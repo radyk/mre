@@ -380,17 +380,23 @@ class TestRendererAttribution:
         exp, _ = explainer_and_index
         bundle = exp.answer("Why is WO-2001 late?")
         text = TemplateRenderer().render(bundle)
-        assert text.endswith("[rendered by: template]")
+        assert text.endswith("[rendered by: template | register: testimony]")
+
+    def test_template_renderer_register_is_testimony(self, explainer_and_index):
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Why is WO-2001 late?")
+        text = TemplateRenderer().render(bundle)
+        assert "register: testimony" in text
 
     def test_llm_renderer_no_key_attribution(self, explainer_and_index):
         from mre.modules.renderers import LLMRenderer
         exp, _ = explainer_and_index
         bundle = exp.answer("Why is WO-2001 late?")
-        # Force no-key scenario by passing empty string
         renderer = LLMRenderer(api_key="")
         text = renderer.render(bundle)
         assert "[rendered by: template" in text
         assert "ANTHROPIC_API_KEY not set" in text
+        assert "register: testimony" in text
 
     def test_llm_renderer_no_key_not_silent(self, explainer_and_index):
         """Fallback must not produce the same output as plain TemplateRenderer."""
@@ -399,7 +405,6 @@ class TestRendererAttribution:
         bundle = exp.answer("Why is WO-2001 late?")
         template_text = TemplateRenderer().render(bundle)
         fallback_text = LLMRenderer(api_key="").render(bundle)
-        # Attribution lines differ even though bodies are the same
         assert template_text != fallback_text
 
     def test_llm_renderer_no_package_attribution(self, tmp_path, monkeypatch, explainer_and_index):
@@ -408,7 +413,6 @@ class TestRendererAttribution:
         from mre.modules.renderers import LLMRenderer
         exp, _ = explainer_and_index
         bundle = exp.answer("Why is WO-2001 late?")
-        # Simulate missing package by blocking the import
         monkeypatch.setitem(sys.modules, "anthropic", None)
         renderer = LLMRenderer(api_key="sk-fake-key-for-test")
         text = renderer.render(bundle)
@@ -417,13 +421,13 @@ class TestRendererAttribution:
     def test_attribution_on_schedule_bundle(self, sched_exp):
         bundle = sched_exp.answer("Show the schedule")
         text = TemplateRenderer().render(bundle)
-        assert text.endswith("[rendered by: template]")
+        assert text.endswith("[rendered by: template | register: testimony]")
 
     def test_attribution_on_unsupported_bundle(self, explainer_and_index):
         exp, _ = explainer_and_index
         bundle = exp.answer("How is the weather?")
         text = TemplateRenderer().render(bundle)
-        assert text.endswith("[rendered by: template]")
+        assert text.endswith("[rendered by: template | register: testimony]")
 
 
 class TestResolveName:
@@ -1017,3 +1021,204 @@ class TestScheduleQuery:
         text = TemplateRenderer().render(bundle)
         assert _SQ_RES_GEAR not in text
         assert _SQ_DEM_2001 not in text
+
+
+# ---------------------------------------------------------------------------
+# Dialogue mode — SessionHistory, judgment path, reset
+# ---------------------------------------------------------------------------
+
+class FakeLLMClient:
+    """Minimal Anthropic-API-shaped fake for dialogue tests."""
+
+    def __init__(self, response_text: str = "My take: looks good.") -> None:
+        self._text = response_text
+        self.calls: list[dict] = []
+
+    @property
+    def messages(self) -> "FakeLLMClient":
+        return self
+
+    def create(self, **kwargs) -> Any:
+        self.calls.append(kwargs)
+        FakeContent = type("FakeContent", (), {"text": self._text})()
+        return type("FakeResponse", (), {"content": [FakeContent]})()
+
+
+class TestDialogueMode:
+    # --- SessionHistory unit tests ---
+
+    def test_session_history_starts_empty(self):
+        from mre.ask import SessionHistory
+        h = SessionHistory()
+        assert h.is_empty()
+        assert len(h) == 0
+
+    def test_session_history_append_and_len(self):
+        from mre.ask import SessionHistory, Turn
+        h = SessionHistory()
+        h.append(Turn(question="q", bundle=None, rendered="r"))
+        assert len(h) == 1
+        assert not h.is_empty()
+
+    def test_session_history_max_turns(self):
+        from mre.ask import SessionHistory, Turn
+        h = SessionHistory(max_turns=3)
+        for i in range(5):
+            h.append(Turn(question=f"q{i}", bundle=None, rendered=f"r{i}"))
+        assert len(h) == 3
+        assert h.turns()[0].question == "q2"
+
+    def test_session_history_reset(self):
+        from mre.ask import SessionHistory, Turn
+        h = SessionHistory()
+        h.append(Turn(question="q", bundle=None, rendered="r"))
+        h.reset()
+        assert h.is_empty()
+
+    def test_turns_returns_copy(self):
+        from mre.ask import SessionHistory, Turn
+        h = SessionHistory()
+        h.append(Turn(question="q", bundle=None, rendered="r"))
+        turns = h.turns()
+        turns.clear()
+        assert len(h) == 1
+
+    # --- _render_repl_turn: routed question (testimony) ---
+
+    def test_routed_turn_returns_testimony_register(self, explainer_and_index):
+        from mre.ask import SessionHistory, _render_repl_turn
+        exp, _ = explainer_and_index
+        h = SessionHistory()
+        rendered, bundle = _render_repl_turn(exp, "Why is WO-2001 late?", False, h)
+        assert "register: testimony" in rendered
+        assert bundle is not None
+
+    def test_routed_turn_after_judgment_still_testimony(self, explainer_and_index):
+        """A routed question must produce testimony even when history has a judgment turn."""
+        from mre.ask import SessionHistory, Turn, _render_repl_turn
+        from mre.modules.renderers import LLMRenderer
+        exp, _ = explainer_and_index
+        h = SessionHistory()
+        # Add a prior judgment turn to history
+        h.append(Turn(question="What do you think?", bundle=None, rendered="My take: x\n[rendered by: LLM | register: judgment]"))
+        rendered, bundle = _render_repl_turn(exp, "Why is WO-2001 late?", False, h)
+        assert "register: testimony" in rendered
+        assert bundle is not None
+        assert bundle.subject_type == "demand"
+
+    # --- _render_repl_turn: unrouted + empty history → honest fallback ---
+
+    def test_unrouted_empty_history_is_honest_fallback(self, explainer_and_index):
+        from mre.ask import SessionHistory, _render_repl_turn
+        exp, _ = explainer_and_index
+        h = SessionHistory()
+        rendered, bundle = _render_repl_turn(exp, "How is the weather?", False, h)
+        assert bundle is not None
+        assert bundle.subject_type == "unsupported"
+        assert "register: testimony" in rendered
+
+    def test_unrouted_empty_history_no_llm_flag_no_judgment(self, explainer_and_index):
+        """Without --llm, unrouted questions never enter judgment mode."""
+        from mre.ask import SessionHistory, Turn, _render_repl_turn
+        exp, _ = explainer_and_index
+        h = SessionHistory()
+        h.append(Turn(question="Why is WO-2001 late?", bundle=None, rendered="..."))
+        rendered, bundle = _render_repl_turn(exp, "How is the weather?", False, h)
+        # Still testimony — no judgment without --llm
+        assert bundle is not None
+        assert bundle.subject_type == "unsupported"
+
+    # --- judgment path: mocked LLM ---
+
+    def test_judgment_path_calls_mocked_llm(self, explainer_and_index):
+        from mre.ask import SessionHistory, Turn, _render_repl_turn
+        from mre.modules.renderers import LLMRenderer
+        exp, _ = explainer_and_index
+
+        fake = FakeLLMClient("My take: WO-2001 is late because the gear machine was blocked.")
+        h = SessionHistory()
+        # Seed history with one routed turn
+        prior_bundle = exp.answer("Why is WO-2001 late?")
+        h.append(Turn(
+            question="Why is WO-2001 late?",
+            bundle=prior_bundle,
+            rendered=TemplateRenderer()._render_body(prior_bundle),
+        ))
+
+        # Monkeypatch LLMRenderer so the _render_repl_turn picks up our fake
+        import mre.modules.renderers as _renderers
+        original_init = LLMRenderer.__init__
+
+        def patched_init(self, *args, **kwargs):
+            original_init(self, *args, **kwargs)
+            self._client = fake
+            self._available = True
+
+        _renderers.LLMRenderer.__init__ = patched_init
+        try:
+            rendered, bundle = _render_repl_turn(exp, "What do you think about this?", True, h)
+        finally:
+            _renderers.LLMRenderer.__init__ = original_init
+
+        assert fake.calls, "LLM client must have been called"
+        assert "My take:" in rendered
+        assert bundle is None  # judgment turn has no evidence bundle
+
+    def test_judgment_attribution_register(self, explainer_and_index):
+        from mre.ask import SessionHistory, Turn, _render_repl_turn
+        from mre.modules.renderers import LLMRenderer
+        exp, _ = explainer_and_index
+
+        fake = FakeLLMClient("My take: short answer.")
+        renderer = LLMRenderer(_client=fake)
+        prior_bundle = exp.answer("Why is WO-2001 late?")
+        h = SessionHistory()
+        h.append(Turn(question="Why is WO-2001 late?", bundle=prior_bundle, rendered="..."))
+
+        fallback_bundle = exp.answer("Some unknown question xyz")
+        text = renderer.render_judgment("Some unknown question xyz", h, fallback_bundle)
+        assert "register: judgment" in text
+        assert "register: testimony" not in text
+
+    def test_judgment_response_text_in_output(self, explainer_and_index):
+        from mre.modules.renderers import LLMRenderer
+        exp, _ = explainer_and_index
+        from mre.ask import SessionHistory, Turn
+        fake = FakeLLMClient("My take: the root cause is the maintenance closure on 2026-07-13.")
+        renderer = LLMRenderer(_client=fake)
+        prior_bundle = exp.answer("Why is WO-2001 late?")
+        h = SessionHistory()
+        h.append(Turn(question="q", bundle=prior_bundle, rendered="..."))
+        fallback_bundle = exp.answer("Something unrouted")
+        text = renderer.render_judgment("Something unrouted", h, fallback_bundle)
+        assert "maintenance closure" in text
+
+    def test_judgment_no_llm_falls_back_to_testimony(self, explainer_and_index):
+        from mre.modules.renderers import LLMRenderer
+        from mre.ask import SessionHistory, Turn
+        exp, _ = explainer_and_index
+        renderer = LLMRenderer(api_key="")  # no key → unavailable
+        prior_bundle = exp.answer("Why is WO-2001 late?")
+        h = SessionHistory()
+        h.append(Turn(question="q", bundle=prior_bundle, rendered="..."))
+        fallback_bundle = exp.answer("How is the weather?")
+        text = renderer.render_judgment("How is the weather?", h, fallback_bundle)
+        assert "register: testimony" in text
+        assert "register: judgment" not in text
+
+    def test_judgment_prompt_contains_prior_facts(self, explainer_and_index):
+        """The judgment prompt must include prior turn key facts."""
+        from mre.modules.renderers import LLMRenderer
+        from mre.ask import SessionHistory, Turn
+        exp, _ = explainer_and_index
+        fake = FakeLLMClient("My take: ok.")
+        renderer = LLMRenderer(_client=fake)
+        prior_bundle = exp.answer("Why is WO-2001 late?")
+        h = SessionHistory()
+        h.append(Turn(question="Why is WO-2001 late?", bundle=prior_bundle, rendered="..."))
+        fallback_bundle = exp.answer("Some unrouted question")
+        renderer.render_judgment("Some unrouted question", h, fallback_bundle)
+        # The prompt sent to the LLM must include prior key facts
+        assert fake.calls
+        prompt_text = fake.calls[0]["messages"][0]["content"]
+        assert "lateness_minutes" in prompt_text or "840" in prompt_text

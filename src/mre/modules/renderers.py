@@ -48,7 +48,7 @@ class TemplateRenderer:
     """Deterministic text renderer.  No external calls."""
 
     def render(self, bundle: ExplanationBundle) -> str:
-        return self._render_body(bundle) + "\n[rendered by: template]"
+        return self._render_body(bundle) + "\n[rendered by: template | register: testimony]"
 
     def _render_body(self, bundle: ExplanationBundle) -> str:
         lines: list[str] = []
@@ -342,13 +342,17 @@ class LLMRenderer:
         self,
         model: str = "claude-haiku-4-5-20251001",
         api_key: Optional[str] = None,
+        _client: Any = None,
     ) -> None:
         self._model = model
         self._api_key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
         self._client = None
         self._available = False
         self._fallback_reason = ""
-        if not self._api_key:
+        if _client is not None:
+            self._client = _client
+            self._available = True
+        elif not self._api_key:
             self._fallback_reason = "ANTHROPIC_API_KEY not set"
         else:
             try:
@@ -361,8 +365,26 @@ class LLMRenderer:
     def render(self, bundle: ExplanationBundle) -> str:
         if not self._available:
             body = TemplateRenderer()._render_body(bundle)
-            return body + f"\n[rendered by: template — --llm requested but {self._fallback_reason}]"
-        return self._llm_render(bundle) + f"\n[rendered by: LLM ({self._model})]"
+            return (
+                body
+                + f"\n[rendered by: template — --llm requested but {self._fallback_reason}"
+                + " | register: testimony]"
+            )
+        return (
+            self._llm_render(bundle)
+            + f"\n[rendered by: LLM ({self._model}) | register: testimony]"
+        )
+
+    def render_judgment(self, question: str, history: Any, fallback_bundle: ExplanationBundle) -> str:
+        """Conversational turn in dialogue mode — reasons over prior evidence bundles."""
+        if not self._available:
+            body = TemplateRenderer()._render_body(fallback_bundle)
+            return (
+                body
+                + f"\n[rendered by: template — {self._fallback_reason} | register: testimony]"
+            )
+        text = self._llm_judgment(question, history)
+        return text + f"\n[rendered by: LLM ({self._model}) | register: judgment]"
 
     def _llm_render(self, bundle: ExplanationBundle) -> str:
         context = TemplateRenderer()._render_body(bundle)
@@ -384,3 +406,42 @@ class LLMRenderer:
             messages=[{"role": "user", "content": prompt}],
         )
         return response.content[0].text
+
+    def _llm_judgment(self, question: str, history: Any) -> str:
+        prompt = self._build_judgment_prompt(question, history)
+        import anthropic  # type: ignore
+        response = self._client.messages.create(
+            model=self._model,
+            max_tokens=512,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.content[0].text
+
+    def _build_judgment_prompt(self, question: str, history: Any) -> str:
+        lines = [
+            "You are a manufacturing scheduling assistant in dialogue mode.",
+            "",
+            "PRIOR TURNS (read-only evidence — do not invent facts beyond these):",
+        ]
+        for i, turn in enumerate(history.turns(), 1):
+            lines.append(f"\n[Turn {i}] User: {turn.question}")
+            if turn.bundle is not None:
+                lines.append(f"  Key facts: {turn.bundle.key_facts}")
+                body = TemplateRenderer()._render_body(turn.bundle)
+                lines.append(f"  Evidence (excerpt):\n{body[:800]}")
+            else:
+                lines.append("  (judgment turn — no evidence bundle)")
+            lines.append(f"  Answer: {turn.rendered[:400]}")
+        lines.extend([
+            f"\nNEW MESSAGE: {question}",
+            "",
+            "INSTRUCTIONS:",
+            "- Open your response with 'My take:' or a natural equivalent.",
+            "- Reason ONLY over facts from the prior turns above.",
+            "  Do not invent schedule facts, assignments, or records.",
+            "- When you extrapolate or suggest, name the specific record or metric.",
+            "- If the question is testable by re-running the solver with changed parameters,",
+            "  say explicitly: \"that's a runnable what-if - not wired up yet.\"",
+            "- Keep your answer to 2-3 paragraphs.",
+        ])
+        return "\n".join(lines)

@@ -15,7 +15,9 @@ from __future__ import annotations
 
 import argparse
 import sys
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Optional
 
 _HELP_TEXT = """\
 Example questions:
@@ -23,13 +25,59 @@ Example questions:
   Why is WO-2001 on M-GEAR-02?
   What data problems exist?
   What changed since snap-demo-v1 vs snap-demo-v2?
+  When does WO-2001 start?
+  What is running on M-GEAR-01?
+  Show the schedule
   summarize                  (run summary)
   diff snap-demo-v1 snap-demo-v2
 
 Commands:
+  reset        clear conversation history
   help / ?     show this message
   quit / exit  exit the REPL
+
+Dialogue mode (--llm only):
+  After a routed answer, any unrecognised follow-up is treated as a
+  conversational turn. The LLM reasons over prior evidence bundles only
+  and labels its reply [register: judgment].
 """
+
+# ---------------------------------------------------------------------------
+# Session history (REPL only — one-shot never touches this)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class Turn:
+    """One REPL turn: question + optional evidence bundle + rendered text."""
+    question: str
+    bundle: Any   # ExplanationBundle | None  (None for judgment turns)
+    rendered: str
+
+
+class SessionHistory:
+    """Circular buffer of the last max_turns turns."""
+
+    def __init__(self, max_turns: int = 10) -> None:
+        self._turns: list[Turn] = []
+        self._max = max_turns
+
+    def append(self, turn: Turn) -> None:
+        self._turns.append(turn)
+        if len(self._turns) > self._max:
+            self._turns = self._turns[-self._max:]
+
+    def reset(self) -> None:
+        self._turns.clear()
+
+    def is_empty(self) -> bool:
+        return not self._turns
+
+    def turns(self) -> list[Turn]:
+        return list(self._turns)
+
+    def __len__(self) -> int:
+        return len(self._turns)
 
 _DIFF_PREFIXES = ("diff ", "compare ")
 
@@ -64,26 +112,50 @@ def _load(out_dir: Path, snapshot_id: str):
     return explainer
 
 
-def _render(explainer, question: str, use_llm: bool) -> str:
-    from mre.modules.renderers import LLMRenderer, TemplateRenderer
-
+def _assemble_bundle(explainer: Any, question: str) -> Any:
+    """Route a question to the right bundle assembler."""
     q = question.strip()
-    renderer = LLMRenderer() if use_llm else TemplateRenderer()
-
     if q.lower() == "summarize":
-        bundle = explainer.summarize_run()
-    elif q.lower().startswith(_DIFF_PREFIXES):
-        # e.g. "diff snap-a snap-b" or "compare snap-a snap-b"
+        return explainer.summarize_run()
+    if q.lower().startswith(_DIFF_PREFIXES):
         rest = q.split(None, 1)[1] if " " in q else ""
         parts = rest.split()
         if len(parts) >= 2:
-            bundle = explainer.answer(f"What changed since {parts[0]} vs {parts[1]}?")
-        else:
-            bundle = explainer.answer(q)
-    else:
-        bundle = explainer.answer(q)
+            return explainer.answer(f"What changed since {parts[0]} vs {parts[1]}?")
+        return explainer.answer(q)
+    return explainer.answer(q)
 
+
+def _render(explainer: Any, question: str, use_llm: bool) -> str:
+    """One-shot render — no history, no judgment path."""
+    from mre.modules.renderers import LLMRenderer, TemplateRenderer
+
+    bundle = _assemble_bundle(explainer, question)
+    renderer = LLMRenderer() if use_llm else TemplateRenderer()
     return renderer.render(bundle)
+
+
+def _render_repl_turn(
+    explainer: Any,
+    question: str,
+    use_llm: bool,
+    history: SessionHistory,
+) -> tuple[str, Optional[Any]]:
+    """REPL render — may invoke judgment path for unrouted questions with history.
+
+    Returns (rendered_text, bundle_or_None).
+    bundle is None for judgment turns (no evidence was assembled).
+    """
+    from mre.modules.renderers import LLMRenderer, TemplateRenderer
+
+    bundle = _assemble_bundle(explainer, question)
+
+    if bundle.subject_type == "unsupported" and not history.is_empty() and use_llm:
+        rendered = LLMRenderer().render_judgment(question, history, bundle)
+        return rendered, None
+
+    renderer = LLMRenderer() if use_llm else TemplateRenderer()
+    return renderer.render(bundle), bundle
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -113,7 +185,9 @@ def main(argv: list[str] | None = None) -> int:
     # Interactive REPL
     print(f"[mre.ask] Evidence index loaded ({args.snapshot_id}). Type 'help' for examples, 'quit' to exit.")
     if args.llm:
-        print("[mre.ask] LLM renderer active.")
+        print("[mre.ask] LLM renderer active. Unrouted follow-ups will use judgment mode.")
+
+    history = SessionHistory()
 
     while True:
         try:
@@ -132,9 +206,16 @@ def main(argv: list[str] | None = None) -> int:
             print(_HELP_TEXT)
             continue
 
+        if raw.lower() == "reset":
+            history.reset()
+            print("[history cleared]")
+            continue
+
         try:
             print()
-            print(_render(explainer, raw, args.llm))
+            rendered, bundle = _render_repl_turn(explainer, raw, args.llm, history)
+            print(rendered)
+            history.append(Turn(question=raw, bundle=bundle, rendered=rendered))
         except Exception as exc:  # noqa: BLE001
             print(f"[error] {exc}", file=sys.stderr)
 
