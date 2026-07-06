@@ -5,11 +5,11 @@ description = "Manufacturing Reasoning Engine - canonical model, evidence contra
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.7",
+    "ortools>=9.8",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
-# Phase 3 adds: ortools
 
 [build-system]
 requires = ["setuptools>=68"]

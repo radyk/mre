@@ -353,3 +353,59 @@ product-family attribute exists yet. It is not a principled equivalence: if a
 true product-family attribute is later added, the outlier grouping should move
 to it, and setup_family reverts to its sole intended role as the
 transition-matrix key.
+
+## 2026-07-06 — Phase 2 scheduling spine: judgment calls
+
+**Time granularity — integer minutes.** The CP-SAT model expresses all times as
+integer minutes from `horizon_start`. Hours or seconds were the alternatives.
+Minutes were chosen because: (a) the shortest operations in the sample data are
+~30-minute setups (sub-minute granularity buys nothing), (b) the widest
+horizon (~650 days) fits in a 32-bit integer in minutes (941 760), and (c)
+cost coefficients scaled by 100 keep integer precision without overflow.
+
+**Horizon computation — internal vs external.** `SolverBuilder._compute_horizon`
+derives the horizon from demand data (earliest start, latest due + 7 days).
+`__main__.py` independently computes a wider horizon (due + 14 days) for
+calendar pre-flattening. The mismatch is benign: the extra calendar windows
+fall outside the operation variable domains and create no blocking intervals
+inside the horizon. If exact consistency is later required, pass the computed
+horizon into `build()` as a parameter rather than re-deriving it.
+
+**Setup transitions — pairwise literals, not circuit.** Sequence-dependent
+setup times use pairwise big-M constraints (one `both_ij` bool + one
+`order_ij` bool per op-pair per shared resource). The CP-SAT `add_circuit`
+alternative was considered but rejected for Phase 2: `add_circuit` requires a
+fixed resource assignment before building the circuit, which conflicts with the
+optional-interval assignment model. The pairwise encoding is O(n²) per
+resource but sufficient for the PoC load (~10 ops per resource).
+
+**Calendar blocking — fixed intervals in no-overlap.** Unavailable periods are
+encoded as fixed-duration interval variables added to each resource's
+`add_no_overlap` group. This prevents operations from spanning shift boundaries
+without requiring explicit shift-indexed start variables. Consequence: all
+operations must complete within a single shift window; `splittable=False` is
+enforced implicitly. Multi-day operations are infeasible with this encoding;
+the sample data was calibrated accordingly.
+
+**Capability UUID matching.** `ResourceRequirement.capability_ref` is a UUID5
+computed as `uuid5(DNS_NS, "capability:<code>")`. The solver builder reverses
+the mapping by computing `uuid5(DNS_NS, "capability:<c>")` for each resource
+capability string and comparing. This avoids storing a second index.
+
+**setup_family per step, not per product.** Each OperationSpec step carries the
+*workcenter's* capability code as `setup_family`, not the product family. This
+ensures transition-matrix lookups are between capability codes (casting→casting,
+machining→machining), which is the intended semantics. An earlier implementation
+used the product's family for all steps; this caused cross-capability machine
+pairs to be erroneously considered for transition constraints.
+
+**Sample data calibration.** Two values were adjusted to keep operations within
+a single 720-minute shift window while preserving detectability by the validator:
+- `PROD-007 ProductionMinutes` changed from 150.0 to 60.0. The value 60.0 is
+  still 30× the gear-family median (0.45–0.6 sec/unit), so M3's statistical
+  outlier check (>10× threshold) still fires. With 150.0, the merged WP for
+  all four R-GEAR-C work orders totalled 847 minutes per operation — infeasible.
+- `_FALLBACK_RUN_RATE_SECONDS` changed from 600 to 30. PROD-008 still has
+  `CostingLotSize=0`, still triggers the LOW_CONFIDENCE_INPUT finding with
+  `disposition=defaulted`, and the merged R-ZERO WP now produces ~280-minute
+  operations instead of ~5 000-minute ones.

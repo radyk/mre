@@ -36,9 +36,10 @@ class WriteContractError(Exception):
 
 
 class SnapshotWriter:
-    def __init__(self, snapshot_dir: Path, snapshot_id: str) -> None:
+    def __init__(self, snapshot_dir: Path, snapshot_id: str, extend: bool = False) -> None:
         self._dir = snapshot_dir
         self._snapshot_id = snapshot_id
+        self._extend = extend  # if True: append entities, skip manifest overwrite
         self._dir.mkdir(parents=True, exist_ok=True)
         # Per-type entity buffers; keyed by entity_type string
         self._entity_buffers: dict[str, list[dict]] = {}
@@ -78,27 +79,29 @@ class SnapshotWriter:
         )
 
     def finalize(self) -> None:
-        """Flush all buffered records to disk and write the manifest."""
+        """Flush all buffered records to disk and (if not extending) write the manifest."""
+        mode = "a" if self._extend else "w"
         for entity_type, records in self._entity_buffers.items():
             path = self._dir / f"entities_{entity_type}.jsonl"
-            with open(path, "w", encoding="utf-8") as f:
+            with open(path, mode, encoding="utf-8") as f:
                 for rec in records:
                     f.write(json.dumps(rec) + "\n")
 
         prov_path = self._dir / "provenance.jsonl"
-        with open(prov_path, "w", encoding="utf-8") as f:
+        with open(prov_path, mode, encoding="utf-8") as f:
             for p in self._provenance:
                 f.write(json.dumps(p) + "\n")
 
-        manifest = {
-            "snapshot_id": self._snapshot_id,
-            "created_at": datetime.now(UTC).isoformat(),
-            "entity_counts": {t: len(recs) for t, recs in self._entity_buffers.items()},
-            "provenance_count": len(self._provenance),
-        }
-        (self._dir / "manifest.json").write_text(
-            json.dumps(manifest, indent=2), encoding="utf-8"
-        )
+        if not self._extend:
+            manifest = {
+                "snapshot_id": self._snapshot_id,
+                "created_at": datetime.now(UTC).isoformat(),
+                "entity_counts": {t: len(recs) for t, recs in self._entity_buffers.items()},
+                "provenance_count": len(self._provenance),
+            }
+            (self._dir / "manifest.json").write_text(
+                json.dumps(manifest, indent=2), encoding="utf-8"
+            )
 
 
 class SnapshotReader:
@@ -195,6 +198,18 @@ class SnapshotStore:
         if not snap_dir.exists():
             raise FileNotFoundError(f"Snapshot '{snapshot_id}' not found at {snap_dir}")
         return SnapshotReader(snap_dir, snapshot_id)
+
+    def extend_snapshot(self, snapshot_id: str) -> SnapshotWriter:
+        """Return a writer that appends new entity types to an existing snapshot.
+
+        Entity JSONL files are opened in append mode; the manifest is NOT rewritten.
+        Use this when the adapter snapshot already exists and a downstream module
+        (planner, extractor) needs to add derived entities to the same snapshot.
+        """
+        snap_dir = self._base / snapshot_id
+        if not snap_dir.exists():
+            raise FileNotFoundError(f"Snapshot '{snapshot_id}' not found at {snap_dir}")
+        return SnapshotWriter(snap_dir, snapshot_id, extend=True)
 
     def list_snapshots(self) -> list[str]:
         return [d.name for d in self._base.iterdir() if d.is_dir()]

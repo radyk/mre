@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "description": "Per-machine shift windows and exceptions for sample data scenario",
+  "default": {
+    "base_pattern": {
+      "weekdays": [0, 1, 2, 3, 4],
+      "shift_start": "07:00",
+      "shift_end": "19:00"
+    },
+    "exceptions": []
+  },
+  "machines": {
+    "M-GEAR-01": {
+      "base_pattern": {
+        "weekdays": [0, 1, 2, 3, 4],
+        "shift_start": "07:00",
+        "shift_end": "19:00"
+      },
+      "exceptions": [
+        {
+          "date": "2026-07-13",
+          "type": "closure",
+          "reason": "planned_maintenance",
+          "note": "Annual PM on gear hobber 1. Forces WO-2001+WO-2002 merged batch onto M-GEAR-02."
+        }
+      ]
+    }
+  }
+}

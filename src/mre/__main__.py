@@ -1,123 +1,296 @@
 """Entry point: python -m mre
 
-Runs the full data-quality pipeline:
-    M1 Adapter → M3 Validator → DQ Report
+Runs the full scheduling spine:
+    M1 Adapter → M3 Validator → gate check → M4 Planner →
+    M5 SolverBuilder → M6 SolveRunner → M7 Extractor
 
 Usage:
-    python -m mre [--sample-data PATH] [--out PATH]
+    python -m mre [--sample-data PATH] [--out PATH] [--snapshot-id ID]
+                  [--policy identity_v1|merge_by_family_v1]
+                  [--time-limit N] [--skip-schedule]
 """
 from __future__ import annotations
 
 import argparse
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 from mre.contracts.vocabularies import ModuleCode, RunStatus
 from mre.modules.adapter import Adapter
+from mre.modules.calendar_utils import flatten_calendar
 from mre.modules.dq_report import generate_dq_report
 from mre.modules.snapshot_store import SnapshotStore
 from mre.modules.validator import Validator
 from mre.reporter import Reporter
 
+UTC = timezone.utc
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Manufacturing Reasoning Engine — data quality pipeline"
+        description="Manufacturing Reasoning Engine — scheduling spine"
     )
     parser.add_argument(
         "--sample-data",
         default=str(Path(__file__).parent.parent.parent / "sample_data"),
-        help="Path to ERP extract directory (default: sample_data/)",
     )
-    parser.add_argument(
-        "--out",
-        default=str(Path("mre_output")),
-        help="Output directory for snapshots, run logs, and report",
-    )
-    parser.add_argument(
-        "--snapshot-id",
-        default="snap-dq-run",
-        help="Snapshot identifier",
-    )
+    parser.add_argument("--out", default=str(Path("mre_output")))
+    parser.add_argument("--snapshot-id", default="snap-run")
+    parser.add_argument("--policy", default="merge_by_family_v1",
+                        choices=["identity_v1", "merge_by_family_v1"])
+    parser.add_argument("--time-limit", type=float, default=30.0,
+                        help="Solver time limit in seconds")
+    parser.add_argument("--skip-schedule", action="store_true",
+                        help="Stop after DQ report (skip planning+solving)")
     args = parser.parse_args(argv)
 
     extract_dir = Path(args.sample_data)
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
-    snap_id = args.snapshot_id
+    snap_id  = args.snapshot_id
     runs_dir = out_dir / "runs"
-    store = SnapshotStore(out_dir / "snapshots")
+    store    = SnapshotStore(out_dir / "snapshots")
 
-    print(f"[mre] extract_dir : {extract_dir}")
-    print(f"[mre] output_dir  : {out_dir}")
-    print(f"[mre] snapshot_id : {snap_id}")
+    _p(f"extract_dir : {extract_dir}")
+    _p(f"output_dir  : {out_dir}")
+    _p(f"snapshot_id : {snap_id}")
 
-    # --- M1: Adapter ---
-    adapter_reporter = Reporter.begin(
-        module=ModuleCode.M1,
-        purpose="ERP adapter run",
+    # -----------------------------------------------------------------------
+    # M1: Adapter
+    # -----------------------------------------------------------------------
+    a_rep = Reporter.begin(
+        module=ModuleCode.M1, purpose="ERP adapter run",
         config={"extract_dir": str(extract_dir)},
-        trigger="cli",
-        snapshot_id=snap_id,
-        sink_dir=runs_dir,
+        trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
     )
-    adapter = Adapter(
-        extract_dir=extract_dir,
-        synthesized_generator="sample_data_gen_v1",
+    adapter = Adapter(extract_dir=extract_dir)
+    a_result = adapter.run(snapshot_id=snap_id, store=store, reporter=a_rep)
+    a_rep.end(RunStatus.SUCCESS)
+
+    _p(
+        f"adapter     : {a_result.demand_count} demands, "
+        f"{a_result.product_count} products, "
+        f"{a_result.resource_count} resources, "
+        f"{a_result.calendar_count} calendars"
     )
-    adapter_result = adapter.run(
-        snapshot_id=snap_id,
-        store=store,
-        reporter=adapter_reporter,
+    if a_result.costmodel_id:
+        _p(f"costmodel   : {a_result.costmodel_id}")
+    if a_result.constraint_id:
+        _p(f"constraint  : {a_result.constraint_id}")
+
+    # -----------------------------------------------------------------------
+    # M3: Validator
+    # -----------------------------------------------------------------------
+    v_rep = Reporter.begin(
+        module=ModuleCode.M3, purpose="semantic validator run",
+        config={}, trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
     )
-    adapter_reporter.end(RunStatus.SUCCESS)
-    adapter_doc = adapter_reporter.consolidated_doc
-    print(
-        f"[mre] adapter     : {adapter_result.demand_count} demands, "
-        f"{adapter_result.product_count} products, "
-        f"{adapter_result.resource_count} resources"
+    v_result = Validator().run(snapshot_id=snap_id, store=store, reporter=v_rep)
+    v_rep.end(RunStatus.SUCCESS)
+    gate = "GO" if v_result.go else "NO-GO"
+    _p(
+        f"validator   : {v_result.blocker_count} blockers, "
+        f"{v_result.error_count} errors, "
+        f"{v_result.warning_count} warnings — gate={gate}"
     )
 
-    # --- M3: Validator ---
-    val_reporter = Reporter.begin(
-        module=ModuleCode.M3,
-        purpose="semantic validator run",
-        config={},
-        trigger="cli",
-        snapshot_id=snap_id,
-        sink_dir=runs_dir,
-    )
-    validator = Validator()
-    val_result = validator.run(
-        snapshot_id=snap_id,
-        store=store,
-        reporter=val_reporter,
-    )
-    val_reporter.end(RunStatus.SUCCESS)
-    val_doc = val_reporter.consolidated_doc
-    gate = "GO" if val_result.go else "NO-GO"
-    print(
-        f"[mre] validator   : {val_result.blocker_count} blockers, "
-        f"{val_result.error_count} errors, "
-        f"{val_result.warning_count} warnings — gate={gate}"
-    )
-
-    # --- DQ Report ---
+    # DQ Report
     report_path = out_dir / "dq_report.md"
     generate_dq_report(
-        adapter_doc=adapter_doc,
-        validator_doc=val_doc,
-        identity_map=adapter_result.identity_map,
+        adapter_doc=a_rep.consolidated_doc,
+        validator_doc=v_rep.consolidated_doc,
+        identity_map=a_result.identity_map,
         output_path=report_path,
     )
-    print(f"[mre] dq_report   : {report_path}")
+    _p(f"dq_report   : {report_path}")
 
-    adapter_jsonl = runs_dir / f"{adapter_reporter.run_id}.jsonl"
-    val_jsonl = runs_dir / f"{val_reporter.run_id}.jsonl"
-    print(f"[mre] adapter run : {adapter_jsonl}")
-    print(f"[mre] validator run: {val_jsonl}")
+    if args.skip_schedule or not v_result.go:
+        if not v_result.go:
+            _p("gate=NO-GO — scheduling skipped")
+        return 0 if v_result.go else 1
 
-    return 0 if val_result.go else 1
+    # -----------------------------------------------------------------------
+    # M4: Planner
+    # -----------------------------------------------------------------------
+    from mre.modules.planner import Planner
+    p_rep = Reporter.begin(
+        module=ModuleCode.M4, purpose="demand planning",
+        config={"policy": args.policy}, trigger="cli",
+        snapshot_id=snap_id, sink_dir=runs_dir,
+    )
+    p_result = Planner(policy=args.policy).run(
+        snapshot_id=snap_id, store=store, reporter=p_rep
+    )
+    p_rep.end(RunStatus.SUCCESS)
+    _p(
+        f"planner     : {p_result.workpackage_count} workpackages, "
+        f"{p_result.operation_count} operations, "
+        f"{p_result.fulfillment_count} fulfillments, "
+        f"{p_result.merge_count} merges"
+    )
+
+    # -----------------------------------------------------------------------
+    # Flatten calendars for solver
+    # -----------------------------------------------------------------------
+    reader = store.load_snapshot(snap_id)
+    demands    = list(reader.iter_entities("demand"))
+    fuls       = list(reader.iter_entities("fulfillment"))
+    wps        = list(reader.iter_entities("workpackage"))
+    ops        = list(reader.iter_entities("operation"))
+    resources  = list(reader.iter_entities("resource"))
+    pools      = list(reader.iter_entities("resourcepool"))
+    calendars  = list(reader.iter_entities("calendar"))
+    constraints = list(reader.iter_entities("constraint"))
+    costmodels  = list(reader.iter_entities("costmodel"))
+    cost_model  = costmodels[0] if costmodels else {
+        "id": "default-cm", "resource_rates": {},
+        "setup_cost_basis": {"fixed_per_setup": 50.0, "scrap_cost_per_unit": 0.0},
+        "tardiness_weights": {"base_weight": 1.0, "commitment_class_multipliers": {}},
+    }
+
+    # Compute planning horizon from demands
+    all_earliest = [
+        datetime.fromisoformat(d["earliest_start"]).replace(tzinfo=UTC)
+        for d in demands if d.get("earliest_start")
+    ]
+    all_due = [
+        datetime.fromisoformat(d["due"]).replace(tzinfo=UTC)
+        for d in demands if d.get("due")
+    ]
+    horizon_start = min(all_earliest) if all_earliest else datetime(2026, 7, 13, tzinfo=UTC)
+    horizon_start = horizon_start.replace(hour=0, minute=0, second=0, microsecond=0)
+    horizon_end   = (max(all_due) if all_due else horizon_start).replace(
+        hour=23, minute=59, second=59
+    ) + __import__("datetime").timedelta(days=14)
+
+    # Flatten each calendar's horizon_resolved
+    from mre.contracts.entities import CalendarException, TimeWindow
+    from mre.contracts.vocabularies import CalendarExceptionType, CalendarExceptionReason
+
+    flattened_cals = []
+    for cal in calendars:
+        exc_raw = cal.get("exceptions", [])
+        excs: list[CalendarException] = []
+        for e in exc_raw:
+            if isinstance(e, dict) and "window" in e:
+                tw = TimeWindow(
+                    start=datetime.fromisoformat(e["window"]["start"]).replace(tzinfo=UTC),
+                    end=datetime.fromisoformat(e["window"]["end"]).replace(tzinfo=UTC),
+                )
+                excs.append(CalendarException(
+                    window=tw,
+                    type=CalendarExceptionType(e.get("type", "closure")),
+                    reason=CalendarExceptionReason(e.get("reason", "planned_maintenance")),
+                ))
+        windows = flatten_calendar(
+            cal.get("base_pattern", {}), excs, horizon_start, horizon_end
+        )
+        flat_windows = [
+            {"start": w.start.isoformat(), "end": w.end.isoformat()}
+            for w in windows
+        ]
+        cal_copy = dict(cal)
+        cal_copy["horizon_resolved"] = flat_windows
+        flattened_cals.append(cal_copy)
+
+    # -----------------------------------------------------------------------
+    # M5: Solver Builder
+    # -----------------------------------------------------------------------
+    from mre.modules.solver_builder import SolverBuilder
+
+    b_rep = Reporter.begin(
+        module=ModuleCode.M5, purpose="model build",
+        config={}, trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
+    )
+    builder = SolverBuilder()
+    model, var_map = builder.build(
+        wps + ops,           # work_items
+        resources + pools,   # capacity_items
+        flattened_cals,      # calendars (horizon_resolved populated)
+        fuls + demands,      # demand_items
+        constraints,         # constraints
+        cost_model,          # cost_model
+    )
+    b_rep.end(RunStatus.SUCCESS)
+    _p("solver_builder: model built")
+
+    # -----------------------------------------------------------------------
+    # M6: Solve Runner
+    # -----------------------------------------------------------------------
+    from mre.modules.solve_runner import SolveRunner
+
+    r_rep = Reporter.begin(
+        module=ModuleCode.M6, purpose="solve run",
+        config={"time_limit": args.time_limit}, trigger="cli",
+        snapshot_id=snap_id, sink_dir=runs_dir,
+    )
+    solve_result = SolveRunner(time_limit_seconds=args.time_limit).solve(
+        model, var_map, r_rep
+    )
+    r_rep.end(RunStatus.SUCCESS if solve_result.status in ("OPTIMAL", "FEASIBLE") else RunStatus.PARTIAL)
+    _p(
+        f"solver      : status={solve_result.status}, "
+        f"obj={solve_result.objective}, "
+        f"wall_time={solve_result.wall_time:.2f}s"
+    )
+
+    if solve_result.status not in ("OPTIMAL", "FEASIBLE"):
+        _p("Solve failed — no schedule produced")
+        return 2
+
+    # -----------------------------------------------------------------------
+    # M7: Extractor
+    # -----------------------------------------------------------------------
+    from mre.modules.extractor import Extractor
+
+    e_rep = Reporter.begin(
+        module=ModuleCode.M7, purpose="schedule extraction",
+        config={}, trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
+    )
+    extract_result = Extractor().extract(
+        solve_values=solve_result.solve_values,
+        snapshot_id=snap_id,
+        operations=ops,
+        workpackages=wps,
+        resources=resources,
+        fulfillments=fuls,
+        demands=demands,
+        cost_model=cost_model,
+        reporter=e_rep,
+    )
+    e_rep.end(RunStatus.SUCCESS)
+
+    # Print schedule summary
+    _p("\n=== Schedule Summary ===")
+    _p(f"Assignments : {len(extract_result.assignments)}")
+    _p(f"ServiceOutcomes : {len(extract_result.service_outcomes)}")
+    ledger = extract_result.cost_ledger
+    _p(f"Total cost  : {ledger['total_cost']:.2f}")
+    _p(f"  production: {ledger['production_cost']:.2f}")
+    _p(f"  setup     : {ledger['setup_cost']:.2f}")
+    _p(f"  tardiness : {ledger['tardiness_cost']:.2f}")
+
+    _p("\n=== Per-Demand Service Table ===")
+    for svc in extract_result.service_outcomes:
+        d = next((d for d in demands if d["id"] == svc["demand_ref"]), {})
+        d_wono = next(
+            (e["value"] for e in d.get("external_refs", []) if e.get("type") == "work_order"),
+            svc["demand_ref"][:12],
+        )
+        lat = svc["lateness_minutes"]
+        status = "LATE" if lat > 0 else ("EARLY" if lat < 0 else "ON_TIME")
+        _p(
+            f"  {d_wono}: completion={svc['projected_completion'][:19]}, "
+            f"lateness={lat:+d} min [{status}]"
+        )
+
+    _p(f"\n[mre] runs dir    : {runs_dir}")
+    return 0
+
+
+def _p(msg: str) -> None:
+    print(f"[mre] {msg}")
 
 
 if __name__ == "__main__":

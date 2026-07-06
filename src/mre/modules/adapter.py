@@ -30,17 +30,20 @@ from pathlib import Path
 from typing import Optional
 
 from mre.contracts.entities import (
-    Calendar, Capability, Demand, ExternalRef, EntityRef, OperationSpec,
-    Process, Product, Quantity, Resource, ResourcePool, ResourceRequirement,
+    Calendar, CalendarException, Capability, Demand, ExternalRef, EntityRef, OperationSpec,
+    Process, Product, Quantity, Resource, ResourcePool, ResourceRequirement, TimeWindow,
 )
 from mre.contracts.provenance import (
-    ProvenanceSidecar, SynthesizedProvenance, ObservedProvenance, ProvenanceClass,
+    DefaultedProvenance, ProvenanceSidecar, SynthesizedProvenance, ObservedProvenance,
+    ProvenanceClass,
 )
 from mre.contracts.vocabularies import (
+    CalendarExceptionReason, CalendarExceptionType,
     CommitmentClass, DemandStatus, DriverCode, FindingCode, FindingDisposition,
     FindingSeverity, ModuleCode, ProcessStatus, RecordTier, ResourceRequirementMode,
     ResourceType, DecisionType, DecisionBasis,
 )
+from mre.modules.config_loader import load_cost_model, load_setup_constraint
 from mre.modules.identity_map import IdentityMap
 from mre.modules.snapshot_store import SnapshotStore, SnapshotWriter
 from mre.reporter import Reporter
@@ -48,7 +51,7 @@ from mre.reporter import Reporter
 UTC = timezone.utc
 
 # Fallback run_rate used when CostingLotSize=0 (avoids division by zero).
-_FALLBACK_RUN_RATE_SECONDS = 600  # 10 minutes per unit
+_FALLBACK_RUN_RATE_SECONDS = 30  # 30 seconds per unit (conservative fallback)
 
 
 @dataclass
@@ -59,6 +62,8 @@ class AdapterResult:
     operation_spec_count: int
     process_count: int
     calendar_count: int
+    costmodel_id: Optional[str]
+    constraint_id: Optional[str]
     identity_map: IdentityMap
     store: SnapshotStore
 
@@ -147,15 +152,26 @@ class Adapter:
         identity_map = IdentityMap()
 
         # Register input manifests
-        for fname in ("openworkorder.csv", "routing.csv", "routinglines.csv",
-                       "product.csv", "machines.csv", "workcenters.csv"):
+        all_inputs = (
+            "openworkorder.csv", "routing.csv", "routinglines.csv",
+            "product.csv", "machines.csv", "workcenters.csv",
+            "machine_schedules.json", "costmodel.json", "setup_transitions.json",
+        )
+        for fname in all_inputs:
             path = self._dir / fname
             if path.exists():
                 reporter.register_input(
                     artifact_id=fname,
                     artifact_hash=_file_hash(path),
-                    profile={"row_count": sum(1 for _ in open(path)) - 1},
+                    profile={},
                 )
+
+        # Load machine schedule config (optional)
+        machine_schedules: dict = {}
+        sched_path = self._dir / "machine_schedules.json"
+        if sched_path.exists():
+            import json
+            machine_schedules = json.loads(sched_path.read_text(encoding="utf-8"))
 
         # Load all CSVs
         wo_rows = _read_csv(self._dir / "openworkorder.csv")
@@ -198,22 +214,87 @@ class Adapter:
         process_count = 0
         canonical_products: dict[str, Product] = {}  # ProductNo → Product
 
-        # Standard working calendar (Mon-Fri, 07:00-19:00) — shared by all resources.
+        # Default working calendar (Mon-Fri, 07:00-19:00) — fallback for resources
+        # without a per-machine schedule. Provenance = defaulted (policy assumption).
+        default_base = (
+            machine_schedules.get("default", {}).get("base_pattern")
+            or {"weekdays": [0, 1, 2, 3, 4], "shift_start": "07:00", "shift_end": "19:00"}
+        )
         calendar_id = _stable_id("calendar", "standard-shifts")
         calendar = Calendar(
             id=calendar_id,
             snapshot_id=snapshot_id,
-            base_pattern={
-                "weekdays": [0, 1, 2, 3, 4],
-                "shift_start": "07:00",
-                "shift_end": "19:00",
-            },
+            base_pattern=default_base,
             exceptions=[],
             horizon_resolved=[],
         )
+        def _defaulted_cal_prov(eid: str, attrs: list[str]) -> list[ProvenanceSidecar]:
+            return [
+                ProvenanceSidecar(
+                    entity_id=eid,
+                    attribute_name=a,
+                    snapshot_id=snapshot_id,
+                    provenance_class=ProvenanceClass.DEFAULTED,
+                    payload=DefaultedProvenance(policy="standard Mon-Fri 07:00-19:00"),
+                )
+                for a in attrs
+            ]
+        def _observed_cal_prov(eid: str, attrs: list[str]) -> list[ProvenanceSidecar]:
+            return [
+                ProvenanceSidecar(
+                    entity_id=eid,
+                    attribute_name=a,
+                    snapshot_id=snapshot_id,
+                    provenance_class=ProvenanceClass.OBSERVED,
+                    payload=ObservedProvenance(
+                        source_system="config",
+                        source_field="machine_schedules",
+                        extract_ref="machine_schedules.json",
+                    ),
+                )
+                for a in attrs
+            ]
+
         cal_attrs = ["base_pattern", "exceptions", "horizon_resolved"]
-        writer.write_entity(calendar, self._prov_list(calendar_id, cal_attrs, snapshot_id))
+        writer.write_entity(calendar, _defaulted_cal_prov(calendar_id, cal_attrs))
         calendar_count = 1
+
+        # Per-machine calendars from machine_schedules.json (provenance = observed).
+        # machine_calendar_map: MachineID → calendar_id
+        machine_calendar_map: dict[str, str] = {}
+        for mid, mspec in machine_schedules.get("machines", {}).items():
+            m_cal_id = _stable_id("calendar", f"machine:{mid}")
+            bp = mspec.get("base_pattern") or default_base
+
+            # Convert raw exception dicts to CalendarException objects
+            cal_exceptions: list[CalendarException] = []
+            for exc_raw in mspec.get("exceptions", []):
+                try:
+                    exc_date = datetime.fromisoformat(exc_raw["date"]).replace(tzinfo=UTC)
+                    exc_window = TimeWindow(
+                        start=exc_date.replace(hour=0, minute=0, second=0),
+                        end=exc_date.replace(hour=23, minute=59, second=59),
+                    )
+                    exc_type = CalendarExceptionType(exc_raw.get("type", "closure"))
+                    exc_reason = CalendarExceptionReason(
+                        exc_raw.get("reason", "planned_maintenance")
+                    )
+                    cal_exceptions.append(
+                        CalendarException(window=exc_window, type=exc_type, reason=exc_reason)
+                    )
+                except (ValueError, KeyError):
+                    pass
+
+            m_cal = Calendar(
+                id=m_cal_id,
+                snapshot_id=snapshot_id,
+                base_pattern=bp,
+                exceptions=cal_exceptions,
+                horizon_resolved=[],
+            )
+            writer.write_entity(m_cal, _observed_cal_prov(m_cal_id, cal_attrs))
+            machine_calendar_map[mid] = m_cal_id
+            calendar_count += 1
 
         # Capabilities by code (one per unique capability string)
         capabilities_written: set[str] = set()
@@ -237,6 +318,8 @@ class Adapter:
             rid = _stable_id("resource", mid)
             cap_code = row.get("Capability", "").strip()
             cap_id = _ensure_capability(cap_code, snapshot_id) if cap_code else None
+            # Use per-machine calendar if one was configured; fall back to the default.
+            res_cal_id = machine_calendar_map.get(mid, calendar_id)
             res = Resource(
                 id=rid,
                 snapshot_id=snapshot_id,
@@ -245,7 +328,7 @@ class Adapter:
                 capabilities=[cap_code] if cap_code else [],
                 capacity=1,
                 cost_rate=float(row.get("CostRate", 0.0)),
-                calendar_ref=calendar_id,
+                calendar_ref=res_cal_id,
                 pool_refs=[],
             )
             attrs = ["resource_type", "capabilities", "capacity", "cost_rate",
@@ -352,9 +435,11 @@ class Adapter:
                 spec_id = _stable_id("operationspec", f"{route_code}:{seq}")
 
                 # Resolve workcenter to ResourceRequirement
+                step_family = ""
                 if wc in workcenter_map:
                     wc_row = workcenter_map[wc]
                     cap_code = wc_row.get("CapabilityCode", "").strip()
+                    step_family = cap_code or family or ""
                     if cap_code:
                         _ensure_capability(cap_code, snapshot_id)
                         req = ResourceRequirement(
@@ -388,6 +473,7 @@ class Adapter:
                         tier=RecordTier.SUPPORTING,
                     )
                     req = None
+                    step_family = family or ""
 
                 reqs = [req] if req is not None else []
                 spec = OperationSpec(
@@ -395,7 +481,7 @@ class Adapter:
                     snapshot_id=snapshot_id,
                     sequence=seq,
                     resource_requirements=reqs,
-                    setup_family=family or "",
+                    setup_family=step_family,
                     base_setup=timedelta(minutes=setup_minutes),
                     run_rate=run_rate,
                 )
@@ -551,6 +637,24 @@ class Adapter:
             seen_wonos[wono] = demand_id
             demand_count += 1
 
+        # ------------------------------------------------------------------
+        # Phase 3: CostModel and setup Constraint from policy config files
+        # ------------------------------------------------------------------
+        costmodel_id: Optional[str] = None
+        constraint_id: Optional[str] = None
+
+        cm_path = self._dir / "costmodel.json"
+        if cm_path.exists():
+            cm, cm_prov = load_cost_model(cm_path, snapshot_id)
+            writer.write_entity(cm, cm_prov)
+            costmodel_id = cm.id
+
+        trans_path = self._dir / "setup_transitions.json"
+        if trans_path.exists() and costmodel_id:
+            con, con_prov, _ = load_setup_constraint(trans_path, snapshot_id, costmodel_id)
+            writer.write_entity(con, con_prov)
+            constraint_id = con.id
+
         writer.write_identity_map(identity_map)
         writer.finalize()
 
@@ -569,6 +673,8 @@ class Adapter:
             operation_spec_count=op_spec_count,
             process_count=process_count,
             calendar_count=calendar_count,
+            costmodel_id=costmodel_id,
+            constraint_id=constraint_id,
             identity_map=identity_map,
             store=store,
         )
