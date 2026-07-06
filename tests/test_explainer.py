@@ -663,3 +663,306 @@ class TestDowntimeRoute:
         bundle = downtime_explainer.answer("How much downtime does casting have?")
         text = TemplateRenderer().render(bundle)
         assert "No calendar closures" in text
+
+
+# ---------------------------------------------------------------------------
+# Schedule query — ScheduleFilter assembler + routes
+# ---------------------------------------------------------------------------
+
+# Fixed IDs for the fake schedule snapshot
+_SQ_RES_GEAR = "sq-res-gear-0000-0000-000000000001"
+_SQ_RES_CAST = "sq-res-cast-0000-0000-000000000002"
+_SQ_OP_1 = "sq-op-0001-0000-0000-000000000001"   # seq=10, gear, WO-2001+WO-2002 merged
+_SQ_OP_2 = "sq-op-0002-0000-0000-000000000002"   # seq=10, cast, WO-3001
+_SQ_OP_3 = "sq-op-0003-0000-0000-000000000003"   # seq=10, cast, WO-CUST-01 (customer A)
+_SQ_WP_MERGED = "sq-wp-merged-0000-000000000001"
+_SQ_WP_SINGLE = "sq-wp-single-0000-000000000002"
+_SQ_WP_CUST = "sq-wp-cust-00-0000-000000000003"
+_SQ_DEM_2001 = "sq-dem-2001-0000-000000000001"
+_SQ_DEM_2002 = "sq-dem-2002-0000-000000000002"
+_SQ_DEM_3001 = "sq-dem-3001-0000-000000000003"
+_SQ_DEM_CUST = "sq-dem-cust-0000-000000000004"
+
+
+class FakeScheduleReader:
+    """Snapshot with 3 assignments across 2 machines, one merged WP."""
+
+    def get_entity(self, entity_id: str):
+        return None
+
+    def iter_entities(self, entity_type: str):
+        if entity_type == "assignment":
+            # Merged WP: gear machine, 2026-07-13
+            yield {
+                "id": "sq-asgn-0001",
+                "snapshot_id": "snap-sq",
+                "operation_ref": _SQ_OP_1,
+                "workpackage_ref": _SQ_WP_MERGED,
+                "resource_assignments": [{"resource_ref": _SQ_RES_GEAR}],
+                "phase_windows": {
+                    "setup": None,
+                    "run": [{"start": "2026-07-13T07:00:00Z", "end": "2026-07-13T14:00:00Z"}],
+                    "dwell": None,
+                },
+                "decision_ref": "dec-001",
+            }
+            # Single WP: cast machine, 2026-07-28
+            yield {
+                "id": "sq-asgn-0002",
+                "snapshot_id": "snap-sq",
+                "operation_ref": _SQ_OP_2,
+                "workpackage_ref": _SQ_WP_SINGLE,
+                "resource_assignments": [{"resource_ref": _SQ_RES_CAST}],
+                "phase_windows": {
+                    "setup": None,
+                    "run": [{"start": "2026-07-28T07:00:00Z", "end": "2026-07-28T08:00:00Z"}],
+                    "dwell": None,
+                },
+                "decision_ref": "dec-002",
+            }
+            # Customer WP: cast machine, 2026-08-06
+            yield {
+                "id": "sq-asgn-0003",
+                "snapshot_id": "snap-sq",
+                "operation_ref": _SQ_OP_3,
+                "workpackage_ref": _SQ_WP_CUST,
+                "resource_assignments": [{"resource_ref": _SQ_RES_CAST}],
+                "phase_windows": {
+                    "setup": None,
+                    "run": [{"start": "2026-08-06T07:00:00Z", "end": "2026-08-06T08:00:00Z"}],
+                    "dwell": None,
+                },
+                "decision_ref": "dec-003",
+            }
+        elif entity_type == "operation":
+            yield {"id": _SQ_OP_1, "workpackage_ref": _SQ_WP_MERGED, "sequence": 10,
+                   "setup_family": "gear_cutting"}
+            yield {"id": _SQ_OP_2, "workpackage_ref": _SQ_WP_SINGLE, "sequence": 10,
+                   "setup_family": "casting"}
+            yield {"id": _SQ_OP_3, "workpackage_ref": _SQ_WP_CUST, "sequence": 10,
+                   "setup_family": "casting"}
+        elif entity_type == "fulfillment":
+            # Both WO-2001 and WO-2002 fulfilled by the merged WP
+            yield {"id": "ful-sq-001", "demand_ref": _SQ_DEM_2001, "workpackage_ref": _SQ_WP_MERGED}
+            yield {"id": "ful-sq-002", "demand_ref": _SQ_DEM_2002, "workpackage_ref": _SQ_WP_MERGED}
+            yield {"id": "ful-sq-003", "demand_ref": _SQ_DEM_3001, "workpackage_ref": _SQ_WP_SINGLE}
+            yield {"id": "ful-sq-004", "demand_ref": _SQ_DEM_CUST, "workpackage_ref": _SQ_WP_CUST}
+        elif entity_type == "demand":
+            yield {"id": _SQ_DEM_2001, "due": "2026-07-13T23:59:00Z",
+                   "external_refs": [{"system": "ERP", "type": "work_order", "value": "WO-2001"}]}
+            yield {"id": _SQ_DEM_2002, "due": "2026-07-13T23:59:00Z",
+                   "external_refs": [{"system": "ERP", "type": "work_order", "value": "WO-2002"}]}
+            yield {"id": _SQ_DEM_3001, "due": "2026-08-31T23:59:00Z",
+                   "external_refs": [{"system": "ERP", "type": "work_order", "value": "WO-3001"}]}
+            yield {"id": _SQ_DEM_CUST, "due": "2026-09-15T23:59:00Z",
+                   "external_refs": [
+                       {"system": "ERP", "type": "work_order", "value": "WO-CUST-01"},
+                       {"system": "ERP", "type": "customer", "value": "CUST-ACME"},
+                   ]}
+        elif entity_type == "serviceoutcome":
+            # WO-2001 late by 840 min; WO-3001 early
+            yield {"id": "svc-001", "demand_ref": _SQ_DEM_2001, "fulfillment_ref": "ful-sq-001",
+                   "projected_completion": "2026-07-14T14:00:00Z",
+                   "lateness": "PT840M", "tardiness_cost": 840.0}
+            yield {"id": "svc-002", "demand_ref": _SQ_DEM_3001, "fulfillment_ref": "ful-sq-003",
+                   "projected_completion": "2026-07-28T08:00:00Z",
+                   "lateness": "-P30DT0H0M", "tardiness_cost": 0.0}
+        elif entity_type == "resourcepool":
+            yield {"id": "pool-sq-gear",
+                   "external_refs": [{"system": "ERP", "type": "workcenter_id", "value": "WC-GEAR"}],
+                   "members": [_SQ_RES_GEAR]}
+            yield {"id": "pool-sq-cast",
+                   "external_refs": [{"system": "ERP", "type": "workcenter_id", "value": "WC-CASTING"}],
+                   "members": [_SQ_RES_CAST]}
+        elif entity_type == "resource":
+            yield {"id": _SQ_RES_GEAR,
+                   "external_refs": [{"system": "ERP", "type": "machine_id", "value": "M-GEAR-02"}],
+                   "calendar_ref": None}
+            yield {"id": _SQ_RES_CAST,
+                   "external_refs": [{"system": "ERP", "type": "machine_id", "value": "M-CAST-01"}],
+                   "calendar_ref": None}
+
+    def read_identity_map(self):
+        from mre.modules.identity_map import IdentityMap
+        m = IdentityMap()
+        m.register(_SQ_RES_GEAR, "ERP", "machine_id", "M-GEAR-02")
+        m.register(_SQ_RES_CAST, "ERP", "machine_id", "M-CAST-01")
+        m.register(_SQ_DEM_2001, "ERP", "work_order", "WO-2001")
+        m.register(_SQ_DEM_2002, "ERP", "work_order", "WO-2002")
+        m.register(_SQ_DEM_3001, "ERP", "work_order", "WO-3001")
+        m.register(_SQ_DEM_CUST, "ERP", "work_order", "WO-CUST-01")
+        return m
+
+
+class FakeScheduleStore:
+    def load_snapshot(self, snap_id: str):
+        return FakeScheduleReader()
+
+
+@pytest.fixture()
+def sched_exp(tmp_path):
+    index = _make_index_no_late(tmp_path)
+    return Explainer(
+        snapshot_store=FakeScheduleStore(),
+        index=index,
+        snapshot_id="snap-sq",
+    )
+
+
+class TestScheduleQuery:
+    # --- routing ---
+
+    def test_routes_when_does_wo_start(self, sched_exp):
+        assert sched_exp.answer("When does WO-2001 start?").subject_type == "schedule"
+
+    def test_routes_when_does_wo_finish(self, sched_exp):
+        assert sched_exp.answer("When does WO-2001 finish?").subject_type == "schedule"
+
+    def test_routes_running_on_machine(self, sched_exp):
+        assert sched_exp.answer("What is running on M-GEAR-02?").subject_type == "schedule"
+
+    def test_routes_next_on_machine(self, sched_exp):
+        assert sched_exp.answer("What's next on M-CAST-01?").subject_type == "schedule"
+
+    def test_routes_show_schedule(self, sched_exp):
+        assert sched_exp.answer("Show the schedule").subject_type == "schedule"
+
+    def test_routes_full_schedule(self, sched_exp):
+        assert sched_exp.answer("Full schedule").subject_type == "schedule"
+
+    def test_routes_schedule_for_wo(self, sched_exp):
+        assert sched_exp.answer("Schedule for WO-3001").subject_type == "schedule"
+
+    def test_routes_schedule_for_customer(self, sched_exp):
+        assert sched_exp.answer("Schedule for customer CUST-ACME").subject_type == "schedule"
+
+    # --- WO filter ---
+
+    def test_wo_filter_returns_only_matching_ops(self, sched_exp):
+        bundle = sched_exp.answer("When does WO-2001 start?")
+        rows = bundle.key_facts["rows"]
+        assert all("WO-2001" in r["work_orders"] for r in rows)
+
+    def test_wo_filter_excludes_other_machines(self, sched_exp):
+        bundle = sched_exp.answer("When does WO-3001 start?")
+        rows = bundle.key_facts["rows"]
+        assert all(r["machine"] == "M-CAST-01" for r in rows)
+
+    # --- batched WP ---
+
+    def test_batched_wp_shows_both_wo_names(self, sched_exp):
+        bundle = sched_exp.answer("When does WO-2001 start?")
+        rows = bundle.key_facts["rows"]
+        assert len(rows) == 1
+        assert "WO-2001" in rows[0]["work_orders"]
+        assert "WO-2002" in rows[0]["work_orders"]
+
+    def test_batched_wp_contains_plus_separator(self, sched_exp):
+        bundle = sched_exp.answer("When does WO-2001 start?")
+        assert "+" in bundle.key_facts["rows"][0]["work_orders"]
+
+    # --- machine filter ---
+
+    def test_machine_filter_returns_only_that_machine(self, sched_exp):
+        bundle = sched_exp.answer("What is running on M-CAST-01?")
+        rows = bundle.key_facts["rows"]
+        assert rows
+        assert all(r["machine"] == "M-CAST-01" for r in rows)
+
+    def test_machine_filter_count(self, sched_exp):
+        bundle = sched_exp.answer("What is running on M-GEAR-02?")
+        assert bundle.key_facts["total_rows"] == 1
+
+    # --- date filter ---
+
+    def test_date_filter_within_window(self, sched_exp):
+        bundle = sched_exp.answer("What is running on M-CAST-01 on 2026-07-28?")
+        rows = bundle.key_facts["rows"]
+        assert len(rows) == 1
+        assert "WO-3001" in rows[0]["work_orders"]
+
+    def test_date_filter_empty(self, sched_exp):
+        bundle = sched_exp.answer("What is running on M-CAST-01 on 2026-07-15?")
+        assert bundle.key_facts["total_rows"] == 0
+
+    # --- limit (next N) ---
+
+    def test_next_applies_limit(self, sched_exp):
+        bundle = sched_exp.answer("What's next on M-CAST-01?")
+        assert bundle.key_facts["total_rows"] <= 5
+
+    # --- customer filter ---
+
+    def test_customer_filter_returns_only_customer_ops(self, sched_exp):
+        bundle = sched_exp.answer("Schedule for customer CUST-ACME")
+        rows = bundle.key_facts["rows"]
+        assert len(rows) == 1
+        assert "WO-CUST-01" in rows[0]["work_orders"]
+
+    # --- lateness in rows ---
+
+    def test_late_wo_has_positive_lateness(self, sched_exp):
+        bundle = sched_exp.answer("When does WO-2001 start?")
+        rows = bundle.key_facts["rows"]
+        assert rows[0]["lateness_minutes"] > 0
+
+    def test_early_wo_has_negative_lateness(self, sched_exp):
+        bundle = sched_exp.answer("When does WO-3001 start?")
+        rows = bundle.key_facts["rows"]
+        assert rows[0]["lateness_minutes"] < 0
+
+    # --- empty result ---
+
+    def test_empty_result_not_error(self, sched_exp):
+        bundle = sched_exp.answer("What is running on M-CAST-01 on 2026-07-15?")
+        assert "error" not in bundle.key_facts
+        assert bundle.key_facts["empty_message"]
+
+    def test_empty_result_subject_type_is_schedule(self, sched_exp):
+        bundle = sched_exp.answer("What is running on M-CAST-01 on 2026-07-15?")
+        assert bundle.subject_type == "schedule"
+
+    # --- full schedule ---
+
+    def test_full_schedule_all_ops(self, sched_exp):
+        bundle = sched_exp.answer("Show the schedule")
+        assert bundle.key_facts["total_rows"] == 3
+
+    # --- renderer ---
+
+    def test_renderer_groups_by_machine(self, sched_exp):
+        bundle = sched_exp.answer("Show the schedule")
+        text = TemplateRenderer().render(bundle)
+        assert "[M-CAST-01]" in text
+        assert "[M-GEAR-02]" in text
+
+    def test_renderer_shows_wo_name(self, sched_exp):
+        bundle = sched_exp.answer("When does WO-2001 start?")
+        text = TemplateRenderer().render(bundle)
+        assert "WO-2001" in text
+
+    def test_renderer_shows_both_wo_names_for_merged_wp(self, sched_exp):
+        bundle = sched_exp.answer("When does WO-2001 start?")
+        text = TemplateRenderer().render(bundle)
+        assert "WO-2002" in text
+
+    def test_renderer_shows_seq_number(self, sched_exp):
+        bundle = sched_exp.answer("When does WO-2001 start?")
+        text = TemplateRenderer().render(bundle)
+        assert "seq=" in text
+
+    def test_renderer_shows_late_marker(self, sched_exp):
+        bundle = sched_exp.answer("When does WO-2001 start?")
+        text = TemplateRenderer().render(bundle)
+        assert "LATE" in text
+
+    def test_renderer_empty_shows_nothing_scheduled(self, sched_exp):
+        bundle = sched_exp.answer("What is running on M-CAST-01 on 2026-07-15?")
+        text = TemplateRenderer().render(bundle)
+        assert "Nothing scheduled" in text
+
+    def test_renderer_no_uuids(self, sched_exp):
+        bundle = sched_exp.answer("Show the schedule")
+        text = TemplateRenderer().render(bundle)
+        assert _SQ_RES_GEAR not in text
+        assert _SQ_DEM_2001 not in text

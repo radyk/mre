@@ -57,7 +57,7 @@ class TemplateRenderer:
         if not bundle.ordered_records:
             if bundle.subject_type == "diff":
                 self._render_diff(lines, bundle.key_facts)
-            elif bundle.subject_type in ("downtime", "unsupported"):
+            elif bundle.subject_type in ("downtime", "unsupported", "schedule"):
                 pass  # header already rendered all content
             elif "error" in bundle.key_facts:
                 lines.append(f"  Error: {bundle.key_facts['error']}")
@@ -143,6 +143,35 @@ class TemplateRenderer:
             lines.append("Supported question types:")
             for route in kf.get("supported_routes", []):
                 lines.append(f"  - {route}")
+            lines.append("")
+
+        elif bundle.subject_type == "schedule":
+            kf = bundle.key_facts
+            rows = kf.get("rows", [])
+            label = kf.get("filter_label", "all")
+            if not rows:
+                lines.append(kf.get("empty_message") or f"Nothing scheduled for {label}.")
+            else:
+                lines.append(f"Schedule for {label} ({len(rows)} operation(s)):")
+                lines.append("")
+                cur_machine = None
+                for row in rows:
+                    if row["machine"] != cur_machine:
+                        cur_machine = row["machine"]
+                        lines.append(f"  [{cur_machine}]")
+                    lateness = row.get("lateness_minutes")
+                    lat_str = ""
+                    if lateness is not None:
+                        lat_str = (
+                            f"  +{int(lateness)}min LATE"
+                            if lateness > 0
+                            else f"  -{int(abs(lateness))}min early"
+                        )
+                    lines.append(
+                        f"    seq={row['op_seq']:>3}  "
+                        f"{row['start']} -> {row['end']}  "
+                        f"{row['work_orders']}{lat_str}"
+                    )
             lines.append("")
 
         elif bundle.subject_type == "findings":

@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from mre.modules.evidence_index import EvidenceIndex
@@ -31,8 +31,20 @@ _SUPPORTED_ROUTES = [
     '"What data problems exist?" — findings and quality issues',
     '"What changed since snap-a vs snap-b?" — snapshot diff',
     '"summarize" — run summary',
-    '"How much downtime does [machine/family] have?" — calendar closures',
+    '"How much downtime does [machine/pool] have?" — calendar closures',
+    '"When does WO-XXXX start/finish?" — schedule for a work order',
+    '"What is running on M-YYYY [date]?" — machine schedule',
+    '"What\'s next on M-YYYY?" — upcoming jobs on a machine',
+    '"Schedule for customer X" — all jobs for a customer',
+    '"Show the schedule" / "full schedule" — complete schedule',
 ]
+
+_SCHEDULE_TRIGGERS = frozenset({
+    "schedule", "scheduled", "running on", "next on",
+    "when does", "when will", "when is",
+    "when start", "when finish", "when complete",
+    "start on", "finish on",
+})
 
 
 @dataclass
@@ -96,6 +108,8 @@ class Explainer:
             return self._explain_what_changed(question)
         if "downtime" in q or "closure" in q or "offline" in q:
             return self._explain_downtime(question)
+        if any(kw in q for kw in _SCHEDULE_TRIGGERS):
+            return self._schedule_query(question, q, wo_match, m_match)
         if wo_match:
             return self._explain_why_late(wo_match.group().upper())
         return self._unknown_question(question)
@@ -503,6 +517,249 @@ class Explainer:
             identity_map=self._identity_map,
         )
 
+    # ------------------------------------------------------------------
+    # Schedule query assembler
+    # ------------------------------------------------------------------
+
+    def _schedule_query(
+        self, question: str, q: str, wo_match, m_match
+    ) -> ExplanationBundle:
+        flt, label = self._build_schedule_filter(q, wo_match, m_match)
+
+        # Resolve target resource IDs (None = no machine filter)
+        target_res_ids: Optional[set[str]] = None
+        if flt.get("machine"):
+            rid = (
+                self._identity_map.resolve("ERP", "machine_id", flt["machine"])
+                if self._identity_map else None
+            )
+            target_res_ids = {rid} if rid else set()
+        elif flt.get("pool_words"):
+            target_res_ids = self._resolve_pool_resource_ids(flt["pool_words"])
+
+        rows = self._load_enriched_assignments()
+        filtered = self._apply_schedule_filter(rows, flt, target_res_ids)
+        filtered.sort(key=lambda r: (r["machine"], r["start"]))
+        if flt.get("limit"):
+            filtered = filtered[: flt["limit"]]
+
+        row_dicts = []
+        for r in filtered:
+            svc_facts = r.get("service_outcomes", {})
+            lateness_min: Optional[float] = None
+            if svc_facts:
+                mins = [
+                    _parse_iso_duration_minutes(s.get("lateness", ""))
+                    for s in svc_facts.values()
+                    if s.get("lateness")
+                ]
+                if mins:
+                    lateness_min = max(mins)
+            row_dicts.append({
+                "work_orders": "+".join(sorted(r["work_orders"])) or "?",
+                "op_seq": r["op_seq"],
+                "setup_family": r["setup_family"],
+                "machine": r["machine"],
+                "start": _fmt_ts(r["start"]),
+                "end": _fmt_ts(r["end"]),
+                "lateness_minutes": lateness_min,
+            })
+
+        empty_msg = ""
+        if not row_dicts:
+            parts = [p for p in [
+                flt.get("machine") or (
+                    "pool" if flt.get("pool_words") else None
+                ),
+                flt.get("work_order"),
+                f"on {flt['time_from'].date()}" if flt.get("time_from") else None,
+            ] if p]
+            empty_msg = f"Nothing scheduled for {label}."
+
+        return ExplanationBundle(
+            question=question,
+            subject_id=label,
+            subject_type="schedule",
+            subject_external_name=label,
+            ordered_records=[],
+            key_facts={
+                "filter_label": label,
+                "rows": row_dicts,
+                "total_rows": len(row_dicts),
+                "empty_message": empty_msg,
+            },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _build_schedule_filter(self, q: str, wo_match, m_match) -> tuple[dict, str]:
+        """Return (filter_dict, human_label)."""
+        flt: dict[str, Any] = {}
+        label_parts: list[str] = []
+
+        if wo_match:
+            flt["work_order"] = wo_match.group().upper()
+            label_parts.append(flt["work_order"])
+        if m_match:
+            flt["machine"] = m_match.group().upper()
+            label_parts.append(flt["machine"])
+
+        # Time window
+        now = datetime.now(timezone.utc)
+        date_m = re.search(r'\d{4}-\d{2}-\d{2}', q)
+        if "today" in q:
+            d = now.date()
+            flt["time_from"] = datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
+            flt["time_to"] = flt["time_from"] + timedelta(days=1)
+            label_parts.append("today")
+        elif "tomorrow" in q:
+            d = (now + timedelta(days=1)).date()
+            flt["time_from"] = datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
+            flt["time_to"] = flt["time_from"] + timedelta(days=1)
+            label_parts.append("tomorrow")
+        elif "this week" in q:
+            d = now.date()
+            flt["time_from"] = datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
+            flt["time_to"] = flt["time_from"] + timedelta(days=7)
+            label_parts.append("this week")
+        elif date_m:
+            from datetime import date as _date
+            d = _date.fromisoformat(date_m.group())
+            flt["time_from"] = datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
+            flt["time_to"] = flt["time_from"] + timedelta(days=1)
+            label_parts.append(date_m.group())
+
+        if "next" in q:
+            flt["limit"] = 5
+
+        # Customer
+        cust_m = re.search(r'customer\s+(\S+)', q)
+        if cust_m:
+            flt["customer"] = cust_m.group(1).strip("?.,!")
+            label_parts.append(f"customer {flt['customer']}")
+
+        # Pool words (for "casting", "gear", etc. when no machine regex matched)
+        if not flt.get("machine") and not flt.get("work_order") and not flt.get("customer"):
+            _STOP = {"how", "much", "does", "do", "have", "any", "is", "are", "the",
+                     "a", "an", "for", "in", "what", "which", "show", "me",
+                     "schedule", "scheduled", "running", "on", "next", "full",
+                     "when", "start", "finish", "complete", "will", "does"}
+            words = {w.strip("?.,!") for w in q.split()
+                     if w.strip("?.,!") not in _STOP and len(w.strip("?.,!")) > 2}
+            if words:
+                flt["pool_words"] = words
+
+        label = " / ".join(label_parts) if label_parts else "all"
+        return flt, label
+
+    def _resolve_pool_resource_ids(self, words: set[str]) -> set[str]:
+        result: set[str] = set()
+        for pool in self._reader.iter_entities("resourcepool"):
+            for ref in pool.get("external_refs", []):
+                pname = ref.get("value", "").lower()
+                if any(w in pname for w in words):
+                    result.update(pool.get("members", []))
+                    break
+        return result
+
+    def _load_enriched_assignments(self) -> list[dict]:
+        ops_by_id = {o["id"]: o for o in self._reader.iter_entities("operation")}
+        wp_to_fuls: dict[str, list[dict]] = {}
+        for f in self._reader.iter_entities("fulfillment"):
+            wp_to_fuls.setdefault(f["workpackage_ref"], []).append(f)
+        demands_by_id = {d["id"]: d for d in self._reader.iter_entities("demand")}
+        outcomes_by_demand: dict[str, dict] = {}
+        for svc in self._reader.iter_entities("serviceoutcome"):
+            outcomes_by_demand[svc["demand_ref"]] = svc
+
+        rows: list[dict] = []
+        for asgn in self._reader.iter_entities("assignment"):
+            op_id = asgn.get("operation_ref", "")
+            wp_id = asgn.get("workpackage_ref", "")
+            op = ops_by_id.get(op_id, {})
+
+            res_id = ""
+            for ra in asgn.get("resource_assignments", []):
+                ra_dict = ra if isinstance(ra, dict) else vars(ra)
+                res_id = ra_dict.get("resource_ref", "")
+                break
+
+            machine_name = res_id[:8]
+            if self._identity_map and res_id:
+                refs = self._identity_map.external_refs(res_id)
+                mref = next((r for r in refs if r.type == "machine_id"), None)
+                if mref:
+                    machine_name = mref.value
+
+            demand_ids = [f["demand_ref"] for f in wp_to_fuls.get(wp_id, [])]
+            wo_names: list[str] = []
+            customer_vals: list[str] = []
+            for did in demand_ids:
+                dem = demands_by_id.get(did, {})
+                for ref in dem.get("external_refs", []):
+                    if ref.get("type") == "work_order":
+                        wo_names.append(ref["value"])
+                    elif ref.get("type") == "customer":
+                        customer_vals.append(ref["value"])
+
+            run_windows = asgn.get("phase_windows", {}).get("run", [])
+            start_str = run_windows[0]["start"] if run_windows else ""
+            end_str = run_windows[0]["end"] if run_windows else ""
+
+            svc_facts: dict[str, dict] = {}
+            for did in demand_ids:
+                svc = outcomes_by_demand.get(did)
+                if svc:
+                    svc_facts[did] = {
+                        "lateness": svc.get("lateness", ""),
+                        "projected_completion": svc.get("projected_completion", ""),
+                        "tardiness_cost": svc.get("tardiness_cost", 0.0),
+                    }
+
+            rows.append({
+                "assignment_id": asgn["id"],
+                "operation_ref": op_id,
+                "workpackage_ref": wp_id,
+                "op_seq": op.get("sequence"),
+                "setup_family": op.get("setup_family", ""),
+                "machine": machine_name,
+                "resource_id": res_id,
+                "start": start_str,
+                "end": end_str,
+                "work_orders": wo_names,
+                "demand_ids": demand_ids,
+                "customer_ids": customer_vals,
+                "service_outcomes": svc_facts,
+            })
+        return rows
+
+    @staticmethod
+    def _apply_schedule_filter(
+        rows: list[dict], flt: dict, target_res_ids: Optional[set[str]]
+    ) -> list[dict]:
+        out: list[dict] = []
+        for r in rows:
+            if flt.get("work_order") and flt["work_order"] not in r["work_orders"]:
+                continue
+            if target_res_ids is not None and r["resource_id"] not in target_res_ids:
+                continue
+            if flt.get("customer") and flt["customer"].lower() not in [
+                c.lower() for c in r["customer_ids"]
+            ]:
+                continue
+            if flt.get("time_from") or flt.get("time_to"):
+                try:
+                    s = _parse_ts(r["start"])
+                    e = _parse_ts(r["end"])
+                except Exception:
+                    continue
+                if flt.get("time_from") and e < flt["time_from"]:
+                    continue
+                if flt.get("time_to") and s >= flt["time_to"]:
+                    continue
+            out.append(r)
+        return out
+
     def _resolve_wo(self, wo_ref: str) -> Optional[str]:
         if self._identity_map is None:
             return None
@@ -519,3 +776,43 @@ class Explainer:
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )
+
+
+# ---------------------------------------------------------------------------
+# Module-level helpers (no snapshot access required)
+# ---------------------------------------------------------------------------
+
+def _parse_iso_duration_minutes(s: str) -> float:
+    """Parse ISO 8601 duration like 'PT840M' or '-P5DT6H57M' to minutes."""
+    if not s:
+        return 0.0
+    negative = s.startswith("-")
+    s = s.lstrip("-")
+    m = re.match(
+        r'P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?',
+        s,
+    )
+    if not m:
+        return 0.0
+    days = float(m.group(1) or 0)
+    hours = float(m.group(2) or 0)
+    minutes = float(m.group(3) or 0)
+    seconds = float(m.group(4) or 0)
+    total = days * 1440 + hours * 60 + minutes + seconds / 60
+    return -total if negative else total
+
+
+def _parse_ts(s: str) -> datetime:
+    """Parse 'Z'-suffixed or offset ISO timestamp to aware datetime."""
+    return datetime.fromisoformat(s.replace("Z", "+00:00"))
+
+
+def _fmt_ts(s: str) -> str:
+    """Truncate ISO timestamp to 'YYYY-MM-DD HH:MM' for display."""
+    if not s:
+        return ""
+    try:
+        dt = _parse_ts(s)
+        return dt.strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return s[:16]
