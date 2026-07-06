@@ -1423,3 +1423,118 @@ class TestLLMTestimonyValidation:
         second_prompt = seq._responses[1]  # only checking structure, not the actual 2nd call content
         # Verify the second call was made (index advanced)
         assert seq._index == 2
+
+    # --- timestamp variant normalization ---
+
+    def test_due_date_no_seconds_passes(self):
+        """LLM quoting 'YYYY-MM-DDTHH:MM' (no seconds) must not be flagged."""
+        from mre.modules.renderers import LLMRenderer
+        renderer = LLMRenderer(api_key="")
+        bundle = _make_late_bundle_for_validation()
+        # Bundle has due_date "2026-07-13T23:59:00Z"; LLM drops seconds and Z
+        text = "WO-2001 was due 2026-07-13T23:59. [record: met-late-001]"
+        issues = renderer._validate_testimony(text, bundle)
+        ts_issues = [i for i in issues if "unverifiable timestamp" in i]
+        assert not ts_issues, ts_issues
+
+    def test_due_date_space_separator_passes(self):
+        """'YYYY-MM-DD HH:MM' (space instead of T) must not be flagged."""
+        from mre.modules.renderers import LLMRenderer
+        renderer = LLMRenderer(api_key="")
+        bundle = _make_late_bundle_for_validation()
+        text = "WO-2001 was due 2026-07-13 23:59. [record: met-late-001]"
+        issues = renderer._validate_testimony(text, bundle)
+        ts_issues = [i for i in issues if "unverifiable timestamp" in i]
+        assert not ts_issues, ts_issues
+
+    def test_date_only_form_passes(self):
+        """Date-only 'YYYY-MM-DD' must pass when any bundle timestamp shares that date."""
+        from mre.modules.renderers import LLMRenderer
+        renderer = LLMRenderer(api_key="")
+        bundle = _make_late_bundle_for_validation()
+        text = "WO-2001 was due on 2026-07-13. [record: met-late-001]"
+        issues = renderer._validate_testimony(text, bundle)
+        ts_issues = [i for i in issues if "unverifiable timestamp" in i]
+        assert not ts_issues, ts_issues
+
+    def test_completion_with_z_suffix_passes(self):
+        """'YYYY-MM-DDTHH:MM:SSZ' must match bundle's 'YYYY-MM-DD HH:MM UTC'."""
+        from mre.modules.renderers import LLMRenderer
+        renderer = LLMRenderer(api_key="")
+        bundle = _make_late_bundle_for_validation()
+        # Bundle has completion_iso "2026-07-14 14:00 UTC"
+        text = "WO-2001 completed 2026-07-14T14:00:00Z. [record: met-epoch-001]"
+        issues = renderer._validate_testimony(text, bundle)
+        ts_issues = [i for i in issues if "unverifiable timestamp" in i]
+        assert not ts_issues, ts_issues
+
+    def test_wrong_hour_on_correct_date_still_fails(self):
+        """A timestamp with the right date but wrong hour must still be flagged."""
+        from mre.modules.renderers import LLMRenderer
+        renderer = LLMRenderer(api_key="")
+        bundle = _make_late_bundle_for_validation()
+        # Due date is 2026-07-13 23:59; using 14:00 on same date is wrong
+        text = "WO-2001 was due 2026-07-13T14:00. [record: met-late-001]"
+        issues = renderer._validate_testimony(text, bundle)
+        ts_issues = [i for i in issues if "unverifiable timestamp" in i]
+        assert ts_issues, "Wrong hour should have been flagged"
+
+    # --- time-unit number normalization ---
+
+    def test_hours_notation_passes(self):
+        """'14h' must pass against a bundle with 840-minute lateness."""
+        from mre.modules.renderers import LLMRenderer
+        renderer = LLMRenderer(api_key="")
+        bundle = _make_late_bundle_for_validation()
+        text = "WO-2001 was 14h late. [record: met-late-001]"
+        issues = renderer._validate_testimony(text, bundle)
+        time_issues = [i for i in issues if "unverifiable time value" in i]
+        assert not time_issues, time_issues
+
+    def test_hours_full_word_passes(self):
+        """'14 hours' must pass against 840-minute bundle."""
+        from mre.modules.renderers import LLMRenderer
+        renderer = LLMRenderer(api_key="")
+        bundle = _make_late_bundle_for_validation()
+        text = "WO-2001 was 14 hours late. [record: met-late-001]"
+        issues = renderer._validate_testimony(text, bundle)
+        time_issues = [i for i in issues if "unverifiable time value" in i]
+        assert not time_issues, time_issues
+
+    def test_minutes_decimal_passes(self):
+        """'840.0 min' must pass (bundle records 840.0 minutes)."""
+        from mre.modules.renderers import LLMRenderer
+        renderer = LLMRenderer(api_key="")
+        bundle = _make_late_bundle_for_validation()
+        text = "WO-2001 was 840.0 min late. [record: met-late-001]"
+        issues = renderer._validate_testimony(text, bundle)
+        time_issues = [i for i in issues if "unverifiable time value" in i]
+        assert not time_issues, time_issues
+
+    def test_wrong_hours_fails(self):
+        """'15h' must be flagged — 15h = 900 min, bundle has 840 min."""
+        from mre.modules.renderers import LLMRenderer
+        renderer = LLMRenderer(api_key="")
+        bundle = _make_late_bundle_for_validation()
+        text = "WO-2001 was 15h late. [record: met-late-001]"
+        issues = renderer._validate_testimony(text, bundle)
+        time_issues = [i for i in issues if "unverifiable time value" in i]
+        assert time_issues, "15h (= 900 min, not 840) should have been flagged"
+
+    # --- end-to-end: realistic LLM response using common timestamp variants ---
+
+    def test_realistic_response_with_timestamp_variants_passes(self, explainer_and_index):
+        """Full render must pass validation when LLM uses legitimate timestamp variants."""
+        from mre.modules.renderers import LLMRenderer
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Why is WO-2001 late?")
+        # Response uses 'YYYY-MM-DDTHH:MM' (no seconds, no Z) for due date
+        # and '840 min (14.0h)' for lateness — both legitimate forms
+        good_response = (
+            "WO-2001 completed 840 min (14.0h) past its due date of 2026-07-13T23:59. "
+            "[record: met-late-001]"
+        )
+        renderer = LLMRenderer(_client=FakeLLMClient(good_response))
+        result = renderer.render(bundle)
+        assert "LLM validation failed" not in result
+        assert "register: testimony" in result

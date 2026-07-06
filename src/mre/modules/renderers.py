@@ -19,8 +19,85 @@ from typing import Any, Optional
 from mre.modules.explainer import ExplanationBundle
 
 # Patterns for post-render validation
-_TS_RE = re.compile(r'\b(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})')
+# Captures full timestamp: date + optional time + optional timezone
+_TS_FULL_RE = re.compile(
+    r'\b(\d{4}-\d{2}-\d{2}'                         # YYYY-MM-DD
+    r'(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)?'   # optional T/space HH:MM[:SS[.fff]]
+    r'(?:Z|[+-]\d{2}:?\d{2}|\s*UTC)?)',              # optional timezone
+    re.IGNORECASE,
+)
+# Time-unit numbers: "840 min", "14h", "14.0 hours", etc.
+_TIME_NUM_RE = re.compile(r'\b(\d+(?:\.\d+)?)\s*(min(?:utes?)?|h(?:ours?)?)\b', re.IGNORECASE)
 _MACHINE_RE = re.compile(r'\bM-[A-Z][A-Z0-9-]*')
+
+
+def _to_minute_tuple(s: str) -> Optional[tuple]:
+    """Parse timestamp string to (year, month, day, hour, minute), or None.
+
+    Strips Z / UTC / ±HH:MM suffixes and converts T-separator to space so
+    strptime sees a clean 'YYYY-MM-DD HH:MM[:SS]' or 'YYYY-MM-DD' string.
+    Returns hour=minute=-1 for date-only forms.
+    """
+    clean = s.strip()
+    clean = re.sub(r'Z\s*$', '', clean)
+    clean = re.sub(r'\s*UTC\s*$', '', clean, flags=re.IGNORECASE)
+    clean = re.sub(r'[+-]\d{2}:?\d{2}\s*$', '', clean)
+    clean = clean.strip().replace('T', ' ')
+    for fmt in ('%Y-%m-%d %H:%M:%S.%f', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'):
+        try:
+            dt = datetime.strptime(clean, fmt)
+            return (dt.year, dt.month, dt.day, dt.hour, dt.minute)
+        except ValueError:
+            pass
+    try:
+        dt = datetime.strptime(clean, '%Y-%m-%d')
+        return (dt.year, dt.month, dt.day, -1, -1)
+    except ValueError:
+        pass
+    return None
+
+
+def _ts_matches(prose_tup: tuple, bundle_tuples: set) -> bool:
+    """True if prose timestamp matches any bundle timestamp at minute granularity.
+    Date-only prose (hour=-1) matches any bundle timestamp with the same date.
+    """
+    if prose_tup[3] == -1:
+        return any(bt[:3] == prose_tup[:3] for bt in bundle_tuples)
+    return prose_tup in bundle_tuples
+
+
+def _to_minutes(value: float, unit: str) -> float:
+    """Convert a time value to minutes based on its unit string."""
+    return value * 60.0 if unit.lower().startswith('h') else value
+
+
+def _collect_known_time_values(bundle: "ExplanationBundle") -> set:
+    """Return all acceptable numeric time values from the bundle.
+
+    For each minutes metric, also includes the hours equivalent so that
+    prose using '14h' or '14.0 hours' passes when the bundle records 840 min.
+    """
+    values: set[float] = set()
+    for rec in bundle.ordered_records:
+        if rec.get("record_type") == "metric":
+            v = rec.get("value")
+            if not isinstance(v, (int, float)):
+                continue
+            v = float(v)
+            unit = rec.get("unit", "").lower()
+            values.add(v)
+            values.add(round(v, 1))
+            if "minute" in unit:
+                h = v / 60.0
+                values.add(h)
+                values.add(round(h, 1))
+                values.add(float(int(h)))
+    for kv in bundle.key_facts.values():
+        if isinstance(kv, (int, float)):
+            kv = float(kv)
+            values.add(kv)
+            values.add(round(kv, 1))
+    return values
 
 
 # ---------------------------------------------------------------------------
@@ -480,24 +557,38 @@ class LLMRenderer:
         """Return a list of validation issues; empty list means text is acceptable."""
         issues: list[str] = []
 
-        # Build the set of all known values from the bundle (body + key_facts)
         bundle_body = TemplateRenderer()._render_body(bundle)
         kf_text = " ".join(str(v) for v in bundle.key_facts.values() if v is not None)
         all_bundle_text = bundle_body + " " + kf_text
 
-        # 1. Timestamps: every YYYY-MM-DD HH:MM in prose must appear in bundle text
-        for date_part, time_part in _TS_RE.findall(text):
-            normalized = f"{date_part} {time_part}"  # "2026-07-14 14:00"
-            if normalized not in all_bundle_text:
-                issues.append(f"unverifiable timestamp '{date_part}T{time_part}'")
+        # 1. Timestamps: parse both sides to (year,month,day,hour,minute) and compare.
+        #    Tolerates dropped seconds, dropped Z, space-vs-T, UTC suffix, date-only.
+        known_ts: set[tuple] = set()
+        for ts_str in _TS_FULL_RE.findall(all_bundle_text):
+            tup = _to_minute_tuple(ts_str)
+            if tup is not None:
+                known_ts.add(tup)
+        for ts_str in _TS_FULL_RE.findall(text):
+            tup = _to_minute_tuple(ts_str)
+            if tup is not None and not _ts_matches(tup, known_ts):
+                issues.append(f"unverifiable timestamp '{ts_str}'")
 
-        # 2. Machine names: every M-XXXX in prose must appear in bundle
+        # 2. Time-unit numbers: normalize min/h/hours to minutes before comparing.
+        #    "14h", "14.0 hours", "840 min", "840.0 min" all pass against a 840-min metric.
+        known_time = _collect_known_time_values(bundle)
+        for m in _TIME_NUM_RE.finditer(text):
+            val = float(m.group(1))
+            normalized = _to_minutes(val, m.group(2))
+            if val not in known_time and normalized not in known_time:
+                issues.append(f"unverifiable time value '{m.group(0).strip()}'")
+
+        # 3. Machine names: every M-XXXX in prose must appear in bundle
         known_machines = set(_MACHINE_RE.findall(all_bundle_text))
         for machine in _MACHINE_RE.findall(text):
             if machine not in known_machines:
                 issues.append(f"unverifiable machine name '{machine}'")
 
-        # 3. Footnotes: if any factual sentence exists, at least one must be footnoted
+        # 4. Footnotes: if any factual sentence exists, at least one must be footnoted
         prose = re.sub(r'\n\[rendered by:.*', '', text, flags=re.DOTALL)
         sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', prose) if s.strip()]
         factual = [s for s in sentences if re.search(r'\d|M-[A-Z]|WO-', s)]
