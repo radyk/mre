@@ -73,6 +73,7 @@ class Planner:
         store: SnapshotStore,
         reporter: Reporter,
         excluded_demand_ids: Optional[set[str]] = None,
+        suppressed_merge_ids: Optional[set[str]] = None,
     ) -> PlannerResult:
         reader = store.load_snapshot(snapshot_id)
         writer = store.extend_snapshot(snapshot_id)
@@ -96,7 +97,9 @@ class Planner:
         if self._policy == "identity_v1":
             batches = [[d] for d in demands.values()]
         else:
-            batches = self._merge_batches(list(demands.values()), products)
+            batches = self._merge_batches(
+                list(demands.values()), products, suppressed_merge_ids
+            )
 
         wp_count = op_count = ful_count = merge_count = 0
 
@@ -215,26 +218,35 @@ class Planner:
         self,
         demands: list[dict],
         products: dict[str, dict],
+        suppressed_merge_ids: Optional[set[str]] = None,
     ) -> list[list[dict]]:
-        """Group demands by (product_ref, setup_family) then by due-date window."""
+        """Group demands by (product_ref, setup_family) then by due-date window.
+
+        Demands whose IDs are in suppressed_merge_ids are forced into solo batches,
+        bypassing the merge policy entirely.
+        """
         from datetime import datetime, timezone
 
-        # Determine setup_family from product's product_family field
+        suppressed = set(suppressed_merge_ids or ())
+        free_demands = [d for d in demands if d["id"] not in suppressed]
+        forced_solo = [d for d in demands if d["id"] in suppressed]
+
         def _family(d: dict) -> str:
             prod = products.get(d["product_ref"], {})
             return prod.get("product_family") or ""
 
-        # Group by (product_ref, family)
         groups: dict[tuple[str, str], list[dict]] = {}
-        for d in demands:
+        for d in free_demands:
             key = (d["product_ref"], _family(d))
             groups.setdefault(key, []).append(d)
 
         batches: list[list[dict]] = []
         for members in groups.values():
-            # Sort by due date
             members.sort(key=lambda d: d["due"])
             batches.extend(self._window_partition(members))
+
+        # Forced solo batches (suppressed merges)
+        batches.extend([[d] for d in forced_solo])
         return batches
 
     def _window_partition(self, demands: list[dict]) -> list[list[dict]]:

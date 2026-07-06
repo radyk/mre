@@ -70,6 +70,7 @@ class Extractor:
         cal_windows: Optional[dict] = None,
         op_eligible: Optional[dict] = None,
         snapshot_writer: Optional["SnapshotWriter"] = None,
+        is_scenario: bool = False,
     ) -> ExtractResult:
         """Extract Schedule, Assignments, ServiceOutcomes, and cost ledger.
 
@@ -270,12 +271,17 @@ class Extractor:
             "tardiness_cost": tardiness_cost,
         }
 
-        # Attach summary to schedule
+        # Attach summary to schedule — full cost breakdown stored for diff queries
         schedule["summary_metrics"] = {
             "total_cost": total_cost,
+            "production_cost": production_cost,
+            "setup_cost": setup_cost,
+            "tardiness_cost": tardiness_cost,
             "assignments": len(assignments),
             "service_outcomes": len(service_outcomes),
         }
+        if is_scenario:
+            schedule["summary_metrics"]["is_scenario"] = True
 
         if snapshot_writer is not None:
             self._persist_entities(

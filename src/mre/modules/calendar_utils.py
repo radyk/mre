@@ -81,3 +81,70 @@ def _is_closed(
         if cw.start <= shift_start and cw.end >= shift_end:
             return True
     return False
+
+
+# ---------------------------------------------------------------------------
+# Pipeline-level helpers (used by both __main__.py and scenario runner)
+# ---------------------------------------------------------------------------
+
+UTC = timezone.utc
+
+
+def compute_horizon(
+    demands: list[dict],
+    excluded_ids: "set[str] | None" = None,
+) -> "tuple[datetime, datetime]":
+    """Return (horizon_start, horizon_end) from schedulable demands."""
+    excluded = excluded_ids or set()
+    schedulable = [d for d in demands if d["id"] not in excluded]
+
+    all_earliest = [
+        datetime.fromisoformat(d["earliest_start"]).replace(tzinfo=UTC)
+        for d in schedulable if d.get("earliest_start")
+    ]
+    all_due = [
+        datetime.fromisoformat(d["due"]).replace(tzinfo=UTC)
+        for d in schedulable if d.get("due")
+    ]
+    horizon_start = min(all_earliest) if all_earliest else datetime(2026, 7, 13, tzinfo=UTC)
+    horizon_start = horizon_start.replace(hour=0, minute=0, second=0, microsecond=0)
+    horizon_end = (max(all_due) if all_due else horizon_start).replace(
+        hour=23, minute=59, second=59
+    ) + timedelta(days=14)
+    return horizon_start, horizon_end
+
+
+def flatten_all_calendars(
+    calendars: list[dict],
+    horizon_start: datetime,
+    horizon_end: datetime,
+) -> list[dict]:
+    """Flatten each calendar's horizon_resolved for the solver.
+
+    Returns a copy of each calendar dict with 'horizon_resolved' populated.
+    """
+    from mre.contracts.entities import CalendarException as CalExc, TimeWindow as TW
+    from mre.contracts.vocabularies import CalendarExceptionReason, CalendarExceptionType
+
+    result = []
+    for cal in calendars:
+        excs: list[CalExc] = []
+        for e in cal.get("exceptions", []):
+            if isinstance(e, dict) and "window" in e:
+                tw = TW(
+                    start=datetime.fromisoformat(e["window"]["start"]).replace(tzinfo=UTC),
+                    end=datetime.fromisoformat(e["window"]["end"]).replace(tzinfo=UTC),
+                )
+                excs.append(CalExc(
+                    window=tw,
+                    type=CalendarExceptionType(e.get("type", "closure")),
+                    reason=CalendarExceptionReason(e.get("reason", "planned_maintenance")),
+                ))
+        windows = flatten_calendar(cal.get("base_pattern", {}), excs, horizon_start, horizon_end)
+        cal_copy = dict(cal)
+        cal_copy["horizon_resolved"] = [
+            {"start": w.start.isoformat(), "end": w.end.isoformat()}
+            for w in windows
+        ]
+        result.append(cal_copy)
+    return result

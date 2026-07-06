@@ -560,3 +560,68 @@ Changes:
 
 Two existing tests that asserted `disposition == "proceeded_flagged"` for
 TEMPORAL_IMPOSSIBILITY were updated to assert `disposition == "excluded"`.
+
+---
+
+### Amendment — 2026-07-06 (Phase 3 extension: what-if runner M_whatif)
+
+**What-if runner design.** `python -m mre.whatif --suppress-merge WO-X,WO-Y`
+re-runs the full scheduling spine against a copy-on-write scenario snapshot and
+returns a cost/lateness diff vs the base schedule. Evidence is isolated to
+`mre_output/scenario_runs/` — the main `EvidenceIndex` is never populated with
+scenario evidence, so scenario runs cannot contaminate production explanation
+queries.
+
+**Snapshot lineage.** `SnapshotStore.derive_scenario_snapshot(src, dst,
+entity_types)` copies only M1-written input entities (demand, product, resource,
+calendar, constraint, costmodel, process, operationspec) plus the identity map.
+No provenance.jsonl is copied — downstream modules write their own. The manifest
+records `parent_snapshot_id` and `snapshot_type="scenario"` for traceability.
+
+**Modification decisions.** Each scenario modification is emitted as a
+`DecisionType.SCENARIO_MODIFICATION` record (`basis=policy_applied`,
+`driver=POLICY_RULE`) in the scenario's run evidence. `suppress_merge` records an
+alternative noting the setup amortization trade-off. These are the scenario's own
+institutional memory.
+
+**Measured setup cost trade vs estimated_benefit discrepancy.**
+
+The Planner's merge decision (D-07, docs/04) records:
+
+    estimated_benefit = (len(batch) - 1) × setup_cost_per_setup = 1 × $50 = $50
+
+This counts "WPs avoided" (1 merge saves 1 WorkPackage). The Extractor's cost
+model bills one setup charge per *operation* (`setup_cost = len(ops) ×
+fixed_per_setup`). When WO-2001 + WO-2002 merge into a single WP containing 2
+operations, setup cost = 2 × $50 = $100. When unbatched, each WP has 2 operations:
+4 operations total × $50 = $200. The measured setup delta is **+$250**, not +$50.
+
+The discrepancy (×5) arises from two compounding factors:
+1. The planner's model counts 1 avoided setup per merged WP; the extractor bills
+   per operation (2 ops per WP × factor).
+2. Unbatching frees the two WOs to be scheduled on different machines at different
+   times, causing 88 assignment moves and cascading re-sequencing across the shop.
+   These moves shift other demands, incurring additional setup charges.
+
+Net result on the 34-demand sample: **total cost decreases by $260** when
+unbatching WO-2001/WO-2002 — because eliminating WO-2001's 840-minute tardiness
+saves $840 in tardiness cost, outweighing the $250 increase in setup cost and
+$330 increase in production cost (WO-2001 now runs on M-GEAR-01 at a higher rate
+than the merged WP used).
+
+Recording this discrepancy here, not in the planner code: the planner's
+`estimated_benefit` is a planning-time heuristic for batch selection, not a
+contract for the realized cost delta. The scenario runner is the right tool for
+measuring actual trade-offs.
+
+**REPL integration.** The `ask.py` REPL detects "what if we unbatch WO-X and
+WO-Y" phrases and routes them to `ScenarioRunner` before the normal explainer
+routing. The rendered diff is added to session history so the LLM judgment path
+can reference it in follow-up turns. The CLI `python -m mre.whatif` is the
+non-interactive path; the REPL phrase is the dialogue-mode path.
+
+**Vocabulary addition.** `DecisionType.SCENARIO_MODIFICATION` added to
+`vocabularies.py`. This is a add-never-repurpose entry; the spec in
+`docs/02-evidence-contract-spec.md` should be updated at next spec review.
+
+**524 tests green** after this amendment.

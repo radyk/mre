@@ -14,6 +14,7 @@ Run 'python -m mre' first to generate the evidence index.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -30,6 +31,9 @@ Example questions:
   Show the schedule
   summarize                  (run summary)
   diff snap-demo-v1 snap-demo-v2
+
+What-if questions (trigger scenario re-solve):
+  what if we unbatch WO-2001 and WO-2002
 
 Commands:
   reset        clear conversation history
@@ -109,7 +113,7 @@ def _load(out_dir: Path, snapshot_id: str):
     store = SnapshotStore(out_dir / "snapshots")
     index = EvidenceIndex.load(index_path)
     explainer = Explainer(store, index, snapshot_id=snapshot_id)
-    return explainer
+    return explainer, store
 
 
 def _assemble_bundle(explainer: Any, question: str) -> Any:
@@ -135,18 +139,76 @@ def _render(explainer: Any, question: str, use_llm: bool) -> str:
     return renderer.render(bundle)
 
 
+def _parse_whatif_scenario(question: str, snap_id: str) -> Any:
+    """Return a Scenario if the question describes a testable what-if, else None."""
+    from mre.modules.scenario import Scenario, SuppressMerge
+
+    q = question.lower()
+    suppress_triggers = ("unbatch", "separate", "unmerge", "unsplit")
+    merge_triggers = ("batch", "merge")
+
+    # "what if we unbatch WO-2001 and WO-2002" or "separate WO-2001 and WO-2002"
+    is_suppress = any(kw in q for kw in suppress_triggers)
+    is_what_if_merge = (
+        "what if" in q
+        and any(kw in q for kw in merge_triggers)
+        and ("not" in q or "without" in q or "no " in q)
+    )
+    if is_suppress or is_what_if_merge:
+        wo_matches = re.findall(r'WO-[\w-]+', question, re.IGNORECASE)
+        if len(wo_matches) >= 2:
+            return Scenario(
+                base_snapshot_id=snap_id,
+                modifications=[SuppressMerge(demand_refs=[w.upper() for w in wo_matches])],
+            )
+    return None
+
+
+def _make_diff_bundle(result: Any, explainer: Any) -> Any:
+    """Wrap a ScenarioResult diff in an ExplanationBundle for rendering."""
+    from mre.modules.explainer import ExplanationBundle
+
+    diff = result.diff
+    return ExplanationBundle(
+        question=f"What if we {diff.get('description', '?')}?",
+        subject_id=result.scenario_snapshot_id,
+        subject_type="scenario_diff",
+        subject_external_name=diff.get("description", "?"),
+        ordered_records=[],
+        key_facts=diff,
+        snapshot_id=result.base_snapshot_id,
+        identity_map=explainer._identity_map,
+    )
+
+
 def _render_repl_turn(
     explainer: Any,
     question: str,
     use_llm: bool,
     history: SessionHistory,
+    scenario_runner: Optional[Any] = None,
 ) -> tuple[str, Optional[Any]]:
-    """REPL render — may invoke judgment path for unrouted questions with history.
+    """REPL render — may invoke judgment or scenario path.
 
     Returns (rendered_text, bundle_or_None).
     bundle is None for judgment turns (no evidence was assembled).
     """
     from mre.modules.renderers import LLMRenderer, TemplateRenderer
+
+    # What-if routing: detect and run scenario before normal routing
+    if scenario_runner is not None:
+        snap_id = getattr(explainer, "_snap_id", "snap-run")
+        scenario = _parse_whatif_scenario(question, snap_id)
+        if scenario is not None:
+            print("[mre.ask] running scenario — this may take a moment...")
+            try:
+                result = scenario_runner.run(scenario)
+                diff_bundle = _make_diff_bundle(result, explainer)
+                renderer = LLMRenderer() if use_llm else TemplateRenderer()
+                return renderer.render(diff_bundle), diff_bundle
+            except Exception as exc:  # noqa: BLE001
+                error_text = f"[scenario error] {exc}"
+                return error_text, None
 
     bundle = _assemble_bundle(explainer, question)
 
@@ -175,17 +237,21 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     out_dir = Path(args.out)
-    explainer = _load(out_dir, args.snapshot_id)
+    explainer, store = _load(out_dir, args.snapshot_id)
 
-    # One-shot mode
+    # One-shot mode — no scenario runner (requires interactive intent)
     if args.question:
         print(_render(explainer, args.question, args.llm))
         return 0
 
-    # Interactive REPL
+    # Interactive REPL — wire up scenario runner
+    from mre.modules.scenario import ScenarioRunner
+    scenario_runner = ScenarioRunner(store, out_dir / "scenario_runs")
+
     print(f"[mre.ask] Evidence index loaded ({args.snapshot_id}). Type 'help' for examples, 'quit' to exit.")
     if args.llm:
         print("[mre.ask] LLM renderer active. Unrouted follow-ups will use judgment mode.")
+    print('[mre.ask] What-if: try "what if we unbatch WO-2001 and WO-2002"')
 
     history = SessionHistory()
 
@@ -213,7 +279,9 @@ def main(argv: list[str] | None = None) -> int:
 
         try:
             print()
-            rendered, bundle = _render_repl_turn(explainer, raw, args.llm, history)
+            rendered, bundle = _render_repl_turn(
+                explainer, raw, args.llm, history, scenario_runner
+            )
             print(rendered)
             history.append(Turn(question=raw, bundle=bundle, rendered=rendered))
         except Exception as exc:  # noqa: BLE001

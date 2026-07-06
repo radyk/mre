@@ -103,6 +103,7 @@ class DecisionType(str, Enum):
     MODEL_SIMPLIFICATION = "model_simplification"
     CONSTRAINT_RELAXATION = "constraint_relaxation"
     ASSIGNMENT = "assignment"
+    SCENARIO_MODIFICATION = "scenario_modification"
 
 
 class DriverCode(str, Enum):

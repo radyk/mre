@@ -14,6 +14,7 @@ Directory layout:
 from __future__ import annotations
 
 import json
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterator
@@ -213,3 +214,39 @@ class SnapshotStore:
 
     def list_snapshots(self) -> list[str]:
         return [d.name for d in self._base.iterdir() if d.is_dir()]
+
+    def derive_scenario_snapshot(
+        self,
+        src_id: str,
+        dst_id: str,
+        entity_types: list[str],
+    ) -> None:
+        """Create a scenario snapshot by copying specified entity types from src.
+
+        Only the listed entity types (typically M1-written input entities) are copied.
+        Does not copy provenance.jsonl — downstream modules write their own.
+        Writes a manifest with parent_snapshot_id for lineage tracking.
+        """
+        src_dir = self._base / src_id
+        dst_dir = self._base / dst_id
+        dst_dir.mkdir(parents=True, exist_ok=True)
+
+        for et in entity_types:
+            src_file = src_dir / f"entities_{et}.jsonl"
+            if src_file.exists():
+                shutil.copy2(str(src_file), str(dst_dir / f"entities_{et}.jsonl"))
+
+        im_src = src_dir / "identity_map.json"
+        if im_src.exists():
+            shutil.copy2(str(im_src), str(dst_dir / "identity_map.json"))
+
+        manifest = {
+            "snapshot_id": dst_id,
+            "parent_snapshot_id": src_id,
+            "snapshot_type": "scenario",
+            "created_at": datetime.now(UTC).isoformat(),
+            "entity_counts": {},
+        }
+        (dst_dir / "manifest.json").write_text(
+            json.dumps(manifest, indent=2), encoding="utf-8"
+        )

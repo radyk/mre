@@ -143,7 +143,9 @@ class TemplateRenderer:
         if not bundle.ordered_records:
             if bundle.subject_type == "diff":
                 self._render_diff(lines, bundle.key_facts)
-            elif bundle.subject_type in ("downtime", "unsupported", "schedule"):
+            elif bundle.subject_type in (
+                "downtime", "unsupported", "schedule", "scenario_diff",
+            ):
                 pass  # header already rendered all content
             elif "error" in bundle.key_facts:
                 lines.append(f"  Error: {bundle.key_facts['error']}")
@@ -259,6 +261,41 @@ class TemplateRenderer:
                         f"{row['work_orders']}{lat_str}"
                     )
             lines.append("")
+
+        elif bundle.subject_type == "scenario_diff":
+            kf = bundle.key_facts
+            lines.append(f"Scenario: {kf.get('description', '?')}")
+            lines.append("")
+            service_deltas = kf.get("service_deltas", [])
+            if service_deltas:
+                lines.append("Service changes:")
+                for d in service_deltas:
+                    wo = d["work_order"]
+                    lb = d["lateness_before"]
+                    la = d["lateness_after"]
+                    delta = d.get("lateness_delta")
+                    lb_str = f"{int(lb):+d} min" if lb is not None else "N/A"
+                    la_str = f"{int(la):+d} min" if la is not None else "N/A"
+                    delta_str = f"  [d{int(delta):+d} min]" if delta is not None else ""
+                    lines.append(f"  {wo}: {lb_str} -> {la_str}{delta_str}")
+                lines.append("")
+            cd = kf.get("cost_delta", {})
+            if cd:
+                lines.append(
+                    f"Cost: {cd.get('total_before', 0):.2f}"
+                    f" -> {cd.get('total_after', 0):.2f}"
+                    f"  (d {cd.get('total_delta', 0):+.2f})"
+                )
+                lines.append(f"  production d: {cd.get('production_delta', 0):+.2f}")
+                lines.append(f"  setup       d: {cd.get('setup_delta', 0):+.2f}")
+                lines.append(f"  tardiness   d: {cd.get('tardiness_delta', 0):+.2f}")
+                lines.append("")
+            am = kf.get("assignment_moves", {})
+            if am.get("total_changed", 0) > 0:
+                lines.append(f"Assignment moves: {am['total_changed']}")
+                for move in am.get("notable", []):
+                    lines.append(f"  {move}")
+                lines.append("")
 
         elif bundle.subject_type == "findings":
             kf = bundle.key_facts
@@ -631,7 +668,10 @@ class LLMRenderer:
             "  Do not invent schedule facts, assignments, or records.",
             "- When you extrapolate or suggest, name the specific record or metric.",
             "- If the question is testable by re-running the solver with changed parameters,",
-            "  say explicitly: \"that's a runnable what-if - not wired up yet.\"",
+            "  say it can be run and name the specific command or phrase, e.g.:",
+            "  '\"what if we unbatch WO-2001 and WO-2002\" runs in the REPL,",
+            "   or: python -m mre.whatif --suppress-merge WO-2001,WO-2002'.",
+            "  Do NOT say 'not wired up yet'.",
             "- Keep your answer to 2-3 paragraphs.",
         ])
         return "\n".join(lines)
