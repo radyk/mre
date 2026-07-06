@@ -104,6 +104,18 @@ class TemplateRenderer:
             )
             lines.append("")
 
+        elif bundle.subject_type == "late_orders":
+            kf = bundle.key_facts
+            count = kf.get("late_count", 0)
+            orders = kf.get("late_orders", [])
+            if count == 0:
+                lines.append("No late orders found in this schedule.")
+            else:
+                lines.append(f"{count} late order(s):")
+                for item in orders:
+                    lines.append(f"  - {item}")
+            lines.append("")
+
         elif bundle.subject_type == "findings":
             kf = bundle.key_facts
             lines.append(

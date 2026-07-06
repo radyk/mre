@@ -73,6 +73,8 @@ class Explainer:
 
         if ("late" in q or "delay" in q or "tardy" in q) and wo_match:
             return self._explain_why_late(wo_match.group().upper())
+        if ("late" in q or "delay" in q or "tardy" in q) and not wo_match:
+            return self._list_late_orders()
         if ("on" in q or "assign" in q or "why" in q) and wo_match and m_match:
             return self._explain_why_on_machine(
                 wo_match.group().upper(), m_match.group().upper()
@@ -226,6 +228,46 @@ class Explainer:
     # ------------------------------------------------------------------
     # Private assemblers
     # ------------------------------------------------------------------
+
+    def _list_late_orders(self) -> ExplanationBundle:
+        """Return all demands with positive lateness_minutes from the evidence index."""
+        all_ev = self._index._all_evidence
+        late_metrics = [
+            r for r in all_ev
+            if r.get("record_type") == "metric"
+            and r.get("name") == "lateness_minutes"
+            and (r.get("value") or 0.0) > 0
+        ]
+
+        late_items = []
+        for m in late_metrics:
+            subj_ids = [s.get("entity_id") for s in m.get("subjects", [])]
+            for did in subj_ids:
+                if did:
+                    refs = self._identity_map.external_refs(did) if self._identity_map else []
+                    wo_name = refs[0].value if refs else did[:8]
+                    late_items.append({
+                        "demand_id": did,
+                        "wo": wo_name,
+                        "lateness_minutes": m.get("value"),
+                    })
+
+        return ExplanationBundle(
+            question="Are there any late orders?",
+            subject_id="all",
+            subject_type="late_orders",
+            subject_external_name="all demands",
+            ordered_records=late_metrics,
+            key_facts={
+                "late_count": len(late_items),
+                "late_orders": [
+                    f"{item['wo']} (+{int(item['lateness_minutes'])} min)"
+                    for item in late_items
+                ],
+            },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
 
     def _explain_why_late(self, wo_ref: str) -> ExplanationBundle:
         demand_id = self._resolve_wo(wo_ref)
