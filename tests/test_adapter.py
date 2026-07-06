@@ -210,3 +210,111 @@ class TestProvenanceOnSnapshot:
         prov = reader.get_provenance(d["id"], "quantity")
         assert prov is not None
         assert prov["provenance_class"] == "synthesized"
+
+
+class TestProcessEntities:
+    """Adapter must create one Process per product and wire Product.process_ref."""
+
+    def test_process_count_matches_product_count(self, adapter_run, tmp_path_factory):
+        result, _ = adapter_run
+        reader = result.store.load_snapshot("snap-adapter-test")
+        processes = list(reader.iter_entities("process"))
+        assert len(processes) == result.product_count
+
+    def test_process_count_in_result(self, adapter_run, tmp_path_factory):
+        result, _ = adapter_run
+        assert result.process_count == result.product_count
+
+    def test_process_has_operation_specs(self, adapter_run, tmp_path_factory):
+        result, _ = adapter_run
+        reader = result.store.load_snapshot("snap-adapter-test")
+        for proc in reader.iter_entities("process"):
+            assert len(proc.get("operation_specs", [])) > 0, (
+                f"Process {proc['id']} has no operation_specs"
+            )
+
+    def test_product_process_ref_set(self, adapter_run, tmp_path_factory):
+        result, _ = adapter_run
+        reader = result.store.load_snapshot("snap-adapter-test")
+        for prod in reader.iter_entities("product"):
+            assert prod.get("process_ref") is not None, (
+                f"Product {prod['id']} has null process_ref"
+            )
+
+    def test_process_product_ref_links_to_known_product(self, adapter_run, tmp_path_factory):
+        result, _ = adapter_run
+        reader = result.store.load_snapshot("snap-adapter-test")
+        product_ids = {p["id"] for p in reader.iter_entities("product")}
+        for proc in reader.iter_entities("process"):
+            assert proc["product_ref"] in product_ids
+
+    def test_process_has_full_provenance(self, adapter_run, tmp_path_factory):
+        result, _ = adapter_run
+        reader = result.store.load_snapshot("snap-adapter-test")
+        for proc in reader.iter_entities("process"):
+            pid = proc["id"]
+            for attr in ("product_ref", "operation_specs", "version", "status"):
+                assert reader.get_provenance(pid, attr) is not None, (
+                    f"Process {pid} missing provenance for '{attr}'"
+                )
+
+
+class TestCalendarEntities:
+    """Adapter must create at least one Calendar and assign it to every resource/pool."""
+
+    def test_snapshot_contains_calendar(self, adapter_run, tmp_path_factory):
+        result, _ = adapter_run
+        reader = result.store.load_snapshot("snap-adapter-test")
+        calendars = list(reader.iter_entities("calendar"))
+        assert len(calendars) >= 1
+
+    def test_calendar_count_in_result(self, adapter_run, tmp_path_factory):
+        result, _ = adapter_run
+        assert result.calendar_count >= 1
+
+    def test_calendar_has_base_pattern(self, adapter_run, tmp_path_factory):
+        result, _ = adapter_run
+        reader = result.store.load_snapshot("snap-adapter-test")
+        for cal in reader.iter_entities("calendar"):
+            assert cal.get("base_pattern"), f"Calendar {cal['id']} has empty base_pattern"
+
+    def test_all_resources_have_calendar_ref(self, adapter_run, tmp_path_factory):
+        result, _ = adapter_run
+        reader = result.store.load_snapshot("snap-adapter-test")
+        for res in reader.iter_entities("resource"):
+            assert res.get("calendar_ref") is not None, (
+                f"Resource {res['id']} has null calendar_ref"
+            )
+
+    def test_all_resource_pools_have_calendar_ref(self, adapter_run, tmp_path_factory):
+        result, _ = adapter_run
+        reader = result.store.load_snapshot("snap-adapter-test")
+        for pool in reader.iter_entities("resourcepool"):
+            assert pool.get("calendar_ref") is not None, (
+                f"ResourcePool {pool['id']} has null calendar_ref"
+            )
+
+
+class TestIdentityMapPersisted:
+    """Identity map must survive the adapter process boundary as identity_map.json."""
+
+    def test_identity_map_readable_from_snapshot(self, adapter_run, tmp_path_factory):
+        result, _ = adapter_run
+        reader = result.store.load_snapshot("snap-adapter-test")
+        loaded = reader.read_identity_map()
+        assert loaded is not None
+
+    def test_identity_map_work_order_round_trip(self, adapter_run, tmp_path_factory):
+        result, _ = adapter_run
+        reader = result.store.load_snapshot("snap-adapter-test")
+        loaded = reader.read_identity_map()
+        expected = result.identity_map.resolve("ERP", "work_order", "WO-1001")
+        assert loaded.resolve("ERP", "work_order", "WO-1001") == expected
+
+    def test_identity_map_product_round_trip(self, adapter_run, tmp_path_factory):
+        result, _ = adapter_run
+        reader = result.store.load_snapshot("snap-adapter-test")
+        loaded = reader.read_identity_map()
+        canon_id = result.identity_map.resolve("ERP", "product_no", "PROD-001")
+        erefs = loaded.external_refs(canon_id)
+        assert any(e.value == "PROD-001" for e in erefs)

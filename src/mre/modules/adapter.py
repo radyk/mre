@@ -30,17 +30,18 @@ from pathlib import Path
 from typing import Optional
 
 from mre.contracts.entities import (
-    Capability, Demand, ExternalRef, EntityRef, OperationSpec, Product,
-    Quantity, Resource, ResourcePool, ResourceRequirement,
+    Calendar, Capability, Demand, ExternalRef, EntityRef, OperationSpec,
+    Process, Product, Quantity, Resource, ResourcePool, ResourceRequirement,
 )
 from mre.contracts.provenance import (
     ProvenanceSidecar, SynthesizedProvenance, ObservedProvenance, ProvenanceClass,
 )
 from mre.contracts.vocabularies import (
     CommitmentClass, DemandStatus, DriverCode, FindingCode, FindingDisposition,
-    FindingSeverity, ModuleCode, RecordTier, ResourceRequirementMode, ResourceType,
-    DecisionType, DecisionBasis,
+    FindingSeverity, ModuleCode, ProcessStatus, RecordTier, ResourceRequirementMode,
+    ResourceType, DecisionType, DecisionBasis,
 )
+from mre.modules.identity_map import IdentityMap
 from mre.modules.snapshot_store import SnapshotStore, SnapshotWriter
 from mre.reporter import Reporter
 
@@ -50,34 +51,14 @@ UTC = timezone.utc
 _FALLBACK_RUN_RATE_SECONDS = 600  # 10 minutes per unit
 
 
-class IdentityMap:
-    """Bidirectional map: (system, type, value) ↔ canonical_id."""
-
-    def __init__(self) -> None:
-        self._to_canonical: dict[tuple[str, str, str], str] = {}
-        self._from_canonical: dict[str, list[tuple[str, str, str]]] = {}
-
-    def register(self, canonical_id: str, system: str, ref_type: str, value: str) -> None:
-        key = (system, ref_type, value)
-        self._to_canonical[key] = canonical_id
-        self._from_canonical.setdefault(canonical_id, []).append(key)
-
-    def resolve(self, system: str, ref_type: str, value: str) -> Optional[str]:
-        return self._to_canonical.get((system, ref_type, value))
-
-    def external_refs(self, canonical_id: str) -> list[ExternalRef]:
-        return [
-            ExternalRef(system=s, type=t, value=v)
-            for s, t, v in self._from_canonical.get(canonical_id, [])
-        ]
-
-
 @dataclass
 class AdapterResult:
     demand_count: int
     product_count: int
     resource_count: int
     operation_spec_count: int
+    process_count: int
+    calendar_count: int
     identity_map: IdentityMap
     store: SnapshotStore
 
@@ -214,7 +195,25 @@ class Adapter:
         product_count = 0
         resource_count = 0
         op_spec_count = 0
+        process_count = 0
         canonical_products: dict[str, Product] = {}  # ProductNo → Product
+
+        # Standard working calendar (Mon-Fri, 07:00-19:00) — shared by all resources.
+        calendar_id = _stable_id("calendar", "standard-shifts")
+        calendar = Calendar(
+            id=calendar_id,
+            snapshot_id=snapshot_id,
+            base_pattern={
+                "weekdays": [0, 1, 2, 3, 4],
+                "shift_start": "07:00",
+                "shift_end": "19:00",
+            },
+            exceptions=[],
+            horizon_resolved=[],
+        )
+        cal_attrs = ["base_pattern", "exceptions", "horizon_resolved"]
+        writer.write_entity(calendar, self._prov_list(calendar_id, cal_attrs, snapshot_id))
+        calendar_count = 1
 
         # Capabilities by code (one per unique capability string)
         capabilities_written: set[str] = set()
@@ -246,7 +245,7 @@ class Adapter:
                 capabilities=[cap_code] if cap_code else [],
                 capacity=1,
                 cost_rate=float(row.get("CostRate", 0.0)),
-                calendar_ref=None,
+                calendar_ref=calendar_id,
                 pool_refs=[],
             )
             attrs = ["resource_type", "capabilities", "capacity", "cost_rate",
@@ -270,18 +269,25 @@ class Adapter:
                 external_refs=[ExternalRef(system="ERP", type="workcenter_id", value=wc_id)],
                 members=member_ids,
                 concurrent_capacity=int(row.get("Capacity", len(member_ids))),
-                calendar_ref=None,
+                calendar_ref=calendar_id,
             )
             attrs = ["members", "concurrent_capacity", "calendar_ref", "limit_reason"]
             writer.write_entity(pool, self._prov_list(pool_id, attrs, snapshot_id))
             identity_map.register(pool_id, "ERP", "workcenter_id", wc_id)
 
-        # Products (includes OperationSpecs per routing)
+        # Products (includes OperationSpecs per routing, then one Process per product)
         for row in product_rows:
             pno = row["ProductNo"]
             prod_id = _stable_id("product", pno)
             uom = row.get("UnitOfMeasure", "EA")
             family = row.get("ProductFamily", "").strip() or None
+
+            # Determine process_id before writing Product so process_ref can be set.
+            route_code = next(
+                (rc for rc, pn in routing_map.items() if pn == pno), None
+            )
+            has_routing = route_code is not None and route_code in routinglines_map
+            process_id = _stable_id("process", route_code) if has_routing else None
 
             prod = Product(
                 id=prod_id,
@@ -289,7 +295,7 @@ class Adapter:
                 external_refs=[ExternalRef(system="ERP", type="product_no", value=pno)],
                 name=row.get("ProductName", pno),
                 unit_of_measure=uom,
-                process_ref=None,
+                process_ref=process_id,
                 product_family=family,
             )
             prod_attrs = ["name", "unit_of_measure", "process_ref", "product_family"]
@@ -298,111 +304,129 @@ class Adapter:
             canonical_products[pno] = prod
             product_count += 1
 
+            if not has_routing:
+                continue
+
             # Build OperationSpecs from routinglines for this product
-            route_code = next(
-                (rc for rc, pn in routing_map.items() if pn == pno), None
-            )
-            if route_code and route_code in routinglines_map:
-                lot_size_str = row.get("CostingLotSize", "0")
-                try:
-                    lot_size = float(lot_size_str)
-                except (ValueError, TypeError):
-                    lot_size = 0.0
+            lot_size_str = row.get("CostingLotSize", "0")
+            try:
+                lot_size = float(lot_size_str)
+            except (ValueError, TypeError):
+                lot_size = 0.0
 
-                prod_minutes_str = row.get("ProductionMinutes", "0")
-                try:
-                    prod_minutes = float(prod_minutes_str)
-                except (ValueError, TypeError):
-                    prod_minutes = 0.0
+            prod_minutes_str = row.get("ProductionMinutes", "0")
+            try:
+                prod_minutes = float(prod_minutes_str)
+            except (ValueError, TypeError):
+                prod_minutes = 0.0
 
-                setup_minutes_str = row.get("SetUpMinutes", "0")
-                try:
-                    setup_minutes = float(setup_minutes_str)
-                except (ValueError, TypeError):
-                    setup_minutes = 0.0
+            setup_minutes_str = row.get("SetUpMinutes", "0")
+            try:
+                setup_minutes = float(setup_minutes_str)
+            except (ValueError, TypeError):
+                setup_minutes = 0.0
 
-                use_fallback = lot_size <= 0.0
-                if use_fallback:
-                    run_rate = timedelta(seconds=_FALLBACK_RUN_RATE_SECONDS)
-                    # LOW_CONFIDENCE_INPUT for each affected OperationSpec
+            use_fallback = lot_size <= 0.0
+            if use_fallback:
+                run_rate = timedelta(seconds=_FALLBACK_RUN_RATE_SECONDS)
+                reporter.record_finding(
+                    code=FindingCode.LOW_CONFIDENCE_INPUT,
+                    severity=FindingSeverity.WARNING,
+                    subjects=[EntityRef(entity_id=prod_id, entity_type="product")],
+                    evidence={
+                        "product_no": pno,
+                        "costing_lot_size": lot_size,
+                        "reason": "CostingLotSize=0; run_rate cannot be derived; fallback applied",
+                        "fallback_seconds": _FALLBACK_RUN_RATE_SECONDS,
+                    },
+                    disposition=FindingDisposition.DEFAULTED,
+                    tier=RecordTier.SUPPORTING,
+                )
+            else:
+                run_rate = timedelta(seconds=(prod_minutes / lot_size) * 60)
+
+            op_spec_ids: list[str] = []
+            for rl in routinglines_map[route_code]:
+                seq = int(rl["Sequence"])
+                wc = rl["Workcenter"].strip()
+                spec_id = _stable_id("operationspec", f"{route_code}:{seq}")
+
+                # Resolve workcenter to ResourceRequirement
+                if wc in workcenter_map:
+                    wc_row = workcenter_map[wc]
+                    cap_code = wc_row.get("CapabilityCode", "").strip()
+                    if cap_code:
+                        _ensure_capability(cap_code, snapshot_id)
+                        req = ResourceRequirement(
+                            mode=ResourceRequirementMode.CAPABILITY,
+                            capability_ref=_stable_id("capability", cap_code),
+                        )
+                    else:
+                        machine_names_wc = [
+                            m.strip() for m in wc_row.get("Machines", "").split(";")
+                            if m.strip()
+                        ]
+                        req = ResourceRequirement(
+                            mode=ResourceRequirementMode.EXPLICIT_SET,
+                            resource_refs=[_stable_id("resource", m)
+                                           for m in machine_names_wc
+                                           if m in machine_map],
+                        )
+                else:
+                    # Unknown workcenter → UNMAPPABLE_VALUE
                     reporter.record_finding(
-                        code=FindingCode.LOW_CONFIDENCE_INPUT,
+                        code=FindingCode.UNMAPPABLE_VALUE,
                         severity=FindingSeverity.WARNING,
                         subjects=[EntityRef(entity_id=prod_id, entity_type="product")],
                         evidence={
-                            "product_no": pno,
-                            "costing_lot_size": lot_size,
-                            "reason": "CostingLotSize=0; run_rate cannot be derived; fallback applied",
-                            "fallback_seconds": _FALLBACK_RUN_RATE_SECONDS,
+                            "routing_code": route_code,
+                            "sequence": seq,
+                            "workcenter": wc,
+                            "reason": f"Workcenter '{wc}' not found in workcenter reference",
                         },
-                        disposition=FindingDisposition.DEFAULTED,
+                        disposition=FindingDisposition.PROCEEDED_FLAGGED,
                         tier=RecordTier.SUPPORTING,
                     )
-                else:
-                    run_rate = timedelta(seconds=(prod_minutes / lot_size) * 60)
+                    req = None
 
-                for rl in routinglines_map[route_code]:
-                    seq = int(rl["Sequence"])
-                    wc = rl["Workcenter"].strip()
-                    spec_id = _stable_id("operationspec", f"{route_code}:{seq}")
+                reqs = [req] if req is not None else []
+                spec = OperationSpec(
+                    id=spec_id,
+                    snapshot_id=snapshot_id,
+                    sequence=seq,
+                    resource_requirements=reqs,
+                    setup_family=family or "",
+                    base_setup=timedelta(minutes=setup_minutes),
+                    run_rate=run_rate,
+                )
+                spec_attrs = [
+                    "sequence", "resource_requirements", "setup_family",
+                    "base_setup", "run_rate", "dwell_rule", "splittable",
+                    "min_chunk", "yield_factor",
+                ]
+                writer.write_entity(spec, self._prov_list(spec_id, spec_attrs, snapshot_id))
+                op_spec_ids.append(spec_id)
+                op_spec_count += 1
 
-                    # Resolve workcenter to ResourceRequirement
-                    if wc in workcenter_map:
-                        wc_row = workcenter_map[wc]
-                        cap_code = wc_row.get("CapabilityCode", "").strip()
-                        if cap_code:
-                            _ensure_capability(cap_code, snapshot_id)
-                            req = ResourceRequirement(
-                                mode=ResourceRequirementMode.CAPABILITY,
-                                capability_ref=_stable_id("capability", cap_code),
-                            )
-                        else:
-                            machine_names_wc = [
-                                m.strip() for m in wc_row.get("Machines", "").split(";")
-                                if m.strip()
-                            ]
-                            req = ResourceRequirement(
-                                mode=ResourceRequirementMode.EXPLICIT_SET,
-                                resource_refs=[_stable_id("resource", m)
-                                               for m in machine_names_wc
-                                               if m in machine_map],
-                            )
-                    else:
-                        # Unknown workcenter → UNMAPPABLE_VALUE
-                        reporter.record_finding(
-                            code=FindingCode.UNMAPPABLE_VALUE,
-                            severity=FindingSeverity.WARNING,
-                            subjects=[EntityRef(entity_id=prod_id, entity_type="product")],
-                            evidence={
-                                "routing_code": route_code,
-                                "sequence": seq,
-                                "workcenter": wc,
-                                "reason": f"Workcenter '{wc}' not found in workcenter reference",
-                            },
-                            disposition=FindingDisposition.PROCEEDED_FLAGGED,
-                            tier=RecordTier.SUPPORTING,
-                        )
-                        # No ResourceRequirement — workcenter is unresolvable.
-                        # NO_CAPABLE_RESOURCE will flag this at validation time.
-                        req = None
-
-                    reqs = [req] if req is not None else []
-                    spec = OperationSpec(
-                        id=spec_id,
-                        snapshot_id=snapshot_id,
-                        sequence=seq,
-                        resource_requirements=reqs,
-                        setup_family=family or "",
-                        base_setup=timedelta(minutes=setup_minutes),
-                        run_rate=run_rate,
-                    )
-                    spec_attrs = [
-                        "sequence", "resource_requirements", "setup_family",
-                        "base_setup", "run_rate", "dwell_rule", "splittable",
-                        "min_chunk", "yield_factor",
-                    ]
-                    writer.write_entity(spec, self._prov_list(spec_id, spec_attrs, snapshot_id))
-                    op_spec_count += 1
+            # Write the Process that owns these OperationSpecs.
+            if op_spec_ids:
+                process = Process(
+                    id=process_id,
+                    snapshot_id=snapshot_id,
+                    external_refs=[ExternalRef(system="ERP", type="route_code", value=route_code)],
+                    product_ref=prod_id,
+                    operation_specs=op_spec_ids,
+                    version=1,
+                    effective_from=None,
+                    status=ProcessStatus.ACTIVE,
+                )
+                proc_attrs = [
+                    "product_ref", "operation_specs", "version", "effective_from", "status",
+                ]
+                writer.write_entity(
+                    process, self._prov_list(process_id, proc_attrs, snapshot_id)
+                )
+                process_count += 1
 
         # ------------------------------------------------------------------
         # Phase 2: Translate Work Orders → Demands
@@ -421,7 +445,6 @@ class Adapter:
 
             # --- Defect 6: DUPLICATE_IDENTITY ---
             if wono in seen_wonos:
-                # Mint a temporary id for the finding subject
                 dup_id = _stable_id("demand_excluded", wono + ":dup")
                 reporter.record_finding(
                     code=FindingCode.DUPLICATE_IDENTITY,
@@ -528,6 +551,7 @@ class Adapter:
             seen_wonos[wono] = demand_id
             demand_count += 1
 
+        writer.write_identity_map(identity_map)
         writer.finalize()
 
         # Register identity map as an output artifact
@@ -543,6 +567,8 @@ class Adapter:
             product_count=product_count,
             resource_count=resource_count,
             operation_spec_count=op_spec_count,
+            process_count=process_count,
+            calendar_count=calendar_count,
             identity_map=identity_map,
             store=store,
         )

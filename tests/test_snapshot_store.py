@@ -196,3 +196,67 @@ class TestSnapshotIsolation:
         store = SnapshotStore(tmp_path)
         with pytest.raises(FileNotFoundError):
             store.load_snapshot("does-not-exist")
+
+
+class TestIdentityMapPersistence:
+    """SnapshotWriter.write_identity_map / SnapshotReader.read_identity_map round-trip."""
+
+    def _make_map(self):
+        from mre.modules.identity_map import IdentityMap
+        im = IdentityMap()
+        im.register("canonical-1", "ERP", "work_order", "WO-100")
+        im.register("canonical-2", "ERP", "product_no", "PROD-001")
+        im.register("canonical-3", "ERP", "machine_id", "CNC-1")
+        return im
+
+    def test_write_and_read_round_trip(self, tmp_path):
+        store = SnapshotStore(tmp_path / "snapshots")
+        writer = store.begin_snapshot("snap-idmap")
+        writer.write_identity_map(self._make_map())
+        writer.finalize()
+
+        reader = store.load_snapshot("snap-idmap")
+        loaded = reader.read_identity_map()
+        assert loaded is not None
+        assert loaded.resolve("ERP", "work_order", "WO-100") == "canonical-1"
+        assert loaded.resolve("ERP", "product_no", "PROD-001") == "canonical-2"
+
+    def test_resolve_unknown_returns_none(self, tmp_path):
+        store = SnapshotStore(tmp_path / "snapshots")
+        writer = store.begin_snapshot("snap-idmap2")
+        writer.write_identity_map(self._make_map())
+        writer.finalize()
+
+        reader = store.load_snapshot("snap-idmap2")
+        loaded = reader.read_identity_map()
+        assert loaded.resolve("ERP", "work_order", "WO-9999") is None
+
+    def test_external_refs_round_trip(self, tmp_path):
+        store = SnapshotStore(tmp_path / "snapshots")
+        writer = store.begin_snapshot("snap-idmap3")
+        writer.write_identity_map(self._make_map())
+        writer.finalize()
+
+        reader = store.load_snapshot("snap-idmap3")
+        loaded = reader.read_identity_map()
+        erefs = loaded.external_refs("canonical-3")
+        assert len(erefs) == 1
+        assert erefs[0].system == "ERP"
+        assert erefs[0].value == "CNC-1"
+
+    def test_read_returns_none_when_not_written(self, tmp_path):
+        store = SnapshotStore(tmp_path / "snapshots")
+        writer = store.begin_snapshot("snap-no-idmap")
+        demand = Demand(
+            id="d1", snapshot_id="snap-no-idmap",
+            product_ref="p1",
+            quantity=Quantity(value=1.0, uom="EA"),
+            due=datetime(2026, 6, 1, tzinfo=UTC),
+            commitment_class=CommitmentClass.STANDARD,
+            status=DemandStatus.OPEN,
+        )
+        writer.write_entity(demand, _full_demand_provenance(demand.id))
+        writer.finalize()
+
+        reader = store.load_snapshot("snap-no-idmap")
+        assert reader.read_identity_map() is None

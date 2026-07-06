@@ -16,11 +16,14 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterator
+from typing import TYPE_CHECKING, Any, Iterator
 
 from pydantic import BaseModel
 
 from mre.contracts.provenance import ProvenanceSidecar
+
+if TYPE_CHECKING:
+    from mre.modules.identity_map import IdentityMap
 
 # Fields that are universal conventions (docs/01 §4) — no provenance required.
 _UNIVERSAL_FIELDS = frozenset({"id", "snapshot_id", "external_refs"})
@@ -66,6 +69,13 @@ class SnapshotWriter:
 
         for p in provenance:
             self._provenance.append(json.loads(p.model_dump_json()))
+
+    def write_identity_map(self, identity_map: "IdentityMap") -> None:
+        """Persist the identity map as identity_map.json alongside the snapshot."""
+        path = self._dir / "identity_map.json"
+        path.write_text(
+            json.dumps(identity_map.to_json_dict(), indent=2), encoding="utf-8"
+        )
 
     def finalize(self) -> None:
         """Flush all buffered records to disk and write the manifest."""
@@ -159,6 +169,14 @@ class SnapshotReader:
         self._load()
         for attr_map in self._provenance_index.values():
             yield from attr_map.values()
+
+    def read_identity_map(self) -> "IdentityMap | None":
+        """Load the persisted identity map, or None if not present in this snapshot."""
+        path = self._dir / "identity_map.json"
+        if not path.exists():
+            return None
+        from mre.modules.identity_map import IdentityMap
+        return IdentityMap.from_json_dict(json.loads(path.read_text(encoding="utf-8")))
 
 
 class SnapshotStore:

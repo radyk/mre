@@ -9,7 +9,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Optional
 
-from mre.modules.adapter import IdentityMap
+from mre.modules.identity_map import IdentityMap
 
 
 def generate_dq_report(
