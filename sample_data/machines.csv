@@ -1,0 +1,10 @@
+MachineID,MachineName,Capability,CostRate
+M-CAST-01,Casting Machine 1,casting,5.0
+M-CAST-02,Casting Machine 2,casting,5.0
+M-MACH-01,CNC Lathe 1,machining,3.0
+M-MACH-02,CNC Lathe 2,machining,3.0
+M-MACH-03,CNC Mill 1,machining,4.0
+M-GRND-01,Surface Grinder,grinding,3.5
+M-GEAR-01,Gear Hobber 1,gear_cutting,6.0
+M-GEAR-02,Gear Hobber 2,gear_cutting,6.0
+M-INSP-01,CMM Inspection,inspection,2.0

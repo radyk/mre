@@ -1,0 +1,9 @@
+RouteCode,ProductNo,Description
+R-CAST-A,PROD-001,Casting/machining/inspection for Widget Alpha
+R-CAST-B,PROD-002,Casting/machining/inspection for Widget Beta
+R-MACH-A,PROD-003,Turning/grinding/inspection for Shaft Alpha
+R-MACH-B,PROD-004,Turning/grinding/inspection for Shaft Beta
+R-GEAR-A,PROD-005,Gear cutting/grinding/inspection for Gear Alpha
+R-GEAR-B,PROD-006,Gear cutting/grinding/inspection for Gear Beta
+R-GEAR-C,PROD-007,Gear cutting/inspection for Gear Gamma
+R-ZERO,PROD-008,Routing for BadWidget (zero lot size)

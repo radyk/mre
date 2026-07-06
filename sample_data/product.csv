@@ -1,0 +1,9 @@
+ProductNo,ProductName,ProductFamily,CostingLotSize,SetUpMinutes,ProductionMinutes,UnitOfMeasure
+PROD-001,Widget Alpha,casting,100,30,2.5,EA
+PROD-002,Widget Beta,casting,100,30,3.0,EA
+PROD-003,Shaft Alpha,machining,50,45,5.0,EA
+PROD-004,Shaft Beta,machining,50,45,6.0,EA
+PROD-005,Gear Alpha,gear,200,60,1.5,EA
+PROD-006,Gear Beta,gear,200,60,2.0,EA
+PROD-007,Gear Gamma,gear,200,60,150.0,EA
+PROD-008,BadWidget,casting,0,30,2.5,EA

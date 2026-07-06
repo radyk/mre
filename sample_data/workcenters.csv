@@ -1,0 +1,6 @@
+WorkcenterID,WorkcenterName,Machines,Capacity,CapabilityCode
+WC-CASTING,Casting Cell,M-CAST-01;M-CAST-02,2,casting
+WC-MACHINE,Machining Cell,M-MACH-01;M-MACH-02;M-MACH-03,3,machining
+WC-GRIND,Grinding Cell,M-GRND-01,1,grinding
+WC-GEAR,Gear Cutting Cell,M-GEAR-01;M-GEAR-02,2,gear_cutting
+WC-INSPECT,Inspection Cell,M-INSP-01,1,inspection

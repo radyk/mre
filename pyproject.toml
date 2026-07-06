@@ -1,0 +1,22 @@
+[project]
+name = "mre"
+version = "0.0.1"
+description = "Manufacturing Reasoning Engine - canonical model, evidence contract, CP-SAT scheduling"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+# Phase 3 adds: ortools
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
