@@ -375,6 +375,57 @@ class TestTemplateRenderer:
 # _resolve_name helper
 # ---------------------------------------------------------------------------
 
+class TestRendererAttribution:
+    def test_template_renderer_ends_with_attribution(self, explainer_and_index):
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Why is WO-2001 late?")
+        text = TemplateRenderer().render(bundle)
+        assert text.endswith("[rendered by: template]")
+
+    def test_llm_renderer_no_key_attribution(self, explainer_and_index):
+        from mre.modules.renderers import LLMRenderer
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Why is WO-2001 late?")
+        # Force no-key scenario by passing empty string
+        renderer = LLMRenderer(api_key="")
+        text = renderer.render(bundle)
+        assert "[rendered by: template" in text
+        assert "ANTHROPIC_API_KEY not set" in text
+
+    def test_llm_renderer_no_key_not_silent(self, explainer_and_index):
+        """Fallback must not produce the same output as plain TemplateRenderer."""
+        from mre.modules.renderers import LLMRenderer
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Why is WO-2001 late?")
+        template_text = TemplateRenderer().render(bundle)
+        fallback_text = LLMRenderer(api_key="").render(bundle)
+        # Attribution lines differ even though bodies are the same
+        assert template_text != fallback_text
+
+    def test_llm_renderer_no_package_attribution(self, tmp_path, monkeypatch, explainer_and_index):
+        """When anthropic package unavailable, attribution names that reason."""
+        import sys
+        from mre.modules.renderers import LLMRenderer
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Why is WO-2001 late?")
+        # Simulate missing package by blocking the import
+        monkeypatch.setitem(sys.modules, "anthropic", None)
+        renderer = LLMRenderer(api_key="sk-fake-key-for-test")
+        text = renderer.render(bundle)
+        assert "anthropic package not installed" in text
+
+    def test_attribution_on_schedule_bundle(self, sched_exp):
+        bundle = sched_exp.answer("Show the schedule")
+        text = TemplateRenderer().render(bundle)
+        assert text.endswith("[rendered by: template]")
+
+    def test_attribution_on_unsupported_bundle(self, explainer_and_index):
+        exp, _ = explainer_and_index
+        bundle = exp.answer("How is the weather?")
+        text = TemplateRenderer().render(bundle)
+        assert text.endswith("[rendered by: template]")
+
+
 class TestResolveName:
     def test_resolves_demand_to_work_order(self):
         from mre.modules.identity_map import IdentityMap

@@ -48,6 +48,9 @@ class TemplateRenderer:
     """Deterministic text renderer.  No external calls."""
 
     def render(self, bundle: ExplanationBundle) -> str:
+        return self._render_body(bundle) + "\n[rendered by: template]"
+
+    def _render_body(self, bundle: ExplanationBundle) -> str:
         lines: list[str] = []
         lines.append(f"=== {bundle.question} ===")
         lines.append("")
@@ -344,21 +347,25 @@ class LLMRenderer:
         self._api_key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
         self._client = None
         self._available = False
-        if self._api_key:
+        self._fallback_reason = ""
+        if not self._api_key:
+            self._fallback_reason = "ANTHROPIC_API_KEY not set"
+        else:
             try:
                 import anthropic  # type: ignore
                 self._client = anthropic.Anthropic(api_key=self._api_key)
                 self._available = True
             except ImportError:
-                pass
+                self._fallback_reason = "anthropic package not installed"
 
     def render(self, bundle: ExplanationBundle) -> str:
         if not self._available:
-            return TemplateRenderer().render(bundle)
-        return self._llm_render(bundle)
+            body = TemplateRenderer()._render_body(bundle)
+            return body + f"\n[rendered by: template — --llm requested but {self._fallback_reason}]"
+        return self._llm_render(bundle) + f"\n[rendered by: LLM ({self._model})]"
 
     def _llm_render(self, bundle: ExplanationBundle) -> str:
-        context = TemplateRenderer().render(bundle)
+        context = TemplateRenderer()._render_body(bundle)
         prompt = (
             "You are a manufacturing scheduling assistant. "
             "Below is a structured evidence chain from a scheduling system.\n\n"
