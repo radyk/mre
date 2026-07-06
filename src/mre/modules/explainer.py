@@ -307,11 +307,20 @@ class Explainer:
         records = self._index.lineage_walk(demand_id, snapshot_reader=self._reader)
 
         lateness = None
+        completion_iso = None
         for rec in records:
-            if rec.get("record_type") == "metric" and rec.get("name") == "lateness_minutes":
+            if rec.get("record_type") != "metric":
+                continue
+            name = rec.get("name", "")
+            if name == "lateness_minutes":
                 if any(s.get("entity_id") == demand_id for s in rec.get("subjects", [])):
                     lateness = rec.get("value")
-                    break
+            elif name == "projected_completion_epoch":
+                epoch = rec.get("value")
+                if isinstance(epoch, (int, float)):
+                    completion_iso = datetime.fromtimestamp(
+                        epoch, tz=timezone.utc
+                    ).strftime("%Y-%m-%d %H:%M UTC")
 
         return ExplanationBundle(
             question=f"Why is {wo_ref} late?",
@@ -319,7 +328,12 @@ class Explainer:
             subject_type="demand",
             subject_external_name=wo_ref,
             ordered_records=records,
-            key_facts={"lateness_minutes": lateness, "due_date": due_date},
+            key_facts={
+                "lateness_minutes": lateness,
+                "lateness_hours": round(lateness / 60, 1) if lateness is not None else None,
+                "due_date": due_date,
+                "completion_iso": completion_iso,
+            },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )

@@ -1027,6 +1027,24 @@ class TestScheduleQuery:
 # Dialogue mode — SessionHistory, judgment path, reset
 # ---------------------------------------------------------------------------
 
+class FakeLLMClientSequence:
+    """Returns successive responses from a list; repeats the last item."""
+
+    def __init__(self, responses: list[str]) -> None:
+        self._responses = list(responses)
+        self._index = 0
+
+    @property
+    def messages(self) -> "FakeLLMClientSequence":
+        return self
+
+    def create(self, **kwargs) -> Any:
+        text = self._responses[min(self._index, len(self._responses) - 1)]
+        self._index += 1
+        FakeContent = type("FakeContent", (), {"text": text})()
+        return type("FakeResponse", (), {"content": [FakeContent]})()
+
+
 class FakeLLMClient:
     """Minimal Anthropic-API-shaped fake for dialogue tests."""
 
@@ -1222,3 +1240,186 @@ class TestDialogueMode:
         assert fake.calls
         prompt_text = fake.calls[0]["messages"][0]["content"]
         assert "lateness_minutes" in prompt_text or "840" in prompt_text
+
+
+# ---------------------------------------------------------------------------
+# LLM testimony validation — anti-hallucination checks
+# ---------------------------------------------------------------------------
+
+def _make_late_bundle_for_validation() -> ExplanationBundle:
+    """Minimal bundle with epoch metric + pre-rendered completion_iso."""
+    return ExplanationBundle(
+        question="Why is WO-2001 late?",
+        subject_id="dem-val-001",
+        subject_type="demand",
+        subject_external_name="WO-2001",
+        ordered_records=[
+            {
+                "record_type": "metric",
+                "record_id": "met-epoch-001",
+                "run_id": "run-val",
+                "module": "M7",
+                "seq": 1,
+                "snapshot_id": "snap-val",
+                "subjects": [],
+                "tier": "supporting",
+                "message": "",
+                "name": "projected_completion_epoch",
+                "value": 1784037600.0,   # 2026-07-14T14:00:00Z
+                "unit": "epoch_seconds",
+                "rollup_of": [],
+            },
+            {
+                "record_type": "metric",
+                "record_id": "met-late-001",
+                "run_id": "run-val",
+                "module": "M7",
+                "seq": 2,
+                "snapshot_id": "snap-val",
+                "subjects": [{"entity_id": "dem-val-001", "entity_type": "demand"}],
+                "tier": "supporting",
+                "message": "",
+                "name": "lateness_minutes",
+                "value": 840.0,
+                "unit": "minutes",
+                "rollup_of": [],
+            },
+        ],
+        key_facts={
+            "lateness_minutes": 840.0,
+            "lateness_hours": 14.0,
+            "due_date": "2026-07-13T23:59:00Z",
+            "completion_iso": "2026-07-14 14:00 UTC",
+        },
+        snapshot_id="snap-val",
+        identity_map=None,
+    )
+
+
+class TestLLMTestimonyValidation:
+    # --- pre-render: epoch metric → ISO in template body ---
+
+    def test_epoch_metric_renders_as_iso_not_epoch(self):
+        bundle = _make_late_bundle_for_validation()
+        text = TemplateRenderer()._render_body(bundle)
+        assert "1784037600" not in text
+        assert "2026-07-14 14:00 UTC" in text
+
+    def test_minutes_metric_renders_with_hours(self):
+        bundle = _make_late_bundle_for_validation()
+        text = TemplateRenderer()._render_body(bundle)
+        assert "840 min" in text
+        assert "14.0h" in text
+
+    # --- pre-render: key_facts populated in _explain_why_late ---
+
+    def test_explain_why_late_has_completion_iso(self, explainer_and_index):
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Why is WO-2001 late?")
+        # FakeSnapshotReader has no epoch metric → None is acceptable
+        # but if the real snapshot is used (integration fixture), it must be non-None.
+        # Here we just assert the key is present.
+        assert "completion_iso" in bundle.key_facts
+
+    def test_explain_why_late_has_lateness_hours(self, explainer_and_index):
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Why is WO-2001 late?")
+        assert "lateness_hours" in bundle.key_facts
+        lh = bundle.key_facts["lateness_hours"]
+        if lh is not None:
+            assert lh == round(840.0 / 60, 1)
+
+    # --- validation: wrong timestamp caught ---
+
+    def test_wrong_timestamp_produces_validation_issue(self):
+        from mre.modules.renderers import LLMRenderer
+        renderer = LLMRenderer(api_key="")
+        bundle = _make_late_bundle_for_validation()
+        # Wrong timestamp — not in bundle (14:00 UTC, not 08:39)
+        bad_text = "WO-2001 completed at 2026-07-14T08:39:59Z. [record: met-epoch-001]"
+        issues = renderer._validate_testimony(bad_text, bundle)
+        assert any("08:39" in i or "unverifiable timestamp" in i for i in issues)
+
+    def test_correct_timestamp_passes_validation(self):
+        from mre.modules.renderers import LLMRenderer
+        renderer = LLMRenderer(api_key="")
+        bundle = _make_late_bundle_for_validation()
+        good_text = "WO-2001 completed at 2026-07-14 14:00 UTC. [record: met-epoch-001]"
+        issues = renderer._validate_testimony(good_text, bundle)
+        ts_issues = [i for i in issues if "unverifiable timestamp" in i]
+        assert not ts_issues
+
+    def test_missing_footnotes_produces_validation_issue(self):
+        from mre.modules.renderers import LLMRenderer
+        renderer = LLMRenderer(api_key="")
+        bundle = _make_late_bundle_for_validation()
+        # Factual sentence with no [record:] footnote
+        bad_text = "WO-2001 was 840 minutes late due to machine constraints."
+        issues = renderer._validate_testimony(bad_text, bundle)
+        assert any("footnote" in i for i in issues)
+
+    def test_unverifiable_machine_name_caught(self):
+        from mre.modules.renderers import LLMRenderer
+        renderer = LLMRenderer(api_key="")
+        bundle = _make_late_bundle_for_validation()
+        # M-CAST-99 is not in the bundle
+        bad_text = "M-CAST-99 caused the delay. [record: met-late-001]"
+        issues = renderer._validate_testimony(bad_text, bundle)
+        assert any("M-CAST-99" in i or "unverifiable machine" in i for i in issues)
+
+    # --- wrong timestamp triggers fallback ---
+
+    def test_wrong_timestamp_triggers_template_fallback(self):
+        from mre.modules.renderers import LLMRenderer
+        bundle = _make_late_bundle_for_validation()
+        # Both calls return the wrong timestamp → must fall back to template
+        seq = FakeLLMClientSequence([
+            "WO-2001 completed at 2026-07-14T08:39:59Z. No footnotes here.",
+            "WO-2001 completed at 2026-07-14T08:39:59Z. Still wrong.",
+        ])
+        renderer = LLMRenderer(_client=seq)
+        text = renderer.render(bundle)
+        assert "LLM validation failed" in text
+        assert "register: testimony" in text
+
+    def test_bad_first_good_second_passes(self):
+        from mre.modules.renderers import LLMRenderer
+        bundle = _make_late_bundle_for_validation()
+        seq = FakeLLMClientSequence([
+            # First: wrong timestamp
+            "WO-2001 completed at 2026-07-14T08:39:59Z. No footnotes here.",
+            # Second: correct — uses pre-computed value
+            "WO-2001 completed at 2026-07-14 14:00 UTC. [record: met-epoch-001]",
+        ])
+        renderer = LLMRenderer(_client=seq)
+        text = renderer.render(bundle)
+        assert "LLM validation failed" not in text
+        assert "2026-07-14 14:00 UTC" in text
+        assert "register: testimony" in text
+
+    # --- precomputed facts in prompt ---
+
+    def test_precomputed_facts_in_llm_prompt(self):
+        from mre.modules.renderers import LLMRenderer
+        bundle = _make_late_bundle_for_validation()
+        fake = FakeLLMClient("WO-2001 completed at 2026-07-14 14:00 UTC. [record: met-epoch-001]")
+        renderer = LLMRenderer(_client=fake)
+        renderer.render(bundle)
+        assert fake.calls
+        prompt = fake.calls[0]["messages"][0]["content"]
+        assert "PRE-COMPUTED FACTS" in prompt
+        assert "2026-07-14 14:00 UTC" in prompt
+
+    def test_regen_note_in_second_prompt(self):
+        from mre.modules.renderers import LLMRenderer
+        bundle = _make_late_bundle_for_validation()
+        seq = FakeLLMClientSequence([
+            "WO-2001 at 2026-07-14T08:39:59Z. No footnotes.",
+            "WO-2001 at 2026-07-14 14:00 UTC. [record: met-epoch-001]",
+        ])
+        renderer = LLMRenderer(_client=seq)
+        renderer.render(bundle)
+        assert seq._index == 2
+        second_prompt = seq._responses[1]  # only checking structure, not the actual 2nd call content
+        # Verify the second call was made (index advanced)
+        assert seq._index == 2

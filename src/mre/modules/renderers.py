@@ -12,9 +12,15 @@ Rendering rules (from CLAUDE.md / docs/03):
 from __future__ import annotations
 
 import os
+import re
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from mre.modules.explainer import ExplanationBundle
+
+# Patterns for post-render validation
+_TS_RE = re.compile(r'\b(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})')
+_MACHINE_RE = re.compile(r'\bM-[A-Z][A-Z0-9-]*')
 
 
 # ---------------------------------------------------------------------------
@@ -309,6 +315,19 @@ class TemplateRenderer:
         name = rec.get("name", "?")
         value = rec.get("value")
         unit = rec.get("unit", "")
+
+        # Pre-convert epoch metrics → ISO so LLM never sees raw epoch numbers
+        display_value: Any = value
+        display_unit = unit
+        if name.endswith("_epoch") and isinstance(value, (int, float)):
+            display_value = datetime.fromtimestamp(value, tz=timezone.utc).strftime(
+                "%Y-%m-%d %H:%M UTC"
+            )
+            display_unit = ""
+        elif unit == "minutes" and isinstance(value, (int, float)) and abs(value) >= 60:
+            display_value = f"{value:.0f} min ({value / 60:.1f}h)"
+            display_unit = ""
+
         subjects = rec.get("subjects", [])
         subject_name = ""
         if subjects:
@@ -318,7 +337,8 @@ class TemplateRenderer:
             )
         lines.append(f"[{idx}] {module} METRIC  | {name}")
         subj_part = f" ({subject_name})" if subject_name else ""
-        lines.append(f"    Value: {value} {unit}{subj_part}")
+        sep = " " if display_unit else ""
+        lines.append(f"    Value: {display_value}{sep}{display_unit}{subj_part}")
         lines.append(f"    [record: {rid_short}...]")
 
     def _render_finding(self, lines, idx, rec, module, rid_short) -> None:
@@ -370,10 +390,23 @@ class LLMRenderer:
                 + f"\n[rendered by: template — --llm requested but {self._fallback_reason}"
                 + " | register: testimony]"
             )
-        return (
-            self._llm_render(bundle)
-            + f"\n[rendered by: LLM ({self._model}) | register: testimony]"
-        )
+
+        text = self._llm_render(bundle)
+        issues = self._validate_testimony(text, bundle)
+        if issues:
+            text = self._llm_render(bundle, validation_issues=issues)
+            issues2 = self._validate_testimony(text, bundle)
+            if issues2:
+                body = TemplateRenderer()._render_body(bundle)
+                warn = "[LLM validation failed: {}; fell back to template]".format(
+                    "; ".join(issues2[:2])
+                )
+                return (
+                    body + "\n" + warn
+                    + "\n[rendered by: template (LLM validated) | register: testimony]"
+                )
+
+        return text + f"\n[rendered by: LLM ({self._model}) | register: testimony]"
 
     def render_judgment(self, question: str, history: Any, fallback_bundle: ExplanationBundle) -> str:
         """Conversational turn in dialogue mode — reasons over prior evidence bundles."""
@@ -386,18 +419,37 @@ class LLMRenderer:
         text = self._llm_judgment(question, history)
         return text + f"\n[rendered by: LLM ({self._model}) | register: judgment]"
 
-    def _llm_render(self, bundle: ExplanationBundle) -> str:
+    def _llm_render(
+        self, bundle: ExplanationBundle, validation_issues: Optional[list[str]] = None
+    ) -> str:
         context = TemplateRenderer()._render_body(bundle)
+        facts = self._extract_precomputed_facts(bundle)
+        facts_section = "\n".join(f"  {k}: {v}" for k, v in facts.items()) or "  (none)"
+
+        regen_note = ""
+        if validation_issues:
+            regen_note = (
+                "PREVIOUS ATTEMPT REJECTED — issues found:\n"
+                + "\n".join(f"  - {i}" for i in validation_issues)
+                + "\nFix every issue. Do NOT compute values; quote only from evidence below.\n\n"
+            )
+
         prompt = (
-            "You are a manufacturing scheduling assistant. "
-            "Below is a structured evidence chain from a scheduling system.\n\n"
-            f"EVIDENCE:\n{context}\n\n"
-            "INSTRUCTIONS:\n"
-            "- Answer in 2-3 concise paragraphs for a production planner.\n"
-            "- Use external names (WO-2001, M-GEAR-01), never internal IDs.\n"
-            "- For reconstructed decisions say 'was assigned to X; Y was unavailable'.\n"
-            "- Only cite facts present in the evidence chain above.\n\n"
-            f"QUESTION: {bundle.question}\n"
+            regen_note
+            + "You are a manufacturing scheduling assistant. "
+            "Report on the solved schedule using ONLY the evidence below.\n\n"
+            "PRE-COMPUTED FACTS (copy these values exactly — never recompute):\n"
+            + facts_section + "\n\n"
+            + "EVIDENCE CHAIN:\n" + context + "\n\n"
+            + "RULES (violating any rule causes regeneration):\n"
+            "1. Quote every timestamp, number, and name EXACTLY as it appears above.\n"
+            "   Never perform arithmetic or unit conversions.\n"
+            "2. End every factual sentence with [record: XXXX] citing the record_id.\n"
+            "3. Do not use causal language ('cascading', 'shifted', 'compressed', 'because of')\n"
+            "   unless a record explicitly states it.\n"
+            "4. Do not mention any machine, WO, date, or number absent from the evidence.\n"
+            "5. Answer in 2-3 sentences.\n\n"
+            + "QUESTION: " + bundle.question + "\n"
         )
         import anthropic  # type: ignore
         response = self._client.messages.create(
@@ -406,6 +458,53 @@ class LLMRenderer:
             messages=[{"role": "user", "content": prompt}],
         )
         return response.content[0].text
+
+    def _extract_precomputed_facts(self, bundle: ExplanationBundle) -> dict[str, str]:
+        """Return string-valued facts for the LLM to quote verbatim."""
+        facts: dict[str, str] = {}
+        kf = bundle.key_facts
+        if kf.get("completion_iso"):
+            facts["projected_completion"] = kf["completion_iso"]
+        if kf.get("lateness_minutes") is not None:
+            mins = kf["lateness_minutes"]
+            facts["lateness"] = f"{int(mins)} min"
+            if kf.get("lateness_hours") is not None:
+                facts["lateness_hours"] = f"{kf['lateness_hours']}h"
+        if kf.get("due_date"):
+            facts["due_date"] = str(kf["due_date"])
+        return facts
+
+    def _validate_testimony(
+        self, text: str, bundle: ExplanationBundle
+    ) -> list[str]:
+        """Return a list of validation issues; empty list means text is acceptable."""
+        issues: list[str] = []
+
+        # Build the set of all known values from the bundle (body + key_facts)
+        bundle_body = TemplateRenderer()._render_body(bundle)
+        kf_text = " ".join(str(v) for v in bundle.key_facts.values() if v is not None)
+        all_bundle_text = bundle_body + " " + kf_text
+
+        # 1. Timestamps: every YYYY-MM-DD HH:MM in prose must appear in bundle text
+        for date_part, time_part in _TS_RE.findall(text):
+            normalized = f"{date_part} {time_part}"  # "2026-07-14 14:00"
+            if normalized not in all_bundle_text:
+                issues.append(f"unverifiable timestamp '{date_part}T{time_part}'")
+
+        # 2. Machine names: every M-XXXX in prose must appear in bundle
+        known_machines = set(_MACHINE_RE.findall(all_bundle_text))
+        for machine in _MACHINE_RE.findall(text):
+            if machine not in known_machines:
+                issues.append(f"unverifiable machine name '{machine}'")
+
+        # 3. Footnotes: if any factual sentence exists, at least one must be footnoted
+        prose = re.sub(r'\n\[rendered by:.*', '', text, flags=re.DOTALL)
+        sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', prose) if s.strip()]
+        factual = [s for s in sentences if re.search(r'\d|M-[A-Z]|WO-', s)]
+        if factual and not any('[record:' in s for s in factual):
+            issues.append("no [record:] footnotes on factual sentences")
+
+        return issues
 
     def _llm_judgment(self, question: str, history: Any) -> str:
         prompt = self._build_judgment_prompt(question, history)
