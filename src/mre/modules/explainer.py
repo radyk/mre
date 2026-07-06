@@ -19,9 +19,20 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any, Optional
 
 from mre.modules.evidence_index import EvidenceIndex
+
+_SUPPORTED_ROUTES = [
+    '"Why is WO-XXXX late?" — lateness cause chain',
+    '"Are there any late orders?" — all late demands',
+    '"Why is WO-XXXX on M-YYYY?" — machine assignment reason',
+    '"What data problems exist?" — findings and quality issues',
+    '"What changed since snap-a vs snap-b?" — snapshot diff',
+    '"summarize" — run summary',
+    '"How much downtime does [machine/family] have?" — calendar closures',
+]
 
 
 @dataclass
@@ -83,9 +94,11 @@ class Explainer:
             return self._explain_data_problems()
         if ("change" in q or "diff" in q or "since" in q or "update" in q):
             return self._explain_what_changed(question)
+        if "downtime" in q or "closure" in q or "offline" in q:
+            return self._explain_downtime(question)
         if wo_match:
             return self._explain_why_late(wo_match.group().upper())
-        return self._explain_data_problems()
+        return self._unknown_question(question)
 
     def summarize_run(self, run_id: Optional[str] = None) -> ExplanationBundle:
         """High-level run summary: notable decisions + findings + late demands."""
@@ -367,6 +380,125 @@ class Explainer:
             subject_external_name=f"{snap_a} -> {snap_b}",
             ordered_records=[],
             key_facts=diff,
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _unknown_question(self, question: str) -> ExplanationBundle:
+        """Return an explicit 'unsupported' bundle — never silently reroute."""
+        return ExplanationBundle(
+            question=question,
+            subject_id="",
+            subject_type="unsupported",
+            subject_external_name="?",
+            ordered_records=[],
+            key_facts={
+                "parsed": question,
+                "supported_routes": _SUPPORTED_ROUTES,
+            },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _explain_downtime(self, question: str) -> ExplanationBundle:
+        """Sum calendar closure windows for a named resource, pool, or setup family."""
+        resources = {r["id"]: r for r in self._reader.iter_entities("resource")}
+        calendars = {c["id"]: c for c in self._reader.iter_entities("calendar")}
+        pools = list(self._reader.iter_entities("resourcepool"))
+
+        m_match = re.search(r'M-[A-Z0-9-]+', question, re.IGNORECASE)
+
+        if m_match:
+            machine_name = m_match.group().upper()
+            rid = self._identity_map.resolve("ERP", "machine_id", machine_name) if self._identity_map else None
+            target_ids = [rid] if rid else []
+            subject_label = machine_name
+        else:
+            _STOP = {"how", "much", "does", "do", "have", "any", "is", "are", "the",
+                     "a", "an", "for", "in", "what", "which", "show", "me",
+                     "downtime", "closures", "closure", "offline", "scheduled"}
+            words = {w.strip("?.,!") for w in question.lower().split()
+                     if w.strip("?.,!") not in _STOP and len(w.strip("?.,!")) > 2}
+
+            target_ids = []
+            subject_label = "all resources"
+            for pool in pools:
+                for ref in pool.get("external_refs", []):
+                    pname = ref.get("value", "").lower()
+                    if any(word in pname for word in words):
+                        target_ids.extend(pool.get("members", []))
+                        subject_label = ref.get("value", subject_label)
+                        break
+                if target_ids:
+                    break
+
+            if not target_ids:
+                # Fallback: setup_family substring match via assignments in snapshot
+                op_ids_by_family: dict[str, list[str]] = {}
+                for op in self._reader.iter_entities("operation"):
+                    fam = op.get("setup_family", "").lower()
+                    if any(word in fam for word in words):
+                        op_ids_by_family.setdefault(fam, []).append(op["id"])
+                        subject_label = fam
+                if op_ids_by_family:
+                    matched_ops = {oid for ids in op_ids_by_family.values() for oid in ids}
+                    for asgn in self._reader.iter_entities("assignment"):
+                        if asgn.get("operation_ref") in matched_ops:
+                            for ra in asgn.get("resource_assignments", []):
+                                rid = ra.get("resource_ref", "") if isinstance(ra, dict) else getattr(ra, "resource_ref", "")
+                                if rid and rid not in target_ids:
+                                    target_ids.append(rid)
+
+            if not target_ids:
+                target_ids = list(resources.keys())
+
+        # Sum closure exceptions per resource
+        closures: list[dict] = []
+        for rid in sorted(set(target_ids)):
+            resource = resources.get(rid)
+            if not resource:
+                continue
+            cal_ref = resource.get("calendar_ref")
+            cal = calendars.get(cal_ref) if cal_ref else None
+            if not cal:
+                continue
+            res_name = rid[:8]
+            if self._identity_map:
+                refs = self._identity_map.external_refs(rid)
+                mref = next((r for r in refs if r.type == "machine_id"), None)
+                if mref:
+                    res_name = mref.value
+            for exc in cal.get("exceptions", []):
+                if exc.get("type") != "closure":
+                    continue
+                window = exc.get("window", {})
+                start_str = window.get("start", "")
+                end_str = window.get("end", "")
+                if not (start_str and end_str):
+                    continue
+                start_dt = datetime.fromisoformat(start_str)
+                end_dt = datetime.fromisoformat(end_str)
+                hours = round((end_dt - start_dt).total_seconds() / 3600, 1)
+                closures.append({
+                    "resource": res_name,
+                    "duration_hours": hours,
+                    "reason": exc.get("reason", "unknown"),
+                    "date": start_dt.strftime("%Y-%m-%d"),
+                })
+
+        total_hours = round(sum(c["duration_hours"] for c in closures), 1)
+        return ExplanationBundle(
+            question=question,
+            subject_id=subject_label,
+            subject_type="downtime",
+            subject_external_name=subject_label,
+            ordered_records=[],
+            key_facts={
+                "subject": subject_label,
+                "closures": closures,
+                "total_hours": total_hours,
+                "resource_count": len({c["resource"] for c in closures}),
+            },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )

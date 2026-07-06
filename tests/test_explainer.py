@@ -493,3 +493,173 @@ class TestLateOrdersRoute:
         exp, _ = explainer_and_index
         bundle = exp.answer("Why is WO-2001 late?")
         assert bundle.subject_type == "demand"
+
+
+# ---------------------------------------------------------------------------
+# Honest fallback — unrouted questions must never silently reroute
+# ---------------------------------------------------------------------------
+
+class TestHonestFallback:
+    def test_unroutable_returns_unsupported_type(self, explainer_and_index):
+        exp, _ = explainer_and_index
+        bundle = exp.answer("How is the weather?")
+        assert bundle.subject_type == "unsupported"
+
+    def test_unroutable_not_findings_type(self, explainer_and_index):
+        """Old silent reroute to data-problems must not happen."""
+        exp, _ = explainer_and_index
+        bundle = exp.answer("What is the meaning of life?")
+        assert bundle.subject_type != "findings"
+
+    def test_unsupported_renderer_shows_cant_answer(self, explainer_and_index):
+        exp, _ = explainer_and_index
+        bundle = exp.answer("How is the weather?")
+        text = TemplateRenderer().render(bundle)
+        assert "can't answer" in text.lower() or "cannot answer" in text.lower()
+
+    def test_unsupported_renderer_lists_supported_routes(self, explainer_and_index):
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Random question nobody asked")
+        text = TemplateRenderer().render(bundle)
+        assert "Supported question types" in text or "Supported" in text
+
+    def test_unsupported_bundle_carries_original_question(self, explainer_and_index):
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Completely unrecognised input xyz")
+        assert bundle.key_facts["parsed"] == "Completely unrecognised input xyz"
+
+    def test_unsupported_supported_routes_nonempty(self, explainer_and_index):
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Random question")
+        assert len(bundle.key_facts.get("supported_routes", [])) >= 1
+
+
+# ---------------------------------------------------------------------------
+# Downtime route — calendar closures for named machine, pool, or family
+# ---------------------------------------------------------------------------
+
+GEAR_RID = "gear-rid-0001-0000-0000-000000000001"
+CAST_RID = "cast-rid-0001-0000-0000-000000000002"
+GEAR_CAL_ID = "gear-cal-0001-0000-0000-000000000001"
+CAST_CAL_ID = "cast-cal-0001-0000-0000-000000000002"
+
+
+class FakeDowntimeReader:
+    """Minimal snapshot reader for downtime tests."""
+
+    def iter_entities(self, entity_type: str):
+        if entity_type == "resource":
+            yield {
+                "id": GEAR_RID,
+                "external_refs": [{"system": "ERP", "type": "machine_id", "value": "M-GEAR-01"}],
+                "calendar_ref": GEAR_CAL_ID,
+            }
+            yield {
+                "id": CAST_RID,
+                "external_refs": [{"system": "ERP", "type": "machine_id", "value": "M-CAST-01"}],
+                "calendar_ref": CAST_CAL_ID,
+            }
+        elif entity_type == "calendar":
+            yield {
+                "id": GEAR_CAL_ID,
+                "exceptions": [
+                    {
+                        "window": {
+                            "start": "2026-07-13T00:00:00+00:00",
+                            "end": "2026-07-13T23:59:59+00:00",
+                        },
+                        "type": "closure",
+                        "reason": "planned_maintenance",
+                    }
+                ],
+            }
+            yield {"id": CAST_CAL_ID, "exceptions": []}
+        elif entity_type == "resourcepool":
+            yield {
+                "id": "pool-gear",
+                "external_refs": [{"system": "ERP", "type": "workcenter_id", "value": "WC-GEAR"}],
+                "members": [GEAR_RID],
+            }
+            yield {
+                "id": "pool-cast",
+                "external_refs": [{"system": "ERP", "type": "workcenter_id", "value": "WC-CASTING"}],
+                "members": [CAST_RID],
+            }
+        else:
+            return
+
+    def get_entity(self, entity_id: str):
+        return None
+
+    def read_identity_map(self):
+        from mre.modules.identity_map import IdentityMap
+        m = IdentityMap()
+        m.register(GEAR_RID, "ERP", "machine_id", "M-GEAR-01")
+        m.register(CAST_RID, "ERP", "machine_id", "M-CAST-01")
+        return m
+
+
+class FakeDowntimeStore:
+    def load_snapshot(self, snap_id: str):
+        return FakeDowntimeReader()
+
+
+@pytest.fixture()
+def downtime_explainer(tmp_path):
+    index = _make_index_no_late(tmp_path)
+    store = FakeDowntimeStore()
+    return Explainer(snapshot_store=store, index=index, snapshot_id="snap-demo")
+
+
+class TestDowntimeRoute:
+    def test_routes_on_downtime_keyword(self, downtime_explainer):
+        bundle = downtime_explainer.answer("How much downtime does gear have?")
+        assert bundle.subject_type == "downtime"
+
+    def test_closure_keyword_also_routes(self, downtime_explainer):
+        bundle = downtime_explainer.answer("Show me closures for gear")
+        assert bundle.subject_type == "downtime"
+
+    def test_machine_name_lookup(self, downtime_explainer):
+        bundle = downtime_explainer.answer("How much downtime does M-GEAR-01 have?")
+        assert bundle.subject_type == "downtime"
+        closures = bundle.key_facts["closures"]
+        assert len(closures) == 1
+        assert closures[0]["resource"] == "M-GEAR-01"
+
+    def test_pool_name_lookup_finds_closure(self, downtime_explainer):
+        bundle = downtime_explainer.answer("How much downtime does gear have?")
+        assert bundle.key_facts["total_hours"] > 0
+
+    def test_closure_duration_approximately_24h(self, downtime_explainer):
+        bundle = downtime_explainer.answer("How much downtime does M-GEAR-01 have?")
+        closures = bundle.key_facts["closures"]
+        assert abs(closures[0]["duration_hours"] - 24.0) < 0.1
+
+    def test_closure_reason(self, downtime_explainer):
+        bundle = downtime_explainer.answer("How much downtime does M-GEAR-01 have?")
+        assert bundle.key_facts["closures"][0]["reason"] == "planned_maintenance"
+
+    def test_closure_date(self, downtime_explainer):
+        bundle = downtime_explainer.answer("How much downtime does M-GEAR-01 have?")
+        assert bundle.key_facts["closures"][0]["date"] == "2026-07-13"
+
+    def test_no_closures_for_casting(self, downtime_explainer):
+        bundle = downtime_explainer.answer("How much downtime does casting have?")
+        assert bundle.key_facts["total_hours"] == 0.0
+        assert bundle.key_facts["closures"] == []
+
+    def test_renderer_shows_machine_name(self, downtime_explainer):
+        bundle = downtime_explainer.answer("How much downtime does M-GEAR-01 have?")
+        text = TemplateRenderer().render(bundle)
+        assert "M-GEAR-01" in text
+
+    def test_renderer_shows_duration(self, downtime_explainer):
+        bundle = downtime_explainer.answer("How much downtime does gear have?")
+        text = TemplateRenderer().render(bundle)
+        assert "24.0h" in text or "24h" in text
+
+    def test_renderer_no_closures_text(self, downtime_explainer):
+        bundle = downtime_explainer.answer("How much downtime does casting have?")
+        text = TemplateRenderer().render(bundle)
+        assert "No calendar closures" in text

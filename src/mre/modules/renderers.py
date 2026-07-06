@@ -57,6 +57,8 @@ class TemplateRenderer:
         if not bundle.ordered_records:
             if bundle.subject_type == "diff":
                 self._render_diff(lines, bundle.key_facts)
+            elif bundle.subject_type in ("downtime", "unsupported"):
+                pass  # header already rendered all content
             elif "error" in bundle.key_facts:
                 lines.append(f"  Error: {bundle.key_facts['error']}")
             else:
@@ -114,6 +116,33 @@ class TemplateRenderer:
                 lines.append(f"{count} late order(s):")
                 for item in orders:
                     lines.append(f"  - {item}")
+            lines.append("")
+
+        elif bundle.subject_type == "downtime":
+            kf = bundle.key_facts
+            subject = kf.get("subject", "?")
+            closures = kf.get("closures", [])
+            total = kf.get("total_hours", 0.0)
+            if not closures:
+                lines.append(f"No calendar closures found for {subject}.")
+            else:
+                lines.append(f"Downtime for {subject}:")
+                for c in closures:
+                    lines.append(
+                        f"  {c['resource']}: {c['duration_hours']}h"
+                        f" — {c['reason']} on {c['date']}"
+                    )
+                res_count = kf.get("resource_count", len({c["resource"] for c in closures}))
+                lines.append(f"  Total: {total}h across {res_count} resource(s)")
+            lines.append("")
+
+        elif bundle.subject_type == "unsupported":
+            kf = bundle.key_facts
+            lines.append(f"I can't answer this question yet: \"{kf.get('parsed', '?')}\"")
+            lines.append("")
+            lines.append("Supported question types:")
+            for route in kf.get("supported_routes", []):
+                lines.append(f"  - {route}")
             lines.append("")
 
         elif bundle.subject_type == "findings":
