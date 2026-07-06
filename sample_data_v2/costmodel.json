@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "effective_from": "2026-07-07",
+  "description": "Phase 3 PoC cost model v2 — M-CAST-01 supplier rate increase",
+  "resource_rates": {
+    "M-CAST-01": 7.5,
+    "M-CAST-02": 5.0,
+    "M-MACH-01": 3.0,
+    "M-MACH-02": 3.0,
+    "M-MACH-03": 4.0,
+    "M-GRND-01": 3.5,
+    "M-GEAR-01": 4.0,
+    "M-GEAR-02": 6.0,
+    "M-INSP-01": 2.0
+  },
+  "setup_cost_basis": {
+    "fixed_per_setup": 50.0,
+    "scrap_cost_per_unit": 0.0
+  },
+  "tardiness_weights": {
+    "base_weight": 1.0,
+    "commitment_class_multipliers": {
+      "standard": 1.0,
+      "rush": 2.0,
+      "firm": 3.0
+    }
+  }
+}

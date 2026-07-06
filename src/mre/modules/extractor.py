@@ -223,6 +223,25 @@ class Extractor:
             }
             service_outcomes.append(svc)
 
+            # Emit lateness and completion metrics so M9 can answer
+            # "why is WO-X late?" by entity-key lookup.
+            if reporter is not None:
+                subj = [EntityRef(entity_id=d_id, entity_type="demand")]
+                reporter.record_metric(
+                    name="lateness_minutes",
+                    value=float(lateness_min),
+                    unit="minutes",
+                    subjects=subj,
+                    message=f"Demand {d_id[:8]} lateness: {lateness_min} min",
+                )
+                reporter.record_metric(
+                    name="projected_completion_epoch",
+                    value=float(completion.timestamp()),
+                    unit="epoch_seconds",
+                    subjects=subj,
+                    message=f"Demand {d_id[:8]} projected completion: {completion.isoformat()}",
+                )
+
         # ------------------------------------------------------------------
         # Cost ledger (must decompose: total = production + setup + tardiness)
         # ------------------------------------------------------------------

@@ -1,0 +1,24 @@
+RoutingCode,Sequence,Workcenter,Active,Description
+R-CAST-A,10,WC-CASTING,1,Casting operation
+R-CAST-A,20,WC-MACHINE,1,Machining operation
+R-CAST-A,30,WC-INSPECT,1,Inspection
+R-CAST-B,10,WC-CASTING,1,Casting operation
+R-CAST-B,20,WC-MACHINE,1,Machining operation
+R-CAST-B,30,WC-INSPECT,1,Inspection
+R-MACH-A,10,WC-MACHINE,1,Turning operation
+R-MACH-A,20,WC-GRIND,1,Grinding operation
+R-MACH-A,30,WC-INSPECT,1,Inspection
+R-MACH-B,10,WC-MACHINE,1,Turning operation
+R-MACH-B,20,WC-GRIND,1,Grinding operation
+R-MACH-B,30,WC-INSPECT,1,Inspection
+R-GEAR-A,10,WC-GEAR,1,Gear cutting
+R-GEAR-A,20,WC-GRIND,1,Grinding
+R-GEAR-A,30,WC-INSPECT,1,Inspection
+R-GEAR-B,10,WC-GEAR,1,Gear cutting
+R-GEAR-B,20,WC-UNKNOWN,1,Secondary operation
+R-GEAR-B,30,WC-GRIND,1,Grinding
+R-GEAR-C,10,WC-GEAR,1,Gear cutting
+R-GEAR-C,20,WC-INSPECT,1,Inspection
+R-ZERO,10,WC-CASTING,1,Casting operation
+R-ZERO,20,WC-MACHINE,1,Machining operation
+R-ZERO,30,WC-INSPECT,1,Inspection

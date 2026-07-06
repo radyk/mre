@@ -12,6 +12,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -51,6 +52,12 @@ def main(argv: list[str] | None = None) -> int:
     snap_id  = args.snapshot_id
     runs_dir = out_dir / "runs"
     store    = SnapshotStore(out_dir / "snapshots")
+
+    # Delete stale snapshot directory so old entity files never poison a fresh run.
+    snap_dir = out_dir / "snapshots" / snap_id
+    if snap_dir.exists():
+        shutil.rmtree(snap_dir)
+        _p(f"cleared stale snapshot: {snap_dir}")
 
     _p(f"extract_dir : {extract_dir}")
     _p(f"output_dir  : {out_dir}")
@@ -286,6 +293,17 @@ def main(argv: list[str] | None = None) -> int:
             f"  {d_wono}: completion={svc['projected_completion'][:19]}, "
             f"lateness={lat:+d} min [{status}]"
         )
+
+    # -----------------------------------------------------------------------
+    # M9: Evidence Index
+    # -----------------------------------------------------------------------
+    from mre.modules.evidence_index import EvidenceIndex
+
+    index = EvidenceIndex().build(runs_dir)
+    index_path = out_dir / "evidence_index.json"
+    index.save(index_path)
+    _p(f"\nevidence_index: {len(index._all_evidence)} records, {len(index.runs())} runs")
+    _p(f"evidence_index: saved to {index_path}")
 
     _p(f"\n[mre] runs dir    : {runs_dir}")
     return 0

@@ -456,3 +456,60 @@ the shift — insufficient for the 420-min inspection step. Inspection is pushed
 2026-07-14, making WO-2001 (due 2026-07-13 23:59) approximately 841 min late.
 The STATISTICAL_OUTLIER finding still fires: 27 sec/unit ÷ 0.6 sec/unit = 45×
 the gear-family median, well above the 10× detection threshold.
+
+## 2026-07-06 — Phase 3: M9 Evidence Index, M10 Explainer, demo script
+
+**Stale-snapshot INFEASIBLE incident.** During pre-Phase-3 verification, deleting
+`mre_output/` between runs was required to get a clean solve — old entity files from
+the previous snapshot directory persisted and the solver saw conflicting state. The
+fix (implemented in `__main__.py` and `demo.py`) is to delete the snapshot
+subdirectory for the target `snap_id` before M1 runs. This converts a silent
+data-poisoning bug into a deterministic clean-start guarantee. The
+incident is the origin of the "run-scoped output" housekeeping item in docs/03.
+
+**L4 Index design (M9).** The evidence index reads raw JSONL stream files from
+`runs/`, not the in-memory consolidated documents. Consolidated docs are never
+written to disk; the index is the persistence layer for cross-run retrieval.
+Two-key indexing: `entity_id -> [records]` and `finding_code -> [findings]`.
+`lineage_walk(entity_id)` adds transitive graph traversal via the snapshot
+reader: demand -> fulfillment -> workpackage -> operations. This is the critical
+primitive for the "why is WO-X late?" query path, because ASSIGNMENT decisions
+are keyed by operation_id, not demand_id; reaching them requires the multi-hop
+walk. Records within a walk are ordered by pipeline stage (M1=1 ... M7=7) then
+by seq within stage, giving a coherent causal narrative.
+
+**M10 read-only invariant.** The explainer module imports neither Reporter nor
+SnapshotWriter. This invariant is enforced by a test (AST import inspection) rather
+than by module structure alone, since Python's dynamic imports make structural
+barriers easy to accidentally bypass. The test is the guard.
+
+**Evidence emission gap (M7).** ServiceOutcomes were computed in the extractor but
+not emitted as evidence records — they lived only in the ExtractResult in-memory
+struct. The demo query "why is WO-2001 late?" requires a `lateness_minutes` metric
+in the evidence store so M9 can find it by entity_id. Two metrics were added to
+M7's extractor loop: `lateness_minutes` and `projected_completion_epoch` per
+fulfillment. The projected_completion_epoch metric stores the Unix timestamp of
+the projected completion so renderers can format it without recomputing from
+the schedule.
+
+**TemplateRenderer rendering rules.** The renderer uses `identity_map.external_refs()`
+to convert canonical UUIDs to external names at render time. Planner vocabulary
+rule: demand -> work_order, resource -> machine_id, product -> product_no.
+Basis=reconstructed decisions include an explicit note ("This is a reconstruction
+from the solved schedule") to distinguish them from policy decisions. Every cited
+record is footnoted with its 8-char record_id prefix. No UUIDs appear in renderer
+output — enforced by a test that asserts `bundle.subject_id not in rendered_text`.
+
+**Snapshot diff design.** `Explainer.snapshot_diff(snap_a, snap_b)` reads both
+snapshot stores and compares demand entities (by work_order external_ref) and
+CostModel (by version + resource_rates). Resource rate changes are resolved back
+to machine_id names via the identity map from snapshot_a. The diff is returned as
+a plain dict (not an evidence record) since it crosses snapshot boundaries and has
+no single snapshot_id to attribute to.
+
+**sample_data_v2 changes.** Three intentional changes from v1: (1) WO-PAST-001
+removed (demand cancellation scenario), (2) WO-1002 due date tightened from
+2026-08-20 to 2026-07-20 (supply chain pressure scenario), (3) M-CAST-01 cost
+rate increased 5.0 -> 7.5 in costmodel.json version 2 (supplier price increase
+scenario). These three change types (removed entity, field change, config change)
+cover the most common production planning re-run triggers.
