@@ -397,3 +397,99 @@ class TestResolveName:
     def test_empty_id_returns_question_mark(self):
         result = _resolve_name("", "demand", None)
         assert result == "?"
+
+
+# ---------------------------------------------------------------------------
+# Late-orders route
+# ---------------------------------------------------------------------------
+
+def _make_index_no_late(tmp_path: Path) -> EvidenceIndex:
+    """Index with an on-time demand (lateness=0) — no positive lateness."""
+    records = [
+        {"record_type": "run_context_open", "run_id": "run-m7-ok", "module": "M7",
+         "snapshot_id": "snap-demo", "purpose": "test", "timestamp": "2026-07-06T01:00:00Z"},
+        {
+            "record_type": "metric",
+            "record_id": "met-ontime-001",
+            "run_id": "run-m7-ok",
+            "module": "M7",
+            "seq": 1,
+            "snapshot_id": "snap-demo",
+            "subjects": [{"entity_id": DEMAND_ID, "entity_type": "demand"}],
+            "tier": "supporting",
+            "message": "",
+            "name": "lateness_minutes",
+            "value": -120.0,   # early, not late
+            "unit": "minutes",
+            "rollup_of": [],
+        },
+        {"record_type": "run_context_close", "run_id": "run-m7-ok",
+         "status": "success", "ended_at": "2026-07-06T01:01:00Z"},
+    ]
+    runs_dir = tmp_path / "runs_no_late"
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    with open(runs_dir / "ontime.jsonl", "w", encoding="utf-8") as f:
+        for r in records:
+            f.write(json.dumps(r) + "\n")
+    return EvidenceIndex().build(runs_dir)
+
+
+class TestLateOrdersRoute:
+    def test_routes_to_late_orders_without_wo(self, explainer_and_index):
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Are there any late orders?")
+        assert bundle.subject_type == "late_orders"
+
+    def test_late_count_is_one(self, explainer_and_index):
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Are there any late orders?")
+        assert bundle.key_facts["late_count"] == 1
+
+    def test_late_orders_list_contains_wo2001(self, explainer_and_index):
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Are there any late orders?")
+        assert any("WO-2001" in item for item in bundle.key_facts["late_orders"])
+
+    def test_late_orders_list_contains_minutes(self, explainer_and_index):
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Are there any late orders?")
+        assert any("840" in item for item in bundle.key_facts["late_orders"])
+
+    def test_renderer_shows_late_count(self, explainer_and_index):
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Are there any late orders?")
+        text = TemplateRenderer().render(bundle)
+        assert "1 late order" in text
+
+    def test_renderer_shows_wo_name(self, explainer_and_index):
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Are there any late orders?")
+        text = TemplateRenderer().render(bundle)
+        assert "WO-2001" in text
+
+    def test_renderer_no_late_orders(self, tmp_path):
+        index = _make_index_no_late(tmp_path)
+        store = FakeStore("snap-demo")
+        exp = Explainer(snapshot_store=store, index=index, snapshot_id="snap-demo")
+        bundle = exp.answer("Are there any late orders?")
+        assert bundle.key_facts["late_count"] == 0
+
+    def test_renderer_no_late_orders_text(self, tmp_path):
+        index = _make_index_no_late(tmp_path)
+        store = FakeStore("snap-demo")
+        exp = Explainer(snapshot_store=store, index=index, snapshot_id="snap-demo")
+        bundle = exp.answer("Are there any late orders?")
+        text = TemplateRenderer().render(bundle)
+        assert "No late orders" in text
+
+    def test_delay_keyword_also_routes(self, explainer_and_index):
+        """'delay' synonym should route the same way as 'late'."""
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Are there any delays?")
+        assert bundle.subject_type == "late_orders"
+
+    def test_late_with_wo_still_routes_to_why_late(self, explainer_and_index):
+        """'late' + specific WO must NOT fall into _list_late_orders."""
+        exp, _ = explainer_and_index
+        bundle = exp.answer("Why is WO-2001 late?")
+        assert bundle.subject_type == "demand"
