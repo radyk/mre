@@ -63,18 +63,45 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status / next work
 
-Phase 0 (see `docs/03-poc-plan.md` §3): implement the contracts package and the
-Reporter, then the toy-module deliverable — a module that begins a run, emits one
-of each record type, ends, and produces a valid consolidated document that passes
-the decomposability check. `PHASE0_PROMPT.md` in the repo root contains the
-intended opening instruction.
+**Phases 0–2 complete. 306 tests green. Solver reaches OPTIMAL in ~0.3s on the
+34-demand sample set.**
+
+Built so far: contracts + Reporter (Phase 0); adapter M1, snapshot store M2,
+validator M3, DQ report, identity-map persistence, per-resource Calendars,
+Process wiring (Phase 1 + gap-closing); planner M4 (identity_v1 +
+merge_by_family_v1 policies), solver builder M5 (six canonical inputs,
+VariableMap), solve runner M6, extractor M7 (canonical Schedule,
+per-Demand ServiceOutcomes, reconstructed-alternative Decisions, decomposable
+cost ledger), full `python -m mre` pipeline (Phase 2). Phase 2 judgment calls
+are recorded in the docs/04 Amendment log.
+
+Immediate next tasks, in order:
+
+1. **Verify the demo ingredients exist.** Run `python -m mre`; confirm (a) at
+   least one late ServiceOutcome (negative outcome demand), and (b) at least
+   one assignment Decision with driver `CALENDAR_WINDOW` whose alternatives
+   reference the maintenance-closed machine. Confirm `sample_data/SCENARIO.md`
+   exists and describes the tuned scenario. Tune sample data if anything is
+   missing — the Phase 3 demo ("why is WO-X late?") depends on these.
+2. **New validator check (pre-solve infeasibility).** Non-splittable operation
+   whose duration exceeds the longest contiguous calendar window on every
+   eligible resource → finding (INFEASIBLE_SUBSET or TEMPORAL_IMPOSSIBILITY,
+   severity blocker). This converts the Phase 2 INFEASIBLE debugging session
+   into a pre-solve data-quality finding. Test by reintroducing a
+   3000-minute operation. Amendment-log entry: first solve failure converted
+   into a pre-solve validation check.
+3. **Phase 3** (docs/03): M10 — run summarizer (pattern a) + question answerer
+   (pattern b, dumb retrieval: entity-key lookup + lineage walk, no
+   embeddings), the demonstration script as acceptance test, and the Dash
+   Gantt re-pointed at the canonical Schedule.
 
 ## Working style
 
 - Write schema/behavior tests **from the spec documents first**, then implement.
   The specs are executable acceptance criteria.
-- Python 3.11+, `pyproject.toml` at root, `pytest` for tests, `ortools` and
-  `pandas` arrive in Phase 2 (not needed for Phase 0).
+- Python 3.11+, `pyproject.toml` at root, `pytest` for tests. `ortools` is a
+  dependency as of Phase 2; keep it quarantined to solver_builder / solve_runner
+  — the canonical Schedule must remain readable with no ortools import (tested).
 - Prefer plain dataclasses / pydantic for contracts (choose one and stay
   consistent; pydantic recommended for validation-at-construction, which matches
   the "malformed records die at the source" rule).

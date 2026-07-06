@@ -30,8 +30,15 @@ def _defaulted(entity_id: str, attr: str, snapshot_id: str, policy: str) -> Prov
 def load_cost_model(
     path: Path,
     snapshot_id: str,
-) -> tuple[CostModel, list[ProvenanceSidecar]]:
-    """Read costmodel.json and return (CostModel entity, provenance list)."""
+    identity_map=None,
+) -> tuple[CostModel, list[ProvenanceSidecar], list[str]]:
+    """Read costmodel.json and return (CostModel, provenance, unresolved_keys).
+
+    If identity_map is provided, resource_rates keys are translated from external
+    machine IDs to canonical UUIDs. unresolved_keys lists any key that couldn't
+    be mapped — the caller must emit findings for these (silent zero-defaults are
+    forbidden per the no-silent-defaults rule).
+    """
     raw = json.loads(Path(path).read_text(encoding="utf-8"))
     version = raw.get("version", 1)
     eff_str = raw.get("effective_from")
@@ -48,12 +55,28 @@ def load_cost_model(
     ))
     policy_label = f"costmodel.json v{version}"
 
+    # Translate external machine IDs → canonical UUIDs so the solver and
+    # extractor (which only know canonical IDs) can look up rates correctly.
+    raw_rates: dict = raw.get("resource_rates", {})
+    unresolved_keys: list[str] = []
+    if identity_map is not None:
+        resolved_rates: dict[str, float] = {}
+        for ext_key, rate in raw_rates.items():
+            canonical = identity_map.resolve("ERP", "machine_id", ext_key)
+            if canonical is None:
+                unresolved_keys.append(ext_key)
+            else:
+                resolved_rates[canonical] = float(rate)
+        resource_rates = resolved_rates
+    else:
+        resource_rates = {k: float(v) for k, v in raw_rates.items()}
+
     cm = CostModel(
         id=cm_id,
         snapshot_id=snapshot_id,
         version=version,
         effective_from=effective_from,
-        resource_rates=raw.get("resource_rates", {}),
+        resource_rates=resource_rates,
         setup_cost_basis=SetupCostBasis(
             fixed_per_setup=setup_raw.get("fixed_per_setup", 0.0),
             scrap_cost_per_unit=setup_raw.get("scrap_cost_per_unit", 0.0),
@@ -72,7 +95,7 @@ def load_cost_model(
         "overtime_premium", "inventory_carrying",
     ]
     provenance = [_defaulted(cm_id, a, snapshot_id, policy_label) for a in attrs]
-    return cm, provenance
+    return cm, provenance, unresolved_keys
 
 
 def load_setup_constraint(

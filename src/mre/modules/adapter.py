@@ -645,9 +645,40 @@ class Adapter:
 
         cm_path = self._dir / "costmodel.json"
         if cm_path.exists():
-            cm, cm_prov = load_cost_model(cm_path, snapshot_id)
+            cm, cm_prov, unresolved_rate_keys = load_cost_model(
+                cm_path, snapshot_id, identity_map
+            )
             writer.write_entity(cm, cm_prov)
             costmodel_id = cm.id
+
+            # Guard: any config key that didn't resolve to a canonical resource
+            for ext_key in unresolved_rate_keys:
+                reporter.record_finding(
+                    code=FindingCode.LOW_CONFIDENCE_INPUT,
+                    severity=FindingSeverity.WARNING,
+                    subjects=[EntityRef(entity_id=costmodel_id, entity_type="costmodel")],
+                    evidence={"unresolved_key": ext_key, "default_rate": 0.0},
+                    disposition=FindingDisposition.DEFAULTED,
+                    disposition_detail=(
+                        f"costmodel.json key '{ext_key}' not found in identity map; "
+                        "rate defaults to 0.0 — this resource will have no production cost"
+                    ),
+                )
+
+            # Guard: any registered machine that has no rate in costmodel.json
+            for (sys_, ref_type, ext_val), canon_id in identity_map._to_canonical.items():
+                if ref_type == "machine_id" and canon_id not in cm.resource_rates:
+                    reporter.record_finding(
+                        code=FindingCode.LOW_CONFIDENCE_INPUT,
+                        severity=FindingSeverity.WARNING,
+                        subjects=[EntityRef(entity_id=canon_id, entity_type="resource")],
+                        evidence={"machine_id": ext_val, "default_rate": 0.0},
+                        disposition=FindingDisposition.DEFAULTED,
+                        disposition_detail=(
+                            f"resource '{ext_val}' (id={canon_id[:8]}) has no rate in "
+                            "costmodel.json; production cost defaults to 0.0"
+                        ),
+                    )
 
         trans_path = self._dir / "setup_transitions.json"
         if trans_path.exists() and costmodel_id:

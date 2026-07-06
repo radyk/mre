@@ -409,3 +409,50 @@ a single 720-minute shift window while preserving detectability by the validator
   `CostingLotSize=0`, still triggers the LOW_CONFIDENCE_INPUT finding with
   `disposition=defaulted`, and the merged R-ZERO WP now produces ~280-minute
   operations instead of ~5 000-minute ones.
+
+---
+
+## Amendment log
+
+### 2026-07-06 — Pre-Phase-3 fixes: identity boundary lesson and decomposability ≠ truth
+
+**External-ID-in-config is still an ERP ID.** `costmodel.json` stored production
+rates keyed by external machine IDs (`"M-CAST-01": 5.0`). The solver builder and
+extractor reference resources only by canonical UUID, so every `rates.get(rid,
+0.0)` silently returned 0.0. The fix: `load_cost_model` now accepts the
+`identity_map` built by M1 and translates each rate key from external machine ID
+to canonical UUID before constructing the CostModel entity. No ERP identifier
+ever appears in the canonical model.
+
+Lesson recorded: *identity mapping applies to config files too*, not only to ERP
+extract rows. Any policy document that addresses a machine, product, or workcenter
+by its ERP name must pass through the identity map at the adapter boundary.
+Failure mode is silent — the config loads without error, the entity looks correct,
+and the consumer just gets 0.0 for every lookup.
+
+Guards added: M1 now emits a `LOW_CONFIDENCE_INPUT / WARNING / disposition=defaulted`
+finding for (a) any rate key in the config file that the identity map cannot
+resolve, and (b) any registered machine that has no rate entry after translation.
+Silent zero-defaults are forbidden; every 0.0 must be accompanied by a finding.
+
+**Decomposability passing ≠ cost model being correct.** The cost ledger had been
+verifying `total = production + setup + tardiness` and passing that check since
+Phase 2 shipped — because all three components decomposed correctly. What it did
+not check was whether any component was factually accurate. With `production_cost
+= 0.0` (all rates silently zero), the ledger was internally coherent but
+factually wrong. The decomposability invariant guarantees arithmetic consistency;
+it says nothing about whether the input rates are non-zero or meaningful.
+
+The no-silent-defaults guard is the fix: a production_cost of 0.0 is now only
+reachable if there is a corresponding finding in the evidence store. A future
+audit or AI explanation can therefore detect the anomaly rather than propagating
+a silently wrong number.
+
+**Demo story tuning.** `PROD-007 ProductionMinutes` was further adjusted from
+60.0 to 90.0 to ensure the merged WP (WO-2001 + WO-2002, qty=800) produces
+operations of 420 min each. With two 420-min steps in sequence and a 720-min
+shift window, gear cutting fills 07:00–14:00 on 2026-07-13, leaving 300 min in
+the shift — insufficient for the 420-min inspection step. Inspection is pushed to
+2026-07-14, making WO-2001 (due 2026-07-13 23:59) approximately 841 min late.
+The STATISTICAL_OUTLIER finding still fires: 27 sec/unit ÷ 0.6 sec/unit = 45×
+the gear-family median, well above the 10× detection threshold.

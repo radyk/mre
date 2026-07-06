@@ -27,8 +27,9 @@ class JsonlSink:
         self._file.close()
 
     def read_all(self) -> list[dict]:
-        """Read all records from the JSONL file. Flushes first."""
-        self._file.flush()
+        """Read all records from the JSONL file. Flushes first if still open."""
+        if not self._file.closed:
+            self._file.flush()
         records: list[dict] = []
         with open(self.path, "r", encoding="utf-8") as f:
             for line in f:

@@ -53,6 +53,8 @@ class Extractor:
         demands: list[dict],
         cost_model: dict,
         reporter=None,
+        cal_windows: Optional[dict] = None,
+        op_eligible: Optional[dict] = None,
     ) -> ExtractResult:
         """Extract Schedule, Assignments, ServiceOutcomes, and cost ledger.
 
@@ -110,14 +112,31 @@ class Extractor:
             op_cost = dur_min * rate
             production_cost += op_cost
 
-            # Determine eligible resources (all resources for PoC scope cut)
-            eligible_rids = list(ress_by_id.keys())
+            # Eligible resources: use solver-derived list when available (accurate
+            # capability matching); fall back to all resources for PoC scope cut.
+            eligible_rids = (op_eligible or {}).get(op_id, list(ress_by_id.keys()))
 
-            # Reconstructed alternatives
+            driver = self._assignment_driver(
+                chosen_rid, eligible_rids, rates,
+                op_start_min=start_min, op_end_min=end_min,
+                cal_windows=cal_windows,
+            )
+
+            # Reconstructed alternatives — calendar-blocked resources get a
+            # different consequence message so the AI layer can explain them.
             alternatives: list[DecisionAlternative] = []
             for rid in eligible_rids:
                 if rid == chosen_rid:
                     continue
+                if cal_windows is not None:
+                    windows = cal_windows.get(rid, [])
+                    fits = any(s <= start_min and e >= end_min for s, e in windows)
+                    if not fits:
+                        alternatives.append(DecisionAlternative(
+                            option=f"resource:{rid}",
+                            consequence="Unavailable: no calendar window covers this operation slot.",
+                        ))
+                        continue
                 alt_rate = rates.get(rid, 0.0)
                 cost_diff = (alt_rate - rate) * dur_min
                 alternatives.append(
@@ -144,7 +163,7 @@ class Extractor:
                         "production_cost": op_cost,
                     },
                     alternatives=alternatives,
-                    driver=self._assignment_driver(chosen_rid, eligible_rids, rates),
+                    driver=driver,
                     basis=DecisionBasis.RECONSTRUCTED,
                     tier=RecordTier.SUPPORTING,
                     message=(
@@ -232,14 +251,30 @@ class Extractor:
         )
 
     def _assignment_driver(
-        self, chosen_rid: str, eligible: list[str], rates: dict[str, float]
+        self,
+        chosen_rid: str,
+        eligible: list[str],
+        rates: dict[str, float],
+        op_start_min: int = 0,
+        op_end_min: int = 0,
+        cal_windows: Optional[dict] = None,
     ) -> DriverCode:
-        """Classify the primary driver for this assignment choice."""
-        if not eligible:
+        """Classify the primary driver for this assignment choice.
+
+        Priority: CALENDAR_WINDOW > COST_TRADEOFF > CAPACITY_BLOCKED.
+        """
+        if not eligible or len(eligible) == 1:
             return DriverCode.CAPACITY_BLOCKED
-        if len(eligible) == 1:
-            return DriverCode.CAPACITY_BLOCKED
-        # If chosen is cheapest → cost tradeoff
+        # CALENDAR_WINDOW: any eligible alternative had no window for this slot
+        if cal_windows is not None:
+            for rid in eligible:
+                if rid == chosen_rid:
+                    continue
+                windows = cal_windows.get(rid, [])
+                fits = any(s <= op_start_min and e >= op_end_min for s, e in windows)
+                if not fits:
+                    return DriverCode.CALENDAR_WINDOW
+        # COST_TRADEOFF: chosen resource is the cheapest eligible option
         chosen_rate = rates.get(chosen_rid, 0.0)
         other_rates = [rates.get(r, 0.0) for r in eligible if r != chosen_rid]
         if other_rates and chosen_rate < min(other_rates):

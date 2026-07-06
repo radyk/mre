@@ -62,6 +62,10 @@ class VariableMap:
     wp_end: dict[str, Any] = field(default_factory=dict)
     # fulfillment_id → IntVar (tardiness, ≥0)
     tardiness: dict[str, Any] = field(default_factory=dict)
+    # op_id → [resource_id, ...] eligible resources (plain strings, no ortools)
+    op_eligible: dict[str, list[str]] = field(default_factory=dict)
+    # resource_id → [(start_min, end_min), ...] available calendar windows
+    cal_windows: dict[str, list[tuple[int, int]]] = field(default_factory=dict)
 
     @property
     def op_ids(self) -> dict[str, Any]:
@@ -170,6 +174,7 @@ class SolverBuilder:
         cal_windows = self._flatten_all(
             resources, cal_map, horizon_start, horizon_end
         )
+        var_map.cal_windows = cal_windows
 
         # ------------------------------------------------------------------
         # Build interval variables for each operation × eligible resource
@@ -211,6 +216,7 @@ class SolverBuilder:
             op_reqs = op.get("resource_requirements", [])
             if op_reqs:
                 eligible = self._eligible_resources(op_reqs, resources)
+            var_map.op_eligible[oid] = eligible
 
             # Create optional interval per eligible resource
             all_intervals: list[Any] = []

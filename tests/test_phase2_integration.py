@@ -116,7 +116,8 @@ def pipeline_run(tmp_path_factory):
 
     # M5
     b_rep = _rep(ModuleCode.M5, "phase2 builder")
-    model, var_map = SolverBuilder().build(
+    builder = SolverBuilder()
+    model, var_map = builder.build(
         wps + ops, resources + pools, flattened_cals,
         fuls + demands, constraints, cm,
     )
@@ -139,6 +140,8 @@ def pipeline_run(tmp_path_factory):
         demands=demands,
         cost_model=cm,
         reporter=e_rep,
+        cal_windows=var_map.cal_windows,
+        op_eligible=var_map.op_eligible,
     )
     e_rep.end(RunStatus.SUCCESS)
 
@@ -150,6 +153,7 @@ def pipeline_run(tmp_path_factory):
         "fuls": fuls,
         "wps": wps,
         "ops": ops,
+        "e_rep": e_rep,
     }
 
 
@@ -255,3 +259,77 @@ class TestCostLedger:
     def test_setup_cost_positive(self, pipeline_run):
         """With fixed_per_setup > 0 and 93 ops, setup cost must be positive."""
         assert pipeline_run["extract"].cost_ledger["setup_cost"] > 0
+
+    def test_production_cost_positive(self, pipeline_run):
+        """Fix 1: costmodel.json rates keyed by canonical UUID → nonzero production cost."""
+        assert pipeline_run["extract"].cost_ledger["production_cost"] > 0
+
+
+# ---------------------------------------------------------------------------
+# Pre-Phase-3 fixes verification
+# ---------------------------------------------------------------------------
+
+class TestPrePhase3Fixes:
+    """Three fixes applied before Phase 3: cost key translation, demo story, CALENDAR_WINDOW."""
+
+    def _outcomes_by_wo(self, pipeline_run):
+        demands = pipeline_run["demands"]
+        svc_by_demand = {s["demand_ref"]: s for s in pipeline_run["extract"].service_outcomes}
+        result = {}
+        for d in demands:
+            for ref in d.get("external_refs", []):
+                if ref.get("type") == "work_order" and ref["value"] in ("WO-2001", "WO-2002"):
+                    result[ref["value"]] = svc_by_demand.get(d["id"], {})
+        return result
+
+    def test_wo2001_is_late(self, pipeline_run):
+        """Fix 2: WO-2001 must have positive lateness (merge + calendar closure pushes past due)."""
+        outcomes = self._outcomes_by_wo(pipeline_run)
+        svc_2001 = outcomes.get("WO-2001", {})
+        assert svc_2001, "WO-2001 ServiceOutcome must exist"
+        assert svc_2001["lateness_minutes"] > 0, (
+            f"WO-2001 must be late; got lateness={svc_2001['lateness_minutes']} min"
+        )
+
+    def test_at_least_one_late_service_outcome(self, pipeline_run):
+        """Fix 2: at least one demand across the schedule ends up late."""
+        late_outcomes = [
+            s for s in pipeline_run["extract"].service_outcomes
+            if s["lateness_minutes"] > 0
+        ]
+        assert len(late_outcomes) >= 1
+
+    def test_calendar_window_decision_exists(self, pipeline_run):
+        """Fix 2: at least one ASSIGNMENT Decision carries driver=CALENDAR_WINDOW."""
+        e_rep = pipeline_run["e_rep"]
+        records = e_rep._sink.read_all()
+        cal_decisions = [
+            r for r in records
+            if r.get("record_type") == "decision"
+            and r.get("decision_type") == "assignment"
+            and r.get("driver") == "CALENDAR_WINDOW"
+        ]
+        assert len(cal_decisions) >= 1, "Expected ≥1 ASSIGNMENT decision with driver=CALENDAR_WINDOW"
+
+    def test_calendar_window_alternative_references_closed_machine(self, pipeline_run):
+        """Fix 2: the CALENDAR_WINDOW decision alternatives should include M-GEAR-01."""
+        from mre.modules.snapshot_store import SnapshotStore
+        e_rep = pipeline_run["e_rep"]
+        records = e_rep._sink.read_all()
+        cal_decisions = [
+            r for r in records
+            if r.get("record_type") == "decision"
+            and r.get("decision_type") == "assignment"
+            and r.get("driver") == "CALENDAR_WINDOW"
+        ]
+        assert cal_decisions, "Need ≥1 CALENDAR_WINDOW decision"
+        dec = cal_decisions[0]
+        alt_options = [a.get("option", "") for a in dec.get("alternatives", [])]
+        # At least one alternative should name a resource (calendar-blocked M-GEAR-01)
+        assert any("resource:" in opt for opt in alt_options), (
+            f"CALENDAR_WINDOW decision should have resource alternative; got {alt_options}"
+        )
+        alt_consequences = [a.get("consequence", "") for a in dec.get("alternatives", [])]
+        assert any("calendar" in c.lower() or "unavailable" in c.lower() for c in alt_consequences), (
+            f"At least one alternative should reference calendar unavailability; got {alt_consequences}"
+        )

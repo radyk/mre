@@ -258,6 +258,8 @@ def main(argv: list[str] | None = None) -> int:
         demands=demands,
         cost_model=cost_model,
         reporter=e_rep,
+        cal_windows=var_map.cal_windows,
+        op_eligible=var_map.op_eligible,
     )
     e_rep.end(RunStatus.SUCCESS)
 
