@@ -61,11 +61,12 @@ class TestSeededDefect3_TemporalImpossibility:
                     and r["code"] == "TEMPORAL_IMPOSSIBILITY"]
         assert len(findings) >= 1
 
-    def test_disposition_proceeded_flagged(self, validated_run):
+    def test_disposition_excluded(self, validated_run):
+        """TEMPORAL_IMPOSSIBILITY demands are now excluded from planning, not merely flagged."""
         result, doc = validated_run
         findings = [r for r in doc["records"] if r.get("record_type") == "finding"
                     and r["code"] == "TEMPORAL_IMPOSSIBILITY"]
-        assert all(f["disposition"] == "proceeded_flagged" for f in findings)
+        assert all(f["disposition"] == "excluded" for f in findings)
 
     def test_subjects_not_empty(self, validated_run):
         result, doc = validated_run

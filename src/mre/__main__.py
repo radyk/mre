@@ -130,7 +130,8 @@ def main(argv: list[str] | None = None) -> int:
         snapshot_id=snap_id, sink_dir=runs_dir,
     )
     p_result = Planner(policy=args.policy).run(
-        snapshot_id=snap_id, store=store, reporter=p_rep
+        snapshot_id=snap_id, store=store, reporter=p_rep,
+        excluded_demand_ids=v_result.excluded_demand_ids,
     )
     p_rep.end(RunStatus.SUCCESS)
     _p(
@@ -159,14 +160,15 @@ def main(argv: list[str] | None = None) -> int:
         "tardiness_weights": {"base_weight": 1.0, "commitment_class_multipliers": {}},
     }
 
-    # Compute planning horizon from demands
+    # Compute planning horizon from schedulable demands only (exclude TEMPORAL_IMPOSSIBILITY)
+    schedulable = [d for d in demands if d["id"] not in v_result.excluded_demand_ids]
     all_earliest = [
         datetime.fromisoformat(d["earliest_start"]).replace(tzinfo=UTC)
-        for d in demands if d.get("earliest_start")
+        for d in schedulable if d.get("earliest_start")
     ]
     all_due = [
         datetime.fromisoformat(d["due"]).replace(tzinfo=UTC)
-        for d in demands if d.get("due")
+        for d in schedulable if d.get("due")
     ]
     horizon_start = min(all_earliest) if all_earliest else datetime(2026, 7, 13, tzinfo=UTC)
     horizon_start = horizon_start.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -258,6 +260,7 @@ def main(argv: list[str] | None = None) -> int:
         module=ModuleCode.M7, purpose="schedule extraction",
         config={}, trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
     )
+    m7_writer = store.extend_snapshot(snap_id)
     extract_result = Extractor().extract(
         solve_values=solve_result.solve_values,
         snapshot_id=snap_id,
@@ -270,7 +273,32 @@ def main(argv: list[str] | None = None) -> int:
         reporter=e_rep,
         cal_windows=var_map.cal_windows,
         op_eligible=var_map.op_eligible,
+        snapshot_writer=m7_writer,
     )
+    m7_writer.finalize()
+
+    # -----------------------------------------------------------------------
+    # schedule.csv output artifact (while e_rep is still open)
+    # -----------------------------------------------------------------------
+    from mre.modules.schedule_csv import generate_schedule_csv
+
+    identity_map = store.load_snapshot(snap_id).read_identity_map()
+    schedule_csv_path = out_dir / "schedule.csv"
+    with open(schedule_csv_path, "w", encoding="utf-8", newline="") as f:
+        generate_schedule_csv(
+            assignments=extract_result.assignments,
+            operations=ops,
+            fulfillments=fuls,
+            demands=demands,
+            identity_map=identity_map,
+            out=f,
+        )
+    e_rep.record_event(
+        status_text="schedule_csv_written",
+        message=f"schedule.csv written: {schedule_csv_path} ({len(extract_result.assignments)} rows)",
+    )
+    _p(f"schedule.csv : {schedule_csv_path} ({len(extract_result.assignments)} rows)")
+
     e_rep.end(RunStatus.SUCCESS)
 
     # Print schedule summary

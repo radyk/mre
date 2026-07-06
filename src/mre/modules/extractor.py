@@ -18,14 +18,28 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 
-from mre.contracts.entities import EntityRef
+from mre.contracts.entities import (
+    Assignment as AssignmentEntity,
+    EntityRef,
+    PhaseWindows,
+    ResourceAssignment,
+    ResourceRequirement,
+    Schedule as ScheduleEntity,
+    ServiceOutcome as ServiceOutcomeEntity,
+    TimeWindow,
+)
+from mre.contracts.provenance import DerivedProvenance, InputRef, ProvenanceSidecar
 from mre.contracts.records import DecisionAlternative
 from mre.contracts.vocabularies import (
     DecisionBasis, DecisionType, DriverCode, RecordTier,
+    ResourceRequirementMode, ScheduleStatus,
 )
 from mre.modules.solver_builder import SolveValues
+
+if TYPE_CHECKING:
+    from mre.modules.snapshot_store import SnapshotWriter
 
 UTC = timezone.utc
 
@@ -55,6 +69,7 @@ class Extractor:
         reporter=None,
         cal_windows: Optional[dict] = None,
         op_eligible: Optional[dict] = None,
+        snapshot_writer: Optional["SnapshotWriter"] = None,
     ) -> ExtractResult:
         """Extract Schedule, Assignments, ServiceOutcomes, and cost ledger.
 
@@ -262,12 +277,161 @@ class Extractor:
             "service_outcomes": len(service_outcomes),
         }
 
+        if snapshot_writer is not None:
+            self._persist_entities(
+                snapshot_writer, snapshot_id,
+                schedule, assignments, service_outcomes,
+                ops_by_id,
+            )
+
         return ExtractResult(
             schedule=schedule,
             assignments=assignments,
             service_outcomes=service_outcomes,
             cost_ledger=cost_ledger,
         )
+
+    # ------------------------------------------------------------------
+    # Persistence helpers
+    # ------------------------------------------------------------------
+
+    def _persist_entities(
+        self,
+        writer: "SnapshotWriter",
+        snapshot_id: str,
+        schedule_dict: dict,
+        assignment_dicts: list[dict],
+        outcome_dicts: list[dict],
+        ops_by_id: dict,
+    ) -> None:
+        """Write Schedule, Assignment, ServiceOutcome entities to the snapshot."""
+
+        def _sidecar(entity_id: str, attr: str, formula: str,
+                     input_refs: list[InputRef]) -> ProvenanceSidecar:
+            return ProvenanceSidecar(
+                entity_id=entity_id,
+                attribute_name=attr,
+                snapshot_id=snapshot_id,
+                provenance_class="derived",
+                payload=DerivedProvenance(
+                    formula_id=formula,
+                    input_refs=input_refs,
+                ),
+            )
+
+        formula_s = "M7.schedule_extraction"
+        formula_a = "M7.assignment_extraction"
+        formula_o = "M7.service_outcome_extraction"
+
+        # --- Schedule ---
+        sched_id = schedule_dict["id"]
+        sched_entity = ScheduleEntity(
+            id=sched_id,
+            snapshot_ref=schedule_dict["snapshot_ref"],
+            costmodel_ref=schedule_dict["costmodel_ref"],
+            solver_run_ref=schedule_dict.get("solver_run_ref"),
+            status=ScheduleStatus(schedule_dict.get("status", "proposed")),
+            summary_metrics=schedule_dict.get("summary_metrics", {}),
+        )
+        sched_prov = [
+            _sidecar(sched_id, "snapshot_ref", formula_s, []),
+            _sidecar(sched_id, "costmodel_ref", formula_s,
+                     [InputRef(entity_id=schedule_dict["costmodel_ref"],
+                               attribute_name="id", snapshot_id=snapshot_id)]),
+            _sidecar(sched_id, "solver_run_ref", formula_s, []),
+            _sidecar(sched_id, "status", formula_s, []),
+            _sidecar(sched_id, "summary_metrics", formula_s, []),
+        ]
+        writer.write_entity(sched_entity, sched_prov)
+
+        # --- Assignments ---
+        for asgn_dict in assignment_dicts:
+            asgn_id = asgn_dict["id"]
+            op_id = asgn_dict["operation_ref"]
+            op = ops_by_id.get(op_id, {})
+            chosen_rid = asgn_dict["resource_id"]
+            run_start = datetime.fromisoformat(asgn_dict["run_start"])
+            run_end = datetime.fromisoformat(asgn_dict["run_end"])
+            if run_start.tzinfo is None:
+                run_start = run_start.replace(tzinfo=UTC)
+            if run_end.tzinfo is None:
+                run_end = run_end.replace(tzinfo=UTC)
+
+            # Reconstruct ResourceRequirement from the operation's first requirement
+            req_dicts = op.get("resource_requirements", [])
+            req = (
+                ResourceRequirement(
+                    mode=ResourceRequirementMode(req_dicts[0]["mode"]),
+                    capability_ref=req_dicts[0].get("capability_ref"),
+                    resource_refs=req_dicts[0].get("resource_refs", []),
+                    count=req_dicts[0].get("count", 1),
+                )
+                if req_dicts
+                else ResourceRequirement(
+                    mode=ResourceRequirementMode.EXPLICIT_SET,
+                    resource_refs=[chosen_rid],
+                )
+            )
+
+            asgn_entity = AssignmentEntity(
+                id=asgn_id,
+                snapshot_id=snapshot_id,
+                operation_ref=op_id,
+                workpackage_ref=asgn_dict["workpackage_ref"],
+                resource_assignments=[
+                    ResourceAssignment(requirement=req, resource_ref=chosen_rid)
+                ],
+                phase_windows=PhaseWindows(
+                    run=[TimeWindow(start=run_start, end=run_end)]
+                ),
+                decision_ref=asgn_dict["decision_ref"],
+            )
+            asgn_prov = [
+                _sidecar(asgn_id, "operation_ref", formula_a,
+                         [InputRef(entity_id=op_id, attribute_name="id",
+                                   snapshot_id=snapshot_id)]),
+                _sidecar(asgn_id, "workpackage_ref", formula_a,
+                         [InputRef(entity_id=asgn_dict["workpackage_ref"],
+                                   attribute_name="id", snapshot_id=snapshot_id)]),
+                _sidecar(asgn_id, "resource_assignments", formula_a,
+                         [InputRef(entity_id=chosen_rid, attribute_name="id",
+                                   snapshot_id=snapshot_id)]),
+                _sidecar(asgn_id, "phase_windows", formula_a,
+                         [InputRef(entity_id=op_id, attribute_name="run_duration",
+                                   snapshot_id=snapshot_id)]),
+                _sidecar(asgn_id, "decision_ref", formula_a, []),
+            ]
+            writer.write_entity(asgn_entity, asgn_prov)
+
+        # --- ServiceOutcomes ---
+        for svc_dict in outcome_dicts:
+            svc_id = svc_dict["id"]
+            completion_dt = datetime.fromisoformat(svc_dict["projected_completion"])
+            if completion_dt.tzinfo is None:
+                completion_dt = completion_dt.replace(tzinfo=UTC)
+            lateness_min = svc_dict["lateness_minutes"]
+
+            svc_entity = ServiceOutcomeEntity(
+                id=svc_id,
+                snapshot_id=snapshot_id,
+                demand_ref=svc_dict["demand_ref"],
+                fulfillment_ref=svc_dict["fulfillment_ref"],
+                projected_completion=completion_dt,
+                lateness=timedelta(minutes=lateness_min),
+                tardiness_cost=svc_dict["tardiness_cost"],
+            )
+            svc_prov = [
+                _sidecar(svc_id, "demand_ref", formula_o,
+                         [InputRef(entity_id=svc_dict["demand_ref"],
+                                   attribute_name="id", snapshot_id=snapshot_id)]),
+                _sidecar(svc_id, "fulfillment_ref", formula_o,
+                         [InputRef(entity_id=svc_dict["fulfillment_ref"],
+                                   attribute_name="id", snapshot_id=snapshot_id)]),
+                _sidecar(svc_id, "projected_completion", formula_o, []),
+                _sidecar(svc_id, "lateness", formula_o, []),
+                _sidecar(svc_id, "tardiness_cost", formula_o, []),
+            ]
+            writer.write_entity(svc_entity, svc_prov)
 
     def _assignment_driver(
         self,

@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import re
 import statistics
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -61,6 +61,7 @@ class ValidationResult:
     blocker_count: int
     error_count: int
     warning_count: int
+    excluded_demand_ids: set[str] = field(default_factory=set)
 
 
 class Validator:
@@ -85,6 +86,7 @@ class Validator:
                 family_by_prod_id[p["id"]] = fam
 
         # --- Check 1: TEMPORAL_IMPOSSIBILITY ---
+        excluded_demand_ids: set[str] = set()
         for d in demands:
             due_raw = d.get("due")
             if not due_raw:
@@ -97,6 +99,7 @@ class Validator:
                 continue
 
             if due < now:
+                excluded_demand_ids.add(d["id"])
                 reporter.record_finding(
                     code=FindingCode.TEMPORAL_IMPOSSIBILITY,
                     severity=FindingSeverity.WARNING,
@@ -105,9 +108,9 @@ class Validator:
                         "demand_id": d["id"],
                         "due": due_raw,
                         "run_date": now.isoformat(),
-                        "reason": "Due date is in the past",
+                        "reason": "Due date is in the past; demand excluded from planning",
                     },
-                    disposition=FindingDisposition.PROCEEDED_FLAGGED,
+                    disposition=FindingDisposition.EXCLUDED,
                     tier=RecordTier.SUPPORTING,
                 )
 
@@ -342,4 +345,5 @@ class Validator:
             blocker_count=blocker_count,
             error_count=counts.get("error", 0),
             warning_count=counts.get("warning", 0),
+            excluded_demand_ids=excluded_demand_ids,
         )

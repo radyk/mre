@@ -72,12 +72,17 @@ class Planner:
         snapshot_id: str,
         store: SnapshotStore,
         reporter: Reporter,
+        excluded_demand_ids: Optional[set[str]] = None,
     ) -> PlannerResult:
         reader = store.load_snapshot(snapshot_id)
         writer = store.extend_snapshot(snapshot_id)
 
-        # Load reference data from snapshot
-        demands = {d["id"]: d for d in reader.iter_entities("demand")}
+        # Load reference data from snapshot; skip TEMPORAL_IMPOSSIBILITY-excluded demands
+        _excluded = excluded_demand_ids or set()
+        demands = {
+            d["id"]: d for d in reader.iter_entities("demand")
+            if d["id"] not in _excluded
+        }
         products = {p["id"]: p for p in reader.iter_entities("product")}
         processes = {pr["id"]: pr for pr in reader.iter_entities("process")}
         specs = {s["id"]: s for s in reader.iter_entities("operationspec")}

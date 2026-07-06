@@ -513,3 +513,50 @@ removed (demand cancellation scenario), (2) WO-1002 due date tightened from
 rate increased 5.0 -> 7.5 in costmodel.json version 2 (supplier price increase
 scenario). These three change types (removed entity, field change, config change)
 cover the most common production planning re-run triggers.
+
+---
+
+### Amendment — 2026-07-06 (post-Phase-3 gap fixes)
+
+**Fix 1 — Schedule entity persistence (M7 write contract).** M7 built
+Schedule/Assignment/ServiceOutcome as plain dicts in the `ExtractResult` struct
+but never wrote them to the snapshot store. The write contract (docs/01 §7.3)
+requires every non-universal attribute to have a matching ProvenanceSidecar.
+M7's `Extractor.extract()` now accepts an optional `snapshot_writer` parameter.
+When provided (by `__main__.py` via `store.extend_snapshot(snap_id)`), the
+extractor builds canonical Pydantic models — `Schedule`, `Assignment` (with
+`ResourceAssignment` + `PhaseWindows`), `ServiceOutcome` (with `lateness:
+timedelta`) — and writes them with `DerivedProvenance(formula_id="M7.*_extraction")`
+sidecars for all five non-universal attributes on each entity type. The
+SnapshotWriter `extend=True` mode appends to existing entity JSONL files without
+overwriting the manifest, so M1/M4 entities are preserved.
+
+A new `schedule.csv` output artifact is also written at `mre_output/schedule.csv`:
+one row per assignment, columns `work_orders`, `op_seq`, `setup_family`, `machine`,
+`start`, `end`, `duration_min`, `production_cost`, sorted by machine then start.
+External names are resolved via the `IdentityMap.external_refs()` API (no UUIDs
+in output). Merged WorkPackages show both WO names joined with `+`.
+
+18 new tests in `tests/test_schedule_persist.py`.
+
+**Fix 2 — Ghost job exclusion (TEMPORAL_IMPOSSIBILITY policy).** WO-PAST-001
+(`due=2025-01-15`) was reaching the solver, dragging `horizon_start` to 2024-12-20
+and producing a nonsense −37,739-minute lateness metric in the ServiceOutcome.
+**Policy decision: EXCLUDED**, not clamped. Clamping would produce synthetic
+`earliest_start` dates that could mislead the solver and obscure the real data
+problem. Exclusion is the honest answer: a demand past its due date cannot be
+feasibly scheduled, and the finding should say so clearly.
+
+Changes:
+- `Validator`: `TEMPORAL_IMPOSSIBILITY` disposition changed from
+  `PROCEEDED_FLAGGED` to `EXCLUDED`. The validator now returns
+  `ValidationResult.excluded_demand_ids: set[str]`.
+- `Planner.run()`: new `excluded_demand_ids` parameter; excluded demands are
+  filtered before batch construction — no Fulfillment or WorkPackage is created
+  for them.
+- `__main__.py`: passes `v_result.excluded_demand_ids` to `Planner.run()` and
+  filters `demands` to `schedulable` (non-excluded) before computing
+  `horizon_start`. `horizon_start` now derives only from schedulable work.
+
+Two existing tests that asserted `disposition == "proceeded_flagged"` for
+TEMPORAL_IMPOSSIBILITY were updated to assert `disposition == "excluded"`.
