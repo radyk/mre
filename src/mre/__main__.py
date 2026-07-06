@@ -53,11 +53,14 @@ def main(argv: list[str] | None = None) -> int:
     runs_dir = out_dir / "runs"
     store    = SnapshotStore(out_dir / "snapshots")
 
-    # Delete stale snapshot directory so old entity files never poison a fresh run.
+    # Delete stale output so previous-run records never appear in the new index.
     snap_dir = out_dir / "snapshots" / snap_id
     if snap_dir.exists():
         shutil.rmtree(snap_dir)
         _p(f"cleared stale snapshot: {snap_dir}")
+    if runs_dir.exists():
+        shutil.rmtree(runs_dir)
+        _p(f"cleared stale runs: {runs_dir}")
 
     _p(f"extract_dir : {extract_dir}")
     _p(f"output_dir  : {out_dir}")
