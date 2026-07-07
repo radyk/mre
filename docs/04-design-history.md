@@ -625,3 +625,47 @@ non-interactive path; the REPL phrase is the dialogue-mode path.
 `docs/02-evidence-contract-spec.md` should be updated at next spec review.
 
 **524 tests green** after this amendment.
+
+---
+
+### 2026-07-06 — LLM testimony validator: single-source-of-truth refactor
+
+**Root cause.** The `LLMRenderer` had two parallel derivations of "what values
+is the LLM allowed to quote":
+
+1. `_llm_render` builds a prompt that includes a **PRE-COMPUTED FACTS** section
+   (`_extract_precomputed_facts`) alongside the template-rendered evidence chain.
+2. `_validate_testimony` re-derives the verifiable set from `bundle_body + kf_text`
+   — a different combination that excludes any future content added to the prompt
+   but not present in those two sources.
+
+This is a latent defect: as soon as any content is added to the prompt that is
+not also in `kf_text` or the rendered body, the validator incorrectly rejects
+the LLM's legitimate quote of that content.  The recurring production failure
+(validator flagging `"2026-07-13T23:59"` as unverifiable even though the demand's
+due date appears in the prompt headline) revealed this fragility.
+
+**Decision.** Collapse the two paths into one: `_build_prompt_material(bundle,
+regen_note=None)` returns `(prompt_text, known_ts, known_time, known_machines)`.
+The three verifiable-value sets are extracted from `base_evidence` (the prompt
+text without the regen_note header) using the same three regexes that `_validate_testimony`
+applies to the LLM's response.  Both `render()` and the validator use this single
+function.  `_llm_render` and `_collect_known_time_values` are removed.
+
+**Critical safety rule.** When regenerating, the `known_*` sets from the
+*first* prompt are reused for validating the second response.  The regen prompt
+prepends a header that repeats the rejected values ("PREVIOUS ATTEMPT REJECTED:
+unverifiable timestamp '2026-07-14T08:39'").  Extracting known sets from the
+regen prompt text would inadvertently whitelist the rejected value — the validator
+would then accept any response quoting the same bad timestamp.  Extracting from
+`base_evidence` only (stripping the header before scanning) prevents this.
+
+**Tests.** Three integration tests added (through `renderer.render(bundle)` with
+`FakeLLMClient`): (1) LLM quoting due-date with seconds stripped passes, (2) LLM
+inventing a timestamp absent from the prompt fails and falls back, (3) `known_ts`
+and `known_time` from `_build_prompt_material` contain the expected prompt values.
+Thirteen existing tests that called `_validate_testimony(text, bundle)` directly
+are updated to go through `_build_prompt_material(bundle)` to get the known sets —
+this is now the only live path and the only tested path.
+
+**527 tests green** after this amendment.

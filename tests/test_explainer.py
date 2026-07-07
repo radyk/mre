@@ -1335,17 +1335,19 @@ class TestLLMTestimonyValidation:
         from mre.modules.renderers import LLMRenderer
         renderer = LLMRenderer(api_key="")
         bundle = _make_late_bundle_for_validation()
-        # Wrong timestamp — not in bundle (14:00 UTC, not 08:39)
+        _, known_ts, known_time, known_machines = renderer._build_prompt_material(bundle)
+        # Wrong timestamp — not in the prompt (14:00 UTC, not 08:39)
         bad_text = "WO-2001 completed at 2026-07-14T08:39:59Z. [record: met-epoch-001]"
-        issues = renderer._validate_testimony(bad_text, bundle)
+        issues = renderer._validate_testimony(bad_text, known_ts, known_time, known_machines)
         assert any("08:39" in i or "unverifiable timestamp" in i for i in issues)
 
     def test_correct_timestamp_passes_validation(self):
         from mre.modules.renderers import LLMRenderer
         renderer = LLMRenderer(api_key="")
         bundle = _make_late_bundle_for_validation()
+        _, known_ts, known_time, known_machines = renderer._build_prompt_material(bundle)
         good_text = "WO-2001 completed at 2026-07-14 14:00 UTC. [record: met-epoch-001]"
-        issues = renderer._validate_testimony(good_text, bundle)
+        issues = renderer._validate_testimony(good_text, known_ts, known_time, known_machines)
         ts_issues = [i for i in issues if "unverifiable timestamp" in i]
         assert not ts_issues
 
@@ -1353,18 +1355,20 @@ class TestLLMTestimonyValidation:
         from mre.modules.renderers import LLMRenderer
         renderer = LLMRenderer(api_key="")
         bundle = _make_late_bundle_for_validation()
+        _, known_ts, known_time, known_machines = renderer._build_prompt_material(bundle)
         # Factual sentence with no [record:] footnote
         bad_text = "WO-2001 was 840 minutes late due to machine constraints."
-        issues = renderer._validate_testimony(bad_text, bundle)
+        issues = renderer._validate_testimony(bad_text, known_ts, known_time, known_machines)
         assert any("footnote" in i for i in issues)
 
     def test_unverifiable_machine_name_caught(self):
         from mre.modules.renderers import LLMRenderer
         renderer = LLMRenderer(api_key="")
         bundle = _make_late_bundle_for_validation()
-        # M-CAST-99 is not in the bundle
+        _, known_ts, known_time, known_machines = renderer._build_prompt_material(bundle)
+        # M-CAST-99 is not in the prompt
         bad_text = "M-CAST-99 caused the delay. [record: met-late-001]"
-        issues = renderer._validate_testimony(bad_text, bundle)
+        issues = renderer._validate_testimony(bad_text, known_ts, known_time, known_machines)
         assert any("M-CAST-99" in i or "unverifiable machine" in i for i in issues)
 
     # --- wrong timestamp triggers fallback ---
@@ -1431,9 +1435,10 @@ class TestLLMTestimonyValidation:
         from mre.modules.renderers import LLMRenderer
         renderer = LLMRenderer(api_key="")
         bundle = _make_late_bundle_for_validation()
-        # Bundle has due_date "2026-07-13T23:59:00Z"; LLM drops seconds and Z
+        _, known_ts, known_time, known_machines = renderer._build_prompt_material(bundle)
+        # Prompt has due_date "2026-07-13T23:59:00Z"; LLM drops seconds and Z
         text = "WO-2001 was due 2026-07-13T23:59. [record: met-late-001]"
-        issues = renderer._validate_testimony(text, bundle)
+        issues = renderer._validate_testimony(text, known_ts, known_time, known_machines)
         ts_issues = [i for i in issues if "unverifiable timestamp" in i]
         assert not ts_issues, ts_issues
 
@@ -1442,29 +1447,32 @@ class TestLLMTestimonyValidation:
         from mre.modules.renderers import LLMRenderer
         renderer = LLMRenderer(api_key="")
         bundle = _make_late_bundle_for_validation()
+        _, known_ts, known_time, known_machines = renderer._build_prompt_material(bundle)
         text = "WO-2001 was due 2026-07-13 23:59. [record: met-late-001]"
-        issues = renderer._validate_testimony(text, bundle)
+        issues = renderer._validate_testimony(text, known_ts, known_time, known_machines)
         ts_issues = [i for i in issues if "unverifiable timestamp" in i]
         assert not ts_issues, ts_issues
 
     def test_date_only_form_passes(self):
-        """Date-only 'YYYY-MM-DD' must pass when any bundle timestamp shares that date."""
+        """Date-only 'YYYY-MM-DD' must pass when any prompt timestamp shares that date."""
         from mre.modules.renderers import LLMRenderer
         renderer = LLMRenderer(api_key="")
         bundle = _make_late_bundle_for_validation()
+        _, known_ts, known_time, known_machines = renderer._build_prompt_material(bundle)
         text = "WO-2001 was due on 2026-07-13. [record: met-late-001]"
-        issues = renderer._validate_testimony(text, bundle)
+        issues = renderer._validate_testimony(text, known_ts, known_time, known_machines)
         ts_issues = [i for i in issues if "unverifiable timestamp" in i]
         assert not ts_issues, ts_issues
 
     def test_completion_with_z_suffix_passes(self):
-        """'YYYY-MM-DDTHH:MM:SSZ' must match bundle's 'YYYY-MM-DD HH:MM UTC'."""
+        """'YYYY-MM-DDTHH:MM:SSZ' must match prompt's 'YYYY-MM-DD HH:MM UTC'."""
         from mre.modules.renderers import LLMRenderer
         renderer = LLMRenderer(api_key="")
         bundle = _make_late_bundle_for_validation()
-        # Bundle has completion_iso "2026-07-14 14:00 UTC"
+        _, known_ts, known_time, known_machines = renderer._build_prompt_material(bundle)
+        # Prompt has completion_iso "2026-07-14 14:00 UTC"
         text = "WO-2001 completed 2026-07-14T14:00:00Z. [record: met-epoch-001]"
-        issues = renderer._validate_testimony(text, bundle)
+        issues = renderer._validate_testimony(text, known_ts, known_time, known_machines)
         ts_issues = [i for i in issues if "unverifiable timestamp" in i]
         assert not ts_issues, ts_issues
 
@@ -1473,51 +1481,56 @@ class TestLLMTestimonyValidation:
         from mre.modules.renderers import LLMRenderer
         renderer = LLMRenderer(api_key="")
         bundle = _make_late_bundle_for_validation()
+        _, known_ts, known_time, known_machines = renderer._build_prompt_material(bundle)
         # Due date is 2026-07-13 23:59; using 14:00 on same date is wrong
         text = "WO-2001 was due 2026-07-13T14:00. [record: met-late-001]"
-        issues = renderer._validate_testimony(text, bundle)
+        issues = renderer._validate_testimony(text, known_ts, known_time, known_machines)
         ts_issues = [i for i in issues if "unverifiable timestamp" in i]
         assert ts_issues, "Wrong hour should have been flagged"
 
     # --- time-unit number normalization ---
 
     def test_hours_notation_passes(self):
-        """'14h' must pass against a bundle with 840-minute lateness."""
+        """'14h' must pass against a prompt with 840-minute lateness."""
         from mre.modules.renderers import LLMRenderer
         renderer = LLMRenderer(api_key="")
         bundle = _make_late_bundle_for_validation()
+        _, known_ts, known_time, known_machines = renderer._build_prompt_material(bundle)
         text = "WO-2001 was 14h late. [record: met-late-001]"
-        issues = renderer._validate_testimony(text, bundle)
+        issues = renderer._validate_testimony(text, known_ts, known_time, known_machines)
         time_issues = [i for i in issues if "unverifiable time value" in i]
         assert not time_issues, time_issues
 
     def test_hours_full_word_passes(self):
-        """'14 hours' must pass against 840-minute bundle."""
+        """'14 hours' must pass against 840-minute prompt."""
         from mre.modules.renderers import LLMRenderer
         renderer = LLMRenderer(api_key="")
         bundle = _make_late_bundle_for_validation()
+        _, known_ts, known_time, known_machines = renderer._build_prompt_material(bundle)
         text = "WO-2001 was 14 hours late. [record: met-late-001]"
-        issues = renderer._validate_testimony(text, bundle)
+        issues = renderer._validate_testimony(text, known_ts, known_time, known_machines)
         time_issues = [i for i in issues if "unverifiable time value" in i]
         assert not time_issues, time_issues
 
     def test_minutes_decimal_passes(self):
-        """'840.0 min' must pass (bundle records 840.0 minutes)."""
+        """'840.0 min' must pass (prompt has 840 minutes lateness)."""
         from mre.modules.renderers import LLMRenderer
         renderer = LLMRenderer(api_key="")
         bundle = _make_late_bundle_for_validation()
+        _, known_ts, known_time, known_machines = renderer._build_prompt_material(bundle)
         text = "WO-2001 was 840.0 min late. [record: met-late-001]"
-        issues = renderer._validate_testimony(text, bundle)
+        issues = renderer._validate_testimony(text, known_ts, known_time, known_machines)
         time_issues = [i for i in issues if "unverifiable time value" in i]
         assert not time_issues, time_issues
 
     def test_wrong_hours_fails(self):
-        """'15h' must be flagged — 15h = 900 min, bundle has 840 min."""
+        """'15h' must be flagged — 15h = 900 min, prompt has 840 min."""
         from mre.modules.renderers import LLMRenderer
         renderer = LLMRenderer(api_key="")
         bundle = _make_late_bundle_for_validation()
+        _, known_ts, known_time, known_machines = renderer._build_prompt_material(bundle)
         text = "WO-2001 was 15h late. [record: met-late-001]"
-        issues = renderer._validate_testimony(text, bundle)
+        issues = renderer._validate_testimony(text, known_ts, known_time, known_machines)
         time_issues = [i for i in issues if "unverifiable time value" in i]
         assert time_issues, "15h (= 900 min, not 840) should have been flagged"
 
@@ -1538,3 +1551,52 @@ class TestLLMTestimonyValidation:
         result = renderer.render(bundle)
         assert "LLM validation failed" not in result
         assert "register: testimony" in result
+
+    # --- integration: single-source-of-truth render path ---
+
+    def test_due_date_from_prompt_headline_passes_via_render(self):
+        """Integration (real render path): LLM quotes due-date with seconds dropped — must pass.
+
+        The headline in the prompt reads "(2026-07-13T23:59:00Z)" and the pre-computed
+        facts show "due_date: 2026-07-13T23:59:00Z".  The LLM abbreviates to "T23:59"
+        (dropping seconds and Z).  The validator must accept this because the value
+        is present in the prompt at minute granularity.
+        """
+        from mre.modules.renderers import LLMRenderer
+        bundle = _make_late_bundle_for_validation()
+        fake = FakeLLMClient(
+            "WO-2001 was due on 2026-07-13T23:59 and finished 840 min late. "
+            "[record: met-late-001]"
+        )
+        renderer = LLMRenderer(_client=fake)
+        result = renderer.render(bundle)
+        assert "LLM validation failed" not in result, result
+        assert "register: testimony" in result
+
+    def test_timestamp_absent_from_prompt_triggers_fallback(self):
+        """Integration (real render path): LLM invents a timestamp not in the prompt — must fail."""
+        from mre.modules.renderers import LLMRenderer
+        bundle = _make_late_bundle_for_validation()
+        # 2027-06-15T10:00 appears nowhere in the prompt — pure hallucination.
+        seq = FakeLLMClientSequence([
+            "WO-2001 completed on 2027-06-15T10:00. [record: met-late-001]",
+            "WO-2001 completed on 2027-06-15T10:00. [record: met-late-001]",
+        ])
+        renderer = LLMRenderer(_client=seq)
+        result = renderer.render(bundle)
+        assert "LLM validation failed" in result
+        assert "register: testimony" in result
+
+    def test_build_prompt_material_known_sets_contain_prompt_values(self):
+        """_build_prompt_material must expose every value shown to the LLM as verifiable."""
+        from mre.modules.renderers import LLMRenderer
+        bundle = _make_late_bundle_for_validation()
+        renderer = LLMRenderer(api_key="")
+        _, known_ts, known_time, known_machines = renderer._build_prompt_material(bundle)
+        # due_date = "2026-07-13T23:59:00Z" -> (2026, 7, 13, 23, 59)
+        assert (2026, 7, 13, 23, 59) in known_ts
+        # completion_iso = "2026-07-14 14:00 UTC" -> (2026, 7, 14, 14, 0)
+        assert (2026, 7, 14, 14, 0) in known_ts
+        # lateness 840 min and its hour equivalent 14.0 both verifiable
+        assert 840.0 in known_time
+        assert 14.0 in known_time

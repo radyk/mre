@@ -71,33 +71,6 @@ def _to_minutes(value: float, unit: str) -> float:
     return value * 60.0 if unit.lower().startswith('h') else value
 
 
-def _collect_known_time_values(bundle: "ExplanationBundle") -> set:
-    """Return all acceptable numeric time values from the bundle.
-
-    For each minutes metric, also includes the hours equivalent so that
-    prose using '14h' or '14.0 hours' passes when the bundle records 840 min.
-    """
-    values: set[float] = set()
-    for rec in bundle.ordered_records:
-        if rec.get("record_type") == "metric":
-            v = rec.get("value")
-            if not isinstance(v, (int, float)):
-                continue
-            v = float(v)
-            unit = rec.get("unit", "").lower()
-            values.add(v)
-            values.add(round(v, 1))
-            if "minute" in unit:
-                h = v / 60.0
-                values.add(h)
-                values.add(round(h, 1))
-                values.add(float(int(h)))
-    for kv in bundle.key_facts.values():
-        if isinstance(kv, (int, float)):
-            kv = float(kv)
-            values.add(kv)
-            values.add(round(kv, 1))
-    return values
 
 
 # ---------------------------------------------------------------------------
@@ -505,11 +478,15 @@ class LLMRenderer:
                 + " | register: testimony]"
             )
 
-        text = self._llm_render(bundle)
-        issues = self._validate_testimony(text, bundle)
+        prompt, known_ts, known_time, known_machines = self._build_prompt_material(bundle)
+        text = self._call_llm(prompt)
+        issues = self._validate_testimony(text, known_ts, known_time, known_machines)
         if issues:
-            text = self._llm_render(bundle, validation_issues=issues)
-            issues2 = self._validate_testimony(text, bundle)
+            regen_prompt, *_ = self._build_prompt_material(bundle, regen_note=issues)
+            text = self._call_llm(regen_prompt)
+            # Validate against the ORIGINAL known sets — not the regen prompt, which
+            # contains the rejected output in its header and must not whitelist itself.
+            issues2 = self._validate_testimony(text, known_ts, known_time, known_machines)
             if issues2:
                 body = TemplateRenderer()._render_body(bundle)
                 warn = "[LLM validation failed: {}; fell back to template]".format(
@@ -533,24 +510,24 @@ class LLMRenderer:
         text = self._llm_judgment(question, history)
         return text + f"\n[rendered by: LLM ({self._model}) | register: judgment]"
 
-    def _llm_render(
-        self, bundle: ExplanationBundle, validation_issues: Optional[list[str]] = None
-    ) -> str:
+    def _build_prompt_material(
+        self,
+        bundle: ExplanationBundle,
+        regen_note: Optional[list[str]] = None,
+    ) -> tuple:
+        """Return (prompt_text, known_ts, known_time_values, known_machine_names).
+
+        The three verifiable-value sets are extracted from the base evidence text
+        (prompt without the regen_note header).  This guarantees:
+        - anything shown to the LLM in the evidence section is verifiable, and
+        - rejected values in a regen_note header cannot accidentally whitelist themselves.
+        """
         context = TemplateRenderer()._render_body(bundle)
         facts = self._extract_precomputed_facts(bundle)
         facts_section = "\n".join(f"  {k}: {v}" for k, v in facts.items()) or "  (none)"
 
-        regen_note = ""
-        if validation_issues:
-            regen_note = (
-                "PREVIOUS ATTEMPT REJECTED — issues found:\n"
-                + "\n".join(f"  - {i}" for i in validation_issues)
-                + "\nFix every issue. Do NOT compute values; quote only from evidence below.\n\n"
-            )
-
-        prompt = (
-            regen_note
-            + "You are a manufacturing scheduling assistant. "
+        base_evidence = (
+            "You are a manufacturing scheduling assistant. "
             "Report on the solved schedule using ONLY the evidence below.\n\n"
             "PRE-COMPUTED FACTS (copy these values exactly — never recompute):\n"
             + facts_section + "\n\n"
@@ -565,11 +542,41 @@ class LLMRenderer:
             "5. Answer in 2-3 sentences.\n\n"
             + "QUESTION: " + bundle.question + "\n"
         )
+
+        header = ""
+        if regen_note:
+            header = (
+                "PREVIOUS ATTEMPT REJECTED — issues found:\n"
+                + "\n".join(f"  - {i}" for i in regen_note)
+                + "\nFix every issue. Do NOT compute values; quote only from evidence below.\n\n"
+            )
+
+        prompt_text = header + base_evidence
+
+        # Extract verifiable sets from base_evidence only — not from the regen header.
+        known_ts: set = set()
+        for ts_str in _TS_FULL_RE.findall(base_evidence):
+            tup = _to_minute_tuple(ts_str)
+            if tup is not None:
+                known_ts.add(tup)
+
+        known_time: set = set()
+        for m in _TIME_NUM_RE.finditer(base_evidence):
+            val = float(m.group(1))
+            normalized = _to_minutes(val, m.group(2))
+            known_time.add(val)
+            known_time.add(normalized)
+
+        known_machines: set = set(_MACHINE_RE.findall(base_evidence))
+
+        return prompt_text, known_ts, known_time, known_machines
+
+    def _call_llm(self, prompt_text: str) -> str:
         import anthropic  # type: ignore
         response = self._client.messages.create(
             model=self._model,
             max_tokens=512,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[{"role": "user", "content": prompt_text}],
         )
         return response.content[0].text
 
@@ -589,43 +596,40 @@ class LLMRenderer:
         return facts
 
     def _validate_testimony(
-        self, text: str, bundle: ExplanationBundle
+        self,
+        text: str,
+        known_ts: set,
+        known_time: set,
+        known_machines: set,
     ) -> list[str]:
-        """Return a list of validation issues; empty list means text is acceptable."""
-        issues: list[str] = []
+        """Return validation issues; empty list means text is acceptable.
 
-        bundle_body = TemplateRenderer()._render_body(bundle)
-        kf_text = " ".join(str(v) for v in bundle.key_facts.values() if v is not None)
-        all_bundle_text = bundle_body + " " + kf_text
+        All three known-value sets must come from _build_prompt_material so that
+        only values actually shown to the LLM are considered verifiable.
+        """
+        issues: list[str] = []
 
         # 1. Timestamps: parse both sides to (year,month,day,hour,minute) and compare.
         #    Tolerates dropped seconds, dropped Z, space-vs-T, UTC suffix, date-only.
-        known_ts: set[tuple] = set()
-        for ts_str in _TS_FULL_RE.findall(all_bundle_text):
-            tup = _to_minute_tuple(ts_str)
-            if tup is not None:
-                known_ts.add(tup)
         for ts_str in _TS_FULL_RE.findall(text):
             tup = _to_minute_tuple(ts_str)
             if tup is not None and not _ts_matches(tup, known_ts):
                 issues.append(f"unverifiable timestamp '{ts_str}'")
 
         # 2. Time-unit numbers: normalize min/h/hours to minutes before comparing.
-        #    "14h", "14.0 hours", "840 min", "840.0 min" all pass against a 840-min metric.
-        known_time = _collect_known_time_values(bundle)
+        #    "14h", "14.0 hours", "840 min", "840.0 min" all pass against a 840-min prompt.
         for m in _TIME_NUM_RE.finditer(text):
             val = float(m.group(1))
             normalized = _to_minutes(val, m.group(2))
             if val not in known_time and normalized not in known_time:
                 issues.append(f"unverifiable time value '{m.group(0).strip()}'")
 
-        # 3. Machine names: every M-XXXX in prose must appear in bundle
-        known_machines = set(_MACHINE_RE.findall(all_bundle_text))
+        # 3. Machine names: every M-XXXX in prose must appear in the prompt.
         for machine in _MACHINE_RE.findall(text):
             if machine not in known_machines:
                 issues.append(f"unverifiable machine name '{machine}'")
 
-        # 4. Footnotes: if any factual sentence exists, at least one must be footnoted
+        # 4. Footnotes: if any factual sentence exists, at least one must be footnoted.
         prose = re.sub(r'\n\[rendered by:.*', '', text, flags=re.DOTALL)
         sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', prose) if s.strip()]
         factual = [s for s in sentences if re.search(r'\d|M-[A-Z]|WO-', s)]
