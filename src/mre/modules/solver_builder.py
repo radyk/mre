@@ -115,7 +115,18 @@ _HORIZON_DAYS = 60  # planning horizon length if not derivable from data
 
 
 class SolverBuilder:
-    """Build a CP-SAT scheduling model from six canonical inputs."""
+    """Build a CP-SAT scheduling model from six canonical inputs.
+
+    Constructor parameters:
+        reference_date  Planning floor (optional): no operation may start
+                        before this date.  Pass for real-data runs to prevent
+                        the solver from scheduling in the past.  This is solver
+                        configuration, not a canonical model input, so it lives
+                        on the constructor rather than build().
+    """
+
+    def __init__(self, reference_date: Optional[datetime] = None) -> None:
+        self._reference_date = reference_date
 
     def build(
         self,
@@ -390,7 +401,13 @@ class SolverBuilder:
         workpackages: dict[str, dict],
         demands: dict[str, dict],
     ) -> tuple[datetime, datetime]:
-        """Compute planning horizon from demand data."""
+        """Compute planning horizon from demand data.
+
+        self._reference_date, when set, acts as a hard floor: the horizon
+        start is max(min(earliest_starts), reference_date).  This prevents
+        the solver from placing operations before the planning reference date
+        (i.e., in the past relative to the snapshot).
+        """
         starts: list[datetime] = []
         ends: list[datetime] = []
 
@@ -406,13 +423,19 @@ class SolverBuilder:
 
         if starts:
             hs = min(starts)
-            # Normalize to start of day
             hs = hs.replace(hour=0, minute=0, second=0, microsecond=0)
         else:
             hs = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
 
+        # Clamp to reference_date: operations must not start before the planning date.
+        if self._reference_date is not None:
+            ref_floor = self._reference_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            if ref_floor.tzinfo is None:
+                ref_floor = ref_floor.replace(tzinfo=UTC)
+            hs = max(hs, ref_floor)
+
         if ends:
-            he = max(ends) + timedelta(days=7)
+            he = max(ends) + timedelta(days=90)
         else:
             he = hs + timedelta(days=_HORIZON_DAYS)
 

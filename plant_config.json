@@ -1,0 +1,133 @@
+{
+  "reference_date": "2025-03-22",
+  "workcenter_defaults": {
+    "parallel_units": 1,
+    "shift_days": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "shift_start": "07:00",
+    "shift_end": "19:00"
+  },
+  "workcenters": {
+    "D000E": {
+      "parallel_units": 1
+    },
+    "D202F": {
+      "parallel_units": 1
+    },
+    "D202G": {
+      "parallel_units": 1
+    },
+    "D202H": {
+      "parallel_units": 1
+    },
+    "D202J": {
+      "parallel_units": 1
+    },
+    "D202X": {
+      "parallel_units": 1
+    },
+    "D202Y": {
+      "parallel_units": 1
+    },
+    "D202Z": {
+      "parallel_units": 1
+    },
+    "D2030": {
+      "parallel_units": 1
+    },
+    "D2031": {
+      "parallel_units": 1
+    },
+    "D2032": {
+      "parallel_units": 1
+    },
+    "D2033": {
+      "parallel_units": 1
+    },
+    "D203K": {
+      "parallel_units": 1
+    },
+    "D203L": {
+      "parallel_units": 1
+    },
+    "D204M": {
+      "parallel_units": 1
+    },
+    "D204N": {
+      "parallel_units": 1
+    },
+    "D2052": {
+      "parallel_units": 1
+    },
+    "D205A": {
+      "parallel_units": 1
+    },
+    "D205U": {
+      "parallel_units": 1
+    },
+    "D205Y": {
+      "parallel_units": 1
+    },
+    "D205Z": {
+      "parallel_units": 1
+    },
+    "D2060": {
+      "parallel_units": 1
+    },
+    "D2062": {
+      "parallel_units": 1
+    },
+    "D2063": {
+      "parallel_units": 1
+    },
+    "D2066": {
+      "parallel_units": 1
+    },
+    "D2067": {
+      "parallel_units": 1
+    },
+    "D2068": {
+      "parallel_units": 1
+    },
+    "D2069": {
+      "parallel_units": 1
+    },
+    "D206A": {
+      "parallel_units": 1
+    },
+    "D206D": {
+      "parallel_units": 1
+    },
+    "D206G": {
+      "parallel_units": 1
+    },
+    "D206J": {
+      "parallel_units": 1
+    },
+    "D206P": {
+      "parallel_units": 1
+    },
+    "D3001": {
+      "parallel_units": 1
+    },
+    "D3002": {
+      "parallel_units": 1
+    },
+    "D3007": {
+      "parallel_units": 1
+    },
+    "D3014": {
+      "parallel_units": 1
+    },
+    "DD005": {
+      "parallel_units": 1
+    }
+  },
+  "facility_overrides": {}
+}

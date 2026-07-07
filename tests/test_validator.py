@@ -11,6 +11,11 @@ from mre.contracts import (
     Demand, ProvenanceSidecar, SynthesizedProvenance, ProvenanceClass,
     CommitmentClass, DemandStatus, Quantity,
 )
+from mre.contracts.entities import (
+    Calendar, OperationSpec, Process, Product, Resource,
+    ResourceRequirement, ResourceRequirementMode, ResourceType,
+    ProcessStatus,
+)
 from mre.contracts.vocabularies import (
     ModuleCode, RunStatus, RecordTier, FindingCode, FindingSeverity, FindingDisposition,
 )
@@ -21,6 +26,23 @@ from mre.reporter import Reporter
 
 SAMPLE_DATA = Path(__file__).parent.parent / "sample_data"
 UTC = timezone.utc
+
+_UNIVERSAL = frozenset({"id", "snapshot_id", "external_refs"})
+
+
+def _synth_prov(entity, snap_id: str) -> list:
+    """Create SynthesizedProvenance for every non-universal field of entity."""
+    return [
+        ProvenanceSidecar(
+            entity_id=entity.id,
+            attribute_name=attr,
+            snapshot_id=snap_id,
+            provenance_class=ProvenanceClass.SYNTHESIZED,
+            payload=SynthesizedProvenance(generator_id="test"),
+        )
+        for attr in type(entity).model_fields
+        if attr not in _UNIVERSAL
+    ]
 
 
 @pytest.fixture(scope="module")
@@ -168,7 +190,7 @@ class TestValueOutOfRange:
             id="d-zero-qty", snapshot_id=snap_id,
             product_ref="prod-001",
             quantity=Quantity(value=0.0, uom="EA"),
-            due=datetime(2026, 6, 1, tzinfo=UTC),
+            due=datetime(2035, 6, 1, tzinfo=UTC),
             commitment_class=CommitmentClass.STANDARD,
             status=DemandStatus.OPEN,
         )
@@ -200,3 +222,103 @@ class TestValueOutOfRange:
             and r["code"] == "VALUE_OUT_OF_RANGE"
         ]
         assert len(findings) >= 1
+
+
+class TestInfeasibleSubset:
+    """Pre-solve window-fit check: operation > max shift window → excluded.
+
+    Derived from CLAUDE.md task 2 and the Phase 2 INFEASIBLE debugging session
+    (first solve failure converted to a pre-solve validator finding).
+    Test scenario: qty=1, run_rate=3000 min >> 720-min shift window.
+    """
+
+    @pytest.fixture(scope="class")
+    def infeasible_run(self, tmp_path_factory):
+        snap_id = "snap-infeasible-test"
+        tmp = tmp_path_factory.mktemp("infeasible")
+        store = SnapshotStore(tmp / "snapshots")
+        writer = store.begin_snapshot(snap_id)
+
+        cal = Calendar(
+            id="cal-001", snapshot_id=snap_id,
+            base_pattern={
+                "weekdays": ["mon", "tue", "wed", "thu", "fri", "sat"],
+                "shift_start": "07:00",
+                "shift_end": "19:00",
+            },
+        )
+        res = Resource(
+            id="res-001", snapshot_id=snap_id,
+            resource_type=ResourceType.MACHINE,
+            calendar_ref="cal-001",
+        )
+        opspec = OperationSpec(
+            id="spec-001", snapshot_id=snap_id,
+            sequence=10,
+            run_rate="PT3000M",
+            base_setup="PT0S",
+            resource_requirements=[
+                ResourceRequirement(
+                    mode=ResourceRequirementMode.EXPLICIT_SET,
+                    resource_refs=["res-001"],
+                )
+            ],
+        )
+        proc = Process(
+            id="proc-001", snapshot_id=snap_id,
+            product_ref="prod-001",
+            operation_specs=["spec-001"],
+            status=ProcessStatus.ACTIVE,
+        )
+        prod = Product(
+            id="prod-001", snapshot_id=snap_id,
+            name="Heavy Part",
+            unit_of_measure="EA",
+            process_ref="proc-001",
+        )
+        demand = Demand(
+            id="dem-001", snapshot_id=snap_id,
+            product_ref="prod-001",
+            quantity=Quantity(value=1.0, uom="EA"),
+            due=datetime(2035, 1, 1, tzinfo=UTC),
+            commitment_class=CommitmentClass.STANDARD,
+            status=DemandStatus.OPEN,
+        )
+
+        for entity in (cal, res, opspec, proc, prod, demand):
+            writer.write_entity(entity, _synth_prov(entity, snap_id))
+        writer.finalize()
+
+        rep = Reporter.begin(
+            module=ModuleCode.M3, purpose="infeasible subset test",
+            config={}, trigger="pytest", snapshot_id=snap_id,
+            sink_dir=tmp / "runs",
+        )
+        result = Validator().run(snapshot_id=snap_id, store=store, reporter=rep)
+        rep.end(RunStatus.SUCCESS)
+        return result, rep.consolidated_doc
+
+    def test_finding_emitted(self, infeasible_run):
+        _, doc = infeasible_run
+        codes = [r["code"] for r in doc["records"] if r.get("record_type") == "finding"]
+        assert "INFEASIBLE_SUBSET" in codes
+
+    def test_demand_excluded(self, infeasible_run):
+        result, _ = infeasible_run
+        assert "dem-001" in result.excluded_demand_ids
+
+    def test_gate_remains_go(self, infeasible_run):
+        """INFEASIBLE_SUBSET is severity=ERROR (not BLOCKER) so gate stays GO."""
+        result, _ = infeasible_run
+        assert result.go is True
+
+    def test_evidence_records_duration(self, infeasible_run):
+        _, doc = infeasible_run
+        findings = [
+            r for r in doc["records"]
+            if r.get("record_type") == "finding" and r.get("code") == "INFEASIBLE_SUBSET"
+        ]
+        assert findings
+        ev = findings[0].get("evidence", {})
+        assert ev.get("estimated_duration_minutes", 0) >= 3000
+        assert ev.get("max_window_minutes", 0) <= 720

@@ -4,10 +4,21 @@ Runs the full scheduling spine:
     M1 Adapter → M3 Validator → gate check → M4 Planner →
     M5 SolverBuilder → M6 SolveRunner → M7 Extractor
 
-Usage:
+Usage (sample data):
     python -m mre [--sample-data PATH] [--out PATH] [--snapshot-id ID]
                   [--policy identity_v1|merge_by_family_v1]
                   [--time-limit N] [--skip-schedule]
+
+Usage (real data):
+    python -m mre --raw-data raw_data --plant-config plant_config.json
+                  [--out PATH] [--skip-schedule] [--time-limit N]
+                  [--horizon-days N]
+
+Demand-selection policies (applied after validator, before planner):
+    --horizon-days N   Only schedule demands whose due date is within N days
+                       of reference_date (model_simplification/POLICY_RULE).
+                       Reduces model size when the backlog is large; recorded
+                       as a Decision in the evidence stream.
 """
 from __future__ import annotations
 
@@ -36,17 +47,25 @@ def main(argv: list[str] | None = None) -> int:
         "--sample-data",
         default=str(Path(__file__).parent.parent.parent / "sample_data"),
     )
+    parser.add_argument("--raw-data", default=None,
+                        help="Path to real raw_data/ directory (activates RawAdapter)")
+    parser.add_argument("--plant-config", default="plant_config.json",
+                        help="Path to plant_config.json (required with --raw-data)")
     parser.add_argument("--out", default=str(Path("mre_output")))
     parser.add_argument("--snapshot-id", default="snap-run")
-    parser.add_argument("--policy", default="merge_by_family_v1",
+    parser.add_argument("--policy", default="identity_v1",
                         choices=["identity_v1", "merge_by_family_v1"])
     parser.add_argument("--time-limit", type=float, default=30.0,
                         help="Solver time limit in seconds")
     parser.add_argument("--skip-schedule", action="store_true",
                         help="Stop after DQ report (skip planning+solving)")
+    parser.add_argument("--horizon-days", type=int, default=None,
+                        help="Demand-selection: only schedule demands due within N days "
+                             "of reference_date (model_simplification policy)")
     args = parser.parse_args(argv)
 
-    extract_dir = Path(args.sample_data)
+    use_raw = args.raw_data is not None
+    extract_dir = Path(args.raw_data) if use_raw else Path(args.sample_data)
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
     snap_id  = args.snapshot_id
@@ -71,10 +90,16 @@ def main(argv: list[str] | None = None) -> int:
     # -----------------------------------------------------------------------
     a_rep = Reporter.begin(
         module=ModuleCode.M1, purpose="ERP adapter run",
-        config={"extract_dir": str(extract_dir)},
+        config={"extract_dir": str(extract_dir), "mode": "raw" if use_raw else "sample"},
         trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
     )
-    adapter = Adapter(extract_dir=extract_dir)
+    if use_raw:
+        from mre.modules.raw_adapter import RawAdapter, load_plant_config
+        plant_cfg = load_plant_config(Path(args.plant_config))
+        adapter = RawAdapter(raw_data_dir=extract_dir, plant_config=plant_cfg)
+    else:
+        plant_cfg = None
+        adapter = Adapter(extract_dir=extract_dir)
     a_result = adapter.run(snapshot_id=snap_id, store=store, reporter=a_rep)
     a_rep.end(RunStatus.SUCCESS)
 
@@ -84,6 +109,8 @@ def main(argv: list[str] | None = None) -> int:
         f"{a_result.resource_count} resources, "
         f"{a_result.calendar_count} calendars"
     )
+    if use_raw and a_result.out_of_window_count:
+        _p(f"out-of-window: {a_result.out_of_window_count} WOs before reference_date (not demands)")
     if a_result.costmodel_id:
         _p(f"costmodel   : {a_result.costmodel_id}")
     if a_result.constraint_id:
@@ -92,11 +119,22 @@ def main(argv: list[str] | None = None) -> int:
     # -----------------------------------------------------------------------
     # M3: Validator
     # -----------------------------------------------------------------------
+    # reference_date: from plant_config for real data; None (= now) for sample data.
+    reference_date = None
+    if use_raw and plant_cfg:
+        from datetime import date
+        rd = date.fromisoformat(plant_cfg["reference_date"])
+        reference_date = datetime(rd.year, rd.month, rd.day, 0, 0, 0, tzinfo=UTC)
+
     v_rep = Reporter.begin(
         module=ModuleCode.M3, purpose="semantic validator run",
-        config={}, trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
+        config={"reference_date": reference_date.isoformat() if reference_date else "now"},
+        trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
     )
-    v_result = Validator().run(snapshot_id=snap_id, store=store, reporter=v_rep)
+    v_result = Validator().run(
+        snapshot_id=snap_id, store=store, reporter=v_rep,
+        reference_date=reference_date,
+    )
     v_rep.end(RunStatus.SUCCESS)
     gate = "GO" if v_result.go else "NO-GO"
     _p(
@@ -119,6 +157,63 @@ def main(argv: list[str] | None = None) -> int:
         if not v_result.go:
             _p("gate=NO-GO — scheduling skipped")
         return 0 if v_result.go else 1
+
+    # -----------------------------------------------------------------------
+    # Demand-selection: horizon-slice (optional)
+    # -----------------------------------------------------------------------
+    from datetime import timedelta
+    from mre.contracts.vocabularies import DecisionBasis, DecisionType, DriverCode
+
+    horizon_days = args.horizon_days
+    if horizon_days is not None:
+        ref_dt = reference_date or datetime.now(UTC)
+        cutoff = (ref_dt + timedelta(days=horizon_days)).replace(
+            hour=23, minute=59, second=59, microsecond=0,
+        )
+        # Load demands from snapshot (may not be loaded yet at this point)
+        _snap_reader_early = store.load_snapshot(snap_id)
+        _demands_early = list(_snap_reader_early.iter_entities("demand"))
+        slice_excluded: set[str] = set()
+        for d in _demands_early:
+            if d["id"] in v_result.excluded_demand_ids:
+                continue
+            due_raw = d.get("due", "")
+            if not due_raw:
+                continue
+            due_dt = datetime.fromisoformat(due_raw)
+            if due_dt.tzinfo is None:
+                due_dt = due_dt.replace(tzinfo=UTC)
+            if due_dt > cutoff:
+                slice_excluded.add(d["id"])
+        v_result.excluded_demand_ids.update(slice_excluded)
+
+        ds_rep = Reporter.begin(
+            module=ModuleCode.M4, purpose="demand-selection horizon-slice",
+            config={"horizon_days": horizon_days, "cutoff": cutoff.isoformat()},
+            trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
+        )
+        from mre.contracts.records import DecisionAlternative
+        ds_rep.record_decision(
+            decision_type=DecisionType.MODEL_SIMPLIFICATION,
+            driver=DriverCode.POLICY_RULE,
+            basis=DecisionBasis.POLICY_APPLIED,
+            subjects=[],
+            chosen=f"horizon_slice:{horizon_days}d",
+            alternatives=[DecisionAlternative(
+                option="all_admitted_demands",
+                consequence="Larger model; solver may not reach OPTIMAL within time limit.",
+            )],
+            message=(
+                f"Horizon-slice: schedule demands due within {horizon_days}d of "
+                f"reference_date ({ref_dt.date()}). Cutoff: {cutoff.date()}. "
+                f"Deferred: {len(slice_excluded)} demands."
+            ),
+        )
+        ds_rep.end(RunStatus.SUCCESS)
+        _p(
+            f"horizon-slice: {len(slice_excluded)} demands deferred "
+            f"(due > {cutoff.date()}, ref+{horizon_days}d)"
+        )
 
     # -----------------------------------------------------------------------
     # M4: Planner
@@ -172,9 +267,14 @@ def main(argv: list[str] | None = None) -> int:
     ]
     horizon_start = min(all_earliest) if all_earliest else datetime(2026, 7, 13, tzinfo=UTC)
     horizon_start = horizon_start.replace(hour=0, minute=0, second=0, microsecond=0)
+    # Clamp to reference_date: no calendar window or operation may start before
+    # the planning reference date (prevents scheduling operations in the past).
+    if reference_date is not None:
+        ref_floor = reference_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        horizon_start = max(horizon_start, ref_floor)
     horizon_end   = (max(all_due) if all_due else horizon_start).replace(
         hour=23, minute=59, second=59
-    ) + __import__("datetime").timedelta(days=14)
+    ) + __import__("datetime").timedelta(days=90)
 
     # Flatten each calendar's horizon_resolved
     from mre.contracts.entities import CalendarException, TimeWindow
@@ -209,13 +309,18 @@ def main(argv: list[str] | None = None) -> int:
     # -----------------------------------------------------------------------
     # M5: Solver Builder
     # -----------------------------------------------------------------------
+    _p(
+        f"solve inputs: {len(wps)} workpackages, {len(ops)} operations, "
+        f"{len(resources)} resources, {len(pools)} pools"
+    )
+
     from mre.modules.solver_builder import SolverBuilder
 
     b_rep = Reporter.begin(
         module=ModuleCode.M5, purpose="model build",
         config={}, trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
     )
-    builder = SolverBuilder()
+    builder = SolverBuilder(reference_date=reference_date)
     model, var_map = builder.build(
         wps + ops,           # work_items
         resources + pools,   # capacity_items

@@ -1,0 +1,14 @@
+{
+  "reference_date": "2025-03-22",
+  "workcenter_defaults": {
+    "parallel_units": 1,
+    "shift_days": [0, 1, 2, 3, 4, 5],
+    "shift_start": "07:00",
+    "shift_end": "19:00"
+  },
+  "workcenters": {
+    "D3001": {"parallel_units": 1},
+    "D3002": {"parallel_units": 1}
+  },
+  "facility_overrides": {}
+}

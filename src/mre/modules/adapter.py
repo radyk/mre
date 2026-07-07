@@ -66,6 +66,7 @@ class AdapterResult:
     constraint_id: Optional[str]
     identity_map: IdentityMap
     store: SnapshotStore
+    out_of_window_count: int = 0
 
 
 def _stable_id(namespace: str, value: str) -> str:

@@ -1,0 +1,4 @@
+ProductNo,MaterialNo,UPS,CUT,FixedWastage,Wastage%
+P001,M001,10,1/4,0.05,5
+P006,M002,5,1/2,0.03,3
+P007,M003,8,1,0.02,2

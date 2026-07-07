@@ -9,3 +9,7 @@ evidence_store/
 snapshots/
 runs/
 mre_output/
+mre_demo_output/
+mre_output_whatif/
+raw_data/
+raw_data_profile.md

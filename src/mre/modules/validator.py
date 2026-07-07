@@ -3,11 +3,20 @@
 Semantic quality checks against a canonical snapshot.  Produces go/no-go gate.
 
 Checks performed:
-1. TEMPORAL_IMPOSSIBILITY  — Demand.due is in the past.
-2. STATISTICAL_OUTLIER     — OperationSpec.run_rate > 10× median within product family.
-3. VALUE_OUT_OF_RANGE      — Demand.quantity == 0 (or other OOB values).
-4. LOW_CONFIDENCE_INPUT    — Demand.customer_weight derived from defaulted/synthesized provenance.
-5. PROVENANCE_GAP          — Entity attribute with no sidecar record.
+1. TEMPORAL_IMPOSSIBILITY  — Demand.due < reference_date (historical-replay safe).
+2. VALUE_OUT_OF_RANGE      — Demand.quantity == 0 (or other OOB values).
+3. LOW_CONFIDENCE_INPUT    — Demand.customer_weight derived from defaulted/synthesized provenance.
+4. STATISTICAL_OUTLIER     — OperationSpec.run_rate > 10× median within product family.
+                             Groups by product_family (via process→product chain); falls back
+                             to setup_family if product_family not available (sample_data compat).
+5. INFEASIBLE_SUBSET       — Non-splittable operation whose estimated duration
+                             (quantity × run_rate + setup) exceeds the longest contiguous
+                             calendar window on every eligible resource; demand excluded.
+6. PROVENANCE_GAP          — Entity attribute with no sidecar record.
+
+reference_date defaults to datetime.now(UTC) when not supplied (backward compat with
+sample_data pipeline). Pass a fixed reference_date for historical-replay runs against
+real data so wall-clock drift never corrupts results.
 
 The go/no-go gate returns go=False if any BLOCKER-severity finding exists in the
 reporter at the time run() returns (including pre-existing blockers in the reporter).
@@ -31,7 +40,6 @@ from mre.reporter import Reporter
 
 UTC = timezone.utc
 
-# Fields on Demand that are decision-relevant and should be checked for low confidence
 _DEMAND_DECISION_ATTRS = {"customer_weight", "commitment_class", "due"}
 
 _PT_RE = re.compile(
@@ -55,6 +63,22 @@ def _parse_duration_seconds(raw) -> float:
     return days * 86400 + hours * 3600 + minutes * 60 + secs
 
 
+def _longest_shift_minutes(cal: dict) -> float:
+    """Longest contiguous work window in minutes from a calendar's base_pattern."""
+    bp = cal.get("base_pattern", {})
+    days = bp.get("weekdays", [])
+    if not days:
+        return 0.0
+    start = bp.get("shift_start", "07:00")
+    end = bp.get("shift_end", "19:00")
+    try:
+        h_s, m_s = (int(x) for x in start.split(":"))
+        h_e, m_e = (int(x) for x in end.split(":"))
+        return float((h_e * 60 + m_e) - (h_s * 60 + m_s))
+    except (ValueError, AttributeError):
+        return 0.0
+
+
 @dataclass
 class ValidationResult:
     go: bool
@@ -70,20 +94,54 @@ class Validator:
         snapshot_id: str,
         store: SnapshotStore,
         reporter: Reporter,
+        reference_date: Optional[datetime] = None,
     ) -> ValidationResult:
         reader = store.load_snapshot(snapshot_id)
-        now = datetime.now(UTC)
+        now = reference_date if reference_date is not None else datetime.now(UTC)
 
         demands = list(reader.iter_entities("demand"))
         op_specs = list(reader.iter_entities("operationspec"))
         products = list(reader.iter_entities("product"))
+        processes = list(reader.iter_entities("process"))
+        resources_list = list(reader.iter_entities("resource"))
+        calendars_list = list(reader.iter_entities("calendar"))
 
-        # Build product_id → product_family lookup
-        family_by_prod_id: dict[str, str] = {}
+        # Build lookup tables
+        op_specs_by_id = {s["id"]: s for s in op_specs}
+        processes_by_id = {p["id"]: p for p in processes}
+        calendars_by_id = {c["id"]: c for c in calendars_list}
+        resources_by_id = {r["id"]: r for r in resources_list}
+
+        # product_id → product_family
+        prod_family: dict[str, str] = {
+            p["id"]: (p.get("product_family") or "")
+            for p in products
+        }
+
+        # product_id → process entity (via product.process_ref)
+        prod_to_process: dict[str, dict] = {}
         for p in products:
-            fam = p.get("product_family") or ""
-            if fam:
-                family_by_prod_id[p["id"]] = fam
+            pref = p.get("process_ref")
+            if pref and pref in processes_by_id:
+                prod_to_process[p["id"]] = processes_by_id[pref]
+
+        # spec_id → product_family (built from process → product chain)
+        spec_to_family: dict[str, str] = {}
+        for proc in processes:
+            pid = proc.get("product_ref", "")
+            fam = prod_family.get(pid, "")
+            for spec_id in proc.get("operation_specs", []):
+                if fam:
+                    spec_to_family[spec_id] = fam
+
+        # resource_id → longest shift window in minutes
+        res_window: dict[str, float] = {}
+        for res in resources_list:
+            cal_id = res.get("calendar_ref")
+            if cal_id and cal_id in calendars_by_id:
+                res_window[res["id"]] = _longest_shift_minutes(calendars_by_id[cal_id])
+            else:
+                res_window[res["id"]] = 0.0
 
         # --- Check 1: TEMPORAL_IMPOSSIBILITY ---
         excluded_demand_ids: set[str] = set()
@@ -107,8 +165,8 @@ class Validator:
                     evidence={
                         "demand_id": d["id"],
                         "due": due_raw,
-                        "run_date": now.isoformat(),
-                        "reason": "Due date is in the past; demand excluded from planning",
+                        "reference_date": now.isoformat(),
+                        "reason": "Due date is before reference_date; demand excluded from planning",
                     },
                     disposition=FindingDisposition.EXCLUDED,
                     tier=RecordTier.SUPPORTING,
@@ -116,11 +174,14 @@ class Validator:
 
         # --- Check 2: VALUE_OUT_OF_RANGE on Demand.quantity ---
         for d in demands:
+            if d["id"] in excluded_demand_ids:
+                continue
             qty_raw = d.get("quantity")
             if qty_raw is None:
                 continue
             try:
-                qty_value = float(qty_raw.get("value", 1.0)) if isinstance(qty_raw, dict) else float(qty_raw)
+                qty_value = (float(qty_raw.get("value", 1.0))
+                             if isinstance(qty_raw, dict) else float(qty_raw))
             except (TypeError, ValueError):
                 continue
             if qty_value <= 0.0:
@@ -137,10 +198,11 @@ class Validator:
                     tier=RecordTier.SUPPORTING,
                 )
 
-        # --- Check 3: LOW_CONFIDENCE_INPUT for decision-relevant synthesized attributes ---
-        # customer_weight drives tardiness priority; if synthesized/defaulted, flag it once.
+        # --- Check 3: LOW_CONFIDENCE_INPUT for synthesized/defaulted customer_weight ---
         affected_demands = []
         for d in demands:
+            if d["id"] in excluded_demand_ids:
+                continue
             prov = reader.get_provenance(d["id"], "customer_weight")
             if prov and prov.get("provenance_class") in ("defaulted", "synthesized"):
                 affected_demands.append(d["id"])
@@ -151,7 +213,7 @@ class Validator:
                 severity=FindingSeverity.WARNING,
                 subjects=[
                     EntityRef(entity_id=eid, entity_type="demand")
-                    for eid in affected_demands[:10]  # cap subjects list for readability
+                    for eid in affected_demands[:10]
                 ],
                 evidence={
                     "attribute": "customer_weight",
@@ -167,116 +229,11 @@ class Validator:
             )
 
         # --- Check 4: STATISTICAL_OUTLIER by product family ---
-        # Group OperationSpec run_rates by product family.
-        # product → family is via the product table; OperationSpec doesn't carry family directly.
-        # We look up: demand → product_ref → family; OperationSpec is shared across demands.
-        # We need to group OperationSpecs by family via their routing (stable_id structure).
-        # Since OperationSpecs carry no direct product_ref, we infer family by mapping
-        # run_rate values across all OperationSpecs whose spec_id belongs to a routing
-        # for a product in a given family.
-        #
-        # Simpler heuristic: product.process_ref → OperationSpecs.
-        # For Phase 1, we group ALL OperationSpecs by the product family of the Product
-        # that shares their routing prefix (stable_id("operationspec", f"{route_code}:{seq}")).
-        # We attach family by iterating products and resolving their routing.
-        #
-        # Practical: read product.csv mapping through routing to find which op specs
-        # belong to which family. Since we have the canonical store, we use:
-        #   product → external_refs[product_no] → routing[route_code] → routinglines
-        # But the canonical store has no ERP field names. We use external_refs.
-        #
-        # Strategy: group op_specs by run_rate (in seconds), tag each with its family
-        # by checking all products whose routing produced those op_specs.
-
-        # Build: stable_id("operationspec", f"{route_code}:{seq}") → family
-        # We can't do this from the canonical store alone without ERP data.
-        # The canonical store has no ERP field names. So we use external_refs on Products
-        # to find product_no, then look up family from the product table.
-        # OperationSpec IDs are deterministic, so we can match by spec_id prefix.
-        #
-        # Rebuild the route_code → family mapping from canonical products + external_refs.
-        family_by_spec_id: dict[str, str] = {}
-        for p in products:
-            fam = p.get("product_family") or ""
-            if not fam:
-                continue
-            # Find the product_no from external_refs
-            for eref in p.get("external_refs", []):
-                if eref.get("ref_type") == "product_no":
-                    pno = eref["value"]
-                    # Find all routing codes for this product_no (via stable_id)
-                    # We know spec IDs are stable_id("operationspec", f"{route_code}:{seq}")
-                    # We need route_code → pno mapping. Since this is in the ERP CSVs,
-                    # for Phase 1 we inject a secondary index during adaptation.
-                    # Since we can't access ERP CSVs here (validator is ERP-blind),
-                    # we tag OperationSpecs with product_family via the snapshot.
-                    # (See: we store product_family on Product; op specs can be linked
-                    # back through demands → product_ref → product_family.)
-                    pass
-
-        # Alternative: group by run_rate_seconds, flag outliers within clusters.
-        # For Phase 1, tag each op_spec with a family via the product that references it
-        # through demands.
-        # Build: product_id → family (from products table)
-        prod_family: dict[str, str] = {
-            p["id"]: (p.get("product_family") or "unknown")
-            for p in products
-        }
-
-        # Each demand references a product; collect run_rates per family by scanning
-        # op_specs. But op_specs don't reference products directly.
-        # Phase 1 strategy: tag op_specs by family via a scan of all demands × products.
-        # Actually the cleanest approach: the OperationSpec carries the product's family
-        # because the adapter writes op_specs keyed by routing code; the routing codes
-        # are per-product. We need a way to link spec_id → product_family.
-        #
-        # Store the family in the OperationSpec's setup_family field? No, that has
-        # a different meaning (setup changeover families).
-        #
-        # Use external_refs on OperationSpec to record the route_code? Not ERP IDs in core.
-        #
-        # Simplest Phase 1 solution: scan the provenance sidecar. The provenance on
-        # each op_spec records generator_id="sample_data_gen_v1". Not helpful.
-        #
-        # Real solution: store product_family on OperationSpec via a dedicated field or
-        # via the product's process_ref link. For now, use the entity ID prefix pattern.
-        #
-        # The adapter uses stable_id("operationspec", f"{route_code}:{seq}") and
-        # stable_id("product", pno). We can get route_code from the spec's external_refs
-        # if we add them, or from a snapshot-level index.
-        #
-        # Practical Phase 1 fix: tag OperationSpecs with a "product_family" metadata
-        # attribute in the snapshot. The adapter should write this. Since we can't change
-        # the OperationSpec schema easily, we store it as provenance evidence, OR we
-        # use the Product.process_ref to link Products → OperationSpec groups.
-        #
-        # SIMPLEST: the validator reads ALL op_specs and groups by run_rate_seconds
-        # using a cluster threshold. This works if families are clearly separated.
-        # For our sample data: casting ~2.5min, machining ~5-6min, gear ~1.5-2min,
-        # outlier 150min. Using a 5× threshold between clusters works.
-        #
-        # But the spec says "by product family" — not by clustering.
-        # Phase 1 acceptable approach: use the snap_family tag that the adapter writes
-        # into the OperationSpec's setup_family field. Since setup_family is a string,
-        # we can store the product family there temporarily.
-        # The adapter already writes setup_family="" by default. We repurpose it for Phase 1.
-        # Actually no — we should not repurpose setup_family.
-        #
-        # TRUE FIX: The adapter writes the product_family on the OperationSpec via a
-        # non-standard attribute. Since OperationSpec doesn't have product_family in the
-        # schema, we store it as a "tag" in the setup_family field during Phase 1,
-        # or we take the simpler route of having the validator look up the family
-        # through demands.
-        #
-        # For Phase 1, use setup_family to carry the product family tag.
-        # We'll update the adapter to set setup_family=product_family and the validator
-        # reads it. This is clean and within the field's purpose (setup family grouping
-        # is a superset of product family in practice).
-
-        # Group op_specs by setup_family (which carries product_family for Phase 1)
-        family_rates: dict[str, list[tuple[float, str]]] = {}  # family → [(seconds, spec_id)]
+        # Group OperationSpec run_rates by product_family (via process→product chain).
+        # Falls back to setup_family when product_family not available (sample_data compat).
+        family_rates: dict[str, list[tuple[float, str]]] = {}
         for spec in op_specs:
-            fam = spec.get("setup_family") or "unknown"
+            fam = spec_to_family.get(spec["id"]) or spec.get("setup_family") or "unknown"
             run_rate_raw = spec.get("run_rate")
             if run_rate_raw is None:
                 continue
@@ -301,14 +258,93 @@ class Validator:
                             "run_rate_seconds": secs,
                             "median_seconds": median,
                             "ratio": round(secs / median, 1),
-                            "threshold": "10×",
+                            "threshold": "10x",
                         },
                         disposition=FindingDisposition.PROCEEDED_FLAGGED,
                         tier=RecordTier.SUPPORTING,
                     )
 
-        # --- Check 4: PROVENANCE_GAP sweep ---
-        # Direction 1: entity attribute with no provenance
+        # --- Check 5: INFEASIBLE_SUBSET — pre-solve window-fit check ---
+        # For each demand (not already excluded), estimate total operation duration
+        # = quantity × run_rate + setup. If this exceeds the longest available calendar
+        # window on ALL eligible resources for any operation, exclude the demand.
+        for d in demands:
+            if d["id"] in excluded_demand_ids:
+                continue
+
+            qty_raw = d.get("quantity")
+            try:
+                qty = (float(qty_raw.get("value", 0.0))
+                       if isinstance(qty_raw, dict) else float(qty_raw or 0.0))
+            except (TypeError, ValueError):
+                qty = 0.0
+            if qty <= 0.0:
+                continue
+
+            process = prod_to_process.get(d.get("product_ref", ""))
+            if process is None:
+                continue
+
+            for spec_id in process.get("operation_specs", []):
+                spec = op_specs_by_id.get(spec_id)
+                if spec is None:
+                    continue
+
+                run_rate_sec = _parse_duration_seconds(spec.get("run_rate"))
+                setup_sec = _parse_duration_seconds(spec.get("base_setup"))
+                total_minutes = (qty * run_rate_sec + setup_sec) / 60.0
+                if total_minutes <= 0.0:
+                    continue
+
+                # Collect eligible resource IDs
+                eligible_ids: list[str] = []
+                for req in spec.get("resource_requirements", []):
+                    if isinstance(req, dict):
+                        mode = req.get("mode", "")
+                        if mode == "explicit_set":
+                            eligible_ids.extend(req.get("resource_refs", []))
+                        elif mode == "capability":
+                            cap_ref = req.get("capability_ref", "")
+                            for r in resources_list:
+                                if cap_ref in (r.get("capabilities") or []):
+                                    eligible_ids.append(r["id"])
+
+                if not eligible_ids:
+                    continue
+
+                max_window = max(
+                    (res_window.get(rid, 0.0) for rid in eligible_ids),
+                    default=0.0,
+                )
+                if max_window <= 0.0:
+                    continue
+
+                if total_minutes > max_window:
+                    excluded_demand_ids.add(d["id"])
+                    reporter.record_finding(
+                        code=FindingCode.INFEASIBLE_SUBSET,
+                        severity=FindingSeverity.ERROR,
+                        subjects=[EntityRef(entity_id=d["id"], entity_type="demand")],
+                        evidence={
+                            "demand_id": d["id"],
+                            "spec_id": spec_id,
+                            "estimated_duration_minutes": round(total_minutes, 1),
+                            "max_window_minutes": max_window,
+                            "quantity": qty,
+                            "run_rate_min_per_unit": round(run_rate_sec / 60.0, 6),
+                            "setup_minutes": round(setup_sec / 60.0, 1),
+                            "reason": (
+                                "Estimated operation duration exceeds the longest available "
+                                "calendar window on every eligible resource; "
+                                "demand cannot be scheduled without splitting"
+                            ),
+                        },
+                        disposition=FindingDisposition.EXCLUDED,
+                        tier=RecordTier.SUPPORTING,
+                    )
+                    break  # one infeasible operation is sufficient to exclude the demand
+
+        # --- Check 6: PROVENANCE_GAP sweep ---
         _UNIVERSAL = frozenset({"id", "snapshot_id", "external_refs", "_entity_type"})
 
         for entity_type in ("demand", "product", "operationspec", "resource", "resourcepool"):

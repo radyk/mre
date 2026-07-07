@@ -669,3 +669,229 @@ are updated to go through `_build_prompt_material(bundle)` to get the known sets
 this is now the only live path and the only tested path.
 
 **527 tests green** after this amendment.
+
+---
+
+### 2026-07-07 — First real-data ingestion: raw_data/ hardening (M1 + M3)
+
+**Reference-date concept.** A new field `reference_date` in `plant_config.json`
+establishes the scheduling "now" for every temporal computation (demand filtering,
+TEMPORAL_IMPOSSIBILITY, horizon math). Validator receives `reference_date` as an
+explicit parameter; when provided it replaces `datetime.now(UTC)`. The design
+enables historical-replay runs: a schedule produced against `2025-03-22` data is
+reproducible months later because no module reads the wall clock. The rule is: any
+module that needs "now" reads it from `reference_date`, never from `datetime.now()`.
+
+**Product-resolution correction: WO.ProductNo, not Routing.ProductNo.**  The
+legacy pipeline resolved `Product` via `Routing.ProductNo`. For generic routes
+(`ProductNo = 0`), no product was found and the WO was silently dropped with no
+finding. The correction: `Product` is resolved via `WO.ProductNo` in all cases.
+Generic routes (where the Routing table's ProductNo = 0) are now treated as normal;
+the WO's own ProductNo determines the product. Recorded in the raw adapter code as
+a named correction; the Amendment log is the institutional memory.
+
+**Duration-semantics RULING (provenance policy "legacy_author_definition_v1").**
+The legacy ProFunctv2 implementation applies the full `ProductionMinutes /
+CostingLotSize` run rate *to each operation independently* — the rate is not split
+across operations or accumulated at the route level. Likewise `SetUpMinutes` is the
+per-operation setup, not a route-level total. This interpretation reproduces the
+legacy scheduler's time estimates and was confirmed as the ruling on 2026-07-07.
+All `run_rate` and `base_setup` values in real-data OperationSpecs carry
+`DerivedProvenance(formula_id="legacy_author_definition_v1")`, so every consumer
+of these values can trace the origin and the ruling in one hop.
+
+**Process keyed by (route_code, product_no).** Because a generic route (ProductNo=0)
+may serve many products, each with its own `CostingLotSize` and `ProductionMinutes`,
+a single route yields multiple Processes — one per (route, product) pair.
+`Process.id = stable_id("process", f"{route_code}:{product_no}")`. This makes
+rates product-specific without copying RoutingLines.
+
+**SalesOrder deferred.** `SalesOrder.csv` is not read in round one. It is
+explicitly out of scope: `commitment_class` and `customer_weight` are defaulted on
+every Demand with `DefaultedProvenance(policy="plant_config_v1")`. A
+`LOW_CONFIDENCE_INPUT / WARNING / disposition=defaulted` finding is emitted for the
+CostModel since no cost rates exist in the raw extract.
+
+**setup_family proxy retired for real-data runs.** The validator's
+STATISTICAL_OUTLIER grouping previously used `spec.setup_family` as a proxy for
+product family when `product_family` was absent (sample_data used `setup_family`
+values like `"gear_cutting"`). Real data has `Product.ProductGroup` mapped to
+`product.product_family`; the outlier check now preferentially uses
+`spec_to_family[spec_id]` (derived from process → product chain) and falls back to
+`spec.setup_family` for backward compat with sample_data tests. The fallback will
+be removed when sample_data is migrated.
+
+**INFEASIBLE_SUBSET severity=ERROR not BLOCKER.** CLAUDE.md item #2 originally
+specified `severity=blocker` for the pre-solve window-fit check. The real-data
+context changes the calculus: with hundreds of demands, the DQ report must survive
+even when some demands are INFEASIBLE_SUBSET so the full scope of exclusions is
+visible. `severity=ERROR + disposition=excluded` achieves the correct effect
+(demand removed from planning) while allowing the pipeline gate to remain GO.
+A BLOCKER would abort the run before the DQ report completes — defeating its
+purpose. CLAUDE.md will be updated at next spec review to reflect ERROR.
+
+**test_zero_quantity_flagged due-date fix.** The test used `due=datetime(2026, 6, 1)`
+which was future when written but became past by 2026-07-07. The
+TEMPORAL_IMPOSSIBILITY check ran first, excluded the demand, and the
+VALUE_OUT_OF_RANGE check never saw it. Fixed to `due=datetime(2035, 6, 1)`. Root
+cause recorded: unit tests that validate behavior relative to "now" must either use
+a far-future date or supply an explicit `reference_date` to `Validator.run()`.
+
+**554 tests green** after this amendment (527 pre-existing + 27 new raw adapter
+tests in `tests/test_raw_adapter.py`, fixture at `tests/fixtures/raw_data_mini/`).
+
+---
+
+## Amendment — 2026-07-07: Real-data solver INFEASIBLE root cause and fix
+
+**Context.** First run of the full pipeline against real extracted data
+(`python -m mre --raw-data raw_data --plant-config plant_config.json`) returned
+`status=INFEASIBLE` in 0.29 s despite only 23% average resource utilization and
+the validator correctly excluding all 173 WOs whose operations exceeded the 720-min
+shift window.
+
+**Root cause: horizon buffer mismatch.** Two independent buffer values controlled
+the planning window: `__main__.py` pre-flattened calendars with `+14 days` beyond
+the latest demand due date, while `solver_builder._compute_horizon` added only `+7
+days`. The effective scheduler boundary therefore ended at the last calendar shift
+close on day +7 (2025-05-05 19:00 = offset 99060 min), while `horizon_minutes` was
+99359. The solver's blocking interval for the overnight gap [99060, 99780] straddled
+the horizon boundary. CP-SAT's energy-based propagation (`not-first/not-last`,
+edge-finding) proved that the mandatory operations could not be packed into the
+remaining calendar windows — even though simple utilization math showed slack. The
+culprit WP was isolated by binary search to position 1806 (PP10299762, three 78-min
+operations on F008/* machines).
+
+**Fix.** Both buffer values raised from +7/+14 days to **+90 days** in
+`solver_builder._compute_horizon` and in `__main__.py`'s calendar pre-flattening.
+Result: real-data pipeline reaches FEASIBLE in 108.59 s (2864 WPs, 13315 ops, 93
+resources). All 2864 demands are LATE — expected, since the historical extract's WOs
+were overdue as of reference_date 2025-03-22.
+
+**Lesson: horizon mismatch is a silent feasibility bug.** When the solver's internal
+horizon is narrower than the pre-flattened calendar window, the last blocking
+interval straddles the boundary and creates a hard constraint that no admitted
+operation can satisfy. The symptom (instant INFEASIBLE at low utilization) is
+counter-intuitive. Any change to horizon computation must update all three locations
+consistently: `solver_builder._compute_horizon`, `__main__.py` calendar flattening,
+and `test_phase2_integration.py` (which hardcodes `+14 days` for the sample-data
+fixture and must remain unchanged as a regression anchor).
+
+**merge_by_family_v1 infeasibility.** Separately, `merge_by_family_v1` was
+infeasible on real data for a different reason: merged WorkPackages accumulate
+operation durations proportional to total batch quantity. With dozens of demands per
+product family, merged operations exceeded 720 min (the single-shift constraint
+window), violating the CP-SAT `add_no_overlap + calendar-blocking` model regardless
+of horizon size. The pre-solve `INFEASIBLE_SUBSET` check catches this for individual
+demands but has no visibility into post-merge sizes.
+
+**Decision: change default policy to `identity_v1`.** Because `merge_by_family_v1`
+creates post-merge infeasibility that the solver cannot recover from and the
+validator cannot yet catch, the CLI default in `__main__.py` was changed to
+`identity_v1`. `demo.py` and `test_phase2_integration.py` continue to use
+`merge_by_family_v1` explicitly, preserving the merge demo and its test coverage.
+`identity_v1` is the safe, always-feasible baseline; batching is opt-in.
+
+**CLAUDE.md task 2 (post-merge infeasibility check) remains open.** The correct
+long-term fix is either (a) a post-merge INFEASIBLE_SUBSET check in the validator
+that runs after M4 and before M5, or (b) a merge-policy limit that caps merged
+quantity so that `run_rate × batch_qty + setup ≤ shift_window_minutes`.
+
+**CLAUDE.md task 2 (pre-solve infeasibility test) completed in this session.**
+`TestInfeasibleSubset` in `tests/test_validator.py` creates a minimal snapshot with
+qty=1 demand, run_rate=PT3000M OperationSpec, and a 720-min shift calendar, then
+asserts: (a) INFEASIBLE_SUBSET finding emitted, (b) demand in `excluded_demand_ids`,
+(c) gate remains GO (severity=ERROR not BLOCKER), (d) evidence records
+`estimated_duration_minutes ≥ 3000` and `max_window_minutes ≤ 720`. A reusable
+`_synth_prov` helper in the test module generates SynthesizedProvenance for all
+non-universal entity fields, satisfying the snapshot store's write contract.
+
+**558 tests green** after adding 4 new INFEASIBLE_SUBSET tests.
+
+---
+
+## Amendment — 2026-07-07: REP 1 — First real solve telemetry and horizon-slice policy
+
+**Solve telemetry (full backlog, 300s).** First full real-data solve against the
+2025-03-22 snapshot with 2864 admitted WPs / 13315 operations:
+
+| Metric | Value |
+|--------|-------|
+| Status | FEASIBLE |
+| Wall time | 312.68 s |
+| Objective | 29,323,488 (all tardiness; prod/setup = 0) |
+| Gap (LP bound) | 87.4 % |
+| Demands: LATE | 1745 (61 %) — late p50 = +9,644 min (161 h) |
+| Demands: EARLY | 1119 (39 %) — early margin p50 = 9,324 min (155 h) |
+| schedule.csv rows | 13,315 |
+
+**Gap interpretation.** The 87.4 % LP bound gap is structural to minimum-tardiness
+scheduling in CP-SAT: the LP relaxation ignores `add_no_overlap` timing constraints
+and produces a near-zero lower bound even for well-solved instances. This gap does
+NOT indicate that the solution is far from optimal — it indicates that CP-SAT cannot
+PROVE optimality within practical time. Running 3× longer (90 s → 300 s) improved
+the objective by only 0.8 %; the solver is in a FEASIBLE plateau. The gap was also
+~87 % on a 7-day demand slice (1318 WPs, 31 s), confirming it is problem-structure-
+driven, not problem-size-driven.
+
+**Demand distribution.** All 2864 admitted demands have due dates in the range
+2025-03-24 to 2025-04-28 (reference_date 2025-03-22 + 0–37 days). There is no
+meaningful "outside the horizon" cutoff at typical slicing granularities: 45 % are
+due within 7 days, 86 % within 14 days, 100 % within 45 days.
+
+**Decision: add `--horizon-days N` demand-selection policy.** Per CLAUDE.md REP 1
+clause ("If solve quality is poor, add a horizon-slice Demand-selection policy"):
+added `--horizon-days N` CLI flag to `__main__.py`. When specified, demands with
+`due > reference_date + N days` are added to `excluded_demand_ids` before M4 runs.
+Recorded as a `Decision(decision_type=model_simplification, driver=POLICY_RULE,
+basis=policy_applied)` in a brief M4 reporter run. With `--horizon-days 7`: 1546
+demands deferred, 1318 WPs remain, FEASIBLE in 31 s. Intended use: focus the
+solver on the most-urgent backlog tier when the operator wants a provably-good
+near-term schedule rather than a best-effort backlog sweep.
+
+**5 new tests** in `tests/test_horizon_slice.py` verify: pipeline succeeds,
+MODEL_SIMPLIFICATION/POLICY_RULE decision emitted, decision message mentions cutoff
+date, beyond-horizon WOs absent from schedule.csv, within-horizon WOs present.
+
+**563 tests green.**
+
+## Amendment — 2026-07-07: Horizon floor clamped to reference_date (BUG FIX)
+
+**Bug.** Real-data solves were scheduling operations before `reference_date`
+(2025-03-22). Analysis of a `--horizon-days 7` run showed 14 % of operation
+starts as early as 2025-02-26 — roughly four weeks in the past relative to the
+planning snapshot.
+
+**Root cause.** Two code sites independently computed the planning horizon start
+as `min(earliest_starts)` with no floor at `reference_date`:
+
+1. `solver_builder._compute_horizon` — sets CP-SAT time-zero origin `hs`.
+2. `__main__.py` — sets `horizon_start` used for calendar flattening.
+
+`raw_adapter.py` maps `CreatedDate` → `earliest_start` on WorkPackages. Some
+real WOs have `CreatedDate` weeks or months before `reference_date` (e.g.,
+WO created 2025-02-26, but the snapshot reference is 2025-03-22). With
+`hs = 2025-02-26`, the solver could legally start operations as early as
+that date, and did.
+
+The existing `wp_earliest_min = max(0, int((es_dt - horizon_start) / 60))`
+guard in `solver_builder` (line 202) correctly clamps WP-level earliest start
+relative to `hs`, but only once `hs` itself is correct.
+
+**Fix.**
+
+- `SolverBuilder.__init__` now accepts optional `reference_date: datetime`.
+  Rationale: `reference_date` is solver configuration (run-time planning floor),
+  not a canonical model input — it belongs on the constructor, not `build()`,
+  preserving the six-canonical-inputs invariant for `build()`.
+- `_compute_horizon` uses `self._reference_date` to clamp:
+  `hs = max(hs, reference_date.replace(hour=0, ...))`.
+- `__main__.py` clamps `horizon_start = max(horizon_start, ref_floor)` after
+  computing it from demand dates, then passes `reference_date=reference_date`
+  to `SolverBuilder(...)`.
+
+**Test.** `tests/test_horizon_slice.py::TestNoPreReferenceDateStarts` runs the
+mini fixture (WO-A001 has `CreatedDate=2025-03-20`, two days before
+`reference_date=2025-03-22`) and asserts `min(assignment.start) >= 2025-03-22`.
+
+**565 tests green.**
