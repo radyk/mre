@@ -895,3 +895,152 @@ mini fixture (WO-A001 has `CreatedDate=2025-03-20`, two days before
 `reference_date=2025-03-22`) and asserts `min(assignment.start) >= 2025-03-22`.
 
 **565 tests green.**
+
+---
+
+## Amendment — 2026-07-08: IDS adoption — conformance gate + synthetic generator (M0)
+
+**Context.** docs/06-incoming-data-spec.md (IDS) formalizes a narrow-waist
+intake surface: N acquisition connectors -> one conformance gate -> the
+unchanged M1 adapter. This session built the gate and its executable twin
+(the synthetic ERP generator) as a pair, per the standing design principle
+that a check and its counterexample-generator keep each other honest.
+
+**Module code addition.** `ModuleCode.M0` added (`src/mre/contracts/vocabularies.py`)
+for the gate, which runs *before* M1 in `--submission` mode. `test_exactly_11`
+replaces `test_exactly_10` in `tests/test_vocabularies.py`. No Finding or
+Driver codes were added — all Tier 1/2/3 gate checks in docs/06 §4 map onto
+the existing 17 finding codes (e.g. `ORPHAN_ENTITY` for reference-chain
+resolution bands, `UNMAPPABLE_VALUE` for uncovered priority classes,
+`AMBIGUOUS_SOURCE` for doorway consistency), confirming the vocabulary's
+closed set is expressive enough for a second intake mechanism.
+
+**The costing ruling: $/hour in, $/minute stored.** docs/06 §5.9 expresses
+`cost_model.json` rates per HOUR (`default_resource_rate_per_hour`,
+`tardiness_cost_per_hour`) because that is what a submitter can state without
+knowing this system's internals. The solver (M5) prices in $/minute against
+duration-in-minutes (the convention already established by
+`sample_data/costmodel.json`). `IDSAdapter` (`src/mre/modules/ids_adapter.py`)
+is the one place that divides by 60 — `CostModel.resource_rates` and
+`CostModel.tardiness_weights.base_weight` are stored in $/minute in the
+canonical model, so no downstream module needs to know two rate units exist.
+`core.default_resource_rate_per_hour` is applied as the floor rate for every
+resource before `refinements.resource_rates` (per-resource, IDS-external-id
+keyed) and `resources.csv.cost_rate` (highest-precedence override) are
+overlaid — this preserves the existing "silent zero-default is forbidden"
+rule from the 2026-07-06 amendment: every resource gets a real, sourced rate
+in the CostModel, never a bare 0.0 for lack of an override.
+
+**Doorway set implemented.** `customers.csv` -> `Demand.customer_ref` +
+`customer_weight` (looked up from `cost_model.core.priority_multipliers` per
+`manifest.semantics.priority_precedence`; `order_over_customer` /
+`customer_over_order` resolve to a single class label today, `max`/`multiply`
+fall back to the same single-label resolution — numeric combination of two
+multipliers is a deferred refinement, not exercised by any current scenario).
+`setup_transitions.csv` -> `Constraint(SETUP_TRANSITION)`, same shape as the
+existing JSON-config path. `locks.csv` -> `Constraint(FROZEN_ASSIGNMENT)` for
+`lock_type=frozen`, `Constraint(PINNED_WINDOW)` for `pinned_resource`/
+`pinned_start` (no dedicated ConstraintType exists for "pin resource, leave
+time free" — parameters carry the actual semantics; `provenance_class=
+human_override`, `hardness=hard`). Overtime enters via `calendars.csv` `added`
+rows with `reason=overtime`, consistent with the existing D-11 seam — pricing
+the premium into the objective remains the same deferred extension noted in
+D-11, not newly implemented here.
+
+**Solver Builder gains lock consumption.** Constraints were previously
+inert data as far as M5 was concerned (only `setup_transition` was read).
+`SolverBuilder._apply_lock_constraints` (new, additive) resolves each
+`frozen_assignment`/`pinned_window` Constraint's `demand_ref` through the
+Fulfillment -> WorkPackage chain to the matching Operation(s) (by `sequence`;
+blank sequence was *intended* to mean "the whole order" but is **not**
+currently exercised that way — see the locked_plant bug below) and pins the
+assignment boolean and/or start-time variable directly. No-op when no lock
+constraints are present, so `sample_data`/`raw_data` runs are provably
+unaffected.
+
+**Two real bugs found via the generator+gate+pipeline round-trip (exactly
+the payoff the pairing is for):**
+
+1. **`Product.process_ref` was always `None`.** The original adapter draft
+   wrote `Product` before computing `process_id_for_pair`, then tried to
+   "backfill" a field on an already-written (and, by the write contract,
+   already-provenanced) entity — which silently did nothing. Every
+   `INFEASIBLE_SUBSET` pre-solve check in `Validator` depends on
+   `Product.process_ref` resolving to a real `Process`
+   (`prod_to_process` lookup); with it always `None`, the check silently
+   no-op'd for *every* IDS-sourced snapshot, not just the scenario meant to
+   exercise it. Fixed by computing `pairs_needed` / `process_id_for_pair` /
+   `prod_first_process` in a first pass (pure ID arithmetic, no writes) so
+   `Product.process_ref` is correct at initial write time. Lesson: the
+   write-once contract (docs/01 §7.3, `WriteContractError`) makes "write now,
+   correct later" a silent no-op rather than a loud failure — sequencing
+   must be right the first time when an entity's own fields are
+   cross-referential.
+2. **`locked_plant`'s own lock created a false INFEASIBLE solve.** The
+   generator picked the *first* routing line's resource but wrote
+   `sequence=""` ("whole order") to locks.csv. For a 2-3 step route, that
+   pins *every* operation in the WorkPackage to the identical start minute —
+   directly contradicting the intra-WorkPackage precedence constraint
+   (`op[i+1].start >= op[i].end`), so the model was infeasible by
+   construction. Fixed by writing the specific `sequence` of the routing
+   line actually being locked. The generator and the solver disagreed about
+   what "lock the order" means; making the generator's intent explicit
+   (lock *one* operation) resolved it. Verified: the locked operation's
+   `schedule.csv` row now shows the exact pinned resource and start
+   (`tests/test_ids_end_to_end.py::TestLockedPlantScenario`).
+
+**One scenario-tuning fix (not a code bug).** `priority_pressure`'s first
+draft resized every product's rate uniformly to create the bottleneck, which
+pushed several *unrelated* orders' operation durations past the 720-minute
+shift window and tripped `INFEASIBLE_SUBSET` for most of the dataset — the
+gate/pipeline correctly caught bad test data. Fixed by scoping the rate
+override to only the two competing orders' own routes
+(`_apply_bottleneck` in `tools/generate_erp_dataset.py`). The harness asserts
+the *relative* property (`critical order's completion <= standard order's
+completion`) rather than literal on-time completion, since the deliberately
+tight shared-resource contention makes both orders late by construction —
+the property under test is that priority pressure changes *scheduling
+order*, not that it defies physics.
+
+**Generator bug: `setup_family` populated by default.** The first draft set
+`setup_family` on every routing line unconditionally (for realism), which
+made every non-`transition_heavy` scenario spuriously trip the
+`setup_family_without_matrix` doorway-consistency check and downgrade from
+ACCEPTED to CONDITIONAL. Fixed: `setup_family` is blank unless a scenario
+explicitly opts in (`transition_heavy`, or the `setup_family_without_matrix`
+anomaly itself).
+
+**Harness.** `tests/test_ids_end_to_end.py` — for every scenario in
+`tools/generate_erp_dataset.SCENARIOS` (excluding `clean_large`, marked
+`@pytest.mark.slow`, opt-in via `--runslow`): generate -> gate -> assert
+certificate grade and costing grade against `truth_manifest.json` -> assert
+every seeded anomaly's expected finding code appears somewhere in the full
+evidence stream (the gate's own certificate for structural/integrity/quality
+defects; the full pipeline run for solve-time defects like
+`chunking_exam`'s `INFEASIBLE_SUBSET`, which only M3 can see) -> for
+non-REJECTED scenarios, run the full pipeline via `--submission` and assert
+scenario-specific schedule properties (lock respected, priority-pressure
+ordering, transition gap honored, oversized orders excluded). Deterministic
+via seed.
+
+**Pipeline-proof rule applied.** Per docs/06 §8, a capability is
+pipeline-proven only when intake doorway + gate check + adapter translation +
+generator scenario + schedule-level assertion all exist. By that bar:
+customers/priority (`priority_pressure`), setup_transitions
+(`transition_heavy`), and locks (`locked_plant`) are now pipeline-proven, not
+merely model-proven. Overtime pricing remains model-proven only (calendar
+fact recorded; premium not yet in the objective) — tracked as a deferred
+doorway per docs/06 §8, consistent with D-11.
+
+**docs/06 housekeeping.** The spec file was found on disk as
+`docs/06-incoming-data-spec-v0.2.md` (drafted in a prior session, never
+committed) and renamed to `docs/06-incoming-data-spec.md` to match the
+`0N-title.md` convention of docs 00-04 — the version lives in the document's
+own "Status:" line, not the filename.
+
+**Test count.** 565 pre-existing + 18 new generator tests
+(`tests/test_generate_erp_dataset.py`) + 16 new gate tests
+(`tests/test_conformance.py`) + the end-to-end harness
+(`tests/test_ids_end_to_end.py`, parametrized across 7 non-slow scenarios plus
+5 dedicated scenario-property tests, `clean_large` opt-in). Exact final count
+recorded once the full suite is confirmed green.

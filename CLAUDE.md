@@ -63,37 +63,52 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status / next work
 
-**Phases 0–2 complete. 306 tests green. Solver reaches OPTIMAL in ~0.3s on the
-34-demand sample set.**
+**Phases 0–3 complete, plus real-data ingestion, what-if runner, and IDS
+adoption (gate + generator). 624+ tests green.**
 
 Built so far: contracts + Reporter (Phase 0); adapter M1, snapshot store M2,
 validator M3, DQ report, identity-map persistence, per-resource Calendars,
 Process wiring (Phase 1 + gap-closing); planner M4 (identity_v1 +
 merge_by_family_v1 policies), solver builder M5 (six canonical inputs,
-VariableMap), solve runner M6, extractor M7 (canonical Schedule,
-per-Demand ServiceOutcomes, reconstructed-alternative Decisions, decomposable
-cost ledger), full `python -m mre` pipeline (Phase 2). Phase 2 judgment calls
-are recorded in the docs/04 Amendment log.
+VariableMap, plus lock-constraint consumption), solve runner M6, extractor M7
+(canonical Schedule, per-Demand ServiceOutcomes, reconstructed-alternative
+Decisions, decomposable cost ledger), full `python -m mre` pipeline (Phase 2);
+M9 evidence index + M10 explainer + demo script (Phase 3); real raw_data/
+ingestion (RawAdapter); the what-if scenario runner (M_whatif). Judgment
+calls are recorded in the docs/04 Amendment log.
+
+**IDS adoption (docs/06, this session).** `ModuleCode.M0` — the IDS
+conformance gate (`src/mre/modules/conformance.py`, `python -m mre.gate
+<submission_dir>`) grades a submission REJECTED / CONDITIONAL / ACCEPTED plus
+a C0–C3 costing-completeness grade, against Tier 1/2/3 checks mapped onto the
+existing 17 finding codes. `IDSAdapter` (`src/mre/modules/ids_adapter.py`)
+translates an IDS submission to canonical entities, including the
+customers/setup_transitions/locks doorways; `python -m mre --submission DIR`
+runs gate → (if not REJECTED) IDSAdapter → the unchanged M3–M7 spine.
+`tools/generate_erp_dataset.py` is the gate's executable twin (8 scenario
+presets, a 13-item anomaly catalog, `truth_manifest.json` per submission);
+`tests/test_ids_end_to_end.py` is the harness proving the pair against each
+other. Full detail, including two real bugs the round-trip caught, in the
+2026-07-08 docs/04 amendment.
 
 Immediate next tasks, in order:
 
-1. **Verify the demo ingredients exist.** Run `python -m mre`; confirm (a) at
-   least one late ServiceOutcome (negative outcome demand), and (b) at least
-   one assignment Decision with driver `CALENDAR_WINDOW` whose alternatives
-   reference the maintenance-closed machine. Confirm `sample_data/SCENARIO.md`
-   exists and describes the tuned scenario. Tune sample data if anything is
-   missing — the Phase 3 demo ("why is WO-X late?") depends on these.
-2. **New validator check (pre-solve infeasibility).** Non-splittable operation
-   whose duration exceeds the longest contiguous calendar window on every
-   eligible resource → finding (INFEASIBLE_SUBSET or TEMPORAL_IMPOSSIBILITY,
-   severity blocker). This converts the Phase 2 INFEASIBLE debugging session
-   into a pre-solve data-quality finding. Test by reintroducing a
-   3000-minute operation. Amendment-log entry: first solve failure converted
-   into a pre-solve validation check.
-3. **Phase 3** (docs/03): M10 — run summarizer (pattern a) + question answerer
-   (pattern b, dumb retrieval: entity-key lookup + lineage walk, no
-   embeddings), the demonstration script as acceptance test, and the Dash
-   Gantt re-pointed at the canonical Schedule.
+1. **Rep 2 — chunking.** `chunking_exam` is currently pipeline-proven only up
+   to "correctly excluded via INFEASIBLE_SUBSET." Landing chunked/preemptive
+   operation support (docs/03 solver-scope-cut table) turns this scenario
+   into a positive acceptance test: long operations should split across
+   shift windows and schedule, not just get excluded. Update the scenario's
+   truth_manifest expectations in the same change.
+2. **docs/05 — Constraint Catalog.** Referenced by docs/06 as "in progress"
+   but not yet started. Needs the test-status column (model-proven /
+   pipeline-proven / unimplemented) called for in docs/06 §8; the IDS
+   harness this session already gives pipeline-proven status to
+   customers/priority, setup_transitions, and locks.
+3. **Overtime pricing.** Calendar `added`/`overtime` exceptions are recorded
+   as capacity fact (model-proven) but the premium is not yet in the solver
+   objective — the seam has existed since D-11; `cost_model.refinements.
+   overtime_premium_multiplier` is parsed and stored on CostModel but unused
+   by M5. Pricing it is the natural next doorway to make pipeline-proven.
 
 ## Working style
 

@@ -246,6 +246,11 @@ class SolverBuilder:
                 model.add(s_var == horizon_minutes)
 
         # ------------------------------------------------------------------
+        # Frozen / pinned assignment constraints (locks doorway, docs/06 §5.12)
+        # ------------------------------------------------------------------
+        self._apply_lock_constraints(model, constraints, fulfillments, operations, var_map)
+
+        # ------------------------------------------------------------------
         # No-overlap per resource + calendar blocking
         # ------------------------------------------------------------------
         resource_intervals: dict[str, list[Any]] = {rid: [] for rid in resources}
@@ -576,6 +581,65 @@ class SolverBuilder:
             ]
             return matched if matched else list(resources.keys())
         return list(resources.keys())
+
+    # ------------------------------------------------------------------
+    # Lock constraints (frozen_assignment / pinned_window)
+    # ------------------------------------------------------------------
+
+    def _apply_lock_constraints(
+        self,
+        model,
+        constraints: list[dict],
+        fulfillments: list[dict],
+        operations: list[dict],
+        var_map: VariableMap,
+    ) -> None:
+        """Honor locks.csv-derived Constraint entities (docs/06 §5.12).
+
+        Each lock's Constraint.parameters carries demand_ref/resource_ref/
+        sequence/start. Resolved via Fulfillment (demand -> workpackage) to
+        the target Operation(s); a blank sequence means "the whole order"
+        (all operations in that WorkPackage). No-op for constraint types
+        other than frozen_assignment/pinned_window and for submissions with
+        no locks — existing sample_data/raw_data runs are unaffected.
+        """
+        lock_constraints = [
+            c for c in constraints
+            if c.get("constraint_type") in ("frozen_assignment", "pinned_window")
+        ]
+        if not lock_constraints:
+            return
+
+        fulfillment_by_demand = {f["demand_ref"]: f for f in fulfillments}
+        ops_by_wp: dict[str, list[dict]] = {}
+        for op in operations:
+            ops_by_wp.setdefault(op["workpackage_ref"], []).append(op)
+
+        for con in lock_constraints:
+            params = con.get("parameters", {})
+            demand_id = params.get("demand_ref")
+            ful = fulfillment_by_demand.get(demand_id)
+            if ful is None:
+                continue
+            wp_id = ful["workpackage_ref"]
+            seq = params.get("sequence")
+            target_ops = [
+                op for op in ops_by_wp.get(wp_id, [])
+                if seq is None or op.get("sequence") == seq
+            ]
+            resource_ref = params.get("resource_ref")
+            start_iso = params.get("start")
+
+            for op in target_ops:
+                oid = op["id"]
+                assigns = var_map.op_assign.get(oid, {})
+                if resource_ref and resource_ref in assigns:
+                    for rid, bv in assigns.items():
+                        model.add(bv == 1 if rid == resource_ref else bv == 0)
+                if start_iso and oid in var_map.op_start:
+                    start_dt = _parse_dt(start_iso)
+                    start_min = max(0, int((start_dt - var_map.horizon_start).total_seconds() / 60))
+                    model.add(var_map.op_start[oid] == start_min)
 
     # ------------------------------------------------------------------
     # Setup transition constraints

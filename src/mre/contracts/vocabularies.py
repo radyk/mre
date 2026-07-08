@@ -180,6 +180,7 @@ class RunStatus(str, Enum):
 
 
 class ModuleCode(str, Enum):
+    M0 = "M0"  # IDS conformance gate (pre-adapter intake)
     M1 = "M1"
     M2 = "M2"
     M3 = "M3"

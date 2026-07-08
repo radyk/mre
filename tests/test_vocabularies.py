@@ -128,8 +128,14 @@ class TestModuleCode:
         for n in range(1, 11):
             assert f"M{n}" in values
 
-    def test_exactly_10(self):
-        assert len(ModuleCode) == 10
+    def test_m0_gate(self):
+        # M0 added for the IDS conformance gate (docs/06), which runs before
+        # M1 (adapter) in --submission mode.
+        values = {m.value for m in ModuleCode}
+        assert "M0" in values
+
+    def test_exactly_11(self):
+        assert len(ModuleCode) == 11
 
 
 class TestRunStatus:

@@ -51,6 +51,9 @@ def main(argv: list[str] | None = None) -> int:
                         help="Path to real raw_data/ directory (activates RawAdapter)")
     parser.add_argument("--plant-config", default="plant_config.json",
                         help="Path to plant_config.json (required with --raw-data)")
+    parser.add_argument("--submission", default=None,
+                        help="Path to an IDS submission directory (docs/06). Runs the "
+                             "conformance gate first; stops if REJECTED, else runs IDSAdapter.")
     parser.add_argument("--out", default=str(Path("mre_output")))
     parser.add_argument("--snapshot-id", default="snap-run")
     parser.add_argument("--policy", default="identity_v1",
@@ -65,7 +68,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     use_raw = args.raw_data is not None
-    extract_dir = Path(args.raw_data) if use_raw else Path(args.sample_data)
+    use_submission = args.submission is not None
+    if use_submission:
+        extract_dir = Path(args.submission)
+    elif use_raw:
+        extract_dir = Path(args.raw_data)
+    else:
+        extract_dir = Path(args.sample_data)
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
     snap_id  = args.snapshot_id
@@ -86,14 +95,49 @@ def main(argv: list[str] | None = None) -> int:
     _p(f"snapshot_id : {snap_id}")
 
     # -----------------------------------------------------------------------
+    # M0: IDS Conformance Gate (--submission mode only)
+    # -----------------------------------------------------------------------
+    submission_manifest = None
+    if use_submission:
+        import json as _json
+        from mre.modules.conformance import (
+            ConformanceGate, write_certificate_json, write_certificate_markdown,
+        )
+
+        g_rep = Reporter.begin(
+            module=ModuleCode.M0, purpose="IDS conformance gate",
+            config={"submission_dir": str(extract_dir)},
+            trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
+        )
+        gate_result = ConformanceGate().run(extract_dir, g_rep)
+        g_rep.end(RunStatus.SUCCESS if gate_result.go else RunStatus.PARTIAL)
+
+        write_certificate_json(gate_result.certificate, out_dir / "certificate.json")
+        write_certificate_markdown(gate_result.certificate, out_dir / "certificate.md")
+        _p(f"gate        : grade={gate_result.grade}, costing={gate_result.costing_grade}, "
+           f"findings={len(gate_result.certificate['findings'])}")
+
+        if gate_result.grade == "REJECTED":
+            _p("gate=REJECTED — deficiencies:")
+            for d in gate_result.certificate["deficiencies"]:
+                _p(f"  - {d}")
+            return 1
+        submission_manifest = gate_result.certificate["manifest"]
+
+    # -----------------------------------------------------------------------
     # M1: Adapter
     # -----------------------------------------------------------------------
     a_rep = Reporter.begin(
         module=ModuleCode.M1, purpose="ERP adapter run",
-        config={"extract_dir": str(extract_dir), "mode": "raw" if use_raw else "sample"},
+        config={"extract_dir": str(extract_dir),
+                "mode": "submission" if use_submission else ("raw" if use_raw else "sample")},
         trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
     )
-    if use_raw:
+    if use_submission:
+        from mre.modules.ids_adapter import IDSAdapter
+        plant_cfg = None
+        adapter = IDSAdapter(submission_dir=extract_dir, manifest=submission_manifest)
+    elif use_raw:
         from mre.modules.raw_adapter import RawAdapter, load_plant_config
         plant_cfg = load_plant_config(Path(args.plant_config))
         adapter = RawAdapter(raw_data_dir=extract_dir, plant_config=plant_cfg)
@@ -119,10 +163,14 @@ def main(argv: list[str] | None = None) -> int:
     # -----------------------------------------------------------------------
     # M3: Validator
     # -----------------------------------------------------------------------
-    # reference_date: from plant_config for real data; None (= now) for sample data.
+    # reference_date: from the manifest for submissions, plant_config for real
+    # data, None (= now) for sample data.
     reference_date = None
-    if use_raw and plant_cfg:
-        from datetime import date
+    from datetime import date
+    if use_submission and submission_manifest:
+        rd = date.fromisoformat(submission_manifest["reference_date"])
+        reference_date = datetime(rd.year, rd.month, rd.day, 0, 0, 0, tzinfo=UTC)
+    elif use_raw and plant_cfg:
         rd = date.fromisoformat(plant_cfg["reference_date"])
         reference_date = datetime(rd.year, rd.month, rd.day, 0, 0, 0, tzinfo=UTC)
 
