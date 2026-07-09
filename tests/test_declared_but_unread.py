@@ -80,13 +80,16 @@ _DORMANT_REGISTER: dict[tuple[str, str], str] = {
     ("resourcepool", "members"): "docs/05 B5 (MP not PP) — pool membership not yet consumed by solver_builder",
     ("resourcepool", "limit_reason"): "docs/05 B5 (MP not PP) — informational only until pool capacity is wired",
 
-    # Verified: solver_builder.py and extractor.py both price production
-    # cost from CostModel.resource_rates (cost_model.get("resource_rates")),
-    # never from Resource.cost_rate. The ERP-sourced cost_rate is currently
-    # read only by conformance.py's certificate grading — a real duplicate-
-    # source risk (the two could silently disagree), flagged in the
-    # 2026-07-12 docs/04 amendment as a follow-up decision, not fixed here.
-    ("resource", "cost_rate"): "docs/04 2026-07-12 amendment — duplicate cost source; CostModel.resource_rates is authoritative, flagged not fixed",
+    # Audited end-to-end (docs/04 2026-07-12 rates-audit amendment): the
+    # value IS consumed — every adapter folds it into CostModel.resource_rates
+    # (docs/06 §5.5 precedence: default < resources.csv cost_rate <
+    # refinements), which solver_builder/extractor price from. The fold is
+    # adapter-side by design (the builder prices only from CostModel), so no
+    # literal read appears in the four pipeline modules and this grep can't
+    # see it. The former duplicate-source risk is closed: Resource.cost_rate
+    # now carries the same effective $/min value as its CostModel entry
+    # (single-source invariant, tests/test_resource_rates.py).
+    ("resource", "cost_rate"): "consumed via adapter fold into CostModel.resource_rates (docs/06 §5.5); equality invariant tested in test_resource_rates.py",
 
     # docs/05 D3 (MP not PP): yield_factor's validation half exists (bad-
     # yield finding per the doorway) but the "quantity model upstream-
@@ -112,11 +115,6 @@ _DORMANT_REGISTER: dict[tuple[str, str], str] = {
     ("process", "effective_from"): "reserved for multi-version/temporal process tracking; single-snapshot solves don't need it yet",
     ("costmodel", "effective_from"): "reserved for multi-version/temporal cost-model tracking; single-snapshot solves don't need it yet",
     ("costmodel", "inventory_carrying"): "reserved cost-model term, not yet priced into any objective",
-
-    # CLAUDE.md next-work item (docs/04 2026-07-12 amendment, item 5):
-    # overtime premium pricing. Expected to be removed from this register
-    # once that work lands.
-    ("costmodel", "overtime_premium"): "CLAUDE.md next-work item (overtime premium pricing) — not yet wired into solver_builder/extractor",
 }
 
 

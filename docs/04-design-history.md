@@ -1626,3 +1626,108 @@ Running it for the first time surfaced real findings, not hypotheticals:
 **657 tests green** (654 + 3 new: `test_declared_but_unread.py`'s three
 tests; `tests/test_planner_merge_v2.py` adds 7 more — 6 fast + 1
 `@pytest.mark.slow` gauntlet test, not counted in the default run).
+
+## Amendment — 2026-07-12: Overtime premium priced in solves + resource-rates audit closed
+
+Two items from the Phase 1 queue, worked together because the second is a
+prerequisite of honest overtime pricing (a premium multiplier on a rate that
+doesn't flow is a premium on nothing).
+
+**Item 1 — the resource-rates audit (dormant-register follow-up).** The
+2026-07-12 guard finding asked: does `Resource.cost_rate` feed anything, or
+does the solver price everything from the cost-model default? Verdict: the
+VALUE is consumed — `ids_adapter.py` folds `resources.csv cost_rate` into
+`CostModel.resource_rates` under the docs/06 §5.5 precedence (cost-model
+default < resources.csv override < refinements.resource_rates), and
+solver_builder/extractor price from that dict. The guard's grep couldn't see
+it because the fold is adapter-side by design (the builder prices only from
+CostModel, docs/01 §8.6). So this was the "guard's trace was incomplete"
+branch — but the audit surfaced two real defects on the way:
+
+- **False provenance (fixed).** `IDSAdapter` wrote `Resource.cost_rate=0.0`
+  hardcoded while recording an *observed* sidecar citing the `cost_rate`
+  column — the entity field lied about both its value and its source. Now
+  the entity carries the **effective rate in canonical $/minute**, equal by
+  invariant to its `CostModel.resource_rates` entry, with the provenance
+  class naming the winning source: observed (csv override), derived
+  (refinement), defaulted (cost-model default). The duplicate-source risk
+  the register flagged is closed structurally — the two cannot disagree,
+  and `tests/test_resource_rates.py` asserts the equality for every
+  resource.
+- **Sample adapter never folded (fixed).** `adapter.py` read
+  `machines.csv CostRate` onto the entity but a machine missing from
+  `costmodel.json` silently priced at 0.0 (with only a warning) despite an
+  observed rate. Now costmodel.json wins where present and the CSV rate
+  fills the gaps; the 0.0 warning fires only when both sources are missing.
+  No-op for `sample_data` (its costmodel.json covers all nine machines with
+  values equal to the CSV) — verified by the untouched golden baselines.
+
+The register entry for `("resource", "cost_rate")` now cites the verified
+consumption path instead of "flagged not fixed". `tests/test_resource_rates.py`
+adds the behavioral proof the audit demanded: per-resource rates flip the
+solver's machine choice when flipped (builder level), and on a generated C1
+scenario the schedule's `production_cost` equals Σ assignment-minutes ×
+per-resource rate — and differs from the all-default figure.
+
+**Item 2 — overtime premium (docs/06 §5.6/§5.9).** Calendar `added`
+exceptions with `reason=overtime` were already capacity (flatten appends
+them); they are now also **priced**. Design decisions worth recording:
+
+- **Premium = overtime minus regular availability.** The builder computes
+  per-resource premium minute-windows as the overtime exception windows
+  minus every non-overtime availability window. An overtime window that
+  merely overlaps a regular shift (15:00–23:00 over a 07:00–19:00 shift) is
+  premium only for the portion outside it — you pay extra only for capacity
+  that exists *because* of overtime.
+- **The objective charges the delta, not the gross.** Base production
+  already charges rate × duration for every minute, so overtime adds
+  rate × (multiplier − 1) per overlap minute. Overlap variables are only
+  lower-bounded (`ov ≥ min(end, we) − max(start, ws)` under the assignment
+  literal); the positive objective coefficient pins them exact under
+  minimization. Chunked (R-C3) operations get one overlap var per chunk
+  slot, gated by the slot's own `used` literal.
+- **Multiplier ≤ 1 creates zero variables.** Datasets without overtime build
+  byte-identical models — a hard requirement, since the
+  defaults-reproduce-baseline gate compares schedule.csv byte-for-byte and
+  CP-SAT is sensitive to variable creation order. Asserted directly
+  (`test_multiplier_unset_creates_no_overtime_variables` checks the model
+  proto) and indirectly (the gate still passes).
+- **Extraction re-derives the split arithmetically** (chunk/run minute spans
+  × premium windows), never by reading solver internals. Ledger decomposes
+  twice: `production = production_regular + production_overtime`;
+  `total = production + setup + tardiness`. The assignment's reconstructed
+  Decision carries `overtime_minutes` / multiplier / cost and a
+  testimony-renderable message ("Includes 600 min in an overtime calendar
+  window (premium ×1.5: $300.00 above the regular rate)").
+
+**The `overtime_required` scenario and what its counterfactual caught.**
+Six 600-minute single-op orders due Saturday EOD share one resource; Mon–Fri
+holds five (one per 720-min shift, never two); a Saturday overtime exception
+supplies the sixth slot. Rates pinned to $1/min make the economics exact:
+$300 premium vs ≈$1,025 tardiness — an optimal solver must buy exactly 600
+overtime minutes and no more (two slack-rich control orders assert the "no
+more"). The truth manifest's third claim — *removing the overtime windows
+makes the same demands late* — *failed on first run* and caught a real
+scenario bug: the generator's base CAL-STD is **six-day** (pattern rows 0–5),
+so the "overtime" window duplicated regular Saturday capacity and stripping
+it changed nothing. The with-overtime assertions had passed anyway, because
+the premium-window subtraction removes availability windows that exactly
+match overtime exception windows — the premium was billed against capacity
+that was regular all along. The scenario now closes Saturday in its base
+pattern. Lesson, same shape as the WO-2001 verdict: **a priced feature's
+test must include the counterfactual that proves the price bought
+something** — the positive assertions alone were green on a broken scenario.
+
+Setup minutes in the scenario are 30 + 570 run (not 0 + 600) to sidestep the
+documented 1-minute PT0S floor quirk (docs/05 §3 item 2).
+
+**Files.** solver_builder.py (premium windows, `_overlap_var`,
+`VariableMap.overtime_windows`, chunk slots carry `resource`), extractor.py
+(regular/overtime split, Decision evidence, two new ledger keys),
+`__main__.py`/scenario.py (plumbing + summary lines), ids_adapter.py
+(effective-rate single source), adapter.py (CostRate fold),
+generate_erp_dataset.py (`overtime_required`), test_declared_but_unread.py
+(register: `costmodel.overtime_premium` removed — it has real consumers now;
+`resource.cost_rate` justification rewritten), docs/01 §5.6/§6.8 rows,
+docs/07 Phase 1. New tests: test_overtime_premium.py (7),
+test_overtime_end_to_end.py (6), test_resource_rates.py (6).

@@ -76,9 +76,9 @@ tests/                Tests derived from the specs — write them from the spec 
 
 **Phases 0–3 complete, plus real-data ingestion, what-if runner, IDS
 adoption (gate + generator), the precedence-edge surgery, Rep 2
-(chunking/resumable operations), and Reps 3–4 (outlier recalibration,
-merge feasibility & risk guard). Phase 1 reps are now complete. 657 tests
-green.**
+(chunking/resumable operations), Reps 3–4 (outlier recalibration,
+merge feasibility & risk guard), and overtime premium pricing + the
+resource-rates audit. 680 tests green.**
 
 Built so far: contracts + Reporter (Phase 0); adapter M1, snapshot store M2,
 validator M3, DQ report, identity-map persistence, per-resource Calendars,
@@ -173,17 +173,37 @@ unread" bug species (third occurrence after `Product.process_ref` and
 `ResourcePool.members`, `OperationSpec.yield_factor` — see the 2026-07-12
 docs/04 amendment). Full detail there; docs/05 D1 updated.
 
+**Overtime premium + resource-rates audit (docs/06 §5.6/§5.9, 2026-07-12).**
+The audit closed the dormant-register finding: `resources.csv cost_rate` IS
+consumed (adapter-fold into `CostModel.resource_rates`, docs/06 §5.5
+precedence default < csv override < refinements) — but the entity field was
+written 0.0 under false *observed* provenance (IDSAdapter) and the sample
+adapter never folded `machines.csv CostRate`. Both fixed: `Resource.cost_rate`
+now carries the effective canonical $/min rate, equal by invariant to its
+CostModel entry (`tests/test_resource_rates.py`). Overtime: the builder
+computes per-resource premium windows (overtime `added` exceptions minus
+regular availability — overlap with a regular shift is NOT premium), charges
+the objective the delta rate × (multiplier − 1) per overlap minute (zero new
+variables when the multiplier is unset — baseline-gate-critical), and the
+extractor splits the ledger into `production_regular_cost` +
+`production_overtime_cost` with the assignment Decision carrying
+testimony-renderable overtime evidence. `overtime_required` generator
+scenario + `tests/test_overtime_end_to_end.py`; its strip-the-windows
+counterfactual caught a real scenario bug (the base generator calendar is
+six-day; Saturday had to be genuinely closed) — see the 2026-07-12 docs/04
+amendment ("a priced feature's test must include the counterfactual that
+proves the price bought something").
+
 **Next work: see `docs/07-roadmap.md`** for the live, prioritized plan (Phase
 1 exit bar, week-one spikes, cross-cutting workstreams). Do not hand-maintain
 a duplicate task list here — docs/07 is the authoritative source and is
 updated same-day per its own W2 workstream rule. As of this entry, Phase 1
-reps (chunking, outlier calibration, merge feasibility & risk guard) are
-done; remaining Phase 1 work is **overtime premium pricing** (next), the
-dwell_heavy/overtime_required/calendar_chaos/multi_facility_balance generator
-scenarios, and then the Phase 1 exit demo (docs/07 §3: messy generated plant
-→ certificate → costed schedule → why → what-if → verdict, then the ticketing
-gauntlet passing clean). The solver-gap/model-richness interaction found
-during Rep 2 is a concrete input to the parked solver-gap workstream.
+reps and overtime premium pricing are done; remaining Phase 1 work is the
+dwell_heavy/calendar_chaos/multi_facility_balance generator scenarios and
+then the Phase 1 exit demo (docs/07 §3: messy generated plant → certificate
+→ costed schedule → why → what-if → verdict, then the ticketing gauntlet
+passing clean). The solver-gap/model-richness interaction found during Rep 2
+is a concrete input to the parked solver-gap workstream.
 
 ## Working style
 

@@ -93,6 +93,10 @@ SCENARIOS: dict[str, dict[str, Any]] = {
         orders=10, resources=4, facilities=1, anomalies=["chunking_exam:2"],
         with_customers=False, cost_profile="C1",
     ),
+    "overtime_required": dict(
+        orders=8, resources=3, facilities=1, anomalies=[],
+        with_customers=False, cost_profile="C2", overtime=True,
+    ),
 }
 
 
@@ -361,6 +365,104 @@ def _apply_chunking_exam(ds: Dataset, rng: random.Random, n: int) -> tuple[list[
         order["quantity"] = "1"
         affected.append(order["order_id"])
     return affected, 3
+
+
+def _apply_overtime_required(ds: Dataset, rng: random.Random) -> dict:
+    """Make regular capacity provably insufficient so the solver must buy
+    priced overtime — deterministically, whatever the seed.
+
+    Six "rescue" orders each get a dedicated single-op product/route on
+    resources[0]: setup 30 + run 570 = a 600-minute operation (setup kept
+    nonzero to avoid the documented 1-minute PT0S floor quirk), quantity 1,
+    due Saturday end-of-day, released Monday (= reference_date). One 720-min
+    weekday shift fits exactly one such op and never two, so Mon-Fri holds 5
+    of the 6; a Saturday `added`/overtime calendar exception (07:00-19:00)
+    supplies the sixth slot. Rates are pinned to 60/h ($1/min) on every
+    resource, so the economics are exact: running the sixth op in Saturday
+    overtime costs a $300 premium (600 min x $1 x 0.5) vs ~$1,025 tardiness
+    (~41h x $25/h) if it waited for Monday — an optimal solver must use
+    overtime for exactly one operation, 600 minutes, and no more.
+
+    Two "control" orders get identical 600-min ops on resources[1]/[2] with
+    two weeks of slack: any overtime minutes there would be pure premium
+    waste, so the truth manifest asserts zero.
+
+    Returns the truth_manifest "overtime" block.
+    """
+    # The base dataset's CAL-STD is SIX-day (pattern rows 0-5). Saturday must
+    # be genuinely closed here or the overtime window would duplicate regular
+    # capacity — and the counterfactual (strip the exception, demands go
+    # late) would be false. Discovered by exactly that counterfactual test.
+    ds.calendars = [
+        r for r in ds.calendars
+        if not (r.get("row_type") == "pattern" and r.get("day_of_week") == "5")
+    ]
+    saturday = ds.reference_date + timedelta(days=5 - ds.reference_date.weekday())
+    ds.calendars.append({
+        "calendar_id": "CAL-STD", "row_type": "exception",
+        "day_of_week": "", "start_time": "07:00", "end_time": "19:00",
+        "exception_date": saturday.isoformat(), "exception_type": "added",
+        "reason": "overtime",
+    })
+
+    rate_per_hour = 60.0
+    for r in ds.resources:
+        ds.cost_model["refinements"]["resource_rates"][r["resource_id"]] = rate_per_hour
+
+    def _dedicated_op_order(order: dict, tag: str, resource_id: str, due: date) -> None:
+        pid = f"PROD-{tag}"
+        route_id = f"RT-{pid}"
+        ds.products.append({
+            "product_id": pid, "uom": "EA", "facility_id": order["facility_id"],
+            "product_group": "overtime_exam", "costing_lot_size": "1",
+            "setup_minutes": "30", "production_minutes": "570", "cost_price": "10.0",
+        })
+        ds.routings.append({
+            "route_id": route_id, "facility_id": order["facility_id"],
+            "product_id": pid, "status": "active", "approved": "Y",
+            "version": "1", "effective_from": ds.reference_date.isoformat(),
+        })
+        ds.routing_lines.append({
+            "route_id": route_id, "sequence": "10", "resource_id": resource_id,
+            "active": "1", "setup_minutes": "", "run_minutes_per_unit": "",
+            "dwell_minutes": "0", "setup_family": "",
+            "splittable": "false", "min_chunk_minutes": "",
+        })
+        order["product_id"] = pid
+        order["route_id"] = route_id
+        order["quantity"] = "1"
+        order["release_date"] = ds.reference_date.isoformat()
+        order["due_date"] = due.isoformat()
+
+    bottleneck_id = ds.resources[0]["resource_id"]
+    rescue_ids, control_ids = [], []
+    for i in range(6):
+        order = ds.orders[i]
+        _dedicated_op_order(order, f"OT-{i + 1:02d}", bottleneck_id, saturday)
+        rescue_ids.append(order["order_id"])
+    for i in range(2):
+        order = ds.orders[6 + i]
+        _dedicated_op_order(order, f"CTRL-{i + 1:02d}",
+                            ds.resources[1 + i]["resource_id"],
+                            ds.reference_date + timedelta(days=12))
+        control_ids.append(order["order_id"])
+
+    op_minutes = 600
+    rate_per_min = rate_per_hour / 60.0
+    multiplier = ds.cost_model["refinements"]["overtime_premium_multiplier"]
+    return {
+        "resource_id": bottleneck_id,
+        "overtime_date": saturday.isoformat(),
+        "overtime_window": {"start": "07:00", "end": "19:00"},
+        "premium_multiplier": multiplier,
+        "rescue_order_ids": rescue_ids,
+        "control_order_ids": control_ids,
+        "op_minutes": op_minutes,
+        "expected_overtime_minutes": op_minutes,
+        "expected_production_overtime_cost": op_minutes * rate_per_min * multiplier,
+        "expected_overtime_premium_delta": op_minutes * rate_per_min * (multiplier - 1),
+        "expected_late_without_overtime_count": 1,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -680,6 +782,8 @@ def generate(
     if preset.get("locks"):
         oid, rid, start_iso = _apply_locks(ds, rng)
         truth_extra["lock"] = {"order_id": oid, "resource_id": rid, "start": start_iso}
+    if preset.get("overtime"):
+        truth_extra["overtime"] = _apply_overtime_required(ds, rng)
 
     anomaly_entries: list[dict] = []
     for spec in anomaly_specs:

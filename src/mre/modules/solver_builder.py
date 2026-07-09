@@ -72,9 +72,14 @@ class VariableMap:
     op_eligible: dict[str, list[str]] = field(default_factory=dict)
     # resource_id → [(start_min, end_min), ...] available calendar windows
     cal_windows: dict[str, list[tuple[int, int]]] = field(default_factory=dict)
-    # op_id → [{"used": BoolVar, "start": IntVar, "end": IntVar}, ...] one
-    # entry per candidate (resource, window) chunk slot — resumable ops only.
+    # op_id → [{"used": BoolVar, "start": IntVar, "end": IntVar,
+    # "resource": str}, ...] one entry per candidate (resource, window)
+    # chunk slot — resumable ops only.
     op_chunks: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
+    # resource_id → [(start_min, end_min), ...] PREMIUM minute windows:
+    # overtime 'added' capacity minus regular availability (docs/06 §5.6).
+    # Minutes scheduled inside these windows price at rate × overtime_premium.
+    overtime_windows: dict[str, list[tuple[int, int]]] = field(default_factory=dict)
 
     @property
     def op_ids(self) -> dict[str, Any]:
@@ -181,6 +186,14 @@ class SolverBuilder:
         # Resource rates from cost_model
         rates: dict[str, float] = cost_model.get("resource_rates", {})
 
+        # Overtime premium multiplier (docs/06 §5.9 refinements.
+        # overtime_premium_multiplier → CostModel.overtime_premium).
+        # ≤ 1.0 (including the 0.0 "unset" default) means no premium is
+        # priced and NO overtime variables are created — models without
+        # overtime build byte-identically to pre-overtime code (the
+        # defaults-reproduce-baseline gate depends on this).
+        ot_mult = float(cost_model.get("overtime_premium", 0.0) or 0.0)
+
         # Transition matrix from first setup_transition constraint
         transition_matrix: dict[str, dict[str, int]] = {}
         for con in constraints:
@@ -206,6 +219,14 @@ class SolverBuilder:
             resources, cal_map, horizon_start, horizon_end
         )
         var_map.cal_windows = cal_windows
+
+        # Premium windows per resource: overtime 'added' exception windows
+        # minus regular availability. Computed even when ot_mult is unset so
+        # the extractor can report zero overtime consistently.
+        overtime_windows = self._premium_windows(
+            resources, cal_map, cal_windows, horizon_start, horizon_minutes
+        )
+        var_map.overtime_windows = overtime_windows
 
         # ------------------------------------------------------------------
         # Build interval variables for each operation × eligible resource
@@ -426,6 +447,43 @@ class SolverBuilder:
                     model.add_bool_and([v.negated() for v in assign_vars]).only_enforce_if(runs.negated())
                     obj_terms.append(runs * fixed_setup)
 
+        # Overtime premium (docs/06 §5.6/§5.9): minutes scheduled inside a
+        # premium window cost rate × ot_mult. Base production above already
+        # charges rate × duration for every minute, so the objective adds
+        # only the DELTA — rate × (ot_mult − 1) — per overtime minute.
+        # Guarded so that no variables are created when the multiplier is
+        # unset or no calendar declares overtime: datasets without overtime
+        # must build byte-identical models (defaults-reproduce-baseline).
+        if ot_mult > 1.0:
+            for op in operations:
+                oid = op["id"]
+                if op.get("splittable", False):
+                    # Resumable: one overlap var per (chunk slot, premium
+                    # window), gated by the slot's own `used` literal (which
+                    # already implies the resource assignment).
+                    for ci, slot in enumerate(var_map.op_chunks.get(oid, [])):
+                        rid = slot["resource"]
+                        delta_int = int(rates.get(rid, 0.0) * (ot_mult - 1.0) * _COST_SCALE)
+                        if delta_int <= 0:
+                            continue
+                        for k, (ws, we) in enumerate(overtime_windows.get(rid, [])):
+                            ov = self._overlap_var(
+                                model, slot["start"], slot["end"], ws, we,
+                                slot["used"], horizon_minutes, f"cot_{oid}_{ci}_{k}",
+                            )
+                            obj_terms.append(ov * delta_int)
+                    continue
+                for rid, bv in var_map.op_assign.get(oid, {}).items():
+                    delta_int = int(rates.get(rid, 0.0) * (ot_mult - 1.0) * _COST_SCALE)
+                    if delta_int <= 0:
+                        continue
+                    for k, (ws, we) in enumerate(overtime_windows.get(rid, [])):
+                        ov = self._overlap_var(
+                            model, var_map.op_start[oid], var_map.op_end[oid],
+                            ws, we, bv, horizon_minutes, f"ot_{oid}_{rid}_{k}",
+                        )
+                        obj_terms.append(ov * delta_int)
+
         # Tardiness cost: Σ tard_var[f] × weight[f]
         for fid, tard_var in var_map.tardiness.items():
             w = tard_weights.get(fid, 1)
@@ -484,6 +542,80 @@ class SolverBuilder:
             he = hs + timedelta(days=_HORIZON_DAYS)
 
         return hs, he
+
+    # ------------------------------------------------------------------
+    # Overtime premium windows (docs/06 §5.6/§5.9)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _overlap_var(model, s_var, e_var, ws: int, we: int, lit,
+                     horizon_minutes: int, name: str):
+        """IntVar equal (under minimization) to the overlap in minutes of
+        [s_var, e_var) with the fixed window [ws, we), when `lit` holds;
+        0 otherwise. Only lower-bounded — the positive objective coefficient
+        pins it to max(0, min(e, we) − max(s, ws)) exactly."""
+        lo = model.new_int_var(0, horizon_minutes, f"lo_{name}")
+        hi = model.new_int_var(0, horizon_minutes, f"hi_{name}")
+        model.add_max_equality(lo, [s_var, ws])
+        model.add_min_equality(hi, [e_var, we])
+        ov = model.new_int_var(0, we - ws, name)
+        model.add(ov >= hi - lo).only_enforce_if(lit)
+        model.add(ov == 0).only_enforce_if(lit.negated())
+        return ov
+
+    def _premium_windows(
+        self,
+        resources: dict[str, dict],
+        cal_map: dict[str, dict],
+        cal_windows: dict[str, list[tuple[int, int]]],
+        horizon_start: datetime,
+        horizon_minutes: int,
+    ) -> dict[str, list[tuple[int, int]]]:
+        """Per-resource PREMIUM minute windows: the resource calendar's
+        `added` exceptions with reason=overtime, minus its regular
+        availability. Minutes here exist only because of overtime, so they
+        (and only they) price at rate × overtime_premium — an overtime
+        window that merely overlaps a regular shift is premium only for the
+        portion outside the shift."""
+        result: dict[str, list[tuple[int, int]]] = {}
+        for rid, res in resources.items():
+            cal_id = res.get("calendar_ref")
+            cal = cal_map.get(cal_id) if cal_id else None
+            if cal is None:
+                result[rid] = []
+                continue
+
+            ot_raw: list[tuple[int, int]] = []
+            for e in cal.get("exceptions", []):
+                if isinstance(e, dict):
+                    etype = e.get("type", "closure")
+                    reason = e.get("reason", "")
+                    w = e.get("window", {})
+                    ws_dt = _parse_dt(w.get("start"))
+                    we_dt = _parse_dt(w.get("end"))
+                else:
+                    etype = getattr(e.type, "value", e.type)
+                    reason = getattr(e.reason, "value", e.reason)
+                    ws_dt, we_dt = e.window.start, e.window.end
+                if etype != "added" or reason != "overtime":
+                    continue
+                s_min = max(0, int((ws_dt - horizon_start).total_seconds() / 60))
+                e_min = min(horizon_minutes,
+                            max(0, int((we_dt - horizon_start).total_seconds() / 60)))
+                if e_min > s_min:
+                    ot_raw.append((s_min, e_min))
+
+            if not ot_raw:
+                result[rid] = []
+                continue
+
+            # Regular availability = the flattened windows minus the ones
+            # that ARE the overtime additions (flatten appends exception
+            # windows verbatim, so they match exactly).
+            ot_set = set(ot_raw)
+            regular = [w for w in cal_windows.get(rid, []) if w not in ot_set]
+            result[rid] = _subtract_intervals(sorted(ot_raw), sorted(regular))
+        return result
 
     # ------------------------------------------------------------------
     # Calendar flattening
@@ -727,7 +859,9 @@ class SolverBuilder:
                     model.add(d_var >= min_chunk_min).only_enforce_if(u)
                 used[w], durv[w], starts[w], ends[w] = u, d_var, s_var, e_var
                 res_op_intervals.setdefault(rid, []).append(iv)
-                var_map.op_chunks[oid].append({"used": u, "start": s_var, "end": e_var})
+                var_map.op_chunks[oid].append(
+                    {"used": u, "start": s_var, "end": e_var, "resource": rid}
+                )
                 any_slot_created = True
 
             idxs = [w for w in idxs if w in used]
@@ -939,6 +1073,30 @@ def _parse_td(s: str | None) -> timedelta:
 
 def _td_to_minutes(td: timedelta) -> int:
     return max(1, int(td.total_seconds() / 60))
+
+
+def _subtract_intervals(
+    base: list[tuple[int, int]], cuts: list[tuple[int, int]]
+) -> list[tuple[int, int]]:
+    """Return the portions of `base` intervals not covered by any `cuts`."""
+    out: list[tuple[int, int]] = []
+    for s, e in base:
+        segs = [(s, e)]
+        for cs, ce in cuts:
+            nxt: list[tuple[int, int]] = []
+            for a, b in segs:
+                if ce <= a or cs >= b:
+                    nxt.append((a, b))
+                    continue
+                if a < cs:
+                    nxt.append((a, cs))
+                if ce < b:
+                    nxt.append((ce, b))
+            segs = nxt
+            if not segs:
+                break
+        out.extend(segs)
+    return sorted(out)
 
 
 def _parse_dt(s: str | None) -> datetime:

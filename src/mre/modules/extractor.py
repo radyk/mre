@@ -71,6 +71,7 @@ class Extractor:
         op_eligible: Optional[dict] = None,
         snapshot_writer: Optional["SnapshotWriter"] = None,
         is_scenario: bool = False,
+        overtime_windows: Optional[dict] = None,
     ) -> ExtractResult:
         """Extract Schedule, Assignments, ServiceOutcomes, and cost ledger.
 
@@ -86,6 +87,10 @@ class Extractor:
         fuls_by_id  = {f["id"]: f for f in fulfillments}
 
         rates: dict[str, float] = cost_model.get("resource_rates", {})
+        # Overtime premium multiplier (docs/06 §5.9); ≤ 1.0 means no premium
+        # is priced and every minute bills at the regular rate.
+        ot_mult: float = float(cost_model.get("overtime_premium", 0.0) or 0.0)
+        ot_windows: dict = overtime_windows or {}
         setup_fixed: float = cost_model.get(
             "setup_cost_basis", {}
         ).get("fixed_per_setup", 0.0)
@@ -111,7 +116,8 @@ class Extractor:
         # Build Assignments
         # ------------------------------------------------------------------
         assignments: list[dict] = []
-        production_cost = 0.0
+        production_regular_cost = 0.0
+        production_overtime_cost = 0.0
 
         for op_id, chosen_rid in solve_values.op_resource.items():
             op = ops_by_id.get(op_id, {})
@@ -138,10 +144,29 @@ class Extractor:
                 run_windows = [(run_start, run_end)]
                 dur_min = end_min - start_min
 
-            # Production cost for this assignment
+            # Production cost for this assignment. Minutes inside a premium
+            # window (overtime capacity, docs/06 §5.6) bill at rate × ot_mult;
+            # everything else at the regular rate. With no premium active
+            # (ot_mult ≤ 1 or no overtime windows) this reduces exactly to
+            # the historical dur_min × rate.
             rate = rates.get(chosen_rid, 0.0)
-            op_cost = dur_min * rate
-            production_cost += op_cost
+            premium = ot_windows.get(chosen_rid, []) if ot_mult > 1.0 else []
+            if premium:
+                minute_spans = chunk_windows_min or [(start_min, end_min)]
+                ot_min = sum(
+                    max(0, min(a_e, we) - max(a_s, ws))
+                    for a_s, a_e in minute_spans
+                    for ws, we in premium
+                )
+                ot_min = min(ot_min, dur_min)
+            else:
+                ot_min = 0
+            regular_min = dur_min - ot_min
+            op_regular_cost = regular_min * rate
+            op_overtime_cost = ot_min * rate * ot_mult
+            op_cost = op_regular_cost + op_overtime_cost
+            production_regular_cost += op_regular_cost
+            production_overtime_cost += op_overtime_cost
 
             # Eligible resources: use solver-derived list when available (accurate
             # capability matching); fall back to all resources for PoC scope cut.
@@ -194,6 +219,10 @@ class Extractor:
                 if is_chunked:
                     chosen["chunked"] = True
                     chosen["chunk_count"] = len(run_windows)
+                if ot_min > 0:
+                    chosen["overtime_minutes"] = ot_min
+                    chosen["overtime_premium_multiplier"] = ot_mult
+                    chosen["overtime_cost"] = op_overtime_cost
                 msg = (
                     f"Operation {op_id} assigned to {chosen_rid} "
                     f"({run_start.isoformat()} → {run_end.isoformat()}). "
@@ -201,6 +230,12 @@ class Extractor:
                 )
                 if is_chunked:
                     msg += f" Resumable: split into {len(run_windows)} chunks pausing at calendar boundaries."
+                if ot_min > 0:
+                    msg += (
+                        f" Includes {ot_min} min in an overtime calendar window "
+                        f"(premium ×{ot_mult:g}: {op_overtime_cost - ot_min * rate:.2f} "
+                        f"above the regular rate)."
+                    )
                 dec = reporter.record_decision(
                     decision_type=DecisionType.ASSIGNMENT,
                     subjects=[EntityRef(entity_id=op_id, entity_type="operation")],
@@ -225,6 +260,7 @@ class Extractor:
                     {"start": s.isoformat(), "end": e.isoformat()} for s, e in run_windows
                 ],
                 "production_cost": op_cost,
+                "overtime_minutes": ot_min,
                 "decision_ref": decision_id,
             }
             assignments.append(asgn)
@@ -285,14 +321,18 @@ class Extractor:
                 )
 
         # ------------------------------------------------------------------
-        # Cost ledger (must decompose: total = production + setup + tardiness)
+        # Cost ledger (must decompose twice: production = regular + overtime;
+        # total = production + setup + tardiness)
         # ------------------------------------------------------------------
         setup_cost = len(operations) * setup_fixed  # one setup per operation
+        production_cost = production_regular_cost + production_overtime_cost
         total_cost = production_cost + setup_cost + tardiness_cost
 
         cost_ledger: dict[str, float] = {
             "total_cost": total_cost,
             "production_cost": production_cost,
+            "production_regular_cost": production_regular_cost,
+            "production_overtime_cost": production_overtime_cost,
             "setup_cost": setup_cost,
             "tardiness_cost": tardiness_cost,
         }
@@ -301,6 +341,8 @@ class Extractor:
         schedule["summary_metrics"] = {
             "total_cost": total_cost,
             "production_cost": production_cost,
+            "production_regular_cost": production_regular_cost,
+            "production_overtime_cost": production_overtime_cost,
             "setup_cost": setup_cost,
             "tardiness_cost": tardiness_cost,
             "assignments": len(assignments),

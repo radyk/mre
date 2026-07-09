@@ -31,8 +31,8 @@ Stage-A content intact:
 - docs/05 Constraint Catalog: four rulings resolved, document drafted with test-status + IDS-doorway columns.
 - **Chunking/splittable operations** (legacy semantics, scale-aware: bounded chunk counts, applied only where needed). Acceptance: `chunking_exam` passes; the gauntlet's 173 window-fit exclusions collapse.
 - Outlier calibration from recorded distributions; merge feasibility & risk guard (re-enable merge_by_family as non-default).
-- **Overtime premium priced in solves.**
-- New generator scenarios: dwell_heavy, overtime_required, calendar_chaos, multi_facility_balance, scale ladder (30/300/3K/10K).
+- **Overtime premium priced in solves.** ✅ DONE 2026-07-12 — premium windows (overtime `added` minus regular availability), delta-priced objective, `production_regular/overtime` ledger split, Decision evidence; `overtime_required` scenario + counterfactual harness (`tests/test_overtime_end_to_end.py`); the resource-rates audit (dormant-register follow-up) closed in the same session — see the docs/04 amendment.
+- New generator scenarios: ~~overtime_required~~ (done), dwell_heavy, calendar_chaos, multi_facility_balance, scale ladder (30/300/3K/10K).
 
 **Exit demo:** messy generated plant through `--submission` → certificate → costed schedule (C1+, full decomposition) → why → what-if → verdict. Then the **ticketing gauntlet passes clean** — 173 rescued, costs priced, honest certificate, no accommodation.
 

@@ -18,9 +18,11 @@ Unit note: docs/06 cost_model.json expresses rates per HOUR
 (default_resource_rate_per_hour) and tardiness cost per HOUR
 (tardiness_cost_per_hour). The solver (M5) prices in $/minute against
 duration-in-minutes (legacy convention, see sample_data/costmodel.json).
-This adapter is the one place that divides by 60 — CostModel.resource_rates
-and CostModel.tardiness_weights.base_weight are stored in $/minute so no
-downstream module needs to know about the hour/minute distinction.
+This adapter is the one place that divides by 60 — CostModel.resource_rates,
+Resource.cost_rate (the same effective value; single-source invariant, see
+tests/test_resource_rates.py) and CostModel.tardiness_weights.base_weight are
+stored in $/minute so no downstream module needs to know about the
+hour/minute distinction.
 
 Only the ERP-shape (IDS-shape) concerns live here; canonical entity shapes
 are identical to those produced by Adapter/RawAdapter so the rest of the
@@ -254,8 +256,15 @@ class IDSAdapter:
             identity_map.register(cal_id, "IDS", "calendar_id", cal_ext_id)
             calendar_count += 1
 
+        # Effective per-resource rate, docs/06 §5.5 precedence: cost-model
+        # default < resources.csv cost_rate override < refinements.resource_rates.
+        # Resource.cost_rate carries the SAME effective value (canonical
+        # $/minute) as the resource's CostModel.resource_rates entry — one
+        # source, visible in both places, with provenance naming where the
+        # value actually came from (the pre-fix code wrote a hardcoded 0.0
+        # under an *observed* sidecar citing the cost_rate column).
         default_rate_per_hour = _num(core.get("default_resource_rate_per_hour"), 0.0)
-        default_rate_per_min = default_rate_per_hour / 60.0
+        refinement_rates = cost_model_raw.get("refinements", {}).get("resource_rates", {}) or {}
         resource_rates: dict[str, float] = {}
         resource_count = 0
         for row in resources_rows:
@@ -267,37 +276,44 @@ class IDSAdapter:
             cal_ref = cal_id_map.get(cal_ext_id)
             parallel = int(_num(row.get("parallel_units"), 1.0)) or 1
 
+            override = _num(row.get("cost_rate"), -1.0)
+            if ext_id in refinement_rates:
+                rate_per_hour = _num(refinement_rates[ext_id])
+                rate_prov = _drv(res_id, "cost_rate", snapshot_id,
+                                 "ids_refinement_rate", [(res_id, "cost_rate")])
+            elif override >= 0:
+                rate_per_hour = override
+                rate_prov = _obs(res_id, "cost_rate", snapshot_id, "cost_rate")
+            else:
+                rate_per_hour = default_rate_per_hour
+                rate_prov = _def(res_id, "cost_rate", snapshot_id,
+                                 "default_resource_rate_per_hour")
+            rate_per_min = rate_per_hour / 60.0
+            resource_rates[res_id] = rate_per_min
+
             res = Resource(
                 id=res_id, snapshot_id=snapshot_id,
                 external_refs=[ExternalRef(system="IDS", type="resource_id", value=ext_id)],
                 resource_type=ResourceType.MACHINE,
                 capabilities=[],
                 capacity=parallel,
-                cost_rate=0.0,
+                cost_rate=rate_per_min,
                 calendar_ref=cal_ref,
                 pool_refs=[],
             )
-            res_prov = _obs_list(res_id, ["resource_type", "capabilities", "capacity", "cost_rate",
+            res_prov = _obs_list(res_id, ["resource_type", "capabilities", "capacity",
                                           "calendar_ref", "pool_refs"], snapshot_id,
                                 {"resource_type": "resources.csv", "capabilities": "resources.csv",
-                                 "capacity": "parallel_units", "cost_rate": "cost_rate",
+                                 "capacity": "parallel_units",
                                  "calendar_ref": "calendar_id", "pool_refs": "pool_id"})
+            res_prov.append(rate_prov)
             writer.write_entity(res, res_prov)
             identity_map.register(res_id, "IDS", "resource_id", ext_id)
             resource_count += 1
 
-            rate_per_hour = default_rate_per_hour
-            override = _num(row.get("cost_rate"), -1.0)
-            if override >= 0:
-                rate_per_hour = override
-            resource_rates[res_id] = rate_per_hour / 60.0
-
-        refinement_rates = cost_model_raw.get("refinements", {}).get("resource_rates", {}) or {}
-        for ext_id, rate_per_hour in refinement_rates.items():
-            res_id = identity_map.resolve("IDS", "resource_id", ext_id)
-            if res_id:
-                resource_rates[res_id] = _num(rate_per_hour) / 60.0
-            else:
+        known_resource_ids = {row.get("resource_id", "") for row in resources_rows}
+        for ext_id in refinement_rates:
+            if ext_id not in known_resource_ids:
                 reporter.record_finding(
                     code=FindingCode.LOW_CONFIDENCE_INPUT, severity=FindingSeverity.WARNING,
                     subjects=[], evidence={"unresolved_resource_rate_key": ext_id},

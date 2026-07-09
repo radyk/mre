@@ -328,6 +328,7 @@ class Adapter:
             return cap_id
 
         # Resources (machines)
+        machine_costrate: dict[str, float] = {}  # machine_id → CostRate ($/min)
         for row in machine_rows:
             mid = row["MachineID"]
             rid = _stable_id("resource", mid)
@@ -350,6 +351,7 @@ class Adapter:
                      "calendar_ref", "pool_refs"]
             writer.write_entity(res, self._prov_list(rid, attrs, snapshot_id))
             identity_map.register(rid, "ERP", "machine_id", mid)
+            machine_costrate[mid] = res.cost_rate
             resource_count += 1
 
         # ResourcePools (workcenters) — three-way split per docs/01 §5.4
@@ -678,6 +680,14 @@ class Adapter:
             cm, cm_prov, unresolved_rate_keys = load_cost_model(
                 cm_path, snapshot_id, identity_map
             )
+            # docs/06 §5.5 precedence: costmodel.json rates win; a machine
+            # absent there falls back to its observed machines.csv CostRate
+            # (already $/min on Resource.cost_rate) instead of silently
+            # pricing at 0.0. No-op when costmodel.json covers every machine.
+            for (sys_, ref_type, ext_val), canon_id in identity_map._to_canonical.items():
+                if (ref_type == "machine_id" and canon_id not in cm.resource_rates
+                        and machine_costrate.get(ext_val, 0.0) > 0):
+                    cm.resource_rates[canon_id] = machine_costrate[ext_val]
             writer.write_entity(cm, cm_prov)
             costmodel_id = cm.id
 

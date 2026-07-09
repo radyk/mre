@@ -266,6 +266,7 @@ class ScenarioRunner:
             op_eligible=var_map.op_eligible,
             snapshot_writer=m7_writer,
             is_scenario=True,
+            overtime_windows=var_map.overtime_windows,
         )
         m7_writer.finalize()
         e_rep.end(RunStatus.SUCCESS)

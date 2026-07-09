@@ -194,7 +194,7 @@ No `predecessors` list and no `dwell_duration` (docs/05 §4 surgery, R-A2/A3, R-
 | `resource_type` | enum: `machine` / `tool` / `labor` / `fixture` | One entity, typed — no parallel systems |
 | `capabilities` | list of Capability refs | The indirection that frees the core from hardcoded machine lists |
 | `capacity` | int | 1 for machines; pooled count for tools |
-| `cost_rate` | number per time | Feeds the cost ledger via CostModel |
+| `cost_rate` | number, canonical $/minute | The resource's **effective** rate — equal by invariant to its `CostModel.resource_rates` entry (adapters fold docs/06 §5.5 precedence: cost-model default < resources.csv override < refinements; provenance class names the winning source). The pipeline prices from CostModel; this field is the same value made visible on the entity |
 | `calendar_ref` | entity ref | Shifts, downtime, exceptions |
 | `pool_refs` | list, optional | ResourcePool membership |
 
@@ -289,7 +289,8 @@ Setup transition matrices are Constraint instances (`setup_transition`, provenan
 | `resource_rates` | map Resource → cost/time | |
 | `setup_cost_basis` | fixed per setup + scrap cost/unit | |
 | `tardiness_weights` | base weight × commitment_class multipliers | Rush multiplier lives here, not in code |
-| deferred slots | `overtime_premium`, `inventory_carrying` | Named now, zero for PoC |
+| `overtime_premium` | multiplier | **Live** (docs/06 §5.6/§5.9): minutes scheduled inside overtime `added` calendar windows price at rate × this multiplier; ≤ 1 (including the 0 default) disables the premium and creates no solver machinery |
+| deferred slots | `inventory_carrying` | Named now, zero for PoC |
 
 Answers "why did the schedule change when nothing else did": the weights changed, and that is a diffable, versioned fact.
 

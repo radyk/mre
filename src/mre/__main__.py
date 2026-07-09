@@ -455,6 +455,7 @@ def main(argv: list[str] | None = None) -> int:
         cal_windows=var_map.cal_windows,
         op_eligible=var_map.op_eligible,
         snapshot_writer=m7_writer,
+        overtime_windows=var_map.overtime_windows,
     )
     m7_writer.finalize()
 
@@ -489,6 +490,9 @@ def main(argv: list[str] | None = None) -> int:
     ledger = extract_result.cost_ledger
     _p(f"Total cost  : {ledger['total_cost']:.2f}")
     _p(f"  production: {ledger['production_cost']:.2f}")
+    if ledger.get("production_overtime_cost"):
+        _p(f"    regular : {ledger['production_regular_cost']:.2f}")
+        _p(f"    overtime: {ledger['production_overtime_cost']:.2f}")
     _p(f"  setup     : {ledger['setup_cost']:.2f}")
     _p(f"  tardiness : {ledger['tardiness_cost']:.2f}")
 
