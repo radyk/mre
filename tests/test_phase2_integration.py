@@ -74,6 +74,7 @@ def pipeline_run(tmp_path_factory):
     fuls = list(reader.iter_entities("fulfillment"))
     wps = list(reader.iter_entities("workpackage"))
     ops = list(reader.iter_entities("operation"))
+    edges = list(reader.iter_entities("precedenceedge"))
     resources = list(reader.iter_entities("resource"))
     pools = list(reader.iter_entities("resourcepool"))
     calendars = list(reader.iter_entities("calendar"))
@@ -118,7 +119,7 @@ def pipeline_run(tmp_path_factory):
     b_rep = _rep(ModuleCode.M5, "phase2 builder")
     builder = SolverBuilder()
     model, var_map = builder.build(
-        wps + ops, resources + pools, flattened_cals,
+        wps + ops + edges, resources + pools, flattened_cals,
         fuls + demands, constraints, cm,
     )
     b_rep.end(RunStatus.SUCCESS)

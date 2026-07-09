@@ -82,7 +82,7 @@ def _make_op_spec(snap_id: str, spec_id: str, seq: int = 10,
             run_rate=timedelta(seconds=rate_sec),
         ),
         ["sequence", "resource_requirements", "setup_family",
-         "base_setup", "run_rate", "dwell_rule", "splittable",
+         "base_setup", "run_rate", "splittable",
          "min_chunk", "yield_factor"],
     )
 

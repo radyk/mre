@@ -72,12 +72,12 @@ def _fulfillment(fid, demand_id, wp_id, qty=200):
 def _operation(oid, wp_id, setup_sec=60, run_sec=9000, family="gear"):
     return {
         "id": oid, "spec_ref": "spec-1", "workpackage_ref": wp_id,
-        "sequence": 10, "predecessors": [],
+        "sequence": 10,
         "resource_requirements": [],
         "setup_family": family,
         "setup_duration": f"PT{setup_sec}S",
         "run_duration": f"PT{run_sec}S",
-        "dwell_duration": "PT0S", "splittable": False,
+        "splittable": False,
     }
 
 

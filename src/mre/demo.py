@@ -130,6 +130,7 @@ def run_demo(
     fuls = list(reader.iter_entities("fulfillment"))
     wps = list(reader.iter_entities("workpackage"))
     ops = list(reader.iter_entities("operation"))
+    edges = list(reader.iter_entities("precedenceedge"))
     resources = list(reader.iter_entities("resource"))
     pools = list(reader.iter_entities("resourcepool"))
     calendars = list(reader.iter_entities("calendar"))
@@ -174,7 +175,7 @@ def run_demo(
     b_rep = _rep(ModuleCode.M5, "demo builder v1")
     builder = SolverBuilder()
     model, var_map = builder.build(
-        wps + ops, resources + pools, flattened_cals,
+        wps + ops + edges, resources + pools, flattened_cals,
         fuls + demands, constraints, cm,
     )
     b_rep.end(RunStatus.SUCCESS)

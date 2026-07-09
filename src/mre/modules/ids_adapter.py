@@ -38,8 +38,8 @@ from typing import Any, Optional
 
 from mre.contracts.entities import (
     Calendar, CalendarException, Constraint, CostModel, Demand, EntityRef,
-    ExternalRef, OperationSpec, Process, Product, Quantity, Resource,
-    ResourceRequirement, SetupCostBasis, TardinessWeights, TimeWindow,
+    ExternalRef, OperationSpec, PrecedenceEdge, Process, Product, Quantity,
+    Resource, ResourceRequirement, SetupCostBasis, TardinessWeights, TimeWindow,
 )
 from mre.contracts.provenance import (
     DefaultedProvenance, DerivedProvenance, InputRef, ObservedProvenance,
@@ -51,7 +51,7 @@ from mre.contracts.vocabularies import (
     FindingCode, FindingDisposition, FindingSeverity, ProcessStatus,
     RecordTier, ResourceRequirementMode, ResourceType,
 )
-from mre.modules.adapter import AdapterResult, _stable_id
+from mre.modules.adapter import AdapterResult, _stable_id, _synthesize_precedence_pairs
 from mre.modules.identity_map import IdentityMap
 from mre.modules.snapshot_store import SnapshotStore
 from mre.reporter import Reporter
@@ -349,6 +349,7 @@ class IDSAdapter:
 
         process_count = 0
         op_spec_count = 0
+        edge_count = 0
         for route_id, ext_pid in pairs_needed:
             process_id = process_id_for_pair[(route_id, ext_pid)]
             prow = product_map[ext_pid]
@@ -357,6 +358,7 @@ class IDSAdapter:
             prod_setup = _num(prow.get("setup_minutes"))
 
             spec_ids: list[str] = []
+            dwell_minutes_by_spec_id: dict[str, float] = {}
             for rl in lines_by_route.get(route_id, []):
                 seq = int(rl.get("sequence", "0") or "0")
                 res_ext = rl.get("resource_id", "")
@@ -384,14 +386,13 @@ class IDSAdapter:
                     resource_requirements=[req],
                     setup_family=rl.get("setup_family", "") or "",
                     base_setup=base_setup, run_rate=run_rate,
-                    dwell_rule=timedelta(minutes=_num(rl.get("dwell_minutes"))),
                     splittable=str(rl.get("splittable", "false")).strip().lower() == "true",
                 )
                 spec_prov = _obs_list(
-                    spec_id, ["sequence", "resource_requirements", "setup_family", "dwell_rule",
+                    spec_id, ["sequence", "resource_requirements", "setup_family",
                               "splittable", "min_chunk", "yield_factor"], snapshot_id,
                     {"sequence": "sequence", "resource_requirements": "resource_id",
-                     "setup_family": "setup_family", "dwell_rule": "dwell_minutes",
+                     "setup_family": "setup_family",
                      "splittable": "splittable", "min_chunk": "min_chunk_minutes",
                      "yield_factor": "routing_lines.csv"},
                 )
@@ -403,10 +404,30 @@ class IDSAdapter:
                 ]
                 writer.write_entity(spec, spec_prov)
                 spec_ids.append(spec_id)
+                # dwell_minutes lands as min_lag on the OUTGOING PrecedenceEdge
+                # per R-Dwell — dwell is no longer a phase anywhere.
+                dwell_minutes_by_spec_id[spec_id] = _num(rl.get("dwell_minutes"))
                 op_spec_count += 1
 
             if not spec_ids:
                 continue
+
+            for pred_spec_id, succ_spec_id in _synthesize_precedence_pairs(spec_ids):
+                edge_id = _stable_id("precedenceedge", f"{pred_spec_id}:{succ_spec_id}")
+                dwell_min = dwell_minutes_by_spec_id.get(pred_spec_id, 0.0)
+                edge = PrecedenceEdge(
+                    id=edge_id, snapshot_id=snapshot_id,
+                    predecessor=pred_spec_id, successor=succ_spec_id,
+                    min_lag=timedelta(minutes=dwell_min), max_lag=None,
+                )
+                edge_prov = _obs_list(edge_id, ["predecessor", "successor"], snapshot_id,
+                                      {"predecessor": "sequence", "successor": "sequence"})
+                edge_prov += [_drv(edge_id, "min_lag", snapshot_id, "ids_dwell_to_min_lag",
+                                   [(pred_spec_id, "dwell_minutes")])]
+                edge_prov += _def_list(edge_id, ["max_lag"], snapshot_id, "unconstrained_default_v1")
+                writer.write_entity(edge, edge_prov)
+                edge_count += 1
+
             process = Process(
                 id=process_id, snapshot_id=snapshot_id,
                 external_refs=[ExternalRef(system="IDS", type="route_id", value=route_id)],
@@ -631,6 +652,7 @@ class IDSAdapter:
             process_count=process_count, calendar_count=calendar_count,
             costmodel_id=cm_id, constraint_id=constraint_id,
             identity_map=identity_map, store=store,
+            precedence_edge_count=edge_count,
         )
 
     @staticmethod

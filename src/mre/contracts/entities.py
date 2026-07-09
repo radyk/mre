@@ -132,7 +132,12 @@ class Capability(BaseModel):
 
 
 class OperationSpec(BaseModel):
-    """Quantity-independent template; Process owns these."""
+    """Quantity-independent template; Process owns these.
+
+    No dwell_rule (docs/05 R-Dwell): dwell is not a phase. It is a min-lag
+    on the PrecedenceEdge outgoing from this spec. Phases occupy resources;
+    lags don't.
+    """
     id: str
     snapshot_id: str
     sequence: int
@@ -140,10 +145,31 @@ class OperationSpec(BaseModel):
     setup_family: str = ""
     base_setup: timedelta = timedelta(0)
     run_rate: timedelta = timedelta(0)
-    dwell_rule: timedelta = timedelta(0)
     splittable: bool = False
     min_chunk: Optional[timedelta] = None
     yield_factor: float = 1.0
+
+
+class PrecedenceEdge(BaseModel):
+    """First-class precedence relationship between two OperationSpecs
+    (docs/05 R-A2/A3, §4 surgery).
+
+    Lags are properties of the relationship, not of either operation —
+    this is what survives non-linear routings and matches how the
+    constraint is actually spoken ("max 4 hours between coating and
+    curing"). predecessor/successor are OperationSpec refs (template-level:
+    the same edge applies to every WorkPackage instantiating the Process).
+
+    min_lag defaults to 0 (immediate succession); dwell lands here per
+    R-Dwell. max_lag=None means unconstrained (R-A3's default of infinity —
+    the doorway for a real max-lag source is deferred, docs/06 §8).
+    """
+    id: str
+    snapshot_id: str
+    predecessor: str
+    successor: str
+    min_lag: timedelta = timedelta(0)
+    max_lag: Optional[timedelta] = None
 
 
 class Process(BaseModel):
@@ -218,18 +244,21 @@ class Demand(BaseModel):
 
 class Operation(BaseModel):
     """Schedulable instance; Planner creates one per OperationSpec per WorkPackage.
-    run_duration is derived: quantity × spec run_rate."""
+    run_duration is derived: quantity × spec run_rate.
+
+    No predecessors list (docs/05 §4 surgery) and no dwell_duration (R-Dwell):
+    precedence and lags (including dwell) are read from PrecedenceEdge
+    records keyed by spec_ref, not carried as instance attributes.
+    """
     id: str
     snapshot_id: str
     spec_ref: str
     workpackage_ref: str
     sequence: int
-    predecessors: list[str] = []
     resource_requirements: list[ResourceRequirement] = []
     setup_family: str = ""
     setup_duration: timedelta = timedelta(0)
     run_duration: timedelta = timedelta(0)
-    dwell_duration: timedelta = timedelta(0)
     splittable: bool = False
     min_chunk: Optional[timedelta] = None
 

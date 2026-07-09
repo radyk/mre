@@ -32,8 +32,8 @@ from typing import Optional
 
 from mre.contracts.entities import (
     Calendar, Capability, CostModel, Demand, EntityRef, ExternalRef,
-    OperationSpec, Process, Product, Quantity, Resource, ResourcePool,
-    ResourceRequirement, SetupCostBasis, TardinessWeights, TimeWindow,
+    OperationSpec, PrecedenceEdge, Process, Product, Quantity, Resource,
+    ResourcePool, ResourceRequirement, SetupCostBasis, TardinessWeights, TimeWindow,
 )
 from mre.contracts.provenance import (
     DefaultedProvenance, DerivedProvenance, InputRef, ObservedProvenance,
@@ -45,7 +45,7 @@ from mre.contracts.vocabularies import (
     LimitReason, ModuleCode, ProcessStatus, RecordTier,
     ResourceRequirementMode, ResourceType, RunStatus,
 )
-from mre.modules.adapter import AdapterResult, _stable_id
+from mre.modules.adapter import AdapterResult, _stable_id, _synthesize_precedence_pairs
 from mre.modules.identity_map import IdentityMap
 from mre.modules.snapshot_store import SnapshotStore
 from mre.reporter import Reporter
@@ -535,6 +535,7 @@ class RawAdapter:
         product_count = 0
         process_count = 0
         op_spec_count = 0
+        edge_count = 0
 
         # Collect unique (route_code, product_no) pairs
         pairs_needed: list[tuple[str, str, dict]] = []
@@ -623,12 +624,11 @@ class RawAdapter:
                 )
                 # Provenance: run_rate derived from product data (RULING: legacy_author_definition_v1)
                 spec_attrs_obs = ["sequence", "resource_requirements", "setup_family",
-                                  "dwell_rule", "splittable", "min_chunk", "yield_factor"]
+                                  "splittable", "min_chunk", "yield_factor"]
                 spec_prov = _obs_list(spec_id, spec_attrs_obs, snapshot_id,
                                       {"sequence": "Sequence",
                                        "resource_requirements": "Workcenter",
                                        "setup_family": "Workcenter",
-                                       "dwell_rule": "RoutingLines",
                                        "splittable": "RoutingLines",
                                        "min_chunk": "RoutingLines",
                                        "yield_factor": "RoutingLines"})
@@ -665,6 +665,26 @@ class RawAdapter:
                                    "status": "Status"})
             writer.write_entity(process, proc_prov)
             process_count += 1
+
+            # PrecedenceEdges: linear chain synthesized from RoutingLines
+            # Sequence (docs/05 A1). No Dwell column in the real extract
+            # (RoutingLines carries TargetTime, unpopulated) so min_lag is 0 —
+            # same effective behavior as the old implicit sequence model.
+            for pred_spec_id, succ_spec_id in _synthesize_precedence_pairs(spec_ids):
+                edge_id = _stable_id("precedenceedge", f"{pred_spec_id}:{succ_spec_id}")
+                edge = PrecedenceEdge(
+                    id=edge_id, snapshot_id=snapshot_id,
+                    predecessor=pred_spec_id, successor=succ_spec_id,
+                    min_lag=timedelta(0), max_lag=None,
+                )
+                writer.write_entity(
+                    edge,
+                    _obs_list(edge_id, ["predecessor", "successor"], snapshot_id,
+                             {"predecessor": "Sequence", "successor": "Sequence"})
+                    + _def_list(edge_id, ["min_lag", "max_lag"], snapshot_id,
+                               "no_dwell_source_in_raw_data"),
+                )
+                edge_count += 1
 
         # ------------------------------------------------------------------
         # Phase 5: Demands
@@ -809,4 +829,5 @@ class RawAdapter:
             identity_map=identity_map,
             store=store,
             out_of_window_count=out_of_window_count,
+            precedence_edge_count=edge_count,
         )

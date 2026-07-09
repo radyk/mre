@@ -65,6 +65,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--horizon-days", type=int, default=None,
                         help="Demand-selection: only schedule demands due within N days "
                              "of reference_date (model_simplification policy)")
+    parser.add_argument("--solver-workers", type=int, default=None,
+                        help="Pin CP-SAT num_search_workers (default: parallel). "
+                             "Set to 1 for reproducible regression baselines.")
+    parser.add_argument("--solver-seed", type=int, default=None,
+                        help="Pin CP-SAT random_seed (default: unset). "
+                             "Combine with --solver-workers 1 for bit-identical reruns.")
     args = parser.parse_args(argv)
 
     use_raw = args.raw_data is not None
@@ -292,6 +298,7 @@ def main(argv: list[str] | None = None) -> int:
     fuls       = list(reader.iter_entities("fulfillment"))
     wps        = list(reader.iter_entities("workpackage"))
     ops        = list(reader.iter_entities("operation"))
+    edges      = list(reader.iter_entities("precedenceedge"))
     resources  = list(reader.iter_entities("resource"))
     pools      = list(reader.iter_entities("resourcepool"))
     calendars  = list(reader.iter_entities("calendar"))
@@ -370,7 +377,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     builder = SolverBuilder(reference_date=reference_date)
     model, var_map = builder.build(
-        wps + ops,           # work_items
+        wps + ops + edges,   # work_items
         resources + pools,   # capacity_items
         flattened_cals,      # calendars (horizon_resolved populated)
         fuls + demands,      # demand_items
@@ -390,9 +397,11 @@ def main(argv: list[str] | None = None) -> int:
         config={"time_limit": args.time_limit}, trigger="cli",
         snapshot_id=snap_id, sink_dir=runs_dir,
     )
-    solve_result = SolveRunner(time_limit_seconds=args.time_limit).solve(
-        model, var_map, r_rep
-    )
+    solve_result = SolveRunner(
+        time_limit_seconds=args.time_limit,
+        num_search_workers=args.solver_workers,
+        random_seed=args.solver_seed,
+    ).solve(model, var_map, r_rep)
     r_rep.end(RunStatus.SUCCESS if solve_result.status in ("OPTIMAL", "FEASIBLE") else RunStatus.PARTIAL)
     _p(
         f"solver      : status={solve_result.status}, "

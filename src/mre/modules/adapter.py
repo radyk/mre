@@ -31,7 +31,8 @@ from typing import Optional
 
 from mre.contracts.entities import (
     Calendar, CalendarException, Capability, Demand, ExternalRef, EntityRef, OperationSpec,
-    Process, Product, Quantity, Resource, ResourcePool, ResourceRequirement, TimeWindow,
+    PrecedenceEdge, Process, Product, Quantity, Resource, ResourcePool, ResourceRequirement,
+    TimeWindow,
 )
 from mre.contracts.provenance import (
     DefaultedProvenance, ProvenanceSidecar, SynthesizedProvenance, ObservedProvenance,
@@ -67,12 +68,24 @@ class AdapterResult:
     identity_map: IdentityMap
     store: SnapshotStore
     out_of_window_count: int = 0
+    precedence_edge_count: int = 0
 
 
 def _stable_id(namespace: str, value: str) -> str:
     """Deterministic UUID5 from a namespace+value pair."""
     ns = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")  # URL namespace
     return str(uuid.uuid5(ns, f"{namespace}:{value}"))
+
+
+def _synthesize_precedence_pairs(spec_ids: list[str]) -> list[tuple[str, str]]:
+    """Consecutive (predecessor, successor) OperationSpec id pairs for a
+    linear-chain Process (docs/05 A1: 'synthesized from linear Sequence').
+
+    spec_ids must already be in sequence order — every adapter builds them
+    that way (routing lines sorted by Sequence before OperationSpecs are
+    created). Shared here so all adapters express "linear chain" identically.
+    """
+    return list(zip(spec_ids, spec_ids[1:]))
 
 
 def _file_hash(path: Path) -> str:
@@ -213,6 +226,7 @@ class Adapter:
         resource_count = 0
         op_spec_count = 0
         process_count = 0
+        edge_count = 0
         canonical_products: dict[str, Product] = {}  # ProductNo → Product
 
         # Default working calendar (Mon-Fri, 07:00-19:00) — fallback for resources
@@ -488,7 +502,7 @@ class Adapter:
                 )
                 spec_attrs = [
                     "sequence", "resource_requirements", "setup_family",
-                    "base_setup", "run_rate", "dwell_rule", "splittable",
+                    "base_setup", "run_rate", "splittable",
                     "min_chunk", "yield_factor",
                 ]
                 writer.write_entity(spec, self._prov_list(spec_id, spec_attrs, snapshot_id))
@@ -514,6 +528,21 @@ class Adapter:
                     process, self._prov_list(process_id, proc_attrs, snapshot_id)
                 )
                 process_count += 1
+
+                # PrecedenceEdges: linear chain synthesized from routing sequence
+                # (docs/05 A1). No dwell source in sample_data's routinglines.csv,
+                # so min_lag is 0 — this is the same effective behavior the old
+                # implicit sequence+dwell_duration model had.
+                for pred_spec_id, succ_spec_id in _synthesize_precedence_pairs(op_spec_ids):
+                    edge_id = _stable_id("precedenceedge", f"{pred_spec_id}:{succ_spec_id}")
+                    edge = PrecedenceEdge(
+                        id=edge_id, snapshot_id=snapshot_id,
+                        predecessor=pred_spec_id, successor=succ_spec_id,
+                        min_lag=timedelta(0), max_lag=None,
+                    )
+                    edge_attrs = ["predecessor", "successor", "min_lag", "max_lag"]
+                    writer.write_entity(edge, self._prov_list(edge_id, edge_attrs, snapshot_id))
+                    edge_count += 1
 
         # ------------------------------------------------------------------
         # Phase 2: Translate Work Orders → Demands
@@ -709,4 +738,5 @@ class Adapter:
             constraint_id=constraint_id,
             identity_map=identity_map,
             store=store,
+            precedence_edge_count=edge_count,
         )

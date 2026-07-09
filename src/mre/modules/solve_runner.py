@@ -61,9 +61,23 @@ class SolveRunner:
         self,
         time_limit_seconds: float = 60.0,
         nonoptimal_gap_threshold: float = 0.01,
+        num_search_workers: Optional[int] = None,
+        random_seed: Optional[int] = None,
     ) -> None:
+        """num_search_workers/random_seed are optional determinism knobs.
+
+        CP-SAT's default parallel search is not reproducible run-to-run when
+        the model has tied-cost alternatives (confirmed empirically: two
+        stock runs of the sample_data pipeline produce different resource
+        assignments for the same proven-optimal total cost). Production
+        callers leave these unset (default parallel search, fastest wall
+        time). Regression tests that need bit-identical output across runs
+        (e.g. tests/test_defaults_reproduce_baseline.py) pin both.
+        """
         self._time_limit = time_limit_seconds
         self._gap_threshold = nonoptimal_gap_threshold
+        self._num_search_workers = num_search_workers
+        self._random_seed = random_seed
 
     def solve(
         self,
@@ -76,6 +90,10 @@ class SolveRunner:
         solver = cp.CpSolver()
         solver.parameters.max_time_in_seconds = self._time_limit
         solver.parameters.log_search_progress = False
+        if self._num_search_workers is not None:
+            solver.parameters.num_search_workers = self._num_search_workers
+        if self._random_seed is not None:
+            solver.parameters.random_seed = self._random_seed
 
         # Solution callback for streaming
         class _Cb(cp.CpSolverSolutionCallback):

@@ -154,13 +154,26 @@ Cardinalities express every planning move with zero additional concepts:
 | Attribute | Type | Notes |
 |---|---|---|
 | `spec_ref` / `workpackage_ref` | entity refs | Lineage to template and owner |
-| `sequence` / `predecessors` | int / refs | Linear chain for PoC; partial order later |
+| `sequence` | int | Position within the WorkPackage; precedence itself lives on PrecedenceEdge (below), not here |
 | `resource_requirements` | list of ResourceRequirement | See 5.5 |
 | `setup_family` | code | Feeds sequence-dependent transition Constraint |
 | `setup_duration` | duration | Derived (spec + family) or observed |
 | `run_duration` | duration | **Derived**: quantity × spec rate; chain recorded |
-| `dwell_duration` | duration | Post-processing wait; machine-free |
 | `splittable` / `min_chunk` | bool / duration | Canonical home of preemption & min-split policy |
+
+No `predecessors` list and no `dwell_duration` (docs/05 §4 surgery, R-A2/A3, R-Dwell — see 5.4a). Phases occupy resources; lags don't.
+
+### 5.4a PrecedenceEdge — precedence and lags as first-class records
+
+**Structural decision (docs/05 R-A2/A3):** lags are properties of the *relationship* between two operations, not of either operation individually — this is what survives non-linear routings and matches how the constraint is actually spoken ("max 4 hours between coating and curing"). Precedence is therefore not an implicit `sequence`-order convention; it is an edge record.
+
+| Attribute | Type | Notes |
+|---|---|---|
+| `predecessor` / `successor` | OperationSpec refs | **Template-level**, not instance-level: one edge set per Process, reused by every WorkPackage that instantiates it. Resolved to concrete Operations via `spec_ref` at solve-build time. |
+| `min_lag` | duration, default 0 | Immediate succession by default. **Dwell lands here** (R-Dwell): a machine-free, calendar-indifferent gap is definitionally a min-lag on the outgoing edge of the operation it follows — dwell is not, and was never structurally, a phase. |
+| `max_lag` | duration, optional, default unconstrained (∞) | R-A3. No IDS doorway yet (docs/06 §8, deferred); the field and the Solver Builder constraint both exist so the doorway is a data problem, not a redesign, when it lands. |
+
+**Synthesis rule (adapter-owned):** every adapter synthesizes a linear chain of edges from `routing_lines.sequence` at ingestion time — this is the default (and, until a real precedence-edge doorway exists, the only) source. `min_lag` is populated from a dwell source where one exists (currently only the IDS `routing_lines.dwell_minutes` column); absent a source it is 0, provenance `defaulted`. This keeps the six-canonical-input Solver Builder invariant intact: edges ride in the same mixed `work_items` list as WorkPackage and Operation entities.
 
 ### 5.5 ResourceRequirement (struct, not entity)
 
@@ -210,9 +223,10 @@ Versioning is not bookkeeping: "the schedule changed because engineering revised
 | `resource_requirements` | list of ResourceRequirement | |
 | `setup_family` | code | Transition-matrix key |
 | `base_setup` / `run_rate` | duration / duration-per-unit | **Rate, never pre-multiplied duration** |
-| `dwell_rule` | fixed duration or formula | |
 | `splittable` / `min_chunk` | bool / duration | Policy defaults, overridable at instantiation |
 | `yield_factor` | fraction, default 1.0 | Scrap ⇒ upstream quantity inflation; stubbed at 1.0, slot reserved |
+
+No `dwell_rule` (docs/05 R-Dwell): dwell is a `PrecedenceEdge.min_lag` (§5.4a), not an OperationSpec attribute.
 
 ### 6.4 Capability
 
@@ -337,7 +351,7 @@ Derived values carry a walkable **derivation chain** ("duration 250 min ← quan
 3. **Quantity and rate are first-class; duration is derived.** Never fuse quantity into minutes upstream. (Reverses the legacy pipeline, which multiplied quantity into ProcTime and discarded it — destroying the ability to split, track partials, or re-derive.)
 4. **Observations are immutable.** Planning never mutates Demands; change arrives as snapshots.
 5. **No number without decomposition.** Any reported total must be reconstructable from its recorded components (enforced by the evidence layer, Document 2).
-6. **The Solver Builder consumes exactly six things:** WorkPackages (with Operations), Resources, ResourcePools, Calendars (flattened), Constraints, CostModel. This short list is the measure of whether the canonical model stays minimal.
+6. **The Solver Builder consumes exactly six things:** WorkPackages (with Operations **and PrecedenceEdges**), Resources, ResourcePools, Calendars (flattened), Constraints, CostModel. PrecedenceEdges ride in the WorkPackages+Operations bucket rather than becoming a seventh input — the count stays six. This short list is the measure of whether the canonical model stays minimal.
 
 ## 9. Deferred concepts (named stubs)
 

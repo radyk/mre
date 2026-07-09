@@ -152,6 +152,7 @@ class SolverBuilder:
         # Separate mixed inputs
         workpackages = {d["id"]: d for d in work_items if "operations" in d}
         operations   = [d for d in work_items if "spec_ref" in d]
+        edges        = [d for d in work_items if "predecessor" in d]
         resources    = {d["id"]: d for d in capacity_items if "resource_type" in d}
         pools        = [d for d in capacity_items if "concurrent_capacity" in d]
         demands      = {d["id"]: d for d in demand_items if "due" in d}
@@ -289,24 +290,44 @@ class SolverBuilder:
             model.add_no_overlap(intervals + blocking)
 
         # ------------------------------------------------------------------
-        # Precedence within WorkPackage (sequenced operations)
+        # Precedence within WorkPackage — read from PrecedenceEdge records
+        # (docs/05 R-A2/A3, §4 surgery). Edges are template-level (keyed by
+        # OperationSpec id, one linear chain per Process); resolved here to
+        # the concrete Operation instances of each WorkPackage via spec_ref.
+        # min_lag carries dwell per R-Dwell (phases occupy resources; lags
+        # don't). max_lag is plumbed through but unconstrained (None) until
+        # a real source exists (docs/06 §8 doorway, R-A3 default = infinity).
+        #
+        # Quirk preserved from the pre-surgery implicit-sequence model
+        # (defaults-reproduce-baseline, docs/05 §3 item 2): _td_to_minutes
+        # floors at 1 minute, so a min_lag of exactly 0 still yields a
+        # 1-minute gap — this was already true of dwell_duration=0 before
+        # edges existed, and changing it would move every downstream
+        # operation's start time by a minute.
         # ------------------------------------------------------------------
-        for wp_id, op_ids in wp_op_map.items():
-            op_seqs = sorted(
-                [(operations_by_id[oid]["sequence"], oid) for oid in op_ids
-                 if oid in (operations_by_id := {o["id"]: o for o in operations})],
-                key=lambda x: x[0],
-            )
-            for i in range(len(op_seqs) - 1):
-                pred_id = op_seqs[i][1]
-                succ_id = op_seqs[i+1][1]
-                dwell_op = next(
-                    (o for o in operations if o["id"] == pred_id), {}
-                )
-                dwell_sec = _td_to_minutes(_parse_td(dwell_op.get("dwell_duration", "PT0S")))
+        ops_by_wp_and_spec: dict[tuple[str, str], str] = {
+            (op["workpackage_ref"], op["spec_ref"]): op["id"] for op in operations
+        }
+
+        for edge in edges:
+            pred_spec = edge["predecessor"]
+            succ_spec = edge["successor"]
+            min_lag_min = _td_to_minutes(_parse_td(edge.get("min_lag", "PT0S")))
+            max_lag_raw = edge.get("max_lag")
+
+            for wp_id in wp_op_map:
+                pred_id = ops_by_wp_and_spec.get((wp_id, pred_spec))
+                succ_id = ops_by_wp_and_spec.get((wp_id, succ_spec))
+                if pred_id is None or succ_id is None:
+                    continue
                 model.add(
-                    var_map.op_start[succ_id] >= var_map.op_end[pred_id] + dwell_sec
+                    var_map.op_start[succ_id] >= var_map.op_end[pred_id] + min_lag_min
                 )
+                if max_lag_raw is not None:
+                    max_lag_min = _td_to_minutes(_parse_td(max_lag_raw))
+                    model.add(
+                        var_map.op_start[succ_id] <= var_map.op_end[pred_id] + max_lag_min
+                    )
 
         # ------------------------------------------------------------------
         # WorkPackage end = max of its operations' ends

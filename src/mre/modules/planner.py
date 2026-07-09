@@ -157,7 +157,6 @@ class Planner:
                     setup_family=spec.get("setup_family", ""),
                     setup_duration=_parse_td(spec.get("base_setup", "PT0S")),
                     run_duration=run_duration,
-                    dwell_duration=_parse_td(spec.get("dwell_rule", "PT0S")),
                     splittable=bool(spec.get("splittable", False)),
                 )
                 op_provenance = _op_provenance(
@@ -364,7 +363,7 @@ def _op_provenance(
 
     spec_inputs = [InputRef(entity_id=spec_id, attribute_name=attr, snapshot_id=snapshot_id)
                    for attr in ("sequence", "resource_requirements", "setup_family",
-                                "base_setup", "dwell_rule", "splittable")]
+                                "base_setup", "splittable")]
 
     return [
         _drv("spec_ref",    "planner.spec_ref",          [InputRef(entity_id=spec_id, attribute_name="id", snapshot_id=snapshot_id)]),
@@ -374,9 +373,7 @@ def _op_provenance(
         _drv("setup_family", "planner.copy_spec",        spec_inputs[2:3]),
         _drv("setup_duration", "planner.copy_base_setup", spec_inputs[3:4]),
         _drv("run_duration", "demand.quantity * spec.run_rate", run_duration_inputs),
-        _drv("dwell_duration", "planner.copy_dwell",     spec_inputs[4:5]),
-        _drv("splittable",  "planner.copy_splittable",   spec_inputs[5:6]),
-        _dflt("predecessors"),
+        _drv("splittable",  "planner.copy_splittable",   spec_inputs[4:5]),
         _dflt("min_chunk"),
     ]
 

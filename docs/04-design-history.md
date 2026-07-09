@@ -1042,5 +1042,132 @@ own "Status:" line, not the filename.
 (`tests/test_generate_erp_dataset.py`) + 16 new gate tests
 (`tests/test_conformance.py`) + the end-to-end harness
 (`tests/test_ids_end_to_end.py`, parametrized across 7 non-slow scenarios plus
-5 dedicated scenario-property tests, `clean_large` opt-in). Exact final count
-recorded once the full suite is confirmed green.
+5 dedicated scenario-property tests, `clean_large` opt-in). 624 tests green
+after this amendment.
+
+---
+
+## Amendment — 2026-07-09: Precedence edges become first-class records (docs/05 §4 surgery)
+
+**What moved.** Per docs/05 R-A2/A3 and R-Dwell: `Operation.predecessors`
+(always empty in practice — nothing ever populated it) and
+`Operation.dwell_duration` / `OperationSpec.dwell_rule` (always zero — no
+data source ever fed them) are removed. A new entity, `PrecedenceEdge`
+(`{id, snapshot_id, predecessor, successor, min_lag, max_lag}`), carries
+precedence and lags instead. `predecessor`/`successor` are **OperationSpec**
+refs, not Operation refs — the edge is template-level (one linear chain per
+Process, reused by every WorkPackage that instantiates it), consistent with
+how OperationSpec itself is quantity-independent (D-10). docs/01 §5.4/§5.4a
+and §6.3 updated in this commit; docs/01 §8 invariant 6 updated to note
+PrecedenceEdges ride in the WorkPackages+Operations bucket of the Solver
+Builder's six inputs, not a seventh.
+
+**Four consumers, as docs/05 §4 specified:**
+1. **Contracts** (`src/mre/contracts/entities.py`) — `PrecedenceEdge` added;
+   `predecessors`/`dwell_duration` removed from `Operation`; `dwell_rule`
+   removed from `OperationSpec`.
+2. **All three adapters** (`adapter.py`, `raw_adapter.py`, `ids_adapter.py`)
+   — each now synthesizes a linear chain of edges from routing-line sequence
+   order after writing a Process's OperationSpecs (`_synthesize_precedence_pairs`,
+   new shared helper in `adapter.py`, imported by the other two).
+   `ids_adapter.py` is the one adapter with a real dwell source
+   (`routing_lines.dwell_minutes`); its dwell value lands as `min_lag` on the
+   *outgoing* edge of the spec it follows, with `DerivedProvenance`
+   (`formula_id="ids_dwell_to_min_lag"`). The other two adapters have no
+   dwell column in their source data (confirmed: sample_data's
+   `routinglines.csv` and the real ticketing extract's `RoutingLines.csv`
+   both lack one — `RoutingLines.TargetTime` is 0% populated per
+   `raw_data_profile.md`), so their edges carry `min_lag=0` with
+   `DefaultedProvenance(policy="no_dwell_source_in_...")`. `max_lag` is
+   `None` (unconstrained) from every adapter — no doorway exists yet
+   (docs/06 §8, tracked as A3 in docs/05).
+3. **Solver Builder** (`solver_builder.py`) — the old implicit
+   `sequence`-sorted precedence loop is replaced by `edges = [d for d in
+   work_items if "predecessor" in d]`, resolved to concrete Operations per
+   WorkPackage via `spec_ref` (`ops_by_wp_and_spec`), enforcing
+   `succ.start >= pred.end + min_lag` and, when `max_lag` is not `None`,
+   `succ.start <= pred.end + max_lag`. `_apply_lock_constraints` (the
+   2026-07-08 locks doorway) and the transition-constraint pass are
+   unaffected — both already worked from `operations`/`constraints`
+   directly, not from the old precedence loop.
+4. **WIP semantics** (docs/06 §5.13) — no code yet (still docs-only per the
+   2026-07-08 amendment), but the "downstream operations chain from this
+   fixed reality" sentence now explicitly says this chaining walks
+   PrecedenceEdge records, the same edges the Solver Builder reads for
+   ordinary precedence — so when WIP lands, an in-flight operation's
+   successor is found by graph walk, not by re-deriving sequence order.
+
+**The defaults-reproduce-baseline gate — and what capturing it actually required.**
+Golden baselines were captured *before* any code changed
+(`tests/fixtures/baselines/{sample_data,gauntlet}_{schedule.csv,summary.json}`),
+per the docs/05 §3 modularity gate. Two things had to be solved to make
+"identical schedule" a checkable claim rather than an aspiration:
+
+- **CP-SAT's default parallel search is not reproducible run-to-run**,
+  confirmed empirically before touching any surgery code: two stock runs of
+  the *unchanged* sample_data pipeline produced different resource
+  assignments (which of two equal-rate casting machines, which order among
+  same-cost operations) for the *same* proven-optimal total cost
+  (24769.00 both times). Bit-identical comparison therefore required pinning
+  three independent sources of nondeterminism simultaneously:
+  `PYTHONHASHSEED=0` (Python's per-process string-hash randomization affects
+  dict/set iteration order, which affects CP-SAT variable-creation order —
+  entity IDs are UUID strings), `--solver-workers 1` (CP-SAT parallel search
+  is inherently non-reproducible across processes), and `--solver-seed 42`
+  (CP-SAT's internal tie-breaking). All three together, on the *same*
+  process-per-run `python -m mre` invocation used to capture the fixtures,
+  gave bit-identical `schedule.csv` output across reruns. `--solver-workers`
+  and `--solver-seed` are new optional CLI flags / `SolveRunner` constructor
+  params (default `None` = unchanged parallel-search production behavior —
+  this is purely a testing knob, not a production default change).
+- **"The gauntlet" baseline uses `--horizon-days 2` against the real
+  `raw_data/` extract**, not the full 2864-demand backlog: this slice
+  happens to reproduce the documented "173 gauntlet exclusions" number
+  (cited repeatedly in docs/05/07) at a size that solves in ~1s and a total
+  pipeline wall time of ~6s, making it a fast, real, reproducible regression
+  fixture rather than the 100-300s+ full-backlog solve. `tests/
+  test_defaults_reproduce_baseline.py::TestGauntletReproducesBaseline::
+  test_still_173_infeasible_subset_exclusions` pins that number as a named
+  regression anchor independent of the byte-identical CSV comparison.
+
+**A subtle pre-existing quirk had to be preserved, not "fixed."** The old
+dwell-gap code reused `_td_to_minutes` (`max(1, int(td.total_seconds()/60))`)
+for the predecessor→successor gap, the same helper used for operation
+*durations* (where a 1-minute floor exists to avoid zero-length CP-SAT
+intervals). Since dwell was always 0 in every dataset, this meant every
+consecutive same-WorkPackage operation pair already had an implicit
+1-minute gap baked into every historical schedule — confirmed directly in
+the golden fixture (`WO-1001` seq 10 ends `07:36`, seq 20 starts `07:37`,
+seq 30 starts `08:14` after seq 20 ends `08:13`). R-Dwell's semantic intent
+is a true zero-lag default; the edge-based `min_lag` code reuses the same
+`_td_to_minutes` floor rather than "correcting" it to true zero, because
+correcting it would shift every downstream operation's start time by a
+minute and fail the defaults-reproduce-baseline gate. Recorded here as a
+known, deliberate, non-obvious behavior — worth revisiting the day dwell
+values are real and the 1-minute floor's origin (an accidental side effect
+of code reuse, not a deliberate design choice) stops being harmless.
+
+**docs/05 status column moved on evidence, not aspiration.** A1
+(finish-start precedence) was already marked PP; unaffected. A2 (min lag
+incl. dwell) moves from "MP→PP with edge surgery" to a corrected **MP**
+pending its actual PP bar (docs/06 §8 full chain: a gate check for
+malformed dwell values, and the `dwell_heavy` generator scenario docs/07
+Phase 1 already lists as backlog) — the edge-surgery portion is done and
+cited, but "the mechanism works" and "the full pipeline chain is proven" are
+different claims, and docs/05 §5 explicitly warns against blurring them. A3
+(max lag) moves from **UI** to **MP**: the Solver Builder now honors
+`max_lag` when present (`tests/test_precedence_edges.py::test_max_lag_enforced`),
+though no doorway populates a non-`None` value yet.
+
+**New tests.** `tests/test_precedence_edges.py` (14 tests) — entity
+defaults, `_synthesize_precedence_pairs`, field-removal assertions on
+`Operation`/`OperationSpec`, edge synthesis from each of the three adapters
+(including the IDS adapter's dwell→min_lag mapping via an injected
+`dwell_minutes` value), and direct Solver Builder tests proving both
+`min_lag` and `max_lag` are enforced (and that `max_lag=None` stays
+unconstrained). `tests/test_defaults_reproduce_baseline.py` (5 tests) — the
+gate itself, described above.
+
+**629 tests green** after this amendment (624 + 14 new precedence-edge tests
++ 5 new baseline-reproduction tests; existing-fixture edits for the
+field removals changed no test counts).

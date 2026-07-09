@@ -29,7 +29,7 @@ UTC = timezone.utc
 
 _M1_ENTITY_TYPES = [
     "demand", "product", "resource", "resourcepool", "calendar",
-    "constraint", "costmodel", "process", "operationspec",
+    "constraint", "costmodel", "process", "operationspec", "precedenceedge",
 ]
 
 
@@ -195,6 +195,7 @@ class ScenarioRunner:
         fuls       = list(reader.iter_entities("fulfillment"))
         wps        = list(reader.iter_entities("workpackage"))
         ops        = list(reader.iter_entities("operation"))
+        edges      = list(reader.iter_entities("precedenceedge"))
         resources  = list(reader.iter_entities("resource"))
         pools      = list(reader.iter_entities("resourcepool"))
         calendars  = list(reader.iter_entities("calendar"))
@@ -219,7 +220,7 @@ class ScenarioRunner:
         )
         from mre.modules.solver_builder import SolverBuilder
         model, var_map = SolverBuilder().build(
-            wps + ops, resources + pools, flattened_cals,
+            wps + ops + edges, resources + pools, flattened_cals,
             fuls + demands, constraints, cost_model,
         )
         b_rep.end(RunStatus.SUCCESS)

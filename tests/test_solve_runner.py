@@ -23,9 +23,9 @@ def _simple_model():
              "earliest_start": HORIZON.isoformat(), "operations": [op_id],
              "process_version": 1, "state": "planned", "created_by": "dec-1"}]
     ops = [{"id": op_id, "spec_ref": "s", "workpackage_ref": wp_id,
-             "sequence": 10, "predecessors": [], "resource_requirements": [],
+             "sequence": 10, "resource_requirements": [],
              "setup_family": "gear", "setup_duration": "PT60S",
-             "run_duration": "PT600S", "dwell_duration": "PT0S", "splittable": False}]
+             "run_duration": "PT600S", "splittable": False}]
     ress = [{"id": r_id, "resource_type": "machine", "capabilities": [],
               "capacity": 1, "cost_rate": 5.0, "calendar_ref": None, "pool_refs": []}]
     fuls = [{"id": f_id, "demand_ref": d_id, "workpackage_ref": wp_id,

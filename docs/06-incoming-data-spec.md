@@ -1,8 +1,10 @@
 # Incoming Data Specification (IDS)
 
-**Document 6** · Status: Draft v0.2 (living document) · Companions: *01 Canonical Model*, *02 Evidence Contract*, *03 PoC Plan*, *04 Design History*, *05 Constraint Catalog (in progress)*
+**Document 6** · Status: Draft v0.3 (living document) · Companions: *01 Canonical Model*, *02 Evidence Contract*, *03 PoC Plan*, *04 Design History*, *05 Constraint Catalog (in progress)*
 
 **v0.2 changes:** cost model REQUIRED with a minimal core (§5.9); customer and priority doorways (§5.10, §3); setup transitions (§5.11); locks (§5.12); overtime expression (§5.6, §5.9); extension & pipeline-proof clause (§8); costing-completeness grade on the certificate (§4).
+
+**v0.3 changes:** `wip_status.csv` doorway for in-flight work / soft-start rescheduling (§5.13); `wip_progress_basis` manifest declaration (§3); WIP gate checks (§4 Tier 2); the reschedule-from-a-point invariant amendment (§5.13).
 
 ---
 
@@ -41,7 +43,8 @@ calendars.csv           REQUIRED — shifts, exceptions, overtime (§5.6)
 cost_model.json         REQUIRED — economics, minimal core (§5.9)
 customers.csv           OPTIONAL* — customer master & priorities (§5.10)
 setup_transitions.csv   OPTIONAL* — dependent setup matrix (§5.11)
-locks.csv               OPTIONAL* — frozen/in-flight assignments (§5.12)
+locks.csv               OPTIONAL* — frozen/pinned future assignments (§5.12)
+wip_status.csv          OPTIONAL* — in-flight work / soft-start state (§5.13)
 bom.csv                 OPTIONAL — material structure (§5.7)
 sales_history.csv       OPTIONAL — demand history (§5.8)
 ```
@@ -72,7 +75,8 @@ Interpretation ambiguities are resolved by the submitter's declaration, never by
     "quantity_uom_source": "products.uom",
     "setup_minutes_scope": "per_operation | per_order",
     "priority_precedence": "order_over_customer | customer_over_order | max | multiply",
-    "unlisted_transition_default": "base_setup | zero | forbidden"
+    "unlisted_transition_default": "base_setup | zero | forbidden",
+    "wip_progress_basis": "remaining_minutes | quantity_complete"
   },
   "notes": "free text"
 }
@@ -81,7 +85,7 @@ Interpretation ambiguities are resolved by the submitter's declaration, never by
 Rules:
 - `reference_date` is the scheduling "now"; all temporal validation is relative to it (historical replay is a feature).
 - `timezone` applies to naive timestamps; the gate converts to UTC on landing and records it.
-- Every `semantics` field relevant to submitted tables is REQUIRED (`priority_precedence` iff both customer and order priorities are present; `unlisted_transition_default` iff setup_transitions.csv is present). Missing required declarations are Tier-1: we do not divine meaning.
+- Every `semantics` field relevant to submitted tables is REQUIRED (`priority_precedence` iff both customer and order priorities are present; `unlisted_transition_default` iff setup_transitions.csv is present; `wip_progress_basis` iff wip_status.csv is present). Missing required declarations are Tier-1: we do not divine meaning.
 
 ## 4. Conformance gate and certificate
 
@@ -95,7 +99,7 @@ The gate runs as an evidence-emitting module (standard finding vocabulary). Outp
 
 **Check tiers:**
 - **Tier 1 — Structural (rejecting):** required files & manifest present and schema-valid; required columns parseable; keys non-null; ≥1 in-scope order, resource, calendar pattern; cost model core present (§5.9); reference-chain resolution below rejection threshold (Appendix A).
-- **Tier 2 — Integrity (conditional):** resolution rates (orders→products/routes→lines); duration computability; date sanity vs reference_date; facility consistency; duplicates; inactive/unapproved route usage; **doorway consistency** — `setup_family` populated without setup_transitions.csv; `customer_id` populated without customers.csv when customer weighting is declared; locks referencing unknown orders/resources.
+- **Tier 2 — Integrity (conditional):** resolution rates (orders→products/routes→lines); duration computability; date sanity vs reference_date; facility consistency; duplicates; inactive/unapproved route usage; **doorway consistency** — `setup_family` populated without setup_transitions.csv; `customer_id` populated without customers.csv when customer weighting is declared; locks referencing unknown orders/resources; **WIP coherence** — wip rows referencing unknown orders/sequences/resources; sequence-order violations (an operation in_progress or complete while a predecessor is not_started — also a data-quality signal about shop-floor reporting); in_progress rows missing progress values; actual_start after reference_date.
 - **Tier 3 — Quality (informational):** statistical outliers (thresholds calibrated from recorded distributions, never fixed constants); placeholder-date detection; defaulted decision-relevant attributes; sparse optional columns.
 
 **Costing-completeness grade (new, reported on every certificate):**
@@ -184,7 +188,26 @@ customer_id ✓ · name · priority_class ✓ (→ priority_multipliers) · note
 from_family ✓ · to_family ✓ · setup_minutes ✓ · setup_cost (optional; else minutes × rate) · scrap_units (optional). Unlisted pairs per manifest `unlisted_transition_default`. Presence without any `setup_family` values in routing_lines ⇒ Tier-2 flag (unused matrix); the reverse ⇒ Tier-2 flag (keys without a lock).
 
 ### 5.12 locks.csv (optional*, doorway)
-order_id ✓ · sequence (blank = whole order) · resource_id ✓ · start ✓ (datetime) · lock_type ✓ (frozen = immovable | pinned_resource | pinned_start) · authority ✓ (who imposed it) · expiry (optional). Translates to frozen_assignment / pinned constraints with provenance human_override or erp_data. Every plant has in-flight work; a scheduler that can't respect it fails the first demo.
+order_id ✓ · sequence (blank = whole order) · resource_id ✓ · start ✓ (datetime) · lock_type ✓ (frozen = immovable | pinned_resource | pinned_start) · authority ✓ (who imposed it) · expiry (optional). Translates to frozen_assignment / pinned constraints with provenance human_override or erp_data. **Locks are human decisions about future work.** For work already underway, use wip_status.csv (§5.13) — different truth, different provenance.
+
+### 5.13 wip_status.csv (optional*, doorway) — soft starts / reschedule-from-a-point
+The observed shop-floor state at reference_date, enabling rescheduling from the plant's actual position rather than a blank slate. Provenance: **observed (erp_data)** — facts, not decisions.
+
+| Column | Type | Req | Notes |
+|---|---|---|---|
+| order_id | string | ✓ | → orders |
+| sequence | int | ✓ | → routing_lines of the order's route |
+| status | string | ✓ | complete / in_progress / not_started |
+| actual_start | datetime | ✓ for in_progress & complete | May legitimately precede reference_date |
+| actual_resource_id | string | ✓ for in_progress & complete | Where it actually ran — reality may differ from any prior plan |
+| remaining_minutes | decimal | per manifest basis | one of the two progress expressions |
+| quantity_complete | decimal | per manifest basis | the other; manifest `wip_progress_basis` declares which is authoritative |
+
+Scheduling semantics: **complete** operations consume no capacity and satisfy precedence; **in_progress** operations become fixed intervals on actual_resource_id for their remaining duration from reference_date; downstream operations chain from this fixed reality **by walking PrecedenceEdge records** (docs/01 §5.4a, docs/05 R-A2/A3) — the same edges the Solver Builder reads for ordinary precedence, so a fixed in-flight operation's successor is found via its outgoing edge, not by re-deriving sequence order. Canonical landing: WorkPackage.state (planned / frozen / in_progress / complete — the seam cut in the founding design).
+
+**Invariant amendment (supersedes the blanket pre-reference clamp):** *no newly scheduled operation may start before reference_date; observed in-flight starts are exempt and rendered as observed history.* Both clamp sites (solver horizon derivation and calendar flattening) honor the amended form.
+
+Absent wip_status.csv, all in-scope orders are treated as not_started (a blank-slate schedule) — valid for first submissions, and the certificate notes it for recurring sources where its continued absence becomes suspicious.
 
 ## 6. Relationship to the synthetic generator
 

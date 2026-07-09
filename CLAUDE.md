@@ -21,8 +21,19 @@ source, including this file and the legacy code**:
    17 finding codes), the eight Reporter verbs, sink/consolidation rules.
 3. `docs/03-poc-plan.md` — module inventory M1–M10, build phases 0–3, solver scope
    cuts, the demonstration script that serves as the acceptance test.
+4. `docs/05-constraint-catalog.md` — the census of scheduling constraints: locked
+   rulings, the full catalog with verdict/plane/status per item, acceptance gates
+   (including the defaults-reproduce-baseline modularity gate).
+5. `docs/06-incoming-data-spec.md` — the IDS: submission schema, the conformance
+   gate's Tier 1/2/3 checks, the costing-completeness grade, doorways (customers,
+   setup_transitions, locks, wip_status).
+6. `docs/07-roadmap.md` — the live product roadmap (phases, workstreams, open
+   rulings queue). **Check this before picking "next work"** — it supersedes any
+   hand-written task list here.
 
-`docs/00-README.md` is a one-page orientation.
+`docs/00-README.md` is a one-page orientation. `docs/04-design-history.md` is the
+append-only decision log — read its Amendment log tail for the most recent
+non-obvious judgment calls before touching an area it covers.
 
 ## Hard rules (do not violate, do not "improve away")
 
@@ -63,8 +74,8 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status / next work
 
-**Phases 0–3 complete, plus real-data ingestion, what-if runner, and IDS
-adoption (gate + generator). 624+ tests green.**
+**Phases 0–3 complete, plus real-data ingestion, what-if runner, IDS
+adoption (gate + generator), and the precedence-edge surgery. 629+ tests green.**
 
 Built so far: contracts + Reporter (Phase 0); adapter M1, snapshot store M2,
 validator M3, DQ report, identity-map persistence, per-resource Calendars,
@@ -77,7 +88,7 @@ M9 evidence index + M10 explainer + demo script (Phase 3); real raw_data/
 ingestion (RawAdapter); the what-if scenario runner (M_whatif). Judgment
 calls are recorded in the docs/04 Amendment log.
 
-**IDS adoption (docs/06, this session).** `ModuleCode.M0` — the IDS
+**IDS adoption (docs/06, 2026-07-08).** `ModuleCode.M0` — the IDS
 conformance gate (`src/mre/modules/conformance.py`, `python -m mre.gate
 <submission_dir>`) grades a submission REJECTED / CONDITIONAL / ACCEPTED plus
 a C0–C3 costing-completeness grade, against Tier 1/2/3 checks mapped onto the
@@ -91,24 +102,29 @@ presets, a 13-item anomaly catalog, `truth_manifest.json` per submission);
 other. Full detail, including two real bugs the round-trip caught, in the
 2026-07-08 docs/04 amendment.
 
-Immediate next tasks, in order:
+**Precedence edges (docs/05 §4 surgery, 2026-07-09).** `Operation.predecessors`
+and `dwell_duration`/`dwell_rule` are gone; a new `PrecedenceEdge` entity
+(`{predecessor, successor, min_lag, max_lag}`, keyed by OperationSpec, docs/01
+§5.4a) carries precedence and lags instead — dwell lands as `min_lag` on the
+outgoing edge (R-Dwell: phases occupy resources, lags don't). All three
+adapters synthesize edges from routing-line sequence; the Solver Builder reads
+them (`max_lag` plumbing in place, unconstrained by default — no doorway
+populates it yet, docs/05 A3). `tests/test_defaults_reproduce_baseline.py` is
+the defaults-reproduce-baseline gate (docs/05 §3): golden fixtures captured
+pre-surgery from `sample_data` and a `--horizon-days 2` gauntlet slice (the
+documented 173-exclusion window), compared byte-for-byte post-surgery — this
+required pinning `PYTHONHASHSEED=0` plus new `--solver-workers`/`--solver-seed`
+CLI flags, since CP-SAT's default parallel search is not reproducible
+run-to-run even without any code change (see the 2026-07-09 docs/04 amendment
+for what that discovery implies for any future "identical schedule" claim).
 
-1. **Rep 2 — chunking.** `chunking_exam` is currently pipeline-proven only up
-   to "correctly excluded via INFEASIBLE_SUBSET." Landing chunked/preemptive
-   operation support (docs/03 solver-scope-cut table) turns this scenario
-   into a positive acceptance test: long operations should split across
-   shift windows and schedule, not just get excluded. Update the scenario's
-   truth_manifest expectations in the same change.
-2. **docs/05 — Constraint Catalog.** Referenced by docs/06 as "in progress"
-   but not yet started. Needs the test-status column (model-proven /
-   pipeline-proven / unimplemented) called for in docs/06 §8; the IDS
-   harness this session already gives pipeline-proven status to
-   customers/priority, setup_transitions, and locks.
-3. **Overtime pricing.** Calendar `added`/`overtime` exceptions are recorded
-   as capacity fact (model-proven) but the premium is not yet in the solver
-   objective — the seam has existed since D-11; `cost_model.refinements.
-   overtime_premium_multiplier` is parsed and stored on CostModel but unused
-   by M5. Pricing it is the natural next doorway to make pipeline-proven.
+**Next work: see `docs/07-roadmap.md`** for the live, prioritized plan (Phase
+1 exit bar, week-one spikes, cross-cutting workstreams). Do not hand-maintain
+a duplicate task list here — docs/07 is the authoritative source and is
+updated same-day per its own W2 workstream rule. As of this entry, Phase 1 is
+in progress: chunking/splittable operations, overtime premium pricing, outlier
+calibration, and the dwell_heavy/overtime_required/calendar_chaos/
+multi_facility_balance/scale-ladder generator scenarios are the open items.
 
 ## Working style
 

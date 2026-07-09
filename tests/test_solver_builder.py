@@ -41,12 +41,12 @@ def _operation(oid, wp_id, spec_id, seq=10, setup_sec=60, run_sec=9000,
                family="gear"):
     return {
         "id": oid, "spec_ref": spec_id, "workpackage_ref": wp_id,
-        "sequence": seq, "predecessors": [],
+        "sequence": seq,
         "resource_requirements": [],  # no specific requirement → all resources eligible
         "setup_family": family,
         "setup_duration": f"PT{setup_sec}S",
         "run_duration": f"PT{run_sec}S",
-        "dwell_duration": "PT0S", "splittable": False,
+        "splittable": False,
     }
 
 
