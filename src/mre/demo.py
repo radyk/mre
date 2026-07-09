@@ -83,7 +83,10 @@ def run_demo(
     print(f"  Adapter complete.")
 
     v_rep = _rep(ModuleCode.M3, "demo validator v1")
-    v_result = Validator().run(snap_id, store, v_rep)
+    # sample_data_v1's seeded PROD-007 outlier is 45x median (SCENARIO.md), designed
+    # against the original 10x threshold. The gauntlet-calibrated default (Rep 3,
+    # 75.76x) is a different deployment's config; the demo keeps its own.
+    v_result = Validator().run(snap_id, store, v_rep, outlier_threshold_ratio=10.0)
     v_rep.end(RunStatus.SUCCESS)
 
     # Write DQ report to disk; also build summary dict for programmatic use.

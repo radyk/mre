@@ -44,7 +44,10 @@ class TestAllSixDefectsFound:
             config={}, trigger="pytest", snapshot_id=snap_id, sink_dir=runs_dir,
         )
         validator = Validator()
-        v_result = validator.run(snapshot_id=snap_id, store=store, reporter=v_rep)
+        # sample_data's seeded PROD-007 outlier is 45x median, designed against the
+        # original 10x threshold (see tests/test_validator.py's validated_run fixture).
+        v_result = validator.run(snapshot_id=snap_id, store=store, reporter=v_rep,
+                                  outlier_threshold_ratio=10.0)
         v_rep.end(RunStatus.SUCCESS)
 
         all_findings = (

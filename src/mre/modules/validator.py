@@ -6,9 +6,14 @@ Checks performed:
 1. TEMPORAL_IMPOSSIBILITY  — Demand.due < reference_date (historical-replay safe).
 2. VALUE_OUT_OF_RANGE      — Demand.quantity == 0 (or other OOB values).
 3. LOW_CONFIDENCE_INPUT    — Demand.customer_weight derived from defaulted/synthesized provenance.
-4. STATISTICAL_OUTLIER     — OperationSpec.run_rate > 10× median within product family.
+4. STATISTICAL_OUTLIER     — OperationSpec.run_rate > threshold × median within product family.
                              Groups by product_family (via process→product chain); falls back
                              to setup_family if product_family not available (sample_data compat).
+                             threshold is config-driven (outlier_threshold_ratio param, plant_config,
+                             or --outlier-threshold); defaults to the gauntlet-calibrated value
+                             (tools/calibrate_outliers.py, see _DEFAULT_OUTLIER_THRESHOLD_RATIO).
+                             Evidence records the threshold and its basis so the DQ report can
+                             say WHY something is flagged, not just that it was.
 5. INFEASIBLE_SUBSET       — Class-aware window-fit (docs/05 R-C3). Non-resumable
                              (splittable=false) operations: estimated duration exceeds the
                              longest contiguous calendar window on every eligible resource.
@@ -17,11 +22,14 @@ Checks performed:
                              resource's weekly open minutes, scaled to the calendar time
                              between reference_date and the demand's own due date) — i.e.
                              excluded only when even chunked it cannot fit before due date.
-   DENSITY GUARD            (STATISTICAL_OUTLIER, warning, proceeded_flagged) — resumable
-                             operations per eligible resource > 3: the chunk-boundary-
-                             interval encoding's validated ceiling is ~4-4.5 resumable
-                             ops/resource (tools/chunking_spike2_report.md); per-resource
-                             decomposition is the mitigation if solves become slow.
+   DENSITY_LIMIT             (warning, proceeded_flagged) — resumable operations per
+                             eligible resource > 3: the chunk-boundary-interval encoding's
+                             validated ceiling is ~4-4.5 resumable ops/resource
+                             (tools/chunking_spike2_report.md); per-resource decomposition
+                             is the mitigation if solves become slow. A distinct code from
+                             STATISTICAL_OUTLIER (docs/02 §4.3, added 2026-07-12) — a
+                             structural concentration signal, not a distributional one;
+                             the two must trend separately.
 6. PROVENANCE_GAP          — Entity attribute with no sidecar record.
 
 reference_date defaults to datetime.now(UTC) when not supplied (backward compat with
@@ -45,12 +53,24 @@ from mre.contracts.vocabularies import (
     FindingCode, FindingDisposition, FindingSeverity,
     ModuleCode, RecordTier,
 )
+from mre.modules.calendar_utils import longest_shift_minutes, weekly_open_minutes
 from mre.modules.snapshot_store import SnapshotStore
 from mre.reporter import Reporter
 
 UTC = timezone.utc
 
 _DEMAND_DECISION_ATTRS = {"customer_weight", "commitment_class", "due"}
+
+# Rep 3 (docs/07 Phase 1): calibrated via tools/calibrate_outliers.py against
+# the raw_data gauntlet snapshot (2026-07-12) — pooled log2(run_rate/family
+# median) p99, converted back to a plain multiplier. At the old fixed 10x
+# constant the gauntlet hit rate was 578/4007 = 14.4% specs; at this
+# calibrated value it is 40/4007 = 1.00%. Config-overridable per deployment
+# (plant_config "statistical_outlier_threshold_ratio" or --outlier-threshold);
+# this is a starting point, not a universal constant — re-calibrate per
+# real dataset.
+_DEFAULT_OUTLIER_THRESHOLD_RATIO = 75.76
+_OUTLIER_THRESHOLD_BASIS = "calibrated_v1"
 
 _PT_RE = re.compile(
     r"^P(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$"
@@ -73,31 +93,6 @@ def _parse_duration_seconds(raw) -> float:
     return days * 86400 + hours * 3600 + minutes * 60 + secs
 
 
-def _longest_shift_minutes(cal: dict) -> float:
-    """Longest contiguous work window in minutes from a calendar's base_pattern."""
-    bp = cal.get("base_pattern", {})
-    days = bp.get("weekdays", [])
-    if not days:
-        return 0.0
-    start = bp.get("shift_start", "07:00")
-    end = bp.get("shift_end", "19:00")
-    try:
-        h_s, m_s = (int(x) for x in start.split(":"))
-        h_e, m_e = (int(x) for x in end.split(":"))
-        return float((h_e * 60 + m_e) - (h_s * 60 + m_s))
-    except (ValueError, AttributeError):
-        return 0.0
-
-
-def _weekly_open_minutes(cal: dict) -> float:
-    """Total open minutes per week from a calendar's base_pattern (open
-    days/week x shift length) — the resumable-operation capacity metric,
-    vs. _longest_shift_minutes' single-window metric for non-resumable ops."""
-    bp = cal.get("base_pattern", {})
-    days = bp.get("weekdays", [])
-    if not days:
-        return 0.0
-    return len(days) * _longest_shift_minutes(cal)
 
 
 @dataclass
@@ -116,9 +111,26 @@ class Validator:
         store: SnapshotStore,
         reporter: Reporter,
         reference_date: Optional[datetime] = None,
+        outlier_threshold_ratio: Optional[float] = None,
     ) -> ValidationResult:
+        """outlier_threshold_ratio: STATISTICAL_OUTLIER multiplier (docs/02
+        §4.3), config-driven (plant_config or CLI) per Rep 3. Defaults to
+        the calibrated gauntlet value (tools/calibrate_outliers.py,
+        pooled log2-ratio p99 -> ~1% hit rate; see the 2026-07-12 docs/04
+        amendment). Not a claim that this value fits every plant's data —
+        it is the value calibrated for the one real dataset this system
+        has seen; re-run the calibration tool per deployment.
+        """
         reader = store.load_snapshot(snapshot_id)
         now = reference_date if reference_date is not None else datetime.now(UTC)
+        threshold_ratio = (
+            outlier_threshold_ratio if outlier_threshold_ratio is not None
+            else _DEFAULT_OUTLIER_THRESHOLD_RATIO
+        )
+        threshold_basis = (
+            "config_override" if outlier_threshold_ratio is not None
+            else _OUTLIER_THRESHOLD_BASIS
+        )
 
         demands = list(reader.iter_entities("demand"))
         op_specs = list(reader.iter_entities("operationspec"))
@@ -163,8 +175,8 @@ class Validator:
             cal_id = res.get("calendar_ref")
             if cal_id and cal_id in calendars_by_id:
                 cal = calendars_by_id[cal_id]
-                res_window[res["id"]] = _longest_shift_minutes(cal)
-                res_weekly_minutes[res["id"]] = _weekly_open_minutes(cal)
+                res_window[res["id"]] = longest_shift_minutes(cal)
+                res_weekly_minutes[res["id"]] = weekly_open_minutes(cal)
             else:
                 res_window[res["id"]] = 0.0
                 res_weekly_minutes[res["id"]] = 0.0
@@ -274,7 +286,7 @@ class Validator:
             if median <= 0:
                 continue
             for secs, spec_id in entries:
-                if secs > 10 * median:
+                if secs > threshold_ratio * median:
                     reporter.record_finding(
                         code=FindingCode.STATISTICAL_OUTLIER,
                         severity=FindingSeverity.WARNING,
@@ -284,7 +296,8 @@ class Validator:
                             "run_rate_seconds": secs,
                             "median_seconds": median,
                             "ratio": round(secs / median, 1),
-                            "threshold": "10x",
+                            "threshold": f"{threshold_ratio:g}x",
+                            "threshold_basis": f"{threshold_basis} from snapshot {snapshot_id}",
                         },
                         disposition=FindingDisposition.PROCEEDED_FLAGGED,
                         tier=RecordTier.SUPPORTING,
@@ -438,7 +451,7 @@ class Validator:
         for rid, count in resumable_ops_by_resource.items():
             if count > 3:
                 reporter.record_finding(
-                    code=FindingCode.STATISTICAL_OUTLIER,
+                    code=FindingCode.DENSITY_LIMIT,
                     severity=FindingSeverity.WARNING,
                     subjects=[EntityRef(entity_id=rid, entity_type="resource")],
                     evidence={

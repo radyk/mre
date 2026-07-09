@@ -35,6 +35,7 @@ PLAN_SOLVE_FINDING_CODES = {
     "INFEASIBLE_SUBSET",
     "HORIZON_EXCEEDED",
     "SOLVER_NONOPTIMAL",
+    "DENSITY_LIMIT",
 }
 
 
@@ -54,10 +55,11 @@ class TestDriverCodes:
 
 
 class TestFindingCodes:
-    def test_exactly_17(self):
-        # spec says "~16" but the exhaustive list in docs/02 §4.3 enumerates
-        # 6 adapter + 7 validation + 4 plan/solve = 17 codes
-        assert len(FindingCode) == 17
+    def test_exactly_18(self):
+        # 6 adapter + 7 validation + 5 plan/solve = 18 codes (docs/02 §4.3).
+        # DENSITY_LIMIT added 2026-07-12 — the Rep 2 density guard had been
+        # repurposing STATISTICAL_OUTLIER (add-never-repurpose violation).
+        assert len(FindingCode) == 18
 
     def test_adapter_layer_codes(self):
         values = {c.value for c in FindingCode}
@@ -73,8 +75,8 @@ class TestFindingCodes:
 
     def test_all_layers_account_for_all_codes(self):
         all_expected = ADAPTER_FINDING_CODES | VALIDATION_FINDING_CODES | PLAN_SOLVE_FINDING_CODES
-        # 6 + 7 + 4 = 17 per the exhaustive enumeration in docs/02 §4.3
-        assert len(all_expected) == 17
+        # 6 + 7 + 5 = 18 per the exhaustive enumeration in docs/02 §4.3
+        assert len(all_expected) == 18
 
 
 class TestProvenanceClass:

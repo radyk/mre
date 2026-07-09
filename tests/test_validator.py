@@ -69,6 +69,11 @@ def validated_run(tmp_path_factory):
     validator = Validator()
     val_result = validator.run(
         snapshot_id=snap_id, store=store, reporter=val_reporter,
+        # sample_data's seeded PROD-007 outlier is 45x median (DEFECTS.md #5),
+        # designed against the original 10x threshold — the gauntlet-calibrated
+        # default (75.76x, Rep 3) is a different deployment's config and would
+        # silently stop catching this seeded defect.
+        outlier_threshold_ratio=10.0,
     )
     val_reporter.end(RunStatus.SUCCESS)
     return val_result, val_reporter.consolidated_doc
@@ -322,3 +327,107 @@ class TestInfeasibleSubset:
         ev = findings[0].get("evidence", {})
         assert ev.get("estimated_duration_minutes", 0) >= 3000
         assert ev.get("max_window_minutes", 0) <= 720
+
+
+class TestDensityGuard:
+    """DENSITY_LIMIT (docs/02 §4.3, added 2026-07-12): resumable operations
+    sharing one resource > 3 -> warning, proceeded_flagged. Must use its own
+    code, not STATISTICAL_OUTLIER (that check is a distributional signal on
+    run_rate values; this is a structural concentration signal on resumable-op
+    count) — the add-never-repurpose fix this test guards against regressing.
+    """
+
+    @pytest.fixture(scope="class")
+    def density_run(self, tmp_path_factory):
+        snap_id = "snap-density-test"
+        tmp = tmp_path_factory.mktemp("density")
+        store = SnapshotStore(tmp / "snapshots")
+        writer = store.begin_snapshot(snap_id)
+
+        cal = Calendar(
+            id="cal-001", snapshot_id=snap_id,
+            base_pattern={
+                "weekdays": ["mon", "tue", "wed", "thu", "fri", "sat"],
+                "shift_start": "07:00",
+                "shift_end": "19:00",
+            },
+        )
+        res = Resource(
+            id="res-001", snapshot_id=snap_id,
+            resource_type=ResourceType.MACHINE,
+            calendar_ref="cal-001",
+        )
+        entities = [cal, res]
+
+        # 4 distinct resumable specs (> the 3-op/resource threshold), each on
+        # its own product/process/demand, all sharing res-001. Small, well
+        # within a single window, and due far out — must NOT be excluded by
+        # the class-aware window-fit check; only the density guard should fire.
+        for i in range(4):
+            spec = OperationSpec(
+                id=f"spec-{i}", snapshot_id=snap_id,
+                sequence=10, run_rate="PT100M", base_setup="PT0S",
+                splittable=True,
+                resource_requirements=[
+                    ResourceRequirement(mode=ResourceRequirementMode.EXPLICIT_SET,
+                                        resource_refs=["res-001"])
+                ],
+            )
+            proc = Process(
+                id=f"proc-{i}", snapshot_id=snap_id,
+                product_ref=f"prod-{i}", operation_specs=[f"spec-{i}"],
+                status=ProcessStatus.ACTIVE,
+            )
+            prod = Product(
+                id=f"prod-{i}", snapshot_id=snap_id,
+                name=f"Part {i}", unit_of_measure="EA", process_ref=f"proc-{i}",
+            )
+            demand = Demand(
+                id=f"dem-{i}", snapshot_id=snap_id,
+                product_ref=f"prod-{i}", quantity=Quantity(value=1.0, uom="EA"),
+                due=datetime(2035, 1, 1, tzinfo=UTC),
+                commitment_class=CommitmentClass.STANDARD, status=DemandStatus.OPEN,
+            )
+            entities += [spec, proc, prod, demand]
+
+        for entity in entities:
+            writer.write_entity(entity, _synth_prov(entity, snap_id))
+        writer.finalize()
+
+        rep = Reporter.begin(
+            module=ModuleCode.M3, purpose="density guard test",
+            config={}, trigger="pytest", snapshot_id=snap_id,
+            sink_dir=tmp / "runs",
+        )
+        result = Validator().run(snapshot_id=snap_id, store=store, reporter=rep)
+        rep.end(RunStatus.SUCCESS)
+        return result, rep.consolidated_doc
+
+    def test_density_limit_code_emitted(self, density_run):
+        _, doc = density_run
+        codes = [r["code"] for r in doc["records"] if r.get("record_type") == "finding"]
+        assert "DENSITY_LIMIT" in codes
+
+    def test_not_statistical_outlier(self, density_run):
+        """The density guard must never emit STATISTICAL_OUTLIER — that code
+        is reserved for the run-rate distributional check (add-never-repurpose)."""
+        _, doc = density_run
+        findings = [r for r in doc["records"] if r.get("record_type") == "finding"]
+        density_findings = [f for f in findings if f.get("evidence", {}).get("resumable_op_count")]
+        assert density_findings, "expected at least one density-guard finding"
+        assert all(f["code"] == "DENSITY_LIMIT" for f in density_findings)
+
+    def test_gate_remains_go(self, density_run):
+        result, _ = density_run
+        assert result.go is True
+
+    def test_evidence_has_count_and_threshold(self, density_run):
+        _, doc = density_run
+        findings = [
+            r for r in doc["records"]
+            if r.get("record_type") == "finding" and r.get("code") == "DENSITY_LIMIT"
+        ]
+        assert findings
+        ev = findings[0]["evidence"]
+        assert ev["resumable_op_count"] == 4
+        assert ev["threshold"] == 3

@@ -36,7 +36,10 @@ def dq_report_run(tmp_path_factory):
         config={}, trigger="pytest", snapshot_id=snap_id, sink_dir=runs_dir,
     )
     validator = Validator()
-    validator.run(snapshot_id=snap_id, store=store, reporter=val_reporter)
+    # sample_data's seeded PROD-007 outlier is 45x median, designed against the
+    # original 10x threshold (see tests/test_validator.py's validated_run fixture).
+    validator.run(snapshot_id=snap_id, store=store, reporter=val_reporter,
+                  outlier_threshold_ratio=10.0)
     val_reporter.end(RunStatus.SUCCESS)
 
     report_path = tmp / "dq_report.md"

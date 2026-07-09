@@ -94,7 +94,7 @@ Legend: ✔core = In-core · ◐slot = In-later modular slot · ✘out = Out · 
 
 | id | Item | Verdict/Plane | Coverage | Input contract | Test triad | Status | IDS doorway |
 |---|---|---|---|---|---|---|---|
-| D1 | Lot sizing, min/max batch | ✔core (Planner policy, not solver constraint) | M4 policies create WorkPackages; Fulfillment cardinalities (D-07) | policy config → identity_v1 default → merge-guard findings (Rep 4) | gauntlet merges · priority_pressure/merge scenarios · BATCH_CONFLICT | PP | policy config |
+| D1 | Lot sizing, min/max batch | ✔core (Planner policy, not solver constraint) | M4 policies create WorkPackages; Fulfillment cardinalities (D-07) | policy config → identity_v1 default → risk-gated merge_by_family_v2 (non-default; 2026-07-12) | gauntlet merges · WO-2001/WO-2002 risk-rejection regression · profitable-merge acceptance | PP | policy config |
 | D2 | Transfer-batch overlap (op N+1 starts on partial qty) | ✘out | — | — | — | — | — |
 | D3 | Yield / scrap inflation | ✔core S (slot active) | OperationSpec.yield_factor; quantity model upstream-inflates | doorway per §8 → 1.0 → yield≤0 or >1 finding | none in gauntlet · yield-inflation scenario · bad yield finding | MP | §8 doorway |
 

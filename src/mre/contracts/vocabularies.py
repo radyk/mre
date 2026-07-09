@@ -123,7 +123,7 @@ class DriverCode(str, Enum):
 
 
 class FindingCode(str, Enum):
-    """Finding codes. 16 total, grouped by pipeline layer of origin per docs/02 §4.3."""
+    """Finding codes. 18 total, grouped by pipeline layer of origin per docs/02 §4.3."""
     # Adapter (ERP-shape)
     MISSING_REFERENCE = "MISSING_REFERENCE"
     UNMAPPABLE_VALUE = "UNMAPPABLE_VALUE"
@@ -144,6 +144,7 @@ class FindingCode(str, Enum):
     INFEASIBLE_SUBSET = "INFEASIBLE_SUBSET"
     HORIZON_EXCEEDED = "HORIZON_EXCEEDED"
     SOLVER_NONOPTIMAL = "SOLVER_NONOPTIMAL"
+    DENSITY_LIMIT = "DENSITY_LIMIT"
 
 
 class FindingSeverity(str, Enum):

@@ -57,7 +57,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", default=str(Path("mre_output")))
     parser.add_argument("--snapshot-id", default="snap-run")
     parser.add_argument("--policy", default="identity_v1",
-                        choices=["identity_v1", "merge_by_family_v1"])
+                        choices=["identity_v1", "merge_by_family_v1", "merge_by_family_v2"],
+                        help="merge_by_family_v2 (Rep 4, docs/07 Phase 1): feasibility + "
+                             "risk-gated merging. Not the default.")
+    parser.add_argument("--risk-margin", type=float, default=1.0,
+                        help="merge_by_family_v2's risk gate: reject when estimated "
+                             "tardiness exposure exceeds estimated setup benefit x this "
+                             "margin. Default 1.0 (risk must not exceed benefit).")
     parser.add_argument("--time-limit", type=float, default=30.0,
                         help="Solver time limit in seconds")
     parser.add_argument("--skip-schedule", action="store_true",
@@ -71,6 +77,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--solver-seed", type=int, default=None,
                         help="Pin CP-SAT random_seed (default: unset). "
                              "Combine with --solver-workers 1 for bit-identical reruns.")
+    parser.add_argument("--outlier-threshold", type=float, default=None,
+                        help="STATISTICAL_OUTLIER multiplier (Rep 3, docs/02 §4.3). "
+                             "Overrides plant_config's statistical_outlier_threshold_ratio, "
+                             "which overrides the gauntlet-calibrated module default. "
+                             "Re-run tools/calibrate_outliers.py per deployment.")
     args = parser.parse_args(argv)
 
     use_raw = args.raw_data is not None
@@ -180,14 +191,22 @@ def main(argv: list[str] | None = None) -> int:
         rd = date.fromisoformat(plant_cfg["reference_date"])
         reference_date = datetime(rd.year, rd.month, rd.day, 0, 0, 0, tzinfo=UTC)
 
+    # outlier_threshold_ratio: CLI flag > plant_config key > Validator's own
+    # gauntlet-calibrated default (Rep 3, docs/07 Phase 1).
+    outlier_threshold_ratio = args.outlier_threshold
+    if outlier_threshold_ratio is None and plant_cfg:
+        outlier_threshold_ratio = plant_cfg.get("statistical_outlier_threshold_ratio")
+
     v_rep = Reporter.begin(
         module=ModuleCode.M3, purpose="semantic validator run",
-        config={"reference_date": reference_date.isoformat() if reference_date else "now"},
+        config={"reference_date": reference_date.isoformat() if reference_date else "now",
+                "outlier_threshold_ratio": outlier_threshold_ratio},
         trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
     )
     v_result = Validator().run(
         snapshot_id=snap_id, store=store, reporter=v_rep,
         reference_date=reference_date,
+        outlier_threshold_ratio=outlier_threshold_ratio,
     )
     v_rep.end(RunStatus.SUCCESS)
     gate = "GO" if v_result.go else "NO-GO"
@@ -278,7 +297,7 @@ def main(argv: list[str] | None = None) -> int:
         config={"policy": args.policy}, trigger="cli",
         snapshot_id=snap_id, sink_dir=runs_dir,
     )
-    p_result = Planner(policy=args.policy).run(
+    p_result = Planner(policy=args.policy, risk_margin=args.risk_margin).run(
         snapshot_id=snap_id, store=store, reporter=p_rep,
         excluded_demand_ids=v_result.excluded_demand_ids,
     )

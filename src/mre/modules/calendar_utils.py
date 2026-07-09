@@ -83,6 +83,39 @@ def _is_closed(
     return False
 
 
+def longest_shift_minutes(cal: dict) -> float:
+    """Longest contiguous work window in minutes from a calendar's base_pattern.
+
+    Class-aware window-fit metric (docs/05 R-C3) for non-resumable operations:
+    a non-splittable operation must fit entirely within one such window on some
+    eligible resource. Shared by the validator (per-demand pre-solve check) and
+    the planner's merge_by_family_v2 feasibility gate (per-merged-batch check).
+    """
+    bp = cal.get("base_pattern", {})
+    days = bp.get("weekdays", [])
+    if not days:
+        return 0.0
+    start = bp.get("shift_start", "07:00")
+    end = bp.get("shift_end", "19:00")
+    try:
+        h_s, m_s = (int(x) for x in start.split(":"))
+        h_e, m_e = (int(x) for x in end.split(":"))
+        return float((h_e * 60 + m_e) - (h_s * 60 + m_s))
+    except (ValueError, AttributeError):
+        return 0.0
+
+
+def weekly_open_minutes(cal: dict) -> float:
+    """Total open minutes per week from a calendar's base_pattern (open
+    days/week x shift length) — the resumable-operation capacity metric,
+    vs. longest_shift_minutes' single-window metric for non-resumable ops."""
+    bp = cal.get("base_pattern", {})
+    days = bp.get("weekdays", [])
+    if not days:
+        return 0.0
+    return len(days) * longest_shift_minutes(cal)
+
+
 # ---------------------------------------------------------------------------
 # Pipeline-level helpers (used by both __main__.py and scenario runner)
 # ---------------------------------------------------------------------------

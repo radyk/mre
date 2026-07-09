@@ -18,7 +18,7 @@ source, including this file and the legacy code**:
    invariants.
 2. `docs/02-evidence-contract-spec.md` — record types (Decision, Finding, Metric,
    Event, Artifact, RunContext), controlled vocabularies (12 driver codes,
-   17 finding codes), the eight Reporter verbs, sink/consolidation rules.
+   18 finding codes), the eight Reporter verbs, sink/consolidation rules.
 3. `docs/03-poc-plan.md` — module inventory M1–M10, build phases 0–3, solver scope
    cuts, the demonstration script that serves as the acceptance test.
 4. `docs/05-constraint-catalog.md` — the census of scheduling constraints: locked
@@ -75,8 +75,10 @@ tests/                Tests derived from the specs — write them from the spec 
 ## Current status / next work
 
 **Phases 0–3 complete, plus real-data ingestion, what-if runner, IDS
-adoption (gate + generator), the precedence-edge surgery, and Rep 2
-(chunking/resumable operations). 644+ tests green.**
+adoption (gate + generator), the precedence-edge surgery, Rep 2
+(chunking/resumable operations), and Reps 3–4 (outlier recalibration,
+merge feasibility & risk guard). Phase 1 reps are now complete. 657 tests
+green.**
 
 Built so far: contracts + Reporter (Phase 0); adapter M1, snapshot store M2,
 validator M3, DQ report, identity-map persistence, per-resource Calendars,
@@ -144,14 +146,44 @@ the full cost/tardiness objective compounds chunking's search difficulty
 beyond spike 2's isolated minimal-model measurement. Full detail in the
 2026-07-11 docs/04 amendment; docs/05 catalog C3 moved UI→PP.
 
+**Reps 3–4 (docs/05 §4.3 vocabulary fix, outlier recalibration, merge
+feasibility & risk guard; 2026-07-12).** Fixed a vocabulary-governance
+violation first: the Rep 2 density guard had been repurposing
+`STATISTICAL_OUTLIER` for a structural (not distributional) signal — added
+`FindingCode.DENSITY_LIMIT` (18th code) and repointed the guard.
+`tools/calibrate_outliers.py` calibrates the `STATISTICAL_OUTLIER` threshold
+from a snapshot's actual run-rate distribution (pooled log2-ratio, p99) instead
+of a fixed 10x constant; against the gauntlet this collapses the hit rate from
+578/4007 (14.4%) to 40/4007 (1.00%), and the 40 survivors all share a
+suspicious exact `run_rate_seconds=60.0` — a real, defensible finding, not
+noise. `Validator.run()`'s `outlier_threshold_ratio` is config-driven
+(`--outlier-threshold`, `plant_config.json`, or the calibrated default);
+sample_data's seeded 45x-median scenario keeps its own 10x threshold
+explicitly (a different "deployment," its own truth manifest). `merge_by_family_v2`
+(`src/mre/modules/planner.py`) re-enables merge batching as a non-default
+policy (`--policy merge_by_family_v2`), gated by a feasibility check
+(class-aware window-fit on the MERGED batch, closing the post-merge-
+infeasibility gap that forced `identity_v1` to become the default) and a risk
+check (estimated tardiness exposure vs. a corrected setup-benefit formula,
+margin-adjustable via `--risk-margin`) — the WO-2001/WO-2002 case from the
+$260 unbatch verdict is now the regression test proving v2 rejects it. A new
+standing test (`tests/test_declared_but_unread.py`) guards the "declared but
+unread" bug species (third occurrence after `Product.process_ref` and
+`min_chunk`) and surfaced real dead fields (`Resource.cost_rate`,
+`ResourcePool.members`, `OperationSpec.yield_factor` — see the 2026-07-12
+docs/04 amendment). Full detail there; docs/05 D1 updated.
+
 **Next work: see `docs/07-roadmap.md`** for the live, prioritized plan (Phase
 1 exit bar, week-one spikes, cross-cutting workstreams). Do not hand-maintain
 a duplicate task list here — docs/07 is the authoritative source and is
 updated same-day per its own W2 workstream rule. As of this entry, Phase 1
-remaining: overtime premium pricing, outlier calibration, and the
+reps (chunking, outlier calibration, merge feasibility & risk guard) are
+done; remaining Phase 1 work is **overtime premium pricing** (next), the
 dwell_heavy/overtime_required/calendar_chaos/multi_facility_balance generator
-scenarios; the solver-gap/model-richness interaction found above is a new,
-concrete input to the parked solver-gap workstream.
+scenarios, and then the Phase 1 exit demo (docs/07 §3: messy generated plant
+→ certificate → costed schedule → why → what-if → verdict, then the ticketing
+gauntlet passing clean). The solver-gap/model-richness interaction found
+during Rep 2 is a concrete input to the parked solver-gap workstream.
 
 ## Working style
 

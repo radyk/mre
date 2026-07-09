@@ -89,7 +89,7 @@ Every record carries:
 
 Disposition is what connects data quality to schedule quality — it answers "did any data problems affect this schedule?"
 
-**Finding codes (17), grouped by pipeline layer of origin:**
+**Finding codes (18), grouped by pipeline layer of origin:**
 
 *Adapter (ERP-shape):*
 `MISSING_REFERENCE` · `UNMAPPABLE_VALUE` · `AMBIGUOUS_SOURCE` · `MALFORMED_FIELD` · `DUPLICATE_IDENTITY` · `IDENTITY_CHANGED`
@@ -98,7 +98,15 @@ Disposition is what connects data quality to schedule quality — it answers "di
 `TEMPORAL_IMPOSSIBILITY` · `NO_CAPABLE_RESOURCE` · `ORPHAN_ENTITY` · `VALUE_OUT_OF_RANGE` · `STATISTICAL_OUTLIER` · `PROVENANCE_GAP` · `LOW_CONFIDENCE_INPUT`
 
 *Planning / Solve:*
-`BATCH_CONFLICT` · `INFEASIBLE_SUBSET` · `HORIZON_EXCEEDED` · `SOLVER_NONOPTIMAL`
+`BATCH_CONFLICT` · `INFEASIBLE_SUBSET` · `HORIZON_EXCEEDED` · `SOLVER_NONOPTIMAL` · `DENSITY_LIMIT`
+
+`DENSITY_LIMIT` (added 2026-07-12): a structural concentration of a scheduling
+feature on one resource exceeds a validated solver-scale ceiling (e.g. resumable
+operations per resource, docs/05 R-C3) — a distinct signal from `STATISTICAL_OUTLIER`
+(an individual value's deviation from its group's distribution). The two must not
+share a code: they answer different planner questions ("is this data point weird?"
+vs. "will this resource's workload be hard to solve?") and trending one must never
+silently include the other.
 
 Code + subjects + snapshot on every record turns the store into a **monitoring** system, not a log: "trend `STATISTICAL_OUTLIER` on durations by product family over 90 days" is a query, not a project. "Where in the pipeline do problems enter?" is answerable because codes carry their layer of origin.
 

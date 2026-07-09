@@ -10,7 +10,7 @@ and dispositions listed here.
 | 2 | product.csv | PROD-008, CostingLotSize=0 | Division by zero in run-rate derivation; fallback rate used | `LOW_CONFIDENCE_INPUT` | `defaulted` |
 | 3 | openworkorder.csv | WO-PAST-001, ScheduleDate=2025-01-15 | Due date is in the past relative to run date | `TEMPORAL_IMPOSSIBILITY` | `proceeded_flagged` |
 | 4 | routinglines.csv | R-GEAR-B seq 20, Workcenter=WC-UNKNOWN | Workcenter code cannot be mapped to any canonical resource | `UNMAPPABLE_VALUE` | `proceeded_flagged` |
-| 5 | product.csv | PROD-007, ProductionMinutes=150.0 | run_rate of 150 min/unit is >10× the median (≈1.75) for the gear family | `STATISTICAL_OUTLIER` | `proceeded_flagged` |
+| 5 | product.csv | PROD-007, ProductionMinutes=90.0 | run_rate of 90 min/unit is 45x the median (2.0) for the gear family, tested against the seeded scenario's 10x detection threshold (Rep 3, docs/07: the gauntlet-calibrated default of 75.76x is a separate deployment's config and does not apply here) | `STATISTICAL_OUTLIER` | `proceeded_flagged` |
 | 6 | openworkorder.csv | WO-DUP-001 (two rows) | Same work-order number appears twice; first row kept, second excluded | `DUPLICATE_IDENTITY` | `excluded` |
 
 ## Notes

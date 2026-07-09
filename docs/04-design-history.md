@@ -1431,3 +1431,198 @@ ladder tests are `@pytest.mark.slow`, 8 skipped by default, opt in with
 `schedule.csv` fixtures (regenerated, verified equivalent modulo the new
 column) and `TestChunkingExamScenario` (redesigned per above, expected —
 its pre-Rep-2 behavior no longer exists to test).
+
+---
+
+### 2026-07-12 — Vocabulary fix (DENSITY_LIMIT) and Rep 3 outlier recalibration
+
+**Vocabulary governance violation found and fixed.** The Rep 2 density guard
+(resumable operations per resource > 3, `tools/chunking_spike2_report.md`'s
+validated ceiling) was emitting `STATISTICAL_OUTLIER` — the same code already
+used for run-rate distributional deviation within a product family. This is
+an add-never-repurpose violation (docs/02 §5): two semantically distinct
+signals ("is this data point weird relative to its peers?" vs. "will this
+resource's workload be hard for the solver?") sharing one code means trending
+either one silently includes the other. **Fixed** by adding `FindingCode.
+DENSITY_LIMIT` (18th finding code; docs/02 §4.3 updated with the
+distinguishing rationale) and repointing the density guard at it
+(`src/mre/modules/validator.py`). Regression guard: `TestDensityGuard` in
+`tests/test_validator.py` asserts findings carrying `resumable_op_count`
+evidence are never `STATISTICAL_OUTLIER`.
+
+**Rep 3 — outlier threshold calibration.** The `STATISTICAL_OUTLIER` check's
+`>10x median` threshold was a fixed constant, never calibrated against a real
+distribution. On the gauntlet it fired at 578/4007 = 14.4% of OperationSpecs
+with a computable family ratio — not a "these are unusual" signal, a
+miscalibrated-threshold signal.
+
+`tools/calibrate_outliers.py` reads every OperationSpec's run_rate from a
+snapshot, groups by product family exactly as the validator does, computes
+each spec's ratio to its family's median, and reports percentiles pooled
+across families **on a log2 scale** (ratios are multiplicative — 0.125x and
+8x are symmetric deviations only in log space) rather than per-family
+(real family sizes are small and uneven; per-family percentiles are not
+statistically meaningful at that sample size). The recommended threshold is
+calibrated to the **p99** of the pooled distribution, converted back to a
+plain multiplier — targeting the acceptance criterion's hit rate directly
+rather than picking another arbitrary constant.
+
+Against the gauntlet snapshot: **p99 = 75.76x** (recommended threshold).
+Hit rate at this threshold: **40/4007 = 1.00%**, down from 578/4007 = 14.4%
+at the old fixed 10x. Spot-check of the 40 flagged specs: all 40 span only
+4 product families (PG111 ×20, PG107 ×8, PG106 ×8, PG104 ×4), and **every
+one carries an identical `run_rate_seconds = 60.0`** against family medians
+of 0.21–0.50 seconds — consistent with a fallback/default rate (exactly
+60s, a suspiciously round number) being applied to specs whose real family
+runs in fractions of a second, not natural variance. This is a genuinely
+defensible "worth a human look" signal, unlike the old threshold's 578 hits
+which mostly just meant the distribution has a long multiplicative tail.
+
+**Validator wiring** (`src/mre/modules/validator.py`): `Validator.run()`
+gained `outlier_threshold_ratio: Optional[float] = None`. Default is
+`_DEFAULT_OUTLIER_THRESHOLD_RATIO = 75.76`, the gauntlet-calibrated value.
+Resolution order: CLI `--outlier-threshold` > `plant_config.json`'s
+`statistical_outlier_threshold_ratio` key > the module default (wired in
+`src/mre/__main__.py`). The finding's evidence payload now carries
+`threshold`, and `threshold_basis` (`"calibrated_v1 from snapshot <id>"`,
+or `"config_override from snapshot <id>"` when an explicit value was
+passed) alongside the existing `median_seconds`/`ratio` fields, so the DQ
+report can say *why* something was flagged, not just that it was.
+
+**Sample-world / demo scenario preserved deliberately, not by accident.**
+`sample_data`'s seeded PROD-007 outlier (`DEFECTS.md` #5, corrected here —
+it had drifted stale, citing ProductionMinutes=150.0/median≈1.75 when the
+actual seeded values are 90.0/2.0 = 45x) and `sample_data_v2`'s identical
+scenario are both designed against the *original* 10x threshold. 45x is
+comfortably below the gauntlet-calibrated 75.76x, so leaving the new default
+in place globally would have silently stopped the demo's seeded defect from
+firing. The gauntlet-calibrated value is a property of the one real dataset
+this system has been calibrated against, not a universal constant — so
+`mre.demo.run_demo` and the sample-data-backed test fixtures
+(`tests/test_validator.py::validated_run`, `tests/test_dq_report.py`,
+`tests/test_integration.py`) now pass `outlier_threshold_ratio=10.0`
+explicitly, each with a comment pointing at this amendment. This is the
+config-driven-per-deployment mechanism working as intended, not a special
+case bolted on: the demo is a different "deployment" with its own
+already-calibrated (by construction) truth manifest.
+
+**Acceptance.** Full gauntlet re-run (`python -m mre --raw-data raw_data
+--plant-config plant_config.json --skip-schedule`) confirms 40
+`STATISTICAL_OUTLIER` warnings (down from 578). All 648 tests green
+(646 + 2 new: `TestDensityGuard`'s 4 methods replace-in-place the
+`STATISTICAL_OUTLIER`-based density assertions that existed before the
+vocabulary fix; net delta accounts for the `TestDensityGuard` class and the
+`test_exactly_17`→`test_exactly_18` rename). Deterministic-mode note: this
+recalibration touches only the validator, not the solver, so no
+`PYTHONHASHSEED`/`--solver-seed` considerations apply here.
+
+**Rep 4 — merge feasibility & risk guard (merge_by_family_v2).** `identity_v1`
+became the CLI default (2026-07-07 amendment above) because `merge_by_family_v1`
+creates post-merge infeasibility the solver cannot recover from and had no
+economic guard — the $260 unbatch verdict (2026-07-06 amendment) showed its
+`estimated_benefit` formula undercounting real setup cost by 5x. `merge_by_family_v2`
+(`src/mre/modules/planner.py`) fixes both, gated, and re-enters as a **non-default**
+opt-in policy (`--policy merge_by_family_v2`).
+
+*Feasibility gate* (`Planner._check_merge_feasibility`): class-aware window-fit
+(docs/05 R-C3), applied to the MERGED batch's total quantity per operation spec
+— the check the validator cannot perform per-demand, since it runs before the
+planner creates merged quantities. Non-resumable: merged operation must fit the
+longest contiguous calendar window on some eligible resource. Resumable: merged
+operation's total working time must fit the batch's own horizon (earliest
+release → latest constituent due date) on the best eligible resource, even
+chunked. Reused helpers `longest_shift_minutes`/`weekly_open_minutes`
+(moved from `validator.py` to `calendar_utils.py` so both modules share one
+implementation — the validator's per-demand check and the planner's
+per-merged-batch check must never silently diverge).
+
+*Risk gate* (`Planner._check_merge_risk`): rejects when estimated tardiness
+exposure — the earliest-due constituent's slack consumed by the merged
+batch's total duration (working-time budget from release to that demand's
+due date, on the representative eligible resource's calendar; NOT raw
+wall-clock days — the WO-2001/2002 case shows why: wall-clock budget is
+~1439 min, comfortably above the 840-min merged duration, but the *working-
+time* budget, which is what the calendar-blocked maintenance closure
+actually leaves available, is ~514 min, well under it), priced at that
+demand's `customer_weight` — exceeds estimated setup benefit × `risk_margin`
+(policy knob, default 1.0, `--risk-margin` CLI flag). The corrected benefit
+formula used here (and only here — `merge_by_family_v1`'s original formula
+is left untouched, still documented as approximate, to avoid changing its
+existing tested behavior): `estimated_benefit = (len(batch)-1) × len(spec_ids)
+× setup_cost_per_setup`, matching the extractor's actual per-operation setup
+billing. For WO-2001/2002: benefit = 1×2×$50 = $100 (vs. v1's buggy $50);
+risk ≈ $840 (merged_duration 840 min − budget ~0 min, since release ≈ due
+day) × weight 1.0. $840 ≫ $100 → **rejected**, matching the real recorded
+outcome (WO-2001 841 min late). This is the acceptance regression test
+(`tests/test_planner_merge_v2.py::TestWO2001RejectedOnRisk`).
+
+*Decisions.* Both gates record their evidence on a Decision even when they
+reject, so "why didn't these batch?" is answerable from evidence alone —
+`decision_type` stays `DEMAND_MERGE` (still fundamentally a merge decision);
+a rejection is distinguished by `chosen.decision == "merge_rejected"`, not a
+new closed-vocab `DecisionType` member (avoiding another vocabulary-review
+cycle for what is a payload distinction, not a new kind of decision).
+`driver=CAPACITY_BLOCKED` for feasibility-gate rejections, `driver=COST_TRADEOFF`
+for risk-gate rejections. Accepted v2 merges carry a numeric `estimated_risk`
+alongside `estimated_benefit` (docs/02 §4.2's benefit/risk counterfactual pair
+— v1's Decision only had a text risk description, never a number).
+
+**Acceptance (item 3c).** (i) `TestWO2001RejectedOnRisk`: WO-2001/WO-2002 no
+longer share a WorkPackage under v2; a `merge_rejected` Decision is recorded
+with `driver=COST_TRADEOFF`, `gate="risk"`. (ii) `TestProfitableMergeAccepted`:
+a synthetic two-demand scenario (same product/family, due dates 60/61 days
+out, small quantities) — v2 accepts the merge (`merge_count == 1`), and the
+realized cost ledger (`M5`→`M6`→`M7`, run for both `merge_by_family_v2` and
+`identity_v1` on the same data) shows `total_cost` strictly lower when merged
+— the schedule actually realizes the saving, not just the Decision's estimate.
+(iii) `TestGauntletFeasibleWithV2` (`@pytest.mark.slow`, `--runslow`): the full
+raw_data gauntlet solves FEASIBLE under `--policy merge_by_family_v2`
+(`time-limit 120`, ~140s wall time) — no post-merge infeasibility, confirming
+the feasibility gate does its job at real-data scale.
+
+**Item 4 — the declared-but-unread guard.** Third occurrence of this bug
+species (after `Product.process_ref` and `Operation.min_chunk`/`OperationSpec.
+min_chunk`): an attribute is adapter-written, carries a real provenance
+record, looks load-bearing — and nothing downstream reads it.
+`tests/test_declared_but_unread.py` runs the Adapter against `sample_data/`,
+collects every `(entity_type, attribute)` pair with a real ProvenanceSidecar,
+and greps `validator.py`/`planner.py`/`solver_builder.py`/`extractor.py` for a
+literal reference. Anything unaccounted must be in `_DORMANT_REGISTER`, and
+every entry must cite where the field IS meaningful — a docs/05 catalog id,
+a module outside the pipeline's scope, or a named future-work item; a second
+test asserts no registered entry has quietly grown a real consumer (register
+drift the other way), and a third guards against citing an attribute that no
+longer exists.
+
+Running it for the first time surfaced real findings, not hypotheticals:
+- **`Resource.cost_rate` is dead** — `solver_builder.py` and `extractor.py`
+  both price production cost from `CostModel.resource_rates`
+  (`cost_model.get("resource_rates", {})`), never from `Resource.cost_rate`.
+  The ERP-sourced field is read only by `conformance.py`'s certificate
+  grading. This is a real duplicate-source risk (the two could silently
+  disagree) — flagged in the register, not fixed here; worth a product
+  decision (should ERP `cost_rate` seed or override `CostModel.resource_rates`?).
+- **Resource pooling is declared but not solved**: `solver_builder.py`
+  detects a pool only via the presence of a `"concurrent_capacity"` key,
+  never reads `ResourcePool.members` or `Resource.pool_refs`, and never
+  reads `Resource.capacity` for single resources (always implicit capacity=1).
+  Matches docs/05 B5's status exactly (MP, not yet PP).
+- **`OperationSpec.yield_factor`** is adapter-written on all three adapter
+  paths but never read — docs/05 D3 is MP not PP for the same reason (the
+  validation half of D3 exists per its doorway; the "quantity model
+  upstream-inflates" half is not yet in `planner.py`).
+- **Soft-constraint fields** (`Constraint.hardness`, `.penalty_weight`,
+  `.subjects`, `.authority`, `.expiry`) are gate-checked at write time
+  (`authority` is "mandatory" per docs/05 A7) but not read by
+  `solver_builder.py` — only hard `frozen_assignment`/`pinned_window` locks
+  are enforced, and lock targeting is read out of `parameters`
+  (`demand_ref`/`sequence`/`resource_ref`/`start`), not the canonical
+  `subjects` field. Consistent with docs/05's own Category F rule that
+  preference/price belongs in `CostModel`, not `Constraint` — soft-constraint
+  penalty pricing simply isn't built yet.
+- `CostModel.overtime_premium` is registered dormant too, but is expected to
+  be short-lived: it is this session's own next-work item (below).
+
+**657 tests green** (654 + 3 new: `test_declared_but_unread.py`'s three
+tests; `tests/test_planner_merge_v2.py` adds 7 more — 6 fast + 1
+`@pytest.mark.slow` gauntlet test, not counted in the default run).

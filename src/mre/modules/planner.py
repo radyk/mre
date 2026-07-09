@@ -3,16 +3,25 @@
 Reads Demands + Processes from a snapshot and produces WorkPackages,
 Operations, and Fulfillments.
 
-Two policies:
+Three policies:
   identity_v1           one Demand → one WorkPackage (1:1)
   merge_by_family_v1    merge Demands sharing product + setup_family whose
                         due dates fall within a configurable window
+  merge_by_family_v2    same candidate grouping as v1, gated: a feasibility
+                        check (class-aware window-fit, docs/05 R-C3) and a
+                        risk check (tardiness exposure vs. setup benefit,
+                        margin-adjustable) each must pass or the merge is
+                        rejected and its constituents fall back to solo
+                        WorkPackages. Not the default (see docs/04 2026-07-12
+                        amendment) — opt in via --policy merge_by_family_v2.
 
 Hard rules:
 - WorkPackage has NO due date, NO priority (docs/01 §5.2).
 - run_duration = quantity × spec.run_rate (DERIVED provenance with chain).
 - Every Fulfillment and WorkPackage carries a created_by Decision ref.
 - Merge Decision: type=demand_merge, driver=SETUP_AMORTIZATION, basis=policy_applied.
+- Rejected merge Decision: type=demand_merge, chosen.decision="merge_rejected",
+  driver=CAPACITY_BLOCKED (feasibility gate) or COST_TRADEOFF (risk gate).
 """
 from __future__ import annotations
 
@@ -34,6 +43,7 @@ from mre.contracts.vocabularies import (
     DecisionBasis, DecisionType, DriverCode,
     ProcessStatus, RecordTier, WorkPackageState,
 )
+from mre.modules.calendar_utils import longest_shift_minutes, weekly_open_minutes
 from mre.modules.snapshot_store import SnapshotStore
 from mre.reporter import Reporter
 
@@ -60,12 +70,18 @@ class Planner:
         policy: str = "identity_v1",
         merge_window_days: int = 3,
         setup_cost_per_setup: float = 50.0,
+        risk_margin: float = 1.0,
     ) -> None:
-        if policy not in ("identity_v1", "merge_by_family_v1"):
+        if policy not in ("identity_v1", "merge_by_family_v1", "merge_by_family_v2"):
             raise ValueError(f"Unknown policy: {policy!r}")
         self._policy = policy
         self._window_days = merge_window_days
         self._setup_cost = setup_cost_per_setup
+        # Rep 4 (docs/07 Phase 1): merge_by_family_v2's risk gate rejects a
+        # merge when estimated tardiness exposure exceeds estimated setup
+        # benefit x this margin. Policy knob, not calibrated — 1.0 means
+        # "risk must not exceed benefit at all."
+        self._risk_margin = risk_margin
 
     def run(
         self,
@@ -96,9 +112,19 @@ class Planner:
         # Group demands into batches according to policy
         if self._policy == "identity_v1":
             batches = [[d] for d in demands.values()]
-        else:
+        elif self._policy == "merge_by_family_v1":
             batches = self._merge_batches(
                 list(demands.values()), products, suppressed_merge_ids
+            )
+        else:  # merge_by_family_v2
+            resources_by_id = {r["id"]: r for r in reader.iter_entities("resource")}
+            calendars_by_id = {c["id"]: c for c in reader.iter_entities("calendar")}
+            candidate_batches = self._merge_batches(
+                list(demands.values()), products, suppressed_merge_ids
+            )
+            batches, v2_risk_evidence = self._gate_merges_v2(
+                candidate_batches, prod_to_process, specs,
+                resources_by_id, calendars_by_id, snapshot_id, reporter,
             )
 
         wp_count = op_count = ful_count = merge_count = 0
@@ -108,10 +134,19 @@ class Planner:
             if is_merge:
                 merge_count += 1
 
-            # Emit a Decision that authorises this WorkPackage
-            decision = self._emit_batch_decision(
-                batch, snapshot_id, reporter, is_merge
-            )
+            # Emit a Decision that authorises this WorkPackage. v2 merges that
+            # passed both gates carry the corrected benefit formula + a
+            # numeric estimated_risk (docs/02 §4.2); v1 and identity_v1 (and
+            # v2's un-merged singletons) use the original emission.
+            if is_merge and self._policy == "merge_by_family_v2":
+                risk_ev = v2_risk_evidence[tuple(sorted(d["id"] for d in batch))]
+                decision = self._emit_batch_decision_v2(
+                    batch, risk_ev, snapshot_id, reporter
+                )
+            else:
+                decision = self._emit_batch_decision(
+                    batch, snapshot_id, reporter, is_merge
+                )
 
             prod_ref = batch[0]["product_ref"]
             proc = prod_to_process.get(prod_ref)
@@ -275,6 +310,229 @@ class Planner:
         return batches
 
     # ------------------------------------------------------------------
+    # Rep 4 (docs/07 Phase 1): merge_by_family_v2 feasibility + risk gates
+    # ------------------------------------------------------------------
+
+    def _gate_merges_v2(
+        self, candidate_batches, prod_to_process, specs,
+        resources_by_id, calendars_by_id, snapshot_id, reporter,
+    ) -> list[list[dict]]:
+        """Run each candidate merge batch through the feasibility gate, then
+        the risk gate. A rejection at either gate breaks the batch back into
+        solo demands and records a merge_rejected Decision explaining why.
+
+        Returns (final_batches, accepted_risk_evidence) — the latter keyed by
+        the batch's sorted demand-id tuple, so the accepted merge's Decision
+        (emitted later in run()) can reuse the exact evidence computed here
+        rather than recomputing it against a possibly-different resource view."""
+        final_batches: list[list[dict]] = []
+        accepted_risk_ev: dict[tuple, dict] = {}
+        for batch in candidate_batches:
+            if len(batch) <= 1:
+                final_batches.append(batch)
+                continue
+
+            proc = prod_to_process.get(batch[0]["product_ref"])
+            spec_ids = proc.get("operation_specs", []) if proc else []
+
+            feasible, feas_ev = self._check_merge_feasibility(
+                batch, spec_ids, specs, resources_by_id, calendars_by_id,
+            )
+            if not feasible:
+                self._emit_merge_rejected_decision(
+                    batch, snapshot_id, reporter,
+                    driver=DriverCode.CAPACITY_BLOCKED,
+                    gate="feasibility", evidence=feas_ev,
+                )
+                final_batches.extend([[d] for d in batch])
+                continue
+
+            risk_ok, risk_ev = self._check_merge_risk(
+                batch, spec_ids, specs, resources_by_id, calendars_by_id,
+            )
+            if not risk_ok:
+                self._emit_merge_rejected_decision(
+                    batch, snapshot_id, reporter,
+                    driver=DriverCode.COST_TRADEOFF,
+                    gate="risk", evidence=risk_ev,
+                )
+                final_batches.extend([[d] for d in batch])
+                continue
+
+            accepted_risk_ev[tuple(sorted(d["id"] for d in batch))] = risk_ev
+            final_batches.append(batch)
+        return final_batches, accepted_risk_ev
+
+    @staticmethod
+    def _eligible_resource_ids(spec: dict, resources_by_id: dict) -> list[str]:
+        """Mirror the validator's eligible-resource walk (docs/05 R-C3)."""
+        eligible: list[str] = []
+        for req in spec.get("resource_requirements", []):
+            if not isinstance(req, dict):
+                continue
+            mode = req.get("mode", "")
+            if mode == "explicit_set":
+                eligible.extend(req.get("resource_refs", []))
+            elif mode == "capability":
+                cap_ref = req.get("capability_ref", "")
+                for rid, r in resources_by_id.items():
+                    if cap_ref in (r.get("capabilities") or []):
+                        eligible.append(rid)
+        return eligible
+
+    @classmethod
+    def _best_calendar_minutes(
+        cls, eligible_ids: list[str], resources_by_id: dict,
+        calendars_by_id: dict, metric,
+    ) -> float:
+        best = 0.0
+        for rid in eligible_ids:
+            res = resources_by_id.get(rid)
+            if not res:
+                continue
+            cal = calendars_by_id.get(res.get("calendar_ref"))
+            if not cal:
+                continue
+            best = max(best, metric(cal))
+        return best
+
+    def _check_merge_feasibility(
+        self, batch, spec_ids, specs, resources_by_id, calendars_by_id,
+    ) -> tuple[bool, dict]:
+        """Class-aware window-fit (docs/05 R-C3), applied to the MERGED batch's
+        total quantity per operation spec — the check the validator cannot
+        perform per-demand (it runs before the planner creates merged
+        quantities). Non-resumable: merged operation must fit the longest
+        contiguous window on some eligible resource. Resumable: merged
+        operation's total working time must fit within the batch's own
+        horizon (earliest release -> latest constituent due date) on the
+        best eligible resource, even chunked."""
+        total_qty = sum(float(d["quantity"]["value"]) for d in batch)
+        releases = [d["earliest_start"] for d in batch if d.get("earliest_start")]
+        dues = [d["due"] for d in batch if d.get("due")]
+        earliest_release = min(releases) if releases else None
+        latest_due = max(dues, key=_parse_datetime) if dues else None
+
+        for spec_id in spec_ids:
+            spec = specs.get(spec_id)
+            if spec is None:
+                continue
+            run_rate_sec = _parse_td(spec.get("run_rate", "PT0S")).total_seconds()
+            setup_sec = _parse_td(spec.get("base_setup", "PT0S")).total_seconds()
+            total_minutes = (total_qty * run_rate_sec + setup_sec) / 60.0
+            if total_minutes <= 0.0:
+                continue
+
+            eligible_ids = self._eligible_resource_ids(spec, resources_by_id)
+            if not eligible_ids:
+                continue
+
+            if not bool(spec.get("splittable", False)):
+                max_window = self._best_calendar_minutes(
+                    eligible_ids, resources_by_id, calendars_by_id, longest_shift_minutes,
+                )
+                if max_window > 0.0 and total_minutes > max_window:
+                    return False, {
+                        "spec_id": spec_id,
+                        "class": "non_resumable",
+                        "estimated_duration_minutes": round(total_minutes, 1),
+                        "max_window_minutes": max_window,
+                        "reason": (
+                            "Merged operation's estimated duration exceeds the longest "
+                            "contiguous calendar window on every eligible resource"
+                        ),
+                    }
+            else:
+                if not earliest_release or not latest_due:
+                    continue
+                elapsed_days = max(
+                    0.0,
+                    (_parse_datetime(latest_due) - _parse_datetime(earliest_release)).total_seconds() / 86400.0,
+                )
+                best_weekly = self._best_calendar_minutes(
+                    eligible_ids, resources_by_id, calendars_by_id, weekly_open_minutes,
+                )
+                available_minutes = best_weekly * (elapsed_days / 7.0)
+                if best_weekly > 0.0 and total_minutes > available_minutes:
+                    return False, {
+                        "spec_id": spec_id,
+                        "class": "resumable",
+                        "estimated_duration_minutes": round(total_minutes, 1),
+                        "available_minutes": round(available_minutes, 1),
+                        "elapsed_days": round(elapsed_days, 2),
+                        "reason": (
+                            "Merged resumable operation's total working time exceeds "
+                            "what is available across the batch's own horizon (earliest "
+                            "release to latest constituent due date), even chunked"
+                        ),
+                    }
+        return True, {}
+
+    def _check_merge_risk(
+        self, batch, spec_ids, specs, resources_by_id, calendars_by_id,
+    ) -> tuple[bool, dict]:
+        """Reject when estimated tardiness exposure (the earliest-due
+        constituent's slack consumed by the merged batch's total duration,
+        priced at that demand's weight) exceeds estimated setup benefit x
+        risk_margin. This is what merge_by_family_v1 got wrong (2026-07-06
+        docs/04 amendment, the $260 unbatch verdict): benefit there counted
+        one avoided setup per merge, but the extractor bills one setup per
+        OPERATION — the corrected formula is used here."""
+        total_qty = sum(float(d["quantity"]["value"]) for d in batch)
+        merged_duration_minutes = 0.0
+        for spec_id in spec_ids:
+            spec = specs.get(spec_id)
+            if spec is None:
+                continue
+            run_rate_sec = _parse_td(spec.get("run_rate", "PT0S")).total_seconds()
+            setup_sec = _parse_td(spec.get("base_setup", "PT0S")).total_seconds()
+            merged_duration_minutes += (total_qty * run_rate_sec + setup_sec) / 60.0
+
+        earliest_demand = min(batch, key=lambda d: _parse_datetime(d.get("due")))
+        releases = [d["earliest_start"] for d in batch if d.get("earliest_start")]
+        earliest_release = min(releases) if releases else None
+
+        budget_minutes: Optional[float] = None
+        tardiness_exposure_minutes = 0.0
+        if earliest_release and earliest_demand.get("due") and spec_ids:
+            elapsed_days = max(
+                0.0,
+                (_parse_datetime(earliest_demand["due"]) - _parse_datetime(earliest_release)).total_seconds() / 86400.0,
+            )
+            rep_spec = specs.get(spec_ids[0])
+            if rep_spec is not None:
+                eligible_ids = self._eligible_resource_ids(rep_spec, resources_by_id)
+                best_weekly = self._best_calendar_minutes(
+                    eligible_ids, resources_by_id, calendars_by_id, weekly_open_minutes,
+                )
+                budget_minutes = best_weekly * (elapsed_days / 7.0)
+                tardiness_exposure_minutes = max(0.0, merged_duration_minutes - budget_minutes)
+
+        customer_weight = float(earliest_demand.get("customer_weight") or 1.0)
+        tardiness_exposure_cost = tardiness_exposure_minutes * customer_weight
+
+        setups_avoided = len(batch) - 1
+        n_ops = len(spec_ids)
+        estimated_benefit = setups_avoided * n_ops * self._setup_cost
+
+        risk_ok = tardiness_exposure_cost <= estimated_benefit * self._risk_margin
+        evidence = {
+            "earliest_demand_id": earliest_demand["id"],
+            "merged_duration_minutes": round(merged_duration_minutes, 1),
+            "budget_minutes": round(budget_minutes, 1) if budget_minutes is not None else None,
+            "tardiness_exposure_minutes": round(tardiness_exposure_minutes, 1),
+            "customer_weight": customer_weight,
+            "estimated_risk": round(tardiness_exposure_cost, 2),
+            "estimated_benefit": round(estimated_benefit, 2),
+            "risk_margin": self._risk_margin,
+            "reason": (
+                "Estimated tardiness exposure exceeds estimated setup benefit x margin"
+                if not risk_ok else ""
+            ),
+        }
+        return risk_ok, evidence
+
+    # ------------------------------------------------------------------
     # Decision emission
     # ------------------------------------------------------------------
 
@@ -336,6 +594,84 @@ class Planner:
                 tier=RecordTier.SUPPORTING,
                 message=f"identity_v1: demand {batch[0]['id']} → 1 WorkPackage",
             )
+
+    def _emit_batch_decision_v2(self, batch, risk_ev, snapshot_id, reporter):
+        """merge_by_family_v2's accepted-merge decision: corrected benefit
+        formula (setups_avoided x n_ops, matching the extractor's per-operation
+        setup billing — see the $260 unbatch verdict, docs/04 2026-07-06) and a
+        numeric estimated_risk (docs/02 §4.2's benefit/risk counterfactual pair).
+        risk_ev is the evidence already computed by the risk gate in
+        _gate_merges_v2 — reused rather than recomputed, so the Decision and
+        the gate that accepted the merge can never disagree."""
+        setups_avoided = len(batch) - 1
+        estimated_benefit = risk_ev["estimated_benefit"]
+
+        return reporter.record_decision(
+            decision_type=DecisionType.DEMAND_MERGE,
+            subjects=[EntityRef(entity_id=d["id"], entity_type="demand") for d in batch],
+            chosen={
+                "policy": "merge_by_family_v2",
+                "merge_window_days": self._window_days,
+                "constituent_demand_ids": [d["id"] for d in batch],
+                "estimated_benefit": estimated_benefit,
+                "estimated_risk": risk_ev["estimated_risk"],
+                "setups_avoided": setups_avoided,
+                "risk_margin": self._risk_margin,
+                "compatibility_basis": "same_product_and_setup_family",
+            },
+            alternatives=[
+                DecisionAlternative(
+                    option="identity_v1",
+                    consequence=(
+                        f"Would run {len(batch)} separate setups costing "
+                        f"~{estimated_benefit:.2f} more, with no tardiness exposure "
+                        f"from coupling the batch's completion."
+                    ),
+                )
+            ],
+            driver=DriverCode.SETUP_AMORTIZATION,
+            basis=DecisionBasis.POLICY_APPLIED,
+            policy_ref="merge_by_family_v2",
+            tier=RecordTier.SUPPORTING,
+            message=(
+                f"Merged {len(batch)} demands (product={batch[0]['product_ref']}) — "
+                f"passed feasibility + risk gates. Benefit: {estimated_benefit:.2f}. "
+                f"Estimated risk: {risk_ev['estimated_risk']:.2f}."
+            ),
+        )
+
+    def _emit_merge_rejected_decision(self, batch, snapshot_id, reporter, driver, gate, evidence):
+        """Records why a candidate merge was rejected, so "why didn't these
+        batch?" is answerable from evidence alone. decision_type stays
+        DEMAND_MERGE (it is still fundamentally a merge decision); the
+        rejection is distinguished by chosen.decision, not a new closed-vocab
+        DecisionType member."""
+        return reporter.record_decision(
+            decision_type=DecisionType.DEMAND_MERGE,
+            subjects=[EntityRef(entity_id=d["id"], entity_type="demand") for d in batch],
+            chosen={
+                "decision": "merge_rejected",
+                "policy": "merge_by_family_v2",
+                "gate": gate,
+                "constituent_demand_ids": [d["id"] for d in batch],
+                **evidence,
+            },
+            alternatives=[
+                DecisionAlternative(
+                    option="merge_by_family_v2 (merged)",
+                    consequence=evidence.get("reason", f"Rejected at the {gate} gate."),
+                )
+            ],
+            driver=driver,
+            basis=DecisionBasis.POLICY_APPLIED,
+            policy_ref="merge_by_family_v2",
+            tier=RecordTier.SUPPORTING,
+            message=(
+                f"Rejected merge of {len(batch)} demands "
+                f"(product={batch[0]['product_ref']}) at the {gate} gate: "
+                f"{evidence.get('reason', '')}"
+            ),
+        )
 
 
 # ---------------------------------------------------------------------------
