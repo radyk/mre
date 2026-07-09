@@ -317,19 +317,50 @@ def _apply_locks(ds: Dataset, rng: random.Random) -> tuple[str, str, str]:
     return order["order_id"], resource_id, start_dt.isoformat()
 
 
-def _apply_chunking_exam(ds: Dataset, rng: random.Random, n: int) -> list[str]:
-    """Give n orders an operation whose duration exceeds every eligible
-    resource's shift window (720 min) on every eligible resource — the
-    validator's pre-solve INFEASIBLE_SUBSET check must exclude them."""
+def _apply_chunking_exam(ds: Dataset, rng: random.Random, n: int) -> tuple[list[str], int]:
+    """Give n orders a dedicated single-step operation whose working duration
+    exceeds a 720-min shift window — but, since Rep 2 (docs/05 R-C3), marked
+    resumable (splittable=true) so it is CHUNKED and scheduled rather than
+    excluded. costing_lot_size=1, production_minutes=1500, quantity=1 ->
+    working duration = 1500 min (2.08x a 720-min shift), which at a
+    shift-open start needs exactly 3 chunks (720 + 720 + 60) — deterministic
+    regardless of seed.
+
+    Each affected order gets its OWN product/route/routing_line (not shared
+    with any other order) — reusing the base dataset's round-robin product
+    pool would silently give the same abnormal duration to every other order
+    sharing that product, breaking the "exactly n orders affected, exactly 3
+    chunks" guarantee.
+
+    Returns (affected_order_ids, expected_chunk_count).
+    """
     affected: list[str] = []
     for i in range(min(n, len(ds.orders))):
         order = ds.orders[i]
-        prod = next(p for p in ds.products if p["product_id"] == order["product_id"])
-        prod["costing_lot_size"] = "1"
-        prod["production_minutes"] = "3000"  # 3000 min/unit -> any qty >=1 exceeds 720 min shift
-        order["quantity"] = "5"
+        pid = f"PROD-CHUNK-{i + 1:03d}"
+        route_id = f"RT-{pid}"
+        ds.products.append({
+            "product_id": pid, "uom": "EA", "facility_id": order["facility_id"],
+            "product_group": "chunking_exam", "costing_lot_size": "1",
+            "setup_minutes": "0", "production_minutes": "1500", "cost_price": "10.0",
+        })
+        ds.routings.append({
+            "route_id": route_id, "facility_id": order["facility_id"],
+            "product_id": pid, "status": "active", "approved": "Y",
+            "version": "1", "effective_from": ds.reference_date.isoformat(),
+        })
+        resource_id = ds.resources[i % len(ds.resources)]["resource_id"]
+        ds.routing_lines.append({
+            "route_id": route_id, "sequence": "10", "resource_id": resource_id,
+            "active": "1", "setup_minutes": "", "run_minutes_per_unit": "",
+            "dwell_minutes": "0", "setup_family": "",
+            "splittable": "true", "min_chunk_minutes": "30",
+        })
+        order["product_id"] = pid
+        order["route_id"] = route_id
+        order["quantity"] = "1"
         affected.append(order["order_id"])
-    return affected
+    return affected, 3
 
 
 # ---------------------------------------------------------------------------
@@ -498,11 +529,21 @@ def _anomaly_lock_on_unknown_order(ds: Dataset, rng: random.Random, n: int) -> d
 
 
 def _anomaly_chunking_exam(ds: Dataset, rng: random.Random, n: int) -> dict:
-    affected = _apply_chunking_exam(ds, rng, int(n))
+    """Rep 2 (docs/05 R-C3): a duration exceeding a shift window is no
+    longer excluded (INFEASIBLE_SUBSET) — it is CHUNKED and scheduled, so
+    there is no finding to expect. The truth manifest instead asserts the
+    positive chunking behavior directly (schedule.csv row count, chunk
+    count, and that every derived pause aligns exactly with a calendar
+    closure — the spike-2 semantic assertion, now a standing production
+    test per tests/test_precedence_edges.py's sibling for chunking)."""
+    affected, expected_chunks = _apply_chunking_exam(ds, rng, int(n))
     return {
         "anomaly": "chunking_exam", "param": int(n), "affected_order_ids": affected,
-        "expected_finding_code": "INFEASIBLE_SUBSET", "expected_severity": "error",
-        "expected_disposition": "excluded", "expected_grade_floor": "ACCEPTED",
+        "expected_finding_code": None,
+        "expected_chunked": True,
+        "expected_chunk_count": expected_chunks,
+        "expected_pause_aligns_with_calendar": True,
+        "expected_grade_floor": "ACCEPTED",
     }
 
 

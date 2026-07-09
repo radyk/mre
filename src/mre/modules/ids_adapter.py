@@ -381,12 +381,17 @@ class IDSAdapter:
                 base_setup = timedelta(minutes=override_setup if override_setup > 0 else prod_setup)
 
                 req = ResourceRequirement(mode=ResourceRequirementMode.EXPLICIT_SET, resource_refs=[res_id])
+                min_chunk_raw = _num(rl.get("min_chunk_minutes"))
                 spec = OperationSpec(
                     id=spec_id, snapshot_id=snapshot_id, sequence=seq,
                     resource_requirements=[req],
                     setup_family=rl.get("setup_family", "") or "",
                     base_setup=base_setup, run_rate=run_rate,
+                    # splittable=true declares the RUN phase resumable (R-C3;
+                    # setup defaults resumable too — it is folded into the
+                    # same chunked working-duration total, see solver_builder).
                     splittable=str(rl.get("splittable", "false")).strip().lower() == "true",
+                    min_chunk=timedelta(minutes=min_chunk_raw) if min_chunk_raw > 0 else None,
                 )
                 spec_prov = _obs_list(
                     spec_id, ["sequence", "resource_requirements", "setup_family",

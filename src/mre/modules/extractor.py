@@ -122,8 +122,23 @@ class Extractor:
             run_start = horizon + timedelta(minutes=start_min)
             run_end   = horizon + timedelta(minutes=end_min)
 
+            # Resumable (chunked) operations: op_chunk_windows carries the
+            # per-window minute ranges actually used (docs/05 R-C3). Billing
+            # and phase_windows.run must use WORKING minutes (sum of each
+            # chunk's own span), never the overall elapsed span — the gaps
+            # between chunks are unpaid pauses, not production time.
+            chunk_windows_min = solve_values.op_chunk_windows.get(op_id)
+            if chunk_windows_min:
+                run_windows = [
+                    (horizon + timedelta(minutes=s), horizon + timedelta(minutes=e))
+                    for s, e in chunk_windows_min
+                ]
+                dur_min = sum(e - s for s, e in chunk_windows_min)
+            else:
+                run_windows = [(run_start, run_end)]
+                dur_min = end_min - start_min
+
             # Production cost for this assignment
-            dur_min = end_min - start_min
             rate = rates.get(chosen_rid, 0.0)
             op_cost = dur_min * rate
             production_cost += op_cost
@@ -168,25 +183,33 @@ class Extractor:
 
             # Emit reconstructed Decision
             decision_id = str(uuid.uuid4())
+            is_chunked = len(run_windows) > 1
             if reporter is not None:
+                chosen: dict[str, Any] = {
+                    "resource_id": chosen_rid,
+                    "start_minutes": start_min,
+                    "end_minutes": end_min,
+                    "production_cost": op_cost,
+                }
+                if is_chunked:
+                    chosen["chunked"] = True
+                    chosen["chunk_count"] = len(run_windows)
+                msg = (
+                    f"Operation {op_id} assigned to {chosen_rid} "
+                    f"({run_start.isoformat()} → {run_end.isoformat()}). "
+                    f"Cost: {op_cost:.2f}."
+                )
+                if is_chunked:
+                    msg += f" Resumable: split into {len(run_windows)} chunks pausing at calendar boundaries."
                 dec = reporter.record_decision(
                     decision_type=DecisionType.ASSIGNMENT,
                     subjects=[EntityRef(entity_id=op_id, entity_type="operation")],
-                    chosen={
-                        "resource_id": chosen_rid,
-                        "start_minutes": start_min,
-                        "end_minutes": end_min,
-                        "production_cost": op_cost,
-                    },
+                    chosen=chosen,
                     alternatives=alternatives,
                     driver=driver,
                     basis=DecisionBasis.RECONSTRUCTED,
                     tier=RecordTier.SUPPORTING,
-                    message=(
-                        f"Operation {op_id} assigned to {chosen_rid} "
-                        f"({run_start.isoformat()} → {run_end.isoformat()}). "
-                        f"Cost: {op_cost:.2f}."
-                    ),
+                    message=msg,
                 )
                 decision_id = dec.record_id
 
@@ -198,6 +221,9 @@ class Extractor:
                 "resource_id": chosen_rid,
                 "run_start": run_start.isoformat(),
                 "run_end": run_end.isoformat(),
+                "run_windows": [
+                    {"start": s.isoformat(), "end": e.isoformat()} for s, e in run_windows
+                ],
                 "production_cost": op_cost,
                 "decision_ref": decision_id,
             }
@@ -379,6 +405,24 @@ class Extractor:
                 )
             )
 
+            # Resumable (chunked) operations carry multiple run windows —
+            # the gaps between them are the pauses (docs/05 R-C3). Falls
+            # back to the single overall window when run_windows is absent
+            # (older evidence) or has exactly one entry (non-resumable).
+            run_windows_raw = asgn_dict.get("run_windows")
+            if run_windows_raw:
+                run_tw = []
+                for w in run_windows_raw:
+                    ws = datetime.fromisoformat(w["start"])
+                    we = datetime.fromisoformat(w["end"])
+                    if ws.tzinfo is None:
+                        ws = ws.replace(tzinfo=UTC)
+                    if we.tzinfo is None:
+                        we = we.replace(tzinfo=UTC)
+                    run_tw.append(TimeWindow(start=ws, end=we))
+            else:
+                run_tw = [TimeWindow(start=run_start, end=run_end)]
+
             asgn_entity = AssignmentEntity(
                 id=asgn_id,
                 snapshot_id=snapshot_id,
@@ -387,9 +431,7 @@ class Extractor:
                 resource_assignments=[
                     ResourceAssignment(requirement=req, resource_ref=chosen_rid)
                 ],
-                phase_windows=PhaseWindows(
-                    run=[TimeWindow(start=run_start, end=run_end)]
-                ),
+                phase_windows=PhaseWindows(run=run_tw),
                 decision_ref=asgn_dict["decision_ref"],
             )
             asgn_prov = [

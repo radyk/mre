@@ -1171,3 +1171,263 @@ gate itself, described above.
 **629 tests green** after this amendment (624 + 14 new precedence-edge tests
 + 5 new baseline-reproduction tests; existing-fixture edits for the
 field removals changed no test counts).
+
+---
+
+## Amendment — 2026-07-10: Chunking week-one spikes (docs/07 §2 risk #1) — element-table encoding falsified, chunk-boundary-interval encoding verdicted YELLOW
+
+Two scratch-script spikes (no production code; `tools/chunking_scale_spike.py`,
+`tools/chunking_spike2.py`, full data in their companion `_report.md` files)
+tested candidate CP-SAT encodings for R-C3 resumable operations before
+committing to Rep 2 (chunking) in full — the roadmap's first week-one spike.
+
+**Spike 1 — start-indexed elapsed table via `AddElement`: FALSIFIED.** One
+interval per operation, `elapsed = table[start]`, tested both dense
+(per-minute) and pruned (coarse-grid) table strategies. Dense tables grow
+linearly in `horizon_minutes × n_resumable_ops` — confirmed at 531K/2.55M/
+7.8M entries for a 7d/30d/90d horizon at N=300 — and the CP-SAT backend
+**crashed with `MemoryError`** handing the N=3,000 dense tables to
+`solver.Solve()`. The pruned strategy kept model size modest (comparable to
+the non-resumable baseline, +20-25%) but **never found a first feasible
+solution within 60 seconds at N≥300**, at any scale, with or without an
+objective (confirmed via a control run with the objective stripped — ruling
+out "hard to prove optimal" in favor of "hard to find any solution at all").
+The failure was non-monotonic in N (solves at 10/50, fails at 100, solves-
+slowly at 200, fails at 300+) — the signature of weak constraint
+propagation from the `AddElement`/dual-no-overlap-group structure, not a
+clean size-vs-time curve. Verdict: **RED**, reported before building.
+Suggested redesign direction: explicit chunk-boundary intervals — R-C3's
+own text already points there ("chunk boundaries are calendar boundaries,
+so chunk count = windows crossed — bounded by construction").
+
+**Spike 2 — explicit chunk-boundary intervals: YELLOW.** One optional
+interval per resumable operation *per calendar window it could occupy*
+(pruned to a feasible range), all in the resource's single native
+`add_no_overlap` alongside non-resumable and calendar-blocking intervals —
+no lookup tables. Three constraints: chunk durations sum to the working
+duration; gluing (a chunk followed by another chunk of the same op must run
+to its window's end, the next must start at the next window's open —
+`OnlyEnforceIf` accepts the two-literal list directly, no auxiliary boolean
+needed); contiguity (exactly one "start transition" and one "end
+transition" among the used-window booleans — the same transition booleans
+double as the op's overall start/end for the objective, at no extra cost).
+Because chunk intervals are bounded to their own window by construction,
+they can never overlap a calendar-closure blocking interval, so — unlike
+spike 1 — one `add_no_overlap` group per resource suffices; no split
+needed.
+
+Tested at two densities: **realistic** (~1% resumable, the deployment
+shape) and **stress** (20% resumable, spike 1's ceiling-finding setup,
+not a deployment target). Realistic density **solved correctly at all
+three scales** (300/3,000/10,000 ops), first feasible in 0.13s/1.59s/10.0s,
+model-size overhead modest (~1.6-2x the baseline's variables/constraints),
+and the required post-solve semantic assertion — every derived pause window
+aligns exactly with a real calendar closure — held at every rung (3, 34, 94
+chunked operations verified). Stress density failed cleanly and
+*consistently* at all three scales (not scale-dependent, unlike spike 1's
+erratic pattern) — pointing at a density ceiling around ~4-4.5 resumable
+ops sharing one resource, independent of total N.
+
+Two named mitigations for the stress-density ceiling were **tested, not
+just proposed**: warm-start hints (`AddHint` on a greedy front-loading
+assignment) did not help — still unresolved after 60s. Per-resource
+decomposition **did**: three sampled single-resource shards from the same
+N=3,000 stress scenario (matching its per-resource resumable density
+exactly) each solved to feasible in under 0.2 seconds, isolating the
+difficulty to the *global* cross-resource model, not the per-resource
+encoding itself.
+
+**Verdict: YELLOW.** Build Rep 2 on the chunk-boundary-interval encoding;
+ship unconditionally for the realistic density; fall back to per-resource/
+per-facility decomposition (architecturally the same fallback already
+planned for the unrelated solver-gap risk, docs/07) if a facility's
+resumable density approaches the stress regime. Do not rely on warm-start
+hints for that case.
+
+**A minor `add_hint` API lesson recorded for future spikes.** `CpModel.
+add_hint(var, value)` takes one variable and one value — not batched lists
+(`add_hint(vars, values)` raises `TypeError` deep inside ortools' internals
+with a confusing message, `'>=' not supported between instances of
+'builtin_function_or_method' and 'int'`, because it iterates the list
+argument as if it were a single `IntVar`). Call it once per (var, value)
+pair.
+
+No production code changed by either spike; `src/mre/` is untouched. Test
+suite unaffected (still 629 green) — these are standalone scripts under
+`tools/`, not covered by `pytest`.
+
+---
+
+## Amendment — 2026-07-11: Rep 2 — resumable operations productionized (docs/05 R-C3)
+
+**Encoding decision.** The chunk-boundary-interval encoding verdicted
+YELLOW in spike 2 (`tools/chunking_spike2_report.md`) is now production
+code in `SolverBuilder._build_resumable_operation`. The element-table
+encoding from spike 1 (`tools/chunking_scale_spike_report.md`) remains
+falsified and was never built. One optional interval per (eligible
+resource, candidate calendar window) chunk slot, all in that resource's
+single native `add_no_overlap` alongside non-resumable and calendar-
+blocking intervals — chunk intervals are bounded to their own window by
+construction, so they can never overlap a closure, meaning no split
+no-overlap group is needed (unlike the falsified encoding). Three
+constraints per resumable operation, generalized from the spike to handle
+genuine multi-resource eligibility (the spike fixed one resource per op):
+duration-sum (scoped `OnlyEnforceIf` the chosen resource, since only one
+resource's chunks may be non-zero), gluing (`OnlyEnforceIf` a two-literal
+list — no auxiliary boolean needed, matching the spike's finding), and
+contiguity (single start/end transition, which double as the operation's
+overall start/end for the objective and WorkPackage-end/tardiness — again
+matching the spike). `CHUNKS_MAX` is computed per operation from its actual
+working duration and the shortest candidate window, not spike 2's hardcoded
+constant (4, sufficient only for its synthetic "1-3x window" duration
+assumption) — real durations are not bounded that way.
+
+**IDS doorway (item 1).** `routing_lines.splittable=true` declares the RUN
+phase resumable (R-C3's default is non-resumable for run, resumable for
+setup/teardown). Rather than model setup/teardown resumability separately
+(no `teardown_duration` field exists on `Operation`/`OperationSpec` yet —
+out of scope), a resumable operation's setup and run durations are folded
+into one chunked "working duration" total — this is a deliberate
+simplification, not a redesign seam: it makes setup effectively resumable
+too (since it now shares the same multi-window chunking), consistent with
+R-C3's default, while `splittable=true` remains the single switch that
+enables chunking at all. `min_chunk_minutes` forbids chunks shorter than it
+(`OnlyEnforceIf` the chunk's `used` boolean). `ids_adapter.py` previously
+declared `min_chunk` provenance without ever parsing the column — a latent
+bug (same shape as the 2026-07-08 `Product.process_ref` incident: a field
+that looks populated but silently isn't) — fixed alongside. `planner.py`
+had the identical bug for `Operation.min_chunk` (defaulted, never copied
+from spec) and `splittable` copy-through was already correct; both are now
+copied with `DerivedProvenance`, no more `DefaultedProvenance` placeholder.
+
+**Validator, two additions (item 3).**
+(a) Class-aware window-fit: non-resumable operations keep the existing
+longest-contiguous-window check unchanged. Resumable operations are tested
+against total working time available — the best eligible resource's weekly
+open minutes (`_weekly_open_minutes`, new — open days/week × shift length),
+scaled to the calendar time between `reference_date` and the *demand's own
+due date* (not a global horizon, which the validator does not have at this
+point in the pipeline — the due date is a real, available, meaningful
+bound: "even chunked, can this finish before the customer needs it?").
+`INFEASIBLE_SUBSET` fires only when even chunked it cannot fit.
+(b) Density guard: resumable operations per eligible resource > 3 emits
+`STATISTICAL_OUTLIER` (broadened, defensible reuse — no new finding code:
+an unusual concentration is a distributional-threshold flag, the same kind
+of check the code already performs for run-rate outliers), severity
+`warning`, disposition `proceeded_flagged`, citing spike 2's measured
+ceiling (~4-4.5 resumable ops/resource) and decomposition as the mitigation
+in `disposition_detail`. Approximated at demand/spec granularity — Planner
+has not run yet at validator time, so concrete Operations don't exist.
+
+**Extraction (item 4).** `SolveValues.op_chunk_windows` (new) carries, per
+chunked operation, the actual (start, end) minute pairs the solver used —
+populated by a new `VariableMap.op_chunks` registry of chunk-slot variables
+recorded during `_build_resumable_operation`. The extractor's production-
+cost calculation was a real risk here: billing the OVERALL elapsed span
+(first-chunk-start to last-chunk-end) would have charged for the pause as
+if it were production time. Fixed by summing each chunk's OWN
+(end − start) — exactly the working minutes, never the elapsed span.
+`Assignment.phase_windows.run` (already `list[TimeWindow]` — no entity
+change needed) carries one window per chunk; pauses are the implicit gaps
+between consecutive windows, not a stored field — consistent with the
+2026-07-09 removal of `PhaseWindows.dwell` as a first-class phase.
+
+**schedule.csv / viewer.** One row per chunk window, sharing
+`(work_orders, op_seq, machine)` as the grouping key; a new `chunk_seq`
+column (1-indexed, blank for non-resumable ops) makes the grouping
+unambiguous. `production_cost` per row is prorated by that chunk's share of
+the assignment's total working minutes (so summing a group's rows
+reproduces the assignment's true cost). `schedule_viewer.py` needed no
+structural change: `px.timeline` already renders each row as its own bar on
+the shared machine row, so consecutive chunks show a natural visual gap
+during the pause ("gap", the simpler of the two rendering options offered)
+— only `chunk_seq` was added to the hover label.
+
+**chunking_exam redesigned as a positive test.** Pre-Rep-2, this scenario's
+oversized operations were *expected* to be `INFEASIBLE_SUBSET`-excluded.
+Post-Rep-2 they are genuinely schedulable, so the anomaly now marks its
+affected operations `splittable=true` with a calibrated duration (1,500
+min, 2.08× a 720-min shift — exactly 3 chunks at a shift-open start: 720 +
+720 + 60) and the truth manifest asserts the positive outcome instead
+(`expected_finding_code: null`, `expected_chunked: true`,
+`expected_chunk_count: 3`). A real bug surfaced while building this: the
+original design reused the base dataset's round-robin product pool, which
+would have silently given the same abnormal 1,500-minute duration to every
+*other* order sharing that product (round-robin cycling means multiple
+orders share a product once order count exceeds product count) —
+undetected, this would have created unboundedly-long durations on
+unrelated orders. Fixed by giving each affected order its own dedicated
+product/route/routing_line. `tests/test_ids_end_to_end.py`'s
+`TestChunkingExamScenario` is the standing production test for the spike's
+semantic assertion: every derived pause is checked, via
+`flatten_calendar`, to land exactly on a real closure — not just asserted
+by construction, verified against the actual solved schedule.
+
+**Acceptance (item 5).**
+(a) `chunking_exam` passes — both affected orders chunk into exactly 3
+windows each, `chunk_seq` populated, pauses verified against the flattened
+calendar.
+(b) Modularity gate: golden fixtures regenerated once, *verified beforehand*
+to be byte-identical to the pre-Rep-2 fixtures with the new `chunk_seq`
+column removed (`tests/test_defaults_reproduce_baseline.py` — sample_data
+and the gauntlet slice have zero resumable ops, so `chunk_seq` is blank on
+every row). All 5 baseline tests green with the regenerated fixtures.
+(c) Gauntlet re-run (`tools/gauntlet_rescue_report.py`): `raw_adapter.py`
+has no real data source for `splittable` (the ticketing extract has no such
+column — R-C3's default, correctly, leaves real pipeline behavior
+unchanged; inventing a value would violate the no-attribute-write-without-
+a-real-basis rule). The report instead runs the counterfactual a plant
+conversation would actually ask: if every excluded operation's spec were
+declared resumable, how many of the 173 documented `INFEASIBLE_SUBSET`
+exclusions would Rep 2 rescue? **116 rescued, 57 genuine survivors** —
+each survivor's evidence (`estimated_duration_minutes` vs.
+`available_minutes_before_due`) shows a demand whose due date is too close
+given the duration and available weekly capacity, regardless of chunking
+strategy; none are encoding artifacts.
+(d) Scale-ladder timings recorded (`tests/test_chunking_scale_ladder.py`,
+realistic ~1% density, through the actual production pipeline — not the
+spike's isolated minimal model): N=300 in 4.6s (OPTIMAL); N=3,000 in 97.3s
+(OPTIMAL, `--time-limit 60`); N=10,000 in 349-373s (FEASIBLE,
+`--time-limit 240`). Two findings worth recording precisely because they
+were *not* predicted by spike 2:
+  1. **CP-SAT's time-limit enforcement overshoots at this model size** —
+     configuring `max_time_in_seconds=240` produced a measured
+     `solver.WallTime()` of ~349s (~1.45×), reproduced twice. Not a bug in
+     this codebase; a real characteristic to budget for when setting
+     production time limits at N≥10,000.
+  2. **The full production objective compounds chunking's search
+     difficulty beyond spike 2's isolated measurement.** A clean
+     (non-resumable) N=10,000 run reaches OPTIMAL in ~60s; adding spike 2's
+     validated "realistic density" (~100 resumable ops, well under the
+     per-resource density-guard threshold — these use dedicated resources,
+     not shared ones) pushed the *same* model to `UNKNOWN` at 120s and
+     `FEASIBLE` only at ~350s. Spike 2's model was intervals + no_overlap +
+     a bare sum-of-ends objective; production adds cost/setup/tardiness
+     terms competing for the same search attention. This means the
+     validated ceiling is not simply "~4-4.5 resumable ops/resource" in
+     isolation — it interacts with overall model richness. Filed as a
+     concrete follow-up for docs/07's parked solver-gap workstream (the
+     week-one spike #2 risk in docs/07 §2, "sliced daily solve blessed as
+     operational mode") rather than re-opened here: the mitigation
+     directions are the same (decomposition, warm-start — spike 2 already
+     showed decomposition works and warm-start alone does not) and the
+     production number now gives that future work a measured target
+     instead of an estimated one.
+
+**docs/05 catalog.** C3 (Interruptibility & chunking) moves from **UI** to
+**PP** — the full docs/06 §8 chain now exists: doorway (§5.3
+`splittable`/`min_chunk`), gate check (validator class-aware window-fit +
+density guard), adapter (`ids_adapter.py` parses both fields), generator
+scenario with truth manifest (`chunking_exam`, redesigned above), and a
+schedule-level assertion (`TestChunkingExamScenario`'s pause-alignment
+check). This is exactly the docs/07 Phase 1 exit criterion ("`chunking_exam`
+passes; the gauntlet's 173 window-fit exclusions collapse") — collapse
+measured precisely as 116/173, not asserted qualitatively.
+
+**Test count.** 644 tests green (629 + 1 new fast test:
+`test_chunking_scale_ladder.py::test_n300`; the N=3,000/N=10,000 scale-
+ladder tests are `@pytest.mark.slow`, 8 skipped by default, opt in with
+`--runslow`). No existing test's assertions changed except the two golden
+`schedule.csv` fixtures (regenerated, verified equivalent modulo the new
+column) and `TestChunkingExamScenario` (redesigned per above, expected —
+its pre-Rep-2 behavior no longer exists to test).

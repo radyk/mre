@@ -75,7 +75,8 @@ tests/                Tests derived from the specs — write them from the spec 
 ## Current status / next work
 
 **Phases 0–3 complete, plus real-data ingestion, what-if runner, IDS
-adoption (gate + generator), and the precedence-edge surgery. 629+ tests green.**
+adoption (gate + generator), the precedence-edge surgery, and Rep 2
+(chunking/resumable operations). 644+ tests green.**
 
 Built so far: contracts + Reporter (Phase 0); adapter M1, snapshot store M2,
 validator M3, DQ report, identity-map persistence, per-resource Calendars,
@@ -118,13 +119,39 @@ CLI flags, since CP-SAT's default parallel search is not reproducible
 run-to-run even without any code change (see the 2026-07-09 docs/04 amendment
 for what that discovery implies for any future "identical schedule" claim).
 
+**Rep 2 — chunking / resumable operations (docs/05 R-C3, 2026-07-11).**
+`routing_lines.splittable=true` declares the RUN phase resumable;
+`SolverBuilder._build_resumable_operation` productionizes the chunk-
+boundary-interval encoding two week-one spikes vetted (`tools/
+chunking_scale_spike*.py` — element-table encoding falsified RED; `tools/
+chunking_spike2*.py` — chunk-boundary encoding verdicted YELLOW). One
+optional interval per (eligible resource, candidate calendar window),
+sharing that resource's native `add_no_overlap` with non-resumable and
+calendar-blocking intervals — no split no-overlap group needed, since chunk
+intervals can never overlap a closure by construction. Validator gained a
+class-aware window-fit (resumable ops tested against total working time
+available before the demand's due date, not a single window) and a density
+guard (`STATISTICAL_OUTLIER`/warning when resumable ops/resource > 3, citing
+spike 2's measured ceiling). Extraction bills working minutes per chunk, never
+the elapsed span including pauses; `schedule.csv` gained a `chunk_seq` column
+(one row per chunk, blank for non-resumable ops). Gauntlet counterfactual
+(`tools/gauntlet_rescue_report.py`, since raw_data has no real `splittable`
+source): **116/173 documented window-fit exclusions rescued**, 57 genuine
+survivors. Scale-ladder timings recorded at realistic (~1%) density through
+the real pipeline — N=10,000 surfaced two findings spike 2 didn't predict:
+CP-SAT's time-limit enforcement overshoots (~1.4x) at this model size, and
+the full cost/tardiness objective compounds chunking's search difficulty
+beyond spike 2's isolated minimal-model measurement. Full detail in the
+2026-07-11 docs/04 amendment; docs/05 catalog C3 moved UI→PP.
+
 **Next work: see `docs/07-roadmap.md`** for the live, prioritized plan (Phase
 1 exit bar, week-one spikes, cross-cutting workstreams). Do not hand-maintain
 a duplicate task list here — docs/07 is the authoritative source and is
-updated same-day per its own W2 workstream rule. As of this entry, Phase 1 is
-in progress: chunking/splittable operations, overtime premium pricing, outlier
-calibration, and the dwell_heavy/overtime_required/calendar_chaos/
-multi_facility_balance/scale-ladder generator scenarios are the open items.
+updated same-day per its own W2 workstream rule. As of this entry, Phase 1
+remaining: overtime premium pricing, outlier calibration, and the
+dwell_heavy/overtime_required/calendar_chaos/multi_facility_balance generator
+scenarios; the solver-gap/model-richness interaction found above is a new,
+concrete input to the parked solver-gap workstream.
 
 ## Working style
 

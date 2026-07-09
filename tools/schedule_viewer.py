@@ -134,6 +134,10 @@ def build_figure(
             continue
 
         dur = int(r.get("duration_min", 0))
+        chunk_seq = r.get("chunk_seq", "")
+        op_label = r.get("op_seq", "")
+        if chunk_seq:
+            op_label = f"{op_label} (chunk {chunk_seq})"
         records.append({
             "machine": machine,
             "facility": facility,
@@ -141,7 +145,7 @@ def build_figure(
             "start": start,
             "end": end,
             "work_orders": wos_str,
-            "op_seq": r.get("op_seq", ""),
+            "op_seq": op_label,
             "duration_min": dur,
             "lateness_class": lat_class,
             "color_key": facility if color_by == "facility" else lat_class,

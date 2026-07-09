@@ -9,9 +9,19 @@ Checks performed:
 4. STATISTICAL_OUTLIER     — OperationSpec.run_rate > 10× median within product family.
                              Groups by product_family (via process→product chain); falls back
                              to setup_family if product_family not available (sample_data compat).
-5. INFEASIBLE_SUBSET       — Non-splittable operation whose estimated duration
-                             (quantity × run_rate + setup) exceeds the longest contiguous
-                             calendar window on every eligible resource; demand excluded.
+5. INFEASIBLE_SUBSET       — Class-aware window-fit (docs/05 R-C3). Non-resumable
+                             (splittable=false) operations: estimated duration exceeds the
+                             longest contiguous calendar window on every eligible resource.
+                             Resumable (splittable=true) operations: estimated duration
+                             exceeds the total working time available (best eligible
+                             resource's weekly open minutes, scaled to the calendar time
+                             between reference_date and the demand's own due date) — i.e.
+                             excluded only when even chunked it cannot fit before due date.
+   DENSITY GUARD            (STATISTICAL_OUTLIER, warning, proceeded_flagged) — resumable
+                             operations per eligible resource > 3: the chunk-boundary-
+                             interval encoding's validated ceiling is ~4-4.5 resumable
+                             ops/resource (tools/chunking_spike2_report.md); per-resource
+                             decomposition is the mitigation if solves become slow.
 6. PROVENANCE_GAP          — Entity attribute with no sidecar record.
 
 reference_date defaults to datetime.now(UTC) when not supplied (backward compat with
@@ -79,6 +89,17 @@ def _longest_shift_minutes(cal: dict) -> float:
         return 0.0
 
 
+def _weekly_open_minutes(cal: dict) -> float:
+    """Total open minutes per week from a calendar's base_pattern (open
+    days/week x shift length) — the resumable-operation capacity metric,
+    vs. _longest_shift_minutes' single-window metric for non-resumable ops."""
+    bp = cal.get("base_pattern", {})
+    days = bp.get("weekdays", [])
+    if not days:
+        return 0.0
+    return len(days) * _longest_shift_minutes(cal)
+
+
 @dataclass
 class ValidationResult:
     go: bool
@@ -134,14 +155,19 @@ class Validator:
                 if fam:
                     spec_to_family[spec_id] = fam
 
-        # resource_id → longest shift window in minutes
+        # resource_id → longest shift window in minutes (non-resumable ops)
+        # resource_id → total open minutes per week (resumable ops, docs/05 R-C3)
         res_window: dict[str, float] = {}
+        res_weekly_minutes: dict[str, float] = {}
         for res in resources_list:
             cal_id = res.get("calendar_ref")
             if cal_id and cal_id in calendars_by_id:
-                res_window[res["id"]] = _longest_shift_minutes(calendars_by_id[cal_id])
+                cal = calendars_by_id[cal_id]
+                res_window[res["id"]] = _longest_shift_minutes(cal)
+                res_weekly_minutes[res["id"]] = _weekly_open_minutes(cal)
             else:
                 res_window[res["id"]] = 0.0
+                res_weekly_minutes[res["id"]] = 0.0
 
         # --- Check 1: TEMPORAL_IMPOSSIBILITY ---
         excluded_demand_ids: set[str] = set()
@@ -264,10 +290,19 @@ class Validator:
                         tier=RecordTier.SUPPORTING,
                     )
 
-        # --- Check 5: INFEASIBLE_SUBSET — pre-solve window-fit check ---
+        # --- Check 5: INFEASIBLE_SUBSET — class-aware pre-solve window-fit check ---
         # For each demand (not already excluded), estimate total operation duration
-        # = quantity × run_rate + setup. If this exceeds the longest available calendar
-        # window on ALL eligible resources for any operation, exclude the demand.
+        # = quantity × run_rate + setup. Non-resumable (splittable=false) operations
+        # must fit the longest available calendar window on some eligible resource, as
+        # before. Resumable (splittable=true) operations can chunk across many windows
+        # (docs/05 R-C3) — they are excluded only when even chunked they cannot fit the
+        # working time available between reference_date and the demand's own due date.
+        #
+        # resumable_ops_by_resource tallies (demand, resource) pairs for the density
+        # guard below — approximated at spec/demand granularity since Planner (which
+        # would produce concrete Operations) has not run yet at validator time.
+        resumable_ops_by_resource: dict[str, int] = {}
+
         for d in demands:
             if d["id"] in excluded_demand_ids:
                 continue
@@ -284,6 +319,15 @@ class Validator:
             process = prod_to_process.get(d.get("product_ref", ""))
             if process is None:
                 continue
+
+            due_raw = d.get("due")
+            try:
+                due_dt = datetime.fromisoformat(due_raw) if due_raw else None
+                if due_dt is not None and due_dt.tzinfo is None:
+                    due_dt = due_dt.replace(tzinfo=UTC)
+            except (ValueError, TypeError):
+                due_dt = None
+            elapsed_days = max(0.0, (due_dt - now).total_seconds() / 86400.0) if due_dt else 0.0
 
             for spec_id in process.get("operation_specs", []):
                 spec = op_specs_by_id.get(spec_id)
@@ -312,14 +356,54 @@ class Validator:
                 if not eligible_ids:
                     continue
 
-                max_window = max(
-                    (res_window.get(rid, 0.0) for rid in eligible_ids),
-                    default=0.0,
-                )
-                if max_window <= 0.0:
+                resumable = bool(spec.get("splittable", False))
+
+                if not resumable:
+                    max_window = max(
+                        (res_window.get(rid, 0.0) for rid in eligible_ids),
+                        default=0.0,
+                    )
+                    if max_window <= 0.0:
+                        continue
+                    if total_minutes > max_window:
+                        excluded_demand_ids.add(d["id"])
+                        reporter.record_finding(
+                            code=FindingCode.INFEASIBLE_SUBSET,
+                            severity=FindingSeverity.ERROR,
+                            subjects=[EntityRef(entity_id=d["id"], entity_type="demand")],
+                            evidence={
+                                "demand_id": d["id"],
+                                "spec_id": spec_id,
+                                "estimated_duration_minutes": round(total_minutes, 1),
+                                "max_window_minutes": max_window,
+                                "quantity": qty,
+                                "run_rate_min_per_unit": round(run_rate_sec / 60.0, 6),
+                                "setup_minutes": round(setup_sec / 60.0, 1),
+                                "reason": (
+                                    "Estimated operation duration exceeds the longest available "
+                                    "calendar window on every eligible resource; "
+                                    "demand cannot be scheduled without splitting"
+                                ),
+                            },
+                            disposition=FindingDisposition.EXCLUDED,
+                            tier=RecordTier.SUPPORTING,
+                        )
+                        break  # one infeasible operation is sufficient to exclude the demand
                     continue
 
-                if total_minutes > max_window:
+                # Resumable: test total working time available before due date,
+                # not a single window. Only infeasible if even chunked it can't fit.
+                for rid in eligible_ids:
+                    resumable_ops_by_resource[rid] = resumable_ops_by_resource.get(rid, 0) + 1
+
+                best_weekly = max(
+                    (res_weekly_minutes.get(rid, 0.0) for rid in eligible_ids),
+                    default=0.0,
+                )
+                if best_weekly <= 0.0:
+                    continue
+                available_minutes = best_weekly * (elapsed_days / 7.0)
+                if total_minutes > available_minutes:
                     excluded_demand_ids.add(d["id"])
                     reporter.record_finding(
                         code=FindingCode.INFEASIBLE_SUBSET,
@@ -329,20 +413,52 @@ class Validator:
                             "demand_id": d["id"],
                             "spec_id": spec_id,
                             "estimated_duration_minutes": round(total_minutes, 1),
-                            "max_window_minutes": max_window,
+                            "available_minutes_before_due": round(available_minutes, 1),
+                            "elapsed_days_to_due": round(elapsed_days, 2),
                             "quantity": qty,
-                            "run_rate_min_per_unit": round(run_rate_sec / 60.0, 6),
-                            "setup_minutes": round(setup_sec / 60.0, 1),
                             "reason": (
-                                "Estimated operation duration exceeds the longest available "
-                                "calendar window on every eligible resource; "
-                                "demand cannot be scheduled without splitting"
+                                "Resumable operation's total working time exceeds what is "
+                                "available (best eligible resource) between reference_date "
+                                "and the demand's due date, even chunked across every open "
+                                "calendar window; demand cannot be scheduled"
                             ),
                         },
                         disposition=FindingDisposition.EXCLUDED,
                         tier=RecordTier.SUPPORTING,
                     )
-                    break  # one infeasible operation is sufficient to exclude the demand
+                    break
+
+        # --- Density guard: resumable ops per resource (docs/05, chunking_spike2) ---
+        # The chunk-boundary-interval encoding's validated ceiling is ~4-4.5
+        # resumable ops/resource (tools/chunking_spike2_report.md); above it,
+        # CP-SAT's default search stopped finding feasible solutions within 60s
+        # in the spike, though per-resource decomposition rescued it. This is a
+        # proceed-but-flag warning, not an exclusion — the schedule is still
+        # attempted globally.
+        for rid, count in resumable_ops_by_resource.items():
+            if count > 3:
+                reporter.record_finding(
+                    code=FindingCode.STATISTICAL_OUTLIER,
+                    severity=FindingSeverity.WARNING,
+                    subjects=[EntityRef(entity_id=rid, entity_type="resource")],
+                    evidence={
+                        "resource_id": rid,
+                        "resumable_op_count": count,
+                        "threshold": 3,
+                        "reason": (
+                            "Resumable-operation density on this resource exceeds the "
+                            "chunk-boundary-interval encoding's validated ceiling "
+                            "(~4-4.5 ops/resource)"
+                        ),
+                    },
+                    disposition=FindingDisposition.PROCEEDED_FLAGGED,
+                    disposition_detail=(
+                        "basis: spike-2 ceiling (~4-4.5 resumable ops/resource) — see "
+                        "tools/chunking_spike2_report.md; per-resource decomposition is "
+                        "the validated mitigation if solves become slow"
+                    ),
+                    tier=RecordTier.SUPPORTING,
+                )
 
         # --- Check 6: PROVENANCE_GAP sweep ---
         _UNIVERSAL = frozenset({"id", "snapshot_id", "external_refs", "_entity_type"})

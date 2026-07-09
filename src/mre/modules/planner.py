@@ -147,6 +147,7 @@ class Planner:
                 op_id = _uid("op", wp_id, spec_id)
                 run_duration = _compute_run_duration(total_qty, spec)
 
+                spec_min_chunk = spec.get("min_chunk")
                 op = Operation(
                     id=op_id,
                     snapshot_id=snapshot_id,
@@ -158,6 +159,7 @@ class Planner:
                     setup_duration=_parse_td(spec.get("base_setup", "PT0S")),
                     run_duration=run_duration,
                     splittable=bool(spec.get("splittable", False)),
+                    min_chunk=_parse_td(spec_min_chunk) if spec_min_chunk else None,
                 )
                 op_provenance = _op_provenance(
                     op_id, snapshot_id,
@@ -354,16 +356,9 @@ def _op_provenance(
             payload=DerivedProvenance(formula_id=formula, input_refs=inputs),
         )
 
-    def _dflt(attr: str) -> ProvenanceSidecar:
-        return ProvenanceSidecar(
-            entity_id=op_id, attribute_name=attr, snapshot_id=snapshot_id,
-            provenance_class=ProvenanceClass.DEFAULTED,
-            payload=DefaultedProvenance(policy="planner default"),
-        )
-
     spec_inputs = [InputRef(entity_id=spec_id, attribute_name=attr, snapshot_id=snapshot_id)
                    for attr in ("sequence", "resource_requirements", "setup_family",
-                                "base_setup", "splittable")]
+                                "base_setup", "splittable", "min_chunk")]
 
     return [
         _drv("spec_ref",    "planner.spec_ref",          [InputRef(entity_id=spec_id, attribute_name="id", snapshot_id=snapshot_id)]),
@@ -374,7 +369,7 @@ def _op_provenance(
         _drv("setup_duration", "planner.copy_base_setup", spec_inputs[3:4]),
         _drv("run_duration", "demand.quantity * spec.run_rate", run_duration_inputs),
         _drv("splittable",  "planner.copy_splittable",   spec_inputs[4:5]),
-        _dflt("min_chunk"),
+        _drv("min_chunk",   "planner.copy_min_chunk",    spec_inputs[5:6]),
     ]
 
 

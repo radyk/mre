@@ -8,6 +8,26 @@ golden fixtures were captured from the pre-surgery code and are compared
 byte-for-byte (schedule.csv) and value-for-value (cost ledger) against
 post-surgery runs.
 
+Rep 2 (chunking, docs/05 R-C3) reused this same gate as its own acceptance
+item 5b: datasets with no resumable ops must solve IDENTICALLY. schedule.csv
+gained one new column (chunk_seq) to support chunked operations' multi-row
+output — golden fixtures were regenerated once, verified beforehand to be
+byte-identical to the pre-Rep-2 fixtures with the chunk_seq column removed
+(sample_data and raw_data have zero resumable ops, so chunk_seq is blank on
+every row). See the 2026-07-11 docs/04 amendment for the verification.
+
+Determinism note: CP-SAT's default parallel search is NOT reproducible
+run-to-run when a model has tied-cost alternatives (confirmed empirically —
+two stock runs of the unchanged sample_data pipeline produced different
+resource assignments for the same proven-optimal cost). Bit-identical
+comparison requires pinning three things simultaneously:
+  - PYTHONHASHSEED=0 (Python's per-process string-hash randomization affects
+    dict/set iteration order, which affects CP-SAT variable creation order)
+  - --solver-workers 1 (CP-SAT parallel search is inherently non-reproducible)
+  - --solver-seed 42 (CP-SAT's internal tie-breaking)
+All three are pinned here via subprocess so the test exercises the exact
+same code path (python -m mre) used to capture the golden fixtures.
+
 Determinism note: CP-SAT's default parallel search is NOT reproducible
 run-to-run when a model has tied-cost alternatives (confirmed empirically —
 two stock runs of the unchanged sample_data pipeline produced different

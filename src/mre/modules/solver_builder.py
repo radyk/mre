@@ -38,6 +38,12 @@ class SolveValues:
     wp_end_minutes: dict[str, int]        # workpackage_id → completion minute
     tardiness_minutes: dict[str, int]     # fulfillment_id → tardiness (minutes, ≥0)
     horizon_start: datetime
+    # op_id → [(chunk_start_min, chunk_end_min), ...] in time order, for
+    # resumable (chunked) operations only — absent/empty for non-resumable
+    # ops. Each tuple is one calendar-window chunk; gaps between consecutive
+    # chunks are the pauses (R-C3), always exactly a calendar closure by
+    # construction (see solver_builder._build_resumable_operation).
+    op_chunk_windows: dict[str, list[tuple[int, int]]] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -66,6 +72,9 @@ class VariableMap:
     op_eligible: dict[str, list[str]] = field(default_factory=dict)
     # resource_id → [(start_min, end_min), ...] available calendar windows
     cal_windows: dict[str, list[tuple[int, int]]] = field(default_factory=dict)
+    # op_id → [{"used": BoolVar, "start": IntVar, "end": IntVar}, ...] one
+    # entry per candidate (resource, window) chunk slot — resumable ops only.
+    op_chunks: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
 
     @property
     def op_ids(self) -> dict[str, Any]:
@@ -95,6 +104,15 @@ class VariableMap:
         wp_end_min = {wid: solver.Value(v) for wid, v in self.wp_end.items()}
         tard_min   = {fid: solver.Value(v) for fid, v in self.tardiness.items()}
 
+        op_chunk_windows: dict[str, list[tuple[int, int]]] = {}
+        for oid, slots in self.op_chunks.items():
+            used_slots = [
+                (solver.Value(slot["start"]), solver.Value(slot["end"]))
+                for slot in slots if solver.Value(slot["used"])
+            ]
+            if used_slots:
+                op_chunk_windows[oid] = sorted(used_slots)
+
         return SolveValues(
             op_start_minutes=op_start_min,
             op_end_minutes=op_end_min,
@@ -102,6 +120,7 @@ class VariableMap:
             wp_end_minutes=wp_end_min,
             tardiness_minutes=tard_min,
             horizon_start=self.horizon_start,
+            op_chunk_windows=op_chunk_windows,
         )
 
 
@@ -194,6 +213,7 @@ class SolverBuilder:
         wp_op_map: dict[str, list[str]] = {}  # wp_id → [op_ids]
         op_durations: dict[str, int] = {}     # op_id → total minutes (setup + run)
         op_families: dict[str, str] = {}      # op_id → setup_family
+        res_op_intervals: dict[str, list[Any]] = {rid: [] for rid in resources}
 
         for op in operations:
             oid = op["id"]
@@ -213,15 +233,6 @@ class SolverBuilder:
                 es_dt = _parse_dt(wp["earliest_start"])
                 wp_earliest_min = max(0, int((es_dt - horizon_start).total_seconds() / 60))
 
-            # Start and end variables for this operation
-            s_var = model.new_int_var(wp_earliest_min, horizon_minutes - total_min, f"s_{oid}")
-            e_var = model.new_int_var(wp_earliest_min + total_min, horizon_minutes, f"e_{oid}")
-            model.add(e_var == s_var + total_min)
-
-            var_map.op_start[oid] = s_var
-            var_map.op_end[oid]   = e_var
-            var_map.op_assign[oid] = {}
-
             # Determine eligible resources (all for now — scope cut: single tool type)
             eligible = list(resources.keys())  # all resources are eligible if no requirements
             # Scope cut: if op has resource_requirements, filter by those
@@ -229,6 +240,24 @@ class SolverBuilder:
             if op_reqs:
                 eligible = self._eligible_resources(op_reqs, resources)
             var_map.op_eligible[oid] = eligible
+            var_map.op_assign[oid] = {}
+
+            if op.get("splittable", False):
+                # R-C3 resumable operation — chunk-boundary-interval encoding
+                # (docs/05 R-C3, spike 2 productionized: tools/chunking_spike2_report.md).
+                self._build_resumable_operation(
+                    model, var_map, oid, eligible, total_min, op.get("min_chunk"),
+                    cal_windows, horizon_minutes, wp_earliest_min, res_op_intervals,
+                )
+                continue
+
+            # Start and end variables for this operation
+            s_var = model.new_int_var(wp_earliest_min, horizon_minutes - total_min, f"s_{oid}")
+            e_var = model.new_int_var(wp_earliest_min + total_min, horizon_minutes, f"e_{oid}")
+            model.add(e_var == s_var + total_min)
+
+            var_map.op_start[oid] = s_var
+            var_map.op_end[oid]   = e_var
 
             # Create optional interval per eligible resource
             all_intervals: list[Any] = []
@@ -254,26 +283,15 @@ class SolverBuilder:
         # ------------------------------------------------------------------
         # No-overlap per resource + calendar blocking
         # ------------------------------------------------------------------
-        resource_intervals: dict[str, list[Any]] = {rid: [] for rid in resources}
-
+        # Resumable operations' chunk intervals were already appended to
+        # res_op_intervals above (bounded within their own calendar window by
+        # construction, so they can never overlap a blocking interval — no
+        # separate no_overlap group needed, unlike the falsified spike-1
+        # encoding). Only non-resumable ops need their intervals (re)built here.
         for op in operations:
             oid = op["id"]
-            for rid, iv, bv in [
-                (rid, None, bv)
-                for rid, bv in var_map.op_assign.get(oid, {}).items()
-            ]:
-                pass  # rebuild below with correct iv reference
-
-        # Rebuild resource_intervals with the actual interval variables
-        # We need to re-create them since we didn't store them in var_map directly
-        # Instead, use the approach of storing (start, duration, end, bool) per op×resource
-        # and building no-overlap constraints from those.
-
-        # Collect intervals per resource for no-overlap
-        res_op_intervals: dict[str, list[Any]] = {rid: [] for rid in resources}
-
-        for op in operations:
-            oid = op["id"]
+            if op.get("splittable", False):
+                continue
             s_var = var_map.op_start[oid]
             e_var = var_map.op_end[oid]
             dur   = op_durations[oid]
@@ -602,6 +620,174 @@ class SolverBuilder:
             ]
             return matched if matched else list(resources.keys())
         return list(resources.keys())
+
+    # ------------------------------------------------------------------
+    # Resumable operations — chunk-boundary-interval encoding (docs/05 R-C3)
+    #
+    # Productionizes tools/chunking_spike2.py, verdicted YELLOW (build for
+    # the deployment-relevant density; per-resource decomposition is the
+    # validated mitigation at high resumable density — see
+    # tools/chunking_spike2_report.md and the 2026-07-10 docs/04 amendment).
+    #
+    # One optional interval per (eligible resource, candidate calendar
+    # window) "chunk slot". Exactly one resource is chosen (op_assign, same
+    # boolean interface non-resumable ops use — transitions/locks/objective
+    # code need no special-casing). On the chosen resource: chunk working-
+    # durations sum to the op's total working minutes; gluing forces a
+    # chunk followed by another chunk of the same op to run to its window's
+    # end, with the next starting at the next window's open (R-C3: pauses
+    # only at calendar boundaries); contiguity requires exactly one "start
+    # transition" and one "end transition" among used chunks — the same
+    # transition literals pin the operation's overall start/end (needed for
+    # WorkPackage-end/tardiness/objective) at no extra cost.
+    #
+    # Chunk intervals are bounded within their own calendar window by
+    # construction, so they can never overlap a closure-blocking interval —
+    # unlike the falsified spike-1 (AddElement) encoding, one add_no_overlap
+    # group per resource suffices; chunk intervals are appended directly to
+    # res_op_intervals by the caller's loop.
+    # ------------------------------------------------------------------
+
+    def _feasible_window_range(
+        self, windows: list[tuple[int, int]], working_min: int, wp_earliest_min: int,
+    ) -> Optional[tuple[int, int]]:
+        """Return (lo, hi) candidate window indices this op could touch on
+        one resource, or None if the resource has no windows at or after
+        wp_earliest_min. hi trims windows with insufficient trailing
+        capacity to ever finish the op if started there (tail pruning);
+        lo trims windows entirely before the WorkPackage's earliest_start."""
+        lo = next((i for i, (s, e) in enumerate(windows) if e > wp_earliest_min), None)
+        if lo is None:
+            return None
+        n = len(windows)
+        suffix_capacity = [0] * (n + 1)
+        for i in range(n - 1, lo - 1, -1):
+            s, e = windows[i]
+            avail_start = max(s, wp_earliest_min)
+            suffix_capacity[i] = suffix_capacity[i + 1] + max(0, e - avail_start)
+        max_start_idx = lo
+        for i in range(lo, n):
+            if suffix_capacity[i] >= working_min:
+                max_start_idx = i
+
+        # Worst-case chunk count bound (not hardcoded to spike 2's synthetic
+        # "1-3x window" assumption — real durations vary): ceil(working_min /
+        # shortest window) + 1 buffer for a partial first/last chunk.
+        min_window_len = min((e - s for s, e in windows[lo:]), default=1) or 1
+        chunks_max = max(2, -(-working_min // min_window_len) + 1)
+
+        hi = min(max_start_idx + chunks_max - 1, n - 1)
+        return lo, hi
+
+    def _build_resumable_operation(
+        self,
+        model,
+        var_map: "VariableMap",
+        oid: str,
+        eligible: list[str],
+        working_min: int,
+        min_chunk_raw: Optional[str],
+        cal_windows: dict[str, list[tuple[int, int]]],
+        horizon_minutes: int,
+        wp_earliest_min: int,
+        res_op_intervals: dict[str, list[Any]],
+    ) -> None:
+        min_chunk_min = _td_to_minutes(_parse_td(min_chunk_raw)) if min_chunk_raw else 0
+
+        op_start = model.new_int_var(0, horizon_minutes, f"opstart_{oid}")
+        op_end = model.new_int_var(0, horizon_minutes, f"opend_{oid}")
+        var_map.op_start[oid] = op_start
+        var_map.op_end[oid] = op_end
+        var_map.op_chunks[oid] = []
+
+        assign_or: dict[str, Any] = {}
+        any_slot_created = False
+
+        for rid in eligible:
+            windows = cal_windows.get(rid, [])
+            rng = self._feasible_window_range(windows, working_min, wp_earliest_min)
+            if rng is None:
+                continue
+            lo, hi = rng
+            idxs = list(range(lo, hi + 1))
+
+            used, durv, starts, ends = {}, {}, {}, {}
+            for w in idxs:
+                w_start, w_end = windows[w]
+                eff_start = max(w_start, wp_earliest_min)
+                if eff_start >= w_end:
+                    continue
+                u = model.new_bool_var(f"u_{oid}_{rid}_{w}")
+                s_var = model.new_int_var(eff_start, w_end, f"cs_{oid}_{rid}_{w}")
+                e_var = model.new_int_var(eff_start, w_end, f"ce_{oid}_{rid}_{w}")
+                d_var = model.new_int_var(0, w_end - eff_start, f"cd_{oid}_{rid}_{w}")
+                iv = model.new_optional_interval_var(s_var, d_var, e_var, u, f"civ_{oid}_{rid}_{w}")
+                model.add(d_var == 0).only_enforce_if(u.Not())
+                if min_chunk_min:
+                    model.add(d_var >= min_chunk_min).only_enforce_if(u)
+                used[w], durv[w], starts[w], ends[w] = u, d_var, s_var, e_var
+                res_op_intervals.setdefault(rid, []).append(iv)
+                var_map.op_chunks[oid].append({"used": u, "start": s_var, "end": e_var})
+                any_slot_created = True
+
+            idxs = [w for w in idxs if w in used]
+            if not idxs:
+                continue
+
+            bv = model.new_bool_var(f"assign_{oid}_{rid}")
+            assign_or[rid] = bv
+
+            # Chunk usage only permitted on the chosen resource.
+            for w in idxs:
+                model.add(used[w] == 0).only_enforce_if(bv.Not())
+
+            # (1) chunk working-durations sum to the op's total working duration
+            model.add(sum(durv[w] for w in idxs) == working_min).only_enforce_if(bv)
+
+            # (3) contiguity — single start-transition, single end-transition
+            start_trans, end_trans = {}, {}
+            for pos, w in enumerate(idxs):
+                if pos == 0:
+                    start_trans[w] = used[w]
+                else:
+                    prev_w = idxs[pos - 1]
+                    t = model.new_bool_var(f"st_{oid}_{rid}_{w}")
+                    model.add_bool_and([used[w], used[prev_w].Not()]).only_enforce_if(t)
+                    model.add_bool_or([used[w].Not(), used[prev_w]]).only_enforce_if(t.Not())
+                    start_trans[w] = t
+                if pos == len(idxs) - 1:
+                    end_trans[w] = used[w]
+                else:
+                    next_w = idxs[pos + 1]
+                    t2 = model.new_bool_var(f"et_{oid}_{rid}_{w}")
+                    model.add_bool_and([used[w], used[next_w].Not()]).only_enforce_if(t2)
+                    model.add_bool_or([used[w].Not(), used[next_w]]).only_enforce_if(t2.Not())
+                    end_trans[w] = t2
+            model.add(sum(start_trans.values()) == 1).only_enforce_if(bv)
+            model.add(sum(end_trans.values()) == 1).only_enforce_if(bv)
+
+            # (2) gluing — a chunk followed by another chunk of the same op
+            # must run to its window's end; the next chunk starts at its
+            # window's open (R-C3: pauses only at calendar boundaries)
+            for pos in range(len(idxs) - 1):
+                w, w_next = idxs[pos], idxs[pos + 1]
+                w_end = windows[w][1]
+                w_next_start = windows[w_next][0]
+                model.add(ends[w] == w_end).only_enforce_if([used[w], used[w_next]])
+                model.add(starts[w_next] == w_next_start).only_enforce_if([used[w], used[w_next]])
+
+            for w in idxs:
+                model.add(op_start == starts[w]).only_enforce_if([bv, start_trans[w]])
+                model.add(op_end == ends[w]).only_enforce_if([bv, end_trans[w]])
+
+        var_map.op_assign[oid] = assign_or
+        if assign_or:
+            model.add_exactly_one(assign_or.values())
+        elif not any_slot_created:
+            # No eligible resource has any feasible chunk placement at all —
+            # constrain to never start (infeasible signal, matching the
+            # non-resumable no-eligible-resource case).
+            model.add(op_start == horizon_minutes)
 
     # ------------------------------------------------------------------
     # Lock constraints (frozen_assignment / pinned_window)

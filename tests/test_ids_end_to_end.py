@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import csv
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -99,6 +99,8 @@ class TestScenarioGateAndTruth:
 
         for entry in truth["anomalies"]:
             expected = entry["expected_finding_code"]
+            if expected is None:
+                continue  # e.g. chunking_exam post-Rep-2: chunked and scheduled, no finding
             assert expected in codes_present, (
                 f"{scenario}: anomaly '{entry['anomaly']}' expected finding "
                 f"{expected}, got {sorted(codes_present)}"
@@ -232,7 +234,15 @@ class TestTransitionHeavyScenario:
 
 
 class TestChunkingExamScenario:
-    def test_oversized_orders_excluded_from_schedule(self, tmp_path):
+    """Rep 2 (docs/05 R-C3): chunking_exam's oversized operations are no
+    longer excluded (INFEASIBLE_SUBSET) — they are chunked and scheduled.
+    This is the standing production test for the spike-2 semantic assertion
+    (every derived pause aligns exactly with a calendar closure)."""
+
+    def test_oversized_orders_are_chunked_and_scheduled(self, tmp_path):
+        from mre.modules.calendar_utils import flatten_calendar
+        from mre.modules.snapshot_store import SnapshotStore
+
         sub_dir = tmp_path / "submission"
         out_dir = tmp_path / "out"
         truth = generate(sub_dir, scenario="chunking_exam", seed=1)
@@ -243,12 +253,50 @@ class TestChunkingExamScenario:
         assert exit_code == 0
 
         anomaly = next(a for a in truth["anomalies"] if a["anomaly"] == "chunking_exam")
+        expected_chunks = anomaly["expected_chunk_count"]
         rows = _read_schedule_csv(out_dir)
-        scheduled_orders = {r["work_orders"] for r in rows}
+
+        store = SnapshotStore(out_dir / "snapshots")
+        reader = store.load_snapshot("snap-chunk")
+        calendars_by_id = {c["id"]: c for c in reader.iter_entities("calendar")}
+        resources_by_id = {r["id"]: r for r in reader.iter_entities("resource")}
+        identity_map = reader.read_identity_map()
+
         for order_id in anomaly["affected_order_ids"]:
-            assert order_id not in scheduled_orders, (
-                f"{order_id} should have been excluded (INFEASIBLE_SUBSET) but appears in schedule.csv"
+            order_rows = sorted(
+                (r for r in rows if order_id in r["work_orders"].split("+")),
+                key=lambda r: int(r["chunk_seq"] or "1"),
             )
+            assert order_rows, f"{order_id} should be chunked and scheduled, but has no schedule.csv rows"
+            assert len(order_rows) == expected_chunks, (
+                f"{order_id}: expected {expected_chunks} chunks, got {len(order_rows)}"
+            )
+            assert all(r["chunk_seq"] for r in order_rows), f"{order_id}: chunk_seq must be set on every row"
+
+            # Every derived pause must align exactly with a real calendar closure.
+            machine_name = order_rows[0]["machine"]
+            resource_id = next(
+                (rid for rid, r in resources_by_id.items()
+                 if identity_map and identity_map.external_refs(rid)
+                 and identity_map.external_refs(rid)[0].value == machine_name),
+                None,
+            )
+            assert resource_id is not None, f"could not resolve machine '{machine_name}' back to a resource"
+            cal = calendars_by_id.get(resources_by_id[resource_id].get("calendar_ref"))
+            assert cal is not None
+
+            for prev_row, next_row in zip(order_rows, order_rows[1:]):
+                gap_start = datetime.fromisoformat(prev_row["end"])
+                gap_end = datetime.fromisoformat(next_row["start"])
+                assert gap_end > gap_start, f"{order_id}: chunk rows must be time-ordered"
+                windows = flatten_calendar(
+                    cal.get("base_pattern", {}), [], gap_start - timedelta(days=1), gap_end + timedelta(days=1),
+                )
+                overlapping = [w for w in windows if w.start < gap_end and w.end > gap_start]
+                assert not overlapping, (
+                    f"{order_id}: pause [{gap_start}, {gap_end}) overlaps an open calendar "
+                    f"window {overlapping} — not a real closure"
+                )
 
 
 @pytest.mark.slow

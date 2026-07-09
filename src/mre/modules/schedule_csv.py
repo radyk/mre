@@ -1,7 +1,15 @@
 """Generate schedule.csv from extraction results.
 
-Columns: work_orders, op_seq, setup_family, machine, start, end,
+Columns: work_orders, op_seq, chunk_seq, setup_family, machine, start, end,
          duration_min, production_cost.
+
+Resumable (chunked, docs/05 R-C3) operations produce multiple rows sharing
+the same (work_orders, op_seq, machine) key — one per calendar-window chunk
+— so the operation groups naturally; chunk_seq (1-indexed) orders them.
+Non-resumable operations keep a single row with chunk_seq blank, unchanged
+from the pre-Rep-2 format. production_cost is prorated per chunk by its
+share of the assignment's total working minutes, so summing a group's rows
+reproduces the assignment's true cost — never billing the pause.
 
 Sorted by machine then start. External names only — no UUIDs.
 """
@@ -57,26 +65,37 @@ def generate_schedule_csv(
 
         machine = _external_name(resource_id, identity_map) or resource_id
 
-        start_str = asgn["run_start"]
-        end_str = asgn["run_end"]
-        start_dt = datetime.fromisoformat(start_str)
-        end_dt = datetime.fromisoformat(end_str)
-        duration_min = int((end_dt - start_dt).total_seconds() / 60)
+        run_windows = asgn.get("run_windows") or [
+            {"start": asgn["run_start"], "end": asgn["run_end"]}
+        ]
+        total_cost = round(asgn.get("production_cost", 0.0), 4)
+        total_working_min = sum(
+            int((datetime.fromisoformat(w["end"]) - datetime.fromisoformat(w["start"])).total_seconds() / 60)
+            for w in run_windows
+        ) or 1
+        is_chunked = len(run_windows) > 1
 
-        rows.append({
-            "work_orders": work_orders,
-            "op_seq": op.get("sequence", ""),
-            "setup_family": op.get("setup_family", ""),
-            "machine": machine,
-            "start": start_str,
-            "end": end_str,
-            "duration_min": duration_min,
-            "production_cost": round(asgn.get("production_cost", 0.0), 4),
-        })
+        for idx, w in enumerate(run_windows, start=1):
+            start_dt = datetime.fromisoformat(w["start"])
+            end_dt = datetime.fromisoformat(w["end"])
+            duration_min = int((end_dt - start_dt).total_seconds() / 60)
+            chunk_cost = round(total_cost * duration_min / total_working_min, 4)
+
+            rows.append({
+                "work_orders": work_orders,
+                "op_seq": op.get("sequence", ""),
+                "chunk_seq": idx if is_chunked else "",
+                "setup_family": op.get("setup_family", ""),
+                "machine": machine,
+                "start": w["start"],
+                "end": w["end"],
+                "duration_min": duration_min,
+                "production_cost": chunk_cost,
+            })
 
     rows.sort(key=lambda r: (r["machine"], r["start"]))
 
-    fieldnames = ["work_orders", "op_seq", "setup_family", "machine",
+    fieldnames = ["work_orders", "op_seq", "chunk_seq", "setup_family", "machine",
                   "start", "end", "duration_min", "production_cost"]
 
     buf = io.StringIO()
