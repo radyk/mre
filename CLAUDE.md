@@ -89,38 +89,44 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
-**Roadmap position: Phase 2 IN PROGRESS (demo backbone).** Session 2.3 done
-2026-07-14: **WIP / soft-start rescheduling** (docs/06 §5.13) shipped end to
-end — `wip_status.csv` gate doorway (manifest `wip_progress_basis` + five
-coherence checks as findings, add-never-repurpose); `WipStatus` /
-`WipOperationObservation` contracts, `Demand.wip_operations` + `Operation`
-WIP fields (docs/01 §5.1/§5.2/§5.4); IDS adapter lands observations with
-truthful observed provenance citing source rows; Planner projects onto
-Operations + WorkPackage.state (remaining_duration observed-vs-derived per
-basis — the yield_factor false-observed anti-pattern avoided); Solver Builder
-removes complete ops (**capacity freed**) and fixes in-flight ops on the
-observed resource for remaining duration (busy span carved out of calendar
-blocking), **amended invariant** at both clamp sites (new ops floored at
-reference_date, in-flight exempt); Validator TEMPORAL_IMPOSSIBILITY exempts
-in-flight/complete demands — **ghost-job fix un-regressed** (proven in one
-run); **mid_replan** generator scenario with the capacity counterfactual
-(strip WIP → strictly more tardiness) + warm-start proof (fixed/in-flight ops
-have no variables to hint). Also 2.2-review carry-ins: warm-start
-counterfactual test, pool diversity threshold (`DIVERSITY_TOLERANCE_MINUTES`
-= 15, Hamming aligned), probe 4,933-vs-14,042 resolved (planner-policy
-artifact), invalidated historical move counts named. **790 tests green.**
-Session 2.2 (warm-start + pool + probe) `86e0115`; Session 2.1 (API layer)
-`517b1fe`; Phase-1 exit audit `9a70e5c`. Qualification carried (owned by
-Phase 4): the raw_data path bypasses the M0 gate (no WIP doorway there either)
-— resolved by the pilot connector; the raw path is then demo-frozen.
+**Roadmap position: Phase 2 IN PROGRESS (demo backbone).** Session 2.4 done
+2026-07-14: **cloud deploy, encrypted (W4 baseline)** + the 2.3-review
+carry-ins. **CU0:** WIP finding-code review (all five checks reuse existing
+codes within their meanings; `wip_sequence_order_violation → LOW_CONFIDENCE_INPUT`
+named as closest-to-a-stretch and justified; no new code) · **resumable
+in-flight remainder now RESPECTS calendars** (`_place_inflight_remaining`
+greedily fills working windows; non-resumable keeps the contiguous carve-out —
+"the future respects calendars even when the past didn't") · op-count
+reconciliation (13,315/14,042/4,088/4,933 = planner-policy × splittability
+rescues) + dossier entry #2 (merge as ~3.3× tractability lever vs the +$260
+cost-loss verdict; pilot entry conditions must declare their policy) ·
+**sunk-setup ledger** (completed/in-flight ops bill zero movable setup; separate
+non-decomposing `sunk_setup_cost` line; counterfactual on mid_replan). **CU1:**
+multi-stage Dockerfile (non-root, pinned lockfiles, `/health`, image-as-shipped
+CI) + compose parity; `TestGauntletReproducesBaseline` guarded to skip when the
+gitignored raw_data is absent. **CU2:** Caddy TLS overlay (`tls internal`) +
+encryption-at-rest as a volume property + secrets via env injection only + CI
+gitleaks secret-scan + **docs/08-security-posture.md** (single-tenant-by-
+construction with the named tenant-#2 trigger). **CU3:** `deploy/azure/` (Bicep +
+deploy.sh + provider-swap-boundary README) + provider-agnostic `deploy/smoke.py`;
+**exit demo demonstrated locally** — clean_large ~3K orders → ACCEPTED/C1 →
+7,460-assignment schedule via the API in ~165s (deterministic), baselines in
+`deploy/scale_ladder.json`. **795 tests green** (+5). **Carried gap:**
+deploy-verified-LOCALLY, not in-cloud (no Docker / no live Azure this session —
+Bicep unvalidated vs ARM, image not built, smoke ran against a local server);
+first in-container CI run + live `az deployment` + cloud smoke are the
+confirmations. Session 2.3 (WIP) `5600de2`; 2.2 `86e0115`; 2.1 `517b1fe`;
+Phase-1 exit audit `9a70e5c`. Qualification carried (owned by Phase 4): the
+raw_data path bypasses the M0 gate (no WIP doorway there either) — resolved by
+the pilot connector; the raw path is then demo-frozen.
 
 **Phase 2 mission (docs/07):** ~~API layer + schedule JSON contract~~ ·
 ~~warm-start scenario solves~~ · ~~solution-pool service~~ · ~~solver-gap
-probe~~ · ~~WIP/soft-start doorway (docs/06 §5.13 + mid_replan scenario)~~
-(done, sessions 2.1–2.3) · cloud deploy with encryption (W4 baseline; single
-tenant by construction) · Conversational Certificate (router domain +
-remediation catalog; jurisdiction rule: coach the IDS requirement, never
-ERP-specific surgery).
+probe~~ · ~~WIP/soft-start doorway (docs/06 §5.13 + mid_replan scenario)~~ ·
+~~cloud deploy with encryption (W4 baseline; single tenant by construction)~~
+(done, sessions 2.1–2.4; cloud deploy verified locally, in-cloud carried) ·
+Conversational Certificate (router domain + remediation catalog; jurisdiction
+rule: coach the IDS requirement, never ERP-specific surgery).
 
 **Small carry-forwards (queue behind Phase 2 items, do not lose):**
 `OperationSpec.yield_factor` still carries false observed provenance
@@ -132,10 +138,11 @@ multi_facility_balance (mid_replan now built) · pool warming-on-publish
 becomes the default when the Phase-3 publish workflow exists (auto-warm is
 opt-in until then) · **pool must become slice-aware before serving
 sliced-mode schedules** (2.3 probe carry: members rebuild from the run's
-M5 horizon, not a sliced run's per-slice selection) · extractor setup-cost
-billing for completed ops (in-flight/complete production is currently out of
-the objective as sunk; the ledger's `len(operations) × setup` still counts
-them — revisit if a WIP cost report needs it).
+M5 horizon, not a sliced run's per-slice selection) · **cloud deploy
+in-cloud confirmation** (2.4 carry: live `az deployment` from `deploy/azure/`
++ cloud smoke, and the first in-container CI run — Docker/Azure both
+unavailable in session 2.4, so verified locally only). [extractor
+sunk-setup billing — RESOLVED 2.4 CU0.5.]
 
 **Do not hand-maintain a duplicate task list here** — docs/07 is authoritative
 and updated same-day per its W2 rule; this section records only position,
