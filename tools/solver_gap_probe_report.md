@@ -20,11 +20,21 @@ were scratch artifacts), so the probe recreates them and states them:
 (comparable with the audit's 600s single-worker figure). Pipeline: M1(raw)
 → M3 → M4(identity_v1), full backlog, **no horizon slice**.
 
-Scope note: this full backlog builds **14,042 operations / 2,980
-WorkPackages / 93 resources**, larger than the audit's reported "4,933-op
-full solve" — the audit figure evidently described a differently-scoped
-run; the discrepancy is recorded, and this probe's numbers are
-self-consistent (partition table below sums to 14,042).
+Scope note — 4,933 vs 14,042, resolved (2.3 review carry-in, measured):
+operation-instance count is a **planner-policy artifact**, not a dataset
+property. The Planner instantiates one Operation per OperationSpec per
+WorkPackage, so merging demands collapses op instances roughly in
+proportion to the WP collapse. Measured on the same gauntlet backlog
+(repo `plant_config.json`, same M1(raw)→M3 exclusions): identity_v1
+plans 2,864 WPs / **13,315 ops**, while merge_by_family_v1 plans 668 WPs
+/ **4,088 ops** — a 3.3× collapse. The audit's "4,933-op full solve" is a
+merge-policy op count (its scratch plant config's splittability rescues
+admitted slightly more demands, landing between these figures); this
+probe pinned identity_v1 and admitted 2,980 WPs / 14,042 ops. Both
+figures are self-consistent for their own planning policies (partition
+table below sums to 14,042), and the discrepancy does not touch the
+verdict: the killers are per-machine densities, which the probe measured
+directly on its own model.
 
 ## Partition: the gauntlet is exactly decomposable
 
@@ -119,6 +129,14 @@ spike rules):
 - Facility decomposition itself is cheap, exact (0 cross-facility WPs) and
   worth productionizing *as an engineering speedup for the sliced mode*,
   not as a full-solve rescue.
+- **The solution pool must become slice-aware for sliced-mode schedules**
+  (2.3 review carry-in): pool members rebuild the base model from the
+  run's own M5-recorded horizon, which is correct for a monolithic solve
+  but does not reproduce a sliced run's per-slice demand selection — a
+  pool warmed against a sliced incumbent would re-solve a differently
+  scoped model. Since the sliced daily solve is the blessed operational
+  mode, this lands with the pool's productionization (tracked on docs/07's
+  pool item).
 
 Raw measurements: `probe_results.json` produced by the probe run
 (scratch artifact; the tables above are the durable record).

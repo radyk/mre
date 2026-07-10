@@ -17,11 +17,15 @@ Mechanism (documented, measured):
        terms), so every member is near-optimal by construction;
     3. diversity pressure: a randomized search seed per member PLUS a
        no-good cut over a random sample of the incumbent's start times
-       (``add_start_diversity_cut``: at least one sampled op must start at
-       a different minute) — disjunctive, so one tight operation cannot
-       sink a member.
-  Measured diversity (assignment Hamming distance: ops whose (resource,
-  start) differ) is reported per member and pairwise in the pool summary.
+       (``add_start_diversity_cut``: at least one sampled op must start
+       ≥ DIVERSITY_TOLERANCE_MINUTES away from its incumbent start — a
+       1-minute slide is not a different placement) — disjunctive, so one
+       tight operation cannot sink a member.
+  Measured diversity (assignment Hamming distance: ops whose resource
+  differs OR whose start moved ≥ the SAME tolerance) is reported per
+  member and pairwise in the pool summary — the cut and the metric share
+  one threshold, so a member can never satisfy the cut while measuring
+  Hamming 0.
 
 Isolation rules (same posture as scenarios, docs/01 §8):
   - Pool members are documents in the run dir's ``pool/`` subdirectory and
@@ -111,6 +115,7 @@ def warm_solution_pool(
     from mre.modules.snapshot_store import SnapshotStore
     from mre.modules.solve_runner import SolveRunner
     from mre.modules.solver_builder import (
+        DIVERSITY_TOLERANCE_MINUTES,
         SolverBuilder,
         add_objective_upper_bound,
         add_start_diversity_cut,
@@ -168,16 +173,19 @@ def warm_solution_pool(
         )
     incumbent_placement = _placements(incumbent_assignments)
 
+    diversity_tol_min = DIVERSITY_TOLERANCE_MINUTES
     params = {
         "k": k, "tolerance_pct": tolerance_pct,
         "member_time_limit_s": member_time_limit_s, "seed": seed,
         "solver_workers": ctx.get("solver_workers"),
         "incumbent_objective": incumbent_objective,
+        "diversity_tolerance_minutes": diversity_tol_min,
         "diversity_mechanism": (
             "warm-start hints from incumbent + objective bound "
             f"<= incumbent x {1 + tolerance_pct / 100.0:.2f} + per-member "
             "randomized seed + no-good cut on a random sample of incumbent "
-            "start times (at least one sampled op must move)"
+            f"start times (at least one sampled op must move >= "
+            f"{diversity_tol_min} min; Hamming uses the same threshold)"
         ),
     }
 
@@ -213,7 +221,8 @@ def warm_solution_pool(
         n_sample = min(len(candidates), max(3, len(candidates) // 10))
         sampled = rng.sample(candidates, n_sample) if candidates else []
         add_start_diversity_cut(model, var_map, incumbent_starts_min,
-                                sampled, name=f"m{i}")
+                                sampled, name=f"m{i}",
+                                tolerance_minutes=diversity_tol_min)
 
         r_rep = Reporter.begin(
             module=ModuleCode.M6, purpose=f"pool member {i} solve",
@@ -267,7 +276,8 @@ def warm_solution_pool(
 
         placement = _placements(extract.assignments)
         member_placements[i] = placement
-        member.hamming_from_incumbent = _hamming(incumbent_placement, placement)
+        member.hamming_from_incumbent = _hamming(
+            incumbent_placement, placement, diversity_tol_min)
 
         document = assemble_schedule_document(
             snapshot_id=snapshot_id,
@@ -300,7 +310,8 @@ def warm_solution_pool(
     from_incumbent = [m.hamming_from_incumbent for m in ok
                       if m.hamming_from_incumbent is not None]
     pairwise = [
-        _hamming(member_placements[a.member_index], member_placements[b.member_index])
+        _hamming(member_placements[a.member_index], member_placements[b.member_index],
+                 diversity_tol_min)
         for x, a in enumerate(ok) for b in ok[x + 1:]
     ]
     diversity = {
@@ -312,7 +323,7 @@ def warm_solution_pool(
             round(sum(pairwise) / len(pairwise), 2) if pairwise else None
         ),
         "ops_with_alternative_positions": _ops_with_alternatives(
-            incumbent_placement, member_placements
+            incumbent_placement, member_placements, diversity_tol_min
         ),
         "operation_count": len(incumbent_placement),
     }
@@ -387,12 +398,12 @@ def _incumbent_objective(evidence: list[dict]) -> Optional[float]:
     return (solves[-1].get("payload") or {}).get("objective")
 
 
-def _placements(assignments: list[dict]) -> dict[str, tuple[str, str]]:
-    """op_id → (resource_id, run_start ISO normalized) for Hamming distance.
+def _placements(assignments: list[dict]) -> dict[str, tuple[str, datetime]]:
+    """op_id → (resource_id, run_start datetime) for Hamming distance.
     Handles both the persisted-entity and extractor dict shapes; datetimes
     are parsed (never compared as raw strings — the 2026-07-13 differ
     lesson)."""
-    out: dict[str, tuple[str, str]] = {}
+    out: dict[str, tuple[str, datetime]] = {}
     for a in assignments:
         rid = a.get("resource_id")
         if not rid:
@@ -401,27 +412,40 @@ def _placements(assignments: list[dict]) -> dict[str, tuple[str, str]]:
         windows = (a.get("phase_windows") or {}).get("run") or a.get("run_windows") or []
         if not (rid and windows):
             continue
-        out[a["operation_ref"]] = (rid, _parse_dt(windows[0]["start"]).isoformat())
+        out[a["operation_ref"]] = (rid, _parse_dt(windows[0]["start"]))
     return out
 
 
-def _hamming(p1: dict[str, tuple], p2: dict[str, tuple]) -> int:
-    """Number of operations placed differently (resource OR start)."""
+def _differs(p1: tuple[str, datetime], p2: tuple[str, datetime],
+             tolerance_minutes: int) -> bool:
+    """A placement counts as different when the resource changed OR the
+    start moved by at least `tolerance_minutes` — the SAME threshold the
+    no-good cut enforces (solver_builder.add_start_diversity_cut), so the
+    diversity metric can never disagree with the diversity constraint."""
+    if p1[0] != p2[0]:
+        return True
+    return abs((p1[1] - p2[1]).total_seconds()) / 60.0 >= tolerance_minutes
+
+
+def _hamming(p1: dict[str, tuple], p2: dict[str, tuple],
+             tolerance_minutes: int) -> int:
+    """Number of operations placed differently (resource, or start moved
+    ≥ tolerance)."""
     shared = set(p1) & set(p2)
-    return sum(1 for oid in shared if p1[oid] != p2[oid])
+    return sum(1 for oid in shared if _differs(p1[oid], p2[oid], tolerance_minutes))
 
 
 def _ops_with_alternatives(
     incumbent: dict[str, tuple], member_placements: dict[int, dict],
+    tolerance_minutes: int,
 ) -> int:
-    """Count of operations with ≥2 distinct placements across the incumbent
-    and all pool members — the Tier-1 ghost precondition: a drag ghost
-    exists only for ops the pool actually places elsewhere."""
+    """Count of operations that at least one pool member places genuinely
+    elsewhere (per _differs' shared threshold) — the Tier-1 ghost
+    precondition: a drag ghost exists only for ops the pool actually
+    places elsewhere."""
     count = 0
     for oid, inc in incumbent.items():
-        placements = {inc} | {
-            p[oid] for p in member_placements.values() if oid in p
-        }
-        if len(placements) >= 2:
+        if any(oid in p and _differs(inc, p[oid], tolerance_minutes)
+               for p in member_placements.values()):
             count += 1
     return count

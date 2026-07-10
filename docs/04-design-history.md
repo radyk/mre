@@ -2066,3 +2066,60 @@ natural repair loop), and facility decomposition productionized as a
 speedup for the SLICED mode. Scope note recorded: the audit's "4,933-op
 full solve" figure described a differently-scoped run; this probe's
 partition table sums self-consistently to 14,042.
+
+## Amendment — 2026-07-14: Session 2.3 carry-ins from the 2.2 review (corrections + pool threshold)
+
+**Correction — the invalidated historical move counts, named.** The differ
+string-format defect fixed 2026-07-13 (`_compute_schedule_diff` compared
+`run_start` as raw strings; `...Z` vs `+00:00` made every shared operation
+count as "moved") invalidates two specific published figures: the Phase-1
+exit audit's **"~307 moves"** for the messy-plant unbatch noise case, and
+the **"88 assignment moves"** in the 2026-07-06 unbatch amendment above.
+Both should be read as ≈ the count of shared operations, not as measured
+movement. **Cost figures are unaffected**: every cost delta (including the
+$260 unbatch verdict) was computed from the cost ledgers, which never
+touched the string comparison. The lateness deltas are likewise unaffected
+(computed from ServiceOutcomes). Only the move COUNTS were inflated.
+
+**Warm-start counterfactual test.** The 2.2 warm-start acceptance proved
+the hint eliminates noise (0 moves warm vs 51 cold); it did not prove the
+hint permits improvement. Added
+`tests/test_scenario.py::test_warm_start_still_departs_hint_for_lower_cost`:
+the WO-2001/WO-2002 unbatch, run warm-started, must still find the known
+lower-cost outcome (tardiness_delta < 0 and total_delta < 0 per the
+2026-07-06 verdict). A hint that traps the solver at the incumbent's cost
+structure is a defect; this test is the standing proof it doesn't.
+
+**The no-good cut's difference threshold.** As shipped, the pool's
+diversity cut was satisfiable by sliding one sampled op a single minute —
+technically "different", semantically the same schedule.
+`add_start_diversity_cut` now takes `tolerance_minutes` (default
+`DIVERSITY_TOLERANCE_MINUTES = 15`): at least one sampled op must start
+≥ 15 minutes from its incumbent start (|start − incumbent| via
+`add_abs_equality`; floor of 1 since a 0 tolerance would make the cut
+vacuous). The pool's Hamming metric is aligned to the SAME threshold
+(`solution_pool._differs`: resource changed OR start moved ≥ tolerance),
+so the constraint and the metric agree on what "different placement"
+means — a member can never satisfy the cut while measuring Hamming 0.
+`ops_with_alternative_positions` uses the same rule. The threshold is
+recorded in pool params (`diversity_tolerance_minutes`). Unit tests: the
+cut INFEASIBLE when every sampled op is pinned within ±1 minute; the
+forced move measures ≥ 15.
+
+**4,933 vs 14,042, resolved by measurement.** Operation-instance count is
+a planner-policy artifact: on the same gauntlet backlog (repo
+plant_config, same M1(raw)→M3 exclusions), identity_v1 plans 2,864 WPs /
+13,315 ops while merge_by_family_v1 plans 668 WPs / 4,088 ops (3.3×
+collapse — one Operation per spec per WorkPackage). The audit's "4,933-op
+full solve" is a merge-policy op count under its scratch config (whose
+splittability rescues admitted more demands); the probe pinned identity_v1
+and built 14,042. Both self-consistent; verdict untouched (the killers are
+per-machine densities, measured directly). Paragraph added to
+`tools/solver_gap_probe_report.md`.
+
+**Pool slice-awareness qualification.** Pool members rebuild the base
+model from the run's own M5-recorded horizon — correct for monolithic
+solves, but a sliced run's per-slice demand selection is not reproduced.
+"Pool must become slice-aware for sliced-mode schedules" added to the
+probe report's parked directions and to docs/07's pool item as a carried
+qualification.

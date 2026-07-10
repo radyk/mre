@@ -521,6 +521,27 @@ def test_scenario_solve_complete_carries_solution_info(scenario_result):
     raise AssertionError("no solve_complete event found in scenario evidence")
 
 
+def test_warm_start_still_departs_hint_for_lower_cost(scenario_result):
+    """Counterfactual for the warm start itself (2.2 review carry-in): the
+    hint must not prevent improvement. The WO-2001/WO-2002 unbatch has a
+    KNOWN lower-cost outcome (docs/04 2026-07-06: eliminating WO-2001's
+    tardiness outweighs the added setup/production cost). This scenario ran
+    warm-started from the base schedule — if the solver had merely accepted
+    the hint's cost structure, tardiness would not improve and the total
+    delta would be >= 0. A hint that prevents improvement is a defect; this
+    test is the proof it doesn't."""
+    result, store, snap_id, tmp = scenario_result
+    cd = result.diff["cost_delta"]
+    assert cd["tardiness_delta"] < 0, (
+        f"warm-started unbatch must still eliminate WO-2001 tardiness; "
+        f"got tardiness_delta={cd['tardiness_delta']}"
+    )
+    assert cd["total_delta"] < 0, (
+        f"warm-started unbatch must still find the known lower-cost outcome; "
+        f"got total_delta={cd['total_delta']} ({cd})"
+    )
+
+
 def test_scenario_untouched_moves_bounded(scenario_result):
     """With warm-start, the unbatch diff no longer measures search noise:
     operations shared between base and scenario (i.e. everything except the

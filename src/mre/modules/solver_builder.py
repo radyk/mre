@@ -210,28 +210,43 @@ def add_objective_upper_bound(model, var_map: "VariableMap", bound_scaled: int) 
         model.add(sum(var_map.objective_terms) <= bound_scaled)
 
 
+DIVERSITY_TOLERANCE_MINUTES = 15
+
+
 def add_start_diversity_cut(
     model,
     var_map: "VariableMap",
     incumbent_starts: dict[str, int],
     sampled_op_ids: list[str],
     name: str = "pool",
+    tolerance_minutes: int = DIVERSITY_TOLERANCE_MINUTES,
 ) -> int:
     """No-good cut over a sample of the incumbent's start times: at least
-    one sampled operation must start at a different minute than it did in
-    the incumbent. This is the solution-pool's diversity pressure — a
-    disjunctive cut, not per-op forcing, so a single tightly-constrained
-    sampled op cannot make the member infeasible by itself.
+    one sampled operation must start ≥ `tolerance_minutes` away from where
+    it started in the incumbent. This is the solution-pool's diversity
+    pressure — a disjunctive cut, not per-op forcing, so a single
+    tightly-constrained sampled op cannot make the member infeasible by
+    itself.
+
+    The tolerance is the cut's difference threshold (2.2 review): without
+    it the cut is satisfiable by sliding one op a single minute, which is
+    not a genuinely different placement. Pool Hamming measurement uses the
+    same threshold (solution_pool._differs) so "diverse" means the same
+    thing in the constraint and in the metric. tolerance_minutes is floored
+    at 1 (a 0 tolerance would make "same" unsatisfiable and the cut vacuous).
 
     Returns the number of operations actually included in the cut."""
+    tolerance_minutes = max(1, int(tolerance_minutes))
     same_lits = []
     for oid in sampled_op_ids:
         if oid not in var_map.op_start or oid not in incumbent_starts:
             continue
         v = incumbent_starts[oid]
+        dist = model.new_int_var(0, 2**30, f"dist_{name}_{oid}")
+        model.add_abs_equality(dist, var_map.op_start[oid] - v)
         lit = model.new_bool_var(f"same_{name}_{oid}")
-        model.add(var_map.op_start[oid] == v).only_enforce_if(lit)
-        model.add(var_map.op_start[oid] != v).only_enforce_if(lit.negated())
+        model.add(dist < tolerance_minutes).only_enforce_if(lit)
+        model.add(dist >= tolerance_minutes).only_enforce_if(lit.negated())
         same_lits.append(lit)
     if same_lits:
         model.add(sum(same_lits) <= len(same_lits) - 1)

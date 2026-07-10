@@ -35,10 +35,14 @@ SNAP_ID = "snap-run"
 
 def test_start_diversity_cut_forces_a_move():
     """A model whose optimum equals the incumbent must, under the cut,
-    move at least one sampled op's start."""
+    move at least one sampled op's start — and by at least the difference
+    threshold, not a token single minute (2.2 review: a 1-minute slide is
+    not a different placement)."""
     from ortools.sat.python import cp_model as cp
 
-    from mre.modules.solver_builder import VariableMap, add_start_diversity_cut
+    from mre.modules.solver_builder import (
+        DIVERSITY_TOLERANCE_MINUTES, VariableMap, add_start_diversity_cut,
+    )
     from datetime import datetime, timezone
 
     m = cp.CpModel()
@@ -55,8 +59,37 @@ def test_start_diversity_cut_forces_a_move():
 
     solver = cp.CpSolver()
     assert solver.Solve(m) == cp.OPTIMAL
-    moved = [oid for oid, v in incumbent.items() if solver.Value(xs[oid]) != v]
-    assert len(moved) >= 1
+    moved = [abs(solver.Value(xs[oid]) - v) for oid, v in incumbent.items()
+             if solver.Value(xs[oid]) != v]
+    assert moved, "the cut must move at least one sampled op"
+    assert max(moved) >= DIVERSITY_TOLERANCE_MINUTES, (
+        f"the cut was satisfied by a sub-threshold shift: {moved}"
+    )
+
+
+def test_start_diversity_cut_rejects_sub_threshold_shift():
+    """Pinning every sampled op within the tolerance of its incumbent start
+    must make the cut INFEASIBLE — a 1-minute slide cannot satisfy it."""
+    from ortools.sat.python import cp_model as cp
+
+    from mre.modules.solver_builder import (
+        DIVERSITY_TOLERANCE_MINUTES, VariableMap, add_start_diversity_cut,
+    )
+    from datetime import datetime, timezone
+
+    m = cp.CpModel()
+    vm = VariableMap(horizon_start=datetime(2026, 7, 1, tzinfo=timezone.utc))
+    incumbent = {"op1": 30, "op2": 30}
+    for oid, v in incumbent.items():
+        var = m.new_int_var(0, 1000, f"s_{oid}")
+        vm.op_start[oid] = var
+        # each op may only slide 1 minute off its incumbent start
+        m.add_linear_constraint(var, v - 1, v + 1)
+
+    assert DIVERSITY_TOLERANCE_MINUTES > 1
+    add_start_diversity_cut(m, vm, incumbent, ["op1", "op2"])
+    solver = cp.CpSolver()
+    assert solver.Solve(m) == cp.INFEASIBLE
 
 
 def test_objective_upper_bound_constrains_the_objective():
