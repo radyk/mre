@@ -2713,3 +2713,112 @@ outcome. Matches `outcome_severity(rule, outcome)` and the catalog header.
 
 985 tests green (+145). No new finding codes. docs/06 §4 amended (severity
 wording); docs/02/05 untouched.
+
+### 2026-07-10 — Phase-2 exit audit (fresh session, audit mode): five clauses run live
+
+The docs/07 Phase-2 exit was audited as written (Clauses 1–5; Clause 6, the
+certificate-session addenda, was resolved at `acb75b8` and is treated as
+recorded). Audit rule: run the clauses as written, **no fixes unless a clause
+fails**, name every accommodation, verify live (stale context presumed wrong).
+**No clause failed — the audit was fix-free.** Verdicts and the accommodations
+they rest on:
+
+**Clause 1 — Exit demo, fresh, deterministic, ≥2× identical: PASS.** The
+`deploy/smoke.py` exit demo (clean_large seed 7, ~3000 orders) was driven over a
+live `uvicorn` instance (`PYTHONHASHSEED=0`) twice. Both runs: ACCEPTED/C1, 7460
+assignments, whatif cost-delta 23773588.5 (identical), ~130s wall (under the
+165s scale-ladder baseline — a faster host; timings are environment-specific,
+not a gate). The business-stable schedule hash (`0f475d2a…`, dropping
+per-submission uuid5 surrogate refs) was **byte-identical across the two fresh
+submissions**. Accommodation named: the uuid5 refs (operation/workpackage/
+resource) differ between two independent submissions — expected (per-submission
+surrogate identity, not schedule content). `smoke.py`'s what-if POST omits
+`deterministic:true` (only the solve sends it) — a latent gap that did **not**
+reproduce here (identical cost-deltas both runs), so it is a code follow-up to
+pin, not a carried discrepancy.
+
+**Clause 2 — Live per Phase-2 item: PASS.**
+- *2a API layer:* contract 1.1 doc retrievable; scenarios excluded from the
+  default `/schedules` listing and pool members are never schedule rows
+  (structural); POST pool on a what-if scenario → **409**.
+- *2b Warm-start:* the exit-audit noise case reproduced live — unbatching a
+  merged WP moved **0 untouched ops warm (both repeats) vs 51 cold, at identical
+  cost delta (309.24)**; warm departs the hint to the same optimum cold finds.
+  Base run under `merge_by_family_v1`, deterministic.
+- *2c Solution pool:* a pool built on a fresh schedule (5 members, ready);
+  diversity honours `DIVERSITY_TOLERANCE_MINUTES=15` (per-member Hamming
+  ≥1 at the 15-min threshold; the no-good cut and Hamming share it); the base
+  snapshot was **byte-identical before/after pooling**; `mark_schedule_superseded`
+  flips the pool to `invalidated`.
+- *2d WIP/mid_replan:* completed op produces no assignment; rescue on time
+  (−418 min); completion-frees-capacity counterfactual (WIP tardiness 0 <
+  no-WIP 725.8; no-WIP rescue 1021 min late); in-flight holds future start
+  (600 ≥ 600 remaining); no scheduled start before reference_date; the sunk-setup
+  ledger separates the sunk line (80.0) from a strictly-lower movable setup
+  (80 < 160), decomposition exact (prod+setup+tard = total, sunk additive).
+  Accommodations named: mid_replan's in-flight op is a *fixed interval*
+  (non-resumable), so "resumable remainder pauses at closures" was verified via
+  the shared chunk-pause invariant (chunking_exam live: 4 derived pauses, all
+  inside closures); and the fixture has no *genuine* ghost job, so the ghost
+  guard was confirmed in its un-regressed direction (WIP demands correctly NOT
+  ghost-excluded).
+- *2e Conversational Certificate:* against a fresh CONDITIONAL (messy_realistic)
+  and REJECTED (rejected) plant, the three questions route to three distinct
+  registers (testimony/remediation/judgment tags, never blended); testimony
+  footnotes records; remediation renders authored notes citing IDS §-sections
+  (§5.1, §5.6; catalog note v1); judgment orders violated-first / degraded-by-
+  closest-escape; REJECTED answers certificate-only (no snapshot). No ERP-specific
+  surgery in any answer (jurisdiction holds).
+  Environment accommodation (2a/2c/2e): an initial long absolute data root chosen
+  to dodge a Git-Bash-`/tmp`-vs-native-Windows-`/tmp` split tripped Windows
+  MAX_PATH on the what-if's snapshot `copytree` (WinError 3); re-running under a
+  short root made the what-if succeed. A path-length artifact of the audit
+  harness, **not** a product defect (corroborated by the clean_large smoke and
+  the full suite).
+
+**Clause 3 — Gauntlet + sliced daily solve: PASS.** `--raw-data raw_data
+--plant-config plant_config.json --horizon-days 2` (the sliced daily solve),
+deterministic (`PYTHONHASHSEED=0 --solver-workers 1 --solver-seed 42`), produced
+a schedule.csv **byte-identical to the golden** and a cost ledger **identical**
+(total 18481, all tardiness), with the **173 INFEASIBLE_SUBSET exclusions**
+regression anchor intact. Accommodation: a first run without the deterministic
+flags differed (CP-SAT parallel search) — the "identical schedule" rule requires
+deterministic mode; re-run under it, byte-identical. **Policy finding (per the
+audit's correction):** the gauntlet's run context records
+`policy=identity_v1` — the **default, 0 merges** — not a merge policy. Both
+`merge_by_family_v1` *and* `merge_by_family_v2` exist as opt-in `--policy`
+choices (the merge-as-tractability-lever dossier concerns those, not the default
+gauntlet run); **v2 exists — flagged as instructed.** **Restated, not resolved
+(Phase-4):** the raw_data path bypasses the M0 gate — it produced **no
+certificate** — and has no WIP doorway; owned by the pilot connector, after which
+the raw path is demo-frozen.
+
+**Clause 4 — Cloud posture: PASS-WITH-QUALIFICATION.** Docker and the Azure CLI
+are both unavailable in-session, so the three open confirmations — first
+in-container CI run, live `az deployment` from `deploy/azure/`, cloud smoke —
+are recorded **OPEN, carried to follow-up 2.4b**. Deploy-verified-locally is not
+deploy-verified-in-cloud.
+
+**Clause 5 — Carry-forward inventory** (nothing evaporates silently):
+- `OperationSpec.yield_factor` false-observed provenance — **OPEN** (default 1.0
+  still cites `routing_lines.csv` as an observed source; provenance-truthfulness
+  cleanup, re-parked to Phase 3).
+- Sentinel / repeated-identical-value detector (the 40× `run_rate_seconds=60.0`
+  fingerprint) — **OPEN**, not built (re-parked to W1, the permanently-open gym).
+- Provenance spot-check guard — **OPEN**, not built (re-parked to W1/Phase 3).
+- W1 scenarios `dwell_heavy` / `calendar_chaos` / `multi_facility_balance` —
+  **OPEN**, none built (mid_replan was built in 2.3; these three re-parked to W1).
+- Pool warming-on-publish — **OPEN**, explicitly parked (becomes default when the
+  Phase-3 publish workflow lands; auto-warm opt-in until then).
+- Pool slice-awareness — **OPEN** (2.3 carry; lands with pool sliced-mode
+  productionization).
+- Extractor sunk-setup billing — **RESOLVED** 2.4 CU0.5 (re-confirmed live in 2d).
+- Two quarantined catalog notes (`decision_relevant_attributes_populated`,
+  `optional_columns_are_not_sparse`) with no resolvable IDS §-cite in
+  `fix_looks_like` — **OPEN**, quarantined + pinned, design-thread note_version fix.
+- `test_n3000` contention-sensitivity — **OPEN/known**: passes solo (~50–58s),
+  flakes under full-suite CPU contention; marked contention-sensitive.
+
+**Verdict: Phase 2 exits COMPLETE (qualified).** All five clauses PASS or
+PASS-WITH-QUALIFICATION; no clause failed; no fixes were required. The
+qualifications above are the carried exit conditions.

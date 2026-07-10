@@ -89,7 +89,26 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
-**Roadmap position: Phase 2 IN PROGRESS (demo backbone).** Certificate session
+**Roadmap position: Phase 2 COMPLETE (qualified) — entering Phase 3.**
+Phase-2 exit **audited by a fresh session 2026-07-10** (audit mode, no fixes
+unless a clause fails): all five exit-prompt clauses PASS / PASS-WITH-
+QUALIFICATION, **fix-free** (Clause 6 addenda resolved at `acb75b8`). Live
+evidence: exit demo byte-identical across two fresh API runs (7460 assignments);
+API 409/listing invariants; warm-start 0-vs-51-move noise case at identical cost
+delta; pool diversity@15min + snapshot byte-identity + supersede-invalidation;
+mid_replan WIP counterfactual + sunk-setup ledger; three certificate registers
+with §-cited remediation + jurisdiction rule; gauntlet reproduces its golden
+byte-identically with the 173-exclusion anchor (default `identity_v1`, 0 merges;
+`merge_by_family_v1`/`_v2` both exist as opt-in). **Carried exit qualifications:**
+cloud in-cloud confirmations (in-container CI + live `az deployment` + cloud
+smoke) OPEN → **2.4b** (Docker/Azure unavailable at audit); raw_data path
+bypasses M0 gate / no WIP doorway → Phase 4; pool slice-awareness + warming-on-
+publish → Phase 3; two quarantined catalog notes (no IDS §-cite) → design-thread
+note_version fix; W1 scenarios `dwell_heavy`/`calendar_chaos`/
+`multi_facility_balance` + sentinel-value detector + provenance spot-check guard
++ `yield_factor` false-observed provenance → OPEN, re-parked (W1/Phase 3);
+`test_n3000` contention-sensitive. See the docs/04 2026-07-10 exit-audit
+amendment and docs/07 v1.7. Certificate session
 (groundwork) done 2026-07-10: **the M0 gate is now a Rule Registry** — 32 named
 rules (`src/mre/contracts/ids_rules.py`, the single source that renders docs/06
 §4), closed outcome vocabulary (satisfied/flagged/degraded/violated), grade as a
