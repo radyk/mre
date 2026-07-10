@@ -34,7 +34,8 @@ REQUIRED_FILES = (
     "orders.csv", "routings.csv", "routing_lines.csv", "products.csv",
     "resources.csv", "calendars.csv", "cost_model.json",
 )
-DOORWAY_FILES = ("customers.csv", "setup_transitions.csv", "locks.csv")
+DOORWAY_FILES = ("customers.csv", "setup_transitions.csv", "locks.csv",
+                 "wip_status.csv")
 
 # Appendix A default thresholds (v0.2)
 _REJECT_BAND = 0.60
@@ -171,7 +172,8 @@ class ConformanceGate:
                 if had_bom:
                     normalizations.append(f"BOM stripped: {fname}")
                 key_cols = [c for c in ("order_id", "product_id", "route_id", "resource_id",
-                                        "calendar_id", "customer_id") if rows and c in rows[0]]
+                                        "calendar_id", "customer_id", "actual_resource_id")
+                            if rows and c in rows[0]]
                 if _trim_keys(rows, key_cols):
                     normalizations.append(f"key whitespace trimmed: {fname}")
                 tables[fname] = rows
@@ -197,6 +199,7 @@ class ConformanceGate:
         customers = tables.get("customers.csv", [])
         setup_transitions = tables.get("setup_transitions.csv", [])
         locks = tables.get("locks.csv", [])
+        wip_rows = tables.get("wip_status.csv", [])
 
         # ------------------------------------------------------------
         # Tier 1c: manifest semantics required-field checks
@@ -220,6 +223,16 @@ class ConformanceGate:
                      FindingDisposition.BLOCKED,
                      "manifest.semantics.unlisted_transition_default missing", RecordTier.HEADLINE)
                 deficiencies.append("manifest.semantics.unlisted_transition_default missing")
+                bump_grade("REJECTED")
+            if wip_rows and "wip_progress_basis" not in semantics:
+                # docs/06 §3: required iff wip_status.csv is present — the
+                # gate does not divine which progress column is authoritative.
+                emit(FindingCode.MALFORMED_FIELD, FindingSeverity.BLOCKER,
+                     {"field": "semantics.wip_progress_basis",
+                      "reason": "required when wip_status.csv is present"},
+                     FindingDisposition.BLOCKED,
+                     "manifest.semantics.wip_progress_basis missing", RecordTier.HEADLINE)
+                deficiencies.append("manifest.semantics.wip_progress_basis missing")
                 bump_grade("REJECTED")
 
         # ------------------------------------------------------------
@@ -425,6 +438,166 @@ class ConformanceGate:
             bump_grade("CONDITIONAL")
 
         # ------------------------------------------------------------
+        # Tier 2: WIP coherence (docs/06 §5.13, §4) — findings, never crashes.
+        # Finding-code review (add-never-repurpose): all four checks map to
+        # existing codes with their established meanings; no new codes.
+        # ------------------------------------------------------------
+        if wip_rows:
+            semantics = (manifest or {}).get("semantics", {})
+            wip_basis = semantics.get("wip_progress_basis", "remaining_minutes")
+            order_by_id = {o.get("order_id"): o for o in orders if o.get("order_id")}
+            route_seqs: dict[str, set[str]] = {
+                rid: {str(rl.get("sequence", "")).strip() for rl in lines}
+                for rid, lines in route_lines_by_route.items()
+            }
+            ref_dt = None
+            if manifest and manifest.get("reference_date"):
+                try:
+                    ref_dt = date.fromisoformat(manifest["reference_date"])
+                except ValueError:
+                    ref_dt = None
+
+            def _order_seqs(row: dict) -> set[str]:
+                order = order_by_id.get(row.get("order_id"))
+                return route_seqs.get(order.get("route_id", ""), set()) if order else set()
+
+            # 1) unknown order / sequence / resource refs
+            unknown_wip = [
+                row for row in wip_rows
+                if row.get("order_id") not in known_order_ids
+                or str(row.get("sequence", "")).strip() not in _order_seqs(row)
+                or ((row.get("actual_resource_id") or "").strip()
+                    and row["actual_resource_id"].strip() not in known_resource_ids)
+            ]
+            if unknown_wip:
+                emit(FindingCode.ORPHAN_ENTITY, FindingSeverity.ERROR,
+                     {"check": "wip_unknown_refs", "count": len(unknown_wip),
+                      "order_ids": sorted({str(r.get("order_id")) for r in unknown_wip})[:10]},
+                     FindingDisposition.EXCLUDED,
+                     f"{len(unknown_wip)} wip_status row(s) reference an unknown "
+                     "order, sequence, or resource", RecordTier.SUPPORTING)
+                bump_grade("CONDITIONAL")
+
+            # 2) in_progress rows missing their observed state: no observed
+            #    start, no observed resource, or no progress value under the
+            #    manifest-declared basis. Such a row cannot be honored as a
+            #    fixed in-flight interval; the adapter treats it not_started.
+            def _progress_missing(row: dict) -> bool:
+                col = ("remaining_minutes" if wip_basis == "remaining_minutes"
+                       else "quantity_complete")
+                return not (row.get(col) or "").strip()
+
+            incomplete = [
+                row for row in wip_rows
+                if (row.get("status") or "").strip() == "in_progress"
+                and (not (row.get("actual_start") or "").strip()
+                     or not (row.get("actual_resource_id") or "").strip()
+                     or _progress_missing(row))
+            ]
+            if incomplete:
+                emit(FindingCode.MALFORMED_FIELD, FindingSeverity.ERROR,
+                     {"check": "wip_in_progress_incomplete", "count": len(incomplete),
+                      "progress_basis": wip_basis,
+                      "order_ids": sorted({str(r.get("order_id")) for r in incomplete})[:10]},
+                     FindingDisposition.DEFAULTED,
+                     f"{len(incomplete)} in_progress wip row(s) missing observed "
+                     "start, resource, or progress value; treated as not_started",
+                     RecordTier.SUPPORTING)
+                bump_grade("CONDITIONAL")
+
+            # 3) sequence-order violations: an op in_progress/complete while a
+            #    predecessor in its route is not_started (explicitly, or absent
+            #    — absence means not_started per §5.13). IDS routing has no
+            #    overlap-permitting edge source (min_lag ≥ 0; the max-lag
+            #    doorway is deferred, §8), so no edge can excuse the overlap
+            #    here. A data-quality signal about shop-floor reporting, not
+            #    an exclusion.
+            status_by_order_seq: dict[tuple[str, str], str] = {
+                (row.get("order_id", ""), str(row.get("sequence", "")).strip()):
+                    (row.get("status") or "").strip()
+                for row in wip_rows
+            }
+            violations = []
+            for row in wip_rows:
+                if (row.get("status") or "").strip() not in ("in_progress", "complete"):
+                    continue
+                oid_w = row.get("order_id", "")
+                seq_raw = str(row.get("sequence", "")).strip()
+                seqs = _order_seqs(row)
+                if not seq_raw.isdigit() or seq_raw not in seqs:
+                    continue  # already counted by the unknown-refs check
+                for pred in seqs:
+                    if pred.isdigit() and int(pred) < int(seq_raw):
+                        pred_status = status_by_order_seq.get((oid_w, pred), "not_started")
+                        if pred_status == "not_started":
+                            violations.append((oid_w, seq_raw, pred))
+                            break
+            if violations:
+                emit(FindingCode.LOW_CONFIDENCE_INPUT, FindingSeverity.WARNING,
+                     {"check": "wip_sequence_order_violation", "count": len(violations),
+                      "examples": [f"{o}: seq {s} active while seq {p} not_started"
+                                   for o, s, p in violations[:5]]},
+                     FindingDisposition.PROCEEDED_FLAGGED,
+                     f"{len(violations)} wip row(s) report an operation underway "
+                     "while a predecessor is not_started (shop-floor reporting "
+                     "quality signal)", RecordTier.SUPPORTING)
+                bump_grade("CONDITIONAL")
+
+            # 4a) completed op with remaining quantity — internally
+            #     inconsistent; completion wins.
+            def _remaining_claimed(row: dict) -> bool:
+                if _num(row.get("remaining_minutes"), 0.0) > 0:
+                    return True
+                if wip_basis == "quantity_complete" and (row.get("quantity_complete") or "").strip():
+                    order = order_by_id.get(row.get("order_id"), {})
+                    qty = _num(order.get("quantity"), 0.0)
+                    return qty > 0 and _num(row.get("quantity_complete")) < qty
+                return False
+
+            complete_with_remaining = [
+                row for row in wip_rows
+                if (row.get("status") or "").strip() == "complete"
+                and _remaining_claimed(row)
+            ]
+            if complete_with_remaining:
+                emit(FindingCode.VALUE_OUT_OF_RANGE, FindingSeverity.WARNING,
+                     {"check": "wip_complete_with_remaining",
+                      "count": len(complete_with_remaining),
+                      "order_ids": sorted({str(r.get("order_id"))
+                                           for r in complete_with_remaining})[:10]},
+                     FindingDisposition.PROCEEDED_FLAGGED,
+                     f"{len(complete_with_remaining)} completed wip row(s) still "
+                     "carry remaining work; completion wins", RecordTier.SUPPORTING)
+                bump_grade("CONDITIONAL")
+
+            # 4b) observed start after THIS submission's reference_date — the
+            #     extract disagrees with its own declared clock. (A start
+            #     merely after a PREVIOUS submission's reference is normal
+            #     recurring-source drift and is deliberately NOT checked.)
+            future_starts = []
+            if ref_dt is not None:
+                for row in wip_rows:
+                    raw = (row.get("actual_start") or "").strip()
+                    if not raw:
+                        continue
+                    try:
+                        start_d = date.fromisoformat(raw[:10])
+                    except ValueError:
+                        continue
+                    if start_d > ref_dt:
+                        future_starts.append(row)
+            if future_starts:
+                emit(FindingCode.VALUE_OUT_OF_RANGE, FindingSeverity.ERROR,
+                     {"check": "wip_start_after_reference", "count": len(future_starts),
+                      "reference_date": ref_dt.isoformat(),
+                      "order_ids": sorted({str(r.get("order_id"))
+                                           for r in future_starts})[:10]},
+                     FindingDisposition.PROCEEDED_FLAGGED,
+                     f"{len(future_starts)} wip row(s) observed to start after "
+                     "reference_date", RecordTier.SUPPORTING)
+                bump_grade("CONDITIONAL")
+
+        # ------------------------------------------------------------
         # Tier 2: priority_multipliers coverage
         # ------------------------------------------------------------
         priority_multipliers = core.get("priority_multipliers", {}) if core else {}
@@ -529,6 +702,7 @@ class ConformanceGate:
                 "products": len(products), "routings": len(routings),
                 "resources": len(resources), "customers": len(customers),
                 "setup_transitions": len(setup_transitions), "locks": len(locks),
+                "wip_status": len(wip_rows),
             },
         }
 

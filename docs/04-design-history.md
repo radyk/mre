@@ -2123,3 +2123,41 @@ solves, but a sliced run's per-slice demand selection is not reproduced.
 "Pool must become slice-aware for sliced-mode schedules" added to the
 probe report's parked directions and to docs/07's pool item as a carried
 qualification.
+
+## Amendment — 2026-07-14: WIP doorway, gate coherence checks (session 2.3 unit 1)
+
+`wip_status.csv` (docs/06 §5.13, IDS v0.3) now enters through the gate.
+Tier 1c: `manifest.semantics.wip_progress_basis` is required iff the file
+is present (we do not divine which progress column is authoritative) —
+MALFORMED_FIELD blocker, REJECTED, matching the other required
+declarations. Tier 2 WIP coherence: five checks, all findings, never
+crashes, each bumping CONDITIONAL.
+
+**Finding-code review (add-never-repurpose):** every check maps to an
+existing code with its established meaning; no vocabulary additions were
+needed —
+- unknown order/sequence/resource refs → `ORPHAN_ENTITY` (excluded);
+- in_progress rows missing observed start, observed resource, or the
+  declared-basis progress value → `MALFORMED_FIELD` (defaulted: the
+  adapter will treat such rows as not_started — an in-flight claim
+  without its observed state cannot be honored as a fixed interval);
+- sequence-order violations (op in_progress/complete while a predecessor
+  is not_started, explicitly or by absence — absence = not_started per
+  §5.13) → `LOW_CONFIDENCE_INPUT` (proceeded_flagged; a shop-floor
+  reporting-quality signal, not an exclusion). IDS routing has no
+  overlap-permitting edge source (min_lag ≥ 0, max-lag doorway deferred
+  §8), so no edge can excuse the overlap at the gate;
+- completed op still carrying remaining work (completion wins) and
+  observed start after THIS submission's reference_date →
+  `VALUE_OUT_OF_RANGE` (proceeded_flagged).
+
+**Recurring-submission rule (recorded as a test, not just a note):** an
+observed start after a PREVIOUS run's reference but before this
+manifest's reference_date is normal drift between extracts — deliberately
+NOT a finding (`test_pre_reference_observed_start_is_normal_not_a_finding`).
+Pilots' second extracts will always contain these; drift belongs on the
+certificate trend line, not in the gate.
+
+Certificate counts gain `wip_status`. Tests:
+`tests/test_conformance.py::TestWipDoorway` (7 checks incl. the
+clean-file ACCEPTED case).
