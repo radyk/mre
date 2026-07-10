@@ -2296,3 +2296,90 @@ Generator plumbing: `wip_status` table on the Dataset, `wip_status.csv`
 columns + optional-doorway omit-when-empty, `_apply_mid_replan`. The scenario
 joins the auto-parametrized IDS harness (`test_ids_end_to_end.py`), which
 gates it and runs the full pipeline.
+
+## Amendment — 2026-07-14: Session 2.4 CU0 — carry-ins from the 2.3 review
+
+Five review carry-ins resolved before the cloud-deploy work; two are code
+fixes with counterfactual tests, three are written rulings.
+
+**CU0.1 — WIP finding-code review (add-never-repurpose audit).** The five
+Tier-2 WIP coherence checks and the exact existing code each reused, with a
+semantic-stretch verdict per check:
+
+| Check | Code | Disposition | Verdict |
+|---|---|---|---|
+| `wip_unknown_refs` (order/seq/resource ref not in the submission) | `ORPHAN_ENTITY` | excluded | clean fit (a reference to a non-existent entity is the canonical orphan) |
+| `wip_in_progress_incomplete` (in_progress row missing observed start / resource / declared-basis progress) | `MALFORMED_FIELD` | defaulted → not_started | clean fit (a required field of the record is absent/unusable) |
+| `wip_sequence_order_violation` (op in_progress/complete while a route predecessor is not_started) | `LOW_CONFIDENCE_INPUT` | proceeded_flagged | **closest to a stretch — held**; see below |
+| `wip_complete_with_remaining` (completed row still carries remaining work) | `VALUE_OUT_OF_RANGE` | proceeded_flagged | fit (remaining > 0 is out of the range implied by status=complete) |
+| `wip_observed_start_after_reference` (actual_start after THIS submission's reference_date) | `VALUE_OUT_OF_RANGE` | proceeded_flagged | fit (a timestamp past the declared clock is out of range) |
+
+The one worth naming: `wip_sequence_order_violation → LOW_CONFIDENCE_INPUT`.
+The established meaning of that code (its other use: orders routed through
+inactive/unapproved routes) is "input we proceed with but flag as lower
+confidence, a shop-floor data-quality signal" — and a WIP report that says
+an operation is underway while its predecessor is not_started is exactly a
+self-inconsistent shop-floor report we choose to proceed on (proceeded_flagged,
+CONDITIONAL), not a hard structural error (IDS routing has no overlap-permitting
+edge, so no edge *excuses* it, but the report may simply be mis-keyed). No
+existing code is a precedence-consistency code, and inventing one for a
+proceed-and-flag signal would over-specify the vocabulary. **Ruling: all five
+reuse existing codes within their established meanings; no new finding code is
+warranted.** (Recorded per the add-never-repurpose review discipline.)
+
+**CU0.2 — resumable in-flight remainder respects calendars (code fix).** The
+2.3 solver modelled EVERY in-flight op as a single fixed `[0, remaining]`
+interval with its busy span carved out of calendar blocking — so a *resumable*
+in-flight op's remaining work crossed shift closures without permission. Fixed
+in `solver_builder`: an in-flight op that `is_effectively_resumable` now has its
+remaining working minutes placed greedily into the observed resource's working
+windows from reference_date (`_place_inflight_remaining`), pausing at closures —
+fixed intervals, each already inside a window, so no carve-out. A *non-resumable*
+in-flight op keeps the contiguous carve-out (it physically cannot pause, so it
+does cross the boundary). Only the observed ELAPSED span (history, never
+modelled) ever crossed a closure. The rule stated: **the future must respect
+calendars even when the past didn't need permission.** Tests
+(`test_wip_solver.py`): a helper unit test (900 min on 07:00-19:00 lands
+720+180, never in the [0,420] closure) and a solver test (a successor chains
+after the calendar-respecting fixed end, minute ≥ 2040, not the old contiguous
+900). mid_replan is unaffected (its in-flight op is `splittable=false` → the
+carve-out path); `test_in_flight_interval_exempt_from_calendar_closure` (also
+non-resumable) still green; defaults-reproduce-baseline unmoved (the branch is
+guarded on effective resumability, absent on WIP-less paths).
+
+**CU0.3 — op-count reconciliation.** The four figures (13,315 / 14,042 /
+4,088 / 4,933) reconciled in one table in `tools/solver_gap_probe_report.md`:
+13,315→14,042 and 4,088→4,933 are the SAME effect (a splittability config
+rescues window-fit-excluded demands into the backlog) measured under
+identity_v1 and merge_by_family_v1 respectively; the cross-policy ~3.3× gap is
+the merge collapse. Verdict untouched.
+
+**CU0.4 — solver-gap dossier entry #2: merge policy as a ~3.3× tractability
+lever, and its cost.** Added to the probe report. merge_by_family_v1 shrinks
+the model 3.3× (668 vs 2,864 WPs; 4,088 vs 13,315 ops) — a larger, denser-
+attacking decomposition lever than facility decomposition — BUT the WO-2001/
+WO-2002 unbatch verdict (2026-07-06) already priced merge as a **+$260 cost
+loss**. The tension is the point: the same knob that buys tractability spends
+optimality. The sliced daily solve stays primary (caps chunk-slot volume with
+no merge penalty); merge is a deliberate secondary lever. **Pilot entry
+conditions must declare which planner policy their tractability/cost figures
+are measured under** — added to the Phase-4 entry-condition discipline (op
+count, and therefore both speed and the cost baseline, move 3.3× between
+policies).
+
+**CU0.5 — sunk-setup ledger ruling (code fix).** A completed or in-flight op's
+setup already happened before reference_date; it is SUNK and must not be
+re-charged in the movable objective. The Solver Builder already excluded both
+from the objective's setup term (no assign literals); the extractor ledger
+still billed `len(operations) × fixed_per_setup`, over-counting them. Fixed:
+`setup_cost` now counts only ops whose `wip_status` is neither complete nor
+in_progress, so `total = production + setup + tardiness` verifies exactly and
+matches the objective. The sunk portion is reported on a separate, additive,
+**non-decomposing** `sunk_setup_cost` ledger/summary line — present only when
+WIP is observed, so WIP-less runs keep a byte-identical ledger (a future WIP
+cost report can consume it). Counterfactual test
+(`test_mid_replan.py::test_mid_replan_ledger_does_not_recharge_sunk_setups`):
+the WIP run's `setup_cost` is strictly below the WIP-stripped run's (which
+re-charges all four ops), a positive `sunk_setup_cost` line is present WITH
+the WIP and absent WITHOUT, and the WIP run's decomposition still closes to
+`total_cost`.

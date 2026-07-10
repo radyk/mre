@@ -147,6 +147,59 @@ def test_successor_chains_after_in_flight_remaining():
     assert solver.Value(vm.op_start["op2"]) >= 300
 
 
+def test_place_inflight_remaining_pauses_at_closures():
+    """Unit test of the placement helper (CU0.2): 900 remaining minutes on a
+    720-min/day calendar (07:00-19:00) starting at a midnight reference land as
+    a full first-day span then a partial second-day span — pausing overnight,
+    never occupying the closure."""
+    from mre.modules.solver_builder import _place_inflight_remaining
+    windows = [(420, 1140), (1860, 2580)]        # day 0 and day 1, 07:00-19:00
+    spans = _place_inflight_remaining(windows, 900, horizon_minutes=10_000)
+    assert spans == [(420, 1140), (1860, 2040)]  # 720 + 180 = 900, no [0,420]
+    assert sum(e - s for s, e in spans) == 900
+
+
+def test_resumable_in_flight_remainder_respects_calendars():
+    """CU0.2: a RESUMABLE in-flight op's REMAINING work obeys shift boundaries
+    even though the observed elapsed span did not. With a midnight reference,
+    07:00-19:00 shifts and 900 min remaining, the remainder pauses overnight
+    and finishes at 07:00+180 on day 1 (minute 2040) — NOT compressed into a
+    contiguous [0,900] across the pre-shift closure. Proven via a successor
+    that must chain after the calendar-respecting fixed end."""
+    r = "R"
+    d0, d1 = REF, REF.replace(day=14)
+    windows = [
+        {"start": d0.replace(hour=7).isoformat(), "end": d0.replace(hour=19).isoformat()},
+        {"start": d1.replace(hour=7).isoformat(), "end": d1.replace(hour=19).isoformat()},
+    ]
+    cal = _calendar("c", windows=windows)
+    res = _resource(r, cal_ref="c")
+    op1 = {
+        "id": "op1", "spec_ref": "spec1", "workpackage_ref": "wp1", "sequence": 10,
+        "resource_requirements": [{"mode": "explicit_set", "capability_ref": None,
+                                   "resource_refs": [r], "count": 1}],
+        "setup_family": "", "setup_duration": "PT0S", "run_duration": "PT54000S",
+        "splittable": True, "min_chunk": "PT30M",       # resumable
+        "wip_status": "in_progress", "remaining_duration": "PT900M",
+        "observed_resource_ref": r,
+        "observed_start": datetime(2026, 7, 12, 20, tzinfo=UTC).isoformat(),
+    }
+    op2 = _wip_op("op2", "wp1", "spec2", r, run_sec=3600, seq=20)   # successor
+    wp = _wp("wp1", "prod", 100, ["op1", "op2"], earliest=REF)
+    d = _demand("d1", "prod", 100, SOON, earliest=REF)
+    ful = _fulfillment("f1", "d1", "wp1", 100)
+    edge = {"id": "e1", "predecessor": "spec1", "successor": "spec2",
+            "min_lag": "PT0S", "max_lag": None}
+    model, vm = SolverBuilder(reference_date=REF).build(
+        [wp, op1, op2, edge], [res], [cal], [ful, d], [], _costmodel("cm"),
+    )
+    solver, status, cp = _solve(model)
+    assert status in (cp.OPTIMAL, cp.FEASIBLE)
+    # Old (bug) behaviour would end the remainder at minute 900 (contiguous,
+    # crossing the closure); the fix pushes the fixed end to 2040.
+    assert solver.Value(vm.op_start["op2"]) >= 2040
+
+
 def test_in_flight_interval_exempt_from_calendar_closure():
     """The amended invariant at the calendar clamp: an in-flight op's remaining
     work occupies the machine across a shift boundary. With reference_date at

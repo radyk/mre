@@ -64,9 +64,13 @@ def _lateness_by_order(reader) -> dict[str, float]:
     return out
 
 
-def _total_tardiness(reader) -> float:
+def _summary(reader) -> dict:
     scheds = list(reader.iter_entities("schedule"))
-    return scheds[0]["summary_metrics"]["tardiness_cost"] if scheds else 0.0
+    return scheds[0]["summary_metrics"] if scheds else {}
+
+
+def _total_tardiness(reader) -> float:
+    return _summary(reader).get("tardiness_cost", 0.0)
 
 
 def _assignments_by_order(reader):
@@ -163,6 +167,37 @@ def _machine_name(reader, resource_ref: str) -> str:
     r = reader.get_entity(resource_ref) or {}
     return next((e["value"] for e in r.get("external_refs", [])
                  if e.get("type") == "resource_id"), resource_ref)
+
+
+# ---------------------------------------------------------------------------
+# Sunk-setup ledger (CU0.5): a completed / in-flight op's setup already
+# happened and must not be re-charged in the movable objective.
+# ---------------------------------------------------------------------------
+
+def test_mid_replan_ledger_does_not_recharge_sunk_setups(replan):
+    """The WIP run bills setup only for ops that actually run (RESCUE, FUTURE);
+    the completed (DONE) and in-flight (INFLIGHT) ops carry SUNK setup, reported
+    on a separate non-decomposing line. Stripping the WIP re-charges all four as
+    new setups — the counterfactual proving the WIP run saved the sunk portion."""
+    truth, wip, nowip = replan
+    wip_s, nowip_s = _summary(wip), _summary(nowip)
+
+    # The movable setup_cost is strictly lower WITH the WIP (sunk ops dropped).
+    assert wip_s["setup_cost"] < nowip_s["setup_cost"], (
+        f"WITH wip setup {wip_s['setup_cost']} should be < WITHOUT "
+        f"{nowip_s['setup_cost']} — sunk setups must not be re-charged"
+    )
+    # The sunk line is present and positive (DONE + INFLIGHT each had a setup).
+    assert wip_s.get("sunk_setup_cost", 0.0) > 0, (
+        "the WIP run must report a sunk_setup_cost line"
+    )
+    # WIP-less run never observes WIP → no sunk line at all.
+    assert "sunk_setup_cost" not in nowip_s
+
+    # Decomposition still verifies EXACTLY in the WIP run — the sunk line is
+    # additive/informational and is NOT part of the total.
+    parts = wip_s["production_cost"] + wip_s["setup_cost"] + wip_s["tardiness_cost"]
+    assert abs(parts - wip_s["total_cost"]) < 1e-6
 
 
 # ---------------------------------------------------------------------------

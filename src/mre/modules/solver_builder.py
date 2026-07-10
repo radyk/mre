@@ -401,19 +401,44 @@ class SolverBuilder:
             wp_op_map.setdefault(wp_id, []).append(oid)
 
             if wip == "in_progress":
-                # Fixed interval for the remaining working time, on the
+                # Fixed occupation for the remaining working time, on the
                 # resource it is actually running on. Occupies that machine
-                # from reference_date so no future op can double-book it; the
-                # calendar clamp exempts this span (see _blocking_intervals'
-                # busy_spans) because in-flight work continues regardless of
-                # shift boundaries.
+                # from reference_date so no future op can double-book it. How
+                # the remainder relates to calendar closures depends on whether
+                # the op is interruptible (docs/06 §5.13; the CU0.2 fix):
+                #   resumable → the remainder RESPECTS calendars — the future
+                #     must obey shift boundaries even though the observed past
+                #     did not. Placed greedily into working windows from
+                #     reference_date, pausing at closures (fixed intervals, each
+                #     already inside a window, so NO carve-out is needed).
+                #   non-resumable → the remainder runs contiguously across the
+                #     shift boundary (it physically cannot pause). Its
+                #     [0, remaining] busy span is carved OUT of calendar
+                #     blocking (committed-busy, not calendar-blocked).
+                # Only the observed ELAPSED span (history, never modelled) ever
+                # crossed a closure "without permission".
                 rem_min = max(1, _td_to_minutes(_parse_td(op.get("remaining_duration") or "PT0S")))
                 res_id = op.get("observed_resource_ref")
-                if res_id in resources:
+                min_chunk_raw = op.get("min_chunk")
+                min_chunk_min = _td_to_minutes(_parse_td(min_chunk_raw)) if min_chunk_raw else 0
+                resumable = is_effectively_resumable(
+                    op.get("splittable", False), rem_min, min_chunk_min
+                )
+                if res_id in resources and resumable:
+                    spans = _place_inflight_remaining(
+                        cal_windows.get(res_id, []), rem_min, horizon_minutes
+                    )
+                    for s, e in spans:
+                        iv = model.new_fixed_size_interval_var(s, e - s, f"inflight_{oid}_{s}")
+                        res_op_intervals.setdefault(res_id, []).append(iv)
+                    inflight_fixed_end[oid] = spans[-1][1] if spans else rem_min
+                elif res_id in resources:
                     iv = model.new_fixed_size_interval_var(0, rem_min, f"inflight_{oid}")
                     res_op_intervals.setdefault(res_id, []).append(iv)
                     inflight_busy_by_res.setdefault(res_id, []).append((0, rem_min))
-                inflight_fixed_end[oid] = rem_min
+                    inflight_fixed_end[oid] = rem_min
+                else:
+                    inflight_fixed_end[oid] = rem_min
                 op_durations[oid] = rem_min
                 op_families[oid] = op.get("setup_family", "")
                 continue
@@ -1293,6 +1318,35 @@ def _parse_td(s: str | None) -> timedelta:
 
 def _td_to_minutes(td: timedelta) -> int:
     return max(1, int(td.total_seconds() / 60))
+
+
+def _place_inflight_remaining(
+    windows: list[tuple[int, int]], rem_min: int, horizon_minutes: int
+) -> list[tuple[int, int]]:
+    """Greedily place `rem_min` remaining working minutes of a RESUMABLE
+    in-flight operation into its resource's working windows, starting at
+    reference_date (minute 0) and pausing at calendar closures (docs/06 §5.13,
+    session 2.4 CU0.2).
+
+    The observed op resumes NOW and fills available working time; each returned
+    (start, end) span lies wholly inside one working window, so the remainder
+    respects calendars even though the observed elapsed span (history, never
+    modelled) crossed closures. Deterministic — no solver choice; the op is
+    where it is. Windows before minute 0 are clipped; a window that starts
+    negative (reference_date mid-shift) resumes at minute 0."""
+    spans: list[tuple[int, int]] = []
+    remaining = rem_min
+    for w_s, w_e in sorted(windows):
+        if remaining <= 0:
+            break
+        s = max(0, w_s)
+        e = min(w_e, horizon_minutes)
+        if s >= e:
+            continue
+        take = min(remaining, e - s)
+        spans.append((s, s + take))
+        remaining -= take
+    return spans
 
 
 def _subtract_intervals(

@@ -324,7 +324,21 @@ class Extractor:
         # Cost ledger (must decompose twice: production = regular + overtime;
         # total = production + setup + tardiness)
         # ------------------------------------------------------------------
-        setup_cost = len(operations) * setup_fixed  # one setup per operation
+        # Setup billing honours observed WIP (docs/06 §5.13, CU0.5 ruling):
+        # a completed or in-flight op's setup already happened before this
+        # submission's reference_date — it is SUNK and must not be re-charged
+        # in the movable objective. The Solver Builder already excludes both
+        # from the objective's setup term (no assign literals); the ledger now
+        # matches it, so total = production + setup + tardiness still verifies
+        # exactly. The sunk portion is reported separately (informational, NOT
+        # part of the decomposition) so a WIP cost report can still see it.
+        new_setup_ops = sum(
+            1 for o in operations
+            if o.get("wip_status") not in ("complete", "in_progress")
+        )
+        sunk_setup_ops = len(operations) - new_setup_ops
+        setup_cost = new_setup_ops * setup_fixed        # one setup per RUNNING op
+        sunk_setup_cost = sunk_setup_ops * setup_fixed  # already incurred, pre-reference
         production_cost = production_regular_cost + production_overtime_cost
         total_cost = production_cost + setup_cost + tardiness_cost
 
@@ -336,6 +350,10 @@ class Extractor:
             "setup_cost": setup_cost,
             "tardiness_cost": tardiness_cost,
         }
+        # Additive, non-decomposing line: only present (non-zero) when WIP is
+        # observed, so WIP-less runs keep a byte-identical ledger.
+        if sunk_setup_cost:
+            cost_ledger["sunk_setup_cost"] = sunk_setup_cost
 
         # Attach summary to schedule — full cost breakdown stored for diff queries
         schedule["summary_metrics"] = {
@@ -348,6 +366,8 @@ class Extractor:
             "assignments": len(assignments),
             "service_outcomes": len(service_outcomes),
         }
+        if sunk_setup_cost:
+            schedule["summary_metrics"]["sunk_setup_cost"] = sunk_setup_cost
         if is_scenario:
             schedule["summary_metrics"]["is_scenario"] = True
 

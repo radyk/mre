@@ -140,3 +140,68 @@ spike rules):
 
 Raw measurements: `probe_results.json` produced by the probe run
 (scratch artifact; the tables above are the durable record).
+
+## Reconciliation — the op-count figures across reports (2.4 CU0.3)
+
+Four op-count figures appear across the audit, the 2.3 review, and this
+probe. They differ only by **planner policy** and by **which demands each
+run's config admitted** (splittability rescues window-fit exclusions), never
+by any dataset change. In one accounting:
+
+| Figure | Policy | Config | WPs | ops |
+|---|---|---|---|---|
+| 13,315 | identity_v1 | repo `plant_config.json` (no splittability) | 2,864 | 13,315 |
+| 14,042 | identity_v1 | probe (recreated splittability) | 2,980 | 14,042 |
+| 4,088 | merge_by_family_v1 | repo `plant_config.json` (no splittability) | 668 | 4,088 |
+| 4,933 | merge_by_family_v1 | audit scratch (splittability) | ~730 | 4,933 |
+
+- **13,315 → 14,042** (same policy, identity_v1): the probe recreated
+  `splittable=true`, so window-fit exclusions that the repo config drops
+  were **rescued** into the backlog — +116 WPs admitted, +727 op instances.
+  Same phenomenon on the merge policy: **4,088 → 4,933** is merge_by_family
+  under the audit's splittability config admitting the same class of rescued
+  demands (+~845 ops). Both deltas are one effect — splittability turns
+  otherwise-un-schedulable demands into admitted work — measured under two
+  different planner policies.
+- **14,042 vs 4,088 / 13,315 vs 4,933** (across policies): the ~3.3× gap is
+  the merge collapse (one Operation per spec per WorkPackage; merging
+  demands collapses op instances in proportion to the WP collapse). See the
+  dossier entry below.
+
+Net: every figure is self-consistent for its (policy, config) pair; the
+verdict is untouched because the killers are per-machine densities measured
+directly on the probe's own identity_v1 model.
+
+## Dossier entry #2 — merge policy as a ~3.3× tractability lever, and its cost (2.4 CU0.4)
+
+**Measurement.** On the identical gauntlet backlog, merge_by_family_v1 plans
+668 WPs / 4,088 ops where identity_v1 plans 2,864 WPs / 13,315 ops — a
+**3.3× reduction in model size** (variables, no-overlap members, chunk
+slots) achieved purely by the planner grouping same-family demands into one
+WorkPackage. As a decomposition lever this is larger than facility
+decomposition delivered on any single facility, and unlike facility
+decomposition it shrinks the per-machine densities that the killers above
+are made of.
+
+**The tension (the point of this entry).** Merge is also a **cost loss**,
+already verdicted: the WO-2001/WO-2002 unbatch (2026-07-06 amendment)
+measured that merging two distinct orders into one WorkPackage forfeits
+per-order scheduling freedom and costs **+$260** versus running them
+separately — the what-if unbatch is a *cheaper* schedule. So the same knob
+that buys ~3.3× tractability spends money: merge-as-tractability and
+merge-as-cost-loss pull in opposite directions. There is no free lunch here
+— a merged plan is smaller and faster to solve but provably not
+cost-optimal on the merged orders.
+
+**Consequences.**
+- The sliced daily solve (the blessed mode) remains the primary tractability
+  answer because it caps horizon-driven chunk-slot volume *without* the merge
+  cost penalty. Merge is a secondary lever, to be spent deliberately where
+  the cost loss is acceptable (e.g., genuinely fungible same-family lots),
+  not a default.
+- **Pilot entry conditions must declare which planner policy their figures
+  are measured under.** A "solves in N seconds / costs $X" claim is
+  meaningless without stating identity_v1 vs merge_by_family_v1 — the op
+  count (and therefore both tractability AND the cost baseline) moves 3.3×
+  between them. This is added to the docs/07 Phase-4 entry-condition
+  discipline: measure, and name the policy, on the same line as the number.
