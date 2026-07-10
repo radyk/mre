@@ -108,7 +108,8 @@ def _make_demand(snap_id: str, demand_id: str, prod_id: str, qty: float,
                commitment_class=CommitmentClass.STANDARD,
                customer_weight=1.0, status=DemandStatus.OPEN),
         ["product_ref", "quantity", "due", "earliest_start",
-         "commitment_class", "customer_weight", "customer_ref", "status"],
+         "commitment_class", "customer_weight", "customer_ref", "status",
+         "wip_operations"],
     )
 
 

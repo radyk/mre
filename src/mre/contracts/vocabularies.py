@@ -25,6 +25,16 @@ class WorkPackageState(str, Enum):
     COMPLETE = "complete"
 
 
+class WipStatus(str, Enum):
+    """Observed execution state of one operation (docs/06 §5.13 wip_status.csv;
+    docs/01 §5.4). Distinct from WorkPackageState — that is the planning seam
+    (planned/frozen come from us), this is shop-floor fact (comes from the
+    plant). Added 2026-07-14, session 2.3."""
+    NOT_STARTED = "not_started"
+    IN_PROGRESS = "in_progress"
+    COMPLETE = "complete"
+
+
 class ResourceType(str, Enum):
     MACHINE = "machine"
     TOOL = "tool"

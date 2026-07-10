@@ -200,7 +200,8 @@ class TestValueOutOfRange:
             status=DemandStatus.OPEN,
         )
         attrs = ["product_ref", "quantity", "due", "earliest_start",
-                 "commitment_class", "customer_weight", "customer_ref", "status"]
+                 "commitment_class", "customer_weight", "customer_ref", "status",
+                 "wip_operations"]
         provenance = [
             ProvenanceSidecar(
                 entity_id=d.id, attribute_name=a, snapshot_id=snap_id,

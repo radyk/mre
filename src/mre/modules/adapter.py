@@ -664,7 +664,15 @@ class Adapter:
                 "product_ref", "quantity", "due", "earliest_start",
                 "commitment_class", "customer_weight", "customer_ref", "status",
             ]
-            writer.write_entity(demand, self._prov_list(demand_id, d_attrs, snapshot_id))
+            d_prov = self._prov_list(demand_id, d_attrs, snapshot_id)
+            # No WIP source on this path — a truthful default, never observed.
+            d_prov.append(ProvenanceSidecar(
+                entity_id=demand_id, attribute_name="wip_operations",
+                snapshot_id=snapshot_id,
+                provenance_class=ProvenanceClass.DEFAULTED,
+                payload=DefaultedProvenance(policy="no_wip_source_blank_slate"),
+            ))
+            writer.write_entity(demand, d_prov)
             identity_map.register(demand_id, "ERP", "work_order", wono)
             seen_wonos[wono] = demand_id
             demand_count += 1

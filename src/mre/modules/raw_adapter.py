@@ -782,6 +782,10 @@ class RawAdapter:
             d_prov += _def_list(demand_id,
                                 ["commitment_class", "customer_weight", "customer_ref", "status"],
                                 snapshot_id, "plant_config_v1")
+            # No WIP doorway on the raw path (demo-frozen; the pilot connector
+            # supersedes it) — a truthful default, never observed.
+            d_prov += _def_list(demand_id, ["wip_operations"],
+                                snapshot_id, "no_wip_source_blank_slate")
             writer.write_entity(demand, d_prov)
             identity_map.register(demand_id, "ERP", "work_order", wono)
             demand_count += 1

@@ -42,6 +42,7 @@ from mre.contracts.entities import (
     Calendar, CalendarException, Constraint, CostModel, Demand, EntityRef,
     ExternalRef, OperationSpec, PrecedenceEdge, Process, Product, Quantity,
     Resource, ResourceRequirement, SetupCostBasis, TardinessWeights, TimeWindow,
+    WipOperationObservation,
 )
 from mre.contracts.provenance import (
     DefaultedProvenance, DerivedProvenance, InputRef, ObservedProvenance,
@@ -51,7 +52,7 @@ from mre.contracts.vocabularies import (
     CalendarExceptionReason, CalendarExceptionType, CommitmentClass,
     ConstraintHardness, ConstraintProvenance, ConstraintType, DemandStatus,
     FindingCode, FindingDisposition, FindingSeverity, ProcessStatus,
-    RecordTier, ResourceRequirementMode, ResourceType,
+    RecordTier, ResourceRequirementMode, ResourceType, WipStatus,
 )
 from mre.modules.adapter import AdapterResult, _stable_id, _synthesize_precedence_pairs
 from mre.modules.identity_map import IdentityMap
@@ -167,7 +168,8 @@ class IDSAdapter:
 
         all_files = ("orders.csv", "routings.csv", "routing_lines.csv", "products.csv",
                      "resources.csv", "calendars.csv", "cost_model.json",
-                     "customers.csv", "setup_transitions.csv", "locks.csv")
+                     "customers.csv", "setup_transitions.csv", "locks.csv",
+                     "wip_status.csv")
         for fname in all_files:
             p = self._dir / fname
             if p.exists():
@@ -183,6 +185,9 @@ class IDSAdapter:
         transitions_rows = (_read_csv(self._dir / "setup_transitions.csv")
                              if (self._dir / "setup_transitions.csv").exists() else [])
         locks_rows = _read_csv(self._dir / "locks.csv") if (self._dir / "locks.csv").exists() else []
+        wip_rows = (_read_csv(self._dir / "wip_status.csv")
+                    if (self._dir / "wip_status.csv").exists() else [])
+        wip_basis = semantics.get("wip_progress_basis", "remaining_minutes")
         cost_model_raw = json.loads((self._dir / "cost_model.json").read_text(encoding="utf-8"))
 
         product_map = {p["product_id"]: p for p in products if p.get("product_id")}
@@ -366,6 +371,10 @@ class IDSAdapter:
         process_count = 0
         op_spec_count = 0
         edge_count = 0
+        # (route_id, ext_pid, sequence) → written spec id; the WIP doorway
+        # resolves wip_status.csv sequences through this (only specs that
+        # actually exist can carry an observation).
+        spec_written: dict[tuple[str, str, int], str] = {}
         for route_id, ext_pid in pairs_needed:
             process_id = process_id_for_pair[(route_id, ext_pid)]
             prow = product_map[ext_pid]
@@ -425,6 +434,7 @@ class IDSAdapter:
                 ]
                 writer.write_entity(spec, spec_prov)
                 spec_ids.append(spec_id)
+                spec_written[(route_id, ext_pid, seq)] = spec_id
                 # dwell_minutes lands as min_lag on the OUTGOING PrecedenceEdge
                 # per R-Dwell — dwell is no longer a phase anywhere.
                 dwell_minutes_by_spec_id[spec_id] = _num(rl.get("dwell_minutes"))
@@ -466,6 +476,14 @@ class IDSAdapter:
         # ------------------------------------------------------------
         # Demands
         # ------------------------------------------------------------
+        # wip_status.csv rows grouped by order, keeping 1-based data row
+        # numbers for provenance citation (docs/06 §5.13).
+        wip_by_order: dict[str, list[tuple[int, dict]]] = {}
+        for row_no, row in enumerate(wip_rows, start=1):
+            ext = (row.get("order_id") or "").strip()
+            if ext:
+                wip_by_order.setdefault(ext, []).append((row_no, row))
+
         demand_count = 0
         seen_order_ids: set[str] = set()
         demand_id_for_order: dict[str, str] = {}
@@ -542,6 +560,11 @@ class IDSAdapter:
                         disposition_detail="customer_weight defaulted to 1.0", tier=RecordTier.SUPPORTING,
                     )
 
+            wip_obs = self._build_wip_observations(
+                wip_by_order.get(ext_oid, []), route_id, ext_pid, wip_basis,
+                spec_written, identity_map, demand_id, ext_oid, reporter,
+            )
+
             demand = Demand(
                 id=demand_id, snapshot_id=snapshot_id,
                 external_refs=[ExternalRef(system="IDS", type="order_id", value=ext_oid)],
@@ -550,11 +573,24 @@ class IDSAdapter:
                 due=due_dt, earliest_start=earliest_start,
                 commitment_class=commitment_class, customer_weight=weight,
                 customer_ref=customer_ref, status=DemandStatus.OPEN,
+                wip_operations=wip_obs,
             )
             d_prov = _obs_list(demand_id, ["product_ref", "quantity", "due", "earliest_start",
                                           "customer_ref"], snapshot_id,
                               {"product_ref": "product_id", "quantity": "quantity", "due": "due_date",
                                "earliest_start": "release_date/created_date", "customer_ref": "customer_id"})
+            if wip_obs:
+                # TRUTHFUL observed provenance citing the source rows: the
+                # observation structs carry their own wip_status.csv row
+                # numbers (source_rows).
+                rows_cited = sorted({r for o in wip_obs for r in o.source_rows})
+                d_prov.append(_obs(
+                    demand_id, "wip_operations", snapshot_id,
+                    f"wip_status.csv rows {rows_cited}",
+                ))
+            else:
+                d_prov += _def_list(demand_id, ["wip_operations"], snapshot_id,
+                                    "no_wip_rows_blank_slate")
             d_prov += ([_drv(demand_id, "customer_weight", snapshot_id, "priority_multiplier_lookup",
                              [(demand_id, "priority_class")])]
                        if resolved_class else _def_list(demand_id, ["customer_weight"], snapshot_id, "no_priority_declared"))
@@ -675,6 +711,91 @@ class IDSAdapter:
             identity_map=identity_map, store=store,
             precedence_edge_count=edge_count,
         )
+
+    @staticmethod
+    def _build_wip_observations(
+        order_rows: list[tuple[int, dict]],
+        route_id: str,
+        ext_pid: str,
+        wip_basis: str,
+        spec_written: dict[tuple[str, str, int], str],
+        identity_map: IdentityMap,
+        demand_id: str,
+        ext_oid: str,
+        reporter: Reporter,
+    ) -> list[WipOperationObservation]:
+        """Translate one order's wip_status.csv rows into canonical
+        observations (docs/06 §5.13). Incoherent rows follow the gate's
+        dispositions: unknown sequence/resource → excluded; in_progress
+        missing its observed state → defaulted to not_started (an in-flight
+        claim without observed start/resource/progress cannot be honored as
+        a fixed interval). First row wins per sequence (the duplicate rule).
+        """
+        obs: list[WipOperationObservation] = []
+        seen_seqs: set[int] = set()
+        for row_no, row in order_rows:
+            seq_raw = str(row.get("sequence", "")).strip()
+            status_raw = (row.get("status") or "").strip()
+            if not seq_raw.isdigit() or status_raw not in (
+                    "not_started", "in_progress", "complete"):
+                continue
+            seq = int(seq_raw)
+            spec_ref = spec_written.get((route_id, ext_pid, seq))
+            if spec_ref is None or seq in seen_seqs:
+                if spec_ref is None:
+                    reporter.record_finding(
+                        code=FindingCode.ORPHAN_ENTITY, severity=FindingSeverity.ERROR,
+                        subjects=[EntityRef(entity_id=demand_id, entity_type="demand")],
+                        evidence={"order_id": ext_oid, "sequence": seq, "row": row_no,
+                                  "reason": "wip row references a sequence with no "
+                                            "operation spec on the order's route"},
+                        disposition=FindingDisposition.EXCLUDED, tier=RecordTier.SUPPORTING,
+                    )
+                continue
+            seen_seqs.add(seq)
+
+            status = WipStatus(status_raw)
+            actual_start = _parse_dt(row.get("actual_start", ""))
+            res_ext = (row.get("actual_resource_id") or "").strip()
+            actual_resource_ref = (identity_map.resolve("IDS", "resource_id", res_ext)
+                                   if res_ext else None)
+            remaining = quantity_complete = None
+            if status == WipStatus.IN_PROGRESS:
+                # Normalize to the manifest-declared basis: exactly one
+                # progress expression survives translation.
+                raw_progress = (row.get(wip_basis) or "").strip()
+                if wip_basis == "remaining_minutes" and raw_progress:
+                    remaining = _num(raw_progress, -1.0)
+                elif wip_basis == "quantity_complete" and raw_progress:
+                    quantity_complete = _num(raw_progress, -1.0)
+                progress_ok = (remaining is not None and remaining >= 0) or (
+                    quantity_complete is not None and quantity_complete >= 0)
+                if not (actual_start and actual_resource_ref and progress_ok):
+                    reporter.record_finding(
+                        code=FindingCode.MALFORMED_FIELD, severity=FindingSeverity.ERROR,
+                        subjects=[EntityRef(entity_id=demand_id, entity_type="demand")],
+                        evidence={"order_id": ext_oid, "sequence": seq, "row": row_no,
+                                  "progress_basis": wip_basis,
+                                  "reason": "in_progress wip row missing observed "
+                                            "start, resource, or progress value"},
+                        disposition=FindingDisposition.DEFAULTED,
+                        disposition_detail="treated as not_started",
+                        tier=RecordTier.SUPPORTING,
+                    )
+                    status = WipStatus.NOT_STARTED
+                    actual_start = actual_resource_ref = None
+                    remaining = quantity_complete = None
+
+            obs.append(WipOperationObservation(
+                sequence=seq, spec_ref=spec_ref, status=status,
+                actual_start=actual_start,
+                actual_resource_ref=actual_resource_ref,
+                remaining_minutes=remaining,
+                quantity_complete=quantity_complete,
+                source_rows=[row_no],
+            ))
+        obs.sort(key=lambda o: o.sequence)
+        return obs
 
     @staticmethod
     def _resolve_priority_class(order_class: str, customer_class: str, precedence: str) -> Optional[str]:

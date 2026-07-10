@@ -35,7 +35,7 @@ from mre.contracts.entities import (
     Product, Quantity, WorkPackage,
 )
 from mre.contracts.provenance import (
-    DefaultedProvenance, DerivedProvenance, InputRef,
+    DefaultedProvenance, DerivedProvenance, InputRef, ObservedProvenance,
     ProvenanceClass, ProvenanceSidecar,
 )
 from mre.contracts.records import DecisionAlternative
@@ -160,6 +160,25 @@ class Planner:
                 default=None,
             )
 
+            # WIP landing (docs/06 §5.13): project the constituent order's
+            # observed execution state onto the operations we instantiate and
+            # onto the WorkPackage state seam. Only SINGLETON batches carry
+            # WIP: a merged operation is a new aggregate that corresponds to
+            # no single order's in-flight op, so its observed actuals would be
+            # ambiguous (and the remainder arithmetic would divide one order's
+            # progress by the merged total). The raw observation stays on
+            # Demand.wip_operations regardless — it is never destroyed. The
+            # WIP doorway runs identity_v1 (1:1), where every batch is a
+            # singleton, so this is a no-op restriction on the supported flow.
+            wip_by_spec: dict[str, dict] = {}
+            wip_demand_id: Optional[str] = None
+            wip_demand_qty: Optional[float] = None
+            if len(batch) == 1:
+                wip_demand_id = batch[0]["id"]
+                wip_demand_qty = float(batch[0]["quantity"]["value"])
+                for obs in batch[0].get("wip_operations", []):
+                    wip_by_spec[obs["spec_ref"]] = obs
+
             wp_id = _uid("wp", *[d["id"] for d in batch])
             wp = WorkPackage(
                 id=wp_id,
@@ -175,12 +194,22 @@ class Planner:
 
             # Instantiate Operations from OperationSpecs
             op_ids: list[str] = []
+            wp_op_statuses: list[str] = []
+            wip_source_rows: set[int] = set()
             for spec_id in spec_ids:
                 spec = specs.get(spec_id)
                 if spec is None:
                     continue
                 op_id = _uid("op", wp_id, spec_id)
                 run_duration = _compute_run_duration(total_qty, spec)
+
+                obs = wip_by_spec.get(spec_id)
+                wip_fields, wip_sidecars = _resolve_op_wip(
+                    op_id, snapshot_id, obs, spec, wip_demand_qty, wip_demand_id,
+                )
+                wp_op_statuses.append(obs["status"] if obs else "not_started")
+                if obs:
+                    wip_source_rows.update(obs.get("source_rows", []))
 
                 spec_min_chunk = spec.get("min_chunk")
                 op = Operation(
@@ -195,6 +224,7 @@ class Planner:
                     run_duration=run_duration,
                     splittable=bool(spec.get("splittable", False)),
                     min_chunk=_parse_td(spec_min_chunk) if spec_min_chunk else None,
+                    **wip_fields,
                 )
                 op_provenance = _op_provenance(
                     op_id, snapshot_id,
@@ -207,17 +237,25 @@ class Planner:
                         InputRef(entity_id=spec_id, attribute_name="run_rate",
                                  snapshot_id=snapshot_id)
                     ],
-                )
+                ) + wip_sidecars
                 writer.write_entity(op, op_provenance)
                 op_ids.append(op_id)
                 op_count += 1
 
-            # Now write WorkPackage (with populated operations list)
-            wp = wp.model_copy(update={"operations": op_ids})
+            # Roll observed operation statuses up to the WorkPackage state
+            # seam (docs/06 §5.13): observed provenance citing the wip source
+            # rows when any real observation exists; planner default otherwise.
+            wp_state, wp_state_sidecar = _resolve_wp_state(
+                wp_id, snapshot_id, wp_op_statuses, sorted(wip_source_rows),
+            )
+
+            # Now write WorkPackage (with populated operations list + state)
+            wp = wp.model_copy(update={"operations": op_ids, "state": wp_state})
             wp_provenance = _wp_provenance(
                 wp_id, snapshot_id,
                 demand_ids=[d["id"] for d in batch],
                 spec_ids=spec_ids,
+                state_sidecar=wp_state_sidecar,
             )
             writer.write_entity(wp, wp_provenance)
             wp_count += 1
@@ -714,6 +752,7 @@ def _wp_provenance(
     snapshot_id: str,
     demand_ids: list[str],
     spec_ids: list[str],
+    state_sidecar: Optional[ProvenanceSidecar] = None,
 ) -> list[ProvenanceSidecar]:
     demand_inputs = [
         InputRef(entity_id=did, attribute_name="quantity", snapshot_id=snapshot_id)
@@ -734,15 +773,158 @@ def _wp_provenance(
             payload=DefaultedProvenance(policy="planner default"),
         )
 
+    # state: observed (WIP rollup, citing source rows) when the caller
+    # derived one from WIP; planner default otherwise (docs/06 §5.13).
+    state_prov = state_sidecar if state_sidecar is not None else _dflt("state")
+
     return [
         _drv("product_ref",     demand_inputs[:1]),
         _drv("quantity",        demand_inputs),
         _drv("earliest_start",  demand_inputs),
         _drv("operations",      [InputRef(entity_id=s, attribute_name="id", snapshot_id=snapshot_id) for s in spec_ids]),
         _dflt("process_version"),
-        _dflt("state"),
+        state_prov,
         _drv("created_by",      demand_inputs[:1]),
     ]
+
+
+# ---------------------------------------------------------------------------
+# WIP landing (docs/06 §5.13) — projecting observed execution state onto
+# Operations and the WorkPackage state seam.
+# ---------------------------------------------------------------------------
+
+_WIP_OP_ATTRS = ("wip_status", "observed_start", "observed_resource_ref",
+                 "remaining_duration")
+
+
+def _wip_observed(entity_id: str, snapshot_id: str, attr: str, field: str,
+                  source_rows: list[int], demand_id: Optional[str] = None
+                  ) -> ProvenanceSidecar:
+    """OBSERVED sidecar citing the actual wip_status.csv source rows — never
+    a constant under an observed sidecar (the yield_factor false-observed
+    anti-pattern, docs/04 2026-07-12)."""
+    who = f"demand {demand_id}, " if demand_id else ""
+    return ProvenanceSidecar(
+        entity_id=entity_id, attribute_name=attr, snapshot_id=snapshot_id,
+        provenance_class=ProvenanceClass.OBSERVED,
+        payload=ObservedProvenance(
+            source_system="wip_status",
+            source_field=f"{field} ({who}wip_status.csv rows {list(source_rows)})",
+            extract_ref="wip_status.csv"),
+    )
+
+
+def _wip_defaulted(entity_id: str, snapshot_id: str, attr: str, policy: str
+                   ) -> ProvenanceSidecar:
+    return ProvenanceSidecar(
+        entity_id=entity_id, attribute_name=attr, snapshot_id=snapshot_id,
+        provenance_class=ProvenanceClass.DEFAULTED,
+        payload=DefaultedProvenance(policy=policy),
+    )
+
+
+def _wip_derived(entity_id: str, snapshot_id: str, attr: str, formula: str,
+                 inputs: list[InputRef]) -> ProvenanceSidecar:
+    return ProvenanceSidecar(
+        entity_id=entity_id, attribute_name=attr, snapshot_id=snapshot_id,
+        provenance_class=ProvenanceClass.DERIVED,
+        payload=DerivedProvenance(formula_id=formula, input_refs=inputs),
+    )
+
+
+def _resolve_op_wip(
+    op_id: str,
+    snapshot_id: str,
+    obs: Optional[dict],
+    spec: dict,
+    demand_qty: Optional[float],
+    demand_id: Optional[str],
+) -> tuple[dict, list[ProvenanceSidecar]]:
+    """Project one operation's WIP observation (docs/06 §5.13) into its
+    canonical fields + provenance. obs is the serialized
+    WipOperationObservation dict from the Demand, or None (no observation).
+
+    - complete: observed actuals; remaining_duration = 0 (DERIVED from status).
+    - in_progress: observed start + resource; remaining_duration is OBSERVED
+      when the plant reported remaining_minutes directly, or DERIVED when
+      computed from observed quantity_complete (the remainder arithmetic).
+    - not_started / no observation: fields None, DEFAULTED.
+    """
+    if obs is None:
+        fields = {a: None for a in _WIP_OP_ATTRS}
+        prov = [_wip_defaulted(op_id, snapshot_id, a, "no_wip_observation")
+                for a in _WIP_OP_ATTRS]
+        return fields, prov
+
+    status = obs["status"]
+    rows = obs.get("source_rows", [])
+    fields: dict = {"wip_status": status, "observed_start": None,
+                    "observed_resource_ref": None, "remaining_duration": None}
+    prov = [_wip_observed(op_id, snapshot_id, "wip_status", "status", rows, demand_id)]
+
+    if status == "not_started":
+        prov += [_wip_defaulted(op_id, snapshot_id, a, "not_started_no_actuals")
+                 for a in ("observed_start", "observed_resource_ref", "remaining_duration")]
+        return fields, prov
+
+    # in_progress or complete carry observed start + resource
+    fields["observed_start"] = obs.get("actual_start")
+    fields["observed_resource_ref"] = obs.get("actual_resource_ref")
+    prov.append(_wip_observed(op_id, snapshot_id, "observed_start", "actual_start", rows, demand_id))
+    prov.append(_wip_observed(op_id, snapshot_id, "observed_resource_ref", "actual_resource_id", rows, demand_id))
+
+    if status == "complete":
+        fields["remaining_duration"] = timedelta(0)
+        prov.append(_wip_derived(
+            op_id, snapshot_id, "remaining_duration", "wip_complete_zero_remaining",
+            [InputRef(entity_id=demand_id, attribute_name="wip_operations", snapshot_id=snapshot_id)]
+            if demand_id else [],
+        ))
+        return fields, prov
+
+    # in_progress: remaining_minutes (observed) or quantity_complete (derived)
+    rem_min = obs.get("remaining_minutes")
+    if rem_min is not None:
+        fields["remaining_duration"] = timedelta(minutes=float(rem_min))
+        prov.append(_wip_observed(op_id, snapshot_id, "remaining_duration",
+                                  "remaining_minutes", rows, demand_id))
+    else:
+        rate_td = _parse_td(spec.get("run_rate", "PT0S"))
+        qty_complete = float(obs.get("quantity_complete") or 0.0)
+        remaining_qty = max(0.0, (demand_qty or 0.0) - qty_complete)
+        fields["remaining_duration"] = timedelta(
+            seconds=remaining_qty * rate_td.total_seconds())
+        prov.append(_wip_derived(
+            op_id, snapshot_id, "remaining_duration",
+            "wip_remaining = (quantity - quantity_complete) * run_rate",
+            ([InputRef(entity_id=demand_id, attribute_name="quantity", snapshot_id=snapshot_id),
+              InputRef(entity_id=demand_id, attribute_name="wip_operations", snapshot_id=snapshot_id)]
+             if demand_id else [])
+            + [InputRef(entity_id=spec["id"], attribute_name="run_rate", snapshot_id=snapshot_id)],
+        ))
+    return fields, prov
+
+
+def _resolve_wp_state(
+    wp_id: str,
+    snapshot_id: str,
+    op_statuses: list[str],
+    source_rows: list[int],
+) -> tuple[WorkPackageState, ProvenanceSidecar]:
+    """Roll observed operation statuses up to the WorkPackage state seam
+    (docs/06 §5.13). Observed provenance citing the wip source rows when any
+    real observation exists (never a default under an observed sidecar);
+    planner default (planned) otherwise."""
+    if not source_rows:
+        return (WorkPackageState.PLANNED,
+                _wip_defaulted(wp_id, snapshot_id, "state", "planner default"))
+    if all(s == "complete" for s in op_statuses):
+        state = WorkPackageState.COMPLETE
+    elif all(s == "not_started" for s in op_statuses):
+        state = WorkPackageState.PLANNED
+    else:
+        state = WorkPackageState.IN_PROGRESS
+    return state, _wip_observed(wp_id, snapshot_id, "state", "status", source_rows)
 
 
 def _ful_provenance(

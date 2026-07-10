@@ -23,6 +23,7 @@ from mre.contracts.vocabularies import (
     ResourceRequirementMode,
     ResourceType,
     ScheduleStatus,
+    WipStatus,
     WorkPackageState,
 )
 
@@ -94,6 +95,29 @@ class ResourceAssignment(BaseModel):
     """Resolves one ResourceRequirement to a specific Resource."""
     requirement: ResourceRequirement
     resource_ref: str
+
+
+class WipOperationObservation(BaseModel):
+    """Observed shop-floor state of one operation of one order at
+    reference_date (docs/06 §5.13). Struct, not entity — carried on the
+    Demand (the order-level observation) in canonical terms only:
+    spec_ref/actual_resource_ref are canonical ids, never ERP identifiers.
+    source_rows are the wip_status.csv row numbers (1-based, excluding the
+    header) this observation was read from — the provenance citation.
+
+    Exactly one of remaining_minutes / quantity_complete is populated for
+    in_progress observations: the adapter normalizes to the manifest's
+    declared wip_progress_basis so downstream code never re-reads the
+    manifest to know which is authoritative.
+    """
+    sequence: int
+    spec_ref: str
+    status: WipStatus
+    actual_start: Optional[datetime] = None
+    actual_resource_ref: Optional[str] = None
+    remaining_minutes: Optional[float] = None
+    quantity_complete: Optional[float] = None
+    source_rows: list[int] = []
 
 
 class TardinessWeights(BaseModel):
@@ -240,6 +264,10 @@ class Demand(BaseModel):
     customer_weight: float = 1.0
     customer_ref: Optional[str] = None
     status: DemandStatus
+    # Observed execution state of this order's operations at reference_date
+    # (docs/06 §5.13). Empty = no WIP source = blank slate. An observation,
+    # like everything else on Demand — never written by planning.
+    wip_operations: list[WipOperationObservation] = []
 
 
 class Operation(BaseModel):
@@ -261,6 +289,14 @@ class Operation(BaseModel):
     run_duration: timedelta = timedelta(0)
     splittable: bool = False
     min_chunk: Optional[timedelta] = None
+    # WIP landing (docs/06 §5.13, docs/01 §5.4): observed execution state at
+    # reference_date. None = no observation (blank slate). complete ops carry
+    # their observed actuals; in_progress ops carry observed start, observed
+    # resource, and a DERIVED remaining_duration (the remainder arithmetic).
+    wip_status: Optional[WipStatus] = None
+    observed_start: Optional[datetime] = None
+    observed_resource_ref: Optional[str] = None
+    remaining_duration: Optional[timedelta] = None
 
 
 class WorkPackage(BaseModel):

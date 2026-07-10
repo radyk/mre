@@ -2161,3 +2161,61 @@ certificate trend line, not in the gate.
 Certificate counts gain `wip_status`. Tests:
 `tests/test_conformance.py::TestWipDoorway` (7 checks incl. the
 clean-file ACCEPTED case).
+
+## Amendment — 2026-07-14: WIP canonical landing — adapter + Demand/Operation/WorkPackage (session 2.3 unit 2)
+
+Observed shop-floor state now lands in the canonical model (docs/06 §5.13,
+docs/01 §5.1/§5.2/§5.4).
+
+**Contracts.** New `WipStatus` enum (`not_started`/`in_progress`/`complete`)
+— distinct from `WorkPackageState`: that is the planning seam
+(planned/frozen come from us), this is shop-floor fact (comes from the
+plant). New struct `WipOperationObservation` carried on `Demand.wip_operations`
+(the immutable order-level observation, canonical ids only, cites its
+wip_status.csv `source_rows`). New optional `Operation` fields
+`wip_status` / `observed_start` / `observed_resource_ref` /
+`remaining_duration`. docs/01 §5.1/§5.2/§5.4 updated in the same commit
+(add-never-repurpose).
+
+**IDS adapter.** `_build_wip_observations` translates wip_status.csv into
+`Demand.wip_operations`, normalizing progress to the manifest-declared
+`wip_progress_basis` (exactly one of remaining_minutes/quantity_complete
+survives). It follows the gate's dispositions rather than crashing:
+unknown sequence → ORPHAN_ENTITY (excluded); in_progress missing observed
+start/resource/progress → MALFORMED_FIELD, downgraded to not_started (an
+in-flight claim without its observed state cannot be honored as a fixed
+interval). First row wins per sequence. Provenance on
+`Demand.wip_operations` is observed, citing the actual source rows. The
+sample and raw adapters (no WIP doorway) write a truthful `defaulted`
+`no_wip_source_blank_slate` — never a false observed sidecar.
+
+**Planner projection.** For each Operation it instantiates, the Planner
+projects the owning Demand's observation:
+- complete → observed actuals; `remaining_duration = 0` (DERIVED from
+  status, not observed — there is no observed "remaining" column for it);
+- in_progress → observed start + resource; `remaining_duration` is
+  **observed** when the plant reported `remaining_minutes` directly, or
+  **derived** when computed as `(quantity − quantity_complete) × run_rate`
+  (the remainder arithmetic). This observed-vs-derived split is the
+  truthful-provenance guard: the yield_factor false-observed defect
+  (2026-07-12) wrote a constant under an observed sidecar; a computed
+  remainder here is never labeled observed.
+- not_started / no observation → fields None, defaulted.
+
+WorkPackage.state is a rollup of the constituent operations' observed
+statuses (all complete → complete; any underway or partial → in_progress),
+with **observed provenance citing the wip_status.csv source rows** — the
+seam docs/06 §5.13 names. WIP is projected only for 1:1 (identity_v1)
+WorkPackages: a merged operation corresponds to no single order's in-flight
+op, so its actuals would be ambiguous (the observation still lives on each
+constituent Demand). The WIP doorway runs identity_v1, so this restricts
+nothing in the supported flow.
+
+**Not yet consumed by the solver** — CU3 makes the Solver Builder treat
+complete ops as satisfied (no variables, capacity freed) and in_progress
+ops as fixed intervals for `remaining_duration` on `observed_resource_ref`,
+with the amended pre-reference invariant. Tests: `tests/test_wip_landing.py`
+(7: observation landing + provenance class per basis, WP-state rollup,
+blank-slate defaulted). Fixture provenance-attr lists updated for the new
+`Demand.wip_operations` field (test_planner / test_snapshot_store /
+test_validator).

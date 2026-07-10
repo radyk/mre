@@ -105,8 +105,9 @@ Absorbs: sales orders, work orders, forecasts, safety-stock triggers.
 | `customer_weight` | number | Tardiness weight; the AI must know when defaulted | observed, often defaulted |
 | `customer_ref` | entity ref, optional | Enables per-customer service reporting | observed |
 | `status` | enum: `open` / `cancelled` / `fulfilled` | Drives re-derivation rules across snapshots | observed |
+| `wip_operations` | list of WipOperationObservation | Observed shop-floor execution state of this order's operations at reference_date (docs/06 §5.13). Empty ⇒ no WIP source ⇒ blank slate. Each observation is `{sequence, spec_ref, status (not_started/in_progress/complete), actual_start?, actual_resource_ref?, remaining_minutes?, quantity_complete?, source_rows}` — canonical ids only, ERP identifiers never appear. | observed (cites the wip_status.csv source rows); defaulted when no WIP source |
 
-Demands are never mutated by planning. They are observations.
+Demands are never mutated by planning. They are observations — WIP included: `wip_operations` is what the plant reported was already underway, not anything the planner chose.
 
 ### 5.2 WorkPackage — *what we plan to do; derived and owned by us*
 
@@ -118,7 +119,7 @@ The unit of planning and scheduling. The only thing the Solver Builder ever sees
 | `quantity` | number + UoM | Derivation policy recorded on the creating Decision |
 | `earliest_start` | timestamp | Max of constituents' earliest_start; policy-recorded |
 | `operations` | ordered list of Operation ids | Instantiated from the Product's Process at creation; records Process version used |
-| `state` | enum: `planned` / `frozen` / `in_progress` / `complete` | `frozen`+ survives re-derivation on new snapshots |
+| `state` | enum: `planned` / `frozen` / `in_progress` / `complete` | `frozen`+ survives re-derivation on new snapshots. `in_progress` / `complete` are the WIP seam (docs/06 §5.13): the Planner rolls the constituent operations' observed statuses up to this field — all complete ⇒ `complete`, any underway or partial ⇒ `in_progress` — with observed provenance citing the wip_status.csv source rows. `planned` when no WIP source. |
 | `created_by` | Decision ref | Every WorkPackage traces to the planning decision that made it |
 
 Deliberately absent: **no due date** (lives on Demands, felt via Fulfillments) and **no priority** (derived at solve time from constituent Demands).
@@ -160,8 +161,13 @@ Cardinalities express every planning move with zero additional concepts:
 | `setup_duration` | duration | Derived (spec + family) or observed |
 | `run_duration` | duration | **Derived**: quantity × spec rate; chain recorded |
 | `splittable` / `min_chunk` | bool / duration | Canonical home of preemption & min-split policy |
+| `wip_status` | enum: `not_started` / `in_progress` / `complete`, optional | Observed execution state at reference_date (docs/06 §5.13), projected by the Planner from the owning Demand's `wip_operations`. None ⇒ no observation (blank slate). | observed; defaulted when absent |
+| `observed_start` / `observed_resource_ref` | timestamp / entity ref, optional | For `in_progress` and `complete` ops: where and when the operation actually ran. | observed (cites wip_status.csv rows) |
+| `remaining_duration` | duration, optional | Working time left at reference_date. `complete` ⇒ 0. `in_progress` ⇒ the plant's observed `remaining_minutes` (observed) **or** `(quantity − quantity_complete) × run_rate` (derived — the remainder arithmetic). Consumed by the Solver Builder to size the fixed in-flight interval (docs/06 §5.13). | observed or derived per basis; defaulted when absent |
 
 No `predecessors` list and no `dwell_duration` (docs/05 §4 surgery, R-A2/A3, R-Dwell — see 5.4a). Phases occupy resources; lags don't.
+
+**WIP landing (docs/06 §5.13).** The observed shop-floor state enters on the Demand as `wip_operations` (an immutable observation) and the Planner projects it onto the Operations it instantiates and onto WorkPackage.state. Provenance is truthful: observed actuals cite the wip_status.csv source rows; the computed remaining duration is derived where it is arithmetic (quantity_complete basis) and observed where the plant reported it directly (remaining_minutes basis) — a constant under an observed sidecar is the yield_factor defect class (docs/04 2026-07-12), never repeated. WIP is projected only for 1:1 (identity_v1) WorkPackages; a merged operation corresponds to no single order's in-flight op, so its actuals would be ambiguous (the observation still lives on each constituent Demand).
 
 ### 5.4a PrecedenceEdge — precedence and lags as first-class records
 

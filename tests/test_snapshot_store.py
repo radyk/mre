@@ -32,6 +32,7 @@ def _full_demand_provenance(demand_id: str) -> list[ProvenanceSidecar]:
     attrs = [
         "product_ref", "quantity", "due", "earliest_start",
         "commitment_class", "customer_weight", "customer_ref", "status",
+        "wip_operations",
     ]
     return [_synth(demand_id, a) for a in attrs]
 
