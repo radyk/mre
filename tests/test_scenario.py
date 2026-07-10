@@ -233,12 +233,16 @@ def base_run(tmp_path_factory):
 
     # M3
     v_rep = _rep(ModuleCode.M3, "validator")
-    Validator().run(snap_id, store, v_rep)
+    v_result = Validator().run(snap_id, store, v_rep)
     v_rep.end(RunStatus.SUCCESS)
 
-    # M4
+    # M4 — pass validator exclusions like the real pipeline (__main__) does;
+    # the scenario runner re-validates and must see the same demand population.
     p_rep = _rep(ModuleCode.M4, "planner")
-    Planner(policy="merge_by_family_v1").run(snap_id, store, p_rep)
+    Planner(policy="merge_by_family_v1").run(
+        snap_id, store, p_rep,
+        excluded_demand_ids=v_result.excluded_demand_ids,
+    )
     p_rep.end(RunStatus.SUCCESS)
 
     reader = store.load_snapshot(snap_id)

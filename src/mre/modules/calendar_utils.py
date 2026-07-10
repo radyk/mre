@@ -105,6 +105,29 @@ def longest_shift_minutes(cal: dict) -> float:
         return 0.0
 
 
+def is_effectively_resumable(
+    splittable: bool, working_minutes: float, min_chunk_minutes: float
+) -> bool:
+    """docs/05 R-C3 degenerate-split rule, shared by SolverBuilder and
+    Validator (the two MUST agree or the validator admits work the solver
+    cannot place).
+
+    An operation with working duration < 2 × min_chunk cannot split at all —
+    any split would create a chunk below the floor — so it behaves as
+    non-resumable: the solver builds no chunk machinery for it (a single
+    mandatory chunk with duration < min_chunk is structurally INFEASIBLE;
+    found in the Phase-1 exit audit when a 17-minute op inherited a
+    workcenter-level min_chunk of 30), and the validator window-fits it as
+    a contiguous block. min_chunk_minutes ≤ 0 means no floor: any split is
+    permitted and the operation stays resumable.
+    """
+    if not splittable:
+        return False
+    if min_chunk_minutes > 0 and working_minutes < 2 * min_chunk_minutes:
+        return False
+    return True
+
+
 def weekly_open_minutes(cal: dict) -> float:
     """Total open minutes per week from a calendar's base_pattern (open
     days/week x shift length) — the resumable-operation capacity metric,
@@ -141,9 +164,15 @@ def compute_horizon(
     ]
     horizon_start = min(all_earliest) if all_earliest else datetime(2026, 7, 13, tzinfo=UTC)
     horizon_start = horizon_start.replace(hour=0, minute=0, second=0, microsecond=0)
+    # +90d buffer, matching __main__.py and SolverBuilder._compute_horizon.
+    # The three MUST agree: the builder's internal horizon is max(due)+90d,
+    # and calendar windows flattened to a shorter horizon leave resumable
+    # (chunked) operations with no windows to sum to their working duration —
+    # structurally INFEASIBLE (Phase-1 exit audit: scenario re-solves of the
+    # gauntlet died on a 14d-vs-90d mismatch while their base solved fine).
     horizon_end = (max(all_due) if all_due else horizon_start).replace(
         hour=23, minute=59, second=59
-    ) + timedelta(days=14)
+    ) + timedelta(days=90)
     return horizon_start, horizon_end
 
 

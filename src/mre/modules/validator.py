@@ -53,7 +53,9 @@ from mre.contracts.vocabularies import (
     FindingCode, FindingDisposition, FindingSeverity,
     ModuleCode, RecordTier,
 )
-from mre.modules.calendar_utils import longest_shift_minutes, weekly_open_minutes
+from mre.modules.calendar_utils import (
+    is_effectively_resumable, longest_shift_minutes, weekly_open_minutes,
+)
 from mre.modules.snapshot_store import SnapshotStore
 from mre.reporter import Reporter
 
@@ -369,7 +371,14 @@ class Validator:
                 if not eligible_ids:
                     continue
 
-                resumable = bool(spec.get("splittable", False))
+                # Degenerate-split rule shared with SolverBuilder (docs/05
+                # R-C3): working < 2 × min_chunk cannot split, so it is
+                # window-fitted as a contiguous block. The two sides MUST
+                # agree or the validator admits work the solver cannot place.
+                min_chunk_min = _parse_duration_seconds(spec.get("min_chunk")) / 60.0
+                resumable = is_effectively_resumable(
+                    bool(spec.get("splittable", False)), total_minutes, min_chunk_min
+                )
 
                 if not resumable:
                     max_window = max(

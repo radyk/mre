@@ -46,6 +46,13 @@ _SCHEDULE_TRIGGERS = frozenset({
     "start on", "finish on",
 })
 
+# External-ref types that name an order / a machine across the three adapter
+# vocabularies (sample ERP, raw_data, IDS). The explainer routes questions in
+# the CUSTOMER'S vocabulary by matching against the identity map — never by
+# assuming an id shape.
+_ORDER_REF_TYPES = frozenset({"work_order", "order_id"})
+_MACHINE_REF_TYPES = frozenset({"machine_id", "resource_id", "workcenter", "workcenter_id"})
+
 
 @dataclass
 class ExplanationBundle:
@@ -84,6 +91,39 @@ class Explainer:
         self._reader = snapshot_store.load_snapshot(snapshot_id)
         self._identity_map = self._reader.read_identity_map()
 
+        # Vocabulary bridges (Phase-1 exit audit fix): the router used to
+        # recognize only sample_data-shaped ids (WO-…, M-…), so "why is
+        # ORD-000090 late" misrouted on every IDS submission and the gauntlet.
+        # The identity map already knows every external id in the customer's
+        # own vocabulary — match against IT, with the legacy regexes kept
+        # only as a fallback for snapshots without an identity map.
+        self._order_refs: dict[str, str] = {}
+        self._machine_refs: dict[str, str] = {}
+        if self._identity_map is not None:
+            for (sys_, ref_type, value), _cid in self._identity_map._to_canonical.items():
+                if ref_type in _ORDER_REF_TYPES:
+                    self._order_refs[value.upper()] = value
+                elif ref_type in _MACHINE_REF_TYPES:
+                    self._machine_refs[value.upper()] = value
+
+    def _find_order_ref(self, question: str) -> Optional[str]:
+        """Return the external order id mentioned in the question, in the
+        customer's own vocabulary, or None."""
+        for tok in re.findall(r"[\w][\w./-]*", question):
+            hit = self._order_refs.get(tok.upper().strip(".,?!"))
+            if hit:
+                return hit
+        m = re.search(r'WO-[\w-]+', question, re.IGNORECASE)
+        return m.group().upper() if m else None
+
+    def _find_machine_ref(self, question: str) -> Optional[str]:
+        for tok in re.findall(r"[\w][\w./-]*", question):
+            hit = self._machine_refs.get(tok.upper().strip(".,?!"))
+            if hit:
+                return hit
+        m = re.search(r'M-[A-Z0-9-]+', question, re.IGNORECASE)
+        return m.group().upper() if m else None
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -91,17 +131,15 @@ class Explainer:
     def answer(self, question: str) -> ExplanationBundle:
         """Route a natural-language question to the right assembler."""
         q = question.lower()
-        wo_match = re.search(r'WO-[\w-]+', question, re.IGNORECASE)
-        m_match = re.search(r'M-[A-Z0-9-]+', question, re.IGNORECASE)
+        wo_ref = self._find_order_ref(question)
+        machine_ref = self._find_machine_ref(question)
 
-        if ("late" in q or "delay" in q or "tardy" in q) and wo_match:
-            return self._explain_why_late(wo_match.group().upper())
-        if ("late" in q or "delay" in q or "tardy" in q) and not wo_match:
+        if ("late" in q or "delay" in q or "tardy" in q) and wo_ref:
+            return self._explain_why_late(wo_ref)
+        if ("late" in q or "delay" in q or "tardy" in q) and not wo_ref:
             return self._list_late_orders()
-        if ("on" in q or "assign" in q or "why" in q) and wo_match and m_match:
-            return self._explain_why_on_machine(
-                wo_match.group().upper(), m_match.group().upper()
-            )
+        if ("on" in q or "assign" in q or "why" in q) and wo_ref and machine_ref:
+            return self._explain_why_on_machine(wo_ref, machine_ref)
         if "data problem" in q or "finding" in q or "quality" in q:
             return self._explain_data_problems()
         if ("change" in q or "diff" in q or "since" in q or "update" in q):
@@ -109,9 +147,9 @@ class Explainer:
         if "downtime" in q or "closure" in q or "offline" in q:
             return self._explain_downtime(question)
         if any(kw in q for kw in _SCHEDULE_TRIGGERS):
-            return self._schedule_query(question, q, wo_match, m_match)
-        if wo_match:
-            return self._explain_why_late(wo_match.group().upper())
+            return self._schedule_query(question, q, wo_ref, machine_ref)
+        if wo_ref:
+            return self._explain_why_late(wo_ref)
         return self._unknown_question(question)
 
     def summarize_run(self, run_id: Optional[str] = None) -> ExplanationBundle:
@@ -536,17 +574,14 @@ class Explainer:
     # ------------------------------------------------------------------
 
     def _schedule_query(
-        self, question: str, q: str, wo_match, m_match
+        self, question: str, q: str, wo_ref: Optional[str], machine_ref: Optional[str]
     ) -> ExplanationBundle:
-        flt, label = self._build_schedule_filter(q, wo_match, m_match)
+        flt, label = self._build_schedule_filter(q, wo_ref, machine_ref)
 
         # Resolve target resource IDs (None = no machine filter)
         target_res_ids: Optional[set[str]] = None
         if flt.get("machine"):
-            rid = (
-                self._identity_map.resolve("ERP", "machine_id", flt["machine"])
-                if self._identity_map else None
-            )
+            rid = self._resolve_machine(flt["machine"])
             target_res_ids = {rid} if rid else set()
         elif flt.get("pool_words"):
             target_res_ids = self._resolve_pool_resource_ids(flt["pool_words"])
@@ -606,16 +641,18 @@ class Explainer:
             identity_map=self._identity_map,
         )
 
-    def _build_schedule_filter(self, q: str, wo_match, m_match) -> tuple[dict, str]:
+    def _build_schedule_filter(
+        self, q: str, wo_ref: Optional[str], machine_ref: Optional[str]
+    ) -> tuple[dict, str]:
         """Return (filter_dict, human_label)."""
         flt: dict[str, Any] = {}
         label_parts: list[str] = []
 
-        if wo_match:
-            flt["work_order"] = wo_match.group().upper()
+        if wo_ref:
+            flt["work_order"] = wo_ref.upper()
             label_parts.append(flt["work_order"])
-        if m_match:
-            flt["machine"] = m_match.group().upper()
+        if machine_ref:
+            flt["machine"] = machine_ref.upper()
             label_parts.append(flt["machine"])
 
         # Time window
@@ -711,7 +748,7 @@ class Explainer:
             for did in demand_ids:
                 dem = demands_by_id.get(did, {})
                 for ref in dem.get("external_refs", []):
-                    if ref.get("type") == "work_order":
+                    if ref.get("type") in _ORDER_REF_TYPES:
                         wo_names.append(ref["value"])
                     elif ref.get("type") == "customer":
                         customer_vals.append(ref["value"])
@@ -774,10 +811,29 @@ class Explainer:
             out.append(r)
         return out
 
+    def _resolve_machine(self, machine_ref: str) -> Optional[str]:
+        if self._identity_map is None:
+            return None
+        cid = self._identity_map.resolve("ERP", "machine_id", machine_ref)
+        if cid:
+            return cid
+        for (sys_, ref_type, value), canon in self._identity_map._to_canonical.items():
+            if ref_type in _MACHINE_REF_TYPES and value.upper() == machine_ref.upper():
+                return canon
+        return None
+
     def _resolve_wo(self, wo_ref: str) -> Optional[str]:
         if self._identity_map is None:
             return None
-        return self._identity_map.resolve("ERP", "work_order", wo_ref)
+        cid = self._identity_map.resolve("ERP", "work_order", wo_ref)
+        if cid:
+            return cid
+        # Any registered order-shaped external ref, any system (IDS order_id
+        # etc.) — case-insensitive, in the customer's vocabulary.
+        for (sys_, ref_type, value), canon in self._identity_map._to_canonical.items():
+            if ref_type in _ORDER_REF_TYPES and value.upper() == wo_ref.upper():
+                return canon
+        return None
 
     def _unknown(self, question: str, ref: str, entity_type: str) -> ExplanationBundle:
         return ExplanationBundle(
@@ -797,22 +853,28 @@ class Explainer:
 # ---------------------------------------------------------------------------
 
 def _parse_iso_duration_minutes(s: str) -> float:
-    """Parse ISO 8601 duration like 'PT840M' or '-P5DT6H57M' to minutes."""
+    """Parse ISO 8601 duration like 'PT840M' or '-P5DT6H57M' to minutes.
+
+    Pydantic serializes timedeltas ≥ 365 days with a years component
+    ('-P3Y34DT10H34M', Y = exactly 365 days) — placeholder-date demands
+    (due ~3y out, docs/06 Appendix A) produce these routinely.
+    """
     if not s:
         return 0.0
     negative = s.startswith("-")
     s = s.lstrip("-")
     m = re.match(
-        r'P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?',
+        r'P(?:(\d+)Y)?(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?',
         s,
     )
     if not m:
         return 0.0
-    days = float(m.group(1) or 0)
-    hours = float(m.group(2) or 0)
-    minutes = float(m.group(3) or 0)
-    seconds = float(m.group(4) or 0)
-    total = days * 1440 + hours * 60 + minutes + seconds / 60
+    years = float(m.group(1) or 0)
+    days = float(m.group(2) or 0)
+    hours = float(m.group(3) or 0)
+    minutes = float(m.group(4) or 0)
+    seconds = float(m.group(5) or 0)
+    total = years * 365 * 1440 + days * 1440 + hours * 60 + minutes + seconds / 60
     return -total if negative else total
 
 

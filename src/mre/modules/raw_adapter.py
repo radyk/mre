@@ -448,6 +448,7 @@ class RawAdapter:
         # ------------------------------------------------------------------
         wc_full_to_res_id: dict[str, str] = {}
         wc_full_to_cal_id: dict[str, str] = {}
+        resource_rates: dict[str, float] = {}  # canonical id → $/min (plant_config.cost_model)
         resource_count = 0
         calendar_count = 0
 
@@ -477,25 +478,46 @@ class RawAdapter:
 
             res_id = _stable_id("resource", wc_full)
             wc_full_to_res_id[wc_full] = res_id
+
+            # Cost-rate doorway (docs/06 §5.9 semantics on the raw path):
+            # plant_config.cost_model supplies default_resource_rate_per_hour
+            # plus optional per-workcenter overrides in resource_rates (keyed
+            # by full 'F001/D3001' or bare code). Resource.cost_rate carries
+            # the effective canonical $/minute value — the SAME value its
+            # CostModel.resource_rates entry gets (single-source invariant,
+            # tests/test_resource_rates.py). No cost_model key ⇒ 0.0,
+            # exactly the pre-doorway behavior.
+            cm_cfg = self._cfg.get("cost_model") or {}
+            cfg_rates = cm_cfg.get("resource_rates") or {}
+            rate_per_hour = cfg_rates.get(wc_full, cfg_rates.get(
+                wc_code, cm_cfg.get("default_resource_rate_per_hour", 0.0)))
+            rate_per_min = float(rate_per_hour or 0.0) / 60.0
+            resource_rates[res_id] = rate_per_min
+
             res = Resource(
                 id=res_id, snapshot_id=snapshot_id,
                 external_refs=[ExternalRef(system="ERP", type="workcenter", value=wc_full)],
                 resource_type=ResourceType.MACHINE,
                 capabilities=[wc_code],
                 capacity=parallel_units,
-                cost_rate=0.0,
+                cost_rate=rate_per_min,
                 calendar_ref=cal_id,
                 pool_refs=[],
             )
-            # Provenance: derived from RoutingLines references
+            # Provenance: derived from RoutingLines references; cost_rate is
+            # plant-config policy (or the absent-source zero default).
             res_attrs = ["resource_type", "capabilities", "capacity",
-                         "cost_rate", "calendar_ref", "pool_refs"]
+                         "calendar_ref", "pool_refs"]
             res_prov = [
                 _drv(res_id, a, snapshot_id,
                      "referenced_by_routing_lines",
                      [(res_id, "workcenter_string")])
                 for a in res_attrs
             ]
+            res_prov.append(_def(
+                res_id, "cost_rate", snapshot_id,
+                "plant_config.cost_model" if cm_cfg else "raw_no_rate_source_default_zero",
+            ))
             writer.write_entity(res, res_prov)
             identity_map.register(res_id, "ERP", "workcenter", wc_full)
             resource_count += 1
@@ -614,6 +636,16 @@ class RawAdapter:
                     resource_refs=[res_id],
                 )
 
+                # Splittability doorway (docs/05 R-C3): raw routing lines
+                # carry no splittable column, so resumability is a plant-
+                # config declaration per workcenter ("operations at this
+                # workcenter may pause at calendar boundaries"), with an
+                # optional min_chunk_minutes. Undeclared -> false, exactly
+                # the pre-doorway behavior.
+                wc_shift = _workcenter_shift(self._cfg, wc_full)
+                wc_splittable = bool(wc_shift.get("splittable", False))
+                wc_min_chunk = float(wc_shift.get("min_chunk_minutes", 0) or 0)
+
                 spec = OperationSpec(
                     id=spec_id, snapshot_id=snapshot_id,
                     sequence=seq,
@@ -621,17 +653,28 @@ class RawAdapter:
                     setup_family="",  # no setup transitions in real data
                     base_setup=base_setup,
                     run_rate=run_rate,
+                    splittable=wc_splittable,
+                    min_chunk=(timedelta(minutes=wc_min_chunk)
+                               if wc_splittable and wc_min_chunk > 0 else None),
                 )
                 # Provenance: run_rate derived from product data (RULING: legacy_author_definition_v1)
                 spec_attrs_obs = ["sequence", "resource_requirements", "setup_family",
-                                  "splittable", "min_chunk", "yield_factor"]
+                                  "yield_factor"]
                 spec_prov = _obs_list(spec_id, spec_attrs_obs, snapshot_id,
                                       {"sequence": "Sequence",
                                        "resource_requirements": "Workcenter",
                                        "setup_family": "Workcenter",
-                                       "splittable": "RoutingLines",
-                                       "min_chunk": "RoutingLines",
                                        "yield_factor": "RoutingLines"})
+                # splittable/min_chunk are plant-config policy (or the
+                # absent-source default) — never observed from RoutingLines,
+                # which has no such column. (The pre-doorway code wrote
+                # observed sidecars citing RoutingLines for these: false.)
+                splittable_policy = ("plant_config.workcenters.splittable"
+                                     if wc_splittable else "raw_no_splittable_source_default_false")
+                spec_prov += [
+                    _def(spec_id, "splittable", snapshot_id, splittable_policy),
+                    _def(spec_id, "min_chunk", snapshot_id, splittable_policy),
+                ]
                 spec_prov += [
                     _drv(spec_id, "base_setup", snapshot_id,
                          "legacy_author_definition_v1",
@@ -754,35 +797,50 @@ class RawAdapter:
         # ------------------------------------------------------------------
         # Phase 6: Minimal defaulted CostModel
         # ------------------------------------------------------------------
-        cm_id = _stable_id("costmodel", "raw_data_default_v1")
+        # plant_config.cost_model (docs/06 §5.9 semantics on the raw path):
+        # hour-denominated economics translated to canonical $/minute here —
+        # the same one-place-divides-by-60 rule the IDS adapter follows.
+        # Absent ⇒ the historical zero-rate default, warned as before.
+        cm_cfg = self._cfg.get("cost_model") or {}
+        cm_version_label = "plant_config_cost_model_v1" if cm_cfg else "raw_data_default_v1"
+        cm_id = _stable_id("costmodel", cm_version_label)
+        tard_per_hour = cm_cfg.get("tardiness_cost_per_hour")
         cm = CostModel(
             id=cm_id, snapshot_id=snapshot_id,
             version=1,
             effective_from=None,
-            resource_rates={},
-            setup_cost_basis=SetupCostBasis(fixed_per_setup=0.0, scrap_cost_per_unit=0.0),
-            tardiness_weights=TardinessWeights(base_weight=1.0),
-            overtime_premium=0.0,
+            resource_rates={rid: r for rid, r in resource_rates.items()} if cm_cfg else {},
+            setup_cost_basis=SetupCostBasis(
+                fixed_per_setup=float(cm_cfg.get("setup_cost_per_setup", 0.0) or 0.0),
+                scrap_cost_per_unit=0.0,
+            ),
+            tardiness_weights=TardinessWeights(
+                base_weight=(float(tard_per_hour) / 60.0
+                             if tard_per_hour is not None else 1.0),
+            ),
+            overtime_premium=float(cm_cfg.get("overtime_premium_multiplier", 0.0) or 0.0),
             inventory_carrying=0.0,
         )
         cm_prov = _def_list(cm_id,
                             ["version", "effective_from", "resource_rates",
                              "setup_cost_basis", "tardiness_weights",
                              "overtime_premium", "inventory_carrying"],
-                            snapshot_id, "raw_data_default_v1")
+                            snapshot_id, cm_version_label)
         writer.write_entity(cm, cm_prov)
-        reporter.record_finding(
-            code=FindingCode.LOW_CONFIDENCE_INPUT,
-            severity=FindingSeverity.WARNING,
-            subjects=[EntityRef(entity_id=cm_id, entity_type="costmodel")],
-            evidence={
-                "reason": "No cost rates in raw_data; all resource rates default to 0.0",
-                "affected_resources": resource_count,
-            },
-            disposition=FindingDisposition.DEFAULTED,
-            disposition_detail="CostModel version raw_data_default_v1 — edit plant_config to add rates",
-            tier=RecordTier.HEADLINE,
-        )
+        if not cm_cfg:
+            reporter.record_finding(
+                code=FindingCode.LOW_CONFIDENCE_INPUT,
+                severity=FindingSeverity.WARNING,
+                subjects=[EntityRef(entity_id=cm_id, entity_type="costmodel")],
+                evidence={
+                    "reason": "No cost rates in raw_data; all resource rates default to 0.0",
+                    "affected_resources": resource_count,
+                },
+                disposition=FindingDisposition.DEFAULTED,
+                disposition_detail=("CostModel version raw_data_default_v1 — add a "
+                                    "cost_model section to plant_config to price the plant"),
+                tier=RecordTier.HEADLINE,
+            )
 
         # ------------------------------------------------------------------
         # Phase 7: BOM — opaque input, no canonical entities

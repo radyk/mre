@@ -16,6 +16,13 @@ from pathlib import Path
 
 
 def main(argv: list[str] | None = None) -> int:
+    # cp1252-safe output on Windows consoles — see mre.ask.main.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
     parser = argparse.ArgumentParser(
         description="MRE what-if scenario runner",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -82,7 +89,10 @@ def main(argv: list[str] | None = None) -> int:
 
     store = SnapshotStore(out_dir / "snapshots")
     runs_dir = out_dir / "scenario_runs"
-    runner = ScenarioRunner(store, runs_dir, time_limit_seconds=args.time_limit)
+    from mre.modules.scenario import derive_base_context
+    base_ctx = derive_base_context(Path(args.out) / "runs")
+    runner = ScenarioRunner(store, runs_dir, time_limit_seconds=args.time_limit,
+                            base_context=base_ctx)
 
     scenario = Scenario(base_snapshot_id=snap_id, modifications=modifications)
     print(f"[mre.whatif] scenario : {scenario.description()}")

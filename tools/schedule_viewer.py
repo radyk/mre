@@ -55,9 +55,15 @@ def _load_lateness(snapshot_dir: Path) -> dict[str, str]:
                 d = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            wos = d.get("external_refs", {}).get("work_orders", [])
-            if isinstance(wos, str):
-                wos = [wos]
+            # external_refs is a list of {system, type, value} (docs/01);
+            # order refs may be work_order (sample/raw) or order_id (IDS).
+            refs = d.get("external_refs", [])
+            if isinstance(refs, dict):  # legacy shape, defensive
+                wos = refs.get("work_orders", [])
+                wos = [wos] if isinstance(wos, str) else wos
+            else:
+                wos = [r.get("value") for r in refs
+                       if r.get("type") in ("work_order", "order_id")]
             dem_wos[d["id"]] = wos
 
     # demand_id → lateness class from service outcomes

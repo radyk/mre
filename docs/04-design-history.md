@@ -1731,3 +1731,97 @@ generate_erp_dataset.py (`overtime_required`), test_declared_but_unread.py
 `resource.cost_rate` justification rewritten), docs/01 §5.6/§6.8 rows,
 docs/07 Phase 1. New tests: test_overtime_premium.py (7),
 test_overtime_end_to_end.py (6), test_resource_rates.py (6).
+
+## Amendment — 2026-07-12: Phase-1 exit audit — what the demo script found when run as written
+
+The docs/07 Phase-1 exit demo was executed as an audit (two acts: a fresh
+messy generated plant end-to-end, then the ticketing gauntlet with the
+chunking counterfactual made live). The audit's rule was "no fixes unless a
+clause fails"; seven clauses failed, each on the first honest attempt to run
+something the docs already claimed. All seven are fixed, with the failures
+recorded here because their *shape* matters: every one is a seam between two
+components that had only ever been exercised from one side.
+
+1. **The explainer only spoke sample_data's vocabulary.** The question
+   router matched order refs with a hardcoded `WO-…` regex (and machines
+   with `M-…`), and `_resolve_wo` tried only `("ERP", "work_order")` — so
+   "why is ORD-000090 late" misrouted on every IDS submission and the
+   gauntlet. Routing and resolution now match question tokens against the
+   identity map (any registered order/machine ref type, any system) — the
+   identity map IS the vocabulary bridge; assuming an id shape was always a
+   violation of its purpose. Same fix in `ask.py`'s what-if parser and
+   `scenario.py`'s SuppressMerge resolution.
+2. **Pydantic serializes ≥365-day timedeltas with a years component**
+   (`-P3Y34DT10H34M`, Y = exactly 365 days). Both hand-rolled ISO-duration
+   parsers (explainer: silent 0.0; scenario differ: crash) choked on it —
+   and the docs/06 Appendix-A `placeholder_dates` anomaly (due ~3y out)
+   produces such lateness values routinely. Both parsers now handle Y.
+3. **The what-if runner measured configuration drift, not the
+   modification.** ScenarioRunner re-planned with a hardcoded
+   `merge_by_family_v1`, never re-ran the validator (base exclusions lost —
+   a stale-due demand the base excluded reappeared 575k minutes late in a
+   scenario diff), never reproduced the horizon slice, never passed
+   reference_date to the builder, and solved unpinned. It now recovers the
+   base run's configuration from the run_context_open records
+   (`derive_base_context`) and re-validates/re-plans/re-solves under it.
+   `__main__` now records risk_margin and solver workers/seed in run
+   configs so they are recoverable. The test_scenario base fixture was
+   itself unfaithful (planned validator-excluded demands); fixed.
+4. **Three horizon computations disagreed.** `__main__` and
+   `SolverBuilder._compute_horizon` buffer max(due)+90d;
+   `calendar_utils.compute_horizon` (the scenario path) buffered +14d.
+   Calendars flattened shorter than the builder's internal horizon leave
+   resumable operations with no windows to sum to their working duration —
+   structurally INFEASIBLE, while the identical base solved fine. Unified
+   at +90d.
+5. **The R-C3 chunk encoding was structurally infeasible for any operation
+   shorter than its min_chunk** (a 17-minute op with a workcenter-level
+   30-minute floor: every used chunk must be ≥30 while chunks must sum to
+   17). Never hit before because splittability had only ever been declared
+   per-op on purpose-built long operations. The degenerate-split rule —
+   working < 2 × min_chunk cannot split, so the op is effectively
+   non-resumable — now lives in `calendar_utils.is_effectively_resumable`,
+   shared by SolverBuilder and the Validator's class-aware window-fit (the
+   two MUST agree or the validator admits work the solver cannot place).
+6. **Two promised plant-config doorways did not exist.** The raw path's
+   zero-rate warning said "edit plant_config to add rates" — nothing read
+   rates from plant_config; and there was no way to declare splittability
+   for raw data at all (the 116/173 rescue lived only in
+   tools/gauntlet_rescue_report.py's snapshot-rewrite counterfactual).
+   plant_config now supports `cost_model` (docs/06 §5.9 semantics:
+   default_resource_rate_per_hour, setup_cost_per_setup,
+   tardiness_cost_per_hour, overtime_premium_multiplier, resource_rates —
+   hour-denominated, divided by 60 in the adapter like the IDS path, with
+   the Resource.cost_rate single-source invariant) and per-workcenter
+   `splittable` + `min_chunk_minutes`. Absent keys reproduce the old
+   behavior byte-for-byte (defaults-reproduce-baseline verified). The
+   pre-doorway provenance for splittable/min_chunk claimed *observed from
+   RoutingLines* — a column that does not exist; now defaulted policy.
+   (`OperationSpec.yield_factor` still carries the same false-observed
+   pattern on the raw path — noted, not fixed here.)
+7. **Windows consoles crash the ask REPL on '→'.** Renderers legitimately
+   emit non-cp1252 characters (assignment Decision messages); cp1252
+   stdout raised 'charmap' errors mid-session. `mre.ask`/`mre.whatif` now
+   reconfigure stdio with errors="replace".
+
+Also fixed on the way: the schedule viewer's lateness join assumed a dict
+shape for `external_refs` that the contract never had (crashed on every
+snapshot), and now recognizes IDS `order_id` refs.
+
+**What the audit measured after the fixes** (details in the session report;
+scratchpad artifacts, not repo fixtures): messy_realistic (unseen seed 23)
+gates CONDITIONAL/C1 and solves clean; the pressured variant answers
+why-late with the batch-coupling chain and prices the unbatch what-if
+(+$13.4k — keep the batch). The gauntlet with splittability + costs
+declared via plant config: 173 → 57 window-fit exclusions (116 rescued,
+now through the shipping doorway, not a snapshot rewrite), 40 calibrated
+outliers (was 578), 102 structural MISSING_REFERENCE unchanged, DENSITY_LIMIT
+warned 58 times exactly as designed, sliced solve FEASIBLE with a fully
+decomposed ledger, chunk rows pausing exactly at calendar closures. The
+full 4,933-op solve with mass chunking could not find an incumbent in 600s
+single-worker — Rep 2's scale-ladder warning realized at ~19% resumable
+density; the sliced daily solve remains the blessed operational mode (the
+docs/07 solver-gap workstream now has a second concrete input).
+
+**685 tests green** (+5 audit-born: splittability doorway ×3, cost-model
+doorway ×2).

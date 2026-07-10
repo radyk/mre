@@ -457,3 +457,124 @@ class TestValidatorIntegration:
         assert len(inf_findings) >= 1
         assert "WO-BIG" in str(inf_findings[0].get("evidence", {})) or \
                inf_findings[0].get("severity") == FindingSeverity.ERROR.value
+
+
+# ---------------------------------------------------------------------------
+# Splittability doorway (docs/05 R-C3): plant_config declares resumability
+# per workcenter — raw routing lines have no splittable column.
+# ---------------------------------------------------------------------------
+
+class TestSplittabilityDoorway:
+    def _run(self, tmp_path, cfg):
+        store = SnapshotStore(tmp_path / "snapshots")
+        rep = Reporter.begin(
+            module=ModuleCode.M1, purpose="doorway test", config={},
+            trigger="test", snapshot_id="snap-split", sink_dir=tmp_path / "runs",
+        )
+        RawAdapter(FIXTURE, cfg).run("snap-split", store, rep)
+        rep.end(RunStatus.SUCCESS)
+        return store.load_snapshot("snap-split")
+
+    def _specs_by_wc(self, reader):
+        res_ext = {r["id"]: r["external_refs"][0]["value"]
+                   for r in reader.iter_entities("resource")}
+        out = {}
+        for sp in reader.iter_entities("operationspec"):
+            refs = sp["resource_requirements"][0]["resource_refs"]
+            wc = res_ext[refs[0]].split("/", 1)[-1]
+            out.setdefault(wc, []).append(sp)
+        return out
+
+    def test_undeclared_workcenters_stay_non_splittable(self, tmp_path, plant_cfg):
+        reader = self._run(tmp_path, plant_cfg)
+        for sp in reader.iter_entities("operationspec"):
+            assert sp["splittable"] is False
+            assert sp["min_chunk"] is None
+
+    def test_declared_workcenter_specs_become_resumable_with_min_chunk(
+        self, tmp_path, plant_cfg
+    ):
+        import copy
+        cfg = copy.deepcopy(plant_cfg)
+        cfg["workcenters"]["D3001"]["splittable"] = True
+        cfg["workcenters"]["D3001"]["min_chunk_minutes"] = 30
+
+        reader = self._run(tmp_path, cfg)
+        by_wc = self._specs_by_wc(reader)
+        assert by_wc.get("D3001"), "fixture should route work through D3001"
+        for sp in by_wc["D3001"]:
+            assert sp["splittable"] is True
+            assert sp["min_chunk"] == "PT30M"
+        for wc, specs in by_wc.items():
+            if wc == "D3001":
+                continue
+            for sp in specs:
+                assert sp["splittable"] is False
+
+    def test_splittable_provenance_is_defaulted_policy_not_observed(
+        self, tmp_path, plant_cfg
+    ):
+        """The pre-doorway code wrote OBSERVED sidecars citing RoutingLines
+        for splittable/min_chunk — a column that does not exist. Provenance
+        must say plant-config policy (declared) or absent-source default."""
+        import copy
+        cfg = copy.deepcopy(plant_cfg)
+        cfg["workcenters"]["D3001"]["splittable"] = True
+
+        reader = self._run(tmp_path, cfg)
+        by_wc = self._specs_by_wc(reader)
+        for wc, specs in by_wc.items():
+            for sp in specs:
+                provs = {p["attribute_name"]: p
+                         for p in reader.iter_provenance_for_entity(sp["id"])}
+                for attr in ("splittable", "min_chunk"):
+                    assert provs[attr]["provenance_class"] == "defaulted", (
+                        f"{wc}/{attr}: expected defaulted, got "
+                        f"{provs[attr]['provenance_class']}"
+                    )
+
+
+# ---------------------------------------------------------------------------
+# Cost-model doorway: plant_config.cost_model prices the raw path
+# (docs/06 §5.9 semantics; absent -> historical zero defaults)
+# ---------------------------------------------------------------------------
+
+class TestCostModelDoorway:
+    def _run(self, tmp_path, cfg):
+        store = SnapshotStore(tmp_path / "snapshots")
+        rep = Reporter.begin(
+            module=ModuleCode.M1, purpose="cost doorway test", config={},
+            trigger="test", snapshot_id="snap-cost", sink_dir=tmp_path / "runs",
+        )
+        RawAdapter(FIXTURE, cfg).run("snap-cost", store, rep)
+        rep.end(RunStatus.SUCCESS)
+        return store.load_snapshot("snap-cost")
+
+    def test_absent_cost_model_keeps_zero_defaults(self, tmp_path, plant_cfg):
+        reader = self._run(tmp_path, plant_cfg)
+        cm = next(iter(reader.iter_entities("costmodel")))
+        assert cm["resource_rates"] == {}
+        assert cm["setup_cost_basis"]["fixed_per_setup"] == 0.0
+        assert cm["tardiness_weights"]["base_weight"] == 1.0
+        for r in reader.iter_entities("resource"):
+            assert r["cost_rate"] == 0.0
+
+    def test_cost_model_section_prices_resources_and_tardiness(self, tmp_path, plant_cfg):
+        import copy
+        cfg = copy.deepcopy(plant_cfg)
+        cfg["cost_model"] = {
+            "default_resource_rate_per_hour": 60.0,
+            "setup_cost_per_setup": 40.0,
+            "tardiness_cost_per_hour": 25.0,
+            "resource_rates": {"D3001": 120.0},
+        }
+        reader = self._run(tmp_path, cfg)
+        cm = next(iter(reader.iter_entities("costmodel")))
+        assert cm["setup_cost_basis"]["fixed_per_setup"] == 40.0
+        assert cm["tardiness_weights"]["base_weight"] == pytest.approx(25.0 / 60.0)
+        for r in reader.iter_entities("resource"):
+            wc_full = r["external_refs"][0]["value"]
+            expected = 2.0 if wc_full.endswith("/D3001") else 1.0
+            # single-source invariant: entity field == CostModel entry, $/min
+            assert r["cost_rate"] == pytest.approx(expected)
+            assert cm["resource_rates"][r["id"]] == pytest.approx(expected)

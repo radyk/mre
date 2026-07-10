@@ -235,6 +235,13 @@ class SolverBuilder:
         op_durations: dict[str, int] = {}     # op_id → total minutes (setup + run)
         op_families: dict[str, str] = {}      # op_id → setup_family
         res_op_intervals: dict[str, list[Any]] = {rid: [] for rid in resources}
+        # Ops that get the R-C3 chunk encoding this build. splittable=true
+        # alone is not enough: the degenerate-split rule (working < 2 ×
+        # min_chunk ⇒ cannot split ⇒ non-resumable) must hold or the chunk
+        # encoding is structurally infeasible. Shared with the validator via
+        # calendar_utils.is_effectively_resumable.
+        from mre.modules.calendar_utils import is_effectively_resumable
+        resumable_op_ids: set[str] = set()
 
         for op in operations:
             oid = op["id"]
@@ -263,11 +270,14 @@ class SolverBuilder:
             var_map.op_eligible[oid] = eligible
             var_map.op_assign[oid] = {}
 
-            if op.get("splittable", False):
+            min_chunk_raw = op.get("min_chunk")
+            min_chunk_min = _td_to_minutes(_parse_td(min_chunk_raw)) if min_chunk_raw else 0
+            if is_effectively_resumable(op.get("splittable", False), total_min, min_chunk_min):
                 # R-C3 resumable operation — chunk-boundary-interval encoding
                 # (docs/05 R-C3, spike 2 productionized: tools/chunking_spike2_report.md).
+                resumable_op_ids.add(oid)
                 self._build_resumable_operation(
-                    model, var_map, oid, eligible, total_min, op.get("min_chunk"),
+                    model, var_map, oid, eligible, total_min, min_chunk_min,
                     cal_windows, horizon_minutes, wp_earliest_min, res_op_intervals,
                 )
                 continue
@@ -311,7 +321,7 @@ class SolverBuilder:
         # encoding). Only non-resumable ops need their intervals (re)built here.
         for op in operations:
             oid = op["id"]
-            if op.get("splittable", False):
+            if oid in resumable_op_ids:
                 continue
             s_var = var_map.op_start[oid]
             e_var = var_map.op_end[oid]
@@ -457,7 +467,7 @@ class SolverBuilder:
         if ot_mult > 1.0:
             for op in operations:
                 oid = op["id"]
-                if op.get("splittable", False):
+                if oid in resumable_op_ids:
                     # Resumable: one overlap var per (chunk slot, premium
                     # window), gated by the slot's own `used` literal (which
                     # already implies the resource assignment).
@@ -818,14 +828,12 @@ class SolverBuilder:
         oid: str,
         eligible: list[str],
         working_min: int,
-        min_chunk_raw: Optional[str],
+        min_chunk_min: int,
         cal_windows: dict[str, list[tuple[int, int]]],
         horizon_minutes: int,
         wp_earliest_min: int,
         res_op_intervals: dict[str, list[Any]],
     ) -> None:
-        min_chunk_min = _td_to_minutes(_parse_td(min_chunk_raw)) if min_chunk_raw else 0
-
         op_start = model.new_int_var(0, horizon_minutes, f"opstart_{oid}")
         op_end = model.new_int_var(0, horizon_minutes, f"opend_{oid}")
         var_map.op_start[oid] = op_start

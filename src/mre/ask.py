@@ -139,7 +139,7 @@ def _render(explainer: Any, question: str, use_llm: bool) -> str:
     return renderer.render(bundle)
 
 
-def _parse_whatif_scenario(question: str, snap_id: str) -> Any:
+def _parse_whatif_scenario(question: str, snap_id: str, explainer: Any = None) -> Any:
     """Return a Scenario if the question describes a testable what-if, else None."""
     from mre.modules.scenario import Scenario, SuppressMerge
 
@@ -155,11 +155,20 @@ def _parse_whatif_scenario(question: str, snap_id: str) -> Any:
         and ("not" in q or "without" in q or "no " in q)
     )
     if is_suppress or is_what_if_merge:
-        wo_matches = re.findall(r'WO-[\w-]+', question, re.IGNORECASE)
+        # Order refs in the customer's own vocabulary (identity-map match,
+        # same bridge the explainer routes with); WO-… regex as fallback.
+        known = getattr(explainer, "_order_refs", {}) if explainer else {}
+        wo_matches = [
+            known[tok.upper().strip(".,?!")]
+            for tok in re.findall(r"[\w][\w./-]*", question)
+            if tok.upper().strip(".,?!") in known
+        ]
+        if len(wo_matches) < 2:
+            wo_matches = [w.upper() for w in re.findall(r'WO-[\w-]+', question, re.IGNORECASE)]
         if len(wo_matches) >= 2:
             return Scenario(
                 base_snapshot_id=snap_id,
-                modifications=[SuppressMerge(demand_refs=[w.upper() for w in wo_matches])],
+                modifications=[SuppressMerge(demand_refs=wo_matches)],
             )
     return None
 
@@ -198,7 +207,7 @@ def _render_repl_turn(
     # What-if routing: detect and run scenario before normal routing
     if scenario_runner is not None:
         snap_id = getattr(explainer, "_snap_id", "snap-run")
-        scenario = _parse_whatif_scenario(question, snap_id)
+        scenario = _parse_whatif_scenario(question, snap_id, explainer)
         if scenario is not None:
             print("[mre.ask] running scenario — this may take a moment...")
             try:
@@ -221,6 +230,16 @@ def _render_repl_turn(
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows consoles (and redirected stdout) default to cp1252, which
+    # cannot encode characters the renderers legitimately emit (e.g. the
+    # '→' in assignment Decision messages) — a REPL turn would die with
+    # 'charmap' codec errors. Render lossily rather than crash.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
     parser = argparse.ArgumentParser(
         description="Ask the MRE evidence store a question.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -244,9 +263,16 @@ def main(argv: list[str] | None = None) -> int:
         print(_render(explainer, args.question, args.llm))
         return 0
 
-    # Interactive REPL — wire up scenario runner
-    from mre.modules.scenario import ScenarioRunner
-    scenario_runner = ScenarioRunner(store, out_dir / "scenario_runs")
+    # Interactive REPL — wire up scenario runner under the BASE run's
+    # configuration (policy, exclusions context, reference date, solver
+    # pinning) so what-if diffs measure the modification, not drift.
+    from mre.modules.scenario import ScenarioRunner, derive_base_context
+    base_ctx = derive_base_context(out_dir / "runs")
+    scenario_runner = ScenarioRunner(
+        store, out_dir / "scenario_runs",
+        time_limit_seconds=base_ctx.get("time_limit", 30.0),
+        base_context=base_ctx,
+    )
 
     print(f"[mre.ask] Evidence index loaded ({args.snapshot_id}). Type 'help' for examples, 'quit' to exit.")
     if args.llm:

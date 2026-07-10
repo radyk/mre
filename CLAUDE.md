@@ -194,6 +194,22 @@ six-day; Saturday had to be genuinely closed) — see the 2026-07-12 docs/04
 amendment ("a priced feature's test must include the counterfactual that
 proves the price bought something").
 
+**Phase-1 exit audit (2026-07-12).** The docs/07 exit demo was executed as an
+audit; seven clauses failed on first honest contact and were fixed in-session:
+explainer/what-if vocabulary hardcoded to sample_data id shapes (identity-map
+matching now), pydantic Y-component durations breaking both ISO parsers,
+scenario-runner configuration drift (now recovers the base run's policy/
+exclusions/slice/reference-date/solver pinning via `derive_base_context`),
+a 14d-vs-90d horizon-buffer mismatch that made scenario re-solves of chunked
+models structurally INFEASIBLE, the R-C3 degenerate-split infeasibility
+(working < 2×min_chunk — shared rule in `calendar_utils.is_effectively_resumable`),
+two promised-but-unbuilt plant_config doorways (cost_model + per-workcenter
+splittable/min_chunk_minutes — the gauntlet's 173→57 rescue now runs through
+shipping code), and cp1252 console crashes in mre.ask. Gauntlet full-solve
+with mass chunking finds no incumbent in 600s (Rep 2's scale warning realized;
+sliced daily solve remains the blessed mode). 685 tests green. Full detail in
+the 2026-07-12 docs/04 audit amendment.
+
 **Next work: see `docs/07-roadmap.md`** for the live, prioritized plan (Phase
 1 exit bar, week-one spikes, cross-cutting workstreams). Do not hand-maintain
 a duplicate task list here — docs/07 is the authoritative source and is

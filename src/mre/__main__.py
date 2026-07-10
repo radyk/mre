@@ -294,8 +294,8 @@ def main(argv: list[str] | None = None) -> int:
     from mre.modules.planner import Planner
     p_rep = Reporter.begin(
         module=ModuleCode.M4, purpose="demand planning",
-        config={"policy": args.policy}, trigger="cli",
-        snapshot_id=snap_id, sink_dir=runs_dir,
+        config={"policy": args.policy, "risk_margin": args.risk_margin},
+        trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
     )
     p_result = Planner(policy=args.policy, risk_margin=args.risk_margin).run(
         snapshot_id=snap_id, store=store, reporter=p_rep,
@@ -413,8 +413,10 @@ def main(argv: list[str] | None = None) -> int:
 
     r_rep = Reporter.begin(
         module=ModuleCode.M6, purpose="solve run",
-        config={"time_limit": args.time_limit}, trigger="cli",
-        snapshot_id=snap_id, sink_dir=runs_dir,
+        config={"time_limit": args.time_limit,
+                "num_search_workers": args.solver_workers,
+                "random_seed": args.solver_seed},
+        trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
     )
     solve_result = SolveRunner(
         time_limit_seconds=args.time_limit,

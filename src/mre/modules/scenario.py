@@ -20,7 +20,7 @@ import hashlib
 import json
 import shutil
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Optional
@@ -108,6 +108,54 @@ class ScenarioResult:
 # Runner
 # ---------------------------------------------------------------------------
 
+def derive_base_context(runs_dir: Path | str) -> dict:
+    """Recover the base pipeline's run configuration from the run_context_open
+    records in its runs/ directory (docs/02 RunContext.config_snapshot).
+
+    The scenario runner must re-validate/re-plan/re-solve under the same
+    reference date, outlier threshold, planner policy, horizon slice and
+    solver settings as the base run — a diff taken under different
+    configuration measures drift, not the modification.
+    """
+    ctx: dict[str, Any] = {}
+    runs_dir = Path(runs_dir)
+    if not runs_dir.exists():
+        return ctx
+    for f in sorted(runs_dir.glob("*.jsonl")):
+        for line in f.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            rec = json.loads(line)
+            if rec.get("record_type") != "run_context_open":
+                continue
+            cfg = rec.get("config_snapshot") or {}
+            module = rec.get("module", "")
+            purpose = rec.get("purpose") or ""
+            if module == "M3":
+                rd = cfg.get("reference_date")
+                if rd and rd != "now":
+                    ctx["reference_date"] = rd
+                if cfg.get("outlier_threshold_ratio") is not None:
+                    ctx["outlier_threshold_ratio"] = cfg["outlier_threshold_ratio"]
+            elif module == "M4" and "horizon-slice" in purpose:
+                if cfg.get("horizon_days") is not None:
+                    ctx["horizon_days"] = cfg["horizon_days"]
+            elif module == "M4":
+                if cfg.get("policy"):
+                    ctx["policy"] = cfg["policy"]
+                if cfg.get("risk_margin") is not None:
+                    ctx["risk_margin"] = cfg["risk_margin"]
+            elif module == "M6":
+                if cfg.get("time_limit") is not None:
+                    ctx["time_limit"] = cfg["time_limit"]
+                if cfg.get("num_search_workers") is not None:
+                    ctx["solver_workers"] = cfg["num_search_workers"]
+                if cfg.get("random_seed") is not None:
+                    ctx["solver_seed"] = cfg["random_seed"]
+    return ctx
+
+
 class ScenarioRunner:
     """Derives a scenario snapshot, re-runs the scheduling spine, returns a diff.
 
@@ -120,11 +168,19 @@ class ScenarioRunner:
         store: Any,                 # SnapshotStore
         runs_dir: Path,             # separate from main runs/
         time_limit_seconds: float = 30.0,
+        base_context: Optional[dict] = None,
     ) -> None:
         self._store = store
         self._runs_dir = Path(runs_dir)
         self._runs_dir.mkdir(parents=True, exist_ok=True)
         self._time_limit = time_limit_seconds
+        # Base-pipeline configuration (derive_base_context): the scenario
+        # must re-validate/re-plan/re-solve under the SAME policy, demand
+        # exclusions, reference date, horizon slice and solver pinning as
+        # the base run — otherwise the diff measures configuration drift,
+        # not the modification (Phase-1 exit audit: a stale-due demand the
+        # base validator excluded reappeared in a scenario 575k min late).
+        self._ctx = base_context or {}
 
     def run(self, scenario: Scenario) -> ScenarioResult:
         """Execute a scenario and return a diff against the base schedule."""
@@ -171,20 +227,69 @@ class ScenarioRunner:
             self._emit_modification_decision(mod_rep, scen_snap_id, mod, base_reader)
         mod_rep.end(RunStatus.SUCCESS)
 
-        # 4. Run M4 (Planner) with suppressed merges
+        # 3b. Re-run M3 (Validator) on the scenario snapshot so the base
+        # run's demand exclusions (TEMPORAL_IMPOSSIBILITY, window-fit, ...)
+        # are reproduced — the scenario must schedule the same demand
+        # population the base did.
+        reference_date = None
+        ref_raw = self._ctx.get("reference_date")
+        if ref_raw and ref_raw != "now":
+            reference_date = datetime.fromisoformat(ref_raw)
+            if reference_date.tzinfo is None:
+                reference_date = reference_date.replace(tzinfo=UTC)
+
+        from mre.modules.validator import Validator
+        v_rep = Reporter.begin(
+            module=ModuleCode.M3,
+            purpose="scenario semantic validation",
+            config={"reference_date": ref_raw or "now",
+                    "outlier_threshold_ratio": self._ctx.get("outlier_threshold_ratio")},
+            trigger="whatif",
+            snapshot_id=scen_snap_id,
+            sink_dir=self._runs_dir,
+        )
+        v_result = Validator().run(
+            snapshot_id=scen_snap_id, store=self._store, reporter=v_rep,
+            reference_date=reference_date,
+            outlier_threshold_ratio=self._ctx.get("outlier_threshold_ratio"),
+        )
+        v_rep.end(RunStatus.SUCCESS)
+        excluded_demand_ids: set[str] = set(v_result.excluded_demand_ids)
+
+        # 3c. Reproduce the base run's horizon-slice (--horizon-days), if any.
+        horizon_days = self._ctx.get("horizon_days")
+        if horizon_days is not None:
+            ref_dt = reference_date or datetime.now(UTC)
+            cutoff = (ref_dt + timedelta(days=horizon_days)).replace(
+                hour=23, minute=59, second=59, microsecond=0,
+            )
+            slice_reader = self._store.load_snapshot(scen_snap_id)
+            for d in slice_reader.iter_entities("demand"):
+                if d["id"] in excluded_demand_ids or not d.get("due"):
+                    continue
+                due_dt = datetime.fromisoformat(d["due"])
+                if due_dt.tzinfo is None:
+                    due_dt = due_dt.replace(tzinfo=UTC)
+                if due_dt > cutoff:
+                    excluded_demand_ids.add(d["id"])
+
+        # 4. Run M4 (Planner) with suppressed merges, under the BASE policy
+        policy = self._ctx.get("policy", "merge_by_family_v1")
+        risk_margin = self._ctx.get("risk_margin", 1.0)
         p_rep = Reporter.begin(
             module=ModuleCode.M4,
             purpose="scenario demand planning",
-            config={"policy": "merge_by_family_v1"},
+            config={"policy": policy, "risk_margin": risk_margin},
             trigger="whatif",
             snapshot_id=scen_snap_id,
             sink_dir=self._runs_dir,
         )
         from mre.modules.planner import Planner
-        Planner(policy="merge_by_family_v1").run(
+        Planner(policy=policy, risk_margin=risk_margin).run(
             snapshot_id=scen_snap_id,
             store=self._store,
             reporter=p_rep,
+            excluded_demand_ids=excluded_demand_ids,
             suppressed_merge_ids=suppressed_demand_ids,
         )
         p_rep.end(RunStatus.SUCCESS)
@@ -207,9 +312,14 @@ class ScenarioRunner:
             "tardiness_weights": {"base_weight": 1.0, "commitment_class_multipliers": {}},
         }
 
-        # 6. Flatten calendars
+        # 6. Flatten calendars — horizon from the demands actually planned
+        # (validator + slice exclusions), clamped to reference_date like the
+        # base pipeline.
         from mre.modules.calendar_utils import compute_horizon, flatten_all_calendars
-        horizon_start, horizon_end = compute_horizon(demands, suppressed_demand_ids)
+        horizon_start, horizon_end = compute_horizon(demands, excluded_demand_ids)
+        if reference_date is not None:
+            ref_floor = reference_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            horizon_start = max(horizon_start, ref_floor)
         flattened_cals = flatten_all_calendars(calendars, horizon_start, horizon_end)
 
         # 7. Run M5 (SolverBuilder)
@@ -219,7 +329,7 @@ class ScenarioRunner:
             snapshot_id=scen_snap_id, sink_dir=self._runs_dir,
         )
         from mre.modules.solver_builder import SolverBuilder
-        model, var_map = SolverBuilder().build(
+        model, var_map = SolverBuilder(reference_date=reference_date).build(
             wps + ops + edges, resources + pools, flattened_cals,
             fuls + demands, constraints, cost_model,
         )
@@ -232,7 +342,11 @@ class ScenarioRunner:
             snapshot_id=scen_snap_id, sink_dir=self._runs_dir,
         )
         from mre.modules.solve_runner import SolveRunner
-        solve_result = SolveRunner(time_limit_seconds=self._time_limit).solve(
+        solve_result = SolveRunner(
+            time_limit_seconds=self._time_limit,
+            num_search_workers=self._ctx.get("solver_workers"),
+            random_seed=self._ctx.get("solver_seed"),
+        ).solve(
             model, var_map, r_rep
         )
         r_rep.end(
@@ -301,10 +415,19 @@ class ScenarioRunner:
     ) -> set[str]:
         ids: set[str] = set()
         for wo_ref in mod.demand_refs:
-            if identity_map:
-                did = identity_map.resolve("ERP", "work_order", wo_ref)
-                if did:
-                    ids.add(did)
+            if not identity_map:
+                continue
+            did = identity_map.resolve("ERP", "work_order", wo_ref)
+            if did is None:
+                # Any order-shaped external ref, any system (IDS order_id
+                # etc.) — the customer's vocabulary, not sample_data's.
+                did = next(
+                    (canon for (s, t, v), canon in identity_map._to_canonical.items()
+                     if t in ("work_order", "order_id") and v.upper() == wo_ref.upper()),
+                    None,
+                )
+            if did:
+                ids.add(did)
         return ids
 
     def _apply_cost_weight(self, mod: SetCostWeight, snap_id: str) -> None:
@@ -494,7 +617,13 @@ def _parse_duration_minutes(s: Optional[str]) -> Optional[float]:
         return None
     neg = s.startswith("-")
     s = s.lstrip("-").lstrip("P")
-    days = hours = minutes = 0.0
+    years = days = hours = minutes = 0.0
+    # Pydantic emits a years component for timedeltas ≥ 365 days
+    # ('-P3Y34DT10H34M', Y = exactly 365 days) — placeholder-date demands
+    # produce these routinely; parsing must not choke on them.
+    if "Y" in s:
+        y_part, s = s.split("Y", 1)
+        years = float(y_part)
     if "D" in s:
         d_part, s = s.split("D", 1)
         days = float(d_part)
@@ -506,7 +635,7 @@ def _parse_duration_minutes(s: Optional[str]) -> Optional[float]:
     if "M" in s:
         m_part, _ = s.split("M", 1)
         minutes = float(m_part)
-    total = days * 24 * 60 + hours * 60 + minutes
+    total = years * 365 * 24 * 60 + days * 24 * 60 + hours * 60 + minutes
     return -total if neg else total
 
 
