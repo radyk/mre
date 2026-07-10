@@ -1,0 +1,44 @@
+{
+  "_comment": "Scale-ladder smoke baselines (docs/07 Phase 2 exit demo, session 2.4 CU3). Produced by deploy/smoke.py: gate -> solve -> retrieve -> one what-if over the API. Timings are WALL-CLOCK and ENVIRONMENT-SPECIFIC (host below); a regression reference point, not a hard CI gate. Re-run on a target instance to compare. Deterministic solve (server PYTHONHASHSEED=0).",
+  "environment": {
+    "measured": "2026-07-14",
+    "where": "local uvicorn (no container; Docker unavailable in-session), single-worker deterministic solve",
+    "host": "developer workstation (Windows, Python 3.11 venv)",
+    "note": "deploy-verified-locally, NOT deploy-verified-in-cloud"
+  },
+  "rungs": [
+    {
+      "scenario": "clean_small",
+      "seed": 7,
+      "solver_time_limit_s": 20,
+      "grade": "ACCEPTED",
+      "costing_grade": "C1",
+      "assignments": 60,
+      "timings_seconds": {
+        "generate_submission": 0.01,
+        "submit_and_gate": 0.20,
+        "solve": 2.04,
+        "retrieve_schedule": 0.03,
+        "what_if": 1.04,
+        "total": 3.32
+      }
+    },
+    {
+      "scenario": "clean_large",
+      "seed": 7,
+      "solver_time_limit_s": 45,
+      "orders_approx": 3000,
+      "grade": "ACCEPTED",
+      "costing_grade": "C1",
+      "assignments": 7460,
+      "timings_seconds": {
+        "generate_submission": 0.03,
+        "submit_and_gate": 0.40,
+        "solve": 81.61,
+        "retrieve_schedule": 0.24,
+        "what_if": 82.97,
+        "total": 165.25
+      }
+    }
+  ]
+}

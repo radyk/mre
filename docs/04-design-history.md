@@ -2486,3 +2486,48 @@ post-window and trigger-gated (docs/07 §4.3).
 parse; the gitleaks step and Caddy proxy are not run here (no Docker) — they
 execute in CI / when the TLS stack is brought up. Named as the outstanding
 confirmation alongside CU1's.
+
+## Amendment — 2026-07-14: Session 2.4 CU3 — deploy artifacts + smoke (Azure-first, swappable)
+
+**Azure deploy artifacts (`deploy/azure/`, isolated).** `main.bicep` provisions
+a Container Apps deployment mirroring the compose stack: an **encrypted**
+Storage account + file share backing the single `/data` volume (registry /
+snapshots / evidence), a managed environment with that share linked, and the
+API container app with **managed-TLS external ingress** to plaintext `:8000`,
+ACR-pull creds and the optional `ANTHROPIC_API_KEY` as **secrets** (never in the
+image), `/health` liveness+readiness probes, `MRE_DATA_ROOT=/data`,
+`PYTHONHASHSEED=0`, and **one replica** (single tenant by construction — one
+writer for the SQLite registry and the volume). `deploy.sh` runs `az acr build
+--target runtime` (the shipped stage) then `az deployment group create`;
+`.env.example` documents the parameters (secrets injected, never committed).
+`README.md` states the **provider-swap boundary** explicitly: app code, image,
+and local stack are provider-agnostic; a new provider is a sibling
+`deploy/<provider>/` supplying four things (managed TLS → `:8000`, an encrypted
+`/data` volume, secret injection, one replica) and touching nothing else.
+
+**Smoke script (`deploy/smoke.py`), the docs/07 Phase 2 exit demo over the
+API.** Provider-agnostic — speaks only the HTTP contract, so the SAME script
+validates local compose and a cloud instance by `--base-url`. It generates a
+submission client-side, then `/health` → multipart submit+gate → solve (async,
+polled to done) → retrieve schedule → one always-valid what-if
+(`set_cost_weight` on the tardiness base weight — dataset-independent), timing
+each phase and writing a scale-ladder baseline JSON. Deterministic solve by
+default (`--insecure` skips TLS verify for the local self-signed CA). ASCII-only
+output (the cp1252-console lesson: an em-dash/arrow in a print crashed the first
+run; fixed).
+
+**Measured (local, deterministic; the exit-demo proof).** Against a local
+uvicorn instance (Docker unavailable this session, so NOT the container — named
+gap): **clean_large (~3,000 orders) gated ACCEPTED/C1 and produced a 7,460-
+assignment schedule via the API in ~165s total** (generate 0.03s, submit+gate
+0.4s, solve 81.6s at a 45s solver limit + build/extract, retrieve 0.24s, what-if
+83s) — "schedule via API in minutes, repeatably." clean_small runs the full
+path in 3.3s. Baselines in `deploy/scale_ladder.json` (environment-stamped as
+a reference point, not a hard CI gate — wall-clock is host-specific).
+
+**Honest gap (deploy-verified-locally ≠ deploy-verified-in-cloud).** No live
+Azure subscription this session: the Bicep is unvalidated against ARM, the image
+was not built (no Docker), and the smoke ran against a local server, not the
+containerized/cloud stack. The artifacts ship; the first live `az deployment
+group create` + cloud smoke run + the in-container CI run (CU1) are the
+outstanding confirmations, carried forward.
