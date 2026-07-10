@@ -367,10 +367,56 @@ class SolverBuilder:
         from mre.modules.calendar_utils import is_effectively_resumable
         resumable_op_ids: set[str] = set()
 
+        # WIP landing (docs/06 §5.13): observed execution state changes what
+        # the solver models.
+        #   complete    → the op is satisfied and off the model entirely: no
+        #                 variables, no interval, contributes nothing to
+        #                 no-overlap. Its resource capacity is FREED (the work
+        #                 already happened, in the past).
+        #   in_progress → a FIXED interval [0, remaining] on the observed
+        #                 resource (remaining duration from reference_date).
+        #                 No free start/resource choice — it is where it is.
+        # The amended invariant: a NEWLY scheduled op still may not start
+        # before reference_date (the horizon floor, minute 0); an observed
+        # in-flight op is EXEMPT — its remaining work is pinned at minute 0
+        # and its observed (pre-reference) start is history, not a scheduled
+        # start. Complete/in-flight ops therefore never pass through the
+        # reference-date floor the way new ops do.
+        complete_op_ids: set[str] = set()
+        inflight_fixed_end: dict[str, int] = {}          # op_id → end minute
+        inflight_busy_by_res: dict[str, list[tuple[int, int]]] = {}
+
         for op in operations:
             oid = op["id"]
             wp_id = op["workpackage_ref"]
+            wip = op.get("wip_status")
+
+            if wip == "complete":
+                # Satisfied — no variables, capacity freed. Successors chain
+                # from reference_date (handled in the precedence section: a
+                # complete predecessor imposes no start constraint).
+                complete_op_ids.add(oid)
+                continue
+
             wp_op_map.setdefault(wp_id, []).append(oid)
+
+            if wip == "in_progress":
+                # Fixed interval for the remaining working time, on the
+                # resource it is actually running on. Occupies that machine
+                # from reference_date so no future op can double-book it; the
+                # calendar clamp exempts this span (see _blocking_intervals'
+                # busy_spans) because in-flight work continues regardless of
+                # shift boundaries.
+                rem_min = max(1, _td_to_minutes(_parse_td(op.get("remaining_duration") or "PT0S")))
+                res_id = op.get("observed_resource_ref")
+                if res_id in resources:
+                    iv = model.new_fixed_size_interval_var(0, rem_min, f"inflight_{oid}")
+                    res_op_intervals.setdefault(res_id, []).append(iv)
+                    inflight_busy_by_res.setdefault(res_id, []).append((0, rem_min))
+                inflight_fixed_end[oid] = rem_min
+                op_durations[oid] = rem_min
+                op_families[oid] = op.get("setup_family", "")
+                continue
 
             setup_min = _td_to_minutes(_parse_td(op.get("setup_duration", "PT0S")))
             run_min   = _td_to_minutes(_parse_td(op.get("run_duration", "PT0S")))
@@ -445,7 +491,10 @@ class SolverBuilder:
         # encoding). Only non-resumable ops need their intervals (re)built here.
         for op in operations:
             oid = op["id"]
-            if oid in resumable_op_ids:
+            # complete ops carry no interval (off the model); in-flight ops
+            # already contributed their fixed interval above; resumable ops
+            # contributed their chunk intervals.
+            if oid in resumable_op_ids or oid in complete_op_ids or oid in inflight_fixed_end:
                 continue
             s_var = var_map.op_start[oid]
             e_var = var_map.op_end[oid]
@@ -456,9 +505,15 @@ class SolverBuilder:
                 res_op_intervals.setdefault(rid, []).append(iv)
 
         for rid, intervals in res_op_intervals.items():
-            # Add calendar blocking intervals
+            # Calendar blocking, with in-flight busy spans carved out: an
+            # in-flight op's remaining work occupies [0, remaining] via its
+            # fixed interval above, so blocking must not also cover that span
+            # (two fixed intervals over the same minutes violate no-overlap).
+            # This is the amended invariant honored at the calendar clamp
+            # site: committed in-flight work is exempt from shift boundaries.
             blocking = self._blocking_intervals(
-                rid, cal_windows.get(rid, []), horizon_minutes, model
+                rid, cal_windows.get(rid, []), horizon_minutes, model,
+                busy_spans=inflight_busy_by_res.get(rid, ()),
             )
             model.add_no_overlap(intervals + blocking)
 
@@ -493,6 +548,24 @@ class SolverBuilder:
                 succ_id = ops_by_wp_and_spec.get((wp_id, succ_spec))
                 if pred_id is None or succ_id is None:
                     continue
+                # WIP (docs/06 §5.13): a successor chains from the fixed reality
+                # of its predecessor by walking this edge.
+                #  - complete predecessor: already done, imposes no start
+                #    constraint (successor is floored at reference_date).
+                #  - in-flight predecessor: fixed end (a constant), so the
+                #    successor starts after the remaining work finishes.
+                # A complete/in-flight SUCCESSOR has no start var — nothing to
+                # constrain (a future→in-flight edge is a data inconsistency
+                # the gate flags as a sequence-order violation; ignore here).
+                if succ_id not in var_map.op_start:
+                    continue
+                if pred_id in complete_op_ids:
+                    continue
+                if pred_id in inflight_fixed_end:
+                    model.add(
+                        var_map.op_start[succ_id] >= inflight_fixed_end[pred_id] + min_lag_min
+                    )
+                    continue
                 model.add(
                     var_map.op_start[succ_id] >= var_map.op_end[pred_id] + min_lag_min
                 )
@@ -506,10 +579,17 @@ class SolverBuilder:
         # WorkPackage end = max of its operations' ends
         # ------------------------------------------------------------------
         for wp_id, op_ids in wp_op_map.items():
-            if not op_ids:
+            # in-flight ops have no end var — their fixed end is a constant.
+            # complete ops were dropped from wp_op_map entirely (their
+            # completion is in the past, earlier than everything remaining).
+            ends = [
+                inflight_fixed_end[oid] if oid in inflight_fixed_end else var_map.op_end[oid]
+                for oid in op_ids
+            ]
+            if not ends:
                 continue
             wp_end_var = model.new_int_var(0, horizon_minutes, f"wp_end_{wp_id}")
-            model.add_max_equality(wp_end_var, [var_map.op_end[oid] for oid in op_ids])
+            model.add_max_equality(wp_end_var, ends)
             var_map.wp_end[wp_id] = wp_end_var
 
         # ------------------------------------------------------------------
@@ -557,9 +637,15 @@ class SolverBuilder:
         # ------------------------------------------------------------------
         obj_terms = []
 
-        # Production cost: Σ assign[op][r] × duration[op] × rate[r]
+        # Production cost: Σ assign[op][r] × duration[op] × rate[r]. Complete
+        # ops (off the model) and in-flight ops (fixed, no assignment var)
+        # carry no assign literals, so their committed/sunk production is not
+        # in the objective — it cannot be optimized away, and the re-solve
+        # prices only the future movable work.
         for op in operations:
             oid = op["id"]
+            if oid not in op_durations or oid in complete_op_ids:
+                continue
             dur = op_durations[oid]
             for rid, bv in var_map.op_assign.get(oid, {}).items():
                 rate_int = int(rates.get(rid, 0.0) * _COST_SCALE)
@@ -826,32 +912,33 @@ class SolverBuilder:
         available: list[tuple[int, int]],
         horizon_minutes: int,
         model,
+        busy_spans: "list[tuple[int, int]] | tuple" = (),
     ) -> list[Any]:
-        """Return fixed interval variables covering unavailable periods."""
+        """Return fixed interval variables covering unavailable periods.
+
+        busy_spans (in-flight WIP occupation, docs/06 §5.13) are carved OUT
+        of the blocking: the machine is committed-busy there, occupied by an
+        in-flight op's own fixed interval, so calendar blocking must not
+        double-cover those minutes."""
         if not available:
             return []
 
-        blocking = []
+        gaps: list[tuple[int, int]] = []
         prev_end = 0
         for s_min, e_min in sorted(available):
             if s_min > prev_end:
-                # Gap [prev_end, s_min) is unavailable
-                dur = s_min - prev_end
-                iv = model.new_fixed_size_interval_var(
-                    prev_end, dur, f"block_{rid}_{prev_end}"
-                )
-                blocking.append(iv)
+                gaps.append((prev_end, s_min))
             prev_end = max(prev_end, e_min)
-
-        # Gap from last available to horizon
         if prev_end < horizon_minutes:
-            dur = horizon_minutes - prev_end
-            iv = model.new_fixed_size_interval_var(
-                prev_end, dur, f"block_{rid}_{prev_end}"
-            )
-            blocking.append(iv)
+            gaps.append((prev_end, horizon_minutes))
 
-        return blocking
+        if busy_spans:
+            gaps = _subtract_intervals(gaps, sorted(busy_spans))
+
+        return [
+            model.new_fixed_size_interval_var(s, e - s, f"block_{rid}_{s}")
+            for s, e in gaps if e > s
+        ]
 
     # ------------------------------------------------------------------
     # Eligible resource resolution

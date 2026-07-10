@@ -2219,3 +2219,50 @@ with the amended pre-reference invariant. Tests: `tests/test_wip_landing.py`
 blank-slate defaulted). Fixture provenance-attr lists updated for the new
 `Demand.wip_operations` field (test_planner / test_snapshot_store /
 test_validator).
+
+## Amendment — 2026-07-14: WIP solver semantics + the amended invariant (session 2.3 unit 3)
+
+The Solver Builder now honors observed execution state (docs/06 §5.13).
+
+**Complete operations** are satisfied and OFF the model: no start/end/assign
+variables, not added to any resource's no-overlap group, not billed in the
+objective. Their capacity is freed (the work already happened, in the past).
+A complete predecessor imposes no precedence constraint — its successor
+chains from reference_date.
+
+**In-progress operations** become a FIXED interval `[0, remaining]` on the
+observed resource (the remaining working time from reference_date), added to
+that resource's no-overlap group so no future op can double-book the machine.
+No free start or resource choice — it is where it is. A successor chains from
+the fixed end (a constant), by walking the PrecedenceEdge — the same edge the
+builder reads for ordinary precedence. WorkPackage end takes the fixed end as
+a constant term; a fully-complete WP contributes no end (it is done).
+
+**The amended invariant, at both clamp sites.** The old blanket rule ("no op
+starts before reference_date") is now: no NEWLY scheduled op starts before
+reference_date (the horizon floor, minute 0, applies to new ops via their
+start-var lower bound); an observed in-flight op is EXEMPT — its remaining
+work is pinned at minute 0 and its observed pre-reference start is history,
+not a scheduled start. Clamp site 1 (horizon derivation) already floors new
+ops at reference_date and never reads op-level observed starts, so in-flight
+history can't drag the horizon back. Clamp site 2 (calendar flattening /
+blocking): an in-flight op's `[0, remaining]` busy span is carved OUT of the
+resource's blocking intervals (`_blocking_intervals(busy_spans=...)`), because
+committed in-flight work continues across shift boundaries — without the
+carve-out, a midnight reference_date with a 07:00 shift would make the fixed
+interval overlap the pre-shift closure and go infeasible.
+
+**Ghost-job non-regression** (docs/07 standing risk). The Validator's
+TEMPORAL_IMPOSSIBILITY check now exempts a past-due demand that carries an
+in_progress/complete observation — live in-flight work is not a ghost.
+A past-due demand with NO WIP is still excluded (the original fix, intact).
+`test_wip_solver.py::test_temporal_impossibility_still_fires_while_in_flight_honored`
+proves both in one run.
+
+Objective note: committed/sunk production of complete and in-flight ops is
+not in the objective (no assign literals) — it cannot be optimized away and
+the re-solve prices only the future movable work. Extractor cost accounting
+for completed ops is revisited with the mid_replan ledger (unit 4).
+Tests: `tests/test_wip_solver.py` (6). defaults-reproduce-baseline stays
+green (WIP-less data builds byte-identical models — WIP branches are guarded
+on wip_status, absent on every existing path).

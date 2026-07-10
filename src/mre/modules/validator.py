@@ -197,6 +197,15 @@ class Validator:
                 continue
 
             if due < now:
+                # WIP exemption (docs/06 §5.13, the amended invariant): a
+                # past-due demand that is actually underway on the floor is
+                # NOT a ghost — excluding it would strand real in-flight work.
+                # Only a past-due demand with no in-flight/complete observation
+                # is a ghost job (the original fix, un-regressed).
+                wip_ops = d.get("wip_operations") or []
+                if any((w.get("status") in ("in_progress", "complete"))
+                       for w in wip_ops):
+                    continue
                 excluded_demand_ids.add(d["id"])
                 reporter.record_finding(
                     code=FindingCode.TEMPORAL_IMPOSSIBILITY,
