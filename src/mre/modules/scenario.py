@@ -169,11 +169,18 @@ class ScenarioRunner:
         runs_dir: Path,             # separate from main runs/
         time_limit_seconds: float = 30.0,
         base_context: Optional[dict] = None,
+        warm_start: bool = True,
     ) -> None:
         self._store = store
         self._runs_dir = Path(runs_dir)
         self._runs_dir.mkdir(parents=True, exist_ok=True)
         self._time_limit = time_limit_seconds
+        # Warm-start (docs/07 Phase 2): seed the scenario solve with the
+        # base schedule as a CP-SAT solution hint. Without it, a scenario
+        # solve is a fresh search over tied-cost alternatives and the diff
+        # measures search noise, not the modification (the Phase-1 exit
+        # audit's ~307-move unbatch). False only for A/B measurement.
+        self._warm_start = warm_start
         # Base-pipeline configuration (derive_base_context): the scenario
         # must re-validate/re-plan/re-solve under the SAME policy, demand
         # exclusions, reference date, horizon slice and solver pinning as
@@ -196,8 +203,12 @@ class ScenarioRunner:
             scenario.base_snapshot_id, scen_snap_id, _M1_ENTITY_TYPES
         )
 
-        # 2. Resolve modifications and apply entity-level changes
+        # 2. Resolve modifications and apply entity-level changes.
+        # Resources whose calendars a modification touches are collected so
+        # warm-start hints skip them: their base placements may now be
+        # illegal, and a wrong hint is worse than none.
         suppressed_demand_ids: set[str] = set()
+        invalidated_resource_ids: set[str] = set()
         base_reader = self._store.load_snapshot(scenario.base_snapshot_id)
         base_identity_map = base_reader.read_identity_map()
 
@@ -209,7 +220,9 @@ class ScenarioRunner:
             elif isinstance(mod, SetCostWeight):
                 self._apply_cost_weight(mod, scen_snap_id)
             elif isinstance(mod, CalendarException):
-                self._apply_calendar_exception(mod, scen_snap_id, base_identity_map)
+                invalidated_resource_ids |= self._apply_calendar_exception(
+                    mod, scen_snap_id, base_identity_map
+                )
 
         # 3. Emit scenario modification Decisions as evidence
         from mre.contracts.vocabularies import ModuleCode, RunStatus
@@ -332,7 +345,7 @@ class ScenarioRunner:
             trigger="whatif",
             snapshot_id=scen_snap_id, sink_dir=self._runs_dir,
         )
-        from mre.modules.solver_builder import SolverBuilder
+        from mre.modules.solver_builder import SolverBuilder, apply_solution_hints
         model, var_map = SolverBuilder(reference_date=reference_date).build(
             wps + ops + edges, resources + pools, flattened_cals,
             fuls + demands, constraints, cost_model,
@@ -350,6 +363,32 @@ class ScenarioRunner:
             trigger="whatif",
             snapshot_id=scen_snap_id, sink_dir=self._runs_dir,
         )
+
+        # 8a. Warm-start: seed the scenario model with the base schedule.
+        # Operations whose structure the modification changed find no
+        # matching variable (deterministic uuid5 ids) and stay unhinted;
+        # ops on calendar-touched resources are explicitly invalidated.
+        # The hint-acceptance side (CP-SAT's solution_info) lands in the
+        # solve_complete event payload.
+        base_data = self._read_base_data(scenario.base_snapshot_id)
+        if self._warm_start and base_data["assignments"]:
+            from mre.contracts.vocabularies import RecordTier
+            hint_stats = apply_solution_hints(
+                model, var_map, base_data["assignments"],
+                invalidated_resource_ids=invalidated_resource_ids,
+            )
+            r_rep.record_event(
+                status_text="warm_start_hints",
+                payload=hint_stats,
+                tier=RecordTier.SUPPORTING,
+                message=(
+                    f"Warm-start: {hint_stats['hinted_operations']} operations "
+                    f"hinted from the base schedule "
+                    f"({hint_stats['skipped_structure_changed']} structure-changed, "
+                    f"{hint_stats['skipped_invalidated_resource']} on modified calendars)"
+                ),
+            )
+
         from mre.modules.solve_runner import SolveRunner
         solve_result = SolveRunner(
             time_limit_seconds=self._time_limit,
@@ -394,8 +433,7 @@ class ScenarioRunner:
         m7_writer.finalize()
         e_rep.end(RunStatus.SUCCESS)
 
-        # 10. Read base schedule data and compute diff
-        base_data = self._read_base_data(scenario.base_snapshot_id)
+        # 10. Compute diff against the base schedule (loaded at step 8a)
         diff = _compute_schedule_diff(
             base_snap_id=scenario.base_snapshot_id,
             scen_snap_id=scen_snap_id,
@@ -458,29 +496,35 @@ class ScenarioRunner:
         mod: CalendarException,
         snap_id: str,
         identity_map: Any,
-    ) -> None:
+    ) -> set[str]:
+        """Apply the exception; returns the canonical ids of every resource
+        whose calendar was touched (calendars may be shared, so this can be
+        more than the named resource) — their warm-start hints are
+        invalidated."""
         snap_dir = self._store._base / snap_id
         rid = identity_map.resolve("ERP", "machine_id", mod.resource_ref) if identity_map else None
         if not rid:
-            return
+            return set()
 
         res_path = snap_dir / "entities_resource.jsonl"
         if not res_path.exists():
-            return
+            return set()
         cal_ref: Optional[str] = None
-        for line in res_path.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            r = json.loads(line)
-            if r.get("id") == rid:
-                cal_ref = r.get("calendar_ref")
-                break
+        resources = [
+            json.loads(line)
+            for line in res_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        cal_ref = next(
+            (r.get("calendar_ref") for r in resources if r.get("id") == rid), None
+        )
         if not cal_ref:
-            return
+            return set()
+        touched = {r["id"] for r in resources if r.get("calendar_ref") == cal_ref}
 
         cal_path = snap_dir / "entities_calendar.jsonl"
         if not cal_path.exists():
-            return
+            return set()
         new_lines: list[str] = []
         for line in cal_path.read_text(encoding="utf-8").splitlines():
             if not line.strip():
@@ -496,6 +540,7 @@ class ScenarioRunner:
                 cal["exceptions"] = excs
             new_lines.append(json.dumps(cal))
         cal_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+        return touched
 
     def _emit_modification_decision(
         self,
@@ -737,7 +782,18 @@ def _compute_schedule_diff(
         "_decomp_ok":         abs(total_d - decomp_check) < 0.01,
     }
 
-    # Assignment moves (operation-level resource or start-time changes)
+    # Assignment moves (operation-level resource or start-time changes).
+    # Start times are compared as parsed datetimes, never as raw strings:
+    # the persisted base serializes UTC as '...Z' (pydantic) while the
+    # in-memory scenario extract uses '+00:00' — a string comparison counts
+    # EVERY shared operation as moved on format alone (found while testing
+    # warm-start; this inflated every pre-warm-start move count).
+    def _start_key(a: dict):
+        raw = a.get("run_start")
+        if not raw:
+            return None
+        return datetime.fromisoformat(raw.replace("Z", "+00:00"))
+
     base_by_op: dict[str, dict] = {
         a["operation_ref"]: a for a in base_data["assignments"]
     }
@@ -747,7 +803,7 @@ def _compute_schedule_diff(
     moved_op_ids = [
         op_id for op_id in set(base_by_op) & set(scen_by_op)
         if (base_by_op[op_id].get("resource_id") != scen_by_op[op_id].get("resource_id")
-            or base_by_op[op_id].get("run_start") != scen_by_op[op_id].get("run_start"))
+            or _start_key(base_by_op[op_id]) != _start_key(scen_by_op[op_id]))
     ]
     notable_moves: list[str] = []
     for op_id in moved_op_ids[:5]:

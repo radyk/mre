@@ -33,6 +33,7 @@ from mre.contracts.schedule_document import (
     HorizonBlock,
     Phases,
     PhaseWindow,
+    PoolBlock,
     ResourceLane,
     ScenarioBlock,
     ScheduleDocument,
@@ -74,6 +75,7 @@ def assemble_schedule_document(
     identity_map: Any = None,
     evidence_records: Optional[list[dict]] = None,
     parent_schedule_id: Optional[str] = None,
+    pool_block: Optional[PoolBlock] = None,
 ) -> ScheduleDocument:
     """Assemble the versioned schedule document. Entity args are persisted
     entity dicts (SnapshotReader shape); evidence_records are the run's raw
@@ -215,6 +217,7 @@ def assemble_schedule_document(
                 is_scenario=is_scenario,
                 parent_schedule_id=parent_schedule_id,
             ),
+            pool=pool_block,
         ),
     )
 

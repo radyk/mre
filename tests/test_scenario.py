@@ -397,6 +397,143 @@ def test_diff_wo2001_lateness_improves_or_same(scenario_result):
 
 
 # ---------------------------------------------------------------------------
+# Warm-start (docs/07 Phase 2): scenario solves seeded from the base schedule
+# ---------------------------------------------------------------------------
+
+
+def test_apply_solution_hints_unit():
+    """Hints land in the model proto; structure-changed ops and ops on
+    invalidated resources are skipped and counted."""
+    from datetime import datetime, timezone
+
+    from ortools.sat.python import cp_model as cp
+
+    from mre.modules.solver_builder import VariableMap, apply_solution_hints
+
+    m = cp.CpModel()
+    vm = VariableMap(horizon_start=datetime(2026, 7, 1, tzinfo=timezone.utc))
+
+    def _op(oid, rids):
+        vm.op_start[oid] = m.new_int_var(0, 100000, f"s_{oid}")
+        vm.op_end[oid] = m.new_int_var(0, 100000, f"e_{oid}")
+        vm.op_assign[oid] = {r: m.new_bool_var(f"a_{oid}_{r}") for r in rids}
+
+    _op("op1", ["r1", "r2"])
+    _op("op3", ["r3"])
+
+    assignments = [
+        # hinted: op1 on r1, 08:00–09:00 → start minute 480
+        {"operation_ref": "op1", "resource_id": "r1",
+         "run_windows": [{"start": "2026-07-01T08:00:00+00:00",
+                          "end": "2026-07-01T09:00:00+00:00"}]},
+        # structure changed: op2 does not exist in this model
+        {"operation_ref": "op2", "resource_id": "r1",
+         "run_windows": [{"start": "2026-07-01T08:00:00+00:00",
+                          "end": "2026-07-01T09:00:00+00:00"}]},
+        # invalidated: op3's resource r3 had a calendar modification
+        {"operation_ref": "op3", "resource_id": "r3",
+         "run_windows": [{"start": "2026-07-01T10:00:00+00:00",
+                          "end": "2026-07-01T11:00:00+00:00"}]},
+    ]
+    stats = apply_solution_hints(m, vm, assignments,
+                                 invalidated_resource_ids={"r3"})
+    assert stats["hinted_operations"] == 1
+    assert stats["skipped_structure_changed"] == 1
+    assert stats["skipped_invalidated_resource"] == 1
+
+    hint = m.proto.solution_hint
+    hinted = dict(zip(hint.vars, hint.values))
+    assert hinted[vm.op_start["op1"].index] == 480
+    assert hinted[vm.op_end["op1"].index] == 540
+    assert hinted[vm.op_assign["op1"]["r1"].index] == 1
+    assert hinted[vm.op_assign["op1"]["r2"].index] == 0
+    # op3's variables must NOT be hinted
+    assert vm.op_start["op3"].index not in hinted
+
+
+def test_apply_solution_hints_persisted_entity_shape():
+    """The persisted Assignment entity shape (resource_assignments +
+    phase_windows.run) hints identically to the extractor dict shape."""
+    from datetime import datetime, timezone
+
+    from ortools.sat.python import cp_model as cp
+
+    from mre.modules.solver_builder import VariableMap, apply_solution_hints
+
+    m = cp.CpModel()
+    vm = VariableMap(horizon_start=datetime(2026, 7, 1, tzinfo=timezone.utc))
+    vm.op_start["op1"] = m.new_int_var(0, 100000, "s_op1")
+    vm.op_end["op1"] = m.new_int_var(0, 100000, "e_op1")
+    vm.op_assign["op1"] = {"r1": m.new_bool_var("a_op1_r1")}
+
+    stats = apply_solution_hints(m, vm, [{
+        "operation_ref": "op1",
+        "resource_assignments": [{"resource_ref": "r1"}],
+        "phase_windows": {"run": [
+            {"start": "2026-07-01T08:00:00+00:00", "end": "2026-07-01T08:30:00+00:00"},
+            {"start": "2026-07-02T07:00:00+00:00", "end": "2026-07-02T07:30:00+00:00"},
+        ]},
+    }])
+    assert stats["hinted_operations"] == 1
+    hint = m.proto.solution_hint
+    hinted = dict(zip(hint.vars, hint.values))
+    # chunked op: overall start = first window start, end = last window end
+    assert hinted[vm.op_start["op1"].index] == 480
+    assert hinted[vm.op_end["op1"].index] == 24 * 60 + 7 * 60 + 30
+
+
+def test_scenario_warm_start_event_recorded(scenario_result):
+    """The scenario run records warm_start_hints telemetry: untouched
+    operations hinted, the unbatched WPs' new operations unhinted."""
+    result, store, snap_id, tmp = scenario_result
+    events = []
+    for f in (tmp / "scenario_runs").glob("*.jsonl"):
+        for line in f.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            rec = json.loads(line)
+            if rec.get("record_type") == "event" and \
+                    rec.get("status_text") == "warm_start_hints":
+                events.append(rec)
+    assert events, "scenario solve should record warm_start_hints telemetry"
+    payload = events[-1]["payload"]
+    assert payload["hinted_operations"] > 0
+    # the base's merged WO-2001+WO-2002 WP was restructured by the unbatch:
+    # its operations' uuid5 ids don't exist in the scenario model, so those
+    # base assignments are skipped (naturally unhinted), never mis-hinted
+    assert payload["skipped_structure_changed"] > 0
+    assert payload["skipped_invalidated_resource"] == 0
+
+
+def test_scenario_solve_complete_carries_solution_info(scenario_result):
+    """Hint-acceptance telemetry: CP-SAT's solution_info is recorded on the
+    solve_complete event (docs/07 Phase 2 warm-start acceptance)."""
+    result, store, snap_id, tmp = scenario_result
+    for f in (tmp / "scenario_runs").glob("*.jsonl"):
+        for line in f.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            rec = json.loads(line)
+            if rec.get("record_type") == "event" and \
+                    rec.get("status_text") == "solve_complete":
+                assert "solution_info" in rec["payload"]
+                return
+    raise AssertionError("no solve_complete event found in scenario evidence")
+
+
+def test_scenario_untouched_moves_bounded(scenario_result):
+    """With warm-start, the unbatch diff no longer measures search noise:
+    operations shared between base and scenario (i.e. everything except the
+    restructured WO-2001/WO-2002 WPs) essentially stay put."""
+    result, store, snap_id, tmp = scenario_result
+    moves = result.diff["assignment_moves"]["total_changed"]
+    assert moves <= 3, (
+        f"expected near-zero moves for untouched operations under "
+        f"warm-start; got {moves}: {result.diff['assignment_moves']['notable']}"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Acceptance test: no UUIDs in rendered output
 # ---------------------------------------------------------------------------
 

@@ -80,6 +80,11 @@ class VariableMap:
     # overtime 'added' capacity minus regular availability (docs/06 §5.6).
     # Minutes scheduled inside these windows price at rate × overtime_premium.
     overtime_windows: dict[str, list[tuple[int, int]]] = field(default_factory=dict)
+    # The objective's terms (ortools linear expressions), captured so pool /
+    # scenario tooling can post additional constraints over the SAME
+    # objective expression (e.g. an incumbent-relative upper bound) without
+    # rebuilding it. Purely additive; the model itself is unchanged.
+    objective_terms: list[Any] = field(default_factory=list)
 
     @property
     def op_ids(self) -> dict[str, Any]:
@@ -127,6 +132,73 @@ class VariableMap:
             horizon_start=self.horizon_start,
             op_chunk_windows=op_chunk_windows,
         )
+
+
+# ---------------------------------------------------------------------------
+# Warm-start hints from a previously solved schedule
+# ---------------------------------------------------------------------------
+
+def apply_solution_hints(
+    model,
+    var_map: "VariableMap",
+    assignments: list[dict],
+    invalidated_resource_ids: "frozenset[str] | set[str]" = frozenset(),
+) -> dict[str, int]:
+    """Seed `model` with a prior schedule's solution as CP-SAT hints.
+
+    `assignments` are Assignment dicts in either the persisted-entity shape
+    (``resource_assignments`` + ``phase_windows.run``) or the extractor
+    shape (``resource_id`` + ``run_windows``). Correspondence is by
+    operation id — the Planner mints deterministic uuid5 ids, so an
+    operation whose WorkPackage composition is unchanged between the two
+    snapshots has the same id, and a structurally modified portion (e.g. an
+    unbatched merge) simply finds no matching variable and stays unhinted.
+
+    Operations on `invalidated_resource_ids` (e.g. a scenario added a
+    calendar exception there) are deliberately left unhinted: their base
+    placement may no longer be legal, and CP-SAT treats a partially wrong
+    hint worse than no hint.
+
+    Hints are per (var, value) — ``add_hint`` does not batch (docs/04
+    2026-07-10 amendment). Chunked (R-C3) operations get their overall
+    start/end and resource literal hinted; chunk-slot variables stay free.
+
+    Returns telemetry counts for the warm_start_hints evidence Event.
+    """
+    stats = {
+        "hinted_operations": 0,
+        "skipped_structure_changed": 0,
+        "skipped_invalidated_resource": 0,
+        "skipped_out_of_horizon": 0,
+    }
+    horizon_start = var_map.horizon_start
+    for a in assignments:
+        oid = a.get("operation_ref")
+        rid = a.get("resource_id")
+        if not rid:
+            ras = a.get("resource_assignments") or []
+            rid = ras[0].get("resource_ref") if ras else None
+        windows = (a.get("phase_windows") or {}).get("run") or a.get("run_windows") or []
+        if not (oid and rid and windows):
+            stats["skipped_structure_changed"] += 1
+            continue
+        if oid not in var_map.op_start or rid not in var_map.op_assign.get(oid, {}):
+            stats["skipped_structure_changed"] += 1
+            continue
+        if rid in invalidated_resource_ids:
+            stats["skipped_invalidated_resource"] += 1
+            continue
+        start_min = int((_parse_dt(windows[0]["start"]) - horizon_start).total_seconds() // 60)
+        end_min = int((_parse_dt(windows[-1]["end"]) - horizon_start).total_seconds() // 60)
+        if start_min < 0:
+            stats["skipped_out_of_horizon"] += 1
+            continue
+        model.add_hint(var_map.op_start[oid], start_min)
+        model.add_hint(var_map.op_end[oid], end_min)
+        for r2, bv in var_map.op_assign[oid].items():
+            model.add_hint(bv, 1 if r2 == rid else 0)
+        stats["hinted_operations"] += 1
+    return stats
 
 
 # ---------------------------------------------------------------------------
@@ -499,6 +571,7 @@ class SolverBuilder:
             w = tard_weights.get(fid, 1)
             obj_terms.append(tard_var * w)
 
+        var_map.objective_terms = obj_terms
         if obj_terms:
             model.minimize(sum(obj_terms))
 

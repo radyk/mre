@@ -155,6 +155,14 @@ class SolveRunner:
 
         # Terminal telemetry event — the schedule-document assembler reads
         # this (status/objective/gap/wall time) from the evidence stream.
+        # solution_info is CP-SAT's own description of what produced the
+        # returned solution — for warm-started solves it is the
+        # hint-acceptance telemetry (e.g. "hint" when the seeded solution
+        # was accepted as the incumbent).
+        try:
+            solution_info = solver.SolutionInfo()
+        except Exception:
+            solution_info = None
         if reporter is not None:
             from mre.contracts.vocabularies import RecordTier
             reporter.record_event(
@@ -165,6 +173,7 @@ class SolveRunner:
                     "best_bound": bound,
                     "gap": gap,
                     "wall_time_s": wall_time,
+                    "solution_info": solution_info,
                 },
                 tier=RecordTier.SUPPORTING,
                 message=(

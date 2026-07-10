@@ -1926,3 +1926,46 @@ only as a fallback for snapshots persisted before the attribute existed.
 Tests: the `overtime_required` harness asserts the persisted entity value,
 its provenance class/formula, and that the rebuilt schedule document
 derives `in_overtime_min` from the entity (57 tests in the module, 2 new).
+
+## Amendment — 2026-07-13: Warm-start scenario solves (docs/07 Phase 2) + a diff-comparison defect
+
+**Warm-start.** ScenarioRunner now seeds every scenario solve with the base
+schedule as a CP-SAT solution hint (`solver_builder.apply_solution_hints`,
+shared with the solution-pool service). Correspondence needs no mapping
+table: the Planner mints deterministic uuid5 ids (`op = uid("op", wp_id,
+spec_id)`, `wp = uid("wp", *batch demand ids)`), so an operation whose
+WorkPackage composition is unchanged has the same id in both snapshots and
+hints directly, while a structurally modified portion (an unbatched merge)
+finds no matching variable and is naturally unhinted. Deliberate
+invalidation on top of that: operations on resources whose calendar a
+modification touched are left unhinted (all resources sharing the touched
+calendar, not just the named one) — a wrong hint is worse than none.
+Chunked (R-C3) ops hint overall start/end and the resource literal only;
+chunk-slot variables stay free. Hints are per (var, value), per the
+2026-07-10 `add_hint` lesson. Telemetry: a `warm_start_hints` Event
+(hinted / structure-changed / invalidated counts) and CP-SAT's own
+`solution_info` now recorded on every `solve_complete` event payload —
+hint acceptance is observable from evidence.
+
+**The exit-audit noise case, re-measured** (messy_realistic seed 23, 310
+operations, merge_by_family_v1, deterministic mode, 2-order unbatch
+ORD-000043+ORD-000123): warm-started scenario = **0 untouched-operation
+moves**; cold re-solve of the identical scenario = **51 moves at the
+identical cost delta (+$309.24)** — pure tied-cost search noise, which is
+what the warm start eliminates. The audit's historical "~307 moves" figure
+was additionally inflated by a real differ defect found while testing this:
+`_compute_schedule_diff` compared `run_start` as raw strings, but the
+persisted base serializes UTC as `...Z` (pydantic) while the in-memory
+scenario extract uses `+00:00` — so EVERY shared operation counted as
+"moved" on format alone. Fixed (datetimes parsed before comparison); every
+pre-fix move count in earlier reports should be read as ≈ total shared ops,
+not as measured noise.
+
+**Acceptance** (`tests/test_warm_start_noise.py`, slow): moves ≤ 10 warm
+(measured 0), diff byte-stable across repeated deterministic runs, cold
+counterfactual ≥ warm (2026-07-12 priced-feature rule: the price bought
+the ceiling), telemetry present. Fast tests in `tests/test_scenario.py`:
+hint-application unit tests (both assignment shapes, skip accounting,
+proto-level hint values), warm-start event on the sample unbatch, moves ≤ 3
+there (measured 0). `VariableMap.objective_terms` added (build-time capture
+so pool tooling can bound the same objective expression — used next).

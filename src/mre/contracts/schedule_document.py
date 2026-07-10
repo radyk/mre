@@ -23,6 +23,12 @@ Field rules (docs/04 amendment, contract derivation decision):
 
 Version this contract: additive changes bump the minor, breaking changes
 bump the major. Add, never repurpose.
+
+Version history:
+- 1.0 (2026-07-13, session 2.1): initial contract.
+- 1.1 (2026-07-13, session 2.2): additive — ``annotations.pool`` marks
+  solution-pool member documents (pool_id, member_index, objective delta).
+  Absent (None) on every non-pool document.
 """
 from __future__ import annotations
 
@@ -33,7 +39,7 @@ from pydantic import BaseModel, model_validator
 
 from mre.contracts.vocabularies import ScheduleStatus
 
-CONTRACT_VERSION = "1.0"
+CONTRACT_VERSION = "1.1"
 
 # Exact decomposition tolerance: cost components are currency values
 # accumulated in float; "exactly" means to the cent, matching the
@@ -151,9 +157,23 @@ class ScenarioBlock(BaseModel):
     parent_schedule_id: Optional[str] = None
 
 
+class PoolBlock(BaseModel):
+    """Marks a solution-pool member (contract 1.1). Pool members are diverse
+    near-optimal alternatives to a base schedule — never the schedule of
+    record, never listed among real schedules (same isolation rule as
+    scenarios)."""
+    is_pool_member: bool = True
+    pool_id: str
+    base_schedule_id: str
+    member_index: int
+    objective: Optional[float] = None          # solver objective (scaled units)
+    objective_delta_pct: Optional[float] = None  # vs the incumbent's objective
+
+
 class Annotations(BaseModel):
     locks: list[str] = []                      # F1/A7 pins, rendered
     scenario: ScenarioBlock = ScenarioBlock()
+    pool: Optional[PoolBlock] = None           # set only on pool members (1.1)
 
 
 class ScheduleDocument(BaseModel):
