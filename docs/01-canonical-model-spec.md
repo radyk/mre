@@ -305,6 +305,7 @@ Answers "why did the schedule change when nothing else did": the weights changed
 | `operation_ref` / `workpackage_ref` | entity refs | What work |
 | `resource_assignments` | list of `{requirement, resource_ref}` | Every requirement resolved — machine *and* tool |
 | `phase_windows` | setup / run / dwell, each `{start, end}` | Real timestamps; chunked ops carry multiple run windows |
+| `overtime_minutes` | int | Scheduled minutes inside overtime premium windows (docs/06 §5.6); derived at extraction. **Authoritative source** — the assignment Decision's payload repeats it as narrative only (2026-07-13 ruling) |
 | `decision_ref` | ref | The reconstructed-alternatives Decision from Solution Extraction |
 
 **ServiceOutcome** — one per Fulfillment: `demand_ref`, projected completion, lateness (may be negative), tardiness cost as charged. The per-customer truth table, materialized so no consumer recomputes lateness ad hoc and disagrees with the solver's own accounting.

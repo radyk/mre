@@ -1907,3 +1907,22 @@ endpoint tests over a generated clean_small: happy paths, REJECTED-never-
 solves, scenario listing exclusion, deterministic plumb-through verified from
 M6 RunContext evidence, round-trip rebuild equality, structural run-scoping).
 **735 green** (685 carried + 50).
+
+## Amendment — 2026-07-13: Overtime attribution ruling — the Assignment entity is the source of truth
+
+Session 2.1 carried a qualification: the schedule document's
+`in_overtime_min` was read from the assignment Decision's `chosen` payload
+because the persisted Assignment entity never carried the fact. That left
+two candidate sources that could drift. **Ruling: promote the fact to the
+entity.** The amount of overtime an assignment consumes is a "what" —
+canonical solve output — not a "why"; entities carry the whats, Decisions
+carry the narrative. `Assignment.overtime_minutes` (docs/01 §6.9, added —
+never repurposed) is persisted at extraction with a derived-provenance
+sidecar (`M7.overtime_attribution`: overlap of the solved run windows with
+the resource calendar's premium windows). The Decision's `chosen` payload
+still repeats the number for testimony rendering, but it is now explicitly
+narrative; the assembler prefers the entity and keeps the Decision read
+only as a fallback for snapshots persisted before the attribute existed.
+Tests: the `overtime_required` harness asserts the persisted entity value,
+its provenance class/formula, and that the rebuilt schedule document
+derives `in_overtime_min` from the entity (57 tests in the module, 2 new).

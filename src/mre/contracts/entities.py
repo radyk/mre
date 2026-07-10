@@ -335,13 +335,21 @@ class Schedule(BaseModel):
 
 
 class Assignment(BaseModel):
-    """Per-Operation scheduling result. decision_ref → a reconstructed Decision."""
+    """Per-Operation scheduling result. decision_ref → a reconstructed Decision.
+
+    overtime_minutes: scheduled minutes falling inside overtime premium
+    calendar windows (docs/06 §5.6) — the entity is the authoritative source
+    of the fact (added 2026-07-13, docs/01 §6.9); the assignment Decision's
+    chosen payload repeats it only as narrative context. 0 when no premium
+    is active.
+    """
     id: str
     snapshot_id: str
     operation_ref: str
     workpackage_ref: str
     resource_assignments: list[ResourceAssignment] = []
     phase_windows: PhaseWindows = PhaseWindows()
+    overtime_minutes: int = 0
     decision_ref: str
 
 

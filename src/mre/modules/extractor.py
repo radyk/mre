@@ -474,6 +474,7 @@ class Extractor:
                     ResourceAssignment(requirement=req, resource_ref=chosen_rid)
                 ],
                 phase_windows=PhaseWindows(run=run_tw),
+                overtime_minutes=int(asgn_dict.get("overtime_minutes", 0)),
                 decision_ref=asgn_dict["decision_ref"],
             )
             asgn_prov = [
@@ -488,6 +489,12 @@ class Extractor:
                                    snapshot_id=snapshot_id)]),
                 _sidecar(asgn_id, "phase_windows", formula_a,
                          [InputRef(entity_id=op_id, attribute_name="run_duration",
+                                   snapshot_id=snapshot_id)]),
+                # Overlap of this assignment's run windows with the resource
+                # calendar's premium (overtime-added) windows — arithmetic on
+                # the solved placement, so derived, not observed.
+                _sidecar(asgn_id, "overtime_minutes", "M7.overtime_attribution",
+                         [InputRef(entity_id=chosen_rid, attribute_name="calendar_ref",
                                    snapshot_id=snapshot_id)]),
                 _sidecar(asgn_id, "decision_ref", formula_a, []),
             ]

@@ -370,8 +370,11 @@ def _phases(op: dict, chunks: list[Chunk]) -> Phases:
     return Phases(setup=PhaseWindow(start=first.start, end=setup_end))
 
 def _overtime_minutes(asgn: dict, decisions_by_id: dict[str, dict]) -> int:
-    # Extractor dicts carry overtime_minutes directly; persisted entities
-    # don't, but the assignment Decision's chosen payload does (evidence).
+    # Source-of-truth order (2026-07-13 ruling, docs/01 §6.9): the Assignment
+    # entity's overtime_minutes attribute is authoritative — the extractor
+    # persists it with derived provenance. The assignment Decision's chosen
+    # payload is narrative context only; it remains here solely as a
+    # fallback for snapshots persisted before the attribute existed.
     if asgn.get("overtime_minutes") is not None:
         return int(asgn["overtime_minutes"])
     dec = decisions_by_id.get(asgn.get("decision_ref", ""))

@@ -162,6 +162,38 @@ class TestOvertimeRequired:
         )
         assert "overtime" in overtime_decisions[0]["message"]
 
+    def test_assignment_entity_is_authoritative_for_overtime(self, overtime_run):
+        """2026-07-13 ruling (docs/01 §6.9): the persisted Assignment entity
+        carries overtime_minutes with derived provenance — the entity is the
+        source of truth; the Decision's chosen payload is narrative only."""
+        truth, _, out_dir = overtime_run
+        ot = truth["overtime"]
+        reader = _snapshot(out_dir)
+        assignments = list(reader.iter_entities("assignment"))
+        assert assignments and all("overtime_minutes" in a for a in assignments)
+
+        ot_assignments = [a for a in assignments if a["overtime_minutes"]]
+        assert len(ot_assignments) == 1
+        assert ot_assignments[0]["overtime_minutes"] == ot["expected_overtime_minutes"]
+
+        provs = list(reader.iter_provenance_for_entity(ot_assignments[0]["id"]))
+        ot_prov = [p for p in provs if p.get("attribute_name") == "overtime_minutes"]
+        assert len(ot_prov) == 1
+        assert ot_prov[0]["provenance_class"] == "derived"
+        assert ot_prov[0]["payload"]["formula_id"] == "M7.overtime_attribution"
+
+    def test_document_derives_in_overtime_min_from_the_entity(self, overtime_run):
+        """The schedule document's in_overtime_min now comes from the entity
+        attribute (Decision payload is only a pre-2.2-snapshot fallback)."""
+        from mre.modules.schedule_assembler import build_document_from_run
+
+        truth, _, out_dir = overtime_run
+        ot = truth["overtime"]
+        doc = build_document_from_run(out_dir, "snap-run", "run-test")
+        with_ot = [a for a in doc.assignments if a.in_overtime_min > 0]
+        assert len(with_ot) == 1
+        assert with_ot[0].in_overtime_min == ot["expected_overtime_minutes"]
+
     def test_removing_overtime_windows_makes_the_same_demands_late(
         self, overtime_run, tmp_path
     ):
