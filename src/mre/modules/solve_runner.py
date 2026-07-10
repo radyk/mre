@@ -153,6 +153,26 @@ class SolveRunner:
                 tier=RecordTier.SUPPORTING,
             )
 
+        # Terminal telemetry event — the schedule-document assembler reads
+        # this (status/objective/gap/wall time) from the evidence stream.
+        if reporter is not None:
+            from mre.contracts.vocabularies import RecordTier
+            reporter.record_event(
+                status_text="solve_complete",
+                payload={
+                    "status": status_str,
+                    "objective": obj,
+                    "best_bound": bound,
+                    "gap": gap,
+                    "wall_time_s": wall_time,
+                },
+                tier=RecordTier.SUPPORTING,
+                message=(
+                    f"Solve complete: status={status_str}, objective={obj}, "
+                    f"wall_time={wall_time:.2f}s"
+                ),
+            )
+
         # Extract values if feasible
         if status_str in ("OPTIMAL", "FEASIBLE"):
             sv = var_map.extract(solver)

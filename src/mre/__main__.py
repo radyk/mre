@@ -23,11 +23,11 @@ Demand-selection policies (applied after validator, before planner):
 from __future__ import annotations
 
 import argparse
-import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from mre.api.registry import prepare_out_dir
 from mre.contracts.vocabularies import ModuleCode, RunStatus
 from mre.modules.adapter import Adapter
 from mre.modules.calendar_utils import flatten_calendar
@@ -92,20 +92,11 @@ def main(argv: list[str] | None = None) -> int:
         extract_dir = Path(args.raw_data)
     else:
         extract_dir = Path(args.sample_data)
-    out_dir = Path(args.out)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    snap_id  = args.snapshot_id
-    runs_dir = out_dir / "runs"
-    store    = SnapshotStore(out_dir / "snapshots")
-
-    # Delete stale output so previous-run records never appear in the new index.
-    snap_dir = out_dir / "snapshots" / snap_id
-    if snap_dir.exists():
-        shutil.rmtree(snap_dir)
-        _p(f"cleared stale snapshot: {snap_dir}")
-    if runs_dir.exists():
-        shutil.rmtree(runs_dir)
-        _p(f"cleared stale runs: {runs_dir}")
+    snap_id = args.snapshot_id
+    # Same out-dir preparation the API registry's run-dir minting uses
+    # (single code path; stale artifacts never shadow the new run).
+    out_dir, runs_dir = prepare_out_dir(Path(args.out), snap_id, log=_p)
+    store = SnapshotStore(out_dir / "snapshots")
 
     _p(f"extract_dir : {extract_dir}")
     _p(f"output_dir  : {out_dir}")
@@ -392,7 +383,11 @@ def main(argv: list[str] | None = None) -> int:
 
     b_rep = Reporter.begin(
         module=ModuleCode.M5, purpose="model build",
-        config={}, trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
+        # Horizon recorded so the schedule-document assembler can derive it
+        # from evidence instead of recomputing (docs/07 Phase 2, API layer).
+        config={"horizon_start": horizon_start.isoformat(),
+                "horizon_end": horizon_end.isoformat()},
+        trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
     )
     builder = SolverBuilder(reference_date=reference_date)
     model, var_map = builder.build(

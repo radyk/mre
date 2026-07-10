@@ -325,7 +325,11 @@ class ScenarioRunner:
         # 7. Run M5 (SolverBuilder)
         b_rep = Reporter.begin(
             module=ModuleCode.M5, purpose="scenario model build",
-            config={}, trigger="whatif",
+            # Same horizon evidence as the base pipeline's M5 run — the
+            # schedule-document assembler derives the horizon from here.
+            config={"horizon_start": horizon_start.isoformat(),
+                    "horizon_end": horizon_end.isoformat()},
+            trigger="whatif",
             snapshot_id=scen_snap_id, sink_dir=self._runs_dir,
         )
         from mre.modules.solver_builder import SolverBuilder
@@ -338,7 +342,12 @@ class ScenarioRunner:
         # 8. Run M6 (SolveRunner)
         r_rep = Reporter.begin(
             module=ModuleCode.M6, purpose="scenario solve",
-            config={"time_limit": self._time_limit}, trigger="whatif",
+            # Record the solver pinning actually used (inherited from the
+            # base run) so evidence-derived telemetry stays truthful.
+            config={"time_limit": self._time_limit,
+                    "num_search_workers": self._ctx.get("solver_workers"),
+                    "random_seed": self._ctx.get("solver_seed")},
+            trigger="whatif",
             snapshot_id=scen_snap_id, sink_dir=self._runs_dir,
         )
         from mre.modules.solve_runner import SolveRunner

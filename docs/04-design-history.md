@@ -1825,3 +1825,85 @@ docs/07 solver-gap workstream now has a second concrete input).
 
 **685 tests green** (+5 audit-born: splittability doorway ×3, cost-model
 doorway ×2).
+
+## Amendment — 2026-07-13: Phase 2 session 2.1 — API layer, schedule JSON contract, run registry
+
+**The schedule JSON contract is derived, never invented.** The document the API
+serves (`src/mre/contracts/schedule_document.py`, `contract_version: "1.0"`,
+versioned from day one — add, never repurpose) is a pure projection of what
+already exists: canonical entities (Schedule, Assignment, ServiceOutcome,
+Resource, Calendar, Demand-via-Fulfillment, Constraint), the identity map, and
+evidence records. No field is computed fresh at serving time. Rules locked in
+the contract:
+
+- **External names appear ONLY in `*_name` / `work_order` fields**, with the
+  canonical UUID refs kept alongside for machine navigation — both,
+  deliberately. This is the identity-boundary lesson (2026-07-06) applied to
+  the outbound surface: the cockpit speaks the customer's vocabulary, the
+  machine-navigable spine stays canonical.
+- **Timestamps are ISO 8601 UTC.**
+- **`cost_summary` must decompose exactly** (total = production_regular +
+  production_overtime + setup + tardiness) and dies at construction if it
+  doesn't — validation-at-construction, same posture as the record contracts.
+  `costmodel_version` rides along so every served cost is attributable.
+- **Chunked (resumable) operations carry one chunk per run window; the pauses
+  are the gaps between chunks** (docs/05 R-C3), `working_min` per chunk.
+  Merged WPs list every constituent work order. Tardiness stays per Demand.
+- **Phases are derived, with an honesty note:** the solver models an operation
+  interval as setup + run contiguous from its start, so `phases.setup` is the
+  first `setup_duration` minutes of the first chunk; `teardown` is always null
+  because the current solver does not model it — the field exists for contract
+  stability, not to pretend we have data we don't.
+- `in_overtime_min` comes from the assignment Decision's `chosen` payload (the
+  persisted Assignment entity never carried it) — evidence as the source of a
+  document field, by design.
+
+**The assembler is a pure function** (`modules/schedule_assembler.py`):
+canonical snapshot + evidence records → document; no solver imports, no
+writes, deterministic ordering. Round-trip rule tested end-to-end: the
+document rebuilt from a persisted run equals the one built at extraction time.
+
+**Evidence enrichment to make the derivation possible** (no vocabulary
+changes — these are free-form Event/`config_snapshot` fields): M6 now emits a
+`solve_complete` Event carrying status/objective/bound/gap/wall-time; M5's
+RunContext config records the builder horizon (both pipeline and scenario
+paths); the scenario runner's M6 config records the solver pinning it actually
+inherits from the base run, so the document's `deterministic` flag is derived
+truthfully everywhere.
+
+**The API layer** (`src/mre/api/`, FastAPI + uvicorn added to dependencies) is
+deliberately thin — it validates, mints run directories, invokes the EXISTING
+pipeline (`mre.__main__.main`), ScenarioRunner, ConformanceGate, and Explainer,
+and serves the contract. Every response is a versioned envelope
+(`{"api_version": "1", data|error}`). Endpoints: POST /submissions (multipart
+or dir path → gate → certificate; REJECTED returns the deficiency list and can
+never be solved — 409), GET /submissions/{id}/certificate, POST
+/submissions/{id}/solve (202 + run_id; background task; `deterministic: true`
+pins `--solver-workers 1 --solver-seed 0`), GET /runs/{id}, GET /schedules,
+GET /schedules/{id}, POST /schedules/{id}/ask (template renderer default; the
+llm flag is honored server-side only if ANTHROPIC_API_KEY is present), POST
+/schedules/{id}/whatif (202; diff bundle + the scenario's own document).
+
+**Evidence isolation extends to the API:** what-if scenario schedules NEVER
+appear in the default GET /schedules listing (opt-in query flag), scenario
+documents carry `is_scenario` + `parent_schedule_id` lineage, and a what-if
+cannot branch from a scenario schedule.
+
+**Run-scoped outputs are now structural.** The registry
+(`api/registry.py`, SQLite) mints `runs/<run_id>/` for every API-triggered
+run — its own snapshot id (`snap-<run8>`), its own evidence directory, its own
+document. What-if runs copy the base snapshot into their own run dir before
+deriving, so scenario artifacts never touch the base run's directories. The
+CLI routes through the same `prepare_out_dir` function (single owner of
+stale-artifact clearing) — the shadowed-artifact incident class dies at the
+structure, not at discipline. SQLite is the INDEX (submissions, certificates,
+runs, schedules); the filesystem stores remain the artifact truth — no
+evidence-store migration.
+
+**Tests:** 50 new (28 contract-assembly from the contract rules: chunked op
+with pauses, merged WP with two work orders, overtime-from-Decision,
+decomposability dies at construction, determinism, scenario lineage; 22
+endpoint tests over a generated clean_small: happy paths, REJECTED-never-
+solves, scenario listing exclusion, deterministic plumb-through verified from
+M6 RunContext evidence, round-trip rebuild equality, structural run-scoping).
+**735 green** (685 carried + 50).
