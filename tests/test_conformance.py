@@ -259,7 +259,10 @@ class TestWipDoorway:
         }], declare=False)
         result = _run_gate(tmp_path, sub)
         assert result.grade == "REJECTED"
-        assert "MALFORMED_FIELD" in _codes(result)
+        # B4 ruling: an undeclared semantics field malforms nothing — the
+        # source cannot be interpreted (AMBIGUOUS_SOURCE), which is the code's
+        # literal meaning and §3's stated purpose.
+        assert "AMBIGUOUS_SOURCE" in _codes(result)
         assert any("wip_progress_basis" in d for d in result.certificate["deficiencies"])
 
     def test_clean_wip_accepted(self, tmp_path):

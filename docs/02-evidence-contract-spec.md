@@ -158,7 +158,7 @@ Eight verbs. Ambient capture (IDs, sequence numbers, timing, exception state) is
 
 ## 8. Boundary rules
 
-1. **Canonical keys only.** No ERP identifiers, no solver indices in `subjects`. Rendering back into planner vocabulary is done at read time via the adapter's external-refs mapping table.
+1. **Canonical keys only.** No ERP identifiers, no solver indices in `subjects`. Rendering back into planner vocabulary is done at read time via the adapter's external-refs mapping table. *Pre-canonical modules (M0) cannot emit canonical refs because canonical identities do not yet exist. They emit **typed submission-space refs** — `EntityRef(system="IDS", type, id)` — as subjects. The M1 adapter MUST register every such ref in the identity map when minting the corresponding canonical entity, making gate findings retroactively reachable by canonical key. For REJECTED submissions that never reach M1, the IDS ref is the finding's permanent identity — stable per source, which is what certificate trending requires.* (`EntityRef.system` defaults to `"canonical"`; M0 sets it to `"IDS"`.)
 2. **No AI write path.** There is deliberately no `record_explanation` verb. The AI layer reads evidence; it does not write into the store it reasons over — that preserves the store's testimony value. Persisted AI narratives (worthwhile for audit) go in a separate annotation store that references evidence and never amends it.
 3. **Reconstructed is labeled reconstructed.** `basis` is mandatory on Decisions; downstream renderers must respect it in phrasing.
 4. **Every record references its snapshot.** No evidence floats free of the ground truth it was produced against.

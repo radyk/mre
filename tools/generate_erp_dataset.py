@@ -56,6 +56,8 @@ class Dataset:
     # bookkeeping for anomalies / assertions
     priority_multipliers: dict[str, float] = field(default_factory=dict)
     omit_files: set[str] = field(default_factory=set)
+    drop_columns: dict[str, set[str]] = field(default_factory=dict)
+    drop_manifest_keys: set[str] = field(default_factory=set)
 
 
 # ---------------------------------------------------------------------------
@@ -661,6 +663,10 @@ def _anomaly_stale_due_dates(ds: Dataset, rng: random.Random, n: int) -> dict:
     stale = ds.reference_date - timedelta(days=400)
     for o in victims:
         o["due_date"] = stale.isoformat()
+        # A stale-backlog order was CREATED long ago too — keep the row
+        # internally coherent (due >= created), so the stale flag is a
+        # backlog signal, not a spurious order_dates inconsistency.
+        o["created_date"] = (stale - timedelta(days=5)).isoformat()
     return {
         "anomaly": "stale_due_dates", "param": n, "affected_count": n,
         "expected_finding_code": "VALUE_OUT_OF_RANGE", "expected_severity": "info",
@@ -747,20 +753,397 @@ def _anomaly_chunking_exam(ds: Dataset, rng: random.Random, n: int) -> dict:
     }
 
 
+# ---------------------------------------------------------------------------
+# Anomaly catalog v2 — the seven new gate checks + the transition-matrix
+# converse + the structural/WIP/quality coverage anomalies (2026-07-10,
+# Certificate session). Each seeds exactly one gate rule; every entry carries
+# expected_rule_id + expected_outcome so the coverage matrix can assert on the
+# precise registry rule, not just the (shared) finding code.
+# ---------------------------------------------------------------------------
+
+def _entry(anomaly: str, code: Optional[str], rule_id: str, outcome: str,
+           severity: str, disposition: str, grade_floor: str, **extra) -> dict:
+    d = {
+        "anomaly": anomaly, "expected_finding_code": code,
+        "expected_rule_id": rule_id, "expected_outcome": outcome,
+        "expected_severity": severity, "expected_disposition": disposition,
+        "expected_grade_floor": grade_floor,
+    }
+    d.update(extra)
+    return d
+
+
+def _anomaly_manifest_schema_invalid(ds: Dataset, rng: random.Random, field_name: Any = None) -> dict:
+    """Parses as JSON but omits a REQUIRED top-level manifest field (§3)."""
+    key = field_name or "ids_version"
+    ds.drop_manifest_keys.add(key)
+    return _entry("manifest_schema_invalid", "MALFORMED_FIELD",
+                  "ids.manifest_schema_valid", "violated", "blocker", "blocked",
+                  "REJECTED", param=key)
+
+
+def _anomaly_missing_columns(ds: Dataset, rng: random.Random, spec: Any = None) -> dict:
+    """Drop a REQUIRED column from a file (no silent .get() fall-through)."""
+    fname, col = (spec or "resources.csv:facility_id").split(":")
+    ds.drop_columns.setdefault(fname, set()).add(col)
+    return _entry("missing_columns", "MALFORMED_FIELD",
+                  "ids.required_columns_parse", "violated", "blocker", "blocked",
+                  "REJECTED", param=f"{fname}:{col}")
+
+
+def _anomaly_blank_keys(ds: Dataset, rng: random.Random, n: Any = 1) -> dict:
+    """Blank a key field (product_id) on n order rows — un-subsumed from the
+    valid-orders aggregate; a per-field null scan of its own."""
+    n = int(n)
+    for o in rng.sample(ds.orders, min(n, len(ds.orders))):
+        o["product_id"] = ""
+    return _entry("blank_keys", "MALFORMED_FIELD",
+                  "ids.key_fields_populated", "violated", "blocker", "blocked",
+                  "REJECTED", param=n, affected_count=n)
+
+
+def _anomaly_lineless_routes(ds: Dataset, rng: random.Random, n: Any = 1) -> dict:
+    """n orders reference a route HEADER that has no active routing lines —
+    header resolves, lines do not (routes_resolve_to_lines, unfolded)."""
+    n = int(n)
+    victims = rng.sample(ds.orders, min(n, len(ds.orders)))
+    for i, o in enumerate(victims):
+        route_id = f"RT-LINELESS-{i + 1:03d}"
+        ds.routings.append({
+            "route_id": route_id, "facility_id": o["facility_id"],
+            "product_id": o["product_id"], "status": "active", "approved": "Y",
+            "version": "1", "effective_from": ds.reference_date.isoformat(),
+        })
+        o["route_id"] = route_id  # product still resolves; route header exists; no lines
+    return _entry("lineless_routes", "ORPHAN_ENTITY",
+                  "ids.routes_resolve_to_lines", "degraded", "error", "excluded",
+                  "CONDITIONAL", param=n, affected_count=n)
+
+
+def _anomaly_inverted_dates(ds: Dataset, rng: random.Random, n: Any = 2) -> dict:
+    """n orders whose due_date precedes their release_date (§5.1)."""
+    n = int(n)
+    early = ds.reference_date + timedelta(days=2)
+    late = ds.reference_date + timedelta(days=20)
+    for o in rng.sample(ds.orders, min(n, len(ds.orders))):
+        o["release_date"] = late.isoformat()
+        o["due_date"] = early.isoformat()
+    return _entry("inverted_dates", "TEMPORAL_IMPOSSIBILITY",
+                  "ids.order_dates_internally_consistent", "degraded", "error",
+                  "proceeded_flagged", "CONDITIONAL", param=n, affected_count=n)
+
+
+def _anomaly_foreign_facility(ds: Dataset, rng: random.Random, n: Any = 2) -> dict:
+    """n orders reference a facility outside the manifest facility_scope."""
+    n = int(n)
+    for o in rng.sample(ds.orders, min(n, len(ds.orders))):
+        o["facility_id"] = "F-FOREIGN"
+    return _entry("foreign_facility", "ORPHAN_ENTITY",
+                  "ids.facility_references_consistent", "degraded", "error",
+                  "excluded", "CONDITIONAL", param=n, affected_count=n)
+
+
+def _anomaly_defaulted_attributes(ds: Dataset, rng: random.Random, n: Any = 3) -> dict:
+    """n orders carry no priority signal at all (blank priority AND
+    commitment class) — a defaulted decision-relevant attribute."""
+    n = int(n)
+    for o in rng.sample(ds.orders, min(n, len(ds.orders))):
+        o["priority_class"] = ""
+        o["commitment_class"] = ""
+    return _entry("defaulted_attributes", "LOW_CONFIDENCE_INPUT",
+                  "ids.decision_relevant_attributes_populated", "flagged", "info",
+                  "proceeded_flagged", "ACCEPTED", param=n, affected_count=n)
+
+
+def _anomaly_sparse_optionals(ds: Dataset, rng: random.Random, n: Any = 1) -> dict:
+    """Populate an optional column (release_date) on a sub-floor fraction of
+    orders — present, non-empty, but sparse."""
+    n = int(n)
+    start = ds.reference_date.isoformat()
+    for o in rng.sample(ds.orders, min(n, len(ds.orders))):
+        o["release_date"] = start
+    return _entry("sparse_optionals", "LOW_CONFIDENCE_INPUT",
+                  "ids.optional_columns_are_not_sparse", "flagged", "info",
+                  "proceeded_flagged", "ACCEPTED", param=n, affected_count=n)
+
+
+def _anomaly_unused_transition_matrix(ds: Dataset, rng: random.Random, _: Any = None) -> dict:
+    """setup_transitions.csv present, but no setup_family values are used
+    (the converse of setup_family_without_matrix)."""
+    fams = _FAMILIES[:2]
+    ds.setup_transitions = [
+        {"from_family": fams[0], "to_family": fams[1], "setup_minutes": "90",
+         "setup_cost": "", "scrap_units": ""},
+    ]
+    ds.manifest["semantics"]["unlisted_transition_default"] = "base_setup"
+    for line in ds.routing_lines:
+        line["setup_family"] = ""
+    return _entry("unused_transition_matrix", "AMBIGUOUS_SOURCE",
+                  "ids.transition_matrix_references_declared_families", "degraded",
+                  "error", "proceeded_flagged", "CONDITIONAL", param=None)
+
+
+def _anomaly_no_valid_orders(ds: Dataset, rng: random.Random, _: Any = None) -> dict:
+    """Every order has quantity 0 → zero in-scope orders."""
+    for o in ds.orders:
+        o["quantity"] = "0"
+    return _entry("no_valid_orders", "MISSING_REFERENCE",
+                  "ids.in_scope_orders_exist", "violated", "blocker", "blocked",
+                  "REJECTED", param=None)
+
+
+def _anomaly_no_resources(ds: Dataset, rng: random.Random, _: Any = None) -> dict:
+    """resources.csv has no rows."""
+    ds.resources = []
+    return _entry("no_resources", "MISSING_REFERENCE",
+                  "ids.in_scope_resources_exist", "violated", "blocker", "blocked",
+                  "REJECTED", param=None)
+
+
+def _anomaly_no_calendar_patterns(ds: Dataset, rng: random.Random, _: Any = None) -> dict:
+    """calendars.csv carries no pattern rows — capacity is not optional (§5.6)."""
+    ds.calendars = [r for r in ds.calendars if r.get("row_type") != "pattern"]
+    return _entry("no_calendar_patterns", "MISSING_REFERENCE",
+                  "ids.calendar_patterns_exist", "violated", "blocker", "blocked",
+                  "REJECTED", param=None)
+
+
+def _anomaly_incomplete_cost_core(ds: Dataset, rng: random.Random, field_name: Any = None) -> dict:
+    """Delete a required cost_model.core field (§5.9)."""
+    key = field_name or "tardiness_cost_per_hour"
+    ds.cost_model.get("core", {}).pop(key, None)
+    return _entry("incomplete_cost_core", "MISSING_REFERENCE",
+                  "ids.cost_model_core_present", "violated", "blocker", "blocked",
+                  "REJECTED", param=key)
+
+
+def _anomaly_runrate_outlier(ds: Dataset, rng: random.Random, _: Any = None) -> dict:
+    """One product's run rate is >10x its family median (§4 outlier).
+
+    Seeds a dedicated family with three normal members and one gross outlier —
+    three normals keep the median stable so the outlier stands clear (a
+    two-member family's median is dragged by the outlier itself). The products
+    are unreferenced by orders, which the gate does not flag."""
+    for i in range(3):
+        ds.products.append({
+            "product_id": f"PROD-OUTLIER-N{i}", "uom": "EA",
+            "facility_id": ds.facilities[0], "product_group": "outlier_family",
+            "costing_lot_size": "100", "setup_minutes": "20",
+            "production_minutes": "50", "cost_price": "10.0",
+        })
+    ds.products.append({
+        "product_id": "PROD-OUTLIER-HUGE", "uom": "EA",
+        "facility_id": ds.facilities[0], "product_group": "outlier_family",
+        "costing_lot_size": "100", "setup_minutes": "20",
+        "production_minutes": "60000", "cost_price": "10.0",  # 1200x the normals
+    })
+    return _entry("runrate_outlier", "STATISTICAL_OUTLIER",
+                  "ids.durations_within_plausible_range", "flagged", "info",
+                  "proceeded_flagged", "ACCEPTED", param=None)
+
+
+def _anomaly_customer_without_master(ds: Dataset, rng: random.Random, _: Any = None) -> dict:
+    """Orders carry customer_id and the manifest declares customer weighting,
+    but customers.csv is absent (§5.10)."""
+    ds.manifest["semantics"]["priority_precedence"] = "customer_over_order"
+    for o in ds.orders:
+        o["customer_id"] = "CUST-EXT"
+    ds.customers = []
+    return _entry("customer_without_master", "AMBIGUOUS_SOURCE",
+                  "ids.customer_references_have_master", "degraded", "error",
+                  "proceeded_flagged", "CONDITIONAL", param=None)
+
+
+def _num(val: Any, default: float = 0.0) -> float:
+    try:
+        return float(val)
+    except (TypeError, ValueError):
+        return default
+
+
+# --- WIP coverage anomalies (docs/06 §5.13). Each builds a coherent base then
+#     injects exactly one incoherence, reusing the first order's real route. ---
+
+def _wip_context(ds: Dataset) -> tuple[dict, list[int], dict]:
+    order = ds.orders[0]
+    lines = sorted(
+        (rl for rl in ds.routing_lines if rl["route_id"] == order["route_id"]
+         and str(rl.get("active", "1")) == "1"),
+        key=lambda r: int(r.get("sequence", "0") or "0"),
+    )
+    seqs = [int(rl["sequence"]) for rl in lines]
+    res_by_seq = {int(rl["sequence"]): rl["resource_id"] for rl in lines}
+    ds.manifest["semantics"]["wip_progress_basis"] = "remaining_minutes"
+    return order, seqs, res_by_seq
+
+
+def _anomaly_undeclared_wip_basis(ds: Dataset, rng: random.Random, _: Any = None) -> dict:
+    """wip_status.csv present but manifest omits the REQUIRED wip_progress_basis
+    declaration (§3) — the source cannot be interpreted (AMBIGUOUS_SOURCE)."""
+    order = ds.orders[0]
+    lines = sorted(
+        (rl for rl in ds.routing_lines if rl["route_id"] == order["route_id"]
+         and str(rl.get("active", "1")) == "1"),
+        key=lambda r: int(r.get("sequence", "0") or "0"),
+    )
+    seq0 = int(lines[0]["sequence"])
+    ds.wip_status = [{
+        "order_id": order["order_id"], "sequence": str(seq0), "status": "complete",
+        "actual_start": "2026-01-02T08:00:00", "actual_resource_id": lines[0]["resource_id"],
+        "remaining_minutes": "", "quantity_complete": "",
+    }]
+    ds.manifest["semantics"].pop("wip_progress_basis", None)
+    return _entry("undeclared_wip_basis", "AMBIGUOUS_SOURCE",
+                  "ids.manifest_semantics_declared", "violated", "blocker", "blocked",
+                  "REJECTED", param=None)
+
+
+def _anomaly_wip_unknown_refs(ds: Dataset, rng: random.Random, _: Any = None) -> dict:
+    order, seqs, res_by_seq = _wip_context(ds)
+    ds.wip_status = [{
+        "order_id": "ORD-DOES-NOT-EXIST", "sequence": str(seqs[0]),
+        "status": "complete", "actual_start": "2026-01-02T08:00:00",
+        "actual_resource_id": res_by_seq[seqs[0]],
+        "remaining_minutes": "", "quantity_complete": "",
+    }]
+    return _entry("wip_unknown_refs", "ORPHAN_ENTITY",
+                  "ids.wip_references_known_entities", "degraded", "error",
+                  "excluded", "CONDITIONAL", param=None)
+
+
+def _anomaly_wip_in_progress_incomplete(ds: Dataset, rng: random.Random, _: Any = None) -> dict:
+    order, seqs, res_by_seq = _wip_context(ds)
+    ds.wip_status = [{
+        "order_id": order["order_id"], "sequence": str(seqs[0]),
+        "status": "in_progress", "actual_start": "",  # missing observed start
+        "actual_resource_id": res_by_seq[seqs[0]],
+        "remaining_minutes": "60", "quantity_complete": "",
+    }]
+    return _entry("wip_in_progress_incomplete", "MALFORMED_FIELD",
+                  "ids.wip_in_progress_rows_carry_progress", "degraded", "error",
+                  "defaulted", "CONDITIONAL", param=None)
+
+
+def _anomaly_wip_sequence_violation(ds: Dataset, rng: random.Random, _: Any = None) -> dict:
+    order, seqs, res_by_seq = _wip_context(ds)
+    if len(seqs) < 2:
+        raise ValueError("wip_sequence_violation needs a >=2-step route")
+    ds.wip_status = [
+        {"order_id": order["order_id"], "sequence": str(seqs[0]),
+         "status": "not_started", "actual_start": "", "actual_resource_id": "",
+         "remaining_minutes": "", "quantity_complete": ""},
+        {"order_id": order["order_id"], "sequence": str(seqs[1]),
+         "status": "in_progress", "actual_start": "2026-01-02T08:00:00",
+         "actual_resource_id": res_by_seq[seqs[1]],
+         "remaining_minutes": "60", "quantity_complete": ""},
+    ]
+    return _entry("wip_sequence_violation", "LOW_CONFIDENCE_INPUT",
+                  "ids.wip_progression_respects_sequence", "degraded", "error",
+                  "proceeded_flagged", "CONDITIONAL", param=None)
+
+
+def _anomaly_wip_complete_with_remaining(ds: Dataset, rng: random.Random, _: Any = None) -> dict:
+    order, seqs, res_by_seq = _wip_context(ds)
+    ds.wip_status = [{
+        "order_id": order["order_id"], "sequence": str(seqs[0]),
+        "status": "complete", "actual_start": "2026-01-02T08:00:00",
+        "actual_resource_id": res_by_seq[seqs[0]],
+        "remaining_minutes": "120", "quantity_complete": "",  # inconsistent
+    }]
+    return _entry("wip_complete_with_remaining", "VALUE_OUT_OF_RANGE",
+                  "ids.wip_completion_is_internally_consistent", "degraded", "error",
+                  "proceeded_flagged", "CONDITIONAL", param=None)
+
+
+def _anomaly_wip_start_after_reference(ds: Dataset, rng: random.Random, _: Any = None) -> dict:
+    order, seqs, res_by_seq = _wip_context(ds)
+    after = (ds.reference_date + timedelta(days=3)).isoformat()
+    ds.wip_status = [{
+        "order_id": order["order_id"], "sequence": str(seqs[0]),
+        "status": "in_progress", "actual_start": f"{after}T08:00:00",
+        "actual_resource_id": res_by_seq[seqs[0]],
+        "remaining_minutes": "60", "quantity_complete": "",
+    }]
+    return _entry("wip_start_after_reference", "VALUE_OUT_OF_RANGE",
+                  "ids.wip_actual_starts_are_at_or_before_reference_date", "degraded",
+                  "error", "proceeded_flagged", "CONDITIONAL", param=None)
+
+
 _ANOMALY_FUNCS = {
     "missing_required_file": _anomaly_missing_required_file,
     "missing_manifest_field": _anomaly_missing_manifest_field,
+    "manifest_schema_invalid": _anomaly_manifest_schema_invalid,
+    "missing_columns": _anomaly_missing_columns,
+    "blank_keys": _anomaly_blank_keys,
     "orphan_product_refs": _anomaly_orphan_product_refs,
     "orphan_route_refs": _anomaly_orphan_route_refs,
+    "lineless_routes": _anomaly_lineless_routes,
     "duplicate_order_ids": _anomaly_duplicate_order_ids,
     "zero_lot_size": _anomaly_zero_lot_size,
     "inactive_route_refs": _anomaly_inactive_route_refs,
+    "inverted_dates": _anomaly_inverted_dates,
+    "foreign_facility": _anomaly_foreign_facility,
     "stale_due_dates": _anomaly_stale_due_dates,
     "placeholder_dates": _anomaly_placeholder_dates,
     "setup_family_without_matrix": _anomaly_setup_family_without_matrix,
+    "unused_transition_matrix": _anomaly_unused_transition_matrix,
     "uncovered_priority_class": _anomaly_uncovered_priority_class,
+    "customer_without_master": _anomaly_customer_without_master,
     "lock_on_unknown_order": _anomaly_lock_on_unknown_order,
+    "no_valid_orders": _anomaly_no_valid_orders,
+    "no_resources": _anomaly_no_resources,
+    "no_calendar_patterns": _anomaly_no_calendar_patterns,
+    "incomplete_cost_core": _anomaly_incomplete_cost_core,
+    "runrate_outlier": _anomaly_runrate_outlier,
+    "defaulted_attributes": _anomaly_defaulted_attributes,
+    "sparse_optionals": _anomaly_sparse_optionals,
+    "undeclared_wip_basis": _anomaly_undeclared_wip_basis,
+    "wip_unknown_refs": _anomaly_wip_unknown_refs,
+    "wip_in_progress_incomplete": _anomaly_wip_in_progress_incomplete,
+    "wip_sequence_violation": _anomaly_wip_sequence_violation,
+    "wip_complete_with_remaining": _anomaly_wip_complete_with_remaining,
+    "wip_start_after_reference": _anomaly_wip_start_after_reference,
     "chunking_exam": _anomaly_chunking_exam,
+}
+
+
+# Rule → anomaly spec that triggers it (docs/06 §4 coverage matrix). Every
+# implemented registry rule MUST have an entry here; the coverage test asserts
+# completeness against RULE_REGISTRY, so a future rule added without an anomaly
+# fails CI by construction. Value is a generate() anomaly spec string.
+RULE_TO_ANOMALY: dict[str, str] = {
+    "ids.submission_files_present": "missing_required_file:products.csv",
+    "ids.manifest_schema_valid": "manifest_schema_invalid:ids_version",
+    "ids.manifest_semantics_declared": "undeclared_wip_basis",
+    "ids.required_columns_parse": "missing_columns:resources.csv:facility_id",
+    "ids.key_fields_populated": "blank_keys:1",
+    "ids.in_scope_orders_exist": "no_valid_orders",
+    "ids.in_scope_resources_exist": "no_resources",
+    "ids.calendar_patterns_exist": "no_calendar_patterns",
+    "ids.cost_model_core_present": "incomplete_cost_core:tardiness_cost_per_hour",
+    "ids.orders_resolve_to_products": "orphan_product_refs:5",
+    "ids.orders_resolve_to_routes": "orphan_route_refs:5",
+    "ids.routes_resolve_to_lines": "lineless_routes:1",
+    "ids.operation_durations_computable": "zero_lot_size:2",
+    "ids.order_identities_unique": "duplicate_order_ids:3",
+    "ids.order_dates_internally_consistent": "inverted_dates:2",
+    "ids.facility_references_consistent": "foreign_facility:2",
+    "ids.orders_use_active_routes": "inactive_route_refs:3",
+    "ids.priority_classes_priced": "uncovered_priority_class",
+    "ids.setup_families_have_transition_matrix": "setup_family_without_matrix",
+    "ids.transition_matrix_references_declared_families": "unused_transition_matrix",
+    "ids.customer_references_have_master": "customer_without_master",
+    "ids.locks_reference_known_entities": "lock_on_unknown_order:2",
+    "ids.wip_references_known_entities": "wip_unknown_refs",
+    "ids.wip_progression_respects_sequence": "wip_sequence_violation",
+    "ids.wip_in_progress_rows_carry_progress": "wip_in_progress_incomplete",
+    "ids.wip_actual_starts_are_at_or_before_reference_date": "wip_start_after_reference",
+    "ids.wip_completion_is_internally_consistent": "wip_complete_with_remaining",
+    "ids.durations_within_plausible_range": "runrate_outlier",
+    "ids.due_dates_within_planning_horizon": "placeholder_dates:1",
+    "ids.backlog_is_current": "stale_due_dates:2",
+    "ids.decision_relevant_attributes_populated": "defaulted_attributes:3",
+    "ids.optional_columns_are_not_sparse": "sparse_optionals:1",
 }
 
 
@@ -799,8 +1182,8 @@ _COLUMNS = {
 }
 
 
-def _write_csv(path: Path, fname: str, rows: list[dict]) -> None:
-    cols = _COLUMNS[fname]
+def _write_csv(path: Path, fname: str, rows: list[dict], dropped: set[str] | None = None) -> None:
+    cols = [c for c in _COLUMNS[fname] if not (dropped and c in dropped)]
     with open(path, "w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=cols)
         w.writeheader()
@@ -812,7 +1195,8 @@ def _write_submission(out_dir: Path, ds: Dataset) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     if "manifest.json" not in ds.omit_files:
-        (out_dir / "manifest.json").write_text(json.dumps(ds.manifest, indent=2), encoding="utf-8")
+        manifest_out = {k: v for k, v in ds.manifest.items() if k not in ds.drop_manifest_keys}
+        (out_dir / "manifest.json").write_text(json.dumps(manifest_out, indent=2), encoding="utf-8")
 
     table_map = {
         "orders.csv": ds.orders, "routings.csv": ds.routings,
@@ -827,7 +1211,7 @@ def _write_submission(out_dir: Path, ds: Dataset) -> None:
         if (fname in ("customers.csv", "setup_transitions.csv", "locks.csv",
                       "wip_status.csv") and not rows):
             continue  # optional doorway tables: omit entirely when unused
-        _write_csv(out_dir / fname, fname, rows)
+        _write_csv(out_dir / fname, fname, rows, ds.drop_columns.get(fname))
 
     if "cost_model.json" not in ds.omit_files:
         (out_dir / "cost_model.json").write_text(

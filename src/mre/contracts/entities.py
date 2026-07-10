@@ -41,9 +41,19 @@ class ExternalRef(BaseModel):
 
 
 class EntityRef(BaseModel):
-    """Lightweight canonical entity reference used in evidence-record subjects."""
+    """Lightweight entity reference used in evidence-record subjects.
+
+    ``system`` defaults to ``"canonical"``: entity_id/entity_type name a
+    canonical entity. Pre-canonical modules (M0) set ``system="IDS"`` to name a
+    *submission-space* ref — a typed (system, type, id) that exists before any
+    canonical identity does (docs/02 boundary rule 1). entity_id then carries
+    the submission id (e.g. "ORD-000001") and entity_type the submission-space
+    type (e.g. "order_id"), which the M1 adapter registers in the identity map
+    when it mints the corresponding canonical entity, making the finding
+    reachable by canonical key. Added 2026-07-10 (Certificate session)."""
     entity_id: str
     entity_type: str
+    system: str = "canonical"
 
 
 class Quantity(BaseModel):

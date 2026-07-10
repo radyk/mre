@@ -89,7 +89,22 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
-**Roadmap position: Phase 2 IN PROGRESS (demo backbone).** Session 2.4 done
+**Roadmap position: Phase 2 IN PROGRESS (demo backbone).** Certificate session
+(groundwork) done 2026-07-10: **the M0 gate is now a Rule Registry** — 32 named
+rules (`src/mre/contracts/ids_rules.py`, the single source that renders docs/06
+§4), closed outcome vocabulary (satisfied/flagged/degraded/violated), grade as a
+pure function of outcomes, evidence-shape refactor (typed `GateFindingEvidence`
+with rule_id; banded rules record a Metric, emit a Finding only on non-satisfied;
+severity derives from outcome; findings name typed submission-space subjects
+`EntityRef(system="IDS")`, reachable by canonical key via the M1 identity map).
+Seven checks made real + the routes_resolve_to_lines unfold + the
+transition-matrix converse split; `manifest_semantics_declared` recoded
+MALFORMED_FIELD→AMBIGUOUS_SOURCE. Coverage-matrix + reverse-guard tests make the
+registry complete-by-construction. **840 tests green** (+45). Docs §4 (docs/06),
+docs/07 v1.5, docs/02 boundary rule 1, docs/04 amended. **Still pending on the
+Conversational Certificate:** the explainer router domain + the remediation
+catalog (per-rule notes, docs/06 §4; finding-code fallback) — this session was
+the groundwork, not the conversational surface. Session 2.4 done
 2026-07-14: **cloud deploy, encrypted (W4 baseline)** + the 2.3-review
 carry-ins. **CU0:** WIP finding-code review (all five checks reuse existing
 codes within their meanings; `wip_sequence_order_violation → LOW_CONFIDENCE_INPUT`

@@ -1,10 +1,12 @@
 # Incoming Data Specification (IDS)
 
-**Document 6** · Status: Draft v0.3 (living document) · Companions: *01 Canonical Model*, *02 Evidence Contract*, *03 PoC Plan*, *04 Design History*, *05 Constraint Catalog (in progress)*
+**Document 6** · Status: Draft v0.4 (living document) · Companions: *01 Canonical Model*, *02 Evidence Contract*, *03 PoC Plan*, *04 Design History*, *05 Constraint Catalog (in progress)*
 
 **v0.2 changes:** cost model REQUIRED with a minimal core (§5.9); customer and priority doorways (§5.10, §3); setup transitions (§5.11); locks (§5.12); overtime expression (§5.6, §5.9); extension & pipeline-proof clause (§8); costing-completeness grade on the certificate (§4).
 
 **v0.3 changes:** `wip_status.csv` doorway for in-flight work / soft-start rescheduling (§5.13); `wip_progress_basis` manifest declaration (§3); WIP gate checks (§4 Tier 2); the reschedule-from-a-point invariant amendment (§5.13).
+
+**v0.4 changes:** §4 rewritten as the **Rule Registry** (32 named rules, registry v0.2), replacing the prose tier list — closed outcome vocabulary (satisfied/flagged/degraded/violated), grade as a pure function of outcomes, naming convention + governance + permanent status column; seven checks made real (required_columns_parse, key_fields_populated, routes_resolve_to_lines [unfolded from orders_resolve_to_routes], order_dates_internally_consistent, facility_references_consistent, decision_relevant_attributes_populated, optional_columns_are_not_sparse); the transition-matrix converse split; `manifest_semantics_declared` recoded MALFORMED_FIELD→AMBIGUOUS_SOURCE.
 
 ---
 
@@ -97,10 +99,110 @@ The gate runs as an evidence-emitting module (standard finding vocabulary). Outp
 | **CONDITIONALLY ACCEPTED** | Quantified gaps within thresholds; submitter triages each class: fix / waive-with-exclusion / block. |
 | **ACCEPTED** | Proceeds; quality flags disclosed. |
 
-**Check tiers:**
-- **Tier 1 — Structural (rejecting):** required files & manifest present and schema-valid; required columns parseable; keys non-null; ≥1 in-scope order, resource, calendar pattern; cost model core present (§5.9); reference-chain resolution below rejection threshold (Appendix A).
-- **Tier 2 — Integrity (conditional):** resolution rates (orders→products/routes→lines); duration computability; date sanity vs reference_date; facility consistency; duplicates; inactive/unapproved route usage; **doorway consistency** — `setup_family` populated without setup_transitions.csv; `customer_id` populated without customers.csv when customer weighting is declared; locks referencing unknown orders/resources; **WIP coherence** — wip rows referencing unknown orders/sequences/resources; sequence-order violations (an operation in_progress or complete while a predecessor is not_started — also a data-quality signal about shop-floor reporting); in_progress rows missing progress values; actual_start after reference_date.
-- **Tier 3 — Quality (informational):** statistical outliers (thresholds calibrated from recorded distributions, never fixed constants); placeholder-date detection; defaulted decision-relevant attributes; sparse optional columns.
+### 4.1 The Rule Registry (v0.2 of the registry; IDS v0.4)
+
+The gate is a **registry of named rules**, not a prose tier list. The registry
+below is the constitution; `src/mre/contracts/ids_rules.py` is its executable
+form (the single source both this table and the gate read), and the end-to-end
+coverage matrix parametrizes over it, so a rule cannot be claimed here without a
+gate check and an anomaly generator behind it.
+
+**Naming convention (lint-bound):** rule IDs are positive present-tense
+conditions in IDS domain vocabulary (§2/§5 nouns); no digits, no
+threshold/band/severity words, no implementation words (check/validate/parse —
+`required_columns_parse` is the one grandfathered exception).
+
+**Governance:** rule IDs are stable identifiers; never renamed for style;
+retired-never-reused; a superseded rule carries `superseded_by` and stays
+resolvable. Thresholds (Appendix A) are versioned rule *parameters*; a change of
+*meaning* is a new rule_id, never a repurpose.
+
+**Outcome vocabulary (closed enum):** `satisfied` / `flagged` / `degraded` /
+`violated`. Certificate grade is a **pure function of outcomes**: any `violated`
+→ REJECTED; else any `degraded` → CONDITIONALLY ACCEPTED; else ACCEPTED (flags
+disclosed = the set of `flagged` findings). For banded rules the measured
+outcome determines the certificate consequence; boolean structural rules resolve
+to satisfied/violated only, and quality rules to satisfied/flagged only —
+quality rules **structurally cannot degrade a grade** (a quality flag is
+informational). A banded rule always records its measurement as a **Metric**;
+a **Finding** is emitted only when the outcome is not satisfied, so a clean
+submission carries no spurious "100% resolved" findings. Finding severity
+derives from outcome — flagged→WARNING, degraded→ERROR, violated→BLOCKER —
+with the one exception that a quality flag is emitted at INFO (its fixed
+informational consequence).
+
+**Status column** (implemented / unimplemented) — the same honesty convention as
+docs/05's MP/PP column. All 32 read *implemented*; the column is permanent: the
+registry never again silently claims a check the gate does not have.
+
+**Boolean structural — satisfied/violated:**
+
+| rule_id | finding code | IDS ref | status |
+|---|---|---|---|
+| ids.submission_files_present | MISSING_REFERENCE | §2 | implemented |
+| ids.manifest_schema_valid | MALFORMED_FIELD | §3 | implemented |
+| ids.manifest_semantics_declared | AMBIGUOUS_SOURCE | §3 | implemented |
+| ids.required_columns_parse | MALFORMED_FIELD | §5 | implemented |
+| ids.key_fields_populated | MALFORMED_FIELD | §5 | implemented |
+| ids.in_scope_orders_exist | MISSING_REFERENCE | §4 | implemented |
+| ids.in_scope_resources_exist | MISSING_REFERENCE | §4 | implemented |
+| ids.calendar_patterns_exist | MISSING_REFERENCE | §5.6 | implemented |
+| ids.cost_model_core_present | MISSING_REFERENCE | §5.9 | implemented |
+
+**Banded — full outcome range; declared measurement; thresholds → Appendix A:**
+
+| rule_id | measures | finding code | IDS ref | status |
+|---|---|---|---|---|
+| ids.orders_resolve_to_products | order_product_resolution_rate | ORPHAN_ENTITY | §5.1, App A | implemented |
+| ids.orders_resolve_to_routes | order_route_resolution_rate | ORPHAN_ENTITY | §5.2, App A | implemented |
+| ids.routes_resolve_to_lines | route_line_resolution_rate | ORPHAN_ENTITY | §5.3, App A | implemented |
+| ids.operation_durations_computable | duration_computability_rate | VALUE_OUT_OF_RANGE | §5.3, App A | implemented |
+
+`orders_resolve_to_routes` measures pure order→route-*header* resolution;
+`routes_resolve_to_lines` is the independent route→line leg (a route header that
+resolves but has zero active lines fails only the latter). The two were folded
+until 2026-07-10; unfolding them re-derived the affected anomaly manifests from
+the new definitions (recorded in the anomaly catalog, not hand-tuned).
+
+**Conditional integrity — satisfied/flagged/degraded:**
+
+| rule_id | finding code | IDS ref | status |
+|---|---|---|---|
+| ids.order_identities_unique | DUPLICATE_IDENTITY | §5.1, App A | implemented |
+| ids.order_dates_internally_consistent | TEMPORAL_IMPOSSIBILITY | §5.1 | implemented |
+| ids.facility_references_consistent | ORPHAN_ENTITY | §3, §5.5 | implemented |
+| ids.orders_use_active_routes | LOW_CONFIDENCE_INPUT | §5.2 | implemented |
+| ids.priority_classes_priced | UNMAPPABLE_VALUE | §5.9, App A | implemented |
+| ids.setup_families_have_transition_matrix | AMBIGUOUS_SOURCE | §5.11 | implemented |
+| ids.transition_matrix_references_declared_families | AMBIGUOUS_SOURCE | §5.11 | implemented |
+| ids.customer_references_have_master | AMBIGUOUS_SOURCE | §5.10 | implemented |
+| ids.locks_reference_known_entities | ORPHAN_ENTITY | §5.12 | implemented |
+| ids.wip_references_known_entities | ORPHAN_ENTITY | §5.13 | implemented |
+| ids.wip_progression_respects_sequence | LOW_CONFIDENCE_INPUT | §5.13 | implemented |
+| ids.wip_in_progress_rows_carry_progress | MALFORMED_FIELD | §5.13 | implemented |
+| ids.wip_actual_starts_are_at_or_before_reference_date | VALUE_OUT_OF_RANGE | §5.13 | implemented |
+| ids.wip_completion_is_internally_consistent | VALUE_OUT_OF_RANGE | §5.13 | implemented |
+
+`customer_references_have_master` fires only when customer weighting is declared
+in the manifest (`priority_precedence`) — §3-correct silence otherwise, recorded
+so it is documented, not mysterious. The two transition-matrix rules are the
+converse split of one §5.11 doorway (matrix missing for used families; matrix
+present but no families used), honoring one-condition-per-rule.
+
+**Quality — satisfied/flagged; fixed informational consequence:**
+
+| rule_id | finding code | IDS ref | status |
+|---|---|---|---|
+| ids.durations_within_plausible_range | STATISTICAL_OUTLIER | §4 | implemented |
+| ids.due_dates_within_planning_horizon | VALUE_OUT_OF_RANGE | App A | implemented |
+| ids.backlog_is_current | VALUE_OUT_OF_RANGE | App A | implemented |
+| ids.decision_relevant_attributes_populated | LOW_CONFIDENCE_INPUT | §4 | implemented |
+| ids.optional_columns_are_not_sparse | LOW_CONFIDENCE_INPUT | §4 | implemented |
+
+`durations_within_plausible_range` today measures run-rate outliers vs. the
+family median (thresholds calibrated from recorded distributions, never fixed
+constants); the rule's condition is stated broadly and the check may grow into
+it — this note describes what is measured today.
 
 **Costing-completeness grade (new, reported on every certificate):**
 | Level | Meaning |

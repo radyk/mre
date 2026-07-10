@@ -2531,3 +2531,103 @@ was not built (no Docker), and the smoke ran against a local server, not the
 containerized/cloud stack. The artifacts ship; the first live `az deployment
 group create` + cloud smoke run + the in-container CI run (CU1) are the
 outstanding confirmations, carried forward.
+
+### 2026-07-10 — Conversational Certificate groundwork: Rule Registry, gate completion, evidence-shape
+
+Certificate session 1 (design) + a verification audit produced four rulings and
+an eight-finding audit, all implemented this session (IMPLEMENT mode). The gate
+had been a prose tier list emitting anonymous checks; it is now a **registry of
+32 named rules** (`src/mre/contracts/ids_rules.py`, the single source that also
+renders docs/06 §4), each carrying a stable rule_id, finding code, category, and
+status. No new finding codes (all 32 rules map onto the existing 18-code
+vocabulary, verified).
+
+**R-CC1 (catalog unit = gate rule).** The remediation catalog's unit is the
+gate *rule*, not the finding code — a two-level catalog (per-rule note; finding-
+code fallback for rule-less findings). docs/07 wording refined and bumped v1.5.
+
+**R-CC2 (rule identity survives reimplementation).** Rule ids are stable
+identifiers with governance: never renamed for style, retired-never-reused,
+`superseded_by` keeps a superseded rule resolvable; thresholds (Appendix A) are
+versioned rule *parameters* — a change of meaning is a new rule_id, never a
+repurpose. Naming convention is lint-bound (present-tense IDS-vocabulary
+conditions; no digits/threshold/severity/implementation words). Registry lives
+in docs/06 §4.
+
+**R-CC3 (four-outcome vocabulary; grade as pure function).** Closed outcome enum
+`satisfied / flagged / degraded / violated`. Grade is a pure function of
+outcomes (any violated → REJECTED; else any degraded → CONDITIONAL; else
+ACCEPTED). Banded rules take the measured outcome; structural rules resolve
+satisfied/violated only; quality rules satisfied/flagged only and structurally
+cannot degrade a grade. Verified equivalent to the old ad-hoc grading on every
+existing scenario (grades unchanged).
+
+**R-CC4 (typed gate evidence payload).** `GateFindingEvidence` (contracts)
+carries rule_id + outcome + optional measured{name,value,unit} + thresholds_ref
++ a detail dict, validation-at-construction (outcome must be one the rule's
+category permits). The legacy `check=` string is kept for one transition (some
+tests still grep it).
+
+**Evidence-shape refactor (the audit's structural findings).**
+- *subjects=[] envelope violation → submission-space refs.* Gate findings now
+  name typed subjects. `EntityRef` gained an additive `system` field (default
+  `"canonical"`; M0 sets `"IDS"`) — the honest way to say "this id is a
+  submission-space id, not a canonical one." M1 already registered these refs
+  in the identity map; a new test proves a gate finding on an order is reachable
+  by canonical key after a full run, and that the IDS ref is the permanent
+  identity for a REJECTED submission (docs/02 boundary rule 1 amended).
+- *satisfied-findings-as-WARNING / metrics-vs-findings.* Banded rules always
+  record a **Metric**; a **Finding** is emitted only on a non-satisfied outcome
+  — the two spurious "100% resolved" WARNINGs are gone. Severity now derives
+  from outcome (flagged→WARNING, degraded→ERROR, violated→BLOCKER).
+- *the one registry-stands ruling (B4).* `manifest_semantics_declared` recoded
+  MALFORMED_FIELD → **AMBIGUOUS_SOURCE**: an absent declaration malforms
+  nothing — the source cannot be interpreted, which is the code's literal
+  meaning and §3's stated purpose. Pinned test updated.
+- *manifest_schema_valid made true to its name (B5).* Extended from
+  JSON-parseability to schema validation (required fields present + typed) via
+  an `IDSManifest` model; semantics-field presence stays a separate rule.
+
+**Seven checks made real + one unfold + two identity splits.**
+required_columns_parse, key_fields_populated (un-subsumed from the valid-orders
+aggregate), routes_resolve_to_lines (unfolded from orders_resolve_to_routes,
+which is now pure order→route-header resolution — the affected anomaly manifests
+were re-derived from the new definitions, not hand-tuned),
+order_dates_internally_consistent, facility_references_consistent,
+decision_relevant_attributes_populated, optional_columns_are_not_sparse. The
+transition-matrix emit sites split into
+setup_families_have_transition_matrix + transition_matrix_references_declared_families
+(one condition per rule); the orphaned wip complete-with-remaining check gained
+rule_id wip_completion_is_internally_consistent. Each new check landed with a
+generator anomaly (the executable twin) and a coverage-matrix entry.
+
+**Registry additions vs. the handoff's 32.** The handoff listed 32; both were
+present and correct (wip_completion_is_internally_consistent; the
+transition-matrix converse split).
+
+**Regression: coverage by construction.** `RULE_TO_ANOMALY` (in the generator)
+must name a trigger for every implemented rule; a completeness test asserts set
+equality against RULE_REGISTRY, and a parametrized coverage matrix generates
+each anomaly and asserts the precise rule's finding appears with a permitted
+outcome — so a future rule added without an anomaly fails CI by construction.
+A reverse guard asserts every M0 finding carries a registry rule_id (no orphan
+checks). 840 tests green (+45).
+
+**One under-specification, reconciled and recorded.** Handoff §B3 gives a single
+severity mapping (flagged→WARNING) while §A pins quality rules to a "fixed INFO
+consequence." These conflict only for a quality *flag*. Resolved: quality flags
+emit at INFO (preserves the existing stale/placeholder/outlier INFO tests and
+honors "quality cannot degrade a grade"); grade-bearing (banded/conditional)
+flags use WARNING. A second shorthand — the handoff writes
+`EntityRef(system="IDS", type=, id=)` where the real `EntityRef` is
+`{entity_id, entity_type}` and `system` lived only on `ExternalRef` — was
+resolved by adding the `system` field to `EntityRef` (additive, default
+`"canonical"`), entity_type carrying the submission-space type ("order_id") and
+entity_id the submission id.
+
+**Generator truthfulness fix (found by a test interaction).** The `stale_due_dates`
+anomaly pushed due_date 400 days into the past while leaving created_date recent,
+which the new order_dates_internally_consistent check correctly reads as due <
+created. A stale-backlog order was *created* long ago too, so the anomaly now
+ages created_date with the due date — the row stays internally coherent and the
+stale flag is a pure backlog signal, not a spurious inconsistency.
