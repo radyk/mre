@@ -103,12 +103,14 @@ def _load(out_dir: Path, snapshot_id: str):
 
     snap_dir = out_dir / "snapshots" / snapshot_id
     if not snap_dir.exists():
+        # A REJECTED submission writes an evidence index but no snapshot; the
+        # Explainer runs in certificate-only mode. Only the certificate
+        # questions (what's wrong / how do I fix / what first) will answer.
         print(
-            f"[mre.ask] Snapshot '{snapshot_id}' not found at {snap_dir}.\n"
-            f"Run 'python -m mre --snapshot-id {snapshot_id}' first.",
+            f"[mre.ask] No snapshot '{snapshot_id}' — certificate-only mode "
+            "(REJECTED submission). Certificate questions only.",
             file=sys.stderr,
         )
-        sys.exit(1)
 
     store = SnapshotStore(out_dir / "snapshots")
     index = EvidenceIndex.load(index_path)

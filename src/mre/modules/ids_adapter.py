@@ -727,9 +727,10 @@ class IDSAdapter:
         """Translate one order's wip_status.csv rows into canonical
         observations (docs/06 §5.13). Incoherent rows follow the gate's
         dispositions: unknown sequence/resource → excluded; in_progress
-        missing its observed state → defaulted to not_started (an in-flight
-        claim without observed start/resource/progress cannot be honored as
-        a fixed interval). First row wins per sequence (the duplicate rule).
+        missing its observed state → excluded, then treated as not_started (an
+        in-flight claim without observed start/resource/progress cannot be
+        honored as a fixed interval, and no progress value is ever invented).
+        First row wins per sequence (the duplicate rule).
         """
         obs: list[WipOperationObservation] = []
         seen_seqs: set[int] = set()
@@ -778,8 +779,11 @@ class IDSAdapter:
                                   "progress_basis": wip_basis,
                                   "reason": "in_progress wip row missing observed "
                                             "start, resource, or progress value"},
-                        disposition=FindingDisposition.DEFAULTED,
-                        disposition_detail="treated as not_started",
+                        # EXCLUDED, not DEFAULTED: the in-flight claim is dropped
+                        # (no progress value invented) and the op reverts to
+                        # not_started — errand-a audit 2026-07-10.
+                        disposition=FindingDisposition.EXCLUDED,
+                        disposition_detail="in-flight state excluded; treated as not_started",
                         tier=RecordTier.SUPPORTING,
                     )
                     status = WipStatus.NOT_STARTED

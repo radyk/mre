@@ -126,10 +126,13 @@ to satisfied/violated only, and quality rules to satisfied/flagged only —
 quality rules **structurally cannot degrade a grade** (a quality flag is
 informational). A banded rule always records its measurement as a **Metric**;
 a **Finding** is emitted only when the outcome is not satisfied, so a clean
-submission carries no spurious "100% resolved" findings. Finding severity
-derives from outcome — flagged→WARNING, degraded→ERROR, violated→BLOCKER —
-with the one exception that a quality flag is emitted at INFO (its fixed
-informational consequence).
+submission carries no spurious "100% resolved" findings. Finding severity is a
+function of **(outcome, category)**, not outcome alone: flagged→WARNING,
+degraded→ERROR, violated→BLOCKER for every non-quality category, while a
+**quality**-category flag is emitted at INFO (its fixed informational
+consequence). The two arguments are irreducible — the category is what
+distinguishes an informational quality flag from a WARNING flag at the same
+outcome.
 
 **Status column** (implemented / unimplemented) — the same honesty convention as
 docs/05's MP/PP column. All 32 read *implemented*; the column is permanent: the

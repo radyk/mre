@@ -1,7 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v1.5 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v1.6 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
 
+**v1.6:** the **Conversational Certificate landed** 2026-07-10 — frozen remediation catalog v1 (`src/mre/catalog/`, 32 rule notes + 18 fallbacks, typed + completeness-tested), three registers (testimony / remediation / judgment), the explainer certificate-question router (identity-resolved, REJECTED answers certificate-only), and one grade-distance triage. Two frozen quality notes lack a resolvable IDS §-cite in `fix_looks_like` — reported for a design-thread note_version fix, quarantined not edited. Errand (a): the WIP progressless-in-progress disposition is `EXCLUDED`, not `DEFAULTED` (no progress invented). With this, **all Phase 2 workstreams are complete** (cloud in-cloud confirmation still carried from 2.4).
 **v1.5:** remediation catalog re-based on the docs/06 §4 Rule Registry (curated note per gate rule, finding-code fallback for rule-less findings) — the Certificate groundwork (registry, gate completion, evidence-shape) landed 2026-07-10.
 **v1.4:** the Conversational Certificate added (Phase 2 item, remediation catalog, registers extended, website moment in Phase 3).
 

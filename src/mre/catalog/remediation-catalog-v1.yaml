@@ -1,0 +1,792 @@
+# Remediation Catalog — v1 (FROZEN 2026-07-10)
+# Design thread: Conversational Certificate session 1.
+# Governance: notes are authored knowledge, rendered per-case, never LLM
+# improvisation at answer time. Edits bump note_version; rule_ids are stable.
+# Jurisdiction rule: fix_looks_like coaches toward the IDS requirement,
+# never toward ERP-specific surgery. Every rule-level fix_looks_like must
+# carry >=1 resolvable IDS cite (lint-enforced).
+# Severity is a function of (outcome, category): banded/conditional flagged ->
+# WARNING; quality flagged -> INFO; degraded -> ERROR; violated -> BLOCKER.
+
+catalog_version: 1
+reviewed: 2026-07-10
+
+rules:
+  # ── Boolean structural ────────────────────────────────────────────────
+  - rule_id: ids.submission_files_present
+    meaning: >
+      Every REQUIRED file in §2 — manifest.json, orders.csv, routings.csv,
+      routing_lines.csv, products.csv, resources.csv, calendars.csv,
+      cost_model.json — must be present. No schedule exists without demand,
+      routes, times, resources, capacity, and economics.
+    typical_causes:
+      - partial export — the extraction job produced only some tables
+      - filename mismatch — files present but not named exactly per §2
+      - archive assembled by hand and a file was missed
+    fix_looks_like: >
+      Include all eight required artifacts, named exactly as §2 specifies,
+      in one submission directory or archive.
+    verify: resubmit; the deficiency list names each absent file
+    outcome_phrasing:
+      violated: "required files are absent; the submission cannot proceed"
+    note_version: 1
+
+  - rule_id: ids.manifest_schema_valid
+    meaning: >
+      manifest.json must parse and conform to the §3 structure — required
+      fields present, types correct (reference_date as YYYY-MM-DD, timezone
+      as an IANA name, facility_scope as a list).
+    typical_causes:
+      - hand-edited JSON (trailing comma, unquoted string)
+      - a template manifest with placeholder or missing top-level fields
+      - dates in a local format rather than ISO
+    fix_looks_like: >
+      Produce manifest.json matching §3's structure exactly. Semantics
+      declarations are governed separately (see ids.manifest_semantics_declared);
+      this rule is about the container being well-formed.
+    verify: resubmit; the certificate names each malformed or missing field
+    outcome_phrasing:
+      violated: "the manifest does not conform to §3; it cannot be interpreted"
+    note_version: 1
+
+  - rule_id: ids.manifest_semantics_declared
+    meaning: >
+      Every semantics declaration §3 requires for the tables actually
+      submitted must be present — including the conditional ones:
+      priority_precedence when both order and customer priorities appear,
+      unlisted_transition_default when setup_transitions.csv is present,
+      wip_progress_basis when wip_status.csv is present. Interpretation
+      ambiguities are resolved by declaration, never by our guesswork.
+    typical_causes:
+      - an optional table was added without its companion declaration
+      - a manifest reused from an earlier submission that lacked that table
+      - the conditional requirement wasn't known to apply
+    fix_looks_like: >
+      Declare the missing semantics fields per §3. The declaration is the
+      submitter's authority over meaning — we do not divine it.
+    verify: resubmit; the certificate names each undeclared required field
+    outcome_phrasing:
+      violated: "required semantics are undeclared; the data cannot be interpreted"
+    note_version: 1
+
+  - rule_id: ids.required_columns_parse
+    meaning: >
+      Each required file must carry its §5-defined required columns, with
+      values parseable to their declared types — dates as YYYY-MM-DD,
+      datetimes ISO 8601, decimals with a point.
+    typical_causes:
+      - ERP export renamed or localized column headers
+      - locale-formatted numbers (thousands separators, decimal commas)
+      - date formats from a regional default rather than ISO
+    fix_looks_like: >
+      Emit headers exactly per the §5 table schemas and values in the §5
+      type formats. Only transport-level artifacts (encoding, delimiters)
+      are normalized on our side — content formats are the submission's job.
+    verify: resubmit; the certificate names each file, column, and first offending value
+    outcome_phrasing:
+      violated: "required columns are missing or unparseable"
+    note_version: 1
+
+  - rule_id: ids.key_fields_populated
+    meaning: >
+      Key columns (order_id, product_id, route_id, resource_id, and the
+      other §5 keys) must be non-null and non-blank on every row. A row
+      without identity cannot be referenced, validated, or scheduled.
+    typical_causes:
+      - extraction joins producing NULL keys for unmatched rows
+      - template, draft, or subtotal rows included in the export
+      - trailing blank rows from spreadsheet round-trips
+    fix_looks_like: >
+      Exclude rows without identities from the extract, or repair the keys
+      at the source. Every remaining row carries the §5 keys for its table.
+    verify: resubmit; the certificate reports rows dropped per file and key
+    outcome_phrasing:
+      violated: "rows are missing key identities"
+    note_version: 1
+
+  - rule_id: ids.in_scope_orders_exist
+    meaning: >
+      After applying the manifest's facility_scope, at least one order must
+      remain. A submission with zero in-scope demand has nothing to schedule.
+    typical_causes:
+      - facility_scope values that don't match the facility values in orders.csv
+      - an upstream extract filter (status, date range) that removed all open orders
+      - the wrong plant's extract paired with this manifest
+    fix_looks_like: >
+      Reconcile facility_scope (§3) with the facility values actually present
+      in orders.csv (§5.1), or widen the upstream extract to include open demand.
+    verify: resubmit; the certificate reports in-scope order count
+    outcome_phrasing:
+      violated: "no orders are in scope; there is nothing to schedule"
+    note_version: 1
+
+  - rule_id: ids.in_scope_resources_exist
+    meaning: >
+      After facility_scope, at least one resource must remain. Demand
+      without machines has nowhere to run.
+    typical_causes:
+      - facility mismatch between manifest scope and resources.csv values
+      - resources filtered to active-only upstream, and all were flagged inactive
+    fix_looks_like: >
+      Reconcile facility_scope (§3) with resources.csv facility values (§5.5),
+      and confirm the extract includes the plant's working resources.
+    verify: resubmit; the certificate reports in-scope resource count
+    outcome_phrasing:
+      violated: "no resources are in scope; there is no capacity to schedule against"
+    note_version: 1
+
+  - rule_id: ids.calendar_patterns_exist
+    meaning: >
+      At least one calendar base pattern must exist — capacity is not
+      optional. Exceptions without base patterns define no working time.
+    typical_causes:
+      - calendars.csv exported with exception rows only, no base shift patterns
+      - patterns present only for facilities outside the declared scope
+    fix_looks_like: >
+      Provide §5.6 base patterns covering the in-scope resources' working
+      time; exceptions then modify that base.
+    verify: resubmit; the certificate reports pattern count and coverage
+    outcome_phrasing:
+      violated: "no calendar patterns exist; working time is undefined"
+    note_version: 1
+
+  - rule_id: ids.cost_model_core_present
+    meaning: >
+      cost_model.json must carry the §5.9 minimal core — plant-default
+      resource rate, base setup and tardiness costs, priority multipliers.
+      This core is grade C0: sufficient to schedule. Refinement toward
+      C1–C3 is optional and the certificate states what it buys.
+    typical_causes:
+      - economics treated as optional or withheld as sensitive
+      - a partial cost_model.json with some core fields absent
+    fix_looks_like: >
+      Supply the §5.9 core. Plant-level defaults are acceptable at C0 —
+      per-resource precision is a refinement, not an entry requirement.
+    verify: resubmit; the certificate reports the costing-completeness grade
+    outcome_phrasing:
+      violated: "the cost model core is absent; cost-optimized scheduling is impossible"
+    note_version: 1
+
+  # ── Banded ────────────────────────────────────────────────────────────
+  - rule_id: ids.orders_resolve_to_products
+    measures: order_product_resolution_rate
+    thresholds_ref: appendix_a.order_product_resolution
+    meaning: >
+      Every order must reference a product present in products.csv. Orders
+      that don't resolve can't be routed, timed, or costed — they cannot be
+      scheduled and are excluded, with each exclusion recorded.
+    typical_causes:
+      - products.csv extracted at a different time than orders.csv
+      - facility_scope excluding the plant that owns the product records
+      - key formatting differences surviving extraction (padding, case)
+      - obsolete or engineering products absent from the current master
+    fix_looks_like: >
+      Re-extract products.csv in the same window as orders.csv so every
+      product_id in §5.1 resolves, or correct order rows carrying wrong
+      product_ids. Appendix A bands govern: below the conditional floor the
+      submission is rejected; within the conditional band you triage
+      (fix / waive-with-exclusion / block); above the accepted floor the
+      residue is disclosed and the affected orders are excluded.
+    verify: resubmit; the certificate reports order_product_resolution_rate against its band
+    outcome_phrasing:
+      flagged: "orders resolve with exceptions, within accepted tolerance; unresolved orders are excluded and disclosed"
+      degraded: "resolution is below conditional acceptance; triage is required"
+      violated: "resolution is below the rejection floor; the submission cannot proceed"
+    note_version: 1
+
+  - rule_id: ids.orders_resolve_to_routes
+    measures: order_route_resolution_rate
+    thresholds_ref: appendix_a.order_route_resolution
+    meaning: >
+      Every order must resolve to a route header in routings.csv. This rule
+      is pure header resolution — whether the route has usable operation
+      lines is judged separately by ids.routes_resolve_to_lines, so the
+      certificate can tell you where in the chain the break is.
+    typical_causes:
+      - routings extracted for a different revision than orders reference
+      - made-to-order items whose routes are created late, after order entry
+      - route identifiers carried differently in orders vs. routings (version suffixes)
+    fix_looks_like: >
+      Extract routings.csv (§5.2) covering every route_id referenced in
+      orders.csv, including current revisions of make-to-order routes.
+      If orders reference versioned route ids, the extract must carry the
+      version the order names. Appendix A bands govern as with product
+      resolution.
+    verify: resubmit; the certificate reports order_route_resolution_rate against its band
+    outcome_phrasing:
+      flagged: "orders resolve to routes with exceptions, within accepted tolerance"
+      degraded: "route resolution is below conditional acceptance; triage is required"
+      violated: "route resolution is below the rejection floor; the submission cannot proceed"
+    note_version: 1
+
+  - rule_id: ids.routes_resolve_to_lines
+    measures: route_line_resolution_rate
+    thresholds_ref: appendix_a.route_line_resolution
+    meaning: >
+      Every referenced route must carry at least one active operation line
+      in routing_lines.csv. A route header without lines is a name with no
+      process — nothing to sequence, time, or assign. Distinct from
+      ids.orders_resolve_to_routes: that rule asks whether the route exists;
+      this one asks whether it says anything.
+    typical_causes:
+      - routing_lines.csv filtered to active/approved lines upstream, dropping some routes entirely
+      - header and line tables extracted from different snapshots
+      - routes mid-authoring — header saved, operations not yet entered
+    fix_looks_like: >
+      Extract routing_lines.csv (§5.3) so every referenced route carries its
+      operation sequence, aligned to the same snapshot as routings.csv. If a
+      route is genuinely lineless at the source, the orders referencing it
+      cannot be scheduled until its process is authored.
+    verify: resubmit; the certificate reports route_line_resolution_rate against its band
+    outcome_phrasing:
+      flagged: "routes carry lines with exceptions, within accepted tolerance"
+      degraded: "line resolution is below conditional acceptance; triage is required"
+      violated: "line resolution is below the rejection floor; the submission cannot proceed"
+    note_version: 1
+
+  - rule_id: ids.operation_durations_computable
+    measures: duration_computability_rate
+    thresholds_ref: appendix_a.duration_computability
+    meaning: >
+      Every operation must yield a computable working duration from the
+      submitted fields under the manifest's declared
+      production_minutes_basis — rates and quantities positive, in range,
+      and arithmetically usable. An operation without a duration cannot
+      occupy time on a machine.
+    typical_causes:
+      - zero or negative lot sizes, run rates, or production minutes
+      - rate fields carrying sentinel values (0, 1, 9999) where real times were never entered
+      - production_minutes_basis declared per_route while the data is per_operation, or vice versa
+      - unit confusion — hours entered in a minutes field, or per-piece vs. per-lot
+    fix_looks_like: >
+      Correct the offending values at the source so every §5.3 operation
+      computes under the declared §3 basis. If the declaration is what's
+      wrong rather than the values, amend the manifest — the declaration
+      is yours to make, but it must match the data it governs.
+    verify: resubmit; the certificate reports duration_computability_rate against its band
+    outcome_phrasing:
+      flagged: "durations compute with exceptions, within accepted tolerance; affected operations are excluded and disclosed"
+      degraded: "duration computability is below conditional acceptance; triage is required"
+      violated: "duration computability is below the rejection floor; the submission cannot proceed"
+    note_version: 1
+
+  # ── Conditional integrity ─────────────────────────────────────────────
+  - rule_id: ids.order_identities_unique
+    meaning: >
+      Each order_id appears once in orders.csv. Duplicate identities make
+      demand ambiguous — two rows claiming one name cannot both be the order.
+    typical_causes:
+      - extraction joins fanning out one order across matched rows
+      - re-exports appended to a prior file rather than replacing it
+      - order lines exported where order headers were expected
+    fix_looks_like: >
+      One row per order per §5.1. If your source is line-level, aggregate to
+      order level before submission. Waiving applies first-wins-with-finding:
+      the first row stands, the rest are excluded and disclosed.
+    verify: resubmit; the certificate reports duplicate count
+    outcome_phrasing:
+      flagged: "duplicate identities present, within tolerance; first row stands, duplicates excluded"
+      degraded: "duplicate identities exceed the conditional threshold; triage is required"
+    note_version: 1
+
+  - rule_id: ids.order_dates_internally_consistent
+    meaning: >
+      Within each order, the dates must tell a possible story — due on or
+      after release/created. An order due before it exists has no
+      schedulable window.
+    typical_causes:
+      - due dates hand-edited after order creation without validation
+      - date columns swapped in the extract mapping
+      - defaulted due dates (system epoch, blank-coerced) landing before creation
+    fix_looks_like: >
+      Correct the offending §5.1 dates at the source. Waived orders are
+      excluded — an impossible window cannot be scheduled around.
+    verify: resubmit; the certificate lists offending orders with both dates
+    outcome_phrasing:
+      flagged: "date-inconsistent orders present, within tolerance; excluded and disclosed"
+      degraded: "date inconsistencies exceed the conditional threshold; triage is required"
+    note_version: 1
+
+  - rule_id: ids.facility_references_consistent
+    meaning: >
+      Facility references on orders and resources must fall within the
+      manifest's facility_scope or the declared facility set. A row pointing
+      at a facility the submission doesn't describe can't be placed.
+    typical_causes:
+      - multi-plant extract paired with a single-plant facility_scope
+      - facility codes differing between tables (site code vs. plant code)
+      - transferred orders still carrying their originating facility
+    fix_looks_like: >
+      Align facility values in §5.1/§5.5 with the §3 facility_scope — widen
+      the scope or correct the rows. Waived rows are excluded from scheduling.
+    verify: resubmit; the certificate reports out-of-scope references per table
+    outcome_phrasing:
+      flagged: "out-of-scope facility references present, within tolerance; excluded and disclosed"
+      degraded: "facility inconsistencies exceed the conditional threshold; triage is required"
+    note_version: 1
+
+  - rule_id: ids.orders_use_active_routes
+    meaning: >
+      Orders should reference routes marked active/approved. An inactive
+      route still schedules — but the process it describes may be obsolete,
+      so every result built on it inherits that doubt.
+    typical_causes:
+      - orders entered against a route later superseded, never re-pointed
+      - route status maintained lazily at the source (everything left "draft")
+      - engineering revisions active in production but not yet flagged approved
+    fix_looks_like: >
+      Re-point orders to current approved routes in §5.2, or correct route
+      status at the source if the flag is stale rather than the route.
+      Proceeding as-is is permitted — the schedule discloses which orders
+      ran on unapproved process data.
+    verify: resubmit; the certificate reports inactive-route usage count
+    outcome_phrasing:
+      flagged: "orders reference inactive routes; scheduled with disclosure"
+      degraded: "inactive-route usage exceeds the conditional threshold; triage is required"
+    note_version: 1
+
+  - rule_id: ids.priority_classes_priced
+    meaning: >
+      Every priority class used by orders (or customers) must have a
+      multiplier in cost_model.json. Priority is a cost coefficient here —
+      an unpriced class is a priority the objective cannot see.
+    typical_causes:
+      - a new priority class introduced in orders after the cost model was authored
+      - casing or naming drift between the class values and the multiplier keys
+      - customer priorities enabled without extending the multiplier table
+    fix_looks_like: >
+      Extend §5.9 priority_multipliers to cover every class in use — 100%
+      coverage is the bar per Appendix A. Waiving leaves the uncovered
+      classes unpriced, meaning their urgency exerts no pull on the schedule;
+      that is disclosed, not silently absorbed.
+    verify: resubmit; the certificate reports class coverage
+    outcome_phrasing:
+      flagged: "priority classes unpriced, within tolerance; their urgency does not influence the schedule"
+      degraded: "unpriced priority classes exceed the conditional threshold; triage is required"
+    note_version: 1
+
+  - rule_id: ids.setup_families_have_transition_matrix
+    meaning: >
+      When routing lines declare setup_family, setup_transitions.csv must
+      accompany them. Families without a matrix are a claim of
+      sequence-dependent setups with no way to price a single transition.
+    typical_causes:
+      - setup_family populated plant-wide by default while the matrix was never extracted
+      - the matrix maintained outside the ERP (spreadsheet) and missed by the export
+    fix_looks_like: >
+      Supply setup_transitions.csv per §5.11, with unlisted_transition_default
+      declared in the manifest (§3) — or blank setup_family if
+      sequence-dependent setups are not actually in use. Either resolves the
+      ambiguity; leaving both halves mismatched cannot.
+    verify: resubmit; the doorway-consistency finding clears
+    outcome_phrasing:
+      flagged: "setup families are declared without a transition matrix; setup pricing falls back to base costs, disclosed"
+      degraded: "the setup doorway inconsistency exceeds tolerance; triage is required"
+    note_version: 1
+
+  - rule_id: ids.transition_matrix_references_declared_families
+    meaning: >
+      The converse doorway: when setup_transitions.csv is supplied, routing
+      lines must actually declare the families it prices. A matrix nothing
+      references is dead weight — and a sign the extract lost the family
+      column.
+    typical_causes:
+      - setup_family column dropped or blanked in the routing-lines extract
+      - matrix families named differently than routing-line families (aliases)
+    fix_looks_like: >
+      Populate setup_family on §5.3 routing lines with the family names the
+      §5.11 matrix prices — or omit the matrix if families are genuinely
+      not modeled. Names must match exactly; we do not guess aliases.
+    verify: resubmit; the doorway-consistency finding clears
+    outcome_phrasing:
+      flagged: "a transition matrix is present but unreferenced; it has no effect, disclosed"
+      degraded: "the matrix doorway inconsistency exceeds tolerance; triage is required"
+    note_version: 1
+
+  - rule_id: ids.customer_references_have_master
+    meaning: >
+      When customer weighting is declared (§3 priority_precedence) and
+      orders carry customer_id, customers.csv must resolve those ids.
+      An unresolvable customer is a priority signal pointing at nobody.
+      This rule is silent when customer weighting is not declared — an
+      undeclared doorway is not checked.
+    typical_causes:
+      - customers.csv filtered to active accounts while orders reference dormant ones
+      - customer ids in orders carrying a prefix or ledger code the master lacks
+    fix_looks_like: >
+      Extract customers.csv (§5.10) covering every customer_id referenced by
+      in-scope orders. Waived orders fall back to order-level priority only,
+      disclosed.
+    verify: resubmit; the certificate reports customer resolution
+    outcome_phrasing:
+      flagged: "customer references unresolved, within tolerance; affected orders use order priority only"
+      degraded: "customer resolution is below the conditional threshold; triage is required"
+    note_version: 1
+
+  - rule_id: ids.locks_reference_known_entities
+    meaning: >
+      Every lock in locks.csv must reference an order and resource the
+      submission contains. A lock on a ghost is unenforceable — and
+      dangerous, because the submitter believes something is frozen that
+      the schedule cannot see.
+    typical_causes:
+      - locks exported from a live schedule while orders.csv reflects an older cut
+      - locked orders completed or cancelled since the lock was placed
+      - resource renamed or retired while the lock persisted
+    fix_looks_like: >
+      Export locks.csv (§5.12) from the same snapshot as orders and
+      resources, and clear locks whose subjects no longer exist. Unresolvable
+      locks are excluded — nothing is silently held.
+    verify: resubmit; the certificate lists each unresolvable lock
+    outcome_phrasing:
+      flagged: "locks reference unknown entities, within tolerance; those locks are excluded and disclosed"
+      degraded: "unresolvable locks exceed the conditional threshold; triage is required"
+    note_version: 1
+
+  - rule_id: ids.wip_references_known_entities
+    meaning: >
+      Every wip_status.csv row must reference a known order, operation
+      sequence, and resource. In-flight state attached to nothing cannot
+      fix any interval or free any capacity.
+    typical_causes:
+      - WIP exported from the shop floor system, orders from the ERP, at different cuts
+      - operation renumbering between the routing revision and the floor's records
+    fix_looks_like: >
+      Export §5.13 WIP from the same snapshot as the rest of the submission,
+      with sequence numbers matching the submitted routing lines. Unresolvable
+      rows are excluded — the affected operations are treated as not started,
+      disclosed.
+    verify: resubmit; the certificate lists each unresolvable WIP row
+    outcome_phrasing:
+      flagged: "WIP rows reference unknown entities, within tolerance; excluded, affected work treated as not started"
+      degraded: "unresolvable WIP exceeds the conditional threshold; triage is required"
+    note_version: 1
+
+  - rule_id: ids.wip_progression_respects_sequence
+    meaning: >
+      An operation reported in_progress or complete while a predecessor is
+      not_started contradicts the route's own order. The timeline isn't
+      impossible — the reporting is untrustworthy, and we don't know which
+      row is lying. This is as much a signal about shop-floor reporting
+      discipline as about this submission.
+    typical_causes:
+      - operators booking against the wrong operation number
+      - out-of-sequence work genuinely performed but the route never updated
+      - completion backflushed at order level, stamping later ops before earlier ones
+    fix_looks_like: >
+      Reconcile the §5.13 status rows against the route sequence at the
+      source. If work genuinely ran out of order, the routing should say so.
+      Proceeding as-is schedules on low-confidence state, disclosed.
+    verify: resubmit; the certificate lists each sequence contradiction
+    outcome_phrasing:
+      flagged: "WIP progression contradicts route sequence; scheduled on low-confidence state, disclosed"
+      degraded: "sequence contradictions exceed the conditional threshold; triage is required"
+    note_version: 1
+
+  - rule_id: ids.wip_in_progress_rows_carry_progress
+    meaning: >
+      Every in_progress row must carry a progress value under the manifest's
+      declared wip_progress_basis (remaining minutes or quantity complete).
+      In-progress with no progress is a fixed interval of unknown length.
+    typical_causes:
+      - the floor system tracks status but not quantities/remaining time
+      - progress held in a different table the extract didn't join
+    fix_looks_like: >
+      Populate the §5.13 progress field per the §3 declared basis. We never
+      invent a progress value — rows without one cannot contribute usable
+      in-flight state.
+    verify: resubmit; the certificate lists each progressless in_progress row
+    outcome_phrasing:
+      flagged: "in-progress rows lack progress values, within tolerance; disclosed"
+      degraded: "progressless in-progress rows exceed the conditional threshold; triage is required"
+    note_version: 1
+
+  - rule_id: ids.wip_actual_starts_are_at_or_before_reference_date
+    meaning: >
+      An observed actual_start must be at or before the manifest's
+      reference_date — in-flight work cannot have started in the declared
+      future. Under historical replay this catches data leaking from after
+      the replay point.
+    typical_causes:
+      - reference_date set to an earlier date than the WIP extract's cut
+      - timezone conversion pushing late-evening starts across midnight
+      - forward-dated bookings entered by operators in advance
+    fix_looks_like: >
+      Align reference_date (§3) with the WIP extract's actual cut, or
+      correct the forward-dated §5.13 rows. The reference_date is the
+      declared "now" — everything observed must sit on its past side.
+    verify: resubmit; the certificate lists each future-dated start
+    outcome_phrasing:
+      flagged: "actual starts after reference_date present, within tolerance; disclosed"
+      degraded: "future-dated starts exceed the conditional threshold; triage is required"
+    note_version: 1
+
+  - rule_id: ids.wip_completion_is_internally_consistent
+    meaning: >
+      A row marked complete must not also report remaining work. Complete
+      with a remainder is a self-contradiction — either the status or the
+      progress figure is wrong, and they cannot both stand.
+    typical_causes:
+      - status set manually while quantities post asynchronously
+      - scrap or rework quantities counted as remaining after closure
+    fix_looks_like: >
+      Reconcile status against progress in §5.13 at the source — close the
+      remainder or reopen the status. We do not choose which figure to
+      believe.
+    verify: resubmit; the certificate lists each contradictory row
+    outcome_phrasing:
+      flagged: "complete rows report remaining work, within tolerance; disclosed"
+      degraded: "completion contradictions exceed the conditional threshold; triage is required"
+    note_version: 1
+
+  # ── Quality ───────────────────────────────────────────────────────────
+  - rule_id: ids.durations_within_plausible_range
+    meaning: >
+      Operation timing values should sit within plausible range of their
+      product family's own distribution. Today this measures run-rate
+      outliers against the family median, with thresholds calibrated from
+      recorded distributions — never fixed constants. An outlier schedules
+      fine; it just makes everything computed from it — durations, costs,
+      lateness — inherit its doubt.
+    typical_causes:
+      - unit slips at entry (seconds where minutes belong, per-lot where per-piece)
+      - decimal errors surviving migration (27 vs 2.7)
+      - a genuinely unusual product sharing a family with routine ones
+    fix_looks_like: >
+      Verify the flagged §5.3 values against the floor's actual times. If a
+      value is genuinely correct, no action is needed — the flag records
+      that it was checked against its family and stood out, nothing more.
+    verify: resubmit; recalibrated distributions reflect the corrections
+    outcome_phrasing:
+      flagged: "timing values stand out from their family's distribution; scheduled as given, disclosed"
+    note_version: 1
+
+  - rule_id: ids.due_dates_within_planning_horizon
+    meaning: >
+      Due dates far beyond the reference_date (Appendix A: ~3 years) are
+      characteristically placeholders — a date entered to satisfy a required
+      field, not a commitment. A placeholder due date makes an order's
+      urgency fiction: it will never exert due-date pressure.
+    typical_causes:
+      - ERP-required due date fields filled with a conventional far date (12/31/2049)
+      - blanket contract lines carried with the agreement's end date
+    fix_looks_like: >
+      Replace placeholder dates in §5.1 with real requested/promise dates
+      where they exist. Orders left as-is are scheduled, but their due dates
+      exert no meaningful pressure — they will yield to everything with a
+      real deadline.
+    verify: resubmit; the placeholder count drops
+    outcome_phrasing:
+      flagged: "far-future due dates present, characteristic of placeholders; those orders will yield to all real deadlines"
+    note_version: 1
+
+  - rule_id: ids.backlog_is_current
+    meaning: >
+      Due dates far behind the reference_date (Appendix A: ~1 year) signal
+      stale backlog — demand that was likely fulfilled, cancelled, or
+      abandoned but never closed at the source. Stale orders scheduled as
+      real consume capacity that live demand needs.
+    typical_causes:
+      - completed orders never status-closed in the ERP
+      - cancelled demand left open pending a credit or paperwork
+      - a status filter missing from the extract (closed orders included)
+    fix_looks_like: >
+      Close or exclude dead demand at the source, or filter the §5.1 extract
+      to open orders. Left as-is, stale orders compete for machines as
+      maximally late work — which is exactly what they'll get.
+    verify: resubmit; the stale-backlog count drops
+    outcome_phrasing:
+      flagged: "orders due long before reference_date are present; if scheduled, they compete for capacity as maximally late work"
+    note_version: 1
+
+  - rule_id: ids.decision_relevant_attributes_populated
+    meaning: >
+      Attributes that influence scheduling decisions — priority, setup_family
+      where a matrix is present, and their §5 kin — should be populated
+      rather than defaulted. Every defaulted attribute is a decision the
+      schedule makes on generic grounds where the plant had specific ones.
+    typical_causes:
+      - priority left at the ERP's default for most orders (only escalations get set)
+      - setup_family maintained for the bottleneck's parts only
+    fix_looks_like: >
+      Populate the flagged attributes where the plant genuinely
+      differentiates. Defaults are legitimate when uniformity is real — this
+      flag distinguishes "everything is normal priority" as a fact from
+      "priority was never maintained" as a gap only you can tell apart.
+    verify: resubmit; defaulted-attribute counts drop where population was the fix
+    outcome_phrasing:
+      flagged: "decision-relevant attributes are defaulted; those decisions rest on generic grounds, disclosed"
+    note_version: 1
+
+  - rule_id: ids.optional_columns_are_not_sparse
+    meaning: >
+      An optional column that is present but nearly empty usually signals a
+      lost join or truncated extract rather than deliberate omission — a
+      wholly absent column is a choice; a 3%-populated one is an accident.
+    typical_causes:
+      - a left join populating the column only where the lookup matched
+      - an extract limit truncating a secondary table
+      - a column mapped from a field only one plant or product line maintains
+    fix_looks_like: >
+      Either complete the column's population at the source or drop the
+      column from the submission — both are coherent. Sparse presence is
+      the only incoherent state, because we can't tell signal from accident.
+    verify: resubmit; population density clears the calibrated floor
+    outcome_phrasing:
+      flagged: "optional columns are sparsely populated; treated as low-confidence, disclosed"
+    note_version: 1
+
+# ── Code-level fallback notes ─────────────────────────────────────────────
+# Used only when a finding resolves to no rule-level note. Fallbacks explain;
+# they coach a fix only where remediation_applies is true, and then only
+# generically. Non-submission codes state plainly that nothing in the
+# submission is at fault — out-with-rationale, the standing honesty pattern.
+
+fallbacks:
+  - finding_code: MISSING_REFERENCE
+    remediation_applies: true
+    meaning: >
+      Required content is absent — a file, field, or record the pipeline
+      needs does not exist in its input.
+    guidance: generic; a rule-level note normally applies — consult the finding's rule_id
+    note_version: 1
+
+  - finding_code: MALFORMED_FIELD
+    remediation_applies: true
+    meaning: >
+      A value could not be parsed or does not conform to its declared shape.
+    guidance: generic; a rule-level note normally applies
+    note_version: 1
+
+  - finding_code: AMBIGUOUS_SOURCE
+    remediation_applies: true
+    meaning: >
+      The submitted data admits more than one interpretation and the
+      declarations present do not disambiguate it. We never guess.
+    guidance: generic; a rule-level note normally applies
+    note_version: 1
+
+  - finding_code: UNMAPPABLE_VALUE
+    remediation_applies: true
+    meaning: >
+      A value exists but maps to nothing the system can act on — an
+      unpriced class, an untranslatable status.
+    guidance: generic; a rule-level note normally applies
+    note_version: 1
+
+  - finding_code: DUPLICATE_IDENTITY
+    remediation_applies: true
+    meaning: >
+      Two records claim the same identity; the system cannot know which
+      one is meant.
+    guidance: generic; a rule-level note normally applies
+    note_version: 1
+
+  - finding_code: ORPHAN_ENTITY
+    remediation_applies: true
+    meaning: >
+      A record references an entity that does not exist in the submitted
+      data — a dangling pointer in the reference chain.
+    guidance: generic; a rule-level note normally applies
+    note_version: 1
+
+  - finding_code: TEMPORAL_IMPOSSIBILITY
+    remediation_applies: true
+    meaning: >
+      Dated values describe a timeline that cannot have happened as stated.
+    guidance: generic; a rule-level note normally applies
+    note_version: 1
+
+  - finding_code: VALUE_OUT_OF_RANGE
+    remediation_applies: true
+    meaning: >
+      A value falls outside the range that makes it usable or credible in
+      its context.
+    guidance: generic; a rule-level note normally applies
+    note_version: 1
+
+  - finding_code: STATISTICAL_OUTLIER
+    remediation_applies: true
+    meaning: >
+      An individual value deviates strongly from its own group's recorded
+      distribution. Distinct from DENSITY_LIMIT, which concerns structural
+      concentration on a resource, not a value's deviation.
+    guidance: generic; a rule-level note normally applies
+    note_version: 1
+
+  - finding_code: LOW_CONFIDENCE_INPUT
+    remediation_applies: true
+    meaning: >
+      The data is usable but its trustworthiness is in doubt — the system
+      proceeds and discloses the doubt rather than hiding it.
+    guidance: generic; a rule-level note normally applies
+    note_version: 1
+
+  - finding_code: IDENTITY_CHANGED
+    remediation_applies: false
+    rationale: >
+      Emitted by the adapter when an entity's identity mapping shifted
+      between snapshots. It records source-side identity drift for the
+      lineage trail; it is not a defect in this submission's files, and
+      there is nothing in them to fix. If drift is frequent, the source's
+      key discipline is the conversation to have — with people, not files.
+    note_version: 1
+
+  - finding_code: PROVENANCE_GAP
+    remediation_applies: false
+    rationale: >
+      A value's chain of provenance could not be established internally.
+      This audits our own evidence discipline, not your data — nothing in
+      the submission is at fault.
+    note_version: 1
+
+  - finding_code: NO_CAPABLE_RESOURCE
+    remediation_applies: false
+    rationale: >
+      Validation found an operation no submitted resource can perform. Not
+      handled by the intake gate today, so no fix note is authored — the
+      finding's evidence names the operation and the capability sought.
+      Whether the gap is a data omission or a plant reality is a question
+      the certificate cannot answer for you.
+    note_version: 1
+
+  - finding_code: BATCH_CONFLICT
+    remediation_applies: false
+    rationale: >
+      A planning-time batching conflict between demands. This arises from
+      our planner's policy decisions, not from a defect in your files —
+      there is nothing in the submission to fix.
+    note_version: 1
+
+  - finding_code: INFEASIBLE_SUBSET
+    remediation_applies: false
+    rationale: >
+      The solver found a subset of work that cannot be scheduled together
+      under the constraints in force. A solve-layer diagnosis, not a
+      submission defect; its explanation belongs to the schedule
+      conversation, not the certificate.
+    note_version: 1
+
+  - finding_code: HORIZON_EXCEEDED
+    remediation_applies: false
+    rationale: >
+      Work could not be placed within the planning horizon. A solve-layer
+      condition — nothing in the submission's files is wrong.
+    note_version: 1
+
+  - finding_code: SOLVER_NONOPTIMAL
+    remediation_applies: false
+    rationale: >
+      The solver stopped with a feasible but not proven-optimal schedule.
+      A property of the solve, disclosed for honesty — not a submission
+      defect, and not fixable in your files.
+    note_version: 1
+
+  - finding_code: DENSITY_LIMIT
+    remediation_applies: false
+    rationale: >
+      A structural concentration of a scheduling feature on one resource
+      exceeds a validated solver-scale ceiling. It describes the problem's
+      shape, not a data defect — the data may be perfectly accurate about
+      a genuinely hard plant.
+    note_version: 1

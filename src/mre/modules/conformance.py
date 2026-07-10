@@ -934,9 +934,15 @@ class ConformanceGate:
                RuleOutcome.DEGRADED if incomplete else RuleOutcome.SATISFIED,
                _subjects("order_id", sorted({str(r.get("order_id")) for r in incomplete})),
                f"{len(incomplete)} in_progress wip row(s) missing observed start, "
-               "resource, or progress value; treated as not_started" if incomplete
+               "resource, or progress value; in-flight state excluded, treated as "
+               "not_started" if incomplete
                else "wip in_progress rows carry progress",
-               disposition=FindingDisposition.DEFAULTED,
+               # EXCLUDED, not DEFAULTED: no progress value is invented — the
+               # unverifiable in-flight claim is dropped and the operation is
+               # scheduled as not_started (errand-a audit 2026-07-10; the charter
+               # forbids inventing semantics, so the honest disposition is
+               # exclusion, matching wip_references_known_entities).
+               disposition=FindingDisposition.EXCLUDED,
                detail={"count": len(incomplete), "progress_basis": wip_basis},
                check="wip_in_progress_incomplete")
 

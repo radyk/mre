@@ -129,6 +129,15 @@ def main(argv: list[str] | None = None) -> int:
             _p("gate=REJECTED — deficiencies:")
             for d in gate_result.certificate["deficiencies"]:
                 _p(f"  - {d}")
+            # Build the evidence index from the gate run even though the pipeline
+            # stops here — certificate questions ("what's wrong / how do I fix /
+            # what first") must answer for a REJECTED submission off the gate
+            # findings alone (handoff §4/§7).
+            from mre.modules.evidence_index import EvidenceIndex
+            idx = EvidenceIndex().build(runs_dir)
+            idx.save(out_dir / "evidence_index.json")
+            _p(f"evidence_index: {len(idx._all_evidence)} records "
+               f"(certificate-only; no schedule)")
             return 1
         submission_manifest = gate_result.certificate["manifest"]
 

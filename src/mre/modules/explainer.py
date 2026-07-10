@@ -53,6 +53,24 @@ _SCHEDULE_TRIGGERS = frozenset({
 _ORDER_REF_TYPES = frozenset({"work_order", "order_id"})
 _MACHINE_REF_TYPES = frozenset({"machine_id", "resource_id", "workcenter", "workcenter_id"})
 
+# Certificate question domain (handoff §4). Three registers:
+#   testimony  — "why rejected?" / "what's wrong?"  (findings, evidence)
+#   remediation — "how do I fix it?"                 (authored catalog guidance)
+#   judgment   — "what should I fix first?" / "does this matter?" (grade triage)
+_CERT_TESTIMONY_TRIGGERS = (
+    "what's wrong", "whats wrong", "what is wrong", "went wrong",
+    "why reject", "why was it reject", "why was this reject", "why rejected",
+    "certificate", "why conditional", "why was it conditional",
+)
+_TRIAGE_TRIGGERS = (
+    "fix first", "what to fix first", "prioriti", "does this matter",
+    "does it matter", "what matters", "worth fixing", "most important",
+    "which first", "biggest problem",
+)
+_REMEDIATION_TRIGGERS = ("how do i fix", "how to fix", "how do we fix",
+                         "how can i fix", "remediat", "how do i resolve",
+                         "how to resolve")
+
 
 @dataclass
 class ExplanationBundle:
@@ -88,8 +106,16 @@ class Explainer:
         self._store = snapshot_store
         self._index = index
         self._snap_id = snapshot_id
-        self._reader = snapshot_store.load_snapshot(snapshot_id)
-        self._identity_map = self._reader.read_identity_map()
+        # A REJECTED submission never reaches the adapter, so no snapshot (and no
+        # identity map) exists — but its gate findings are in the evidence store
+        # and certificate questions must still answer. Operate in certificate-
+        # only mode when the snapshot cannot be loaded (handoff §4/§7).
+        try:
+            self._reader = snapshot_store.load_snapshot(snapshot_id)
+            self._identity_map = self._reader.read_identity_map()
+        except (FileNotFoundError, NotADirectoryError):
+            self._reader = None
+            self._identity_map = None
 
         # Vocabulary bridges (Phase-1 exit audit fix): the router used to
         # recognize only sample_data-shaped ids (WO-…, M-…), so "why is
@@ -133,6 +159,19 @@ class Explainer:
         q = question.lower()
         wo_ref = self._find_order_ref(question)
         machine_ref = self._find_machine_ref(question)
+
+        # Certificate question domain (handoff §4) — checked before the schedule
+        # routes so "how do I fix …" / "what should I fix first" never fall into
+        # schedule/late handling. Judgment (triage) is checked before remediation
+        # so "what should I fix first" (an ordering question) is not swallowed by
+        # the bare "fix" in the remediation triggers.
+        if any(t in q for t in _TRIAGE_TRIGGERS):
+            return self._explain_fix_first(question)
+        if any(t in q for t in _REMEDIATION_TRIGGERS):
+            limit = 1 if ("worst" in q or "top " in q or "the one" in q) else None
+            return self._explain_how_to_fix(question, limit)
+        if any(t in q for t in _CERT_TESTIMONY_TRIGGERS):
+            return self._explain_data_problems(entity_ref=wo_ref)
 
         if ("late" in q or "delay" in q or "tardy" in q) and wo_ref:
             return self._explain_why_late(wo_ref)
@@ -400,9 +439,12 @@ class Explainer:
             identity_map=self._identity_map,
         )
 
-    def _explain_data_problems(self) -> ExplanationBundle:
+    def _explain_data_problems(self, entity_ref: Optional[str] = None) -> ExplanationBundle:
+        findings = self._index.all_findings()
+        if entity_ref:
+            findings = self._findings_for_entity(findings, entity_ref)
         findings = sorted(
-            self._index.all_findings(),
+            findings,
             key=lambda r: (
                 {"blocker": 0, "error": 1, "warning": 2, "info": 3}.get(
                     r.get("severity", "info"), 9
@@ -412,15 +454,76 @@ class Explainer:
         )
         codes = sorted({r.get("code", "") for r in findings})
         return ExplanationBundle(
-            question="What data problems exist?",
-            subject_id=self._snap_id,
+            question=f"What's wrong with {entity_ref}?" if entity_ref
+            else "What data problems exist?",
+            subject_id=entity_ref or self._snap_id,
             subject_type="findings",
-            subject_external_name=self._snap_id,
+            subject_external_name=entity_ref or self._snap_id,
             ordered_records=findings,
             key_facts={
                 "total_findings": len(findings),
                 "codes": codes,
+                "entity_ref": entity_ref,
             },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    # ------------------------------------------------------------------
+    # Certificate question domain (handoff §4)
+    # ------------------------------------------------------------------
+
+    def _certificate_findings(self) -> list[dict]:
+        """Gate (M0) findings from the evidence store — those carrying a
+        registry rule_id + outcome. Read from evidence, never by re-running the
+        gate (handoff §4)."""
+        return [
+            f for f in self._index.all_findings()
+            if "rule_id" in f.get("evidence", {})
+            and "outcome" in f.get("evidence", {})
+        ]
+
+    def _findings_for_entity(self, findings: list[dict], entity_ref: str) -> list[dict]:
+        """Resolve an entity's findings through identity — the canonical id via
+        the identity map when a snapshot exists, else the IDS-space subject the
+        gate finding already carries (the only identity a REJECTED run has).
+        Never an id-shape regex (Phase-1 exit audit rule)."""
+        canonical = self._resolve_wo(entity_ref) if self._identity_map else None
+        target = entity_ref.upper()
+        hits: list[dict] = []
+        for f in findings:
+            for s in f.get("subjects", []):
+                sid = str(s.get("entity_id", ""))
+                if canonical and sid == canonical:
+                    hits.append(f)
+                    break
+                if sid.upper() == target:
+                    hits.append(f)
+                    break
+        return hits
+
+    def _explain_how_to_fix(self, question: str, limit: Optional[int]) -> ExplanationBundle:
+        findings = self._certificate_findings()
+        return ExplanationBundle(
+            question=question,
+            subject_id=self._snap_id,
+            subject_type="remediation",
+            subject_external_name="submission",
+            ordered_records=findings,
+            key_facts={"limit": limit, "finding_count": len(findings)},
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _explain_fix_first(self, question: str) -> ExplanationBundle:
+        findings = self._certificate_findings()
+        return ExplanationBundle(
+            question=question,
+            subject_id=self._snap_id,
+            subject_type="triage",
+            subject_external_name="submission",
+            ordered_records=findings,
+            key_facts={"finding_count": len(findings)},
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )

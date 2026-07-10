@@ -101,10 +101,23 @@ Seven checks made real + the routes_resolve_to_lines unfold + the
 transition-matrix converse split; `manifest_semantics_declared` recoded
 MALFORMED_FIELD→AMBIGUOUS_SOURCE. Coverage-matrix + reverse-guard tests make the
 registry complete-by-construction. **840 tests green** (+45). Docs §4 (docs/06),
-docs/07 v1.5, docs/02 boundary rule 1, docs/04 amended. **Still pending on the
-Conversational Certificate:** the explainer router domain + the remediation
-catalog (per-rule notes, docs/06 §4; finding-code fallback) — this session was
-the groundwork, not the conversational surface. Session 2.4 done
+docs/07 v1.5, docs/02 boundary rule 1, docs/04 amended. **Conversational
+Certificate landed 2026-07-10** (catalog v1 frozen, renderer/router/triage
+live): frozen `remediation-catalog-v1.yaml` (32 rule notes + 18 fallbacks) at
+`src/mre/catalog/`, typed + completeness-tested; three answer registers —
+testimony / **remediation** (authored, single-source-of-truth number validator,
+fail-closed) / **judgment** (one grade-distance triage: violated → degraded by
+closest escape → flagged, quality last); explainer routes cert questions through
+identity, never id-shape regex; REJECTED runs answer certificate-only (index
+built pre-stop, no snapshot). `APPENDIX_A_BANDS` single source resolves the
+catalog's `appendix_a.*` anchors. **Errand (a):** `wip_in_progress_rows_carry_progress`
+disposition `DEFAULTED`→`EXCLUDED` (gate + adapter) — no progress value is
+invented, the in-flight claim is excluded. **Errand (b):** docs/06 §4 severity
+reworded as a function of **(outcome, category)**. **Reported, not fixed** (frozen
+prose, report-don't-edit): two quality notes'
+`fix_looks_like` carry no resolvable IDS §-cite — quarantined + pinned, a
+design-thread note_version fix. **985 tests green** (+145); docs/06 §4 + docs/04
+amended. Session 2.4 done
 2026-07-14: **cloud deploy, encrypted (W4 baseline)** + the 2.3-review
 carry-ins. **CU0:** WIP finding-code review (all five checks reuse existing
 codes within their meanings; `wip_sequence_order_violation → LOW_CONFIDENCE_INPUT`
@@ -140,8 +153,10 @@ the pilot connector; the raw path is then demo-frozen.
 probe~~ · ~~WIP/soft-start doorway (docs/06 §5.13 + mid_replan scenario)~~ ·
 ~~cloud deploy with encryption (W4 baseline; single tenant by construction)~~
 (done, sessions 2.1–2.4; cloud deploy verified locally, in-cloud carried) ·
-Conversational Certificate (router domain + remediation catalog; jurisdiction
-rule: coach the IDS requirement, never ERP-specific surgery).
+~~Conversational Certificate (router domain + remediation catalog; jurisdiction
+rule: coach the IDS requirement, never ERP-specific surgery)~~ (done 2026-07-10).
+**Phase 2 mission complete** — all workstreams landed (cloud deploy in-cloud
+confirmation still carried from 2.4).
 
 **Small carry-forwards (queue behind Phase 2 items, do not lose):**
 `OperationSpec.yield_factor` still carries false observed provenance

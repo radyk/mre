@@ -100,11 +100,20 @@ def _resolve_name(entity_id: str, entity_type: str, identity_map: Any) -> str:
 # TemplateRenderer
 # ---------------------------------------------------------------------------
 
+# Which answer register each certificate subject_type belongs to (handoff §4).
+_REGISTER_BY_SUBJECT = {"remediation": "remediation", "triage": "judgment"}
+
+
+def _register_for(bundle: ExplanationBundle) -> str:
+    return _REGISTER_BY_SUBJECT.get(bundle.subject_type, "testimony")
+
+
 class TemplateRenderer:
     """Deterministic text renderer.  No external calls."""
 
     def render(self, bundle: ExplanationBundle) -> str:
-        return self._render_body(bundle) + "\n[rendered by: template | register: testimony]"
+        return (self._render_body(bundle)
+                + f"\n[rendered by: template | register: {_register_for(bundle)}]")
 
     def _render_body(self, bundle: ExplanationBundle) -> str:
         lines: list[str] = []
@@ -112,6 +121,12 @@ class TemplateRenderer:
         lines.append("")
 
         self._render_header(lines, bundle)
+
+        if bundle.subject_type in ("remediation", "triage"):
+            # Register bodies are assembled by their own modules from the
+            # certificate findings on the bundle (authored catalog text /
+            # grade-distance arithmetic), never from the testimony templater.
+            return "\n".join(lines) + self._render_register_body(bundle)
 
         if not bundle.ordered_records:
             if bundle.subject_type == "diff":
@@ -277,6 +292,16 @@ class TemplateRenderer:
                 f"| Codes: {', '.join(kf.get('codes', []))}"
             )
             lines.append("")
+
+    def _render_register_body(self, bundle: ExplanationBundle) -> str:
+        from mre.modules.remediation import render_remediation_body
+        from mre.modules.triage import render_triage_body
+
+        findings = bundle.ordered_records
+        if bundle.subject_type == "remediation":
+            limit = bundle.key_facts.get("limit")
+            return "\n" + render_remediation_body(findings, limit=limit)
+        return "\n" + render_triage_body(findings)
 
     def _render_diff(self, lines: list[str], kf: dict) -> None:
         snap_a = kf.get("snapshot_a", "?")
@@ -470,6 +495,8 @@ class LLMRenderer:
                 self._fallback_reason = "anthropic package not installed"
 
     def render(self, bundle: ExplanationBundle) -> str:
+        if bundle.subject_type in ("remediation", "triage"):
+            return self._render_register(bundle)
         if not self._available:
             body = TemplateRenderer()._render_body(bundle)
             return (
@@ -498,6 +525,49 @@ class LLMRenderer:
                 )
 
         return text + f"\n[rendered by: LLM ({self._model}) | register: testimony]"
+
+    def _render_register(self, bundle: ExplanationBundle) -> str:
+        """Remediation / judgment-triage register (handoff §3): the deterministic
+        authored body is the ground truth; the LLM may only reword it for
+        fluency. The allowed-number set is derived from exactly that body (the
+        single derivation), and any invented number fails closed to the body."""
+        from mre.modules.remediation import (
+            allowed_numbers, render_remediation_body, unverifiable_numbers,
+        )
+        from mre.modules.triage import render_triage_body
+
+        register = _register_for(bundle)
+        if bundle.subject_type == "remediation":
+            body = render_remediation_body(
+                bundle.ordered_records, limit=bundle.key_facts.get("limit"))
+            intro = ("This is authored remediation guidance from the frozen "
+                     "catalog. Reword it for fluency ONLY.")
+        else:
+            body = render_triage_body(bundle.ordered_records)
+            intro = ("This is a grade-distance triage. Reword it for fluency "
+                     "ONLY, keeping the fix-first order and the named arithmetic.")
+
+        if not self._available:
+            return (body + f"\n[rendered by: template — {self._fallback_reason} "
+                    f"| register: {register}]")
+
+        allowed = allowed_numbers(body)
+        prompt = (
+            f"{intro}\n\n"
+            "RULES (violating any causes fallback to the source text):\n"
+            "1. Do NOT introduce any number, percentage, or § reference not "
+            "present below.\n"
+            "2. Do NOT invent causes, thresholds, or fixes — only what appears "
+            "below.\n"
+            "3. Keep every rule_id, catalog note version, and § citation.\n\n"
+            f"SOURCE (authored):\n{body}\n"
+        )
+        text = self._call_llm(prompt)
+        if unverifiable_numbers(text, allowed):
+            return (body + "\n[LLM validation failed: invented a value; fell "
+                    f"back to authored text]\n[rendered by: template (LLM "
+                    f"validated) | register: {register}]")
+        return text + f"\n[rendered by: LLM ({self._model}) | register: {register}]"
 
     def render_judgment(self, question: str, history: Any, fallback_bundle: ExplanationBundle) -> str:
         """Conversational turn in dialogue mode — reasons over prior evidence bundles."""

@@ -2631,3 +2631,85 @@ which the new order_dates_internally_consistent check correctly reads as due <
 created. A stale-backlog order was *created* long ago too, so the anomaly now
 ages created_date with the due date — the row stays internally coherent and the
 stale flag is a pure backlog signal, not a spurious inconsistency.
+
+### 2026-07-10 — Conversational Certificate: catalog, renderer, router, triage
+
+The Rule Registry groundwork (same-day entry above) built the machinery; this
+session built the **conversational surface** over it. Three answer registers now
+sit alongside testimony and judgment; a frozen remediation catalog supplies the
+words; a single grade-distance triage supplies the order.
+
+**Frozen catalog, loaded typed.** `remediation-catalog-v1.yaml` (32 rule-level
+notes + 18 code-level fallbacks, FROZEN in the design thread) lands at
+`src/mre/catalog/` and loads into validation-at-construction Pydantic models
+(`RemediationNote` keyed by RuleId, `FallbackNote` keyed by FindingCode). The
+prose was treated as read-only authored knowledge — not edited here; edits are
+design-thread work that bumps note_version. Completeness tests parametrize over
+the registry/vocabulary (never hand lists): every rule has exactly one note,
+every finding code exactly one fallback, each note's outcome_phrasing keys ⊆ its
+rule's category-permitted outcomes, banded notes carry the registry's `measures`.
+
+**Reported defect, not fixed (report-don't-edit).** Two frozen quality-rule
+notes — `decision_relevant_attributes_populated`, `optional_columns_are_not_sparse`
+— carry a `fix_looks_like` with **no resolvable IDS §-cite**, which the §2
+jurisdiction lint requires of every rule-level fix. Adding a cite is a prose edit
+(note_version bump) reserved to the design thread, so the two are **quarantined**:
+the lint runs for the other 30, and a pinned guard asserts the uncited set is
+exactly those two, so a later catalog fix trips the guard and the quarantine is
+re-derived rather than silently kept. Surfaced for the design thread; not
+worked around by editing frozen prose.
+
+**Thresholds_ref resolves to real numbers.** The catalog's `appendix_a.*`
+anchors resolve through a single `APPENDIX_A_BANDS` source in `ids_rules.py`
+(reject 0.60 / conditional 0.97), the same numbers the gate bands against — so a
+note's authored threshold is instantiated, never reinvented. (The registry's
+coarse "App A" ref and the catalog's specific anchor point at the same band; the
+completeness test asserts the measure name matches and a thresholds_ref is
+present, not that the two anchor *strings* are equal.)
+
+**Remediation register — single-source-of-truth validator (the 2026-07-06
+lesson, again).** Rendering a remediation is the note's authored text
+instantiated with one finding's evidence (subjects, measured value, threshold
+band, phrasing keyed by the finding's outcome). The allowed-number set is
+derived from *exactly* the render material in one derivation; any number in the
+output absent from that set fails closed (the LLM path falls back to the
+deterministic authored body). Output is introduced as authored guidance with the
+catalog note_version as a footnote — never as testimony.
+
+**Grade-distance triage — one ordering, pure function.** `triage_findings`:
+all `violated` first; then `degraded` by proximity to the Appendix A threshold
+that escapes the band (closest first); then `flagged`, WARNING before INFO,
+quality last. Severity is reused as (outcome, category) via `outcome_severity`,
+never re-derived. The judgment register names the arithmetic (rule, measured,
+threshold, distance). Both the remediation ordering and any future UI consume
+this one function.
+
+**Router + REJECTED certificate-only mode.** The explainer routes certificate
+questions: "what's wrong / why rejected" → testimony; "how do I fix it" →
+remediation; "what should I fix first / does this matter" → judgment. Resolution
+goes through identity (canonical when a snapshot exists, else the IDS-space
+subject the gate finding already carries) — never an id-shape regex (Phase-1
+exit audit rule). A REJECTED submission has no snapshot; `python -m mre` now
+builds the evidence index from the gate run before stopping, and the explainer
+runs certificate-only (reader/identity_map None) so all three questions still
+answer with IDS-space identity.
+
+**Errand (a) — wip_in_progress_rows_carry_progress disposition audit.** The gate
+(and the adapter) labelled the in_progress-missing-progress finding `DEFAULTED`.
+Audit: the adapter sets status to not_started and **clears** actual_start /
+resource / progress — nothing is invented; the unverifiable in-flight claim is
+dropped. `defaulted` mislabelled an **exclusion**. Corrected to `EXCLUDED` in
+both the gate and the adapter (matching the sibling wip_references_known_entities
+"treated as not started"), making the catalog note ("we never invent a progress
+value") true. Grade is unaffected (a pure function of outcomes, not
+dispositions). The separate blank-slate provenance (`defaulted` on an unobserved
+op's wip_status attribute) is legitimate and untouched.
+
+**Errand (b) — docs/06 §4 severity wording.** Amended from "severity derives
+from outcome … with the one exception" to "severity is a function of (outcome,
+category)", the two arguments named irreducible — the category is what
+distinguishes an informational quality flag from a WARNING flag at the same
+outcome. Matches `outcome_severity(rule, outcome)` and the catalog header.
+
+985 tests green (+145). No new finding codes. docs/06 §4 amended (severity
+wording); docs/02/05 untouched.

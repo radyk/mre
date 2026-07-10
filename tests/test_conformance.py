@@ -340,8 +340,9 @@ class TestWipDoorway:
 
     def test_in_progress_missing_observed_state_conditional(self, tmp_path):
         """in_progress with no observed resource, no observed start, or no
-        progress value (per the declared basis) — MALFORMED_FIELD, treated
-        as not_started (defaulted), CONDITIONAL."""
+        progress value (per the declared basis) — MALFORMED_FIELD, in-flight
+        state excluded and treated as not_started (errand-a: EXCLUDED, not
+        DEFAULTED — no progress value is invented), CONDITIONAL."""
         sub = self._sub(tmp_path)
         orders, order_seqs, res_map = _submission_shape(sub)
         o1, o2, o3 = orders[0], orders[1], orders[2]
@@ -366,7 +367,9 @@ class TestWipDoorway:
         wf = _wip_findings(result)
         assert any(f["code"] == "MALFORMED_FIELD"
                    and f["evidence"]["check"] == "wip_in_progress_incomplete"
-                   and f["evidence"]["count"] == 3 for f in wf)
+                   and f["evidence"]["count"] == 3
+                   and f["disposition"] == "excluded"  # errand-a: not defaulted
+                   for f in wf)
 
     def test_sequence_order_violation_flagged(self, tmp_path):
         """An operation in_progress while its predecessor is not_started —

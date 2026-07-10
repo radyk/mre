@@ -234,6 +234,39 @@ def outcome_severity(rule: RuleSpec, outcome: RuleOutcome) -> FindingSeverity:
     }[outcome]
 
 
+class ThresholdBand(BaseModel):
+    """One Appendix A banded threshold pair (docs/06 Appendix A, v0.2).
+
+    ``reject`` is the floor below which a resolution rate is VIOLATED; the
+    [reject, conditional) interval is DEGRADED; ``conditional`` and above is
+    SATISFIED. This is the single source the gate bands against and that the
+    remediation/judgment registers resolve ``thresholds_ref`` to."""
+    reject: float
+    conditional: float
+
+
+# Appendix A default thresholds (v0.2). The four banded resolution rules share
+# one band pair; keyed by the ``thresholds_ref`` anchor the remediation catalog
+# cites (appendix_a.*), so a note's authored threshold reference resolves to a
+# real number here rather than being reinvented at answer time.
+_BANDED_RESOLUTION = ThresholdBand(reject=0.60, conditional=0.97)
+APPENDIX_A_BANDS: dict[str, ThresholdBand] = {
+    "appendix_a.order_product_resolution": _BANDED_RESOLUTION,
+    "appendix_a.order_route_resolution": _BANDED_RESOLUTION,
+    "appendix_a.route_line_resolution": _BANDED_RESOLUTION,
+    "appendix_a.duration_computability": _BANDED_RESOLUTION,
+}
+
+
+def resolve_threshold_band(thresholds_ref: Optional[str]) -> Optional[ThresholdBand]:
+    """Resolve a catalog ``thresholds_ref`` anchor to its Appendix A band, or
+    None when the ref names no banded threshold (coarse "App A" registry refs
+    and non-banded rules resolve to None — they carry no rate band)."""
+    if not thresholds_ref:
+        return None
+    return APPENDIX_A_BANDS.get(thresholds_ref)
+
+
 def grade_from_outcomes(outcomes: list[RuleOutcome]) -> str:
     """Certificate grade as a pure function of rule outcomes (docs/06 §4).
 
