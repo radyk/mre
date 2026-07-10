@@ -2440,3 +2440,49 @@ well-formed, the runtime CMD itself was smoke-tested on the host (uvicorn
 container runs), and the fast suite is green on the host (793 passed). The
 in-container run is exercised by CI on first push; **image-built-and-tested-in-
 CI is the outstanding confirmation, not done locally this session.**
+
+## Amendment — 2026-07-14: Session 2.4 CU2 — encryption + secrets (W4 baseline)
+
+The W4 encryption/secrets posture ships with the deploy work; the durable
+record is the new **docs/08-security-posture.md** (what's encrypted and where,
+where keys live, secrets rule, single-tenant-by-construction with the tenant-#2
+trigger). Highlights:
+
+**TLS in transit.** The API never terminates TLS — a reverse proxy fronts it
+and speaks plaintext to `:8000` on a private network. Local parity:
+`docker-compose.tls.yml` overlay adds a Caddy service
+(`deploy/local-tls/Caddyfile`, `tls internal` = offline self-signed local CA),
+publishes 443, and `!reset`s the base file's public api port so the proxy is
+the only entrypoint. Cloud: the platform's managed TLS front end (CU3/deploy/
+azure) — same app image, different terminator. HSTS set at the terminator in
+both.
+
+**Encryption at rest.** All durable state is under one mount
+(`MRE_DATA_ROOT=/data`: registry, submissions, snapshots, evidence). Encryption
+is a property of the volume's backing store, application-agnostic: a
+host-encrypted disk locally, an encrypted managed disk in cloud; keys live with
+the host/platform, never in the repo or image. No application-level field
+encryption in the baseline (threat model = disk/host/backup compromise,
+answered at the storage layer).
+
+**Secrets — environment injection only.** No credentials in the image
+(multi-stage build copies only a venv + app) or the repo. Runtime secrets
+(today just the optional `ANTHROPIC_API_KEY` for the explainer LLM) are injected
+by the platform secret store in cloud / a git-ignored `.env` locally.
+Provider-neutral `MRE_*` config only. **CI `secret-scan` job** (gitleaks,
+`.gitleaks.toml` extending the default ruleset, synthetic-data dirs allowlisted)
+fails the build on any committed credential across full history.
+
+**Single tenant by construction.** One data root = one customer; no tenant key
+on any entity/evidence record, no tenant-selecting code path — isolation is the
+process/volume boundary. Tenant #2 = a second isolated deployment, not a shared
+store. The **tenant-#2 isolation trigger** (first time two tenants must share
+infrastructure → tenant id on snapshot + every evidence record, tenant-scoped
+registry, per-tenant keys) is named in docs/08 §4 so multi-tenancy is a
+deliberate design item, never discovered by accident. Certification stays
+post-window and trigger-gated (docs/07 §4.3).
+
+**Verification.** Compose (base + TLS overlay, the `!reset` tag) and CI YAML
+parse; the gitleaks step and Caddy proxy are not run here (no Docker) — they
+execute in CI / when the TLS stack is brought up. Named as the outstanding
+confirmation alongside CU1's.

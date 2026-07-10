@@ -1,0 +1,19 @@
+# Secret-scanner config (session 2.4 CU2, W4). Extends gitleaks' default
+# ruleset — the CI `secret-scan` job fails the build (exit 1) on any committed
+# credential. Secrets reach the running service ONLY via environment injection
+# (see docs/08-security-posture.md); none may live in the image or the repo.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Synthetic generated data and lockfiles are not secrets"
+paths = [
+  # Generated/sample manufacturing data: UUIDs and order ids can resemble
+  # high-entropy tokens but carry no credential.
+  '''sample_data/.*''',
+  '''sample_data_v2/.*''',
+  '''tests/fixtures/.*''',
+  # Pinned dependency hashes/versions are public.
+  '''requirements.*\.lock''',
+]

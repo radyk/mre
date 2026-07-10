@@ -10,6 +10,20 @@ on:
   pull_request:
 
 jobs:
+  # W4 (CU2): fail the build on any committed credential. Secrets reach the
+  # service only via environment injection — never the image, never the repo.
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # full history so a secret in any commit is caught
+      - name: gitleaks (scan working tree + history)
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest \
+            detect --source=/repo --config=/repo/.gitleaks.toml \
+            --redact -v --exit-code=1
+
   image-build-and-test:
     runs-on: ubuntu-latest
     steps:

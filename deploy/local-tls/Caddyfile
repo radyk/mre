@@ -1,0 +1,26 @@
+# Local TLS-termination parity for the MRE API (session 2.4 CU2).
+#
+# Caddy terminates TLS and reverse-proxies plaintext to the api service on the
+# compose network. The API itself never speaks TLS — the same shape as the
+# cloud (a managed TLS front end in deploy/azure). `tls internal` uses Caddy's
+# own local CA: NO ACME, no external calls, so this works fully offline. The
+# cert is self-signed; a browser will warn, which is correct for local dev.
+
+{
+	# No automatic HTTP->HTTPS public issuance; local CA only.
+	auto_https disable_redirects
+}
+
+localhost {
+	tls internal
+	encode gzip
+
+	# HSTS: in production the managed front end sets this; mirrored here so
+	# the local stack behaves like the deployed one.
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+	reverse_proxy api:8000 {
+		health_uri /health
+		health_interval 30s
+	}
+}

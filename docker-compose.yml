@@ -22,8 +22,9 @@ services:
       PYTHONHASHSEED: "0"
     volumes:
       # Encryption at rest is a property of this volume's backing store
-      # (docs/09 W4): a LUKS/host-encrypted directory locally, an encrypted
-      # managed disk in the cloud. The application is agnostic to which.
+      # (docs/08 security posture, W4): a LUKS/host-encrypted directory
+      # locally, an encrypted managed disk in the cloud. The application is
+      # agnostic to which.
       - mre-data:/data
     ports:
       # Direct exposure for local dev without the proxy. In the TLS overlay the

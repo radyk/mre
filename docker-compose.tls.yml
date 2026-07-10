@@ -1,0 +1,35 @@
+# TLS overlay for local parity (session 2.4 CU2). Compose it ON TOP of the base:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.tls.yml up
+#
+# Adds a Caddy reverse proxy that terminates TLS (self-signed local CA) and
+# forwards plaintext to the api service. The api stops publishing its own port
+# so the proxy is the only entrypoint — TLS in transit end to end from the
+# client's perspective. In the cloud this proxy is replaced by the platform's
+# managed TLS front end (deploy/azure); nothing in the app image changes.
+
+services:
+  api:
+    # Requires Docker Compose v2.24+ (the !reset tag). Removes the base file's
+    # public 8000:8000 mapping so only the proxy is reachable from outside.
+    ports: !reset []
+    expose:
+      - "8000"
+
+  proxy:
+    image: caddy:2-alpine
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./deploy/local-tls/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data      # Caddy's local CA + issued certs persist here
+      - caddy-config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy-data:
+  caddy-config:
