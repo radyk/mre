@@ -20,7 +20,7 @@ A sellable **manufacturing reasoning engine** for high-mix, make-to-order discre
 
 **Week-one spikes (front-load the research-shaped risks):**
 1. Chunking at scale — model-size behavior on the scale ladder before Rep 2 is built in full.
-2. Solver-gap probe — quick test of facility decomposition on the full gauntlet; if the 87% gap is structural, the sliced daily solve is the blessed operational mode and the research is parked, named, post-pilot.
+2. Solver-gap probe — quick test of facility decomposition on the full gauntlet; if the 87% gap is structural, the sliced daily solve is the blessed operational mode and the research is parked, named, post-pilot. ✅ RUN 2026-07-13, verdict **RED**: perfectly decomposable (0 cross-facility WPs) yet 8/10 facilities and even single-resource shards find no incumbent at mass-splittability density — two named killers (chunk-slot volume on the full horizon; raw per-machine op count), both capped at once by slicing. Sliced daily solve confirmed as the blessed mode; parked directions named in `tools/solver_gap_probe_report.md` + the docs/04 amendment.
 
 **Checkpoint rule:** each month ends with a stage-position review against this document; CLAUDE.md status updated same-day.
 
@@ -100,7 +100,7 @@ The ticketing client. Entry conditions (the no-half-baked rule): Phase 1 exit pa
 | Risk | Mitigation |
 |---|---|
 | Chunking explodes model size | Week-one spike; bounded chunks; chunking_exam + scale ladder gate it |
-| Solver gap structural | Week-one probe; sliced daily solve blessed as operational mode; research parked, named |
+| Solver gap structural | Probe run 2026-07-13 (RED): sliced daily solve confirmed blessed; research parked with named directions (horizon-capped chunk slots, slice-within-facility + LNS repair) |
 | Phase 3 feel-bar iteration overruns | It owns the schedule's largest block; scope discipline via the sixty-second script — ship the script, not the toolkit |
 | Pilot live data diverges from historical dump | Certificates trend the divergence; entry conditions on the live extract, not the dump |
 | One first impression with the pilot | Entry conditions are objective tests; no demo before they pass |

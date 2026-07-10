@@ -2027,3 +2027,42 @@ dies at construction), objective deltas ≤ 10%. Tests:
 integration, registry invalidation, slow messy acceptance) and
 `tests/test_api_endpoints.py::TestSolutionPool` (endpoints, structural
 listing isolation, auto-warm).
+
+## Amendment — 2026-07-13: Solver-gap probe #1 — facility decomposition on the gauntlet full solve: RED
+
+The dossier's first real experiment (`tools/solver_gap_probe.py`, report in
+`tools/solver_gap_probe_report.md`). Question: does per-facility /
+per-resource decomposition make the mass-splittability full solve viable,
+and does it change the 87%-gap story? **Verdict RED** — it does not; the
+sliced daily solve remains the blessed operational mode, and the research
+stays parked per docs/07 §2, now with a sharper measured explanation.
+
+Headline measurements (single-worker seed 0; config recreated and stated —
+the audit's mass-chunking plant config was a scratch artifact): the full
+backlog builds 14,042 ops / 2,980 WPs / 93 resources across 10 facilities
+that are PERFECTLY decomposable (0 cross-facility WorkPackages, explicit
+single-resource eligibility — sum of facility objectives would be exact).
+Monolith: UNKNOWN, and **model build alone took 289s**. Decomposed: 8 of 10
+facilities still UNKNOWN at 180s; only trivial F002 (3 ops, OPTIMAL) and
+F004 (1,040 ops, ~9 resumable/resource → FEASIBLE, gap 43.6% vs the 87%
+REP-1 monolith figure) produced solutions. Sharpest finding: single-resource
+shards of F001 (~170–190 ops, ~65 resumable ops/resource) fail at 30s —
+spike 2's "per-resource decomposition works" was measured at ~4–4.5
+resumable ops/resource and does NOT extend to mass-splittability density.
+The difficulty has moved inside the resource.
+
+Two independent killers, either sufficient: (a) chunk-slot volume — on the
+full-backlog horizon the suffix-capacity tail pruning leaves candidate
+window ranges spanning most of the horizon, so one machine's no-overlap
+group holds tens of thousands of optional intervals (build time is the
+visible symptom); (b) raw per-machine op count — F006 with only 12
+resumable ops still fails at ~850 ops/machine, while F004 solves at ~260.
+The sliced daily solve caps the horizon and therefore caps BOTH at once —
+it is the correct structural counter, not just "less work". Named parked
+directions (not built): horizon-capped chunk slots (due-date-relative
+candidate window policy), hierarchical slice-within-facility with LNS
+repair from the sliced incumbent (the warm-start/pool machinery is the
+natural repair loop), and facility decomposition productionized as a
+speedup for the SLICED mode. Scope note recorded: the audit's "4,933-op
+full solve" figure described a differently-scoped run; this probe's
+partition table sums self-consistently to 14,042.
