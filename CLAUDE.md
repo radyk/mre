@@ -89,36 +89,38 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
-**Roadmap position: Phase 2 IN PROGRESS (demo backbone).** Session 2.2 done
-2026-07-13: warm-start scenario solves (base schedule as CP-SAT hint;
-deterministic uuid5 correspondence; the exit-audit noise case re-measured
-**0 moves warm vs 51 cold** at identical cost delta — and a differ
-string-format bug that inflated every historical move count was fixed) ·
-solution-pool service (`modules/solution_pool.py`: K warm-started short
-re-solves under an objective bound with seed + start-time no-good-cut
-diversity, measured Hamming diversity; schedule contract 1.0→1.1
-`annotations.pool`; registry pool tables — structurally never in schedule
-listings; pool endpoints + opt-in auto-warm; invalidated on supersede) ·
-overtime attribution ruled: `Assignment.overtime_minutes` is the entity
-source of truth (docs/01 §6.9), Decision payload is narrative ·
-**solver-gap probe #1 run, verdict RED** — perfectly decomposable plant
-(0 cross-facility WPs) yet decomposition doesn't rescue the
-mass-splittability full solve (chunk-slot volume on the full horizon +
-raw per-machine op counts, either sufficient); sliced daily solve
-confirmed blessed, research parked with named directions
-(`tools/solver_gap_probe_report.md`). **758 tests green.** Session 2.1
-(API layer, contract, registry) `517b1fe`; Phase-1 exit audit `9a70e5c`.
-Qualification carried (owned by Phase 4): the raw_data path bypasses the
-M0 gate — resolved by the pilot connector; the raw path is then
-demo-frozen.
+**Roadmap position: Phase 2 IN PROGRESS (demo backbone).** Session 2.3 done
+2026-07-14: **WIP / soft-start rescheduling** (docs/06 §5.13) shipped end to
+end — `wip_status.csv` gate doorway (manifest `wip_progress_basis` + five
+coherence checks as findings, add-never-repurpose); `WipStatus` /
+`WipOperationObservation` contracts, `Demand.wip_operations` + `Operation`
+WIP fields (docs/01 §5.1/§5.2/§5.4); IDS adapter lands observations with
+truthful observed provenance citing source rows; Planner projects onto
+Operations + WorkPackage.state (remaining_duration observed-vs-derived per
+basis — the yield_factor false-observed anti-pattern avoided); Solver Builder
+removes complete ops (**capacity freed**) and fixes in-flight ops on the
+observed resource for remaining duration (busy span carved out of calendar
+blocking), **amended invariant** at both clamp sites (new ops floored at
+reference_date, in-flight exempt); Validator TEMPORAL_IMPOSSIBILITY exempts
+in-flight/complete demands — **ghost-job fix un-regressed** (proven in one
+run); **mid_replan** generator scenario with the capacity counterfactual
+(strip WIP → strictly more tardiness) + warm-start proof (fixed/in-flight ops
+have no variables to hint). Also 2.2-review carry-ins: warm-start
+counterfactual test, pool diversity threshold (`DIVERSITY_TOLERANCE_MINUTES`
+= 15, Hamming aligned), probe 4,933-vs-14,042 resolved (planner-policy
+artifact), invalidated historical move counts named. **790 tests green.**
+Session 2.2 (warm-start + pool + probe) `86e0115`; Session 2.1 (API layer)
+`517b1fe`; Phase-1 exit audit `9a70e5c`. Qualification carried (owned by
+Phase 4): the raw_data path bypasses the M0 gate (no WIP doorway there either)
+— resolved by the pilot connector; the raw path is then demo-frozen.
 
 **Phase 2 mission (docs/07):** ~~API layer + schedule JSON contract~~ ·
 ~~warm-start scenario solves~~ · ~~solution-pool service~~ · ~~solver-gap
-probe~~ (done, sessions 2.1–2.2) · cloud deploy with encryption (W4
-baseline; single tenant by construction) · WIP/soft-start doorway
-(docs/06 §5.13 + mid_replan scenario) · Conversational Certificate (router
-domain + remediation catalog; jurisdiction rule: coach the IDS requirement,
-never ERP-specific surgery).
+probe~~ · ~~WIP/soft-start doorway (docs/06 §5.13 + mid_replan scenario)~~
+(done, sessions 2.1–2.3) · cloud deploy with encryption (W4 baseline; single
+tenant by construction) · Conversational Certificate (router domain +
+remediation catalog; jurisdiction rule: coach the IDS requirement, never
+ERP-specific surgery).
 
 **Small carry-forwards (queue behind Phase 2 items, do not lose):**
 `OperationSpec.yield_factor` still carries false observed provenance
@@ -126,8 +128,14 @@ never ERP-specific surgery).
 (the 40× `run_rate_seconds=60.0` fingerprint from Rep 3) · provenance
 spot-check guard (sampled: `observed` values must appear in the cited source) ·
 W1 scenarios not yet built: dwell_heavy, calendar_chaos,
-multi_facility_balance · pool warming-on-publish becomes the default when
-the Phase-3 publish workflow exists (auto-warm is opt-in until then).
+multi_facility_balance (mid_replan now built) · pool warming-on-publish
+becomes the default when the Phase-3 publish workflow exists (auto-warm is
+opt-in until then) · **pool must become slice-aware before serving
+sliced-mode schedules** (2.3 probe carry: members rebuild from the run's
+M5 horizon, not a sliced run's per-slice selection) · extractor setup-cost
+billing for completed ops (in-flight/complete production is currently out of
+the objective as sunk; the ledger's `len(operations) × setup` still counts
+them — revisit if a WIP cost report needs it).
 
 **Do not hand-maintain a duplicate task list here** — docs/07 is authoritative
 and updated same-day per its W2 rule; this section records only position,
