@@ -201,6 +201,43 @@ def apply_solution_hints(
     return stats
 
 
+def add_objective_upper_bound(model, var_map: "VariableMap", bound_scaled: int) -> None:
+    """Constrain the model's own objective expression to ≤ bound_scaled
+    (CP-SAT scaled integer units, i.e. the units solver.ObjectiveValue()
+    reports for this model). Used by the solution-pool service to keep
+    diversified re-solves within X% of the incumbent's objective."""
+    if var_map.objective_terms:
+        model.add(sum(var_map.objective_terms) <= bound_scaled)
+
+
+def add_start_diversity_cut(
+    model,
+    var_map: "VariableMap",
+    incumbent_starts: dict[str, int],
+    sampled_op_ids: list[str],
+    name: str = "pool",
+) -> int:
+    """No-good cut over a sample of the incumbent's start times: at least
+    one sampled operation must start at a different minute than it did in
+    the incumbent. This is the solution-pool's diversity pressure — a
+    disjunctive cut, not per-op forcing, so a single tightly-constrained
+    sampled op cannot make the member infeasible by itself.
+
+    Returns the number of operations actually included in the cut."""
+    same_lits = []
+    for oid in sampled_op_ids:
+        if oid not in var_map.op_start or oid not in incumbent_starts:
+            continue
+        v = incumbent_starts[oid]
+        lit = model.new_bool_var(f"same_{name}_{oid}")
+        model.add(var_map.op_start[oid] == v).only_enforce_if(lit)
+        model.add(var_map.op_start[oid] != v).only_enforce_if(lit.negated())
+        same_lits.append(lit)
+    if same_lits:
+        model.add(sum(same_lits) <= len(same_lits) - 1)
+    return len(same_lits)
+
+
 # ---------------------------------------------------------------------------
 # SolverBuilder
 # ---------------------------------------------------------------------------

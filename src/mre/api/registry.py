@@ -65,6 +65,28 @@ CREATE TABLE IF NOT EXISTS schedules (
     document_path      TEXT NOT NULL,
     created_at         TEXT NOT NULL
 );
+-- Solution pools live in their OWN tables, never in schedules: pool members
+-- can therefore never appear in any schedule listing (the scenario
+-- isolation rule, made structural).
+CREATE TABLE IF NOT EXISTS pools (
+    id            TEXT PRIMARY KEY,
+    schedule_id   TEXT NOT NULL REFERENCES schedules(id),
+    status        TEXT NOT NULL,            -- warming | ready | empty | failed | invalidated
+    params_json   TEXT,
+    summary_json  TEXT,
+    error         TEXT,
+    created_at    TEXT NOT NULL,
+    finished_at   TEXT
+);
+CREATE TABLE IF NOT EXISTS pool_members (
+    pool_id                TEXT NOT NULL REFERENCES pools(id),
+    member_index           INTEGER NOT NULL,
+    objective              REAL,
+    objective_delta_pct    REAL,
+    hamming_from_incumbent INTEGER,
+    document_path          TEXT NOT NULL,
+    PRIMARY KEY (pool_id, member_index)
+);
 """
 
 
@@ -240,7 +262,8 @@ class Registry:
 
     def list_schedules(self, include_scenarios: bool = False) -> list[dict]:
         """Default listing NEVER includes what-if scenarios — the evidence-
-        isolation rule (docs/01 §8) extended to the API surface."""
+        isolation rule (docs/01 §8) extended to the API surface. Pool
+        members are excluded structurally: they are never rows here."""
         q = "SELECT * FROM schedules"
         if not include_scenarios:
             q += " WHERE is_scenario=0"
@@ -248,3 +271,66 @@ class Registry:
         with self._conn() as con:
             rows = con.execute(q).fetchall()
         return [dict(r) for r in rows]
+
+    def mark_schedule_superseded(self, schedule_id: str) -> None:
+        """Supersede a schedule and invalidate its solution pools — a pool
+        is keyed to one schedule version; a superseded base makes every
+        member's objective delta and placements stale (docs/07 Phase 2)."""
+        with self._conn() as con:
+            con.execute("UPDATE schedules SET status='superseded' WHERE id=?",
+                        (schedule_id,))
+            con.execute(
+                "UPDATE pools SET status='invalidated' WHERE schedule_id=?",
+                (schedule_id,))
+
+    # ------------------------------------------------------------------
+    # Solution pools (docs/07 Phase 2)
+    # ------------------------------------------------------------------
+
+    def create_pool(self, pool_id: str, schedule_id: str,
+                    params: Optional[dict] = None) -> None:
+        with self._conn() as con:
+            con.execute(
+                "INSERT INTO pools (id, schedule_id, status, params_json, created_at) "
+                "VALUES (?,?,?,?,?)",
+                (pool_id, schedule_id, "warming", json.dumps(params or {}), _now()),
+            )
+
+    def finish_pool(self, pool_id: str, status: str,
+                    summary: Optional[dict] = None,
+                    members: Optional[list[dict]] = None,
+                    error: Optional[str] = None) -> None:
+        with self._conn() as con:
+            con.execute(
+                "UPDATE pools SET status=?, summary_json=?, error=?, finished_at=? "
+                "WHERE id=?",
+                (status, json.dumps(summary or {}, default=str), error, _now(), pool_id),
+            )
+            for m in members or []:
+                con.execute(
+                    "INSERT OR REPLACE INTO pool_members (pool_id, member_index, "
+                    "objective, objective_delta_pct, hamming_from_incumbent, "
+                    "document_path) VALUES (?,?,?,?,?,?)",
+                    (pool_id, m["member_index"], m.get("objective"),
+                     m.get("objective_delta_pct"), m.get("hamming_from_incumbent"),
+                     m["document_path"]),
+                )
+
+    def get_pool_for_schedule(self, schedule_id: str) -> Optional[dict]:
+        """The schedule's most recent pool, with its member index rows."""
+        with self._conn() as con:
+            row = con.execute(
+                "SELECT * FROM pools WHERE schedule_id=? ORDER BY created_at DESC "
+                "LIMIT 1", (schedule_id,),
+            ).fetchone()
+            if row is None:
+                return None
+            pool = dict(row)
+            members = con.execute(
+                "SELECT * FROM pool_members WHERE pool_id=? ORDER BY member_index",
+                (pool["id"],),
+            ).fetchall()
+        pool["params"] = json.loads(pool.pop("params_json") or "{}")
+        pool["summary"] = json.loads(pool.pop("summary_json") or "{}")
+        pool["members"] = [dict(m) for m in members]
+        return pool

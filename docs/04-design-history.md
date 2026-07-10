@@ -1969,3 +1969,61 @@ hint-application unit tests (both assignment shapes, skip accounting,
 proto-level hint values), warm-start event on the sample unbatch, moves ≤ 3
 there (measured 0). `VariableMap.objective_terms` added (build-time capture
 so pool tooling can bound the same objective expression — used next).
+
+## Amendment — 2026-07-13: Solution-pool service (docs/07 Phase 2) — contract 1.1
+
+**What ships.** `src/mre/modules/solution_pool.py`: for a solved run, K
+(default 5) diverse near-optimal alternatives to the incumbent schedule —
+the raw material for Tier-1 drag ghosts, pool-consensus testimony, and
+ATP's fast re-solve. Mechanism (chosen and measured, per the session spec):
+each member is a short re-solve of the EXACT base model — rebuilt from the
+persisted snapshot with the run's own M5-recorded horizon and reference
+date, so the incumbent's variables correspond — with three additions:
+(1) warm-start hints from the incumbent (the warm-start mechanics, shared
+code); (2) an in-model objective upper bound ≤ incumbent × (1 + X/100)
+(X default 10) posted over the builder's own captured `objective_terms` —
+near-optimality by construction, not post-hoc filtering; (3) diversity
+pressure = a randomized search seed per member PLUS a no-good cut over a
+random sample (10%, min 3) of the incumbent's start times — disjunctive
+("at least one sampled op moves"), so a single tight operation cannot make
+a member infeasible. Members that still come back infeasible are recorded
+as rigidity findings, not errors. Measured diversity is reported: per-member
+and mean assignment-Hamming distance from the incumbent (ops whose
+(resource, start) differ — datetimes parsed, per the differ lesson), mean
+pairwise, and `ops_with_alternative_positions` (the Tier-1 ghost
+precondition, asserted ≥ 1 in the acceptance tests).
+
+**Isolation, structural.** Pool members are contract documents in the run
+dir's `pool/` subdirectory and rows in NEW registry tables
+(`pools`/`pool_members`) — never rows in `schedules`, so no listing can
+ever contain them (the scenario rule, made structural). Member extraction
+runs with no snapshot writer and no reporter: the canonical snapshot is
+byte-untouched (tested). Each member's own M5/M6 evidence sinks to
+`pool/member_<n>_runs/` so its document's solver block is still derived
+from real evidence, and the member document carries `annotations.pool`
+(pool_id, base_schedule_id, member_index, objective + delta) —
+**schedule-document contract 1.0 → 1.1**, additive, version history added
+to the contract docstring.
+
+**API.** POST `/schedules/{id}/pool` (202, warming; sync flag for tests),
+GET `/schedules/{id}/pool` (summary: status, members, measured diversity,
+mechanism string), GET `/schedules/{id}/pool/{n}` (member document),
+409 for scenario schedules (pools belong to base schedules). Auto-warm:
+`pool: true` on the solve request warms in the same background task
+strictly after the schedule registers; it stays opt-in until the Phase-3
+publish workflow exists, at which point warming-on-publish becomes the
+default (the roadmap's "warmed async after publish"). Invalidation:
+`Registry.mark_schedule_superseded` supersedes the schedule AND
+invalidates its pools in one transaction — the supersede hook the publish
+workflow will call.
+
+**Acceptance measured** (clean_small and messy_realistic seed 23, both
+deterministic base): pools populate ready within seconds (clean_small
+~2s for K=5; messy plant within its generous bound), every member differs
+from the incumbent (Hamming ≥ 1 guaranteed by the cut, measured higher),
+every member document parses against the contract (cost decomposition
+dies at construction), objective deltas ≤ 10%. Tests:
+`tests/test_solution_pool.py` (helpers unit-tested at the ortools level,
+integration, registry invalidation, slow messy acceptance) and
+`tests/test_api_endpoints.py::TestSolutionPool` (endpoints, structural
+listing isolation, auto-warm).

@@ -145,7 +145,7 @@ class TestScheduleDocument:
     def test_document_validates_against_contract(self, api):
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
         parsed = ScheduleDocument.model_validate(doc)
-        assert parsed.contract_version == "1.0"
+        assert parsed.contract_version == "1.1"
         assert parsed.schedule_id == api.schedule_id
         assert parsed.run_id == api.run["id"]
         assert parsed.solver.deterministic is True
@@ -268,3 +268,76 @@ class TestWhatIf:
         _error(api.client.post(
             f"/schedules/{api.schedule_id}/whatif",
             json={"modifications": []}), 400)
+
+
+# ---------------------------------------------------------------------------
+# Solution pool (docs/07 Phase 2)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def pool(api, scenario_run):
+    """Warm a small pool for the base schedule (after the scenario tests'
+    schedule exists, proving isolation both ways)."""
+    accepted = _data(api.client.post(
+        f"/schedules/{api.schedule_id}/pool",
+        json={"k": 3, "member_time_limit": 10, "sync": True},
+    ), status=202)
+    return accepted["pool_id"]
+
+
+class TestSolutionPool:
+    def test_pool_summary_ready_with_measured_diversity(self, api, pool):
+        data = _data(api.client.get(f"/schedules/{api.schedule_id}/pool"))
+        assert data["id"] == pool
+        assert data["status"] == "ready", data.get("error")
+        assert data["members"], "pool warmed but has no members"
+        assert data["summary"]["diversity"]["mean_hamming_from_incumbent"] >= 1
+        assert data["summary"]["diversity"]["ops_with_alternative_positions"] >= 1
+
+    def test_member_document_is_contract_11_and_marked(self, api, pool):
+        doc = _data(api.client.get(f"/schedules/{api.schedule_id}/pool/0"))
+        parsed = ScheduleDocument.model_validate(doc)  # cost decomposition dies here if broken
+        assert parsed.annotations.pool is not None
+        assert parsed.annotations.pool.is_pool_member is True
+        assert parsed.annotations.pool.pool_id == pool
+        assert parsed.annotations.pool.base_schedule_id == api.schedule_id
+        assert parsed.annotations.pool.member_index == 0
+
+    def test_members_within_objective_tolerance(self, api, pool):
+        data = _data(api.client.get(f"/schedules/{api.schedule_id}/pool"))
+        for m in data["members"]:
+            if m["objective_delta_pct"] is not None:
+                assert m["objective_delta_pct"] <= 10.0 + 1e-6
+
+    def test_pool_members_never_in_schedule_listings(self, api, pool):
+        """Structural isolation: members live in pool tables, so even the
+        opt-in scenario listing cannot contain them."""
+        rows = _data(api.client.get(
+            "/schedules?include_scenarios=true"))["schedules"]
+        data = _data(api.client.get(f"/schedules/{api.schedule_id}/pool"))
+        member_docs = {m["document_path"] for m in data["members"]}
+        assert member_docs  # sanity
+        assert not member_docs & {r["document_path"] for r in rows}
+
+    def test_pool_refused_for_scenario_schedules(self, api, scenario_run, pool):
+        scen_id = scenario_run["result"]["schedule_id"]
+        _error(api.client.post(f"/schedules/{scen_id}/pool", json={}), 409)
+
+    def test_pool_404s(self, api):
+        _error(api.client.get("/schedules/nope/pool"), 404)
+        _error(api.client.get(f"/schedules/{api.schedule_id}/pool/99"), 404)
+
+    def test_solve_with_pool_flag_auto_warms(self, api):
+        """pool: true on the solve request warms the pool in the same
+        background task, strictly after the schedule registers."""
+        solve = _data(api.client.post(
+            f"/submissions/{api.submission['submission_id']}/solve",
+            json={"time_limit": 20, "deterministic": True,
+                  "sync": True, "pool": True},
+        ), status=202)
+        run = _data(api.client.get(f"/runs/{solve['run_id']}"))
+        assert run["status"] == "succeeded", run.get("error")
+        data = _data(api.client.get(
+            f"/schedules/{run['result']['schedule_id']}/pool"))
+        assert data["status"] == "ready"
+        assert data["members"]

@@ -48,6 +48,18 @@ class SolveRequest(BaseModel):
     time_limit: float = 30.0
     deterministic: bool = False
     sync: bool = False              # small runs may opt into the sync path
+    # Warm the solution pool right after the solve (same background task,
+    # so it runs strictly after the schedule is registered). Opt-in until
+    # the publish workflow (Phase 3) makes warming-on-publish the default.
+    pool: bool = False
+
+
+class PoolRequest(BaseModel):
+    k: int = 5
+    tolerance_pct: float = 10.0
+    member_time_limit: float = 10.0
+    seed: int = 1234
+    sync: bool = False
 
 
 class AskRequest(BaseModel):
@@ -199,6 +211,50 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
         return _ok(document)
 
     # ------------------------------------------------------------------
+    # Solution pool (docs/07 Phase 2)
+    # ------------------------------------------------------------------
+
+    @app.post("/schedules/{schedule_id}/pool", status_code=202)
+    def warm_pool(schedule_id: str, req: PoolRequest, background: BackgroundTasks):
+        row = _live_schedule(registry, schedule_id)
+        if row["is_scenario"]:
+            raise HTTPException(409, "pools are built for base schedules; "
+                                     "a what-if scenario has no pool")
+        import uuid as _uuid
+        pool_id = f"pool-{_uuid.uuid4().hex[:12]}"
+        registry.create_pool(pool_id, schedule_id, params=req.model_dump())
+        if req.sync:
+            _execute_pool(registry, pool_id, row, req.model_dump())
+        else:
+            background.add_task(_execute_pool, registry, pool_id, row,
+                                req.model_dump())
+        return _ok({"pool_id": pool_id, "status": "warming"}, status_code=202)
+
+    @app.get("/schedules/{schedule_id}/pool")
+    def get_pool(schedule_id: str):
+        if registry.get_schedule(schedule_id) is None:
+            raise HTTPException(404, f"unknown schedule {schedule_id}")
+        pool = registry.get_pool_for_schedule(schedule_id)
+        if pool is None:
+            raise HTTPException(404, f"schedule {schedule_id} has no pool — "
+                                     "POST /schedules/{id}/pool to warm one")
+        return _ok(pool)
+
+    @app.get("/schedules/{schedule_id}/pool/{member_index}")
+    def get_pool_member(schedule_id: str, member_index: int):
+        pool = registry.get_pool_for_schedule(schedule_id)
+        if pool is None:
+            raise HTTPException(404, f"schedule {schedule_id} has no pool")
+        member = next((m for m in pool["members"]
+                       if m["member_index"] == member_index), None)
+        if member is None:
+            raise HTTPException(404, f"pool {pool['id']} has no member "
+                                     f"{member_index}")
+        document = json.loads(
+            Path(member["document_path"]).read_text(encoding="utf-8"))
+        return _ok(document)
+
+    # ------------------------------------------------------------------
     # Ask (M10 explainer)
     # ------------------------------------------------------------------
 
@@ -327,6 +383,53 @@ def _execute_solve(registry: Registry, run: dict, files_dir: Path,
     except Exception as exc:  # noqa: BLE001
         registry.finish_run(run_id, "failed",
                             error=f"document assembly: {type(exc).__name__}: {exc}")
+        return
+
+    if req.pool:
+        # Warm the solution pool strictly after the schedule is registered —
+        # same background task, so "warmed by a background task after solve
+        # completes" holds without a second scheduling mechanism.
+        import uuid as _uuid
+        pool_id = f"pool-{_uuid.uuid4().hex[:12]}"
+        registry.create_pool(pool_id, document.schedule_id)
+        _execute_pool(registry, pool_id,
+                      registry.get_schedule(document.schedule_id), {})
+
+
+def _execute_pool(registry: Registry, pool_id: str, schedule_row: dict,
+                  params: dict) -> None:
+    """Warm the solution pool for a registered schedule. The pool module is
+    registry-free; this worker owns the indexing and status transitions."""
+    from mre.modules.solution_pool import warm_solution_pool
+
+    run = registry.get_run(schedule_row["run_id"])
+    try:
+        result = warm_solution_pool(
+            out_dir=Path(run["out_dir"]),
+            snapshot_id=schedule_row["snapshot_id"],
+            base_schedule_id=schedule_row["id"],
+            run_id=schedule_row["run_id"],
+            k=int(params.get("k", 5)),
+            tolerance_pct=float(params.get("tolerance_pct", 10.0)),
+            member_time_limit_s=float(params.get("member_time_limit", 10.0)),
+            seed=int(params.get("seed", 1234)),
+            pool_id=pool_id,
+        )
+        summary = result.summary()
+        registry.finish_pool(
+            pool_id, result.status,
+            summary=summary,
+            members=[
+                {"member_index": m.member_index, "objective": m.objective,
+                 "objective_delta_pct": m.objective_delta_pct,
+                 "hamming_from_incumbent": m.hamming_from_incumbent,
+                 "document_path": m.document_path}
+                for m in result.members if m.document_path
+            ],
+        )
+    except Exception as exc:  # noqa: BLE001 — background task must not raise
+        registry.finish_pool(pool_id, "failed",
+                             error=f"{type(exc).__name__}: {exc}")
 
 
 def _execute_whatif(registry: Registry, run: dict, base_schedule: dict,
