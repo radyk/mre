@@ -2266,3 +2266,33 @@ for completed ops is revisited with the mid_replan ledger (unit 4).
 Tests: `tests/test_wip_solver.py` (6). defaults-reproduce-baseline stays
 green (WIP-less data builds byte-identical models — WIP branches are guarded
 on wip_status, absent on every existing path).
+
+## Amendment — 2026-07-14: mid_replan scenario — the WIP capability, end to end (session 2.3 unit 4)
+
+The generator's `mid_replan` scenario (W1) exercises reschedule-from-a-point
+with a truth manifest and a counterfactual. Deterministic, seed-independent
+layout (reference_date = Monday, CAL-STD 07:00–19:00): R0 carries a COMPLETE
+order (its window freed) and a not_started RESCUE order due Monday; R1 carries
+an IN_PROGRESS order (600 min remaining, fixed) and a not_started FUTURE order.
+Emits `wip_status.csv` + `wip_progress_basis`; gates ACCEPTED with zero WIP
+findings (the observed pre-reference actual_start is history, not flagged).
+
+Proven end to end (`tests/test_mid_replan.py`, deterministic
+`--solver-workers 1 --solver-seed 0`):
+- **Completed op frees capacity** — the price-bought-something rule on
+  capacity. The counterfactual strips `wip_status.csv` (every order
+  not_started, the "prior" blank-slate plan) and the SAME plant carries
+  strictly more tardiness; the rescue order is on time WITH the WIP and late
+  WITHOUT it, purely because the completed op vacated R0's window.
+- **Only the future moves / fixed ops stay put** — the completed op produces
+  no assignment (history, not scheduled); the in-flight op holds R1's early
+  block so the future op starts at/after the in-flight remaining (600 min).
+- **Warm-start never hints the fixed/in-flight ops** — a re-solve hinted from
+  the prior (no-WIP) schedule finds the completed and in-flight ops have NO
+  variables in the WIP model, so they are unhintable by construction (not
+  luck); only future movable ops are hinted.
+
+Generator plumbing: `wip_status` table on the Dataset, `wip_status.csv`
+columns + optional-doorway omit-when-empty, `_apply_mid_replan`. The scenario
+joins the auto-parametrized IDS harness (`test_ids_end_to_end.py`), which
+gates it and runs the full pipeline.

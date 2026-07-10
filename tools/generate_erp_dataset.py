@@ -51,6 +51,7 @@ class Dataset:
     customers: list[dict] = field(default_factory=list)
     setup_transitions: list[dict] = field(default_factory=list)
     locks: list[dict] = field(default_factory=list)
+    wip_status: list[dict] = field(default_factory=list)
     cost_model: dict[str, Any] = field(default_factory=dict)
     # bookkeeping for anomalies / assertions
     priority_multipliers: dict[str, float] = field(default_factory=dict)
@@ -96,6 +97,10 @@ SCENARIOS: dict[str, dict[str, Any]] = {
     "overtime_required": dict(
         orders=8, resources=3, facilities=1, anomalies=[],
         with_customers=False, cost_profile="C2", overtime=True,
+    ),
+    "mid_replan": dict(
+        orders=4, resources=3, facilities=1, anomalies=[],
+        with_customers=False, cost_profile="C1", mid_replan=True,
     ),
 }
 
@@ -465,6 +470,99 @@ def _apply_overtime_required(ds: Dataset, rng: random.Random) -> dict:
     }
 
 
+def _apply_mid_replan(ds: Dataset, rng: random.Random) -> dict:
+    """Reschedule-from-a-point (docs/06 §5.13). The plant's second submission
+    carries WIP: some work is done, some underway, the rest still to plan.
+    Deterministic, seed-independent — the whole point is a repeatable
+    counterfactual on capacity.
+
+    Layout (reference_date = Monday; CAL-STD open 07:00–19:00 = 720 min/day):
+      R0  ORD_DONE   (complete)   would have filled R0's Monday window; now
+                                  done, so its capacity is FREED.
+          ORD_RESCUE (not_started, due Monday) 600 min — fits Monday ONLY
+                                  because ORD_DONE vacated the window. Strip
+                                  the WIP and R0 must serve both → tardiness.
+      R1  ORD_INFLIGHT (in_progress, 600 min remaining) — a FIXED interval
+                                  from reference_date; it holds R1's early
+                                  block.
+          ORD_FUTURE  (not_started, due Monday) 300 min — the only movable op
+                                  on R1; it is pushed past the in-flight
+                                  remaining.
+
+    Truth: rescue on time WITH wip; total tardiness strictly lower WITH wip
+    than without (completion bought capacity); the future op starts at/after
+    the in-flight remaining (the fixed op stayed put); the completed op
+    produces no assignment.
+    """
+    ref = ds.reference_date                       # a Monday
+    prev_workday = ref - timedelta(days=3)         # the previous Friday (history)
+    r0 = ds.resources[0]["resource_id"]
+    r1 = ds.resources[1]["resource_id"]
+
+    def _dedicated(order: dict, tag: str, resource_id: str, run_minutes: int,
+                   due: date) -> None:
+        pid = f"PROD-{tag}"
+        route_id = f"RT-{pid}"
+        ds.products.append({
+            "product_id": pid, "uom": "EA", "facility_id": order["facility_id"],
+            "product_group": "mid_replan", "costing_lot_size": "1",
+            "setup_minutes": "0", "production_minutes": str(run_minutes),
+            "cost_price": "10.0",
+        })
+        ds.routings.append({
+            "route_id": route_id, "facility_id": order["facility_id"],
+            "product_id": pid, "status": "active", "approved": "Y",
+            "version": "1", "effective_from": ref.isoformat(),
+        })
+        ds.routing_lines.append({
+            "route_id": route_id, "sequence": "10", "resource_id": resource_id,
+            "active": "1", "setup_minutes": "", "run_minutes_per_unit": "",
+            "dwell_minutes": "0", "setup_family": "",
+            "splittable": "false", "min_chunk_minutes": "",
+        })
+        order["product_id"] = pid
+        order["route_id"] = route_id
+        order["quantity"] = "1"
+        order["release_date"] = ref.isoformat()
+        order["due_date"] = due.isoformat()
+
+    done, rescue, inflight, future = ds.orders[0], ds.orders[1], ds.orders[2], ds.orders[3]
+    _dedicated(done,     "MR-DONE",     r0, 600, ref)
+    _dedicated(rescue,   "MR-RESCUE",   r0, 600, ref)
+    _dedicated(inflight, "MR-INFLIGHT", r1, 660, ref)
+    _dedicated(future,   "MR-FUTURE",   r1, 300, ref)
+
+    inflight_remaining = 600
+    # wip_status.csv: DONE complete, INFLIGHT underway. RESCUE/FUTURE absent
+    # ⇒ not_started. actual_start on the previous workday (history — before
+    # reference_date, deliberately NOT a gate finding).
+    ds.wip_status = [
+        {"order_id": done["order_id"], "sequence": "10", "status": "complete",
+         "actual_start": f"{prev_workday.isoformat()}T08:00:00",
+         "actual_resource_id": r0, "remaining_minutes": "", "quantity_complete": ""},
+        {"order_id": inflight["order_id"], "sequence": "10", "status": "in_progress",
+         "actual_start": f"{prev_workday.isoformat()}T08:00:00",
+         "actual_resource_id": r1, "remaining_minutes": str(inflight_remaining),
+         "quantity_complete": ""},
+    ]
+    ds.manifest["semantics"]["wip_progress_basis"] = "remaining_minutes"
+
+    return {
+        "reference_date": ref.isoformat(),
+        "bottleneck_resource": r0,
+        "second_resource": r1,
+        "done_order_id": done["order_id"],
+        "rescue_order_id": rescue["order_id"],
+        "inflight_order_id": inflight["order_id"],
+        "future_order_id": future["order_id"],
+        "inflight_remaining_minutes": inflight_remaining,
+        "expected_rescue_on_time_with_wip": True,
+        "expected_total_tardiness_lower_with_wip": True,
+        "expected_future_starts_after_inflight_remaining": True,
+        "expected_completed_op_has_no_assignment": True,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Anomaly catalog v1 — each returns a truth_manifest entry
 # ---------------------------------------------------------------------------
@@ -696,6 +794,8 @@ _COLUMNS = {
     "customers.csv": ["customer_id", "name", "priority_class", "notes"],
     "setup_transitions.csv": ["from_family", "to_family", "setup_minutes", "setup_cost", "scrap_units"],
     "locks.csv": ["order_id", "sequence", "resource_id", "start", "lock_type", "authority", "expiry"],
+    "wip_status.csv": ["order_id", "sequence", "status", "actual_start",
+                       "actual_resource_id", "remaining_minutes", "quantity_complete"],
 }
 
 
@@ -719,12 +819,13 @@ def _write_submission(out_dir: Path, ds: Dataset) -> None:
         "routing_lines.csv": ds.routing_lines, "products.csv": ds.products,
         "resources.csv": ds.resources, "calendars.csv": ds.calendars,
         "customers.csv": ds.customers, "setup_transitions.csv": ds.setup_transitions,
-        "locks.csv": ds.locks,
+        "locks.csv": ds.locks, "wip_status.csv": ds.wip_status,
     }
     for fname, rows in table_map.items():
         if fname in ds.omit_files:
             continue
-        if fname in ("customers.csv", "setup_transitions.csv", "locks.csv") and not rows:
+        if (fname in ("customers.csv", "setup_transitions.csv", "locks.csv",
+                      "wip_status.csv") and not rows):
             continue  # optional doorway tables: omit entirely when unused
         _write_csv(out_dir / fname, fname, rows)
 
@@ -784,6 +885,8 @@ def generate(
         truth_extra["lock"] = {"order_id": oid, "resource_id": rid, "start": start_iso}
     if preset.get("overtime"):
         truth_extra["overtime"] = _apply_overtime_required(ds, rng)
+    if preset.get("mid_replan"):
+        truth_extra["mid_replan"] = _apply_mid_replan(ds, rng)
 
     anomaly_entries: list[dict] = []
     for spec in anomaly_specs:
