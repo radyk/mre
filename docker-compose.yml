@@ -1,0 +1,43 @@
+# Local parity stack for the MRE API (docs/07 Phase 2, W4 / session 2.4).
+#
+# CU1 (this base): the API service + a persistent named volume that holds the
+# run registry (SQLite), snapshots, and the evidence store — everything under
+# MRE_DATA_ROOT=/data. CU2 layers a TLS-terminating reverse proxy in front
+# (see docker-compose.tls.yml) so the API itself never needs to speak TLS.
+#
+# Provider-agnostic: the cloud deploy (deploy/azure) supplies the managed
+# equivalents — an encrypted managed disk for the volume, platform secrets for
+# any credentials — and touches nothing in the application image.
+
+services:
+  api:
+    build:
+      context: .
+      target: runtime
+    image: mre-api:local
+    environment:
+      MRE_DATA_ROOT: /data
+      # Supports the deterministic-mode reproducibility guarantee (the
+      # identical-schedule claim additionally needs it; 2026-07-09 amendment).
+      PYTHONHASHSEED: "0"
+    volumes:
+      # Encryption at rest is a property of this volume's backing store
+      # (docs/09 W4): a LUKS/host-encrypted directory locally, an encrypted
+      # managed disk in the cloud. The application is agnostic to which.
+      - mre-data:/data
+    ports:
+      # Direct exposure for local dev without the proxy. In the TLS overlay the
+      # proxy owns the public port and this maps to localhost only.
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  mre-data:
+    # Named volume so registry/snapshots/evidence survive container recreation.
+    driver: local

@@ -1,0 +1,31 @@
+# Keep the build context small and reproducible. Runtime artifacts, caches,
+# and the developer-local (gitignored) extracts never belong in an image.
+.git
+.gitignore
+**/__pycache__
+**/*.pyc
+.pytest_cache
+*.egg-info
+.venv
+venv
+
+# Runtime / evidence output (regenerated; never source)
+evidence_store/
+snapshots/
+runs/
+mre_output/
+mre_demo_output/
+mre_output_whatif/
+mre_api_data/
+runs/
+
+# Developer-local extracts (gitignored) and their profile
+raw_data/
+raw_data_profile.md
+
+# Docs and deploy scaffolding are not needed to build/run the service image
+docs/
+legacy/
+deploy/
+*.md
+!README.md

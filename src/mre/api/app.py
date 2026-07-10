@@ -103,6 +103,35 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
         )
 
     # ------------------------------------------------------------------
+    # Liveness / readiness (container healthcheck, docs/07 W4 CU1)
+    # ------------------------------------------------------------------
+
+    @app.get("/health")
+    async def health():
+        """Cheap readiness probe for the container HEALTHCHECK and any
+        reverse proxy / platform liveness check. Confirms the process is up
+        and its data root is present and writable (the run registry, snapshot
+        and evidence stores all live under it) without touching the solver."""
+        root = Path(registry.data_root)
+        writable = False
+        try:
+            root.mkdir(parents=True, exist_ok=True)
+            probe = root / ".health_probe"
+            probe.write_text("ok", encoding="utf-8")
+            probe.unlink()
+            writable = True
+        except OSError:
+            writable = False
+        if not writable:
+            return JSONResponse(
+                {"api_version": API_VERSION,
+                 "error": {"code": 503, "message": "data root not writable"}},
+                status_code=503,
+            )
+        return _ok({"status": "ok", "api_version": API_VERSION,
+                    "data_root_writable": True})
+
+    # ------------------------------------------------------------------
     # Submissions
     # ------------------------------------------------------------------
 

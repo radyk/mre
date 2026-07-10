@@ -70,6 +70,33 @@ def api(tmp_path_factory):
 # Submission + certificate
 # ---------------------------------------------------------------------------
 
+class TestHealth:
+    """The container HEALTHCHECK / proxy liveness probe (session 2.4 CU1)."""
+
+    def test_health_ok_when_data_root_writable(self, tmp_path):
+        client = TestClient(create_app(data_root=tmp_path / "hdata"))
+        data = _data(client.get("/health"))
+        assert data["status"] == "ok"
+        assert data["data_root_writable"] is True
+
+    def test_health_503_when_data_root_unwritable(self, tmp_path, monkeypatch):
+        root = tmp_path / "hdata2"
+        client = TestClient(create_app(data_root=root))
+        # Simulate a broken/unwritable data root: make the write probe fail.
+        import pathlib
+        orig = pathlib.Path.write_text
+
+        def boom(self, *a, **k):
+            if self.name == ".health_probe":
+                raise OSError("read-only file system")
+            return orig(self, *a, **k)
+
+        monkeypatch.setattr(pathlib.Path, "write_text", boom)
+        resp = client.get("/health")
+        assert resp.status_code == 503
+        assert resp.json()["error"]["code"] == 503
+
+
 class TestSubmissionIntake:
     def test_accepted_submission_reports_grades(self, api):
         assert api.submission["grade"] == "ACCEPTED"

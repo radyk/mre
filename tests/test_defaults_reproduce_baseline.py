@@ -104,6 +104,11 @@ class TestSampleDataReproducesBaseline:
         assert current == golden
 
 
+@pytest.mark.skipif(
+    not (REPO / "raw_data").exists(),
+    reason="gauntlet regression needs the local (gitignored) raw_data extract; "
+           "skipped on a fresh checkout / in the CI container",
+)
 class TestGauntletReproducesBaseline:
     """'The gauntlet' = raw_data (the real ticketing extract), sliced to the
     documented 173-exclusion window (--horizon-days 2) for a fast, real,

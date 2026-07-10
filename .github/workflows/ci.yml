@@ -1,0 +1,55 @@
+name: CI
+
+# Green CI on the IMAGE AS SHIPPED, not the checkout: the fast suite runs
+# inside a container built FROM the runtime image, so a stale/broken install
+# fails here (the stale-install false-green lesson, applied to images).
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  image-build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # The shipped image must build on its own (no test tooling in it).
+      - name: Build runtime image (as shipped)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runtime
+          tags: mre-api:ci
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # test target is FROM runtime, so mre.* resolves to the shipped venv.
+      - name: Build test image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: test
+          tags: mre-api:citest
+          load: true
+          cache-from: type=gha
+
+      - name: Run the fast suite INSIDE the built image
+        run: docker run --rm mre-api:citest pytest -q -m "not slow"
+
+      # Prove the shipped image actually serves: boot it, poll /health.
+      - name: Smoke the runtime image /health
+        run: |
+          docker run -d --name mre_health -p 8000:8000 mre-api:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/health; then echo "healthy"; ok=1; break; fi
+            sleep 2
+          done
+          docker logs mre_health
+          docker rm -f mre_health
+          test "${ok:-0}" = "1"

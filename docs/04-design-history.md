@@ -2383,3 +2383,60 @@ the WIP run's `setup_cost` is strictly below the WIP-stripped run's (which
 re-charges all four ops), a positive `sunk_setup_cost` line is present WITH
 the WIP and absent WITHOUT, and the WIP run's decomposition still closes to
 `total_cost`.
+
+## Amendment — 2026-07-14: Session 2.4 CU1 — containerization (docs/07 Phase 2, W4)
+
+The API service is now containerized, provider-agnostic by construction (no
+cloud SDKs, no provider env-var names; the app reads only `MRE_*` config).
+
+**Healthcheck endpoint.** `GET /health` (app.py) — a cheap liveness/readiness
+probe for the container `HEALTHCHECK` and any reverse-proxy/platform check.
+It confirms the process is up and `MRE_DATA_ROOT` is present and writable (the
+run registry, snapshots and evidence all live under it) via a write-probe, and
+returns 503 if not — without touching the solver. Tests
+(`test_api_endpoints.py::TestHealth`): 200 with `data_root_writable` when
+writable, 503 envelope when the probe write fails.
+
+**Dockerfile — multi-stage.** `builder` resolves the pinned lockfile into a
+`/opt/venv` and installs the app wheel (`pip install --no-deps .`), so
+compilers and pip caches never reach the shipped image. `runtime` (the shipped
+target) copies only the venv, adds `curl` for the healthcheck, creates a
+non-root `mre` user owning `/data`, `EXPOSE`s 8000, declares the `HEALTHCHECK`,
+and runs uvicorn via the app factory. `test` is `FROM runtime` + pinned dev
+deps + `tests/`+`tools/`+committed data, run from an `/app` rootdir where
+pytest prepends the suites to `sys.path` while `import mre` still resolves to
+the SHIPPED venv package — so CI exercises the image as shipped, not the
+checkout (the stale-install false-green lesson applied to images).
+
+**Pinned lockfiles.** `requirements.lock` (runtime: FastAPI/Starlette/uvicorn,
+Pydantic, OR-Tools + numpy/protobuf/absl/immutabledict) and
+`requirements-dev.lock` (`-r` the runtime lock + pytest + httpx). Exact
+versions, grouped by the direct dep that pulls each transitive; regenerated
+deliberately, never floated. `.dockerignore` keeps runtime artifacts, caches,
+and the gitignored `raw_data/` out of the build context.
+
+**Compose (local parity).** `docker-compose.yml`: the `api` service (runtime
+target) + a persistent named volume `mre-data:/data` holding registry +
+snapshots + evidence, `PYTHONHASHSEED=0` set to support the deterministic-mode
+guarantee, compose-level healthcheck. The TLS reverse proxy is a CU2 overlay
+(the API never speaks TLS itself).
+
+**CI (`.github/workflows/ci.yml`).** Builds the `runtime` image (must build on
+its own), builds the `test` image, runs `pytest -q -m "not slow"` INSIDE it,
+then boots the runtime image and polls `/health` to prove it serves.
+
+**Fresh-checkout / container robustness.** `TestGauntletReproducesBaseline`
+hard-depended on the gitignored `raw_data/` extract and would error anywhere
+that extract is absent (fresh checkout, CI, container). Guarded with
+`skipif(not (REPO/"raw_data").exists())` — it skips gracefully off the
+developer machine (the merge_v2 gauntlet test was already `@pytest.mark.slow`,
+so excluded from the fast suite already).
+
+**Verification gap named.** Docker is not available in this session's
+environment, so the image was NOT built here. Everything buildable-independent
+was verified: the compose and CI YAML parse, the Dockerfile stage graph is
+well-formed, the runtime CMD itself was smoke-tested on the host (uvicorn
+`--factory` boots and `/health` returns 200 with the exact command the
+container runs), and the fast suite is green on the host (793 passed). The
+in-container run is exercised by CI on first push; **image-built-and-tested-in-
+CI is the outstanding confirmation, not done locally this session.**
