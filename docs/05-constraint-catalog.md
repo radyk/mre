@@ -112,6 +112,14 @@ Legend: ✔core = In-core · ◐slot = In-later modular slot · ✘out = Out · 
 
 Priorities and customer weights (**cost coefficients**, docs/06 §5.9) · preferred machines/shifts (soft preference terms) · minimize-changeovers / minimize-WIP / makespan pressure (objective terms) · overtime premiums (calendar `added` × CostModel premium). **Rule:** anything expressing *preference or price* lives in CostModel; the Constraint entity is reserved for restrictions. A "preference" arriving as a hard rule is a modeling error to be caught in review, not accommodated.
 
+### Category H — Soft preferences (objective plane; conversational-channel origin, R-DP4)
+
+The soft counterpart to Category F's hard overrides: a *preference*, not a restriction. Per the Category G firewall it is a **CostModel penalty term, never a Constraint record**; per R-DP4 (docs/04 2026-07-11 drop-pin amendment) it enters through the **conversational channel only** — gesture is command, language is wish — and the solver may override it with a **visible priced explanation**. Gestures never compile to wishes; wishes never move bars silently.
+
+| id | Item | Verdict/Plane | Coverage | Input contract | Test triad | Status | IDS doorway |
+|---|---|---|---|---|---|---|---|
+| H1 | Soft assignment/timing preference ("keep Henderson on Press 2 this week") | ◐slot O | CostModel penalty term over the preferred assignment/window; conversational-intent origin; solver-overridable with a priced explanation (R-DP4) | *owed to interim-A* (conversational-intent → penalty-term doorway; not invented now) | *owed to interim-A* (honored-when-cheap · overridden-when-costly-with-priced-explanation · gesture-never-compiles-to-wish) | UI (Phase 3) | conversational channel (not an IDS submission field) |
+
 ### Global exclusions (with approximation & limits)
 
 - **Individual operator rostering** — operators are pools (R-B3). Approximation: pool capacity per calendar. Limit: no named-person assignments, skills matrices deferred with the labor stub. Revisit trigger: a pilot whose binding constraint is certified individuals.

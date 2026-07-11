@@ -2943,3 +2943,78 @@ the full 3.0b addendum. Residuals disclosed, neither a failure under evidence:
 the overlay reads vis DOM geometry (stable public-ish surface), and I verified
 settled-window drift across three zoom levels rather than a single mid-flight pan
 frame.
+
+## Amendment — 2026-07-11: Drop-pin ruling resolved (open-rulings queue item 5) + the cockpit edit vocabulary
+
+Resolved in the Phase 3 design thread. Supersedes all earlier
+sketches of drag-intent inference as the primary mechanism.
+
+**R-DP1 — A drag is a literal must.** The dropped bar lands exactly
+where the planner placed it — machine and time as displayed — or
+the drop does not happen. The sandbox re-solve holds the dropped
+bar fixed and rearranges only its surroundings; it never relocates
+the dragged bar to a "better" spot. Rationale: planner testimony —
+a moved bar settling anywhere other than where it was dropped is
+read as disobedience, not intelligence. The one thing the planner
+touched is the one thing that cannot move. This resolves the
+drop-pin default (machine / start / both): the pin is BOTH, as
+displayed.
+
+**R-DP2 — Commit-or-return.** Proven-illegal zones (Tier-0 dim:
+capability, closed calendar, precedence floor, window-fit) refuse
+the drop mid-drag — release over dim snaps the bar home; no dialog,
+no post-hoc explanation beyond a one-line hover reason during the
+drag. Drops that pass Tier 0 land as a visually distinct TENTATIVE
+bar pending the sandbox verdict; if the re-solve is infeasible with
+the pin held, the bar returns home carrying the binding constraint
+and the nearest feasible alternative (relax-and-report, per A7
+machinery). Invariant: the bar ends where it was put, or where it
+started — never a third place. Nothing mutates before accept.
+
+**R-DP3 — Semantic snap, generous tolerance.** Within legal zones,
+snap targets are semantic anchors, not a time grid: ghost
+placements (strongest), calendar openings, adjacency edges,
+predecessor-finish floors; coarse grid only as fallback in open
+space. Snap resolves DURING the drag (the planner watches the bar
+click to the anchor before release), preserving R-DP1 literalness.
+Alt-drag disables snapping. Tolerance radii are externalized design
+tokens (feel-iteration owned).
+
+**R-DP4 — Gesture is command; language is wish.** Soft preferences
+("try to keep Henderson on Press 2 this week") enter through the
+conversational channel only, compile to objective penalty terms
+(new soft-preference constraint category alongside A7's hard pins,
+docs/05 row required), and may be overridden by the solver with a
+visible priced explanation. Gestures never compile to wishes;
+wishes never move bars silently.
+
+**R-DP5 — Additional verbs, all priced Decisions through the
+sandbox:** HOLD (earliest-start push / parked state for
+not-yet-started work; capacity freed; accruing tardiness priced on
+the card; in-flight pause is out of scope pending the
+interruptibility ruling) and DEFER (unschedule a demand — never
+deletion; the card prices what removal costs against what it buys).
+
+**R-DP6 — Legality epistemics (what each layer may claim).** Dim =
+proven illegal by canonical arithmetic; never wrong. Green =
+provably-not-illegal by every cheaply-evaluable rule; NOT a
+full-model guarantee. Ghosts = the only pre-release known-feasible
+targets (a complete solved schedule vouches for each). The Tier-2
+re-solve is the sole full-model authority. Saved solutions (pool,
+incumbents) never define legality — rules define the map, solutions
+decorate it. Delta cards may offer an explicit relaxation toggle
+("keep machine, let time float") after landing, with the drag axis
+informing only which relaxation is offered as the default — never
+silently applied.
+
+**Consequences registered:** (1) contract 1.2 additive
+"interaction payload" — eligibility sets, calendar windows,
+precedence edges, remaining durations, occupancy — so Tier-0 is
+computable client-side; (2) a capability-routed generator scenario
+(multi-eligible routing per B2, real cost differentials) is an
+interim-A entry prerequisite — the 3.0 spike proved generated data
+currently contains no legal cross-machine move and no priced ghost,
+making the sixty-second script impossible on it; (3) mid-drag
+refusal (R-DP2) is a load-bearing bake-off criterion, tested and
+PASSED in 3.0b; (4) the docs/07 open-rulings queue marks item 5
+resolved, citing this entry.
