@@ -89,6 +89,38 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 IN PROGRESS — Session 3.1 interim-A (read-only
+cockpit) STARTED 2026-07-11.** The two backbone commit-units landed; the
+frontend units remain. **CU1 (done):** `multi_route` — the capability-routed
+generator scenario (docs/05 B2 pipeline-proven). An operation's eligible set is
+expressed as multiple `routing_lines` rows sharing one (route_id, sequence); the
+IDS adapter groups them into one `explicit_set` OperationSpec (single-row case
+byte-identical → defaults-reproduce-baseline holds). A **saturated
+identical-rate cheap pair** (R0=R1=$50) is what makes the solution pool actually
+surface cross-machine ghosts at a clean near-optimal base — the hard-won lesson:
+with distinct rates the optimum is machine-unique and earlier "cross-machine"
+readings were artifacts of a *suboptimal* incumbent. `solution_pool` now reports
+`diversity.cross_machine_ops`; `tests/test_multi_route.py` asserts structure +
+pool cross-machine + the single-eligibility-collapse counterfactual. This closes
+the 3.0 "generated data has no legal cross-machine move / no priced ghost"
+carry-forward. **CU2 (done):** schedule **contract 1.2** (additive `interaction`
+block — the Tier-0 client-side legality payload: per-op eligible sets, durations,
+release floors, precedence expanded to operation-instance refs; built only when
+the assembler gets `edges`, so 1.1 consumers/pool members are unaffected;
+calendar windows + occupancy deliberately not duplicated). Size check on
+clean_large: **+1.9 MB / +35.7%** — a split-endpoint (`/schedules/{id}/interaction`)
+is **proposed, not implemented**, for interim-B. **Remaining interim-A (NOT
+built): CU3** the cockpit shell (production `src/cockpit/` vis-timeline frontend
+rendering a contract-1.2 doc from the live API — resources as rows, planner
+vocabulary via the identity map, lateness coloring, calendar closures, top strip
+= version + grade, design tokens externalized, read-only); **CU4** the ask panel
+embedding M10 with cited-bar highlighting + shared selection (deictic "why is
+this here?"); **CU5** the Playwright screenshot harness promoted from the spike
+into `tests/` (scripted states as screenshot assertions, the C1 0.0px drift check
+as a standing regression, CI headless). 995 tests green (non-slow) + the 5
+slow `multi_route` pool/counterfactual tests. See the docs/04 2026-07-11
+Session 3.1 CU1/CU2 amendments and docs/07 v2.0.
+
 **Roadmap position: Phase 3 IN PROGRESS — frontend substrate SELECTED
 (vis-timeline) 2026-07-11 via the bake-off SPIKE + 3.0b extension.** Throwaway
 spike (`tools/spikes/frontend_bakeoff/`, nothing ships) choosing the cockpit's
