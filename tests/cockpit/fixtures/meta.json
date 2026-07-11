@@ -1,0 +1,12 @@
+{
+  "id": "sched-multi-route-fixture",
+  "run_id": "run-mr-fixture",
+  "submission_id": "sub-mr",
+  "snapshot_id": "snap-mr",
+  "status": "proposed",
+  "contract_version": "1.2",
+  "is_scenario": 0,
+  "parent_schedule_id": null,
+  "grade": "ACCEPTED",
+  "costing_grade": "C1"
+}

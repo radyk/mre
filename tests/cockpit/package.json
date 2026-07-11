@@ -1,0 +1,15 @@
+{
+  "name": "mre-cockpit-harness",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "The cockpit screenshot harness (docs/07 Phase 3, CU5) — promoted from the frontend bake-off spike. Playwright drives the read-only cockpit through scripted states, captures screenshots, and asserts machine-checked numbers incl. the standing C1 label-vs-bar drift regression. Builds + serves src/cockpit via the hermetic fixture server. CI runs it headless.",
+  "scripts": {
+    "test": "playwright test -c ./playwright.config.mjs",
+    "test:headed": "playwright test -c ./playwright.config.mjs --headed",
+    "install:browser": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1"
+  }
+}

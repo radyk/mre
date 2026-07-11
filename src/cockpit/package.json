@@ -1,0 +1,21 @@
+{
+  "name": "mre-cockpit",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "The reasoning cockpit (docs/07 Phase 3, interim-A). Read-only vis-timeline board over the contract-1.2 schedule document from the live API, with the embedded M10 ask panel and cited-bar highlighting. No drag handlers — read-only is the law until interim-B.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 5176 --strictPort",
+    "fixture": "python ../../tools/build_cockpit_fixture.py",
+    "test:e2e": "npm --prefix ../../tests/cockpit test"
+  },
+  "dependencies": {
+    "vis-data": "7.1.10",
+    "vis-timeline": "7.7.4"
+  },
+  "devDependencies": {
+    "vite": "5.4.21"
+  }
+}

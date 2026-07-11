@@ -3175,3 +3175,202 @@ fetched once on first grab. The payload is grab-time data, not
 first-paint data, so the split costs nothing perceptible and keeps
 the initial render document lean. Deferred to interim-B (the drag
 surface) where the payload is actually consumed.
+
+## Amendment — 2026-07-11: Session 3.1b — interim-A frontend stack decisions (CU3–CU5 groundwork)
+
+Session 3.1b built the three remaining interim-A commit-units (CU3
+cockpit shell, CU4 ask panel, CU5 screenshot harness). The stack
+choices left open by the Session 3.1 brief are recorded here so
+they are reviewable; the per-unit amendments follow.
+
+**Home — `src/cockpit/`** (a peer of `src/mre/`, its own npm
+package). The production frontend lives here; nothing about it
+reaches into the Python package and vice-versa (it talks to the API
+over HTTP only). `.gitignore`d: `node_modules/`, `dist/`.
+
+**Bundler — Vite 5** (`5.4.21`), the same tool the throwaway
+bake-off spike used, so the vis-timeline substrate's proven
+behaviour carries over unchanged. Dev/preview PROXY the API
+(`/schedules`, `/submissions`, `/runs`, `/health`) so the browser
+sees one origin — the FastAPI surface has no CORS middleware by
+design (single-tenant-by-construction, docs/08). The built app
+fetches the same relative paths, so it runs behind the API or the
+test fixture server with no rebuild.
+
+**Framework — none (vanilla ES modules).** The read-only board
+needs no component runtime; the bake-off's Candidate-A React path
+was the *drag*-surface's higher-feel fallback, not required for a
+render-only cockpit. Feel-iteration lives entirely in
+`src/cockpit/src/tokens.css` (colors, spacing, motion durations,
+and the semantic mappings — lateness bands, register hues,
+calendar shading, citation glow) — externalized from day one per
+the CU3 brief.
+
+**vis-timeline pinned to the bake-off version.** `vis-timeline`
+`7.7.4` + `vis-data` `7.1.10` pinned exactly (no `^`) in
+`src/cockpit/package.json` — a version bump is now a deliberate act
+that must clear the CU5 harness (the C1 drift regression is the
+tripwire).
+
+**Small API additions (thin, additive, no business logic).**
+(1) `GET /schedules/{id}/meta` — registry metadata joined to the
+submission's certificate GRADE (`registry.get_schedule_meta`). The
+grade is a submission property living in the certificate store, NOT
+in the derived-not-invented schedule document; the cockpit's top
+strip reads it here. (2) The `/ask` response envelope gained two
+additive fields read straight off the bundle the explainer already
+produced — `bundle.register` (testimony | judgment, so the panel
+styles the card without parsing prose) and `bundle.cited_refs`
+(`{operations, resources, demands}`, the entity refs the answer
+already cites, so the board can highlight the matching bars/lanes).
+Both SURFACE existing citations; neither adds an answer path or an
+evidence surface (honesty armor intact). Covered by
+`tests/test_api_endpoints.py::TestScheduleMeta` +
+`TestAsk::test_ask_surfaces_register_and_cited_refs` /
+`test_cited_refs_point_at_real_board_entities`.
+
+## Amendment — 2026-07-11: Session 3.1b CU3 — the cockpit shell (read-only board)
+
+The production reasoning-cockpit board (`src/cockpit/src/board.js`
++ `main.js` + `cockpit.css` + `tokens.css`), a vis-timeline render
+of a **contract-1.2 document fetched from the live API**. Verified
+end-to-end against the real FastAPI (a live `multi_route` solve,
+Vite proxying `:8000`).
+
+- **Resources are rows, assignments are bars, in the PLANNER's
+  vocabulary** — `external_name` on lanes, `work_orders` on bars;
+  canonical UUIDs never appear on screen (they stay in refs the
+  code navigates by). The identity map already put the external
+  names in the document (`*_name`/`work_order` fields); the board
+  just renders them.
+- **Lateness-signal coloring, per Demand.** Each bar's color is the
+  worst lateness among its demands' `service_outcomes`
+  (`lateness_min`), never a per-WorkPackage number — bands (on-time
+  / tight / late) in `board.js`, hues in `tokens.css`. (On the
+  near-optimal `multi_route` fixture every order is early, so the
+  board reads on-time/tight; the late band is exercised by any
+  tardy schedule.)
+- **Calendar closures shaded**; overtime tinted; regular windows
+  left unshaded (`resources[].calendar_windows`, culled to the
+  visible span).
+- **Top strip = version + certificate grade** — `contract 1.2 ·
+  <id>` + status + the certificate grade chip (`ACCEPTED / C1`),
+  the grade fetched from `/meta`.
+- **Read-only is the law:** `editable: false` everywhere — no drag
+  handlers wired (interim-A). The drag surface is interim-B.
+
+**vis-timeline blank-board fix (recorded because it will recur).**
+vis leaves the timeline root `visibility:hidden` until an initial
+range-change completes *when `start`/`end` are passed as
+constructor options*; for a static (non-animated) window that
+range-change never fires and the whole board renders blank while
+the item DOM exists (so a naive DOM-count test passes green — it
+did, and hid the bug until the screenshot). Fix: do NOT pass
+`start`/`end` as options; construct with `min`/`max` only, then
+`timeline.setWindow(win.start, win.end, {animation:false})` +
+a `requestAnimationFrame(redraw)`. This is load-bearing; the CU5
+harness now screenshots the board so a regression can't hide.
+
+## Amendment — 2026-07-11: Session 3.1b CU4 — the ask panel + cited-bar highlighting
+
+`src/cockpit/src/askpanel.js` embeds the M10 explainer against the
+rendered board (`POST /schedules/{id}/ask`). Three integrations
+make the evidence architecture spatial:
+
+- **Registers render visibly distinct.** The answer card is styled
+  from `bundle.register` (testimony = teal left-rule + fill;
+  judgment = amber) — the two never blend, mirroring the renderer's
+  own discipline. The register is surfaced structurally, not parsed
+  from the rendered footer.
+- **Cited bars + lanes light up in sync with the answer.** On each
+  answer the board highlights the bars whose `operation_ref` is in
+  `cited_refs.operations` (+ bars of any cited demand) and tints the
+  lanes in `cited_refs.resources` — the CHOSEN resource AND the
+  priced alternatives the answer names ("the other press"). An
+  always-on overlay layer (the 3.0b concept, productionized) draws a
+  legible tag centred on each cited bar — this both solves the 3.0
+  narrow-bar label-clipping lesson and is the carrier for the CU5
+  drift regression.
+- **Shared selection → deictic ask.** Clicking a bar scopes the
+  panel ("selected ORD-000012 on F001-RES002"); "Why is this here?"
+  composes the exact question the explainer already understands
+  (`why is <wo> on <resource>?`) from the board's own state —
+  proven live (click → `why is ORD-000006 on F001-RES001?`).
+
+**Honesty armor — the acceptance moment holds through existing
+surfaces.** The exit-bar question ("why is ORD-000012 on
+F001-RES002?") returns a **testimony** answer that cites the
+alternatives' PRICES directly from the reconstructed-assignment
+Decision already in the evidence store — "Alternative: F001-RES001
+— Same cost." and "Alternative: F001-RES002 — Would cost −20.08
+more." — and the two cited bars + three lanes light up. No new
+answer path was added, no LLM given new reach. **Observed
+pre-existing renderer quirk (reported, not fixed):** the template
+renderer phrases a cheaper alternative as "Would cost −20.08 more."
+(negative-more), awkward but truthful — the differential IS cited;
+the wording is a `renderers.py` matter for a future prose pass, out
+of scope for interim-A's honesty-armor rule (don't add/alter answer
+paths for the demo).
+
+## Amendment — 2026-07-11: Session 3.1b CU5 — screenshot harness promoted to `tests/`
+
+The candidate-agnostic Playwright harness moved from the throwaway
+spike into production test infra at **`tests/cockpit/`** (its own
+npm package — `@playwright/test` pinned `1.61.1`; the cockpit app
+deps stay in `src/cockpit`). It is **hermetic**: a captured
+`multi_route` fixture (`tools/build_cockpit_fixture.py` →
+`tests/cockpit/fixtures/{schedule,meta,asks}.json`, committed,
+deterministic seed 7 / solver seed 42) is served by a tiny
+`fixture-server.mjs` that stands in for the live API with the exact
+envelopes — so CI renders the real cockpit and runs the
+ask/highlight flow **with no Python solver in the browser test**.
+`playwright.config.mjs` builds the cockpit + serves it, headless in
+CI.
+
+Six scripted states, each screenshotted, each with machine-checked
+assertions (the 3.0b evidence-grade discipline — numbers, not
+golden-image pixel diffs, so cross-platform font rendering can't
+flake it):
+- **load** — 6 lanes, bars, planner vocabulary on screen, top-strip
+  grade `ACCEPTED`.
+- **select** — a clicked bar scopes the deictic ask (shared
+  selection).
+- **ask+highlight** (the acceptance frame) — the answer names an
+  alternative resource and PRICES it (`/Would cost [+-]?\$?\d/` +
+  "Same cost"); ≥2 cited bars glow, ≥2 lanes tint; register =
+  testimony.
+- **C1 drift — the standing regression** — overlay tag centre-x vs
+  the **vis-rendered** bar centre-x, both measured independently
+  from the DOM, `≤ 1.0px` at default zoom AND a hard zoom-in;
+  culling of off-window cited bars is respected (only on-screen tags
+  asserted, ≥1 required). Measured drift is **1.0px** (a systematic
+  sub-pixel of DOM re-measurement — honestly not the spike's literal
+  0.0px, which was measured against *computed* geometry, not the
+  rendered DOM; the guard's teeth are proven — an earlier
+  tag↔bar mismatch bug read 183.6px). A vis-timeline version bump
+  that broke item geometry trips this test, not the demo.
+- **mid-pan frame** — the 3.0b residual (it had verified settled
+  zoom levels, not a mid-flight frame): drift holds `≤ 1.0px`
+  DURING an un-settled pan.
+- **registers** — testimony and judgment answers carry different
+  left-border colors (never blend).
+
+Result: **6/6 green** headless. The live acceptance moment was ALSO
+driven end-to-end against the real API (not cited from the fixture)
+— live `multi_route` solve → cockpit over the Vite proxy → auto-ask
+→ priced answer + 2 cited bars + 3 lanes + `ACCEPTED / C1` strip,
+0 page errors — the first frame of the sixty-second script.
+
+**Carry-forwards (interim-B / design-thread, named not lost):**
+(1) the contract-1.2 **split-endpoint** `GET /schedules/{id}/interaction`
+(the +35.7% Tier-0 payload) is still proposed-not-built — lands with
+the drag surface that consumes it (interim-B); (2) **no drag
+handlers** — Tier-0/1/2 (R-DP1–R-DP7) are interim-B; (3) the
+board's overlay reads vis DOM geometry (`itemSet.items[id].dom.box`)
+— the same stable-public-ish surface disclosed in 3.0b, now with the
+CU5 drift test guarding it; (4) the parked **pool-diversity design
+question** from 3.1 — ghost realism under *distinct* rates (the
+saturated identical-rate pair is what surfaces cross-machine ghosts;
+a distinct-rate optimum is machine-unique) — remains
+**design-thread-owned**, not attempted here; (5) the `renderers.py`
+"−N more" prose quirk (above).

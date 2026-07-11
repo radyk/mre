@@ -1,0 +1,68 @@
+/* ===========================================================================
+ * Design tokens — the single file feel-iteration edits (docs/07 Phase 3,
+ * "design tokens externalized from day one"). Colors, spacing, durations, and
+ * the SEMANTIC mappings (lateness bands, register hues, calendar-lane shading,
+ * citation glow) all live here so the look can be tuned without touching board
+ * or panel logic. Nothing outside this file should hard-code a color.
+ *
+ * Palette carried from the bake-off (shared/bakeoff.css) so the cockpit reads
+ * as the same system the substrate decision was made on.
+ * ======================================================================== */
+:root {
+  /* --- surface ---------------------------------------------------------- */
+  --bg: #0f1117;
+  --panel: #161a23;
+  --panel-2: #1b2130;
+  --grid: #232836;
+  --ink: #e6e9ef;
+  --muted: #8b93a7;
+  --muted-2: #656c80;
+
+  /* --- spacing / rhythm ------------------------------------------------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --radius: 6px;
+  --radius-sm: 3px;
+
+  /* --- motion (durations feel-iteration owns) --------------------------- */
+  --dur-fast: 90ms;
+  --dur: 160ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  /* --- bars: lateness-signal coloring ---------------------------------- *
+   * The board colors each assignment bar by the service outcome of its
+   * demand (per-Demand tardiness, never per-WorkPackage — CLAUDE.md hard
+   * rule). Bands are set by --late-* thresholds in board.js.               */
+  --bar-ontime: #3b6fd6;        /* comfortably early / on time */
+  --bar-ontime-ink: #cfe0ff;
+  --bar-tight: #e0a63c;         /* early but inside the tight band */
+  --bar-tight-ink: #201607;
+  --bar-late: #e0564f;          /* projected completion past due */
+  --bar-late-ink: #2a0c0a;
+  --bar-border: rgba(255, 255, 255, 0.14);
+
+  /* --- calendar lane shading ------------------------------------------- */
+  --cal-closure: rgba(10, 12, 18, 0.55);   /* non-working: nights/weekends */
+  --cal-overtime: rgba(224, 166, 60, 0.10); /* premium window tint */
+
+  /* --- citation highlight (the evidence architecture made spatial) ----- */
+  --cite-bar: #35c9c2;          /* a cited bar glows teal */
+  --cite-glow: 0 0 0 2px rgba(53, 201, 194, 0.9), 0 0 12px 2px rgba(53, 201, 194, 0.45);
+  --cite-lane: rgba(53, 201, 194, 0.10);  /* a cited resource lane tint */
+  --select: #b06cf0;            /* the shared selection (clicked bar) */
+  --select-glow: 0 0 0 2px rgba(176, 108, 240, 0.95);
+
+  /* --- registers (never blend — CLAUDE.md honesty armor) --------------- */
+  --reg-testimony: #35c9c2;     /* evidence / decisions */
+  --reg-judgment: #e0a63c;      /* findings / triage */
+  --reg-testimony-fill: rgba(53, 201, 194, 0.08);
+  --reg-judgment-fill: rgba(224, 166, 60, 0.08);
+
+  /* --- certificate grade chips ----------------------------------------- */
+  --grade-c1: #2fbf71;
+  --grade-c0: #8b93a7;
+  --grade-conditional: #e0a63c;
+  --grade-rejected: #e0564f;
+}

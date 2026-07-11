@@ -260,6 +260,23 @@ class Registry:
             ).fetchone()
         return dict(row) if row else None
 
+    def get_schedule_meta(self, schedule_id: str) -> Optional[dict]:
+        """Registry-level metadata for a schedule, joined to its submission's
+        certificate GRADE. The grade is a submission property (it lives in the
+        certificate store, not the derived-not-invented schedule document), so
+        the cockpit's top strip reads it here rather than from the document."""
+        with self._conn() as con:
+            row = con.execute(
+                "SELECT s.id, s.run_id, s.submission_id, s.snapshot_id, "
+                "       s.status, s.contract_version, s.is_scenario, "
+                "       s.parent_schedule_id, c.grade, c.costing_grade "
+                "FROM schedules s "
+                "LEFT JOIN certificates c ON c.submission_id = s.submission_id "
+                "WHERE s.id=?",
+                (schedule_id,),
+            ).fetchone()
+        return dict(row) if row else None
+
     def list_schedules(self, include_scenarios: bool = False) -> list[dict]:
         """Default listing NEVER includes what-if scenarios — the evidence-
         isolation rule (docs/01 §8) extended to the API surface. Pool

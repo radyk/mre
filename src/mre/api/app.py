@@ -239,6 +239,17 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
         document = json.loads(Path(row["document_path"]).read_text(encoding="utf-8"))
         return _ok(document)
 
+    @app.get("/schedules/{schedule_id}/meta")
+    def get_schedule_meta(schedule_id: str):
+        """Registry-level metadata for a schedule joined to its certificate
+        grade — the cockpit top strip's version + grade, kept out of the
+        derived-not-invented schedule document (the grade is a submission
+        property)."""
+        meta = registry.get_schedule_meta(schedule_id)
+        if meta is None:
+            raise HTTPException(404, f"unknown schedule {schedule_id}")
+        return _ok(meta)
+
     # ------------------------------------------------------------------
     # Solution pool (docs/07 Phase 2)
     # ------------------------------------------------------------------
@@ -580,4 +591,76 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
         "subject_external_name": bundle.subject_external_name,
         "snapshot_id": bundle.snapshot_id,
         "record_count": len(bundle.ordered_records),
+        "register": _register_of(bundle),
+        # The entity refs this answer already cites — surfaced (not synthesized)
+        # so the cockpit can highlight the corresponding bars/lanes in sync with
+        # the text. Reads only bundle.ordered_records; adds no answer path.
+        "cited_refs": _cited_refs_from_bundle(bundle),
+    }
+
+
+# The renderer stamps a register footer ("register: testimony"); expose the same
+# classification structurally so the cockpit styles the panel per register
+# without parsing rendered prose.
+_JUDGMENT_SUBJECTS = {"findings", "triage"}
+
+
+def _register_of(bundle: Any) -> str:
+    """testimony (evidence/decisions) vs judgment (findings/triage). Mirrors the
+    renderer's own register discipline; no register ever blends."""
+    st = getattr(bundle, "subject_type", "") or ""
+    kf = getattr(bundle, "key_facts", {}) or {}
+    if st in _JUDGMENT_SUBJECTS or "triage_order" in kf or "codes" in kf:
+        return "judgment"
+    return "testimony"
+
+
+def _cited_refs_from_bundle(bundle: Any) -> dict:
+    """Collect the canonical entity refs the answer cites, WITHOUT re-deriving
+    anything: walk ``bundle.ordered_records`` (the exact records the renderer
+    footnoted) and pull the operation/resource/demand UUIDs already there.
+
+    - ``operations`` — every record subject of type operation, plus the subject
+      demand: the board highlights bars whose operation_ref is in this set.
+    - ``resources`` — the CHOSEN resource of each assignment decision AND its
+      priced alternatives (``resource:<uuid>`` options): the cockpit glows the
+      chosen lane and the alternative lanes the answer prices.
+    - ``demands`` — the subject demand ref, if the subject is a demand.
+    This is the evidence architecture made spatial (docs/07 Phase 3): the refs
+    are the citations, not a new computation over them."""
+    operations: list[str] = []
+    resources: list[str] = []
+    demands: list[str] = []
+
+    if getattr(bundle, "subject_type", "") == "demand" and bundle.subject_id:
+        demands.append(bundle.subject_id)
+
+    for rec in getattr(bundle, "ordered_records", []) or []:
+        for subj in rec.get("subjects", []) or []:
+            eid, etype = subj.get("entity_id"), subj.get("entity_type")
+            if not eid:
+                continue
+            if etype == "operation":
+                operations.append(eid)
+            elif etype == "resource":
+                resources.append(eid)
+            elif etype == "demand":
+                demands.append(eid)
+        chosen = rec.get("chosen") or {}
+        if isinstance(chosen, dict) and chosen.get("resource_id"):
+            resources.append(chosen["resource_id"])
+        for alt in rec.get("alternatives", []) or []:
+            opt = str(alt.get("option", ""))
+            if opt.startswith("resource:"):
+                resources.append(opt.split(":", 1)[1])
+
+    # de-dup, preserve first-seen order
+    def _uniq(xs: list[str]) -> list[str]:
+        seen: set[str] = set()
+        return [x for x in xs if not (x in seen or seen.add(x))]
+
+    return {
+        "operations": _uniq(operations),
+        "resources": _uniq(resources),
+        "demands": _uniq(demands),
     }

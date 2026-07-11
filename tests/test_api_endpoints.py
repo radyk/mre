@@ -210,6 +210,27 @@ class TestScheduleDocument:
 
 
 # ---------------------------------------------------------------------------
+# Schedule meta (cockpit top strip — version + certificate grade)
+# ---------------------------------------------------------------------------
+
+class TestScheduleMeta:
+    """The cockpit top strip reads the certificate GRADE here, not from the
+    derived-not-invented schedule document (grade is a submission property)."""
+
+    def test_meta_joins_the_certificate_grade(self, api):
+        meta = _data(api.client.get(f"/schedules/{api.schedule_id}/meta"))
+        assert meta["id"] == api.schedule_id
+        assert meta["contract_version"] == "1.2"
+        assert meta["grade"] == "ACCEPTED"
+        assert meta["costing_grade"] == "C1"
+        assert meta["submission_id"] == api.submission["submission_id"]
+        assert meta["is_scenario"] in (0, False)
+
+    def test_meta_unknown_schedule_404(self, api):
+        _error(api.client.get("/schedules/nope/meta"), 404)
+
+
+# ---------------------------------------------------------------------------
 # Ask
 # ---------------------------------------------------------------------------
 
@@ -234,6 +255,42 @@ class TestAsk:
     def test_ask_unknown_schedule_404(self, api):
         _error(api.client.post("/schedules/nope/ask",
                                json={"question": "summarize"}), 404)
+
+    def test_ask_surfaces_register_and_cited_refs(self, api):
+        """The cockpit (CU4) needs, structurally: the register (to style the
+        answer card — never blend) and the cited entity refs (to highlight the
+        corresponding bars/lanes). Both are surfaced from the bundle the
+        explainer already produced — no new answer path."""
+        doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
+        a = doc["assignments"][0]
+        wo, res = a["work_orders"][0], a["external_name"]
+        data = _data(api.client.post(
+            f"/schedules/{api.schedule_id}/ask",
+            json={"question": f"why is {wo} on {res}?"},
+        ))
+        bundle = data["bundle"]
+        assert bundle["register"] in ("testimony", "judgment")
+        refs = bundle["cited_refs"]
+        assert set(refs) == {"operations", "resources", "demands"}
+        # a why-on-machine answer cites the assigned op and its resource lane
+        assert refs["operations"], "no cited operations to highlight"
+        assert a["operation_ref"] in refs["operations"]
+        assert a["resource_id"] in refs["resources"]
+
+    def test_cited_refs_point_at_real_board_entities(self, api):
+        """Every cited op ref resolves to an assignment bar and every cited
+        resource ref to a lane — so the highlight can never dangle."""
+        doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
+        op_refs = {a["operation_ref"] for a in doc["assignments"]}
+        res_refs = {r["resource_id"] for r in doc["resources"]}
+        wo = doc["service_outcomes"][0]["work_order"]
+        data = _data(api.client.post(
+            f"/schedules/{api.schedule_id}/ask",
+            json={"question": f"why is {wo} late?"},
+        ))
+        refs = data["bundle"]["cited_refs"]
+        assert all(o in op_refs for o in refs["operations"])
+        assert all(r in res_refs for r in refs["resources"])
 
 
 # ---------------------------------------------------------------------------

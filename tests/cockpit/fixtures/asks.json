@@ -1,0 +1,56 @@
+{
+  "why is ORD-000012 on F001-RES001?": {
+    "question": "why is ORD-000012 on F001-RES001?",
+    "answer": "=== Why is ORD-000012 on F001-RES001? ===\n\n\nEvidence chain (2 record(s)):\n\n[1] M7 DECISION  | ASSIGNMENT  | reconstructed\n    Assigned to: F001-RES001\n    Driver: CAPACITY_BLOCKED\n    Note: This is a reconstruction from the solved schedule.\n    Alternative: F001-RES002  - Same cost.\n    [record: f11c8436...]\n\n[2] M7 DECISION  | ASSIGNMENT  | reconstructed\n    Assigned to: F001-RES001\n    Driver: CAPACITY_BLOCKED\n    Note: This is a reconstruction from the solved schedule.\n    Alternative: F001-RES002  - Same cost.\n    Alternative: F001-RES003  - Would cost +20.08 more.\n    [record: 13e7d5cf...]\n\n[rendered by: template | register: testimony]",
+    "bundle": {
+      "subject_id": "0dee42a9-6527-50b3-bd7c-ddceb9dd94a6",
+      "subject_type": "demand",
+      "subject_external_name": "ORD-000012",
+      "snapshot_id": "snap-mr",
+      "record_count": 2,
+      "register": "testimony",
+      "cited_refs": {
+        "operations": [
+          "0c1255cb-1e08-5059-98bc-5d92631a03bb",
+          "ab66f55d-42d9-5d93-b69d-46bf9d2de499"
+        ],
+        "resources": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+          "8ea48ae0-4288-57e9-86dc-1ca5caec646c"
+        ],
+        "demands": [
+          "0dee42a9-6527-50b3-bd7c-ddceb9dd94a6"
+        ]
+      }
+    }
+  },
+  "what data problems exist?": {
+    "question": "what data problems exist?",
+    "answer": "=== What data problems exist? ===\n\nTotal findings: 1 | Codes: LOW_CONFIDENCE_INPUT\n\nEvidence chain (1 record(s)):\n\n[1] M3 FINDING  | LOW_CONFIDENCE_INPUT  | warning\n    [record: 39c350e3...]\n\n[rendered by: template | register: testimony]",
+    "bundle": {
+      "subject_id": "snap-mr",
+      "subject_type": "findings",
+      "subject_external_name": "snap-mr",
+      "snapshot_id": "snap-mr",
+      "record_count": 1,
+      "register": "judgment",
+      "cited_refs": {
+        "operations": [],
+        "resources": [],
+        "demands": [
+          "9d743574-47fd-5128-9ec2-2823fbb48b6c",
+          "4b0212db-c16e-53e8-8930-b4f6c63f769a",
+          "a11593de-eeb8-5dc6-9553-1369b380b411",
+          "0f093432-1125-5023-a198-205f5e637507",
+          "5348876d-d02e-545e-9595-69afb825a508",
+          "12b5e06c-23c3-5dc3-84de-61efe2524eee",
+          "01d65946-e8f2-5832-829b-b7d797104857",
+          "cd74a156-474b-57a2-963a-ca1db901174f",
+          "db5ffb35-443b-5d15-95c7-51be9ce353df",
+          "7401a6b7-eedd-5df9-b86a-c168c5d5a56d"
+        ]
+      }
+    }
+  }
+}

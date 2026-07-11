@@ -83,15 +83,57 @@ src/mre/modules/      M0 (conformance gate), M1 adapters (sample / raw / IDS),
                       schedule-document assembler
 src/mre/api/          FastAPI surface (thin, no business logic) + SQLite
                       run/schedule registry; run-dir minting lives here
+src/cockpit/          L-frontend: the reasoning cockpit (Vite + vis-timeline,
+                      read-only). Renders a contract-1.2 document from the API;
+                      talks to the core over HTTP only. Design tokens in
+                      tokens.css. (interim-A, Phase 3)
 tools/                Generator, calibration, spikes, viewers, profilers
-tests/                Tests derived from the specs — write them from the spec text
+tests/                Tests derived from the specs — write them from the spec text.
+                      tests/cockpit/ = the Playwright screenshot harness (CU5).
 ```
 
 ## Current status
 
 **Roadmap position: Phase 3 IN PROGRESS — Session 3.1 interim-A (read-only
-cockpit) STARTED 2026-07-11.** The two backbone commit-units landed; the
-frontend units remain. **CU1 (done):** `multi_route` — the capability-routed
+cockpit) COMPLETE 2026-07-11 (session 3.1b).** All five commit-units landed;
+the read-only board + language mode are in. Gesture (drag, Tier-0/1/2 per
+R-DP1–R-DP7) and voice are interim-B and later. **CU3 (done):** the cockpit
+shell — `src/cockpit/` (Vite 5, framework-free ES modules, vis-timeline pinned
+to the bake-off `7.7.4`, design tokens externalized in `tokens.css`) renders a
+**contract-1.2 document from the live API**: resources as rows,
+`work_orders`/`external_name` planner vocabulary (never canonical UUIDs on
+screen), per-Demand lateness coloring, calendar closures, top strip = contract
+version + certificate grade (via the new thin `GET /schedules/{id}/meta`, which
+joins the grade from the certificate store — the grade is a submission property,
+kept out of the derived-not-invented document). Read-only: `editable:false`,
+no drag handlers. (vis-timeline blank-board gotcha recorded in docs/04: pass
+`min`/`max` only + `setWindow`, never `start`/`end` options, or the root stays
+`visibility:hidden`.) **CU4 (done):** the ask panel embeds M10 (`/ask`);
+registers render visibly distinct (testimony/judgment from the additive
+`bundle.register`); the answer's cited bars + lanes light up in sync via the
+additive `bundle.cited_refs` (`{operations,resources,demands}` — the refs the
+answer already cites, surfaced not synthesized; an always-on overlay tags each
+cited bar, carrying the 3.0 narrow-bar label lesson); clicking a bar scopes a
+deictic "why is this here?". **Honesty armor intact** — the acceptance answer
+cites the alternatives' PRICES straight from the reconstructed-assignment
+Decision ("Same cost" / "Would cost −N more"); no new answer path, no new LLM
+reach. **CU5 (done):** the Playwright harness promoted to `tests/cockpit/`
+(hermetic committed `multi_route` fixture + fixture-server standing in for the
+API — CI needs no solver): 6 scripted states screenshotted with machine-checked
+assertions incl. the standing **C1 label-vs-bar drift regression (≤1.0px)** and
+a **mid-pan frame** (3.0b residual closed); **6/6 green** headless.
+**Acceptance met LIVE** (not cited from tests): real `multi_route` solve →
+cockpit over the Vite→API proxy → ask "why is ORD-000012 on F001-RES002?" →
+priced testimony answer → 2 cited bars + 3 lanes glow, `ACCEPTED / C1` strip,
+0 page errors — the first frame of the sixty-second script. **999 tests green**
+(+4 API: `/meta`, register + cited_refs) + the 5 slow `multi_route` tests.
+**Interim-B carry-forwards (named):** the contract-1.2 split-endpoint
+`GET /schedules/{id}/interaction` (+35.7% Tier-0 payload, proposed-not-built);
+the drag surface (R-DP1–R-DP7); the board overlay reads vis DOM geometry (guarded
+by the CU5 drift test); a `renderers.py` "−N more" prose quirk. **Design-thread
+(do not attempt):** the parked pool-diversity ghost-realism question under
+*distinct* rates. See the docs/04 2026-07-11 Session 3.1b CU3/CU4/CU5 amendments
+and docs/07 v2.1. **CU1 (done):** `multi_route` — the capability-routed
 generator scenario (docs/05 B2 pipeline-proven). An operation's eligible set is
 expressed as multiple `routing_lines` rows sharing one (route_id, sequence); the
 IDS adapter groups them into one `explicit_set` OperationSpec (single-row case

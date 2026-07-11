@@ -1,0 +1,139 @@
+/* Cockpit layout + component styling. All colors reference tokens.css. */
+@import "./tokens.css";
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%;
+  background: var(--bg); color: var(--ink);
+  font: 13px/1.45 -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+#app { display: grid; grid-template-rows: auto 1fr; height: 100vh; }
+
+/* --- top strip: version + certificate grade ----------------------------- */
+.topstrip {
+  display: flex; align-items: center; gap: var(--sp-4);
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--panel); border-bottom: 1px solid var(--grid);
+}
+.topstrip .brand { font-weight: 650; font-size: 14px; }
+.topstrip .ver {
+  font: 600 11px/1 ui-monospace, monospace; color: var(--muted);
+  border: 1px solid var(--grid); border-radius: var(--radius-sm);
+  padding: 3px 7px;
+}
+.topstrip .status { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.topstrip .grade {
+  margin-left: auto; display: inline-flex; align-items: center; gap: var(--sp-2);
+  font: 700 12px/1 ui-monospace, monospace; color: #0b0d12;
+  border-radius: var(--radius-sm); padding: 4px 9px;
+}
+.topstrip .grade.g-c1, .topstrip .grade.g-c2, .topstrip .grade.g-c3 { background: var(--grade-c1); }
+.topstrip .grade.g-c0 { background: var(--grade-c0); }
+.topstrip .grade.g-conditional { background: var(--grade-conditional); }
+.topstrip .grade.g-rejected { background: var(--grade-rejected); color: #fff; }
+.topstrip .grade .lbl { font-weight: 500; opacity: 0.8; }
+
+/* --- main split: board | ask panel -------------------------------------- */
+.split { display: grid; grid-template-columns: 1fr 360px; min-height: 0; }
+.board-host { position: relative; min-width: 0; overflow: hidden; }
+#tl { height: 100%; }
+
+/* --- legend ------------------------------------------------------------- */
+.legend {
+  position: absolute; left: var(--sp-3); bottom: var(--sp-3); z-index: 6;
+  display: flex; gap: var(--sp-3); flex-wrap: wrap;
+  background: rgba(15, 17, 23, 0.82); border: 1px solid var(--grid);
+  border-radius: var(--radius); padding: var(--sp-2) var(--sp-3);
+  color: var(--muted); font-size: 11px; pointer-events: none;
+}
+.legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+
+/* --- vis-timeline theming (references tokens) --------------------------- */
+.vis-timeline { border: 0; font-size: 11px; }
+.vis-labelset .vis-label, .vis-foreground .vis-group { border-color: var(--grid); }
+.vis-panel.vis-left { color: var(--muted); background: var(--panel-2); }
+.vis-labelset .vis-label .vis-inner { font-weight: 600; color: var(--ink); padding: 0 var(--sp-2); }
+.vis-time-axis .vis-text { color: var(--muted); }
+.vis-time-axis .vis-grid.vis-minor { border-color: var(--grid); }
+.vis-panel.vis-center { background: var(--bg); }
+
+.vis-item { border-radius: var(--radius-sm); border-width: 1px; transition: box-shadow var(--dur) var(--ease); }
+.vis-item.bar { background: var(--bar-ontime); border-color: var(--bar-border); color: var(--bar-ontime-ink); }
+.vis-item.bar.late-ontime { background: var(--bar-ontime); color: var(--bar-ontime-ink); }
+.vis-item.bar.late-tight  { background: var(--bar-tight);  color: var(--bar-tight-ink); }
+.vis-item.bar.late-late   { background: var(--bar-late);   color: var(--bar-late-ink); }
+.vis-item.bar .vis-item-content { padding: 0 5px; font-weight: 600; }
+
+/* cited bar: the evidence architecture made spatial */
+.vis-item.bar.cited { box-shadow: var(--cite-glow); border-color: var(--cite-bar); z-index: 3; }
+/* the shared selection (clicked bar scopes a deictic ask) */
+.vis-item.bar.selected { box-shadow: var(--select-glow); border-color: var(--select); z-index: 4; }
+
+/* the always-on citation overlay (tracks vis pan/zoom; C1 regression) */
+.cite-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; }
+.cite-tag {
+  position: absolute; transform: translate(-50%, -100%);
+  font: 700 10px/1.2 ui-monospace, monospace; color: #04201e;
+  background: var(--cite-bar); border-radius: 3px; padding: 1px 5px; white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* calendar-lane background shading */
+.vis-item.vis-background.cal-closure { background: var(--cal-closure); }
+.vis-item.vis-background.cal-overtime { background: var(--cal-overtime); }
+/* a cited resource lane glows */
+.vis-item.vis-background.cited-lane { background: var(--cite-lane); }
+
+/* =========================================================================
+ * Ask panel (CU4) — embeds M10; registers render VISIBLY DISTINCT.
+ * ====================================================================== */
+.ask {
+  display: grid; grid-template-rows: auto 1fr auto; min-height: 0;
+  background: var(--panel); border-left: 1px solid var(--grid);
+}
+.ask h2 { margin: 0; padding: var(--sp-3) var(--sp-4); font-size: 13px; border-bottom: 1px solid var(--grid); }
+.ask h2 .sub { color: var(--muted); font-weight: 400; font-size: 11px; }
+.ask .log { overflow-y: auto; padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-3); }
+.ask .msg { border-radius: var(--radius); padding: var(--sp-2) var(--sp-3); }
+.ask .msg.you { background: var(--panel-2); border: 1px solid var(--grid); align-self: flex-end; max-width: 92%; }
+.ask .msg.you .who { color: var(--select); }
+
+/* register-tagged answer cards */
+.ask .msg.answer { border: 1px solid var(--grid); border-left-width: 3px; }
+.ask .msg.answer.testimony { border-left-color: var(--reg-testimony); background: var(--reg-testimony-fill); }
+.ask .msg.answer.judgment  { border-left-color: var(--reg-judgment);  background: var(--reg-judgment-fill); }
+.ask .msg .who { font: 700 10px/1 ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--sp-2); }
+.ask .msg.answer.testimony .who { color: var(--reg-testimony); }
+.ask .msg.answer.judgment  .who { color: var(--reg-judgment); }
+.ask .msg .reg-chip {
+  float: right; font-size: 9px; padding: 1px 5px; border-radius: 2px;
+  border: 1px solid currentColor; opacity: 0.9;
+}
+.ask .msg pre {
+  margin: 0; white-space: pre-wrap; word-break: break-word;
+  font: 11px/1.4 ui-monospace, monospace; color: var(--ink);
+}
+.ask .msg .cites {
+  margin-top: var(--sp-2); font-size: 10px; color: var(--muted);
+  border-top: 1px dashed var(--grid); padding-top: var(--sp-2);
+}
+.ask .msg .cites b { color: var(--cite-bar); }
+
+.ask .composer { border-top: 1px solid var(--grid); padding: var(--sp-3); display: grid; gap: var(--sp-2); }
+.ask .composer .scope {
+  font-size: 10px; color: var(--muted); min-height: 14px;
+}
+.ask .composer .scope b { color: var(--select); }
+.ask .composer .row { display: flex; gap: var(--sp-2); }
+.ask input[type="text"] {
+  flex: 1; background: var(--bg); border: 1px solid var(--grid); color: var(--ink);
+  border-radius: var(--radius); padding: var(--sp-2) var(--sp-3); font-size: 12px;
+}
+.ask button {
+  background: var(--bar-ontime); color: #fff; border: 0; border-radius: var(--radius);
+  padding: var(--sp-2) var(--sp-3); font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.ask button.ghost { background: transparent; border: 1px solid var(--grid); color: var(--muted); }
+.ask .empty { color: var(--muted-2); font-size: 11px; text-align: center; padding: var(--sp-4); }
+
+.err { color: var(--grade-rejected); padding: var(--sp-4); font: 12px ui-monospace, monospace; }
