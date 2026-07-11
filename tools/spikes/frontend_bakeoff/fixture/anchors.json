@@ -1,0 +1,999 @@
+{
+  "_meta": {
+    "spike": "frontend_bakeoff (Session 3.0)",
+    "purpose": "static precomputed anchors for ONE grab task; tests RENDERING + INTERACTION only",
+    "board_scenario": "messy_realistic seed=7, deterministic solve seed=42 workers=1",
+    "honest_caveat": "Generated data routes every op to exactly one resource (eligibility {1:475}); the pool on this slack schedule yields flat zero-cost non-successor movers. Board geometry is real; cross-row legality + ghosts are an authored spike_capability_overlay (same-facility pool), REAL-priced. Anchor computation is interim-A work, out of spike scope.",
+    "contract": "consumed by both bake-off candidates unchanged"
+  },
+  "visible_window": {
+    "start": "2026-01-05T00:00:00Z",
+    "end": "2026-01-09T00:00:00Z"
+  },
+  "grab": {
+    "assignment_id": "0e40c35a-853a-4a28-a96d-c5b44823d05d",
+    "operation_ref": "51fc5453-200d-57d8-bd9d-bad6ce228e3f",
+    "workpackage_ref": "121216ca-ac36-5a00-9adf-beb0a3fef4d0",
+    "work_orders": [
+      "ORD-000127"
+    ],
+    "resource_id": "3a725468-f97d-51e0-a309-828258604d3c",
+    "external_name": "F002-RES010",
+    "start": "2026-01-06T13:40:00Z",
+    "end": "2026-01-06T14:37:00Z",
+    "working_min": 57,
+    "basis": "real_schedule"
+  },
+  "predecessor_finish": {
+    "operation_ref": "084bc40f-532d-592e-9370-2ce6c2de0e08",
+    "resource_id": "bb943a82-44e7-5be5-903e-a6bb9b565f74",
+    "external_name": "F001-RES009",
+    "finish": "2026-01-06T13:39:00Z",
+    "note": "earliest legal start for the grab task (same-WP precedence)",
+    "basis": "real_schedule"
+  },
+  "rows": [
+    {
+      "resource_id": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+      "external_name": "F001-RES001",
+      "facility": "F001",
+      "legality": "dim",
+      "reason": "illegal: different facility / not in eligibility pool",
+      "basis": "real_routing"
+    },
+    {
+      "resource_id": "8ea48ae0-4288-57e9-86dc-1ca5caec646c",
+      "external_name": "F001-RES003",
+      "facility": "F001",
+      "legality": "dim",
+      "reason": "illegal: different facility / not in eligibility pool",
+      "basis": "real_routing"
+    },
+    {
+      "resource_id": "1d008a1d-5585-543d-a852-189fd39b1d10",
+      "external_name": "F001-RES005",
+      "facility": "F001",
+      "legality": "dim",
+      "reason": "illegal: different facility / not in eligibility pool",
+      "basis": "real_routing"
+    },
+    {
+      "resource_id": "70e952da-cee4-519a-8f30-c0044c755767",
+      "external_name": "F001-RES007",
+      "facility": "F001",
+      "legality": "dim",
+      "reason": "illegal: different facility / not in eligibility pool",
+      "basis": "real_routing"
+    },
+    {
+      "resource_id": "bb943a82-44e7-5be5-903e-a6bb9b565f74",
+      "external_name": "F001-RES009",
+      "facility": "F001",
+      "legality": "dim",
+      "reason": "illegal: different facility / not in eligibility pool",
+      "basis": "real_routing"
+    },
+    {
+      "resource_id": "1b453247-0e50-595e-9bc8-0c51f29ca972",
+      "external_name": "F001-RES011",
+      "facility": "F001",
+      "legality": "dim",
+      "reason": "illegal: different facility / not in eligibility pool",
+      "basis": "real_routing"
+    },
+    {
+      "resource_id": "127276e8-1179-5224-9625-4da20e3ecb90",
+      "external_name": "F001-RES013",
+      "facility": "F001",
+      "legality": "dim",
+      "reason": "illegal: different facility / not in eligibility pool",
+      "basis": "real_routing"
+    },
+    {
+      "resource_id": "c2b0613b-d435-52e1-9fa9-82cc77a72127",
+      "external_name": "F001-RES015",
+      "facility": "F001",
+      "legality": "dim",
+      "reason": "illegal: different facility / not in eligibility pool",
+      "basis": "real_routing"
+    },
+    {
+      "resource_id": "e491efcf-d6cd-575d-acf7-7f2c25bd93d8",
+      "external_name": "F002-RES002",
+      "facility": "F002",
+      "legality": "amber",
+      "reason": "same-facility workcentre; placing here displaces an existing bar",
+      "basis": "spike_capability_overlay"
+    },
+    {
+      "resource_id": "6e0d0e0f-2d27-5e01-b156-188aa0240ee3",
+      "external_name": "F002-RES004",
+      "facility": "F002",
+      "legality": "amber",
+      "reason": "same-facility workcentre; placing here displaces an existing bar",
+      "basis": "spike_capability_overlay"
+    },
+    {
+      "resource_id": "fd61a666-a188-5c8b-b9ef-106f4268f268",
+      "external_name": "F002-RES006",
+      "facility": "F002",
+      "legality": "amber",
+      "reason": "same-facility workcentre; placing here displaces an existing bar",
+      "basis": "spike_capability_overlay"
+    },
+    {
+      "resource_id": "04c8e014-1b89-5fa1-a0f9-a2c1253666eb",
+      "external_name": "F002-RES008",
+      "facility": "F002",
+      "legality": "amber",
+      "reason": "same-facility workcentre; placing here displaces an existing bar",
+      "basis": "spike_capability_overlay"
+    },
+    {
+      "resource_id": "3a725468-f97d-51e0-a309-828258604d3c",
+      "external_name": "F002-RES010",
+      "facility": "F002",
+      "legality": "green",
+      "reason": "eligible resource (real routing)",
+      "basis": "real_routing"
+    },
+    {
+      "resource_id": "ce912066-9631-5f58-87e8-4e8d239ff6e7",
+      "external_name": "F002-RES012",
+      "facility": "F002",
+      "legality": "amber",
+      "reason": "same-facility workcentre; placing here displaces an existing bar",
+      "basis": "spike_capability_overlay"
+    },
+    {
+      "resource_id": "f315706b-906a-590c-a1c6-3f07235c557f",
+      "external_name": "F002-RES014",
+      "facility": "F002",
+      "legality": "amber",
+      "reason": "same-facility workcentre; placing here displaces an existing bar",
+      "basis": "spike_capability_overlay"
+    },
+    {
+      "resource_id": "bf9d61af-1bb3-5a83-9715-b3f037654fee",
+      "external_name": "F002-RES016",
+      "facility": "F002",
+      "legality": "amber",
+      "reason": "same-facility workcentre; placing here displaces an existing bar",
+      "basis": "spike_capability_overlay"
+    }
+  ],
+  "calendar_openings": {
+    "basis": "real_schedule",
+    "own_row": [
+      "2026-01-05T07:00:00Z",
+      "2026-01-06T07:00:00Z",
+      "2026-01-07T07:00:00Z",
+      "2026-01-08T07:00:00Z"
+    ],
+    "by_ghost_row": {
+      "F002-RES002": [
+        "2026-01-05T07:00:00Z",
+        "2026-01-06T07:00:00Z",
+        "2026-01-07T07:00:00Z",
+        "2026-01-08T07:00:00Z"
+      ],
+      "F002-RES004": [
+        "2026-01-05T07:00:00Z",
+        "2026-01-06T07:00:00Z",
+        "2026-01-07T07:00:00Z",
+        "2026-01-08T07:00:00Z"
+      ],
+      "F002-RES006": [
+        "2026-01-05T07:00:00Z",
+        "2026-01-06T07:00:00Z",
+        "2026-01-07T07:00:00Z",
+        "2026-01-08T07:00:00Z"
+      ]
+    }
+  },
+  "adjacency_edges": {
+    "basis": "real_schedule",
+    "own_row": [
+      {
+        "start": "2026-01-05T07:00:00Z",
+        "end": "2026-01-05T07:54:00Z",
+        "work_orders": [
+          "ORD-000169"
+        ]
+      },
+      {
+        "start": "2026-01-05T08:27:00Z",
+        "end": "2026-01-05T09:53:00Z",
+        "work_orders": [
+          "ORD-000064"
+        ]
+      },
+      {
+        "start": "2026-01-05T09:53:00Z",
+        "end": "2026-01-05T10:47:00Z",
+        "work_orders": [
+          "ORD-000008"
+        ]
+      },
+      {
+        "start": "2026-01-05T10:47:00Z",
+        "end": "2026-01-05T12:28:00Z",
+        "work_orders": [
+          "ORD-000049"
+        ]
+      },
+      {
+        "start": "2026-01-05T12:28:00Z",
+        "end": "2026-01-05T13:39:00Z",
+        "work_orders": [
+          "ORD-000129"
+        ]
+      },
+      {
+        "start": "2026-01-05T13:50:00Z",
+        "end": "2026-01-05T15:01:00Z",
+        "work_orders": [
+          "ORD-000040"
+        ]
+      },
+      {
+        "start": "2026-01-05T15:01:00Z",
+        "end": "2026-01-05T16:35:00Z",
+        "work_orders": [
+          "ORD-000009"
+        ]
+      },
+      {
+        "start": "2026-01-05T16:49:00Z",
+        "end": "2026-01-05T17:22:00Z",
+        "work_orders": [
+          "ORD-000168"
+        ]
+      },
+      {
+        "start": "2026-01-05T17:39:00Z",
+        "end": "2026-01-05T18:29:00Z",
+        "work_orders": [
+          "ORD-000144"
+        ]
+      },
+      {
+        "start": "2026-01-05T18:29:00Z",
+        "end": "2026-01-05T18:53:00Z",
+        "work_orders": [
+          "ORD-000024"
+        ]
+      },
+      {
+        "start": "2026-01-06T07:00:00Z",
+        "end": "2026-01-06T08:13:00Z",
+        "work_orders": [
+          "ORD-000184"
+        ]
+      },
+      {
+        "start": "2026-01-06T08:44:00Z",
+        "end": "2026-01-06T09:19:00Z",
+        "work_orders": [
+          "ORD-000088"
+        ]
+      },
+      {
+        "start": "2026-01-06T09:19:00Z",
+        "end": "2026-01-06T11:06:00Z",
+        "work_orders": [
+          "ORD-000025"
+        ]
+      },
+      {
+        "start": "2026-01-06T11:06:00Z",
+        "end": "2026-01-06T12:37:00Z",
+        "work_orders": [
+          "ORD-000185"
+        ]
+      },
+      {
+        "start": "2026-01-06T12:37:00Z",
+        "end": "2026-01-06T13:13:00Z",
+        "work_orders": [
+          "ORD-000104"
+        ]
+      },
+      {
+        "start": "2026-01-06T14:46:00Z",
+        "end": "2026-01-06T15:52:00Z",
+        "work_orders": [
+          "ORD-000048"
+        ]
+      },
+      {
+        "start": "2026-01-06T15:52:00Z",
+        "end": "2026-01-06T17:50:00Z",
+        "work_orders": [
+          "ORD-000145"
+        ]
+      },
+      {
+        "start": "2026-01-06T17:50:00Z",
+        "end": "2026-01-06T18:30:00Z",
+        "work_orders": [
+          "ORD-000128"
+        ]
+      },
+      {
+        "start": "2026-01-07T07:00:00Z",
+        "end": "2026-01-07T08:46:00Z",
+        "work_orders": [
+          "ORD-000105"
+        ]
+      },
+      {
+        "start": "2026-01-07T08:46:00Z",
+        "end": "2026-01-07T09:30:00Z",
+        "work_orders": [
+          "ORD-000063"
+        ]
+      },
+      {
+        "start": "2026-01-08T10:52:00Z",
+        "end": "2026-01-08T12:36:00Z",
+        "work_orders": [
+          "ORD-000143"
+        ]
+      },
+      {
+        "start": "2026-01-08T13:59:00Z",
+        "end": "2026-01-08T17:06:00Z",
+        "work_orders": [
+          "ORD-000160"
+        ]
+      }
+    ],
+    "by_ghost_row": {
+      "F002-RES002": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T07:58:00Z",
+          "work_orders": [
+            "ORD-000001"
+          ]
+        },
+        {
+          "start": "2026-01-05T08:13:00Z",
+          "end": "2026-01-05T09:25:00Z",
+          "work_orders": [
+            "ORD-000056"
+          ]
+        },
+        {
+          "start": "2026-01-05T09:25:00Z",
+          "end": "2026-01-05T10:02:00Z",
+          "work_orders": [
+            "ORD-000033"
+          ]
+        },
+        {
+          "start": "2026-01-05T10:04:00Z",
+          "end": "2026-01-05T11:35:00Z",
+          "work_orders": [
+            "ORD-000135"
+          ]
+        },
+        {
+          "start": "2026-01-05T11:35:00Z",
+          "end": "2026-01-05T12:59:00Z",
+          "work_orders": [
+            "ORD-000041"
+          ]
+        },
+        {
+          "start": "2026-01-05T12:59:00Z",
+          "end": "2026-01-05T14:51:00Z",
+          "work_orders": [
+            "ORD-000055"
+          ]
+        },
+        {
+          "start": "2026-01-05T14:51:00Z",
+          "end": "2026-01-05T16:25:00Z",
+          "work_orders": [
+            "ORD-000073"
+          ]
+        },
+        {
+          "start": "2026-01-05T16:25:00Z",
+          "end": "2026-01-05T18:57:00Z",
+          "work_orders": [
+            "ORD-000137"
+          ]
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T09:19:00Z",
+          "work_orders": [
+            "ORD-000175"
+          ]
+        },
+        {
+          "start": "2026-01-06T09:19:00Z",
+          "end": "2026-01-06T10:36:00Z",
+          "work_orders": [
+            "ORD-000113"
+          ]
+        },
+        {
+          "start": "2026-01-06T10:36:00Z",
+          "end": "2026-01-06T11:08:00Z",
+          "work_orders": [
+            "ORD-000193"
+          ]
+        },
+        {
+          "start": "2026-01-06T11:30:00Z",
+          "end": "2026-01-06T13:44:00Z",
+          "work_orders": [
+            "ORD-000191"
+          ]
+        },
+        {
+          "start": "2026-01-06T13:52:00Z",
+          "end": "2026-01-06T16:10:00Z",
+          "work_orders": [
+            "ORD-000151"
+          ]
+        },
+        {
+          "start": "2026-01-06T16:10:00Z",
+          "end": "2026-01-06T17:17:00Z",
+          "work_orders": [
+            "ORD-000192"
+          ]
+        },
+        {
+          "start": "2026-01-06T17:17:00Z",
+          "end": "2026-01-06T18:46:00Z",
+          "work_orders": [
+            "ORD-000153"
+          ]
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T09:37:00Z",
+          "work_orders": [
+            "ORD-000071"
+          ]
+        },
+        {
+          "start": "2026-01-07T09:37:00Z",
+          "end": "2026-01-07T11:04:00Z",
+          "work_orders": [
+            "ORD-000017"
+          ]
+        },
+        {
+          "start": "2026-01-07T11:04:00Z",
+          "end": "2026-01-07T12:28:00Z",
+          "work_orders": [
+            "ORD-000136"
+          ]
+        },
+        {
+          "start": "2026-01-07T12:28:00Z",
+          "end": "2026-01-07T15:11:00Z",
+          "work_orders": [
+            "ORD-000121"
+          ]
+        },
+        {
+          "start": "2026-01-07T15:11:00Z",
+          "end": "2026-01-07T17:02:00Z",
+          "work_orders": [
+            "ORD-000057"
+          ]
+        },
+        {
+          "start": "2026-01-07T17:02:00Z",
+          "end": "2026-01-07T18:46:00Z",
+          "work_orders": [
+            "ORD-000176"
+          ]
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T09:19:00Z",
+          "work_orders": [
+            "ORD-000177"
+          ]
+        },
+        {
+          "start": "2026-01-08T09:19:00Z",
+          "end": "2026-01-08T12:04:00Z",
+          "work_orders": [
+            "ORD-000032"
+          ]
+        },
+        {
+          "start": "2026-01-08T12:04:00Z",
+          "end": "2026-01-08T14:10:00Z",
+          "work_orders": [
+            "ORD-000072"
+          ]
+        },
+        {
+          "start": "2026-01-08T14:10:00Z",
+          "end": "2026-01-08T15:35:00Z",
+          "work_orders": [
+            "ORD-000152"
+          ]
+        },
+        {
+          "start": "2026-01-08T15:35:00Z",
+          "end": "2026-01-08T18:51:00Z",
+          "work_orders": [
+            "ORD-000161"
+          ]
+        }
+      ],
+      "F002-RES004": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T08:00:00Z",
+          "work_orders": [
+            "ORD-000195"
+          ]
+        },
+        {
+          "start": "2026-01-05T08:00:00Z",
+          "end": "2026-01-05T09:18:00Z",
+          "work_orders": [
+            "ORD-000179"
+          ]
+        },
+        {
+          "start": "2026-01-05T09:18:00Z",
+          "end": "2026-01-05T10:16:00Z",
+          "work_orders": [
+            "ORD-000194"
+          ]
+        },
+        {
+          "start": "2026-01-05T10:16:00Z",
+          "end": "2026-01-05T11:44:00Z",
+          "work_orders": [
+            "ORD-000034"
+          ]
+        },
+        {
+          "start": "2026-01-05T11:44:00Z",
+          "end": "2026-01-05T12:18:00Z",
+          "work_orders": [
+            "ORD-000138"
+          ]
+        },
+        {
+          "start": "2026-01-05T12:18:00Z",
+          "end": "2026-01-05T13:16:00Z",
+          "work_orders": [
+            "ORD-000114"
+          ]
+        },
+        {
+          "start": "2026-01-05T13:16:00Z",
+          "end": "2026-01-05T13:52:00Z",
+          "work_orders": [
+            "ORD-000178"
+          ]
+        },
+        {
+          "start": "2026-01-05T13:52:00Z",
+          "end": "2026-01-05T14:20:00Z",
+          "work_orders": [
+            "ORD-000099"
+          ]
+        },
+        {
+          "start": "2026-01-05T14:20:00Z",
+          "end": "2026-01-05T15:13:00Z",
+          "work_orders": [
+            "ORD-000139"
+          ]
+        },
+        {
+          "start": "2026-01-05T15:31:00Z",
+          "end": "2026-01-05T16:37:00Z",
+          "work_orders": [
+            "ORD-000042"
+          ]
+        },
+        {
+          "start": "2026-01-05T16:37:00Z",
+          "end": "2026-01-05T17:05:00Z",
+          "work_orders": [
+            "ORD-000115"
+          ]
+        },
+        {
+          "start": "2026-01-05T17:05:00Z",
+          "end": "2026-01-05T18:30:00Z",
+          "work_orders": [
+            "ORD-000163"
+          ]
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T07:32:00Z",
+          "work_orders": [
+            "ORD-000059"
+          ]
+        },
+        {
+          "start": "2026-01-06T07:32:00Z",
+          "end": "2026-01-06T09:01:00Z",
+          "work_orders": [
+            "ORD-000123"
+          ]
+        },
+        {
+          "start": "2026-01-06T09:01:00Z",
+          "end": "2026-01-06T10:26:00Z",
+          "work_orders": [
+            "ORD-000019"
+          ]
+        },
+        {
+          "start": "2026-01-06T10:26:00Z",
+          "end": "2026-01-06T12:58:00Z",
+          "work_orders": [
+            "ORD-000137"
+          ]
+        },
+        {
+          "start": "2026-01-06T12:58:00Z",
+          "end": "2026-01-06T13:35:00Z",
+          "work_orders": [
+            "ORD-000154"
+          ]
+        },
+        {
+          "start": "2026-01-06T13:47:00Z",
+          "end": "2026-01-06T14:20:00Z",
+          "work_orders": [
+            "ORD-000162"
+          ]
+        },
+        {
+          "start": "2026-01-06T15:04:00Z",
+          "end": "2026-01-06T16:21:00Z",
+          "work_orders": [
+            "ORD-000113"
+          ]
+        },
+        {
+          "start": "2026-01-06T16:21:00Z",
+          "end": "2026-01-06T17:55:00Z",
+          "work_orders": [
+            "ORD-000073"
+          ]
+        },
+        {
+          "start": "2026-01-06T17:55:00Z",
+          "end": "2026-01-06T18:48:00Z",
+          "work_orders": [
+            "ORD-000043"
+          ]
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T07:40:00Z",
+          "work_orders": [
+            "ORD-000074"
+          ]
+        },
+        {
+          "start": "2026-01-07T07:40:00Z",
+          "end": "2026-01-07T08:17:00Z",
+          "work_orders": [
+            "ORD-000033"
+          ]
+        },
+        {
+          "start": "2026-01-07T08:30:00Z",
+          "end": "2026-01-07T09:59:00Z",
+          "work_orders": [
+            "ORD-000153"
+          ]
+        },
+        {
+          "start": "2026-01-07T09:59:00Z",
+          "end": "2026-01-07T12:15:00Z",
+          "work_orders": [
+            "ORD-000058"
+          ]
+        },
+        {
+          "start": "2026-01-07T12:15:00Z",
+          "end": "2026-01-07T13:21:00Z",
+          "work_orders": [
+            "ORD-000083"
+          ]
+        },
+        {
+          "start": "2026-01-07T13:21:00Z",
+          "end": "2026-01-07T14:59:00Z",
+          "work_orders": [
+            "ORD-000018"
+          ]
+        },
+        {
+          "start": "2026-01-07T14:59:00Z",
+          "end": "2026-01-07T16:33:00Z",
+          "work_orders": [
+            "ORD-000098"
+          ]
+        },
+        {
+          "start": "2026-01-07T16:33:00Z",
+          "end": "2026-01-07T17:50:00Z",
+          "work_orders": [
+            "ORD-000003"
+          ]
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T09:13:00Z",
+          "work_orders": [
+            "ORD-000035"
+          ]
+        },
+        {
+          "start": "2026-01-08T09:13:00Z",
+          "end": "2026-01-08T11:04:00Z",
+          "work_orders": [
+            "ORD-000057"
+          ]
+        },
+        {
+          "start": "2026-01-08T11:04:00Z",
+          "end": "2026-01-08T12:54:00Z",
+          "work_orders": [
+            "ORD-000155"
+          ]
+        },
+        {
+          "start": "2026-01-08T12:54:00Z",
+          "end": "2026-01-08T15:44:00Z",
+          "work_orders": [
+            "ORD-000082"
+          ]
+        },
+        {
+          "start": "2026-01-08T15:44:00Z",
+          "end": "2026-01-08T18:03:00Z",
+          "work_orders": [
+            "ORD-000177"
+          ]
+        }
+      ],
+      "F002-RES006": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T07:52:00Z",
+          "work_orders": [
+            "ORD-000005"
+          ]
+        },
+        {
+          "start": "2026-01-05T08:07:00Z",
+          "end": "2026-01-05T09:13:00Z",
+          "work_orders": [
+            "ORD-000020"
+          ]
+        },
+        {
+          "start": "2026-01-05T09:13:00Z",
+          "end": "2026-01-05T10:13:00Z",
+          "work_orders": [
+            "ORD-000195"
+          ]
+        },
+        {
+          "start": "2026-01-05T10:13:00Z",
+          "end": "2026-01-05T11:31:00Z",
+          "work_orders": [
+            "ORD-000021"
+          ]
+        },
+        {
+          "start": "2026-01-05T11:31:00Z",
+          "end": "2026-01-05T13:35:00Z",
+          "work_orders": [
+            "ORD-000157"
+          ]
+        },
+        {
+          "start": "2026-01-05T13:35:00Z",
+          "end": "2026-01-05T13:59:00Z",
+          "work_orders": [
+            "ORD-000116"
+          ]
+        },
+        {
+          "start": "2026-01-05T14:01:00Z",
+          "end": "2026-01-05T15:08:00Z",
+          "work_orders": [
+            "ORD-000164"
+          ]
+        },
+        {
+          "start": "2026-01-05T15:08:00Z",
+          "end": "2026-01-05T17:46:00Z",
+          "work_orders": [
+            "ORD-000125"
+          ]
+        },
+        {
+          "start": "2026-01-05T17:46:00Z",
+          "end": "2026-01-05T18:39:00Z",
+          "work_orders": [
+            "ORD-000139"
+          ]
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T08:27:00Z",
+          "work_orders": [
+            "ORD-000156"
+          ]
+        },
+        {
+          "start": "2026-01-06T08:27:00Z",
+          "end": "2026-01-06T10:45:00Z",
+          "work_orders": [
+            "ORD-000045"
+          ]
+        },
+        {
+          "start": "2026-01-06T11:09:00Z",
+          "end": "2026-01-06T13:52:00Z",
+          "work_orders": [
+            "ORD-000180"
+          ]
+        },
+        {
+          "start": "2026-01-06T13:52:00Z",
+          "end": "2026-01-06T14:23:00Z",
+          "work_orders": [
+            "ORD-000196"
+          ]
+        },
+        {
+          "start": "2026-01-06T14:23:00Z",
+          "end": "2026-01-06T14:59:00Z",
+          "work_orders": [
+            "ORD-000076"
+          ]
+        },
+        {
+          "start": "2026-01-06T14:59:00Z",
+          "end": "2026-01-06T15:36:00Z",
+          "work_orders": [
+            "ORD-000061"
+          ]
+        },
+        {
+          "start": "2026-01-06T15:36:00Z",
+          "end": "2026-01-06T16:20:00Z",
+          "work_orders": [
+            "ORD-000165"
+          ]
+        },
+        {
+          "start": "2026-01-06T16:20:00Z",
+          "end": "2026-01-06T17:44:00Z",
+          "work_orders": [
+            "ORD-000181"
+          ]
+        },
+        {
+          "start": "2026-01-06T17:44:00Z",
+          "end": "2026-01-06T18:16:00Z",
+          "work_orders": [
+            "ORD-000101"
+          ]
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T09:13:00Z",
+          "work_orders": [
+            "ORD-000141"
+          ]
+        },
+        {
+          "start": "2026-01-07T09:13:00Z",
+          "end": "2026-01-07T10:28:00Z",
+          "work_orders": [
+            "ORD-000036"
+          ]
+        },
+        {
+          "start": "2026-01-07T10:28:00Z",
+          "end": "2026-01-07T12:22:00Z",
+          "work_orders": [
+            "ORD-000140"
+          ]
+        },
+        {
+          "start": "2026-01-07T12:22:00Z",
+          "end": "2026-01-07T14:33:00Z",
+          "work_orders": [
+            "ORD-000100"
+          ]
+        },
+        {
+          "start": "2026-01-07T14:33:00Z",
+          "end": "2026-01-07T16:11:00Z",
+          "work_orders": [
+            "ORD-000060"
+          ]
+        },
+        {
+          "start": "2026-01-07T16:11:00Z",
+          "end": "2026-01-07T18:42:00Z",
+          "work_orders": [
+            "ORD-000077"
+          ]
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T09:08:00Z",
+          "work_orders": [
+            "ORD-000197"
+          ]
+        },
+        {
+          "start": "2026-01-08T09:08:00Z",
+          "end": "2026-01-08T11:12:00Z",
+          "work_orders": [
+            "ORD-000117"
+          ]
+        }
+      ]
+    }
+  },
+  "ghosts": [
+    {
+      "ghost_index": 0,
+      "resource_id": "e491efcf-d6cd-575d-acf7-7f2c25bd93d8",
+      "external_name": "F002-RES002",
+      "start": "2026-01-07T07:00:00Z",
+      "end": "2026-01-07T07:57:00Z",
+      "cost_delta": 18.84,
+      "cost_label": "+$19",
+      "basis": "spike_capability_overlay",
+      "pricing": "real cost-model marginal (rate[target]-rate[current])*working_min; tardiness delta 0"
+    },
+    {
+      "ghost_index": 1,
+      "resource_id": "6e0d0e0f-2d27-5e01-b156-188aa0240ee3",
+      "external_name": "F002-RES004",
+      "start": "2026-01-07T07:00:00Z",
+      "end": "2026-01-07T07:57:00Z",
+      "cost_delta": 10.95,
+      "cost_label": "+$11",
+      "basis": "spike_capability_overlay",
+      "pricing": "real cost-model marginal (rate[target]-rate[current])*working_min; tardiness delta 0"
+    },
+    {
+      "ghost_index": 2,
+      "resource_id": "fd61a666-a188-5c8b-b9ef-106f4268f268",
+      "external_name": "F002-RES006",
+      "start": "2026-01-07T07:00:00Z",
+      "end": "2026-01-07T07:57:00Z",
+      "cost_delta": 53.2,
+      "cost_label": "+$53",
+      "basis": "spike_capability_overlay",
+      "pricing": "real cost-model marginal (rate[target]-rate[current])*working_min; tardiness delta 0"
+    }
+  ],
+  "grid_fallback_minutes": 30
+}

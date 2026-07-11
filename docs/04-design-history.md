@@ -2822,3 +2822,59 @@ deploy-verified-in-cloud.
 **Verdict: Phase 2 exits COMPLETE (qualified).** All five clauses PASS or
 PASS-WITH-QUALIFICATION; no clause failed; no fixes were required. The
 qualifications above are the carried exit conditions.
+
+### 2026-07-11 — Session 3.0: frontend bake-off SPIKE (Phase-3 entry) + merge_v2 carry-in
+
+A timeboxed, throwaway spike to choose the rendering substrate for the Phase-3
+cockpit's three-tier drag surface. Spike rules (chunking-spike precedent):
+code in `tools/spikes/frontend_bakeoff/`, no production wiring, the deliverable
+is a verdict. Full report: `tools/spikes/frontend_bakeoff/VERDICT.md`. **The
+docs/07 frontend line is deliberately NOT updated — verdict reviewed jointly
+first.**
+
+**Carry-in — `merge_by_family_v2` traced.** Origin commit `847fe89` ("Rep 4"),
+**design-reviewed** (this doc, 2026-07-12 amendment; acceptance tests
+`tests/test_planner_merge_v2.py`). Behavioural diff vs `_v1`: identical
+candidate grouping, then two gates before committing a merge — feasibility
+(class-aware window-fit on the *merged* quantity, R-C3) and risk (tardiness
+exposure on the earliest-due constituent's *working-time* budget vs. a
+corrected setup benefit × `risk_margin`); a rejection at either gate falls the
+batch back to solo WorkPackages with a `merge_rejected` Decision
+(`CAPACITY_BLOCKED` / `COST_TRADEOFF`). Both variants added to the solver-gap
+dossier's tractability-lever entry (`tools/solver_gap_probe_report.md`): v1 =
+maximum tractability, unpriced risk (the 3.3× figure is v1's); v2 = gated,
+data-dependent, ≤ v1's multiplier but each merge earned. Phase-4 name-the-policy
+discipline now spans three values.
+
+**Fixture (shared, both candidates + a real finding).** Real `messy_realistic`
+deterministic solve (seed 7 / solver seed 42, `PYTHONHASHSEED=0`) → contract-1.1
+`schedule.json` (475 assignments / 16 resources) via `build_document_from_run`;
+static `anchors.json` for one grab task via `build_fixture.py`. **Finding:**
+every generator scenario routes each operation to **exactly one** resource
+(eligibility `{1:475}`; single `resource_id` per routing line), and the pool on
+this slack schedule yields **9 movers at Δ$0, none in a precedence chain** — so
+generated data has **no legal cross-machine move and no priced successor
+ghost**, defeating a faithful drag fixture. Resolution: board geometry anchors
+are real; cross-row legality + ghosts are an authored `spike_capability_overlay`
+(same-facility pool), **real-priced** from the cost model, and labelled as such
+in `anchors.json._meta` (static anchors = the brief's honest interim-A scope).
+**Carry-forward (W1/Phase-3):** the generator needs capability-based
+multi-eligible routing before real Tier-0/Tier-1 anchor computation is possible.
+
+**Bake-off result.** Candidate A (custom React: SVG + dnd-kit) and Candidate B
+(vis-timeline), same fixture, same `shared/geometry.js` snap core, driven by a
+candidate-agnostic Playwright harness (`harness/run.mjs`, the surviving
+interim-A infra). Both **GREEN on the mechanics**, both driveable headlessly
+(scripted contract + real pointer — dnd-kit robustly; vis's Hammer.js drag
+engaged only via a diagonal multi-step gesture, a criterion-5 caveat, *not* a
+hard fail — an initial "hard fail" read was a diagnostic artifact, corrected by
+driving the real gesture). Latency well under target (A 17–23 ms, B 30–45 ms).
+Neither hard-failed criterion 1/3/5. B's one material blemish: vis-timeline
+**clips all in-bar text to the bar box**, so priced-ghost labels ("+$53" → "+")
+and narrow-bar labels need an always-on overlay layer synced to vis's pan/zoom
+(fragile) — a criterion-2/6 concern on a demo-critical feature. Licences clear
+both ways (dnd-kit/react MIT; vis-timeline Apache-2.0 OR MIT). **Recommendation
+(decision rule "library wins ties", no killer hard-failed): adopt vis-timeline,
+conditional on a follow-up proving a stable label/overlay layer; Candidate A is
+the proven zero-blocker fallback with a higher feel ceiling. Close call — to be
+settled in joint review.**

@@ -1,0 +1,4 @@
+# Heavy, regenerable build inputs (see build_fixture.py header for commands).
+# The committed fixture contract is schedule.json + anchors.json only.
+messy_run/
+messy_submission/

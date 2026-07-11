@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Frontend bake-off · SPIKE</title>
+    <link rel="stylesheet" href="/shared/bakeoff.css" />
+  </head>
+  <body>
+    <div class="topbar"><h1>Frontend bake-off</h1><span class="tag">Session 3.0 SPIKE · throwaway</span></div>
+    <div style="padding: 24px; max-width: 640px">
+      <p>Two candidates render the <b>same</b> fixture (a real <code>messy_realistic</code>
+      schedule, 475 assignments / 16 resources) with the <b>same</b> shared geometry + snap core.
+      They differ only in the rendering host.</p>
+      <ul>
+        <li><a href="/candidate_a.html">Candidate A</a> — custom React: SVG timeline + dnd-kit</li>
+        <li><a href="/candidate_b.html">Candidate B</a> — library: vis-timeline</li>
+      </ul>
+      <p class="hint">Grab the purple task, watch Tier-0 shading + priced ghosts appear,
+      drag with semantic snap (magnet to predecessor-finish / shift-openings / neighbours /
+      ghosts; 30-min grid otherwise; hold <kbd>Alt</kbd> to disable snap), drop for a tentative bar.</p>
+    </div>
+  </body>
+</html>

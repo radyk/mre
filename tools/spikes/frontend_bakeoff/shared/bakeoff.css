@@ -1,0 +1,44 @@
+/* Shared styling so both candidates read as one system (fair comparison). */
+:root {
+  --bg: #0f1117;
+  --panel: #161a23;
+  --grid: #232836;
+  --ink: #e6e9ef;
+  --muted: #8b93a7;
+  --green: #2fbf71;
+  --green-fill: rgba(47, 191, 113, 0.16);
+  --amber: #e0a63c;
+  --amber-fill: rgba(224, 166, 60, 0.16);
+  --dim-fill: rgba(120, 130, 150, 0.05);
+  --bar: #3b6fd6;
+  --bar-ink: #cfe0ff;
+  --grab: #b06cf0;
+  --ghost: #35c9c2;
+  --closure: rgba(20, 22, 30, 0.7);
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 13px/1.4 -apple-system, Segoe UI, Roboto, sans-serif;
+}
+.topbar {
+  display: flex; align-items: baseline; gap: 16px;
+  padding: 10px 16px; border-bottom: 1px solid var(--grid); background: var(--panel);
+  position: sticky; top: 0; z-index: 20;
+}
+.topbar h1 { font-size: 15px; margin: 0; font-weight: 650; }
+.topbar .tag {
+  font-size: 11px; color: var(--muted); border: 1px solid var(--grid);
+  border-radius: 5px; padding: 2px 7px;
+}
+.topbar .status { margin-left: auto; color: var(--muted); font-size: 12px; }
+.topbar button {
+  background: var(--bar); color: white; border: 0; border-radius: 6px;
+  padding: 6px 12px; font-size: 12px; cursor: pointer; font-weight: 600;
+}
+.topbar button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--grid); }
+.legend { display: flex; gap: 14px; padding: 6px 16px; color: var(--muted); font-size: 11px; border-bottom: 1px solid var(--grid); }
+.legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+.board-scroll { overflow: auto; height: calc(100vh - 96px); }
+.hint { color: var(--muted); font-size: 11px; }
+kbd { background: var(--grid); border-radius: 3px; padding: 1px 5px; font-size: 11px; }

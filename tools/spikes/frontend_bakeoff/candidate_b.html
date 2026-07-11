@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Candidate B · vis-timeline</title>
+    <link rel="stylesheet" href="/shared/bakeoff.css" />
+  </head>
+  <body>
+    <div class="topbar">
+      <h1>Candidate B</h1><span class="tag">library · vis-timeline</span>
+      <span class="status" id="status">loading…</span>
+      <button class="ghost" id="reset">reset</button>
+    </div>
+    <div class="legend">
+      <span><span class="sw" style="background: var(--green)"></span>green: fits</span>
+      <span><span class="sw" style="background: var(--amber)"></span>amber: fits, displaces</span>
+      <span><span class="sw" style="background: #4a4f60"></span>dim: illegal</span>
+      <span><span class="sw" style="background: var(--ghost)"></span>ghost: pool placement (priced)</span>
+      <span class="hint">drag the purple task · hold <kbd>Alt</kbd> to disable snap</span>
+    </div>
+    <div id="tl" style="height: calc(100vh - 96px)"></div>
+    <script type="module" src="/src_b/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "a": {
+    "url": "http://localhost:5173/candidate_a.html",
+    "driveable": true,
+    "latencyMs": 17.5,
+    "snapOnGhost": "ghost",
+    "ghostDeltaShown": 53.2,
+    "droppedPhase": "dropped",
+    "realPointer": "OK (grab engaged via real pointer)"
+  },
+  "b": {
+    "url": "http://localhost:5173/candidate_b.html",
+    "driveable": true,
+    "latencyMs": 31.4,
+    "snapOnGhost": "ghost",
+    "ghostDeltaShown": 53.2,
+    "droppedPhase": "dropped",
+    "realPointer": "OK (grab engaged via real pointer)"
+  }
+}

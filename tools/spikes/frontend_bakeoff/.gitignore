@@ -1,0 +1,5 @@
+# JS workspace build/deps — regenerable via `npm install` + the harness.
+node_modules/
+dist/
+# shots/ (2MB of PNG evidence) and fixture/{schedule,anchors}.json ARE committed
+# — they are the VERDICT.md evidence and the shared fixture contract.

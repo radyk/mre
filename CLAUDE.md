@@ -89,6 +89,25 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 IN PROGRESS — frontend bake-off SPIKE complete
+2026-07-11.** Throwaway spike (`tools/spikes/frontend_bakeoff/`, nothing ships)
+choosing the cockpit's drag-surface substrate. **Both candidates GREEN on the
+mechanics**, both headlessly driveable (custom React SVG+dnd-kit vs vis-timeline;
+shared fixture from a real `messy_realistic` solve + shared snap core + a
+surviving candidate-agnostic Playwright harness). Neither hard-failed criteria
+1/3/5; vis-timeline's one material blemish is **in-bar-text clipping** (priced
+ghost labels truncate → need a fragile overlay layer). **Recommendation
+(rule: library wins ties): adopt vis-timeline, conditional on a stable
+label-overlay follow-up; custom React is the zero-blocker fallback.** Verdict at
+`tools/spikes/frontend_bakeoff/VERDICT.md`; **docs/07 frontend line intentionally
+NOT updated — to be settled in joint review.** Spike findings/carry-forwards:
+(a) the generator has **no capability-based multi-eligible routing** (every op
+routes to one resource), so it cannot yet produce a faithful drag fixture — a
+W1/Phase-3 prerequisite for real Tier-0/Tier-1 anchor computation; (b)
+`merge_by_family_v2` traced (carry-in): design-reviewed, origin `847fe89`, added
+to the solver-gap dossier's tractability-lever entry alongside v1. See the
+docs/04 2026-07-11 amendment.
+
 **Roadmap position: Phase 2 COMPLETE (qualified) — entering Phase 3.**
 Phase-2 exit **audited by a fresh session 2026-07-10** (audit mode, no fixes
 unless a clause fails): all five exit-prompt clauses PASS / PASS-WITH-

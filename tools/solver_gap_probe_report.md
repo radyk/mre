@@ -205,3 +205,27 @@ cost-optimal on the merged orders.
   count (and therefore both tractability AND the cost baseline) moves 3.3×
   between them. This is added to the docs/07 Phase-4 entry-condition
   discipline: measure, and name the policy, on the same line as the number.
+
+**Both merge variants, distinguished (2026-07-11, Session 3.0 spike carry-in).**
+The 3.3× figure above is measured under `merge_by_family_v1` — the *ungated*
+policy: it merges every same-product/same-family batch inside the due-date
+window unconditionally. That is exactly why it is not the default (2026-07-07):
+ungated merges create post-merge infeasibility the solver cannot recover from,
+and its `estimated_benefit` formula undercounts real setup cost 5× (the +$260
+WO-2001/2002 unbatch verdict, 2026-07-06). `merge_by_family_v2` (origin commit
+`847fe89`, "Rep 4", **design-reviewed** — docs/04 2026-07-12 amendment, acceptance
+tests `tests/test_planner_merge_v2.py`) keeps the identical candidate grouping
+but runs each batch through two gates before committing it: a **feasibility gate**
+(class-aware window-fit on the *merged* quantity, docs/05 R-C3) and a **risk gate**
+(tardiness exposure priced on the earliest-due constituent's working-time budget
+vs. a corrected setup benefit × `risk_margin`). Rejections fall back to solo
+WorkPackages and record a `merge_rejected` Decision (`driver=CAPACITY_BLOCKED`
+feasibility / `COST_TRADEOFF` risk). The consequence for this dossier: **v2's
+tractability multiplier is ≤ v1's and data-dependent** — it only collapses the
+batches that survive both gates, so it does not buy the full 3.3× on a backlog
+where many merges are infeasible or cost-losing, but the collapse it *does* buy
+is earned (no infeasibility, benefit ≥ priced risk). The lever therefore has two
+settings: v1 = maximum tractability, unpriced risk; v2 = gated tractability, each
+merge carrying a numeric benefit/risk pair on its Decision. The Phase-4
+name-the-policy discipline above extends to three values, not two:
+identity_v1 / merge_by_family_v1 / merge_by_family_v2.
