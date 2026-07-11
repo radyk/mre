@@ -3018,3 +3018,30 @@ making the sixty-second script impossible on it; (3) mid-drag
 refusal (R-DP2) is a load-bearing bake-off criterion, tested and
 PASSED in 3.0b; (4) the docs/07 open-rulings queue marks item 5
 resolved, citing this entry.
+
+## Amendment — 2026-07-11: R-DP7 — Change legibility (extends the drop-pin ruling)
+
+Added in the Phase 3 design thread immediately after R-DP1–R-DP6
+were ratified; authored as its own entry per append-only.
+
+**R-DP7 — Change legibility.** No schedule state change is ever
+rendered as an instantaneous silent swap. (a) The dropped bar
+carries a distinct visual state through its whole lifecycle —
+tentative on landing, confirmed on accept, and if returned home it
+returns animated along a visible path with the reason attached,
+never teleporting. (b) Every bar the sandbox re-solve moved as a
+consequence of an edit is visibly traced from old to new position
+(ghost-of-old + motion trace or equivalent), held on screen until
+the edit is accepted or discarded. (c) Delta card line items are
+linked to board annotations — the card's "Ortiz slips 4h" IS
+Ortiz's on-board displacement trace; selecting a card line
+navigates to that bar. (d) Accepted edits remain replayable from
+their Decision records (recent-changes affordance: re-highlight
+what a past edit moved). Rationale: planner testimony — a drop
+followed by unexplained board motion, or by hunting for what
+happened to the dropped item, is the same frustration R-DP1
+eliminated, arriving through the surroundings instead of the bar.
+Implementation note: the moved-set is computed by the schedule
+differ (2.2, serialization fix applied); warm-started sandbox
+re-solves keep consequence sets minimal by construction, which is
+what makes tracing them tractable.
