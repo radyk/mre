@@ -1,0 +1,339 @@
+{
+  "url": "http://localhost:5173/candidate_b_3b.html",
+  "ts": "2026-07-11T13:43:08.277Z",
+  "C1": {
+    "allLegible": true,
+    "maxDriftPx": 0,
+    "driftThresholdPx": 6,
+    "pass": true,
+    "probes": [
+      {
+        "window": {
+          "start": "2026-01-05T00:00:00.000Z",
+          "end": "2026-01-09T00:00:00.000Z"
+        },
+        "ghosts": [
+          {
+            "ghost": 0,
+            "row": 8,
+            "label": "+$19",
+            "legible": true,
+            "visBarCx": 849.3,
+            "labelCx": 849.3,
+            "driftPx": 0
+          },
+          {
+            "ghost": 1,
+            "row": 9,
+            "label": "+$11",
+            "legible": true,
+            "visBarCx": 849.3,
+            "labelCx": 849.3,
+            "driftPx": 0
+          },
+          {
+            "ghost": 2,
+            "row": 10,
+            "label": "+$53",
+            "legible": true,
+            "visBarCx": 849.3,
+            "labelCx": 849.3,
+            "driftPx": 0
+          }
+        ]
+      },
+      {
+        "window": {
+          "start": "2026-01-06T18:00:00.000Z",
+          "end": "2026-01-07T18:00:00.000Z"
+        },
+        "ghosts": [
+          {
+            "ghost": 0,
+            "row": 8,
+            "label": "+$19",
+            "legible": true,
+            "visBarCx": 825.2,
+            "labelCx": 825.2,
+            "driftPx": 0
+          },
+          {
+            "ghost": 1,
+            "row": 9,
+            "label": "+$11",
+            "legible": true,
+            "visBarCx": 825.2,
+            "labelCx": 825.2,
+            "driftPx": 0
+          },
+          {
+            "ghost": 2,
+            "row": 10,
+            "label": "+$53",
+            "legible": true,
+            "visBarCx": 825.2,
+            "labelCx": 825.2,
+            "driftPx": 0
+          }
+        ]
+      },
+      {
+        "window": {
+          "start": "2026-01-06T22:00:00.000Z",
+          "end": "2026-01-07T14:00:00.000Z"
+        },
+        "ghosts": [
+          {
+            "ghost": 0,
+            "row": 8,
+            "label": "+$19",
+            "legible": true,
+            "visBarCx": 870.3,
+            "labelCx": 870.3,
+            "driftPx": 0
+          },
+          {
+            "ghost": 1,
+            "row": 9,
+            "label": "+$11",
+            "legible": true,
+            "visBarCx": 870.3,
+            "labelCx": 870.3,
+            "driftPx": 0
+          },
+          {
+            "ghost": 2,
+            "row": 10,
+            "label": "+$53",
+            "legible": true,
+            "visBarCx": 870.3,
+            "labelCx": 870.3,
+            "driftPx": 0
+          }
+        ]
+      }
+    ]
+  },
+  "C2": {
+    "scriptedRefusedMidDrag": true,
+    "scriptedReturnedHomeOnDrop": true,
+    "realRefusedMidDrag": true,
+    "realReturnedHome": true,
+    "realErr": null,
+    "pass": true
+  },
+  "C3": {
+    "anchor": "2026-01-07T07:00:00Z",
+    "samples": [
+      {
+        "offsetMin": 45,
+        "dMin": 45,
+        "magnetStrength": 0,
+        "inTol": false
+      },
+      {
+        "offsetMin": 30,
+        "dMin": 30,
+        "magnetStrength": 0,
+        "inTol": true
+      },
+      {
+        "offsetMin": 22,
+        "dMin": 22,
+        "magnetStrength": 0.267,
+        "inTol": true
+      },
+      {
+        "offsetMin": 15,
+        "dMin": 15,
+        "magnetStrength": 0.5,
+        "inTol": true
+      },
+      {
+        "offsetMin": 8,
+        "dMin": 8,
+        "magnetStrength": 0.733,
+        "inTol": true
+      },
+      {
+        "offsetMin": 3,
+        "dMin": 3,
+        "magnetStrength": 0.9,
+        "inTol": true
+      },
+      {
+        "offsetMin": 0,
+        "dMin": 0,
+        "magnetStrength": 1,
+        "inTol": true
+      }
+    ],
+    "falloffMonotonic": true,
+    "onTargetStrength": 1,
+    "zeroOutsideTolerance": true,
+    "altDisablesSnap": true,
+    "onMovingCalls": 42,
+    "stepsEmitted": 44,
+    "callToStepRatio": 0.95,
+    "noThrottle": true,
+    "onMovingHz_syntheticPacing": 19.7,
+    "pass": true
+  },
+  "C4": {
+    "runs": 20,
+    "successes": 20,
+    "failures": 0,
+    "successRate": "20/20",
+    "pass": true,
+    "detail": [
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      },
+      {
+        "ok": true,
+        "engaged": true,
+        "phaseMid": "grabbing",
+        "calls": 14,
+        "phaseAfter": "dropped"
+      }
+    ]
+  },
+  "verdict": {
+    "C1": true,
+    "C2": true,
+    "C3": true,
+    "C4": true,
+    "allFourPass": true,
+    "rule": "vis-timeline adopted only if all four pass clean; any failure -> Candidate A"
+  }
+}

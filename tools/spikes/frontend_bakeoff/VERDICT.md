@@ -7,7 +7,15 @@ substrate for the Phase-3 reasoning cockpit's three-tier drag surface
 custom wins only if the library hard-fails criterion 1, 3, or 5, or its feel
 ceiling is *clearly disqualifying with evidence*.
 
-> **Do not update docs/07's frontend line on this alone — review together first.**
+> **[3.0 banner — now superseded]** Do not update docs/07's frontend line on
+> this alone — review together first.
+>
+> **[3.0b update, 2026-07-11]** The follow-up ran and settled it — see the
+> **[3.0b addendum](#30b-addendum--the-drop-rulings-four-killer-criteria)** at
+> the foot of this file. vis-timeline cleared all four drop-ruling criteria
+> clean; **docs/07's frontend line IS now updated (v1.8)** per the 3.0b brief's
+> instruction. The recommendation below is the 3.0 record; the addendum is the
+> final word.
 
 ---
 
@@ -183,3 +191,114 @@ npm install
 npm run dev                                      # http://localhost:5173
 node harness/run.mjs                             # -> shots/*.png + report.json
 ```
+
+---
+---
+
+# 3.0b ADDENDUM — the drop ruling's four killer criteria
+
+**Session 3.0b · 2026-07-11 · half-day timebox · same spike, same directory,
+throwaway code.** The 3.0 recommendation was *adopt vis-timeline conditional on
+a short follow-up proving a stable always-on overlay layer, with custom React as
+the zero-blocker fallback if the overlay (or magnet feel) proved fragile.* 3.0b
+**is that follow-up**, widened by a new ruling (docs/04 pending):
+
+> A drag is a literal must — the bar lands exactly where dropped or returns home;
+> proven-illegal zones must **visibly REFUSE the drop mid-drag** (no post-hoc
+> dialog); semantic snap with generous tolerance interprets within legal zones.
+
+**Decision rule (from the 3.0b brief, final):** vis-timeline is adopted **only
+if all four criteria pass clean**. Any failure or fragile workaround → Candidate
+A (custom React/SVG + dnd-kit) is selected, on the evidence it cleared every 3.0
+criterion in one day with headroom.
+
+Only vis-timeline was under test (the 3.0 sheet already cleared A). New surface:
+`candidate_b_3b.html` + `src_b/main_3b.js` (zoom/pan **enabled**, unlike 3.0's
+frozen window, so the overlay's tracking is actually exercised) + a new
+evidence harness `harness/run_3b.mjs` writing `shots/report_3b.json` and
+`shots/b3b_*.png`. Same shared fixture + `shared/geometry.js` as 3.0.
+
+## Result: **all four PASS clean → vis-timeline is ADOPTED.**
+
+| | Criterion | Verdict | Machine-checked evidence |
+|---|---|---|---|
+| **C1** | Always-on overlay layer (labels + hatch, tracks pan/zoom, no drift) | **PASS** | ghost labels legible at every zoom; **max drift 0.0 px** across 3 windows (default 4-day → 30 h → 16 h) |
+| **C2** | Mid-drag rejection of illegal zones + return-home | **PASS** | scripted + **real-pointer**: bar pins at the legal boundary, refuses the dim row, `phase=returned_home` on release |
+| **C3** | One real magnet with falloff via `onMoving` | **PASS** | monotonic falloff `0→0→0.27→0.5→0.73→0.9→1.0` to a single anchor; 0 outside tolerance; Alt frees; **no throttle (0.95 call:step)** |
+| **C4** | 20 consecutive headless drag runs | **PASS** | **20 / 20** (deterministic; every run `dropped`, 14 `onMoving` calls) |
+
+Reproduce: `node harness/run_3b.mjs http://localhost:5173` → `shots/report_3b.json`.
+
+### C1 — always-on overlay layer  ·  `b3b_c1_*` , `overlayProbe()`
+The 3.0 blemish (vis clips **all** in-bar text, so "+$53" → "+") is **resolved**.
+A positioned layer (`.spk-overlay`, mounted inside vis's `centerContainer`)
+carries the priced ghost labels and the tentative hatch, and is redrawn from
+vis's **public `getWindow()`** on `rangechange` / `rangechanged` / `changed`.
+The honest drift test compares each overlay label's centre-x against the
+**vis-rendered** ghost bar's centre-x (not against our own math): **0.0 px at
+the default 4-day window, at a 30 h zoom, and at a 16 h zoom** — the overlay and
+vis share the identical linear time→x map, so they cannot separate under
+zoom/pan. Labels `+$19 / +$11 / +$53` are fully legible at every level
+(`b3b_c1_2_zoomed.png`). *Residual, disclosed:* the overlay reads vis DOM
+geometry (`centerContainer.offsetWidth`, `.vis-foreground .vis-group` rects) — a
+stable public-ish surface, and the redraw is wired to vis's own pan events; I
+verified settled-window drift across three zoom levels, not a single mid-flight
+pan frame. Not fragile under the evidence gathered.
+
+### C2 — mid-drag rejection  ·  `b3b_c2_*`
+vis-timeline's `onMoving(item, cb)` is called continuously with the tentative
+**group** under the cursor; calling **`cb(null)`** refuses that frame's move, so
+the bar **will not enter an illegal (dim) row** — it pins at the last legal
+boundary while the cursor + a banner go `not-allowed` (`b3b_c2_3_realdrag_over_dim.png`:
+dragging up from the green home row toward a dim F001 row, the bar stops at the
+amber F002 boundary, "⃠ illegal row — drop refused"). On release over an illegal
+row, `onMove`'s `cb(null)` **returns the bar home** (`b3b_c2_4/…_2`,
+`phase=returned_home`, origin row 12, `+$0`). Proven both scripted **and** by a
+real Playwright pointer drag. The ruling's "visibly refuse mid-drag, no post-hoc
+dialog, land-or-return" is satisfied through documented public API — not a
+workaround.
+
+### C3 — one real magnet with falloff  ·  `b3b_c3_*` , `magnetTo()`
+A single magnet (the shift-start / ghost anchor at Wed 07:00, a real calendar
+opening) implemented through the **only** per-drag seam, `onMoving`: shift-start
+anchor, 30-min tolerance radius, **Alt-disable**, and a proximity **falloff**
+line drawn in the overlay (opacity/width ∝ strength). Isolated-anchor sweep:
+strength rises **cleanly and monotonically** from 0 (outside tolerance) to 1.0
+(on the anchor) — `b3b_c3_1_magnet_falloff.png` shows the pull line on Wed 07:00
+with "tentative · ghost · +$53.2"; Alt frees the snap (`b3b_c3_2_alt_free.png`).
+The granularity question — *does the single coarse hook fight falloff?* — is
+answered by counting `onMoving` calls against emitted pointer steps: **42 / 44 =
+0.95**, i.e. **vis fires `onMoving` per pointer-move and does not throttle it**,
+so hook granularity equals input rate. The hook carries falloff; it does not
+fight it. *(Custom React still has a higher feel ceiling — a dedicated rAF loop
+vs one library hook — but the hook is not the bottleneck here.)*
+
+> **Honest correction (recorded, not hidden).** My *first* 3.0b C3 pass reported
+> C3 **FAIL** on two counts. Both were **probe artifacts**, corrected exactly as
+> the 3.0 criterion-5 Hammer diagnosis was: (1) "non-monotonic falloff" — the
+> sweep measured *nearest-of-all-targets*, so passing near an unrelated
+> `adjacency` edge broke monotonicity; the criterion asks about **one** magnet,
+> so the corrected probe measures distance to the single anchor. (2) "21 Hz, too
+> coarse" — that number was **Playwright's synthetic ~45 ms/step pacing**, not a
+> vis throttle; the call:step ratio (0.95) is the throttle-free measurement.
+> Corrected numbers above; the raw first run is in git history.
+
+### C4 — headless reliability  ·  `report_3b.json.C4`
+**20 / 20** consecutive real-pointer drags engaged Hammer.js, moved the grab
+item across groups, and committed a drop. Deterministic: every run reached
+`phase=dropped` with 14 `onMoving` calls. *The number behind "finicky":* 20/20 —
+**conditional on the diagonal, group-crossing engage gesture** the 3.0 spike
+identified (a naïve small horizontal drag still does not reliably trigger
+Hammer). That gesture is now encoded in the surviving harness, so the headless
+drag is repeatable — the tax is a prescriptive engage motion, not per-run flake.
+
+## What this does to the 3.0 recommendation
+3.0 said *vis-timeline, conditional on proving a stable overlay; custom React the
+fallback if the overlay or magnet feel proved fragile.* 3.0b **discharged that
+condition**: the overlay is stable (0 px), the magnet feel is reachable and
+un-throttled, illegal-zone refusal works, headless drag is 20/20. Per the
+decision rule, **the tie no longer needs the tiebreaker — vis-timeline passes on
+its own merits. Adopt vis-timeline.** Custom React/SVG + dnd-kit stays on record
+as the proven zero-blocker fallback (higher feel ceiling, no library to fight)
+should later feel-iteration on the bespoke overlay surface change the calculus.
+docs/07 frontend line updated (v1.8); this is the spike's final word.

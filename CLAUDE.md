@@ -89,24 +89,31 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
-**Roadmap position: Phase 3 IN PROGRESS — frontend bake-off SPIKE complete
-2026-07-11.** Throwaway spike (`tools/spikes/frontend_bakeoff/`, nothing ships)
-choosing the cockpit's drag-surface substrate. **Both candidates GREEN on the
-mechanics**, both headlessly driveable (custom React SVG+dnd-kit vs vis-timeline;
-shared fixture from a real `messy_realistic` solve + shared snap core + a
-surviving candidate-agnostic Playwright harness). Neither hard-failed criteria
-1/3/5; vis-timeline's one material blemish is **in-bar-text clipping** (priced
-ghost labels truncate → need a fragile overlay layer). **Recommendation
-(rule: library wins ties): adopt vis-timeline, conditional on a stable
-label-overlay follow-up; custom React is the zero-blocker fallback.** Verdict at
-`tools/spikes/frontend_bakeoff/VERDICT.md`; **docs/07 frontend line intentionally
-NOT updated — to be settled in joint review.** Spike findings/carry-forwards:
-(a) the generator has **no capability-based multi-eligible routing** (every op
-routes to one resource), so it cannot yet produce a faithful drag fixture — a
-W1/Phase-3 prerequisite for real Tier-0/Tier-1 anchor computation; (b)
-`merge_by_family_v2` traced (carry-in): design-reviewed, origin `847fe89`, added
-to the solver-gap dossier's tractability-lever entry alongside v1. See the
-docs/04 2026-07-11 amendment.
+**Roadmap position: Phase 3 IN PROGRESS — frontend substrate SELECTED
+(vis-timeline) 2026-07-11 via the bake-off SPIKE + 3.0b extension.** Throwaway
+spike (`tools/spikes/frontend_bakeoff/`, nothing ships) choosing the cockpit's
+drag-surface substrate. 3.0: both candidates GREEN on the mechanics (custom React
+SVG+dnd-kit vs vis-timeline), recommendation *adopt vis-timeline conditional on a
+stable overlay follow-up, custom React the fallback*. **3.0b (2026-07-11) ran
+that follow-up** — held vis-timeline to the drop ruling's four killer criteria
+(`candidate_b_3b.html` + `src_b/main_3b.js`, zoom/pan enabled; harness
+`harness/run_3b.mjs` → `shots/report_3b.json` + `b3b_*.png`) and it **cleared all
+four CLEAN**: C1 always-on overlay carries the priced ghost labels + hatch and
+tracks vis's pan/zoom at **0 px drift** (3.0 in-bar clipping resolved); C2 illegal
+rows **visibly refuse the drop mid-drag** (pin at legal boundary + not-allowed
+cursor, return home on release); C3 one real magnet via `onMoving` — clean
+monotonic falloff, Alt-disable, **no throttle (0.95 call:step)**; C4 **20/20**
+headless drags. **Decision rule (all-four-pass → adopt) applied: vis-timeline
+SELECTED**; custom React is the zero-blocker fallback. **docs/07 frontend line
+updated (v1.8)**; VERDICT.md carries the 3.0b addendum (incl. an honest C3
+probe-artifact correction). Residuals disclosed (overlay reads vis DOM geometry;
+harness needs the diagonal engage gesture) — neither a failure under evidence.
+Carry-forwards unchanged: (a) the generator has **no capability-based
+multi-eligible routing** (every op routes to one resource), so it cannot yet
+produce a faithful drag fixture — a W1/Phase-3 prerequisite for real
+Tier-0/Tier-1 anchor computation; (b) `merge_by_family_v2` traced (design-
+reviewed, origin `847fe89`), in the solver-gap dossier's tractability-lever entry
+alongside v1. See the docs/04 2026-07-11 Session 3.0 + 3.0b amendments.
 
 **Roadmap position: Phase 2 COMPLETE (qualified) — entering Phase 3.**
 Phase-2 exit **audited by a fresh session 2026-07-10** (audit mode, no fixes
