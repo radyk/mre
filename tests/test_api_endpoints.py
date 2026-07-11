@@ -172,12 +172,18 @@ class TestScheduleDocument:
     def test_document_validates_against_contract(self, api):
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
         parsed = ScheduleDocument.model_validate(doc)
-        assert parsed.contract_version == "1.1"
+        assert parsed.contract_version == "1.2"
         assert parsed.schedule_id == api.schedule_id
         assert parsed.run_id == api.run["id"]
         assert parsed.solver.deterministic is True
         assert parsed.assignments and parsed.service_outcomes and parsed.resources
         assert parsed.annotations.scenario.is_scenario is False
+        # Contract 1.2: the API path supplies edges, so the Tier-0 interaction
+        # payload is present — one entry per scheduled op, each with its
+        # eligible set; and the precedence graph.
+        assert parsed.interaction is not None
+        assert len(parsed.interaction.operations) == len(parsed.assignments)
+        assert all(o.eligible_resource_ids for o in parsed.interaction.operations)
 
     def test_every_assignment_has_chunks_and_work_orders(self, api):
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))

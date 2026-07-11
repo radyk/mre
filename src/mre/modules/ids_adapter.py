@@ -384,12 +384,33 @@ class IDSAdapter:
 
             spec_ids: list[str] = []
             dwell_minutes_by_spec_id: dict[str, float] = {}
+            # Group this route's active lines by sequence: multiple rows sharing
+            # one (route_id, sequence) but naming different resource_id are the
+            # operation's ELIGIBLE SET (docs/05 B2 "routing_lines.resource_id →
+            # explicit_set"; docs/06 §5.3). One row per sequence — the common
+            # case — yields a single-element set, byte-identical to the
+            # pre-grouping adapter (the defaults-reproduce-baseline gate). The
+            # per-operation time model (setup/run overrides) is a property of
+            # the operation, not the eligible machine, so it is read once from
+            # the sequence's first row; the differential a multi-eligible op
+            # carries lives on the resources' cost_rate/calendar, never here.
+            lines_by_seq: dict[int, list[dict]] = {}
             for rl in lines_by_route.get(route_id, []):
                 seq = int(rl.get("sequence", "0") or "0")
-                res_ext = rl.get("resource_id", "")
-                res_id = identity_map.resolve("IDS", "resource_id", res_ext)
-                if res_id is None:
+                lines_by_seq.setdefault(seq, []).append(rl)
+
+            for seq in sorted(lines_by_seq):
+                seq_lines = lines_by_seq[seq]
+                # Resolve every eligible resource; preserve first-seen order and
+                # drop unresolvable references (same skip as the single-line path).
+                resolved: list[str] = []
+                for rl in seq_lines:
+                    res_id = identity_map.resolve("IDS", "resource_id", rl.get("resource_id", ""))
+                    if res_id is not None and res_id not in resolved:
+                        resolved.append(res_id)
+                if not resolved:
                     continue
+                rl = seq_lines[0]  # the op's time model is read from the first row
                 spec_id = _stable_id("operationspec", f"{route_id}:{ext_pid}:{seq}")
 
                 override_run = _num(rl.get("run_minutes_per_unit"))
@@ -405,7 +426,7 @@ class IDSAdapter:
                     run_formula = "unavailable"
                 base_setup = timedelta(minutes=override_setup if override_setup > 0 else prod_setup)
 
-                req = ResourceRequirement(mode=ResourceRequirementMode.EXPLICIT_SET, resource_refs=[res_id])
+                req = ResourceRequirement(mode=ResourceRequirementMode.EXPLICIT_SET, resource_refs=resolved)
                 min_chunk_raw = _num(rl.get("min_chunk_minutes"))
                 spec = OperationSpec(
                     id=spec_id, snapshot_id=snapshot_id, sequence=seq,

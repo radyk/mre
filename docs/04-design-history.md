@@ -3045,3 +3045,133 @@ Implementation note: the moved-set is computed by the schedule
 differ (2.2, serialization fix applied); warm-started sandbox
 re-solves keep consequence sets minimal by construction, which is
 what makes tracing them tractable.
+
+## Amendment — 2026-07-11: Session 3.1 CU1 — `multi_route`, the capability-routed scenario (docs/05 B2; the interim-A prerequisite)
+
+The Session 3.0 bake-off's honest caveat (VERDICT.md) was that
+**every generator scenario routed each operation to exactly one
+resource** (eligibility-size distribution `{1: N}`), so generated
+data contained no legal cross-machine move and no priced ghost —
+the sixty-second cockpit script was impossible on it. The R-DP
+consequences block (2026-07-11) named a capability-routed scenario
+as an interim-A entry prerequisite. This is it.
+
+**Representation — no schema change (docs/06 §5.3, docs/05 B2).**
+An operation's eligible set is expressed as **multiple
+`routing_lines` rows sharing one (route_id, sequence) but naming
+different resource_id**. The IDS adapter now GROUPS a route's lines
+by sequence and builds one OperationSpec whose ResourceRequirement
+is `explicit_set` over the whole resolved set (previously: one spec
+per line, single-element set). One row per sequence — the common
+case — yields a single-element set **byte-identical to the
+pre-grouping adapter**, so the defaults-reproduce-baseline
+modularity gate holds (the full IDS end-to-end + generator suites
+stayed green, 54 passed). The op's time model (setup/run overrides)
+is read once from the sequence's first row; the differential a
+multi-eligible op carries lives on the *resources* (per-resource
+`cost_rate`/`calendar`), never the op time — so the single
+`OperationSpec.run_rate` still holds and the canonical model is
+unchanged. The Solver Builder already implemented the disjunctive
+alternative-resource choice (one optional interval per eligible
+resource); it needed nothing.
+
+**The scenario (`tools/generate_erp_dataset.py::_apply_multi_route`).**
+1 facility, 6 resources; R0,R1 share the cheap $50 rate, R2..R5 are
+$55/$60/$65/$70. Two products with multi-eligible ops IN precedence
+chains: PROD-MR-A (3 steps) seq10 {R0,R1,R2} → seq20 {R0,R1} →
+seq30 {R0,R1,R3}; PROD-MR-B (2 steps) seq10 {R0,R1} → seq20
+{R0,R1,R2}. 12 orders, due 5-6 days. 5 multi-eligible ops, 3 of
+them tier-spanning (a nonzero ghost price by construction).
+
+**The design that made the pool actually surface cross-machine
+ghosts — the hard-won lesson.** A pool member is a near-optimal
+re-solve under a start-time diversity cut; it MINIMIZES objective,
+so it reveals a cross-machine alternative only when a sampled op is
+*boxed in* (cannot slide in time on its own machine) AND the jump
+is near-optimal. Two facts follow, both learned by measurement
+(many tuning iterations recorded in the session):
+- **Distinct rates ⇒ a unique optimum.** With a wide rate spread,
+  the optimal machine assignment is essentially unique; at the true
+  optimum the pool finds only time-shifts (hamming≈1, cross-machine
+  0). Early "cross-machine = 15" readings were an ARTIFACT of a
+  *suboptimal* incumbent (the pool found 40% cheaper, cross-machine
+  solutions) — not genuine near-optimal alternatives. A wide spread
+  also made contention hard to solve, so the base itself was a poor
+  incumbent — an ugly fixture.
+- **The fix: a saturated identical-rate pair.** R0 and R1 both bill
+  $50 and carry almost all the work at ~90% load, so *which of the
+  two* an op runs on is a genuinely free, degenerate choice: the
+  base solve is easy and near-optimal (flat cost ⇒ FEASIBLE ≈
+  optimal, on-time), and the diversity cut readily swaps ops R0↔R1
+  at ZERO delta — this is what puts cross-machine moves in the pool.
+  The R2+ pricier machines are idle spill valves whose only job is
+  to give some ops a *different-rate* eligible alternative, i.e. the
+  nonzero ghost PRICE, asserted directly from the eligibility set
+  (working_min × Δrate), independent of the pool's stochastic choice.
+
+**Assertions (`tests/test_multi_route.py`, deterministic
+workers=1/seed=42).** Structural (default suite): multi-eligible
+ops exist with the expected max fan-out; a multi-eligible op sits
+in a precedence chain; a scheduled multi-eligible op has a
+different-rate eligible alternative (nonzero ghost price). Slow:
+the pool built on the solve places ≥1 op cross-machine; and the
+**counterfactual** — collapsing the scenario to single-eligibility
+(keep the first `routing_lines` row per (route,sequence)) drives
+the pool's cross-machine count to **0** and lowers its diversity
+profile. That collapse is the price-bought-something proof the
+routing alternatives are real, not decorative.
+
+**New diversity sub-metric.** `solution_pool.py` now reports
+`diversity.cross_machine_ops` (ops at least one member places on a
+different *resource*, not merely a different time) — the Tier-1
+"other press" ghost precondition and the counterfactual's anchor
+(0 by construction on single-eligibility data).
+
+**Carry-forward.** The base solve is a fixed-time-limit FEASIBLE
+solve that measures optimal-quality here (pool cannot beat it) but
+is not PROVEN optimal; the fixture is small by design so this is
+cheap and stable. The `multi_route` board is now the cockpit
+fixture for CU2–CU5.
+
+## Amendment — 2026-07-11: Session 3.1 CU2 — schedule contract 1.2, the Tier-0 interaction payload
+
+Additive minor bump (`schedule_document.py` CONTRACT_VERSION 1.1 →
+1.2). Per the R-DP consequences block (contract 1.2 "interaction
+payload"), the cockpit computes legal drop zones CLIENT-SIDE with
+no solver round-trip (docs/07 Phase 3 Tier-0; R-DP6 legality
+epistemics). The new top-level `interaction` block carries exactly
+what that arithmetic needs and nothing it can derive:
+- `operations[]` — per scheduled op: `eligible_resource_ids` (the
+  WHOLE set, not the chosen one, so the board can dim
+  capability-illegal rows), `working_min` + `setup_min` (bar size
+  for a fit/displace test), `earliest_start` (the release floor =
+  Demand.earliest_start, R-A4; MAX across a merged WP's demands).
+- `precedence_edges[]` — template PrecedenceEdge records EXPANDED to
+  Operation-instance refs the same way the Solver Builder resolves
+  them ((workpackage_ref, spec_ref) → op id), so the refs live in
+  the same id-space as `interaction.operations` and the board bars
+  (a spec-keyed edge would be unusable — refs in a different space).
+
+**Deliberately NOT duplicated:** calendar windows already live per
+lane in `resources[].calendar_windows` (regular/overtime/closure);
+resource occupancy is computed client-side from `assignments[]`
+(resource_id + chunks) — the schedule already IS the occupancy.
+
+**Additivity proven.** The block is built ONLY when the assembler
+is given `edges` (the API path, `build_document_from_run`, now
+passes them); pool members and any 1.1-shaped caller get
+`interaction=None` and are unaffected (tested:
+`test_absent_when_no_edges_supplied`). The eligibility resolver
+mirrors `solver_builder._eligible_resources` so the client sees the
+SAME set the solver enforced.
+
+**Size check (the brief's request).** On the 3K-order `clean_large`
+schedule (7,460 assignments) the payload adds **+1.9 MB (+35.7%)**:
+base document 5.4 MB → 7.3 MB. This is material. **Proposed, not
+implemented** (interim-A is read-only): a split-endpoint —
+`GET /schedules/{id}` keeps the render document (1.1 shape), and a
+sibling `GET /schedules/{id}/interaction` serves the Tier-0 payload
+fetched once on first grab. The payload is grab-time data, not
+first-paint data, so the split costs nothing perceptible and keeps
+the initial render document lean. Deferred to interim-B (the drag
+surface) where the payload is actually consumed.

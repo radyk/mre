@@ -161,7 +161,7 @@ def doc(world) -> ScheduleDocument:
 class TestHeader:
     def test_versioned_from_day_one(self, doc):
         # 1.1 (2026-07-13): additive annotations.pool block for pool members
-        assert doc.contract_version == CONTRACT_VERSION == "1.1"
+        assert doc.contract_version == CONTRACT_VERSION == "1.2"
 
     def test_pool_annotation_absent_on_ordinary_documents(self, doc):
         assert doc.annotations.pool is None
@@ -349,3 +349,67 @@ class TestDeterminism:
         dumped = doc.model_dump(mode="json")
         assert dumped["assignments"][0]["chunks"][0]["start"].endswith(
             ("+00:00", "Z"))
+
+
+# ---------------------------------------------------------------------------
+# Contract 1.2 — the Tier-0 interaction payload (additive)
+# ---------------------------------------------------------------------------
+
+class TestInteractionPayload:
+    def test_absent_when_no_edges_supplied(self, doc):
+        """Additive: a 1.1-shaped caller (no ``edges``) gets interaction=None,
+        so 1.1 consumers are unaffected."""
+        assert doc.interaction is None
+
+    def _world_with_specs(self) -> dict:
+        w = _world()
+        # give the op a spec_ref + eligible set so the payload has substance
+        w["operations"][0]["spec_ref"] = "spec-10"
+        w["operations"][0]["resource_requirements"] = [
+            {"mode": "explicit_set", "resource_refs": ["r-1", "r-2"]}
+        ]
+        w["resources"].append(
+            {"id": "r-2", "snapshot_id": SNAP, "resource_type": "machine",
+             "calendar_ref": "cal-1", "pool_refs": []})
+        w["demands"][0]["earliest_start"] = "2026-02-01T07:00:00+00:00"
+        return w
+
+    def test_built_when_edges_supplied(self):
+        w = self._world_with_specs()
+        d = assemble_schedule_document(**w, edges=[])
+        assert d.interaction is not None
+        assert len(d.interaction.operations) == 1
+        op = d.interaction.operations[0]
+        assert op.operation_ref == "op-1"
+        # the WHOLE eligible set, not just the chosen resource
+        assert set(op.eligible_resource_ids) == {"r-1", "r-2"}
+        assert op.working_min == 600  # 8h + 2h run windows
+        assert op.setup_min == 30
+        assert op.earliest_start is not None
+
+    def test_edges_expand_to_operation_instances(self):
+        """Template (spec-keyed) edges resolve to instance ops via
+        (workpackage_ref, spec_ref), so refs live in operation-id space."""
+        w = self._world_with_specs()
+        w["operations"].append(
+            {"id": "op-2", "snapshot_id": SNAP, "workpackage_ref": "wp-m",
+             "spec_ref": "spec-20", "sequence": 20, "setup_duration": "PT0S",
+             "resource_requirements": [
+                 {"mode": "explicit_set", "resource_refs": ["r-1"]}]})
+        w["assignments"].append(
+            {"id": "a-2", "snapshot_id": SNAP, "operation_ref": "op-2",
+             "workpackage_ref": "wp-m",
+             "resource_assignments": [
+                 {"requirement": {"mode": "explicit_set", "resource_refs": ["r-1"]},
+                  "resource_ref": "r-1"}],
+             "phase_windows": {"setup": None, "run": [
+                 {"start": "2026-02-03T09:00:00+00:00",
+                  "end": "2026-02-03T11:00:00+00:00"}], "dwell": None}})
+        edges = [{"predecessor": "spec-10", "successor": "spec-20",
+                  "min_lag": "PT0S", "max_lag": None}]
+        d = assemble_schedule_document(**w, edges=edges)
+        assert len(d.interaction.precedence_edges) == 1
+        e = d.interaction.precedence_edges[0]
+        op_ids = {o.operation_ref for o in d.interaction.operations}
+        assert e.predecessor_ref == "op-1" and e.successor_ref == "op-2"
+        assert e.predecessor_ref in op_ids and e.successor_ref in op_ids

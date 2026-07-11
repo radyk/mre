@@ -246,6 +246,8 @@ route_id ✓ · facility_id ✓ · product_id (blank/0 = generic route: valid) �
 ### 5.3 routing_lines.csv
 route_id ✓ · sequence ✓ · resource_id ✓ (→ resources) · active ✓ · setup_minutes, run_minutes_per_unit, dwell_minutes (optional; when present they OVERRIDE product-level times — the preferred, per-operation time model) · setup_family · splittable, min_chunk_minutes.
 
+**Eligible sets (docs/05 B2, no schema change):** an operation's *eligible resource set* is expressed as **multiple rows sharing one (route_id, sequence) but naming different resource_id** — the adapter groups them into one OperationSpec whose ResourceRequirement is `explicit_set` over the whole set (`routing_lines.resource_id → explicit_set`). One row per sequence — the common case — is a single-element set, identical to the pre-grouping behaviour (the defaults-reproduce-baseline gate). The per-operation time model (setup/run overrides) is a property of the operation, read once from the sequence's first row; a multi-eligible operation's cost differential lives on the *resources* (per-resource `cost_rate`, §5.5, and/or `calendar_id`, §5.6), never on the op time — so a single `run_rate` still holds and the choice of machine, not the duration, carries the price.
+
 ### 5.4 products.csv
 product_id ✓ · uom ✓ · facility_id · product_group · costing_lot_size, setup_minutes, production_minutes (REQUIRED as a set iff routing_lines omit per-op times; semantics per manifest) · cost_price.
 

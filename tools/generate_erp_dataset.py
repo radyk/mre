@@ -104,6 +104,10 @@ SCENARIOS: dict[str, dict[str, Any]] = {
         orders=4, resources=3, facilities=1, anomalies=[],
         with_customers=False, cost_profile="C1", mid_replan=True,
     ),
+    "multi_route": dict(
+        orders=30, resources=6, facilities=1, anomalies=[],
+        with_customers=False, cost_profile="C1", multi_route=True,
+    ),
 }
 
 
@@ -562,6 +566,148 @@ def _apply_mid_replan(ds: Dataset, rng: random.Random) -> dict:
         "expected_total_tardiness_lower_with_wip": True,
         "expected_future_starts_after_inflight_remaining": True,
         "expected_completed_op_has_no_assignment": True,
+    }
+
+
+def _apply_multi_route(ds: Dataset, rng: random.Random) -> dict:
+    """Capability-routed scenario (docs/05 B2): operations whose eligible
+    resource set has 2-4 members carrying REAL cost differentials, so a
+    cross-machine move has a genuine, nonzero price (docs/04 R-DP consequence
+    (2): the interim-A prerequisite the 3.0 spike proved generated data
+    lacked).
+
+    IDS expression (no schema change): an operation's eligible set is the set
+    of routing_lines rows sharing one (route_id, sequence) but naming
+    different resource_id — docs/05 B2's "routing_lines.resource_id →
+    explicit_set". The adapter groups them into one OperationSpec whose
+    ResourceRequirement is EXPLICIT_SET over the whole set. The differential
+    lives on the *resource* (per-resource cost_rate), not the op time, so a
+    single OperationSpec.run_rate still holds — the choice of machine, not the
+    duration, is what carries the price. This keeps the canonical model
+    unchanged while giving the pool real cross-machine ghosts to render.
+
+    Layout (1 facility, 6 resources, all on CAL-STD 07:00-19:00). The design
+    turns on the one mechanism that makes the pool surface cross-machine
+    ghosts at a CLEAN, near-optimal base (the interim-A lesson, learned the
+    hard way): a genuine near-optimal cross-machine alternative exists only
+    where two machines are cost-EQUIVALENT for an op AND both are needed, so
+    the machine assignment is a free, degenerate choice.
+
+      (1) A SATURATED IDENTICAL-RATE PAIR — R0 and R1 both bill $50/h, and
+          almost every operation is eligible on {R0,R1}. The order load fills
+          R0+R1 to ~90%, so which of the two an op runs on is a genuinely free
+          choice: the optimum is massively degenerate, the base solve is easy
+          and near-optimal (flat cost ⇒ FEASIBLE≈optimal), and the pool's
+          diversity cut readily swaps ops R0↔R1 at ZERO cost delta. THIS is
+          what makes cross-machine moves appear in the pool at all (a slack or
+          distinct-rate board yields only time-shifts, hamming≈1).
+      (2) PRICIER ELIGIBLE ALTERNATIVES for the ghost PRICE — some ops are
+          also eligible on R2/R3 ($55/$60), idle spill valves the optimum
+          avoids. They give each such op a different-rate alternative, so the
+          Tier-1 ghost price of a cross-tier move is nonzero by construction —
+          asserted directly from the contract-1.2 eligibility payload
+          (working_min × Δrate), independent of the pool's stochastic choice.
+
+      PROD-MR-A (3 steps): seq10 {R0,R1,R2} → seq20 {R0,R1} → seq30 {R0,R1,R3}
+      PROD-MR-B (2 steps): seq10 {R0,R1}    → seq20 {R0,R1,R2}
+    Every op is a 240-min block (production_minutes=240, lot=1, qty=1).
+
+    Truth: a counted number of ops have >1 eligible resource; at least one
+    such op sits in a precedence chain; at least one scheduled multi-eligible
+    op has an eligible alternative on a different-rate machine (a nonzero ghost
+    price); the pool built on the deterministic solve yields ≥1 op placed
+    cross-machine; and the single-eligibility collapse (each op's route reduced
+    to one eligible row) drives the pool's cross-machine count to zero — the
+    price-bought-something proof that the alternatives are real, not decorative.
+    """
+    ref = ds.reference_date
+    # R0 and R1 share the cheap $50 rate (the saturated identical pair whose
+    # assignment is a free degenerate choice); R2+ are slightly pricier spill
+    # valves whose only role is to give some ops a nonzero-price alternative.
+    rate_by_res = {}
+    tiers = [50.0, 50.0, 55.0, 60.0, 65.0, 70.0]
+    for i, r in enumerate(ds.resources):
+        rate = tiers[i % len(tiers)]
+        rate_by_res[r["resource_id"]] = rate
+    ds.cost_model["refinements"]["resource_rates"] = dict(rate_by_res)
+    R = [r["resource_id"] for r in ds.resources]
+
+    # Reset the process + demand tables; rebuild a controlled multi-route fixture.
+    ds.products, ds.routings, ds.routing_lines, ds.orders = [], [], [], []
+
+    # (route_id, sequence) -> list of eligible resource_ids (the eligible set).
+    def _product(pid: str, steps: list[list[str]]) -> str:
+        route_id = f"RT-{pid}"
+        ds.products.append({
+            "product_id": pid, "uom": "EA", "facility_id": ds.facilities[0],
+            "product_group": "multi_route", "costing_lot_size": "1",
+            "setup_minutes": "0", "production_minutes": "240", "cost_price": "10.0",
+        })
+        ds.routings.append({
+            "route_id": route_id, "facility_id": ds.facilities[0],
+            "product_id": pid, "status": "active", "approved": "Y",
+            "version": "1", "effective_from": ref.isoformat(),
+        })
+        for step_idx, eligible in enumerate(steps):
+            seq = (step_idx + 1) * 10
+            for res_id in eligible:  # one row per eligible resource — the set
+                ds.routing_lines.append({
+                    "route_id": route_id, "sequence": str(seq), "resource_id": res_id,
+                    "active": "1", "setup_minutes": "", "run_minutes_per_unit": "",
+                    "dwell_minutes": "0", "setup_family": "",
+                    "splittable": "false", "min_chunk_minutes": "",
+                })
+        return route_id
+
+    steps_a = [[R[0], R[1], R[2]], [R[0], R[1]], [R[0], R[1], R[3]]]
+    steps_b = [[R[0], R[1]], [R[0], R[1], R[2]]]
+    route_a = _product("PROD-MR-A", steps_a)
+    route_b = _product("PROD-MR-B", steps_b)
+    specs = [("PROD-MR-A", route_a, steps_a), ("PROD-MR-B", route_b, steps_b)]
+
+    n_orders = 12
+    for i in range(n_orders):
+        pid, route_id, _ = specs[i % 2]
+        oid = f"ORD-{i + 1:06d}"
+        due = ref + timedelta(days=5 + (i % 2))
+        ds.orders.append({
+            "order_id": oid, "product_id": pid, "route_id": route_id,
+            "quantity": "1", "due_date": due.isoformat(),
+            "created_date": ref.isoformat(), "release_date": ref.isoformat(),
+            "facility_id": ds.facilities[0], "customer_id": "",
+            "priority_class": "", "commitment_class": "standard",
+        })
+
+    # Count multi-eligible ops, whether any sits in a precedence chain, and
+    # whether any spans rate tiers (a nonzero ghost price by construction).
+    multi_eligible = []
+    in_chain = False
+    tier_spanning = 0
+    for pid, route_id, steps in specs:
+        for step_idx, eligible in enumerate(steps):
+            if len(eligible) > 1:
+                seq = (step_idx + 1) * 10
+                rates = {rate_by_res[r] for r in eligible}
+                multi_eligible.append({"route_id": route_id, "sequence": seq,
+                                       "eligible_count": len(eligible),
+                                       "distinct_rates": sorted(rates)})
+                if len(steps) > 1:  # any neighbour ⇒ it is in a chain
+                    in_chain = True
+                if len(rates) > 1:
+                    tier_spanning += 1
+
+    return {
+        "resources": R,
+        "resource_rates": rate_by_res,
+        "multi_eligible_ops": multi_eligible,
+        "multi_eligible_op_count": len(multi_eligible),
+        "max_eligible_alternatives": max(m["eligible_count"] for m in multi_eligible),
+        "tier_spanning_op_count": tier_spanning,
+        "expected_multi_eligible_in_precedence_chain": in_chain,
+        "expected_nonzero_ghost_price": tier_spanning > 0,
+        # verified by the end-to-end test that builds the pool on the solve:
+        "expected_pool_cross_machine_ops_ge": 1,
+        "expected_collapse_cross_machine_ops": 0,
     }
 
 
@@ -1271,6 +1417,8 @@ def generate(
         truth_extra["overtime"] = _apply_overtime_required(ds, rng)
     if preset.get("mid_replan"):
         truth_extra["mid_replan"] = _apply_mid_replan(ds, rng)
+    if preset.get("multi_route"):
+        truth_extra["multi_route"] = _apply_multi_route(ds, rng)
 
     anomaly_entries: list[dict] = []
     for spec in anomaly_specs:

@@ -31,9 +31,12 @@ from mre.contracts.schedule_document import (
     Chunk,
     CostSummary,
     HorizonBlock,
+    InteractionBlock,
+    OperationInteraction,
     Phases,
     PhaseWindow,
     PoolBlock,
+    PrecedenceEdgeBlock,
     ResourceLane,
     ScenarioBlock,
     ScheduleDocument,
@@ -76,10 +79,16 @@ def assemble_schedule_document(
     evidence_records: Optional[list[dict]] = None,
     parent_schedule_id: Optional[str] = None,
     pool_block: Optional[PoolBlock] = None,
+    edges: Optional[list[dict]] = None,
 ) -> ScheduleDocument:
     """Assemble the versioned schedule document. Entity args are persisted
     entity dicts (SnapshotReader shape); evidence_records are the run's raw
-    JSONL records."""
+    JSONL records.
+
+    ``edges`` are PrecedenceEdge entity dicts. When provided, the contract-1.2
+    ``interaction`` block is built (the Tier-0 client-side legality payload);
+    when None (pool members, pre-1.2 callers) ``interaction`` stays None and
+    1.1 consumers are unaffected."""
     evidence = evidence_records or []
     ops_by_id = {o["id"]: o for o in operations}
     demands_by_id = {d["id"]: d for d in demands}
@@ -199,6 +208,15 @@ def assemble_schedule_document(
     )
     is_scenario = bool(sm.get("is_scenario", False))
 
+    # ------------------------------------------------------------------
+    # Interaction payload (contract 1.2): Tier-0 legality arithmetic,
+    # client-side. Built only when precedence edges are supplied.
+    # ------------------------------------------------------------------
+    interaction = _interaction_block(
+        edges, asgn_blocks, ops_by_id, resources,
+        fulfillments, demands_by_id,
+    ) if edges is not None else None
+
     return ScheduleDocument(
         schedule_id=schedule["id"],
         snapshot_id=snapshot_id,
@@ -219,6 +237,7 @@ def assemble_schedule_document(
             ),
             pool=pool_block,
         ),
+        interaction=interaction,
     )
 
 
@@ -270,6 +289,7 @@ def build_document_from_run(
         identity_map=reader.read_identity_map(),
         evidence_records=evidence,
         parent_schedule_id=parent_schedule_id,
+        edges=list(reader.iter_entities("precedenceedge")),
     )
 
 
@@ -432,6 +452,108 @@ def _calendar_windows(cal: Optional[dict], horizon: Optional[HorizonBlock]) -> l
 
     out.sort(key=lambda w: (w.start.isoformat(), w.kind))
     return out
+
+def _interaction_block(
+    edges: list[dict],
+    asgn_blocks: list[AssignmentBlock],
+    ops_by_id: dict[str, dict],
+    resources: list[dict],
+    fulfillments: list[dict],
+    demands_by_id: dict[str, dict],
+) -> InteractionBlock:
+    """Build the Tier-0 payload: per-scheduled-operation eligible sets +
+    durations + release floor, and the precedence graph. Pure derivation —
+    eligibility comes from the OperationSpec's resource_requirements (the WHOLE
+    eligible set, not the chosen resource), durations from the assignment's
+    chunks + the op's setup, the release floor from the op's demand."""
+    resources_by_id = {r["id"]: r for r in resources}
+    # A workpackage may fulfil several demands (merged WPs); its release floor
+    # is the MAX release across them — every demand must be released to start.
+    wp_releases: dict[str, list[datetime]] = {}
+    for f in fulfillments:
+        # Demand.earliest_start is the canonical release floor (docs/05 R-A4:
+        # "one field, provenance-bearing").
+        rel = _parse_dt(demands_by_id.get(f.get("demand_ref", ""), {}).get("earliest_start"))
+        if rel is not None:
+            wp_releases.setdefault(f.get("workpackage_ref", ""), []).append(rel)
+
+    ops_out: list[OperationInteraction] = []
+    for a in asgn_blocks:
+        op = ops_by_id.get(a.operation_ref, {})
+        working_min = sum(c.working_min for c in a.chunks)
+        setup_min = int(_iso_minutes(op.get("setup_duration")) or 0.0)
+        releases = wp_releases.get(a.workpackage_ref, [])
+        ops_out.append(OperationInteraction(
+            operation_ref=a.operation_ref,
+            eligible_resource_ids=_eligible_resource_ids(op, resources_by_id),
+            working_min=working_min,
+            setup_min=setup_min,
+            earliest_start=max(releases) if releases else None,
+        ))
+    ops_out.sort(key=lambda o: o.operation_ref)
+    scheduled_ops = {o.operation_ref for o in ops_out}
+
+    # PrecedenceEdge records are TEMPLATE-level (keyed by OperationSpec, one
+    # chain per Process). Expand to concrete Operation-INSTANCE edges the same
+    # way the Solver Builder does — (workpackage_ref, spec_ref) → op id — so
+    # the payload's refs live in the same id-space as interaction.operations
+    # (and the board's bars). Only edges between two scheduled instances are
+    # emitted (a completed/absent endpoint has no bar to anchor to).
+    op_by_wp_spec: dict[tuple[str, str], str] = {
+        (op.get("workpackage_ref", ""), op.get("spec_ref", "")): op["id"]
+        for op in ops_by_id.values()
+        if op.get("workpackage_ref") and op.get("spec_ref")
+    }
+    workpackage_refs = {op.get("workpackage_ref", "") for op in ops_by_id.values()}
+    edge_blocks: list[PrecedenceEdgeBlock] = []
+    for e in edges:
+        pred_spec, succ_spec = e.get("predecessor"), e.get("successor")
+        if not (pred_spec and succ_spec):
+            continue
+        min_lag = int(_iso_minutes(e.get("min_lag")) or 0.0)
+        max_lag = int(_iso_minutes(e.get("max_lag"))) if e.get("max_lag") else None
+        for wp_id in workpackage_refs:
+            pred_id = op_by_wp_spec.get((wp_id, pred_spec))
+            succ_id = op_by_wp_spec.get((wp_id, succ_spec))
+            if pred_id in scheduled_ops and succ_id in scheduled_ops:
+                edge_blocks.append(PrecedenceEdgeBlock(
+                    predecessor_ref=pred_id, successor_ref=succ_id,
+                    min_lag_min=min_lag, max_lag_min=max_lag,
+                ))
+    edge_blocks.sort(key=lambda e: (e.predecessor_ref, e.successor_ref))
+    return InteractionBlock(operations=ops_out, precedence_edges=edge_blocks)
+
+
+# uuid5 namespace + capability id, mirrors solver_builder._eligible_resources
+# so the Tier-0 client sees the SAME eligible set the solver enforced.
+_CAP_NS = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+
+
+def _eligible_resource_ids(op: dict, resources_by_id: dict[str, dict]) -> list[str]:
+    """The full set of resource UUIDs the operation may run on — the same
+    resolution the Solver Builder uses (explicit_set → resource_refs;
+    capability → resources bearing the capability). An empty/absent
+    requirement means every resource is eligible (solver scope-cut)."""
+    import uuid as _uuid
+    ns = _uuid.UUID(_CAP_NS)
+    reqs = op.get("resource_requirements") or []
+    if not reqs:
+        return sorted(resources_by_id)
+    req = reqs[0]
+    mode = req.get("mode", "")
+    if mode == "explicit_set":
+        refs = [r for r in (req.get("resource_refs") or []) if r in resources_by_id]
+        return sorted(refs) if refs else sorted(resources_by_id)
+    if mode == "capability":
+        cap_ref = req.get("capability_ref", "")
+        matched = [
+            rid for rid, res in resources_by_id.items()
+            if any(str(_uuid.uuid5(ns, f"capability:{c}")) == cap_ref
+                   for c in res.get("capabilities", []))
+        ]
+        return sorted(matched) if matched else sorted(resources_by_id)
+    return sorted(resources_by_id)
+
 
 def _render_lock(con: dict, identity_map: Any) -> str:
     names = []

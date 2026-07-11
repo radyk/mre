@@ -325,6 +325,15 @@ def warm_solution_pool(
         "ops_with_alternative_positions": _ops_with_alternatives(
             incumbent_placement, member_placements, diversity_tol_min
         ),
+        # Cross-machine subset: ops at least one member places on a DIFFERENT
+        # resource (not merely a different time). This is the Tier-1 "other
+        # press" ghost precondition (docs/07 Phase 3) — a cross-machine ghost
+        # exists only where the eligible set genuinely has >1 member the pool
+        # will use — and the multi_route counterfactual anchor: it is 0 by
+        # construction on single-eligibility data.
+        "cross_machine_ops": _cross_machine_ops(
+            incumbent_placement, member_placements
+        ),
         "operation_count": len(incumbent_placement),
     }
 
@@ -446,6 +455,22 @@ def _ops_with_alternatives(
     count = 0
     for oid, inc in incumbent.items():
         if any(oid in p and _differs(inc, p[oid], tolerance_minutes)
+               for p in member_placements.values()):
+            count += 1
+    return count
+
+
+def _cross_machine_ops(
+    incumbent: dict[str, tuple], member_placements: dict[int, dict],
+) -> int:
+    """Count of operations at least one pool member places on a DIFFERENT
+    resource than the incumbent — the resource-change subset of the
+    alternatives (time shifts excluded). Zero by construction when every op
+    has a single eligible resource: the counterfactual proof that a
+    multi_route scenario's alternatives are real (docs/05 B2, R-DP)."""
+    count = 0
+    for oid, inc in incumbent.items():
+        if any(oid in p and p[oid][0] != inc[0]
                for p in member_placements.values()):
             count += 1
     return count
