@@ -94,6 +94,55 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 IN PROGRESS — interim B COMPLETE 2026-07-12
+(Session 3.2b, the gesture surface).** The interaction layer, rendered against
+`multi_route_distinct` (realistic rates → the priced ghosts are the
+forced-alternative service's, not the saturated pool's). One overlay in vis's
+center container, tracking pan/zoom via a single `redraw()` (the C1 discipline,
+extended to ghosts + traces); two entry paths drive the same phase machine —
+real pointer events and programmatic `window.__cockpit.drag` hooks
+(grab/dragTo/drop/dropAt/discard) the harness uses.
+**Data spine (backend, additive, hermetic-testable):** `sandbox.py`
+`SandboxResult` gains the **moved-set** (R-DP7: `_moved_set` diffs the pinned
+re-solve vs the incumbent, old→new per displaced op, pinned op flagged + first)
++ `delta_abs` + echoed pin; API **`POST /schedules/{id}/sandbox`** (Tier-2
+pinned re-solve, R-DP1/R-T1c, sync under the budget token, scenario 409);
+`forced_alternatives.py` members carry a compact **`alternative_placement`**
+(the Tier-1 ghost bar, no full-doc fetch, CU2); the fixture builder now writes
+BOTH the read-only `multi_route` set (unchanged) AND a `fixtures/distinct/`
+gesture set (`alternatives.json` = 4 priced cross-machine ghosts +
+`sandbox.json` = canned verdict/flagged/no_verdict by op). **CU1** grab →
+Tier-0 shading (`drag/shade.js`): green legal / amber displace / dim,
+capability-dim distinguished, hover-over-dim one-line reason; **standing
+latency regression grab→shade < 100 ms** (payload prefetched, R-T1d).
+**CU2** ghosts (`drag/ghosts.js`, R-T1a): forced + pool placements unified,
+source-distinguished subtly, each wearing its price / "not feasible this
+horizon" verdict, labels legible + tracking (drift ≤ 1 px). **CU3** drag
+physics (`drag/magnets.js`, pure; R-DP1/R-DP3): semantic snap (ghosts strongest
+→ calendar → adjacency → predecessor → coarse grid) resolving DURING the drag,
+Alt disables, dim refuses with boundary-pinning + not-allowed cursor,
+release-over-dim returns home animated. **CU4** drop → tentative → verdict
+(`drag/controller.js` + `drag/sandboxui.js`, R-DP2/R-T1c): hatched tentative
+bar, visible countdown, three honest outcomes (delta card / flagged "bound not
+proven" / return-home), drop-onto-ghost near-instant from the vouching schedule;
+**accept STUBBED DISABLED** (no publish workflow — a dead-end accept would
+violate R-DP7). **CU5** change traces (`drag/traces.js`, R-DP7): moved-set drawn
+old→new (ghost-of-old + motion line) held until discard; delta-card line items
+linked to bars (click → navigate + pulse); discard restores everything.
+**CU6** the tuning panel (`drag/tuning.js`, DEV-BUILD-ONLY): every feel token
+live with hot reload + export — never in the production build. Feel-token split:
+numeric interaction knobs in `drag/feel.js` (the panel's source, CSS-visible
+subset mirrored to `:root`), visual tokens in `tokens.css`. **Tests: cockpit JS
+23/23** (7 board + 5 legality + 11 gesture; `tests/cockpit/gesture.spec.mjs`);
+**Python 1026 passed** (+4 sandbox API) + the slow sandbox-latency regression on
+the distinct fixture (the drop→verdict authority). **Carry-forwards (named):**
+the accept/publish path (final session — accept disabled by design so no gesture
+mutates canonical state yet); voice (later interim); pool/forced slice-awareness
+(pilot-gated, heavier); drop-onto-ghost shows the dropped bar's own trace only
+(deeper consequences need the ghost's document); one ghost per op (one cut per
+op); and whatever the feel iteration finds once Daryn's hands are on the panel.
+See the docs/04 2026-07-12 Session 3.2b amendment and docs/07 v2.3.
+
 **Roadmap position: Phase 3 IN PROGRESS — Session 3.2a interim-B part 1 (the
 interaction data spine) COMPLETE 2026-07-12.** Everything interim B needs that
 is testable WITHOUT a cursor; the gesture/voice surface is 3.2b.

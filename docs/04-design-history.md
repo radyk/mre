@@ -3568,3 +3568,144 @@ and will evolve as the pilot data teaches. Tests: **1022 non-slow
 green** (+23) plus the new slow ladder (forced counterfactual,
 sandbox latency, multi_route unchanged); the cockpit JS suite is
 **12/12** (7 board + 5 legality).
+
+## Amendment — 2026-07-12: Session 3.2b — interim-B part 2, the gesture surface (CU1–CU6)
+
+The interaction layer itself — grab → shade → ghosts → magnet-snap
+drag → drop-or-refuse → tentative → sandbox verdict → delta card →
+change traces → DISCARD. Rendered against the DISTINCT-rate fixture
+(`multi_route_distinct`) as primary, so the priced ghosts are the
+forced-alternative service's (R-T1), not the saturated pool's. Voice
+and Tier-2 accept/publish stay out (later / final). Per-unit below.
+
+**Data spine (backend, all hermetic-testable).** Three additive
+backend changes the surface needs, none touching a record shape.
+(1) `sandbox.py`: `SandboxResult` now carries the **moved-set**
+(R-DP7) — `_moved_set` diffs the pinned re-solve's placements against
+the incumbent, emitting old→new (resource + start) per displaced op,
+the pinned op flagged and listed first (so the delta card leads with
+what the planner touched); warm-starting keeps the set minimal by
+construction, which is what makes tracing it tractable. Plus
+`delta_abs` and an echoed `pin`. (2) API `POST /schedules/{id}/sandbox`
+— the Tier-2 pinned re-solve (R-DP1/R-T1c), synchronous under the
+budget token, returns the classified outcome + moves; scenarios 409,
+unknown 404. (3) `forced_alternatives.py`: each priced member carries
+a compact `alternative_placement` (resource + start + end), extracted
+from the member's own solved document — the Tier-1 ghost bar the
+cockpit renders WITHOUT a full-document fetch (CU2); surfaced through
+the `/alternatives` member label. Fixture builder rebuilt to produce
+BOTH the read-only `multi_route` set (unchanged) AND a
+`fixtures/distinct/` gesture set: schedule/interaction/meta +
+`alternatives.json` (4 priced cross-machine ghosts) + `sandbox.json`
+(canned verdict/flagged/no_verdict by pinned op — one REAL verdict
+from a real pin, the other two honest outcomes synthesized, since the
+classifier itself is unit-tested in Python).
+
+**CU1 — grab → Tier-0 shading (`drag/shade.js`, R-DP2/R-DP6).** On
+grab, every resource row is painted from the grabbed op's
+`computeTier0` result: green legal-start regions, amber occupancy
+(fit-but-displace, still legal), a dim wash where eligible-but-illegal,
+a stronger capability-dim wash on wrong-machine rows. Green =
+provably-not-illegal by the cheap rules, dim = proven illegal — the
+library's epistemics, only painted here. Hover-over-dim shows the
+one-line reason (capability / precedence / calendar-or-window-fit),
+resolved via `isLegalStart`. Standing latency regression: grab→shade
+measured in the harness, asserted **< 100 ms** (the 3.0b bake-off
+bar) — the Tier-0 payload is prefetched (R-T1d), so grab touches no
+network.
+
+**CU2 — ghosts (`drag/ghosts.js`, R-T1a).** The forced-alternative
+(and, when present, pool) placements for the grabbed op, rendered
+UNIFIED and source-distinguished only subtly (border style: solid
+teal = forced/priced road, dashed grey = pool/cheap option), each
+wearing its signed price (`+0.30%`, or "same cost" for a free move)
+or its "not feasible this horizon" verdict. Labels ride an overlay
+that tracks pan/zoom and stays legible at every zoom — the C1 drift
+discipline extended to ghost labels (`ghostDriftProbe`, ≤ 1 px).
+Ghosts are the only pre-release known-feasible targets (R-DP6), so
+they are also the strongest magnet and the near-instant drop path.
+
+**CU3 — drag physics (`drag/magnets.js`, pure; controller wiring,
+R-DP1/R-DP3).** Semantic snap from the anchor set: ghosts strongest,
+then calendar openings, adjacency edges, the predecessor/release
+floor, coarse grid only as the open-space fallback — priority-ordered,
+radii as feel tokens converted px→minutes at the current zoom so a
+token means the same on-screen distance at any zoom. Snap resolves
+DURING the drag (the bar clicks to the anchor before release,
+preserving R-DP1 literalness). Alt disables snapping. Dim zones refuse
+mid-drag: the carry is boundary-pinned at the nearest legal edge (the
+3.0b-proven behavior), the overlay wears `not-allowed`, and the reason
+shows; release over dim returns the bar home animated, never
+teleporting (R-DP7a). The one thing the planner touched is the one
+thing that cannot silently move.
+
+**CU4 — drop → tentative → verdict (`drag/controller.js` +
+`drag/sandboxui.js`, R-DP2/R-T1c).** A legal drop lands a hatched,
+pulsing tentative bar and opens the delta card in one of the three
+honest states, never an unbounded spinner: (1) VERDICT — the delta
+card, headline cost delta + the moved-set as line items; (2) FLAGGED
+— "≈ delta, bound not proven" (SOLVER_NONOPTIMAL surfaced); (3)
+RETURN-HOME — "couldn't verify this placement in time", the bar goes
+home, no line items. A visible countdown paces the budget token while
+`POST /sandbox` runs; the board is never blocked. Drop ONTO a ghost
+renders its card near-instantly from the vouching schedule (no fresh
+solve) — its price is already proven; the dropped bar's own old→new is
+the shown move (deeper consequence traces from the ghost's document
+are a carry-forward). Accept is STUBBED DISABLED with a tooltip naming
+why — the publish workflow isn't built, and a dead-end accept would
+violate R-DP7's no-silent-change law. Discard is the only commit verb
+this session.
+
+**CU5 — change traces (`drag/traces.js`, R-DP7).** The moved-set is
+drawn on the board: a faint ghost-of-old bar at each displaced op's
+former placement + a motion line (with arrowhead) to its new one,
+held until discard. The delta card's line items ARE these traces
+(R-DP7c): each carries the same `data-op`, so clicking a card line
+selects the bar and pulses its trace. Discard restores everything
+(overlays cleared, tentative removed, card hidden, phase idle),
+animated.
+
+**CU6 — the tuning panel (`drag/tuning.js`, DEV-BUILD-ONLY).** Every
+numeric feel token (snap radii, magnet falloff, ghost opacity,
+tentative pulse, trace styling, sandbox budget) exposed as a live
+control that hot-reloads the surface on change (mutates the one
+`feel` object the controller reads, mirrors the CSS-visible subset
+onto `:root`, re-`redraw`s), plus export-to-tokens (console + JSON
+download). Mounted only under `import.meta.env.DEV`, so it never ships
+in the production build the harness serves — it cannot leak feel knobs
+into the planner's cockpit. This is the instrument for the feel
+iteration: Daryn plays it, prompts don't.
+
+**Feel-token architecture.** The numeric interaction-feel knobs live
+in `drag/feel.js` (`DEFAULT_FEEL`, `makeFeel`, `applyFeel`) — the
+tuning panel's single source; the CSS-visible subset (opacities,
+pulse period, trace width) is mirrored onto `:root` custom properties
+so `drag.css` and JS never disagree. Purely visual tokens (shade
+greens/ambers, ghost edges, tentative hatch, reason colors) stay in
+`tokens.css`. Nothing outside these two files hard-codes a color or a
+feel number.
+
+**Tests.** `tests/cockpit/gesture.spec.mjs` — 11 screenshot-asserted
+states (grab-shade, refusal, ghosts, magnet-snap, Alt-disable, ghost-
+drop verdict + traces, /sandbox verdict, flagged, return-home, discard
+restore, card-line navigation) against the distinct fixture, driven
+through the programmatic `window.__cockpit.drag` hooks (the same
+transitions the pointer handlers call). The full cockpit JS suite is
+**23/23** (7 board + 5 legality + 11 gesture). The gesture controller
+stands up on the read-only `multi_route` fixture too (no ghosts →
+green-only) without disturbing the interim-A regressions. Python
+**1026 passed** (+4 sandbox API), plus the slow ladder (the sandbox
+latency regression on the distinct fixture is the drop→verdict
+authority — the canned harness path is near-instant by construction).
+
+**Carry-forwards (named, not lost).** (a) The accept/publish path is
+STUBBED (final session) — accept is disabled by design until the
+publish workflow exists, so no gesture can mutate canonical state yet.
+(b) Voice (a later interim). (c) Pool/forced slice-awareness remains
+pilot-gated (R-T1b), now heavier. (d) Drop-onto-ghost shows the
+dropped bar's own trace only; the ghost's deeper consequence set would
+come from its stored document (a fetch we deliberately avoided for the
+near-instant path). (e) Each forced-alternative gives ONE ghost per op
+(one cut per op); multiple ghosts per op await forbidding each machine
+in turn. (f) Whatever the feel iteration discovers once Daryn's hands
+are on the tuning panel — the tokens are provisional by design.
