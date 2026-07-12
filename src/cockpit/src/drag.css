@@ -1,0 +1,138 @@
+/* Gesture surface styling (3.2b). All colors/opacities/durations reference
+ * tokens.css; the CSS-visible feel subset is live-mirrored onto :root by
+ * drag/feel.js applyFeel() so the tuning panel (CU6) hot-reloads it. The whole
+ * surface is one overlay mounted in vis's center container (like the citation
+ * overlay), so it tracks pan/zoom via the controller's redraw(). */
+
+.drag-overlay { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
+.drag-overlay.active { pointer-events: none; }        /* toggled to auto mid-gesture */
+.drag-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+
+/* --- CU1: Tier-0 shading ------------------------------------------------- */
+.shade-row { position: absolute; }
+.shade-row.eligible { background: var(--shade-dim); }
+.shade-row.dim.capability { background: var(--shade-dim-capability); }
+.shade-seg { position: absolute; }
+.shade-seg.green { background: var(--shade-green); box-shadow: inset 0 0 0 1px var(--shade-green-edge); }
+.shade-seg.amber { background: var(--shade-amber); }
+
+/* --- CU2: ghosts (source-distinguished subtly by border) ---------------- */
+.ghost-bar {
+  position: absolute; border-radius: var(--radius-sm);
+  background: var(--ghost-fill); opacity: var(--ghost-opacity);
+  border: 1px dashed var(--ghost-pool-edge);
+}
+.ghost-bar.src-forced_alternative { border-style: solid; border-color: var(--ghost-forced-edge); }
+.ghost-bar.src-pool { border-style: dashed; border-color: var(--ghost-pool-edge); }
+.ghost-tag {
+  position: absolute; transform: translate(-50%, -115%);
+  font: 700 10px/1.2 ui-monospace, monospace;
+  background: var(--ghost-tag-bg); color: var(--ghost-tag-ink);
+  border-radius: 3px; padding: 1px 5px; white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+.ghost-tag.src-forced_alternative { box-shadow: 0 0 0 1px var(--ghost-forced-edge), 0 1px 4px rgba(0,0,0,.45); }
+.ghost-tag.better { color: var(--ghost-better); }
+.ghost-tag.worse { color: var(--ghost-worse); }
+
+/* --- CU3/CU4: the carried / tentative bar ------------------------------- */
+.carry-bar {
+  position: absolute; border-radius: var(--radius-sm);
+  font: 700 10px/1 ui-monospace, monospace; color: #fff;
+  display: flex; align-items: center; padding: 0 5px; overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+.carry-bar.legal { background: var(--carry-legal); outline: 2px solid #fff2; }
+.carry-bar.dim  { background: var(--carry-dim); opacity: 0.7; }
+.carry-bar.tentative {
+  background: repeating-linear-gradient(45deg,
+    var(--tentative-hatch) 0, var(--tentative-hatch) var(--tentative-hatch-px),
+    transparent var(--tentative-hatch-px), transparent calc(var(--tentative-hatch-px) * 2));
+  border: 1.5px solid var(--tentative-edge);
+  animation: tentative-pulse var(--tentative-pulse-ms) ease-in-out infinite;
+}
+@keyframes tentative-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(176, 108, 240, 0.5); }
+  50%      { box-shadow: 0 0 0 3px rgba(176, 108, 240, 0.15); }
+}
+/* the refusing cursor over a dim spot (R-DP2) */
+.drag-overlay.refusing { cursor: not-allowed; }
+.drag-overlay.returning .carry-bar { transition: left var(--dur) var(--ease), top var(--dur) var(--ease); }
+
+/* the one-line mid-drag reason (R-DP2 hover) */
+.drag-reason {
+  position: absolute; transform: translate(0, -115%);
+  font: 600 10px/1.3 -apple-system, "Segoe UI", sans-serif;
+  background: var(--reason-bg); color: var(--reason-ink);
+  border: 1px solid var(--reason-edge); border-radius: var(--radius-sm);
+  padding: 2px 6px; white-space: nowrap; max-width: 240px; z-index: 9;
+}
+.drag-reason.hidden { display: none; }
+
+/* --- CU5: change traces -------------------------------------------------- */
+.drag-trace-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.trace-line { stroke: var(--trace-line); stroke-width: var(--trace-width-px); opacity: 0.85; }
+.trace-line.pinned { stroke-dasharray: none; }
+.trace-old {
+  position: absolute; border-radius: var(--radius-sm);
+  background: var(--trace-old); opacity: var(--trace-ghost-opacity);
+  border: 1px dashed var(--trace-line);
+}
+.trace-old.pulse, .trace-line.pulse { animation: trace-pulse 0.9s ease-in-out; }
+@keyframes trace-pulse { 0%, 100% { filter: none; } 50% { filter: brightness(1.8); } }
+
+/* --- CU4: the delta card ------------------------------------------------- */
+.delta-card {
+  position: absolute; left: 50%; bottom: var(--sp-4); transform: translateX(-50%);
+  width: min(560px, 92%); z-index: 10;
+  background: var(--panel); border: 1px solid var(--grid);
+  border-left: 3px solid var(--reg-testimony);
+  border-radius: var(--radius); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+  padding: var(--sp-3); font-size: 12px;
+}
+.delta-card.hidden { display: none; }
+.delta-card.feasible_unproven { border-left-color: var(--reg-judgment); }
+.delta-card.return-home { border-left-color: var(--grade-rejected); }
+.dc-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); }
+.dc-outcome { font: 700 14px/1.1 ui-monospace, monospace; }
+.dc-outcome.verdict { color: var(--grade-c1); }
+.dc-outcome.feasible_unproven { color: var(--reg-judgment); }
+.dc-outcome.pending { color: var(--muted); }
+.dc-status { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.dc-countdown { height: 4px; background: var(--grid); border-radius: 2px; margin: var(--sp-2) 0; overflow: hidden; }
+.dc-countdown-fill { height: 100%; background: var(--reg-testimony); transition: width 0.1s linear; }
+.dc-note, .dc-reason { color: var(--muted); font-size: 11px; margin: var(--sp-1) 0; }
+.dc-reason { color: var(--reason-ink); }
+.dc-lines { display: flex; flex-direction: column; gap: 3px; margin: var(--sp-2) 0; }
+.dc-line {
+  display: flex; align-items: center; gap: var(--sp-2); width: 100%; text-align: left;
+  background: var(--panel-2); border: 1px solid var(--grid); border-radius: var(--radius-sm);
+  color: var(--ink); padding: 4px 7px; cursor: pointer; font: inherit;
+}
+.dc-line:hover { border-color: var(--reg-testimony); }
+.dc-line.pinned { border-color: var(--tentative-edge); }
+.dc-wo { font: 700 11px/1 ui-monospace, monospace; color: var(--cite-bar); }
+.dc-move { color: var(--muted); }
+.dc-pin { margin-left: auto; font-size: 9px; color: var(--tentative-edge); text-transform: uppercase; }
+.dc-actions { display: flex; justify-content: flex-end; gap: var(--sp-2); margin-top: var(--sp-2); }
+.dc-actions button { border-radius: var(--radius); padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; border: 0; }
+.dc-discard { background: var(--panel-2); border: 1px solid var(--grid) !important; color: var(--ink); }
+.dc-accept { background: var(--grid); color: var(--muted-2); cursor: not-allowed; }
+
+/* --- CU6: the tuning panel (dev only) ----------------------------------- */
+.tuning-panel {
+  position: absolute; right: var(--sp-3); top: var(--sp-3); z-index: 12;
+  width: 250px; background: rgba(22, 26, 35, 0.96); border: 1px solid var(--grid);
+  border-radius: var(--radius); font-size: 11px; color: var(--ink);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+.tp-head { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2); border-bottom: 1px solid var(--grid); }
+.tp-toggle, .tp-export { background: var(--panel-2); border: 1px solid var(--grid); color: var(--ink); border-radius: var(--radius-sm); padding: 2px 7px; cursor: pointer; font-size: 10px; }
+.tp-title { flex: 1; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+.tp-export { margin-left: auto; }
+.tuning-panel.collapsed .tp-body { display: none; }
+.tp-body { padding: var(--sp-2); max-height: 60vh; overflow-y: auto; }
+.tp-row { display: grid; grid-template-columns: 1fr 90px 34px; align-items: center; gap: 6px; margin-bottom: 4px; }
+.tp-label { color: var(--muted); }
+.tp-row input[type="range"] { width: 100%; }
+.tp-row output { font: 600 10px/1 ui-monospace, monospace; color: var(--cite-bar); text-align: right; }

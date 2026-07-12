@@ -1,5 +1,6 @@
 /* Cockpit layout + component styling. All colors reference tokens.css. */
 @import "./tokens.css";
+@import "./drag.css";
 
 * { box-sizing: border-box; }
 html, body {

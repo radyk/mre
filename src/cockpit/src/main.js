@@ -66,9 +66,14 @@ async function boot() {
     };
 
     // Fetch the Tier-0 interaction payload in the BACKGROUND, after first
-    // paint (R-T1d) — the board is already interactive read-only; drag
-    // affordances enable when it arrives. Never blocks the render or the ask.
-    wireInteraction(id, board, window.__cockpit);
+    // paint (R-T1d) — the board is already interactive read-only; the 3.2b
+    // gesture surface stands up when it arrives. Never blocks render or ask.
+    // The dev build (vite dev / non-production) also mounts the feel tuning
+    // panel (CU6). import.meta.env.DEV is true under `vite` and false in the
+    // production `vite build` the harness serves — so tuning never ships.
+    wireInteraction(id, board, window.__cockpit, {
+      doc, devMode: !!import.meta.env?.DEV,
+    });
 
     if (CONFIG.autoAsk) panel.run(CONFIG.autoAsk);
   } catch (e) {

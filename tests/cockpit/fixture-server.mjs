@@ -15,7 +15,20 @@ const DIST = resolve(__dirname, "..", "..", "src", "cockpit", "dist");
 const FIX = resolve(__dirname, "fixtures");
 const PORT = parseInt(process.env.PORT || "5199", 10);
 
-const load = async (name) => JSON.parse(await readFile(join(FIX, name), "utf-8"));
+// Two hermetic fixture sets, keyed by schedule id → its directory:
+//   * the SATURATED multi_route (read-only interim-A regressions)
+//   * the DISTINCT-rate multi_route (the 3.2b gesture surface — real ghosts +
+//     canned sandbox verdicts). See tools/build_cockpit_fixture.py.
+const DIRS = {
+  "sched-multi-route-fixture": FIX,
+  "sched-multi-route-distinct": resolve(FIX, "distinct"),
+};
+const dirFor = (id) => DIRS[id] || FIX;
+const load = async (name, dir = FIX) => JSON.parse(await readFile(join(dir, name), "utf-8"));
+const loadMaybe = async (name, dir) => {
+  const full = join(dir, name);
+  return existsSync(full) ? JSON.parse(await readFile(full, "utf-8")) : null;
+};
 const MIME = {
   ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
   ".json": "application/json", ".svg": "image/svg+xml", ".map": "application/json",
@@ -40,30 +53,62 @@ const server = createServer(async (req, res) => {
       return res.end(envelope({ status: "ok", api_version: "1" }));
     }
     if (p === "/schedules" && req.method === "GET") {
-      const meta = await load("meta.json");
+      // both fixtures listed; the harness always selects via ?schedule=…
+      const metas = [];
+      for (const dir of new Set(Object.values(DIRS))) {
+        const m = await loadMaybe("meta.json", dir);
+        if (m) metas.push(m);
+      }
       res.writeHead(200, { "content-type": "application/json" });
-      return res.end(envelope({ schedules: [meta] }));
+      return res.end(envelope({ schedules: metas }));
     }
     const mSched = p.match(/^\/schedules\/([^/]+)$/);
     if (mSched && req.method === "GET") {
       res.writeHead(200, { "content-type": "application/json" });
-      return res.end(envelope(await load("schedule.json")));
+      return res.end(envelope(await load("schedule.json", dirFor(mSched[1]))));
     }
     const mMeta = p.match(/^\/schedules\/([^/]+)\/meta$/);
     if (mMeta && req.method === "GET") {
       res.writeHead(200, { "content-type": "application/json" });
-      return res.end(envelope(await load("meta.json")));
+      return res.end(envelope(await load("meta.json", dirFor(mMeta[1]))));
     }
     const mInteract = p.match(/^\/schedules\/([^/]+)\/interaction$/);
     if (mInteract && req.method === "GET") {
       // the Tier-0 payload, served separately (contract 1.3, R-T1d)
       res.writeHead(200, { "content-type": "application/json" });
-      return res.end(envelope(await load("interaction.json")));
+      return res.end(envelope(await load("interaction.json", dirFor(mInteract[1]))));
+    }
+    // Tier-1 ghosts (R-T1a) — the /alternatives payload. 404 when the fixture
+    // built none (the read-only multi_route set): the drag surface stays green.
+    const mAlt = p.match(/^\/schedules\/([^/]+)\/alternatives$/);
+    if (mAlt && req.method === "GET") {
+      const alt = await loadMaybe("alternatives.json", dirFor(mAlt[1]));
+      if (!alt) {
+        res.writeHead(404, { "content-type": "application/json" });
+        return res.end(errEnv(404, "no forced alternatives built"));
+      }
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(envelope(alt));
+    }
+    // Tier-2 sandbox re-solve (R-DP1/R-T1c) — canned by pinned op. Returns the
+    // outcome the fixture recorded for this op (verdict / flagged / no_verdict),
+    // else the default verdict.
+    const mSandbox = p.match(/^\/schedules\/([^/]+)\/sandbox$/);
+    if (mSandbox && req.method === "POST") {
+      const sb = await loadMaybe("sandbox.json", dirFor(mSandbox[1]));
+      if (!sb) {
+        res.writeHead(404, { "content-type": "application/json" });
+        return res.end(errEnv(404, "no canned sandbox for this fixture"));
+      }
+      const { pin_op_id } = JSON.parse((await body(req)) || "{}");
+      const result = (sb.by_op && sb.by_op[pin_op_id]) || sb.default;
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(envelope(result));
     }
     const mAsk = p.match(/^\/schedules\/([^/]+)\/ask$/);
     if (mAsk && req.method === "POST") {
       const { question } = JSON.parse((await body(req)) || "{}");
-      const asks = await load("asks.json");
+      const asks = await load("asks.json", dirFor(mAsk[1]));
       const hit = asks[question];
       if (!hit) {
         res.writeHead(404, { "content-type": "application/json" });

@@ -12,7 +12,10 @@
 // load of the same id serves the cached payload immediately AND revalidates in
 // the background, so a schedule-version change is picked up without ever
 // blocking on the network.
-import { getScheduleInteraction } from "./api.js";
+import { getScheduleInteraction, getScheduleAlternatives, postSandbox } from "./api.js";
+import { createGeometry } from "./drag/geometry.js";
+import { createGestureController } from "./drag/controller.js";
+import { mountTuningPanel } from "./drag/tuning.js";
 
 const _cache = new Map();   // scheduleId -> interaction envelope data
 
@@ -32,20 +35,49 @@ export function loadInteraction(id, onReady) {
   return revalidate;
 }
 
-// Bind the payload lifecycle to the board + the harness/demo hook. The board
-// gets the payload (the Tier-0 legality library will consume it in 3.2b) and a
-// stub drag-enabled flag; window.__cockpit exposes both for the tests.
-export function wireInteraction(id, board, hook) {
+// Bind the payload lifecycle to the board + the harness/demo hook. When the
+// Tier-0 payload arrives (after first paint, R-T1d), stand up the 3.2b gesture
+// controller against it — grab/shade/ghosts/magnets/drop/verdict/traces — and
+// fetch the Tier-1 ghost payload (/alternatives) in the background to feed it.
+// The dev build additionally mounts the feel tuning panel (CU6). Read-only
+// until this resolves; drag affordances enable on arrival.
+export function wireInteraction(id, board, hook, opts = {}) {
+  const { doc, devMode = false } = opts;
   hook.interactionReady = false;
-  hook.dragEnabled = false;         // stub: the gesture surface is 3.2b
+  hook.dragEnabled = false;
   hook.interaction = null;
+  hook.drag = null;
+
+  const api = { postSandbox };
+
   const onReady = (payload) => {
-    hook.interaction = payload.interaction || null;
+    const interaction = payload.interaction || null;
+    hook.interaction = interaction;
     hook.interactionReady = true;
-    hook.dragEnabled = true;
-    if (board?.setInteraction) board.setInteraction(payload.interaction || null);
-    // a DOM signal the screenshot harness (and any external probe) can await
+    if (board?.setInteraction) board.setInteraction(interaction);
     board?.host?.setAttribute?.("data-drag-enabled", "true");
+
+    // Build the gesture controller once (idempotent: rebuild on a genuine
+    // payload change under stale-while-revalidate is fine — a new solve = a new
+    // id = a fresh boot, so in practice this runs once per cockpit load).
+    if (!interaction || !doc || hook.drag) { hook.dragEnabled = !!hook.drag; return; }
+    try {
+      const geometry = createGeometry(board.timeline);
+      const controller = createGestureController(board, geometry, {
+        doc, interaction, api, scheduleId: id,
+      });
+      hook.drag = controller;
+      hook.dragEnabled = true;
+      if (devMode) mountTuningPanel(board.host.parentElement || board.host, controller);
+      // ghosts arrive on their own endpoint, in the background (R-T1a) — a 404
+      // (none built) leaves the surface Tier-0-green-only.
+      getScheduleAlternatives(id).then((alt) => {
+        if (alt) controller.setAlternatives(alt, null);
+        hook.alternativesReady = true;
+      });
+    } catch (e) {
+      hook.dragError = String(e?.message || e);
+    }
   };
   return loadInteraction(id, onReady);
 }

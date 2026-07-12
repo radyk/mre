@@ -57,6 +57,25 @@ export function getScheduleInteraction(id) {
   return envelope(`/schedules/${id}/interaction`).catch(() => null);
 }
 
+export function getScheduleAlternatives(id) {
+  // The Tier-1 ghost payload (forced alternatives + pool, R-T1a). Fetched in
+  // the background alongside the interaction payload; a 404 (none built) is not
+  // an error — the drag surface renders Tier-0 shading with no ghosts.
+  return envelope(`/schedules/${id}/alternatives`).catch(() => null);
+}
+
+export function postSandbox(id, pin) {
+  // The Tier-2 pinned re-solve (R-DP1/R-T1c) behind a dropped bar: pin one op at
+  // (machine + time as displayed), re-solve the surroundings under the budget,
+  // return the classified outcome + the moved-set (R-DP7). Synchronous up to the
+  // budget — the caller shows a countdown and never blocks its own board.
+  return envelope(`/schedules/${id}/sandbox`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(pin),
+  });
+}
+
 export function ask(id, question) {
   return envelope(`/schedules/${id}/ask`, {
     method: "POST",

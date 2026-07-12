@@ -65,4 +65,47 @@
   --grade-c0: #8b93a7;
   --grade-conditional: #e0a63c;
   --grade-rejected: #e0564f;
+
+  /* =======================================================================
+   * Gesture surface (3.2b) — the drag interaction layer. Visual tokens live
+   * here; the NUMERIC feel knobs (snap radii, falloff, pulse period, budget)
+   * live in drag/feel.js and the tuning panel (CU6) mirrors its CSS-visible
+   * subset onto the custom properties below at runtime.
+   * ==================================================================== */
+  /* Tier-0 shading (CU1, R-DP2/R-DP6): green legal / amber displace / dim */
+  --shade-green: rgba(47, 191, 113, 0.22);
+  --shade-green-edge: rgba(47, 191, 113, 0.5);
+  --shade-amber: rgba(224, 166, 60, 0.20);
+  --shade-dim: rgba(8, 10, 15, 0.42);            /* eligible-but-illegal wash */
+  --shade-dim-capability: rgba(8, 10, 15, 0.62); /* wrong machine (stronger) */
+
+  /* Tier-1 ghosts (CU2): source-distinguished only subtly (border style) */
+  --ghost-fill: rgba(139, 147, 167, 0.22);
+  --ghost-forced-edge: #7bd4c9;      /* forced-alternative (the priced road) */
+  --ghost-pool-edge: #8b93a7;        /* pool (the cheap near-optimal option) */
+  --ghost-tag-bg: #14202a;
+  --ghost-tag-ink: #cfe0ff;
+  --ghost-better: #2fbf71;           /* a cheaper alternative */
+  --ghost-worse: #e0a63c;            /* a pricier alternative */
+  --ghost-opacity: 0.42;             /* (feel-mirrored) */
+  --ghost-infeasible-opacity: 0.3;   /* (feel-mirrored) */
+
+  /* the carried / tentative bar (CU3/CU4, R-DP7a) */
+  --carry-legal: #3b6fd6;
+  --carry-dim: #656c80;
+  --tentative-edge: #b06cf0;         /* distinct visual state pending verdict */
+  --tentative-hatch: rgba(176, 108, 240, 0.35);
+  --tentative-pulse-ms: 1100ms;      /* (feel-mirrored) */
+  --tentative-hatch-px: 6px;         /* (feel-mirrored) */
+
+  /* change traces (CU5, R-DP7) */
+  --trace-line: #b06cf0;
+  --trace-old: rgba(139, 147, 167, 0.5);
+  --trace-width-px: 2px;             /* (feel-mirrored) */
+  --trace-ghost-opacity: 0.28;       /* (feel-mirrored) */
+
+  /* the mid-drag refusal reason (R-DP2) */
+  --reason-bg: #2a0c0a;
+  --reason-ink: #ffd9d5;
+  --reason-edge: var(--bar-late);
 }
