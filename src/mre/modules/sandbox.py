@@ -23,8 +23,8 @@ budget — so a heavy fixture fails a test before it fails a demo.
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -55,7 +55,19 @@ class SandboxResult:
     feasible: bool               # a placement exists with the pin held
     objective: Optional[float] = None
     delta_pct: Optional[float] = None      # vs the incumbent objective
+    delta_abs: Optional[float] = None      # objective_after - objective_before
     message: str = ""
+    # The moved-set (R-DP7): every op the pinned re-solve displaced relative to
+    # the incumbent, old → new (resource + start). The pinned op itself is
+    # flagged (``pinned``) and always present when feasible. Warm-starting keeps
+    # this set minimal by construction — the property that makes tracing it
+    # tractable (R-DP7 implementation note). The cockpit maps operation_ref →
+    # bar to draw the ghost-of-old + motion trace and the delta-card line items.
+    moves: list[dict] = field(default_factory=list)
+    pin: dict = field(default_factory=dict)  # {operation_ref, resource_id, start}
+
+    def summary(self) -> dict:
+        return asdict(self)
 
 
 def classify_sandbox_outcome(status: str, wall_time_s: float,
@@ -194,10 +206,21 @@ def sandbox_pin_resolve(
 
     outcome = classify_sandbox_outcome(solve_result.status, wall, budget_s)
     feasible = solve_result.status in ("OPTIMAL", "FEASIBLE")
-    delta_pct = None
-    if feasible and incumbent_objective and incumbent_objective > 0 and solve_result.objective:
-        delta_pct = round((solve_result.objective - incumbent_objective)
-                          / incumbent_objective * 100.0, 4)
+    delta_pct = delta_abs = None
+    if feasible and incumbent_objective and solve_result.objective is not None:
+        delta_abs = round(solve_result.objective - incumbent_objective, 4)
+        if incumbent_objective > 0:
+            delta_pct = round(delta_abs / incumbent_objective * 100.0, 4)
+
+    # The moved-set (R-DP7): old → new placement for every displaced op. Read
+    # the new placement from the solve values, the old from the incumbent; a
+    # move is a resource change or a start shift ≥ 1 min (the differ tolerance).
+    moves: list[dict] = []
+    if feasible:
+        moves = _moved_set(
+            solve_result.solve_values, incumbent_placement, horizon_start,
+            pin_op_id,
+        )
     message = {
         SANDBOX_VERDICT: ("optimal delta proven" if feasible
                           else "pin infeasible this horizon"),
@@ -209,8 +232,52 @@ def sandbox_pin_resolve(
         within_budget=wall <= budget_s + _BUDGET_STOP_MARGIN_S,
         wall_time_s=wall, budget_s=budget_s,
         feasible=feasible, objective=solve_result.objective,
-        delta_pct=delta_pct, message=message,
+        delta_pct=delta_pct, delta_abs=delta_abs, message=message, moves=moves,
+        pin={"operation_ref": pin_op_id, "resource_id": pin_resource_id,
+             "start": pin_start_dt.isoformat()},
     )
+
+
+def _moved_set(
+    solve_values,
+    incumbent_placement: dict[str, tuple],
+    horizon_start: datetime,
+    pin_op_id: str,
+    tolerance_min: int = 1,
+) -> list[dict]:
+    """Compare the re-solve's placements to the incumbent, op by op, and emit
+    the displaced set old → new. The pinned op is always included (flagged) so
+    the tentative bar is part of the traced change even when only its neighbours
+    truly moved. Sorted: pinned first, then largest start shift, so the delta
+    card's line items lead with the biggest displacements (R-DP7c)."""
+    def _new_placement(op_id: str):
+        rid = solve_values.op_resource.get(op_id)
+        smin = solve_values.op_start_minutes.get(op_id)
+        if rid is None or smin is None:
+            return None
+        return rid, horizon_start + timedelta(minutes=smin)
+
+    moves: list[dict] = []
+    for op_id, (old_rid, old_start) in incumbent_placement.items():
+        new = _new_placement(op_id)
+        if new is None:
+            continue
+        new_rid, new_start = new
+        start_delta = round((new_start - old_start).total_seconds() / 60.0)
+        changed = (new_rid != old_rid) or (abs(start_delta) >= tolerance_min)
+        is_pin = op_id == pin_op_id
+        if not changed and not is_pin:
+            continue
+        moves.append({
+            "operation_ref": op_id,
+            "from_resource": old_rid, "to_resource": new_rid,
+            "from_start": old_start.isoformat(), "to_start": new_start.isoformat(),
+            "start_delta_min": start_delta,
+            "resource_changed": new_rid != old_rid,
+            "pinned": is_pin,
+        })
+    moves.sort(key=lambda m: (not m["pinned"], -abs(m["start_delta_min"])))
+    return moves
 
 
 def _parse_dt(raw) -> Optional[datetime]:

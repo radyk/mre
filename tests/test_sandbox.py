@@ -108,6 +108,29 @@ def test_single_pin_resolve_returns_a_verdict_within_budget(solved_distinct):
 
 
 @pytest.mark.slow
+def test_moved_set_carries_the_pin_and_reports_old_and_new(solved_distinct):
+    """R-DP7: a feasible re-solve returns the moved-set old → new. Pinning at
+    the incumbent placement is the zero-delta floor, so the ONLY guaranteed
+    member is the pinned op itself (its neighbours need not move); every move
+    carries both endpoints and a start-shift, and the pinned op is flagged and
+    listed first (so the delta card leads with what the planner touched)."""
+    result = sandbox_pin_resolve(
+        out_dir=solved_distinct, snapshot_id=SNAP, budget_s=SANDBOX_BUDGET_S,
+        deterministic=True,
+    )
+    assert result.feasible is True
+    assert result.moves, "a feasible re-solve reports its moved-set"
+    assert result.moves[0]["pinned"] is True, "the pinned op leads the card"
+    assert sum(m["pinned"] for m in result.moves) == 1
+    for m in result.moves:
+        assert m["from_resource"] and m["to_resource"]
+        assert m["from_start"] and m["to_start"]
+        assert isinstance(m["start_delta_min"], int)
+    # the pin is echoed back for the tentative-bar identity
+    assert result.pin["operation_ref"] == result.moves[0]["operation_ref"]
+
+
+@pytest.mark.slow
 def test_pin_at_a_specific_placement_is_honored(solved_distinct):
     """R-DP1 literalness: a pin names the op, machine, and start; the re-solve
     holds exactly that and returns a classified, within-budget outcome."""

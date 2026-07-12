@@ -64,6 +64,11 @@ class ForcedAlternative:
     alternative_resource_ref: Optional[str] = None
     wall_time_s: float = 0.0
     document_path: Optional[str] = None
+    # Compact placement of the MOVED op on its alternative machine — the Tier-1
+    # ghost the cockpit renders (a bar at resource+start, wearing the price).
+    # Extracted from this member's own solved document so the cockpit needs no
+    # full-document fetch to draw the ghost (R-T1a, CU2). None for infeasible.
+    alternative_placement: Optional[dict] = None
 
 
 @dataclass
@@ -321,6 +326,7 @@ def build_forced_alternatives(
             op_eligible=var_map.op_eligible, snapshot_writer=None,
             overtime_windows=var_map.overtime_windows,
         )
+        member.alternative_placement = _placement_of(extract.assignments, target)
         document = assemble_schedule_document(
             snapshot_id=snapshot_id, run_id=run_id,
             schedule=extract.schedule, assignments=extract.assignments,
@@ -357,6 +363,27 @@ def build_forced_alternatives(
                             encoding="utf-8")
     result.summary_path = str(summary_path)
     return result
+
+
+def _placement_of(assignments: list[dict], op_id: str) -> Optional[dict]:
+    """The compact ghost placement of one op in an extracted schedule:
+    {resource_id, start, end, work_orders}. Reads the extractor dict shape
+    (resource_assignments + phase_windows.run). None if the op is absent."""
+    for a in assignments:
+        if a.get("operation_ref") != op_id:
+            continue
+        ras = a.get("resource_assignments") or []
+        rid = a.get("resource_id") or (ras[0].get("resource_ref") if ras else None)
+        windows = (a.get("phase_windows") or {}).get("run") or a.get("run_windows") or []
+        if not (rid and windows):
+            return None
+        return {
+            "resource_id": rid,
+            "start": windows[0]["start"],
+            "end": windows[-1]["end"],
+            "work_orders": a.get("work_orders") or [],
+        }
+    return None
 
 
 def _parse_ref_date(raw: Optional[str]) -> Optional[datetime]:

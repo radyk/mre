@@ -1,0 +1,12 @@
+{
+  "id": "sched-multi-route-distinct",
+  "run_id": "run-mrd-fixture",
+  "submission_id": "sched-multi-route-distinct",
+  "snapshot_id": "snap-mrd",
+  "status": "proposed",
+  "contract_version": "1.3",
+  "is_scenario": 0,
+  "parent_schedule_id": null,
+  "grade": "ACCEPTED",
+  "costing_grade": "C1"
+}

@@ -528,3 +528,48 @@ class TestForcedAlternatives:
         scen_id = scenario_run["result"]["schedule_id"]
         _error(api.client.post(
             f"/schedules/{scen_id}/alternatives", json={}), 409)
+
+
+# ---------------------------------------------------------------------------
+# Sandbox (Tier-2 pinned re-solve, docs/07 Phase 3, R-DP1/R-T1c). The three-
+# outcome classifier is unit-tested in test_sandbox.py; here we assert the API
+# contract — a default pin (incumbent op at its own placement) returns a
+# classified, within-budget outcome with the moved-set (R-DP7), and scenarios
+# are refused. clean_small proves fast, so this is not a slow test.
+# ---------------------------------------------------------------------------
+
+class TestSandbox:
+    def test_default_pin_returns_classified_outcome_and_moved_set(self, api):
+        data = _data(api.client.post(
+            f"/schedules/{api.schedule_id}/sandbox",
+            json={"deterministic": True, "budget_s": 15},
+        ))
+        assert data["outcome"] in (
+            "verdict", "feasible_unproven", "no_verdict")
+        assert data["within_budget"] is True
+        assert data["feasible"] is True
+        # the moved-set carries the pinned op, listed first (R-DP7)
+        assert data["moves"], "a feasible re-solve reports its moved-set"
+        assert data["moves"][0]["pinned"] is True
+        assert data["pin"]["operation_ref"] == data["moves"][0]["operation_ref"]
+
+    def test_explicit_pin_is_honored(self, api):
+        doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
+        a = doc["assignments"][0]
+        data = _data(api.client.post(
+            f"/schedules/{api.schedule_id}/sandbox",
+            json={"pin_op_id": a["operation_ref"],
+                  "pin_resource_id": a["resource_id"],
+                  "pin_start_iso": a["chunks"][0]["start"],
+                  "deterministic": True, "budget_s": 15},
+        ))
+        assert data["pin"]["operation_ref"] == a["operation_ref"]
+        assert data["pin"]["resource_id"] == a["resource_id"]
+        assert data["within_budget"] is True
+
+    def test_sandbox_refused_for_scenario_schedules(self, api, scenario_run):
+        scen_id = scenario_run["result"]["schedule_id"]
+        _error(api.client.post(f"/schedules/{scen_id}/sandbox", json={}), 409)
+
+    def test_sandbox_404_for_unknown_schedule(self, api):
+        _error(api.client.post("/schedules/nope/sandbox", json={}), 404)

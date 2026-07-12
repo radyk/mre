@@ -1,0 +1,109 @@
+{
+  "id": "alt-fixture",
+  "schedule_id": "sched-multi-route-distinct",
+  "kind": "alternatives",
+  "status": "ready",
+  "created_at": null,
+  "finished_at": null,
+  "error": null,
+  "params": {
+    "budget": 4,
+    "member_time_limit_s": 8.0,
+    "seed": 1234,
+    "incumbent_objective": 240030.0,
+    "selection": "explicit",
+    "n_targets": 4,
+    "mechanism": "per target op: warm-start hints from incumbent + a 'not on the incumbent machine' cut (add_forced_alternative_cut), short time limit; no objective bound (the true best price of the road not taken, even when worse than the incumbent)"
+  },
+  "summary": {},
+  "members": [
+    {
+      "pool_id": "alt-fixture",
+      "member_index": 0,
+      "objective": 240753.0,
+      "objective_delta_pct": 0.3012,
+      "hamming_from_incumbent": null,
+      "document_path": null,
+      "source": "forced_alternative",
+      "verdict": "priced",
+      "label": {
+        "target_operation_ref": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+        "forbidden_resource_ref": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+        "alternative_resource_ref": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+        "status": "OPTIMAL",
+        "placement": {
+          "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+          "start": "2026-01-05T07:00:00+00:00",
+          "end": "2026-01-05T11:01:00+00:00",
+          "work_orders": []
+        }
+      }
+    },
+    {
+      "pool_id": "alt-fixture",
+      "member_index": 1,
+      "objective": 240753.0,
+      "objective_delta_pct": 0.3012,
+      "hamming_from_incumbent": null,
+      "document_path": null,
+      "source": "forced_alternative",
+      "verdict": "priced",
+      "label": {
+        "target_operation_ref": "c761c094-24d0-5c7e-9926-a6ecb06893c4",
+        "forbidden_resource_ref": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+        "alternative_resource_ref": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+        "status": "OPTIMAL",
+        "placement": {
+          "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+          "start": "2026-01-07T07:00:00+00:00",
+          "end": "2026-01-07T11:01:00+00:00",
+          "work_orders": []
+        }
+      }
+    },
+    {
+      "pool_id": "alt-fixture",
+      "member_index": 2,
+      "objective": 240753.0,
+      "objective_delta_pct": 0.3012,
+      "hamming_from_incumbent": null,
+      "document_path": null,
+      "source": "forced_alternative",
+      "verdict": "priced",
+      "label": {
+        "target_operation_ref": "6b4a17a6-0b36-55e0-ae00-5b4ee029dcb3",
+        "forbidden_resource_ref": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+        "alternative_resource_ref": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+        "status": "OPTIMAL",
+        "placement": {
+          "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+          "start": "2026-01-09T07:00:00+00:00",
+          "end": "2026-01-09T11:01:00+00:00",
+          "work_orders": []
+        }
+      }
+    },
+    {
+      "pool_id": "alt-fixture",
+      "member_index": 3,
+      "objective": 240753.0,
+      "objective_delta_pct": 0.3012,
+      "hamming_from_incumbent": null,
+      "document_path": null,
+      "source": "forced_alternative",
+      "verdict": "priced",
+      "label": {
+        "target_operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
+        "forbidden_resource_ref": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+        "alternative_resource_ref": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+        "status": "OPTIMAL",
+        "placement": {
+          "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+          "start": "2026-01-05T07:00:00+00:00",
+          "end": "2026-01-05T11:01:00+00:00",
+          "work_orders": []
+        }
+      }
+    }
+  ]
+}

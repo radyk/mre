@@ -73,6 +73,18 @@ class AlternativesRequest(BaseModel):
     sync: bool = False
 
 
+class SandboxRequest(BaseModel):
+    """Tier-2 sandbox re-solve for a dropped bar (R-DP1/R-T1c). Pin one op at
+    (machine + time exactly as displayed) and re-solve its surroundings under a
+    hard, visible budget. Omitting the pin fields pins the first incumbent op at
+    its own placement — the latency-floor case the CI regression uses."""
+    pin_op_id: Optional[str] = None
+    pin_resource_id: Optional[str] = None
+    pin_start_iso: Optional[str] = None
+    budget_s: Optional[float] = None    # override the SANDBOX_BUDGET_S token
+    deterministic: bool = True
+
+
 class AskRequest(BaseModel):
     question: str
     llm: bool = False               # honored only if ANTHROPIC_API_KEY is set
@@ -379,6 +391,32 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
         return _ok(document)
 
     # ------------------------------------------------------------------
+    # Sandbox (Tier-2 pinned re-solve, docs/07 Phase 3, R-DP1/R-T1c) — the
+    # authority behind a dropped bar. Pin one op (machine + time as displayed)
+    # and re-solve its surroundings under a hard, visible budget; return the
+    # classified outcome + the moved-set (R-DP7 traces). Synchronous: the call
+    # holds for at most the budget (the cockpit shows a countdown and never
+    # blocks its own board during the wait).
+    # ------------------------------------------------------------------
+
+    @app.post("/schedules/{schedule_id}/sandbox")
+    def sandbox(schedule_id: str, req: SandboxRequest):
+        from mre.modules.sandbox import SANDBOX_BUDGET_S, sandbox_pin_resolve
+        row = _live_schedule(registry, schedule_id)
+        if row["is_scenario"]:
+            raise HTTPException(409, "sandbox re-solves run against a base "
+                                     "schedule; a what-if scenario is itself one")
+        run = registry.get_run(row["run_id"])
+        result = sandbox_pin_resolve(
+            out_dir=Path(run["out_dir"]), snapshot_id=row["snapshot_id"],
+            pin_op_id=req.pin_op_id, pin_resource_id=req.pin_resource_id,
+            pin_start_iso=req.pin_start_iso,
+            budget_s=req.budget_s if req.budget_s is not None else SANDBOX_BUDGET_S,
+            deterministic=req.deterministic,
+        )
+        return _ok(result.summary())
+
+    # ------------------------------------------------------------------
     # Ask (M10 explainer)
     # ------------------------------------------------------------------
 
@@ -611,6 +649,8 @@ def _execute_forced_alternatives(registry: Registry, pool_id: str,
                      "forbidden_resource_ref": m.forbidden_resource_ref,
                      "alternative_resource_ref": m.alternative_resource_ref,
                      "status": m.status,
+                     # compact ghost placement — the bar the cockpit draws (CU2)
+                     "placement": m.alternative_placement,
                  }}
                 for m in result.members
             ],

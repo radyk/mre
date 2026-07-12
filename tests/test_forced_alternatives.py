@@ -143,6 +143,11 @@ def test_forced_service_prices_cross_machine_alternatives(distinct, forced):
     for m in priced:
         assert m.alternative_resource_ref != m.forbidden_resource_ref
         assert m.objective_delta_pct is not None
+        # the compact ghost placement the cockpit renders (CU2): the moved op
+        # sits on its alternative machine, with a start/end bar.
+        p = m.alternative_placement
+        assert p and p["resource_id"] == m.alternative_resource_ref
+        assert p["start"] and p["end"]
         # moving an op off its (cheapest) incumbent machine costs MORE
         assert m.objective_delta_pct > 0, (
             f"forced move off {m.forbidden_resource_ref} priced at "
