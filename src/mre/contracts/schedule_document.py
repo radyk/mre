@@ -38,6 +38,19 @@ Version history:
   ``assignments[]`` (resource_id + chunks) and is deliberately NOT duplicated.
   Present only when the assembler is given the precedence edges (the API
   path); None on pool members and pre-1.2 documents. 1.1 consumers ignore it.
+- 1.3 (2026-07-12, session 3.2a): split-endpoint delivery (docs/04 R-T1d).
+  The interaction block is no longer delivered INLINE on ``GET /schedules/{id}``
+  — it moves to the sibling ``GET /schedules/{id}/interaction`` so the main
+  render document returns to its ~1.1 size (the +35.7% Tier-0 payload measured
+  in 3.1 CU2 no longer sits inside first-paint). The document SCHEMA is
+  unchanged (``interaction`` remains an optional field, always None on the main
+  endpoint; the assembler still builds it in-memory for the split endpoint to
+  persist and serve). Ruled a MINOR bump, not major: the field was optional
+  from 1.2 and legitimately None for pool members / pre-1.2 docs, so a 1.2
+  consumer already handles None; the sole production consumer is the cockpit,
+  updated in the same session. Also additive: ``OperationInteraction.resumable``
+  — a Tier-0 window-fit input (a resumable op may span calendar closures), a
+  CU2-discovered payload gap extended in the same bump.
 """
 from __future__ import annotations
 
@@ -48,7 +61,7 @@ from pydantic import BaseModel, model_validator
 
 from mre.contracts.vocabularies import ScheduleStatus
 
-CONTRACT_VERSION = "1.2"
+CONTRACT_VERSION = "1.3"
 
 # Exact decomposition tolerance: cost components are currency values
 # accumulated in float; "exactly" means to the cent, matching the
@@ -170,13 +183,25 @@ class PoolBlock(BaseModel):
     """Marks a solution-pool member (contract 1.1). Pool members are diverse
     near-optimal alternatives to a base schedule — never the schedule of
     record, never listed among real schedules (same isolation rule as
-    scenarios)."""
+    scenarios).
+
+    Contract 1.3 (session 3.2a, R-T1a): ``source`` distinguishes the two
+    Tier-1 ghost sources — ``pool`` (near-optimal placements, the cheap
+    options) and ``forced_alternative`` (a targeted re-solve carrying a
+    "not on the incumbent machine" cut, giving the TRUE best price of a road
+    not taken). Forced-alternative members additionally name the op they moved,
+    the machine forbidden, and the machine it landed on — the priced
+    cross-machine ghost's identity."""
     is_pool_member: bool = True
     pool_id: str
     base_schedule_id: str
     member_index: int
     objective: Optional[float] = None          # solver objective (scaled units)
     objective_delta_pct: Optional[float] = None  # vs the incumbent's objective
+    source: Literal["pool", "forced_alternative"] = "pool"
+    target_operation_ref: Optional[str] = None   # forced: the op moved off its machine
+    forbidden_resource_ref: Optional[str] = None  # forced: the incumbent machine cut
+    alternative_resource_ref: Optional[str] = None  # forced: where it landed
 
 
 class OperationInteraction(BaseModel):
@@ -192,6 +217,9 @@ class OperationInteraction(BaseModel):
     working_min: int = 0                        # run working minutes (sum of chunks)
     setup_min: int = 0                          # setup minutes prefixed to the run
     earliest_start: Optional[datetime] = None  # release floor (demand.release)
+    resumable: bool = False                     # splittable: may span calendar
+    #                                             closures (Tier-0 window-fit
+    #                                             input, contract 1.3 / CU2)
 
 
 class PrecedenceEdgeBlock(BaseModel):

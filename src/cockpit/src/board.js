@@ -233,10 +233,18 @@ export function createBoard(hostEl, doc) {
     return { bars: [...barIds], lanes: (citedRefs.resources || []).filter((r) => resById.has(r)) };
   }
 
+  // Tier-0 interaction payload (contract 1.3, delivered by interaction.js after
+  // first paint). Stored here as the seam the Tier-0 legality library (CU2) and
+  // the 3.2b drag surface consume; the read-only board itself does not use it.
+  let interactionPayload = null;
+
   return {
     timeline, items, groups,
     win,
+    host: hostEl,
     resourceName: nameOf,
+    setInteraction(payload) { interactionPayload = payload; },
+    getInteraction() { return interactionPayload; },
     onSelect(cb) { selectCb = cb; },
     select(operationRef) { const id = opToItem.get(operationRef); if (id) { timeline.setSelection([id]); setSelected(id); } },
     highlight,

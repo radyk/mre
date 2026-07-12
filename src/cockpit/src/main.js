@@ -5,6 +5,7 @@ import "./cockpit.css";
 import { CONFIG, resolveScheduleId, getSchedule, getScheduleMeta } from "./api.js";
 import { createBoard } from "./board.js";
 import { createAskPanel } from "./askpanel.js";
+import { wireInteraction } from "./interaction.js";
 
 const GRADE_CLASS = {
   ACCEPTED: "g-c1", CONDITIONAL: "g-conditional", REJECTED: "g-rejected",
@@ -63,6 +64,12 @@ async function boot() {
       overlayProbe: () => board.overlayProbe(),
       doc, meta,
     };
+
+    // Fetch the Tier-0 interaction payload in the BACKGROUND, after first
+    // paint (R-T1d) — the board is already interactive read-only; drag
+    // affordances enable when it arrives. Never blocks the render or the ask.
+    wireInteraction(id, board, window.__cockpit);
+
     if (CONFIG.autoAsk) panel.run(CONFIG.autoAsk);
   } catch (e) {
     app.querySelector(".split")?.remove();

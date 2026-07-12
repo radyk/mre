@@ -1,7 +1,7 @@
 {
   "why is ORD-000012 on F001-RES001?": {
     "question": "why is ORD-000012 on F001-RES001?",
-    "answer": "=== Why is ORD-000012 on F001-RES001? ===\n\n\nEvidence chain (2 record(s)):\n\n[1] M7 DECISION  | ASSIGNMENT  | reconstructed\n    Assigned to: F001-RES001\n    Driver: CAPACITY_BLOCKED\n    Note: This is a reconstruction from the solved schedule.\n    Alternative: F001-RES002  - Same cost.\n    [record: f11c8436...]\n\n[2] M7 DECISION  | ASSIGNMENT  | reconstructed\n    Assigned to: F001-RES001\n    Driver: CAPACITY_BLOCKED\n    Note: This is a reconstruction from the solved schedule.\n    Alternative: F001-RES002  - Same cost.\n    Alternative: F001-RES003  - Would cost +20.08 more.\n    [record: 13e7d5cf...]\n\n[rendered by: template | register: testimony]",
+    "answer": "=== Why is ORD-000012 on F001-RES001? ===\n\n\nEvidence chain (2 record(s)):\n\n[1] M7 DECISION  | ASSIGNMENT  | reconstructed\n    Assigned to: F001-RES001\n    Driver: CAPACITY_BLOCKED\n    Note: This is a reconstruction from the solved schedule.\n    Alternative: F001-RES002  - Same cost.\n    [record: 71fa4315...]\n\n[2] M7 DECISION  | ASSIGNMENT  | reconstructed\n    Assigned to: F001-RES001\n    Driver: CAPACITY_BLOCKED\n    Note: This is a reconstruction from the solved schedule.\n    Alternative: F001-RES002  - Same cost.\n    Alternative: F001-RES003  - Would cost $20.08 more.\n    [record: 1ca23ff1...]\n\n[rendered by: template | register: testimony]",
     "bundle": {
       "subject_id": "0dee42a9-6527-50b3-bd7c-ddceb9dd94a6",
       "subject_type": "demand",
@@ -27,7 +27,7 @@
   },
   "what data problems exist?": {
     "question": "what data problems exist?",
-    "answer": "=== What data problems exist? ===\n\nTotal findings: 1 | Codes: LOW_CONFIDENCE_INPUT\n\nEvidence chain (1 record(s)):\n\n[1] M3 FINDING  | LOW_CONFIDENCE_INPUT  | warning\n    [record: 39c350e3...]\n\n[rendered by: template | register: testimony]",
+    "answer": "=== What data problems exist? ===\n\nTotal findings: 1 | Codes: LOW_CONFIDENCE_INPUT\n\nEvidence chain (1 record(s)):\n\n[1] M3 FINDING  | LOW_CONFIDENCE_INPUT  | warning\n    [record: fc894279...]\n\n[rendered by: template | register: testimony]",
     "bundle": {
       "subject_id": "snap-mr",
       "subject_type": "findings",

@@ -48,6 +48,15 @@ export function getScheduleMeta(id) {
   return envelope(`/schedules/${id}/meta`).catch(() => null);
 }
 
+export function getScheduleInteraction(id) {
+  // The Tier-0 legality payload (contract 1.3, R-T1d), served on its OWN
+  // endpoint so it never sits inside first-paint. Fetched in the background
+  // after the board renders; a 404 (pool member / pre-1.3) is not an error —
+  // the board stays Tier-0-green-only. Returns the {interaction, ...} envelope
+  // data or null on absence.
+  return envelope(`/schedules/${id}/interaction`).catch(() => null);
+}
+
 export function ask(id, question) {
   return envelope(`/schedules/${id}/ask`, {
     method: "POST",

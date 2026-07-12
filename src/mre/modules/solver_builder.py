@@ -210,6 +210,22 @@ def add_objective_upper_bound(model, var_map: "VariableMap", bound_scaled: int) 
         model.add(sum(var_map.objective_terms) <= bound_scaled)
 
 
+def add_forced_alternative_cut(
+    model, var_map: "VariableMap", op_id: str, forbidden_resource_id: str,
+) -> bool:
+    """Forbid `op_id` from running on `forbidden_resource_id` — the
+    "not on the incumbent machine" cut of the forced-alternative service
+    (docs/04 R-T1a). Warm-started + otherwise free, this re-solve yields the
+    TRUE best price of moving that one op off its incumbent machine (or proves
+    the move infeasible this horizon). Returns False when the op has no
+    assignment literal for that resource (nothing to forbid — a no-op)."""
+    lit = var_map.op_assign.get(op_id, {}).get(forbidden_resource_id)
+    if lit is None:
+        return False
+    model.add(lit == 0)
+    return True
+
+
 DIVERSITY_TOLERANCE_MINUTES = 15
 
 

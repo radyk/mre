@@ -94,6 +94,59 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 IN PROGRESS — Session 3.2a interim-B part 1 (the
+interaction data spine) COMPLETE 2026-07-12.** Everything interim B needs that
+is testable WITHOUT a cursor; the gesture/voice surface is 3.2b.
+**CU1** — the split interaction endpoint (R-T1d): schedule **contract 1.2 →
+1.3**, `GET /schedules/{id}/interaction` serves the Tier-0 block and the main
+`GET /schedules/{id}` document returns to ~1.1 size. Ruled a **MINOR** bump,
+honestly: the document schema is unchanged (`interaction` stays optional, always
+None on the main endpoint; a thin `_persist_document` writes the main doc +
+sibling `interaction.json`), the field was already legitimately None for pool
+members, and the sole production consumer is the cockpit (updated same session).
+Cockpit `interaction.js` background-fetches after first paint with
+stale-while-revalidate; a **stub** `dragEnabled` flag + `data-drag-enabled` host
+attr enable on arrival (the gesture surface is 3.2b). Additive:
+`OperationInteraction.resumable` (a CU2-discovered Tier-0 window-fit input).
+**CU2** — the client-side **Tier-0 legality library** (`src/cockpit/legality/
+tier0.js`, pure/framework-free): eligible rows (capability) + legal-start
+regions (calendar ∩ precedence floor ∩ window-fit) + the anchor set;
+**conservative-error asserted (R-DP6)** — may under-offer green, never greens a
+proven-illegal spot; all four dim dimensions tested (`tests/cockpit/
+legality.spec.mjs`, incl. resumable window-fit via `latestStartForRemaining`).
+**CU3** — the **forced-alternative service** (`src/mre/modules/
+forced_alternatives.py`, R-T1a/b): per-op warm-started re-solves carrying a
+"not on the incumbent machine" cut (`solver_builder.add_forced_alternative_cut`,
+no objective bound) → the TRUE price of each road not taken, stored as
+pool-member-class documents (`annotations.pool.source="forced_alternative"`) in
+the **same** pool tables (`pools.kind='alternatives'`, `pool_members.source/
+verdict/label_json`, nullable doc path — same never-in-listings exclusion, same
+supersede invalidation); infeasibility is **first-class**
+(`verdict="infeasible_this_horizon"`, no doc). Selection heuristic **v1**
+(`select_target_ops`): at-risk demands (late first, then tightest slack) and
+their multi-eligible ops, budget-capped. The **price-bought-something
+counterfactual** runs on the new **`multi_route_distinct`** generator scenario
+(distinct rates + light load → the pool converges): the plain pool crosses
+machines ~0 times while the forced service yields ≥1 priced cross-machine
+alternative, strictly more (`tests/test_forced_alternatives.py`). API additive:
+`POST/GET /schedules/{id}/alternatives` (+ `/{member}`), distinguishable by
+source label. **CU4** — the **sandbox latency budget** (`src/mre/modules/
+sandbox.py`, R-T1c): `classify_sandbox_outcome` — the pure three-outcome
+classifier (verdict / feasible_unproven / no_verdict), budget a **design token**
+(`SANDBOX_BUDGET_S = 15.0`), budget-exhaust paths simulated not waited;
+`sandbox_pin_resolve` warm-starts + pins one op (machine+time, R-DP1) + solves
+under budget. **CI verdict regression runs on `multi_route_distinct`** (proves
+fast) — a **CU4 finding**: the saturated `multi_route` fixture is degenerate by
+design (the identical-rate R0/R1 pair that surfaces pool ghosts), so a pinned
+re-solve there returns a within-budget **FLAGGED** card (outcome 2), never a
+hang — the honest second outcome R-T1c designs for, asserted not hidden. Harness
+readiness-wait added for the 3.1c 0-bars flake. **1022 non-slow tests green**
+(+23) + new slow ladder (forced counterfactual, sandbox latency); **cockpit JS
+12/12** (7 board + 5 legality). **Carry-forwards:** pool/forced slice-awareness
+(heavier now, pilot-gated, R-T1b); the gesture surface + voice (3.2b); the v1
+selection heuristic (will evolve). See the docs/04 2026-07-12 Session 3.2a
+amendment and docs/07 v2.2.
+
 **Roadmap position: Phase 3 IN PROGRESS — Session 3.1 interim-A (read-only
 cockpit) COMPLETE 2026-07-11 (session 3.1b).** All five commit-units landed;
 the read-only board + language mode are in. Gesture (drag, Tier-0/1/2 per

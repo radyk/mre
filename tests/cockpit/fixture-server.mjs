@@ -54,6 +54,12 @@ const server = createServer(async (req, res) => {
       res.writeHead(200, { "content-type": "application/json" });
       return res.end(envelope(await load("meta.json")));
     }
+    const mInteract = p.match(/^\/schedules\/([^/]+)\/interaction$/);
+    if (mInteract && req.method === "GET") {
+      // the Tier-0 payload, served separately (contract 1.3, R-T1d)
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(envelope(await load("interaction.json")));
+    }
     const mAsk = p.match(/^\/schedules\/([^/]+)\/ask$/);
     if (mAsk && req.method === "POST") {
       const { question } = JSON.parse((await body(req)) || "{}");

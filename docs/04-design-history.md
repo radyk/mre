@@ -3431,3 +3431,140 @@ network round-trip must not sit inside Tier-0's latency budget).
 Stale-while-revalidate on schedule-version change. The board
 renders read-only immediately; drag affordances enable when the
 payload arrives.
+
+## Amendment — 2026-07-12: Session 3.2a — interim-B part 1, the interaction data spine (CU1–CU4)
+
+Everything interim B needs that is testable WITHOUT a cursor. No
+drag handlers, no cockpit rendering changes beyond CU1's fetch
+wiring — the interaction layer (grab/shade/ghosts/magnets/tuning
+panel/change traces) is Session 3.2b. Per-unit below.
+
+**CU1 — the split interaction endpoint (R-T1d).** Contract 1.2 →
+**1.3**. `GET /schedules/{id}/interaction` now serves the Tier-0
+interaction block; the main `GET /schedules/{id}` document drops
+it (returns to its ~1.1 size). **Version ruling recorded honestly:
+a MINOR bump, not major.** The document SCHEMA is unchanged —
+`interaction` remains an optional field, always None on the main
+endpoint; the assembler still builds it in-memory and a thin
+`_persist_document` writes the main doc (interaction stripped) and
+a sibling `interaction.json` the split endpoint serves. Justified
+as minor because `interaction` was optional from 1.2 and
+legitimately None for pool members / pre-1.2 docs, so any 1.2
+consumer already handles None; the SOLE production consumer is the
+cockpit, updated in the same session (no production consumer relied
+on inline delivery). Pool members / edge-less callers write no
+sibling file so `/interaction` 404s (degrade to Tier-0-green-only,
+R-T1b/R-DP6). Cockpit fetch (`src/cockpit/src/interaction.js`):
+background fetch after first paint via `wireInteraction`, never
+grab-triggered; **stale-while-revalidate** cached per schedule id
+(a new solve mints a new id = a new version); a stub
+`dragEnabled`/`interactionReady` flag + a `data-drag-enabled` host
+attribute enable on payload arrival (the gesture surface itself is
+3.2b). Size: the main document is lean again;
+`test_round_trip_rebuild_equals_served_document` compares the
+served main doc against the interaction-stripped rebuild.
+**Additive payload extension (a CU2-discovered gap):**
+`OperationInteraction.resumable` (splittable so may span calendar
+closures), a Tier-0 window-fit input, landed in the same 1.3 bump.
+
+**CU2 — the Tier-0 legality library (client-side).**
+`src/cockpit/legality/tier0.js` — PURE, framework-free (no DOM, no
+vis, no fetch), so node tests import it directly. `buildContext(doc,
+interaction)` + `computeTier0(opRef, ctx)` compute, for one op:
+eligible resource ROWS (capability), LEGAL START REGIONS per
+eligible row (open calendar windows [regular union overtime]
+intersected with the precedence/release floor and window-fit for
+the remaining duration), and the semantic ANCHOR set (calendar
+openings, adjacency edges, predecessor finishes, release floor,
+ghosts pass-through). Output serves both 3.2b's shading/magnets and
+the harness; occupancy is reported but NOT subtracted from legality
+(a fit-but-displace is amber, still legal). **Conservative-error
+direction asserted (R-DP6):** the four dim dimensions are all
+subtractive, so the library may under-offer green but never greens a
+proven-illegal spot — `isLegalStart` returns false for capability,
+closed-calendar, precedence-floor, and window-fit. Resumable
+window-fit handled via `latestStartForRemaining` (a resumable op may
+pause across closures but still needs at least its duration in
+cumulative open capacity ahead of its start). Tested
+(`tests/cockpit/legality.spec.mjs`, hand-verified zones + the
+multi_route fixture): one case each of capability / closed-calendar /
+precedence-floor / resumable-window-fit dim, plus the
+conservative-error invariant on real data. **Finding, extended not
+failed:** the interaction payload lacked a resumability flag Tier-0
+needs for window-fit — reported and added additively (CU1's
+`resumable`).
+
+**CU3 — the forced-alternative service (R-T1a/b).**
+`src/mre/modules/forced_alternatives.py` — for selected ops, one
+warm-started re-solve each carrying a "not on the incumbent machine"
+cut (`solver_builder.add_forced_alternative_cut`), short time
+limit, NO objective bound (the true best price of the road not
+taken). Results are pool-member-class documents
+(`annotations.pool.source="forced_alternative"` plus the moved op /
+forbidden machine / landing machine), stored in the SAME registry
+pool tables (new `pools.kind='alternatives'`, `pool_members.source /
+verdict / label_json`, nullable `document_path`) — same
+never-in-schedule-listings exclusion, same supersede invalidation.
+An infeasible forced solve is FIRST-CLASS: a
+`verdict="infeasible_this_horizon"` member with no document ("not
+feasible this horizon" is a renderable answer, R-T1a). API additive:
+`POST/GET /schedules/{id}/alternatives` (plus `/{member}`),
+distinguishable by source label. **Selection heuristic v1
+(`select_target_ops`, it WILL evolve):** the at-risk demands — late
+first, then tightest by slack — and their MULTI-ELIGIBLE ops (only
+a multi-eligible op can move off its machine); a budget caps the
+count (R-T1b: forced solves multiply the pool-build solve count and
+inherit its slice-awareness qualification, now heavier). **The
+price-bought-something counterfactual** needed the DISTINCT-rate
+case R-T1 names: new generator scenario `multi_route_distinct`
+(distinct rates + light load, so the optimum concentrates on the
+cheapest machine and the pool CONVERGES on machine placement). On
+it both halves assert (`tests/test_forced_alternatives.py`,
+deterministic): the plain pool crosses machines ~0 times (the
+pool-only ghost degradation R-T1 names), while the forced service
+yields at least one feasible cross-machine alternative at a positive
+price — strictly MORE than the pool. The saturated `multi_route`'s
+`expected_pool_cross_machine_ops_ge` stays 1 (unchanged).
+
+**CU4 — the sandbox latency budget (R-T1c).**
+`src/mre/modules/sandbox.py`. `classify_sandbox_outcome(status,
+wall, budget)` — the pure three-outcome classifier, unit-tested
+without a solve (budget-exhausted paths SIMULATED, never waited):
+OPTIMAL/INFEASIBLE gives **verdict** (1); FEASIBLE gives
+**feasible_unproven** (2, flagged "≈ delta, bound not proven"); else
+gives **no_verdict** (3, return home). The budget is a **design
+token** (`SANDBOX_BUDGET_S = 15.0`), not a constant — the outcome is
+a function of the PROOF, so the same status classifies the same at
+any budget; `within_budget` allows a 1s stop-overhead margin (a
+solve given time_limit=budget stops a hair over it).
+`sandbox_pin_resolve` warm-starts, pins one op at (machine + time as
+displayed, R-DP1), re-solves under budget, classifies. **CI
+acceptance:** a single-pin re-solve on the demo fixture returns a
+verdict within budget — asserted on `multi_route_distinct` (a
+non-degenerate optimum proves fast). **CU4 FINDING (honest, not
+hidden):** the SATURATED `multi_route` fixture is degenerate BY
+DESIGN (the identical-rate R0/R1 pair — the very thing that surfaces
+pool cross-machine ghosts), so a pinned re-solve there finds the
+incumbent-cost placement (delta 0) but cannot PROVE optimality
+inside 15s and returns outcome (2), a shippable FLAGGED card, WITHIN
+budget (never a hang). That is exactly the honest second outcome
+R-T1c designs for; the verdict regression therefore uses the
+distinct fixture, and the degeneracy is asserted, not papered over.
+
+**Harness readiness-wait (3.1c 0-bars flake).** `cockpit.spec.mjs`
+`boot()` now waits for at least one painted `.vis-item.bar` after
+`window.__cockpit.ready` — the vis item DOM can lag ready by a
+frame; one retry-until-bars guard, cheap insurance.
+
+**Carry-forwards (named, not lost).** (a) The pool/forced-alternative
+**slice-awareness qualification** is now heavier (forced solves
+multiply solve count) and remains pilot-gated (R-T1b). (b) The
+cockpit fetch wiring lands a **stub** drag flag only — the gesture
+surface (grab/shade via the CU2 library, Tier-1 ghost rendering from
+the CU3 alternatives, magnets/tuning panel, Tier-2 drop + change
+traces per R-DP7) is Session 3.2b. (c) The forced-alternative
+**selection heuristic is v1** (at-risk demands' multi-eligible ops)
+and will evolve as the pilot data teaches. Tests: **1022 non-slow
+green** (+23) plus the new slow ladder (forced counterfactual,
+sandbox latency, multi_route unchanged); the cockpit JS suite is
+**12/12** (7 board + 5 legality).

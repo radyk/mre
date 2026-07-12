@@ -108,6 +108,17 @@ SCENARIOS: dict[str, dict[str, Any]] = {
         orders=30, resources=6, facilities=1, anomalies=[],
         with_customers=False, cost_profile="C1", multi_route=True,
     ),
+    # The DISTINCT-rate case that motivated R-T1 (docs/04): every eligible
+    # machine bills a different rate and the load is LIGHT, so the optimum
+    # concentrates on the cheapest machine and the near-optimal pool converges
+    # on machine placement (few/no cross-machine ghosts) — the economically
+    # realistic case where pool-only ghosts degrade and the forced-alternative
+    # service earns its keep. Used by the CU3 counterfactual.
+    "multi_route_distinct": dict(
+        orders=6, resources=6, facilities=1, anomalies=[],
+        with_customers=False, cost_profile="C1",
+        multi_route=True, multi_route_distinct=True,
+    ),
 }
 
 
@@ -569,7 +580,8 @@ def _apply_mid_replan(ds: Dataset, rng: random.Random) -> dict:
     }
 
 
-def _apply_multi_route(ds: Dataset, rng: random.Random) -> dict:
+def _apply_multi_route(ds: Dataset, rng: random.Random,
+                       distinct_rates: bool = False) -> dict:
     """Capability-routed scenario (docs/05 B2): operations whose eligible
     resource set has 2-4 members carrying REAL cost differentials, so a
     cross-machine move has a genuine, nonzero price (docs/04 R-DP consequence
@@ -621,11 +633,18 @@ def _apply_multi_route(ds: Dataset, rng: random.Random) -> dict:
     price-bought-something proof that the alternatives are real, not decorative.
     """
     ref = ds.reference_date
-    # R0 and R1 share the cheap $50 rate (the saturated identical pair whose
-    # assignment is a free degenerate choice); R2+ are slightly pricier spill
-    # valves whose only role is to give some ops a nonzero-price alternative.
+    # Two rate regimes:
+    #  * DEFAULT (saturated identical pair): R0 and R1 both bill $50 — a free
+    #    degenerate machine choice the pool swaps at zero delta, which is what
+    #    surfaces cross-machine ghosts in the pool at all.
+    #  * DISTINCT (R-T1 realistic case): every machine bills a different rate,
+    #    so each op has a strictly cheapest eligible machine; with a light load
+    #    the optimum concentrates there and the pool CONVERGES on machine
+    #    placement (the pool-only ghost degradation R-T1 names). The
+    #    forced-alternative service is what still prices the roads not taken.
     rate_by_res = {}
-    tiers = [50.0, 50.0, 55.0, 60.0, 65.0, 70.0]
+    tiers = ([50.0, 52.0, 54.0, 56.0, 58.0, 60.0] if distinct_rates
+             else [50.0, 50.0, 55.0, 60.0, 65.0, 70.0])
     for i, r in enumerate(ds.resources):
         rate = tiers[i % len(tiers)]
         rate_by_res[r["resource_id"]] = rate
@@ -665,7 +684,10 @@ def _apply_multi_route(ds: Dataset, rng: random.Random) -> dict:
     route_b = _product("PROD-MR-B", steps_b)
     specs = [("PROD-MR-A", route_a, steps_a), ("PROD-MR-B", route_b, steps_b)]
 
-    n_orders = 12
+    # Light load for the distinct-rate case (so the optimum concentrates on the
+    # cheapest machine and the pool converges); the saturated case needs the
+    # heavier load to fill the identical pair to ~90%.
+    n_orders = 4 if distinct_rates else 12
     for i in range(n_orders):
         pid, route_id, _ = specs[i % 2]
         oid = f"ORD-{i + 1:06d}"
@@ -699,14 +721,19 @@ def _apply_multi_route(ds: Dataset, rng: random.Random) -> dict:
     return {
         "resources": R,
         "resource_rates": rate_by_res,
+        "distinct_rates": distinct_rates,
+        "n_orders": n_orders,
         "multi_eligible_ops": multi_eligible,
         "multi_eligible_op_count": len(multi_eligible),
         "max_eligible_alternatives": max(m["eligible_count"] for m in multi_eligible),
         "tier_spanning_op_count": tier_spanning,
         "expected_multi_eligible_in_precedence_chain": in_chain,
         "expected_nonzero_ghost_price": tier_spanning > 0,
-        # verified by the end-to-end test that builds the pool on the solve:
-        "expected_pool_cross_machine_ops_ge": 1,
+        # verified by the end-to-end test that builds the pool on the solve.
+        # DEFAULT (saturated pair): the pool surfaces cross-machine ghosts.
+        # DISTINCT (light load): the pool converges — few/no cross-machine
+        # ghosts — and the forced-alternative service supplies the priced ones.
+        "expected_pool_cross_machine_ops_ge": 0 if distinct_rates else 1,
         "expected_collapse_cross_machine_ops": 0,
     }
 
@@ -1418,7 +1445,8 @@ def generate(
     if preset.get("mid_replan"):
         truth_extra["mid_replan"] = _apply_mid_replan(ds, rng)
     if preset.get("multi_route"):
-        truth_extra["multi_route"] = _apply_multi_route(ds, rng)
+        truth_extra["multi_route"] = _apply_multi_route(
+            ds, rng, distinct_rates=preset.get("multi_route_distinct", False))
 
     anomaly_entries: list[dict] = []
     for spec in anomaly_specs:

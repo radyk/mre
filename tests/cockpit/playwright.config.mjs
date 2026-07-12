@@ -10,7 +10,10 @@ const PORT = 5199;
 
 export default defineConfig({
   testDir: ".",
-  testMatch: /cockpit\.spec\.mjs/,
+  // both the screenshot harness (cockpit.spec.mjs) and the pure-JS Tier-0
+  // legality tests (legality.spec.mjs — no browser needed, but they share the
+  // one built-cockpit webServer).
+  testMatch: /\.spec\.mjs$/,
   outputDir: "./shots/_pw",
   timeout: 60_000,
   fullyParallel: false,

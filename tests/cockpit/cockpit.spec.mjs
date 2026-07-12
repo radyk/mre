@@ -32,6 +32,13 @@ async function boot(page, extra = "") {
   await page.waitForFunction(() => window.__cockpit && window.__cockpit.ready === true, { timeout: 20000 });
   const err = await page.evaluate(() => window.__cockpit.error || null);
   expect(err, "cockpit booted without error").toBeNull();
+  // readiness-wait for the cold-run first-paint race (the 0-bars flake from
+  // 3.1c): the vis item DOM can lag window.__cockpit.ready by a frame. Retry
+  // until at least one bar is painted before any test touches the board —
+  // cheap insurance, one guard.
+  await page.waitForFunction(
+    () => document.querySelectorAll(".vis-item.bar").length > 0,
+    { timeout: 10000 });
 }
 
 test("load — board renders lanes, bars, and the certificate grade", async ({ page }) => {
@@ -45,9 +52,25 @@ test("load — board renders lanes, bars, and the certificate grade", async ({ p
   // planner vocabulary on screen, not UUIDs
   await expect(page.locator(".vis-labelset")).toContainText("F001-RES001");
   // top strip: contract version + certificate grade
-  await expect(page.locator(".topstrip .ver")).toContainText("contract 1.2");
+  await expect(page.locator(".topstrip .ver")).toContainText("contract 1.3");
   await expect(page.locator(".topstrip .grade")).toContainText("ACCEPTED");
   await shot(page, "01_load");
+});
+
+test("interaction — Tier-0 payload loads in the background, enabling affordances", async ({ page }) => {
+  await boot(page);
+  // R-T1d: the split-endpoint payload is fetched AFTER first paint and drag
+  // affordances (a stub flag in interim-A) enable on arrival. The board is
+  // already interactive read-only before this resolves.
+  await page.waitForFunction(() => window.__cockpit.interactionReady === true, { timeout: 10000 });
+  const state = await page.evaluate(() => ({
+    dragEnabled: window.__cockpit.dragEnabled,
+    ops: window.__cockpit.interaction?.operations?.length || 0,
+    hostAttr: document.getElementById("tl")?.getAttribute("data-drag-enabled"),
+  }));
+  expect(state.dragEnabled, "drag affordances enabled when the payload arrived").toBe(true);
+  expect(state.ops, "interaction payload carries per-op Tier-0 facts").toBeGreaterThan(0);
+  expect(state.hostAttr).toBe("true");
 });
 
 test("select — clicking a bar scopes the deictic ask (shared selection)", async ({ page }) => {

@@ -72,19 +72,28 @@ CREATE TABLE IF NOT EXISTS pools (
     id            TEXT PRIMARY KEY,
     schedule_id   TEXT NOT NULL REFERENCES schedules(id),
     status        TEXT NOT NULL,            -- warming | ready | empty | failed | invalidated
+    kind          TEXT NOT NULL DEFAULT 'pool',  -- 'pool' | 'alternatives' (R-T1a)
     params_json   TEXT,
     summary_json  TEXT,
     error         TEXT,
     created_at    TEXT NOT NULL,
     finished_at   TEXT
 );
+-- ``source`` distinguishes the two Tier-1 ghost sources (R-T1a): 'pool'
+-- (near-optimal, cheap) and 'forced_alternative' (the priced road not taken).
+-- ``verdict`` + ``label_json`` carry the forced-alternative first-class info
+-- (incl. an infeasible verdict, which has no document — hence the nullable
+-- document_path).
 CREATE TABLE IF NOT EXISTS pool_members (
     pool_id                TEXT NOT NULL REFERENCES pools(id),
     member_index           INTEGER NOT NULL,
     objective              REAL,
     objective_delta_pct    REAL,
     hamming_from_incumbent INTEGER,
-    document_path          TEXT NOT NULL,
+    document_path          TEXT,
+    source                 TEXT NOT NULL DEFAULT 'pool',
+    verdict                TEXT,
+    label_json             TEXT,
     PRIMARY KEY (pool_id, member_index)
 );
 """
@@ -305,12 +314,12 @@ class Registry:
     # ------------------------------------------------------------------
 
     def create_pool(self, pool_id: str, schedule_id: str,
-                    params: Optional[dict] = None) -> None:
+                    params: Optional[dict] = None, kind: str = "pool") -> None:
         with self._conn() as con:
             con.execute(
-                "INSERT INTO pools (id, schedule_id, status, params_json, created_at) "
-                "VALUES (?,?,?,?,?)",
-                (pool_id, schedule_id, "warming", json.dumps(params or {}), _now()),
+                "INSERT INTO pools (id, schedule_id, status, kind, params_json, created_at) "
+                "VALUES (?,?,?,?,?,?)",
+                (pool_id, schedule_id, "warming", kind, json.dumps(params or {}), _now()),
             )
 
     def finish_pool(self, pool_id: str, status: str,
@@ -327,18 +336,23 @@ class Registry:
                 con.execute(
                     "INSERT OR REPLACE INTO pool_members (pool_id, member_index, "
                     "objective, objective_delta_pct, hamming_from_incumbent, "
-                    "document_path) VALUES (?,?,?,?,?,?)",
+                    "document_path, source, verdict, label_json) "
+                    "VALUES (?,?,?,?,?,?,?,?,?)",
                     (pool_id, m["member_index"], m.get("objective"),
                      m.get("objective_delta_pct"), m.get("hamming_from_incumbent"),
-                     m["document_path"]),
+                     m.get("document_path"), m.get("source", "pool"),
+                     m.get("verdict"),
+                     json.dumps(m["label"], default=str) if m.get("label") else None),
                 )
 
-    def get_pool_for_schedule(self, schedule_id: str) -> Optional[dict]:
-        """The schedule's most recent pool, with its member index rows."""
+    def get_pool_for_schedule(self, schedule_id: str,
+                              kind: str = "pool") -> Optional[dict]:
+        """The schedule's most recent pool of the given kind ('pool' or
+        'alternatives'), with its member rows."""
         with self._conn() as con:
             row = con.execute(
-                "SELECT * FROM pools WHERE schedule_id=? ORDER BY created_at DESC "
-                "LIMIT 1", (schedule_id,),
+                "SELECT * FROM pools WHERE schedule_id=? AND kind=? "
+                "ORDER BY created_at DESC LIMIT 1", (schedule_id, kind),
             ).fetchone()
             if row is None:
                 return None
@@ -349,5 +363,10 @@ class Registry:
             ).fetchall()
         pool["params"] = json.loads(pool.pop("params_json") or "{}")
         pool["summary"] = json.loads(pool.pop("summary_json") or "{}")
-        pool["members"] = [dict(m) for m in members]
+        member_rows = []
+        for m in members:
+            md = dict(m)
+            md["label"] = json.loads(md.pop("label_json")) if md.get("label_json") else None
+            member_rows.append(md)
+        pool["members"] = member_rows
         return pool

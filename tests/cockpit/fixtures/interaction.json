@@ -1,0 +1,466 @@
+{
+  "schedule_id": "sched-multi-route-fixture",
+  "contract_version": "1.3",
+  "interaction": {
+    "operations": [
+      {
+        "operation_ref": "0c1255cb-1e08-5059-98bc-5d92631a03bb",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "20358e5f-5d77-512b-9f25-e94b35a4003b",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "8ea48ae0-4288-57e9-86dc-1ca5caec646c",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "2debde52-2860-5408-9d96-47ce7d52f372",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "8ea48ae0-4288-57e9-86dc-1ca5caec646c",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "8ea48ae0-4288-57e9-86dc-1ca5caec646c",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "3297e784-e3fb-564a-a870-814c7a4cbf21",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "8ea48ae0-4288-57e9-86dc-1ca5caec646c",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "438b549a-7387-5c46-af50-bf3e2f189483",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "6433ca60-3576-5ffb-9db8-81a5ebe42e53",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "673304c2-4b97-582b-aa07-968c2dbb63fa",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "6b4a17a6-0b36-55e0-ae00-5b4ee029dcb3",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+          "d7e3af54-2cab-521a-bd19-2f5c6cba9667"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "6fb65d0a-f327-5e08-a01e-8054bafef78a",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "8ea48ae0-4288-57e9-86dc-1ca5caec646c",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "714bf26d-8215-58be-896f-3841338f9ec7",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "71883fe7-c4d2-552f-a556-8982c6500943",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+          "d7e3af54-2cab-521a-bd19-2f5c6cba9667"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "78767920-7dad-59bd-b15d-77450645bd8d",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+          "d7e3af54-2cab-521a-bd19-2f5c6cba9667"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "86a5f0bf-2bd9-5ac7-811f-9f7dcd61124a",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "8f402924-db0d-599e-bdb5-0e184d28f648",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "8ea48ae0-4288-57e9-86dc-1ca5caec646c",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "906edb26-0f19-5760-88a7-a07e7b031388",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "8ea48ae0-4288-57e9-86dc-1ca5caec646c",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "93aff8bd-cee6-57c6-b456-c275b83eb692",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "8ea48ae0-4288-57e9-86dc-1ca5caec646c",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "9ec0b537-b5e9-5015-b6b1-55e9af1ef9d8",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+          "d7e3af54-2cab-521a-bd19-2f5c6cba9667"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "a1ba867e-e117-5c7f-85c4-344a7571508c",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+          "d7e3af54-2cab-521a-bd19-2f5c6cba9667"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "a6655ef7-6bee-51e9-b38a-b1c88f9c1108",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "8ea48ae0-4288-57e9-86dc-1ca5caec646c",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "a773e7be-2ffe-58cc-b468-ab12353d3484",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "ab66f55d-42d9-5d93-b69d-46bf9d2de499",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "8ea48ae0-4288-57e9-86dc-1ca5caec646c",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "af15d3f8-b792-5a48-9af0-b750e0821761",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+          "d7e3af54-2cab-521a-bd19-2f5c6cba9667"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "c761c094-24d0-5c7e-9926-a6ecb06893c4",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "cf7e7588-9344-5dea-a780-c457c73133a5",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "e599bfd1-eb3c-5403-b0b9-6ad5f6c3367f",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "8ea48ae0-4288-57e9-86dc-1ca5caec646c",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "eceb9104-6d35-5eb2-8681-6ed2fa868e72",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "8ea48ae0-4288-57e9-86dc-1ca5caec646c",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "fcf7aa32-a0aa-5c7c-bc78-988ebf6696fc",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "ff490151-867d-5883-ac25-a5529b52e04a",
+        "eligible_resource_ids": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc"
+        ],
+        "working_min": 241,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      }
+    ],
+    "precedence_edges": [
+      {
+        "predecessor_ref": "0c1255cb-1e08-5059-98bc-5d92631a03bb",
+        "successor_ref": "ab66f55d-42d9-5d93-b69d-46bf9d2de499",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "20358e5f-5d77-512b-9f25-e94b35a4003b",
+        "successor_ref": "2debde52-2860-5408-9d96-47ce7d52f372",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
+        "successor_ref": "86a5f0bf-2bd9-5ac7-811f-9f7dcd61124a",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+        "successor_ref": "c761c094-24d0-5c7e-9926-a6ecb06893c4",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "3297e784-e3fb-564a-a870-814c7a4cbf21",
+        "successor_ref": "cf7e7588-9344-5dea-a780-c457c73133a5",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "438b549a-7387-5c46-af50-bf3e2f189483",
+        "successor_ref": "e599bfd1-eb3c-5403-b0b9-6ad5f6c3367f",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "6433ca60-3576-5ffb-9db8-81a5ebe42e53",
+        "successor_ref": "71883fe7-c4d2-552f-a556-8982c6500943",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "673304c2-4b97-582b-aa07-968c2dbb63fa",
+        "successor_ref": "a6655ef7-6bee-51e9-b38a-b1c88f9c1108",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "714bf26d-8215-58be-896f-3841338f9ec7",
+        "successor_ref": "6fb65d0a-f327-5e08-a01e-8054bafef78a",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "86a5f0bf-2bd9-5ac7-811f-9f7dcd61124a",
+        "successor_ref": "a1ba867e-e117-5c7f-85c4-344a7571508c",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "8f402924-db0d-599e-bdb5-0e184d28f648",
+        "successor_ref": "6433ca60-3576-5ffb-9db8-81a5ebe42e53",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "906edb26-0f19-5760-88a7-a07e7b031388",
+        "successor_ref": "a773e7be-2ffe-58cc-b468-ab12353d3484",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "93aff8bd-cee6-57c6-b456-c275b83eb692",
+        "successor_ref": "ff490151-867d-5883-ac25-a5529b52e04a",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "a773e7be-2ffe-58cc-b468-ab12353d3484",
+        "successor_ref": "af15d3f8-b792-5a48-9af0-b750e0821761",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "c761c094-24d0-5c7e-9926-a6ecb06893c4",
+        "successor_ref": "6b4a17a6-0b36-55e0-ae00-5b4ee029dcb3",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "cf7e7588-9344-5dea-a780-c457c73133a5",
+        "successor_ref": "78767920-7dad-59bd-b15d-77450645bd8d",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "fcf7aa32-a0aa-5c7c-bc78-988ebf6696fc",
+        "successor_ref": "eceb9104-6d35-5eb2-8681-6ed2fa868e72",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "ff490151-867d-5883-ac25-a5529b52e04a",
+        "successor_ref": "9ec0b537-b5e9-5015-b6b1-55e9af1ef9d8",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      }
+    ]
+  }
+}

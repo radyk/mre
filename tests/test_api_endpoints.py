@@ -172,18 +172,16 @@ class TestScheduleDocument:
     def test_document_validates_against_contract(self, api):
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
         parsed = ScheduleDocument.model_validate(doc)
-        assert parsed.contract_version == "1.2"
+        assert parsed.contract_version == "1.3"
         assert parsed.schedule_id == api.schedule_id
         assert parsed.run_id == api.run["id"]
         assert parsed.solver.deterministic is True
         assert parsed.assignments and parsed.service_outcomes and parsed.resources
         assert parsed.annotations.scenario.is_scenario is False
-        # Contract 1.2: the API path supplies edges, so the Tier-0 interaction
-        # payload is present — one entry per scheduled op, each with its
-        # eligible set; and the precedence graph.
-        assert parsed.interaction is not None
-        assert len(parsed.interaction.operations) == len(parsed.assignments)
-        assert all(o.eligible_resource_ids for o in parsed.interaction.operations)
+        # Contract 1.3 (R-T1d): the Tier-0 interaction payload is served
+        # SEPARATELY (GET .../interaction) so it never sits inside first-paint;
+        # the main render document carries it no longer.
+        assert parsed.interaction is None
 
     def test_every_assignment_has_chunks_and_work_orders(self, api):
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
@@ -199,7 +197,11 @@ class TestScheduleDocument:
         rebuilt = build_document_from_run(
             Path(api.run["out_dir"]), api.run["snapshot_id"], api.run["id"],
         )
-        assert rebuilt.model_dump(mode="json") == served
+        # The assembler still builds interaction in-memory; the split-endpoint
+        # discipline (contract 1.3) strips it from the served MAIN document, so
+        # compare against the stripped rebuild.
+        main = rebuilt.model_copy(update={"interaction": None})
+        assert main.model_dump(mode="json") == served
 
     def test_unknown_schedule_404_envelope(self, api):
         _error(api.client.get("/schedules/nope"), 404)
@@ -220,7 +222,7 @@ class TestScheduleMeta:
     def test_meta_joins_the_certificate_grade(self, api):
         meta = _data(api.client.get(f"/schedules/{api.schedule_id}/meta"))
         assert meta["id"] == api.schedule_id
-        assert meta["contract_version"] == "1.2"
+        assert meta["contract_version"] == "1.3"
         assert meta["grade"] == "ACCEPTED"
         assert meta["costing_grade"] == "C1"
         assert meta["submission_id"] == api.submission["submission_id"]
@@ -228,6 +230,50 @@ class TestScheduleMeta:
 
     def test_meta_unknown_schedule_404(self, api):
         _error(api.client.get("/schedules/nope/meta"), 404)
+
+
+# ---------------------------------------------------------------------------
+# Split interaction endpoint (contract 1.3, R-T1d) — the Tier-0 payload,
+# fetched separately from the main render document
+# ---------------------------------------------------------------------------
+
+class TestScheduleInteraction:
+    """The +35.7% Tier-0 payload moves off the main document (R-T1d): the
+    cockpit fetches it in the background after first paint, never inside the
+    render path."""
+
+    def test_interaction_served_separately(self, api):
+        from mre.contracts.schedule_document import InteractionBlock
+        data = _data(api.client.get(
+            f"/schedules/{api.schedule_id}/interaction"))
+        assert data["schedule_id"] == api.schedule_id
+        assert data["contract_version"] == "1.3"
+        block = InteractionBlock.model_validate(data["interaction"])
+        # one entry per scheduled op, each with its eligible set + the graph
+        doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
+        assert len(block.operations) == len(doc["assignments"])
+        assert all(o.eligible_resource_ids for o in block.operations)
+
+    def test_main_document_no_longer_carries_the_payload(self, api):
+        """The split's whole point: the main render document is lean again."""
+        doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
+        assert doc["interaction"] is None
+
+    def test_interaction_unknown_schedule_404(self, api):
+        _error(api.client.get("/schedules/nope/interaction"), 404)
+
+    def test_pool_member_has_no_interaction_payload_404(self, api, pool):
+        """Pool members carry no interaction payload (R-T1b: coverage misses
+        degrade to Tier-0-green-only, never a dangling 500)."""
+        # the base pool is warmed by the `pool` fixture; its members are
+        # edge-less documents — no interaction.json beside them. There is no
+        # public per-member interaction route, so assert the file discipline
+        # via the summary: a member document exists, none has interaction.
+        data = _data(api.client.get(f"/schedules/{api.schedule_id}/pool"))
+        member_doc = _data(api.client.get(
+            f"/schedules/{api.schedule_id}/pool/0"))
+        assert member_doc["interaction"] is None
+        assert data["members"]
 
 
 # ---------------------------------------------------------------------------
@@ -431,3 +477,54 @@ class TestSolutionPool:
             f"/schedules/{run['result']['schedule_id']}/pool"))
         assert data["status"] == "ready"
         assert data["members"]
+
+
+# ---------------------------------------------------------------------------
+# Forced alternatives (docs/07 Phase 3, R-T1a) — the priced roads not taken,
+# surfaced through the pool endpoint family, distinguishable by source label.
+# The counterfactual (priced cross-machine alternatives on distinct-rate data)
+# lives in tests/test_forced_alternatives.py; here we assert the API contract
+# on the clean_small fixture (single-eligibility ops → first-class infeasible
+# verdicts), plus isolation.
+# ---------------------------------------------------------------------------
+
+class TestForcedAlternatives:
+    def test_build_and_fetch_labeled_by_source(self, api):
+        doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
+        op = doc["assignments"][0]["operation_ref"]
+        accepted = _data(api.client.post(
+            f"/schedules/{api.schedule_id}/alternatives",
+            json={"target_op_ids": [op], "budget": 1,
+                  "member_time_limit": 8, "sync": True},
+        ), status=202)
+        assert accepted["pool_id"].startswith("alt-")
+
+        data = _data(api.client.get(f"/schedules/{api.schedule_id}/alternatives"))
+        assert data["kind"] == "alternatives"
+        assert data["members"], "forced-alternative build recorded no member"
+        m = data["members"][0]
+        assert m["source"] == "forced_alternative"
+        # clean_small ops are single-eligibility: forbidding the only machine
+        # is proven infeasible this horizon — first-class information (R-T1a).
+        assert m["verdict"] == "infeasible_this_horizon"
+        assert m["label"]["target_operation_ref"] == op
+        assert m["document_path"] is None
+
+    def test_infeasible_member_has_no_document(self, api):
+        # (build performed by the previous test; fetch the verdict-only member)
+        _error(api.client.get(f"/schedules/{api.schedule_id}/alternatives/0"), 409)
+
+    def test_alternatives_404_when_none_built(self, api):
+        # a fresh solve with no alternatives built
+        solve = _data(api.client.post(
+            f"/submissions/{api.submission['submission_id']}/solve",
+            json={"time_limit": 20, "deterministic": True, "sync": True},
+        ), status=202)
+        sid = _data(api.client.get(f"/runs/{solve['run_id']}"))["result"]["schedule_id"]
+        _error(api.client.get(f"/schedules/{sid}/alternatives"), 404)
+        _error(api.client.get("/schedules/nope/alternatives"), 404)
+
+    def test_alternatives_refused_for_scenario_schedules(self, api, scenario_run):
+        scen_id = scenario_run["result"]["schedule_id"]
+        _error(api.client.post(
+            f"/schedules/{scen_id}/alternatives", json={}), 409)

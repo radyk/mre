@@ -161,7 +161,7 @@ def doc(world) -> ScheduleDocument:
 class TestHeader:
     def test_versioned_from_day_one(self, doc):
         # 1.1 (2026-07-13): additive annotations.pool block for pool members
-        assert doc.contract_version == CONTRACT_VERSION == "1.2"
+        assert doc.contract_version == CONTRACT_VERSION == "1.3"
 
     def test_pool_annotation_absent_on_ordinary_documents(self, doc):
         assert doc.annotations.pool is None
@@ -386,6 +386,8 @@ class TestInteractionPayload:
         assert op.working_min == 600  # 8h + 2h run windows
         assert op.setup_min == 30
         assert op.earliest_start is not None
+        # contract 1.3: resumable is a Tier-0 window-fit input (default False)
+        assert op.resumable is False
 
     def test_edges_expand_to_operation_instances(self):
         """Template (spec-keyed) edges resolve to instance ops via

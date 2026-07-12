@@ -63,11 +63,19 @@ def main() -> int:
             print(f"pipeline failed rc={rc}", file=sys.stderr)
             return 1
 
-        # contract-1.2 document
+        # contract-1.3 document, split-endpoint discipline (R-T1d): the main
+        # render document (interaction stripped → lean) and a sibling
+        # interaction.json the /interaction endpoint serves.
         doc = build_document_from_run(out, SNAP, "run-mr-fixture")
-        d = doc.model_dump(mode="json")
+        interaction = doc.interaction
+        d = doc.model_copy(update={"interaction": None}).model_dump(mode="json")
         d["schedule_id"] = SCHEDULE_ID
         (FIXDIR / "schedule.json").write_text(json.dumps(d, indent=2), encoding="utf-8")
+        (FIXDIR / "interaction.json").write_text(json.dumps({
+            "schedule_id": SCHEDULE_ID,
+            "contract_version": d["contract_version"],
+            "interaction": interaction.model_dump(mode="json") if interaction else None,
+        }, indent=2), encoding="utf-8")
 
         # certificate grade (the top strip) — run the gate on the submission
         reporter = Reporter.begin(

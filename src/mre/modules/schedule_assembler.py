@@ -489,6 +489,7 @@ def _interaction_block(
             working_min=working_min,
             setup_min=setup_min,
             earliest_start=max(releases) if releases else None,
+            resumable=bool(op.get("splittable", False)),
         ))
     ops_out.sort(key=lambda o: o.operation_ref)
     scheduled_ops = {o.operation_ref for o in ops_out}

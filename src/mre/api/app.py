@@ -62,6 +62,17 @@ class PoolRequest(BaseModel):
     sync: bool = False
 
 
+class AlternativesRequest(BaseModel):
+    """Forced-alternative build (R-T1a): the priced roads not taken. When
+    ``target_op_ids`` is omitted the selection heuristic v1 picks the at-risk
+    demands' multi-eligible ops (docs/04 R-T1b)."""
+    target_op_ids: Optional[list[str]] = None
+    budget: int = 4
+    member_time_limit: float = 10.0
+    seed: int = 1234
+    sync: bool = False
+
+
 class AskRequest(BaseModel):
     question: str
     llm: bool = False               # honored only if ANTHROPIC_API_KEY is set
@@ -250,6 +261,25 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
             raise HTTPException(404, f"unknown schedule {schedule_id}")
         return _ok(meta)
 
+    @app.get("/schedules/{schedule_id}/interaction")
+    def get_schedule_interaction(schedule_id: str):
+        """The Tier-0 legality-arithmetic payload (contract 1.3, docs/04 R-T1d),
+        served SEPARATELY from the main render document so the +35.7% payload
+        never sits inside first-paint. The cockpit fetches this in the
+        background after first paint; the board renders read-only immediately
+        and enables drag affordances when this arrives (interim-B). Pool
+        members and pre-1.3 schedules carry no payload (404 — degrade to
+        Tier-0-green-only, R-T1b/R-DP6)."""
+        row = registry.get_schedule(schedule_id)
+        if row is None:
+            raise HTTPException(404, f"unknown schedule {schedule_id}")
+        ipath = Path(row["document_path"]).parent / "interaction.json"
+        if not ipath.exists():
+            raise HTTPException(
+                404, f"schedule {schedule_id} has no interaction payload "
+                     "(pool member or pre-1.3 document)")
+        return _ok(json.loads(ipath.read_text(encoding="utf-8")))
+
     # ------------------------------------------------------------------
     # Solution pool (docs/07 Phase 2)
     # ------------------------------------------------------------------
@@ -290,6 +320,60 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
         if member is None:
             raise HTTPException(404, f"pool {pool['id']} has no member "
                                      f"{member_index}")
+        document = json.loads(
+            Path(member["document_path"]).read_text(encoding="utf-8"))
+        return _ok(document)
+
+    # ------------------------------------------------------------------
+    # Forced alternatives (docs/07 Phase 3, R-T1a) — the priced roads not
+    # taken. Surfaced through the pool endpoint family (additive), stored in
+    # the same pool tables (structural isolation + supersede invalidation),
+    # distinguishable by the members' ``source`` label.
+    # ------------------------------------------------------------------
+
+    @app.post("/schedules/{schedule_id}/alternatives", status_code=202)
+    def build_alternatives(schedule_id: str, req: AlternativesRequest,
+                           background: BackgroundTasks):
+        row = _live_schedule(registry, schedule_id)
+        if row["is_scenario"]:
+            raise HTTPException(409, "forced alternatives are built for base "
+                                     "schedules; a what-if scenario has none")
+        import uuid as _uuid
+        pool_id = f"alt-{_uuid.uuid4().hex[:12]}"
+        registry.create_pool(pool_id, schedule_id, params=req.model_dump(),
+                             kind="alternatives")
+        if req.sync:
+            _execute_forced_alternatives(registry, pool_id, row, req.model_dump())
+        else:
+            background.add_task(_execute_forced_alternatives, registry, pool_id,
+                                row, req.model_dump())
+        return _ok({"pool_id": pool_id, "status": "building"}, status_code=202)
+
+    @app.get("/schedules/{schedule_id}/alternatives")
+    def get_alternatives(schedule_id: str):
+        if registry.get_schedule(schedule_id) is None:
+            raise HTTPException(404, f"unknown schedule {schedule_id}")
+        pool = registry.get_pool_for_schedule(schedule_id, kind="alternatives")
+        if pool is None:
+            raise HTTPException(
+                404, f"schedule {schedule_id} has no forced alternatives — "
+                     "POST /schedules/{id}/alternatives to build them")
+        return _ok(pool)
+
+    @app.get("/schedules/{schedule_id}/alternatives/{member_index}")
+    def get_alternative_member(schedule_id: str, member_index: int):
+        pool = registry.get_pool_for_schedule(schedule_id, kind="alternatives")
+        if pool is None:
+            raise HTTPException(404, f"schedule {schedule_id} has no alternatives")
+        member = next((m for m in pool["members"]
+                       if m["member_index"] == member_index), None)
+        if member is None:
+            raise HTTPException(404, f"no alternative member {member_index}")
+        if not member.get("document_path"):
+            # infeasible verdict — first-class, but no placement document
+            raise HTTPException(
+                409, f"alternative {member_index} is a "
+                     f"'{member.get('verdict')}' verdict — no placement document")
         document = json.loads(
             Path(member["document_path"]).read_text(encoding="utf-8"))
         return _ok(document)
@@ -340,6 +424,28 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
 # ---------------------------------------------------------------------------
 # Workers (module-level so background tasks are picklable/testable)
 # ---------------------------------------------------------------------------
+
+def _persist_document(document: Any, out_dir: Path) -> Path:
+    """Persist a schedule document under the split-endpoint discipline
+    (contract 1.3, docs/04 R-T1d): the main render document (interaction
+    stripped → ~1.1 size) to ``schedule_document.json``, and the Tier-0
+    interaction payload — when present — to a sibling ``interaction.json``
+    the split endpoint serves. Pool members / edge-less callers have no
+    interaction and write no sibling file. Returns the main document path."""
+    doc_path = out_dir / "schedule_document.json"
+    main_doc = document.model_copy(update={"interaction": None})
+    doc_path.write_text(main_doc.model_dump_json(indent=2), encoding="utf-8")
+    if document.interaction is not None:
+        (out_dir / "interaction.json").write_text(
+            json.dumps({
+                "schedule_id": document.schedule_id,
+                "contract_version": document.contract_version,
+                "interaction": document.interaction.model_dump(mode="json"),
+            }, indent=2),
+            encoding="utf-8",
+        )
+    return doc_path
+
 
 def _run_gate(registry: Registry, submission_id: str, sub_dir: Path | str,
               files_dir: Path) -> dict:
@@ -407,8 +513,7 @@ def _execute_solve(registry: Registry, run: dict, files_dir: Path,
 
     try:
         document = build_document_from_run(out_dir, snapshot_id, run_id)
-        doc_path = out_dir / "schedule_document.json"
-        doc_path.write_text(document.model_dump_json(indent=2), encoding="utf-8")
+        doc_path = _persist_document(document, out_dir)
         registry.register_schedule(
             schedule_id=document.schedule_id, run_id=run_id,
             snapshot_id=snapshot_id, status=document.status.value,
@@ -472,6 +577,49 @@ def _execute_pool(registry: Registry, pool_id: str, schedule_row: dict,
                              error=f"{type(exc).__name__}: {exc}")
 
 
+def _execute_forced_alternatives(registry: Registry, pool_id: str,
+                                 schedule_row: dict, params: dict) -> None:
+    """Build the forced-alternative ghosts (R-T1a) for a registered schedule
+    and index them into the pool tables with a ``forced_alternative`` source
+    label. Registry-free module; this worker owns the indexing."""
+    from mre.modules.forced_alternatives import build_forced_alternatives
+
+    run = registry.get_run(schedule_row["run_id"])
+    try:
+        result = build_forced_alternatives(
+            out_dir=Path(run["out_dir"]),
+            snapshot_id=schedule_row["snapshot_id"],
+            base_schedule_id=schedule_row["id"],
+            run_id=schedule_row["run_id"],
+            target_op_ids=params.get("target_op_ids"),
+            budget=int(params.get("budget", 4)),
+            member_time_limit_s=float(params.get("member_time_limit", 10.0)),
+            seed=int(params.get("seed", 1234)),
+            pool_id=pool_id,
+        )
+        registry.finish_pool(
+            pool_id, result.status,
+            summary=result.summary(),
+            members=[
+                {"member_index": m.member_index, "objective": m.objective,
+                 "objective_delta_pct": m.objective_delta_pct,
+                 "hamming_from_incumbent": None,
+                 "document_path": m.document_path,
+                 "source": "forced_alternative", "verdict": m.verdict,
+                 "label": {
+                     "target_operation_ref": m.target_operation_ref,
+                     "forbidden_resource_ref": m.forbidden_resource_ref,
+                     "alternative_resource_ref": m.alternative_resource_ref,
+                     "status": m.status,
+                 }}
+                for m in result.members
+            ],
+        )
+    except Exception as exc:  # noqa: BLE001 — background task must not raise
+        registry.finish_pool(pool_id, "failed",
+                             error=f"{type(exc).__name__}: {exc}")
+
+
 def _execute_whatif(registry: Registry, run: dict, base_schedule: dict,
                     modifications: list, time_limit: Optional[float]) -> None:
     """Run a scenario re-solve, fully run-scoped: the base snapshot is copied
@@ -504,8 +652,7 @@ def _execute_whatif(registry: Registry, run: dict, base_schedule: dict,
             runs_subdir="scenario_runs",
             parent_schedule_id=base_schedule["id"],
         )
-        doc_path = out_dir / "schedule_document.json"
-        doc_path.write_text(document.model_dump_json(indent=2), encoding="utf-8")
+        doc_path = _persist_document(document, out_dir)
         (out_dir / "diff.json").write_text(
             json.dumps(result.diff, indent=2, default=str), encoding="utf-8")
 
