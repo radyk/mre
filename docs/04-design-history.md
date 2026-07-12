@@ -3374,3 +3374,60 @@ saturated identical-rate pair is what surfaces cross-machine ghosts;
 a distinct-rate optimum is machine-unique) — remains
 **design-thread-owned**, not attempted here; (5) the `renderers.py`
 "−N more" prose quirk (above).
+
+## Amendment — 2026-07-12: R-T1 — Tier-1 ghost sources, sandbox
+time-boxing, and interaction-payload delivery (interim-B design
+session)
+
+Resolved in the Phase 3 design thread. Context: the 3.1 multi_route
+finding — under realistic distinct rates the near-optimal pool
+converges on machine placement, so pool-only ghosts degrade
+precisely on economically realistic data.
+
+**R-T1a — Two ghost sources, unified rendering, honest labels.**
+Tier-1 ghosts come from (1) POOL members (near-optimal placements,
+the cheap options) and (2) FORCED-ALTERNATIVE solves: for selected
+ops, targeted re-solves each carrying a "not on the incumbent
+machine" cut, warm-started, short time limit — yielding the TRUE
+best price of each road not taken. An infeasible forced solve is
+information: the ghost renders as a proven "not feasible this
+horizon" verdict. Planner-visible result: every eligible machine
+for a grabbed op wears a price or a verdict. Epistemics per R-DP6
+hold — both sources are vouched for by complete solved schedules;
+they deliberately sample different regions. Demo language: "priced
+alternatives," not "near-optimal alternatives."
+
+**R-T1b — Lifecycle.** Forced-alternative solves run async
+post-publish (never at grab time), per likely-grabbed op
+(initial heuristic: late demands and their critical-path ops),
+stored as pool-member-class documents, invalidated on supersede —
+the pool's exact lifecycle. Coverage misses degrade gracefully:
+no ghost, Tier-0 green remains. Scale note (named, not hidden):
+this multiplies pool-build solve count and inherits the pool's
+slice-awareness qualification, now heavier; the per-slice answer
+remains pilot-gated. Strategic note: the forced-alternative
+service is the ATP fast-targeted-re-solve muscle built early.
+
+**R-T1c — Sandbox time-boxing (elaborates R-DP2).** The Tier-2
+sandbox re-solve runs under a hard, visible budget (design token;
+initial 15s). Three honest outcomes, never an unbounded spinner:
+(1) verdict within budget → delta card as designed; (2) feasible
+incumbent, bound unproven → card ships flagged ("≈ delta, bound
+not proven" — SOLVER_NONOPTIMAL surfacing in the UI); (3) nothing
+within budget → R-DP2 return-home with "couldn't verify this
+placement in time." The board is never blocked during the wait.
+Drops ONTO a ghost may render their card from the vouching
+schedule near-instantly (no fresh solve required for the
+placement itself). CI acceptance: a pinned re-solve on the demo
+fixture must return a verdict within budget — a standing latency
+regression, so a heavy fixture fails a test before it fails a
+demo.
+
+**R-T1d — Interaction payload delivery.** Contract 1.2's
+interaction block moves to a split endpoint
+(GET /schedules/{id}/interaction), fetched on schedule load in
+the background after first paint — never grab-triggered (a
+network round-trip must not sit inside Tier-0's latency budget).
+Stale-while-revalidate on schedule-version change. The board
+renders read-only immediately; drag affordances enable when the
+payload arrives.

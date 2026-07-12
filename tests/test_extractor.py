@@ -161,6 +161,43 @@ class TestAssignments:
             assert d["basis"] == DecisionBasis.RECONSTRUCTED.value
 
 
+class TestAlternativeConsequenceWording:
+    """A cheaper road-not-taken renders as savings, not a negative 'more'
+    (Session 3.1c carry-in). The number was always honest; the sentence now
+    matches it. Symmetric: a costlier alternative reads 'Would cost $X more.'"""
+
+    def _consequences(self, tmp_path, snap_id):
+        from mre.modules.extractor import Extractor
+        sv = _solve_values(op_start=0, op_end=150, op_resource="res-1")
+        ops = [_operation("op-1", "wp-1")]
+        # res-1 chosen @ $10; res-2 cheaper @ $8; res-3 costlier @ $12
+        ress = [_resource("res-1"), _resource("res-2"), _resource("res-3")]
+        wps = [_wp("wp-1", ["op-1"])]
+        fuls = [_fulfillment("f-1", "d-1", "wp-1")]
+        demands = [_demand("d-1", DUE_WED)]
+        cm = _costmodel(rate=10.0)
+        cm["resource_rates"] = {"res-1": 10.0, "res-2": 8.0, "res-3": 12.0}
+        rep = _make_reporter(tmp_path, snap_id)
+
+        Extractor().extract(sv, snap_id, ops, wps, ress, fuls, demands, cm, rep)
+        records = rep._sink.read_all()
+        [dec] = [r for r in records if r.get("record_type") == "decision"
+                 and r.get("decision_type") == "assignment"]
+        return {a["option"]: a["consequence"] for a in dec["alternatives"]}
+
+    def test_cheaper_alternative_renders_as_savings(self, tmp_path):
+        cons = self._consequences(tmp_path, "snap-alt-save")
+        # (8 - 10) * 150 min = -$300 cheaper
+        assert cons["resource:res-2"] == "Would save $300.00."
+        assert "more" not in cons["resource:res-2"]
+        assert "-" not in cons["resource:res-2"]
+
+    def test_costlier_alternative_renders_as_more(self, tmp_path):
+        cons = self._consequences(tmp_path, "snap-alt-more")
+        # (12 - 10) * 150 min = +$300 costlier
+        assert cons["resource:res-3"] == "Would cost $300.00 more."
+
+
 # ---------------------------------------------------------------------------
 # ServiceOutcomes (per-Demand tardiness, D-07)
 # ---------------------------------------------------------------------------

@@ -195,14 +195,16 @@ class Extractor:
                         continue
                 alt_rate = rates.get(rid, 0.0)
                 cost_diff = (alt_rate - rate) * dur_min
+                if cost_diff > 0:
+                    consequence = f"Would cost ${cost_diff:.2f} more."
+                elif cost_diff < 0:
+                    consequence = f"Would save ${-cost_diff:.2f}."
+                else:
+                    consequence = "Same cost."
                 alternatives.append(
                     DecisionAlternative(
                         option=f"resource:{rid}",
-                        consequence=(
-                            f"Would cost {cost_diff:+.2f} more."
-                            if cost_diff != 0
-                            else "Same cost."
-                        ),
+                        consequence=consequence,
                     )
                 )
 
