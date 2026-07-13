@@ -33,8 +33,10 @@ $run = (Invoke-RestMethod -Method Post -Uri "$api/submissions/$sub/solve" -Conte
 $sch = (Invoke-RestMethod -Uri "$api/runs/$run").data.result.schedule_id
 Write-Host "[dev_cockpit] schedule_id=$sch"
 
+# budget=8 (over the service default of 4) so the lively busy_board fixture
+# surfaces a full set of priced roads-not-taken for the cockpit to render.
 Write-Host "[dev_cockpit] building forced-alternative ghosts (the priced roads not taken)"
-Invoke-RestMethod -Method Post -Uri "$api/schedules/$sch/alternatives" -ContentType $json -Body (@{ sync = $true } | ConvertTo-Json) -TimeoutSec 180 | Out-Null
+Invoke-RestMethod -Method Post -Uri "$api/schedules/$sch/alternatives" -ContentType $json -Body (@{ sync = $true; budget = 8 } | ConvertTo-Json) -TimeoutSec 300 | Out-Null
 
 Write-Host ""
 Write-Host "  cockpit URL:  http://localhost:5175/?schedule=$sch"

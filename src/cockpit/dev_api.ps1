@@ -1,10 +1,17 @@
 ﻿#Requires -Version 5
 # dev_api.ps1 — terminal 1 of the cockpit dev-startup recipe (see README.md).
 #
-# Generates a multi_route_distinct submission and starts the MRE API over a
-# persistent data root. Leave this running, then run dev_cockpit.ps1 in a
-# second terminal. Run it from anywhere — it resolves the repo root from its
-# own location.
+# Generates a submission (the busy_board FEEL fixture by default) and starts the
+# MRE API over a persistent data root. Leave this running, then run
+# dev_cockpit.ps1 in a second terminal. Run it from anywhere — it resolves the
+# repo root from its own location.
+param(
+    # Generator scenario for the dev submission. Defaults to busy_board — the
+    # lively, multi-eligible, loaded FEEL fixture built for gesture-surface
+    # feel-iteration. Pass any generator scenario, e.g.
+    #   .\src\cockpit\dev_api.ps1 -Scenario multi_route_distinct
+    [string]$Scenario = 'busy_board'
+)
 $ErrorActionPreference = 'Stop'
 
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
@@ -16,8 +23,8 @@ $env:MRE_DATA_ROOT = './_data'
 
 Write-Host "[dev_api] repo root:      $repo"
 Write-Host "[dev_api] MRE_DATA_ROOT:  $env:MRE_DATA_ROOT"
-Write-Host "[dev_api] generating multi_route_distinct submission -> _data/mrd"
-python tools/generate_erp_dataset.py --scenario multi_route_distinct --out _data/mrd
+Write-Host "[dev_api] generating $Scenario submission -> _data/mrd"
+python tools/generate_erp_dataset.py --scenario $Scenario --out _data/mrd
 if ($LASTEXITCODE -ne 0) { throw "dataset generation failed (exit $LASTEXITCODE)" }
 
 Write-Host "[dev_api] starting API on http://localhost:8000  (leave this running)"

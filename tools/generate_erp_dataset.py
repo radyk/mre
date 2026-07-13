@@ -119,6 +119,17 @@ SCENARIOS: dict[str, dict[str, Any]] = {
         with_customers=False, cost_profile="C1",
         multi_route=True, multi_route_distinct=True,
     ),
+    # A FEEL fixture (feel=True), NOT a truth-bearing test scenario: a lively,
+    # multi-eligible, loaded board for hands-on iteration of the cockpit gesture
+    # surface. Seeds no anomalies and asserts nothing — generate() writes a
+    # feel_fixture.json marker instead of a truth_manifest, and the
+    # scenario-enumerating tests skip it. Wired as dev_api.ps1's default
+    # --scenario. See _apply_busy_board for the design.
+    "busy_board": dict(
+        orders=40, resources=6, facilities=1, anomalies=[],
+        with_customers=False, cost_profile="C1",
+        busy_board=True, feel=True,
+    ),
 }
 
 
@@ -735,6 +746,122 @@ def _apply_multi_route(ds: Dataset, rng: random.Random,
         # ghosts — and the forced-alternative service supplies the priced ones.
         "expected_pool_cross_machine_ops_ge": 0 if distinct_rates else 1,
         "expected_collapse_cross_machine_ops": 0,
+    }
+
+
+def _apply_busy_board(ds: Dataset, rng: random.Random) -> dict:
+    """FEEL fixture — a lively cockpit board for hands-on iteration of the
+    gesture surface (grab → shade → ghosts → magnets → drop → traces). This is
+    NOT a truth-bearing test scenario: it seeds no anomalies and asserts
+    nothing, so generate() writes a feel_fixture.json marker instead of a
+    truth_manifest.json (and the scenario-enumerating tests skip it).
+
+    It is tuned for the qualities feel-iteration needs, not for a proof:
+      * 30–50 orders spread across MOST of the six resources;
+      * NEAR-EQUIVALENT but strictly distinct machine rates ($50.0–$51.0/h, a
+        ~2% spread) — close enough that tardiness dominates the objective and
+        the optimum SPREADS work across the machines (not concentrating on the
+        cheapest), distinct enough that every cross-machine ghost still carries
+        a nonzero (if small) price (Δrate × working minutes);
+      * MULTI-ELIGIBLE ops throughout (every op eligible on 2–6 machines), so
+        grab-shading and forced-alternative ghosts always have somewhere to go;
+      * enough LOAD, with front-loaded due dates, that some demands run tight or
+        late — so lateness coloring and consequence traces have real material;
+      * a few PRECEDENCE CHAINS that cross machines (products B and C: their
+        consecutive steps have DISJOINT eligible sets, so successive ops must
+        land on different resources).
+
+    Same IDS expression as multi_route (docs/05 B2, no schema change): one
+    routing_lines row per eligible resource under a shared (route_id, sequence);
+    the adapter groups them into a single EXPLICIT_SET OperationSpec. The rate
+    differential lives on the resource, not the op time, so one run_rate holds.
+    """
+    ref = ds.reference_date
+    R = [r["resource_id"] for r in ds.resources]
+    n_res = len(R)
+
+    # Near-equivalent, strictly distinct rates: a $0.20/h step per machine (a
+    # ~2% spread). Deliberately tiny — small enough that tardiness dominates the
+    # objective and the optimum SPREADS work across all six machines rather than
+    # concentrating on the cheapest, yet strictly distinct so every
+    # cross-machine ghost still carries a nonzero (if small) price.
+    rate_by_res = {R[i]: round(50.0 + 0.2 * i, 2) for i in range(n_res)}
+    ds.cost_model["refinements"]["resource_rates"] = dict(rate_by_res)
+
+    # Preserve the preset order count, then rebuild the process/demand tables.
+    n_orders = len(ds.orders)
+    ds.products, ds.routings, ds.routing_lines, ds.orders = [], [], [], []
+
+    def _product(pid: str, steps: list[list[str]], minutes: int) -> str:
+        route_id = f"RT-{pid}"
+        ds.products.append({
+            "product_id": pid, "uom": "EA", "facility_id": ds.facilities[0],
+            "product_group": "busy_board", "costing_lot_size": "1",
+            "setup_minutes": "0", "production_minutes": str(minutes),
+            "cost_price": "10.0",
+        })
+        ds.routings.append({
+            "route_id": route_id, "facility_id": ds.facilities[0],
+            "product_id": pid, "status": "active", "approved": "Y",
+            "version": "1", "effective_from": ref.isoformat(),
+        })
+        for step_idx, eligible in enumerate(steps):
+            seq = (step_idx + 1) * 10
+            for res_id in eligible:  # one row per eligible resource — the set
+                ds.routing_lines.append({
+                    "route_id": route_id, "sequence": str(seq),
+                    "resource_id": res_id, "active": "1",
+                    "setup_minutes": "", "run_minutes_per_unit": "",
+                    "dwell_minutes": "0", "setup_family": "",
+                    "splittable": "false", "min_chunk_minutes": "",
+                })
+        return route_id
+
+    # Eligible sets deliberately overlap so the whole board touches all six
+    # resources and most ops have 2–4 homes; B and C are cross-machine chains
+    # (disjoint consecutive steps ⇒ the precedence edge MUST span machines).
+    catalog = [
+        ("PROD-BB-A", [[R[0], R[1], R[2]], [R[1], R[2], R[3]], [R[3], R[4], R[5]]], 240),
+        ("PROD-BB-B", [[R[0], R[2], R[4]], [R[1], R[3], R[5]]], 260),
+        ("PROD-BB-C", [[R[0], R[1]], [R[2], R[3]], [R[4], R[5]]], 220),
+        ("PROD-BB-D", [[R[0], R[1], R[2], R[3], R[4], R[5]]], 300),
+    ]
+    routes = [(pid, _product(pid, steps, minutes), steps)
+              for pid, steps, minutes in catalog]
+
+    # Two due-date cohorts that together exercise the full lateness spectrum:
+    #  * a RUSH FRONT due tomorrow (ref+1), a window that provably cannot hold
+    #    their work — the front cohort's minutes modestly exceed the first two
+    #    working days of capacity across the six machines — so SOME must run late
+    #    (red) and the rest tight (amber);
+    #  * a comfortable TAIL due a week+ out (green).
+    front = 2 * n_orders // 5
+    for i in range(n_orders):
+        pid, route_id, _steps = routes[i % len(routes)]
+        oid = f"ORD-{i + 1:06d}"
+        if i < front:
+            due = ref + timedelta(days=1)             # over-subscribed rush front
+        else:
+            due = ref + timedelta(days=9 + (i % 3))   # comfortable green tail
+        ds.orders.append({
+            "order_id": oid, "product_id": pid, "route_id": route_id,
+            "quantity": "1", "due_date": due.isoformat(),
+            "created_date": ref.isoformat(), "release_date": ref.isoformat(),
+            "facility_id": ds.facilities[0], "customer_id": "",
+            "priority_class": "", "commitment_class": "standard",
+        })
+
+    # A compact, non-asserting summary for the marker (feel fixture: descriptive,
+    # not a truth manifest — nothing here is checked by a test).
+    multi_eligible_steps = sum(1 for _pid, _rt, steps in routes
+                               for s in steps if len(s) > 1)
+    return {
+        "resources": R,
+        "resource_rates": rate_by_res,
+        "n_orders": n_orders,
+        "products": [pid for pid, _s, _m in catalog],
+        "multi_eligible_step_count": multi_eligible_steps,
+        "cross_machine_chains": ["PROD-BB-B", "PROD-BB-C"],
     }
 
 
@@ -1447,6 +1574,8 @@ def generate(
     if preset.get("multi_route"):
         truth_extra["multi_route"] = _apply_multi_route(
             ds, rng, distinct_rates=preset.get("multi_route_distinct", False))
+    if preset.get("busy_board"):
+        truth_extra["busy_board"] = _apply_busy_board(ds, rng)
 
     anomaly_entries: list[dict] = []
     for spec in anomaly_specs:
@@ -1456,6 +1585,23 @@ def generate(
         anomaly_entries.append(entry)
 
     _write_submission(out_dir, ds)
+
+    if preset.get("feel"):
+        # Feel fixture (docs/07 Phase 3): a hands-on cockpit board, not a
+        # truth-bearing scenario. It seeds no anomalies and is tight/late BY
+        # DESIGN, so there is nothing to assert. Emit a descriptive marker —
+        # clearly NOT a truth_manifest — and return it.
+        marker = {
+            "feel_fixture": True,
+            "scenario": scenario, "seed": seed,
+            "orders": n_orders, "resources": n_resources, "facilities": n_facilities,
+            "reference_date": ref_date.isoformat(),
+            "expected_costing_grade": preset.get("cost_profile", "C0"),
+            **truth_extra,
+        }
+        (out_dir / "feel_fixture.json").write_text(
+            json.dumps(marker, indent=2), encoding="utf-8")
+        return marker
 
     grade_order = {"REJECTED": 0, "CONDITIONAL": 1, "ACCEPTED": 2}
     expected_grade = "ACCEPTED"
@@ -1502,7 +1648,11 @@ def main(argv: list[str] | None = None) -> int:
         anomalies=anomalies,
     )
     print(f"[generate_erp_dataset] wrote submission to {args.out}")
-    print(f"[generate_erp_dataset] expected_certificate_grade={truth['expected_certificate_grade']}")
+    if truth.get("feel_fixture"):
+        print("[generate_erp_dataset] feel fixture — no truth manifest "
+              "(marker: feel_fixture.json)")
+    else:
+        print(f"[generate_erp_dataset] expected_certificate_grade={truth['expected_certificate_grade']}")
     return 0
 
 

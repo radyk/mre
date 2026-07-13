@@ -18,7 +18,10 @@ REQUIRED_FILES = (
 )
 
 
-@pytest.mark.parametrize("scenario", [s for s in SCENARIOS if s != "clean_large"])
+@pytest.mark.parametrize(
+    "scenario",
+    [s for s in SCENARIOS if s != "clean_large" and not SCENARIOS[s].get("feel")],
+)
 def test_scenario_emits_required_files(tmp_path, scenario):
     out = tmp_path / scenario
     generate(out, scenario=scenario, seed=1)
@@ -29,7 +32,10 @@ def test_scenario_emits_required_files(tmp_path, scenario):
     assert (out / "truth_manifest.json").exists()
 
 
-@pytest.mark.parametrize("scenario", [s for s in SCENARIOS if s != "clean_large"])
+@pytest.mark.parametrize(
+    "scenario",
+    [s for s in SCENARIOS if s != "clean_large" and not SCENARIOS[s].get("feel")],
+)
 def test_truth_manifest_shape(tmp_path, scenario):
     out = tmp_path / scenario
     truth = generate(out, scenario=scenario, seed=2)
@@ -71,6 +77,31 @@ def test_cli_anomaly_override(tmp_path):
     assert truth["orders"] == 50
     assert truth["expected_certificate_grade"] == "CONDITIONAL"
     assert truth["anomalies"][0]["anomaly"] == "duplicate_order_ids"
+
+
+def test_busy_board_is_a_feel_fixture(tmp_path):
+    """busy_board is a FEEL fixture: it emits a valid IDS submission plus a
+    feel_fixture.json marker, and NEVER a truth_manifest.json — so it is not
+    treated as a truth-bearing test scenario. It carries multi-eligible ops
+    throughout (the property the gesture surface needs)."""
+    import csv as _csv
+    from collections import Counter
+
+    out = tmp_path / "busy_board"
+    marker = generate(out, scenario="busy_board", seed=1)
+    for fname in REQUIRED_FILES:
+        assert (out / fname).exists(), f"{fname} missing for busy_board"
+    assert (out / "feel_fixture.json").exists()
+    assert not (out / "truth_manifest.json").exists()
+    assert marker["feel_fixture"] is True
+
+    # Multi-eligible ops throughout: some (route_id, sequence) group names >1
+    # resource, and near-equivalent-but-distinct rates give ghosts a price.
+    lines = list(_csv.DictReader((out / "routing_lines.csv").open(encoding="utf-8")))
+    grp = Counter((r["route_id"], r["sequence"]) for r in lines)
+    assert max(grp.values()) > 1, "expected multi-eligible ops (shared route_id+sequence)"
+    rates = set(marker["busy_board"]["resource_rates"].values())
+    assert len(rates) == marker["resources"], "rates must be distinct per machine"
 
 
 @pytest.mark.slow

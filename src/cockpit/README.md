@@ -25,7 +25,7 @@ src/drag/           the gesture surface: shade · ghosts · magnets · controlle
 src/main.js         boot: resolve schedule → fetch doc + grade → render → wire drag
 ```
 
-## Dev startup: the gesture cockpit against a solved `multi_route_distinct`
+## Dev startup: the gesture cockpit against a solved `busy_board`
 
 **Run these two scripts** (PowerShell), one per terminal, from the repo root —
 each resolves the repo root from its own location, so running them from anywhere
@@ -33,7 +33,9 @@ works. Terminal 1 runs the API; terminal 2 prepares one solved schedule with its
 priced ghosts and then runs the Vite dev server proxied at it.
 
 ```powershell
-# Terminal 1 — generate a submission + start the API (leave running)
+# Terminal 1 — generate a submission + start the API (leave running).
+# Defaults to the busy_board FEEL fixture; -Scenario overrides it, e.g.
+#   .\src\cockpit\dev_api.ps1 -Scenario multi_route_distinct
 .\src\cockpit\dev_api.ps1
 
 # Terminal 2 — submit -> solve -> build ghosts -> print URL -> npm run dev
@@ -57,10 +59,22 @@ the API base by setting `$env:MRE_API` before `dev_cockpit.ps1` (default
 Optional `&ask=<question>` on the URL auto-runs one M10 question after load, e.g.
 `?schedule=<id>&ask=why%20is%20ORD-000012%20on%20F001-RES002%3F`.
 
-Why `multi_route_distinct`: distinct machine rates + light load, so the solution
-pool converges and the priced ghosts you drag onto are the **forced-alternative**
-service's true roads-not-taken, not a saturated pool's artifacts (docs/04
-Session 3.2a).
+Why `busy_board` (the default): it is a **feel fixture** — not a truth-bearing
+test scenario (it seeds no anomalies and writes a `feel_fixture.json` marker, not
+a `truth_manifest.json`), tuned for the qualities feel-iteration needs. 30–50
+orders spread across the six resources; near-equivalent but strictly distinct
+machine rates ($50.0–$51.0/h, ~2% apart) so tardiness dominates and the optimum
+spreads work across the machines, yet every cross-machine ghost still carries a
+nonzero price; multi-eligible ops throughout; a rush cohort due tomorrow on an
+over-subscribed window (so some demands run late) plus a comfortable green tail —
+so lateness coloring and consequence traces have material; and a few precedence
+chains that cross machines. `dev_cockpit.ps1` asks for `budget=8` forced alternatives (over the
+service default of 4) so the board surfaces a full set of priced ghosts.
+
+For the forced-alternative **counterfactual** instead — distinct rates + light
+load, where the near-optimal pool converges so the priced ghosts are provably the
+forced service's roads-not-taken and not a saturated pool's artifacts — run
+`-Scenario multi_route_distinct` (docs/04 Session 3.2a).
 
 The built app (`npm run build`) fetches the same relative paths, so it also runs
 behind the API or the test fixture server unchanged (production build = no tuning
@@ -75,8 +89,9 @@ no `jq` needed).
 **Terminal 1 — generate a submission, then start the API (leave running):**
 
 ```sh
-# from repo root
-python tools/generate_erp_dataset.py --scenario multi_route_distinct --out _data/mrd
+# from repo root (--scenario busy_board is dev_api.ps1's default; swap in any
+# generator scenario, e.g. multi_route_distinct, here)
+python tools/generate_erp_dataset.py --scenario busy_board --out _data/mrd
 
 MRE_DATA_ROOT=./_data uvicorn mre.api.app:create_app --factory --app-dir src --port 8000
 ```
@@ -102,8 +117,9 @@ SCH=$(curl -s $API/runs/$RUN \
 
 # 3. build the forced-alternative ghosts (the priced cross-machine bars CU2 draws).
 #    WITHOUT this the drag surface still stands up, but Tier-0-green-only — no ghosts.
+#    budget=8 (over the service default of 4) to fill the lively busy_board board.
 curl -s -XPOST $API/schedules/$SCH/alternatives -H content-type:application/json \
-     -d '{"sync":true}' >/dev/null
+     -d '{"sync":true,"budget":8}' >/dev/null
 
 echo "cockpit URL: http://localhost:5175/?schedule=$SCH"
 
