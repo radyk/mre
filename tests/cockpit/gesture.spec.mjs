@@ -77,6 +77,43 @@ test("grab → Tier-0 shading, sub-100ms (CU1)", async ({ page }) => {
   await shot(page, "g01_grab_shade");
 });
 
+test("dragging a bar sideways moves the bar, NOT the timeline window (3.2c)", async ({ page }) => {
+  await boot(page);
+  // This is the ONE test driven by REAL pointer events (not the programmatic
+  // window.__cockpit.drag hooks) — the pan/drag conflict lives in vis's own
+  // Hammer pan, which only the real event path exercises. A horizontal drag
+  // over a bar must leave the timeline window bit-for-bit unchanged.
+  const bar = page.locator(".vis-item.bar").first();
+  await expect(bar).toBeVisible();
+  const box = await bar.boundingBox();
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+
+  const before = await page.evaluate(() => window.__cockpit.getWindow());
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  // pan/zoom suppressed the instant the pointer lands on a bar
+  expect(await page.evaluate(() => window.__cockpit.board.isPanZoomEnabled())).toBe(false);
+  // drag well past the grab slop, horizontally, in steps (each a Hammer panmove)
+  for (const dx of [20, 80, 160, 260, 360]) {
+    await page.mouse.move(cx + dx, cy, { steps: 3 });
+  }
+  const during = await page.evaluate(() => window.__cockpit.getWindow());
+  expect(during.start, "window start unchanged mid-drag").toBe(before.start);
+  expect(during.end, "window end unchanged mid-drag").toBe(before.end);
+  // the bar itself moved: a grab happened and the carry is off its incumbent
+  const midPhase = await page.evaluate(() => window.__cockpit.drag.state().phase);
+  expect(["dragging", "grabbed"]).toContain(midPhase);
+
+  await page.mouse.up();
+  // pan/zoom resumes the instant the drag ends; the drop didn't move the window
+  expect(await page.evaluate(() => window.__cockpit.board.isPanZoomEnabled())).toBe(true);
+  const after = await page.evaluate(() => window.__cockpit.getWindow());
+  expect(after.start, "window start unchanged after drop").toBe(before.start);
+  expect(after.end, "window end unchanged after drop").toBe(before.end);
+  await shot(page, "g00_pan_suppressed");
+});
+
 test("hover-over-dim shows the one-line reason (CU1, R-DP2)", async ({ page }) => {
   await boot(page);
   const op = priced[0].label.target_operation_ref;
@@ -202,6 +239,8 @@ test("no verdict → return home with reason (CU4, R-T1c outcome 3 / R-DP2)", as
   // the bar returned home: the gesture is over (idle), overlays cleared.
   const phase = await page.evaluate(() => window.__cockpit.drag.state().phase);
   expect(phase).toBe("idle");
+  // Tier-0 shading fully clears once idle — no wash persists on an idle board.
+  expect(await page.locator(".drag-shade .shade-row").count()).toBe(0);
   await shot(page, "g07_return_home");
 });
 
@@ -224,6 +263,8 @@ test("accept is stubbed disabled; discard restores everything (CU4/CU5, R-DP7)",
   await expect(page.locator(".delta-card")).toBeHidden();
   expect(await page.locator(".drag-traces .trace-old").count()).toBe(0);
   expect(await page.locator(".carry-bar").count()).toBe(0);
+  // shading is part of "everything" — the idle board carries no leftover wash.
+  expect(await page.locator(".drag-shade .shade-row").count()).toBe(0);
   await shot(page, "g08_post_discard");
 });
 

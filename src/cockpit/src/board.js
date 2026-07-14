@@ -116,6 +116,21 @@ export function createBoard(hostEl, doc) {
   timeline.setWindow(win.start, win.end, { animation: false });
   requestAnimationFrame(() => { timeline.redraw(); renderOverlay(); });
 
+  // --- pan/zoom suppression (3.2c) -------------------------------------
+  // vis owns a built-in Hammer pan/zoom on the center container: a horizontal
+  // drag shifts the whole window. That fights a bar drag — dragging a bar
+  // sideways would pan the board out from under the cursor. The gesture
+  // controller disables vis's moveable/zoomable for the duration of a bar drag
+  // (grab→release) and restores it the instant the drag ends. vis re-checks
+  // options.moveable on every panmove (Range._onDrag), so toggling the option
+  // mid-gesture reliably halts the window — no Hammer surgery needed.
+  let panZoomEnabled = true;
+  function setPanZoom(enabled) {
+    if (panZoomEnabled === enabled) return;
+    panZoomEnabled = enabled;
+    timeline.setOptions({ moveable: enabled, zoomable: enabled });
+  }
+
   // --- citation overlay (the 3.0b always-on overlay, productionized) ----
   // A positioned layer mounted INSIDE vis's centerContainer that carries a
   // legible tag centered on each cited bar. It exists for two reasons: narrow
@@ -245,6 +260,11 @@ export function createBoard(hostEl, doc) {
     resourceName: nameOf,
     setInteraction(payload) { interactionPayload = payload; },
     getInteraction() { return interactionPayload; },
+    // pan/zoom suppression during a bar drag (3.2c). The gesture controller
+    // calls setPanZoom(false) on grab and setPanZoom(true) on release so the
+    // board stays completely still under the cursor while a bar is being moved.
+    setPanZoom,
+    isPanZoomEnabled() { return panZoomEnabled; },
     onSelect(cb) { selectCb = cb; },
     select(operationRef) { const id = opToItem.get(operationRef); if (id) { timeline.setSelection([id]); setSelected(id); } },
     highlight,

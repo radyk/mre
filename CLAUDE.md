@@ -94,6 +94,24 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 IN PROGRESS — Session 3.2c: the drag/pan
+conflict fix 2026-07-14.** A bug found live on `busy_board`: dragging a bar
+sideways panned the whole timeline (vis-timeline's built-in Hammer pan on the
+center container ran alongside the controller's bar-carry; the pointer path's
+`preventDefault` never touched it). Latent through 3.2b because the harness
+drives the phase machine through the programmatic `window.__cockpit.drag` hooks,
+which emit no Hammer events — the conflict lives only on the real pointer path.
+Fix: `board.setPanZoom(enabled)` toggles vis's `moveable`/`zoomable` (the
+vendored `Range._onDrag` re-checks `moveable` on every panmove, so options hold
+mid-gesture — no Hammer surgery); the controller suppresses on pointer-down over
+a bar (still from the first pixel) and restores on pointer-up (pan resumes the
+instant the bar is released, so tentative/verdict stays pannable). Verified by a
+NEW real-pointer harness test (window bit-for-bit unchanged mid-drag; a
+negative-control run proved it bites) + a shading-lifecycle check (already
+correct — no wash survives to an idle board; regression pins added). **Cockpit
+JS 24/24** (7 board + 5 legality + 12 gesture); Python untouched. See the
+docs/04 2026-07-14 Session 3.2c amendment and docs/07 v2.4.
+
 **Roadmap position: Phase 3 IN PROGRESS — interim B COMPLETE 2026-07-12
 (Session 3.2b, the gesture surface).** The interaction layer, rendered against
 `multi_route_distinct` (realistic rates → the priced ghosts are the

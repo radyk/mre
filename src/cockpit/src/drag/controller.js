@@ -360,6 +360,11 @@ export function createGestureController(board, geometry, opts) {
     const itemId = props?.item;
     if (itemId == null || !asgById.has(itemId)) return;   // not a bar
     down = { x: ev.clientX, y: ev.clientY, op: asgById.get(itemId).operation_ref, moved: false };
+    // Still the board from the very first pixel: suppress vis's built-in
+    // pan/zoom the instant the pointer lands on a bar, before any movement can
+    // start a Hammer pan (3.2c). A plain click that never becomes a drag simply
+    // restores it on pointerup below — vis tap-selection is unaffected.
+    board.setPanZoom(false);
   }
   function onPointerMove(ev) {
     if (!down) return;
@@ -370,8 +375,12 @@ export function createGestureController(board, geometry, opts) {
     ev.preventDefault();
   }
   function onPointerUp(ev) {
+    const wasDown = !!down;
     if (down && down.moved) { drop(); ev.preventDefault(); ev.stopPropagation(); }
     down = null; root.style.pointerEvents = "none";
+    // pan/zoom resumes the instant the drag ends — a dropped/tentative bar no
+    // longer owns the cursor, so the user is free to pan the board again (3.2c).
+    if (wasDown) board.setPanZoom(true);
   }
   const center = timeline.dom.centerContainer;
   center.addEventListener("pointerdown", onPointerDown, true);

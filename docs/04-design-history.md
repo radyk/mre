@@ -3709,3 +3709,61 @@ near-instant path). (e) Each forced-alternative gives ONE ghost per op
 (one cut per op); multiple ghosts per op await forbidding each machine
 in turn. (f) Whatever the feel iteration discovers once Daryn's hands
 are on the tuning panel — the tokens are provisional by design.
+
+## Amendment — 2026-07-14: Session 3.2c — the drag/pan conflict fix (unblocking feel iteration)
+
+**The bug, observed live on `busy_board`.** While dragging a bar,
+horizontal mouse movement panned the whole timeline instead of (or in
+addition to) moving the bar — the board slid out from under the cursor.
+The gesture surface was built on the premise that the board is still
+during a drag; it was not.
+
+**Root cause.** vis-timeline owns a built-in Hammer pan/zoom on the
+center container (`Range._onDragStart`/`_onDrag`, bound to
+`panstart`/`panmove` in the vendored `vis-timeline-graph2d.js`). That
+pan lives entirely in vis's own input pipeline — the controller's
+`onPointerMove` calling `preventDefault()` does nothing to it. So a
+horizontal drag fed BOTH the controller's bar-carry AND vis's window
+pan simultaneously. This was latent through all of 3.2b because the
+harness drives the phase machine through the programmatic
+`window.__cockpit.drag` hooks, which never emit Hammer events — the
+conflict only exists on the real pointer path, which no test exercised.
+
+**The fix (options, not Hammer surgery).** Read the vendored Range
+source first: `_onDragStart` (guard at the top) AND `_onDrag`
+(re-checked on EVERY panmove) both bail early on `!this.options.moveable`.
+So toggling the option mid-gesture reliably halts the window — no need
+to reach into Hammer or detach recognizers. `board.js` gains
+`setPanZoom(enabled)` (`timeline.setOptions({moveable, zoomable})` +
+a tracked flag) and `isPanZoomEnabled()`. `drag/controller.js`
+suppresses on `onPointerDown` OVER A BAR — before any movement can
+start a Hammer pan, so the board is still from the first pixel — and
+restores on `onPointerUp`. Suppression is bound to the PHYSICAL pointer
+gesture (down→up), not the phase machine: pan resumes the instant the
+bar is released, so the tentative/verdict phase is freely pannable to
+inspect traces (the overlay tracks pan via `redraw()` as always). The
+programmatic harness path never panned and is deliberately left
+unsuppressed. vis tap-selection is unaffected (a plain click suppresses
+on down, restores on up, and `selectable` is untouched), confirmed by
+the interim-A select regression still green.
+
+**Verified.** New `gesture.spec.mjs` test — the ONLY one driven by
+REAL pointer events (`page.mouse.down/move/up`) against the real built
+cockpit + real vis-timeline, the one path that exercises the Hammer
+pan: a horizontal bar-drag leaves the timeline window bit-for-bit
+unchanged mid-drag and after drop, while the phase confirms a grab
+happened; `isPanZoomEnabled()` is false during and true after.
+**Negative control run before trusting it:** with the real
+`setOptions` call stubbed to a no-op, the test failed exactly on the
+mid-drag assertion (window jumped a full day) — the test bites. Full
+cockpit JS suite **24/24** (7 board + 5 legality + **12** gesture, up
+from 11). Python untouched (frontend-only). **Shading-lifecycle check
+(asked for in the same session):** confirmed already correct — `redraw()`
+early-returns on `idle` and every idle-entry path (`returnHome`,
+`discard`, `cancelSilently`) runs `clearOverlays()` in the same
+synchronous block, so no wash survives to an idle board; added standing
+`.shade-row === 0` assertions to the return-home and discard tests as a
+regression pin. No fix needed there. Live `busy_board` confirmation is
+the user's hands-on eyeball (the fixture exists for exactly that); the
+real-pointer harness test + negative control are the machine-checked
+proof.
