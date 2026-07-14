@@ -3767,3 +3767,104 @@ regression pin. No fix needed there. Live `busy_board` confirmation is
 the user's hands-on eyeball (the fixture exists for exactly that); the
 real-pointer harness test + negative control are the machine-checked
 proof.
+
+### 2026-07-14 — Session 3.2d: feel-session fixes (six items from a live `busy_board` session)
+
+Six items observed by Daryn with his hands on the gesture surface. All
+frontend except CU4 (a Python renderer wording fix) and CU6 (an
+investigation that confirmed a config-only wiring). Screenshots existed
+for the shading-persist (CU1) and shading-noise (CU5) items.
+
+**CU1 — Tier-0 shading must clear on drop (bug, fixed).** After a legal
+drop the grab-phase green/amber/dim wash persisted into the tentative
+phase alongside the tentative bar + card. 3.2c had verified clearing on
+every *idle-entry* path (return-home / discard / cancel) and added
+regression pins there — but the **drop→tentative transition** is not an
+idle entry, and it was the missed seam. Per design the drop answers the
+"where can it go" question, so on that transition the legality overlays
+(shade + ghosts + the refusal reason) retire, leaving only tentative bar
++ traces + delta card. Fix in `drag/controller.js`: a new
+`clearLegalityOverlays()` (clears shade/ghosts/labels + `S.drawnGhosts`,
+drops the `refusing` class) called on entering tentative in BOTH drop
+paths (the sandbox re-solve and the near-instant drop-onto-ghost); and
+`redraw()` now only repaints shade/ghosts while `phase ∈ {grabbed,
+dragging}` so a pan/zoom during tentative/verdict can't bring the wash
+back. New `gesture.spec.mjs` test drives a canned-VERDICT drop WITHOUT
+awaiting the sandbox promise to observe the tentative phase in flight:
+`shade-row === 0` and `ghost-bar === 0` at the drop instant AND through
+the verdict, tentative bar still present, then Discard restores a clean
+idle board. (The existing return-home/discard shade pins from 3.2c stay.)
+
+**CU2 — Accept must READ as disabled (feel/honesty).** It was already
+`disabled` and inert on click, but styled like a live control. Now
+visibly inert: `drag.css` `.dc-accept` dimmed (`opacity: .5`) with
+`cursor: not-allowed` and no hover affordance; tooltip reworded from the
+dev-facing R-DP7 note to the planner-facing "Publish workflow arrives in
+the next build." A dead control that looks alive violates the
+no-silent-anything spirit of R-DP7.
+
+**CU3 — deictic injection (fixed at the UI seam).** The
+"Why is this here?" deictic must compile the RESOLVED planner-vocabulary
+question from the live selection *before* `/ask` — never a literal "this",
+never a canonical id. `askpanel.js` already composed
+`why is <wo> on <resource_name>?`, but two seams were hardened: (a) the
+scope's `(op)` fallback that could show a *selected-but-unresolvable*
+bar with an enabled-but-dead button is gone — an order-less selection
+now keeps the button disabled with a hint (`.scope-hint` "click a bar to
+ask why it's placed there"), the honest state; (b) `board.select()`
+(programmatic selection, used by delta-card navigation and the harness)
+now fires the shared-selection callback — vis emits `select` only on user
+interaction, so a programmatic select previously left the ask panel's
+scope silently stale. The router is UNTOUCHED: its refusal of an
+unresolvable "this" was correct; it only ever sees fully-resolved
+external refs. New `cockpit.spec.mjs` test: no selection → button
+disabled + hint; select ORD-000012/F001-RES001 → scope populated, button
+enabled, click → the exact resolved question `why is ORD-000012 on
+F001-RES001?` was sent and a non-fallback testimony answer rendered.
+
+**CU4 — fallback menu speaks planner, not developer (wording only).**
+The unsupported-question menu listed `WO-XXXX / M-YYYY / snap-a vs
+snap-b` id-shapes. `explainer.py` `_SUPPORTED_ROUTES` reworded into
+planner language ("why is an order late", "what's running on a machine",
+"schedule for a customer", "what changed between two schedule versions"),
+and a new `_planner_routes()` leads the menu with CONCRETE examples drawn
+from the loaded schedule's real external refs where cheap (a deterministic
+`min()` pick of the identity map's order + machine names), falling back to
+the generic planner list. Router capabilities unchanged; the
+`supported_routes` key and the renderer header are unchanged, so the
+explainer tests hold (129 green).
+
+**CU5 — shading emphasis controls (feel; tokens first).** On busy boards
+most rows are legitimately green, so the wash reads as noise. Added two
+feel knobs — `shade.green_opacity` and `shade.dim_opacity` — mirrored to
+`:root` by `applyFeel()`, exposed as tuning-panel sliders, and applied in
+`drag.css` as separate `opacity` multipliers on the green legal segments
+vs the dim/capability washes. Defaults deliberately let dim + ghosts
+dominate over green (green damped to 0.5, dim at full 1.0). No
+rendering-philosophy change yet — the inversion decision (emphasize
+forbidden over legal) waits on Daryn's verdict with the knobs in hand.
+
+**CU6 — LLM renderer wiring (investigated, wired for dev — it was
+config-only).** The M10 `LLMRenderer` + testimony validator path was
+already fully built and reachable from `POST /schedules/{id}/ask`
+(`use_llm = req.llm and bool(ANTHROPIC_API_KEY)`), and fails closed three
+ways: no key / no `anthropic` package → template with a note; prose that
+fails post-render validation (timestamps / durations / machine names
+against the evidence bundle), even after one regeneration → deterministic
+template with a `[LLM validation failed … fell back to template]` stamp.
+So the only gap was the client never asking for it. Wired: `api.js`
+`ask()` sends the `llm` flag; `main.js` sets it true only in the dev
+build (`import.meta.env.DEV`) so the production `vite build` the harness
+serves always renders templates; documented in the cockpit README
+(key via the API server's environment, never committed — gitleaks scans
+for it). No new answer path, no new LLM reach; template render remains
+the default and the fail-closed floor.
+
+**Result.** Cockpit JS **26/26** (7 board + 5 legality + 14 gesture; the
+board suite gains the CU3 deictic test, the gesture suite the CU1
+shade-clear test). Python explainer suite **129 green** (CU4 wording).
+Committed on master. (Pre-existing, untouched: the
+`test_certificate_conversation.py[busy_board]` parametrization KeyErrors
+on `expected_certificate_grade` — `busy_board` is a feel fixture with a
+`feel_fixture.json` marker, not a truth manifest; fails identically on
+3.2c HEAD, flagged for a later test-guard.)

@@ -78,6 +78,8 @@
   --shade-amber: rgba(224, 166, 60, 0.20);
   --shade-dim: rgba(8, 10, 15, 0.42);            /* eligible-but-illegal wash */
   --shade-dim-capability: rgba(8, 10, 15, 0.62); /* wrong machine (stronger) */
+  --shade-green-opacity: 0.5;        /* (feel-mirrored, CU5) legal-zone emphasis */
+  --shade-dim-opacity: 1.0;          /* (feel-mirrored, CU5) forbidden-zone emphasis */
 
   /* Tier-1 ghosts (CU2): source-distinguished only subtly (border style) */
   --ghost-fill: rgba(139, 147, 167, 0.22);

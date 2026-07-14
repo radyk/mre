@@ -10,7 +10,11 @@
 //      question the explainer already understands).
 import { ask } from "./api.js";
 
-export function createAskPanel(rootEl, board, scheduleId) {
+export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
+  // useLlm: send the `llm` flag to /ask. Enabled only in the dev build (main.js
+  // passes import.meta.env.DEV). The server honors it solely when a key is set
+  // and fails closed to the template renderer otherwise (CU6).
+  const useLlm = !!opts.useLlm;
   let selection = null;   // {operation_ref, work_orders, resource_id, resource_name}
 
   rootEl.innerHTML = `
@@ -37,14 +41,26 @@ export function createAskPanel(rootEl, board, scheduleId) {
   const deicticBtn = rootEl.querySelector("#ask-deictic");
 
   function renderScope() {
-    if (!selection) { scopeEl.innerHTML = ""; deicticBtn.disabled = true; return; }
-    const wo = selection.work_orders[0] || "(op)";
+    // The deictic ask is only well-formed when the selected bar resolves to an
+    // external order ref (planner vocabulary) AND a resource name — otherwise
+    // there is no honest "why is X on Y?" to compose. No selection (or an
+    // order-less bar) → the button stays disabled with a hint, never a dead
+    // control that fires a bare "why is this here?" at the router (CU3).
+    const wo = selection && (selection.work_orders || [])[0];
+    if (!wo || !selection.resource_name) {
+      scopeEl.innerHTML = `<span class="scope-hint">click a bar to ask why it's placed there</span>`;
+      deicticBtn.disabled = true;
+      deicticBtn.title = "select a bar on the board first";
+      return;
+    }
     scopeEl.innerHTML = `selected <b>${wo}</b> on <b>${selection.resource_name}</b>`;
     deicticBtn.disabled = false;
+    deicticBtn.title = `ask: why is ${wo} on ${selection.resource_name}?`;
   }
 
   // shared selection: a clicked bar scopes the deictic ask (R-DP shared state).
   board.onSelect((sel) => { selection = sel; renderScope(); });
+  renderScope();   // show the "click a bar" hint before any selection
 
   function appendYou(text) {
     clearEmpty();
@@ -84,7 +100,7 @@ export function createAskPanel(rootEl, board, scheduleId) {
     appendYou(question);
     inputEl.value = "";
     try {
-      const res = await ask(scheduleId, question);
+      const res = await ask(scheduleId, question, useLlm);
       appendAnswer(res.answer, res.bundle);
     } catch (e) {
       const el = document.createElement("div");
@@ -95,10 +111,13 @@ export function createAskPanel(rootEl, board, scheduleId) {
     }
   }
 
+  // Compile the RESOLVED question from the live selection BEFORE calling /ask —
+  // external refs only (work_order + resource external_name), never the literal
+  // "this" and never a canonical id. The router is left untouched; it only ever
+  // sees a fully-resolved planner-vocabulary question (CU3).
   function deictic() {
-    if (!selection) return;
-    const wo = selection.work_orders[0];
-    if (!wo) return;
+    const wo = selection && (selection.work_orders || [])[0];
+    if (!wo || !selection.resource_name) return;   // unresolvable — button is disabled anyway
     run(`why is ${wo} on ${selection.resource_name}?`);
   }
 

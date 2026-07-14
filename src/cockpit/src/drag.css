@@ -9,11 +9,13 @@
 .drag-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 
 /* --- CU1: Tier-0 shading ------------------------------------------------- */
+/* Legal (green) and forbidden (dim) carry SEPARATE opacity multipliers so the
+ * emphasis is tunable live (CU5). Defaults let dim + ghosts dominate green. */
 .shade-row { position: absolute; }
-.shade-row.eligible { background: var(--shade-dim); }
-.shade-row.dim.capability { background: var(--shade-dim-capability); }
+.shade-row.eligible { background: var(--shade-dim); opacity: var(--shade-dim-opacity, 1); }
+.shade-row.dim.capability { background: var(--shade-dim-capability); opacity: var(--shade-dim-opacity, 1); }
 .shade-seg { position: absolute; }
-.shade-seg.green { background: var(--shade-green); box-shadow: inset 0 0 0 1px var(--shade-green-edge); }
+.shade-seg.green { background: var(--shade-green); box-shadow: inset 0 0 0 1px var(--shade-green-edge); opacity: var(--shade-green-opacity, 1); }
 .shade-seg.amber { background: var(--shade-amber); }
 
 /* --- CU2: ghosts (source-distinguished subtly by border) ---------------- */
@@ -117,7 +119,11 @@
 .dc-actions { display: flex; justify-content: flex-end; gap: var(--sp-2); margin-top: var(--sp-2); }
 .dc-actions button { border-radius: var(--radius); padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; border: 0; }
 .dc-discard { background: var(--panel-2); border: 1px solid var(--grid) !important; color: var(--ink); }
-.dc-accept { background: var(--grid); color: var(--muted-2); cursor: not-allowed; }
+/* Accept is stubbed disabled (no publish workflow yet) — it must READ as inert,
+ * never like a live control, or it violates the no-silent-anything spirit of
+ * R-DP7 (CU2). Muted + not-allowed + dimmed, no hover affordance. */
+.dc-accept { background: var(--grid); color: var(--muted-2); cursor: not-allowed; opacity: 0.5; }
+.dc-accept:disabled:hover { background: var(--grid); }
 
 /* --- CU6: the tuning panel (dev only) ----------------------------------- */
 .tuning-panel {

@@ -128,6 +128,35 @@ cd src/cockpit && npm install
 MRE_API=$API npm run dev
 ```
 
+## LLM answers (optional, dev only)
+
+The ask panel's answers are rendered **deterministically from templates by
+default**. The M10 `LLMRenderer` (Anthropic) is wired but **fail-closed** and
+gated three ways, so it can only ever improve fluency, never fabricate:
+
+- **Dev build only.** `src/main.js` sends the `llm` flag to `POST
+  /schedules/{id}/ask` only when `import.meta.env.DEV` is true (i.e. `vite dev`).
+  The production `npm run build` the harness serves always renders templates.
+- **Key required, in the environment.** The API honors the flag only when
+  `ANTHROPIC_API_KEY` is set in the **API server's** environment (terminal 1):
+
+  ```powershell
+  $env:ANTHROPIC_API_KEY = "sk-ant-…"   # NEVER commit this — gitleaks scans for it
+  .\src\cockpit\dev_api.ps1
+  ```
+
+  With no key set, the server drops back to `use_llm=False` and the template
+  renderer — silently and correctly.
+- **Validated, or it falls back.** `LLMRenderer.render` validates every prose
+  answer against the evidence bundle (timestamps, durations, machine names). On a
+  validation failure — even after one regeneration — it renders the deterministic
+  template instead and stamps `[LLM validation failed … fell back to template]`.
+  There is no path from a missing key or a bad generation to an error or to
+  unvalidated prose.
+
+The key is read from the process environment only; it is never written to a file
+in this repo, and CI's gitleaks scan guards against an accidental commit.
+
 ## Tests
 
 The screenshot harness lives in `tests/cockpit/` (CU5). `npm run test:e2e` here

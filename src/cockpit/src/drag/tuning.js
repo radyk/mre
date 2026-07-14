@@ -24,6 +24,8 @@ const CONTROLS = [
   ["snap.grid_px", "snap · grid", 0, 40, 1],
   ["snap.grid_step_min", "grid step (min)", 5, 120, 5],
   ["snap.falloff", "magnet falloff", 0.5, 3, 0.1],
+  ["shade.green_opacity", "shade · legal (green)", 0, 1, 0.02],
+  ["shade.dim_opacity", "shade · forbidden (dim)", 0, 1, 0.02],
   ["ghost.opacity", "ghost opacity", 0, 1, 0.02],
   ["ghost.infeasible_opacity", "infeasible opacity", 0, 1, 0.02],
   ["tentative.pulse_ms", "tentative pulse (ms)", 300, 2500, 50],

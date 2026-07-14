@@ -179,19 +179,26 @@ export function createBoard(hostEl, doc) {
   let selectedItem = null;
   const itemToOp = new Map([...opToItem].map(([op, it]) => [it, op]));
 
+  // The shared-selection payload (planner vocabulary — work_order + resource
+  // external_name, never canonical ids). One builder so a bar CLICK and a
+  // programmatic select() notify the ask panel identically (the deictic seam).
+  function selectionPayload(itemId) {
+    const a = doc.assignments.find((x) => x.assignment_id === itemId);
+    if (!a) return null;
+    return {
+      operation_ref: a.operation_ref,
+      work_orders: a.work_orders || [],
+      resource_id: a.resource_id,
+      resource_name: nameOf(a.resource_id),
+    };
+  }
+
   timeline.on("select", (props) => {
     const itemId = props.items && props.items[0];
     if (!itemId || String(itemId).startsWith("cal-")) return;
     setSelected(itemId);
-    const a = doc.assignments.find((x) => x.assignment_id === itemId);
-    if (a && selectCb) {
-      selectCb({
-        operation_ref: a.operation_ref,
-        work_orders: a.work_orders || [],
-        resource_id: a.resource_id,
-        resource_name: nameOf(a.resource_id),
-      });
-    }
+    const payload = selectionPayload(itemId);
+    if (payload && selectCb) selectCb(payload);
   });
 
   function setSelected(itemId) {
@@ -266,7 +273,17 @@ export function createBoard(hostEl, doc) {
     setPanZoom,
     isPanZoomEnabled() { return panZoomEnabled; },
     onSelect(cb) { selectCb = cb; },
-    select(operationRef) { const id = opToItem.get(operationRef); if (id) { timeline.setSelection([id]); setSelected(id); } },
+    select(operationRef) {
+      const id = opToItem.get(operationRef);
+      if (!id) return;
+      timeline.setSelection([id]);
+      setSelected(id);
+      // vis emits 'select' only on user interaction, not on setSelection — so a
+      // programmatic select must notify the shared-selection callback itself,
+      // or the ask panel's deictic scope would silently miss it (CU3).
+      const payload = selectionPayload(id);
+      if (payload && selectCb) selectCb(payload);
+    },
     highlight,
     clearHighlight,
     fit() { timeline.setWindow(win.start, win.end, { animation: false }); },

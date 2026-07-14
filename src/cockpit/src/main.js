@@ -47,7 +47,10 @@ async function boot() {
     paintTopStrip(strip, doc, meta);
     const board = createBoard(boardHost, doc);
     legend(boardHost.parentElement);
-    const panel = createAskPanel(askRoot, board, id);
+    // The dev build asks the API to use the LLM renderer (fails closed to the
+    // template when no ANTHROPIC_API_KEY / on validation failure). The
+    // production `vite build` the harness serves has DEV=false → always template.
+    const panel = createAskPanel(askRoot, board, id, { useLlm: !!import.meta.env?.DEV });
 
     // harness + demo hook (read-only): drive the sixty-second script's first
     // frame from the URL (?ask=...) and expose probes for the screenshot tests.

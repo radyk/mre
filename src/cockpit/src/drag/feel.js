@@ -21,6 +21,16 @@ export const DEFAULT_FEEL = {
     grid_step_min: 30,     // the fallback grid resolution (minutes)
     falloff: 1.6,          // >1 = softer approach, harder final click
   },
+  // --- Tier-0 shading emphasis (CU5) — separate opacity multipliers for the
+  // legal (green) zones and the forbidden (dim) wash. On a busy board most rows
+  // are legitimately green, so the wash reads as noise; the defaults deliberately
+  // let the dim + ghosts dominate over green (green damped, dim at full). Daryn
+  // tunes these live; the inversion decision (emphasize forbidden) waits on his
+  // verdict with the knobs. ---
+  shade: {
+    green_opacity: 0.5,    // legal-zone green, damped so it doesn't wash out
+    dim_opacity: 1.0,      // forbidden-zone dim, full strength (dominates)
+  },
   // --- ghosts (CU2) ---
   ghost: {
     opacity: 0.42,
@@ -71,6 +81,8 @@ function deepMerge(dst, src) {
 // stylesheet (drag.css) reads the same live values the tuning panel changes.
 export function applyFeel(feel, root = document.documentElement) {
   const s = root.style;
+  s.setProperty("--shade-green-opacity", String(feel.shade.green_opacity));
+  s.setProperty("--shade-dim-opacity", String(feel.shade.dim_opacity));
   s.setProperty("--ghost-opacity", String(feel.ghost.opacity));
   s.setProperty("--ghost-infeasible-opacity", String(feel.ghost.infeasible_opacity));
   s.setProperty("--tentative-pulse-ms", `${feel.tentative.pulse_ms}ms`);

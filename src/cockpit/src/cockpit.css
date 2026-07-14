@@ -125,6 +125,9 @@ html, body {
   font-size: 10px; color: var(--muted); min-height: 14px;
 }
 .ask .composer .scope b { color: var(--select); }
+.ask .composer .scope .scope-hint { color: var(--muted-2); font-style: italic; }
+/* the deictic button reads as inert until a bar is selected */
+.ask button.ghost:disabled { opacity: 0.45; cursor: not-allowed; }
 .ask .composer .row { display: flex; gap: var(--sp-2); }
 .ask input[type="text"] {
   flex: 1; background: var(--bg); border: 1px solid var(--grid); color: var(--ink);

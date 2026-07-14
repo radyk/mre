@@ -94,6 +94,43 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 IN PROGRESS — Session 3.2d: feel-session
+fixes 2026-07-14.** Six items from a live `busy_board` session (Daryn's
+hands on the gesture surface). **CU1** (bug): Tier-0 shading now clears
+on the **drop→tentative** transition — 3.2c had only covered the
+idle-entry paths, and drop is not one; `drag/controller.js`
+`clearLegalityOverlays()` retires the wash + ghosts on drop (both the
+sandbox and drop-onto-ghost paths) and `redraw()` no longer repaints
+shade/ghosts past the dragging phase (new harness test observes
+`shade === 0` in-flight through verdict, then a clean discard). **CU2**
+(honesty): the stubbed-disabled Accept button now READS as inert (dimmed
++ not-allowed + no hover) with the planner-facing tooltip "Publish
+workflow arrives in the next build." **CU3** (bug): the deictic
+"Why is this here?" seam — an order-less selection keeps the button
+disabled with a hint (no dead enabled control), and programmatic
+`board.select()` now fires the shared-selection callback so the ask
+panel's scope never goes stale; the router is UNTOUCHED (it only ever
+sees the fully-resolved external-ref question, never a literal "this").
+**CU4** (wording only): the unsupported-question fallback menu
+(`explainer.py`) reworded from `WO-XXXX / M-YYYY / snap-a` id-shapes into
+planner language, led by concrete examples from the loaded schedule's
+real refs where cheap. **CU5** (feel): two shading-emphasis knobs
+(`shade.green_opacity` / `shade.dim_opacity`) added as tuning-panel
+sliders + `:root` mirror + `drag.css` opacity multipliers; defaults let
+dim + ghosts dominate green (the inversion decision waits on Daryn's
+verdict with the knobs). **CU6** (investigate→wire): the M10 LLM
+renderer + testimony validator path was already built, reachable, and
+fail-closed (no key/package → template; validation failure after one
+regen → template) — config-only, so wired for the DEV build (`api.js`
+sends `llm`; `main.js` sets it true only under `import.meta.env.DEV`;
+production build always templates) and documented in the cockpit README
+(key via the API env, gitleaks-guarded). **Cockpit JS 26/26** (7 board +
+5 legality + 14 gesture); Python explainer 129 green. See the docs/04
+2026-07-14 Session 3.2d amendment and docs/07 v2.5. (Pre-existing,
+untouched: `test_certificate_conversation.py[busy_board]` KeyErrors on a
+missing truth-manifest key — `busy_board` is a feel fixture, not
+truth-bearing; fails identically on 3.2c HEAD.)
+
 **Roadmap position: Phase 3 IN PROGRESS — Session 3.2c: the drag/pan
 conflict fix 2026-07-14.** A bug found live on `busy_board`: dragging a bar
 sideways panned the whole timeline (vis-timeline's built-in Hammer pan on the

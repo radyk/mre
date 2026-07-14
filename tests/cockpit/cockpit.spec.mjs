@@ -84,6 +84,39 @@ test("select — clicking a bar scopes the deictic ask (shared selection)", asyn
   await shot(page, "02_select");
 });
 
+test("deictic — 'Why is this here?' injects the selection, not a literal 'this' (CU3)", async ({ page }) => {
+  await boot(page);
+  // With no selection the deictic button is inert and carries a hint, never a
+  // dead control that fires a bare "why is this here?" at the router.
+  await expect(page.locator("#ask-deictic")).toBeDisabled();
+  await expect(page.locator("#ask-scope .scope-hint")).toBeVisible();
+
+  // Select ORD-000012 on F001-RES001 (the bar with a canned answer). The
+  // selection populates the shared scope; the deictic compiles the RESOLVED
+  // planner-vocabulary question before /ask is ever called.
+  await page.evaluate(() => {
+    const doc = window.__cockpit.doc;
+    const nameOf = (rid) => (doc.resources.find((r) => r.resource_id === rid) || {}).external_name;
+    const a = doc.assignments.find(
+      (x) => (x.work_orders || []).includes("ORD-000012") && nameOf(x.resource_id) === "F001-RES001");
+    window.__cockpit.select(a.operation_ref);
+  });
+  await expect(page.locator("#ask-scope")).toContainText("ORD-000012");
+  await expect(page.locator("#ask-scope")).toContainText("F001-RES001");
+  await expect(page.locator("#ask-deictic")).toBeEnabled();
+
+  await page.locator("#ask-deictic").click();
+
+  // the RESOLVED question was sent — external refs, no literal "this"
+  await expect(page.locator("#ask-log .msg.you pre").last())
+    .toHaveText("why is ORD-000012 on F001-RES001?");
+  // …and a non-fallback answer rendered (real testimony, not "can't answer")
+  const answer = page.locator(".msg.answer").last();
+  await expect(answer).toContainText("Evidence chain");
+  await expect(answer).not.toContainText("can't answer");
+  await shot(page, "07_deictic");
+});
+
 test("ask+highlight — the acceptance moment: priced answer, cited bars light up", async ({ page }) => {
   await boot(page);
   await page.evaluate((q) => window.__cockpit.ask(q), ACCEPTANCE_Q);

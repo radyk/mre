@@ -114,8 +114,13 @@ export function createGestureController(board, geometry, opts) {
   function redraw() {
     const win = board.getWindow();
     if (S.phase === "idle") return;
-    if (S.tier0) renderShade(layers.shade, S.tier0, geometry, win);
-    S.drawnGhosts = renderGhosts(layers.ghosts, ghostLabels, S.opGhosts, geometry, win);
+    // The Tier-0 legality overlays (shade + ghosts) answer the "where can it go"
+    // question — they belong to the grab/drag phase only. Once the bar is
+    // dropped (tentative/verdict), the wash is cleared and must NOT be repainted
+    // by a pan/zoom redraw, leaving only tentative bar + traces + card (CU1).
+    const asking = S.phase === "grabbed" || S.phase === "dragging";
+    if (asking && S.tier0) renderShade(layers.shade, S.tier0, geometry, win);
+    if (asking) S.drawnGhosts = renderGhosts(layers.ghosts, ghostLabels, S.opGhosts, geometry, win);
     if (S.target) renderCarry();
     if (S.phase === "verdict" && S.result?.moves?.length) {
       S.traces = renderTraces(layers.traces, svg, S.result.moves, durationMinOf, geometry, win);
@@ -207,6 +212,7 @@ export function createGestureController(board, geometry, opts) {
 
     // otherwise a Tier-2 sandbox re-solve (R-T1c) behind the tentative bar.
     S.phase = "tentative";
+    clearLegalityOverlays();             // the drop answered "where" — clear the wash (CU1)
     renderCarry();                       // promote carry → tentative style
     card.showPending(feel.sandbox.budget_s, feel.sandbox.countdown_tick_ms);
     const t0 = performance.now();
@@ -248,6 +254,7 @@ export function createGestureController(board, geometry, opts) {
     };
     S.target = { resource_id: ghost.resource_id, time_ms: ms(ghost.start), legal: true, reason: null, anchor: null };
     S.phase = "tentative";
+    clearLegalityOverlays();             // the drop answered "where" — clear the wash (CU1)
     S.dropToVerdictMs = 0;               // near-instant path
     applyResult(result);
     return Promise.resolve(result);
@@ -301,6 +308,19 @@ export function createGestureController(board, geometry, opts) {
     ghostLabels.replaceChildren();
     while (svg.firstChild) svg.removeChild(svg.firstChild);
     reasonTip.classList.add("hidden");
+  }
+
+  // Clear ONLY the Tier-0 legality overlays (shade + ghosts + the refusal
+  // reason), keeping the tentative bar, traces, and card. Used on the
+  // drop→tentative transition (CU1): the drop has answered "where can it go",
+  // so the green/amber/dim wash and the ghost bars retire.
+  function clearLegalityOverlays() {
+    layers.shade.replaceChildren();
+    layers.ghosts.replaceChildren();
+    ghostLabels.replaceChildren();
+    S.drawnGhosts = [];
+    reasonTip.classList.add("hidden");
+    root.classList.remove("refusing");
   }
 
   // ---------------------------------------------------------------------

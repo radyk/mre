@@ -24,19 +24,23 @@ from typing import Any, Optional
 
 from mre.modules.evidence_index import EvidenceIndex
 
+# The fallback menu shown when a question doesn't route. Worded in the PLANNER'S
+# language — "an order", "a machine", "a customer" — never the developer's
+# id-shapes (WO-XXXX / M-YYYY / snap-a vs snap-b). Router capabilities are
+# unchanged; this is wording only (CU4). _planner_routes() below substitutes a
+# real order / machine from the loaded schedule where one is cheaply available.
 _SUPPORTED_ROUTES = [
-    '"Why is WO-XXXX late?" — lateness cause chain',
-    '"Are there any late orders?" — all late demands',
-    '"Why is WO-XXXX on M-YYYY?" — machine assignment reason',
-    '"What data problems exist?" — findings and quality issues',
-    '"What changed since snap-a vs snap-b?" — snapshot diff',
-    '"summarize" — run summary',
-    '"How much downtime does [machine/pool] have?" — calendar closures',
-    '"When does WO-XXXX start/finish?" — schedule for a work order',
-    '"What is running on M-YYYY [date]?" — machine schedule',
-    '"What\'s next on M-YYYY?" — upcoming jobs on a machine',
-    '"Schedule for customer X" — all jobs for a customer',
-    '"Show the schedule" / "full schedule" — complete schedule',
+    'why is an order late — the lateness cause chain',
+    'are there any late orders — every late order at a glance',
+    'why is an order on a machine — the assignment reason',
+    "what's running on a machine — that machine's schedule",
+    "what's next on a machine — its upcoming jobs",
+    'when does an order start or finish — one order\'s schedule',
+    'schedule for a customer — every job for that customer',
+    'how much downtime a machine has — its calendar closures',
+    'what data problems exist — data-quality findings',
+    'what changed between two schedule versions — a version diff',
+    'show the full schedule — everything, machine by machine',
 ]
 
 _SCHEDULE_TRIGGERS = frozenset({
@@ -563,11 +567,27 @@ class Explainer:
             ordered_records=[],
             key_facts={
                 "parsed": question,
-                "supported_routes": _SUPPORTED_ROUTES,
+                "supported_routes": self._planner_routes(),
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )
+
+    def _planner_routes(self) -> list[str]:
+        """The fallback menu in planner language, led by concrete examples drawn
+        from THIS schedule's real external refs where cheap (an actual order /
+        machine name), falling back to the generic planner-worded list. Router
+        capabilities are unchanged — wording only (CU4)."""
+        # Deterministic pick (min of the known refs) so the menu is stable.
+        order = min(self._order_refs.values()) if self._order_refs else None
+        machine = min(self._machine_refs.values()) if self._machine_refs else None
+        examples: list[str] = []
+        if order:
+            examples.append(f'why is {order} late — the lateness cause chain')
+            examples.append(f'when does {order} finish — one order\'s schedule')
+        if machine:
+            examples.append(f"what's running on {machine} — that machine's schedule")
+        return examples + list(_SUPPORTED_ROUTES)
 
     def _explain_downtime(self, question: str) -> ExplanationBundle:
         """Sum calendar closure windows for a named resource, pool, or setup family."""

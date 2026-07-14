@@ -86,7 +86,7 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate }) {
       ${returnHome ? `<div class="dc-reason">${result.message || "couldn't verify this placement"}</div>` : ""}
       ${lineHtml ? `<div class="dc-lines">${lineHtml}</div>` : ""}
       <div class="dc-actions">
-        <button class="dc-accept" disabled title="the publish workflow isn't built yet (3.2b) — accept is stubbed so a dead-end change can't violate R-DP7">Accept</button>
+        <button class="dc-accept" disabled title="Publish workflow arrives in the next build.">Accept</button>
         <button class="dc-discard">Discard</button>
       </div>`;
 

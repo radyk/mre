@@ -76,10 +76,15 @@ export function postSandbox(id, pin) {
   });
 }
 
-export function ask(id, question) {
+export function ask(id, question, useLlm = false) {
+  // `llm` is honored by the server ONLY when ANTHROPIC_API_KEY is set, and the
+  // LLMRenderer itself fails closed (no key / package / validation failure →
+  // deterministic template render, never an error, never unvalidated prose). The
+  // cockpit sends it true only in the dev build (see main.js); the production
+  // build always renders templates. See src/cockpit/README.md.
   return envelope(`/schedules/${id}/ask`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, llm: !!useLlm }),
   });
 }

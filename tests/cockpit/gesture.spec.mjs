@@ -214,6 +214,55 @@ test("legal drop off a ghost → sandbox verdict via /sandbox (CU4)", async ({ p
   await expect(page.locator(".delta-card.verdict")).toBeVisible();
 });
 
+test("Tier-0 shading clears on drop → tentative, stays cleared through verdict (CU1)", async ({ page }) => {
+  await boot(page);
+  const op = opFor("verdict");           // canned VERDICT → a real tentative window
+  const inc = incumbent(op);
+  // grab first: the wash is painted while asking "where can it go"
+  await page.evaluate((op) => window.__cockpit.drag.grab(op), op);
+  expect(await page.locator(".drag-shade .shade-row").count(),
+    "shaded while grabbed").toBeGreaterThan(0);
+
+  // drop WITHOUT awaiting so we observe the tentative phase (the sandbox
+  // re-solve is still in flight): the drop answered "where", so the legality
+  // wash + ghosts must already be gone, leaving only the tentative bar.
+  const obs = await page.evaluate(([op, rid, start]) => {
+    const p = window.__cockpit.drag.dropAt(op, rid, start);
+    const atDrop = {
+      phase: window.__cockpit.drag.state().phase,
+      shade: document.querySelectorAll(".drag-shade .shade-row").length,
+      ghosts: document.querySelectorAll(".drag-ghosts .ghost-bar").length,
+    };
+    return p.then(() => ({
+      atDrop,
+      after: {
+        phase: window.__cockpit.drag.state().phase,
+        shade: document.querySelectorAll(".drag-shade .shade-row").length,
+        ghosts: document.querySelectorAll(".drag-ghosts .ghost-bar").length,
+      },
+    }));
+  }, [op, inc.resource_id, inc.start]);
+
+  expect(obs.atDrop.phase).toBe("tentative");
+  expect(obs.atDrop.shade, "wash cleared the instant the bar is dropped").toBe(0);
+  expect(obs.atDrop.ghosts, "ghosts cleared on drop").toBe(0);
+  expect(obs.after.phase).toBe("verdict");
+  expect(obs.after.shade, "no wash repaints through the verdict phase").toBe(0);
+  expect(obs.after.ghosts).toBe(0);
+  // only the tentative bar + the card remain (traces belong to the verdict)
+  expect(await page.locator(".carry-bar.tentative").count()).toBe(1);
+  await expect(page.locator(".delta-card")).toBeVisible();
+  await shot(page, "g09_shade_cleared");
+
+  // Discard from this state restores a fully clean idle board.
+  await page.locator(".dc-discard").click();
+  await page.waitForTimeout(100);
+  const st = await page.evaluate(() => window.__cockpit.drag.state());
+  expect(st.phase).toBe("idle");
+  expect(await page.locator(".drag-shade .shade-row").count()).toBe(0);
+  expect(await page.locator(".carry-bar").count()).toBe(0);
+});
+
 test("flagged outcome → 'bound not proven' card (CU4, R-T1c outcome 2)", async ({ page }) => {
   await boot(page);
   const op = opFor("feasible_unproven");
