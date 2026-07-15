@@ -954,7 +954,10 @@ def _execute_accept(registry: Registry, base_schedule: dict, req: "AcceptRequest
     decision = {
         "record_id": result.decision_record_id,
         "authority": req.authority,
+        # delta_abs/delta_pct are the SCALED solver objective (never dollars);
+        # cost_delta carries the LEDGER dollars the card shows (exit-audit fix).
         "delta_abs": result.delta_abs, "delta_pct": result.delta_pct,
+        "cost_delta": result.cost_delta,
         "moved_count": result.moved_count, "pin": result.pin,
     }
     return document.schedule_id, decision

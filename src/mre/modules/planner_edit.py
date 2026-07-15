@@ -58,6 +58,9 @@ class PlannerEditResult:
     message: str = ""
     moves: list[dict] = field(default_factory=list)
     pin: dict = field(default_factory=dict)
+    # The DECOMPOSED dollar cost delta (production/setup/tardiness), so the
+    # accepted card shows LEDGER dollars, never the scaled objective (exit-audit).
+    cost_delta: dict = field(default_factory=dict)
 
 
 def apply_planner_edit(
@@ -262,7 +265,7 @@ def apply_planner_edit(
         status=solve_result.status, objective=solve_result.objective,
         delta_abs=delta_abs, delta_pct=delta_pct, moved_count=len(moves),
         decision_record_id=decision.record_id, wall_time_s=wall,
-        message="accepted", moves=moves,
+        message="accepted", moves=moves, cost_delta=cost_delta,
         pin={"operation_ref": pin_op_id, "resource_id": pin_resource_id,
              "start": pin_start_dt.isoformat()},
     )

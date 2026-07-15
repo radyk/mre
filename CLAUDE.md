@@ -94,7 +94,34 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
-**Roadmap position: Phase 3 BUILD COMPLETE — awaiting exit audit. Session 3.4:
+**Roadmap position: PHASE 3 COMPLETE (qualified) — exit audit done 2026-07-15;
+entering Phase 4 preparation.** A fresh audit session ran the six exit clauses
+LIVE on the real dev stack (uvicorn + `busy_board`, deterministic). **One seam
+found and FIXED in-session (the audit earning its keep):** the delta card
+rendered the SCALED solver objective delta as dollars — on `busy_board` it would
+have shown "+$602" for a true ledger cost delta of "+$5.02" (~120×). Fixed:
+`SandboxResult` carries `cost_delta_abs`/`cost_delta_pct` from a no-persist
+extraction of the re-solve's ledger vs the base total; `apply_planner_edit`
+exposes the decomposed `cost_delta` and the accept response carries it; the
+cockpit card shows dollars ONLY when ledger-backed and degrades to a
+relative-%-vs-current-plan label otherwise (never a false `$`). Re-verified LIVE
+("+0.01% cost · +$5.02", decomposing exactly). **Clause verdicts:** C1 (script
+LIVE ×2, deterministic legs agree; accept→Decision→publish→supersede→
+pool-invalidation→summarize all verified) PASS-qualified (sandbox ships the
+honest FLAGGED card within the 15 s budget on busy_board; LLM off — no key; voice
+driven programmatically); C2 (honesty armor) FAILED→FIXED→re-verified; C3 (R-DP)
+PASS via harness; C4 latency baselines recorded LIVE (first-grab ghosts **6.2 s**,
+cached **3.6 ms**, sandbox **15 s = budget→flagged**, grab→shade **5.2 ms**); C5
+(cold stranger) **MET-BY-PROXY** — the cold-drive is a NAMED Phase-4 entry
+condition; C6 carry-forwards inventoried (**feel tokens NOT yet exported/
+committed** — runs on `DEFAULT_FEEL`; cloud in-cloud 2.4b; slice-awareness; LLM
+voice normalizer; ghost precompute dial (a); pool-ghost partial consequences;
+real auth). `busy_board` = 90 scheduled assignments (the "hundreds of ops"
+phrasing was imprecise). **1036 non-slow Python passed (0 failed)** + slow
+sandbox/planner_edit ladder + **cockpit 34/34**. See the docs/04 2026-07-15
+Phase 3 exit-audit amendment and docs/07 v2.8.
+
+**Roadmap position: Phase 3 BUILD COMPLETE — Session 3.4:
 the interim final 2026-07-15.** The last build session of Phase 3; it ends with
 the sixty-second script running end to end. Five CUs + three riders.
 **CU1** (headline): **accept → Decision → publish**. Accept on the delta card is

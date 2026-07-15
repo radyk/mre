@@ -4178,3 +4178,101 @@ console print the headless fallback).
 passes in isolation, unrelated to this session) + the new slow ladder. Phase 3
 build work is complete — **Phase 3 awaits its exit audit** (a fresh session
 driving the exit demo cold). See docs/07 v2.7 and CLAUDE.md.
+
+## Amendment — 2026-07-15: Phase 3 EXIT AUDIT (audit mode; one seam found + fixed)
+
+A fresh session ran the exit prompt's six clauses LIVE against the real dev stack
+(uvicorn on :8137/:8138, `busy_board`, deterministic env `PYTHONHASHSEED=0` +
+`--deterministic`), no fixes unless a clause failed. **One clause failed
+(Clause 2, the delta-card dollar provenance); it was fixed in-session and
+re-verified live.** Every accommodation is named below. `busy_board` measured at
+90 scheduled assignments (CLAUDE.md's "board of hundreds of ops" was imprecise —
+corrected).
+
+**Clause 1 — the sixty-second script, LIVE: PASS (qualified).** Driven end to end
+over HTTP on `busy_board`, TWICE; the deterministic legs AGREE byte-for-byte
+(objective 5107162.0, sandbox/accept objective-delta 602.0, cost delta $5.02 —
+identical both legs). Beats: (1) ask "why is ORD-000012 late?" → testimony answer,
+1 op + 6 resources cited to glow; (2) 8 priced cross-machine ghosts; (3) drag onto
+a ghost → the Tier-2 re-solve returned **`feasible_unproven`** (FEASIBLE, bound
+unproven) within the 15 s budget — the honest FLAGGED card (R-T1c outcome 2), NOT
+a proven-optimal verdict, and **0 why-clauses** on the exercised drag (the moved
+op was not a major contiguous displacement, so none was fabricated — R-DP7); (4)
+Accept → a `planner_edit` Decision recorded (record_id present, **authority
+"audit-planner" present**), a NEW **proposed** version (is_scenario false, parent
+link true), **the base byte-identical/untouched**; (4b) Publish → base
+**superseded**, its **pool invalidated**, double-publish 409; (5) "summarize what
+I changed and what it cost" → testimony narrative naming the authority + the
+decomposed cost, and the cost-question decomposes production/setup/tardiness.
+**Accommodations:** the LLM renderer ran OFF (no `ANTHROPIC_API_KEY`) — template
+throughout; voice was driven programmatically (`panel.askSpoken`, no microphone in
+automation); the UI beats (glow / drag physics / card) are verified by the cockpit
+harness (client-side) while the BACKEND beats were verified live over HTTP.
+**Qualification:** on `busy_board` the sandbox uses the FULL 15 s budget and ships
+the flagged card — the demo's "delta confirms" is an honest ≈-delta, not a proven
+optimum, on a board this size.
+
+**Clause 2 — honesty armor: FAILED → FIXED → re-verified.** Registers never blend
+(testimony vs judgment distinct, live). Fail-closed verified: `llm:true` with no
+key returns a clean TEMPLATE answer (`[rendered by: template | register:
+testimony]`), no error, no unvalidated prose — named accommodation: the key was
+absent throughout, so the fail-closed path was verified DIRECTLY rather than by
+breaking a working key mid-session. Unsupported question refused honestly. **The
+failure:** the delta card rendered `delta_abs` (the SCALED, tardiness-weighted
+solver OBJECTIVE delta, ~100× the dollar ledger) with a `$` sign — on `busy_board`
+it would have shown **"+$602"** when the true ledger cost delta is **+$5.02** (a
+~120× overstatement); the "% cost" and the accepted card carried the same
+objective-as-dollars defect. A delta-card number that does NOT trace to ledger
+records (docs/02 §4.4). **Fix (authorized by the clause failure):** `SandboxResult`
+gains `cost_delta_abs`/`cost_delta_pct` computed from a no-persist extraction of
+the re-solve's ledger vs the base schedule's total; `apply_planner_edit` exposes
+the decomposed `cost_delta` and the accept response carries it; the cockpit card
+(`sandboxui.js` `_deltaHeadline` + `showAccepted`) shows dollars ONLY when
+ledger-backed and degrades to a relative-`%`-vs-current-plan label otherwise —
+never a false dollar figure. Re-verified LIVE: the card now shows **"+0.01% cost ·
++$5.02"** with the decomposition summing exactly (5.02 = 5.02 + 0 + 0). Sandbox +
+planner_edit tests green, full cockpit suite green.
+
+**Clause 3 — R-DP compliance: PASS.** Verified via the cockpit harness on current
+HEAD (34/34): literal drop (R-DP1), dim-refusal + return-home with reason (R-DP2),
+shading clears on the drop→tentative transition (3.2d CU1), no silent motion —
+traces held + legible board rebind on accept (R-DP7), Accept a LIVE control (no
+longer stubbed). Client-side / harness-driven (not a live pointer) — named.
+
+**Clause 4 — measurements (baselines recorded, LIVE on `busy_board`).** Median
+first-grab time-to-ghosts = **6.2 s** (82 of 90 multi-eligible ops uncovered;
+server-side K per-machine solves, parallelized dial-c, bounded by the 6 s
+per-solve limit — the cockpit shows the "pricing alternatives…" shimmer over the
+wait, absence never silent). Cached-grab (pool re-read on a second grab) =
+**3.6 ms**. Sandbox verdict latency = **15.0 s = the full budget token** → flagged.
+grab→shade = **5.2 ms** (client-side, from the gesture harness). The CU4 gap the
+record owed is now MEASURED: first grab is multi-second by design, cached is
+instant.
+
+**Clause 5 — the exit bar (cold stranger): MET-BY-PROXY.** No stranger who plans
+for a living was available this session. The bar is met by proxy — Daryn's live
+`busy_board` feel sessions (3.2d/3.3) + this audit's twice-run live script + the
+hermetic beat-by-beat rehearsal. **The cold-stranger drive is a NAMED CONDITION on
+Phase 4 entry** (docs/07 Phase 4 entry conditions), not relaxed.
+
+**Clause 6 — carry-forward inventory (nothing evaporates).** 2.4b cloud in-cloud
+confirmations (Docker/Azure) — OPEN. Pool/forced slice-awareness (pilot-gated) —
+OPEN. LLM voice normalizer — OPEN. Ghost precompute dial (a) — OPEN, but the
+`busy_board` first-grab profiling it was paired with is now MEASURED (6.2 s /
+3.6 ms above). Pool-ghost partial consequences — OPEN. Real auth (dev token now) —
+OPEN. **Feel tokens exported + committed: NOT LANDED** — no `feel.tokens.json` in
+the tree; the surface runs on `DEFAULT_FEEL`; the export path is verified working
+(3.4), Daryn's tuning pass is still pending. CP-SAT-contention flakes
+(`test_scenario_untouched_moves_bounded`, `test_n3000`) marked as such — this
+audit's full run passed CLEAN (1036 non-slow, 0 failed), confirming flake status.
+**NEW (from this audit):** the hermetic canned-sandbox fixture carries no
+`cost_delta_abs`, so the rehearsal/gesture cards degrade to the relative-% headline
+while the LIVE path shows dollars — a minor fixture-realism follow-up (the builder
+could compute it on the next regen).
+
+**Verdict: Phase 3 COMPLETE (qualified).** One seam found and fixed in-session
+(the delta-card dollar provenance — the exit audit earning its keep); all other
+clauses PASS or are recorded with named accommodations. **1036 non-slow Python
+passed (0 failed)** + slow sandbox/planner_edit ladder + **cockpit 34/34**.
+Entering Phase 4 preparation; carried conditions: the cold-stranger cold-drive,
+cloud in-cloud confirmations, and Daryn's feel-token pass.

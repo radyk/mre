@@ -65,8 +65,17 @@ class SandboxResult:
     # limit or the wall time?" question answers itself.
     applied_time_limit_s: float = 0.0
     objective: Optional[float] = None
-    delta_pct: Optional[float] = None      # vs the incumbent objective
-    delta_abs: Optional[float] = None      # objective_after - objective_before
+    delta_pct: Optional[float] = None      # vs the incumbent objective (SCALED)
+    delta_abs: Optional[float] = None      # objective_after - objective_before (SCALED)
+    # The DOLLAR cost delta from the ledger (Phase-3 exit audit fix): the solver
+    # objective is a SCALED, tardiness-weighted sum (~100× the dollar ledger), so
+    # ``delta_abs`` must NEVER be shown as a dollar amount. These carry the true
+    # cost delta — extracted from the re-solve's own ledger vs the base schedule's
+    # total — so every number the delta card shows in dollars traces to ledger
+    # records (docs/02 §4.4). None when the ledger could not be computed (the card
+    # then degrades to a relative-% headline, never a false dollar figure).
+    cost_delta_abs: Optional[float] = None   # dollars: total_after - total_before
+    cost_delta_pct: Optional[float] = None   # cost_delta_abs / total_before * 100
     message: str = ""
     # The moved-set (R-DP7): every op the pinned re-solve displaced relative to
     # the incumbent, old → new (resource + start). The pinned op itself is
@@ -223,6 +232,17 @@ def sandbox_pin_resolve(
         if incumbent_objective > 0:
             delta_pct = round(delta_abs / incumbent_objective * 100.0, 4)
 
+    # The DOLLAR cost delta (exit-audit fix) — the ledger truth the card shows in
+    # dollars, NOT the scaled objective. A no-persist extraction of the re-solve
+    # gives the new cost total; the base total comes from the base schedule's
+    # summary. Fully guarded: any failure → None → the card degrades to a
+    # relative-% headline, never a false dollar figure.
+    cost_delta_abs = cost_delta_pct = None
+    if feasible:
+        cost_delta_abs, cost_delta_pct = _cost_delta_dollars(
+            reader, solve_result.solve_values, ops, wps, resources, fuls,
+            demands, cost_model, var_map)
+
     # The moved-set (R-DP7): old → new placement for every displaced op. Read
     # the new placement from the solve values, the old from the incumbent; a
     # move is a resource change or a start shift ≥ 1 min (the differ tolerance).
@@ -245,10 +265,41 @@ def sandbox_pin_resolve(
         within_budget=wall <= budget_s + _BUDGET_STOP_MARGIN_S,
         wall_time_s=wall, budget_s=budget_s, applied_time_limit_s=budget_s,
         feasible=feasible, objective=solve_result.objective,
-        delta_pct=delta_pct, delta_abs=delta_abs, message=message, moves=moves,
+        delta_pct=delta_pct, delta_abs=delta_abs,
+        cost_delta_abs=cost_delta_abs, cost_delta_pct=cost_delta_pct,
+        message=message, moves=moves,
         pin={"operation_ref": pin_op_id, "resource_id": pin_resource_id,
              "start": pin_start_dt.isoformat()},
     )
+
+
+def _cost_delta_dollars(reader, solve_values, ops, wps, resources, fuls,
+                        demands, cost_model, var_map) -> tuple:
+    """The DOLLAR cost delta of a pinned re-solve vs the base schedule (exit-audit
+    fix). A no-persist extraction gives the re-solve's ledger total; the base
+    total comes from the base schedule entity's summary_metrics. Returns
+    (abs_dollars, pct) or (None, None) on any failure — the caller degrades the
+    card to a relative-% headline rather than show a false dollar figure."""
+    try:
+        from mre.modules.extractor import Extractor
+        schedules = list(reader.iter_entities("schedule"))
+        base_total = float(schedules[-1].get("summary_metrics", {})
+                           .get("total_cost", 0.0)) if schedules else 0.0
+        if not base_total:
+            return None, None
+        er = Extractor().extract(
+            solve_values=solve_values, snapshot_id="sandbox-cost",
+            operations=ops, workpackages=wps, resources=resources,
+            fulfillments=fuls, demands=demands, cost_model=cost_model,
+            reporter=None, cal_windows=var_map.cal_windows,
+            op_eligible=var_map.op_eligible, snapshot_writer=None,
+            is_scenario=True, overtime_windows=var_map.overtime_windows,
+        )
+        new_total = float((er.cost_ledger or {}).get("total_cost", 0.0))
+        abs_d = round(new_total - base_total, 2)
+        return abs_d, round(abs_d / base_total * 100.0, 4)
+    except Exception:
+        return None, None
 
 
 def _moved_set(

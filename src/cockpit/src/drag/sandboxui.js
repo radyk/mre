@@ -122,8 +122,12 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
   function showAccepted({ newScheduleId, decision }) {
     _stopCountdown();
     card.className = "delta-card accepted";
-    const delta = decision && decision.delta_abs != null
-      ? ` · ${decision.delta_abs >= 0 ? "+" : "−"}$${Math.abs(decision.delta_abs).toLocaleString()}`
+    // LEDGER dollars only (exit-audit fix): cost_delta.total_delta is the true
+    // decomposed cost delta; decision.delta_abs is the SCALED objective and is
+    // never shown as dollars.
+    const td = decision && decision.cost_delta && decision.cost_delta.total_delta;
+    const delta = td != null
+      ? ` · ${td >= 0 ? "+" : "−"}$${Math.abs(td).toLocaleString(undefined, { maximumFractionDigits: 2 })}`
       : "";
     const shortId = (newScheduleId || "").slice(0, 8);
     card.innerHTML = `
@@ -182,12 +186,24 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
       { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
   }
 
+  // The headline shows LEDGER dollars only (exit-audit fix): `cost_delta_abs`
+  // (+ `cost_delta_pct`) is the true dollar delta from the re-solve's ledger.
+  // `delta_abs`/`delta_pct` are the SCALED solver objective (~100× dollars,
+  // tardiness-weighted) — NEVER shown as a dollar amount. When no ledger dollar
+  // figure is available (a pool-ghost drop, a fixture), the card degrades to a
+  // relative-% label ("vs current plan") — an honest signal, never a false $.
   function _deltaHeadline(result) {
+    const cAbs = result.cost_delta_abs, cPct = result.cost_delta_pct;
+    if (cAbs != null) {
+      if (Math.abs(cAbs) < 0.005) return "Same cost";
+      const pct = cPct != null ? `${cPct > 0 ? "+" : "−"}${Math.abs(cPct).toFixed(2)}% cost · ` : "";
+      return `${pct}${cAbs > 0 ? "+" : "−"}$${Math.abs(cAbs).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    }
+    // no ledger dollars → relative objective change only, labelled honestly
     const d = result.delta_pct;
     if (d == null) return "Feasible";
-    if (Math.abs(d) < 1e-6) return "Same cost";
-    const abs = result.delta_abs != null ? ` · ${result.delta_abs > 0 ? "+" : "−"}$${Math.abs(result.delta_abs).toLocaleString()}` : "";
-    return `${d > 0 ? "+" : "−"}${Math.abs(d).toFixed(2)}% cost${abs}`;
+    if (Math.abs(d) < 1e-6) return "Same plan";
+    return `${d > 0 ? "+" : "−"}${Math.abs(d).toFixed(2)}% vs current plan`;
   }
 
   return { showPending, showResult, showAccepted, showPublished, hide, el: card };
