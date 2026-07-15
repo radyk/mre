@@ -9,7 +9,7 @@
 //      to it (the board tells us the work_order + resource; we compose the
 //      question the explainer already understands).
 import { ask } from "./api.js";
-import { createPushToTalk, speak, spokenSummary, speechRecognitionAvailable } from "./voice.js";
+import { createVoiceInput, speak, spokenSummary, speechRecognitionAvailable } from "./voice.js";
 
 export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
   // useLlm: send the `llm` flag to /ask. Enabled only in the dev build (main.js
@@ -28,13 +28,21 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
       (e.g. “why is ORD-000012 on F001-RES001?”).</div>
     </div>
     <div class="composer">
+      <!-- Interim transcript FLOATS above the composer (Session 3.7 CU1): a
+           fixed-footprint overlay so streaming speech never reflows the row the
+           mic lives in — nothing under an active pointer may move (R-M1 spirit). -->
+      <div class="voice-overlay hidden" id="ask-voice-overlay" aria-live="polite">
+        <span class="vo-dot" aria-hidden="true"></span>
+        <span class="vo-label">recording</span>
+        <span class="vo-text" id="ask-voice-text"></span>
+      </div>
       <div class="scope" id="ask-scope"></div>
       <div class="row">
         <input id="ask-input" type="text" placeholder="ask a question…" autocomplete="off" />
-        <button id="ask-mic" class="mic" title="hold to speak" aria-label="push to talk">🎤</button>
+        <button id="ask-mic" class="mic" title="tap to speak" aria-label="voice input"
+                aria-pressed="false">🎤</button>
         <button id="ask-send">Ask</button>
       </div>
-      <div class="voice-caption hidden" id="ask-caption"></div>
       <div class="row">
         <button class="ghost" id="ask-deictic" disabled>Why is this here?</button>
         <button class="ghost" id="ask-clear">Clear highlight</button>
@@ -138,23 +146,47 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
   deicticBtn.addEventListener("click", deictic);
   rootEl.querySelector("#ask-clear").addEventListener("click", () => board.clearHighlight());
 
-  // --- voice: push-to-talk into the same ask path (CU3) ----------------
+  // --- voice: tap-to-talk into the same ask path (CU3; Session 3.7 model) ---
   const micBtn = rootEl.querySelector("#ask-mic");
-  const captionEl = rootEl.querySelector("#ask-caption");
-  const ptt = createPushToTalk({
-    onInterim: (t) => { captionEl.textContent = t; captionEl.classList.remove("hidden"); },
-    onState: (s) => { micBtn.classList.toggle("listening", s === "listening"); },
-    onTranscript: (t) => { captionEl.classList.add("hidden"); captionEl.textContent = ""; run(t, { spoken: true }); },
+  const overlayEl = rootEl.querySelector("#ask-voice-overlay");
+  const overlayTextEl = rootEl.querySelector("#ask-voice-text");
+  let voiceState = "idle";
+
+  const voice = createVoiceInput({
+    // Silence auto-stop is a convenience, OFF by default (explicit tap-to-stop is
+    // the contract). Flip to VOICE_SILENCE_MS to enable.
+    silenceMs: 0,
+    // interim → the FLOATING overlay only; the input is never touched mid-record.
+    onInterim: (t) => { overlayTextEl.textContent = t; },
+    onState: (s) => {
+      voiceState = s === "recording" ? "recording" : "idle";
+      const rec = voiceState === "recording";
+      micBtn.classList.toggle("recording", rec);
+      micBtn.setAttribute("aria-pressed", String(rec));
+      micBtn.title = rec ? "tap to stop · Esc cancels" : "tap to speak";
+      overlayEl.classList.toggle("hidden", !rec);
+      if (!rec) overlayTextEl.textContent = "";
+    },
+    // The FINAL transcript lands in the input on stop (never the interim), then
+    // runs on the spoken path (register aloud + one-sentence summary).
+    onTranscript: (t) => { inputEl.value = t; run(t, { spoken: true }); },
+    // Escape / cancel: leave recording, submit nothing, clear the overlay.
+    onCancel: () => { overlayTextEl.textContent = ""; },
   });
-  if (!ptt.available) {
+
+  if (!voice.available) {
     // degrade WITHOUT drama: no mic where SpeechRecognition is absent; the typed
     // composer is untouched.
     micBtn.remove();
+    overlayEl.remove();
   } else {
-    // hold-to-talk (pointer), with a click fallback to toggle.
-    micBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); ptt.start(); });
-    micBtn.addEventListener("pointerup", (e) => { e.preventDefault(); ptt.stop(); });
-    micBtn.addEventListener("pointerleave", () => ptt.stop());
+    // tap-to-start / tap-to-stop (Session 3.7): the capture no longer rides on a
+    // held pointer, so a shifting button can't sever it mid-word.
+    micBtn.addEventListener("click", (e) => { e.preventDefault(); voice.toggle(); });
+    // Escape cancels an in-flight recording without submitting.
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && voice.listening()) { e.preventDefault(); voice.cancel(); }
+    });
   }
 
   return {
@@ -167,6 +199,11 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
     // the pure spoken-summary builder, surfaced so the harness can assert the
     // "record IDs are never voiced" contract without a microphone (CU3).
     spokenSummary,
+    // the voice controller + its live state, surfaced for the harness (which
+    // drives a fake recognizer): assert toggle latching, layout stability during
+    // interim, and the full-transcript (no-fragment) submission (Session 3.7).
+    voice,
+    voiceState: () => voiceState,
     selectAndAsk(operationRef) { board.select(operationRef); },
   };
 }

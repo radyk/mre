@@ -4445,3 +4445,54 @@ in-cloud confirmations) are gates on entering Phase 4, distinct from the build
 queue; the deferred items (slice-awareness, LLM voice normalizer, ghost
 precompute dial (a), pool-ghost partial consequences, real auth) are all Phase-4+/
 pilot-gated/post-pilot, not before Phase-4 design. See docs/07 v2.10.
+
+## Amendment — 2026-07-15: Session 3.7 — voice input hardening (a bug + the interaction model)
+
+**Provenance.** A bug observed live on the gesture surface: during press-and-hold
+voice recording, the interim transcript streamed into the ask composer, reflowed
+the panel, and shifted the **mic button out from under the pressed pointer** — the
+pointer left the button, `pointerup`/`pointerleave` fired `stop()`, and recognition
+ended after the first few words, so only a **fragment** was submitted. The
+press-and-hold model coupled the capture lifetime to a pointer sitting on a target
+that could move. This session fixes the reflow AND retires the hold model.
+
+**CU1 — no layout motion during recording.** The interim transcript now renders in
+a **fixed-footprint FLOATING overlay** (`.voice-overlay`, `position:absolute`,
+`transform: translateY(calc(-100% - …))` above the composer, fixed
+`--voice-overlay-h`, single-line ellipsis), so streaming speech is drawn *over* the
+log and **never reflows the row the mic lives in** — nothing under an active
+pointer moves (R-M1 spirit). The interim text is written ONLY to that overlay
+(`onInterim`); the input is untouched mid-record. The **final** transcript lands in
+the input only on **stop**, then runs on the spoken path (register aloud + one
+sentence, record ids never voiced — the 3.4 contract, un-regressed).
+
+**CU2 — interaction model.** Press-and-hold → **tap-to-start / tap-to-stop
+toggle** (`voice.js` `createVoiceInput` replaces `createPushToTalk`; the mic click
+calls `voice.toggle()`, no pointerdown/up/leave capture coupling). Recording is an
+explicit LATCHED state — push-to-talk **explicitness** per docs/07 is preserved (the
+mic never opens itself). **Unmistakable recording state** (tokenized): the mic gets
+`.recording` (solid `--voice-rec-fill` red + `--voice-rec-pulse-ms` pulse +
+`aria-pressed`), and the overlay carries a pulsing `--voice-rec-dot` + a "recording"
+label. **Escape cancels** without submitting (`voice.cancel()` → `abort()`, the
+`cancelled` flag suppresses the `onTranscript` submit; a `window` keydown listener
+active only while `listening()`). **Optional silence auto-stop** as a convenience:
+`VOICE_SILENCE_MS = 2500` + a `silenceMs` option (a timer re-armed on each result),
+**OFF by default at the call site** — explicit tap-to-stop is the contract. The
+recognizer now runs `continuous = true` and **accumulates finals across result
+events** (never resets `finalText` mid-session), which is what keeps the whole
+sentence instead of a leading fragment.
+
+**Tokens.** All voice visuals are tokenized in `tokens.css`
+(`--voice-rec-*`/`--voice-overlay-*`); the silence timeout is a named const in
+`voice.js`. A `@media (prefers-reduced-motion: reduce)` block in `cockpit.css` drops
+the mic/dot pulse — recording stays unmistakable via the solid fill + label.
+
+**Harness.** Headless has no microphone, so a **fake `SpeechRecognition`** injected
+before page scripts (`window.__VOICE_TEST_RECOGNITION`, honored by
+`recognitionCtor()` — harness-only) drives the REAL controller/UI path. Three new
+`gesture.spec.mjs` tests: (1) tap latches recording (class + `aria-pressed` +
+overlay) and a long interim leaves the **mic bounding box unchanged** (≤0.5px on
+x/y/w/h) while capture stays live; (2) the **fragment regression** — incremental
+interims + a final, then stop, submits the FULL sentence as the "you" message, never
+a fragment; (3) **Escape cancels** — state returns idle, overlay retired, nothing
+submitted. **Cockpit JS 41/41** (was 38); Python untouched. See docs/07 v2.11.

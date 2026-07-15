@@ -497,6 +497,134 @@ test("the mic degrades without drama where speech is unsupported (CU3)", async (
 });
 
 // ---------------------------------------------------------------------------
+// Session 3.7 — voice input hardening: tap-to-toggle model + layout stability.
+// Headless has no microphone, so a FAKE SpeechRecognition (injected before the
+// page scripts run) drives the REAL UI path — mic mount, toggle latch, interim
+// overlay, submit — through the actual voice.js controller.
+// ---------------------------------------------------------------------------
+
+// The fake mimics the Web Speech shape the controller consumes (resultIndex +
+// array-like results, each result[0].transcript + isFinal), in CONTINUOUS mode
+// (the session lives until the user stops it). It registers itself on
+// window.__lastRecognition so a test can push interim/final results and drive
+// stop/abort. Enabled via window.__VOICE_TEST_RECOGNITION (honored by
+// recognitionCtor() in voice.js — harness-only).
+async function bootWithVoice(page) {
+  await page.addInitScript(() => {
+    class FakeRec {
+      constructor() {
+        window.__lastRecognition = this;
+        this.lang = ""; this.interimResults = false; this.continuous = false;
+        this.onresult = null; this.onend = null; this.onerror = null;
+        this._results = []; this._running = false;
+      }
+      start() { this._running = true; this._results = []; }
+      stop() { if (!this._running) return; this._running = false; this.onend && this.onend(); }
+      abort() { if (!this._running) return; this._running = false; this.onend && this.onend(); }
+      _emit(index) {
+        if (!this.onresult) return;
+        const results = this._results.map((r) => ({ isFinal: r.isFinal, 0: { transcript: r.transcript } }));
+        this.onresult({ resultIndex: index, results });
+      }
+      __interim(text) {
+        const last = this._results[this._results.length - 1];
+        if (last && !last.isFinal) last.transcript = text;
+        else this._results.push({ transcript: text, isFinal: false });
+        this._emit(this._results.length - 1);
+      }
+      __final(text) {
+        const last = this._results[this._results.length - 1];
+        if (last && !last.isFinal) { last.transcript = text; last.isFinal = true; }
+        else this._results.push({ transcript: text, isFinal: true });
+        this._emit(this._results.length - 1);
+      }
+    }
+    window.__VOICE_TEST_RECOGNITION = FakeRec;
+  });
+  await boot(page);
+}
+
+test("voice: tap latches recording; interim streaming NEVER moves the mic (CU1/CU2)", async ({ page }) => {
+  await bootWithVoice(page);
+  // the mic mounts (a recognizer is available via the injected fake)
+  await expect(page.locator("#ask-mic")).toHaveCount(1);
+  const box0 = await page.locator("#ask-mic").boundingBox();
+
+  // tap → recording latches (unmistakable state: class + aria + overlay shown)
+  const s1 = await page.evaluate(() => {
+    window.__cockpit.panel.voice.toggle();
+    const mic = document.querySelector("#ask-mic");
+    return {
+      state: window.__cockpit.panel.voiceState(),
+      pressed: mic.getAttribute("aria-pressed"),
+      recClass: mic.classList.contains("recording"),
+      overlayShown: !document.querySelector("#ask-voice-overlay").classList.contains("hidden"),
+    };
+  });
+  expect(s1.state).toBe("recording");
+  expect(s1.pressed).toBe("true");
+  expect(s1.recClass).toBe(true);
+  expect(s1.overlayShown).toBe(true);
+
+  // stream a LONG interim → the floating overlay fills; the mic box is unchanged
+  await page.evaluate(() => window.__lastRecognition.__interim(
+    "why is WO-2001 scheduled on machine M-GEAR-01 instead of the alternative route"));
+  const overlayText = await page.locator("#ask-voice-text").textContent();
+  expect(overlayText.length).toBeGreaterThan(30);
+  const box1 = await page.locator("#ask-mic").boundingBox();
+  for (const k of ["x", "y", "width", "height"]) {
+    expect(Math.abs(box1[k] - box0[k]), `mic ${k} stable during interim`).toBeLessThanOrEqual(0.5);
+  }
+  // interim did not sever capture — still recording
+  expect(await page.evaluate(() => window.__cockpit.panel.voice.listening())).toBe(true);
+
+  // tap again → idle, overlay retired
+  await page.evaluate(() => window.__cockpit.panel.voice.toggle());
+  expect(await page.evaluate(() => window.__cockpit.panel.voiceState())).toBe("idle");
+  expect(await page.locator("#ask-voice-overlay").evaluate((e) => e.classList.contains("hidden"))).toBe(true);
+});
+
+test("voice: the FULL transcript is submitted, never a leading fragment (regression)", async ({ page }) => {
+  await bootWithVoice(page);
+  const before = await page.locator(".ask .msg.you").count();
+  await page.evaluate(() => window.__cockpit.panel.voice.toggle());   // start
+  // words arrive incrementally — the OLD bug (button shifting under the held
+  // pointer) severed capture and submitted only the first few.
+  await page.evaluate(() => {
+    const r = window.__lastRecognition;
+    r.__interim("why");
+    r.__interim("why is");
+    r.__interim("why is WO-2001");
+    r.__final("why is WO-2001 on M-GEAR-01");
+  });
+  // interim/final never stop the toggle session on their own
+  expect(await page.evaluate(() => window.__cockpit.panel.voice.listening())).toBe(true);
+
+  // stop → the WHOLE sentence lands + is submitted (the "you" message)
+  await page.evaluate(() => window.__cockpit.panel.voice.toggle());   // stop
+  const you = (await page.locator(".ask .msg.you pre").last().textContent()).trim();
+  expect(you).toBe("why is WO-2001 on M-GEAR-01");   // not "why", not a fragment
+  expect(await page.locator(".ask .msg.you").count()).toBe(before + 1);
+});
+
+test("voice: Escape cancels recording WITHOUT submitting (CU2)", async ({ page }) => {
+  await bootWithVoice(page);
+  const before = await page.locator(".ask .msg.you").count();
+  await page.evaluate(() => window.__cockpit.panel.voice.toggle());   // start
+  await page.evaluate(() => {
+    const r = window.__lastRecognition;
+    r.__interim("why is WO-2001");
+    r.__final("why is WO-2001 on M-GEAR-01");
+  });
+  // Escape → cancel (discard the heard text)
+  await page.keyboard.press("Escape");
+  expect(await page.evaluate(() => window.__cockpit.panel.voiceState())).toBe("idle");
+  // overlay retired, and NOTHING was submitted
+  expect(await page.locator("#ask-voice-overlay").evaluate((e) => e.classList.contains("hidden"))).toBe(true);
+  expect(await page.locator(".ask .msg.you").count()).toBe(before);
+});
+
+// ---------------------------------------------------------------------------
 // Session 3.6 — R-M1: motion carries register (animation end-states)
 // ---------------------------------------------------------------------------
 

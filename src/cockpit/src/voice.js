@@ -1,22 +1,45 @@
-// Voice — push-to-talk into the SAME ask path (docs/07 Phase 3 CU3).
+// Voice — tap-to-talk into the SAME ask path (docs/07 Phase 3 CU3; Session 3.7
+// interaction model).
 //
-// The charter: ears for the answer, eyes for the footnotes. Push-to-talk
-// speech-to-text (Web Speech API) feeds the transcript straight into the
-// existing ask() route taxonomy — the deterministic explainer router IS the
-// transcript→route mapper, and its honest "unsupported" bundle IS the
-// low-confidence refusal (the LLM never authors answers; it only ever renders
-// prose over evidence, fail-closed). Spoken responses give a SUMMARY sentence +
-// the register aloud ("My take:" / "Testimony:") while the screen holds the
-// receipts — record IDs are NEVER read aloud.
+// The charter: ears for the answer, eyes for the footnotes. Speech-to-text (Web
+// Speech API) feeds the transcript straight into the existing ask() route
+// taxonomy — the deterministic explainer router IS the transcript→route mapper,
+// and its honest "unsupported" bundle IS the low-confidence refusal (the LLM
+// never authors answers; it only ever renders prose over evidence, fail-closed).
+// Spoken responses give a SUMMARY sentence + the register aloud ("My take:" /
+// "Testimony:") while the screen holds the receipts — record IDs are NEVER read
+// aloud.
+//
+// Interaction model (Session 3.7): tap-to-start / tap-to-stop toggle — NOT a
+// press-and-hold, which coupled the capture lifetime to the pointer sitting on a
+// button that could shift out from under it. Recording is an explicit, latched
+// state (push-to-talk EXPLICITNESS per docs/07 is preserved — the mic never
+// opens itself). The interim transcript is streamed to a caller-owned overlay,
+// never into the input; only the FINAL transcript lands, and only on stop.
+// Escape cancels without submitting. An optional silence auto-stop is a
+// convenience knob, OFF by default.
 //
 // Feature-detect and degrade to typed input WITHOUT drama: on a browser with no
 // SpeechRecognition the mic simply doesn't mount; the typed composer is
 // untouched.
 
-// The Web Speech API is vendor-prefixed on Chromium.
+// Silence auto-stop convenience (Session 3.7 CU2): after this much sustained
+// quiet the recognizer stops itself (submitting what it heard). A token, tunable
+// here; OFF by default at the call site — push-to-talk explicitness is the
+// contract, this is only a courtesy for the "I stopped talking" case.
+export const VOICE_SILENCE_MS = 2500;
+
+// The recognition constructor: the vendor-prefixed Web Speech API on Chromium,
+// OR a harness-injected fake (window.__VOICE_TEST_RECOGNITION) so the real UI
+// path — mic mount, toggle, overlay, submit — is exercised without a microphone.
+function recognitionCtor() {
+  if (typeof window === "undefined") return null;
+  return window.__VOICE_TEST_RECOGNITION
+    || window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
 export function speechRecognitionAvailable() {
-  return typeof window !== "undefined"
-    && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  return !!recognitionCtor();
 }
 
 export function speechSynthesisAvailable() {
@@ -68,51 +91,81 @@ export function speak(text) {
   } catch { /* speech is a courtesy, never load-bearing */ }
 }
 
-// A push-to-talk controller: hold the mic (pointerdown → start, pointerup →
-// stop), transcript flows to onTranscript(text). Interim results paint a live
-// caption via onInterim. Idempotent + safe to call where unsupported (the
-// factory returns a stub with available:false).
-export function createPushToTalk({ onTranscript, onInterim, onState } = {}) {
-  if (!speechRecognitionAvailable()) {
-    return { available: false, start() {}, stop() {}, toggle() {}, listening: () => false };
+// A tap-to-talk controller: toggle() latches recording on/off. While recording,
+// interim results stream to onInterim(text) (a caller-owned overlay — NEVER the
+// input). onState("recording"|"idle") drives the recording affordance. On stop
+// the accumulated FINAL transcript flows to onTranscript(text); cancel() (Escape)
+// leaves recording WITHOUT submitting (onCancel fires instead). An optional
+// silenceMs auto-stops after sustained quiet (0/falsy = off). Idempotent + safe
+// where unsupported (returns a stub with available:false).
+export function createVoiceInput({
+  onTranscript, onInterim, onState, onCancel, silenceMs = 0,
+} = {}) {
+  const Ctor = recognitionCtor();
+  if (!Ctor) {
+    return {
+      available: false,
+      start() {}, stop() {}, cancel() {}, toggle() {}, listening: () => false,
+    };
   }
-  const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
   const rec = new Ctor();
   rec.lang = "en-US";
   rec.interimResults = true;
-  rec.continuous = false;
+  // continuous: the session lives until the USER stops it (toggle) or silence
+  // auto-stop fires — not until the engine's first pause. This is what keeps the
+  // full sentence, never a leading fragment (Session 3.7 bug).
+  rec.continuous = true;
   let listening = false;
-  let finalText = "";
+  let cancelled = false;
+  let finalText = "";      // accumulates across result events (never reset mid-session)
+  let silenceTimer = null;
+
+  function clearSilence() { if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; } }
+  function armSilence() {
+    if (!silenceMs) return;
+    clearSilence();
+    silenceTimer = setTimeout(() => stop(), silenceMs);
+  }
 
   rec.onresult = (ev) => {
     let interim = "";
-    finalText = "";
     for (let i = ev.resultIndex; i < ev.results.length; i++) {
       const r = ev.results[i];
       if (r.isFinal) finalText += r[0].transcript;
       else interim += r[0].transcript;
     }
-    if (interim && onInterim) onInterim(interim);
+    // paint the full running transcript (finals so far + the live interim) into
+    // the overlay; the input is untouched until stop.
+    if (onInterim) onInterim(`${finalText} ${interim}`.replace(/\s+/g, " ").trim());
+    armSilence();   // any speech resets the quiet clock
   };
-  rec.onerror = () => { listening = false; onState && onState("idle"); };
+  rec.onerror = () => { listening = false; clearSilence(); onState && onState("idle"); };
   rec.onend = () => {
     listening = false;
+    clearSilence();
     onState && onState("idle");
     const t = finalText.trim();
-    if (t && onTranscript) onTranscript(t);
     finalText = "";
+    if (cancelled) { cancelled = false; onCancel && onCancel(); return; }
+    if (t && onTranscript) onTranscript(t);
   };
 
   function start() {
     if (listening) return;
-    finalText = "";
-    try { rec.start(); listening = true; onState && onState("listening"); }
+    finalText = ""; cancelled = false;
+    try { rec.start(); listening = true; onState && onState("recording"); }
     catch { listening = false; }
   }
+  // stop → submit whatever was heard (via onend). cancel → discard it (Escape).
   function stop() { if (listening) { try { rec.stop(); } catch { /* */ } } }
+  function cancel() {
+    if (!listening) return;
+    cancelled = true;
+    try { (rec.abort || rec.stop).call(rec); } catch { /* */ }
+  }
 
   return {
-    available: true, start, stop,
+    available: true, start, stop, cancel,
     toggle() { listening ? stop() : start(); },
     listening: () => listening,
   };

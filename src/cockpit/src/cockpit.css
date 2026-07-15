@@ -126,7 +126,7 @@ html, body {
 }
 .ask .msg .cites b { color: var(--cite-bar); }
 
-.ask .composer { border-top: 1px solid var(--grid); padding: var(--sp-3); display: grid; gap: var(--sp-2); }
+.ask .composer { position: relative; border-top: 1px solid var(--grid); padding: var(--sp-3); display: grid; gap: var(--sp-2); }
 .ask .composer .scope {
   font-size: var(--fs-xs); color: var(--muted); min-height: 14px;
 }
@@ -145,12 +145,49 @@ html, body {
   padding: var(--sp-2) var(--sp-3); font-size: var(--fs-base); font-weight: var(--fw-semibold); cursor: pointer;
 }
 .ask button.ghost { background: transparent; border: 1px solid var(--grid); color: var(--muted); }
-/* push-to-talk mic (CU3): a quiet affordance that pulses while listening. */
+/* tap-to-talk mic (CU3; Session 3.7): a quiet affordance that latches into an
+   unmistakable recording state. */
 .ask button.mic { background: transparent; border: 1px solid var(--grid); color: var(--muted); padding: var(--sp-2); font-size: var(--fs-lg); flex: 0 0 auto; }
-.ask button.mic.listening { background: var(--bar-late); color: var(--ink-inverse); border-color: var(--bar-late); animation: mic-pulse 1s ease-in-out infinite; }
+.ask button.mic.recording {
+  background: var(--voice-rec-fill); color: var(--voice-rec-ink);
+  border-color: var(--voice-rec-edge);
+  animation: mic-pulse var(--voice-rec-pulse-ms) ease-in-out infinite;
+}
 @keyframes mic-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
-.ask .voice-caption { color: var(--muted); font-size: var(--fs-sm); font-style: italic; padding: 0 var(--sp-3) var(--sp-1); }
-.ask .voice-caption.hidden { display: none; }
+
+/* interim transcript overlay (CU1): FLOATS above the composer at a FIXED
+   footprint, so streaming speech never reflows the mic row. */
+.ask .voice-overlay {
+  position: absolute; left: var(--sp-3); right: var(--sp-3);
+  top: 0; transform: translateY(calc(-100% - var(--sp-2)));
+  height: var(--voice-overlay-h); box-sizing: border-box;
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: 0 var(--sp-3); overflow: hidden;
+  background: var(--voice-overlay-bg); color: var(--voice-overlay-ink);
+  border: 1px solid var(--voice-overlay-edge); border-radius: var(--voice-overlay-radius);
+  box-shadow: var(--voice-overlay-shadow); z-index: 6;
+}
+.ask .voice-overlay.hidden { display: none; }
+.ask .voice-overlay .vo-dot {
+  flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--voice-rec-dot);
+  animation: mic-pulse var(--voice-rec-pulse-ms) ease-in-out infinite;
+}
+.ask .voice-overlay .vo-label {
+  flex: 0 0 auto; font: var(--fw-bold) var(--fs-2xs)/1 var(--font-mono);
+  text-transform: uppercase; letter-spacing: var(--ls-caps-wide);
+  color: var(--voice-overlay-label);
+}
+.ask .voice-overlay .vo-text {
+  flex: 1 1 auto; min-width: 0; font-size: var(--fs-sm); font-style: italic;
+  color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* Reduced motion: the pulse is decorative — recording stays unmistakable via the
+   solid red mic fill + the "recording" label/dot, no animation. */
+@media (prefers-reduced-motion: reduce) {
+  .ask button.mic.recording { animation: none; }
+  .ask .voice-overlay .vo-dot { animation: none; }
+}
 .ask .empty { color: var(--muted-2); font-size: var(--fs-sm); text-align: center; padding: var(--sp-4); }
 
 .err { color: var(--grade-rejected); padding: var(--sp-4); font: var(--fs-base) var(--font-mono); }

@@ -94,6 +94,43 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 3.7 — voice input
+hardening 2026-07-15. Queue before Phase-4 design unchanged: Daryn's grand feel
+pass + export.** A bug seen live on the gesture surface: press-and-hold voice
+recording streamed the interim transcript into the ask composer, reflowed the
+panel, and shifted the **mic button out from under the pressed pointer** —
+`pointerup`/`pointerleave` then stopped recognition early and only a **fragment**
+was submitted. Two-part fix, voice only (no solver/API/gesture-logic changes).
+**CU1 — no layout motion during recording:** the interim transcript renders in a
+**fixed-footprint FLOATING overlay** (`.voice-overlay`, absolute + translated
+above the composer, fixed height, single-line ellipsis) written ONLY by
+`onInterim` — the input is untouched mid-record; the **final** transcript lands in
+the input only on **stop**, then runs on the spoken path (register aloud + one
+sentence, record ids never voiced — 3.4 contract un-regressed). Nothing under an
+active pointer moves (R-M1 spirit). **CU2 — interaction model:** press-and-hold →
+**tap-to-start / tap-to-stop toggle** (`voice.js` `createVoiceInput` replaces
+`createPushToTalk`; the mic click calls `voice.toggle()`, no pointer-capture
+coupling) — push-to-talk **explicitness** preserved (the mic never opens itself);
+**unmistakable recording state** (tokenized: mic `.recording` solid-red fill +
+pulse + `aria-pressed`; a pulsing `--voice-rec-dot` + "recording" label in the
+overlay); **Escape cancels** without submitting (`voice.cancel()`→`abort()`, a
+`cancelled` flag suppresses the submit; a `window` keydown active only while
+`listening()`); **optional 2.5s silence auto-stop** (`VOICE_SILENCE_MS` + a
+`silenceMs` option), **OFF by default** — explicit tap-to-stop is the contract.
+The recognizer runs `continuous` + **accumulates finals across result events**
+(never resets `finalText` mid-session), which is what keeps the whole sentence
+instead of a leading fragment. All voice visuals tokenized in `tokens.css`
+(`--voice-rec-*`/`--voice-overlay-*`); a `@media (prefers-reduced-motion)` block
+drops the pulse (recording still unmistakable via the solid fill + label).
+**Harness:** headless has no microphone, so a **fake `SpeechRecognition`**
+injected before page scripts (`window.__VOICE_TEST_RECOGNITION`, honored by
+`recognitionCtor()` — harness-only) drives the REAL controller/UI; three new
+`gesture.spec.mjs` tests — recording toggles (class + `aria-pressed` + overlay), a
+long interim leaves the **mic bounding box unchanged** (≤0.5px) with capture
+live, and the **fragment regression** submits the FULL sentence (Escape submits
+nothing). **Cockpit JS 41/41** (was 38); Python untouched. See the docs/04
+2026-07-15 Session 3.7 amendment and docs/07 v2.11.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 3.6 — R-M1
 implementation (motion carries register) 2026-07-15. Queue before Phase-4 design:
 exactly Daryn's grand feel pass + export.** Animation only — no solver/API/

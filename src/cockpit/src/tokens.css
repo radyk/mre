@@ -104,6 +104,24 @@
   --reg-judgment-fill: rgba(224, 166, 60, 0.08);
   --on-accent: #08131f;         /* dark ink on a teal action button */
 
+  /* --- voice input (Session 3.7): recording state + interim overlay --- *
+   * Tap-to-talk. The mic latches into an unmistakable recording state; the
+   * interim transcript streams into a FIXED-FOOTPRINT floating overlay so it
+   * never reflows the row the mic lives in (R-M1 spirit: nothing under an
+   * active pointer moves). Both affordances are tokenized.                */
+  --voice-rec-fill: var(--bar-late);            /* the mic while recording */
+  --voice-rec-ink: var(--ink-inverse);
+  --voice-rec-edge: var(--bar-late);
+  --voice-rec-dot: #ff6b60;                     /* the pulsing "recording" dot */
+  --voice-rec-pulse-ms: 1200ms;
+  --voice-overlay-bg: var(--panel-float);
+  --voice-overlay-ink: var(--ink);
+  --voice-overlay-label: var(--voice-rec-dot);  /* the "recording" caption ink */
+  --voice-overlay-edge: var(--grid);
+  --voice-overlay-h: 40px;                       /* FIXED height — the overlay never grows */
+  --voice-overlay-shadow: var(--shadow-2);
+  --voice-overlay-radius: var(--radius);
+
   /* --- certificate grade chips ---------------------------------------- */
   --grade-c1: #2fbf71;
   --grade-c0: #8b93a7;
