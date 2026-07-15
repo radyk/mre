@@ -17,3 +17,5 @@ python -m venv .venv && source .venv/bin/activate   # (Windows: .venv\Scripts\ac
 pip install -e ".[dev]"
 pytest        # (no tests yet — Phase 0 writes them)
 ```
+
+Each work session ends with a single commit on `master` — **push after every session commit** (`git push`) so `origin/master` always matches local HEAD.
