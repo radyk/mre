@@ -59,7 +59,68 @@
 }
 /* the refusing cursor over a dim spot (R-DP2) */
 .drag-overlay.refusing { cursor: not-allowed; }
-.drag-overlay.returning .carry-bar { transition: left var(--dur) var(--ease), top var(--dur) var(--ease); }
+
+/* =========================================================================
+ * R-M1 — MOTION CARRIES REGISTER (docs/04 R-M1). Bar motion is communication;
+ * each class has a fixed meaning. Session 3.6 consumes the 3.5 motion tokens.
+ * ====================================================================== */
+
+/* (a) REJECTION — return-home: FAST snap-back (no settling ease) + a brief,
+ * subtle arrival shake. Must read as "the board refused," never "the system
+ * placed it." The reason surfaces through text channels, not the animation. */
+.carry-bar.rejecting {
+  transition: left var(--motion-reject-dur) var(--motion-reject-ease),
+              top var(--motion-reject-dur) var(--motion-reject-ease);
+  outline: none;
+}
+.carry-bar.reject-shake { animation: reject-shake var(--motion-reject-shake-dur) ease-in-out; }
+@keyframes reject-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(calc(var(--motion-reject-shake-amp) * -1)); }
+  55% { transform: translateX(var(--motion-reject-shake-amp)); }
+  80% { transform: translateX(calc(var(--motion-reject-shake-amp) * -0.5)); }
+}
+
+/* (b) REFLOW — other bars moving after a committed re-solve: SIMULTANEOUS eased
+ * transitions (no per-bar stagger — CP-SAT re-solves globally), moved bars
+ * briefly highlighted. Enabled only during the reflow window (the host gains
+ * .reflowing) so ordinary interactions are never animated. */
+.reflowing .vis-item.bar:not(.pin-lock) {
+  transition: left var(--motion-reflow-dur) var(--motion-reflow-ease),
+              top var(--motion-reflow-dur) var(--motion-reflow-ease),
+              width var(--motion-reflow-dur) var(--motion-reflow-ease),
+              transform var(--motion-reflow-dur) var(--motion-reflow-ease);
+  transition-delay: 0s !important;   /* simultaneous — never staggered */
+}
+.vis-item.bar.reflow-moved { animation: reflow-highlight var(--motion-reflow-highlight-dur) ease-out; }
+@keyframes reflow-highlight {
+  0%   { box-shadow: 0 0 0 2px var(--motion-reflow-highlight), 0 0 14px 2px var(--motion-reflow-highlight); }
+  100% { box-shadow: var(--bar-sheen); }
+}
+
+/* (c) OWN PLACEMENT — the committed drop NEVER moves; a static pin-lock ring on
+ * accept, visually distinct from the tentative (purple hatch/pulse). */
+.vis-item.bar.pin-lock {
+  animation: pin-lock var(--motion-pinlock-dur) cubic-bezier(0.3, 0, 0.2, 1);
+  box-shadow: 0 0 0 2px var(--motion-pinlock-ring), var(--bar-sheen);  /* settled lock */
+}
+@keyframes pin-lock {
+  0%   { box-shadow: 0 0 0 8px rgba(47, 191, 113, 0), var(--bar-sheen); }
+  45%  { box-shadow: 0 0 0 4px var(--motion-pinlock-ring), var(--bar-sheen); }
+  100% { box-shadow: 0 0 0 2px var(--motion-pinlock-ring), var(--bar-sheen); }
+}
+
+/* Reduced motion — instant transitions, semantics intact. Rejection stays
+ * distinct via the reason text channel (the shake is dropped, not the meaning);
+ * reflow/pin-lock jump to their end-states; ghosts appear without a fade. */
+@media (prefers-reduced-motion: reduce) {
+  .carry-bar.rejecting { transition: none; }
+  .carry-bar.reject-shake { animation: none; }
+  .reflowing .vis-item.bar { transition: none; }
+  .vis-item.bar.reflow-moved { animation: none; }
+  .vis-item.bar.pin-lock { animation: none; }
+  .drag-ghosts.ghost-fade, .drag-ghost-labels.ghost-fade { animation: none; }
+}
 
 /* the one-line mid-drag reason (R-DP2 hover) */
 .drag-reason {
@@ -82,9 +143,13 @@
 .drag-pricing.hidden { display: none; }
 .drag-pricing.shimmer { animation: pricing-shimmer var(--dur-shimmer) ease-in-out infinite; }
 @keyframes pricing-shimmer { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
-/* ghosts fade in when priced on demand (never a hard pop) */
-.drag-ghosts.fade-in { animation: ghosts-fade var(--dur-slow) ease-out; }
-@keyframes ghosts-fade { from { opacity: 0; } to { opacity: 1; } }
+/* (d) GHOSTS — fade in/out ONLY; the label layer fades WITH the bar layer (never
+ * a hard pop, labels never pop independently — R-M1d). Applied to BOTH the ghost
+ * bars and their overlay labels on grab (precomputed) and on-demand arrival. */
+.drag-ghosts.ghost-fade, .drag-ghost-labels.ghost-fade {
+  animation: ghost-fade var(--motion-ghost-fade-dur) var(--motion-ghost-fade-ease);
+}
+@keyframes ghost-fade { from { opacity: 0; } to { opacity: 1; } }
 
 /* --- CU5: change traces -------------------------------------------------- */
 .drag-trace-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }

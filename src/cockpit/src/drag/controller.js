@@ -178,6 +178,19 @@ export function createGestureController(board, geometry, opts) {
   // ---------------------------------------------------------------------
   // Transitions
   // ---------------------------------------------------------------------
+  const reduceMotion = () =>
+    typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // R-M1d: fade ghosts in with their labels — BOTH layers together, so a label
+  // never pops independently of its bar. Retriggered by removing + reflowing.
+  function fadeGhosts() {
+    for (const el of [layers.ghosts, ghostLabels]) {
+      el.classList.remove("ghost-fade");
+      void el.offsetWidth;
+      el.classList.add("ghost-fade");
+    }
+  }
+
   function grab(opRef) {
     if (!ctx.opFacts.get(opRef)) return false;   // no Tier-0 facts → not grabbable
     cancelSilently();
@@ -190,6 +203,7 @@ export function createGestureController(board, geometry, opts) {
     const win = board.getWindow();
     renderShade(layers.shade, S.tier0, geometry, win);
     S.drawnGhosts = renderGhosts(layers.ghosts, ghostLabels, S.opGhosts, geometry, win);
+    if (S.drawnGhosts.length) fadeGhosts();   // R-M1d: ghosts fade in (labels with bars)
     // start the carry at the incumbent placement
     const inc = incumbentOf(opRef);
     if (inc) S.target = { resource_id: inc.resource_id, time_ms: inc.start_ms, legal: true, reason: null, anchor: null };
@@ -261,7 +275,7 @@ export function createGestureController(board, geometry, opts) {
             const win = board.getWindow();
             renderShade(layers.shade, S.tier0, geometry, win);
             S.drawnGhosts = renderGhosts(layers.ghosts, ghostLabels, S.opGhosts, geometry, win);
-            layers.ghosts.classList.add("fade-in");
+            fadeGhosts();   // R-M1d: on-demand ghosts fade in too, labels WITH bars
           }
           hidePricing();
           return;
@@ -433,20 +447,43 @@ export function createGestureController(board, geometry, opts) {
     card.showResult(result, { nameOf, woOf });
   }
 
-  // Release over dim / no verdict: the bar goes home ANIMATED with the reason
-  // (R-DP2/R-DP7a — never teleports). Here "animated" = a brief class the CSS
-  // transitions; the carry then clears.
+  // Release over dim / no verdict: the bar goes home as a REJECTION (R-M1a) —
+  // a FAST snap-back (no settling ease, so it reads as "refused" not "placed")
+  // plus a brief, subtle arrival shake. The reason stays in the text channels
+  // (card / the mid-drag reason), never the animation. Under reduced motion the
+  // snap is instant and the shake is dropped — the meaning survives via the text.
   function returnHome(reason, keepCard = false) {
     root.classList.add("returning");
     reasonTip.classList.add("hidden");
+    const m = feel.motion || {};
+    const reduce = reduceMotion();
+    const snapMs = reduce ? 0 : (m.reject_dur_ms ?? 200);
+    const shakeMs = reduce ? 0 : (m.reject_shake_dur_ms ?? 140);
     const inc = incumbentOf(S.op);
-    if (inc && S.target) { S.target = { resource_id: inc.resource_id, time_ms: inc.start_ms, legal: true }; renderCarry(); }
+    // Move the EXISTING carry element back home so the snap-back actually
+    // transitions (a fresh render would teleport). Keep S.target consistent so a
+    // stray redraw lands the carry at home, not the dropped spot.
+    const bar = layers.tentative.querySelector(".carry-bar");
+    if (inc) {
+      S.target = { resource_id: inc.resource_id, time_ms: inc.start_ms, legal: true };
+      const dur = durationMinOf(S.op) * MIN;
+      const home = geometry.barRect(inc.resource_id, inc.start_ms, inc.start_ms + dur);
+      if (bar && home) {
+        bar.classList.remove("legal", "dim", "tentative");
+        if (!reduce) { bar.classList.add("rejecting"); void bar.offsetWidth; }
+        bar.style.left = `${home.x}px`;
+        bar.style.top = `${home.top + 3}px`;
+        if (!reduce) setTimeout(() => { if (bar.isConnected) bar.classList.add("reject-shake"); }, snapMs);
+      } else {
+        renderCarry();
+      }
+    }
     setTimeout(() => {
       root.classList.remove("returning", "refusing", "active");
       if (!keepCard) card.hide();
       clearOverlays();
       S.phase = "idle"; S.op = null; S.tier0 = null; S.target = null;
-    }, 260);
+    }, snapMs + shakeMs + 30);
     return { returned: true, reason };
   }
 
@@ -470,11 +507,20 @@ export function createGestureController(board, geometry, opts) {
     };
     S.acceptToDoneMs = null;
     const t0 = performance.now();
+    // R-M1b/c: the dropped op is OWN PLACEMENT (never moves → pin-lock); the
+    // other displaced ops are the REFLOW set (simultaneous eased, highlighted).
+    // Captured from the verdict moved-set BEFORE the traces are cleared.
+    const droppedOp = S.op;
+    const movedOps = new Set(((S.result && S.result.moves) || [])
+      .map((mv) => mv.operation_ref).filter((op) => op !== droppedOp));
     return api.postAccept(scheduleId, pin).then((res) =>
       api.getSchedule(res.schedule_id).then((newDoc) => {
-        // the traces have pointed old→new all along; settle the real bars there
-        board.rebind(newDoc);
+        // the traces pointed old→new all along; the REFLOW settles the real bars
+        // there (R-M1b) — one instance of the reflow class, unified with 3.4's
+        // accept-rebind; the dropped bar pin-locks in place (R-M1c).
+        board.rebind(newDoc, { pinnedOp: droppedOp, movedOps, motion: feel.motion });
         clearTraces();
+        layers.tentative.replaceChildren();   // the committed board bar (pin-lock) now stands for it
         return rebindController(res.schedule_id, newDoc).then(() => {
           S.acceptToDoneMs = +(performance.now() - t0).toFixed(2);
           S.phase = "accepted";
@@ -534,6 +580,7 @@ export function createGestureController(board, geometry, opts) {
     root.classList.remove("active", "refusing", "returning");
     card.hide();
     clearOverlays();
+    if (board.clearMotionClasses) board.clearMotionClasses();  // clear a prior pin-lock (R-M1c)
     S.phase = "idle"; S.op = null; S.tier0 = null; S.target = null;
     S.result = null; S.traces = [];
   }
@@ -546,7 +593,8 @@ export function createGestureController(board, geometry, opts) {
   function clearOverlays() {
     for (const el of Object.values(layers)) el.replaceChildren();
     ghostLabels.replaceChildren();
-    layers.ghosts.classList.remove("fade-in");
+    layers.ghosts.classList.remove("ghost-fade");
+    ghostLabels.classList.remove("ghost-fade");
     while (svg.firstChild) svg.removeChild(svg.firstChild);
     reasonTip.classList.add("hidden");
     hidePricing();
@@ -559,7 +607,8 @@ export function createGestureController(board, geometry, opts) {
   function clearLegalityOverlays() {
     layers.shade.replaceChildren();
     layers.ghosts.replaceChildren();
-    layers.ghosts.classList.remove("fade-in");
+    layers.ghosts.classList.remove("ghost-fade");
+    ghostLabels.classList.remove("ghost-fade");
     ghostLabels.replaceChildren();
     S.drawnGhosts = [];
     reasonTip.classList.add("hidden");

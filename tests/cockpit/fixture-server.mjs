@@ -75,8 +75,24 @@ const server = createServer(async (req, res) => {
     }
     const mSched = p.match(/^\/schedules\/([^/]+)$/);
     if (mSched && req.method === "GET") {
+      const sid = mSched[1];
+      const doc = await load("schedule.json", dirFor(sid));
+      // An accepted -edit version reflects its pin: relocate the pinned op's
+      // assignment to the pin placement so a rebind actually REFLOWS it (R-M1
+      // motion end-states need a real move to assert against).
+      const dec = _EDITS.get(sid);
+      const pin = dec && dec.pin;
+      if (pin) {
+        const a = (doc.assignments || []).find((x) => x.operation_ref === pin.pin_op_id);
+        if (a && a.chunks && a.chunks.length) {
+          const span = new Date(a.chunks[a.chunks.length - 1].end) - new Date(a.chunks[0].start);
+          a.resource_id = pin.pin_resource_id;
+          a.chunks[0].start = pin.pin_start_iso;
+          a.chunks[a.chunks.length - 1].end = new Date(new Date(pin.pin_start_iso).getTime() + span).toISOString();
+        }
+      }
       res.writeHead(200, { "content-type": "application/json" });
-      return res.end(envelope(await load("schedule.json", dirFor(mSched[1]))));
+      return res.end(envelope(doc));
     }
     const mMeta = p.match(/^\/schedules\/([^/]+)\/meta$/);
     if (mMeta && req.method === "GET") {

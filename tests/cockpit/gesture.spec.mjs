@@ -495,3 +495,90 @@ test("the mic degrades without drama where speech is unsupported (CU3)", async (
   expect(state.inputPresent && state.sendPresent).toBe(true);
   expect(state.micCount === 0 || state.micCount === 1).toBe(true);
 });
+
+// ---------------------------------------------------------------------------
+// Session 3.6 — R-M1: motion carries register (animation end-states)
+// ---------------------------------------------------------------------------
+
+test("R-M1a rejection: return-home is a snap-back (no settle) ending at origin", async ({ page }) => {
+  await boot(page);
+  const op = opFor("no_verdict");
+  const inc = incumbent(op);
+  const origin = await page.evaluate((o) => window.__cockpit.board.placementOf(o), op);
+  // a canned no_verdict drop → REJECTION
+  const obs = await page.evaluate(([o, rid, start]) =>
+    window.__cockpit.drag.dropAt(o, rid, start).then(() => ({
+      rejecting: !!document.querySelector(".carry-bar.rejecting"),   // the snap-back class
+    })), [op, inc.resource_id, inc.start]);
+  expect(obs.rejecting, "return-home uses the reject snap-back (R-M1a)").toBe(true);
+  // after it completes the board is UNCHANGED — the op sits at its origin
+  await page.waitForFunction(() => window.__cockpit.drag.state().phase === "idle", { timeout: 2000 });
+  const after = await page.evaluate((o) => window.__cockpit.board.placementOf(o), op);
+  expect(after).toEqual(origin);
+  // the reason survives in the text channel (not the animation)
+  await expect(page.locator(".delta-card.return-home")).toBeVisible();
+});
+
+test("R-M1b/c reflow is SIMULTANEOUS + the dropped bar pin-locks (own placement)", async ({ page }) => {
+  await boot(page);
+  const g = priced[0];
+  const op = g.label.target_operation_ref;
+  const rid = g.label.placement.resource_id, start = g.label.placement.start;
+  await page.evaluate(([o, r, s]) => window.__cockpit.drag.dropAt(o, r, s), [op, rid, start]);
+  const res = await page.evaluate(() => window.__cockpit.drag.accept().then(() => {
+    const op = window.__cockpit.drag.state().op;
+    const other = document.querySelector(".vis-item.bar:not(.pin-lock)");
+    return {
+      pinnedMotion: window.__cockpit.board.motionOf(op),
+      pinnedPlacement: window.__cockpit.board.placementOf(op),
+      // simultaneous — never staggered: no per-bar transition delay
+      transitionDelay: other ? getComputedStyle(other).transitionDelay : "0s",
+    };
+  }));
+  // R-M1c: OWN PLACEMENT — the dropped bar pin-locks, and it sits at the committed spot
+  expect(res.pinnedMotion, "the dropped bar carries the pin-lock (R-M1c)").toContain("pin-lock");
+  expect(res.pinnedPlacement.group, "the committed bar is on the dropped machine").toBe(rid);
+  expect(Date.parse(res.pinnedPlacement.start)).toBe(Date.parse(start));
+  // R-M1b: SIMULTANEOUS — no per-bar stagger/delay
+  expect(res.transitionDelay).toBe("0s");
+  await shot(page, "g12_pinlock_reflow");
+});
+
+test("R-M1d ghosts fade in WITH their labels (both layers, no independent pop)", async ({ page }) => {
+  await boot(page);
+  const op = priced[0].label.target_operation_ref;
+  const st = await page.evaluate((o) => {
+    window.__cockpit.drag.grab(o);
+    return {
+      ghosts: document.querySelectorAll(".drag-ghosts .ghost-bar").length,
+      barsFade: !!document.querySelector(".drag-ghosts.ghost-fade"),
+      labelsFade: !!document.querySelector(".drag-ghost-labels.ghost-fade"),
+    };
+  }, op);
+  expect(st.ghosts).toBeGreaterThan(0);
+  expect(st.barsFade && st.labelsFade, "bars AND labels fade together (R-M1d)").toBe(true);
+});
+
+test("R-M1 reduced-motion: instant transitions, semantics intact", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await boot(page);
+  // rejection still returns to origin (no shake), still distinct via the card
+  const op = opFor("no_verdict");
+  const inc = incumbent(op);
+  const origin = await page.evaluate((o) => window.__cockpit.board.placementOf(o), op);
+  await page.evaluate(([o, r, s]) => window.__cockpit.drag.dropAt(o, r, s), [op, inc.resource_id, inc.start]);
+  await page.waitForFunction(() => window.__cockpit.drag.state().phase === "idle", { timeout: 2000 });
+  expect(await page.evaluate((o) => window.__cockpit.board.placementOf(o), op)).toEqual(origin);
+  await expect(page.locator(".delta-card.return-home")).toBeVisible();   // meaning survives
+  // accept still settles + pin-locks (end-state), but WITHOUT the reflow transition
+  const g = priced[0];
+  const gop = g.label.target_operation_ref;
+  await page.evaluate(([o, r, s]) => window.__cockpit.drag.dropAt(o, r, s),
+    [gop, g.label.placement.resource_id, g.label.placement.start]);
+  const m = await page.evaluate(() => window.__cockpit.drag.accept().then(() => ({
+    motion: window.__cockpit.board.motionOf(window.__cockpit.drag.state().op),
+    reflowing: !!document.querySelector("#tl.reflowing"),
+  })));
+  expect(m.motion, "pin-lock confirmation present even under reduced motion").toContain("pin-lock");
+  expect(m.reflowing, "no reflow transition class under reduced motion").toBe(false);
+});

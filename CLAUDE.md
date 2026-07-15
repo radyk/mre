@@ -94,6 +94,35 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 3.6 — R-M1
+implementation (motion carries register) 2026-07-15. Queue before Phase-4 design:
+exactly Daryn's grand feel pass + export.** Animation only — no solver/API/
+gesture-logic changes; the R-M1 ruling implemented as written, consuming the 3.5
+motion tokens. **CU1 REJECTION** (`returnHome`): a FAST snap-back of the existing
+carry element (`--motion-reject-*`, non-settling ease so it reads "refused" not
+"placed") + a brief arrival `reject-shake`; the reason stays in the text channels
+(un-regressed). **CU2 REFLOW** (`board.rebind`): ONE implementation unifying the
+consequence motion + the 3.4 accept-rebind — a single `.reflowing` class enables a
+SIMULTANEOUS eased transition on all bars (`transition-delay:0 !important`,
+explicitly no per-bar stagger — CP-SAT re-solves globally), displaced bars get a
+one-shot `reflow-moved` highlight. **CU3 OWN PLACEMENT**: the dropped bar never
+slides — `pin-lock` is baked into its reposition update and the reflow selector is
+`:not(.pin-lock)`, so it SNAPS to the committed spot with a static green pin-lock
+ring (distinct from the tentative purple); pin-lock persists until the next
+gesture (`board.clearMotionClasses`). **CU4 GHOSTS** (`fadeGhosts`): fade only,
+labels fading WITH bars (both `.drag-ghosts` + `.drag-ghost-labels`), on grab +
+on-demand arrival. **Reduced motion**: one `@media (prefers-reduced-motion)` block
+→ instant; motion classes/semantics intact, rejection still distinct via text.
+Four motion end-state harness tests (post-rejection == origin; simultaneous reflow
+`transition-delay:0`; pin-lock present post-accept; reduced-motion end-states).
+**Cockpit JS 38/38** (was 34); Python untouched. **Carry-forward: the ONLY
+remaining Phase-3 item is Daryn's grand feel pass + export** — the tuning panel now
+exposes every visual + motion token (incl. the R-M1 group). Phase-4 ENTRY
+conditions (cold-stranger cold-drive; cloud in-cloud) are gates, distinct from the
+build queue; the rest (slice-awareness, LLM voice normalizer, ghost precompute
+dial (a), pool-ghost partial consequences, real auth) are Phase-4+/pilot-gated/
+post-pilot. See the docs/04 2026-07-15 Session 3.6 amendment and docs/07 v2.10.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 3.5 — R-M1 ruling +
 cockpit design-token pass 2026-07-15. Next: Session 3.6 (R-M1 implementation).**
 Two parts, visual-only (zero behavior changes). **Part 1 — R-M1 ruling** ("MOTION

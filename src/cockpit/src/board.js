@@ -287,7 +287,31 @@ export function createBoard(hostEl, initialDoc) {
   // animate to their new group/time via a DataSet update (R-DP7: a legible
   // settle, never a teleport-reload). Selection + citation lookups read the live
   // ``doc``, so they follow automatically.
-  function rebind(newDoc) {
+  function reduceMotion() {
+    return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+  // Clear any lingering R-M1 motion classes (pin-lock / reflow-moved) from the
+  // bars — called at the start of a rebind and on discard so a prior edit's
+  // confirmation never bleeds into the next gesture.
+  function clearMotionClasses() {
+    for (const it of items.get()) {
+      const cn = it.className || "";
+      if (cn.includes("pin-lock")) toggleClass(it.id, "pin-lock", false);
+      if (cn.includes("reflow-moved")) toggleClass(it.id, "reflow-moved", false);
+    }
+  }
+
+  function rebind(newDoc, opts = {}) {
+    // R-M1b/c: `movedOps` are the bars the re-solve displaced (REFLOW —
+    // simultaneous, highlighted); `pinnedOp` is the dropped bar (OWN PLACEMENT —
+    // never moves, static pin-lock). `motion` carries the feel durations.
+    const { movedOps = null, pinnedOp = null, motion = {} } = opts;
+    const reduce = reduceMotion();
+    const reflowDur = motion.reflow_dur_ms ?? 340;
+    const highlightDur = motion.reflow_highlight_dur_ms ?? 600;
+    const pinlockDur = motion.pinlock_dur_ms ?? 220;
+    clearMotionClasses();
+
     const oldIdByOp = new Map(doc.assignments.map((a) => [a.operation_ref, a.assignment_id]));
     for (const a of newDoc.assignments) {
       const oldId = oldIdByOp.get(a.operation_ref);
@@ -296,13 +320,28 @@ export function createBoard(hostEl, initialDoc) {
     doc = newDoc;
     rebuildDemandLookups();
     opToItem.clear(); woToItems.clear(); itemToOp.clear();
+
+    // R-M1b: enable the SIMULTANEOUS reflow transition for the reflow window only
+    // (never staggered — one class, every bar moves at once). The pin-locked bar
+    // is EXCLUDED from the transition in CSS (:not(.pin-lock)) so OWN PLACEMENT
+    // snaps to its committed spot instead of sliding (R-M1c).
+    if (!reduce) hostEl.classList.add("reflowing");
+
+    // Bake the motion class into the same update that repositions each bar, so
+    // the pin-lock exclusion is in place BEFORE vis moves the pinned bar (else it
+    // would start sliding before the class lands). pin-lock = OWN PLACEMENT
+    // (static, persists); reflow-moved = a one-shot highlight on a displaced bar.
+    const highlightIds = [];
     for (const a of doc.assignments) {
       const s = ms(a.chunks[0].start);
       const e = ms(a.chunks[a.chunks.length - 1].end);
       const { band, label } = barVisual(a);
+      let cn = `bar late-${band}`;
+      if (pinnedOp && a.operation_ref === pinnedOp) cn += " pin-lock";
+      else if (movedOps && movedOps.has(a.operation_ref)) { cn += " reflow-moved"; highlightIds.push(a.assignment_id); }
       items.update({
         id: a.assignment_id, group: a.resource_id, start: s, end: e,
-        type: "range", className: `bar late-${band}`, editable: false,
+        type: "range", className: cn, editable: false,
         content: label, title: `${label} · ${nameOf(a.resource_id)} · op ${a.op_seq}`,
       });
       opToItem.set(a.operation_ref, a.assignment_id);
@@ -312,7 +351,13 @@ export function createBoard(hostEl, initialDoc) {
         woToItems.get(w).push(a.assignment_id);
       }
     }
-    requestAnimationFrame(() => { timeline.redraw(); renderOverlay(); });
+    // the reflow highlight is a one-shot — retire the class once it has faded.
+    for (const id of highlightIds) setTimeout(() => toggleClass(id, "reflow-moved", false), highlightDur + 60);
+
+    requestAnimationFrame(() => {
+      timeline.redraw(); renderOverlay();
+      if (!reduce) setTimeout(() => hostEl.classList.remove("reflowing"), reflowDur + 60);
+    });
   }
 
   return {
@@ -321,7 +366,20 @@ export function createBoard(hostEl, initialDoc) {
     host: hostEl,
     resourceName: nameOf,
     rebind,
+    clearMotionClasses,
     currentDoc() { return doc; },
+    // Harness probes (R-M1 motion end-states): a bar's current group+start (to
+    // assert post-reflow positions) and its className (to assert the pin-lock /
+    // reflow-moved motion classes), keyed by operation_ref.
+    placementOf(opRef) {
+      const id = opToItem.get(opRef); if (!id) return null;
+      const it = items.get(id); if (!it) return null;
+      return { group: it.group, start: new Date(it.start).toISOString() };
+    },
+    motionOf(opRef) {
+      const id = opToItem.get(opRef); if (!id) return "";
+      return (items.get(id)?.className) || "";
+    },
     setInteraction(payload) { interactionPayload = payload; },
     getInteraction() { return interactionPayload; },
     // pan/zoom suppression during a bar drag (3.2c). The gesture controller

@@ -4376,3 +4376,72 @@ token-routed), `drag/feel.js` (+motion +bars groups, mirrored), `drag/tuning.js`
 Python untouched. **Carry-forward: Session 3.6 — R-M1 implementation** (consume
 the motion tokens; unify the 3.4 accept-rebind settle under the REFLOW class;
 the return-home snap-back, pin-lock, and ghost-fade animations). See docs/07 v2.9.
+
+## Amendment — 2026-07-15: Session 3.6 — R-M1 implementation (motion carries register)
+
+Animation only — no solver, API, or gesture-logic changes; the ruling is law,
+implemented as written. Consumes the 3.5 motion tokens; adds none outside the
+panel surface. The cockpit harness went 34 → 38 (the four end-states below);
+nothing else changed.
+
+**CU1 — REJECTION (R-M1a).** `returnHome` is now a FAST snap-back of the
+*existing* carry element (not a fresh render, which would teleport) using
+`--motion-reject-*` — `--motion-reject-ease` is deliberately a non-settling curve
+so it reads as "the board refused," never "the system placed it" — followed by a
+brief `reject-shake` at ARRIVAL (`transform` translateX, `--motion-reject-shake-*`).
+The reason stays in the existing text channels (the return-home card / the
+mid-drag reason tip), never the animation — verified un-regressed (the
+return-home card still shows on a no-verdict drop). Harness: post-rejection the
+op's board placement == its origin (nothing committed); the `.carry-bar.rejecting`
+snap-back class is observed mid-return.
+
+**CU2 — REFLOW (R-M1b).** ONE reflow implementation, unifying the consequence
+motion and the 3.4 accept-rebind: on accept, `board.rebind` enables a
+SIMULTANEOUS eased transition (`--motion-reflow-*`) on every bar for the reflow
+window only (a single `.reflowing` class on the host; `transition-delay: 0s
+!important` — explicitly no per-bar stagger, because CP-SAT re-solves globally and
+a cascade would imply a causal chain that does not exist), and the displaced bars
+get a one-shot `reflow-moved` highlight that fades over
+`--motion-reflow-highlight-dur`. Harness asserts the computed `transition-delay`
+on a reflow bar is `0s` (simultaneity) and the committed placements match.
+
+**CU3 — OWN PLACEMENT (R-M1c).** The dropped bar NEVER slides: its motion class
+(`pin-lock`) is baked into the same `items.update` that repositions it, and the
+reflow transition selector is `:not(.pin-lock)`, so the committed bar SNAPS to its
+drop spot (matching where the tentative already was) and plays a static green
+pin-lock ring (`--motion-pinlock-*`) — visually distinct from the tentative's
+purple hatch/pulse — while everything else reflows. The tentative overlay is
+cleared on accept so the committed board bar (with its lock) stands for it.
+pin-lock persists as the "locked" confirmation until the next gesture/rebind
+(`board.clearMotionClasses`, called on discard + at the head of a rebind).
+Harness: the pinned op carries `pin-lock` post-accept and sits on the dropped
+machine.
+
+**CU4 — GHOSTS (R-M1d).** Fade in/out ONLY, and the label layer fades WITH the
+bar layer (`fadeGhosts()` applies `ghost-fade`/`--motion-ghost-fade-*` to BOTH
+`.drag-ghosts` and `.drag-ghost-labels`), so a price/verdict label never pops
+independently of its bar — covering both the precomputed appearance (on grab) and
+the on-demand shimmer→ghosts arrival (replacing the old bars-only `.fade-in`).
+Harness: on grab, both layers carry `ghost-fade` and the ghosts are present.
+
+**Reduced motion.** A single `@media (prefers-reduced-motion: reduce)` block
+drops every R-M1 animation/transition to instant; the motion CLASSES still apply
+(so the confirmation semantics are present — the pin-lock class is there, the
+return still lands at origin) and the rejection stays distinct via the text
+channel (the shake is dropped, not the meaning). Harness asserts under
+`reducedMotion: reduce`: the rejection ends at origin with the card shown, and
+accept pin-locks with NO `.reflowing` transition class.
+
+**Result.** `drag.css` (the R-M1 animation blocks + reduced-motion), `board.js`
+(reflow/pin-lock in `rebind`, `clearMotionClasses`, `placementOf`/`motionOf`
+probes), `drag/controller.js` (reject snap-back, `fadeGhosts`, reflow wiring on
+accept, discard cleanup), the fixture server (an accepted -edit version reflects
+its pin so the reflow has a real move to assert), + four harness end-state tests.
+**Cockpit JS 38/38**; Python untouched. **Carry-forward check:** after 3.6, the
+queue before Phase-4 design is exactly **Daryn's grand feel pass + export**
+(the tuning panel now exposes every visual + motion token, incl. the R-M1
+group). The Phase-4 ENTRY conditions (the cold-stranger cold-drive, cloud
+in-cloud confirmations) are gates on entering Phase 4, distinct from the build
+queue; the deferred items (slice-awareness, LLM voice normalizer, ghost
+precompute dial (a), pool-ghost partial consequences, real auth) are all Phase-4+/
+pilot-gated/post-pilot, not before Phase-4 design. See docs/07 v2.10.
