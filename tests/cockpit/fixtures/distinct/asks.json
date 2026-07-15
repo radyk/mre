@@ -1,1 +1,30 @@
-{}
+{
+  "why is ORD-000003 on F001-RES001?": {
+    "question": "why is ORD-000003 on F001-RES001?",
+    "answer": "=== Why is ORD-000003 on F001-RES001? ===\n\n\nEvidence chain (3 record(s)):\n\n[1] M7 DECISION  | ASSIGNMENT  | reconstructed\n    Assigned to: F001-RES001\n    Driver: COST_TRADEOFF\n    Note: This is a reconstruction from the solved schedule.\n    Alternative: F001-RES002  - Would cost $8.03 more.\n    Alternative: F001-RES003  - Would cost $16.07 more.\n    [record: 98931668...]\n\n[2] M7 DECISION  | ASSIGNMENT  | reconstructed\n    Assigned to: F001-RES001\n    Driver: COST_TRADEOFF\n    Note: This is a reconstruction from the solved schedule.\n    Alternative: F001-RES002  - Would cost $8.03 more.\n    [record: fadfaece...]\n\n[3] M7 DECISION  | ASSIGNMENT  | reconstructed\n    Assigned to: F001-RES001\n    Driver: COST_TRADEOFF\n    Note: This is a reconstruction from the solved schedule.\n    Alternative: F001-RES002  - Would cost $8.03 more.\n    Alternative: F001-RES004  - Would cost $24.10 more.\n    [record: 4b805f23...]\n\n[rendered by: template | register: testimony]",
+    "bundle": {
+      "subject_id": "a11593de-eeb8-5dc6-9553-1369b380b411",
+      "subject_type": "demand",
+      "subject_external_name": "ORD-000003",
+      "snapshot_id": "snap-mrd",
+      "record_count": 3,
+      "register": "testimony",
+      "cited_refs": {
+        "operations": [
+          "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+          "c761c094-24d0-5c7e-9926-a6ecb06893c4",
+          "6b4a17a6-0b36-55e0-ae00-5b4ee029dcb3"
+        ],
+        "resources": [
+          "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+          "8ea48ae0-4288-57e9-86dc-1ca5caec646c",
+          "d7e3af54-2cab-521a-bd19-2f5c6cba9667"
+        ],
+        "demands": [
+          "a11593de-eeb8-5dc6-9553-1369b380b411"
+        ]
+      }
+    }
+  }
+}

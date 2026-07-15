@@ -107,6 +107,19 @@ class SandboxRequest(BaseModel):
     deterministic: bool = True
 
 
+class AcceptRequest(BaseModel):
+    """Accept a dropped bar's Tier-2 verdict (docs/07 Phase 3 CU1, R-DP7). Pin
+    the op at (machine + time as displayed), re-solve, and MINT A NEW proposed
+    schedule version — the base is never mutated. Records one ``planner_edit``
+    Decision (authority MANDATORY: a dev identity token now, real auth
+    post-pilot)."""
+    pin_op_id: str
+    pin_resource_id: str
+    pin_start_iso: str
+    authority: str = "dev-planner"      # who accepted (identity token)
+    budget_s: Optional[float] = None    # override the SANDBOX_BUDGET_S token
+
+
 class AskRequest(BaseModel):
     question: str
     llm: bool = False               # honored only if ANTHROPIC_API_KEY is set
@@ -477,6 +490,47 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
         return _ok(result.summary())
 
     # ------------------------------------------------------------------
+    # Accept + publish (docs/07 Phase 3 CU1, R-DP7) — the edit becomes real.
+    # Accept mints a NEW proposed version (the base is never mutated) and records
+    # a planner_edit Decision. Publish is a second, explicit act: proposed →
+    # published, superseding the prior version and invalidating its pools.
+    # ------------------------------------------------------------------
+
+    @app.post("/schedules/{schedule_id}/accept", status_code=201)
+    def accept_edit(schedule_id: str, req: AcceptRequest):
+        from mre.modules.sandbox import SANDBOX_BUDGET_S
+        base = _live_schedule(registry, schedule_id)
+        if base["is_scenario"]:
+            raise HTTPException(409, "cannot accept an edit onto a what-if "
+                                     "scenario; edit its base schedule")
+        new_schedule_id, decision = _execute_accept(
+            registry, base, req,
+            budget_s=req.budget_s if req.budget_s is not None else SANDBOX_BUDGET_S,
+        )
+        return _ok({
+            "schedule_id": new_schedule_id,
+            "parent_schedule_id": schedule_id,
+            "status": "proposed",
+            "decision": decision,
+        }, status_code=201)
+
+    @app.post("/schedules/{schedule_id}/publish")
+    def publish_schedule(schedule_id: str):
+        row = registry.get_schedule(schedule_id)
+        if row is None:
+            raise HTTPException(404, f"unknown schedule {schedule_id}")
+        if row["status"] == "published":
+            raise HTTPException(409, f"schedule {schedule_id} is already published")
+        if row["status"] == "superseded":
+            raise HTTPException(409, f"schedule {schedule_id} is superseded — "
+                                     "cannot publish a stale version")
+        if row["is_scenario"]:
+            raise HTTPException(409, "a what-if scenario is not publishable")
+        superseded = registry.publish_schedule(schedule_id)
+        return _ok({"schedule_id": schedule_id, "status": "published",
+                    "superseded": superseded})
+
+    # ------------------------------------------------------------------
     # Ask (M10 explainer)
     # ------------------------------------------------------------------
 
@@ -823,6 +877,87 @@ def _execute_whatif(registry: Registry, run: dict, base_schedule: dict,
         })
     except Exception as exc:  # noqa: BLE001
         registry.finish_run(run_id, "failed", error=f"{type(exc).__name__}: {exc}")
+
+
+def _execute_accept(registry: Registry, base_schedule: dict, req: "AcceptRequest",
+                    budget_s: float) -> tuple[str, dict]:
+    """Materialize an accepted edit (CU1): mint a run, copy the base snapshot
+    into it, pin + re-solve into a child snapshot (never mutating the base),
+    assemble the document, and register it as a NEW proposed schedule whose
+    parent is the base. Returns (new_schedule_id, decision_summary).
+
+    Synchronous by design — accept is a deliberate act; the planner waits behind
+    the sandbox budget (the cockpit already showed the verdict) rather than
+    polling a background run."""
+    from mre.contracts.schedule_document import CONTRACT_VERSION
+    from mre.modules.planner_edit import apply_planner_edit
+    from mre.modules.scenario import derive_base_context
+    from mre.modules.schedule_assembler import build_document_from_run
+
+    base_run = registry.get_run(base_schedule["run_id"])
+    base_out = Path(base_run["out_dir"])
+    # The schedule's OWN snapshot — for an accept-derived version this is a child
+    # snapshot (base--edit-…), NOT the run's minted snapshot id (so chained edits
+    # copy the right ground truth).
+    base_snap = base_schedule["snapshot_id"]
+
+    # Config (reference_date, policy, outlier threshold) must come from the ROOT
+    # solve run — an accept run records no M3/M4 pipeline, so re-deriving from a
+    # chained parent would lose the reference date (the 3.3b wall-clock trap). The
+    # M5 horizon + incumbent objective, however, come from the IMMEDIATE parent's
+    # evidence (its own accept re-solve), which is where the version we edit sits.
+    root_run = base_run
+    while root_run.get("base_run_id"):
+        nxt = registry.get_run(root_run["base_run_id"])
+        if nxt is None:
+            break
+        root_run = nxt
+
+    run = registry.create_run(
+        kind="accept", submission_id=base_schedule["submission_id"],
+        base_run_id=base_schedule["run_id"],
+        params={"pin_op_id": req.pin_op_id, "pin_resource_id": req.pin_resource_id,
+                "pin_start_iso": req.pin_start_iso, "authority": req.authority},
+    )
+    run_id, out_dir = run["id"], Path(run["out_dir"])
+    try:
+        shutil.copytree(base_out / "snapshots" / base_snap,
+                        out_dir / "snapshots" / base_snap)
+        base_ctx = derive_base_context(Path(root_run["out_dir"]) / "runs")
+        base_ctx["base_runs_dir"] = str(base_out / "runs")
+        result = apply_planner_edit(
+            out_dir=out_dir, base_snapshot_id=base_snap,
+            pin_op_id=req.pin_op_id, pin_resource_id=req.pin_resource_id,
+            pin_start_iso=req.pin_start_iso, authority=req.authority,
+            base_context=base_ctx, budget_s=budget_s,
+        )
+        document = build_document_from_run(
+            out_dir, result.child_snapshot_id, run_id,
+            runs_subdir="runs", parent_schedule_id=base_schedule["id"],
+        )
+        doc_path = _persist_document(document, out_dir)
+        registry.register_schedule(
+            schedule_id=document.schedule_id, run_id=run_id,
+            snapshot_id=result.child_snapshot_id, status="proposed",
+            contract_version=CONTRACT_VERSION, document_path=doc_path,
+            submission_id=base_schedule["submission_id"],
+            is_scenario=False, parent_schedule_id=base_schedule["id"],
+        )
+        registry.finish_run(run_id, "succeeded", result={
+            "schedule_id": document.schedule_id,
+            "delta_abs": result.delta_abs, "moved_count": result.moved_count,
+        })
+    except Exception as exc:  # noqa: BLE001
+        registry.finish_run(run_id, "failed", error=f"{type(exc).__name__}: {exc}")
+        raise HTTPException(409, f"accept failed: {type(exc).__name__}: {exc}")
+
+    decision = {
+        "record_id": result.decision_record_id,
+        "authority": req.authority,
+        "delta_abs": result.delta_abs, "delta_pct": result.delta_pct,
+        "moved_count": result.moved_count, "pin": result.pin,
+    }
+    return document.schedule_id, decision
 
 
 def _live_schedule(registry: Registry, schedule_id: str) -> dict:

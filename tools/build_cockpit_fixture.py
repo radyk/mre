@@ -299,7 +299,16 @@ def build_distinct() -> dict:
         d = _write_core(fixdir, out, MRD_SNAP, "run-mrd-fixture", MRD_SCHEDULE_ID)
         meta = _write_meta(fixdir, sub, out, MRD_SCHEDULE_ID, "run-mrd-fixture",
                            MRD_SNAP, d)
-        _write_asks(fixdir, out, MRD_SNAP, [])   # gesture flow needs no asks
+        # The sixty-second rehearsal's opening ask beat (CU5): a real
+        # "why is <order> on <machine>?" answered by the explainer against the
+        # solved run, so its cited_refs glow real bars. (The closing "summarize
+        # my changes" beat is synthesized by the fixture server for the accepted
+        # -edit version, which the base run has no evidence for.)
+        a0 = d["assignments"][0]
+        demo_wo = (a0.get("work_orders") or ["?"])[0]
+        demo_machine = a0.get("external_name") or a0["resource_id"][:8]
+        _write_asks(fixdir, out, MRD_SNAP,
+                    [f"why is {demo_wo} on {demo_machine}?"])
 
         # ghosts: the forced-alternative service (the priced roads not taken on
         # distinct rates — R-T1's whole point).

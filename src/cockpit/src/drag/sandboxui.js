@@ -11,11 +11,13 @@
 //   * RETURN-HOME — no verdict / infeasible: the bar goes home animated with
 //     the reason (outcome 3, R-DP2); no card line items.
 //
-// Accept is STUBBED DISABLED this session — the publish workflow isn't built,
-// and a dead-end accept would violate R-DP7's no-silent-change law. Discard is
-// the only commit verb; it restores everything (the controller animates it).
+// Accept is REAL now (CU1, R-DP7): accepting mints a new proposed schedule
+// version (the base is never mutated) and rebinds the board; publish is the
+// explicit second act (proposed → published). The card walks
+// verdict → accepted → published, each step honest about what happened. Discard
+// restores everything at any pre-publish step (the controller animates it).
 
-export function createDeltaCard(hostEl, { onDiscard, onNavigate }) {
+export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPublish }) {
   const card = document.createElement("div");
   card.className = "delta-card hidden";
   hostEl.appendChild(card);
@@ -95,14 +97,67 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate }) {
       ${lineHtml ? `<div class="dc-lines">${lineHtml}</div>` : ""}
       ${pending}
       <div class="dc-actions">
-        <button class="dc-accept" disabled title="Publish workflow arrives in the next build.">Accept</button>
+        ${returnHome ? "" : `<button class="dc-accept">Accept</button>`}
         <button class="dc-discard">Discard</button>
       </div>`;
 
     card.querySelector(".dc-discard").addEventListener("click", () => onDiscard && onDiscard());
+    const acceptBtn = card.querySelector(".dc-accept");
+    if (acceptBtn) {
+      acceptBtn.addEventListener("click", () => {
+        acceptBtn.disabled = true;
+        acceptBtn.textContent = "accepting…";
+        onAccept && onAccept();
+      });
+    }
     for (const b of card.querySelectorAll(".dc-line")) {
       b.addEventListener("click", () => onNavigate && onNavigate(b.dataset.op));
     }
+    return card;
+  }
+
+  // ACCEPTED: the edit is now a NEW proposed version (the base stands untouched).
+  // Publish is the explicit second act. Keeps the moved-set line items on screen
+  // so the accepted change stays legible until published or discarded (R-DP7).
+  function showAccepted({ newScheduleId, decision }) {
+    _stopCountdown();
+    card.className = "delta-card accepted";
+    const delta = decision && decision.delta_abs != null
+      ? ` · ${decision.delta_abs >= 0 ? "+" : "−"}$${Math.abs(decision.delta_abs).toLocaleString()}`
+      : "";
+    const shortId = (newScheduleId || "").slice(0, 8);
+    card.innerHTML = `
+      <div class="dc-head">
+        <span class="dc-outcome accepted">Accepted${delta}</span>
+        <span class="dc-status">new version <b>${shortId}</b> · proposed</span>
+      </div>
+      <div class="dc-reason">the base is untouched — publish to make this the schedule of record</div>
+      <div class="dc-actions">
+        <button class="dc-publish">Publish</button>
+        <button class="dc-discard">Discard</button>
+      </div>`;
+    card.querySelector(".dc-discard").addEventListener("click", () => onDiscard && onDiscard());
+    const pub = card.querySelector(".dc-publish");
+    pub.addEventListener("click", () => {
+      pub.disabled = true; pub.textContent = "publishing…";
+      onPublish && onPublish();
+    });
+    return card;
+  }
+
+  // PUBLISHED: proposed → published; the prior version is superseded. Terminal.
+  function showPublished({ scheduleId, superseded }) {
+    _stopCountdown();
+    card.className = "delta-card published";
+    const supN = (superseded || []).length;
+    card.innerHTML = `
+      <div class="dc-head">
+        <span class="dc-outcome published">Published ✓</span>
+        <span class="dc-status">${(scheduleId || "").slice(0, 8)} is the schedule of record</span>
+      </div>
+      <div class="dc-reason">${supN ? `the prior version was superseded` : "now the schedule of record"}</div>
+      <div class="dc-actions"><button class="dc-discard">Close</button></div>`;
+    card.querySelector(".dc-discard").addEventListener("click", () => onDiscard && onDiscard());
     return card;
   }
 
@@ -135,5 +190,5 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate }) {
     return `${d > 0 ? "+" : "−"}${Math.abs(d).toFixed(2)}% cost${abs}`;
   }
 
-  return { showPending, showResult, hide, el: card };
+  return { showPending, showResult, showAccepted, showPublished, hide, el: card };
 }

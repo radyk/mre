@@ -23,10 +23,18 @@ const DIRS = {
   "sched-multi-route-fixture": FIX,
   "sched-multi-route-distinct": resolve(FIX, "distinct"),
 };
-const dirFor = (id) => DIRS[id] || FIX;
+// An accepted edit mints a new version id ``<base>-edit`` (CU1); it maps back to
+// the base fixture directory so a rebind serves a coherent document (the harness
+// asserts the state transitions, not a distinct moved-bar fixture).
+const dirFor = (id) => DIRS[id] || DIRS[id.replace(/-edit(-\d+)?$/, "")] || FIX;
 // On-demand pricing state (session 3.3 CU1): ops POSTed for pricing this
 // session, keyed "<scheduleId>|<opId>". A GET /alternatives merges their ghosts.
 const _PRIMED = new Set();
+// Accepted edits this session, keyed by the new -edit version id → its decision.
+// The edit-domain "summarize my changes" answer (CU2/CU5) is synthesized from
+// this (the base run carries no edit evidence hermetically — the fixture server
+// stands in for the real edit-domain, its established role).
+const _EDITS = new Map();
 const load = async (name, dir = FIX) => JSON.parse(await readFile(join(dir, name), "utf-8"));
 const loadMaybe = async (name, dir) => {
   const full = join(dir, name);
@@ -140,10 +148,64 @@ const server = createServer(async (req, res) => {
       res.writeHead(200, { "content-type": "application/json" });
       return res.end(envelope(result));
     }
+    // Accept a dropped bar's verdict (CU1): mint a new proposed version id and
+    // echo a planner_edit decision. The delta rides from the canned sandbox so
+    // the accepted card shows a real number.
+    const mAccept = p.match(/^\/schedules\/([^/]+)\/accept$/);
+    if (mAccept && req.method === "POST") {
+      const sid = mAccept[1];
+      const pin = JSON.parse((await body(req)) || "{}");
+      const sb = await loadMaybe("sandbox.json", dirFor(sid));
+      const canned = (sb && sb.by_op && sb.by_op[pin.pin_op_id]) || (sb && sb.default) || {};
+      const newId = `${sid}-edit`;
+      const decision = {
+        record_id: "dec-" + Math.random().toString(36).slice(2, 10),
+        authority: pin.authority || "dev-planner",
+        delta_abs: canned.delta_abs ?? null, delta_pct: canned.delta_pct ?? null,
+        moved_count: (canned.moves || []).length, pin,
+      };
+      _EDITS.set(newId, decision);
+      res.writeHead(201, { "content-type": "application/json" });
+      return res.end(envelope({
+        schedule_id: newId, parent_schedule_id: sid, status: "proposed", decision,
+      }));
+    }
+    // Publish an accepted version (CU1): proposed → published, superseding the
+    // prior version.
+    const mPublish = p.match(/^\/schedules\/([^/]+)\/publish$/);
+    if (mPublish && req.method === "POST") {
+      const sid = mPublish[1];
+      const parent = sid.replace(/-edit(-\d+)?$/, "");
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(envelope({ schedule_id: sid, status: "published",
+                                superseded: parent !== sid ? [parent] : [] }));
+    }
     const mAsk = p.match(/^\/schedules\/([^/]+)\/ask$/);
     if (mAsk && req.method === "POST") {
+      const sid = mAsk[1];
       const { question } = JSON.parse((await body(req)) || "{}");
-      const asks = await load("asks.json", dirFor(mAsk[1]));
+      // CU5 closing beat: "summarize my changes" on an accepted -edit version →
+      // synthesize the edit narrative from the remembered accept (the base run
+      // has no edit evidence hermetically). The real decomposed answer is proven
+      // by the Python end-to-end test against the live API.
+      const dec = _EDITS.get(sid);
+      if (dec && /summar|what.*chang|what i chang|my (change|edit)/i.test(question)) {
+        const d = dec.delta_abs;
+        const dstr = d == null ? "cost unknown"
+          : `${d >= 0 ? "+" : "−"}$${Math.abs(d).toLocaleString()}`;
+        const op8 = (dec.pin?.pin_op_id || "").slice(0, 8);
+        const answer = `You accepted 1 edit on this version (${dstr} total):\n`
+          + `  - pinned op ${op8} to its machine · ${dstr} · by ${dec.authority}\n\n`
+          + `register: testimony`;
+        res.writeHead(200, { "content-type": "application/json" });
+        return res.end(envelope({
+          question, answer,
+          bundle: { register: "testimony", subject_type: "edits",
+                    cited_refs: { operations: [dec.pin?.pin_op_id].filter(Boolean),
+                                  resources: [], demands: [] } },
+        }));
+      }
+      const asks = await load("asks.json", dirFor(sid));
       const hit = asks[question];
       if (!hit) {
         res.writeHead(404, { "content-type": "application/json" });

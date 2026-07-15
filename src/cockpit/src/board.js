@@ -28,17 +28,27 @@ function latenessBand(latenessMin) {
   return "ontime";
 }
 
-export function createBoard(hostEl, doc) {
+export function createBoard(hostEl, initialDoc) {
+  // ``doc`` is mutable: an accepted edit REBINDS the board to the new schedule
+  // version (rebind() below), with bars animating to their new positions rather
+  // than a destroy/recreate (R-DP7 legible settle). Every closure reads the
+  // live ``doc``.
+  let doc = initialDoc;
   // --- planner-vocabulary lookups --------------------------------------
   const resById = new Map(doc.resources.map((r) => [r.resource_id, r]));
   const nameOf = (rid) => resById.get(rid)?.external_name || rid.slice(0, 8);
   // per-Demand lateness, keyed by the external work_order the bars carry.
   const latenessByWO = new Map();
   const demandToWO = new Map();
-  for (const so of doc.service_outcomes || []) {
-    if (so.work_order != null) latenessByWO.set(so.work_order, so.lateness_min);
-    if (so.demand_ref) demandToWO.set(so.demand_ref, so.work_order);
+  function rebuildDemandLookups() {
+    latenessByWO.clear();
+    demandToWO.clear();
+    for (const so of doc.service_outcomes || []) {
+      if (so.work_order != null) latenessByWO.set(so.work_order, so.lateness_min);
+      if (so.demand_ref) demandToWO.set(so.demand_ref, so.work_order);
+    }
   }
+  rebuildDemandLookups();
 
   // --- groups (rows) in document order ---------------------------------
   const groups = new DataSet(
@@ -260,11 +270,58 @@ export function createBoard(hostEl, doc) {
   // the 3.2b drag surface consume; the read-only board itself does not use it.
   let interactionPayload = null;
 
+  // The per-bar lateness band + label, factored so rebind() re-derives them.
+  function barVisual(a) {
+    const wos = a.work_orders || [];
+    const lateness = wos.map((w) => latenessByWO.get(w))
+      .filter((v) => v != null)
+      .reduce((m, v) => (m == null || v > m ? v : m), null);
+    const band = latenessBand(lateness);
+    const label = wos.join(", ") || nameOf(a.resource_id);
+    return { band, label };
+  }
+
+  // Rebind the board to a NEW schedule version (an accepted edit). The op set is
+  // unchanged — a pin edit only MOVES placements — so each new assignment is
+  // re-stamped with the OLD bar's id (keyed by operation_ref) and the bars
+  // animate to their new group/time via a DataSet update (R-DP7: a legible
+  // settle, never a teleport-reload). Selection + citation lookups read the live
+  // ``doc``, so they follow automatically.
+  function rebind(newDoc) {
+    const oldIdByOp = new Map(doc.assignments.map((a) => [a.operation_ref, a.assignment_id]));
+    for (const a of newDoc.assignments) {
+      const oldId = oldIdByOp.get(a.operation_ref);
+      if (oldId) a.assignment_id = oldId;   // preserve stable board identity
+    }
+    doc = newDoc;
+    rebuildDemandLookups();
+    opToItem.clear(); woToItems.clear(); itemToOp.clear();
+    for (const a of doc.assignments) {
+      const s = ms(a.chunks[0].start);
+      const e = ms(a.chunks[a.chunks.length - 1].end);
+      const { band, label } = barVisual(a);
+      items.update({
+        id: a.assignment_id, group: a.resource_id, start: s, end: e,
+        type: "range", className: `bar late-${band}`, editable: false,
+        content: label, title: `${label} · ${nameOf(a.resource_id)} · op ${a.op_seq}`,
+      });
+      opToItem.set(a.operation_ref, a.assignment_id);
+      itemToOp.set(a.assignment_id, a.operation_ref);
+      for (const w of (a.work_orders || [])) {
+        if (!woToItems.has(w)) woToItems.set(w, []);
+        woToItems.get(w).push(a.assignment_id);
+      }
+    }
+    requestAnimationFrame(() => { timeline.redraw(); renderOverlay(); });
+  }
+
   return {
     timeline, items, groups,
     win,
     host: hostEl,
     resourceName: nameOf,
+    rebind,
+    currentDoc() { return doc; },
     setInteraction(payload) { interactionPayload = payload; },
     getInteraction() { return interactionPayload; },
     // pan/zoom suppression during a bar drag (3.2c). The gesture controller

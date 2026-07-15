@@ -1,6 +1,6 @@
 {
   "contract_version": "1.3",
-  "schedule_id": "c1843574-0379-4b5e-877c-8fea6b2f82a7",
+  "schedule_id": "cb6170d6-2d41-461f-9661-25e8cc7934af",
   "snapshot_id": "snap-mrd",
   "run_id": "run-mrd-fixture",
   "status": "proposed",
@@ -13,7 +13,7 @@
     "status": "OPTIMAL",
     "objective": 240753.0,
     "gap": 0.0,
-    "wall_time_s": 0.0214652,
+    "wall_time_s": 0.020446600000000002,
     "deterministic": true
   },
   "cost_summary": {
@@ -2596,7 +2596,7 @@
   ],
   "assignments": [
     {
-      "assignment_id": "b6228477-30fc-423f-bffe-e178d9a7724d",
+      "assignment_id": "17f71e65-0720-432c-b943-6b72509e92a1",
       "operation_ref": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
       "workpackage_ref": "510c68d0-3c77-59f4-992a-dd821f5b9d60",
       "work_orders": [
@@ -2619,10 +2619,10 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "25251174-22d4-4611-bc48-752a959154db"
+      "decision_ref": "7e738fde-2a98-4bae-becc-824de4a3c5ba"
     },
     {
-      "assignment_id": "cd565dbe-a966-4a0d-90d6-87bebc382688",
+      "assignment_id": "031f4930-0c11-47b1-8687-aa4145f1e4c2",
       "operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
       "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
       "work_orders": [
@@ -2645,10 +2645,10 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "72857747-fcec-41d9-bdd4-bdde38d071b4"
+      "decision_ref": "ec877128-c1fd-4828-baf1-bb8709e89b2c"
     },
     {
-      "assignment_id": "f9e72354-0254-4f7a-b4a0-0368e84bfcf4",
+      "assignment_id": "3816588b-c364-4854-93e9-edb38e5f3a73",
       "operation_ref": "20358e5f-5d77-512b-9f25-e94b35a4003b",
       "workpackage_ref": "93d5172e-4763-5b74-9df1-06fc02d9118f",
       "work_orders": [
@@ -2671,10 +2671,10 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "3c243787-cb67-4205-aeee-4c68340f2438"
+      "decision_ref": "a029bee5-b9d6-4c53-af4e-4f398a47c0cd"
     },
     {
-      "assignment_id": "7fa4399f-dd03-4911-bf4a-7648a27736e9",
+      "assignment_id": "22f841a6-bfd4-4f3e-b9f2-a550282f1158",
       "operation_ref": "438b549a-7387-5c46-af50-bf3e2f189483",
       "workpackage_ref": "d77e28e5-ad51-50c8-83f0-4da443317121",
       "work_orders": [
@@ -2697,10 +2697,10 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "267763ac-cac2-47c5-a87d-97b39d529cc6"
+      "decision_ref": "650b3646-6de4-43f9-bd37-cdbab3527406"
     },
     {
-      "assignment_id": "c4d508e5-a79b-452b-ae38-be75d324073e",
+      "assignment_id": "647cfb00-1d1a-4601-93ce-5cf193710785",
       "operation_ref": "c761c094-24d0-5c7e-9926-a6ecb06893c4",
       "workpackage_ref": "510c68d0-3c77-59f4-992a-dd821f5b9d60",
       "work_orders": [
@@ -2708,8 +2708,8 @@
       ],
       "op_seq": 20,
       "setup_family": "",
-      "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
-      "external_name": "F001-RES002",
+      "resource_id": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+      "external_name": "F001-RES001",
       "chunks": [
         {
           "chunk_seq": 1,
@@ -2723,10 +2723,10 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "0852d4b8-4528-4d0c-a1b1-9395282fe27f"
+      "decision_ref": "7106f943-42a1-4a92-bdef-5bb9bdb16913"
     },
     {
-      "assignment_id": "29429461-aca0-4488-bee7-290dd96a232a",
+      "assignment_id": "21f03170-562e-4d6d-9737-b94134456d0a",
       "operation_ref": "86a5f0bf-2bd9-5ac7-811f-9f7dcd61124a",
       "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
       "work_orders": [
@@ -2734,8 +2734,8 @@
       ],
       "op_seq": 20,
       "setup_family": "",
-      "resource_id": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
-      "external_name": "F001-RES001",
+      "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+      "external_name": "F001-RES002",
       "chunks": [
         {
           "chunk_seq": 1,
@@ -2749,10 +2749,10 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "4cedad25-ddd2-4b4b-81dc-ce20e33e27fb"
+      "decision_ref": "f965b223-8e61-436e-885a-b5a3014bb120"
     },
     {
-      "assignment_id": "0f1e3dc7-37ab-4e4c-aa55-80ba48ea553c",
+      "assignment_id": "d57c945a-2387-432a-ac1e-9c5f0ce6232e",
       "operation_ref": "a1ba867e-e117-5c7f-85c4-344a7571508c",
       "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
       "work_orders": [
@@ -2775,10 +2775,10 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "152ce979-f0d4-455f-b944-c5c85e51cfc9"
+      "decision_ref": "bf0d865e-3b73-4095-9ef9-4c82086fef4b"
     },
     {
-      "assignment_id": "b792dff3-46dd-4a37-9884-a46da9e74529",
+      "assignment_id": "1980bc48-a0c2-4966-a55a-ca0e4850de81",
       "operation_ref": "2debde52-2860-5408-9d96-47ce7d52f372",
       "workpackage_ref": "93d5172e-4763-5b74-9df1-06fc02d9118f",
       "work_orders": [
@@ -2801,10 +2801,10 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "1b15284f-88ba-4f9d-8fb9-7383fb339471"
+      "decision_ref": "068a04be-fbc2-465d-9781-7eca847c635e"
     },
     {
-      "assignment_id": "d3a7e3e0-0c13-4ebf-9a57-9aa2b4e134ba",
+      "assignment_id": "1b8a4cb3-3086-4308-a782-c713fd622b4d",
       "operation_ref": "e599bfd1-eb3c-5403-b0b9-6ad5f6c3367f",
       "workpackage_ref": "d77e28e5-ad51-50c8-83f0-4da443317121",
       "work_orders": [
@@ -2827,10 +2827,10 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "925c549c-942c-477d-88b3-eafc46c53eb7"
+      "decision_ref": "48f9d1ef-3a4a-4fef-860c-5232abef0bf4"
     },
     {
-      "assignment_id": "bd7285c9-65c3-4ffd-96fd-fd4444b59658",
+      "assignment_id": "e0a7b178-1ac3-4fac-9188-72efe4341d6a",
       "operation_ref": "6b4a17a6-0b36-55e0-ae00-5b4ee029dcb3",
       "workpackage_ref": "510c68d0-3c77-59f4-992a-dd821f5b9d60",
       "work_orders": [
@@ -2853,7 +2853,7 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "1ad7e857-ebf6-4c1b-a53f-0fe15902f430"
+      "decision_ref": "bfb77422-b642-4c0f-a305-932510b579a3"
     }
   ],
   "service_outcomes": [
@@ -2908,7 +2908,7 @@
       "objective": 240753.0,
       "objective_delta_pct": 0.3012,
       "source": "forced_alternative",
-      "target_operation_ref": "c761c094-24d0-5c7e-9926-a6ecb06893c4",
+      "target_operation_ref": "86a5f0bf-2bd9-5ac7-811f-9f7dcd61124a",
       "forbidden_resource_ref": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
       "alternative_resource_ref": "98a636b5-b943-5fc5-81ac-01f16f5353cc"
     }

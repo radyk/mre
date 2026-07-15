@@ -75,6 +75,24 @@ _REMEDIATION_TRIGGERS = ("how do i fix", "how to fix", "how do we fix",
                          "how can i fix", "remediat", "how do i resolve",
                          "how to resolve")
 
+# The sandbox/edit question domain (Phase 3 CU2) — over the planner_edit
+# Decisions an accepted edit records (docs/02 planner_edit, basis=observed).
+# "summarize what I changed and what it cost" is the demo's closing beat; the
+# cost question decomposes one edit's delta (production/setup/tardiness Δ). These
+# are checked BEFORE the snapshot-diff "changed" route so edit phrasing routes
+# here, not into a version diff.
+_EDIT_SUMMARY_TRIGGERS = (
+    "my changes", "my edits", "did i change", "did i do", "i changed",
+    "i've changed", "changes i made", "edits i made", "what i changed",
+    "this session", "summarize my", "summarise my",
+)
+_EDIT_COST_TRIGGERS = (
+    "this move cost", "this edit cost", "that cost", "cost of this",
+    "cost of my", "cost of the edit", "cost of the move", "why does this cost",
+    "why does this move cost", "what did this cost", "what did that cost",
+    "what did this move cost", "why does that cost", "why so expensive",
+)
+
 
 @dataclass
 class ExplanationBundle:
@@ -176,6 +194,14 @@ class Explainer:
             return self._explain_how_to_fix(question, limit)
         if any(t in q for t in _CERT_TESTIMONY_TRIGGERS):
             return self._explain_data_problems(entity_ref=wo_ref)
+
+        # The sandbox/edit question domain (CU2) — before the schedule/diff
+        # routes so "summarize my changes" / "what did this move cost" never
+        # fall into the snapshot-diff or lateness handlers.
+        if any(t in q for t in _EDIT_COST_TRIGGERS):
+            return self._explain_edit_cost(question)
+        if any(t in q for t in _EDIT_SUMMARY_TRIGGERS):
+            return self._summarize_edits(question)
 
         if ("late" in q or "delay" in q or "tardy" in q) and wo_ref:
             return self._explain_why_late(wo_ref)
@@ -553,6 +579,94 @@ class Explainer:
             subject_external_name=f"{snap_a} -> {snap_b}",
             ordered_records=[],
             key_facts=diff,
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    # ------------------------------------------------------------------
+    # The sandbox/edit question domain (CU2) — over planner_edit Decisions
+    # ------------------------------------------------------------------
+
+    def _planner_edits(self) -> list[dict]:
+        """The planner_edit Decisions in this version's run evidence, oldest
+        first. An accepted edit records exactly one; a chain of edits leaves one
+        per step in each version's run — the explainer, scoped to the current
+        version's run, sees this version's edit (docs/02 planner_edit)."""
+        edits = [
+            r for r in self._index._all_evidence
+            if r.get("record_type") == "decision"
+            and r.get("decision_type") == "planner_edit"
+        ]
+        edits.sort(key=lambda r: (r.get("timestamp", ""), r.get("seq", 0)))
+        return edits
+
+    def _edit_facts(self, dec: dict) -> dict:
+        """Planner-vocabulary facts for one planner_edit Decision: the pinned
+        order + machine (via identity), the total + decomposed cost delta, the
+        moved-op count, and the authority. Reads only the Decision's own payload
+        (self-contained evidence)."""
+        chosen = dec.get("chosen") or {}
+        pin = chosen.get("pin") or {}
+        op_ref = pin.get("operation_ref", "")
+        res_ref = pin.get("resource_id", "")
+        # resolve to planner vocabulary where the identity map knows it
+        machine = res_ref[:8] if res_ref else "?"
+        if self._identity_map and res_ref:
+            refs = self._identity_map.external_refs(res_ref)
+            mref = next((r for r in refs if r.type in _MACHINE_REF_TYPES), None)
+            if mref:
+                machine = mref.value
+        # the pinned op's work order rides the Decision message; fall back to id8
+        return {
+            "machine": machine,
+            "op_ref8": op_ref[:8] if op_ref else "?",
+            "start": pin.get("start"),
+            "cost_delta": chosen.get("cost_delta") or {},
+            "delta_abs": chosen.get("delta_abs"),
+            "moved_count": chosen.get("moved_count", 0),
+            "authority": dec.get("authority"),
+            "moves": chosen.get("moves") or [],
+        }
+
+    def _summarize_edits(self, question: str) -> ExplanationBundle:
+        """The demo's closing beat: "summarize what I changed and what it cost".
+        Over the planner_edit Decisions this version carries — each a pinned op +
+        its priced delta — never fabricated, always evidence."""
+        edits = self._planner_edits()
+        facts = [self._edit_facts(d) for d in edits]
+        total_cost_delta = round(
+            sum((f["cost_delta"].get("total_delta") or 0.0) for f in facts), 2)
+        return ExplanationBundle(
+            question=question,
+            subject_id=self._snap_id,
+            subject_type="edits",
+            subject_external_name="this session's edits",
+            ordered_records=edits,
+            key_facts={
+                "edit_count": len(edits),
+                "edits": facts,
+                "total_cost_delta": total_cost_delta,
+            },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _explain_edit_cost(self, question: str) -> ExplanationBundle:
+        """"Why does this move cost N?" — decompose the MOST RECENT edit's cost
+        delta into production / setup / tardiness (docs/02 §4.4 decomposition)
+        plus the per-consequence "why" clauses (3.3 CU3). Refuses honestly when
+        no edit has been made yet (the records can't support the question)."""
+        edits = self._planner_edits()
+        if not edits:
+            return self._unknown_question(question)
+        facts = self._edit_facts(edits[-1])
+        return ExplanationBundle(
+            question=question,
+            subject_id=self._snap_id,
+            subject_type="edit_cost",
+            subject_external_name=f"edit on {facts['machine']}",
+            ordered_records=[edits[-1]],
+            key_facts=facts,
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )

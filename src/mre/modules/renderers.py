@@ -66,6 +66,13 @@ def _ts_matches(prose_tup: tuple, bundle_tuples: set) -> bool:
     return prose_tup in bundle_tuples
 
 
+def _signed(v: Any) -> str:
+    """A signed dollar amount for a cost-delta component (CU2). None → '—'."""
+    if v is None:
+        return "—"
+    return f"{'+' if v >= 0 else '−'}${abs(v):,.0f}"
+
+
 def _to_minutes(value: float, unit: str) -> float:
     """Convert a time value to minutes based on its unit string."""
     return value * 60.0 if unit.lower().startswith('h') else value
@@ -127,6 +134,12 @@ class TemplateRenderer:
             # certificate findings on the bundle (authored catalog text /
             # grade-distance arithmetic), never from the testimony templater.
             return "\n".join(lines) + self._render_register_body(bundle)
+
+        # The edit domain (CU2) renders its whole answer in the header (the
+        # planner narrative over planner_edit Decisions); the Decisions ARE the
+        # citations, already summarized, so no separate raw evidence chain.
+        if bundle.subject_type in ("edits", "edit_cost"):
+            return "\n".join(lines)
 
         if not bundle.ordered_records:
             if bundle.subject_type == "diff":
@@ -210,6 +223,56 @@ class TemplateRenderer:
                     )
                 res_count = kf.get("resource_count", len({c["resource"] for c in closures}))
                 lines.append(f"  Total: {total}h across {res_count} resource(s)")
+            lines.append("")
+
+        elif bundle.subject_type == "edits":
+            kf = bundle.key_facts
+            edits = kf.get("edits", [])
+            n = kf.get("edit_count", len(edits))
+            if not n:
+                lines.append("No edits have been accepted on this version yet.")
+            else:
+                total = kf.get("total_cost_delta", 0.0)
+                sign = "+" if total >= 0 else "−"
+                lines.append(f"You accepted {n} edit(s) on this version "
+                             f"({sign}${abs(total):,.0f} total):")
+                lines.append("")
+                for e in edits:
+                    cd = e.get("cost_delta", {})
+                    td = cd.get("total_delta")
+                    dstr = (f"{'+' if (td or 0) >= 0 else '−'}${abs(td):,.0f}"
+                            if td is not None else "cost unknown")
+                    lines.append(f"  - pinned op {e.get('op_ref8', '?')} to "
+                                 f"{e.get('machine', '?')} · {dstr}"
+                                 f" · moved {e.get('moved_count', 0)} op(s)"
+                                 f" · by {e.get('authority', '?')}")
+            lines.append("")
+
+        elif bundle.subject_type == "edit_cost":
+            kf = bundle.key_facts
+            cd = kf.get("cost_delta", {})
+            total = cd.get("total_delta")
+            if total is None:
+                lines.append("This edit's cost delta was not recorded.")
+            else:
+                sign = "+" if total >= 0 else "−"
+                lines.append(f"This edit costs {sign}${abs(total):,.0f}, decomposed:")
+                lines.append(f"  production  {_signed(cd.get('production_delta'))}")
+                lines.append(f"  setup       {_signed(cd.get('setup_delta'))}")
+                lines.append(f"  tardiness   {_signed(cd.get('tardiness_delta'))}")
+                # per-consequence reasons (3.3 CU3), where the edit annotated them
+                reasoned = [m for m in kf.get("moves", []) if m.get("reason")]
+                if reasoned:
+                    lines.append("")
+                    lines.append("Why the surroundings moved:")
+                    for m in reasoned[:5]:
+                        r = m.get("reason", {})
+                        if r.get("kind") == "displaced_by_drop":
+                            why = "displaced by the dropped op"
+                        else:
+                            why = f"blocked on a busy machine until {(r.get('until') or '')[:16]}"
+                        lines.append(f"  - op {m.get('operation_ref', '')[:8]} "
+                                     f"(+{m.get('start_delta_min', 0)}min): {why}")
             lines.append("")
 
         elif bundle.subject_type == "unsupported":

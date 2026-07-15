@@ -114,6 +114,7 @@ class DecisionType(str, Enum):
     CONSTRAINT_RELAXATION = "constraint_relaxation"
     ASSIGNMENT = "assignment"
     SCENARIO_MODIFICATION = "scenario_modification"
+    PLANNER_EDIT = "planner_edit"
 
 
 class DriverCode(str, Enum):

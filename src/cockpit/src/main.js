@@ -76,6 +76,17 @@ async function boot() {
     // production `vite build` the harness serves — so tuning never ships.
     wireInteraction(id, board, window.__cockpit, {
       doc, devMode: !!import.meta.env?.DEV,
+      // An accepted/published edit rebinds the cockpit to the new version: the
+      // strip reflects the new id + live status, the ask panel retargets it, and
+      // the harness hook follows (R-DP7: the strip reflects state).
+      onVersionChange: async (newId, status) => {
+        panel.setScheduleId(newId);
+        window.__cockpit.scheduleId = newId;
+        const nextMeta = await getScheduleMeta(newId).catch(() => meta);
+        const nextDoc = board.currentDoc ? board.currentDoc() : doc;
+        paintTopStrip(strip, { ...nextDoc, status }, nextMeta);
+        window.__cockpit.versionChanged = { id: newId, status };
+      },
     });
 
     if (CONFIG.autoAsk) panel.run(CONFIG.autoAsk);

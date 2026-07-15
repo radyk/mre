@@ -4078,3 +4078,103 @@ when a "solver" regression appears is to check the *input population* before
 blaming the solver. The prior three amendments' "ortools 9.15 + CP-SAT noise"
 attribution is hereby corrected: it was neither the version nor CP-SAT
 nondeterminism — it was the calendar.
+
+## Amendment — 2026-07-15: Session 3.4 — the interim final (accept/publish, the answering edit, voice, latency, the sixty-second rehearsal)
+
+The last build session of Phase 3. It ends with the sixty-second script running
+end to end. Fresh session; production discipline throughout. Five commit-units +
+three riders.
+
+**CU1 — accept → Decision → publish (the headline).** Accept on the delta card
+is REAL now. An accepted edit records a `planner_edit` Decision (new
+decision_type, docs/02 §4.2; **basis=observed** — a human command, not a solver
+reconstruction; **authority MANDATORY** — a dev identity token now, real auth
+post-pilot; new optional `Decision.authority`, machine-authored decisions leave
+it None) and mints a NEW proposed schedule version — **the base is never
+mutated** (R-DP2's "nothing mutates before accept" becomes "accept CREATES,
+never overwrites"). Publish is an explicit second act (proposed → published)
+that supersedes the prior version and invalidates its pools/alternatives via the
+existing supersede machinery. Backend: `modules/planner_edit.py`
+(`apply_planner_edit`) derives a child snapshot copying every planned entity but
+the M7 outputs (so the edit reproduces the base's planning EXACTLY, differing
+only by the pin), warm-starts + pins the dropped op (machine+time as displayed,
+R-DP1), re-solves under the sandbox budget, extracts canonical entities
+(is_scenario=False → a real schedule), records the one Decision with the
+DECOMPOSED cost delta + annotated moved-set. API: `POST /schedules/{id}/accept`
+(synchronous — a deliberate act behind the budget; parent-linked, is_scenario
+False) + `POST /schedules/{id}/publish` (`Registry.publish_schedule`). **The
+registry is the live-lifecycle source of truth** — the served document's status
+is frozen at assembly; `/meta` reflects current state, which the cockpit strip
+reads. Chained edits: the accept path walks `base_run_id` to the ROOT solve for
+the reference date (an accept run records no M3/M4, so re-deriving from a chained
+parent would lose it — the 3.3b wall-clock trap avoided by construction) while
+reading the M5 horizon + incumbent objective from the IMMEDIATE parent. Cockpit:
+the delta card walks verdict → accepted → published (Accept + Publish are LIVE
+controls now); `board.rebind(newDoc)` settles the moved bars into their new
+positions by re-stamping the new assignments with the old bars' ids (the op set
+is unchanged, so bars animate rather than teleport-reload — R-DP7); the
+controller + ask panel retarget the new version (sequential edits sandbox against
+the proposed version; asks read the new version's evidence). **Tests: Python
+`test_planner_edit` 6; cockpit "accept mints a new proposed version; publish
+supersedes it".**
+
+**CU2 — the sandbox/edit question domain** (from a live refusal, "why does this
+move cost 261"). New explainer routes: `_summarize_edits` ("summarize what I
+changed and what it cost" — the demo's closing beat) and `_explain_edit_cost`
+(production Δ + setup Δ + tardiness Δ, decomposing exactly per docs/02 §4.4, plus
+the per-consequence "why" clauses from 3.3 CU3). Both read the `planner_edit`
+Decisions in the current version's run — no new answer path; the Decision carries
+the decomposed delta as self-contained evidence. Registers as testimony;
+refuses honestly (unsupported) when no edit exists. New renderer subject types.
+**Tests: `test_edit_question_domain` — routing (no solve) + a live end-to-end.**
+
+**CU3 — voice.** `voice.js`: push-to-talk (Web Speech, feature-detected, degrades
+to typed WITHOUT drama) feeds the transcript into the SAME ask path — the
+deterministic router IS the transcript→route mapper and its "unsupported" bundle
+IS the low-confidence refusal (an LLM-interpreter normalizer is NOT added; the
+LLM never authors answers). `spokenSummary` leads with the register aloud + a
+one-sentence summary and **strips every id-shape** — record IDs are NEVER voiced
+(the screen holds the receipts). **Tests: cockpit "spoken summary … NEVER voices
+record ids" + "the mic degrades without drama".** Carry-forward: the
+LLM-interpreter transcript normalizer.
+
+**CU4 — ghost latency.** Dial (b): on-demand pricing fires on pointer-DOWN (eager
+= silent) so the K solves are in flight before the bar lifts. Dial (c): the K
+per-machine solves run in a bounded thread pool (`ONDEMAND_SOLVE_WORKERS=4`;
+CP-SAT releases the GIL during search, per-solve determinism unchanged). Dial (a)
+precompute widening landed in 3.3 CU1; deepening it further is a measured
+carry-forward. Measured (hermetic): grab→shade 5.2 ms; the rehearsal records
+`priceToGhostsMs`/`acceptToDoneMs` per beat. busy_board raw wall time stays
+bounded-by-design (Phase-4 profiling carry-forward).
+
+**CU5 — the rehearsal.** `tests/cockpit/rehearsal.spec.mjs` drives the
+sixty-second script end to end on the distinct fixture, BEAT BY BEAT,
+screenshot-asserted, recording each beat's latency to `shots/
+rehearsal_report.json`: ask why (VOICE) → 3 bars glow · grab → priced ghosts ·
+drag onto a ghost → verdict + traced moved-set · Accept → new proposed version,
+Publish → supersedes the base, strip flips · "summarize my changes" (VOICE) →
+narrative naming the edit + authority. **Every beat green; 557 ms total beat
+latency hermetic.** The fixture server stands in for the API across the arc
+(canned ask + ghosts + sandbox + accept/publish + a synthesized edit narrative
+for the accepted -edit version); the REAL accept→Decision→publish + the REAL
+decomposed edit answer are proven against the live API by the Python tests. The
+distinct fixture was regenerated to add the opening ask (real cited_refs glow
+real bars).
+
+**Riders.** (a) `dev_api.ps1` / `dev_cockpit.ps1` ALREADY self-locate via
+`$PSScriptRoot` — confirmed, no change. (b) datetime.now() audit: the only
+wall-clock fallbacks are `validator.py` (the known reference_date fallback,
+mitigated by 3.3b's `--reference-date`, always supplied on the sample/API/edit
+paths), `solver_builder.py` (horizon floor when NO demand is dated), and
+`scenario.py` (slice cutoff when reference_date is None) — none new;
+`apply_planner_edit` threads the reference date from the ROOT solve, so accept
+never reintroduces the trap. (c) The feel-token export (`drag/tuning.js`
+`exportFeel`) is confirmed working (JSON print + `feel.tokens.json` download,
+console print the headless fallback).
+
+**Result.** **Cockpit JS 34/34** (7 board + 5 legality + 20 gesture + rehearsal);
+**Python 1035 non-slow passed** (the one intermittent
+`test_scenario_untouched_moves_bounded` is a known CP-SAT-contention flake —
+passes in isolation, unrelated to this session) + the new slow ladder. Phase 3
+build work is complete — **Phase 3 awaits its exit audit** (a fresh session
+driving the exit demo cold). See docs/07 v2.7 and CLAUDE.md.

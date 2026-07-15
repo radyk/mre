@@ -60,13 +60,16 @@ Every record carries:
 
 | Field | Content |
 |---|---|
-| `decision_type` | Per-module enum: `identity_resolution`, `interpretation` (M1); `demand_merge`, `demand_split` (M4); `model_simplification`, `constraint_relaxation` (M5); `assignment` (M7) |
+| `decision_type` | Per-module enum: `identity_resolution`, `interpretation` (M1); `demand_merge`, `demand_split` (M4); `model_simplification`, `constraint_relaxation` (M5); `assignment` (M7); `scenario_modification` (what-if); `planner_edit` (an accepted cockpit gesture, Phase 3) |
 | `subjects` | Canonical entity refs |
 | `chosen` | Structured description of what was selected |
 | `alternatives` | List of `{option, consequence}` — consequences in comparable terms (cost delta, constraint violated, lateness created) |
 | `driver` | Primary driver code (mandatory, exactly one) + optional secondary list. Forcing commitment to the dominant cause is what makes explanations crisp. |
 | `basis` | `observed` / `reconstructed` / `policy_applied` — **the honesty flag** |
 | `policy_ref` | The named policy that governed, if any |
+| `authority` | **WHO authored the decision** (Phase 3 addition). `None` for machine-authored decisions (adapter interpretations, planner merges, solver-reconstructed assignments). **MANDATORY on a `planner_edit`** — an accepted cockpit edit is a human act pinning an operation and re-solving its surroundings, so the store must name the authority that stands behind it. A dev identity token in Phase 3; real auth (SSO/role) is post-pilot. The value never carries ERP identifiers — it is an identity of the *actor*, orthogonal to `subjects`. |
+
+**The planner-edit Decision (Phase 3, R-DP7).** When a planner drops a bar and *accepts* the Tier-2 verdict, the accept records a `planner_edit` Decision and mints a NEW proposed schedule version (the base is never mutated). `basis` is `observed` — the pin is a directly observed human command, not a solver reconstruction (the *consequences* the re-solve computes are reconstructed evidence in that new version's own run, as always). `chosen` carries the pin (operation, resource, start), the priced delta, and the moved-set count; `alternatives` carries the road not taken (keeping the incumbent placement, at its known cost). `authority` is mandatory. Publish (proposed → published) is a separate act that supersedes the prior version and invalidates its pools/alternatives; it is not itself a Decision but a status transition recorded in the registry.
 
 **Driver codes (12):**
 

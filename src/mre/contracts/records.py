@@ -111,6 +111,11 @@ class Decision(BaseModel):
     secondary_drivers: list[DriverCode] = []
     basis: DecisionBasis
     policy_ref: Optional[str] = None
+    # WHO authored this decision (docs/02 §4.2, Phase 3 planner-edit addition).
+    # None for machine-authored decisions (adapter/planner/solver reconstruction);
+    # MANDATORY for a ``planner_edit`` — an accepted cockpit edit is a human act
+    # and must name its authority. A dev identity token now; real auth post-pilot.
+    authority: Optional[str] = None
 
 
 class Finding(BaseModel):

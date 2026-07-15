@@ -14,7 +14,8 @@
 // blocking on the network.
 import {
   getScheduleInteraction, getScheduleAlternatives, postSandbox,
-  priceOpAlternatives, getAlternativeMember,
+  priceOpAlternatives, getAlternativeMember, postAccept, postPublish,
+  getSchedule,
 } from "./api.js";
 import { createGeometry } from "./drag/geometry.js";
 import { createGestureController } from "./drag/controller.js";
@@ -45,7 +46,7 @@ export function loadInteraction(id, onReady) {
 // The dev build additionally mounts the feel tuning panel (CU6). Read-only
 // until this resolves; drag affordances enable on arrival.
 export function wireInteraction(id, board, hook, opts = {}) {
-  const { doc, devMode = false } = opts;
+  const { doc, devMode = false, onVersionChange } = opts;
   hook.interactionReady = false;
   hook.dragEnabled = false;
   hook.interaction = null;
@@ -59,6 +60,11 @@ export function wireInteraction(id, board, hook, opts = {}) {
     priceOpAlternatives,
     getAlternativeMember,
     getAlternatives: getScheduleAlternatives,
+    // accept/publish (CU1) + the rebind reads the controller needs after an edit
+    postAccept,
+    postPublish,
+    getSchedule,
+    getInteraction: getScheduleInteraction,
   };
 
   const onReady = (payload) => {
@@ -76,6 +82,11 @@ export function wireInteraction(id, board, hook, opts = {}) {
       const geometry = createGeometry(board.timeline);
       const controller = createGestureController(board, geometry, {
         doc, interaction, api, scheduleId: id,
+        onVersionChange: (newId, status) => {
+          hook.scheduleId = newId;    // subsequent asks target the live version
+          hook.versionChanged = { id: newId, status };   // synchronous, race-free
+          if (onVersionChange) onVersionChange(newId, status);
+        },
       });
       hook.drag = controller;
       hook.dragEnabled = true;

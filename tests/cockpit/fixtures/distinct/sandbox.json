@@ -3,7 +3,7 @@
     "outcome": "verdict",
     "status": "OPTIMAL",
     "within_budget": true,
-    "wall_time_s": 0.015,
+    "wall_time_s": 0.021,
     "budget_s": 15.0,
     "feasible": true,
     "applied_time_limit_s": 15.0,
@@ -13,45 +13,45 @@
     "message": "optimal delta proven",
     "moves": [
       {
-        "operation_ref": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+        "operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
         "from_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
         "to_resource": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
-        "from_start": "2026-01-05T07:00:00+00:00",
+        "from_start": "2026-01-05T11:01:00+00:00",
         "to_start": "2026-01-05T07:00:00+00:00",
-        "start_delta_min": 0,
+        "start_delta_min": -241,
         "resource_changed": true,
         "pinned": true
       },
       {
-        "operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
+        "operation_ref": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
         "from_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
         "to_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
-        "from_start": "2026-01-05T11:01:00Z",
-        "to_start": "2026-01-05T11:01:00Z",
+        "from_start": "2026-01-05T07:00:00Z",
+        "to_start": "2026-01-05T07:00:00Z",
         "start_delta_min": 240,
         "resource_changed": false,
         "pinned": false,
         "reason": {
           "kind": "occupancy",
           "on_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
-          "blocker_op": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+          "blocker_op": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
           "until": "2026-01-05T07:00:00+00:00"
         }
       }
     ],
     "pin": {
-      "operation_ref": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+      "operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
       "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
       "start": "2026-01-05T07:00:00+00:00"
     }
   },
   "budget_s": 15.0,
   "by_op": {
-    "2f4487ed-0c8a-5a02-b757-a99a1e924002": {
+    "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6": {
       "outcome": "verdict",
       "status": "OPTIMAL",
       "within_budget": true,
-      "wall_time_s": 0.015,
+      "wall_time_s": 0.021,
       "budget_s": 15.0,
       "feasible": true,
       "applied_time_limit_s": 15.0,
@@ -61,43 +61,43 @@
       "message": "optimal delta proven",
       "moves": [
         {
-          "operation_ref": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+          "operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
           "from_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
           "to_resource": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
-          "from_start": "2026-01-05T07:00:00+00:00",
+          "from_start": "2026-01-05T11:01:00+00:00",
           "to_start": "2026-01-05T07:00:00+00:00",
-          "start_delta_min": 0,
+          "start_delta_min": -241,
           "resource_changed": true,
           "pinned": true
         },
         {
-          "operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
+          "operation_ref": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
           "from_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
           "to_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
-          "from_start": "2026-01-05T11:01:00Z",
-          "to_start": "2026-01-05T11:01:00Z",
+          "from_start": "2026-01-05T07:00:00Z",
+          "to_start": "2026-01-05T07:00:00Z",
           "start_delta_min": 240,
           "resource_changed": false,
           "pinned": false,
           "reason": {
             "kind": "occupancy",
             "on_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
-            "blocker_op": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+            "blocker_op": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
             "until": "2026-01-05T07:00:00+00:00"
           }
         }
       ],
       "pin": {
-        "operation_ref": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+        "operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
         "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
         "start": "2026-01-05T07:00:00+00:00"
       }
     },
-    "c761c094-24d0-5c7e-9926-a6ecb06893c4": {
+    "86a5f0bf-2bd9-5ac7-811f-9f7dcd61124a": {
       "outcome": "feasible_unproven",
       "status": "FEASIBLE",
       "within_budget": true,
-      "wall_time_s": 0.015,
+      "wall_time_s": 0.021,
       "budget_s": 15.0,
       "feasible": true,
       "applied_time_limit_s": 15.0,
@@ -107,43 +107,43 @@
       "message": "\u2248 delta, bound not proven",
       "moves": [
         {
-          "operation_ref": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+          "operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
           "from_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
           "to_resource": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
-          "from_start": "2026-01-05T07:00:00+00:00",
+          "from_start": "2026-01-05T11:01:00+00:00",
           "to_start": "2026-01-05T07:00:00+00:00",
-          "start_delta_min": 0,
+          "start_delta_min": -241,
           "resource_changed": true,
           "pinned": true
         },
         {
-          "operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
+          "operation_ref": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
           "from_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
           "to_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
-          "from_start": "2026-01-05T11:01:00Z",
-          "to_start": "2026-01-05T11:01:00Z",
+          "from_start": "2026-01-05T07:00:00Z",
+          "to_start": "2026-01-05T07:00:00Z",
           "start_delta_min": 240,
           "resource_changed": false,
           "pinned": false,
           "reason": {
             "kind": "occupancy",
             "on_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
-            "blocker_op": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+            "blocker_op": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
             "until": "2026-01-05T07:00:00+00:00"
           }
         }
       ],
       "pin": {
-        "operation_ref": "c761c094-24d0-5c7e-9926-a6ecb06893c4",
+        "operation_ref": "86a5f0bf-2bd9-5ac7-811f-9f7dcd61124a",
         "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
-        "start": "2026-01-07T07:00:00+00:00"
+        "start": "2026-01-07T11:01:00+00:00"
       }
     },
-    "6b4a17a6-0b36-55e0-ae00-5b4ee029dcb3": {
+    "a1ba867e-e117-5c7f-85c4-344a7571508c": {
       "outcome": "no_verdict",
       "status": "UNKNOWN",
       "within_budget": true,
-      "wall_time_s": 0.015,
+      "wall_time_s": 0.021,
       "budget_s": 15.0,
       "feasible": false,
       "applied_time_limit_s": 15.0,
@@ -153,9 +153,9 @@
       "message": "couldn't verify this placement in time",
       "moves": [],
       "pin": {
-        "operation_ref": "6b4a17a6-0b36-55e0-ae00-5b4ee029dcb3",
+        "operation_ref": "a1ba867e-e117-5c7f-85c4-344a7571508c",
         "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
-        "start": "2026-01-09T07:00:00+00:00"
+        "start": "2026-01-09T11:02:00+00:00"
       }
     }
   }

@@ -298,6 +298,30 @@ class Registry:
             rows = con.execute(q).fetchall()
         return [dict(r) for r in rows]
 
+    def publish_schedule(self, schedule_id: str) -> list[str]:
+        """Publish a proposed schedule (docs/07 Phase 3 CU1): proposed →
+        published, and supersede its immediate PRIOR version (its
+        parent_schedule_id) — invalidating that version's pools/alternatives via
+        the existing supersede machinery. The base is only superseded HERE, on an
+        explicit publish, never on accept. Returns the ids superseded."""
+        superseded: list[str] = []
+        with self._conn() as con:
+            row = con.execute(
+                "SELECT parent_schedule_id FROM schedules WHERE id=?", (schedule_id,)
+            ).fetchone()
+            con.execute("UPDATE schedules SET status='published' WHERE id=?",
+                        (schedule_id,))
+            parent = row["parent_schedule_id"] if row else None
+            if parent:
+                con.execute(
+                    "UPDATE schedules SET status='superseded' WHERE id=? "
+                    "AND status!='superseded'", (parent,))
+                con.execute(
+                    "UPDATE pools SET status='invalidated' WHERE schedule_id=?",
+                    (parent,))
+                superseded.append(parent)
+        return superseded
+
     def mark_schedule_superseded(self, schedule_id: str) -> None:
         """Supersede a schedule and invalidate its solution pools — a pool
         is keyed to one schedule version; a superseded base makes every

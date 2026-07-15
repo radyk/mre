@@ -1,6 +1,6 @@
 {
   "contract_version": "1.3",
-  "schedule_id": "19dcfe91-7134-4a36-9feb-233e1fe32aa2",
+  "schedule_id": "fc553f76-380b-45c7-a33c-e097cdd9a147",
   "snapshot_id": "snap-mrd",
   "run_id": "run-mrd-fixture",
   "status": "proposed",
@@ -13,12 +13,12 @@
     "status": "OPTIMAL",
     "objective": 240753.0,
     "gap": 0.0,
-    "wall_time_s": 0.024444200000000003,
+    "wall_time_s": 0.0315176,
     "deterministic": true
   },
   "cost_summary": {
-    "total": 2416.3666666666663,
-    "production_regular": 2016.3666666666663,
+    "total": 2416.366666666667,
+    "production_regular": 2016.3666666666666,
     "production_overtime": 0.0,
     "setup": 400.0,
     "tardiness": 0.0,
@@ -2596,37 +2596,11 @@
   ],
   "assignments": [
     {
-      "assignment_id": "864574d2-f538-4bd9-933b-2fb18d14ef9e",
-      "operation_ref": "20358e5f-5d77-512b-9f25-e94b35a4003b",
-      "workpackage_ref": "93d5172e-4763-5b74-9df1-06fc02d9118f",
+      "assignment_id": "cda89f7a-3b7e-493b-8b27-7035fe96cd6e",
+      "operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
+      "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
       "work_orders": [
-        "ORD-000004"
-      ],
-      "op_seq": 10,
-      "setup_family": "",
-      "resource_id": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
-      "external_name": "F001-RES001",
-      "chunks": [
-        {
-          "chunk_seq": 1,
-          "start": "2026-01-05T07:00:00Z",
-          "end": "2026-01-05T11:01:00Z",
-          "working_min": 241
-        }
-      ],
-      "phases": {
-        "setup": null,
-        "teardown": null
-      },
-      "in_overtime_min": 0,
-      "decision_ref": "03f53db9-d57d-4e4b-b7f3-546cd696563b"
-    },
-    {
-      "assignment_id": "0954f443-7e90-4893-84fa-e826e64013fe",
-      "operation_ref": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
-      "workpackage_ref": "510c68d0-3c77-59f4-992a-dd821f5b9d60",
-      "work_orders": [
-        "ORD-000003"
+        "ORD-000001"
       ],
       "op_seq": 10,
       "setup_family": "",
@@ -2645,14 +2619,40 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "a3b515fc-edb0-4b6c-a359-3798ec8c98d0"
+      "decision_ref": "b222abf6-1b6c-4a81-b1a9-ccfba4ef8d24"
     },
     {
-      "assignment_id": "9800c2ec-fadb-49e6-bcaf-5b0891af3866",
-      "operation_ref": "2debde52-2860-5408-9d96-47ce7d52f372",
-      "workpackage_ref": "93d5172e-4763-5b74-9df1-06fc02d9118f",
+      "assignment_id": "444d47d0-731e-4721-a570-8a4cf162627d",
+      "operation_ref": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+      "workpackage_ref": "510c68d0-3c77-59f4-992a-dd821f5b9d60",
       "work_orders": [
-        "ORD-000004"
+        "ORD-000003"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+      "external_name": "F001-RES001",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T11:01:00Z",
+          "working_min": 241
+        }
+      ],
+      "phases": {
+        "setup": null,
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "d641bfdb-e6e7-402c-83a1-f93d525fc916"
+    },
+    {
+      "assignment_id": "61de990d-970e-4441-8027-d638f14a7690",
+      "operation_ref": "c761c094-24d0-5c7e-9926-a6ecb06893c4",
+      "workpackage_ref": "510c68d0-3c77-59f4-992a-dd821f5b9d60",
+      "work_orders": [
+        "ORD-000003"
       ],
       "op_seq": 20,
       "setup_family": "",
@@ -2671,14 +2671,14 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "85efa02a-f88f-414c-a3a8-bc388ea221b3"
+      "decision_ref": "adc839b6-a5f1-49da-95f2-767f3ca71ba2"
     },
     {
-      "assignment_id": "8ba7b9cb-5b88-47b3-927e-f4aa61757ba4",
-      "operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
-      "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
+      "assignment_id": "8ffa539f-e8c3-4e05-8cf7-5d9309527d18",
+      "operation_ref": "438b549a-7387-5c46-af50-bf3e2f189483",
+      "workpackage_ref": "d77e28e5-ad51-50c8-83f0-4da443317121",
       "work_orders": [
-        "ORD-000001"
+        "ORD-000002"
       ],
       "op_seq": 10,
       "setup_family": "",
@@ -2697,24 +2697,24 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "88343a51-a506-411f-8d5e-050f1d8ed681"
+      "decision_ref": "71194c20-1fb8-4df9-93a8-b9da5c44ded8"
     },
     {
-      "assignment_id": "6066f12f-3646-4e27-be33-ccf18aa43fe2",
-      "operation_ref": "86a5f0bf-2bd9-5ac7-811f-9f7dcd61124a",
-      "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
+      "assignment_id": "43565210-7bb6-4c66-985a-adabd4be0b37",
+      "operation_ref": "6b4a17a6-0b36-55e0-ae00-5b4ee029dcb3",
+      "workpackage_ref": "510c68d0-3c77-59f4-992a-dd821f5b9d60",
       "work_orders": [
-        "ORD-000001"
+        "ORD-000003"
       ],
-      "op_seq": 20,
+      "op_seq": 30,
       "setup_family": "",
       "resource_id": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
       "external_name": "F001-RES001",
       "chunks": [
         {
           "chunk_seq": 1,
-          "start": "2026-01-06T11:02:00Z",
-          "end": "2026-01-06T15:03:00Z",
+          "start": "2026-01-06T11:01:00Z",
+          "end": "2026-01-06T15:02:00Z",
           "working_min": 241
         }
       ],
@@ -2723,16 +2723,16 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "eff88bfe-a5ef-4469-a1e0-e671bf70c337"
+      "decision_ref": "4ec1fa6c-7ad6-4680-8f07-5a9d91d0989c"
     },
     {
-      "assignment_id": "b6f7c7fc-644b-4839-8f70-9604d6d1c9a1",
-      "operation_ref": "a1ba867e-e117-5c7f-85c4-344a7571508c",
-      "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
+      "assignment_id": "cd069d54-7305-4cfa-9828-ccf640b9213b",
+      "operation_ref": "20358e5f-5d77-512b-9f25-e94b35a4003b",
+      "workpackage_ref": "93d5172e-4763-5b74-9df1-06fc02d9118f",
       "work_orders": [
-        "ORD-000001"
+        "ORD-000004"
       ],
-      "op_seq": 30,
+      "op_seq": 10,
       "setup_family": "",
       "resource_id": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
       "external_name": "F001-RES001",
@@ -2749,14 +2749,14 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "a9ea3f7c-894a-4945-b8ab-de8e4f529dae"
+      "decision_ref": "7fb2ecc6-1796-40ae-a360-484ef4cff8ce"
     },
     {
-      "assignment_id": "43a4e021-2996-4900-8ba0-664ef754a14a",
-      "operation_ref": "c761c094-24d0-5c7e-9926-a6ecb06893c4",
-      "workpackage_ref": "510c68d0-3c77-59f4-992a-dd821f5b9d60",
+      "assignment_id": "772318ad-1b37-4aea-85ad-c0bb936928ad",
+      "operation_ref": "2debde52-2860-5408-9d96-47ce7d52f372",
+      "workpackage_ref": "93d5172e-4763-5b74-9df1-06fc02d9118f",
       "work_orders": [
-        "ORD-000003"
+        "ORD-000004"
       ],
       "op_seq": 20,
       "setup_family": "",
@@ -2765,8 +2765,8 @@
       "chunks": [
         {
           "chunk_seq": 1,
-          "start": "2026-01-07T11:01:00Z",
-          "end": "2026-01-07T15:02:00Z",
+          "start": "2026-01-07T11:02:00Z",
+          "end": "2026-01-07T15:03:00Z",
           "working_min": 241
         }
       ],
@@ -2775,16 +2775,16 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "af33709d-5dea-48aa-a642-2a5c57dad6b2"
+      "decision_ref": "de24c747-b580-4526-b645-bd939632c868"
     },
     {
-      "assignment_id": "f39f0bdf-2781-4280-9e16-6ef0112e89fa",
-      "operation_ref": "6b4a17a6-0b36-55e0-ae00-5b4ee029dcb3",
-      "workpackage_ref": "510c68d0-3c77-59f4-992a-dd821f5b9d60",
+      "assignment_id": "0ea1b89a-0913-47f7-9d94-f9434a57a6d6",
+      "operation_ref": "e599bfd1-eb3c-5403-b0b9-6ad5f6c3367f",
+      "workpackage_ref": "d77e28e5-ad51-50c8-83f0-4da443317121",
       "work_orders": [
-        "ORD-000003"
+        "ORD-000002"
       ],
-      "op_seq": 30,
+      "op_seq": 20,
       "setup_family": "",
       "resource_id": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
       "external_name": "F001-RES001",
@@ -2801,16 +2801,16 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "774ec03d-9284-4897-9f9a-cdb3bd068de5"
+      "decision_ref": "77cc29b6-363a-446c-a854-17b263888142"
     },
     {
-      "assignment_id": "65478e59-c44a-4269-bb67-d20252acd488",
-      "operation_ref": "438b549a-7387-5c46-af50-bf3e2f189483",
-      "workpackage_ref": "d77e28e5-ad51-50c8-83f0-4da443317121",
+      "assignment_id": "33d4d037-41f4-43fd-809f-7b2ee15b6ffe",
+      "operation_ref": "86a5f0bf-2bd9-5ac7-811f-9f7dcd61124a",
+      "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
       "work_orders": [
-        "ORD-000002"
+        "ORD-000001"
       ],
-      "op_seq": 10,
+      "op_seq": 20,
       "setup_family": "",
       "resource_id": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
       "external_name": "F001-RES001",
@@ -2827,16 +2827,16 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "8b31b5d2-e00e-4895-a6a8-f608d657249a"
+      "decision_ref": "1812ad95-3535-4afe-a015-6fbef68de42c"
     },
     {
-      "assignment_id": "17646195-16a3-4b60-8b57-220e405f4057",
-      "operation_ref": "e599bfd1-eb3c-5403-b0b9-6ad5f6c3367f",
-      "workpackage_ref": "d77e28e5-ad51-50c8-83f0-4da443317121",
+      "assignment_id": "96cb1d1a-362d-4092-b8f8-7459344f13fa",
+      "operation_ref": "a1ba867e-e117-5c7f-85c4-344a7571508c",
+      "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
       "work_orders": [
-        "ORD-000002"
+        "ORD-000001"
       ],
-      "op_seq": 20,
+      "op_seq": 30,
       "setup_family": "",
       "resource_id": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
       "external_name": "F001-RES001",
@@ -2853,7 +2853,7 @@
         "teardown": null
       },
       "in_overtime_min": 0,
-      "decision_ref": "5aec51de-06ba-4ccc-bd22-87b152e09cab"
+      "decision_ref": "4849b472-31cc-44b7-a6d9-fdd5b62c84e9"
     }
   ],
   "service_outcomes": [
@@ -2862,8 +2862,8 @@
       "work_order": "ORD-000001",
       "customer_ref": null,
       "due": "2026-01-10T23:59:59Z",
-      "projected_completion": "2026-01-07T11:01:00Z",
-      "lateness_min": -5098,
+      "projected_completion": "2026-01-09T11:01:00Z",
+      "lateness_min": -2218,
       "tardiness_cost": 0.0
     },
     {
@@ -2871,8 +2871,8 @@
       "work_order": "ORD-000002",
       "customer_ref": null,
       "due": "2026-01-11T23:59:59Z",
-      "projected_completion": "2026-01-09T11:01:00Z",
-      "lateness_min": -3658,
+      "projected_completion": "2026-01-08T11:01:00Z",
+      "lateness_min": -5098,
       "tardiness_cost": 0.0
     },
     {
@@ -2880,8 +2880,8 @@
       "work_order": "ORD-000003",
       "customer_ref": null,
       "due": "2026-01-10T23:59:59Z",
-      "projected_completion": "2026-01-08T11:01:00Z",
-      "lateness_min": -3658,
+      "projected_completion": "2026-01-06T15:02:00Z",
+      "lateness_min": -6297,
       "tardiness_cost": 0.0
     },
     {
@@ -2889,8 +2889,8 @@
       "work_order": "ORD-000004",
       "customer_ref": null,
       "due": "2026-01-11T23:59:59Z",
-      "projected_completion": "2026-01-05T15:03:00Z",
-      "lateness_min": -9176,
+      "projected_completion": "2026-01-07T15:03:00Z",
+      "lateness_min": -6296,
       "tardiness_cost": 0.0
     }
   ],
@@ -2908,7 +2908,7 @@
       "objective": 240753.0,
       "objective_delta_pct": 0.3012,
       "source": "forced_alternative",
-      "target_operation_ref": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+      "target_operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
       "forbidden_resource_ref": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
       "alternative_resource_ref": "98a636b5-b943-5fc5-81ac-01f16f5353cc"
     }

@@ -191,6 +191,7 @@ class Reporter:
         secondary_drivers: Optional[list[DriverCode]] = None,
         tier: RecordTier = RecordTier.SUPPORTING,
         message: str = "",
+        authority: Optional[str] = None,
     ) -> Decision:
         record = Decision(
             record_id=str(uuid.uuid4()),
@@ -209,6 +210,7 @@ class Reporter:
             secondary_drivers=secondary_drivers or [],
             basis=basis,
             policy_ref=policy_ref,
+            authority=authority,
         )
         self._sink.write(record)
         return record

@@ -75,6 +75,11 @@ DEFAULT_TOP_N_EXPENSIVE = 6
 # a grab must not fan out into an unbounded fleet of re-solves.
 DEFAULT_ONDEMAND_MAX_MACHINES = 4
 DEFAULT_ONDEMAND_TIME_LIMIT_S = 6.0
+# CU4 dial (c): the K per-machine on-demand solves run in a bounded thread pool
+# (CP-SAT releases the GIL during search, so threads overlap the solves). Capped
+# so a single grab never oversubscribes the box — the API-level concurrency token
+# (MAX_CONCURRENT_ONDEMAND) still bounds concurrent GRABS on top of this.
+ONDEMAND_SOLVE_WORKERS = 4
 
 
 @dataclass
@@ -607,14 +612,32 @@ def build_op_alternatives(
         ),
     }
 
-    members: list[ForcedAlternative] = []
-    for i, machine in enumerate(machines):
-        members.append(_solve_alternative(
+    # CU4 dial (c): price the K eligible machines IN PARALLEL. Each _solve_alternative
+    # is independent (its own member_index + output document) and CP-SAT releases
+    # the GIL during search, so a bounded thread pool overlaps the expensive solves
+    # instead of running them back-to-back. Determinism is per-solve (workers=1 +
+    # seed inside _solve_alternative), so the parallelism only changes WALL time,
+    # not any member's result. Results are re-ordered by member_index.
+    members: list[ForcedAlternative] = [None] * len(machines)  # type: ignore[list-item]
+
+    def _price(i_machine):
+        i, machine = i_machine
+        return i, _solve_alternative(
             actx, work_dir=work_dir, member_index=i, target=op_id,
             required_resource=machine, snapshot_id=snapshot_id, run_id=run_id,
             base_schedule_id=base_schedule_id, pool_id=pool_id,
             member_time_limit_s=member_time_limit_s, seed=seed,
-        ))
+        )
+
+    if len(machines) <= 1:
+        for i, machine in enumerate(machines):
+            _, members[i] = _price((i, machine))
+    else:
+        import concurrent.futures as _cf
+        workers = min(len(machines), ONDEMAND_SOLVE_WORKERS)
+        with _cf.ThreadPoolExecutor(max_workers=workers) as ex:
+            for i, member in ex.map(_price, list(enumerate(machines))):
+                members[i] = member
 
     result = ForcedAlternativeResult(
         pool_id=pool_id, base_schedule_id=base_schedule_id,

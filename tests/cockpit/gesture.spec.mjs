@@ -294,7 +294,45 @@ test("no verdict → return home with reason (CU4, R-T1c outcome 3 / R-DP2)", as
   await shot(page, "g07_return_home");
 });
 
-test("accept is stubbed disabled; discard restores everything (CU4/CU5, R-DP7)", async ({ page }) => {
+test("accept mints a new proposed version; publish supersedes it (CU1, R-DP7)", async ({ page }) => {
+  await boot(page);
+  const op = opFor("verdict");
+  const inc = incumbent(op);
+  // drop → verdict; Accept is a LIVE control now (no longer stubbed disabled)
+  const v = await page.evaluate(([op, rid, start]) =>
+    window.__cockpit.drag.dropAt(op, rid, start).then(() => window.__cockpit.drag.state()),
+    [op, inc.resource_id, inc.start]);
+  expect(v.phase).toBe("verdict");
+  await expect(page.locator(".dc-accept")).toBeEnabled();
+
+  // accept → a NEW proposed version; the board rebinds, the card reads Accepted,
+  // the strip + hook follow the new version (R-DP7: the strip reflects state).
+  const acc = await page.evaluate(() => window.__cockpit.drag.accept().then(() => ({
+    state: window.__cockpit.drag.state(),
+    changed: window.__cockpit.versionChanged,
+    scheduleId: window.__cockpit.scheduleId,
+  })));
+  expect(acc.state.phase).toBe("accepted");
+  expect(acc.state.acceptedId, "accept records the new version id").toBeTruthy();
+  expect(acc.changed.status).toBe("proposed");
+  expect(acc.scheduleId, "the cockpit retargets the new version").toBe(acc.state.acceptedId);
+  await expect(page.locator(".delta-card.accepted")).toBeVisible();
+  await expect(page.locator(".dc-publish")).toBeVisible();
+  await shot(page, "g10_accepted");
+
+  // publish → published; the prior version is superseded; the strip flips.
+  const pub = await page.evaluate(() => window.__cockpit.drag.publish().then(() => ({
+    state: window.__cockpit.drag.state(),
+    changed: window.__cockpit.versionChanged,
+  })));
+  expect(pub.state.phase).toBe("published");
+  expect(pub.changed.status).toBe("published");
+  await expect(page.locator(".delta-card.published")).toBeVisible();
+  await expect(page.locator("#topstrip .status")).toContainText("published");
+  await shot(page, "g11_published");
+});
+
+test("discard from a verdict restores everything (CU5, R-DP7)", async ({ page }) => {
   await boot(page);
   const g = priced[0];
   const op = g.label.target_operation_ref;
@@ -302,8 +340,6 @@ test("accept is stubbed disabled; discard restores everything (CU4/CU5, R-DP7)",
     window.__cockpit.drag.dropAt(op, rid, start),
     [op, g.label.placement.resource_id, g.label.placement.start]);
   await expect(page.locator(".delta-card")).toBeVisible();
-  // accept is disabled (no publish workflow — a dead-end accept would break R-DP7)
-  await expect(page.locator(".dc-accept")).toBeDisabled();
   // discard restores: card hidden, overlays + traces cleared, phase idle
   await page.locator(".dc-discard").click();
   await page.waitForTimeout(100);
@@ -414,4 +450,48 @@ test("delta-card line → navigate to the traced bar (CU5, R-DP7c)", async ({ pa
   await line.click();
   // clicking the line selects the op's bar on the board (deictic navigation)
   await expect(page.locator(".vis-item.bar.selected")).toHaveCount(1);
+});
+
+// ---------------------------------------------------------------------------
+// Session 3.4 — voice (CU3): the spoken-summary honesty contract + degrade
+// ---------------------------------------------------------------------------
+
+test("spoken summary leads with the register and NEVER voices record ids (CU3)", async ({ page }) => {
+  await boot(page);
+  const out = await page.evaluate(() => {
+    const p = window.__cockpit.panel;
+    const answer = "=== Why is WO-2001 late? ===\n"
+      + "WO-2001 is 840 min late (record dec-1a2b3c4d, "
+      + "op 3f2a9c11-2b3c-4d5e-6f70-8192a3b4c5d6 on M-GEAR-01).\nMore detail here.";
+    return {
+      testimony: p.spokenSummary(answer, "testimony"),
+      judgment: p.spokenSummary(answer, "judgment"),
+      voiceAvailable: p.voiceAvailable(),
+    };
+  });
+  // register aloud, one sentence, planner vocabulary kept…
+  expect(out.testimony.startsWith("Testimony.")).toBe(true);
+  expect(out.judgment.startsWith("My take.")).toBe(true);
+  expect(out.testimony).toContain("WO-2001");    // planner words are voiced
+  // …but record ids are NEVER voiced (the screen holds the receipts)
+  expect(out.testimony).not.toMatch(/dec-[0-9a-f]/i);
+  expect(out.testimony).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}/i);
+  // one sentence only (stops at the first period)
+  expect(out.testimony).not.toContain("More detail");
+});
+
+test("the mic degrades without drama where speech is unsupported (CU3)", async ({ page }) => {
+  await boot(page);
+  // In a headless browser the mic either mounts (SpeechRecognition present) or
+  // is silently removed — either way the typed composer is intact and nothing
+  // throws. The honest contract is: no dead control, no crash.
+  const state = await page.evaluate(() => ({
+    micCount: document.querySelectorAll("#ask-mic").length,
+    inputPresent: !!document.querySelector("#ask-input"),
+    sendPresent: !!document.querySelector("#ask-send"),
+    err: window.__cockpit.error || null,
+  }));
+  expect(state.err).toBe(null);
+  expect(state.inputPresent && state.sendPresent).toBe(true);
+  expect(state.micCount === 0 || state.micCount === 1).toBe(true);
 });

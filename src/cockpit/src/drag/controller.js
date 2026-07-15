@@ -31,20 +31,30 @@ const MIN = 60000;
 const ms = (iso) => Date.parse(iso);
 
 export function createGestureController(board, geometry, opts) {
-  const { doc, interaction, api, scheduleId } = opts;
+  const { api } = opts;
+  // Mutable across an accepted edit: accept rebinds the whole surface to the new
+  // schedule version so a SEQUENTIAL edit sandboxes against it (CU1).
+  let doc = opts.doc;
+  let interaction = opts.interaction;
+  let scheduleId = opts.scheduleId;
+  const authority = opts.authority || "dev-planner";
   const feel = opts.feel || makeFeel();
   applyFeel(feel);
 
-  const ctx = buildContext(doc, interaction);
+  let ctx = buildContext(doc, interaction);
   const timeline = board.timeline;
 
   // --- planner-vocabulary + incumbent indexes --------------------------
   const asgByOp = new Map();          // op -> assignment (incumbent placement)
   const asgById = new Map();          // assignment_id -> assignment
-  for (const a of doc.assignments || []) {
-    asgByOp.set(a.operation_ref, a);
-    asgById.set(a.assignment_id, a);
+  function rebuildAsgIndex() {
+    asgByOp.clear(); asgById.clear();
+    for (const a of doc.assignments || []) {
+      asgByOp.set(a.operation_ref, a);
+      asgById.set(a.assignment_id, a);
+    }
   }
+  rebuildAsgIndex();
   const nameOf = (rid) => board.resourceName(rid);
   const woOf = (opRef) => (asgByOp.get(opRef)?.work_orders || [])[0] || null;
   const durationMinOf = (opRef) => {
@@ -114,10 +124,12 @@ export function createGestureController(board, geometry, opts) {
     dropToVerdictMs: null,
   };
 
-  // --- the delta card (CU4) --------------------------------------------
+  // --- the delta card (CU4 + CU1 accept/publish) -----------------------
   const card = createDeltaCard(board.host.parentElement || board.host, {
     onDiscard: discard,
     onNavigate: (opRef) => navigateToOp(opRef),
+    onAccept: accept,
+    onPublish: publish,
   });
 
   // ---------------------------------------------------------------------
@@ -193,31 +205,40 @@ export function createGestureController(board, geometry, opts) {
 
   // Is `opRef` a candidate for on-demand pricing? Only when it's multi-eligible
   // (>1 eligible row → a cross-machine move exists to price) and carries no
-  // ghosts yet (the precomputed batch missed it).
+  // ghosts yet (the precomputed batch missed it). Works BEFORE a grab: if the op
+  // isn't the currently-grabbed one, its eligibility is computed on the fly
+  // (tier0For) so pricing can fire on pointer-DOWN (CU4 dial b) — buying back the
+  // reaction time before the drag even starts.
   function isUncovered(opRef) {
     if ((ghostIndex.get(opRef) || []).length) return false;
-    const rows = S.tier0?.rows || [];
+    const rows = (S.op === opRef && S.tier0)
+      ? S.tier0.rows
+      : (computeTier0(opRef, ctx, { ghosts: ghostIndex.get(opRef) || [] }).rows || []);
     return rows.filter((r) => r.eligible).length > 1;
   }
 
-  // Fire on-demand pricing for a grabbed, uncovered op and fade its ghosts in
-  // when priced (CU1). Never re-fires (pricingRequested); shows a shimmer while
-  // in flight and a one-line "no cheaper alternative" note if the priced roads
-  // all cost more or are infeasible — so the answer is always visible.
-  function maybePriceOnDemand(opRef) {
+  // Fire on-demand pricing for an uncovered op and fade its ghosts in when priced
+  // (CU1/CU4). Never re-fires (pricingRequested). ``eager`` (pointer-down, CU4
+  // dial b) primes silently in the background — no shimmer until an actual grab —
+  // so a pre-price that the planner never follows through on stays invisible.
+  function maybePriceOnDemand(opRef, { eager = false } = {}) {
     if (!api.priceOpAlternatives || !api.getAlternatives) return;
     if (pricingRequested.has(opRef) || !isUncovered(opRef)) return;
     pricingRequested.add(opRef);
-    showPricing("pricing alternatives…");
+    S.priceFiredAt = S.priceFiredAt || {};
+    S.priceFiredAt[opRef] = performance.now();
+    if (!eager) showPricing("pricing alternatives…");
     api.priceOpAlternatives(scheduleId, opRef, {}).then((r) => {
       if (r === null) { hidePricing(); return; }   // endpoint absent — stay quiet-green
-      pollForGhosts(opRef, 0);
+      pollForGhosts(opRef, 0, eager);
     });
   }
 
-  function pollForGhosts(opRef, tries) {
-    // stop polling if the planner moved on to another op / released the grab
-    if (S.op !== opRef || (S.phase !== "grabbed" && S.phase !== "dragging")) {
+  function pollForGhosts(opRef, tries, eager = false) {
+    // An EAGER (pre-grab) prime keeps polling regardless of grab state — it is
+    // filling the cache for a grab that may come. A grab-time poll stops if the
+    // planner moved on / released.
+    if (!eager && (S.op !== opRef || (S.phase !== "grabbed" && S.phase !== "dragging"))) {
       hidePricing();
       return;
     }
@@ -226,22 +247,31 @@ export function createGestureController(board, geometry, opts) {
         setAlternatives(alt, null);
         const ghosts = ghostIndex.get(opRef) || [];
         if (ghosts.length) {
-          // priced → fade the ghosts in for the still-grabbed op
-          S.opGhosts = ghosts;
-          S.tier0 = computeTier0(opRef, ctx, { ghosts });
-          const win = board.getWindow();
-          renderShade(layers.shade, S.tier0, geometry, win);
-          S.drawnGhosts = renderGhosts(layers.ghosts, ghostLabels, S.opGhosts, geometry, win);
-          layers.ghosts.classList.add("fade-in");
+          // record time-to-ghosts (CU4 measurement) from the fire instant
+          const t0 = (S.priceFiredAt || {})[opRef];
+          if (t0 != null) {
+            S.priceToGhostsMs = S.priceToGhostsMs || {};
+            S.priceToGhostsMs[opRef] = +(performance.now() - t0).toFixed(2);
+          }
+          // if the op is grabbed right now, fade its ghosts in; otherwise the
+          // cache is warmed for when it IS grabbed (eager prime, CU4 dial b).
+          if (S.op === opRef && (S.phase === "grabbed" || S.phase === "dragging")) {
+            S.opGhosts = ghosts;
+            S.tier0 = computeTier0(opRef, ctx, { ghosts });
+            const win = board.getWindow();
+            renderShade(layers.shade, S.tier0, geometry, win);
+            S.drawnGhosts = renderGhosts(layers.ghosts, ghostLabels, S.opGhosts, geometry, win);
+            layers.ghosts.classList.add("fade-in");
+          }
           hidePricing();
           return;
         }
       }
       if (tries + 1 >= ONDEMAND_MAX_POLLS) {
-        showPricing("no cheaper alternative found", /*fade*/ true);
+        if (!eager) showPricing("no cheaper alternative found", /*fade*/ true);
         return;
       }
-      setTimeout(() => pollForGhosts(opRef, tries + 1), ONDEMAND_POLL_MS);
+      setTimeout(() => pollForGhosts(opRef, tries + 1, eager), ONDEMAND_POLL_MS);
     });
   }
 
@@ -420,6 +450,86 @@ export function createGestureController(board, geometry, opts) {
     return { returned: true, reason };
   }
 
+  // Accept the verdict (CU1, R-DP7): pin the op server-side, minting a NEW
+  // proposed schedule version (the base is never mutated) + a planner_edit
+  // Decision. On success the board REBINDS to the new version — the traced bars
+  // settle into their new positions (a legible transition, never a reload) — and
+  // the controller rebinds too, so a sequential edit sandboxes against it.
+  function accept() {
+    if (S.phase !== "verdict" || !S.op || !S.target) return Promise.resolve(null);
+    if (!api.postAccept || !api.getSchedule) return Promise.resolve(null);
+    S.phase = "accepting";
+    // The pin is the drop exactly as displayed (R-DP1) — read from the gesture
+    // state, not the server echo, so accept never depends on the sandbox payload
+    // carrying it back.
+    const pin = {
+      pin_op_id: S.op,
+      pin_resource_id: S.target.resource_id,
+      pin_start_iso: new Date(S.target.time_ms).toISOString(),
+      authority,
+    };
+    S.acceptToDoneMs = null;
+    const t0 = performance.now();
+    return api.postAccept(scheduleId, pin).then((res) =>
+      api.getSchedule(res.schedule_id).then((newDoc) => {
+        // the traces have pointed old→new all along; settle the real bars there
+        board.rebind(newDoc);
+        clearTraces();
+        return rebindController(res.schedule_id, newDoc).then(() => {
+          S.acceptToDoneMs = +(performance.now() - t0).toFixed(2);
+          S.phase = "accepted";
+          S.acceptedId = res.schedule_id;
+          card.showAccepted({ newScheduleId: res.schedule_id, decision: res.decision });
+          if (opts.onVersionChange) opts.onVersionChange(res.schedule_id, "proposed");
+          return res;
+        });
+      })
+    ).catch((e) => {
+      S.phase = "verdict";
+      returnHome(`accept failed: ${e.message || e}`, /*keepCard*/ false);
+    });
+  }
+
+  // Publish the accepted version (CU1): proposed → published, superseding the
+  // prior version. The explicit second act.
+  function publish() {
+    if (S.phase !== "accepted" || !S.acceptedId || !api.postPublish) return Promise.resolve(null);
+    S.phase = "publishing";
+    return api.postPublish(S.acceptedId).then((res) => {
+      S.phase = "published";
+      card.showPublished({ scheduleId: res.schedule_id, superseded: res.superseded });
+      if (opts.onVersionChange) opts.onVersionChange(res.schedule_id, "published");
+      return res;
+    }).catch((e) => {
+      S.phase = "accepted";
+      card.showAccepted({ newScheduleId: S.acceptedId, decision: null });
+    });
+  }
+
+  // Rebind the whole gesture surface to a new schedule version: fetch its Tier-0
+  // interaction payload (so legality + snapping recompute against the new
+  // placements) and its priced ghosts, and rebuild the incumbent indexes. Leaves
+  // the board (already rebound) settling its bars.
+  function rebindController(newId, newDoc) {
+    scheduleId = newId;
+    doc = newDoc;
+    rebuildAsgIndex();
+    const iP = api.getInteraction ? api.getInteraction(newId) : Promise.resolve(null);
+    const aP = api.getAlternatives ? api.getAlternatives(newId) : Promise.resolve(null);
+    return Promise.all([iP, aP]).then(([ip, alt]) => {
+      interaction = (ip && ip.interaction) || interaction;
+      ctx = buildContext(doc, interaction);
+      pricingRequested.clear();
+      setAlternatives(alt || null, null);
+    });
+  }
+
+  function clearTraces() {
+    layers.traces.replaceChildren();
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    S.traces = [];
+  }
+
   function discard() {
     root.classList.remove("active", "refusing", "returning");
     card.hide();
@@ -514,6 +624,11 @@ export function createGestureController(board, geometry, opts) {
     const itemId = props?.item;
     if (itemId == null || !asgById.has(itemId)) return;   // not a bar
     down = { x: ev.clientX, y: ev.clientY, op: asgById.get(itemId).operation_ref, moved: false };
+    // CU4 dial (b): fire on-demand pricing on pointer-DOWN — before the drag
+    // threshold is even crossed — so the K per-machine solves are already in
+    // flight by the time the bar lifts, buying back reaction time. Eager =
+    // silent (no shimmer until an actual grab). Dedup'd, so grab() is a no-op.
+    maybePriceOnDemand(down.op, { eager: true });
     // Still the board from the very first pixel: suppress vis's built-in
     // pan/zoom the instant the pointer lands on a bar, before any movement can
     // start a Hammer pan (3.2c). A plain click that never becomes a drag simply
@@ -548,7 +663,8 @@ export function createGestureController(board, geometry, opts) {
   // ---------------------------------------------------------------------
   return {
     feel, ctx, redraw, setAlternatives,
-    grab, dragTo, drop, discard, returnHome,
+    grab, dragTo, drop, discard, returnHome, accept, publish,
+    scheduleId: () => scheduleId,
     // programmatic drop straight to a target (harness convenience): grab, drag
     // to the target, drop — the full path, no pointer math.
     dropAt(opRef, resourceId, startIso, altKey = false) {
@@ -558,8 +674,10 @@ export function createGestureController(board, geometry, opts) {
     },
     // probes for the screenshot harness / standing regressions
     state: () => ({
-      phase: S.phase, op: S.op,
+      phase: S.phase, op: S.op, acceptedId: S.acceptedId || null,
       grabToShadeMs: S.grabToShadeMs, dropToVerdictMs: S.dropToVerdictMs,
+      acceptToDoneMs: S.acceptToDoneMs || null,
+      priceToGhostsMs: (S.priceToGhostsMs || {})[S.op] || null,
       target: S.target && { ...S.target },
       ghosts: S.drawnGhosts.map((g) => ({ source: g.source, resource_id: g.resource_id, label: g.label || null, delta_pct: g.delta_pct })),
       result: S.result && { outcome: S.result.outcome, delta_pct: S.result.delta_pct, moves: (S.result.moves || []).length },

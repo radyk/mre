@@ -28,7 +28,7 @@
       "source": "forced_alternative",
       "verdict": "priced",
       "label": {
-        "target_operation_ref": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+        "target_operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
         "forbidden_resource_ref": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
         "alternative_resource_ref": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
         "status": "OPTIMAL",
@@ -38,7 +38,7 @@
           "start": "2026-01-05T07:00:00+00:00",
           "end": "2026-01-05T11:01:00+00:00",
           "work_orders": [
-            "ORD-000003"
+            "ORD-000001"
           ]
         }
       }
@@ -53,17 +53,17 @@
       "source": "forced_alternative",
       "verdict": "priced",
       "label": {
-        "target_operation_ref": "c761c094-24d0-5c7e-9926-a6ecb06893c4",
+        "target_operation_ref": "86a5f0bf-2bd9-5ac7-811f-9f7dcd61124a",
         "forbidden_resource_ref": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
         "alternative_resource_ref": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
         "status": "OPTIMAL",
         "on_demand": false,
         "placement": {
           "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
-          "start": "2026-01-07T07:00:00+00:00",
-          "end": "2026-01-07T11:01:00+00:00",
+          "start": "2026-01-07T11:01:00+00:00",
+          "end": "2026-01-07T15:02:00+00:00",
           "work_orders": [
-            "ORD-000003"
+            "ORD-000001"
           ]
         }
       }
@@ -78,17 +78,17 @@
       "source": "forced_alternative",
       "verdict": "priced",
       "label": {
-        "target_operation_ref": "6b4a17a6-0b36-55e0-ae00-5b4ee029dcb3",
+        "target_operation_ref": "a1ba867e-e117-5c7f-85c4-344a7571508c",
         "forbidden_resource_ref": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
         "alternative_resource_ref": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
         "status": "OPTIMAL",
         "on_demand": false,
         "placement": {
           "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
-          "start": "2026-01-09T07:00:00+00:00",
-          "end": "2026-01-09T11:01:00+00:00",
+          "start": "2026-01-09T11:02:00+00:00",
+          "end": "2026-01-09T15:03:00+00:00",
           "work_orders": [
-            "ORD-000003"
+            "ORD-000001"
           ]
         }
       }
@@ -103,17 +103,17 @@
       "source": "forced_alternative",
       "verdict": "priced",
       "label": {
-        "target_operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
+        "target_operation_ref": "438b549a-7387-5c46-af50-bf3e2f189483",
         "forbidden_resource_ref": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
         "alternative_resource_ref": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
         "status": "OPTIMAL",
         "on_demand": false,
         "placement": {
           "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
-          "start": "2026-01-05T07:00:00+00:00",
-          "end": "2026-01-05T11:01:00+00:00",
+          "start": "2026-01-06T11:01:00+00:00",
+          "end": "2026-01-06T15:02:00+00:00",
           "work_orders": [
-            "ORD-000001"
+            "ORD-000002"
           ]
         }
       }

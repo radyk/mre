@@ -138,6 +138,12 @@ html, body {
   padding: var(--sp-2) var(--sp-3); font-size: 12px; font-weight: 600; cursor: pointer;
 }
 .ask button.ghost { background: transparent; border: 1px solid var(--grid); color: var(--muted); }
+/* push-to-talk mic (CU3): a quiet affordance that pulses while listening. */
+.ask button.mic { background: transparent; border: 1px solid var(--grid); color: var(--muted); padding: var(--sp-2); font-size: 14px; flex: 0 0 auto; }
+.ask button.mic.listening { background: var(--bar-late); color: #fff; border-color: var(--bar-late); animation: mic-pulse 1s ease-in-out infinite; }
+@keyframes mic-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.ask .voice-caption { color: var(--muted); font-size: 11px; font-style: italic; padding: 0 var(--sp-3) var(--sp-1); }
+.ask .voice-caption.hidden { display: none; }
 .ask .empty { color: var(--muted-2); font-size: 11px; text-align: center; padding: var(--sp-4); }
 
 .err { color: var(--grade-rejected); padding: var(--sp-4); font: 12px ui-monospace, monospace; }

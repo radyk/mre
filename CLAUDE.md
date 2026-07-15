@@ -94,6 +94,58 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 BUILD COMPLETE — awaiting exit audit. Session 3.4:
+the interim final 2026-07-15.** The last build session of Phase 3; it ends with
+the sixty-second script running end to end. Five CUs + three riders.
+**CU1** (headline): **accept → Decision → publish**. Accept on the delta card is
+REAL — an accepted edit records a `planner_edit` Decision (new decision_type;
+**basis=observed**, a human command; **authority MANDATORY**, dev token now / real
+auth post-pilot; new optional `Decision.authority`) and mints a NEW **proposed**
+schedule version — the base is NEVER mutated ("accept CREATES, never
+overwrites"). Backend `modules/planner_edit.py` (`apply_planner_edit`: derive a
+child snapshot copying every planned entity but the M7 outputs → warm-start + pin
+the dropped op R-DP1 → re-solve under budget → extract is_scenario=False → record
+one Decision carrying the decomposed cost delta + annotated moved-set). API
+`POST /schedules/{id}/accept` (sync, parent-linked) + `POST /schedules/{id}/
+publish` (`Registry.publish_schedule`: proposed → published, supersede the
+immediate parent, invalidate its pools). **The registry is the live-lifecycle
+truth** — the served document status is frozen at assembly, `/meta` reflects
+current state (the strip reads it). Chained edits inherit the reference date from
+the ROOT solve (the 3.3b wall-clock trap avoided by construction). Cockpit: the
+delta card walks verdict → accepted → published (Accept + Publish LIVE now);
+`board.rebind(newDoc)` settles the moved bars into place by re-stamping new
+assignments with old bar ids (R-DP7, not a teleport-reload); the controller + ask
+panel retarget the new version (sequential edits + asks read the new version).
+**CU2**: the sandbox/edit **question domain** — `_summarize_edits` ("summarize
+what I changed and what it cost", the closing beat) + `_explain_edit_cost`
+(production Δ + setup Δ + tardiness Δ, decomposing exactly + the 3.3 "why"
+clauses) over the `planner_edit` Decisions; no new answer path (the Decision is
+self-contained evidence); new renderer subject types; honest refusal when no edit
+exists. **CU3**: **voice** (`src/cockpit/src/voice.js`) — push-to-talk (Web
+Speech, feature-detected, degrades to typed WITHOUT drama) into the SAME ask path
+(the deterministic router IS the transcript→route mapper, its "unsupported"
+bundle IS the low-confidence refusal — no LLM-interpreter added; the LLM never
+authors answers); `spokenSummary` leads with the register aloud + one sentence
+and STRIPS every id-shape (record ids NEVER voiced). **CU4**: ghost latency —
+pricing fires on pointer-DOWN (dial b, eager=silent) + the K per-machine solves
+run in a bounded pool (`ONDEMAND_SOLVE_WORKERS=4`, dial c; CP-SAT frees the GIL
+in search, per-solve determinism unchanged); grab→shade 5.2 ms measured; dial (a)
+precompute widening already in 3.3, deepening it a carry-forward. **CU5**: the
+**rehearsal** (`tests/cockpit/rehearsal.spec.mjs`) — the sixty-second script beat
+by beat, screenshot-asserted, each beat's latency recorded to
+`shots/rehearsal_report.json`, every beat green (557 ms hermetic total; the REAL
+accept→Decision→publish + REAL decomposed edit answer proven against the live API
+by the Python tests). **Riders**: dev PS scripts ALREADY self-locate via
+`$PSScriptRoot` (confirmed); datetime.now() audit — only the known
+validator/solver_builder/scenario fallbacks, none new, accept threads the ref
+date from the root solve; feel-token export (`drag/tuning.js` `exportFeel`)
+confirmed working. **Cockpit JS 34/34** (7 board + 5 legality + 20 gesture +
+rehearsal); **Python 1035 non-slow** (the lone intermittent
+`test_scenario_untouched_moves_bounded` is a known CP-SAT-contention flake, green
+in isolation) + the new slow ladder (planner_edit, edit_question_domain). See the
+docs/04 2026-07-15 Session 3.4 amendment and docs/07 v2.7. **Next: the Phase-3
+exit audit** — a fresh session driving the exit demo cold, no terminal.
+
 **Roadmap position: Phase 3 IN PROGRESS — Session 3.3: Tier-1 coverage +
 card explainability 2026-07-14.** Five feel-session findings (live on
 `busy_board`, schedule `769223cf`), all about the Tier-1 promise failing

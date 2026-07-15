@@ -97,6 +97,26 @@ export function postSandbox(id, pin) {
   });
 }
 
+export function postAccept(id, pin) {
+  // Accept a dropped bar's verdict (CU1, R-DP7): pin the op and MINT A NEW
+  // proposed schedule version — the base is never mutated. Records one
+  // planner_edit Decision (authority mandatory). Returns
+  // {schedule_id, parent_schedule_id, status:"proposed", decision}. Synchronous
+  // behind the sandbox budget; the caller then rebinds the board to schedule_id.
+  return envelope(`/schedules/${id}/accept`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(pin),
+  });
+}
+
+export function postPublish(id) {
+  // Publish a proposed version (CU1): proposed → published, superseding the
+  // prior version (invalidating its pools). The explicit second act after
+  // accept. Returns {schedule_id, status:"published", superseded:[...]}.
+  return envelope(`/schedules/${id}/publish`, { method: "POST" });
+}
+
 export function ask(id, question, useLlm = false) {
   // `llm` is honored by the server ONLY when ANTHROPIC_API_KEY is set, and the
   // LLMRenderer itself fails closed (no key / package / validation failure →

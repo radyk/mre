@@ -110,6 +110,10 @@
 .delta-card.hidden { display: none; }
 .delta-card.feasible_unproven { border-left-color: var(--reg-judgment); }
 .delta-card.return-home { border-left-color: var(--grade-rejected); }
+.delta-card.accepted { border-left-color: var(--grade-c1); }
+.delta-card.published { border-left-color: var(--grade-c1); }
+.dc-outcome.accepted { color: var(--grade-c1); }
+.dc-outcome.published { color: var(--grade-c1); }
 .dc-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); }
 .dc-outcome { font: 700 14px/1.1 ui-monospace, monospace; }
 .dc-outcome.verdict { color: var(--grade-c1); }
@@ -137,11 +141,17 @@
 .dc-actions { display: flex; justify-content: flex-end; gap: var(--sp-2); margin-top: var(--sp-2); }
 .dc-actions button { border-radius: var(--radius); padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; border: 0; }
 .dc-discard { background: var(--panel-2); border: 1px solid var(--grid) !important; color: var(--ink); }
-/* Accept is stubbed disabled (no publish workflow yet) — it must READ as inert,
- * never like a live control, or it violates the no-silent-anything spirit of
- * R-DP7 (CU2). Muted + not-allowed + dimmed, no hover affordance. */
-.dc-accept { background: var(--grid); color: var(--muted-2); cursor: not-allowed; opacity: 0.5; }
-.dc-accept:disabled:hover { background: var(--grid); }
+/* Accept + Publish are LIVE controls now (CU1): accept mints a new proposed
+ * version, publish makes it the schedule of record. Both read as primary
+ * affordances; while a request is in flight they disable + relabel (accepting…
+ * / publishing…) so absence of instant feedback is never silent (R-DP7). */
+.dc-accept, .dc-publish {
+  background: var(--reg-testimony); color: #08131f;
+  border: 1px solid var(--reg-testimony) !important;
+}
+.dc-accept:hover, .dc-publish:hover { filter: brightness(1.1); }
+.dc-accept:disabled, .dc-publish:disabled { opacity: 0.55; cursor: progress; }
+.dc-publish { background: var(--grade-c1); border-color: var(--grade-c1) !important; }
 
 /* --- CU6: the tuning panel (dev only) ----------------------------------- */
 .tuning-panel {

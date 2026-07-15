@@ -9,12 +9,16 @@
 //      to it (the board tells us the work_order + resource; we compose the
 //      question the explainer already understands).
 import { ask } from "./api.js";
+import { createPushToTalk, speak, spokenSummary, speechRecognitionAvailable } from "./voice.js";
 
 export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
   // useLlm: send the `llm` flag to /ask. Enabled only in the dev build (main.js
   // passes import.meta.env.DEV). The server honors it solely when a key is set
   // and fails closed to the template renderer otherwise (CU6).
   const useLlm = !!opts.useLlm;
+  // scheduleId is MUTABLE: an accepted edit rebinds the cockpit to a new version,
+  // and a subsequent ask ("summarize my changes") must target it so the answer
+  // reads the new version's evidence (where the planner_edit Decision lives).
   let selection = null;   // {operation_ref, work_orders, resource_id, resource_name}
 
   rootEl.innerHTML = `
@@ -27,8 +31,10 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
       <div class="scope" id="ask-scope"></div>
       <div class="row">
         <input id="ask-input" type="text" placeholder="ask a question…" autocomplete="off" />
+        <button id="ask-mic" class="mic" title="hold to speak" aria-label="push to talk">🎤</button>
         <button id="ask-send">Ask</button>
       </div>
+      <div class="voice-caption hidden" id="ask-caption"></div>
       <div class="row">
         <button class="ghost" id="ask-deictic" disabled>Why is this here?</button>
         <button class="ghost" id="ask-clear">Clear highlight</button>
@@ -95,13 +101,16 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
     return el;
   }
 
-  async function run(question) {
+  async function run(question, { spoken = false } = {}) {
     if (!question.trim()) return;
     appendYou(question);
     inputEl.value = "";
     try {
       const res = await ask(scheduleId, question, useLlm);
       appendAnswer(res.answer, res.bundle);
+      // CU3: a voice-originated question gets a SPOKEN response — the register
+      // aloud + a one-sentence summary; record IDs stay on screen, never voiced.
+      if (spoken) speak(spokenSummary(res.answer, res.bundle?.register));
     } catch (e) {
       const el = document.createElement("div");
       el.className = "msg answer testimony";
@@ -129,5 +138,35 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
   deicticBtn.addEventListener("click", deictic);
   rootEl.querySelector("#ask-clear").addEventListener("click", () => board.clearHighlight());
 
-  return { run, deictic, selectAndAsk(operationRef) { board.select(operationRef); } };
+  // --- voice: push-to-talk into the same ask path (CU3) ----------------
+  const micBtn = rootEl.querySelector("#ask-mic");
+  const captionEl = rootEl.querySelector("#ask-caption");
+  const ptt = createPushToTalk({
+    onInterim: (t) => { captionEl.textContent = t; captionEl.classList.remove("hidden"); },
+    onState: (s) => { micBtn.classList.toggle("listening", s === "listening"); },
+    onTranscript: (t) => { captionEl.classList.add("hidden"); captionEl.textContent = ""; run(t, { spoken: true }); },
+  });
+  if (!ptt.available) {
+    // degrade WITHOUT drama: no mic where SpeechRecognition is absent; the typed
+    // composer is untouched.
+    micBtn.remove();
+  } else {
+    // hold-to-talk (pointer), with a click fallback to toggle.
+    micBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); ptt.start(); });
+    micBtn.addEventListener("pointerup", (e) => { e.preventDefault(); ptt.stop(); });
+    micBtn.addEventListener("pointerleave", () => ptt.stop());
+  }
+
+  return {
+    run, deictic,
+    setScheduleId(id) { scheduleId = id; },
+    // voice availability + a programmatic "speak this answer" seam for the
+    // harness (which has no microphone): drive run() with {spoken:true}.
+    voiceAvailable: () => speechRecognitionAvailable(),
+    askSpoken(question) { return run(question, { spoken: true }); },
+    // the pure spoken-summary builder, surfaced so the harness can assert the
+    // "record IDs are never voiced" contract without a microphone (CU3).
+    spokenSummary,
+    selectAndAsk(operationRef) { board.select(operationRef); },
+  };
 }
