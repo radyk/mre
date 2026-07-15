@@ -3976,3 +3976,105 @@ accept/publish (final session) and voice (later interim). (Pre-existing,
 untouched: `test_defaults_reproduce_baseline`, `test_planner_merge_v2`, and
 three `test_scenario` warm-start/merge tests fail on THIS machine's HEAD too —
 ortools 9.15 vs the golden baseline + CP-SAT noise — unrelated to this session.)
+
+## Amendment — 2026-07-15: Session 3.3b — ortools "drift" was a wall-clock time-bomb (baselines STAND; solver pinned)
+
+**The prompt's premise, tested and overturned.** Ten regression tests
+(`test_defaults_reproduce_baseline` ×2, `test_planner_merge_v2::TestWO2001
+RejectedOnRisk` ×2, four `test_scenario` warm-start/merge tests, and the two
+slow scenario tests behind them) had been standing red on this machine's HEAD,
+blamed across three prior amendments on "ortools 9.15 vs the golden baseline +
+CP-SAT noise." That attribution is **wrong**, and this session proves it by
+construction rather than asserting it.
+
+**Establishing what changed (prompt item 1).** `pyproject` pinned
+`ortools>=9.8` — an open upper bound. The installed build is **9.15.6755**,
+which arrived by an *unpinned* `pip install`, not a deliberate adoption
+(nothing in git chose it). An unpinned solver is an unpinned product, so it is
+now pinned **exactly**: `ortools==9.15.6755`, guarded by
+`tests/test_ortools_pin.py` (reads the pin out of `pyproject.toml` — single
+source — and fails if the installed `ortools.__version__` differs; environment
+drift is now a named test failure, not a mystery). This is the same discipline
+the differ fix used: the environment is part of the baseline.
+
+**The decision (prompt item 2): NEITHER pin-back NOR regenerate.** The prompt
+framed a binary — (a) pin back if 9.15 bought nothing, or (b) adopt 9.15 and
+regenerate every golden as a new baseline epoch. Both presuppose 9.15 changed
+the output. **It did not.** Isolation test: a new `--reference-date` CLI flag
+(see below) lets the sample_data pipeline be pinned to a fixed planning date.
+Run under `--reference-date 2026-07-09/10/11`, `PYTHONHASHSEED=0
+--solver-workers 1 --solver-seed 42`, ortools **9.15.6755 reproduces the
+golden `sample_data_schedule.csv` byte-for-byte** and the cost ledger
+value-for-value (24769.00). There is **zero ortools drift**. The goldens
+STAND; no baseline epoch is invalidated; the pin moves forward to the
+already-validated 9.15.6755 with no regeneration.
+
+**The actual root cause: a fixed-date fixture read the wall clock.** The
+sample_data path has no manifest `reference_date`, so `__main__` left it `None`
+and the validator fell back to `datetime.now(UTC)` (validator.py:127). The
+sample scenario is a *fixed narrative* — WO-2001 due 2026-07-13, WO-2002 due
+2026-07-15, the $260-unbatch counterexample. The golden was captured as-of the
+~2026-07-09 epoch, with both demands in-window and merged. Once the machine
+clock passed **2026-07-13**, the validator began excluding WO-2001 as past-due
+(validator.py:209, "due date before reference_date"), which:
+  - removed the one late demand → the 840-min tardiness and its cost vanished
+    (the "cheaper" 22009-vs-24769 read was the *smaller model*, never 9.15
+    "finding a better solution" — a trap the session nearly fell into before
+    checking the demand population);
+  - dissolved the WO-2001/WO-2002 merge → `merge_by_family_v2`'s risk gate had
+    nothing to reject, and the suppress-merge scenario diffed to a no-op
+    (setup_delta 0.0).
+Proof it is the clock and nothing else: pinning the validator to
+`reference_date=2026-07-09` restores WO-2001, restores the two
+`merge_rejected` decisions the v2 test asserts, and (the merge gate being
+entirely pre-solve) never touches ortools. The 1024 other tests — including
+real-solve regressions on fixed-date fixtures like `TestProfitableMergeAccepted`
+— were green throughout, exactly the signature of a time-bomb localized to the
+one wall-clock-dated fixture, not a solver regression.
+
+**The fix (prompt item 3: full green + guard).**
+  - **`--reference-date <ISO>` CLI flag** (`__main__`): highest priority over
+    manifest/plant_config, and the missing knob for the sample-data path. Its
+    help text names the failure mode ("without this the wall clock silently
+    excludes past-due demands and the schedule rots"). This is the proper
+    reproducibility fix, not a test-only patch.
+  - **Regression tests pinned to the 2026-07-09 sample epoch.**
+    `test_defaults_reproduce_baseline` passes `--reference-date 2026-07-09`;
+    `test_planner_merge_v2` and `test_scenario` pass
+    `reference_date=2026-07-09` to the validator. `test_scenario` additionally
+    **records** the reference_date in its M3 run-context config and derives
+    `base_context` via `derive_base_context(runs_dir)`, so the ScenarioRunner's
+    re-validation inherits the same epoch (the runner reads reference_date off
+    M3's config, not the clock — without this the base run pins but the
+    scenario re-solve still excluded WO-2001).
+  - **ortools pin + drift guard** as above.
+  - **Full suite green at close: 1033 passed, 0 failed, 35 skipped** (non-slow;
+    +1 vs the pre-session 1024 is the new pin guard) + the scenario/merge slow
+    ladder. Zero standing reds.
+
+**Baseline epochs, stated (prompt's fixture question).** Two distinct epochs,
+neither disturbed by 9.15:
+  - **sample_data regression baselines** (`tests/fixtures/baselines/
+    sample_data_*`): epoch **2026-07-09**, now pinned explicitly. Goldens
+    unchanged — byte-verified under 9.15.6755.
+  - **gauntlet baselines** (`gauntlet_*`): epoch = `plant_config.json`
+    reference_date (already fixed); time-stable; untouched (and skipped here —
+    raw_data is gitignored).
+  - **generator / cockpit / feel fixtures** (`multi_route`,
+    `multi_route_distinct`, `busy_board`): epoch **2026-01-05**, the fixed
+    `generate()` default (`ref_date = reference_date or date(2026,1,5)`), carried
+    in each submission's manifest `reference_date` and used by the solve — so
+    these were **never** wall-clock-dated and did **not** rot. Confirmed against
+    the committed `tests/cockpit/fixtures/distinct/` (manifest reference_date
+    `2026-01-05`, all dates in Jan 2026). Byte-reproducible under 9.15, so **no
+    rebuild** — the "solved under the drifted env" worry is void once drift is
+    disproven. They belong to the 2026-01-05 generator epoch and stay there.
+
+**Lesson (do not lose).** A regression baseline that reads `datetime.now()`
+is not a baseline — it is a countdown. The only wall-clock-dated fixture in the
+repo was the one without a manifest reference_date; the fix is structural (pin
+the epoch at the boundary, CLI flag + recorded config), and the correct reflex
+when a "solver" regression appears is to check the *input population* before
+blaming the solver. The prior three amendments' "ortools 9.15 + CP-SAT noise"
+attribution is hereby corrected: it was neither the version nor CP-SAT
+nondeterminism — it was the calendar.

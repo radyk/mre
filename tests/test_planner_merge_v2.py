@@ -84,7 +84,15 @@ class TestWO2001RejectedOnRisk:
         a_rep.end(RunStatus.SUCCESS)
 
         v_rep = _rep(ModuleCode.M3, "merge v2 validator")
-        v_result = Validator().run(snap_id, store, v_rep, outlier_threshold_ratio=10.0)
+        # Pin the reference_date to the sample_data scenario epoch (2026-07-09).
+        # Unpinned, the validator defaults to datetime.now(), and once the wall
+        # clock passes WO-2001's 2026-07-13 due date the demand is excluded as
+        # past-due — the WO-2001/WO-2002 merge case this test exists to check
+        # then silently evaporates. See docs/04 2026-07-15 (the time-bomb ruling).
+        v_result = Validator().run(
+            snap_id, store, v_rep, outlier_threshold_ratio=10.0,
+            reference_date=datetime(2026, 7, 9, tzinfo=UTC),
+        )
         v_rep.end(RunStatus.SUCCESS)
 
         p_rep = _rep(ModuleCode.M4, "merge v2 planner")

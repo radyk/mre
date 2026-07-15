@@ -71,6 +71,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--horizon-days", type=int, default=None,
                         help="Demand-selection: only schedule demands due within N days "
                              "of reference_date (model_simplification policy)")
+    parser.add_argument("--reference-date", default=None,
+                        help="Pin the planning reference_date (ISO date, e.g. 2026-07-09). "
+                             "Highest priority: overrides the manifest/plant_config value "
+                             "and the sample-data default of now(). REQUIRED for any "
+                             "time-stable regression baseline — sample data has no manifest "
+                             "reference_date, so without this the wall clock silently "
+                             "excludes past-due demands and the schedule rots over time.")
     parser.add_argument("--solver-workers", type=int, default=None,
                         help="Pin CP-SAT num_search_workers (default: parallel). "
                              "Set to 1 for reproducible regression baselines.")
@@ -184,7 +191,11 @@ def main(argv: list[str] | None = None) -> int:
     # data, None (= now) for sample data.
     reference_date = None
     from datetime import date
-    if use_submission and submission_manifest:
+    if args.reference_date:
+        # Explicit CLI flag wins over every source (reproducibility knob).
+        rd = date.fromisoformat(args.reference_date)
+        reference_date = datetime(rd.year, rd.month, rd.day, 0, 0, 0, tzinfo=UTC)
+    elif use_submission and submission_manifest:
         rd = date.fromisoformat(submission_manifest["reference_date"])
         reference_date = datetime(rd.year, rd.month, rd.day, 0, 0, 0, tzinfo=UTC)
     elif use_raw and plant_cfg:

@@ -23,6 +23,15 @@ import pytest
 
 SAMPLE_DATA = Path(__file__).parent.parent / "sample_data"
 
+# The sample_data scenario is a fixed narrative anchored at 2026-07-09 (WO-2001
+# due 2026-07-13, WO-2002 due 2026-07-15). Unpinned, the validator defaults to
+# datetime.now(); once the wall clock passes 2026-07-13, WO-2001 is excluded as
+# past-due and the whole suppress-merge(WO-2001,WO-2002) narrative these tests
+# exercise evaporates. Pin the epoch so the base run AND the scenario re-solve
+# (which reads reference_date back off the M3 run-context config) see the same
+# demand population. See docs/04 2026-07-15 (the time-bomb ruling).
+SAMPLE_REF_DATE = "2026-07-09"
+
 
 # ---------------------------------------------------------------------------
 # Unit: vocabulary
@@ -220,9 +229,12 @@ def base_run(tmp_path_factory):
     runs = tmp / "runs"
     runs.mkdir(parents=True, exist_ok=True)
 
-    def _rep(mod, purpose):
+    from datetime import datetime, timezone
+    ref_dt = datetime(2026, 7, 9, tzinfo=timezone.utc)
+
+    def _rep(mod, purpose, config=None):
         return Reporter.begin(
-            module=mod, purpose=purpose, config={},
+            module=mod, purpose=purpose, config=config or {},
             trigger="pytest", snapshot_id=snap_id, sink_dir=runs,
         )
 
@@ -231,9 +243,12 @@ def base_run(tmp_path_factory):
     Adapter(extract_dir=SAMPLE_DATA).run(snap_id, store, a_rep)
     a_rep.end(RunStatus.SUCCESS)
 
-    # M3
-    v_rep = _rep(ModuleCode.M3, "validator")
-    v_result = Validator().run(snap_id, store, v_rep)
+    # M3 — pin the reference_date and RECORD it in the M3 run-context config so
+    # the ScenarioRunner (which reads reference_date back off M3's config, not
+    # the wall clock) re-validates against the same demand population.
+    v_rep = _rep(ModuleCode.M3, "validator",
+                 config={"reference_date": ref_dt.isoformat()})
+    v_result = Validator().run(snap_id, store, v_rep, reference_date=ref_dt)
     v_rep.end(RunStatus.SUCCESS)
 
     # M4 — pass validator exclusions like the real pipeline (__main__) does;
@@ -307,7 +322,9 @@ def base_run(tmp_path_factory):
 @pytest.fixture(scope="module")
 def scenario_result(base_run):
     """Run suppress_merge(WO-2001, WO-2002) scenario against the base run."""
-    from mre.modules.scenario import Scenario, ScenarioRunner, SuppressMerge
+    from mre.modules.scenario import (
+        Scenario, ScenarioRunner, SuppressMerge, derive_base_context,
+    )
 
     store, snap_id, runs_dir, tmp = base_run
     scenario_runs_dir = tmp / "scenario_runs"
@@ -316,7 +333,15 @@ def scenario_result(base_run):
         base_snapshot_id=snap_id,
         modifications=[SuppressMerge(demand_refs=["WO-2001", "WO-2002"])],
     )
-    runner = ScenarioRunner(store, scenario_runs_dir, time_limit_seconds=30.0)
+    # Derive base context from the base run's evidence (like the whatif CLI),
+    # so the scenario re-solve inherits the pinned reference_date recorded in
+    # base_run's M3 config — otherwise the runner re-validates against now()
+    # and WO-2001 is excluded, collapsing the suppress-merge into a no-op.
+    base_context = derive_base_context(runs_dir)
+    runner = ScenarioRunner(
+        store, scenario_runs_dir, time_limit_seconds=30.0,
+        base_context=base_context,
+    )
     return runner.run(scenario), store, snap_id, tmp
 
 

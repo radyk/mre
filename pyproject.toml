@@ -5,7 +5,10 @@ description = "Manufacturing Reasoning Engine - canonical model, evidence contra
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.7",
-    "ortools>=9.8",
+    "ortools==9.15.6755",  # PINNED EXACT: CP-SAT is not reproducible across versions.
+                           # Verified 2026-07-15 to reproduce every golden baseline
+                           # byte-for-byte (see docs/04 2026-07-15). An unpinned solver
+                           # is an unpinned product. Guarded by tests/test_ortools_pin.py.
     "fastapi>=0.111",
     "uvicorn>=0.30",
     "python-multipart>=0.0.9",

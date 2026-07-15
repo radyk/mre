@@ -138,10 +138,33 @@ echoes `applied_time_limit_s`. Shared `_load_alt_context` +
 30/30** (7 board + 5 legality + 18 gesture); Python non-slow green (+ slow
 on-demand + reason tests). Distinct fixture rebuilt (work_orders
 populated, member docs + on-demand fixture). See the docs/04 2026-07-14
-Session 3.3 amendment and docs/07 v2.6. (Pre-existing on this machine's
-HEAD, untouched: `test_defaults_reproduce_baseline`, `test_planner_merge_v2`,
-three `test_scenario` warm-start/merge tests — ortools 9.15 vs the golden
-baseline + CP-SAT noise, unrelated to this session.)
+Session 3.3 amendment and docs/07 v2.6.
+
+**Roadmap position: Phase 3 IN PROGRESS — Session 3.3b: ortools "drift" was
+a wall-clock time-bomb 2026-07-15.** The ten standing reds
+(`test_defaults_reproduce_baseline` ×2, `test_planner_merge_v2` ×2, four
+`test_scenario` + two slow warm-start/merge) blamed on "ortools 9.15 vs the
+golden baseline + CP-SAT noise" were **not** solver drift. Root cause: the
+manifest-less `sample_data` path left `reference_date=None`, so the validator
+used `datetime.now()`; once the machine clock passed WO-2001's 2026-07-13 due
+date, WO-2001 was excluded as past-due — removing the late demand, dissolving
+the WO-2001/WO-2002 merge, and diverging the golden. **Proven by isolation:**
+pinned to `--reference-date 2026-07-09`, ortools **9.15.6755 reproduces every
+golden byte-for-byte** (24769.00), so the goldens STAND and no baseline epoch
+is regenerated. Fixes: `ortools==9.15.6755` pinned exact + `tests/
+test_ortools_pin.py` (installed-vs-pin drift guard, reads pyproject); a new
+`--reference-date <ISO>` CLI flag (highest priority; the missing knob for the
+sample path); the three regression fixtures pinned to the 2026-07-09 sample
+epoch (`test_scenario` also records it in M3 config + derives `base_context` so
+the ScenarioRunner re-solve inherits it). **Fixture epochs stated:** sample_data
+baselines = 2026-07-09 (now explicit); gauntlet = plant_config (fixed);
+generator/cockpit/feel fixtures (`multi_route`, `multi_route_distinct`,
+`busy_board`) = **2026-01-05** (fixed `generate()` default, carried in each
+manifest — never wall-clock-dated, so NOT rotted, no rebuild). **Full suite
+green: 1033 non-slow passed, 0 failed** + the scenario/merge slow ladder (39).
+See the docs/04 2026-07-15 amendment and docs/07 3.3b. Lesson: a baseline that
+reads `datetime.now()` is a countdown, not a baseline — check the input
+population before blaming the solver.
 
 **Roadmap position: Phase 3 IN PROGRESS — Session 3.2d: feel-session
 fixes 2026-07-14.** Six items from a live `busy_board` session (Daryn's

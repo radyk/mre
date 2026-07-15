@@ -53,6 +53,14 @@ import pytest
 REPO = Path(__file__).parent.parent
 FIXTURES = Path(__file__).parent / "fixtures" / "baselines"
 
+# The sample_data path has no manifest reference_date, so unpinned it falls back
+# to datetime.now() and the wall clock silently excludes past-due demands
+# (WO-2001 is due 2026-07-13). The golden fixtures were captured as-of the
+# 2026-07-09 scenario epoch; pin that so the gate is time-STABLE, not a bomb
+# that detonates once the clock passes the sample due dates. See docs/04
+# 2026-07-15. Any date before 2026-07-13 reproduces the goldens byte-for-byte.
+SAMPLE_REF_DATE = "2026-07-09"
+
 
 def _run_mre(args: list[str], out_dir: Path) -> str:
     env = dict(os.environ)
@@ -86,7 +94,8 @@ class TestSampleDataReproducesBaseline:
     def test_schedule_csv_identical(self, tmp_path):
         stdout = _run_mre(
             ["--sample-data", str(REPO / "sample_data"), "--snapshot-id", "snap-regress",
-             "--policy", "merge_by_family_v1", "--time-limit", "30"],
+             "--policy", "merge_by_family_v1", "--time-limit", "30",
+             "--reference-date", SAMPLE_REF_DATE],
             tmp_path,
         )
         golden = (FIXTURES / "sample_data_schedule.csv").read_text(encoding="utf-8")
@@ -96,7 +105,8 @@ class TestSampleDataReproducesBaseline:
     def test_cost_ledger_identical(self, tmp_path):
         stdout = _run_mre(
             ["--sample-data", str(REPO / "sample_data"), "--snapshot-id", "snap-regress2",
-             "--policy", "merge_by_family_v1", "--time-limit", "30"],
+             "--policy", "merge_by_family_v1", "--time-limit", "30",
+             "--reference-date", SAMPLE_REF_DATE],
             tmp_path,
         )
         golden = json.loads((FIXTURES / "sample_data_summary.json").read_text(encoding="utf-8"))
