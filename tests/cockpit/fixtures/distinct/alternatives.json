@@ -11,7 +11,8 @@
     "member_time_limit_s": 8.0,
     "seed": 1234,
     "incumbent_objective": 240030.0,
-    "selection": "explicit",
+    "selection": "heuristic_v2",
+    "top_n_expensive": 6,
     "n_targets": 4,
     "mechanism": "per target op: warm-start hints from incumbent + a 'not on the incumbent machine' cut (add_forced_alternative_cut), short time limit; no objective bound (the true best price of the road not taken, even when worse than the incumbent)"
   },
@@ -31,11 +32,14 @@
         "forbidden_resource_ref": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
         "alternative_resource_ref": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
         "status": "OPTIMAL",
+        "on_demand": false,
         "placement": {
           "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
           "start": "2026-01-05T07:00:00+00:00",
           "end": "2026-01-05T11:01:00+00:00",
-          "work_orders": []
+          "work_orders": [
+            "ORD-000003"
+          ]
         }
       }
     },
@@ -53,11 +57,14 @@
         "forbidden_resource_ref": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
         "alternative_resource_ref": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
         "status": "OPTIMAL",
+        "on_demand": false,
         "placement": {
           "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
           "start": "2026-01-07T07:00:00+00:00",
           "end": "2026-01-07T11:01:00+00:00",
-          "work_orders": []
+          "work_orders": [
+            "ORD-000003"
+          ]
         }
       }
     },
@@ -75,11 +82,14 @@
         "forbidden_resource_ref": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
         "alternative_resource_ref": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
         "status": "OPTIMAL",
+        "on_demand": false,
         "placement": {
           "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
           "start": "2026-01-09T07:00:00+00:00",
           "end": "2026-01-09T11:01:00+00:00",
-          "work_orders": []
+          "work_orders": [
+            "ORD-000003"
+          ]
         }
       }
     },
@@ -97,11 +107,14 @@
         "forbidden_resource_ref": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
         "alternative_resource_ref": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
         "status": "OPTIMAL",
+        "on_demand": false,
         "placement": {
           "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
           "start": "2026-01-05T07:00:00+00:00",
           "end": "2026-01-05T11:01:00+00:00",
-          "work_orders": []
+          "work_orders": [
+            "ORD-000001"
+          ]
         }
       }
     }

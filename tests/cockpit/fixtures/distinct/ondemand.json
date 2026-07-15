@@ -1,0 +1,30 @@
+{
+  "op_id": "20358e5f-5d77-512b-9f25-e94b35a4003b",
+  "members": [
+    {
+      "pool_id": "alt-ondemand",
+      "member_index": 100,
+      "objective": 240753.0,
+      "objective_delta_pct": 0.3012,
+      "hamming_from_incumbent": null,
+      "document_path": null,
+      "source": "forced_alternative",
+      "verdict": "priced",
+      "label": {
+        "target_operation_ref": "20358e5f-5d77-512b-9f25-e94b35a4003b",
+        "forbidden_resource_ref": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+        "alternative_resource_ref": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+        "status": "OPTIMAL",
+        "on_demand": true,
+        "placement": {
+          "resource_id": "98a636b5-b943-5fc5-81ac-01f16f5353cc",
+          "start": "2026-01-06T07:00:00+00:00",
+          "end": "2026-01-06T11:01:00+00:00",
+          "work_orders": [
+            "ORD-000004"
+          ]
+        }
+      }
+    }
+  ]
+}

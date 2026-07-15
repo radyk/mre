@@ -59,10 +59,18 @@ export function createGestureController(board, geometry, opts) {
 
   // --- ghosts (CU2) ----------------------------------------------------
   let ghostIndex = new Map();
+  let lastAlternatives = opts.alternatives || null;   // for member-doc lookups (CU4)
   function setAlternatives(alternatives, pool) {
+    if (alternatives) lastAlternatives = alternatives;
     ghostIndex = buildGhostIndex(alternatives, pool);
   }
   setAlternatives(opts.alternatives, opts.pool);
+
+  // On-demand coverage (session 3.3 CU1): ops we've already fired pricing for,
+  // so a repeated grab never re-fires. Covered ops (ghosts already present) and
+  // single-eligibility ops (nothing to price) are never candidates.
+  const pricingRequested = new Set();
+  const ONDEMAND_POLL_MS = 1200, ONDEMAND_MAX_POLLS = 12;
 
   // --- overlay layers (all in center container, all track pan/zoom) ----
   const root = document.createElement("div");
@@ -83,6 +91,11 @@ export function createGestureController(board, geometry, opts) {
   const reasonTip = document.createElement("div");
   reasonTip.className = "drag-reason hidden";
   root.appendChild(reasonTip);
+  // The on-demand pricing shimmer (CU1): shown while a grabbed-but-uncovered
+  // op's alternatives are priced server-side, so their absence is never silent.
+  const pricingTip = document.createElement("div");
+  pricingTip.className = "drag-pricing hidden";
+  root.appendChild(pricingTip);
   timeline.dom.centerContainer.appendChild(root);
   // the overlay only intercepts pointer events while a gesture is active
   root.style.pointerEvents = "none";
@@ -171,8 +184,74 @@ export function createGestureController(board, geometry, opts) {
     renderCarry();
     root.classList.add("active");
     S.grabToShadeMs = +(performance.now() - t0).toFixed(2);   // CU1 latency
+    // Coverage (session 3.3 CU1): the Tier-1 promise fails silently for an
+    // uncovered op. If this multi-eligible op has no ghosts yet, price its
+    // alternatives on demand (async) with a shimmer so absence is never silent.
+    maybePriceOnDemand(opRef);
     return true;
   }
+
+  // Is `opRef` a candidate for on-demand pricing? Only when it's multi-eligible
+  // (>1 eligible row → a cross-machine move exists to price) and carries no
+  // ghosts yet (the precomputed batch missed it).
+  function isUncovered(opRef) {
+    if ((ghostIndex.get(opRef) || []).length) return false;
+    const rows = S.tier0?.rows || [];
+    return rows.filter((r) => r.eligible).length > 1;
+  }
+
+  // Fire on-demand pricing for a grabbed, uncovered op and fade its ghosts in
+  // when priced (CU1). Never re-fires (pricingRequested); shows a shimmer while
+  // in flight and a one-line "no cheaper alternative" note if the priced roads
+  // all cost more or are infeasible — so the answer is always visible.
+  function maybePriceOnDemand(opRef) {
+    if (!api.priceOpAlternatives || !api.getAlternatives) return;
+    if (pricingRequested.has(opRef) || !isUncovered(opRef)) return;
+    pricingRequested.add(opRef);
+    showPricing("pricing alternatives…");
+    api.priceOpAlternatives(scheduleId, opRef, {}).then((r) => {
+      if (r === null) { hidePricing(); return; }   // endpoint absent — stay quiet-green
+      pollForGhosts(opRef, 0);
+    });
+  }
+
+  function pollForGhosts(opRef, tries) {
+    // stop polling if the planner moved on to another op / released the grab
+    if (S.op !== opRef || (S.phase !== "grabbed" && S.phase !== "dragging")) {
+      hidePricing();
+      return;
+    }
+    api.getAlternatives(scheduleId).then((alt) => {
+      if (alt) {
+        setAlternatives(alt, null);
+        const ghosts = ghostIndex.get(opRef) || [];
+        if (ghosts.length) {
+          // priced → fade the ghosts in for the still-grabbed op
+          S.opGhosts = ghosts;
+          S.tier0 = computeTier0(opRef, ctx, { ghosts });
+          const win = board.getWindow();
+          renderShade(layers.shade, S.tier0, geometry, win);
+          S.drawnGhosts = renderGhosts(layers.ghosts, ghostLabels, S.opGhosts, geometry, win);
+          layers.ghosts.classList.add("fade-in");
+          hidePricing();
+          return;
+        }
+      }
+      if (tries + 1 >= ONDEMAND_MAX_POLLS) {
+        showPricing("no cheaper alternative found", /*fade*/ true);
+        return;
+      }
+      setTimeout(() => pollForGhosts(opRef, tries + 1), ONDEMAND_POLL_MS);
+    });
+  }
+
+  function showPricing(text, fade = false) {
+    pricingTip.textContent = text;
+    pricingTip.classList.remove("hidden");
+    pricingTip.classList.toggle("shimmer", !fade);
+    if (fade) setTimeout(hidePricing, 2200);
+  }
+  function hidePricing() { pricingTip.classList.add("hidden"); pricingTip.classList.remove("shimmer"); }
 
   // Move the carry to a candidate (resource, time): snap, legality, dim-refuse.
   function dragTo(resourceId, timeMs, altKey = false) {
@@ -232,17 +311,19 @@ export function createGestureController(board, geometry, opts) {
 
   // Drop onto a ghost: the placement is a complete solved schedule's vouched-for
   // spot, so its price is known — render the card immediately (near-instant, no
-  // fresh solve, R-T1c). The moved-set shown is the dropped bar's own old→new
-  // (its deeper consequences would need the ghost's document — a carry-forward).
+  // fresh solve, R-T1c). Then (session 3.3 CU4) lazy-fetch the ghost's own
+  // member document and diff it against the incumbent to trace the FULL
+  // moved-set — every op that solved schedule displaced, not just the dropped
+  // bar — showing "consequences loading…" until it lands (R-DP7: never silence).
   function dropOnGhost(ghost) {
-    const inc = incumbentOf(S.op);
-    const dur = durationMinOf(S.op);
+    const opRef = S.op;
+    const inc = incumbentOf(opRef);
     const result = {
       outcome: "verdict", status: "GHOST", feasible: true, within_budget: true,
       delta_pct: ghost.delta_pct, delta_abs: null,
       message: "from a vouched-for alternative (no re-solve needed)",
       moves: [{
-        operation_ref: S.op,
+        operation_ref: opRef,
         from_resource: inc?.resource_id, to_resource: ghost.resource_id,
         from_start: inc ? new Date(inc.start_ms).toISOString() : ghost.start,
         to_start: ghost.start,
@@ -250,14 +331,63 @@ export function createGestureController(board, geometry, opts) {
         resource_changed: inc ? inc.resource_id !== ghost.resource_id : true,
         pinned: true,
       }],
-      pin: { operation_ref: S.op, resource_id: ghost.resource_id, start: ghost.start },
+      pin: { operation_ref: opRef, resource_id: ghost.resource_id, start: ghost.start },
     };
     S.target = { resource_id: ghost.resource_id, time_ms: ms(ghost.start), legal: true, reason: null, anchor: null };
     S.phase = "tentative";
     clearLegalityOverlays();             // the drop answered "where" — clear the wash (CU1)
     S.dropToVerdictMs = 0;               // near-instant path
+
+    const loadable = ghost.source === "forced_alternative"
+      && ghost.member_index != null && api.getAlternativeMember;
+    result.consequences_pending = loadable;
     applyResult(result);
+    if (loadable) fetchGhostConsequences(opRef, ghost);
     return Promise.resolve(result);
+  }
+
+  // CU4: pull the ghost's full solved schedule and diff it against the
+  // incumbent → the complete moved-set (ghost-of-old + motion line for every
+  // displaced op), then re-render traces + card. A failed/absent fetch keeps
+  // the single-bar trace already on screen (never silence, never a lie).
+  function fetchGhostConsequences(opRef, ghost) {
+    api.getAlternativeMember(scheduleId, ghost.member_index).then((memberDoc) => {
+      // ignore if the gesture moved on (discarded / new grab / different op)
+      if (!memberDoc || S.op !== opRef || S.phase !== "verdict") return;
+      const moves = movedSetFromDoc(memberDoc, opRef, ghost);
+      if (!moves.length) return;
+      S.result = { ...S.result, moves, consequences_pending: false };
+      S.traces = renderTraces(layers.traces, svg, moves, durationMinOf, geometry, board.getWindow());
+      card.showResult(S.result, { nameOf, woOf });
+    });
+  }
+
+  // Diff a ghost's member document (a complete solved schedule) against the
+  // incumbent → moves old→new for every op it placed differently, in the same
+  // shape the sandbox moved-set uses. The dropped op leads (pinned).
+  function movedSetFromDoc(memberDoc, pinnedOp, ghost) {
+    const moves = [];
+    for (const a of memberDoc.assignments || []) {
+      const op = a.operation_ref;
+      const newRid = a.resource_id, newStart = a.chunks?.[0]?.start;
+      const old = asgByOp.get(op);
+      if (!old || !newStart) continue;
+      const oldRid = old.resource_id, oldStart = old.chunks?.[0]?.start;
+      if (!oldStart) continue;
+      const delta = Math.round((ms(newStart) - ms(oldStart)) / MIN);
+      const changed = newRid !== oldRid || Math.abs(delta) >= 1;
+      const isPin = op === pinnedOp;
+      if (!changed && !isPin) continue;
+      moves.push({
+        operation_ref: op, from_resource: oldRid, to_resource: newRid,
+        from_start: oldStart, to_start: newStart, start_delta_min: delta,
+        resource_changed: newRid !== oldRid, pinned: isPin,
+      });
+    }
+    moves.sort((a, b) =>
+      (a.pinned ? 0 : 1) - (b.pinned ? 0 : 1)
+      || Math.abs(b.start_delta_min) - Math.abs(a.start_delta_min));
+    return moves;
   }
 
   function applyResult(result) {
@@ -306,8 +436,10 @@ export function createGestureController(board, geometry, opts) {
   function clearOverlays() {
     for (const el of Object.values(layers)) el.replaceChildren();
     ghostLabels.replaceChildren();
+    layers.ghosts.classList.remove("fade-in");
     while (svg.firstChild) svg.removeChild(svg.firstChild);
     reasonTip.classList.add("hidden");
+    hidePricing();
   }
 
   // Clear ONLY the Tier-0 legality overlays (shade + ghosts + the refusal
@@ -317,9 +449,11 @@ export function createGestureController(board, geometry, opts) {
   function clearLegalityOverlays() {
     layers.shade.replaceChildren();
     layers.ghosts.replaceChildren();
+    layers.ghosts.classList.remove("fade-in");
     ghostLabels.replaceChildren();
     S.drawnGhosts = [];
     reasonTip.classList.add("hidden");
+    hidePricing();
     root.classList.remove("refusing");
   }
 

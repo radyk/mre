@@ -529,6 +529,27 @@ class TestForcedAlternatives:
         _error(api.client.post(
             f"/schedules/{scen_id}/alternatives", json={}), 409)
 
+    def test_on_demand_op_pricing_appends_to_pool(self, api):
+        # session 3.3 CU1: pricing a grabbed op on demand creates/updates the
+        # alternatives pool. clean_small ops are single-eligibility (no machine
+        # to price), so 0 members are appended — but the endpoint accepts the
+        # request, creates the pool, and prices without error (K' path).
+        doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
+        op = doc["assignments"][0]["operation_ref"]
+        resp = _data(api.client.post(
+            f"/schedules/{api.schedule_id}/alternatives/op/{op}",
+            json={"max_machines": 4, "member_time_limit": 6, "sync": True},
+        ), status=202)
+        assert resp["status"] == "pricing"
+        assert resp["pool_id"].startswith("alt-")
+        pool = _data(api.client.get(f"/schedules/{api.schedule_id}/alternatives"))
+        assert pool["kind"] == "alternatives"
+
+    def test_on_demand_refused_for_scenario_schedules(self, api, scenario_run):
+        scen_id = scenario_run["result"]["schedule_id"]
+        _error(api.client.post(
+            f"/schedules/{scen_id}/alternatives/op/whatever", json={}), 409)
+
 
 # ---------------------------------------------------------------------------
 # Sandbox (Tier-2 pinned re-solve, docs/07 Phase 3, R-DP1/R-T1c). The three-
@@ -548,6 +569,8 @@ class TestSandbox:
             "verdict", "feasible_unproven", "no_verdict")
         assert data["within_budget"] is True
         assert data["feasible"] is True
+        # session 3.3 CU5: the applied time limit is echoed (budget-vs-actual)
+        assert data["applied_time_limit_s"] == 15
         # the moved-set carries the pinned op, listed first (R-DP7)
         assert data["moves"], "a feasible re-solve reports its moved-set"
         assert data["moves"][0]["pinned"] is True

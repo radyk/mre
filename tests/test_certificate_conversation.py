@@ -28,7 +28,13 @@ from mre.catalog import load_catalog
 from tools.generate_erp_dataset import SCENARIOS, generate
 
 _OUTCOME_TIER = {"violated": 0, "degraded": 1, "flagged": 2}
-NON_SLOW = [s for s in SCENARIOS if not SCENARIOS[s].get("slow")]
+# Feel fixtures (docs/07 Phase 3, e.g. busy_board) are hands-on cockpit boards,
+# not truth-bearing scenarios: generate() writes a feel_fixture.json MARKER with
+# no expected_certificate_grade, so parametrizing them here KeyErrors (an
+# erroring red carried since session 3.2d). Exclude them explicitly — they have
+# no remediation to order — and guard defensively in the test body too.
+NON_SLOW = [s for s in SCENARIOS
+            if not SCENARIOS[s].get("slow") and not SCENARIOS[s].get("feel")]
 CATALOG = load_catalog()
 
 
@@ -56,6 +62,8 @@ class TestExpectedRemediation:
     def test_triage_order_and_citations(self, tmp_path, scenario):
         sub = tmp_path / "sub"
         truth = generate(sub, scenario=scenario, seed=11)
+        if truth.get("feel_fixture") or "expected_certificate_grade" not in truth:
+            pytest.skip(f"{scenario} is a feel fixture (no truth manifest)")
         result = _gate(sub, tmp_path / "runs")
         if truth["expected_certificate_grade"] == "ACCEPTED":
             pytest.skip(f"{scenario} is ACCEPTED — no remediation to order")

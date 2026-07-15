@@ -12,7 +12,10 @@
 // load of the same id serves the cached payload immediately AND revalidates in
 // the background, so a schedule-version change is picked up without ever
 // blocking on the network.
-import { getScheduleInteraction, getScheduleAlternatives, postSandbox } from "./api.js";
+import {
+  getScheduleInteraction, getScheduleAlternatives, postSandbox,
+  priceOpAlternatives, getAlternativeMember,
+} from "./api.js";
 import { createGeometry } from "./drag/geometry.js";
 import { createGestureController } from "./drag/controller.js";
 import { mountTuningPanel } from "./drag/tuning.js";
@@ -48,7 +51,15 @@ export function wireInteraction(id, board, hook, opts = {}) {
   hook.interaction = null;
   hook.drag = null;
 
-  const api = { postSandbox };
+  // The gesture controller's server surface: the sandbox re-solve (CU4, 3.2b),
+  // plus the on-demand pricing + re-fetch + member-document lazy-load the
+  // coverage + full-consequences work needs (session 3.3 CU1/CU4).
+  const api = {
+    postSandbox,
+    priceOpAlternatives,
+    getAlternativeMember,
+    getAlternatives: getScheduleAlternatives,
+  };
 
   const onReady = (payload) => {
     const interaction = payload.interaction || null;

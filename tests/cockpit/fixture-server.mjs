@@ -24,6 +24,9 @@ const DIRS = {
   "sched-multi-route-distinct": resolve(FIX, "distinct"),
 };
 const dirFor = (id) => DIRS[id] || FIX;
+// On-demand pricing state (session 3.3 CU1): ops POSTed for pricing this
+// session, keyed "<scheduleId>|<opId>". A GET /alternatives merges their ghosts.
+const _PRIMED = new Set();
 const load = async (name, dir = FIX) => JSON.parse(await readFile(join(dir, name), "utf-8"));
 const loadMaybe = async (name, dir) => {
   const full = join(dir, name);
@@ -78,14 +81,46 @@ const server = createServer(async (req, res) => {
       res.writeHead(200, { "content-type": "application/json" });
       return res.end(envelope(await load("interaction.json", dirFor(mInteract[1]))));
     }
+    // On-demand pricing (session 3.3 CU1): POST /alternatives/op/<op> primes the
+    // op; a later GET /alternatives merges in its priced ghosts (replaying the
+    // real append-to-pool behavior). Match this BEFORE the member-index route.
+    const mOnDemand = p.match(/^\/schedules\/([^/]+)\/alternatives\/op\/([^/]+)$/);
+    if (mOnDemand && req.method === "POST") {
+      const [, sid, opId] = mOnDemand;
+      const od = await loadMaybe("ondemand.json", dirFor(sid));
+      if (od && od.op_id === opId) _PRIMED.add(`${sid}|${opId}`);
+      res.writeHead(202, { "content-type": "application/json" });
+      return res.end(envelope({ op_id: opId, status: "pricing" }));
+    }
+    // The full solved document behind one ghost (session 3.3 CU4): served as
+    // member_<index>.json (404 when the fixture built none for this index).
+    const mMember = p.match(/^\/schedules\/([^/]+)\/alternatives\/(\d+)$/);
+    if (mMember && req.method === "GET") {
+      const doc = await loadMaybe(`member_${mMember[2]}.json`, dirFor(mMember[1]));
+      if (!doc) {
+        res.writeHead(404, { "content-type": "application/json" });
+        return res.end(errEnv(404, "no member document for this index"));
+      }
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(envelope(doc));
+    }
     // Tier-1 ghosts (R-T1a) — the /alternatives payload. 404 when the fixture
     // built none (the read-only multi_route set): the drag surface stays green.
     const mAlt = p.match(/^\/schedules\/([^/]+)\/alternatives$/);
     if (mAlt && req.method === "GET") {
-      const alt = await loadMaybe("alternatives.json", dirFor(mAlt[1]));
+      const dir = dirFor(mAlt[1]);
+      const alt = await loadMaybe("alternatives.json", dir);
       if (!alt) {
         res.writeHead(404, { "content-type": "application/json" });
         return res.end(errEnv(404, "no forced alternatives built"));
+      }
+      // merge any on-demand-priced members for ops primed this session (CU1)
+      const od = await loadMaybe("ondemand.json", dir);
+      if (od && _PRIMED.has(`${mAlt[1]}|${od.op_id}`)) {
+        const have = new Set(alt.members.map((m) => m.member_index));
+        for (const m of od.members || []) {
+          if (!have.has(m.member_index)) alt.members.push(m);
+        }
       }
       res.writeHead(200, { "content-type": "application/json" });
       return res.end(envelope(alt));

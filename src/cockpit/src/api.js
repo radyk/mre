@@ -64,6 +64,27 @@ export function getScheduleAlternatives(id) {
   return envelope(`/schedules/${id}/alternatives`).catch(() => null);
 }
 
+export function priceOpAlternatives(id, opId, opts = {}) {
+  // ON-DEMAND pricing (session 3.3 CU1, R-T1a K'): the planner grabbed an op the
+  // precomputed batch didn't cover — price every eligible machine for it right
+  // now. Returns 202 {op_id, pool_id, status:"pricing"}; the results land in the
+  // /alternatives pool (appended), which the caller re-fetches to fade the
+  // ghosts in. Idempotent under repeated grabs.
+  return envelope(`/schedules/${id}/alternatives/op/${opId}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(opts),
+  }).catch(() => null);
+}
+
+export function getAlternativeMember(id, memberIndex) {
+  // The full solved document behind one priced ghost (session 3.3 CU4): fetched
+  // lazily on a drop-onto-ghost so the complete moved-set (not just the dropped
+  // bar) can be traced. A 409 (infeasible verdict — no document) or any error
+  // is not fatal: the caller falls back to the single-bar trace.
+  return envelope(`/schedules/${id}/alternatives/${memberIndex}`).catch(() => null);
+}
+
 export function postSandbox(id, pin) {
   // The Tier-2 pinned re-solve (R-DP1/R-T1c) behind a dropped bar: pin one op at
   // (machine + time as displayed), re-solve the surroundings under the budget,

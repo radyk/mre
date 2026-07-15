@@ -10,16 +10,20 @@ Two levels, per the ruling:
 """
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 
 from mre.__main__ import main as mre_main
 from mre.modules.sandbox import (
+    MAJOR_MOVE_THRESHOLD_MIN,
     SANDBOX_BUDGET_S,
     SANDBOX_FEASIBLE_UNPROVEN,
     SANDBOX_NO_VERDICT,
     SANDBOX_VERDICT,
+    _annotate_move_reasons,
+    _moved_set,
     classify_sandbox_outcome,
     sandbox_pin_resolve,
 )
@@ -63,6 +67,75 @@ class TestClassification:
 
 
 # ---------------------------------------------------------------------------
+# The delta-card "why" clause (session 3.3 CU3) — reason derivation, no solve
+# ---------------------------------------------------------------------------
+
+class _FakeSolveValues:
+    def __init__(self, resource, start, end):
+        self.op_resource = resource
+        self.op_start_minutes = start
+        self.op_end_minutes = end
+
+
+class TestMoveReasons:
+    """The occupancy arithmetic behind the card's one-clause 'why', tested on a
+    hand-built re-solve (no solver): a forward-shifted op is annotated with what
+    holds its machine right up to its start — the dropped op ('displaced by the
+    dropped op') or another op ('blocked on <machine> until <time>'). Minor
+    shifts, the pin itself, and non-contiguous blockers are left unannotated —
+    the card must not fabricate a reason."""
+
+    def _scenario(self):
+        h = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        R, R2, R3 = "R", "R2", "R3"
+        # incumbent: everything starts at horizon
+        incumbent = {"P": (R, h), "X": (R, h), "V": (R2, h), "W": (R2, h),
+                     "T": (R3, h), "U": (R3, h)}
+        # new placements (minutes from horizon):
+        #   P pinned 0–60; X blocked behind P → 60–120 (+60, blocker=pin)
+        #   V unchanged 0–300; W blocked behind V → 300–360 (+300, blocker=V)
+        #   T 0–100; U shifted to 300–360 but its machine is free 100–300
+        #     (gap 200 > threshold) → NO reason invented
+        sv = _FakeSolveValues(
+            resource={"P": R, "X": R, "V": R2, "W": R2, "T": R3, "U": R3},
+            start={"P": 0, "X": 60, "V": 0, "W": 300, "T": 0, "U": 300},
+            end={"P": 60, "X": 120, "V": 300, "W": 360, "T": 100, "U": 360},
+        )
+        return h, incumbent, sv
+
+    def test_reasons_are_derived_from_occupancy(self):
+        h, incumbent, sv = self._scenario()
+        moves = _moved_set(sv, incumbent, h, pin_op_id="P")
+        _annotate_move_reasons(moves, sv, h, pin_op_id="P")
+        by_op = {m["operation_ref"]: m for m in moves}
+
+        # X moved +60, held behind the dropped op → displaced_by_drop
+        assert by_op["X"]["reason"]["kind"] == "displaced_by_drop"
+        # W moved +300, held behind V (not the pin) → occupancy, names V + machine
+        assert by_op["W"]["reason"]["kind"] == "occupancy"
+        assert by_op["W"]["reason"]["on_resource"] == "R2"
+        assert by_op["W"]["reason"]["blocker_op"] == "V"
+        # the pinned drop carries no "why" (it IS the drop)
+        assert "reason" not in by_op["P"]
+        # U shifted far but its machine was free before it → no fabricated reason
+        assert "reason" not in by_op["U"]
+
+    def test_minor_shifts_are_not_annotated(self):
+        h = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        incumbent = {"P": ("R", h), "A": ("R", h)}
+        # A shifts by less than the threshold → no reason
+        small = MAJOR_MOVE_THRESHOLD_MIN - 1
+        sv = _FakeSolveValues(
+            resource={"P": "R", "A": "R"},
+            start={"P": 0, "A": small}, end={"P": 60, "A": small + 60},
+        )
+        moves = _moved_set(sv, incumbent, h, pin_op_id="P")
+        _annotate_move_reasons(moves, sv, h, pin_op_id="P")
+        a = next(m for m in moves if m["operation_ref"] == "A")
+        assert "reason" not in a
+
+
+# ---------------------------------------------------------------------------
 # CI latency regression on the demo fixture (slow: one pipeline solve + re-solve)
 # ---------------------------------------------------------------------------
 
@@ -102,6 +175,9 @@ def test_single_pin_resolve_returns_a_verdict_within_budget(solved_distinct):
     assert result.within_budget is True
     assert result.wall_time_s <= SANDBOX_BUDGET_S + 1.0
     assert result.feasible is True
+    # session 3.3 CU5: the applied time limit is echoed so budget-vs-actual is
+    # inspectable straight from the payload (= the budget in normal operation).
+    assert result.applied_time_limit_s == SANDBOX_BUDGET_S
     # pinning at the incumbent placement is the latency floor: a zero-delta
     # confirmation (the surroundings need not move).
     assert result.delta_pct == 0 or result.delta_pct is None

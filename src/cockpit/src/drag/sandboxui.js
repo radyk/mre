@@ -73,10 +73,18 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate }) {
       const from = nameOf(m.from_resource), to = nameOf(m.to_resource);
       const move = m.resource_changed ? `${from} → ${to}` : `${to}`;
       const shift = m.start_delta_min ? ` · ${m.start_delta_min > 0 ? "+" : ""}${m.start_delta_min}min` : "";
+      // the "why" clause (session 3.3 CU3): each major consequence names its
+      // reason, sourced from the re-solve's own occupancy arithmetic.
+      const why = _reasonClause(m.reason, { nameOf, woOf });
       return `<button class="dc-line${m.pinned ? " pinned" : ""}" data-op="${m.operation_ref}">
         <span class="dc-wo">${wo}</span><span class="dc-move">${move}${shift}</span>
-        ${m.pinned ? '<span class="dc-pin">dropped</span>' : ""}</button>`;
+        ${m.pinned ? '<span class="dc-pin">dropped</span>' : ""}
+        ${why ? `<span class="dc-why">${why}</span>` : ""}</button>`;
     }).join("");
+    // CU4: a ghost drop traces the dropped bar instantly, then fills in the full
+    // moved-set from the vouching schedule — say so while it loads (R-DP7).
+    const pending = !returnHome && result.consequences_pending
+      ? `<div class="dc-note pending">consequences loading…</div>` : "";
 
     card.innerHTML = `
       <div class="dc-head">
@@ -85,6 +93,7 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate }) {
       </div>
       ${returnHome ? `<div class="dc-reason">${result.message || "couldn't verify this placement"}</div>` : ""}
       ${lineHtml ? `<div class="dc-lines">${lineHtml}</div>` : ""}
+      ${pending}
       <div class="dc-actions">
         <button class="dc-accept" disabled title="Publish workflow arrives in the next build.">Accept</button>
         <button class="dc-discard">Discard</button>
@@ -95,6 +104,27 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate }) {
       b.addEventListener("click", () => onNavigate && onNavigate(b.dataset.op));
     }
     return card;
+  }
+
+  // Render the structured move reason (session 3.3 CU3) into a planner-facing
+  // one-clause "why". The backend emits ids only (occupancy: which machine, and
+  // until when; or the dropped op displaced it); the card resolves names here.
+  function _reasonClause(reason, { nameOf, woOf }) {
+    if (!reason) return "";
+    if (reason.kind === "displaced_by_drop") return "displaced by the dropped op";
+    if (reason.kind === "occupancy") {
+      const machine = nameOf(reason.on_resource) || "the machine";
+      const until = _shortDate(reason.until);
+      return `blocked on ${machine}${until ? ` until ${until}` : ""}`;
+    }
+    return "";
+  }
+
+  function _shortDate(iso) {
+    const t = Date.parse(iso);
+    if (Number.isNaN(t)) return "";
+    return new Date(t).toLocaleString(undefined,
+      { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
   }
 
   function _deltaHeadline(result) {

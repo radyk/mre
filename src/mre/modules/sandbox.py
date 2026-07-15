@@ -38,6 +38,12 @@ SANDBOX_BUDGET_S = 15.0
 # small stop-overhead margin is allowed — it is not a second budget.
 _BUDGET_STOP_MARGIN_S = 1.0
 
+# A moved op counts as MAJOR — and so earns a "why" clause on the delta card
+# (session 3.3 CU3) — only when it shifted at least this far. A design token:
+# it keeps the card from annotating twenty one-minute shuffles with reasons,
+# leading instead with the displacements a planner actually feels.
+MAJOR_MOVE_THRESHOLD_MIN = 60
+
 # The three honest outcomes (R-T1c). String constants so evidence/JSON carry a
 # stable vocabulary.
 SANDBOX_VERDICT = "verdict"                    # (1) proven within budget
@@ -53,6 +59,11 @@ class SandboxResult:
     wall_time_s: float
     budget_s: float
     feasible: bool               # a placement exists with the pin held
+    # The time limit actually handed to the solver for this re-solve (= budget_s
+    # in normal operation). Echoed explicitly (session 3.3 CU5) so budget-vs-
+    # actual is always inspectable straight from the payload — the "was 60s the
+    # limit or the wall time?" question answers itself.
+    applied_time_limit_s: float = 0.0
     objective: Optional[float] = None
     delta_pct: Optional[float] = None      # vs the incumbent objective
     delta_abs: Optional[float] = None      # objective_after - objective_before
@@ -221,6 +232,8 @@ def sandbox_pin_resolve(
             solve_result.solve_values, incumbent_placement, horizon_start,
             pin_op_id,
         )
+        _annotate_move_reasons(moves, solve_result.solve_values, horizon_start,
+                               pin_op_id)
     message = {
         SANDBOX_VERDICT: ("optimal delta proven" if feasible
                           else "pin infeasible this horizon"),
@@ -230,7 +243,7 @@ def sandbox_pin_resolve(
     return SandboxResult(
         outcome=outcome, status=solve_result.status,
         within_budget=wall <= budget_s + _BUDGET_STOP_MARGIN_S,
-        wall_time_s=wall, budget_s=budget_s,
+        wall_time_s=wall, budget_s=budget_s, applied_time_limit_s=budget_s,
         feasible=feasible, objective=solve_result.objective,
         delta_pct=delta_pct, delta_abs=delta_abs, message=message, moves=moves,
         pin={"operation_ref": pin_op_id, "resource_id": pin_resource_id,
@@ -278,6 +291,70 @@ def _moved_set(
         })
     moves.sort(key=lambda m: (not m["pinned"], -abs(m["start_delta_min"])))
     return moves
+
+
+def _annotate_move_reasons(
+    moves: list[dict],
+    solve_values,
+    horizon_start: datetime,
+    pin_op_id: str,
+    threshold_min: int = MAJOR_MOVE_THRESHOLD_MIN,
+) -> None:
+    """Attach a one-clause ``reason`` to each MAJOR forward-shifted move
+    (session 3.3 CU3). A delta card that says "+9818 min" without a WHY is a
+    number with no story; this reads the story straight off the re-solve's own
+    placements — the same occupancy arithmetic the reconstruction already knows.
+
+    For an op that moved later, the reason is whatever holds its NEW machine
+    right up until its new start: if that is the DROPPED op, "displaced by the
+    dropped op"; otherwise the machine was simply busy — "blocked on <machine>
+    until <time>". The reason is STRUCTURED (resource ids, not names) so the
+    cockpit renders it in planner vocabulary via its own identity map. Only
+    major shifts are annotated (the threshold token), and only when the machine
+    is busy contiguously up to the start — a distant blocker is not the reason,
+    so no clause is invented.
+
+    Mutates ``moves`` in place; leaves minor shuffles and the pinned drop
+    unannotated (the card's own move text already reads them).
+    """
+    # New placement of EVERY op in the re-solve (for the per-machine timeline).
+    new_all: dict[str, tuple[str, datetime, datetime]] = {}
+    for op_id, rid in solve_values.op_resource.items():
+        smin = solve_values.op_start_minutes.get(op_id)
+        emin = solve_values.op_end_minutes.get(op_id)
+        if smin is None or emin is None:
+            continue
+        new_all[op_id] = (rid, horizon_start + timedelta(minutes=smin),
+                          horizon_start + timedelta(minutes=emin))
+    by_res: dict[str, list[tuple[datetime, datetime, str]]] = {}
+    for op_id, (rid, s, e) in new_all.items():
+        by_res.setdefault(rid, []).append((s, e, op_id))
+    for v in by_res.values():
+        v.sort()
+
+    gap = timedelta(minutes=threshold_min)
+    for m in moves:
+        if m["pinned"] or m["start_delta_min"] < threshold_min:
+            continue
+        placed = new_all.get(m["operation_ref"])
+        if placed is None:
+            continue
+        rid, start, _end = placed
+        # the op that occupies this machine latest, ending at or before `start`
+        blocker_op, blocker_end = None, None
+        for bs, be, boid in by_res.get(rid, []):
+            if boid == m["operation_ref"]:
+                continue
+            if be <= start and (blocker_end is None or be > blocker_end):
+                blocker_op, blocker_end = boid, be
+        if blocker_op is None or (start - blocker_end) > gap:
+            continue      # not held contiguously — don't fabricate a why
+        if blocker_op == pin_op_id:
+            m["reason"] = {"kind": "displaced_by_drop"}
+        else:
+            m["reason"] = {"kind": "occupancy", "on_resource": rid,
+                           "blocker_op": blocker_op,
+                           "until": blocker_end.isoformat()}
 
 
 def _parse_dt(raw) -> Optional[datetime]:

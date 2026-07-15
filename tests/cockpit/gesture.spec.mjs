@@ -27,6 +27,7 @@ const schedule = load("schedule.json");
 const alternatives = load("alternatives.json");
 const sandbox = load("sandbox.json");
 const interaction = load("interaction.json").interaction;
+const ondemand = load("ondemand.json");         // session 3.3 CU1 fixture
 
 const GRAB_TO_SHADE_MAX_MS = 100;   // the bake-off latency bar (CU1)
 const DRIFT_MAX_PX = 1.0;
@@ -315,6 +316,90 @@ test("accept is stubbed disabled; discard restores everything (CU4/CU5, R-DP7)",
   // shading is part of "everything" — the idle board carries no leftover wash.
   expect(await page.locator(".drag-shade .shade-row").count()).toBe(0);
   await shot(page, "g08_post_discard");
+});
+
+// ---------------------------------------------------------------------------
+// Session 3.3 — coverage + card explainability
+// ---------------------------------------------------------------------------
+
+test("ghost labels carry planner work orders (CU2)", async ({ page }) => {
+  await boot(page);
+  const op = priced[0].label.target_operation_ref;
+  await page.evaluate((op) => window.__cockpit.drag.grab(op), op);
+  // the placement now speaks external refs end-to-end: the ghost bar's title
+  // names its work order + price (empty work_orders was the CU2 bug).
+  const title = await page.locator(".drag-ghosts .ghost-bar").first().getAttribute("title");
+  expect(title, "ghost names its work order").toMatch(/ORD-\d+/);
+});
+
+test("grab an UNCOVERED op → on-demand pricing → ghosts fade in (CU1)", async ({ page }) => {
+  await boot(page);
+  const op = ondemand.op_id;   // a multi-eligible op the precomputed batch missed
+  // before the grab it has no ghosts — the silent-failure the coverage work fixes
+  const before = await page.evaluate((op) => window.__cockpit.drag.ghostsFor(op).length, op);
+  expect(before, "uncovered op starts with zero ghosts").toBe(0);
+
+  // absence is never silent: the shimmer shows the INSTANT an uncovered op is
+  // grabbed (captured synchronously — the poll can hide it within ms once the
+  // in-process fixture server answers, so we read it before awaiting).
+  const shown = await page.evaluate((op) => {
+    window.__cockpit.drag.grab(op);
+    const el = document.querySelector(".drag-pricing");
+    return { visible: el && !el.classList.contains("hidden"), text: el?.textContent || "" };
+  }, op);
+  expect(shown.visible, "pricing shimmer shows on grab of an uncovered op").toBe(true);
+  expect(shown.text).toContain("pricing");
+
+  // the POST primes the op; the poll re-fetches /alternatives and the ghosts
+  // fade in for the still-grabbed op (the second grab would be instant).
+  await page.waitForFunction((op) => window.__cockpit.drag.ghostsFor(op).length > 0,
+    op, { timeout: 8000 });
+  const ghosts = await page.locator(".drag-ghosts .ghost-bar").count();
+  expect(ghosts, "priced ghosts appear on demand").toBeGreaterThan(0);
+  await expect(page.locator(".drag-pricing")).toBeHidden();
+  await shot(page, "g10_ondemand");
+});
+
+test("drop onto a ghost → FULL moved-set from the member doc (CU4)", async ({ page }) => {
+  await boot(page);
+  const g = priced[0];                    // member_index 0 → member_0.json served
+  const op = g.label.target_operation_ref;
+  // expected: diff the ghost's own solved document against the incumbent.
+  const memberDoc = load("member_0.json");
+  const inc = Object.fromEntries(schedule.assignments.map(
+    (a) => [a.operation_ref, [a.resource_id, a.chunks[0].start]]));
+  let expected = 0;
+  for (const a of memberDoc.assignments) {
+    const o = inc[a.operation_ref];
+    if (o && (o[0] !== a.resource_id || o[1] !== a.chunks[0].start)) expected += 1;
+  }
+  expect(expected, "the member doc displaces more than the dropped bar").toBeGreaterThan(1);
+
+  const st = await page.evaluate(([op, rid, start]) =>
+    window.__cockpit.drag.dropAt(op, rid, start).then(() => window.__cockpit.drag.state()),
+    [op, g.label.placement.resource_id, g.label.placement.start]);
+  expect(st.phase).toBe("verdict");
+  // the dropped bar traces instantly; the FULL consequences load from the doc
+  await page.waitForFunction((n) => window.__cockpit.drag.state().traces === n,
+    expected, { timeout: 6000 });
+  const traceBars = await page.locator(".drag-traces .trace-old").count();
+  expect(traceBars, "every displaced op is traced, not just the drop").toBe(expected);
+  await shot(page, "g11_ghost_consequences");
+});
+
+test("delta card shows a 'why' clause on a major move (CU3)", async ({ page }) => {
+  await boot(page);
+  const op = opFor("verdict");            // canned verdict carries a reasoned move
+  const inc = incumbent(op);
+  await page.evaluate(([op, rid, start]) =>
+    window.__cockpit.drag.dropAt(op, rid, start).then(() => {}),
+    [op, inc.resource_id, inc.start]);
+  await expect(page.locator(".delta-card.verdict")).toBeVisible();
+  // the major consequence names WHY — occupancy, in planner vocabulary.
+  const why = page.locator(".delta-card .dc-why").first();
+  await expect(why).toBeVisible();
+  await expect(why).toContainText("blocked on");
+  await shot(page, "g12_why");
 });
 
 test("delta-card line → navigate to the traced bar (CU5, R-DP7c)", async ({ page }) => {

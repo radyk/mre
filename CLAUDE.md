@@ -94,6 +94,55 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 IN PROGRESS — Session 3.3: Tier-1 coverage +
+card explainability 2026-07-14.** Five feel-session findings (live on
+`busy_board`, schedule `769223cf`), all about the Tier-1 promise failing
+QUIETLY or INCOMPLETELY — the mechanics (R-T1a/b/c, R-DP7) held.
+**CU1** (coverage): the forced-alternative heuristic WIDENED to v2
+(`select_target_ops`: late-demand ops + top-N most-expensive ops
+[`DEFAULT_TOP_N_EXPENSIVE`] + slack catch-all; cost DERIVED via
+`_incumbent_costs`, a ranking key only) PLUS an ON-DEMAND path
+(`build_op_alternatives` + `POST /schedules/{id}/alternatives/op/{op}`):
+grabbing an uncovered multi-eligible op fires its solves right then,
+pricing EVERY eligible machine (R-T1a K': `add_required_resource_cut`
+pins each machine, not the solver's one cheapest escape), appending to
+the same pool (`Registry.append_pool_members`, member docs under
+`alternatives/op_<op8>/`) so the second grab is instant. Solve bill
+guarded: per-op machine cap (`DEFAULT_ONDEMAND_MAX_MACHINES=4`) +
+per-solve limit (`DEFAULT_ONDEMAND_TIME_LIMIT_S=6.0`) + API concurrency
+cap/dedup (`MAX_CONCURRENT_ONDEMAND=2`, `_ONDEMAND_SEMAPHORE`/
+`_ONDEMAND_INFLIGHT`). Cockpit: grab of an uncovered op fires the POST
+behind a "pricing alternatives…" shimmer (`.drag-pricing`, absence never
+silent), polls `/alternatives`, fades priced ghosts in. **Measured: one
+on-demand pricing on the small distinct fixture prices its eligible
+machine sub-2s; the `busy_board` raw cost-center is bounded by design
+(≤4×6s, ≤2 concurrent), not measured at scale (a Phase-4 profiling
+carry-forward).** **CU2** (bug): `alternative_placement.work_orders` was
+always `[]` — now resolved from the workpackage→order map
+(`_load_alt_context.wp_orders`, same identity-map source as the
+assembler); ghost bars wear the work order in their `title`. **CU3**
+(explainability): each MAJOR forward-shifted delta-card consequence gains
+a one-clause "why" (`sandbox._annotate_move_reasons`, threshold token
+`MAJOR_MOVE_THRESHOLD_MIN=60`) from the re-solve's own occupancy
+arithmetic — structured (ids), rendered by the card as "blocked on
+<machine> until <time>" / "displaced by the dropped op"; a non-contiguous
+blocker earns NO clause (never fabricated). No new answer path.
+**CU4** (completeness): drop-onto-ghost lazy-fetches the ghost's member
+document (`GET /alternatives/{member_index}`), diffs it vs the incumbent
+(`movedSetFromDoc`), renders the FULL moved-set — "consequences loading…"
+until it lands (R-DP7); a failed fetch keeps the single-bar trace. **CU5**
+(guards): `test_certificate_conversation` + `test_ids_end_to_end` exclude
+feel fixtures explicitly (the `busy_board` reds retired); `SandboxResult`
+echoes `applied_time_limit_s`. Shared `_load_alt_context` +
+`_solve_alternative` (forbid|require) back both build modes. **Cockpit JS
+30/30** (7 board + 5 legality + 18 gesture); Python non-slow green (+ slow
+on-demand + reason tests). Distinct fixture rebuilt (work_orders
+populated, member docs + on-demand fixture). See the docs/04 2026-07-14
+Session 3.3 amendment and docs/07 v2.6. (Pre-existing on this machine's
+HEAD, untouched: `test_defaults_reproduce_baseline`, `test_planner_merge_v2`,
+three `test_scenario` warm-start/merge tests — ortools 9.15 vs the golden
+baseline + CP-SAT noise, unrelated to this session.)
+
 **Roadmap position: Phase 3 IN PROGRESS — Session 3.2d: feel-session
 fixes 2026-07-14.** Six items from a live `busy_board` session (Daryn's
 hands on the gesture surface). **CU1** (bug): Tier-0 shading now clears

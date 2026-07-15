@@ -3868,3 +3868,111 @@ Committed on master. (Pre-existing, untouched: the
 on `expected_certificate_grade` — `busy_board` is a feel fixture with a
 `feel_fixture.json` marker, not a truth manifest; fails identically on
 3.2c HEAD, flagged for a later test-guard.)
+
+### 2026-07-14 — Session 3.3: Tier-1 coverage + card explainability (feel-session findings)
+
+Five findings from a live `busy_board` run (schedule `769223cf`, Daryn's
+hands on the gesture surface) drove this session. All are about the Tier-1
+promise failing QUIETLY or INCOMPLETELY, not the mechanics — the mechanics
+(R-T1a/b/c, R-DP7) held; the gaps were coverage and legibility.
+
+**CU1 — coverage: widen the precomputed batch + add an on-demand path.**
+The precomputed forced-alternative batch priced 8 targets on a board of
+hundreds of ops; a random grab (a not-late, not-covered op) showed ZERO
+ghosts — the Tier-1 promise failing silently. Two fixes, both in
+`forced_alternatives.py`, both R-T1a-faithful:
+
+  * *Widen the heuristic* (`select_target_ops`, now v2, three phases,
+    budget-capped): **(A)** late demands' multi-eligible ops, **(B)** the
+    top-N most-EXPENSIVE multi-eligible ops overall (config token
+    `DEFAULT_TOP_N_EXPENSIVE = 6` — where a cross-machine move is likeliest
+    to buy something, late or not), **(C)** the remaining at-risk demands by
+    slack (the old catch-all, so a no-late-demand board still gets coverage).
+    Phase B needs a cost key; the Assignment entity carries none, so
+    `_incumbent_costs` DERIVES it (working-minutes × the incumbent machine's
+    rate) — a RANKING key only, never surfaced as a priced number. Without a
+    cost key the heuristic degrades to A+C (the pre-widening behavior), which
+    keeps the existing selection test green.
+  * *On-demand pricing* (`build_op_alternatives` + `POST
+    /schedules/{id}/alternatives/op/{op_id}`): grabbing an uncovered op fires
+    its forced solves RIGHT THEN. Honoring R-T1a's original language ("every
+    eligible machine wears a price or a verdict"), it prices EVERY eligible
+    machine — `add_required_resource_cut` pins the op to each machine in turn
+    (`op_assign[op][machine] == 1`), not the single "forbid incumbent" cut the
+    solver's cheapest-escape would take (K'). Results APPEND to the same
+    alternatives pool (`Registry.append_pool_members`, globally-unique indices,
+    member docs under `alternatives/op_<op8>/`), so the second grab is instant.
+    The solve bill is guarded two ways: a per-op machine cap
+    (`DEFAULT_ONDEMAND_MAX_MACHINES = 4`) + per-solve time limit
+    (`DEFAULT_ONDEMAND_TIME_LIMIT_S = 6.0`), and a process-wide concurrency cap
+    + in-flight dedup in the API (`MAX_CONCURRENT_ONDEMAND = 2`,
+    `_ONDEMAND_SEMAPHORE`, `_ONDEMAND_INFLIGHT`) so a burst of grabs can't fan
+    out into an unbounded fleet. The refactor extracted a shared
+    `_load_alt_context` + `_solve_alternative` (forbid | require modes) so the
+    precomputed and on-demand builds share one per-member solve.
+    **Cockpit (`controller.js`):** on grab of a multi-eligible op with no
+    ghosts, `maybePriceOnDemand` fires the POST behind a "pricing
+    alternatives…" shimmer (`.drag-pricing`) — absence is NEVER silent — polls
+    `/alternatives`, and fades the priced ghosts in (or shows "no cheaper
+    alternative found"). **Measured on the small distinct fixture: one
+    on-demand pricing of an uncovered multi-eligible op = a single eligible
+    machine, priced sub-2s wall.** (The `busy_board` cost-center number the
+    brief asked for is bounded BY DESIGN now, not measured raw: max_machines ×
+    per-solve-limit = 4 × 6s worst case, throttled to 2 concurrent.)
+
+**CU2 — planner vocabulary in alternatives (the empty-`work_orders` bug).**
+`alternative_placement.work_orders` was always `[]` because the extractor's
+assignment dict carries no order names. `_placement_of` now resolves them from
+the workpackage→order map (the same identity-map + fulfillments source the
+schedule assembler uses, threaded through `_load_alt_context.wp_orders`), so
+ghost placements and API alternative documents speak external refs end to end.
+The cockpit ghost bar wears its work order in its `title` (`ghosts.js`, CU2).
+
+**CU3 — the delta card "why" line.** A card that said "+9818 min" never said
+WHY. `sandbox._annotate_move_reasons` reads the story off the re-solve's own
+placements (the same occupancy arithmetic the reconstruction already knows):
+for each MAJOR forward-shifted move (threshold token `MAJOR_MOVE_THRESHOLD_MIN
+= 60`), whatever holds its new machine right up to its start — the dropped op
+(`displaced_by_drop`) or another op (`occupancy`, naming machine + until-time).
+The reason is STRUCTURED (resource ids), rendered in planner vocabulary by the
+card (`sandboxui.js` `_reasonClause` → "blocked on <machine> until <time>").
+Conservative: a non-contiguous blocker (gap > threshold) earns NO clause — the
+card never fabricates a why. No new answer path; the derivation is unit-tested
+without a solve (`test_sandbox.TestMoveReasons`).
+
+**CU4 — ghost-drop full consequences.** Drop-onto-ghost priced the dropped bar
+but traced only IT; the ghost's deeper consequences needed its document.
+`dropOnGhost` now lazy-fetches the ghost's member document
+(`GET /alternatives/{member_index}`), diffs it against the incumbent
+(`movedSetFromDoc`), and re-renders the FULL moved-set — "consequences
+loading…" on the card until it lands (R-DP7: never silence). The member index
+rides the ghost descriptor (`ghosts.js` CU2/CU4); a failed/absent fetch keeps
+the single-bar trace (never a lie). Harness: the served member doc displaces 9
+of 10 ops → the card's traces go from 1 to 9.
+
+**CU5 — small guards.** (a) `test_certificate_conversation` and
+`test_ids_end_to_end` now EXCLUDE feel fixtures explicitly (`not
+SCENARIOS[s].get("feel")` + a defensive in-body skip) — the `busy_board`
+KeyError/grade reds carried since 3.2d are retired (the fixtures carry a
+`feel_fixture.json` marker, no truth manifest). (b) `SandboxResult` gains
+`applied_time_limit_s` (= the budget handed to the solver) so budget-vs-actual
+is inspectable straight from the payload — the "was 60s the limit or the wall
+time?" question from the session answers itself next time.
+
+**Result.** Backend: `forced_alternatives.py` (widen + on-demand + shared
+solve + work_orders), `sandbox.py` (reasons + applied limit), `solver_builder`
+(`add_required_resource_cut`), API (`/alternatives/op/{op}` + concurrency
+guards + `Registry.append_pool_members`). Cockpit: on-demand grab flow +
+shimmer, ghost work-order titles + member index, ghost-drop full consequences,
+card "why" clause. Distinct fixture rebuilt (work_orders populated, member docs
++ on-demand fixture written); fixture server serves member docs + replays
+on-demand priming. **Cockpit JS 30/30** (7 board + 5 legality + **18**
+gesture); **Python: non-slow green** (+ new slow on-demand + reason tests).
+**Carry-forwards (named):** on-demand pool/forced slice-awareness (still
+pilot-gated); the `busy_board` raw cost-center wall time (bounded by design, not
+measured at scale this session — a Phase-4 profiling item); ghost-drop
+consequences for POOL ghosts (no document → single-bar trace, unchanged);
+accept/publish (final session) and voice (later interim). (Pre-existing,
+untouched: `test_defaults_reproduce_baseline`, `test_planner_merge_v2`, and
+three `test_scenario` warm-start/merge tests fail on THIS machine's HEAD too —
+ortools 9.15 vs the golden baseline + CP-SAT noise — unrelated to this session.)

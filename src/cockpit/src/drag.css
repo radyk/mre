@@ -71,6 +71,21 @@
 }
 .drag-reason.hidden { display: none; }
 
+/* --- session 3.3 CU1: on-demand pricing shimmer ------------------------- */
+.drag-pricing {
+  position: absolute; top: var(--sp-2); left: 50%; transform: translateX(-50%);
+  font: 600 11px/1.3 -apple-system, "Segoe UI", sans-serif;
+  background: var(--panel); color: var(--muted);
+  border: 1px solid var(--grid); border-radius: var(--radius-sm);
+  padding: 3px 10px; white-space: nowrap; z-index: 11; pointer-events: none;
+}
+.drag-pricing.hidden { display: none; }
+.drag-pricing.shimmer { animation: pricing-shimmer 1.1s ease-in-out infinite; }
+@keyframes pricing-shimmer { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+/* ghosts fade in when priced on demand (never a hard pop) */
+.drag-ghosts.fade-in { animation: ghosts-fade 0.35s ease-out; }
+@keyframes ghosts-fade { from { opacity: 0; } to { opacity: 1; } }
+
 /* --- CU5: change traces -------------------------------------------------- */
 .drag-trace-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .trace-line { stroke: var(--trace-line); stroke-width: var(--trace-width-px); opacity: 0.85; }
@@ -107,7 +122,7 @@
 .dc-reason { color: var(--reason-ink); }
 .dc-lines { display: flex; flex-direction: column; gap: 3px; margin: var(--sp-2) 0; }
 .dc-line {
-  display: flex; align-items: center; gap: var(--sp-2); width: 100%; text-align: left;
+  display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-2); width: 100%; text-align: left;
   background: var(--panel-2); border: 1px solid var(--grid); border-radius: var(--radius-sm);
   color: var(--ink); padding: 4px 7px; cursor: pointer; font: inherit;
 }
@@ -116,6 +131,9 @@
 .dc-wo { font: 700 11px/1 ui-monospace, monospace; color: var(--cite-bar); }
 .dc-move { color: var(--muted); }
 .dc-pin { margin-left: auto; font-size: 9px; color: var(--tentative-edge); text-transform: uppercase; }
+/* the "why" clause (session 3.3 CU3): a full-width second line under the move */
+.dc-why { flex-basis: 100%; font-size: 10px; color: var(--muted); font-style: italic; opacity: 0.9; }
+.dc-note.pending { color: var(--reg-testimony); }
 .dc-actions { display: flex; justify-content: flex-end; gap: var(--sp-2); margin-top: var(--sp-2); }
 .dc-actions button { border-radius: var(--radius); padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; border: 0; }
 .dc-discard { background: var(--panel-2); border: 1px solid var(--grid) !important; color: var(--ink); }

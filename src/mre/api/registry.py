@@ -345,6 +345,34 @@ class Registry:
                      json.dumps(m["label"], default=str) if m.get("label") else None),
                 )
 
+    def append_pool_members(self, pool_id: str, members: list[dict]) -> list[int]:
+        """Append members to an existing pool WITHOUT clobbering, assigning
+        globally-unique member indices after the current max (session 3.3 CU1,
+        the on-demand pricing path). Returns the assigned indices. Leaves the
+        pool's status/summary untouched — the pool stays 'ready' as fresh ghosts
+        for newly-grabbed ops trickle in."""
+        assigned: list[int] = []
+        with self._conn() as con:
+            row = con.execute(
+                "SELECT COALESCE(MAX(member_index), -1) AS mx FROM pool_members "
+                "WHERE pool_id=?", (pool_id,)).fetchone()
+            nxt = int(row["mx"]) + 1
+            for m in members:
+                idx = nxt + len(assigned)
+                con.execute(
+                    "INSERT OR REPLACE INTO pool_members (pool_id, member_index, "
+                    "objective, objective_delta_pct, hamming_from_incumbent, "
+                    "document_path, source, verdict, label_json) "
+                    "VALUES (?,?,?,?,?,?,?,?,?)",
+                    (pool_id, idx, m.get("objective"),
+                     m.get("objective_delta_pct"), m.get("hamming_from_incumbent"),
+                     m.get("document_path"), m.get("source", "forced_alternative"),
+                     m.get("verdict"),
+                     json.dumps(m["label"], default=str) if m.get("label") else None),
+                )
+                assigned.append(idx)
+        return assigned
+
     def get_pool_for_schedule(self, schedule_id: str,
                               kind: str = "pool") -> Optional[dict]:
         """The schedule's most recent pool of the given kind ('pool' or

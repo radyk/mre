@@ -57,7 +57,12 @@ def _read_schedule_csv(out_dir: Path) -> list[dict]:
         return list(csv.DictReader(f))
 
 
-NON_SLOW_SCENARIOS = [s for s in SCENARIOS if not SCENARIOS[s].get("slow")]
+# Feel fixtures (e.g. busy_board, docs/07 Phase 3) are hands-on cockpit boards
+# with a feel_fixture.json marker and NO truth manifest, so the grade/anomaly
+# assertions here have nothing to check against (a red carried since 3.2d).
+# Exclude them explicitly — the same CU5 guard as test_certificate_conversation.
+NON_SLOW_SCENARIOS = [s for s in SCENARIOS
+                      if not SCENARIOS[s].get("slow") and not SCENARIOS[s].get("feel")]
 
 
 @pytest.mark.parametrize("scenario", NON_SLOW_SCENARIOS)

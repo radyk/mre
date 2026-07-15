@@ -43,7 +43,9 @@ sys.path.insert(0, str(ROOT))
 from mre.__main__ import main as mre_main  # noqa: E402
 from mre.api.app import _answer_question  # noqa: E402
 from mre.modules.conformance import ConformanceGate  # noqa: E402
-from mre.modules.forced_alternatives import build_forced_alternatives  # noqa: E402
+from mre.modules.forced_alternatives import (  # noqa: E402
+    build_forced_alternatives, build_op_alternatives,
+)
 from mre.modules.sandbox import SANDBOX_BUDGET_S, sandbox_pin_resolve  # noqa: E402
 from mre.modules.schedule_assembler import build_document_from_run  # noqa: E402
 from mre.reporter import Reporter  # noqa: E402
@@ -148,36 +150,81 @@ def build_multi_route() -> dict:
 # The gesture fixture (multi_route_distinct) — ghosts + canned sandbox verdicts.
 # ---------------------------------------------------------------------------
 
+def _member_row(m, *, pool_id: str, on_demand: bool = False) -> dict:
+    """One /alternatives member row (mirrors Registry.get_pool_for_schedule)."""
+    return {
+        "pool_id": pool_id, "member_index": m.member_index,
+        "objective": m.objective, "objective_delta_pct": m.objective_delta_pct,
+        "hamming_from_incumbent": None, "document_path": None,
+        "source": "forced_alternative", "verdict": m.verdict,
+        "label": {
+            "target_operation_ref": m.target_operation_ref,
+            "forbidden_resource_ref": m.forbidden_resource_ref,
+            "alternative_resource_ref": m.alternative_resource_ref,
+            "status": m.status, "on_demand": on_demand,
+            "placement": m.alternative_placement,   # now carries work_orders (CU2)
+        },
+    }
+
+
+def _copy_member_docs(result, fixdir: Path) -> None:
+    """Copy each priced member's full solved document into the fixture dir as
+    member_<index>.json — what GET /alternatives/<index> serves, so a
+    drop-onto-ghost can lazy-fetch it and trace the FULL moved-set (CU4)."""
+    for m in result.members:
+        if m.document_path and Path(m.document_path).exists():
+            (fixdir / f"member_{m.member_index}.json").write_text(
+                Path(m.document_path).read_text(encoding="utf-8"), encoding="utf-8")
+
+
 def _alternatives_payload(pool_id: str, schedule_id: str, snap: str,
                           result) -> dict:
-    """The /alternatives envelope-`data` shape (mirrors
-    Registry.get_pool_for_schedule): a pool row of kind 'alternatives' with its
-    member rows, each carrying the compact ghost placement in its label. Member
-    document_path is nulled — the cockpit renders ghosts from label.placement,
-    never a full-document fetch (CU2)."""
-    members = []
-    for m in result.members:
-        members.append({
-            "pool_id": pool_id, "member_index": m.member_index,
-            "objective": m.objective, "objective_delta_pct": m.objective_delta_pct,
-            "hamming_from_incumbent": None, "document_path": None,
-            "source": "forced_alternative", "verdict": m.verdict,
-            "label": {
-                "target_operation_ref": m.target_operation_ref,
-                "forbidden_resource_ref": m.forbidden_resource_ref,
-                "alternative_resource_ref": m.alternative_resource_ref,
-                "status": m.status, "placement": m.alternative_placement,
-            },
-        })
+    """The /alternatives envelope-`data` shape: a pool row of kind
+    'alternatives' with its member rows, each carrying the compact ghost
+    placement (with planner work_orders, CU2) in its label."""
     return {
         "id": pool_id, "schedule_id": schedule_id, "kind": "alternatives",
         "status": result.status, "created_at": None, "finished_at": None,
         "error": None, "params": result.params, "summary": {},
-        "members": members,
+        "members": [_member_row(m, pool_id=pool_id) for m in result.members],
     }
 
 
-def _sandbox_canned(out: Path, snap: str, priced) -> dict:
+def _ondemand_payload(out: Path, fixdir: Path, covered: set[str],
+                      pool_id: str) -> dict:
+    """Build the ON-DEMAND fixture (session 3.3 CU1): pick a multi-eligible op
+    the precomputed batch MISSED, price its every eligible machine on demand,
+    and record the resulting ghost members keyed by op. The fixture server
+    replays this when the harness POSTs /alternatives/op/<op> — proving a grab
+    of an uncovered op surfaces priced ghosts where none existed. Member indices
+    are offset (100+) so they never collide with the precomputed batch."""
+    interaction = json.loads(
+        (fixdir / "interaction.json").read_text(encoding="utf-8"))["interaction"]
+    multi = [o["operation_ref"] for o in (interaction or {}).get("operations", [])
+             if len(o.get("eligible_resource_ids", [])) > 1]
+    uncovered = next((op for op in multi if op not in covered), None)
+    if uncovered is None:
+        print("  (on-demand: no uncovered multi-eligible op — skipping)")
+        return {}
+    od = build_op_alternatives(
+        out_dir=out, snapshot_id=MRD_SNAP, base_schedule_id=MRD_SCHEDULE_ID,
+        run_id="run-mrd-fixture", op_id=uncovered, max_machines=4,
+        member_time_limit_s=8.0, pool_id="alt-ondemand",
+    )
+    members = []
+    for m in od.members:
+        m.member_index = 100 + m.member_index      # offset off the batch
+        if m.document_path and Path(m.document_path).exists():
+            (fixdir / f"member_{m.member_index}.json").write_text(
+                Path(m.document_path).read_text(encoding="utf-8"), encoding="utf-8")
+        members.append(_member_row(m, pool_id="alt-ondemand", on_demand=True))
+    priced = [m for m in members if m["verdict"] == "priced"]
+    print(f"  on-demand: op {uncovered[:8]} -> {len(priced)} priced / "
+          f"{len(members)} total machines")
+    return {"op_id": uncovered, "members": members}
+
+
+def _sandbox_canned(out: Path, snap: str, priced, doc: dict) -> dict:
     """Canned POST /sandbox responses keyed by pinned op (R-T1c). One REAL
     verdict (pin the first priced ghost's op at its alternative placement — a
     known-feasible move, so a real delta + moved-set), plus a synthetic FLAGGED
@@ -191,6 +238,28 @@ def _sandbox_canned(out: Path, snap: str, priced) -> dict:
         pin_resource_id=p0["resource_id"], pin_start_iso=p0["start"],
         budget_s=SANDBOX_BUDGET_S, deterministic=True,
     ).summary()
+
+    # The tiny distinct fixture is too light for a pin to displace a neighbour,
+    # so this verdict's moved-set is just the pinned op — no "why" clause to
+    # render. Synthesize ONE reasoned consequence line (an occupancy block) so
+    # the CU3 renderer has something to draw; the reason DERIVATION itself is
+    # unit-tested in Python (test_sandbox._annotate_move_reasons). Uses a real
+    # neighbour op + real resource so nameOf/woOf resolve.
+    neighbour = next((a for a in doc.get("assignments", [])
+                      if a.get("operation_ref") != tgt0 and a.get("chunks")), None)
+    if neighbour:
+        verdict = dict(verdict)
+        verdict["moves"] = list(verdict["moves"]) + [{
+            "operation_ref": neighbour["operation_ref"],
+            "from_resource": neighbour["resource_id"],
+            "to_resource": neighbour["resource_id"],
+            "from_start": neighbour["chunks"][0]["start"],
+            "to_start": neighbour["chunks"][0]["start"],
+            "start_delta_min": 240, "resource_changed": False, "pinned": False,
+            "reason": {"kind": "occupancy",
+                       "on_resource": neighbour["resource_id"],
+                       "blocker_op": tgt0, "until": p0["start"]},
+        }]
 
     by_op = {tgt0: verdict}
     # a FLAGGED card: feasible, bound unproven (SOLVER_NONOPTIMAL in the UI).
@@ -243,12 +312,21 @@ def build_distinct() -> dict:
         payload = _alternatives_payload(pool_id, MRD_SCHEDULE_ID, MRD_SNAP, result)
         (fixdir / "alternatives.json").write_text(
             json.dumps(payload, indent=2, default=str), encoding="utf-8")
+        # member documents for the full-consequences lazy fetch (CU4)
+        _copy_member_docs(result, fixdir)
 
         priced = result.priced_cross_machine()
         if not priced:
             raise SystemExit("distinct fixture: no priced cross-machine ghost — "
                              "the gesture fixture needs at least one")
-        sandbox = _sandbox_canned(out, MRD_SNAP, priced)
+
+        # on-demand coverage fixture (CU1): an uncovered op priced on grab.
+        covered = {m.target_operation_ref for m in result.members}
+        ondemand = _ondemand_payload(out, fixdir, covered, pool_id)
+        (fixdir / "ondemand.json").write_text(
+            json.dumps(ondemand, indent=2, default=str), encoding="utf-8")
+
+        sandbox = _sandbox_canned(out, MRD_SNAP, priced, d)
         (fixdir / "sandbox.json").write_text(
             json.dumps(sandbox, indent=2, default=str), encoding="utf-8")
 

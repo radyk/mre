@@ -25,6 +25,7 @@ import pytest
 from mre.__main__ import main as mre_main
 from mre.modules.forced_alternatives import (
     build_forced_alternatives,
+    build_op_alternatives,
     select_target_ops,
 )
 from mre.modules.snapshot_store import SnapshotStore
@@ -99,6 +100,33 @@ def test_selection_picks_multi_eligible_ops(distinct):
         assert len(eligible[oid]) > 1, "a selected op is not multi-eligible"
 
 
+def test_selection_widens_to_top_n_expensive():
+    """Session 3.3 CU1: the widening buys the most-EXPENSIVE multi-eligible op
+    even when its demand isn't late. Pure (no solve): one late demand + two
+    on-time, budget 2. Phase A takes the late op; the widening's phase B then
+    buys the expensive op — where the pre-widening slack walk would have taken a
+    cheap on-time op instead."""
+    ops = [{"id": f"op{i}", "workpackage_ref": f"wp{i}",
+            "resource_requirements": [{"resource_refs": ["R0", "R1"]}]}
+           for i in range(3)]
+    fuls = [{"demand_ref": f"d{i}", "workpackage_ref": f"wp{i}"} for i in range(3)]
+    demands = [{"id": f"d{i}"} for i in range(3)]
+    svc = [{"demand_ref": "d0", "lateness_minutes": 100},   # late
+           {"demand_ref": "d1", "lateness_minutes": -50},   # on time (cheap op)
+           {"demand_ref": "d2", "lateness_minutes": -50}]   # on time (EXPENSIVE op)
+    placement = {f"op{i}": ("R0", None) for i in range(3)}
+    cost = {"op0": 10.0, "op1": 20.0, "op2": 300.0}
+    common = dict(operations=ops, fulfillments=fuls, demands=demands,
+                  service_outcomes=svc, incumbent_placement=placement, budget=2)
+
+    widened = select_target_ops(**common, incumbent_cost=cost, top_n_expensive=6)
+    plain = select_target_ops(**common, top_n_expensive=0)   # widening off
+
+    assert widened[0] == "op0", "the late op still leads"
+    assert "op2" in widened and "op1" not in widened, "widening bought the expensive op"
+    assert "op2" not in plain and "op1" in plain, "without widening the cheap op wins"
+
+
 # ---------------------------------------------------------------------------
 # The counterfactual — both halves (slow: pool + forced re-solves)
 # ---------------------------------------------------------------------------
@@ -148,6 +176,9 @@ def test_forced_service_prices_cross_machine_alternatives(distinct, forced):
         p = m.alternative_placement
         assert p and p["resource_id"] == m.alternative_resource_ref
         assert p["start"] and p["end"]
+        # planner vocabulary end-to-end (session 3.3 CU2): the ghost names its
+        # work order(s) — the empty-work_orders bug is fixed.
+        assert p["work_orders"], "ghost placement carries no work order name"
         # moving an op off its (cheapest) incumbent machine costs MORE
         assert m.objective_delta_pct > 0, (
             f"forced move off {m.forbidden_resource_ref} priced at "
@@ -167,6 +198,46 @@ def test_forced_beats_pool_on_cross_machine_ghosts(distinct, pool, forced):
         f"forced priced cross-machine={n_forced} is not more than the pool's "
         f"cross_machine_ops={n_pool} — the service bought nothing"
     )
+
+
+@pytest.mark.slow
+def test_on_demand_prices_every_eligible_machine(distinct):
+    """Session 3.3 CU1 (R-T1a K'): the on-demand path prices EVERY eligible
+    machine for one grabbed op — not just the solver's single cheapest escape.
+    Each priced member pins the op to its own machine and carries the incumbent
+    as forbidden; each placement names its work order (CU2)."""
+    _, _, out, reader = distinct
+    from mre.modules.solution_pool import _placements
+    ops = list(reader.iter_entities("operation"))
+    placement = _placements(list(reader.iter_entities("assignment")))
+    op = next((o for o in ops if o["id"] in placement
+               and len((o.get("resource_requirements") or [{}])[0].get("resource_refs") or []) > 1),
+              None)
+    assert op is not None, "distinct fixture has a multi-eligible scheduled op"
+    op_id = op["id"]
+    incumbent = placement[op_id][0]
+    eligible = (op.get("resource_requirements") or [{}])[0]["resource_refs"]
+    expected_machines = [r for r in eligible if r != incumbent][:4]
+
+    res = build_op_alternatives(
+        out_dir=out, snapshot_id=SNAP, base_schedule_id="s", run_id="run-mrd",
+        op_id=op_id, max_machines=4, member_time_limit_s=8.0,
+    )
+    # one member per targeted machine — none silently dropped (priced OR a
+    # first-class infeasible verdict)
+    assert len(res.members) == len(expected_machines)
+    priced_machines = set()
+    for m in res.members:
+        assert m.forbidden_resource_ref == incumbent
+        assert m.verdict in ("priced", "infeasible_this_horizon")
+        if m.verdict == "priced":
+            assert m.alternative_resource_ref in expected_machines
+            assert m.alternative_placement["resource_id"] == m.alternative_resource_ref
+            assert m.alternative_placement["work_orders"], "no work order on ghost"
+            priced_machines.add(m.alternative_resource_ref)
+    # the roads are distinct machines (every eligible one got its own price)
+    assert len(priced_machines) == sum(
+        1 for m in res.members if m.verdict == "priced")
 
 
 @pytest.mark.slow

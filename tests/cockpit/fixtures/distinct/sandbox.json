@@ -3,9 +3,10 @@
     "outcome": "verdict",
     "status": "OPTIMAL",
     "within_budget": true,
-    "wall_time_s": 0.021,
+    "wall_time_s": 0.015,
     "budget_s": 15.0,
     "feasible": true,
+    "applied_time_limit_s": 15.0,
     "objective": 240753.0,
     "delta_pct": 0.3012,
     "delta_abs": 723.0,
@@ -20,6 +21,22 @@
         "start_delta_min": 0,
         "resource_changed": true,
         "pinned": true
+      },
+      {
+        "operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
+        "from_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+        "to_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+        "from_start": "2026-01-05T11:01:00Z",
+        "to_start": "2026-01-05T11:01:00Z",
+        "start_delta_min": 240,
+        "resource_changed": false,
+        "pinned": false,
+        "reason": {
+          "kind": "occupancy",
+          "on_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "blocker_op": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+          "until": "2026-01-05T07:00:00+00:00"
+        }
       }
     ],
     "pin": {
@@ -34,9 +51,10 @@
       "outcome": "verdict",
       "status": "OPTIMAL",
       "within_budget": true,
-      "wall_time_s": 0.021,
+      "wall_time_s": 0.015,
       "budget_s": 15.0,
       "feasible": true,
+      "applied_time_limit_s": 15.0,
       "objective": 240753.0,
       "delta_pct": 0.3012,
       "delta_abs": 723.0,
@@ -51,6 +69,22 @@
           "start_delta_min": 0,
           "resource_changed": true,
           "pinned": true
+        },
+        {
+          "operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
+          "from_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "to_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "from_start": "2026-01-05T11:01:00Z",
+          "to_start": "2026-01-05T11:01:00Z",
+          "start_delta_min": 240,
+          "resource_changed": false,
+          "pinned": false,
+          "reason": {
+            "kind": "occupancy",
+            "on_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+            "blocker_op": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+            "until": "2026-01-05T07:00:00+00:00"
+          }
         }
       ],
       "pin": {
@@ -63,9 +97,10 @@
       "outcome": "feasible_unproven",
       "status": "FEASIBLE",
       "within_budget": true,
-      "wall_time_s": 0.021,
+      "wall_time_s": 0.015,
       "budget_s": 15.0,
       "feasible": true,
+      "applied_time_limit_s": 15.0,
       "objective": 240753.0,
       "delta_pct": 0.3012,
       "delta_abs": 723.0,
@@ -80,6 +115,22 @@
           "start_delta_min": 0,
           "resource_changed": true,
           "pinned": true
+        },
+        {
+          "operation_ref": "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6",
+          "from_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "to_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+          "from_start": "2026-01-05T11:01:00Z",
+          "to_start": "2026-01-05T11:01:00Z",
+          "start_delta_min": 240,
+          "resource_changed": false,
+          "pinned": false,
+          "reason": {
+            "kind": "occupancy",
+            "on_resource": "1eee5cdf-8d04-526a-aab2-57d58ca0a437",
+            "blocker_op": "2f4487ed-0c8a-5a02-b757-a99a1e924002",
+            "until": "2026-01-05T07:00:00+00:00"
+          }
         }
       ],
       "pin": {
@@ -92,9 +143,10 @@
       "outcome": "no_verdict",
       "status": "UNKNOWN",
       "within_budget": true,
-      "wall_time_s": 0.021,
+      "wall_time_s": 0.015,
       "budget_s": 15.0,
       "feasible": false,
+      "applied_time_limit_s": 15.0,
       "objective": null,
       "delta_pct": null,
       "delta_abs": null,

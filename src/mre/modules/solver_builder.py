@@ -226,6 +226,23 @@ def add_forced_alternative_cut(
     return True
 
 
+def add_required_resource_cut(
+    model, var_map: "VariableMap", op_id: str, required_resource_id: str,
+) -> bool:
+    """Pin `op_id` to run on `required_resource_id` exactly — the per-machine
+    pricing cut of the on-demand forced-alternative path (docs/04 R-T1a K':
+    price EVERY eligible machine, not just the solver's single cheapest escape).
+    Warm-started + otherwise free, this re-solve yields the true best cost of
+    running that one op on THAT specific machine (or proves it infeasible this
+    horizon). Returns False when the op has no assignment literal for that
+    resource (not eligible there — nothing to require, a no-op)."""
+    lit = var_map.op_assign.get(op_id, {}).get(required_resource_id)
+    if lit is None:
+        return False
+    model.add(lit == 1)
+    return True
+
+
 DIVERSITY_TOLERANCE_MINUTES = 15
 
 

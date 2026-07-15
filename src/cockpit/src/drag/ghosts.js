@@ -41,6 +41,10 @@ export function buildGhostIndex(alternatives, pool) {
       resource_id: p?.resource_id || lab.alternative_resource_ref || null,
       start: p?.start || null,
       end: p?.end || null,
+      // planner vocabulary (session 3.3 CU2) + the member index that lets a
+      // drop lazy-fetch the ghost's full solved document (session 3.3 CU4).
+      work_orders: p?.work_orders || [],
+      member_index: m.member_index,
     });
   }
   // pool members (optional, same shape via a per-op placement projection)
@@ -82,6 +86,10 @@ export function renderGhosts(barLayer, labelLayer, ghosts, geometry, win) {
 
     const bar = document.createElement("div");
     bar.className = `ghost-bar src-${g.source}`;
+    // planner vocabulary end-to-end (CU2): the ghost names its work order(s), so
+    // hover reads "WO-1234 · +0.30%", never a bare bar.
+    const wos = (g.work_orders || []).filter(Boolean);
+    if (wos.length) bar.title = `${wos.join(", ")} · ${ghostLabel(g)}`;
     Object.assign(bar.style, {
       left: `${rect.x}px`, width: `${rect.width}px`,
       top: `${rect.top + 3}px`, height: `${rect.height - 6}px`,

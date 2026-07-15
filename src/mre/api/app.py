@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import threading
 from pathlib import Path
 from typing import Any, Optional
 
@@ -36,6 +37,16 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from mre.api.registry import Registry
 
 API_VERSION = "1"
+
+# On-demand forced-alternative pricing (session 3.3 CU1) guards the solve bill
+# — a burst of grabs must not fan out into an unbounded fleet of re-solves. A
+# process-wide semaphore caps CONCURRENT on-demand pricings; a dedup set drops a
+# second grab of an op already being priced. Both are design tokens.
+MAX_CONCURRENT_ONDEMAND = 2
+ONDEMAND_TIME_LIMIT_S = 6.0
+_ONDEMAND_SEMAPHORE = threading.BoundedSemaphore(MAX_CONCURRENT_ONDEMAND)
+_ONDEMAND_INFLIGHT: set[tuple[str, str]] = set()
+_ONDEMAND_LOCK = threading.Lock()
 
 
 # ---------------------------------------------------------------------------
@@ -69,6 +80,17 @@ class AlternativesRequest(BaseModel):
     target_op_ids: Optional[list[str]] = None
     budget: int = 4
     member_time_limit: float = 10.0
+    seed: int = 1234
+    sync: bool = False
+
+
+class OpAlternativesRequest(BaseModel):
+    """On-demand pricing for ONE grabbed op (session 3.3 CU1, R-T1a K'): price
+    every eligible machine for it, right now. Fired when a planner grabs an op
+    the precomputed batch missed. ``max_machines`` + ``member_time_limit`` cap
+    the solve bill (the API also enforces a concurrency cap across grabs)."""
+    max_machines: int = 4
+    member_time_limit: Optional[float] = None   # defaults to ONDEMAND_TIME_LIMIT_S
     seed: int = 1234
     sync: bool = False
 
@@ -390,6 +412,44 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
             Path(member["document_path"]).read_text(encoding="utf-8"))
         return _ok(document)
 
+    @app.post("/schedules/{schedule_id}/alternatives/op/{op_id}", status_code=202)
+    def price_op_alternatives(schedule_id: str, op_id: str,
+                              req: OpAlternativesRequest,
+                              background: BackgroundTasks):
+        """ON-DEMAND (session 3.3 CU1, R-T1a K'): price every eligible machine
+        for ONE grabbed op the precomputed batch missed. Results persist to the
+        SAME alternatives pool (appended, not replaced), so the next grab of the
+        same op is instant. Idempotent under a burst of grabs: a repeat while
+        pricing is in flight returns 'pricing' without re-firing the solves."""
+        row = _live_schedule(registry, schedule_id)
+        if row["is_scenario"]:
+            raise HTTPException(409, "forced alternatives are built for base "
+                                     "schedules; a what-if scenario has none")
+        # ensure an alternatives pool exists to append into
+        pool = registry.get_pool_for_schedule(schedule_id, kind="alternatives")
+        if pool is None:
+            import uuid as _uuid
+            pool_id = f"alt-{_uuid.uuid4().hex[:12]}"
+            registry.create_pool(pool_id, schedule_id,
+                                 params={"selection": "on_demand"},
+                                 kind="alternatives")
+            registry.finish_pool(pool_id, "ready", summary={}, members=[])
+        else:
+            pool_id = pool["id"]
+        key = (schedule_id, op_id)
+        with _ONDEMAND_LOCK:
+            if key in _ONDEMAND_INFLIGHT:
+                return _ok({"op_id": op_id, "pool_id": pool_id,
+                            "status": "pricing"}, status_code=202)
+            _ONDEMAND_INFLIGHT.add(key)
+        args = (registry, pool_id, row, op_id, req.model_dump())
+        if req.sync:
+            _execute_op_alternatives(*args)
+        else:
+            background.add_task(_execute_op_alternatives, *args)
+        return _ok({"op_id": op_id, "pool_id": pool_id, "status": "pricing"},
+                   status_code=202)
+
     # ------------------------------------------------------------------
     # Sandbox (Tier-2 pinned re-solve, docs/07 Phase 3, R-DP1/R-T1c) — the
     # authority behind a dropped bar. Pin one op (machine + time as displayed)
@@ -658,6 +718,60 @@ def _execute_forced_alternatives(registry: Registry, pool_id: str,
     except Exception as exc:  # noqa: BLE001 — background task must not raise
         registry.finish_pool(pool_id, "failed",
                              error=f"{type(exc).__name__}: {exc}")
+
+
+def _execute_op_alternatives(registry: Registry, pool_id: str,
+                             schedule_row: dict, op_id: str, params: dict) -> None:
+    """On-demand pricing worker (session 3.3 CU1): price every eligible machine
+    for one grabbed op and APPEND the members to the schedule's alternatives
+    pool. Bounded by the process-wide concurrency semaphore; the in-flight dedup
+    key is cleared on exit so a later grab of the same op can re-price if it
+    ever needs to. Registry-free module; this worker owns the indexing."""
+    from mre.modules.forced_alternatives import build_op_alternatives
+
+    key = (schedule_row["id"], op_id)
+    run = registry.get_run(schedule_row["run_id"])
+    time_limit = params.get("member_time_limit")
+    if time_limit is None:
+        time_limit = ONDEMAND_TIME_LIMIT_S
+    acquired = _ONDEMAND_SEMAPHORE.acquire(timeout=120)
+    try:
+        result = build_op_alternatives(
+            out_dir=Path(run["out_dir"]),
+            snapshot_id=schedule_row["snapshot_id"],
+            base_schedule_id=schedule_row["id"],
+            run_id=schedule_row["run_id"],
+            op_id=op_id,
+            max_machines=int(params.get("max_machines", 4)),
+            member_time_limit_s=float(time_limit),
+            seed=int(params.get("seed", 1234)),
+            pool_id=pool_id,
+        )
+        registry.append_pool_members(
+            pool_id,
+            members=[
+                {"member_index": m.member_index, "objective": m.objective,
+                 "objective_delta_pct": m.objective_delta_pct,
+                 "hamming_from_incumbent": None,
+                 "document_path": m.document_path,
+                 "source": "forced_alternative", "verdict": m.verdict,
+                 "label": {
+                     "target_operation_ref": m.target_operation_ref,
+                     "forbidden_resource_ref": m.forbidden_resource_ref,
+                     "alternative_resource_ref": m.alternative_resource_ref,
+                     "status": m.status, "on_demand": True,
+                     "placement": m.alternative_placement,
+                 }}
+                for m in result.members
+            ],
+        )
+    except Exception:  # noqa: BLE001 — background task must not raise
+        pass
+    finally:
+        if acquired:
+            _ONDEMAND_SEMAPHORE.release()
+        with _ONDEMAND_LOCK:
+            _ONDEMAND_INFLIGHT.discard(key)
 
 
 def _execute_whatif(registry: Registry, run: dict, base_schedule: dict,
