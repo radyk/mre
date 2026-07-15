@@ -55,6 +55,25 @@ export const DEFAULT_FEEL = {
     budget_s: 15.0,
     countdown_tick_ms: 100,
   },
+  // --- bar geometry (Session 3.5 token pass) — the board bar corner radius,
+  // mirrored to --bar-radius so ghosts/carry/traces stay visually consistent. ---
+  bars: {
+    radius_px: 4,
+  },
+  // --- R-M1 motion (docs/04 R-M1 — MOTION CARRIES REGISTER). NAMED-BUT-
+  // UNCONSUMED this session: Session 3.6 implements the animations against
+  // these. The values are panel-tunable NOW (mirrored to --motion-* by
+  // applyFeel) so 3.6 builds against a live surface. Semantics are FIXED by the
+  // ruling; only the numbers iterate on busy_board. ---
+  motion: {
+    reject_dur_ms: 200,          // (a) return-home snap-back — fast, no settling
+    reject_shake_amp_px: 3,      // (a) the brief "board refused" shake amplitude
+    reject_shake_dur_ms: 140,    // (a) shake duration
+    reflow_dur_ms: 340,          // (b) other bars, simultaneous eased transition
+    reflow_highlight_dur_ms: 600, // (b) moved-bar highlight linger
+    pinlock_dur_ms: 220,         // (c) committed drop pin-lock effect
+    ghost_fade_dur_ms: 350,      // (d) ghost fade in/out (labels fade WITH bars)
+  },
 };
 
 // Deep-clone so each session gets its own mutable copy (the tuning panel edits
@@ -89,4 +108,18 @@ export function applyFeel(feel, root = document.documentElement) {
   s.setProperty("--tentative-hatch-px", `${feel.tentative.hatch_px}px`);
   s.setProperty("--trace-width-px", `${feel.trace.width_px}px`);
   s.setProperty("--trace-ghost-opacity", String(feel.trace.ghost_of_old_opacity));
+  // bar geometry (3.5 token pass)
+  if (feel.bars) s.setProperty("--bar-radius", `${feel.bars.radius_px}px`);
+  // R-M1 motion tokens (unconsumed until 3.6, but panel-tunable now — mirroring
+  // them here is what makes the surface live for the 3.6 implementation).
+  if (feel.motion) {
+    const m = feel.motion;
+    s.setProperty("--motion-reject-dur", `${m.reject_dur_ms}ms`);
+    s.setProperty("--motion-reject-shake-amp", `${m.reject_shake_amp_px}px`);
+    s.setProperty("--motion-reject-shake-dur", `${m.reject_shake_dur_ms}ms`);
+    s.setProperty("--motion-reflow-dur", `${m.reflow_dur_ms}ms`);
+    s.setProperty("--motion-reflow-highlight-dur", `${m.reflow_highlight_dur_ms}ms`);
+    s.setProperty("--motion-pinlock-dur", `${m.pinlock_dur_ms}ms`);
+    s.setProperty("--motion-ghost-fade-dur", `${m.ghost_fade_dur_ms}ms`);
+  }
 }

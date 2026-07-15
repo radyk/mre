@@ -4276,3 +4276,103 @@ clauses PASS or are recorded with named accommodations. **1036 non-slow Python
 passed (0 failed)** + slow sandbox/planner_edit ladder + **cockpit 34/34**.
 Entering Phase 4 preparation; carried conditions: the cold-stranger cold-drive,
 cloud in-cloud confirmations, and Daryn's feel-token pass.
+
+## Amendment — 2026-07-15: R-M1 — Motion carries register (ruling; implementation is Session 3.6)
+
+Settled in a parallel design thread; reconciled and renumbered into the main
+thread here. **Implementation is Session 3.6; Session 3.5 builds the token
+surface it depends on** (the named-but-unconsumed motion tokens in
+`src/cockpit/src/tokens.css`, panel-tunable via `drag/feel.js` + the tuning
+panel). Transcribed VERBATIM:
+
+--- RULING TEXT BEGINS ---
+R-M1 — MOTION CARRIES REGISTER
+Bar motion is communication. Each movement class has a fixed
+meaning:
+
+a) REJECTION (return-home per R-DP1): fast snap-back with a brief,
+   subtle shake at arrival. Must read as "the board refused,"
+   never as "the system placed it." No easing that implies
+   settling. The rejection reason surfaces through existing text
+   channels (status/conversational layer), not the animation.
+
+b) REFLOW (other bars moving after a committed re-solve): smooth,
+   simultaneous eased transitions (~300-400ms), moved bars briefly
+   highlighted. Simultaneous, not cascaded — CP-SAT re-solves
+   globally; a cascade would imply a causal chain that doesn't
+   exist. (The 3.4 accept-rebind "settles into place" behavior is
+   an instance of this class and is unified under it in 3.6.)
+
+c) OWN PLACEMENT (committed drop): never moves. Confirmation is a
+   static pin-lock effect, visually distinct from pending-solve.
+
+d) GHOSTS: fade in/out only, price/verdict labels fading WITH
+   their bars (labels never pop independently).
+
+All durations, easings, and shake amplitude are design tokens
+(panel-tunable). Semantics are fixed by this ruling; feel numbers
+iterate on busy_board.
+--- RULING TEXT ENDS ---
+
+**Reconciliation notes (main-thread, non-normative).** R-M1 governs the
+*motion vocabulary* of the surfaces R-DP1/R-DP2/R-DP7 and R-T1 already ruled:
+(a) refines the R-DP2 return-home into a refusal-reading snap-back (no settling
+ease); (b) subsumes the 3.4 accept-rebind `board.rebind` "settle" under one
+REFLOW class (simultaneous, not cascaded); (c) makes the R-DP1 committed drop a
+static pin-lock, distinct from the tentative/pending-solve state; (d) fixes
+ghost fade as the only ghost motion, labels bound to their bars (the C1/CU2
+label-tracking discipline extended into fade). No vocabulary or contract changes;
+this is presentation semantics. Session 3.6 implements it against the token
+surface Session 3.5 lays down below.
+
+## Amendment — 2026-07-15: Session 3.5 — cockpit design-token pass (visual only, zero behavior changes)
+
+Visual modernization of the board WITHIN the existing token architecture — no
+behavior, timing-logic, or gesture changes. The 34/34 cockpit harness stayed
+green untouched (it asserts behavior / geometry / text, not colors; screenshots
+are gitignored and NOT pixel-compared, so visual changes cannot trip it — no
+baselines to rebaseline, they re-capture on run). The C1 label-vs-bar drift
+regression (≤ 1 px) passing confirms the bar-radius/sheen changes did not shift
+geometry.
+
+**Token consolidation.** Every palette + typography + geometry + elevation +
+motion value now lives in `src/cockpit/src/tokens.css` (or derives from it);
+`cockpit.css` and `drag.css` reference tokens only — grepping either for a bare
+hex/rgba or a bare `px` font-size now returns nothing. Added: a typography scale
+(`--font-ui`/`--font-mono` families + `--fs-2xs…--fs-lg` + `--fw-*` weights +
+`--ls-caps`/`--lh-*`), color primitives the CSS had hard-coded (`--ink-inverse`,
+`--on-accent`, `--grade-ink`, `--cite-ink`, `--scrim`, `--bg-deep`), an elevation
+scale (`--shadow-scrim/-1/-2/-3`), a `--radius-xs`, bar-geometry tokens
+(`--bar-radius`, `--bar-sheen`, `--bar-pad-x`), general motion durations
+(`--dur-slow/-pulse/-shimmer`, replacing the inline `0.35s/0.9s/1.1s`), and the
+tentative/carry glow + outline tokens (`--tentative-glow-0/-1`, `--carry-outline`)
+that pulled the last rgba literals out of the keyframes. (Incidental micro-paddings
+on the 4 px rhythm — `3px 7px` chip insets etc. — remain inline; they are not
+palette/semantic values.)
+
+**R-M1 motion tokens — NAMED-BUT-UNCONSUMED.** The R-M1 group (`--motion-reject-*`,
+`--motion-reflow-*`, `--motion-pinlock-*`, `--motion-ghost-fade-*`) is added now
+so Session 3.6 implements the ruling against a live surface. It is NOT wired into
+any animation this session (that is the point — build the surface first). The
+numbers are panel-tunable NOW: `drag/feel.js` gains `motion.*` (+ `bars.radius_px`)
+and `applyFeel()` mirrors them onto the `--motion-*` custom properties, and the
+tuning panel exposes them under a "motion · R-M1 (3.6)" group (the panel gained
+group headers + the geometry/motion groups so every visual token group Daryn
+tunes is in one place).
+
+**Restrained modernization** (named, since it changes the look): the base surface
+calmed a touch (`--bg` #0f1117→#0e1016, `--grid` #232836→#262b3a); bars get a
+cleaner 4 px radius (from 3 px) + a subtle inset top sheen; the ghost / carried /
+trace bars adopt the same `--bar-radius` for consistency; typography moved to the
+`--font-ui`/`--font-mono` stacks with fuller fallbacks + the semantic scale;
+elevations unified through the shadow scale; the legend gained a light backdrop
+blur; the ask input gained a focus ring. Sleek, not flashy — this board's job is
+trust. Verified rendering on the harness-captured board state (rounded bars,
+sheen, calm chrome, mic affordance, green grade chip all intact).
+
+**Result.** `tokens.css` (rewritten), `cockpit.css` + `drag.css` (fully
+token-routed), `drag/feel.js` (+motion +bars groups, mirrored), `drag/tuning.js`
+(grouped panel + motion/geometry controls). Cockpit JS **34/34** (unchanged);
+Python untouched. **Carry-forward: Session 3.6 — R-M1 implementation** (consume
+the motion tokens; unify the 3.4 accept-rebind settle under the REFLOW class;
+the return-home snap-back, pin-lock, and ghost-fade animations). See docs/07 v2.9.

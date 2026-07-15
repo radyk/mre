@@ -15,8 +15,13 @@
 
 import { applyFeel } from "./feel.js";
 
-// [path, label, min, max, step] — path is dot-notation into the feel object.
+// Grouped controls. A string entry is a GROUP HEADER; a [path, label, min, max,
+// step] array is a slider bound to a dot-path in the feel object. Session 3.5
+// added the geometry + R-M1 motion groups so every VISUAL token group Daryn
+// tunes lives in one panel (the motion group is named-but-unconsumed until 3.6,
+// tunable now so 3.6 builds against a live surface).
 const CONTROLS = [
+  "magnet snap (R-DP3)",
   ["snap.ghost_px", "snap · ghost", 0, 60, 1],
   ["snap.calendar_px", "snap · calendar", 0, 60, 1],
   ["snap.adjacency_px", "snap · adjacency", 0, 60, 1],
@@ -24,13 +29,25 @@ const CONTROLS = [
   ["snap.grid_px", "snap · grid", 0, 40, 1],
   ["snap.grid_step_min", "grid step (min)", 5, 120, 5],
   ["snap.falloff", "magnet falloff", 0.5, 3, 0.1],
+  "shading + ghosts",
   ["shade.green_opacity", "shade · legal (green)", 0, 1, 0.02],
   ["shade.dim_opacity", "shade · forbidden (dim)", 0, 1, 0.02],
   ["ghost.opacity", "ghost opacity", 0, 1, 0.02],
   ["ghost.infeasible_opacity", "infeasible opacity", 0, 1, 0.02],
+  "tentative + traces",
   ["tentative.pulse_ms", "tentative pulse (ms)", 300, 2500, 50],
   ["trace.width_px", "trace width", 1, 6, 0.5],
   ["trace.ghost_of_old_opacity", "ghost-of-old opacity", 0, 1, 0.02],
+  "geometry",
+  ["bars.radius_px", "bar radius (px)", 0, 12, 1],
+  "motion · R-M1 (3.6)",
+  ["motion.reject_dur_ms", "reject snap-back (ms)", 80, 500, 10],
+  ["motion.reject_shake_amp_px", "reject shake (px)", 0, 10, 0.5],
+  ["motion.reflow_dur_ms", "reflow (ms)", 150, 700, 10],
+  ["motion.reflow_highlight_dur_ms", "reflow highlight (ms)", 200, 1500, 50],
+  ["motion.pinlock_dur_ms", "pin-lock (ms)", 80, 600, 10],
+  ["motion.ghost_fade_dur_ms", "ghost fade (ms)", 100, 800, 10],
+  "sandbox",
   ["sandbox.budget_s", "sandbox budget (s)", 1, 60, 1],
 ];
 
@@ -51,7 +68,15 @@ export function mountTuningPanel(hostEl, controller) {
     <div class="tp-body"></div>`;
   const body = panel.querySelector(".tp-body");
 
-  for (const [path, label, min, max, step] of CONTROLS) {
+  for (const entry of CONTROLS) {
+    if (typeof entry === "string") {          // a group header
+      const h = document.createElement("div");
+      h.className = "tp-group-label";
+      h.textContent = entry;
+      body.appendChild(h);
+      continue;
+    }
+    const [path, label, min, max, step] = entry;
     const row = document.createElement("label");
     row.className = "tp-row";
     const val = get(feel, path);

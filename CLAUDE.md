@@ -94,6 +94,30 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 3.5 — R-M1 ruling +
+cockpit design-token pass 2026-07-15. Next: Session 3.6 (R-M1 implementation).**
+Two parts, visual-only (zero behavior changes). **Part 1 — R-M1 ruling** ("MOTION
+CARRIES REGISTER", docs/04, transcribed verbatim; implementation is 3.6): bar
+motion is communication with a fixed vocabulary — (a) REJECTION = fast snap-back
++ subtle shake, no settling ease; (b) REFLOW = smooth SIMULTANEOUS eased
+transitions (~300–400ms), never cascaded (CP-SAT re-solves globally; the 3.4
+accept-rebind "settle" unifies under this class in 3.6); (c) OWN PLACEMENT =
+never moves, a static pin-lock; (d) GHOSTS = fade only, labels fade WITH bars.
+All durations/easings/shake are design tokens; semantics fixed by the ruling.
+**Part 2 — the token pass:** every cockpit palette/typography/geometry/elevation/
+motion value consolidated into `src/cockpit/src/tokens.css` (grepping `cockpit.css`
+/`drag.css` for a bare hex or px font-size returns nothing); a typography scale
+(`--font-ui`/`--font-mono` + `--fs-*`/`--fw-*`), elevation scale (`--shadow-*`),
+bar-geometry tokens (`--bar-radius`/`--bar-sheen`), and general motion durations
+added. The **R-M1 motion tokens** (`--motion-reject-*`/`-reflow-*`/`-pinlock-*`/
+`-ghost-fade-*`) added NAMED-BUT-UNCONSUMED — 3.6 implements against them; they
+are panel-tunable now (`feel.js` `motion.*` + `applyFeel` mirror; the tuning panel
+gained group headers + motion/geometry groups). Restrained modernization applied
+(calmer chrome, cleaner 4px bars + sheen, better typography, unified elevation) —
+sleek, not flashy. **Zero behavior changes: cockpit JS 34/34 unchanged** (shots
+gitignored/not pixel-compared; C1 drift ≤1px holds); Python untouched. See the
+docs/04 2026-07-15 R-M1 + token-pass amendments and docs/07 v2.9.
+
 **Roadmap position: PHASE 3 COMPLETE (qualified) — exit audit done 2026-07-15;
 entering Phase 4 preparation.** A fresh audit session ran the six exit clauses
 LIVE on the real dev stack (uvicorn + `busy_board`, deterministic). **One seam
