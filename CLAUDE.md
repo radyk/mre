@@ -803,3 +803,7 @@ qualifications, and carry-forwards.
   the *shapes*.
 - A priced feature's test must include the counterfactual proving the price
   bought something (2026-07-12 amendment).
+- **Sessions commit to `master` directly and push — no session branches, no
+  PRs** (the working pattern since Session 3.0). Push after every session commit
+  (see the README). A session branch may exist transiently, but it fast-forwards
+  into `master` and is deleted at close; `master` is the trunk.
