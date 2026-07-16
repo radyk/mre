@@ -4788,3 +4788,109 @@ See docs/07 v2.14. Lesson: a hard invariant applied through
 `if <thing-exists>:` is not an invariant — it is a suggestion the code drops the
 moment the thing is missing, and then reports success. Enforce, or refuse; never
 skip-and-vouch.
+
+---
+
+### 2026-07-16 — Session 4.0b: Tier-0 vs solver eligibility — one source of truth (R-DP6)
+
+**Why.** The 4.0-hotfix proved an accepted drop targeted a resource the solver
+had NO `op_assign` literal for — the R-DP1 machine pin was silently skipped. Its
+CU1 left the upstream question open: could Tier-0 have *offered* (greened) that
+un-pinnable row? R-DP6 requires green = provably-not-illegal **by the same rules
+the solver compiles**. Eligibility was resolved TWICE, by hand — the Solver
+Builder (which resources get an `op_assign` literal, the set the pin binds) and
+the schedule-document assembler (the payload's `eligible_resource_ids` the
+cockpit dims/greens with). Two copies can drift; worse, they measured **different
+things** (below). This session makes them one.
+
+**CU1 — the divergence, traced and reproduced.** Two axes:
+
+1. **Duplicated capability resolution.** `solver_builder._eligible_resources` and
+   `schedule_assembler._eligible_resource_ids` were byte-for-byte hand-copies of
+   the same explicit_set/capability uuid5 resolution — "mirrors" by comment, not
+   by construction. (A *third* copy, `planner._eligible_resource_ids` over
+   OperationSpec, is a separate allocation concern — noted, left for a later
+   unification; it is neither the Tier-0 payload nor the solver's op_assign.)
+
+2. **Raw eligibility vs COMPILED eligibility — the real gap.** The payload
+   advertised the RAW capability set (== `var_map.op_eligible`, set *before* any
+   prune). The pin binds `var_map.op_assign`, the COMPILED set, which the builder
+   prunes further: a **resumable** op drops a capability-eligible resource with no
+   in-horizon calendar window that could finish it (the chunk-slot prune —
+   `_feasible_window_range is None`); a **WIP** op (`complete`/`in_progress`) gets
+   no free literal at all. So `payload_eligible(op) ⊇ solver_literals(op)`,
+   strict-superset-possible → Tier-0 could green a row the pin then silently
+   skips.
+
+   **Empirically:** a probe built the model AND the payload for every op on
+   `multi_route_distinct` (10 ops) and `busy_board` (90 ops) and diffed
+   `eligible_resource_ids` against `op_assign` keys: **0/100 diverge** — both
+   fixtures are `splittable=0, wip=0`, so the raw and compiled sets coincide. The
+   divergence is **latent, not active on the demo path**. It was then reproduced
+   deterministically on a constructed resumable op eligible on two machines, one
+   with a dead in-horizon calendar: the payload advertised BOTH, the solver built
+   a literal for only the live one. So the class is real; the pilot's data
+   (splittable ops, WIP) would surface it.
+
+**The original live case — was ORD-000002's RES002 row green, amber, or dim?**
+Determined by evidence, not memory. On `busy_board` (the feel fixture), ORD-000002
+is two ops on **disjoint** machine sets — the RES001 op is eligible on
+{RES001, RES003, RES005}, so **RES002 is capability-DIM for it** (correctly, and
+its op_assign has no RES002 literal — payload and solver AGREE it is ineligible).
+On `multi_route_distinct`, ORD-000002's op IS eligible on {RES001, RES002}, both
+**green/pinnable** — a RES001→RES002 drag there binds honestly and lands on
+RES002 (the +0.30% HONEST reproduction from the hotfix). **Neither fixture ever
+greens an un-pinnable row.** So the live "wrong machine" symptom was **not** a
+Tier-0-vs-solver eligibility-DATA divergence: the data is honest on the demo path.
+The mechanism was the pin-skip the 4.0-hotfix already closed (mandatory pin). Note
+the corollary the task named: because the RES001 op is correctly DIM on RES002,
+any live drop there must be **refused** — and the client `drop()` does refuse
+(`if (!t.legal) return returnHome`, before any sandbox/ghost path), so refusal
+enforcement is intact in shipped code. 4.0b's job is therefore the **latent**
+axis: make it structurally impossible for a payload to advertise a resource the
+solver would prune, on any data, and pin a standing guard.
+
+**CU2 — unify: one derivation, two consumers (the narrow waist).** New ortools-
+free `src/mre/modules/eligibility.py` is the SINGLE definition of:
+`capability_eligible` (the explicit_set/capability resolution, in the solver's
+resource-dict order so variable-creation order — and the defaults-reproduce-
+baseline gate — is unchanged), `feasible_window_range` (moved verbatim from the
+solver: `None` ⟺ a resumable op gets no literal, since the `lo` window always
+yields at least one usable chunk slot — the equivalence that lets the payload
+re-derive op_assign membership EXACTLY), `flatten_resource_windows` (the solver's
+calendar flatten, moved so both sides see identical minute windows), and
+`pinnable_resources` (the resources the builder would give a literal + a dim
+reason for those it prunes). The Solver Builder now **delegates** all three (the
+goldens confirm byte-identical solves). The assembler builds
+`eligible_resource_ids` = `pinnable_resources(...)` and carries the SAME prune it
+can't offer as truthful `dim_reasons` (`no_calendar_window` / `wip_fixed`). The
+two sets are now equal **by construction** — the divergence is structural, not a
+promise. Contract **1.3 → 1.4** (additive `OperationInteraction.dim_reasons`;
+`eligible_resource_ids` narrows to the solver-pinnable set — byte-identical on
+the demo fixtures, strictly-never-wider elsewhere). The cockpit surfaces the new
+reasons: `tier0.js` reads `dim_reasons` for a dimmed row; `shade.js` carries the
+row's own reason; `controller.js` REASONS map renders "no open calendar window
+this horizon" / "this operation is already running and can't be moved."
+
+**CU3 — the standing guard.** `tests/test_eligibility_consistency.py`: (slow) for
+a SOLVED schedule, every scheduled op's payload `eligible_resource_ids` **equals**
+its `op_assign` literal set — asserted on `multi_route_distinct` AND `busy_board`
+(the consistency contract as a permanent regression); (fast) the constructed
+resumable case — the solver prunes the dead machine, `pinnable_resources` prunes
+it too, and the payload names it `no_calendar_window` (never greened); plus the
+shared capability resolver's unit cases (order + fallbacks). And a cockpit
+row-type test (`legality.spec.mjs`): a drop on each of the three row kinds —
+eligible / capability-ineligible / **solver-pruned** — behaves per R-DP2
+(**takes / dims / dims**), the pruned row dimmed with its truthful reason and its
+drop refused. (The constructed dates derive from `now()` so they never rot — the
+3.3b `datetime.now()` horizon trap, avoided.)
+
+**Result.** Non-slow Python **1092 passed** (+6; `test_declared_but_unread`
+consumer list gained `eligibility.py`), + the slow eligibility guard on both
+fixtures; solver goldens byte-identical (delegation only); planner_edit/sandbox/
+forced_alternatives slow ladders green (R-DP1 accept guard intact); **cockpit JS
+47/47** (was 46). See docs/07 v2.15. Lesson: when two layers must agree on an
+invariant, do not have each *compute* it — give them ONE function to *call*. A
+hand-mirrored copy is a divergence with a delay; and a payload that reports RAW
+capability while the pin binds the COMPILED set is that same delay wearing an
+"eligible" label.

@@ -907,58 +907,13 @@ class SolverBuilder:
         horizon_start: datetime,
         horizon_end: datetime,
     ) -> dict[str, list[tuple[int, int]]]:
-        """Return per-resource list of (start_min, end_min) available windows."""
-        result: dict[str, list[tuple[int, int]]] = {}
-        for rid, res in resources.items():
-            cal_id = res.get("calendar_ref")
-            cal = cal_map.get(cal_id) if cal_id else None
-            if cal is None:
-                result[rid] = []
-                continue
-
-            # Use horizon_resolved if populated
-            windows = cal.get("horizon_resolved", [])
-            if windows:
-                parsed = []
-                for w in windows:
-                    ws = _parse_dt(w["start"] if isinstance(w, dict) else w.start)
-                    we = _parse_dt(w["end"]   if isinstance(w, dict) else w.end)
-                    s_min = max(0, int((ws - horizon_start).total_seconds() / 60))
-                    e_min = max(0, int((we - horizon_start).total_seconds() / 60))
-                    parsed.append((s_min, e_min))
-                result[rid] = parsed
-            else:
-                # horizon_resolved empty → use base_pattern via calendar_utils
-                try:
-                    from mre.modules.calendar_utils import flatten_calendar
-                    from mre.contracts.entities import CalendarException, TimeWindow
-                    from mre.contracts.vocabularies import CalendarExceptionType, CalendarExceptionReason
-                    bp = cal.get("base_pattern", {})
-                    excs_raw = cal.get("exceptions", [])
-                    excs: list[CalendarException] = []
-                    for e in excs_raw:
-                        if isinstance(e, dict):
-                            tw = TimeWindow(
-                                start=_parse_dt(e["window"]["start"]),
-                                end=_parse_dt(e["window"]["end"]),
-                            )
-                            excs.append(CalendarException(
-                                window=tw,
-                                type=CalendarExceptionType(e.get("type", "closure")),
-                                reason=CalendarExceptionReason(e.get("reason", "planned_maintenance")),
-                            ))
-                        else:
-                            excs.append(e)
-                    flat = flatten_calendar(bp, excs, horizon_start, horizon_end)
-                    parsed = []
-                    for w in flat:
-                        s_min = max(0, int((w.start - horizon_start).total_seconds() / 60))
-                        e_min = max(0, int((w.end   - horizon_start).total_seconds() / 60))
-                        parsed.append((s_min, e_min))
-                    result[rid] = parsed
-                except Exception:
-                    result[rid] = []
-        return result
+        """Per-resource list of (start_min, end_min) available windows.
+        Delegates to eligibility.flatten_resource_windows — the SINGLE
+        definition of the calendar flatten, shared with the Tier-0 payload so
+        the resumable feasible-window prune sees identical windows on both sides
+        (docs/04 R-DP6, Session 4.0b)."""
+        from mre.modules.eligibility import flatten_resource_windows
+        return flatten_resource_windows(resources, cal_map, horizon_start, horizon_end)
 
     # ------------------------------------------------------------------
     # Calendar blocking intervals
@@ -1005,33 +960,16 @@ class SolverBuilder:
     def _eligible_resources(
         self, requirements: list[dict], resources: dict[str, dict]
     ) -> list[str]:
-        """Return resource IDs matching the first ResourceRequirement.
+        """Resource IDs matching the first ResourceRequirement.
 
-        capability_ref is a UUID5 computed as uuid5(ns, "capability:<code>").
-        We reverse-map by computing uuid5 for each resource's capability codes.
-        """
-        import uuid as _uuid
-        _NS = _uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-
-        def _cap_id(name: str) -> str:
-            return str(_uuid.uuid5(_NS, f"capability:{name}"))
-
-        if not requirements:
-            return list(resources.keys())
-        req = requirements[0]
-        mode = req.get("mode", "")
-        if mode == "explicit_set":
-            refs = req.get("resource_refs") or []
-            matched = [r for r in refs if r in resources]
-            return matched if matched else list(resources.keys())
-        elif mode == "capability":
-            cap_ref = req.get("capability_ref", "")
-            matched = [
-                rid for rid, res in resources.items()
-                if any(_cap_id(c) == cap_ref for c in res.get("capabilities", []))
-            ]
-            return matched if matched else list(resources.keys())
-        return list(resources.keys())
+        Delegates to eligibility.capability_eligible — the SINGLE definition of
+        capability resolution, shared with the Tier-0 payload so the two cannot
+        drift (docs/04 R-DP6, Session 4.0b). Same first-requirement rule, same
+        explicit_set/capability branches, same "empty → all resources" fallback,
+        same iteration order (resources dict order → variable-creation order
+        unchanged, the defaults-reproduce-baseline gate holds)."""
+        from mre.modules.eligibility import capability_eligible
+        return capability_eligible(requirements, resources)
 
     # ------------------------------------------------------------------
     # Resumable operations — chunk-boundary-interval encoding (docs/05 R-C3)
@@ -1063,33 +1001,13 @@ class SolverBuilder:
     def _feasible_window_range(
         self, windows: list[tuple[int, int]], working_min: int, wp_earliest_min: int,
     ) -> Optional[tuple[int, int]]:
-        """Return (lo, hi) candidate window indices this op could touch on
-        one resource, or None if the resource has no windows at or after
-        wp_earliest_min. hi trims windows with insufficient trailing
-        capacity to ever finish the op if started there (tail pruning);
-        lo trims windows entirely before the WorkPackage's earliest_start."""
-        lo = next((i for i, (s, e) in enumerate(windows) if e > wp_earliest_min), None)
-        if lo is None:
-            return None
-        n = len(windows)
-        suffix_capacity = [0] * (n + 1)
-        for i in range(n - 1, lo - 1, -1):
-            s, e = windows[i]
-            avail_start = max(s, wp_earliest_min)
-            suffix_capacity[i] = suffix_capacity[i + 1] + max(0, e - avail_start)
-        max_start_idx = lo
-        for i in range(lo, n):
-            if suffix_capacity[i] >= working_min:
-                max_start_idx = i
-
-        # Worst-case chunk count bound (not hardcoded to spike 2's synthetic
-        # "1-3x window" assumption — real durations vary): ceil(working_min /
-        # shortest window) + 1 buffer for a partial first/last chunk.
-        min_window_len = min((e - s for s, e in windows[lo:]), default=1) or 1
-        chunks_max = max(2, -(-working_min // min_window_len) + 1)
-
-        hi = min(max_start_idx + chunks_max - 1, n - 1)
-        return lo, hi
+        """(lo, hi) candidate window indices this resumable op could touch on
+        one resource, or None if none can finish it. Delegates to
+        eligibility.feasible_window_range — the SINGLE definition, shared with
+        the Tier-0 payload so a resumable op's op_assign membership can be
+        re-derived exactly (docs/04 R-DP6, Session 4.0b)."""
+        from mre.modules.eligibility import feasible_window_range
+        return feasible_window_range(windows, working_min, wp_earliest_min)
 
     def _build_resumable_operation(
         self,

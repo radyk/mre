@@ -23,10 +23,12 @@ export function renderShade(layerEl, tier0, geometry, win) {
     const band = geometry.rowBand(row.resource_id);
     if (!band) continue;
 
-    // full-row wash (dim strength differs eligible vs capability-dim)
+    // full-row wash (dim strength differs eligible vs capability-dim). The dim
+    // reason is the row's own (capability / no_calendar_window / wip_fixed) so
+    // the hover reads the truth (contract 1.4, R-DP6 / Session 4.0b).
     const wash = document.createElement("div");
     wash.className = row.eligible ? "shade-row eligible" : "shade-row dim capability";
-    wash.dataset.reason = row.eligible ? "" : "capability";
+    wash.dataset.reason = row.eligible ? "" : (row.reason || "capability");
     Object.assign(wash.style, {
       left: "0px", right: "0px",
       top: `${band.top}px`, height: `${band.height}px`,

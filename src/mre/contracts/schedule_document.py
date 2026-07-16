@@ -51,6 +51,18 @@ Version history:
   updated in the same session. Also additive: ``OperationInteraction.resumable``
   — a Tier-0 window-fit input (a resumable op may span calendar closures), a
   CU2-discovered payload gap extended in the same bump.
+- 1.4 (2026-07-16, Session 4.0b): additive — ``OperationInteraction.dim_reasons``
+  and a semantics fix to ``eligible_resource_ids``. The eligible set is now the
+  set the SOLVER would give an op_assign literal (capability resolution AND the
+  builder's resumable calendar feasible-window prune), derived through the shared
+  ``eligibility`` module rather than a hand-copy of the capability logic — so
+  Tier-0 can never green a row the R-DP1 pin would silently skip (docs/04 R-DP6).
+  On the demo fixtures (no resumable/WIP ops) the set is BYTE-IDENTICAL to 1.3;
+  it narrows only where the solver prunes. ``dim_reasons`` maps a
+  capability-eligible-but-pruned resource to a truthful hover reason
+  ("no_calendar_window" / "wip_fixed"); empty on documents with no such prune.
+  MINOR: both are additive with empty defaults; a 1.3 consumer ignores
+  ``dim_reasons`` and reads a strictly-narrower (never-wider) eligible set.
 """
 from __future__ import annotations
 
@@ -61,7 +73,7 @@ from pydantic import BaseModel, model_validator
 
 from mre.contracts.vocabularies import ScheduleStatus
 
-CONTRACT_VERSION = "1.3"
+CONTRACT_VERSION = "1.4"
 
 # Exact decomposition tolerance: cost components are currency values
 # accumulated in float; "exactly" means to the cent, matching the
@@ -207,13 +219,22 @@ class PoolBlock(BaseModel):
 class OperationInteraction(BaseModel):
     """Per-operation Tier-0 facts the client needs to shade legal drop zones
     without a solver (contract 1.2, docs/04 R-DP6). ``eligible_resource_ids``
-    is the FULL set the op may run on — not just the chosen one — so the board
-    can dim capability-illegal rows; ``working_min``/``setup_min`` size the bar
-    for a fit/displace test; ``earliest_start`` is the release floor; the
-    precedence graph (separate ``precedence_edges`` list) supplies the
-    predecessor-finish floor."""
+    is the set the SOLVER would give an op_assign literal — capability
+    resolution AND (for a resumable op) the same calendar feasible-window prune
+    the builder applies, computed through the shared ``eligibility`` module so
+    Tier-0 can never green a row the R-DP1 pin would silently skip (contract
+    1.4, docs/04 Session 4.0b). ``working_min``/``setup_min`` size the bar for a
+    fit/displace test; ``earliest_start`` is the release floor; the precedence
+    graph (separate ``precedence_edges`` list) supplies the predecessor-finish
+    floor."""
     operation_ref: str                         # canonical UUID
-    eligible_resource_ids: list[str] = []      # canonical UUIDs (the WHOLE set)
+    eligible_resource_ids: list[str] = []      # canonical UUIDs (solver-pinnable set)
+    dim_reasons: dict[str, str] = {}           # resource_id → dim reason for a
+    #                                            capability-eligible resource the
+    #                                            solver still refuses a literal
+    #                                            ("no_calendar_window"/"wip_fixed"),
+    #                                            so Tier-0's hover reads the truth
+    #                                            (contract 1.4, Session 4.0b)
     working_min: int = 0                        # run working minutes (sum of chunks)
     setup_min: int = 0                          # setup minutes prefixed to the run
     earliest_start: Optional[datetime] = None  # release floor (demand.release)

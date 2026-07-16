@@ -55,6 +55,10 @@ _CONSUMER_MODULES = (
     "src/mre/modules/planner.py",
     "src/mre/modules/solver_builder.py",
     "src/mre/modules/extractor.py",
+    # The shared eligibility narrow waist (Session 4.0b): solver_builder's
+    # capability resolution + calendar flatten moved here, so it now consumes
+    # calendar base_pattern / horizon_resolved on the solver's behalf.
+    "src/mre/modules/eligibility.py",
 )
 
 # (entity_type, attribute) -> justification, each citing where the field IS

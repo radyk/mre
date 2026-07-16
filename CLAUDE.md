@@ -94,6 +94,55 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4.0b — Tier-0 vs solver
+eligibility unified to one source of truth (R-DP6) 2026-07-16.** Follow-up to the
+4.0-hotfix: could Tier-0 GREEN the un-pinnable row the pin then silently skips?
+Eligibility was resolved TWICE by hand — the Solver Builder (which resources get
+an `op_assign` literal, the set the R-DP1 pin binds) and the schedule-document
+assembler (the payload's `eligible_resource_ids`). **CU1 divergence:** the payload
+advertised the RAW capability set (`var_map.op_eligible`, pre-prune) while the pin
+binds the COMPILED set (`var_map.op_assign`), which the builder further prunes for
+**resumable** ops (a capability-eligible resource with no in-horizon calendar
+window that could finish it → `_feasible_window_range is None` → no literal) and
+**WIP** ops (no free literal). So `payload_eligible(op) ⊇ solver_literals(op)`,
+strict-superset-possible → Tier-0 could offer a row the pin silently skips. **A
+probe found 0/100 ops diverge on `multi_route_distinct` + `busy_board`** (both
+`splittable=0, wip=0` → raw == compiled): the gap is **latent, not active on the
+demo path**, then reproduced deterministically on a constructed resumable op.
+**Live case, by evidence:** on `busy_board` ORD-000002's RES001 op is eligible on
+{RES001,RES003,RES005}, so **RES002 is capability-DIM for it** and its `op_assign`
+has no RES002 literal — payload and solver AGREE it is ineligible (data honest);
+on `multi_route_distinct` the op IS eligible on {RES001,RES002}, both
+green/pinnable (the +0.30% HONEST reproduction). **Neither fixture greens an
+un-pinnable row**, and the client `drop()` refuses `!legal` before any
+sandbox/ghost path — so refusal enforcement is intact; the live symptom was the
+pin-skip the hotfix already closed. **CU2 unify (narrow waist):** new ortools-free
+`src/mre/modules/eligibility.py` is the SINGLE definition of `capability_eligible`
+(explicit_set/capability resolution, solver order preserved → goldens unchanged),
+`feasible_window_range` + `flatten_resource_windows` (moved from the solver), and
+`pinnable_resources` (the literal set + a dim reason for pruned rows). The Solver
+Builder **delegates** all three (byte-identical solves); the assembler derives
+`eligible_resource_ids` = `pinnable_resources(...)` and carries the SAME prune as
+truthful `dim_reasons` (`no_calendar_window` / `wip_fixed`) — the two sets equal
+**by construction**. Schedule contract **1.3 → 1.4** (additive `dim_reasons`;
+`eligible_resource_ids` narrows to the solver-pinnable set — byte-identical on the
+demo fixtures, never wider). Cockpit surfaces the reasons (`tier0.js`/`shade.js`/
+`controller.js` REASONS: "no open calendar window this horizon"). **CU3 guard:**
+`tests/test_eligibility_consistency.py` — (slow) payload `eligible_resource_ids`
+== `op_assign` keys for every op on `multi_route_distinct` AND `busy_board`; (fast)
+the constructed resumable case (solver prunes the dead machine, payload prunes +
+names it, never greened) + the shared resolver's unit cases; and a
+`legality.spec.mjs` row-type test (eligible/capability-ineligible/solver-pruned →
+**takes/dims/dims**). Related copy noted, not fixed: `planner._eligible_resource_ids`
+(OperationSpec allocation, a separate concern). **Non-slow Python 1092 passed**
+(+6; `test_declared_but_unread` consumer list gained `eligibility.py`) + the slow
+eligibility guard; solver goldens byte-identical; planner_edit/sandbox/
+forced_alternatives slow green (R-DP1 accept guard intact); **cockpit JS 47/47**
+(was 46). See the docs/04 2026-07-16 Session 4.0b amendment and docs/07 v2.15.
+Lesson: when two layers must agree on an invariant, don't have each *compute* it —
+give them ONE function to *call*; a payload reporting RAW capability while the pin
+binds the COMPILED set is a divergence wearing an "eligible" label.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4.0-hotfix — an accepted
 cross-machine drop landed on the wrong machine (R-DP1 VIOLATED in shipped code)
 2026-07-16.** Live report: drag ORD-000002 RES001→RES002, verdict "+0.30% proven,"

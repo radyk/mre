@@ -165,6 +165,11 @@ export function computeTier0(opRef, ctx, opts = {}) {
   const op = ctx.opFacts.get(opRef);
   if (!op) throw new Error(`no interaction facts for operation ${opRef}`);
   const eligible = new Set(op.eligible_resource_ids || []);
+  // A resource the SOLVER refuses a literal for (capability-eligible but
+  // calendar-pruned, or WIP-fixed) is NOT in eligible_resource_ids; the payload
+  // names WHY in dim_reasons so the hover reads the truth instead of the
+  // generic "capability" (contract 1.4, docs/04 R-DP6 / Session 4.0b).
+  const dimReasons = op.dim_reasons || {};
   const { floor, predecessor_finishes } = startFloor(op, ctx);
   const durationMs = ((op.setup_min || 0) + (op.working_min || 0)) * MIN;
 
@@ -178,7 +183,7 @@ export function computeTier0(opRef, ctx, opts = {}) {
       resource_id: rid,
       external_name: r.external_name || rid,
       eligible: isEligible,
-      reason: isEligible ? null : "capability",       // dim reason (R-DP2 hover)
+      reason: isEligible ? null : (dimReasons[rid] || "capability"), // dim reason (R-DP2 hover)
       legal_regions: isEligible
         ? legalRegionsOnRow(op, rid, floor, ctx).map((w) => ({ start: iso(w.start), end: iso(w.end) }))
         : [],
@@ -220,7 +225,8 @@ export function computeTier0(opRef, ctx, opts = {}) {
 export function isLegalStart(opRef, resourceId, startIso, ctx) {
   const op = ctx.opFacts.get(opRef);
   if (!op) return { legal: false, reason: "unknown_operation" };
-  if (!(op.eligible_resource_ids || []).includes(resourceId)) return { legal: false, reason: "capability" };
+  if (!(op.eligible_resource_ids || []).includes(resourceId))
+    return { legal: false, reason: (op.dim_reasons || {})[resourceId] || "capability" };
   const { floor } = startFloor(op, ctx);
   const t = ms(startIso);
   if (floor != null && t < floor) return { legal: false, reason: "precedence_floor" };

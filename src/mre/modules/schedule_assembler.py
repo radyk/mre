@@ -214,7 +214,7 @@ def assemble_schedule_document(
     # ------------------------------------------------------------------
     interaction = _interaction_block(
         edges, asgn_blocks, ops_by_id, resources,
-        fulfillments, demands_by_id,
+        fulfillments, demands_by_id, workpackages, calendars, horizon,
     ) if edges is not None else None
 
     return ScheduleDocument(
@@ -460,13 +460,37 @@ def _interaction_block(
     resources: list[dict],
     fulfillments: list[dict],
     demands_by_id: dict[str, dict],
+    workpackages: list[dict],
+    calendars: list[dict],
+    horizon: Optional[HorizonBlock],
 ) -> InteractionBlock:
     """Build the Tier-0 payload: per-scheduled-operation eligible sets +
-    durations + release floor, and the precedence graph. Pure derivation —
-    eligibility comes from the OperationSpec's resource_requirements (the WHOLE
-    eligible set, not the chosen resource), durations from the assignment's
-    chunks + the op's setup, the release floor from the op's demand."""
+    durations + release floor, and the precedence graph. Pure derivation.
+
+    ``eligible_resource_ids`` is the set the SOLVER would give an op_assign
+    literal — capability resolution AND (for a resumable op) the same calendar
+    feasible-window prune the builder applies — computed through the shared
+    ``eligibility`` module, so Tier-0 can never green a row the R-DP1 pin would
+    silently skip (docs/04 R-DP6, Session 4.0b). A capability-eligible resource
+    the builder still refuses carries a truthful ``dim_reasons`` entry so Tier-0
+    dims it with an honest hover ("no open calendar window") rather than the
+    generic "capability"."""
+    from mre.modules.eligibility import flatten_resource_windows, pinnable_resources
+
     resources_by_id = {r["id"]: r for r in resources}
+    wp_by_id = {w["id"]: w for w in workpackages}
+    cal_map = {c["id"]: c for c in calendars}
+
+    # Flatten calendars to per-resource minute windows exactly as the solver did
+    # (same shared function, same horizon), so the resumable prune matches. With
+    # no recorded horizon we cannot flatten; the prune is then skipped (the
+    # pre-4.0b behaviour) — non-resumable ops are unaffected either way.
+    windows_by_res: dict[str, list[tuple[int, int]]] = {}
+    if horizon is not None:
+        windows_by_res = flatten_resource_windows(
+            resources_by_id, cal_map, horizon.start, horizon.end
+        )
+
     # A workpackage may fulfil several demands (merged WPs); its release floor
     # is the MAX release across them — every demand must be released to start.
     wp_releases: dict[str, list[datetime]] = {}
@@ -483,9 +507,27 @@ def _interaction_block(
         working_min = sum(c.working_min for c in a.chunks)
         setup_min = int(_iso_minutes(op.get("setup_duration")) or 0.0)
         releases = wp_releases.get(a.workpackage_ref, [])
+
+        # The WorkPackage release floor the solver used for the feasible-window
+        # prune (workpackage.earliest_start → minutes from horizon start), NOT
+        # the demand-side release above (which floors client-side precedence).
+        wp_earliest_min = 0
+        wp = wp_by_id.get(a.workpackage_ref, {})
+        if horizon is not None and wp.get("earliest_start"):
+            es = _parse_dt(wp["earliest_start"])
+            wp_earliest_min = max(0, int((es - horizon.start).total_seconds() / 60))
+        # total (setup + run) minutes — the duration the solver's resumable
+        # feasible-window check uses, from the op spec (not the scheduled chunks).
+        total_min = int((_iso_minutes(op.get("setup_duration")) or 0.0)
+                        + (_iso_minutes(op.get("run_duration")) or 0.0))
+
+        pinnable, dim_reasons = pinnable_resources(
+            op, resources_by_id, windows_by_res, wp_earliest_min, total_min
+        )
         ops_out.append(OperationInteraction(
             operation_ref=a.operation_ref,
-            eligible_resource_ids=_eligible_resource_ids(op, resources_by_id),
+            eligible_resource_ids=sorted(pinnable),
+            dim_reasons=dict(sorted(dim_reasons.items())),
             working_min=working_min,
             setup_min=setup_min,
             earliest_start=max(releases) if releases else None,
@@ -525,35 +567,10 @@ def _interaction_block(
     return InteractionBlock(operations=ops_out, precedence_edges=edge_blocks)
 
 
-# uuid5 namespace + capability id, mirrors solver_builder._eligible_resources
-# so the Tier-0 client sees the SAME eligible set the solver enforced.
-_CAP_NS = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-
-
-def _eligible_resource_ids(op: dict, resources_by_id: dict[str, dict]) -> list[str]:
-    """The full set of resource UUIDs the operation may run on — the same
-    resolution the Solver Builder uses (explicit_set → resource_refs;
-    capability → resources bearing the capability). An empty/absent
-    requirement means every resource is eligible (solver scope-cut)."""
-    import uuid as _uuid
-    ns = _uuid.UUID(_CAP_NS)
-    reqs = op.get("resource_requirements") or []
-    if not reqs:
-        return sorted(resources_by_id)
-    req = reqs[0]
-    mode = req.get("mode", "")
-    if mode == "explicit_set":
-        refs = [r for r in (req.get("resource_refs") or []) if r in resources_by_id]
-        return sorted(refs) if refs else sorted(resources_by_id)
-    if mode == "capability":
-        cap_ref = req.get("capability_ref", "")
-        matched = [
-            rid for rid, res in resources_by_id.items()
-            if any(str(_uuid.uuid5(ns, f"capability:{c}")) == cap_ref
-                   for c in res.get("capabilities", []))
-        ]
-        return sorted(matched) if matched else sorted(resources_by_id)
-    return sorted(resources_by_id)
+# The Tier-0 eligible set is now derived through the shared ``eligibility``
+# module (capability resolution + the solver's calendar prune), consumed in
+# _interaction_block — no hand-copy of the capability logic lives here (the
+# 4.0b unification; the copy that drifted from the solver is gone).
 
 
 def _render_lock(con: dict, identity_map: Any) -> str:

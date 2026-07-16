@@ -771,4 +771,8 @@ const REASONS = {
   calendar_or_window_fit: "closed here, or won't fit before close",
   calendar: "the machine is closed here",
   window_fit: "won't fit in the open time here",
+  // solver-pruned rows the payload names (contract 1.4, R-DP6): a
+  // capability-eligible machine the solver still refuses a literal for.
+  no_calendar_window: "no open calendar window this horizon",
+  wip_fixed: "this operation is already running and can't be moved",
 };

@@ -1,6 +1,34 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.14 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.15 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.15:** **Session 4.0b — Tier-0 vs solver eligibility: one source of truth
+(R-DP6)** 2026-07-16 (docs/04 amendment). The 4.0-hotfix left open whether Tier-0
+could *green* the un-pinnable row it defended against. Eligibility was resolved
+TWICE by hand — the Solver Builder (which resources get an `op_assign` literal,
+the set the pin binds) and the assembler (the payload's `eligible_resource_ids`).
+**CU1:** the payload advertised the RAW capability set (`op_eligible`) while the
+pin binds the COMPILED set (`op_assign`), which the builder further prunes for
+**resumable** ops (no in-horizon calendar window) and **WIP** ops (no free
+literal) → `payload ⊇ solver_literals`, so Tier-0 could offer a row the pin then
+silently skips. A probe found **0/100 ops diverge** on `multi_route_distinct` +
+`busy_board` (both `splittable=0, wip=0`) — the gap is **latent**, then reproduced
+on a constructed resumable op. **Live case:** ORD-000002's RES001 op is
+capability-DIM on RES002 (payload and solver AGREE), so the data was honest and
+refusal enforcement (`drop()` refuses `!legal`) intact — the symptom was the
+pin-skip the hotfix already closed. **CU2 unify:** new ortools-free
+`eligibility.py` holds the SINGLE `capability_eligible` + `feasible_window_range`
++ `flatten_resource_windows` + `pinnable_resources`; the Solver Builder delegates
+(goldens byte-identical), the assembler derives the payload through the same
+functions → the two sets equal by construction. Contract **1.3 → 1.4** (additive
+`dim_reasons`; `eligible_resource_ids` narrows to the solver-pinnable set); the
+cockpit dims a pruned row with its truthful reason ("no open calendar window").
+**CU3 guard:** `test_eligibility_consistency.py` asserts payload == op_assign for
+every op on both fixtures + the constructed resumable case; a `legality.spec.mjs`
+row-type test (eligible/capability-ineligible/solver-pruned → takes/dims/dims).
+**Non-slow Python 1092 passed** (+6) + the slow eligibility guard; **cockpit JS
+47/47** (was 46). Queue before Phase-4 design unchanged: Daryn's grand feel pass +
+export.
 
 **v2.14:** **Session 4.0-hotfix — an accepted cross-machine drop landed on the
 wrong machine (R-DP1 violated in shipped code)** 2026-07-16 (docs/04 amendment).

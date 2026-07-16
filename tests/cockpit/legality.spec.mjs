@@ -63,6 +63,45 @@ test("capability dim — an ineligible row is never green", () => {
   expect(rowA.legal_regions.length).toBeGreaterThan(0);
 });
 
+test("three row-types (R-DP2 takes/dims/dims) — eligible, capability-dim, solver-pruned", () => {
+  // Session 4.0b: eligible_resource_ids is now the solver-PINNABLE set. A
+  // capability-eligible resource the solver pruned (no op_assign literal, e.g.
+  // no in-horizon calendar window for a resumable op) is ABSENT from it and
+  // named in dim_reasons, so Tier-0 dims it with the truth — never greens a row
+  // the R-DP1 pin would silently skip. Three rows, one of each kind:
+  //   R-A eligible → takes (green offered, a legal start is legal)
+  //   R-B capability-ineligible → dims ("capability")
+  //   R-C solver-pruned → dims ("no_calendar_window"), NOT greened
+  const doc = synthDoc();
+  doc.resources.push({ resource_id: "R-C", external_name: "C",
+    calendar_windows: [W("regular", "08:00", "17:00")] });  // R-C's calendar is OPEN
+  const ctx = buildContext(doc, synthInteraction({
+    operation_ref: "OP1", eligible_resource_ids: ["R-A"],
+    dim_reasons: { "R-C": "no_calendar_window" },
+    working_min: 60, setup_min: 0, resumable: false,
+  }));
+  const t0 = computeTier0("OP1", ctx);
+  const row = (rid) => t0.rows.find((r) => r.resource_id === rid);
+
+  // R-A: takes — eligible, offers green, a legal start is legal.
+  expect(row("R-A").eligible).toBe(true);
+  expect(row("R-A").legal_regions.length).toBeGreaterThan(0);
+  expect(isLegalStart("OP1", "R-A", at("09:00"), ctx).legal).toBe(true);
+
+  // R-B: dims — capability-ineligible (absent, no dim_reasons entry → default).
+  expect(row("R-B").eligible).toBe(false);
+  expect(row("R-B").reason).toBe("capability");
+  expect(row("R-B").legal_regions).toHaveLength(0);
+  expect(isLegalStart("OP1", "R-B", at("09:00"), ctx)).toEqual({ legal: false, reason: "capability" });
+
+  // R-C: dims — solver-pruned despite an OPEN calendar; the reason is the
+  // payload's truth, and the drop is refused (never greened).
+  expect(row("R-C").eligible).toBe(false);
+  expect(row("R-C").reason).toBe("no_calendar_window");
+  expect(row("R-C").legal_regions).toHaveLength(0);
+  expect(isLegalStart("OP1", "R-C", at("09:00"), ctx)).toEqual({ legal: false, reason: "no_calendar_window" });
+});
+
 test("closed-calendar dim — a start inside a closure is never green", () => {
   const doc = synthDoc();
   const ctx = buildContext(doc, synthInteraction({
