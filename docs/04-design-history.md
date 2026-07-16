@@ -4676,3 +4676,115 @@ interpreter + `ROUTE_TAXONOMY` + the meta-route (the ledger is itself queryable)
 domain** ("what's already running / in progress?"); **cross-run economics has
 none** ("is batching paying for itself?"); the **constraint-catalog "why can't it
 do X"** is not conversational. See docs/07 the AI-track line.
+
+---
+
+### 2026-07-16 — Session 4.0-hotfix: an accepted cross-machine drop landed on the wrong machine (R-DP1 violated in shipped code)
+
+**The report (live, screenshots).** A bar for ORD-000002 was dragged
+RES001→RES002, held tentative, the sandbox returned "+0.30% proven within
+budget," Accept was pressed — and the new proposed version rendered the op back
+on **RES001** at approximately the dropped time. Right time, wrong machine.
+
+**CU1 — diagnosis by evidence, before any code change.** The pin is applied
+identically in `sandbox.py` and `planner_edit.py`:
+
+```python
+apply_solution_hints(model, var_map, incumbent_assignments)
+if pin_op_id in var_map.op_start:
+    model.add(var_map.op_start[pin_op_id] == pin_start_min)   # TIME pin
+lit = var_map.op_assign.get(pin_op_id, {}).get(pin_resource_id)
+if lit is not None:                                            # MACHINE pin
+    model.add(lit == 1)                                        #  — SILENTLY skipped
+```
+
+`var_map.op_assign[op]` carries a `{resource_id: BoolVar}` entry **only for the
+resources the op is eligible on** (solver_builder builds it from the eligible
+set). So `.get(pin_resource_id)` returns `None` — and `if lit is not None:`
+**silently drops the entire machine constraint** — whenever the pinned resource
+is not a key in that op's assignment dict. The time pin binds independently.
+Result: the re-solve honours only the time pin and is free to place the op on
+its cheaper eligible machine — right time, its machine — while reporting a
+feasible verdict for a placement that was **never actually tested**.
+
+Reproduced deterministically (`multi_route`/`multi_route_distinct`, workers 1,
+seed 42, `PYTHONHASHSEED=0`), driving the real API exactly as the cockpit does:
+
+- **Eligible, id-matching cross-machine pin** (distinct rates, drop onto the more
+  expensive machine): the pin binds end to end; the op lands on the pinned
+  resource; the verdict is **+0.3012% / +0.33% cost** — the reported "+0.30%"
+  reproduced *exactly*, and honest. So the gesture→CP-SAT→extraction chain is
+  **sound when the machine literal exists**.
+- **Un-pinnable target** (a resource the op has no literal for): the machine pin
+  is silently skipped, the op stays on its cheaper incumbent machine, and the
+  solve reports **OPTIMAL / feasible / 0.0% delta** — a false-happy verdict; the
+  accepted version places the op on the wrong resource. The live symptom,
+  reproduced.
+
+**What compiled the pin — precisely.** The compiled pin constrained **start**
+(always) and **resource** (only when the eligibility literal existed, else
+skipped). The extracted assignment reflects exactly that: on the un-pinnable
+path it carries the incumbent resource at the pinned start. **The sandbox verdict
+solve and the accept solve use the SAME pin** — identical code, and the cockpit
+sends identical params to both (`t.resource_id` to `/sandbox`,
+`S.target.resource_id` to `/accept`, both the canonical vis-group id). They
+cannot diverge; the reporter's "verdict pinned both, accept re-compiled
+differently" hypothesis is **refuted**. A happy-verdict-and-wrong-placement can
+arise only when the machine literal was absent in *both* — i.e. the drop targeted
+a resource with no assignment literal (an ineligible row Tier-0 should have
+dimmed, or a Tier-0-vs-solver eligibility disagreement), or the delta shown was a
+ghost's precomputed price while the accept-solve silently dropped the machine pin.
+
+**Mechanism, named honestly: R-DP1 was violated in shipped code.** R-DP1 requires
+the pinned op be placed on the pinned resource at the pinned start — gesture
+through CP-SAT through extraction. The pin code did not *enforce* the machine
+axis; it *offered* it and **silently discarded** it whenever the literal was
+absent, then reported a verdict as if the placement had been proven. The
+invariant was not merely unasserted (CU3) — it was actively broken by a
+`if lit is not None:` that turned a hard constraint into a no-op.
+
+**CU2 — the fix (per diagnosis).** The machine pin is now **mandatory**, never
+silently skipped, in both modules:
+
+- `planner_edit.py` (accept): an absent start variable or an absent machine
+  literal is a **hard error** — the accept raises (surfaced by the API as 409),
+  nothing is registered, the base version stands. An accept must never mint a
+  version that places the op where the planner did not drop it. Added a **post-
+  solve R-DP1 post-condition**: the solved `(op_resource, op_start_minutes)` for
+  the pinned op must equal `(pin_resource_id, pin_start_min)` before the version
+  is minted — belt-and-suspenders against any residual model looseness on an
+  irreversible act.
+- `sandbox.py`: an un-pinnable target is a **proven-illegal placement**, so the
+  re-solve short-circuits (before spending budget) to an honest INFEASIBLE
+  verdict → R-DP2 return-home ("this placement isn't possible: op is not eligible
+  on the target resource"), never a false-happy delta. Symmetric post-solve guard
+  added. "Green + refused-by-solve is its own finding": if Tier-0 ever offers an
+  un-pinnable row, the sandbox now says so out loud instead of pricing a fiction.
+
+Eligible, id-matching pins (the demo path, and every existing same-machine
+`_pin_from_incumbent` test) are unaffected — the literal exists, `model.add(lit
+== 1)` binds, the post-condition passes.
+
+**CU3 — the missing assertion, permanently.** The 3.4/3.8 suites pinned only
+**same-machine** (`_pin_from_incumbent`, chosen precisely so the fixture needn't
+carry a cross-machine move) and **never asserted the extracted placement**, so
+they could not see this. Added:
+
+- **`test_planner_edit.py::TestAcceptHonoursThePinnedResource`** (slow, on
+  `multi_route_distinct`): a genuine cross-machine accept must land the op on the
+  **pinned resource at the pinned start** (the end-state check); the sandbox
+  verdict must move the op to the target; an **ineligible pin is refused** — accept
+  409 (base stands), sandbox an honest infeasible return-home — never silently
+  relocated. Planner_edit slow ladder **7 → 10**.
+- **`gesture.spec.mjs`** — one harness test drives a cross-machine drag → accept →
+  rebind and asserts the **rendered row** (`board.placementOf(op).group`) equals
+  the pinned machine and differs from the incumbent; **rehearsal.spec.mjs** Beat 4
+  gains the same rendered-row R-DP1 end-state check (the demo script now catches
+  the regression). Cockpit JS **45 → 46**.
+
+**Result.** Non-slow Python **1086 passed** (unchanged — the new accept tests are
+slow); planner_edit slow **10/10**, sandbox slow **12/12**; cockpit JS **46/46**.
+See docs/07 v2.14. Lesson: a hard invariant applied through
+`if <thing-exists>:` is not an invariant — it is a suggestion the code drops the
+moment the thing is missing, and then reports success. Enforce, or refuse; never
+skip-and-vouch.

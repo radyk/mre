@@ -1,6 +1,31 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.13 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.14 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.14:** **Session 4.0-hotfix — an accepted cross-machine drop landed on the
+wrong machine (R-DP1 violated in shipped code)** 2026-07-16 (docs/04 amendment).
+Live: drag RES001→RES002, verdict "+0.30% proven," Accept → the op rendered back
+on RES001 (right time, wrong machine). **CU1 diagnosis by evidence:** the pin was
+`lit = op_assign[op].get(resource); if lit is not None: model.add(lit == 1)` in
+both `sandbox.py` and `planner_edit.py`; `op_assign[op]` keys only the op's
+*eligible* resources, so a target with no literal → the machine pin **silently
+skipped**, the time pin binds alone, the re-solve relocates the op to its cheaper
+eligible machine and reports a feasible verdict for a placement never tested.
+Reproduced deterministically: an eligible id-matching pin binds and reproduces the
+reported +0.30% exactly (honest); an un-pinnable target gives feasible/0.0% with
+the op on the incumbent (the symptom). Sandbox and accept share the pin (identical
+code + params) — cannot diverge. **R-DP1 was violated in shipped code:** the
+machine axis was offered, not enforced, then vouched for. **CU2 fix:** the machine
+pin is mandatory — accept raises (API 409, base stands) + a post-solve R-DP1
+post-condition; sandbox short-circuits to an honest INFEASIBLE return-home instead
+of a false delta. **CU3:** the 3.4/3.8 suites pinned only same-machine and never
+asserted placement — added `TestAcceptHonoursThePinnedResource` (slow,
+`multi_route_distinct`: cross-machine accept lands on the pinned resource+start;
+ineligible pin refused, never relocated) + a `gesture.spec.mjs` cross-machine
+drag→accept→rebind rendered-row assertion + the same end-state check in
+`rehearsal.spec.mjs` Beat 4. **Non-slow Python 1086 passed** (planner_edit slow
+10/10, sandbox 12/12); **cockpit JS 46/46** (was 45). Queue before Phase-4 design
+unchanged: Daryn's grand feel pass + export.
 
 **v2.13:** **AI-track Session 4A.1 — R-AI1 ruling + the interpreter, conversational
 context, and the question ledger** 2026-07-16 (docs/04 amendment). First AI-track

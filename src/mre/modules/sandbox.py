@@ -201,11 +201,23 @@ def sandbox_pin_resolve(
 
     # warm-start from the incumbent, then pin the target (machine + time), R-DP1.
     apply_solution_hints(model, var_map, incumbent_assignments)
-    if pin_op_id in var_map.op_start:
-        model.add(var_map.op_start[pin_op_id] == pin_start_min)
+    # R-DP1 (4.0 hotfix): the machine pin binds ONLY when the op is eligible on
+    # the target (a literal exists in ``op_assign``). The prior
+    # ``if lit is not None: model.add(lit == 1)`` SILENTLY SKIPPED the machine
+    # constraint otherwise, so the re-solve kept the op on its cheaper incumbent
+    # machine and STILL reported a feasible verdict — a false "OK" for a placement
+    # never actually tested (right time, wrong machine). An un-pinnable target is
+    # a PROVEN-ILLEGAL placement (R-DP2 return-home), not a happy verdict, so
+    # short-circuit to an infeasible verdict before spending the solve budget.
+    if pin_op_id not in var_map.op_start:
+        return _pin_unsatisfiable(budget_s, pin_op_id, pin_resource_id,
+                                  pin_start_dt, "op has no schedulable start")
     lit = var_map.op_assign.get(pin_op_id, {}).get(pin_resource_id)
-    if lit is not None:
-        model.add(lit == 1)
+    if lit is None:
+        return _pin_unsatisfiable(budget_s, pin_op_id, pin_resource_id,
+                                  pin_start_dt, "op is not eligible on the target resource")
+    model.add(var_map.op_start[pin_op_id] == pin_start_min)
+    model.add(lit == 1)
 
     r_rep = Reporter.begin(
         module=ModuleCode.M6, purpose="sandbox pin re-solve",
@@ -226,6 +238,17 @@ def sandbox_pin_resolve(
 
     outcome = classify_sandbox_outcome(solve_result.status, wall, budget_s)
     feasible = solve_result.status in ("OPTIMAL", "FEASIBLE")
+    # R-DP1 post-condition (4.0 hotfix): with the machine + time pins now
+    # mandatory, a feasible solve MUST place the pinned op exactly where pinned.
+    # Belt-and-suspenders against any residual model looseness — if it did not,
+    # the verdict would be honest-looking but for the wrong placement, so treat it
+    # as unsatisfiable rather than report a delta the drop never earned.
+    if feasible:
+        solved_res = solve_result.solve_values.op_resource.get(pin_op_id)
+        solved_start = solve_result.solve_values.op_start_minutes.get(pin_op_id)
+        if solved_res != pin_resource_id or solved_start != pin_start_min:
+            return _pin_unsatisfiable(budget_s, pin_op_id, pin_resource_id,
+                                      pin_start_dt, "pin did not bind to the target")
     delta_pct = delta_abs = None
     if feasible and incumbent_objective and solve_result.objective is not None:
         delta_abs = round(solve_result.objective - incumbent_objective, 4)
@@ -268,6 +291,24 @@ def sandbox_pin_resolve(
         delta_pct=delta_pct, delta_abs=delta_abs,
         cost_delta_abs=cost_delta_abs, cost_delta_pct=cost_delta_pct,
         message=message, moves=moves,
+        pin={"operation_ref": pin_op_id, "resource_id": pin_resource_id,
+             "start": pin_start_dt.isoformat()},
+    )
+
+
+def _pin_unsatisfiable(budget_s: float, pin_op_id: str, pin_resource_id: str,
+                       pin_start_dt: datetime, why: str) -> SandboxResult:
+    """The pin cannot be honoured by construction (the op has no assignment
+    literal for the target resource, or no start variable): the placement is
+    PROVEN illegal, so the honest verdict is an infeasible return-home — never a
+    silently-skipped machine pin that reports a happy delta (4.0 hotfix, R-DP1)."""
+    return SandboxResult(
+        outcome=SANDBOX_VERDICT, status="INFEASIBLE", within_budget=True,
+        wall_time_s=0.0, budget_s=budget_s, applied_time_limit_s=budget_s,
+        feasible=False, objective=None, delta_pct=None, delta_abs=None,
+        cost_delta_abs=None, cost_delta_pct=None,
+        message=f"this placement isn't possible: {why}",
+        moves=[],
         pin={"operation_ref": pin_op_id, "resource_id": pin_resource_id,
              "start": pin_start_dt.isoformat()},
     )

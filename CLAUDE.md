@@ -94,6 +94,41 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4.0-hotfix — an accepted
+cross-machine drop landed on the wrong machine (R-DP1 VIOLATED in shipped code)
+2026-07-16.** Live report: drag ORD-000002 RES001→RES002, verdict "+0.30% proven,"
+Accept → the new version rendered the op back on **RES001** (right time, wrong
+machine). **CU1 diagnosis (by evidence, before the fix):** the pin was applied as
+`lit = op_assign[op].get(resource); if lit is not None: model.add(lit == 1)` in
+BOTH `sandbox.py` and `planner_edit.py`. `op_assign[op]` keys only the op's
+**eligible** resources, so a target with no literal → the machine pin **silently
+skipped**; the time pin binds alone; the re-solve legally relocates the op to its
+cheaper eligible machine and reports a **feasible verdict for a placement never
+tested**. Reproduced deterministically: an eligible id-matching cross-machine pin
+binds end to end and reproduces the reported **+0.30%** *exactly* (honest); an
+**un-pinnable** target yields OPTIMAL/feasible/0.0% while the op stays on the
+incumbent — the live symptom. Sandbox and accept use the SAME pin (identical code,
+identical cockpit params) — they cannot diverge; the "verdict pinned both, accept
+re-compiled differently" hypothesis is **refuted**. **R-DP1 was violated in
+shipped code:** the machine axis was offered, not enforced, then vouched for.
+**CU2 fix:** the machine pin is **mandatory** — accept **raises** (API 409, base
+stands) on an absent start/machine literal + a **post-solve R-DP1 post-condition**
+(solved (resource,start) must equal the pin before minting); sandbox **short-
+circuits to an honest INFEASIBLE return-home** ("this placement isn't possible")
+instead of a false-happy delta. Eligible/same-machine pins unaffected. **CU3 the
+permanent assertion:** the 3.4/3.8 suites pinned only same-machine
+(`_pin_from_incumbent`) and never asserted placement — added
+`TestAcceptHonoursThePinnedResource` (slow, `multi_route_distinct`: cross-machine
+accept lands on the pinned resource+start; ineligible pin refused 409/infeasible,
+never relocated) + a `gesture.spec.mjs` cross-machine drag→accept→rebind
+**rendered-row** assertion + the same R-DP1 end-state check in `rehearsal.spec.mjs`
+Beat 4. **Non-slow Python 1086 passed** (new accept tests are slow: planner_edit
+**10/10**, sandbox **12/12**); **cockpit JS 46/46** (was 45). See the docs/04
+2026-07-16 Session 4.0-hotfix amendment and docs/07 v2.14. Lesson: a hard
+invariant applied through `if <exists>:` is a suggestion the code drops the moment
+the thing is missing, then reports success — enforce, or refuse; never skip-and-
+vouch.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.1 — R-AI1 +
 the interpreter, conversational context, and the question ledger 2026-07-16.**
 First AI-track session. **R-AI1 ruled** (docs/04, verbatim — "everything logs

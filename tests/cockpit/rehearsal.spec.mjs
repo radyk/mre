@@ -34,6 +34,13 @@ const load = (n) => JSON.parse(readFileSync(resolve(DIST, n), "utf-8"));
 const asks = load("asks.json");
 const alternatives = load("alternatives.json");
 const sandbox = load("sandbox.json");
+const schedule = load("schedule.json");
+
+// incumbent row of an op (for the 4.0 R-DP1 cross-machine end-state check).
+function incumbent(opRef) {
+  const a = schedule.assignments.find((x) => x.operation_ref === opRef);
+  return a ? { resource_id: a.resource_id, start: a.chunks[0].start } : null;
+}
 
 const DEMO_Q = Object.keys(asks)[0];   // "why is ORD-000003 on F001-RES001?"
 const priced = alternatives.members.filter((m) => m.verdict === "priced" && m.label.placement);
@@ -92,12 +99,22 @@ test("the sixty-second script, end to end (CU5 rehearsal)", async ({ page }) => 
   await shot(page, "r03_verdict_card");
 
   // --- Beat 4: Accept → a new proposed version, then Publish ----------------
+  // Beat 3 dropped op g onto a CROSS-machine ghost, so the accepted bar must
+  // render on the PINNED row (g.placement.resource_id), never snap back to its
+  // incumbent (4.0 R-DP1 end-state check — the demo script itself catches the
+  // silent-machine-pin-skip regression).
+  const home4 = incumbent(g.label.target_operation_ref).resource_id;
+  const target4 = g.label.placement.resource_id;
+  expect(target4, "beat 3 was a genuine cross-machine drop").not.toBe(home4);
   const t4 = Date.now();
   const acc = await page.evaluate(() => window.__cockpit.drag.accept().then(() => ({
     state: window.__cockpit.drag.state(), changed: window.__cockpit.versionChanged,
+    placement: window.__cockpit.board.placementOf(window.__cockpit.drag.state().op),
   })));
   expect(acc.state.phase, "accept mints a new proposed version").toBe("accepted");
   expect(acc.changed.status).toBe("proposed");
+  expect(acc.placement.group, "R-DP1: accepted bar on the pinned machine").toBe(target4);
+  expect(acc.placement.group).not.toBe(home4);
   await expect(page.locator(".delta-card.accepted")).toBeVisible();
   await shot(page, "r04_accepted");
   const pub = await page.evaluate(() => window.__cockpit.drag.publish().then(() => ({

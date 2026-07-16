@@ -196,6 +196,114 @@ class TestPublish:
         _error(api.client.post(f"/schedules/{fresh_base}/publish"), 409)
 
 
+@pytest.fixture(scope="module")
+def multi_api(tmp_path_factory):
+    """A solved ``multi_route_distinct`` submission — DISTINCT rates + genuinely
+    multi-eligible ops, so a real CROSS-MACHINE drop exists (``clean_small`` has
+    none, which is exactly why the 3.4 suite could only pin same-machine). The
+    4.0 R-DP1 hotfix tests need this."""
+    root = tmp_path_factory.mktemp("edit_mr_data")
+    sub_src = tmp_path_factory.mktemp("edit_mr_sub") / "multi_route_distinct"
+    generate(sub_src, scenario="multi_route_distinct", seed=7)
+    client = TestClient(create_app(data_root=root))
+    sub = _data(client.post("/submissions", json={"path": str(sub_src)}))
+    assert sub["grade"] == "ACCEPTED"
+    solve = _data(client.post(
+        f"/submissions/{sub['submission_id']}/solve",
+        json={"time_limit": 45, "deterministic": True},
+    ), status=202)
+    run = _data(client.get(f"/runs/{solve['run_id']}"))
+    assert run["status"] == "succeeded", run.get("error")
+    return SimpleNamespace(client=client, root=root,
+                           schedule_id=run["result"]["schedule_id"])
+
+
+def _cross_machine_pin(client, sid):
+    """A pin moving a placed multi-eligible op to a DIFFERENT eligible resource
+    at its own incumbent start — a genuine cross-machine drop. Returns
+    (pin_dict, incumbent_resource_id)."""
+    doc = _data(client.get(f"/schedules/{sid}"))
+    inter = _data(client.get(f"/schedules/{sid}/interaction"))["interaction"]
+    elig = {op["operation_ref"]: (op.get("eligible_resource_ids") or [])
+            for op in inter["operations"]}
+    placed = {a["operation_ref"]: a for a in doc["assignments"]}
+    for op_ref, refs in elig.items():
+        if op_ref not in placed:
+            continue
+        inc = placed[op_ref]["resource_id"]
+        alts = [r for r in refs if r != inc]
+        if alts:
+            a = placed[op_ref]
+            return ({"pin_op_id": op_ref, "pin_resource_id": alts[0],
+                     "pin_start_iso": a["chunks"][0]["start"],
+                     "authority": "dev-planner"}, inc)
+    raise AssertionError("fixture has no cross-machine drop available")
+
+
+class TestAcceptHonoursThePinnedResource:
+    """4.0 hotfix — R-DP1 end to end, gesture → CP-SAT → extraction. An accepted
+    CROSS-MACHINE drop MUST place the pinned op on the PINNED resource at the
+    PINNED start — never silently relocated to a cheaper eligible machine.
+
+    The shipped code did ``lit = op_assign[op].get(resource); if lit is not None:
+    model.add(lit == 1)`` and SILENTLY SKIPPED the machine pin whenever the
+    literal was absent, so the re-solve honoured only the time pin and reported a
+    happy verdict for the wrong machine. The 3.4 suite pinned only same-machine
+    (``_pin_from_incumbent``) and never asserted placement, so it never saw it."""
+
+    def test_cross_machine_accept_lands_on_the_pinned_resource(self, multi_api):
+        pin, inc_res = _cross_machine_pin(multi_api.client, multi_api.schedule_id)
+        assert pin["pin_resource_id"] != inc_res, "the drop must cross machines"
+        acc = _data(multi_api.client.post(
+            f"/schedules/{multi_api.schedule_id}/accept", json=pin), status=201)
+        new_doc = _data(multi_api.client.get(f"/schedules/{acc['schedule_id']}"))
+        a = next(x for x in new_doc["assignments"]
+                 if x["operation_ref"] == pin["pin_op_id"])
+        # the end-state check the 3.4 suite never made: PINNED resource + start
+        assert a["resource_id"] == pin["pin_resource_id"], (
+            f"R-DP1 violated: pinned {pin['pin_resource_id']}, landed on "
+            f"{a['resource_id']} (incumbent {inc_res})")
+        assert a["chunks"][0]["start"] == pin["pin_start_iso"]
+
+    def test_cross_machine_sandbox_verdict_moves_the_op_to_the_target(self, multi_api):
+        pin, _ = _cross_machine_pin(multi_api.client, multi_api.schedule_id)
+        sb = _data(multi_api.client.post(
+            f"/schedules/{multi_api.schedule_id}/sandbox", json={
+                "pin_op_id": pin["pin_op_id"],
+                "pin_resource_id": pin["pin_resource_id"],
+                "pin_start_iso": pin["pin_start_iso"]}))
+        assert sb["feasible"]
+        pinned = next(m for m in sb["moves"] if m["pinned"])
+        assert pinned["to_resource"] == pin["pin_resource_id"]
+        assert pinned["resource_changed"] is True
+
+    def test_pin_to_an_ineligible_resource_is_refused_not_silently_relocated(self, multi_api):
+        """Green + refused-by-solve is its own finding: an un-pinnable target is a
+        hard refusal — accept 409 (base stands), sandbox an honest infeasible
+        return-home — never a silent machine-pin skip reporting a happy verdict."""
+        client, sid = multi_api.client, multi_api.schedule_id
+        doc = _data(client.get(f"/schedules/{sid}"))
+        inter = _data(client.get(f"/schedules/{sid}/interaction"))["interaction"]
+        elig = {op["operation_ref"]: set(op.get("eligible_resource_ids") or [])
+                for op in inter["operations"]}
+        placed = {a["operation_ref"]: a for a in doc["assignments"]}
+        all_res = [r["resource_id"] for r in doc["resources"]]
+        op_ref = next(o for o in elig if o in placed
+                      and any(r not in elig[o] for r in all_res))
+        bad = next(r for r in all_res if r not in elig[op_ref])
+        start = placed[op_ref]["chunks"][0]["start"]
+
+        # sandbox: an INFEASIBLE verdict (proven illegal), not a feasible delta
+        sb = _data(client.post(f"/schedules/{sid}/sandbox", json={
+            "pin_op_id": op_ref, "pin_resource_id": bad, "pin_start_iso": start}))
+        assert sb["feasible"] is False
+        assert sb["outcome"] == "verdict"    # PROVEN illegal, return home
+        # accept: refused with 409 — nothing accepted, the base stands
+        _error(client.post(f"/schedules/{sid}/accept", json={
+            "pin_op_id": op_ref, "pin_resource_id": bad, "pin_start_iso": start,
+            "authority": "dev-planner"}), 409)
+
+
 class TestSequentialEdits:
     def test_edit_on_a_proposed_version_re_enters_the_accept_path(self, api):
         base_doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))

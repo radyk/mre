@@ -367,6 +367,34 @@ async function editAccept(page, ghost) {
   return { op, place, acc };
 }
 
+// 4.0 hotfix — R-DP1 on the RENDERED board. A GENUINE cross-machine drop (the
+// ghost's target row ≠ the op's incumbent row) must, after accept + rebind,
+// render the bar on the PINNED row — never snap back to the incumbent. The
+// shipped backend silently skipped the machine pin when the target had no
+// assignment literal, landing the op on the cheaper incumbent machine (right
+// time, wrong machine); the Python end-to-end test pins the solver side, this
+// pins the cockpit's gesture→send→rebind side. The 3.4/3.8 accept tests dropped
+// onto ghosts too, but never asserted the target row DIFFERED from home.
+test("a cross-machine drop renders the accepted bar on the PINNED row, not the incumbent (4.0 R-DP1)", async ({ page }) => {
+  await boot(page);
+  const ghost = priced.find((m) => {
+    const inc = incumbent(m.label.target_operation_ref);
+    return inc && m.label.placement.resource_id !== inc.resource_id;
+  });
+  expect(ghost, "the fixture carries a cross-machine ghost").toBeTruthy();
+  const op = ghost.label.target_operation_ref;
+  const home = incumbent(op).resource_id;
+  const target = ghost.label.placement.resource_id;
+  expect(target, "the drop genuinely crosses machines").not.toBe(home);
+
+  const { acc } = await editAccept(page, ghost);
+  expect(acc.state.phase).toBe("accepted");
+  // the rendered bar sits on the PINNED row — not returned to its incumbent row.
+  expect(acc.placement.group, "R-DP1: accepted bar rendered on the pinned machine").toBe(target);
+  expect(acc.placement.group).not.toBe(home);
+  await shot(page, "g13_cross_machine_rdp1");
+});
+
 test("two consecutive edit→accept cycles keep the cockpit bound to the live version (CU1, CU2)", async ({ page }) => {
   await boot(page);
   expect(priced.length, "the fixture carries ≥2 priced ghosts").toBeGreaterThanOrEqual(2);

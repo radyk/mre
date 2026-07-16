@@ -158,11 +158,29 @@ def apply_planner_edit(
     b_rep.end(RunStatus.SUCCESS)
 
     apply_solution_hints(model, var_map, incumbent_assignments)
-    if pin_op_id in var_map.op_start:
-        model.add(var_map.op_start[pin_op_id] == pin_start_min)
-    lit = var_map.op_assign.get(pin_op_id, {}).get(pin_resource_id)
-    if lit is not None:
-        model.add(lit == 1)
+    # R-DP1 (4.0 hotfix): the pin MUST bind on BOTH axes — machine AND time.
+    # The machine literal exists ONLY for resources the op is eligible on; a
+    # target outside that set has no literal. The prior code did
+    # ``if lit is not None: model.add(lit == 1)`` and SILENTLY SKIPPED the
+    # machine constraint when the literal was absent, so the re-solve honoured
+    # only the time pin and legally relocated the op to a cheaper eligible
+    # machine — right time, wrong machine, reported as a happy verdict. An accept
+    # must NEVER place the op anywhere but where the planner dropped it, so an
+    # un-pinnable target is a hard error (nothing accepted, the base stands) —
+    # never a silent skip.
+    if pin_op_id not in var_map.op_start:
+        raise RuntimeError(
+            f"planner edit: op {pin_op_id} has no schedulable start variable to "
+            "pin — nothing accepted; the base version stands")
+    model.add(var_map.op_start[pin_op_id] == pin_start_min)
+    assign = var_map.op_assign.get(pin_op_id, {})
+    lit = assign.get(pin_resource_id)
+    if lit is None:
+        raise RuntimeError(
+            f"planner edit: op {pin_op_id} is not eligible on resource "
+            f"{pin_resource_id} (eligible: {sorted(assign)}) — R-DP1 requires the "
+            "pinned resource be honoured; nothing accepted, the base stands")
+    model.add(lit == 1)
 
     r_rep = Reporter.begin(
         module=ModuleCode.M6, purpose="planner-edit re-solve",
@@ -184,6 +202,22 @@ def apply_planner_edit(
         raise RuntimeError(
             f"planner edit infeasible with the pin held (status={solve_result.status}) "
             "— nothing accepted; the base version stands")
+
+    # R-DP1 post-condition (4.0 hotfix): the pinned op MUST have solved to the
+    # pinned resource at the pinned start. The mandatory constraints above
+    # guarantee it, but an accept is irreversible once registered — so verify the
+    # solved placement (what extraction is about to write) BEFORE minting the
+    # version. A mismatch means the pin did not bind and the accept aborts; it
+    # must never register a version that renders the op somewhere the planner did
+    # not drop it.
+    solved_res = solve_result.solve_values.op_resource.get(pin_op_id)
+    solved_start = solve_result.solve_values.op_start_minutes.get(pin_op_id)
+    if solved_res != pin_resource_id or solved_start != pin_start_min:
+        raise RuntimeError(
+            f"planner edit: R-DP1 post-condition FAILED — pinned op {pin_op_id} "
+            f"solved to resource {solved_res} @ {solved_start}min, not the pinned "
+            f"{pin_resource_id} @ {pin_start_min}min; nothing accepted, the base "
+            "version stands")
 
     delta_abs = delta_pct = None
     if incumbent_objective and solve_result.objective is not None:
