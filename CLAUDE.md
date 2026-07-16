@@ -94,6 +94,65 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4.0c — the silent
+accept (an accept that 409'd on a storage limit, rendered mutely) 2026-07-16.**
+Live specimen: schedule `ea1a42f0` in Daryn's `_data` root — sandbox verdict
+succeeds (+0.70% proven, ORD-000004 RES001→RES003 on `multi_route_distinct`),
+Accept pressed, bar returns to RES001 with **no error** and the **same id** (no
+new version). **CU1 — diagnosed against the live registry FIRST:** `ea1a42f0` has
+**no child** (`parent_schedule_id`) and is `proposed`, not superseded → the accept
+did NOT commit and was NOT a supersede-409 (**suspect 3 — rebind-not-firing —
+refuted**); the `runs` table showed **11 failed accept runs, all with the
+identical** `FileNotFoundError: [WinError 3] The system cannot find the path
+specified` (**suspect 2 confirmed; suspect 1 — the 4.0-hotfix's post-condition —
+refuted**). **Mechanism, reproduced deterministically:** `apply_planner_edit`
+minted each accepted child as `f"{base_snapshot_id}--edit-{hash}"`, appending
+unboundedly; `ea1a42f0`'s snapshot id is a **7-deep, 118-char** `--edit-…` chain,
+and at that depth the dir path `…\_data\runs\<uuid>\snapshots\<child>\entities_
+serviceoutcome.jsonl` crosses **Windows MAX_PATH (260)** → the child derive
+(`shutil.copy2`/`copytree`) fails, `_execute_accept` raises `HTTPException(409,
+"accept failed: …")`, and — pre-4.0c — the cockpit's `accept().catch` called
+`returnHome(reason, keepCard=false)`, hiding the card AND the reason: a
+committed-looking edit vanishing silently (a temp-dir repro passed only because
+its shorter prefix stayed under 260 — why it never surfaced in tests). **Named
+plainly, per the close:** the hotfix's guard did NOT cause this — the post-solve
+R-DP1 post-condition already compares in the canonical minute grid
+(`op_start_minutes`, int `solver.Value()`, vs int `pin_start_min`), no datetime
+re-serialized, no rounding seam; the 409 came from storage upstream of the check
+(hardened anyway: solved start coerced `int()` + comment). **CU2 root-cause fix:**
+new `_edit_snapshot_id(base, hash)` bounds the id at `_MAX_EDIT_SNAP_ID_LEN=90` —
+shallow chains keep the readable `<base>--edit-<hash>` lineage; deeper ones
+**collapse** to `{root}--chain-{sha256(base)[:12]}--edit-{hash}` (`root` = up to
+the FIRST edit/chain marker, so a second collapse never re-accumulates `--chain-`
+— fixed-width however deep; digest over the exact parent id → deterministic +
+collision-free per lineage). Every base is thereafter a root or an already-bounded
+child, so **no fresh chain can reach MAX_PATH**; the lineage lives in the
+registry's `parent_schedule_id` chain (`ea1a42f0`'s pre-existing 118-char id can't
+be retroactively shortened — accepting on it still fails, but now LOUDLY).
+**CU3 — a refused accept is LOUD (R-M1a), regardless of cause:** `accept().catch`
+on a non-superseded failure calls `card.showRefused({reason})` — an authored line
+("Edit not saved · the plan is unchanged" + "This placement couldn't be committed
+— the schedule of record still stands. Nothing was changed.") with the raw server
+reason kept as a muted `.dc-detail` (never hidden) — then snaps home with
+`keepCard=true`; the card wears a `refused` class (rejected border + one-shot
+`card-refuse` shake; reduced-motion drops the shake, keeps the text). A silent
+bar-goes-home on a committed gesture is no longer reachable. **CU4 — the DEV
+question-ledger refusal panel (4A.1) occluded ask:** it was `position:fixed;
+right;bottom;z-index 40`, floating over the ask composer — now docked bottom-**left**
+(never over ask), **collapsible**, **collapsed by default** (header only; the body,
+incl. the "no dev ledger (set MRE_DEV)" empty state, lives inside the docked panel
+and loads lazily on first expand). **Tests:** `tests/test_edit_snapshot_id.py`
+(fast — shallow lineage kept; the 7-deep `ea1a42f0` shape stays ≤ cap; a 50-deep
+accept-on-accept chain never crosses it [caught a mid-session collapse-recursion
+bug]; determinism + per-parent distinctness) + a `gesture.spec.mjs` mocked-409
+loud-refusal test (`.delta-card.refused` visible with authored line + raw reason;
+base id stays bound). **Non-slow Python 1096 passed** (+4) + slow `planner_edit`
+**10/10**; **cockpit JS 48/48** (was 47). See the docs/04 2026-07-16 Session 4.0c
+amendment and docs/07 v2.16. Lesson: a snapshot id that embeds its whole ancestry
+is a path-length bomb on a chained-edit workflow — bound the name, keep the lineage
+in the registry; and a hard failure surfaced through `returnHome(reason,
+keepCard=false)` IS a silent failure — refuse loudly, never drop the reason.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4.0b — Tier-0 vs solver
 eligibility unified to one source of truth (R-DP6) 2026-07-16.** Follow-up to the
 4.0-hotfix: could Tier-0 GREEN the un-pinnable row the pin then silently skips?

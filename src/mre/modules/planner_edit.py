@@ -108,7 +108,8 @@ def apply_planner_edit(
     runs_dir.mkdir(parents=True, exist_ok=True)
 
     # 1. Derive the child snapshot (copy every planned entity but the M7 outputs).
-    child_snap_id = f"{base_snapshot_id}--edit-{_short_pin_hash(pin_op_id, pin_resource_id, pin_start_iso)}"
+    edit_hash = _short_pin_hash(pin_op_id, pin_resource_id, pin_start_iso)
+    child_snap_id = _edit_snapshot_id(base_snapshot_id, edit_hash)
     store.derive_scenario_snapshot(base_snapshot_id, child_snap_id, _EDIT_COPY_TYPES)
 
     # 2. Load base entities (base snapshot still intact — accept never mutates it).
@@ -210,8 +211,13 @@ def apply_planner_edit(
     # version. A mismatch means the pin did not bind and the accept aborts; it
     # must never register a version that renders the op somewhere the planner did
     # not drop it.
+    # Compare in the SAME canonical minute grid the pin compiled to (int minutes
+    # since horizon_start), never re-serialized datetimes — solve_values carry
+    # integer minutes straight from solver.Value(), and pin_start_min is an int,
+    # so there is no rounding/tz seam between the pin and the check (4.0c).
     solved_res = solve_result.solve_values.op_resource.get(pin_op_id)
     solved_start = solve_result.solve_values.op_start_minutes.get(pin_op_id)
+    solved_start = int(solved_start) if solved_start is not None else None
     if solved_res != pin_resource_id or solved_start != pin_start_min:
         raise RuntimeError(
             f"planner edit: R-DP1 post-condition FAILED — pinned op {pin_op_id} "
@@ -333,6 +339,41 @@ def _cost_delta(base_reader, extract_result) -> dict:
 def _short_pin_hash(*parts: str) -> str:
     import hashlib
     return hashlib.sha256("|".join(str(p) for p in parts).encode()).hexdigest()[:8]
+
+
+# A child snapshot id is a directory NAME on disk (snapshots/<id>/entities_*.jsonl).
+# The naive scheme appends "--edit-<hash>" to the parent id on every accept, so a
+# chain of edits grows the id — and thus the on-disk path — without bound. Past
+# ~8 chained edits the path crosses the Windows MAX_PATH limit (260) and the
+# derive/copy fails with FileNotFoundError [WinError 3]; pre-4.0c that aborted the
+# accept SILENTLY (the cockpit returned the bar home with no error). Bounding the
+# id keeps every base a valid short directory name forever (each base is either a
+# root or an already-bounded child), so no chain ever reaches that depth. The
+# lineage itself is not lost — it lives in the registry's parent_schedule_id chain.
+_MAX_EDIT_SNAP_ID_LEN = 90
+
+
+def _edit_snapshot_id(base_snapshot_id: str, edit_hash: str) -> str:
+    """The child snapshot id for an accepted edit, bounded in length so chained
+    edits never grow the snapshot-directory path past a filesystem limit (4.0c).
+
+    Shallow chains keep the readable ``<base>--edit-<hash>`` lineage. Once that
+    would exceed the cap, the ancestry collapses into a stable digest of the
+    (real, on-disk) parent id — preserving the visible root and the fresh edit
+    hash, and staying collision-free because the digest is over the exact parent
+    id we derive from."""
+    import hashlib
+    import re
+    candidate = f"{base_snapshot_id}--edit-{edit_hash}"
+    if len(candidate) <= _MAX_EDIT_SNAP_ID_LEN:
+        return candidate
+    # The pure root — everything before the FIRST edit/chain marker — so a second
+    # collapse does not accumulate "--chain-" segments (the id stays fixed-width
+    # however deep the chain goes). The digest is over the whole parent id, so it
+    # still uniquely fingerprints the exact lineage we derive from.
+    root = re.split(r"--edit-|--chain-", base_snapshot_id, maxsplit=1)[0]
+    lineage = hashlib.sha256(base_snapshot_id.encode()).hexdigest()[:12]
+    return f"{root}--chain-{lineage}--edit-{edit_hash}"
 
 
 def _base_runs_dir(base_context: dict) -> Path:

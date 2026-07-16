@@ -14,15 +14,32 @@ import { ledgerRefusals } from "./api.js";
 
 export function mountDevLedger(hostEl) {
   const panel = document.createElement("div");
-  panel.className = "dev-ledger";
+  // Docked bottom-LEFT (board side) and COLLAPSED by default (session 4.0c) so it
+  // never occludes the ask composer on the right — it opens only when a developer
+  // clicks it. The header toggles; the body (including the empty/"no dev ledger"
+  // state) lives INSIDE the docked panel, never floating over ask.
+  panel.className = "dev-ledger collapsed";
   panel.innerHTML = `
     <div class="dl-head">
-      <span class="dl-title">question ledger · refusals</span>
+      <button class="dl-toggle" title="show / hide the refusal ledger" aria-expanded="false">
+        <span class="dl-chevron">▸</span>
+        <span class="dl-title">question ledger · refusals</span>
+      </button>
       <button class="dl-refresh" title="reload">↻</button>
     </div>
     <div class="dl-body"><div class="dl-empty">loading…</div></div>`;
   hostEl.appendChild(panel);
   const body = panel.querySelector(".dl-body");
+
+  const toggleBtn = panel.querySelector(".dl-toggle");
+  let loaded = false;
+  function toggle() {
+    const nowCollapsed = panel.classList.toggle("collapsed");
+    toggleBtn.setAttribute("aria-expanded", String(!nowCollapsed));
+    panel.querySelector(".dl-chevron").textContent = nowCollapsed ? "▸" : "▾";
+    if (!nowCollapsed && !loaded) { loaded = true; refresh(); }
+  }
+  toggleBtn.addEventListener("click", toggle);
 
   async function refresh() {
     body.innerHTML = `<div class="dl-empty">loading…</div>`;
@@ -50,7 +67,11 @@ export function mountDevLedger(hostEl) {
     }
   }
 
-  panel.querySelector(".dl-refresh").addEventListener("click", refresh);
-  refresh();
-  return { refresh, el: panel };
+  panel.querySelector(".dl-refresh").addEventListener("click", (e) => {
+    e.stopPropagation();
+    loaded = true;
+    refresh();
+  });
+  // Deferred: the body loads on first expand (start collapsed → no eager fetch).
+  return { refresh, toggle, el: panel };
 }

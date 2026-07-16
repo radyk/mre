@@ -233,16 +233,27 @@ html, body {
 
 /* CU3: the question-ledger refusal dev panel (DEV build only) — a compact,
    fixed corner overlay, styled like the tuning panel's chrome. */
+/* Docked bottom-LEFT (board side), not bottom-right — the ask composer owns the
+ * right column, so the ledger must never sit over it (session 4.0c). Collapsible:
+ * collapsed → just the header bar; expanded → the refusal body drops open. */
 .dev-ledger {
-  position: fixed; right: var(--sp-3); bottom: var(--sp-3); z-index: 40;
+  position: fixed; left: var(--sp-3); bottom: var(--sp-3); z-index: 40;
   width: 320px; max-height: 42vh; display: flex; flex-direction: column;
   background: var(--panel); border: 1px solid var(--grid); border-radius: var(--radius);
   box-shadow: var(--shadow-2); font: var(--fs-xs)/1.4 var(--font-mono);
 }
+.dev-ledger.collapsed { max-height: none; }
+.dev-ledger.collapsed .dl-body { display: none; }
+.dev-ledger.collapsed .dl-head { border-bottom: 0; }
 .dev-ledger .dl-head {
   display: flex; justify-content: space-between; align-items: center;
   padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--grid);
 }
+.dev-ledger .dl-toggle {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  background: transparent; border: 0; cursor: pointer; padding: 0; font: inherit;
+}
+.dev-ledger .dl-chevron { color: var(--muted); flex: 0 0 auto; }
 .dev-ledger .dl-title {
   font-weight: var(--fw-bold); text-transform: uppercase; letter-spacing: var(--ls-caps);
   color: var(--muted);

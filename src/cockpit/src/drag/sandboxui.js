@@ -165,6 +165,32 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     return card;
   }
 
+  // REFUSED (session 4.0c, R-M1a): an accept the server would not commit (a 409
+  // that is NOT "superseded" — e.g. an infeasible pin, an R-DP1 violation, or a
+  // storage failure). Pre-4.0c this returned the bar home with the card hidden
+  // and no reason — a committed-looking edit vanishing silently. The refusal is
+  // now LOUD: an authored line saying nothing changed, the raw server reason kept
+  // as a muted detail (never hidden), and the card shakes (R-M1a). The bar still
+  // snaps home as a rejection — the controller drives that; the card stays.
+  function showRefused({ reason } = {}) {
+    _stopCountdown();
+    card.className = "delta-card refused";
+    card.innerHTML = `
+      <div class="dc-head">
+        <span class="dc-outcome refused">Edit not saved</span>
+        <span class="dc-status">the plan is unchanged</span>
+      </div>
+      <div class="dc-reason">This placement couldn't be committed — the schedule of
+        record still stands. Nothing was changed.</div>
+      ${reason ? `<div class="dc-detail"></div>` : ""}
+      <div class="dc-actions"><button class="dc-discard">Close</button></div>`;
+    if (reason) card.querySelector(".dc-detail").textContent = String(reason);
+    card.querySelector(".dc-discard").addEventListener("click", () => onDiscard && onDiscard());
+    // Retrigger the shake if the class was already present (re-refusal).
+    void card.offsetWidth;
+    return card;
+  }
+
   // Render the structured move reason (session 3.3 CU3) into a planner-facing
   // one-clause "why". The backend emits ids only (occupancy: which machine, and
   // until when; or the dropped op displaced it); the card resolves names here.
@@ -206,5 +232,5 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     return `${d > 0 ? "+" : "−"}${Math.abs(d).toFixed(2)}% vs current plan`;
   }
 
-  return { showPending, showResult, showAccepted, showPublished, hide, el: card };
+  return { showPending, showResult, showAccepted, showPublished, showRefused, hide, el: card };
 }

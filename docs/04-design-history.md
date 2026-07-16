@@ -4894,3 +4894,96 @@ invariant, do not have each *compute* it — give them ONE function to *call*. A
 hand-mirrored copy is a divergence with a delay; and a payload that reports RAW
 capability while the pin binds the COMPILED set is that same delay wearing an
 "eligible" label.
+
+### 2026-07-16 — Session 4.0c: the silent accept (an accept that 409'd on a storage limit, rendered mutely)
+
+**Live specimen.** Schedule `ea1a42f0` in Daryn's `_data` root: a sandbox verdict
+succeeds (+0.70% proven, ORD-000004 RES001→RES003 on `multi_route_distinct`),
+Accept is pressed, the bar returns to RES001 with **no visible error** and the
+**same schedule id** — no new version bound.
+
+**CU1 — diagnose against the live registry FIRST (before any fix).** Three
+suspects were named in order: (1) accept 409ing on the 4.0-hotfix's post-solve
+post-condition via a rounding/serialization mismatch (pinned vs solved start);
+(2) accept failing for another reason, rendered mutely; (3) accept succeeding +
+rebind not firing. The registry settled it:
+
+- **`ea1a42f0` has NO child** (nothing lists it as `parent_schedule_id`) and it is
+  `proposed`, not superseded — so the accept did **not** create a version and it
+  was **not** a supersede-409. **Suspect (3) refuted** (no child ⇒ nothing to fail
+  to rebind).
+- The `runs` table is the smoking gun: **eleven** `kind=accept` runs off
+  `ea1a42f0`'s run, **every one `status=failed` with the identical error**
+  `FileNotFoundError: [WinError 3] The system cannot find the path specified`.
+  Not the post-condition RuntimeError, not an eligibility refusal — a **filesystem
+  error**. **Suspect (2) confirmed; suspect (1) refuted.**
+
+**The mechanism, reproduced deterministically.** `ea1a42f0`'s snapshot id is
+`snap-be998b25--edit-…--edit-3e7811a6` — a chain of **seven** `--edit-<hash>`
+segments, 118 chars, because `apply_planner_edit` minted each accepted child as
+`f"{base_snapshot_id}--edit-{hash}"`, appending unboundedly. On Windows the
+snapshot directory path
+`…\_data\runs\<uuid>\snapshots\<child-id>\entities_serviceoutcome.jsonl` crosses
+**MAX_PATH (260)** at that depth; the child derive (`shutil.copy2` /
+`copytree`) fails with `FileNotFoundError [WinError 3]`, `_execute_accept` catches
+it and raises `HTTPException(409, "accept failed: …")`, and — pre-4.0c — the
+cockpit's `accept().catch` called `returnHome(reason, keepCard=false)`, which
+**hid the card and the reason tip**: the bar snapped home with nothing on screen.
+A committed-looking edit vanishing silently. Reproduced at the real `_data` path
+length (a temp-dir repro passed — its shorter prefix stayed under 260, which is
+exactly why this never surfaced in tests).
+
+**Named plainly, per the close instruction: the 4.0-hotfix's own guard did NOT
+cause this.** The post-solve R-DP1 post-condition already compares in the
+canonical minute grid (`solve_values.op_start_minutes`, integer
+`solver.Value()`, vs the integer `pin_start_min`) — no datetime is re-serialized,
+so there is no rounding seam for it to 409 on. The live 409 came from storage,
+upstream of the check. (Hardened anyway: the solved start is coerced `int()` with
+a comment fixing the invariant, so no future float can introduce a seam.)
+
+**CU2 — the root-cause fix: bound the snapshot-id growth.** New
+`_edit_snapshot_id(base, edit_hash)` (`planner_edit.py`): shallow chains keep the
+readable `<base>--edit-<hash>` lineage; once that would exceed
+`_MAX_EDIT_SNAP_ID_LEN = 90` the ancestry **collapses** into a stable
+digest — `f"{root}--chain-{sha256(base)[:12]}--edit-{hash}"`, where `root` is the
+id up to the FIRST edit/chain marker (so a second collapse does not accumulate
+`--chain-` segments — the id stays fixed-width however deep the chain goes). The
+digest is over the exact parent id we derive from, so it is deterministic
+(idempotent re-accept) and collision-free per lineage. Every base is thereafter a
+root or an already-bounded child, so **no fresh chain can ever reach MAX_PATH**.
+The lineage is not lost — it lives in the registry's `parent_schedule_id` chain.
+(`ea1a42f0`'s already-118-char id is a pre-existing casualty the bound cannot
+retroactively shorten; accepting on it still fails — but now **loudly**, see CU3.)
+
+**CU3 — a refused accept must be LOUD (R-M1a), regardless of cause.** The
+cockpit's `accept().catch`, on a non-superseded failure, now renders an **authored
+refusal on the delta card** — `card.showRefused({reason})`: "Edit not saved · the
+plan is unchanged", the honest sentence "This placement couldn't be committed —
+the schedule of record still stands. Nothing was changed.", and the raw server
+reason kept as a muted `.dc-detail` (never hidden) — then snaps the bar home as a
+rejection with `keepCard=true` so the card stays. The card wears a `refused`
+class: a rejected border + a one-shot `card-refuse` shake (reduced-motion drops
+the shake, keeps the text). A silent bar-goes-home on a committed gesture is no
+longer reachable.
+
+**CU4 — the dev question-ledger refusal panel (4A.1) was occluding ask.** It was
+`position: fixed; right; bottom; z-index 40` — floating over the ask composer
+(input + buttons) bottom-right. Now docked bottom-**left** (board side, never over
+ask), **collapsible**, and **collapsed by default** (header only; the body —
+including the "no dev ledger (set MRE_DEV)" empty state — lives inside the docked
+panel and loads lazily on first expand). DEV-build-only, unchanged.
+
+**Tests.** `tests/test_edit_snapshot_id.py` (fast, pure-string): shallow lineage
+preserved; a 7-deep chain (the `ea1a42f0` shape) stays ≤ cap with root + fresh
+hash visible; a **50-deep** accept-on-accept chain never crosses the cap (this
+caught a real bug mid-session — the first collapse scheme re-accumulated
+`--chain-` segments); determinism + per-parent distinctness. `gesture.spec.mjs`:
+"a refused accept is LOUD" — a `page.route`-mocked 409 accept renders
+`.delta-card.refused` visibly with the authored line + the raw reason, and the
+cockpit stays bound to the base id (nothing committed). **Non-slow Python 1096
+passed** (+4); slow `planner_edit` **10/10** (real chained accepts, bound in
+effect); **cockpit JS 48/48** (was 47). See docs/07 v2.16. Lesson: a snapshot id
+that embeds its whole ancestry is a path-length bomb on a chained-edit workflow —
+bound the name, keep the lineage in the registry; and a hard failure surfaced
+through `returnHome(reason, keepCard=false)` is a silent failure — enforce, or
+refuse loudly, but never drop the reason on the floor.

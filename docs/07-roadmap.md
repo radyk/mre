@@ -1,6 +1,30 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.15 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.16 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.16:** **Session 4.0c — the silent accept (an accept that 409'd on a storage
+limit, rendered mutely)** 2026-07-16 (docs/04 amendment). Live specimen: schedule
+`ea1a42f0` — sandbox verdict succeeds, Accept pressed, bar returns home with **no
+error** and the **same id** (no new version). **Diagnosed against the live
+registry first:** `ea1a42f0` has **no child** and is `proposed` (not superseded) →
+accept didn't commit and wasn't a supersede-409 (suspect 3 refuted); the `runs`
+table showed **11 failed accept runs, all with the identical**
+`FileNotFoundError [WinError 3]` (suspect 2 confirmed, suspect 1 — the hotfix's
+post-condition — refuted). **Mechanism, reproduced:** each accepted child was
+minted `f"{base}--edit-{hash}"`, appending unboundedly; `ea1a42f0`'s id is a
+**7-deep, 118-char** chain, and at that depth the snapshot dir path crosses
+Windows **MAX_PATH (260)** → the child derive fails, accept 409s, and the cockpit
+hid the card + reason on the failure branch. **CU2 fix:** `_edit_snapshot_id`
+bounds the id (≤ 90) — shallow chains stay readable, deep ones collapse to
+`{root}--chain-{sha12}--edit-{hash}` (fixed-width however deep); lineage lives in
+the registry's parent chain. **CU3 (regardless of cause):** a refused accept is
+now **LOUD** (R-M1a) — an authored refusal card (`showRefused`, "Edit not saved",
+raw reason kept as a muted detail) + a shake, never a silent bar-goes-home. **CU4:**
+the DEV question-ledger refusal panel (4A.1) was floating over the ask composer —
+now docked bottom-**left**, collapsible, collapsed by default. Post-condition
+hardened to compare in canonical minute units explicitly. **Non-slow Python 1096
+passed** (+4) + slow `planner_edit` 10/10; **cockpit JS 48/48** (was 47). Queue
+before Phase-4 design unchanged: Daryn's grand feel pass + export.
 
 **v2.15:** **Session 4.0b — Tier-0 vs solver eligibility: one source of truth
 (R-DP6)** 2026-07-16 (docs/04 amendment). The 4.0-hotfix left open whether Tier-0

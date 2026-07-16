@@ -336,6 +336,44 @@ test("accept mints a new proposed version; publish supersedes it (CU1, R-DP7)", 
   await shot(page, "g11_published");
 });
 
+// 4.0c — a refused accept must be LOUD (R-M1a). The live "silent accept"
+// (schedule ea1a42f0) was an accept that 409'd server-side (a storage failure)
+// and returned the bar home with the card hidden and no reason — a committed-
+// looking edit vanishing without a trace. Now a non-superseded accept failure
+// renders an authored refusal on the card (which shakes) and keeps it on screen;
+// the base id stays bound (nothing was committed).
+test("a refused accept is LOUD — the card shows the refusal, never a silent return-home (4.0c, R-M1a)", async ({ page }) => {
+  await boot(page);
+  const op = opFor("verdict");
+  const inc = incumbent(op);
+  const v = await page.evaluate(([op, rid, start]) =>
+    window.__cockpit.drag.dropAt(op, rid, start).then(() => window.__cockpit.drag.state()),
+    [op, inc.resource_id, inc.start]);
+  expect(v.phase).toBe("verdict");
+
+  // The server refuses the accept with a 409 that is NOT "superseded" (an
+  // infeasible pin / R-DP1 violation / storage failure). Intercept it so the
+  // refusal branch fires deterministically without a real backend.
+  const reasonText = "accept failed: RuntimeError: planner edit infeasible with the pin held";
+  await page.route("**/accept", (route) =>
+    route.fulfill({ status: 409, contentType: "application/json",
+      body: JSON.stringify({ error: { message: reasonText } }) }));
+
+  const acc = await page.evaluate(() => window.__cockpit.drag.accept().then(() => ({
+    changed: window.__cockpit.versionChanged || null,
+    scheduleId: window.__cockpit.scheduleId,
+  })));
+
+  // LOUD: the refusal card is visible, authored, and carries the raw reason.
+  await expect(page.locator(".delta-card.refused")).toBeVisible();
+  await expect(page.locator(".delta-card.refused .dc-outcome")).toContainText("Edit not saved");
+  await expect(page.locator(".delta-card.refused .dc-detail")).toContainText("infeasible");
+  // NOT silent, NOT committed: no new version bound; the cockpit stays on base.
+  expect(acc.scheduleId, "the refused accept never rebinds a new version").toBe(SCHEDULE);
+  await shot(page, "g12_refused");
+  await page.unroute("**/accept");
+});
+
 // ---------------------------------------------------------------------------
 // Session 3.8 — version-lifecycle continuity (the missing seam). One session
 // drives TWO consecutive edit→accept cycles and one edit→accept→publish→edit

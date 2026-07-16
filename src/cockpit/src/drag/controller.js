@@ -542,7 +542,12 @@ export function createGestureController(board, geometry, opts) {
     ).catch((e) => {
       S.phase = "verdict";
       if (e && e.superseded && handleSuperseded()) return;
-      returnHome(`accept failed: ${e.message || e}`, /*keepCard*/ false);
+      // R-M1a (4.0c): a refused accept must be LOUD, never a silent bar-goes-home.
+      // Render the authored refusal on the card (it shakes), then snap the bar
+      // home as a rejection — but KEEP the card so the reason stays on screen.
+      const reason = (e && (e.rawMessage || e.message)) || String(e);
+      card.showRefused({ reason });
+      returnHome(reason, /*keepCard*/ true);
     });
   }
 

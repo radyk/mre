@@ -116,6 +116,7 @@
 @media (prefers-reduced-motion: reduce) {
   .carry-bar.rejecting { transition: none; }
   .carry-bar.reject-shake { animation: none; }
+  .delta-card.refused { animation: none; }
   .reflowing .vis-item.bar { transition: none; }
   .vis-item.bar.reflow-moved { animation: none; }
   .vis-item.bar.pin-lock { animation: none; }
@@ -177,6 +178,24 @@
 .delta-card.return-home { border-left-color: var(--grade-rejected); }
 .delta-card.accepted { border-left-color: var(--grade-c1); }
 .delta-card.published { border-left-color: var(--grade-c1); }
+/* REFUSED (4.0c, R-M1a): a refused accept is loud — a rejected border, an
+ * authored line, and a one-shot shake so it can never be mistaken for a quiet
+ * return-home. The raw server reason rides in .dc-detail (muted, monospace). */
+.delta-card.refused {
+  border-left-color: var(--grade-rejected);
+  animation: card-refuse var(--motion-reject-shake-dur) ease-in-out;
+}
+.dc-outcome.refused { color: var(--grade-rejected); }
+.dc-detail {
+  margin-top: var(--sp-1); font: var(--fs-xs)/1.4 var(--font-mono);
+  color: var(--muted-2); word-break: break-word;
+}
+@keyframes card-refuse {
+  0%, 100% { transform: translateX(-50%); }
+  25% { transform: translateX(calc(-50% - var(--motion-reject-shake-amp))); }
+  60% { transform: translateX(calc(-50% + var(--motion-reject-shake-amp))); }
+  85% { transform: translateX(calc(-50% - var(--motion-reject-shake-amp) * 0.5)); }
+}
 .dc-outcome.accepted { color: var(--grade-c1); }
 .dc-outcome.published { color: var(--grade-c1); }
 .dc-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); }
