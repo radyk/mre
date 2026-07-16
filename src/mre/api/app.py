@@ -123,6 +123,14 @@ class AcceptRequest(BaseModel):
 class AskRequest(BaseModel):
     question: str
     llm: bool = False               # honored only if ANTHROPIC_API_KEY is set
+    # Conversational context (Session 4A.1 CU2): recent turns + the current board
+    # selection, so an elliptical follow-up resolves before routing. The server is
+    # stateless — the client carries the short history. Each history turn is
+    # {question, resolved_question, route, order, machine}; selection is
+    # {order, machine}. Omitted → a fresh, self-contained question.
+    history: list[dict[str, Any]] = []
+    selection: dict[str, Any] = {}
+    session_id: Optional[str] = None    # links a refusal to its later rephrase
 
 
 class WhatIfRequest(BaseModel):
@@ -547,9 +555,26 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
             Path(run["out_dir"]), row["snapshot_id"], req.question,
             use_llm=req.llm and bool(os.environ.get("ANTHROPIC_API_KEY")),
             runs_subdir="scenario_runs" if row["is_scenario"] else "runs",
+            context={"history": req.history, "selection": req.selection},
+            ledger_path=_ledger_path(registry),
+            schedule_id=schedule_id,
+            session_id=req.session_id,
         )
         return _ok({"question": req.question, "answer": answer,
                     "bundle": bundle_meta})
+
+    @app.get("/ledger/refusals")
+    def ledger_refusals(limit: int = 20):
+        """The question ledger's refusal clusters (R-AI1(d)) — the DEV-panel
+        view. DEV-gated (like the tuning panel): 404 unless MRE_DEV is set, so a
+        production deployment never exposes it. Reads the ledger; never writes."""
+        if not os.environ.get("MRE_DEV"):
+            raise HTTPException(404, "not found")
+        from mre.modules.question_ledger import QuestionLedger
+        led = QuestionLedger(_ledger_path(registry))
+        return _ok({"clusters": led.refusal_clusters(limit=limit),
+                    "recent": [e.model_dump(mode="json")
+                               for e in led.recent(limit=limit)]})
 
     # ------------------------------------------------------------------
     # What-if
@@ -1007,11 +1032,29 @@ def _parse_modifications(raw: list[dict]) -> list:
     return out
 
 
+def _ledger_path(registry: Registry) -> Path:
+    """The question ledger's own stream (R-AI1(d), CU3): under the data root,
+    NEVER inside a run's evidence dir — a ledger entry is a fact about the AI
+    layer, not about the schedule, and must never pollute schedule evidence."""
+    return Path(registry.data_root) / "ledger" / "questions.jsonl"
+
+
 def _answer_question(out_dir: Path, snapshot_id: str, question: str,
-                     use_llm: bool, runs_subdir: str = "runs") -> tuple[str, dict]:
-    """Route a question through the M10 explainer for a persisted run."""
+                     use_llm: bool, runs_subdir: str = "runs",
+                     context: Optional[dict] = None,
+                     ledger_path: Optional[Path] = None,
+                     schedule_id: Optional[str] = None,
+                     session_id: Optional[str] = None) -> tuple[str, dict]:
+    """Route a question through the M10 explainer for a persisted run.
+
+    Session 4A.1: the deterministic router is now wrapped by the interpreter +
+    conversational context + question ledger (``run_ask``). Deterministic
+    phrasings route exactly as before (zero regression / zero LLM); only a
+    miss falls through to the interpreter, and every ask is logged."""
     from mre.modules.evidence_index import EvidenceIndex
     from mre.modules.explainer import Explainer
+    from mre.modules.interpreter import Interpreter, run_ask
+    from mre.modules.question_ledger import QuestionLedger
     from mre.modules.renderers import LLMRenderer, TemplateRenderer
     from mre.modules.snapshot_store import SnapshotStore
 
@@ -1025,8 +1068,26 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
 
     store = SnapshotStore(out_dir / "snapshots")
     explainer = Explainer(store, index, snapshot_id=snapshot_id)
-    bundle = (explainer.summarize_run() if question.strip().lower() == "summarize"
-              else explainer.answer(question))
+
+    if question.strip().lower() == "summarize":
+        bundle = explainer.summarize_run()
+        ask_meta = {"resolved_question": question, "route": "summarize",
+                    "source": "deterministic", "confidence": None}
+    else:
+        ledger = QuestionLedger(ledger_path) if ledger_path is not None else None
+        # The interpreter is available only when a key is set; without one it is
+        # simply off (deterministic-only, zero regression). It never authors an
+        # answer — it maps phrasing onto the closed route taxonomy.
+        interpreter = Interpreter() if os.environ.get("ANTHROPIC_API_KEY") else None
+        result = run_ask(explainer, question, context=context,
+                         interpreter=interpreter, ledger=ledger,
+                         schedule_id=schedule_id, session_id=session_id)
+        bundle = result.bundle
+        ask_meta = {"resolved_question": result.resolved_question,
+                    "route": result.route, "source": result.source,
+                    "confidence": result.confidence,
+                    "resolution_note": result.resolution_note}
+
     renderer = LLMRenderer() if use_llm else TemplateRenderer()
     answer = renderer.render(bundle)
     return answer, {
@@ -1040,23 +1101,15 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
         # so the cockpit can highlight the corresponding bars/lanes in sync with
         # the text. Reads only bundle.ordered_records; adds no answer path.
         "cited_refs": _cited_refs_from_bundle(bundle),
+        **ask_meta,
     }
 
 
-# The renderer stamps a register footer ("register: testimony"); expose the same
-# classification structurally so the cockpit styles the panel per register
-# without parsing rendered prose.
-_JUDGMENT_SUBJECTS = {"findings", "triage"}
-
-
 def _register_of(bundle: Any) -> str:
-    """testimony (evidence/decisions) vs judgment (findings/triage). Mirrors the
-    renderer's own register discipline; no register ever blends."""
-    st = getattr(bundle, "subject_type", "") or ""
-    kf = getattr(bundle, "key_facts", {}) or {}
-    if st in _JUDGMENT_SUBJECTS or "triage_order" in kf or "codes" in kf:
-        return "judgment"
-    return "testimony"
+    """testimony (evidence/decisions) vs judgment (findings/triage). Delegates to
+    the single-source classifier in explainer.py so no register ever blends."""
+    from mre.modules.explainer import register_of
+    return register_of(bundle)
 
 
 def _cited_refs_from_bundle(bundle: Any) -> dict:

@@ -46,9 +46,16 @@ priced ghosts and then runs the Vite dev server proxied at it.
 `http://localhost:5175/?schedule=<id>`. The board renders read-only first; the
 Tier-0 interaction payload arrives in the background and the gesture layer enables
 (`data-drag-enabled="true"` on the board host). Because `vite dev` sets
-`import.meta.env.DEV`, the **CU6 feel tuning panel** mounts (it is stripped from
+`import.meta.env.DEV`, the **CU6 feel tuning panel** and the **question-ledger
+refusal panel** (Session 4A.1 CU3, bottom-right) mount (both stripped from
 `npm run build`). Probe drag from the console via `window.__cockpit.drag`
 (`grab/dragTo/drop/dropAt/discard`) — the same hooks the harness drives.
+
+The refusal panel reads `GET /ledger/refusals`, which the API serves **only when
+`MRE_DEV` is set** in its environment (404 otherwise) — so the ledger's refusal
+view never ships to production. It lists the questions the AI layer couldn't
+answer, clustered by frequency, with a "↳ rephrased" marker where a later
+rephrase in the same session succeeded (the free labeled data of R-AI1(d)).
 
 The scripts set env the PowerShell way (`$env:MRE_DATA_ROOT`, `$env:MRE_API`),
 resolve the repo root from their own location (run them from anywhere), and drive

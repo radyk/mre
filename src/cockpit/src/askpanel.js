@@ -25,6 +25,18 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
   // reads the new version's evidence (where the planner_edit Decision lives).
   let selection = null;   // {operation_ref, work_orders, resource_id, resource_name}
 
+  // Conversational context (Session 4A.1 CU2): a short rolling history + a stable
+  // session id let the server resolve an elliptical follow-up ("and what about
+  // it?") against the prior subject, and let the ledger link a refusal to its
+  // later rephrase (R-AI1(d)). The server is stateless — the client carries this.
+  const sessionId = `sess-${Math.random().toString(36).slice(2, 10)}`;
+  const askHistory = [];   // [{question, resolved_question, route, order, machine}]
+
+  function currentSelectionRefs() {
+    const wo = selection && (selection.work_orders || [])[0];
+    return { order: wo || null, machine: (selection && selection.resource_name) || null };
+  }
+
   rootEl.innerHTML = `
     <h2>Ask the schedule <span class="sub">— M10 explainer, read-only</span></h2>
     <div class="log" id="ask-log">
@@ -89,6 +101,15 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
     logEl.appendChild(el); scrollDown();
   }
 
+  function appendResolved(resolved) {
+    clearEmpty();
+    const el = document.createElement("div");
+    el.className = "msg resolved-note";
+    el.innerHTML = `<div class="who">interpreted as</div><pre></pre>`;
+    el.querySelector("pre").textContent = resolved;
+    logEl.appendChild(el); scrollDown();
+  }
+
   function appendAnswer(text, meta) {
     clearEmpty();
     const register = meta?.register === "judgment" ? "judgment" : "testimony";
@@ -118,8 +139,23 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
     appendYou(question);
     inputEl.value = "";
     try {
-      const res = await ask(scheduleId, question, useLlm);
+      const res = await ask(scheduleId, question, useLlm, {
+        history: askHistory.slice(-4),
+        selection: currentSelectionRefs(),
+        sessionId,
+      });
+      // CU2: an elliptical follow-up the server resolved shows the question it
+      // actually answered (the deictic pattern from 3.2d, generalized).
+      const resolved = res.bundle && res.bundle.resolved_question;
+      if (resolved && resolved !== question) appendResolved(resolved);
       appendAnswer(res.answer, res.bundle);
+      // remember this turn (subject refs from the live selection) for follow-ups
+      const refs = currentSelectionRefs();
+      askHistory.push({
+        question, resolved_question: resolved || question,
+        route: (res.bundle && res.bundle.route) || null,
+        order: refs.order, machine: refs.machine,
+      });
       // CU3: a voice-originated question gets a SPOKEN response — the register
       // aloud + a one-sentence summary; record IDs stay on screen, never voiced.
       if (spoken) speak(spokenSummary(res.answer, res.bundle?.register));

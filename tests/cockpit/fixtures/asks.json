@@ -25,6 +25,22 @@
       }
     }
   },
+  "and what about it?": {
+    "question": "and what about it?",
+    "answer": "=== why is ORD-000012 late? ===\n\nORD-000012 completed 840 minutes past its due date.\n\n[rendered by: template | register: testimony]",
+    "bundle": {
+      "subject_id": "0dee42a9-6527-50b3-bd7c-ddceb9dd94a6",
+      "subject_type": "demand",
+      "subject_external_name": "ORD-000012",
+      "snapshot_id": "snap-mr",
+      "record_count": 0,
+      "register": "testimony",
+      "route": "late-order",
+      "source": "deterministic",
+      "resolved_question": "why is ORD-000012 late?",
+      "cited_refs": { "operations": [], "resources": [], "demands": [] }
+    }
+  },
   "what data problems exist?": {
     "question": "what data problems exist?",
     "answer": "=== What data problems exist? ===\n\nTotal findings: 1 | Codes: LOW_CONFIDENCE_INPUT\n\nEvidence chain (1 record(s)):\n\n[1] M3 FINDING  | LOW_CONFIDENCE_INPUT  | warning\n    [record: fc894279...]\n\n[rendered by: template | register: testimony]",

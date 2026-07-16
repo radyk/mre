@@ -4574,3 +4574,105 @@ gesture surface not wired.
 **Results.** Cockpit JS **44/44** (was 41). Python **1036 passed / 0 failed**
 (non-slow) + the planner_edit slow ladder **7/7** incl. a new
 `test_superseded_meta_carries_its_live_successor`. See docs/07 v2.12.
+
+## Amendment — 2026-07-16: R-AI1 ruling — EVERYTHING LOGS FACTS AND ESTABLISHES PATHWAYS TO AI
+
+Ruled in the design thread, transcribed here verbatim (append-only; settled).
+Implementation begins AI-track Session 4A.1 (same day, below).
+
+--- RULING TEXT BEGINS ---
+R-AI1 — EVERYTHING LOGS FACTS AND ESTABLISHES PATHWAYS TO AI
+Every capability ships AI-reachable or names its debt:
+(a) It emits structured evidence of what it did and why — no
+    silent mechanisms.
+(b) It ships with, or explicitly queues, its question domain — a
+    pathway from planner language to its records.
+(c) Intelligence accrues only in reviewable artifacts (routes,
+    catalogs, interpreter cases, authored copy) — never in model
+    state; models are swappable renderers behind the validation
+    armor.
+(d) Unanswerable questions are themselves logged facts (the
+    question ledger), feeding a human-curated improvement loop —
+    the system never rewrites its own routing unreviewed.
+Session close-outs must name the session's evidence and its
+question pathway, or name the debt.
+--- RULING TEXT ENDS ---
+
+## Amendment — 2026-07-16: AI-track Session 4A.1 — the interpreter, conversational context, and the question ledger
+
+First AI-track session. Wraps the M10 deterministic router (which the router IS
+the taxonomy) with a normalization stage, conversational memory, a logged fact
+stream, and a no-dead-end fallback — **without touching the router's routing**
+(1086 non-slow Python green, the existing explainer/certificate/edit suites among
+them; cockpit JS 45/45, was 44).
+
+**The refactor that makes it possible (zero regression).** `Explainer.answer()`
+is now exactly `route(*classify(question))`: `classify()` maps a working phrasing
+onto a route id + params (branch order preserved byte-for-byte from the pre-4A.1
+router), `route()` dispatches. The 15 route ids are a closed taxonomy
+(`ROUTE_TAXONOMY`, each with its param slots + a canonical planner-vocabulary
+question). This split makes the taxonomy callable by everything downstream while
+routing is unchanged — the deterministic path never calls an LLM, never pays
+latency or cost (a call-counting mock asserts zero interpreter calls across the
+17-row deterministic paraphrase table).
+
+**CU1 — the interpreter** (`interpreter.py`). Invoked ONLY when `classify()`
+returns `unsupported`. LLM-backed (a swappable client; fail-closed — no key /
+malformed JSON / unknown route / low confidence → the honest refusal), strict JSON
+contract (`{route, params, confidence, nearest}`), route validated against the
+closed taxonomy. Params are external refs resolved through the identity map
+(`resolve_order_value` / `resolve_machine_value`: exact token then unique
+substring — `'2001' ⊂ 'WO-2001'`, `'GEAR-01' ⊂ 'M-GEAR-01'`), never an id-shape
+regex (the Phase-1 audit lesson). A high-confidence route with all params resolved
+answers by synthesizing the canonical question and re-routing it through the same
+assemblers (external refs re-resolved inside). The paraphrase table is the growing
+asset the ledger feeds (≥25 cases: deterministic rows route with no LLM; the rest
+via a mocked interpreter).
+
+**CU2 — conversational context** (`resolve_followup`). Deterministic ellipsis
+resolution BEFORE routing: a self-contained question passes through; a cost
+follow-up after an edit answer ("how much?") resolves into the edit-cost domain; a
+pronoun/fragment follow-up ("and what about it?") resolves against the last
+order/machine subject in the short history or the board selection; an ellipsis
+with no prior subject → **clarify** (ask for the referent, never guess). Resolution
+is VISIBLE — the resolved question rides back on the bundle (`bundle.question`) and
+the cockpit renders an "interpreted as" note above the answer (the 3.2d deictic
+pattern, generalized). The server stays stateless: the cockpit carries a rolling
+4-turn history + selection + a session id in the `/ask` body.
+
+**CU3 — the question ledger** (`question_ledger.py`, shape in
+`contracts/question_ledger.py`). Every ask logged as one `QuestionLedgerEntry` in
+its OWN append-only JSONL stream under the data root
+(`ledger/questions.jsonl`) — **never** inside a run's evidence dir (a fact about
+the AI layer, not the schedule). Records: verbatim + resolved question, route (or
+`REFUSED`/`NEAR_MISS`/`CLARIFY`), source (`deterministic`/`llm`/`none`),
+confidence, register, schedule id, session id, and **rephrase linkage** — a routed
+entry that follows a refusal in the same session within 180 s points at that
+refusal (`rephrase_of`), the free labeled pair the improvement loop consumes.
+`refusal_clusters()` (frequency-ranked, "any_rephrased" marked) backs a DEV-gated
+cockpit panel; a **meta-route** ("what questions couldn't you answer recently?")
+reads the ledger — the ledger answering about itself (R-AI1(d)). The `/ledger/
+refusals` endpoint is DEV-gated (404 unless `MRE_DEV`).
+
+**CU4 — tiered fallback** (`ask_fallback_copy.py`, all copy AUTHORED, never
+LLM-improvised). Between routed and refused: the **near-miss bridge** — moderate
+interpreter confidence (`[0.45, 0.75)`) OR params that only partially resolve →
+answer honestly and offer the two nearest routes as concrete one-phrase follow-ups
+("I can't answer that exactly — I can show you every late order, or …"). The full
+refusal keeps the planner-language capability list. No dead ends.
+
+**Verification.** `test_interpreter.py` (paraphrase table + deterministic-never-
+calls-LLM + fail-closed + near-miss + param resolution + 3-turn context chains),
+`test_question_ledger.py` (roundtrip, rephrase linkage, clusters, malformed-line
+tolerance), `test_ask_chain_api.py` (slow, one deterministic solve: voice-shaped
+phrasing → route → render → ledger row in its own stream; live ellipsis
+resolution; meta-route; DEV gating). Existing router/explainer suites untouched-
+green. One cockpit test for the visible resolved-question.
+
+**R-AI1 close-out for this session.** *Evidence:* the question-ledger records
+(every ask, routed or refused, in its own stream). *Question pathway:* the
+interpreter + `ROUTE_TAXONOMY` + the meta-route (the ledger is itself queryable).
+*Debts named, not built* (AI-track Session 2/3 scope): **WIP has no question
+domain** ("what's already running / in progress?"); **cross-run economics has
+none** ("is batching paying for itself?"); the **constraint-catalog "why can't it
+do X"** is not conversational. See docs/07 the AI-track line.

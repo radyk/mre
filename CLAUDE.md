@@ -94,6 +94,47 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.1 — R-AI1 +
+the interpreter, conversational context, and the question ledger 2026-07-16.**
+First AI-track session. **R-AI1 ruled** (docs/04, verbatim — "everything logs
+facts and establishes pathways to AI"; every capability ships AI-reachable or
+names its debt; intelligence accrues only in reviewable artifacts, never model
+state; unanswerable questions are logged facts feeding a human-curated loop). The
+M10 router is wrapped WITHOUT changing its routing: `Explainer.answer()` is now
+`route(*classify(question))` over a **closed 15-route taxonomy** (`ROUTE_TAXONOMY`),
+branch order byte-for-byte preserved — the deterministic path never touches an
+LLM. **CU1 interpreter** (`src/mre/modules/interpreter.py`): phrasing →
+(route, params, confidence) onto the taxonomy ONLY, invoked only on a
+deterministic miss; LLM-backed, strict JSON, **fail-closed** (no key/malformed/
+unknown-route/low-conf → honest refusal); params resolve through the identity map
+(external refs in, unique-substring, **no id-shape regex**); a high-confidence
+fully-resolved route synthesizes its canonical question and re-routes through the
+same assemblers. **CU2 context** (`resolve_followup`): deterministic ellipsis
+resolution before routing ("and what would fix it?" → against the last order;
+"how much?" after an edit → edit-cost), **visible** (resolved question rides back
+on `bundle.question`; the cockpit shows an "interpreted as" note); unresolvable →
+**clarify**, never a guess; the server stays stateless (the cockpit carries a
+4-turn history + selection + session id in the `/ask` body). **CU3 ledger**
+(`question_ledger.py`; shape in `contracts/question_ledger.py`): every ask →
+one `QuestionLedgerEntry` in its OWN append-only JSONL under the data root
+(`ledger/questions.jsonl`), **never** in a run's evidence; carries verbatim +
+resolved question, route/REFUSED/NEAR_MISS/CLARIFY, source, confidence, register,
+schedule id, session id, and **rephrase linkage** (a refusal → its later
+successful rephrase within 180 s = free labeled data); `refusal_clusters()` backs
+a DEV-gated cockpit panel; `GET /ledger/refusals` is DEV-gated (404 unless
+`MRE_DEV`); a **meta-route** ("what questions couldn't you answer recently?")
+reads the ledger — it answers about itself. **CU4 tiered fallback**
+(`ask_fallback_copy.py`, all copy AUTHORED): a **near-miss bridge** (confidence in
+[0.45, 0.75) OR partial params → the two nearest routes as one-phrase offers)
+between routed and refused; the full refusal keeps the planner-language capability
+list; no dead ends. **R-AI1 close-out:** evidence = the ledger records; pathway =
+the interpreter + taxonomy + the meta-route; **debts NAMED, not built** (AI-track
+Session 2/3): WIP has no question domain, cross-run economics has none,
+constraint-catalog "why can't it do X" is not conversational. **1086 non-slow
+Python passed (0 failed)** (+50) + the slow ask-chain ladder; **cockpit JS 45/45**
+(was 44). See the docs/04 2026-07-16 R-AI1 + Session 4A.1 amendments and docs/07
+v2.13.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 3.8 — version-lifecycle
 continuity in the cockpit 2026-07-16. Queue before Phase-4 design unchanged:
 Daryn's grand feel pass + export.** Feel-pass findings: after an accept→publish

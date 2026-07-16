@@ -146,6 +146,7 @@ class TemplateRenderer:
                 self._render_diff(lines, bundle.key_facts)
             elif bundle.subject_type in (
                 "downtime", "unsupported", "schedule", "scenario_diff",
+                "near_miss", "clarify", "refusals",
             ):
                 pass  # header already rendered all content
             elif "error" in bundle.key_facts:
@@ -282,6 +283,46 @@ class TemplateRenderer:
             lines.append("Supported question types:")
             for route in kf.get("supported_routes", []):
                 lines.append(f"  - {route}")
+            lines.append("")
+
+        elif bundle.subject_type == "near_miss":
+            # The tiered-fallback bridge (CU4): honest miss + the two nearest
+            # routes as concrete follow-ups. All copy is authored (never LLM).
+            from mre.modules.ask_fallback_copy import NEAR_MISS_LEAD, NEAR_MISS_OFFER
+            kf = bundle.key_facts
+            lines.append(NEAR_MISS_LEAD.format(q=kf.get("parsed", "?")))
+            lines.append("")
+            lines.append(NEAR_MISS_OFFER)
+            for offer in kf.get("offers", []):
+                lines.append(f"  - {offer}")
+            lines.append("")
+
+        elif bundle.subject_type == "clarify":
+            # Unresolvable ellipsis (CU2): ask for the missing referent, never
+            # guess. The reason is authored fallback copy carried on the bundle.
+            from mre.modules.ask_fallback_copy import CLARIFY_LEAD
+            kf = bundle.key_facts
+            lines.append(CLARIFY_LEAD.format(q=kf.get("parsed", "?")))
+            reason = kf.get("reason")
+            if reason:
+                lines.append(reason)
+            lines.append("")
+
+        elif bundle.subject_type == "refusals":
+            # The meta-route (R-AI1(d)): the ledger answering about itself.
+            from mre.modules.ask_fallback_copy import (
+                REFUSAL_META_EMPTY, REFUSAL_META_LEAD,
+            )
+            kf = bundle.key_facts
+            refusals = kf.get("refusals", [])
+            if not refusals:
+                lines.append(REFUSAL_META_EMPTY)
+            else:
+                lines.append(REFUSAL_META_LEAD.format(n=len(refusals)))
+                for r in refusals:
+                    q = r.get("verbatim_question", "?")
+                    kind = r.get("route", "REFUSED")
+                    lines.append(f"  - \"{q}\"  [{kind}]")
             lines.append("")
 
         elif bundle.subject_type == "schedule":

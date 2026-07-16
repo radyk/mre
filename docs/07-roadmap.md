@@ -1,6 +1,35 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.12 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.13 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.13:** **AI-track Session 4A.1 — R-AI1 ruling + the interpreter, conversational
+context, and the question ledger** 2026-07-16 (docs/04 amendment). First AI-track
+session; implements **R-AI1** ("everything logs facts and establishes pathways to
+AI"). The M10 deterministic router is refactored so `answer() == route(*classify())`
+— a **closed 15-route taxonomy** (`ROUTE_TAXONOMY`) callable by everything, routing
+byte-for-byte unchanged (zero regression, the deterministic path never touches an
+LLM). **CU1** the **interpreter** — free-form phrasing → (route, params, confidence)
+onto the taxonomy ONLY, invoked only on a deterministic miss; LLM-backed, strict
+JSON, **fail-closed** (no key / malformed / low confidence → honest refusal); params
+resolve through the identity map (external refs in, no id-shape regex); the
+paraphrase table is the growing asset the ledger feeds. **CU2** **conversational
+context** — deterministic ellipsis resolution before routing ("and what would fix
+it?" → against the last order; "how much?" after an edit → the edit-cost domain),
+**visible** (the resolved question rides back, the cockpit shows an "interpreted as"
+note); unresolvable ellipsis → clarify, never a guess; server stays stateless (the
+cockpit carries a 4-turn history + selection + session id). **CU3** the **question
+ledger** — every ask logged as a `QuestionLedgerEntry` in its OWN JSONL stream
+(never schedule evidence): verbatim + resolved question, route/REFUSED, confidence,
+register, version, and **rephrase linkage** (a refusal → its later successful
+rephrase = free labeled data); a DEV-gated cockpit refusal-cluster panel +
+`GET /ledger/refusals` (404 unless `MRE_DEV`); a **meta-route** reads the ledger
+itself. **CU4** **tiered fallback** — a near-miss bridge (moderate confidence /
+partial params → the two nearest routes as authored one-phrase offers) between
+routed and refused; no dead ends, all fallback copy authored. **1086 non-slow
+Python** (+50) + the slow ask-chain ladder; **cockpit JS 45/45** (was 44). **Debts
+named** (R-AI1 close-out, AI-track Session 2/3): WIP has no question domain,
+cross-run economics has none, constraint-catalog "why can't it do X" is not
+conversational. See the docs/04 2026-07-16 R-AI1 + Session 4A.1 amendments.
 
 **v2.12:** **Session 3.8 — version-lifecycle continuity in the cockpit** 2026-07-16 (docs/04 amendment). Feel-pass findings: after an accept→publish the cockpit stayed bound to the *superseded* schedule id → `/ask` returned a raw "superseded" error, a subsequent accepted drop *returned home*, and Tier-0 shading rendered from the stale payload ("zombie legality"). **CU2 (diagnose first)** — reproduced against the real API: a stale-bound board's `/sandbox` + `/accept` **409 against the superseded id (the backend never commits)** — so the returned-home drop was NOT a committed edit reverting; it was the accept *failing* against a stale id — while `/interaction` still 200s (no status guard) → the zombie legality. Backend lifecycle is correct; the defect is the cockpit's version binding + its handling of a superseded response. **CU1** — every version change (accept AND publish) now routes through one seam that updates the **URL** (`history.replaceState`), the strip, the ask target, the **selection** (cleared), and the hook; the controller already re-fetches the new version's interaction + alternatives. Invariant: no user action may be issued against a superseded id from a live session. **CU3** — additive `Registry.live_successor` + `successor_id` on a superseded `/meta`; a typed `ApiError.superseded`; a **deep link** to a superseded id loads read-only behind a banner + a one-click "View current" jump, gesture surface **not wired** (no editable zombie); a **live** 409 self-heals (planner language + jump). **Harness** — the fixture server models the lifecycle (records parents, supersedes on publish, 409s superseded ids, serves `successor_id`, composes the edit chain's pins, `POST /__test__/reset` before each boot); three new tests: two consecutive edit→accept cycles, edit→accept→publish→edit, and the superseded deep link. **Cockpit JS 44/44** (was 41); Python **1036 non-slow** + planner_edit slow 7/7 (new successor test). Queue before Phase-4 design unchanged: Daryn's grand feel pass + export. See the docs/04 2026-07-16 Session 3.8 amendment.
 

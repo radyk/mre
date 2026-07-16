@@ -93,6 +93,72 @@ _EDIT_COST_TRIGGERS = (
     "what did this move cost", "why does that cost", "why so expensive",
 )
 
+# The meta-route (Session 4A.1 CU3 / R-AI1(d)): the ledger answering questions
+# ABOUT itself — "what questions couldn't you answer recently?". Checked first in
+# classify() so this exact phrasing never falls into the schedule/diff handlers.
+_LEDGER_TRIGGERS = (
+    "couldn't you answer", "couldn't answer", "could not answer",
+    "questions you can't answer", "questions you cannot answer",
+    "what couldn't you", "unanswered questions", "what have you refused",
+    "what did you refuse", "recent refusals",
+)
+
+# The route taxonomy — the closed set of route ids classify()/route() dispatch
+# over (docs/07 Phase 4, R-AI1(b)). The interpreter (CU1) maps free-form phrasing
+# ONLY onto these ids; it never invents a route. `params` names the external-ref
+# slots a route needs (resolved through the identity map, never an id-shape).
+# `canonical` is the planner-vocabulary question the interpreter's route+params
+# synthesize into — re-parsed by the same assemblers, so identity resolution
+# stays inside (the Phase-1 audit lesson).
+ROUTE_TAXONOMY: dict[str, dict] = {
+    "late-order":            {"params": ["order"],   "canonical": "why is {order} late?"},
+    "late-orders":           {"params": [],          "canonical": "which orders are late?"},
+    "why-on-machine":        {"params": ["order", "machine"],
+                              "canonical": "why is {order} on {machine}?"},
+    "machine-schedule":      {"params": ["machine"], "canonical": "what is running on {machine}?"},
+    "order-schedule":        {"params": ["order"],   "canonical": "when does {order} start and finish?"},
+    "customer-schedule":     {"params": ["customer"],
+                              "canonical": "show the schedule for customer {customer}"},
+    "downtime":              {"params": ["machine"], "canonical": "how much downtime does {machine} have?"},
+    "data-problems":         {"params": [],          "canonical": "what data problems exist?"},
+    "version-diff":          {"params": [],          "canonical": "what changed between the two versions?"},
+    "remediation":           {"params": [],          "canonical": "how do I fix the submission's problems?"},
+    "triage":                {"params": [],          "canonical": "what should I fix first?"},
+    "certificate-testimony": {"params": [],          "canonical": "what is wrong with the submission?"},
+    "edit-summary":          {"params": [],          "canonical": "summarize my changes and what they cost"},
+    "edit-cost":             {"params": [],          "canonical": "what did this move cost?"},
+    "ledger-refusals":       {"params": [],          "canonical": "what questions couldn't you answer recently?"},
+}
+
+
+# The two answer registers (honesty armor): testimony (evidence/decisions) vs
+# judgment (findings/triage). Single source — the API and the interpreter both
+# classify through this, so no register ever blends across surfaces.
+_JUDGMENT_SUBJECTS = frozenset({"findings", "triage"})
+
+
+def register_of(bundle: "ExplanationBundle") -> str:
+    st = getattr(bundle, "subject_type", "") or ""
+    kf = getattr(bundle, "key_facts", {}) or {}
+    if st in _JUDGMENT_SUBJECTS or "triage_order" in kf or "codes" in kf:
+        return "judgment"
+    return "testimony"
+
+
+def canonical_question(route: str, params: Optional[dict] = None) -> str:
+    """The planner-vocabulary question a route + resolved external-ref params
+    synthesize into. The interpreter feeds this back through the deterministic
+    assemblers, so external refs get re-resolved inside (no id-shape regex)."""
+    spec = ROUTE_TAXONOMY.get(route)
+    if spec is None:
+        return (params or {}).get("question", "")
+    params = params or {}
+    try:
+        return spec["canonical"].format(**{k: params.get(k, f"{{{k}}}") for k in
+                                            ("order", "machine", "customer")})
+    except (KeyError, IndexError):
+        return spec["canonical"]
+
 
 @dataclass
 class ExplanationBundle:
@@ -177,49 +243,133 @@ class Explainer:
     # ------------------------------------------------------------------
 
     def answer(self, question: str) -> ExplanationBundle:
-        """Route a natural-language question to the right assembler."""
+        """Route a natural-language question to the right assembler.
+
+        The deterministic router IS the taxonomy (docs/07 Phase 4): classify()
+        maps working phrasings onto a route id + params, route() dispatches. This
+        split (Session 4A.1) makes the taxonomy callable by the interpreter (CU1)
+        without changing any routing — answer() is exactly classify()+route()."""
+        route_id, params = self.classify(question)
+        return self.route(route_id, params)
+
+    def classify(self, question: str) -> tuple[str, dict]:
+        """Deterministic phrasing → (route id, params). No LLM, no cost. Returns
+        ("unsupported", …) when nothing matches — the signal the orchestration
+        uses to fall through to the interpreter (CU1). Branch order is preserved
+        byte-for-byte from the pre-4A.1 router (zero regression)."""
         q = question.lower()
         wo_ref = self._find_order_ref(question)
         machine_ref = self._find_machine_ref(question)
+        base = {"question": question, "order": wo_ref, "machine": machine_ref}
 
-        # Certificate question domain (handoff §4) — checked before the schedule
-        # routes so "how do I fix …" / "what should I fix first" never fall into
-        # schedule/late handling. Judgment (triage) is checked before remediation
-        # so "what should I fix first" (an ordering question) is not swallowed by
-        # the bare "fix" in the remediation triggers.
+        # The meta-route first — "what couldn't you answer?" must not fall into
+        # the schedule/diff handlers (R-AI1(d)).
+        if any(t in q for t in _LEDGER_TRIGGERS):
+            return "ledger-refusals", base
+
+        # Certificate question domain (handoff §4) — before the schedule routes so
+        # "how do I fix …" / "what should I fix first" never fall into schedule/
+        # late handling. Judgment (triage) before remediation so "what should I
+        # fix first" is not swallowed by the bare "fix" in the remediation
+        # triggers.
         if any(t in q for t in _TRIAGE_TRIGGERS):
-            return self._explain_fix_first(question)
+            return "triage", base
         if any(t in q for t in _REMEDIATION_TRIGGERS):
             limit = 1 if ("worst" in q or "top " in q or "the one" in q) else None
-            return self._explain_how_to_fix(question, limit)
+            return "remediation", {**base, "limit": limit}
         if any(t in q for t in _CERT_TESTIMONY_TRIGGERS):
-            return self._explain_data_problems(entity_ref=wo_ref)
+            return "certificate-testimony", base
 
-        # The sandbox/edit question domain (CU2) — before the schedule/diff
-        # routes so "summarize my changes" / "what did this move cost" never
-        # fall into the snapshot-diff or lateness handlers.
+        # The sandbox/edit question domain (3.4 CU2) — before schedule/diff.
         if any(t in q for t in _EDIT_COST_TRIGGERS):
-            return self._explain_edit_cost(question)
+            return "edit-cost", base
         if any(t in q for t in _EDIT_SUMMARY_TRIGGERS):
-            return self._summarize_edits(question)
+            return "edit-summary", base
 
         if ("late" in q or "delay" in q or "tardy" in q) and wo_ref:
-            return self._explain_why_late(wo_ref)
+            return "late-order", base
         if ("late" in q or "delay" in q or "tardy" in q) and not wo_ref:
-            return self._list_late_orders()
+            return "late-orders", base
         if ("on" in q or "assign" in q or "why" in q) and wo_ref and machine_ref:
-            return self._explain_why_on_machine(wo_ref, machine_ref)
+            return "why-on-machine", base
         if "data problem" in q or "finding" in q or "quality" in q:
-            return self._explain_data_problems()
+            return "data-problems", base
         if ("change" in q or "diff" in q or "since" in q or "update" in q):
-            return self._explain_what_changed(question)
+            return "version-diff", base
         if "downtime" in q or "closure" in q or "offline" in q:
-            return self._explain_downtime(question)
+            return "downtime", base
         if any(kw in q for kw in _SCHEDULE_TRIGGERS):
-            return self._schedule_query(question, q, wo_ref, machine_ref)
+            return "schedule", base
         if wo_ref:
-            return self._explain_why_late(wo_ref)
-        return self._unknown_question(question)
+            return "late-order", base
+        return "unsupported", base
+
+    def route(self, route_id: str, params: dict) -> ExplanationBundle:
+        """Dispatch a route id + params to its assembler. The single dispatch
+        both the deterministic router and the interpreter (CU1) go through."""
+        q = params.get("question", "")
+        if route_id == "ledger-refusals":
+            return self._explain_recent_refusals(params.get("refusals", []))
+        if route_id == "triage":
+            return self._explain_fix_first(q)
+        if route_id == "remediation":
+            return self._explain_how_to_fix(q, params.get("limit"))
+        if route_id == "certificate-testimony":
+            return self._explain_data_problems(entity_ref=params.get("order"))
+        if route_id == "edit-cost":
+            return self._explain_edit_cost(q)
+        if route_id == "edit-summary":
+            return self._summarize_edits(q)
+        if route_id == "late-order":
+            return self._explain_why_late(params["order"])
+        if route_id == "late-orders":
+            return self._list_late_orders()
+        if route_id == "why-on-machine":
+            return self._explain_why_on_machine(params["order"], params["machine"])
+        if route_id == "data-problems":
+            return self._explain_data_problems()
+        if route_id == "version-diff":
+            return self._explain_what_changed(q)
+        if route_id == "downtime":
+            return self._explain_downtime(q)
+        if route_id in ("schedule", "machine-schedule", "order-schedule",
+                        "customer-schedule"):
+            return self._schedule_query(q, q.lower(), params.get("order"),
+                                        params.get("machine"))
+        if route_id == "near-miss":
+            return self._near_miss(q, params.get("offers", []),
+                                   params.get("routes", []))
+        if route_id == "clarify":
+            return self._clarify(q, params.get("reason", ""))
+        return self._unknown_question(q)
+
+    # ------------------------------------------------------------------
+    # External-ref param resolution (CU1) — external refs in, canonical
+    # resolution inside; never an id-shape regex (Phase-1 audit lesson).
+    # ------------------------------------------------------------------
+
+    def resolve_order_value(self, raw: str) -> Optional[str]:
+        """Resolve a free-form order phrase to a known external order ref
+        (the customer's own vocabulary), or None. Exact-token first, then a
+        unique substring match against the identity map's order refs."""
+        if not raw:
+            return None
+        key = raw.upper().strip(" .,?!")
+        if key in self._order_refs:
+            return self._order_refs[key]
+        hits = [v for k, v in self._order_refs.items() if key in k or k in key]
+        return hits[0] if len(hits) == 1 else None
+
+    def resolve_machine_value(self, raw: str) -> Optional[str]:
+        """Resolve a free-form machine phrase ("the big press") to a known
+        external machine ref, or None. Exact-token, then unique substring."""
+        if not raw:
+            return None
+        key = raw.upper().strip(" .,?!")
+        if key in self._machine_refs:
+            return self._machine_refs[key]
+        hits = [v for k, v in self._machine_refs.items() if key in k or k in key]
+        return hits[0] if len(hits) == 1 else None
 
     def summarize_run(self, run_id: Optional[str] = None) -> ExplanationBundle:
         """High-level run summary: notable decisions + findings + late demands."""
@@ -667,6 +817,53 @@ class Explainer:
             subject_external_name=f"edit on {facts['machine']}",
             ordered_records=[edits[-1]],
             key_facts=facts,
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _near_miss(self, question: str, offers: list[str],
+                   routes: list[str]) -> ExplanationBundle:
+        """The tiered-fallback bridge (CU4): moderate interpreter confidence or
+        params that only partially resolved. Answer honestly with the nearest
+        routes offered as concrete follow-ups. All copy is authored upstream
+        (ask_fallback_copy) — this assembler only carries it. Never a dead end."""
+        return ExplanationBundle(
+            question=question,
+            subject_id="",
+            subject_type="near_miss",
+            subject_external_name="?",
+            ordered_records=[],
+            key_facts={"parsed": question, "offers": offers, "routes": routes},
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _clarify(self, question: str, reason: str) -> ExplanationBundle:
+        """An elliptical follow-up (CU2) that cannot be resolved against the
+        conversation — ask for the missing referent, never guess."""
+        return ExplanationBundle(
+            question=question,
+            subject_id="",
+            subject_type="clarify",
+            subject_external_name="?",
+            ordered_records=[],
+            key_facts={"parsed": question, "reason": reason},
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _explain_recent_refusals(self, refusals: list[dict]) -> ExplanationBundle:
+        """The meta-route (R-AI1(d)): the ledger answering about itself. The
+        refusal facts are passed in (the orchestration reads the ledger and hands
+        them here) so the explainer stays free of the ledger dependency and its
+        no-write-path invariant is untouched."""
+        return ExplanationBundle(
+            question="What questions couldn't you answer recently?",
+            subject_id=self._snap_id,
+            subject_type="refusals",
+            subject_external_name="the question ledger",
+            ordered_records=[],
+            key_facts={"refusals": refusals, "count": len(refusals)},
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )

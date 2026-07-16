@@ -8,6 +8,7 @@ import {
 import { createBoard } from "./board.js";
 import { createAskPanel } from "./askpanel.js";
 import { wireInteraction } from "./interaction.js";
+import { mountDevLedger } from "./devledger.js";
 
 // Rewrite the address bar to bind the given schedule version WITHOUT a reload
 // (session 3.8 CU1): a live accept/publish stays in the same session, but the
@@ -164,6 +165,11 @@ async function boot() {
         },
       });
     }
+
+    // The refusal-cluster dev panel (CU3, R-AI1(d)) — DEV-build-only, like the
+    // feel tuning panel. Reads the DEV-gated /ledger/refusals; absent in the
+    // production build the harness serves.
+    if (import.meta.env?.DEV) mountDevLedger(app);
 
     if (CONFIG.autoAsk) panel.run(CONFIG.autoAsk);
   } catch (e) {

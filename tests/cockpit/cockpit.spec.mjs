@@ -151,6 +151,17 @@ test("ask+highlight — the acceptance moment: priced answer, cited bars light u
   await shot(page, "03_ask_highlight");  // the first frame of the sixty-second script
 });
 
+test("resolved question — an elliptical follow-up shows what it answered (CU2)", async ({ page }) => {
+  await boot(page);
+  // the server (here the fixture) resolved "and what about it?" against the prior
+  // subject and returned resolved_question; the panel surfaces it before the
+  // answer (the deictic pattern from 3.2d, generalized, R-AI1 CU2).
+  await page.evaluate(() => window.__cockpit.ask("and what about it?"));
+  const note = page.locator(".msg.resolved-note").last();
+  await expect(note).toBeVisible();
+  await expect(note.locator("pre")).toHaveText("why is ORD-000012 late?");
+});
+
 test("C1 drift — standing regression across zoom (label-vs-bar 0.0px)", async ({ page }) => {
   await boot(page);
   await page.evaluate((q) => window.__cockpit.ask(q), ACCEPTANCE_Q);

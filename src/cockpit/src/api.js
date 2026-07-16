@@ -142,15 +142,31 @@ export function postPublish(id) {
   return envelope(`/schedules/${id}/publish`, { method: "POST" });
 }
 
-export function ask(id, question, useLlm = false) {
+export function ask(id, question, useLlm = false, ctx = {}) {
   // `llm` is honored by the server ONLY when ANTHROPIC_API_KEY is set, and the
   // LLMRenderer itself fails closed (no key / package / validation failure →
   // deterministic template render, never an error, never unvalidated prose). The
   // cockpit sends it true only in the dev build (see main.js); the production
   // build always renders templates. See src/cockpit/README.md.
+  //
+  // ctx (Session 4A.1 CU2): the conversational context the stateless server uses
+  // to resolve an elliptical follow-up before routing — {history, selection,
+  // session_id}. Omitted fields default server-side to a fresh question.
   return envelope(`/schedules/${id}/ask`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ question, llm: !!useLlm }),
+    body: JSON.stringify({
+      question, llm: !!useLlm,
+      history: ctx.history || [],
+      selection: ctx.selection || {},
+      session_id: ctx.sessionId || null,
+    }),
   });
+}
+
+export function ledgerRefusals(limit = 20) {
+  // The question ledger's refusal clusters (R-AI1(d), CU3) — the DEV-panel view.
+  // The endpoint is DEV-gated server-side (404 unless MRE_DEV is set); a 404 here
+  // simply means "no dev ledger view" and is not an error to surface.
+  return envelope(`/ledger/refusals?limit=${limit}`).catch(() => null);
 }
