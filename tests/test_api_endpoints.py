@@ -78,6 +78,11 @@ class TestHealth:
         data = _data(client.get("/health"))
         assert data["status"] == "ok"
         assert data["data_root_writable"] is True
+        # The 4.0d path-length budget rides on the liveness probe so a thin
+        # margin is visible before it can fail at accept time.
+        budget = data["path_budget"]
+        assert budget["worst_case_path_len"] > budget["data_root_len"]
+        assert budget["status"] in ("ok", "at_risk")
 
     def test_health_503_when_data_root_unwritable(self, tmp_path, monkeypatch):
         root = tmp_path / "hdata2"

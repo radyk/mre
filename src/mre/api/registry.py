@@ -15,12 +15,13 @@ No FastAPI imports here; the CLI may import this module.
 from __future__ import annotations
 
 import json
-import shutil
 import sqlite3
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Optional
+
+from mre.modules import longpath
 
 UTC = timezone.utc
 
@@ -112,15 +113,17 @@ def prepare_out_dir(
     directories.
     """
     out_dir = Path(out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    longpath.makedirs(out_dir)
     runs_dir = out_dir / "runs"
     snap_dir = out_dir / "snapshots" / snapshot_id
-    if snap_dir.exists():
-        shutil.rmtree(snap_dir)
+    # Snapshot/run dirs nest deep under a chained-edit run; route their existence
+    # + clear through the long-path seam so MAX_PATH never bites here (4.0d).
+    if longpath.exists(snap_dir):
+        longpath.rmtree(snap_dir)
         if log:
             log(f"cleared stale snapshot: {snap_dir}")
-    if runs_dir.exists():
-        shutil.rmtree(runs_dir)
+    if longpath.exists(runs_dir):
+        longpath.rmtree(runs_dir)
         if log:
             log(f"cleared stale runs: {runs_dir}")
     return out_dir, runs_dir

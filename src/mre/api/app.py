@@ -23,6 +23,7 @@ or embed ``create_app(data_root=...)``.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import shutil
 import threading
@@ -35,6 +36,7 @@ from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from mre.api.registry import Registry
+from mre.modules import longpath
 
 API_VERSION = "1"
 
@@ -157,6 +159,28 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
         data_root = os.environ.get("MRE_DATA_ROOT", "mre_api_data")
     registry = Registry(data_root)
 
+    # Boot-time path-budget tripwire (4.0d fix 3): a path-length problem must never
+    # again be discovered only at accept time. If the worst-case snapshot path could
+    # exceed the classic limit AND the long-path seam is somehow not mitigating it,
+    # warn LOUDLY at startup; otherwise record the numbers so /health can surface
+    # them. In normal operation the seam always mitigates on Windows, so this is a
+    # standing guard, not an expected warning.
+    _budget = longpath.path_budget(registry.data_root)
+    _log = logging.getLogger("mre.api")
+    if _budget["status"] == "at_risk":
+        _log.warning(
+            "PATH BUDGET AT RISK: worst-case snapshot path is %d chars under data "
+            "root %r, over the classic Windows limit of %d. The run store's "
+            "long-path seam is mitigating this (active=%s) so accepts still work, "
+            "but the data root is dangerously deep — shorten it to remove the "
+            "dependency and never risk a FileNotFoundError at accept time.",
+            _budget["worst_case_path_len"], str(registry.data_root),
+            _budget["classic_max_path"], _budget["long_path_mitigation"],
+        )
+    else:
+        _log.info("path budget ok: worst-case %d chars, mitigation=%s",
+                  _budget["worst_case_path_len"], _budget["long_path_mitigation"])
+
     app = FastAPI(title="Manufacturing Reasoning Engine API", version=API_VERSION)
     app.state.registry = registry
 
@@ -194,8 +218,11 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
                  "error": {"code": 503, "message": "data root not writable"}},
                 status_code=503,
             )
+        # Surface the path-length budget (4.0d) so a thin margin is visible on a
+        # liveness probe, never a surprise at accept time.
         return _ok({"status": "ok", "api_version": API_VERSION,
-                    "data_root_writable": True})
+                    "data_root_writable": True,
+                    "path_budget": longpath.path_budget(registry.data_root)})
 
     # ------------------------------------------------------------------
     # Submissions
@@ -616,15 +643,15 @@ def _persist_document(document: Any, out_dir: Path) -> Path:
     interaction and write no sibling file. Returns the main document path."""
     doc_path = out_dir / "schedule_document.json"
     main_doc = document.model_copy(update={"interaction": None})
-    doc_path.write_text(main_doc.model_dump_json(indent=2), encoding="utf-8")
+    longpath.write_text(doc_path, main_doc.model_dump_json(indent=2))
     if document.interaction is not None:
-        (out_dir / "interaction.json").write_text(
+        longpath.write_text(
+            out_dir / "interaction.json",
             json.dumps({
                 "schedule_id": document.schedule_id,
                 "contract_version": document.contract_version,
                 "interaction": document.interaction.model_dump(mode="json"),
             }, indent=2),
-            encoding="utf-8",
         )
     return doc_path
 
@@ -873,8 +900,8 @@ def _execute_whatif(registry: Registry, run: dict, base_schedule: dict,
     base_snap = base_run["snapshot_id"]
 
     try:
-        shutil.copytree(base_out / "snapshots" / base_snap,
-                        out_dir / "snapshots" / base_snap)
+        longpath.copytree(base_out / "snapshots" / base_snap,
+                          out_dir / "snapshots" / base_snap)
         base_ctx = derive_base_context(base_out / "runs")
         runner = ScenarioRunner(
             SnapshotStore(out_dir / "snapshots"),
@@ -926,9 +953,9 @@ def _execute_accept(registry: Registry, base_schedule: dict, req: "AcceptRequest
 
     base_run = registry.get_run(base_schedule["run_id"])
     base_out = Path(base_run["out_dir"])
-    # The schedule's OWN snapshot — for an accept-derived version this is a child
-    # snapshot (base--edit-…), NOT the run's minted snapshot id (so chained edits
-    # copy the right ground truth).
+    # The schedule's OWN snapshot — for an accept-derived version this is an
+    # accept-derived child snapshot (opaque snap-edit-<sha12>, 4.0d), NOT the run's
+    # minted snapshot id (so chained edits copy the right ground truth).
     base_snap = base_schedule["snapshot_id"]
 
     # Config (reference_date, policy, outlier threshold) must come from the ROOT
@@ -951,8 +978,10 @@ def _execute_accept(registry: Registry, base_schedule: dict, req: "AcceptRequest
     )
     run_id, out_dir = run["id"], Path(run["out_dir"])
     try:
-        shutil.copytree(base_out / "snapshots" / base_snap,
-                        out_dir / "snapshots" / base_snap)
+        # Route through the long-path seam: the base snapshot dir can be nested
+        # deep under a chained-edit run, past Windows MAX_PATH (4.0d).
+        longpath.copytree(base_out / "snapshots" / base_snap,
+                          out_dir / "snapshots" / base_snap)
         base_ctx = derive_base_context(Path(root_run["out_dir"]) / "runs")
         base_ctx["base_runs_dir"] = str(base_out / "runs")
         result = apply_planner_edit(

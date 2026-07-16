@@ -1,6 +1,31 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.16 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.17 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.17:** **Session 4.0d — MAX_PATH survives the bound (the 4.0c fix was validated
+in a short prefix)** 2026-07-16 (docs/04 amendment). Live: post-4.0c, **every**
+accept still failed `FileNotFoundError [WinError 3]` — now even on a **fresh
+schedule, depth-1 edit**. The 4.0c cap of 90 chars was calibrated against a short
+temp-dir prefix; Daryn's real data root spends ~130 chars before any snapshot id,
+so a chain grown near the cap still crossed 260. **Fixed all three, defense in
+depth:** (1) **long-path seam** — new `src/mre/modules/longpath.py` routes the
+snapshot/run store's I/O through Windows `\\?\` extended-length paths (the 260
+limit stops applying); `SnapshotStore`/`prepare_out_dir`/accept-`copytree`/
+`_persist_document` all go through it. (2) **short opaque snapshot ids** —
+`_edit_snapshot_id` is now a fixed-width `snap-edit-<sha12>` (22 chars) embedding
+NO lineage (the parent chain lives in the registry), so the on-disk name is tiny
+however deep the chain. (3) **boot / `/health` path-budget tripwire** —
+`longpath.path_budget` warns loudly at startup when a data root is deep enough to
+exceed 260, and `/health` carries the numbers; never discovered at accept time
+again. **Tested at a REALISTIC prefix:** `test_longpath.py` (a SnapshotStore
+round-trip at a >260 path + a naive negative control), a rewritten
+`test_edit_snapshot_id.py` (opaque/fixed-width), and a **slow end-to-end accept
+under a ~160-char-prefix data root** where a 4.0c-era id would have crossed 260.
+**Non-slow Python 1103 passed** (+7) + slow `planner_edit` **11/11**; cockpit
+untouched (JS 48/48). Queue before Phase-4 design unchanged: Daryn's grand feel
+pass + export. Named residual: the shallow run-dir writers (evidence sink,
+certificate) are not yet on the seam — safe at Daryn's depth, flagged by the
+budget check for absurd (>200-char) roots.
 
 **v2.16:** **Session 4.0c — the silent accept (an accept that 409'd on a storage
 limit, rendered mutely)** 2026-07-16 (docs/04 amendment). Live specimen: schedule

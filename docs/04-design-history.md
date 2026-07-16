@@ -4987,3 +4987,79 @@ that embeds its whole ancestry is a path-length bomb on a chained-edit workflow 
 bound the name, keep the lineage in the registry; and a hard failure surfaced
 through `returnHome(reason, keepCard=false)` is a silent failure — enforce, or
 refuse loudly, but never drop the reason on the floor.
+
+### 2026-07-16 — Session 4.0d: MAX_PATH survives the bound (the 4.0c fix was validated in a short prefix)
+
+**Live report.** Post-4.0c, on Daryn's real stack, **every** accept still failed
+`FileNotFoundError [WinError 3]` — now even on a **fresh schedule with a depth-1
+edit**, not just the pre-existing 118-char `ea1a42f0`. The 4.0c bound capped chain
+GROWTH, but the fix was validated in a short temp-dir prefix, and Daryn's real data
+root (`…\OneDrive\Documents\PythonProjects\mre\_data\…`) spends ~130 chars before
+any snapshot id ever appears. **The blind spot named plainly:** the 4.0c cap of
+**90** chars was calibrated against that short test prefix. At Daryn's real
+~130-char prefix a chain grown to *near* the cap (an id in the ~75–90 range, which
+the collapse deliberately allows) plus `\entities_serviceoutcome.jsonl` (30) still
+crosses 260 — the cap was chosen without accounting for the real prefix the temp
+tests never had. Reproduced deterministically at a padded ~136-char prefix: a naive
+write at 265 chars fails `FileNotFoundError`; the same write through a `\\?\`
+extended-length path succeeds (`os.makedirs`/`open`/`shutil.copy2`/`copytree`/`glob`
+all honor the prefix — `pathlib.Path.mkdir(parents=True)` does NOT, it walks up to
+`\\?\C:` and raises `WinError 123`, so the seam uses the low-level calls).
+
+**Fixed in order of preference, all three (defense in depth):**
+
+**Fix 1 — long-path support at the filesystem seam (the correct fix on modern
+Windows).** New `src/mre/modules/longpath.py` is the SINGLE seam through which the
+snapshot/run store does disk I/O. `extended(path)` returns the `\\?\`-prefixed
+absolute string on Windows (idempotent; UNC → `\\?\UNC\…`; a no-op pass-through on
+every other platform), lifting the 260-char limit (paths to ~32767). It exposes
+`makedirs`/`open_`/`write_text`/`read_text`/`exists`/`copy2`/`copytree`/`rmtree`/
+`glob`/`child_dir_names`, and `SnapshotStore`, `registry.prepare_out_dir`, and the
+accept/scenario `copytree` + `_persist_document` in `app.py` route through it. The
+snapshot tree (where the accept died) is now MAX_PATH-proof regardless of data-root
+or chain depth. (Named residual: the shallow run-dir writers — the Reporter
+evidence sink, the certificate writers — are not on the seam; at a data root beyond
+~200 chars they too would need it. They are safe at Daryn's real depth and flagged
+by fix 3, not silently left.)
+
+**Fix 2 — short, opaque snapshot directory names (shrink the budget anyway).**
+`_edit_snapshot_id` no longer embeds any lineage. It is now a fixed-width
+`snap-edit-<sha256(base|hash)[:12]>` = **22 chars**, deterministic per
+(base, edit_hash) and distinct per parent; the parent chain lives solely in the
+registry's `parent_schedule_id`. The on-disk snapshot name is therefore tiny and
+constant however deep the edit chain grows — the 4.0c "grow then collapse" scheme
+(and its 90-char ceiling) is gone. `_MAX_EDIT_SNAP_ID_LEN` is repurposed from a cap
+into a guaranteed ceiling (32) the tests assert the fixed-width id stays under. The
+4.0c collapse recursion is moot (no growth to collapse).
+
+**Fix 3 — a boot / `/health` path-budget tripwire.** `longpath.path_budget(root)`
+computes the worst-case snapshot path length under the data root and reports
+`status` (`ok` / `at_risk` when it exceeds the classic 260 even with a bounded id),
+`long_path_mitigation` (the seam covers it), and the numbers. `create_app` **warns
+loudly at startup** when a root is `at_risk` (mitigated, but dangerously deep —
+shorten it), and `/health` carries the whole block. A path-length problem is never
+again discovered only at accept time.
+
+**Why the arithmetic works now.** At Daryn's real ~130-char prefix: 4.0c near-cap
+id (~88) → 130+1+88+30 = **249…268** (crossed on the deeper chains); 4.0d opaque id
+(22) → 130+1+22+30 = **183** (fix 2 alone clears it). And even a pathological
+>200-char prefix that would push the 22-char child past 260 is defeated by fix 1's
+`\\?\` seam. Belt and suspenders.
+
+**Tests — at a REALISTIC prefix, so the temp-dir blind spot cannot recur.**
+`tests/test_longpath.py` (fast): `extended()` prefix/idempotency/UNC/pass-through;
+a **SnapshotStore write→derive→read round-trip at a >260-char prefix** with a naive
+**negative control** proving the limit is real (the seam succeeds where the naive
+path raises); `path_budget` ok vs at_risk. `tests/test_edit_snapshot_id.py`
+rewritten for the opaque scheme (short/fixed-width/opaque; a 50-deep chain stays
+one constant length; deterministic + distinct per parent; a realistic-prefix
+under-260 assertion). `tests/test_planner_edit.py` gains
+`TestAcceptAtARealisticDataRootPrefix` (**slow, end-to-end**): a real solve + accept
+under a data root padded so the prefix reaches ~160 — deep enough that a 4.0c-era
+~88-char id WOULD have crossed 260 (asserted in the test) — succeeds and lands on
+the pinned resource+start. `/health` gains a `path_budget` assertion. **Non-slow
+Python 1103 passed** (+7, 0 failed); slow `planner_edit` **11/11** (+1). Cockpit
+untouched (backend-only), JS stays 48/48. See docs/07 v2.17. Lesson: a bound
+validated against a short test prefix is a bound with an unmeasured margin — pin the
+budget to the REAL deployment path length, and prefer making the limit not exist
+(`\\?\`) over racing it with an ever-tighter cap.

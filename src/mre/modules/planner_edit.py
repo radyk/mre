@@ -342,38 +342,38 @@ def _short_pin_hash(*parts: str) -> str:
 
 
 # A child snapshot id is a directory NAME on disk (snapshots/<id>/entities_*.jsonl).
-# The naive scheme appends "--edit-<hash>" to the parent id on every accept, so a
-# chain of edits grows the id — and thus the on-disk path — without bound. Past
-# ~8 chained edits the path crosses the Windows MAX_PATH limit (260) and the
-# derive/copy fails with FileNotFoundError [WinError 3]; pre-4.0c that aborted the
-# accept SILENTLY (the cockpit returned the bar home with no error). Bounding the
-# id keeps every base a valid short directory name forever (each base is either a
-# root or an already-bounded child), so no chain ever reaches that depth. The
-# lineage itself is not lost — it lives in the registry's parent_schedule_id chain.
-_MAX_EDIT_SNAP_ID_LEN = 90
+# History: the naive scheme appended "--edit-<hash>" to the parent id on every
+# accept, so a chain of edits grew the id — and thus the on-disk path — without
+# bound, crossing Windows MAX_PATH (260) and failing the derive/copy with
+# FileNotFoundError [WinError 3] (4.0c). 4.0c capped that at 90 chars, but the cap
+# was validated in a SHORT temp prefix; at Daryn's real ~130-char data-root prefix
+# a near-cap id still crossed 260 on a shallow chain (4.0d).
+#
+# 4.0d makes the directory name a SHORT, FIXED-WIDTH opaque id that embeds NO
+# lineage at all — the parent chain lives solely in the registry's
+# parent_schedule_id. The on-disk snapshot path is therefore bounded and tiny no
+# matter how deep the edit chain goes (defense in depth alongside the long-path
+# seam, which independently lifts MAX_PATH — see mre.modules.longpath). The id is:
+#   * fixed-width  — always _EDIT_SNAP_PREFIX + 12 hex = 22 chars;
+#   * deterministic per (base, edit_hash) — a re-accept of the same pin reproduces
+#     the same id (idempotent), and different parents yield different ids (the
+#     digest is over the exact parent id), so lineages never collide.
+_EDIT_SNAP_PREFIX = "snap-edit-"
+# The guaranteed upper bound on an edit-snapshot directory name. The opaque scheme
+# is fixed-width (22) and far under this; the ceiling is asserted by the tests as a
+# standing guard against the name ever growing again.
+_MAX_EDIT_SNAP_ID_LEN = 32
 
 
 def _edit_snapshot_id(base_snapshot_id: str, edit_hash: str) -> str:
-    """The child snapshot id for an accepted edit, bounded in length so chained
-    edits never grow the snapshot-directory path past a filesystem limit (4.0c).
+    """A SHORT, OPAQUE directory name for an accepted-edit child snapshot (4.0d).
 
-    Shallow chains keep the readable ``<base>--edit-<hash>`` lineage. Once that
-    would exceed the cap, the ancestry collapses into a stable digest of the
-    (real, on-disk) parent id — preserving the visible root and the fresh edit
-    hash, and staying collision-free because the digest is over the exact parent
-    id we derive from."""
+    Embeds no lineage — the parent chain is the registry's parent_schedule_id — so
+    the name stays fixed-width however deep the chain grows. Deterministic per
+    (base_snapshot_id, edit_hash) and distinct per parent."""
     import hashlib
-    import re
-    candidate = f"{base_snapshot_id}--edit-{edit_hash}"
-    if len(candidate) <= _MAX_EDIT_SNAP_ID_LEN:
-        return candidate
-    # The pure root — everything before the FIRST edit/chain marker — so a second
-    # collapse does not accumulate "--chain-" segments (the id stays fixed-width
-    # however deep the chain goes). The digest is over the whole parent id, so it
-    # still uniquely fingerprints the exact lineage we derive from.
-    root = re.split(r"--edit-|--chain-", base_snapshot_id, maxsplit=1)[0]
-    lineage = hashlib.sha256(base_snapshot_id.encode()).hexdigest()[:12]
-    return f"{root}--chain-{lineage}--edit-{edit_hash}"
+    digest = hashlib.sha256(f"{base_snapshot_id}|{edit_hash}".encode()).hexdigest()[:12]
+    return f"{_EDIT_SNAP_PREFIX}{digest}"
 
 
 def _base_runs_dir(base_context: dict) -> Path:

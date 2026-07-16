@@ -304,6 +304,80 @@ class TestAcceptHonoursThePinnedResource:
             "authority": "dev-planner"}), 409)
 
 
+@pytest.fixture(scope="module")
+def deep_api(tmp_path_factory):
+    """A solved ``clean_small`` submission under a data root padded so the prefix
+    before a snapshot id (~52 chars of runs/<uuid>/snapshots atop the root) reaches
+    ~160 — deep enough that a 4.0c-era ~88-char id would have crossed Windows
+    MAX_PATH (260), shallow enough that the 4.0d opaque id (22) and the base solve's
+    own files fit. Reproduces Daryn's real ~130-char overhead the short temp-dir
+    tests never had."""
+    base = tmp_path_factory.mktemp("deep")
+    root = base
+    while len(str(root)) < 108:
+        root = root / "onedrive_documents_pythonprojects"
+    root.mkdir(parents=True, exist_ok=True)
+
+    sub_src = tmp_path_factory.mktemp("deep_sub") / "clean_small"
+    generate(sub_src, scenario="clean_small", seed=13)
+    client = TestClient(create_app(data_root=root))
+    sub = _data(client.post("/submissions", json={"path": str(sub_src)}))
+    assert sub["grade"] == "ACCEPTED"
+    solve = _data(client.post(
+        f"/submissions/{sub['submission_id']}/solve",
+        json={"time_limit": 20, "deterministic": True}), status=202)
+    run = _data(client.get(f"/runs/{solve['run_id']}"))
+    assert run["status"] == "succeeded", run.get("error")
+    return SimpleNamespace(client=client, root=root,
+                           schedule_id=run["result"]["schedule_id"])
+
+
+class TestAcceptAtARealisticDataRootPrefix:
+    """Session 4.0d — the 4.0c blind spot, as a red test.
+
+    4.0c bounded the child snapshot id but VALIDATED the fix in a short temp
+    prefix. Daryn's real data root spends ~130 chars before any snapshot id, and at
+    that depth the 4.0c near-cap (≤90) id STILL pushed the on-disk path past
+    Windows MAX_PATH (260) → every accept failed ``FileNotFoundError [WinError 3]``.
+    This solves + accepts under a data root padded to that realistic overhead and
+    asserts the accept SUCCEEDS and lands on the pinned placement — the temp-dir
+    blind spot cannot recur. (Fix 1, the long-path seam, is proven independently at
+    >260 by tests/test_longpath.py; here the OPAQUE id (fix 2) alone keeps the real
+    accept path under the limit at Daryn's depth.)"""
+
+    def test_accept_succeeds_where_the_4_0c_id_would_have_blown_max_path(self, deep_api):
+        base_doc = _data(deep_api.client.get(f"/schedules/{deep_api.schedule_id}"))
+        pin = _pin_from_incumbent(base_doc)
+
+        acc = _data(deep_api.client.post(
+            f"/schedules/{deep_api.schedule_id}/accept", json=pin), status=201)
+        new_id = acc["schedule_id"]
+
+        # The child snapshot really lives at a deep path on disk...
+        out_dir, snap_id = _run_out_dir_and_snap(deep_api.root, new_id)
+        child_leaf = (Path(out_dir) / "snapshots" / snap_id
+                      / "entities_serviceoutcome.jsonl")
+        assert child_leaf.exists(), child_leaf
+
+        # ...and at THIS prefix, a 4.0c-era near-cap (~88-char) id WOULD have
+        # crossed MAX_PATH — the exact silent-accept condition (this asserts the
+        # test is genuinely in the blind-spot zone, not a trivially short path).
+        prefix_len = len(str(child_leaf)) - len(snap_id)
+        would_be_4_0c = prefix_len + 88
+        assert would_be_4_0c > 260, (
+            f"not exercising the blind spot: a 4.0c id here would be {would_be_4_0c} "
+            "chars — pad the data root deeper")
+        # The 4.0d opaque id keeps the REAL path safely under the limit.
+        assert len(str(child_leaf)) < 260, len(str(child_leaf))
+
+        # And the accept is real: the new version renders on the pinned placement.
+        new_doc = _data(deep_api.client.get(f"/schedules/{new_id}"))
+        a = next(x for x in new_doc["assignments"]
+                 if x["operation_ref"] == pin["pin_op_id"])
+        assert a["resource_id"] == pin["pin_resource_id"]
+        assert a["chunks"][0]["start"] == pin["pin_start_iso"]
+
+
 class TestSequentialEdits:
     def test_edit_on_a_proposed_version_re_enters_the_accept_path(self, api):
         base_doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
@@ -333,6 +407,19 @@ def _find_run_for_schedule(root: Path, schedule_id: str) -> str:
                       "WHERE s.id=?", (schedule_id,)).fetchone()
     con.close()
     return row["out_dir"]
+
+
+def _run_out_dir_and_snap(root: Path, schedule_id: str) -> tuple[str, str]:
+    """(run out_dir, the schedule's OWN snapshot id) — for a child version the
+    snapshot id is the accept-derived opaque id, not the run's minted one."""
+    import sqlite3
+    con = sqlite3.connect(Path(root) / "registry.sqlite")
+    con.row_factory = sqlite3.Row
+    row = con.execute("SELECT r.out_dir, s.snapshot_id FROM schedules s "
+                      "JOIN runs r ON r.id=s.run_id WHERE s.id=?",
+                      (schedule_id,)).fetchone()
+    con.close()
+    return row["out_dir"], row["snapshot_id"]
 
 
 def _decisions_in_run(out_dir: Path) -> list[dict]:

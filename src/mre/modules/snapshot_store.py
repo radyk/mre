@@ -14,7 +14,6 @@ Directory layout:
 from __future__ import annotations
 
 import json
-import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterator
@@ -22,6 +21,7 @@ from typing import TYPE_CHECKING, Any, Iterator
 from pydantic import BaseModel
 
 from mre.contracts.provenance import ProvenanceSidecar
+from mre.modules import longpath
 
 if TYPE_CHECKING:
     from mre.modules.identity_map import IdentityMap
@@ -41,7 +41,9 @@ class SnapshotWriter:
         self._dir = snapshot_dir
         self._snapshot_id = snapshot_id
         self._extend = extend  # if True: append entities, skip manifest overwrite
-        self._dir.mkdir(parents=True, exist_ok=True)
+        # All disk ops route through the long-path seam so a deep snapshot tree
+        # never hits Windows MAX_PATH (Session 4.0d).
+        longpath.makedirs(self._dir)
         # Per-type entity buffers; keyed by entity_type string
         self._entity_buffers: dict[str, list[dict]] = {}
         self._provenance: list[dict] = []
@@ -75,8 +77,8 @@ class SnapshotWriter:
     def write_identity_map(self, identity_map: "IdentityMap") -> None:
         """Persist the identity map as identity_map.json alongside the snapshot."""
         path = self._dir / "identity_map.json"
-        path.write_text(
-            json.dumps(identity_map.to_json_dict(), indent=2), encoding="utf-8"
+        longpath.write_text(
+            path, json.dumps(identity_map.to_json_dict(), indent=2)
         )
 
     def finalize(self) -> None:
@@ -84,12 +86,12 @@ class SnapshotWriter:
         mode = "a" if self._extend else "w"
         for entity_type, records in self._entity_buffers.items():
             path = self._dir / f"entities_{entity_type}.jsonl"
-            with open(path, mode, encoding="utf-8") as f:
+            with longpath.open_(path, mode) as f:
                 for rec in records:
                     f.write(json.dumps(rec) + "\n")
 
         prov_path = self._dir / "provenance.jsonl"
-        with open(prov_path, mode, encoding="utf-8") as f:
+        with longpath.open_(prov_path, mode) as f:
             for p in self._provenance:
                 f.write(json.dumps(p) + "\n")
 
@@ -100,8 +102,8 @@ class SnapshotWriter:
                 "entity_counts": {t: len(recs) for t, recs in self._entity_buffers.items()},
                 "provenance_count": len(self._provenance),
             }
-            (self._dir / "manifest.json").write_text(
-                json.dumps(manifest, indent=2), encoding="utf-8"
+            longpath.write_text(
+                self._dir / "manifest.json", json.dumps(manifest, indent=2)
             )
 
 
@@ -125,8 +127,8 @@ class SnapshotReader:
         if self._loaded:
             return
         # Load entities
-        for path in self._dir.glob("entities_*.jsonl"):
-            with open(path, encoding="utf-8") as f:
+        for path in longpath.glob(self._dir, "entities_*.jsonl"):
+            with longpath.open_(path) as f:
                 for line in f:
                     line = line.strip()
                     if not line:
@@ -138,8 +140,8 @@ class SnapshotReader:
                     self._entities_by_type.setdefault(entity_type, []).append(clean)
         # Load provenance
         prov_path = self._dir / "provenance.jsonl"
-        if prov_path.exists():
-            with open(prov_path, encoding="utf-8") as f:
+        if longpath.exists(prov_path):
+            with longpath.open_(prov_path) as f:
                 for line in f:
                     line = line.strip()
                     if not line:
@@ -177,10 +179,10 @@ class SnapshotReader:
     def read_identity_map(self) -> "IdentityMap | None":
         """Load the persisted identity map, or None if not present in this snapshot."""
         path = self._dir / "identity_map.json"
-        if not path.exists():
+        if not longpath.exists(path):
             return None
         from mre.modules.identity_map import IdentityMap
-        return IdentityMap.from_json_dict(json.loads(path.read_text(encoding="utf-8")))
+        return IdentityMap.from_json_dict(json.loads(longpath.read_text(path)))
 
 
 class SnapshotStore:
@@ -188,7 +190,7 @@ class SnapshotStore:
 
     def __init__(self, base_dir: Path) -> None:
         self._base = Path(base_dir)
-        self._base.mkdir(parents=True, exist_ok=True)
+        longpath.makedirs(self._base)
 
     def begin_snapshot(self, snapshot_id: str) -> SnapshotWriter:
         snap_dir = self._base / snapshot_id
@@ -196,7 +198,7 @@ class SnapshotStore:
 
     def load_snapshot(self, snapshot_id: str) -> SnapshotReader:
         snap_dir = self._base / snapshot_id
-        if not snap_dir.exists():
+        if not longpath.exists(snap_dir):
             raise FileNotFoundError(f"Snapshot '{snapshot_id}' not found at {snap_dir}")
         return SnapshotReader(snap_dir, snapshot_id)
 
@@ -208,12 +210,12 @@ class SnapshotStore:
         (planner, extractor) needs to add derived entities to the same snapshot.
         """
         snap_dir = self._base / snapshot_id
-        if not snap_dir.exists():
+        if not longpath.exists(snap_dir):
             raise FileNotFoundError(f"Snapshot '{snapshot_id}' not found at {snap_dir}")
         return SnapshotWriter(snap_dir, snapshot_id, extend=True)
 
     def list_snapshots(self) -> list[str]:
-        return [d.name for d in self._base.iterdir() if d.is_dir()]
+        return longpath.child_dir_names(self._base)
 
     def derive_scenario_snapshot(
         self,
@@ -229,16 +231,16 @@ class SnapshotStore:
         """
         src_dir = self._base / src_id
         dst_dir = self._base / dst_id
-        dst_dir.mkdir(parents=True, exist_ok=True)
+        longpath.makedirs(dst_dir)
 
         for et in entity_types:
             src_file = src_dir / f"entities_{et}.jsonl"
-            if src_file.exists():
-                shutil.copy2(str(src_file), str(dst_dir / f"entities_{et}.jsonl"))
+            if longpath.exists(src_file):
+                longpath.copy2(src_file, dst_dir / f"entities_{et}.jsonl")
 
         im_src = src_dir / "identity_map.json"
-        if im_src.exists():
-            shutil.copy2(str(im_src), str(dst_dir / "identity_map.json"))
+        if longpath.exists(im_src):
+            longpath.copy2(im_src, dst_dir / "identity_map.json")
 
         manifest = {
             "snapshot_id": dst_id,
@@ -247,6 +249,6 @@ class SnapshotStore:
             "created_at": datetime.now(UTC).isoformat(),
             "entity_counts": {},
         }
-        (dst_dir / "manifest.json").write_text(
-            json.dumps(manifest, indent=2), encoding="utf-8"
+        longpath.write_text(
+            dst_dir / "manifest.json", json.dumps(manifest, indent=2)
         )

@@ -94,6 +94,61 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4.0d — MAX_PATH survives
+the bound (the 4.0c fix was validated in a short prefix) 2026-07-16.** Follow-up to
+4.0c: on Daryn's real stack **every** accept still failed `FileNotFoundError
+[WinError 3]`, now even on a **fresh schedule, depth-1 edit**. **The blind spot,
+named:** the 4.0c cap of **90** chars was calibrated against a short temp-dir
+prefix; Daryn's real data root (`…\OneDrive\Documents\PythonProjects\mre\_data\…`)
+spends ~130 chars before any snapshot id, so a chain grown *near* the cap (an id in
+the ~75–90 range, which the collapse deliberately allows) plus
+`\entities_serviceoutcome.jsonl` still crossed **MAX_PATH (260)** — the cap raced
+the limit without accounting for the real prefix the temp tests never had.
+**Reproduced deterministically** at a padded ~136-char prefix: naive write at 265
+chars fails; the same write through a `\\?\` extended-length path succeeds
+(`os.makedirs`/`open`/`shutil.copy2`/`copytree`/`glob` honor it — `pathlib
+.Path.mkdir(parents=True)` does NOT, it walks to `\\?\C:` → `WinError 123`, so the
+seam uses the low-level calls). **Fixed all three, in order of preference (defense
+in depth): Fix 1 — long-path seam:** new `src/mre/modules/longpath.py` is the
+SINGLE seam the snapshot/run store does disk I/O through — `extended(path)` returns
+the `\\?\`-prefixed absolute string on Windows (idempotent; UNC-aware; no-op
+off-Windows), lifting the 260 limit; `SnapshotStore`,
+`registry.prepare_out_dir`, the accept/scenario `copytree`, and `_persist_document`
+all route through it, so the **snapshot tree is MAX_PATH-proof regardless of
+data-root or chain depth**. **Fix 2 — short opaque snapshot ids:**
+`_edit_snapshot_id` no longer embeds lineage — it is a fixed-width
+`snap-edit-<sha256(base|hash)[:12]>` = **22 chars**, deterministic per
+(base, hash) + distinct per parent; the parent chain lives in the registry's
+`parent_schedule_id`, so the on-disk name is tiny however deep the chain (the 4.0c
+grow-then-collapse scheme + its 90-char ceiling are gone; `_MAX_EDIT_SNAP_ID_LEN`
+repurposed to a guaranteed ceiling of 32 the tests assert against). **Fix 3 — boot
+/ `/health` path-budget tripwire:** `longpath.path_budget(root)` reports the
+worst-case snapshot path length + `status` (`at_risk` when it exceeds 260 even with
+a bounded id) + `long_path_mitigation`; `create_app` **warns loudly at startup** on
+an at-risk root and `/health` carries the block — a path-length problem is never
+again found only at accept time. **Arithmetic:** Daryn's ~130 prefix → 4.0d opaque
+id (22) = 183 (fix 2 alone clears it); a pathological >200 prefix that would push
+even the 22-char child past 260 is defeated by fix 1's `\\?\` seam — belt and
+suspenders. **Tests at a REALISTIC prefix (the temp-dir blind spot cannot recur):**
+`tests/test_longpath.py` (fast — `extended()` shape/idempotency/UNC/pass-through; a
+SnapshotStore **write→derive→read round-trip at a >260-char path** with a naive
+**negative control** proving the limit is real; `path_budget` ok vs at_risk);
+`tests/test_edit_snapshot_id.py` rewritten for the opaque scheme (short/fixed-width/
+opaque; a 50-deep chain stays one constant length; deterministic + distinct);
+`tests/test_planner_edit.py` `TestAcceptAtARealisticDataRootPrefix` (**slow,
+end-to-end** — a real solve+accept under a data root padded so the prefix reaches
+~160, deep enough that a 4.0c-era ~88-char id WOULD have crossed 260 [asserted],
+succeeds and lands on the pinned resource+start); `/health` gains a `path_budget`
+assertion. **Non-slow Python 1103 passed** (+7, 0 failed) + slow `planner_edit`
+**11/11** (+1); cockpit untouched (backend-only), **JS 48/48**. **Named residual:**
+the shallow run-dir writers (Reporter evidence sink, certificate writers) are not
+on the seam — safe at Daryn's real depth, flagged by the budget check for absurd
+(>200-char) roots, not silently left. See the docs/04 2026-07-16 Session 4.0d
+amendment and docs/07 v2.17. Lesson: a bound validated against a short test prefix
+is a bound with an unmeasured margin — pin the budget to the REAL deployment path
+length, and prefer making the limit not exist (`\\?\`) over racing it with an
+ever-tighter cap.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4.0c — the silent
 accept (an accept that 409'd on a storage limit, rendered mutely) 2026-07-16.**
 Live specimen: schedule `ea1a42f0` in Daryn's `_data` root — sandbox verdict
