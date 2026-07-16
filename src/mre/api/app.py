@@ -306,6 +306,11 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
         meta = registry.get_schedule_meta(schedule_id)
         if meta is None:
             raise HTTPException(404, f"unknown schedule {schedule_id}")
+        # A superseded version carries a pointer to the live successor so the
+        # cockpit can offer "view current" on a deep link (session 3.8 CU3),
+        # never a raw error and never an editable zombie.
+        if meta.get("status") == "superseded":
+            meta["successor_id"] = registry.live_successor(schedule_id)
         return _ok(meta)
 
     @app.get("/schedules/{schedule_id}/interaction")

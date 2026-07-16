@@ -16,6 +16,10 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
   // passes import.meta.env.DEV). The server honors it solely when a key is set
   // and fails closed to the template renderer otherwise (CU6).
   const useLlm = !!opts.useLlm;
+  // onSuperseded(staleId): the version this panel targets was replaced — jump to
+  // the live successor (session 3.8 CU3). A stale /ask 409s "superseded"; we
+  // surface planner language + a jump, never the raw error string.
+  const onSuperseded = opts.onSuperseded || null;
   // scheduleId is MUTABLE: an accepted edit rebinds the cockpit to a new version,
   // and a subsequent ask ("summarize my changes") must target it so the answer
   // reads the new version's evidence (where the planner_edit Decision lives).
@@ -120,12 +124,29 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
       // aloud + a one-sentence summary; record IDs stay on screen, never voiced.
       if (spoken) speak(spokenSummary(res.answer, res.bundle?.register));
     } catch (e) {
+      // A superseded target is not an error to show raw (session 3.8 CU3): word
+      // it as the plan having moved on, and offer a one-click jump to current.
+      if (e && e.superseded) return appendSuperseded();
       const el = document.createElement("div");
       el.className = "msg answer testimony";
       el.innerHTML = `<div class="who">error</div><pre></pre>`;
       el.querySelector("pre").textContent = String(e.message || e);
       logEl.appendChild(el); scrollDown();
     }
+  }
+
+  // Planner-language notice + jump when the asked version was replaced (CU3).
+  function appendSuperseded() {
+    clearEmpty();
+    const el = document.createElement("div");
+    el.className = "msg answer superseded-note";
+    el.innerHTML = `<div class="who">note</div>
+      <pre>This plan was replaced by a newer version, so it no longer answers questions.</pre>
+      <div class="row"><button class="jump-current">View current plan →</button></div>`;
+    el.querySelector(".jump-current").addEventListener("click", () => {
+      if (onSuperseded) onSuperseded(scheduleId);
+    });
+    logEl.appendChild(el); scrollDown();
   }
 
   // Compile the RESOLVED question from the live selection BEFORE calling /ask —
@@ -192,6 +213,10 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
   return {
     run, deictic,
     setScheduleId(id) { scheduleId = id; },
+    // A version change may have MOVED the selected op (its resource/time is now
+    // stale): drop the deictic scope so the next "why is this here?" is composed
+    // from a fresh click on the rebound board (session 3.8 CU1).
+    clearSelection() { selection = null; renderScope(); },
     // voice availability + a programmatic "speak this answer" seam for the
     // harness (which has no microphone): drive run() with {spoken:true}.
     voiceAvailable: () => speechRecognitionAvailable(),

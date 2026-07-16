@@ -191,3 +191,29 @@ html, body {
 .ask .empty { color: var(--muted-2); font-size: var(--fs-sm); text-align: center; padding: var(--sp-4); }
 
 .err { color: var(--grade-rejected); padding: var(--sp-4); font: var(--fs-base) var(--font-mono); }
+
+/* Superseded deep-link banner (session 3.8 CU3): a read-only plan offers the
+   current version, never a raw error. */
+.superseded-banner {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--grade-conditional); color: var(--ink-inverse);
+  font-size: var(--fs-sm); font-weight: var(--fw-medium);
+}
+.superseded-banner .sb-msg { flex: 0 0 auto; }
+.superseded-banner .sb-jump {
+  background: var(--ink-inverse); color: var(--grade-conditional);
+  border: none; border-radius: var(--radius-sm); cursor: pointer;
+  padding: var(--sp-1) var(--sp-3); font-weight: var(--fw-semibold); font-size: var(--fs-sm);
+}
+.superseded-banner .sb-ro {
+  margin-left: auto; text-transform: uppercase; letter-spacing: var(--ls-caps);
+  font-size: var(--fs-xs); opacity: 0.85;
+}
+/* The ask panel's superseded notice mirrors the banner language + jump. */
+.ask .msg.superseded-note { border-left: 3px solid var(--grade-conditional); }
+.ask .msg.superseded-note .jump-current {
+  background: var(--grade-conditional); color: var(--ink-inverse);
+  border: none; border-radius: var(--radius-sm); cursor: pointer;
+  padding: var(--sp-1) var(--sp-3); font-weight: var(--fw-semibold); font-size: var(--fs-sm);
+}

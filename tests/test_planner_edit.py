@@ -168,6 +168,22 @@ class TestPublish:
         pool = _data(api.client.get(f"/schedules/{fresh_base}/pool"))
         assert pool["status"] == "invalidated"
 
+    def test_superseded_meta_carries_its_live_successor(self, api, fresh_base):
+        """A superseded version's /meta names the live successor (session 3.8
+        CU3), so a deep link can offer "view current" instead of a raw error."""
+        base_doc = _data(api.client.get(f"/schedules/{fresh_base}"))
+        acc = _data(api.client.post(
+            f"/schedules/{fresh_base}/accept",
+            json=_pin_from_incumbent(base_doc)), status=201)
+        new_id = acc["schedule_id"]
+        _data(api.client.post(f"/schedules/{new_id}/publish"))
+
+        base_meta = _data(api.client.get(f"/schedules/{fresh_base}/meta"))
+        assert base_meta["status"] == "superseded"
+        assert base_meta["successor_id"] == new_id
+        # a live (non-superseded) version carries no successor pointer
+        assert "successor_id" not in _data(api.client.get(f"/schedules/{new_id}/meta"))
+
     def test_cannot_publish_twice_or_publish_superseded(self, api, fresh_base):
         base_doc = _data(api.client.get(f"/schedules/{fresh_base}"))
         acc = _data(api.client.post(

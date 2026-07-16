@@ -4496,3 +4496,81 @@ x/y/w/h) while capture stays live; (2) the **fragment regression** — increment
 interims + a final, then stop, submits the FULL sentence as the "you" message, never
 a fragment; (3) **Escape cancels** — state returns idle, overlay retired, nothing
 submitted. **Cockpit JS 41/41** (was 38); Python untouched. See docs/07 v2.11.
+
+## Amendment — 2026-07-16: Session 3.8 — version-lifecycle continuity in the cockpit
+
+**Provenance.** Feel-pass findings, live: after an accept→publish the cockpit was
+observed still referencing the *superseded* schedule id. The consequences were a
+raw "superseded" error from `/ask`, a subsequent accepted drop that *returned
+home* (a committed edit apparently rendering as a rejection — R-DP1/R-M1a as
+experienced), and Tier-0 shading/ghosts still rendered from the stale version's
+payload while drops validated against reality ("zombie legality"). Backend +
+gesture mechanics only; no solver/model changes.
+
+**CU2 — diagnosis FIRST (which case it actually was).** Reproduced against the
+real API (`TestClient`, one deterministic `clean_small` solve; scratch repro):
+accept edit1 → C1 (proposed), publish C1 → C1 published, base B **superseded**.
+Then two probes:
+
+- *Bound to the current version C1* (the correct state): `/ask`, `/sandbox`,
+  `/accept` all **succeed** (200/201).
+- *Stale-bound to the superseded base B*: `/ask` → **409 "is superseded"**,
+  `/sandbox` → **409**, `/accept` → **409**. **But `/interaction` → 200** even
+  for a superseded id (the endpoint has no status guard).
+
+So the returned-home drop was **NOT** "a committed edit reverting" (the suspected
+case A). It was **case B: the accept/sandbox itself 409'd against a superseded id
+— the backend never committed anything** — and the controller surfaced that 409
+as a generic `sandbox error` / silent `returnHome`. The zombie legality is
+explained by the same asymmetry: `/interaction` keeps serving the stale payload
+while every *mutating/asking* call against that id 409s. The backend lifecycle is
+correct (accept mints a proposed-with-interaction child, publish supersedes the
+immediate parent, sequential edits re-enter the accept path — all already tested);
+the defect is entirely in the **cockpit's version binding + its handling of a
+superseded response**. The fix therefore is *surfacing + continuity*, not a
+re-solve change.
+
+**CU1 — version continuity (full rebind on accept AND publish).** The live rebind
+existed for the strip/panel/controller but left two seams that let a stale id
+persist and one that made it fail opaquely: (a) the **address bar was never
+rewritten**, so a reload re-bound the now-superseded id; (b) the **shared
+selection** kept a moved op's stale scope. `main.js` now routes every version
+change through one seam that updates the URL (`history.replaceState`, other params
+preserved), the strip (new id + live status), the ask target, the selection
+(`panel.clearSelection()`), and the harness hook — and the deep-link boot stamps
+the resolved id into the URL up front. The controller already re-fetches the new
+version's interaction + alternatives on accept (`rebindController`); publish keeps
+the same id, so no refetch is needed there. Invariant restated: **no user action
+may ever be issued against a superseded id from a live session.**
+
+**CU3 — superseded-schedule UX (never a raw error, never an editable zombie).**
+Additive backend: `Registry.live_successor(id)` follows the child chain forward
+past further-superseded links to the live descendant; `GET /schedules/{id}/meta`
+adds `successor_id` when `status == "superseded"`. Frontend: `api.js` throws a
+typed `ApiError` with a `.superseded` flag (409 + "is superseded"), plus
+`resolveSuccessor(id)`. A **deep link** to a superseded id loads read-only behind
+a banner ("This plan was replaced by a newer version" + a one-click *View current
+(<id8>)* jump) and the gesture surface is **deliberately not wired** (no zombie).
+A **live** 409 self-heals: the ask panel renders planner language + a jump, and
+the controller's drop/accept catch routes to the live successor instead of a raw
+error. "View current" / the self-heal do a clean full reload bound to the
+successor — no half-rebound state.
+
+**Harness — the missing seam.** The hermetic fixture server now models the
+lifecycle: it records each accept's parent, supersedes the immediate parent on
+publish (recording the successor), answers `/ask`|`/sandbox`|`/accept`|`/publish`
+against a superseded id with **409 "is superseded"** exactly like the real API,
+serves `successor_id` on a superseded `/meta`, composes the whole edit chain's
+pins in `GET /schedule` (so an earlier accepted bar stays put through later
+cycles), and exposes `POST /__test__/reset` (called before each `boot()`) so a
+publish in one test never supersedes a base fixture the next test boots against.
+Three new `gesture.spec.mjs` tests: (1) **two consecutive edit→accept cycles** —
+the hook, controller, and URL all advance together each cycle and each accepted
+bar stays where committed; (2) **edit→accept→publish→edit** — the post-publish
+edit re-enters accept against the *published* version, never a superseded-id 409 →
+return-home; (3) **deep link to a superseded version** — read-only banner + jump,
+gesture surface not wired.
+
+**Results.** Cockpit JS **44/44** (was 41). Python **1036 passed / 0 failed**
+(non-slow) + the planner_edit slow ladder **7/7** incl. a new
+`test_superseded_meta_carries_its_live_successor`. See docs/07 v2.12.

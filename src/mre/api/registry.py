@@ -322,6 +322,27 @@ class Registry:
                 superseded.append(parent)
         return superseded
 
+    def live_successor(self, schedule_id: str) -> Optional[str]:
+        """The live (non-superseded) descendant that replaced ``schedule_id``,
+        or None if there is none (session 3.8 CU3). Publish supersedes a version
+        by publishing its child, so the successor is the child whose
+        ``parent_schedule_id`` is this id; follow the chain forward past any
+        further-superseded links until a live version is reached. A deep link to
+        a superseded id uses this to offer "view current" instead of a raw
+        error."""
+        with self._conn() as con:
+            cur = schedule_id
+            for _ in range(100):  # cycle guard — the chain is short in practice
+                row = con.execute(
+                    "SELECT id, status FROM schedules WHERE parent_schedule_id=? "
+                    "ORDER BY created_at DESC LIMIT 1", (cur,)).fetchone()
+                if row is None:
+                    return None
+                if row["status"] != "superseded":
+                    return row["id"]
+                cur = row["id"]
+        return None
+
     def mark_schedule_superseded(self, schedule_id: str) -> None:
         """Supersede a schedule and invalidate its solution pools — a pool
         is keyed to one schedule version; a superseded base makes every

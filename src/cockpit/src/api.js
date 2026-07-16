@@ -15,15 +15,40 @@ export const CONFIG = {
   autoAsk: params.get("ask") || "",
 };
 
+// An API error that carries the HTTP status + a ``superseded`` flag so callers
+// can self-heal (jump to the current version) instead of surfacing a raw string
+// (session 3.8 CU3). A schedule that has been replaced answers editing/asking
+// calls with 409 "…is superseded"; that is a routable condition, not a failure.
+export class ApiError extends Error {
+  constructor(path, status, message) {
+    super(`${path}: ${message}`);
+    this.name = "ApiError";
+    this.status = status;
+    this.rawMessage = message;
+    this.superseded = status === 409 && /is superseded/i.test(message || "");
+  }
+}
+
 async function envelope(path, opts) {
   const res = await fetch(CONFIG.base + path, opts);
   let body;
   try { body = await res.json(); } catch { body = null; }
   if (!res.ok || (body && body.error)) {
     const msg = body?.error?.message || `HTTP ${res.status}`;
-    throw new Error(`${path}: ${msg}`);
+    throw new ApiError(path, res.status, msg);
   }
   return body.data;
+}
+
+// The live version that replaced a superseded one (session 3.8 CU3): read from
+// the superseded schedule's own /meta (successor_id), so a stale reference can
+// route forward to the current version rather than dead-ending. Null when the
+// schedule is not superseded or has no live descendant.
+export async function resolveSuccessor(id) {
+  try {
+    const meta = await getScheduleMeta(id);
+    return (meta && meta.successor_id) || null;
+  } catch { return null; }
 }
 
 export function listSchedules() {

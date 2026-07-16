@@ -38,6 +38,14 @@ export function createGestureController(board, geometry, opts) {
   let interaction = opts.interaction;
   let scheduleId = opts.scheduleId;
   const authority = opts.authority || "dev-planner";
+  // Self-heal seam (session 3.8 CU3): a live drop/accept that 409s "superseded"
+  // means this session is holding a stale id — route forward to the live
+  // successor instead of a raw "sandbox error" / silent return-home.
+  const onSuperseded = opts.onSuperseded || null;
+  function handleSuperseded() {
+    if (onSuperseded) { onSuperseded(scheduleId); return true; }
+    return false;
+  }
   const feel = opts.feel || makeFeel();
   applyFeel(feel);
 
@@ -349,6 +357,7 @@ export function createGestureController(board, geometry, opts) {
       applyResult(result);
       return result;
     }).catch((e) => {
+      if (e && e.superseded && handleSuperseded()) return;
       returnHome(`sandbox error: ${e.message || e}`);
     });
   }
@@ -532,6 +541,7 @@ export function createGestureController(board, geometry, opts) {
       })
     ).catch((e) => {
       S.phase = "verdict";
+      if (e && e.superseded && handleSuperseded()) return;
       returnHome(`accept failed: ${e.message || e}`, /*keepCard*/ false);
     });
   }

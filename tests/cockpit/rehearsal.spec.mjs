@@ -41,6 +41,7 @@ const opFor = (outcome) =>
   Object.keys(sandbox.by_op).find((op) => sandbox.by_op[op].outcome === outcome);
 
 async function boot(page) {
+  await page.request.post("/__test__/reset").catch(() => {});  // clean lifecycle (3.8)
   await page.goto(`/?schedule=${SCHEDULE}`);
   await page.waitForFunction(() => window.__cockpit && window.__cockpit.ready === true, { timeout: 20000 });
   expect(await page.evaluate(() => window.__cockpit.error || null)).toBeNull();

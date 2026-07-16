@@ -23,10 +23,12 @@ const DIRS = {
   "sched-multi-route-fixture": FIX,
   "sched-multi-route-distinct": resolve(FIX, "distinct"),
 };
-// An accepted edit mints a new version id ``<base>-edit`` (CU1); it maps back to
-// the base fixture directory so a rebind serves a coherent document (the harness
-// asserts the state transitions, not a distinct moved-bar fixture).
-const dirFor = (id) => DIRS[id] || DIRS[id.replace(/-edit(-\d+)?$/, "")] || FIX;
+// An accepted edit mints a new version id ``<base>-edit`` (CU1); a CHAINED edit
+// appends another ``-edit``. All map back to the base fixture directory so a
+// rebind serves a coherent document (the harness asserts the state transitions,
+// not a distinct moved-bar fixture). Strip EVERY trailing ``-edit`` so chained
+// versions (``<base>-edit-edit``) still resolve to the base dir (session 3.8).
+const dirFor = (id) => DIRS[id] || DIRS[id.replace(/(-edit)+$/, "")] || FIX;
 // On-demand pricing state (session 3.3 CU1): ops POSTed for pricing this
 // session, keyed "<scheduleId>|<opId>". A GET /alternatives merges their ghosts.
 const _PRIMED = new Set();
@@ -35,6 +37,24 @@ const _PRIMED = new Set();
 // this (the base run carries no edit evidence hermetically — the fixture server
 // stands in for the real edit-domain, its established role).
 const _EDITS = new Map();
+// Version lifecycle (session 3.8): a schedule's parent (recorded on accept), and
+// the superseded set + successor map (populated on publish — publish supersedes
+// the parent, whose successor is the published child). Editing/asking calls
+// against a superseded id answer 409 "is superseded" exactly as the real API
+// does, so the multi-cycle regression bites if a rebind ever leaves the cockpit
+// stale-bound. Reset per test via POST /__test__/reset so a publish in one test
+// never supersedes a base fixture the next test boots against.
+let _PARENT = new Map();
+let _SUPERSEDED = new Set();
+let _SUCCESSOR = new Map();
+function resetState() {
+  _PRIMED.clear(); _EDITS.clear();
+  _PARENT = new Map(); _SUPERSEDED = new Set(); _SUCCESSOR = new Map();
+}
+const supersededError = (res, sid) => {
+  res.writeHead(409, { "content-type": "application/json" });
+  return res.end(errEnv(409, `schedule ${sid} is superseded`));
+};
 const load = async (name, dir = FIX) => JSON.parse(await readFile(join(dir, name), "utf-8"));
 const loadMaybe = async (name, dir) => {
   const full = join(dir, name);
@@ -63,6 +83,13 @@ const server = createServer(async (req, res) => {
       res.writeHead(200, { "content-type": "application/json" });
       return res.end(envelope({ status: "ok", api_version: "1" }));
     }
+    // Test-only: clear per-session lifecycle state so each test starts clean
+    // (a publish in one test must not supersede the base a later test boots).
+    if (p === "/__test__/reset" && req.method === "POST") {
+      resetState();
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(envelope({ reset: true }));
+    }
     if (p === "/schedules" && req.method === "GET") {
       // both fixtures listed; the harness always selects via ?schedule=…
       const metas = [];
@@ -79,10 +106,16 @@ const server = createServer(async (req, res) => {
       const doc = await load("schedule.json", dirFor(sid));
       // An accepted -edit version reflects its pin: relocate the pinned op's
       // assignment to the pin placement so a rebind actually REFLOWS it (R-M1
-      // motion end-states need a real move to assert against).
-      const dec = _EDITS.get(sid);
-      const pin = dec && dec.pin;
-      if (pin) {
+      // motion end-states need a real move to assert against). A CHAINED edit
+      // composes EVERY ancestor's pin (session 3.8), so a bar committed in an
+      // earlier cycle stays where it was put through later cycles.
+      const pins = [];
+      for (let cur = sid; _EDITS.has(cur); cur = _PARENT.get(cur)) {
+        const d = _EDITS.get(cur);
+        if (d && d.pin) pins.push(d.pin);
+        if (!_PARENT.has(cur)) break;
+      }
+      for (const pin of pins) {
         const a = (doc.assignments || []).find((x) => x.operation_ref === pin.pin_op_id);
         if (a && a.chunks && a.chunks.length) {
           const span = new Date(a.chunks[a.chunks.length - 1].end) - new Date(a.chunks[0].start);
@@ -96,8 +129,19 @@ const server = createServer(async (req, res) => {
     }
     const mMeta = p.match(/^\/schedules\/([^/]+)\/meta$/);
     if (mMeta && req.method === "GET") {
+      const sid = mMeta[1];
+      const meta = { ...(await load("meta.json", dirFor(sid))), id: sid };
+      const dec = _EDITS.get(sid);
+      // an -edit version reads as proposed/published; a superseded one carries
+      // its live successor so the cockpit can offer "view current" (CU3).
+      if (_SUPERSEDED.has(sid)) {
+        meta.status = "superseded";
+        meta.successor_id = _SUCCESSOR.get(sid) || null;
+      } else if (dec) {
+        meta.status = dec.published ? "published" : "proposed";
+      }
       res.writeHead(200, { "content-type": "application/json" });
-      return res.end(envelope(await load("meta.json", dirFor(mMeta[1]))));
+      return res.end(envelope(meta));
     }
     const mInteract = p.match(/^\/schedules\/([^/]+)\/interaction$/);
     if (mInteract && req.method === "GET") {
@@ -154,6 +198,7 @@ const server = createServer(async (req, res) => {
     // else the default verdict.
     const mSandbox = p.match(/^\/schedules\/([^/]+)\/sandbox$/);
     if (mSandbox && req.method === "POST") {
+      if (_SUPERSEDED.has(mSandbox[1])) return supersededError(res, mSandbox[1]);
       const sb = await loadMaybe("sandbox.json", dirFor(mSandbox[1]));
       if (!sb) {
         res.writeHead(404, { "content-type": "application/json" });
@@ -170,9 +215,11 @@ const server = createServer(async (req, res) => {
     const mAccept = p.match(/^\/schedules\/([^/]+)\/accept$/);
     if (mAccept && req.method === "POST") {
       const sid = mAccept[1];
+      if (_SUPERSEDED.has(sid)) return supersededError(res, sid);
       const pin = JSON.parse((await body(req)) || "{}");
       const sb = await loadMaybe("sandbox.json", dirFor(sid));
       const canned = (sb && sb.by_op && sb.by_op[pin.pin_op_id]) || (sb && sb.default) || {};
+      // A chained edit appends another -edit so the id keeps advancing (CU1).
       const newId = `${sid}-edit`;
       const decision = {
         record_id: "dec-" + Math.random().toString(36).slice(2, 10),
@@ -181,6 +228,7 @@ const server = createServer(async (req, res) => {
         moved_count: (canned.moves || []).length, pin,
       };
       _EDITS.set(newId, decision);
+      _PARENT.set(newId, sid);
       res.writeHead(201, { "content-type": "application/json" });
       return res.end(envelope({
         schedule_id: newId, parent_schedule_id: sid, status: "proposed", decision,
@@ -191,14 +239,26 @@ const server = createServer(async (req, res) => {
     const mPublish = p.match(/^\/schedules\/([^/]+)\/publish$/);
     if (mPublish && req.method === "POST") {
       const sid = mPublish[1];
-      const parent = sid.replace(/-edit(-\d+)?$/, "");
+      if (_SUPERSEDED.has(sid)) return supersededError(res, sid);
+      // Supersede the IMMEDIATE parent (recorded on accept), whose live
+      // successor becomes this published version (session 3.8 CU3). Mirrors
+      // Registry.publish_schedule: proposed → published, parent → superseded.
+      const parent = _PARENT.get(sid) || sid.replace(/(-edit)+$/, "");
+      const superseded = [];
+      if (parent && parent !== sid) {
+        _SUPERSEDED.add(parent);
+        _SUCCESSOR.set(parent, sid);
+        superseded.push(parent);
+      }
+      const dec = _EDITS.get(sid);
+      if (dec) dec.published = true;
       res.writeHead(200, { "content-type": "application/json" });
-      return res.end(envelope({ schedule_id: sid, status: "published",
-                                superseded: parent !== sid ? [parent] : [] }));
+      return res.end(envelope({ schedule_id: sid, status: "published", superseded }));
     }
     const mAsk = p.match(/^\/schedules\/([^/]+)\/ask$/);
     if (mAsk && req.method === "POST") {
       const sid = mAsk[1];
+      if (_SUPERSEDED.has(sid)) return supersededError(res, sid);
       const { question } = JSON.parse((await body(req)) || "{}");
       // CU5 closing beat: "summarize my changes" on an accepted -edit version →
       // synthesize the edit narrative from the remembered accept (the base run

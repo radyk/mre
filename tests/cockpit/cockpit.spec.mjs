@@ -28,6 +28,7 @@ const JUDGMENT_Q = "what data problems exist?";
 const DRIFT_MAX_PX = 1.0;      // 0.0 expected; allow sub-pixel rounding
 
 async function boot(page, extra = "") {
+  await page.request.post("/__test__/reset").catch(() => {});  // clean lifecycle (3.8)
   await page.goto(`/?schedule=${SCHEDULE}${extra}`);
   await page.waitForFunction(() => window.__cockpit && window.__cockpit.ready === true, { timeout: 20000 });
   const err = await page.evaluate(() => window.__cockpit.error || null);

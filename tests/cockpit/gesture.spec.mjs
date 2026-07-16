@@ -46,6 +46,10 @@ const byOp = sandbox.by_op;
 const opFor = (outcome) => Object.keys(byOp).find((op) => byOp[op].outcome === outcome);
 
 async function boot(page) {
+  // Clear the fixture server's per-session version lifecycle (session 3.8): a
+  // publish in a prior test supersedes its base, which would break a later boot
+  // of that base id. Reset BEFORE navigation so the page's meta read is clean.
+  await page.request.post("/__test__/reset").catch(() => {});
   await page.goto(`/?schedule=${SCHEDULE}`);
   await page.waitForFunction(() => window.__cockpit && window.__cockpit.ready === true, { timeout: 20000 });
   const err = await page.evaluate(() => window.__cockpit.error || null);
@@ -330,6 +334,113 @@ test("accept mints a new proposed version; publish supersedes it (CU1, R-DP7)", 
   await expect(page.locator(".delta-card.published")).toBeVisible();
   await expect(page.locator("#topstrip .status")).toContainText("published");
   await shot(page, "g11_published");
+});
+
+// ---------------------------------------------------------------------------
+// Session 3.8 — version-lifecycle continuity (the missing seam). One session
+// drives TWO consecutive edit→accept cycles and one edit→accept→publish→edit
+// cycle, asserting the bound id + URL advance each time and that an accepted bar
+// stays where committed (never a superseded-id 409 → return-home).
+// ---------------------------------------------------------------------------
+
+// The schedule id the whole cockpit is bound to right now: the hook, the drag
+// controller, and the address bar must all agree (CU1).
+const boundIds = (page) => page.evaluate(() => ({
+  hook: window.__cockpit.scheduleId,
+  controller: window.__cockpit.drag.scheduleId(),
+  url: new URLSearchParams(location.search).get("schedule"),
+  status: window.__cockpit.versionChanged && window.__cockpit.versionChanged.status,
+}));
+
+// grab a ghost's op, drop onto its priced placement, accept → the new version.
+async function editAccept(page, ghost) {
+  const op = ghost.label.target_operation_ref;
+  const place = ghost.label.placement;
+  const v = await page.evaluate(([op, rid, start]) =>
+    window.__cockpit.drag.dropAt(op, rid, start).then(() => window.__cockpit.drag.state().phase),
+    [op, place.resource_id, place.start]);
+  expect(v, "the drop reaches a verdict (not returned home)").toBe("verdict");
+  const acc = await page.evaluate(() => window.__cockpit.drag.accept().then(() => ({
+    state: window.__cockpit.drag.state(),
+    placement: window.__cockpit.board.placementOf(window.__cockpit.drag.state().op),
+  })));
+  return { op, place, acc };
+}
+
+test("two consecutive edit→accept cycles keep the cockpit bound to the live version (CU1, CU2)", async ({ page }) => {
+  await boot(page);
+  expect(priced.length, "the fixture carries ≥2 priced ghosts").toBeGreaterThanOrEqual(2);
+  const base = (await boundIds(page)).hook;
+
+  // cycle 1
+  const c1 = await editAccept(page, priced[0]);
+  expect(c1.acc.state.phase).toBe("accepted");
+  const b1 = await boundIds(page);
+  expect(b1.hook, "hook advanced off the base").not.toBe(base);
+  expect(b1.controller, "controller agrees with the hook").toBe(b1.hook);
+  expect(b1.url, "the address bar names the new version").toBe(b1.hook);
+  // the accepted bar sits at the committed placement, not back home
+  expect(c1.acc.placement.group).toBe(c1.place.resource_id);
+
+  // cycle 2 — a SECOND edit on the already-rebound version (the seam that broke)
+  const c2 = await editAccept(page, priced[1]);
+  expect(c2.acc.state.phase, "the second accept succeeds against the live version").toBe("accepted");
+  const b2 = await boundIds(page);
+  expect(b2.hook, "the id advanced again").not.toBe(b1.hook);
+  expect(b2.controller).toBe(b2.hook);
+  expect(b2.url).toBe(b2.hook);
+  // the SECOND accepted bar stays where committed
+  expect(c2.acc.placement.group).toBe(c2.place.resource_id);
+  expect(Math.abs(Date.parse(c2.acc.placement.start) - Date.parse(c2.place.start)))
+    .toBeLessThanOrEqual(60000);
+  await shot(page, "g12_two_cycles");
+});
+
+test("edit→accept→publish→edit: editing continues on the published version, never a superseded id (CU1, CU2)", async ({ page }) => {
+  await boot(page);
+  // edit → accept
+  const c1 = await editAccept(page, priced[0]);
+  expect(c1.acc.state.phase).toBe("accepted");
+  const afterAccept = await boundIds(page);
+
+  // publish → the published version is the schedule of record; the base is
+  // superseded, but the cockpit is bound to the CHILD, not the superseded base.
+  const pub = await page.evaluate(() => window.__cockpit.drag.publish().then(() => ({
+    state: window.__cockpit.drag.state(),
+    changed: window.__cockpit.versionChanged,
+    url: new URLSearchParams(location.search).get("schedule"),
+  })));
+  expect(pub.state.phase).toBe("published");
+  expect(pub.changed.status).toBe("published");
+  expect(pub.url, "the URL still names the published version").toBe(afterAccept.hook);
+
+  // edit AGAIN after publish — the drop must NOT 409 against a superseded id and
+  // return home; it re-enters the accept path against the published version.
+  const c2 = await editAccept(page, priced[1]);
+  expect(c2.acc.state.phase, "post-publish edit reaches accept, not a superseded 409").toBe("accepted");
+  const b2 = await boundIds(page);
+  expect(b2.hook).not.toBe(afterAccept.hook);
+  expect(b2.url).toBe(b2.hook);
+  expect(c2.acc.placement.group).toBe(c2.place.resource_id);
+  await shot(page, "g13_publish_then_edit");
+});
+
+test("a deep link to a superseded version loads read-only with a jump to current (CU3)", async ({ page }) => {
+  // set up a superseded base: accept then publish supersedes it.
+  await boot(page);
+  await editAccept(page, priced[0]);
+  await page.evaluate(() => window.__cockpit.drag.publish());
+  // deep-link to the (now superseded) base id WITHOUT resetting lifecycle state.
+  await page.goto(`/?schedule=${SCHEDULE}`);
+  await page.waitForFunction(() => window.__cockpit && window.__cockpit.ready === true, { timeout: 20000 });
+  expect(await page.evaluate(() => window.__cockpit.error || null)).toBeNull();
+  // superseded → read-only banner + a one-click jump, and NO editable zombie.
+  expect(await page.evaluate(() => window.__cockpit.superseded)).toBe(true);
+  await expect(page.locator("#superseded-banner")).toBeVisible();
+  await expect(page.locator("#sb-jump")).toBeVisible();
+  expect(await page.evaluate(() => !!window.__cockpit.drag),
+    "the gesture surface is not wired on a superseded version").toBe(false);
+  await shot(page, "g14_superseded_deeplink");
 });
 
 test("discard from a verdict restores everything (CU5, R-DP7)", async ({ page }) => {

@@ -94,6 +94,57 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 3.8 — version-lifecycle
+continuity in the cockpit 2026-07-16. Queue before Phase-4 design unchanged:
+Daryn's grand feel pass + export.** Feel-pass findings: after an accept→publish
+the cockpit stayed bound to the **superseded** schedule id — `/ask` returned a raw
+"superseded" error, a subsequent accepted drop **returned home** (a committed edit
+apparently rendering as a rejection, R-DP1/R-M1a as experienced), and Tier-0
+shading/ghosts rendered from the stale version's payload while drops validated
+against reality (**zombie legality**). Backend + gesture surface only; no
+solver/model changes. **CU2 — diagnose FIRST (which case it was):** reproduced
+against the real API — a board stale-bound to a superseded id gets **409 "is
+superseded"** on `/sandbox`, `/accept`, and `/ask`, while `/interaction` still
+**200s** (no status guard). So the returned-home drop was **NOT** a committed edit
+reverting (the suspected case A); it was **case B — the accept/sandbox itself
+409'd against a superseded id, the backend never committing** — surfaced by the
+controller as a generic `sandbox error`/silent return-home; the zombie legality is
+the same asymmetry (interaction served, mutations refused). The backend lifecycle
+is correct (accept mints a proposed-with-interaction child; publish supersedes the
+immediate parent; sequential edits re-enter accept — all already tested); the
+defect is entirely the cockpit's **version binding + superseded-response
+handling**. **CU1 — full continuity:** every version change (accept AND publish)
+now routes through one `main.js` seam that updates the **URL**
+(`history.replaceState`, other params preserved), the strip (new id + live
+status), the ask target, the **shared selection** (`panel.clearSelection()` — a
+moved op's scope is stale), and the harness hook; the deep-link boot also stamps
+the resolved id into the URL. The controller already re-fetches the new version's
+interaction + alternatives on accept (`rebindController`); publish keeps the id.
+Invariant restated: **no user action may ever be issued against a superseded id
+from a live session.** **CU3 — superseded UX:** additive `Registry.live_successor`
+(follows the child chain forward to the live descendant) + `successor_id` on a
+superseded `GET /meta`; a typed `ApiError.superseded` (409 + "is superseded") +
+`resolveSuccessor` in `api.js`. A **deep link** to a superseded id loads read-only
+behind a banner ("This plan was replaced by a newer version" + a one-click *View
+current (<id8>)* jump) with the **gesture surface deliberately not wired** (never
+an editable zombie); a **live** 409 self-heals — the ask panel renders planner
+language + a jump (`appendSuperseded`), the controller's drop/accept catch routes
+to the live successor. Jumps do a clean full reload bound to the successor.
+**Harness — the missing seam:** the hermetic fixture server now models the
+lifecycle (records each accept's parent, supersedes the immediate parent on
+publish + records the successor, answers `/ask`|`/sandbox`|`/accept`|`/publish`
+against a superseded id with **409**, serves `successor_id` on a superseded
+`/meta`, composes the whole edit chain's pins in `GET /schedule`, and exposes
+`POST /__test__/reset` called before each `boot()` so a publish never leaks across
+tests); three new `gesture.spec.mjs` tests — **two consecutive edit→accept
+cycles** (hook/controller/URL advance together, each accepted bar stays where
+committed), **edit→accept→publish→edit** (post-publish edit re-enters accept on
+the published version, never a superseded-id 409→return-home), and the
+**superseded deep link** (read-only banner + jump, gesture not wired). **Cockpit
+JS 44/44** (was 41); Python **1036 non-slow passed (0 failed)** + planner_edit slow
+**7/7** (new `test_superseded_meta_carries_its_live_successor`). See the docs/04
+2026-07-16 Session 3.8 amendment and docs/07 v2.12.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 3.7 — voice input
 hardening 2026-07-15. Queue before Phase-4 design unchanged: Daryn's grand feel
 pass + export.** A bug seen live on the gesture surface: press-and-hold voice

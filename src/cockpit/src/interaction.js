@@ -46,7 +46,7 @@ export function loadInteraction(id, onReady) {
 // The dev build additionally mounts the feel tuning panel (CU6). Read-only
 // until this resolves; drag affordances enable on arrival.
 export function wireInteraction(id, board, hook, opts = {}) {
-  const { doc, devMode = false, onVersionChange } = opts;
+  const { doc, devMode = false, onVersionChange, onSuperseded } = opts;
   hook.interactionReady = false;
   hook.dragEnabled = false;
   hook.interaction = null;
@@ -87,6 +87,9 @@ export function wireInteraction(id, board, hook, opts = {}) {
           hook.versionChanged = { id: newId, status };   // synchronous, race-free
           if (onVersionChange) onVersionChange(newId, status);
         },
+        // A live drop/accept that 409s "superseded" means a stale reference
+        // slipped through — jump to the live successor (session 3.8 CU3).
+        onSuperseded,
       });
       hook.drag = controller;
       hook.dragEnabled = true;
