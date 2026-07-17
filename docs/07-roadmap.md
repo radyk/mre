@@ -1,6 +1,33 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.18 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.19 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.19:** **Session 4.1 — light theme as the shipped default; theme as a
+first-class token dimension** 2026-07-17 (docs/04 amendment). Product decision
+(Daryn's charter, ratified): this product's visual language is TRUST — the document,
+the ledger, dark ink on light paper; the dark cockpit signalled *developer tool*.
+**Light is now the shipped default; dark is an option** — and light is a DESIGNED
+theme, not an inversion. **CU1 architecture:** `tokens.css` split into a STRUCTURAL
+layer (typography, spacing, geometry, motion TIMING, feel-panel opacity multipliers
+— theme-invariant) + two COLOR files (`theme-light.css`, `theme-dark.css`) selected
+by a `data-theme` attribute (light declared for a bare `:root` too → no flash on the
+default path; a no-flash `<head>` script + a chrome toggle + `?theme=` URL/config
+param; theme choice is a tier-2-class preference). **CU2 the light palette:** warm
+paper bg, dark-slate ink, a **deuteranopia-safe lateness palette** (on-time BLUE +
+tight/late separated by LIGHTNESS *and* ink polarity — three redundant cues, all AA
+on their fill), shading re-tuned for paper (dim-dominates-green carries as
+SEMANTICS; opacities re-tune at the feel panel), ghosts/traces/tentative-hatch
+redrawn (new `--carry-ink`/`--tentative-ink`/`--tentative-backing` — the tentative
+hatch's hard-coded white label was the one place an inversion failed silently),
+standing-pin amber vs pin-lock green both re-tuned. **Dark kept working — colors
+moved VERBATIM; no design effort on dark this session.** **CU3 contrast + harness:**
+micro-chip typography bumped for AA both themes; the Playwright harness parametrized
+on `data-theme` via projects (logic once + light/dark run every rendering spec) — C1
+drift asserted per theme. **Cockpit JS 94 passed** (logic 6 + light 44 + dark 44;
+was 49 single-theme); Python untouched (frontend-only), non-slow suite green as a
+regression guard. Note for Daryn: visual opacities re-tune on light at the feel
+panel; semantic/motion tokens stand. Queue before Phase-4 design unchanged: Daryn's
+grand feel pass + export.
 
 **v2.18:** **Session 4.0e — accepted placements are standing commitments (R-DP8)**
 2026-07-17 (docs/04 amendment). Live: an accepted, then PUBLISHED, edit was

@@ -35,6 +35,34 @@ const GRADE_CLASS = {
   C1: "g-c1", C2: "g-c2", C3: "g-c3", C0: "g-c0",
 };
 
+// Theme (Session 4.1): light is the shipped default; dark is an option. The
+// attribute is stamped pre-paint by the head script in index.html (no flash);
+// here we keep it in sync with the URL + localStorage and expose a chrome
+// toggle. Theme choice is a tier-2-class preference — a per-deployment default
+// when that layer lands; a URL/config param + this toggle for now.
+function currentTheme() {
+  return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+}
+function paintThemeToggle(btn, theme) {
+  const to = theme === "dark" ? "light" : "dark";
+  btn.textContent = theme === "dark" ? "☾ dark" : "☀ light";
+  btn.title = `switch to ${to} theme`;
+  btn.setAttribute("aria-label", `theme: ${theme}. switch to ${to}`);
+}
+function applyTheme(t) {
+  const theme = t === "dark" ? "dark" : "light";
+  document.documentElement.setAttribute("data-theme", theme);
+  try { localStorage.setItem("mre-theme", theme); } catch { /* private mode */ }
+  const url = new URL(location.href);
+  url.searchParams.set("theme", theme);
+  history.replaceState(null, "", url);
+  const btn = document.getElementById("theme-toggle");
+  if (btn) paintThemeToggle(btn, theme);
+  if (window.__cockpit) window.__cockpit.theme = theme;
+  return theme;
+}
+function toggleTheme() { return applyTheme(currentTheme() === "dark" ? "light" : "dark"); }
+
 function paintTopStrip(el, doc, meta) {
   const shortId = doc.schedule_id.slice(0, 8);
   const grade = meta?.grade || "—";
@@ -44,7 +72,12 @@ function paintTopStrip(el, doc, meta) {
     <span class="brand">Reasoning Cockpit</span>
     <span class="ver">contract ${doc.contract_version} · ${shortId}</span>
     <span class="status">${doc.status}</span>
-    <span class="grade ${gcls}"><span class="lbl">certificate</span> ${grade}${costing}</span>`;
+    <span class="grade ${gcls}"><span class="lbl">certificate</span> ${grade}${costing}</span>
+    <button class="theme-toggle" id="theme-toggle"></button>`;
+  // the toggle is recreated on every repaint (version change too) — (re)bind it.
+  const btn = el.querySelector("#theme-toggle");
+  paintThemeToggle(btn, currentTheme());
+  btn.addEventListener("click", toggleTheme);
 }
 
 // A read-only banner shown when the loaded schedule has been superseded
@@ -86,6 +119,9 @@ async function boot() {
   const boardHost = document.getElementById("tl");
   const askRoot = document.getElementById("ask");
   try {
+    // The URL param is authoritative over the head-script's early stamp, and
+    // syncs it back to localStorage + the URL (Session 4.1).
+    applyTheme(CONFIG.theme || currentTheme());
     const id = await resolveScheduleId();
     const [doc, meta] = await Promise.all([getSchedule(id), getScheduleMeta(id)]);
     // The URL must always name the version the board IS — even a deep link that
@@ -124,6 +160,10 @@ async function boot() {
       ready: true,
       scheduleId: id,
       superseded: !!superseded,
+      theme: currentTheme(),
+      getTheme: currentTheme,
+      setTheme: applyTheme,
+      toggleTheme,
       board, panel,
       ask: (q) => panel.run(q),
       select: (opRef) => board.select(opRef),

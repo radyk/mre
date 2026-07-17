@@ -5144,3 +5144,74 @@ constraint that lives for exactly one solve is a preference; a commitment must b
 COMPILED into every solve of its lineage, held in the registry, and structurally
 un-moveable — the optimizer will otherwise, correctly and quietly, undo the very
 decisions the planner made by hand.
+
+### 2026-07-17 — Session 4.1: light theme as the shipped default; theme as a first-class token dimension
+
+**Product decision (Daryn's charter, recorded as ratified): LIGHT IS TRUST.** The
+dark cockpit "tried too hard to be relevant" — it signalled *developer tool*. This
+product's visual language is the DOCUMENT, the LEDGER — dark ink on light paper;
+professional, calm, modern through restraint. **Light is now the shipped default;
+dark becomes an option.** Light is a *designed* theme, not an inversion of dark.
+
+**CU1 — theme architecture.** `src/cockpit/src/tokens.css` split into a STRUCTURAL
+layer (typography, spacing, geometry, radii, motion TIMING — durations/easings/
+amplitudes — and the feel-panel opacity multipliers; all theme-invariant) plus two
+COLOR files selected by a `data-theme` attribute on the document root:
+`theme-light.css` (`:root, :root[data-theme="light"]` — declared for a bare `:root`
+too, so the board renders light before any JS runs, no flash on the default path)
+and `theme-dark.css` (`:root[data-theme="dark"]`, equal-specificity attribute
+selector, defined later → cleanly overrides). Nothing in `tokens.css` carries a
+color; every color lives in exactly one theme file. Semantic ALIASES that are pure
+references (e.g. `--voice-rec-fill: var(--bar-late)`) stay in the structural layer
+and resolve lazily against the active theme. One chrome toggle in the top strip
+(shows the theme you'd switch TO); a no-flash inline `<head>` script stamps the
+attribute from `?theme=` / `localStorage` before first paint; `main.js` keeps it in
+sync with the URL + storage. Theme choice is a **tier-2-class preference** (a
+per-deployment default when that layer lands; a URL/config param + the toggle for
+now). **The feel panel's visual knobs write to the ACTIVE theme** — the opacity
+multipliers mirror to `:root` inline and only one theme renders at a time, so a
+re-tune lands on whatever theme is showing; semantic/motion tokens stand across it.
+
+**CU2 — the light theme, designed (not inverted).** Warm ivory PAPER background
+(`#f6f4ef`, not `#fff` glare); dark-slate ink (`#23262d`); a warm-grey ramp for
+chrome/recess/hairlines; soft shadows (restraint on paper). **The lateness palette
+re-chosen colorblind-safe (deuteranopia checked on the red/amber pair)** via THREE
+redundant cues: (1) on-time = BLUE (`#2f63bd`) — unambiguous vs red/amber for
+red-green CVD; (2) tight (`#d98a2b`, a LIGHT warm orange) vs late (`#b5271e`, a
+distinctly DARKER red) separated by LIGHTNESS, which survives the deut simulation
+where both trend to brown; (3) INK POLARITY as a redundant channel — tight carries
+DARK ink, late carries WHITE ink, so the two read apart even under full color loss.
+All bar-label ink meets WCAG AA on its fill. Shading re-tuned for paper (dim = a
+cool grey VEIL that darkens the forbidden zone; green = a legal tint) — Daryn's
+**dim-dominates-green verdict carries as SEMANTICS**; the opacity multipliers
+re-tune per theme at the feel panel. Ghosts/traces redrawn (a dark ghost-tag chip
+keeps prices legible over the busy board). **The tentative bar is the one place the
+carry ink had to become theme-aware:** the hatch used to sit on a transparent
+backing with white ink — invisible on paper — so 4.1 added `--carry-ink` /
+`--tentative-ink` / `--tentative-backing` tokens; on light the hatch sits over a
+translucent PAPER backing (reads unmistakably NOT-YET-REAL) with DARK ink (legible).
+Closures visible without murk; the amber STANDING-PIN marker vs the transient green
+pin-lock both re-tuned to read on paper; the refusal card's authored-reason
+treatment, legend, cards, ask panel, ledger dock all carry through the same tokens.
+**Dark theme kept working — its pre-4.1 colors moved VERBATIM under the selector;
+no design effort spent improving dark this session (the design went into light).**
+
+**CU3 — contrast pass, both themes + the harness parametrized.** Micro-chip
+typography bumped for AA (the smallest chip text sat at 9px below the contrast some
+carried → `--fs-2xs` 10px, `--fs-xs` 11px, register chip → semibold). The Playwright
+harness is now **parametrized on `data-theme` via projects**: a theme-free `logic`
+project (the pure-JS Tier-0 legality tests) plus `light` and `dark` projects that
+run EVERY rendering spec (cockpit/gesture/rehearsal) — each boot appends
+`&theme=<project theme>`, so the **C1 label-vs-bar drift regression is asserted per
+theme**; screenshots + the rehearsal report are suffixed by theme (`shots/` is
+gitignored). A new `cockpit.spec` theme test asserts light is the default (fresh
+context, no stored pref), the chrome toggle flips the attribute + palette (the
+paper base is far brighter than the dark base — a designed theme, not a tint), and
+the chosen theme rides in the URL. **Cockpit JS 94 passed** (logic 6 + light 44 +
+dark 44; was 49 single-theme), C1 drift green on both themes. Python untouched
+(frontend-only): non-slow suite green as a regression guard. Backend/contracts/
+solver unchanged. See docs/07 v2.19. Lesson: a theme is a token DIMENSION, not a
+palette swap — split structural from color, let one attribute select, and the one
+place a hard-coded `ink-inverse` hid (the tentative hatch's white label) is exactly
+where an inversion would have failed silently; design the light theme, don't invert
+the dark one.

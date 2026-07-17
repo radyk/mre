@@ -1,0 +1,134 @@
+/* ===========================================================================
+ * LIGHT theme (Session 4.1) — the shipped DEFAULT. Declared for a bare `:root`
+ * as well as `:root[data-theme="light"]`, so the board renders light before any
+ * JS runs (no flash on the default path) and a `data-theme="dark"` attribute
+ * cleanly overrides it (equal-specificity attribute selector, defined later).
+ *
+ * This is a DESIGNED theme, not an inversion of dark. The charter (Daryn):
+ * this product's visual language is TRUST — the document, the ledger, dark ink
+ * on warm paper. Professional, calm, modern through restraint.
+ *
+ * Colorblind-safe lateness palette (CU2). The three service-outcome bands must
+ * be instantly distinguishable AND survive deuteranopia (the red/amber pair is
+ * the classic collapse). Three redundant cues carry the distinction:
+ *   1. on-time = BLUE — unambiguous against red/amber for red-green CVD;
+ *   2. tight vs late separated by LIGHTNESS — tight is a light warm orange,
+ *      late is a distinctly darker red (the lightness gap survives the deut
+ *      simulation where both trend to brown);
+ *   3. INK POLARITY as a redundant channel — tight carries DARK ink, late
+ *      carries WHITE ink, so even under full color loss the two read apart.
+ * All bar-label ink meets WCAG AA on its fill (CU3).
+ * ======================================================================== */
+:root,
+:root[data-theme="light"] {
+  /* --- surface: warm paper, not #fff glare ---------------------------- */
+  --bg: #f6f4ef;               /* the board — warm ivory paper (the document) */
+  --bg-deep: #eae7de;          /* recessed wells (inputs) */
+  --panel: #efece5;            /* chrome (top strip, ask panel) — a touch cooler */
+  --panel-2: #e5e2d8;          /* recessed within a panel (bubbles, buttons) */
+  --panel-float: rgba(249, 248, 244, 0.97);  /* floating panels over the board */
+  --grid: #d7d3c8;             /* hairlines — soft but present on paper */
+  --ink: #23262d;              /* primary text — dark slate, not pure black */
+  --ink-inverse: #ffffff;      /* text on a saturated accent fill */
+  --muted: #555a68;            /* secondary text (AA on paper) */
+  --muted-2: #6b7080;          /* tertiary text / hints (AA on paper) */
+  --scrim: rgba(246, 244, 239, 0.88);   /* legend backdrop — paper, so ink reads */
+
+  /* --- elevation: soft shadows on paper (restraint) ------------------- */
+  --shadow-scrim: 0 1px 3px rgba(28, 30, 40, 0.14);   /* small tags */
+  --shadow-1: 0 1px 3px rgba(28, 30, 40, 0.10);
+  --shadow-2: 0 2px 10px rgba(28, 30, 40, 0.14);      /* carried bar / float */
+  --shadow-3: 0 12px 30px rgba(28, 30, 40, 0.16);     /* cards / panels */
+
+  /* --- bars: the deuteranopia-safe lateness palette (see header) ------ */
+  --bar-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.22);  /* faint top gloss */
+  --bar-ontime: #2f63bd;        /* on time / early — BLUE (CVD anchor) */
+  --bar-ontime-ink: #ffffff;
+  --bar-tight: #d98a2b;         /* tight — LIGHT warm orange, DARK ink */
+  --bar-tight-ink: #3a2408;
+  --bar-late: #b5271e;          /* late — DARK red, WHITE ink */
+  --bar-late-ink: #ffffff;
+  --bar-border: rgba(0, 0, 0, 0.16);
+
+  /* --- calendar lane shading: visible without murk -------------------- */
+  --cal-closure: rgba(56, 62, 78, 0.13);   /* non-working: a cool grey veil */
+  --cal-overtime: rgba(191, 120, 20, 0.13); /* premium window tint */
+
+  /* --- citation highlight (deep teal — AA as text AND a legible glow) - */
+  --cite-bar: #0c6f66;          /* a cited bar glows teal */
+  --cite-ink: #ffffff;          /* white ink on the teal cite tag */
+  --cite-glow: 0 0 0 2px rgba(12, 111, 102, 0.9), 0 0 12px 2px rgba(12, 111, 102, 0.30);
+  --cite-lane: rgba(12, 111, 102, 0.12);  /* a cited resource lane tint */
+  --select: #7c3ad0;            /* the shared selection (clicked bar) */
+  --select-glow: 0 0 0 2px rgba(124, 58, 208, 0.9);
+
+  /* --- registers (never blend — honesty armor) ------------------------ */
+  --reg-testimony: #0c6f66;     /* evidence / decisions — deep teal */
+  --reg-judgment: #965a0e;      /* findings / triage — deep amber */
+  --reg-testimony-fill: rgba(12, 111, 102, 0.09);
+  --reg-judgment-fill: rgba(150, 90, 14, 0.10);
+  --on-accent: #ffffff;         /* white ink on the deep-teal action button */
+
+  /* --- voice input (Session 3.7) -------------------------------------- */
+  --voice-rec-dot: #cf2b20;                     /* the pulsing "recording" dot */
+
+  /* --- certificate grade chips (colored fill + white ink) ------------- */
+  --grade-c1: #167e3c;
+  --grade-c0: #6b7080;
+  --grade-conditional: #a5620e;
+  --grade-rejected: #b5271e;
+  --grade-ink: #ffffff;         /* white ink on every colored grade chip */
+
+  /* --- gesture surface (3.2b) — Tier-0 shading ------------------------ *
+   * On paper, "dim" = a cool grey VEIL that darkens the forbidden zone; green =
+   * a legal-zone tint. The dim-dominates-green SEMANTICS carry from dark as a
+   * design decision; the opacity multipliers (tokens.css) re-tune per theme at
+   * the feel panel. */
+  --shade-green: rgba(22, 126, 60, 0.16);
+  --shade-green-edge: rgba(22, 126, 60, 0.55);
+  --shade-amber: rgba(165, 98, 14, 0.18);
+  --shade-dim: rgba(38, 42, 55, 0.22);           /* eligible-but-illegal veil */
+  --shade-dim-capability: rgba(38, 42, 55, 0.36); /* wrong machine (stronger) */
+
+  /* Tier-1 ghosts (CU2) — a dark tag chip keeps prices legible over the board */
+  --ghost-fill: rgba(90, 96, 112, 0.15);
+  --ghost-forced-edge: #0c6f66;      /* forced-alternative (the priced road) */
+  --ghost-pool-edge: #7a8091;        /* pool (the cheap near-optimal option) */
+  --ghost-tag-bg: #2a2f3b;
+  --ghost-tag-ink: #f0f2f7;
+  --ghost-better: #167e3c;           /* a cheaper alternative */
+  --ghost-worse: #965a0e;            /* a pricier alternative */
+
+  /* the carried / tentative bar (CU3/CU4, R-DP7a). The tentative bar must read
+   * unmistakably NOT-YET-REAL on paper: a purple hatch over a translucent paper
+   * backing (so the ghostly hatch shows) while its DARK label stays legible. */
+  --carry-legal: #2f63bd;
+  --carry-dim: #6b7080;
+  --carry-ink: #ffffff;              /* white ink on the blue/grey carry fills */
+  --carry-outline: rgba(0, 0, 0, 0.16);
+  --tentative-edge: #7c3ad0;         /* distinct visual state pending verdict */
+  --tentative-ink: #23262d;          /* DARK ink — the backing makes it legible */
+  --tentative-backing: rgba(255, 255, 255, 0.66);  /* translucent paper under hatch */
+  --tentative-hatch: rgba(124, 58, 208, 0.30);
+  --tentative-glow-0: rgba(124, 58, 208, 0.42);  /* pulse keyframe 0/100% */
+  --tentative-glow-1: rgba(124, 58, 208, 0.12);  /* pulse keyframe 50% */
+
+  /* change traces (CU5, R-DP7) */
+  --trace-line: #7c3ad0;
+  --trace-old: rgba(90, 96, 112, 0.5);
+
+  /* the mid-drag refusal reason (R-DP2) — light red chip, dark red ink */
+  --reason-bg: #fbe4e2;
+  --reason-ink: #8a201a;
+  --reason-edge: var(--bar-late);
+
+  /* R-M1 motion COLORS (timing lives in tokens.css) */
+  --motion-reflow-highlight: rgba(12, 111, 102, 0.5);
+  --motion-pinlock-ring: rgba(22, 126, 60, 0.9);
+
+  /* STANDING PIN (R-DP8) — the persistent amber commitment marker, tuned to read
+   * on paper. Amber (not the pin-lock green) says "held", not "just placed"; it
+   * stays distinct from the transient green pin-lock ring even on light. */
+  --standing-pin-edge: rgba(165, 98, 14, 0.95);
+  --standing-pin-ring: rgba(165, 98, 14, 0.40);
+}

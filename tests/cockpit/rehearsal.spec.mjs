@@ -25,7 +25,9 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SHOTS = resolve(HERE, "shots");
 mkdirSync(SHOTS, { recursive: true });
-const shot = (page, name) => page.screenshot({ path: resolve(SHOTS, `${name}.png`) });
+// Theme dimension (4.1 CU3): the rehearsal runs on both data-themes.
+const theme = () => test.info().project.metadata?.theme || "light";
+const shot = (page, name) => page.screenshot({ path: resolve(SHOTS, `${name}__${theme()}.png`) });
 
 const SCHEDULE = "sched-multi-route-distinct";
 const DIST = resolve(HERE, "fixtures", "distinct");
@@ -49,7 +51,7 @@ const opFor = (outcome) =>
 
 async function boot(page) {
   await page.request.post("/__test__/reset").catch(() => {});  // clean lifecycle (3.8)
-  await page.goto(`/?schedule=${SCHEDULE}`);
+  await page.goto(`/?schedule=${SCHEDULE}&theme=${theme()}`);
   await page.waitForFunction(() => window.__cockpit && window.__cockpit.ready === true, { timeout: 20000 });
   expect(await page.evaluate(() => window.__cockpit.error || null)).toBeNull();
   await page.waitForFunction(() => document.querySelectorAll(".vis-item.bar").length > 0, { timeout: 10000 });
@@ -140,7 +142,7 @@ test("the sixty-second script, end to end (CU5 rehearsal)", async ({ page }) => 
 
   // --- the rehearsal report -------------------------------------------------
   report.total_ms = report.beats.reduce((s, b) => s + (b.ms || 0), 0);
-  writeFileSync(resolve(SHOTS, "rehearsal_report.json"), JSON.stringify(report, null, 2));
+  writeFileSync(resolve(SHOTS, `rehearsal_report__${theme()}.json`), JSON.stringify(report, null, 2));
   // every beat produced a state (no silent stall)
   expect(report.beats.length).toBe(5);
   for (const b of report.beats) expect(b.ms, `${b.name} recorded a latency`).not.toBeNull();

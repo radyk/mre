@@ -35,6 +35,18 @@ html, body {
 .topstrip .grade.g-rejected { background: var(--grade-rejected); color: var(--ink-inverse); }
 .topstrip .grade .lbl { font-weight: var(--fw-medium); opacity: 0.8; }
 
+/* theme toggle (Session 4.1): light is the shipped default, dark an option. The
+ * button shows the theme you'd switch TO. Sits after the grade (grade owns the
+ * margin-left:auto that pushes this right cluster over). */
+.topstrip .theme-toggle {
+  display: inline-flex; align-items: center; gap: var(--sp-1);
+  background: var(--panel-2); color: var(--muted);
+  border: 1px solid var(--grid); border-radius: var(--radius-sm);
+  padding: 4px 9px; cursor: pointer;
+  font: var(--fw-semibold) var(--fs-sm)/1 var(--font-mono);
+}
+.topstrip .theme-toggle:hover { color: var(--ink); border-color: var(--muted-2); }
+
 /* --- main split: board | ask panel -------------------------------------- */
 .split { display: grid; grid-template-columns: 1fr 360px; min-height: 0; }
 .board-host { position: relative; min-width: 0; overflow: hidden; }
@@ -113,7 +125,8 @@ html, body {
 .ask .msg.answer.testimony .who { color: var(--reg-testimony); }
 .ask .msg.answer.judgment  .who { color: var(--reg-judgment); }
 .ask .msg .reg-chip {
-  float: right; font-size: var(--fs-2xs); padding: 1px 5px; border-radius: var(--radius-xs);
+  float: right; font-size: var(--fs-2xs); font-weight: var(--fw-semibold);
+  padding: 1px 5px; border-radius: var(--radius-xs);
   border: 1px solid currentColor; opacity: 0.9;
 }
 .ask .msg pre {

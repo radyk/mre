@@ -1,38 +1,42 @@
 /* ===========================================================================
- * Design tokens — the single file feel-iteration edits (docs/07 Phase 3,
- * "design tokens externalized from day one"). EVERY visual value in the cockpit
- * (color, typography, geometry, spacing, border, elevation, motion) lives here
- * or is derived from here; nothing outside this file hard-codes a visual value
- * (Session 3.5 token pass). The SEMANTIC mappings (lateness bands, register
- * hues, calendar-lane shading, citation glow, gesture surface) map onto the
- * primitives below so the look can be tuned without touching board/panel logic.
+ * Design tokens — STRUCTURAL layer (Session 4.1 theme split).
  *
- * Palette carried from the bake-off so the cockpit reads as the same system the
- * substrate decision was made on; Session 3.5 refines it (calmer chrome,
- * cleaner bars, better label typography) within the existing architecture —
- * sleek, not flashy; this board's job is trust.
+ * This file holds ONLY the theme-INVARIANT tokens: typography, spacing,
+ * geometry, radii, motion timing (durations / easings / amplitudes), and the
+ * opacity multipliers the feel panel drives. Nothing here carries a color.
+ *
+ * Every COLOR lives in one of the two theme files, selected by the
+ * `data-theme` attribute on the document root:
+ *   theme-light.css → :root, :root[data-theme="light"]   (the shipped DEFAULT)
+ *   theme-dark.css  → :root[data-theme="dark"]            (an option)
+ *
+ * Light is the default (Session 4.1, Daryn's charter): this product's visual
+ * language is TRUST — the document, the ledger, dark ink on light paper.
+ * Because light is declared for a bare `:root` as well, the board renders in
+ * light even before any JS sets the attribute (no flash on the default path).
+ *
+ * The SEMANTIC mappings (lateness bands, register hues, gesture surface) map
+ * onto each theme's primitives so the look can be tuned per theme without
+ * touching board/panel logic. The feel panel writes visual opacities to the
+ * ACTIVE theme (they mirror to :root inline; only one theme renders at a time)
+ * — semantic/motion tokens stand across a re-tune.
  * ======================================================================== */
-:root {
-  /* --- surface --------------------------------------------------------- */
-  --bg: #0e1016;               /* deepest base (calmed a touch in 3.5) */
-  --bg-deep: #0a0c11;          /* darker-than-bg wells (inputs, grade ink bg) */
-  --panel: #161a23;
-  --panel-2: #1b2130;
-  --panel-float: rgba(22, 26, 35, 0.96);  /* floating panels over the board */
-  --grid: #262b3a;             /* hairlines / borders (softened in 3.5) */
-  --ink: #e7eaf1;
-  --ink-inverse: #ffffff;      /* text on a saturated accent fill */
-  --muted: #8b93a7;
-  --muted-2: #656c80;
-  --scrim: rgba(14, 16, 22, 0.82);   /* legend / overlay backdrop */
+@import "./theme-light.css";
+@import "./theme-dark.css";
 
-  /* --- typography ------------------------------------------------------ */
+:root {
+  /* --- typography (theme-invariant) ----------------------------------- */
   --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
              "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono",
                Menlo, Consolas, monospace;
-  --fs-2xs: 9px;
-  --fs-xs: 10px;
+  /* Micro sizes bumped in 4.1 CU3 for WCAG AA legibility: the smallest chip
+   * text (register chips, ledger rows, ghost tags) sat at 9px, below AA for the
+   * contrast some carried. --fs-2xs is now 10px and the smallest real-text chip
+   * carries semibold weight (see cockpit.css / drag.css). Decorative glyphs may
+   * still go smaller inline. */
+  --fs-2xs: 10px;
+  --fs-xs: 11px;
   --fs-sm: 11px;
   --fs-base: 12px;
   --fs-md: 13px;
@@ -47,7 +51,7 @@
   --ls-caps: 0.04em;           /* uppercase micro-labels */
   --ls-caps-wide: 0.05em;
 
-  /* --- spacing / rhythm ------------------------------------------------ */
+  /* --- spacing / rhythm ----------------------------------------------- */
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
@@ -56,13 +60,7 @@
   --radius-sm: 3px;
   --radius: 6px;
 
-  /* --- elevation ------------------------------------------------------- */
-  --shadow-scrim: 0 1px 4px rgba(0, 0, 0, 0.45);   /* small tags */
-  --shadow-1: 0 1px 4px rgba(0, 0, 0, 0.40);
-  --shadow-2: 0 2px 10px rgba(0, 0, 0, 0.50);      /* carried bar / float */
-  --shadow-3: 0 10px 34px rgba(0, 0, 0, 0.52);     /* cards / panels */
-
-  /* --- motion (durations feel-iteration owns) ------------------------- */
+  /* --- motion timing (durations feel-iteration owns) ------------------ */
   --dur-fast: 90ms;
   --dur: 160ms;
   --dur-slow: 350ms;           /* ghost fade-in */
@@ -70,143 +68,58 @@
   --dur-shimmer: 1100ms;       /* on-demand pricing shimmer */
   --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
 
-  /* --- bars: geometry + lateness-signal coloring ---------------------- *
-   * The board colors each assignment bar by the service outcome of its
-   * demand (per-Demand tardiness, never per-WorkPackage — CLAUDE.md hard
-   * rule). Bands are set by --late-* thresholds in board.js.             */
-  --bar-radius: 4px;                              /* cleaner than the old 3px */
-  --bar-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.10);  /* subtle top light */
+  /* --- bar + gesture geometry (color lives per theme) ----------------- */
+  --bar-radius: 4px;
   --bar-pad-x: 6px;                              /* in-bar label inset */
-  --bar-ontime: #3b6fd6;        /* comfortably early / on time */
-  --bar-ontime-ink: #cfe0ff;
-  --bar-tight: #e0a63c;         /* early but inside the tight band */
-  --bar-tight-ink: #201607;
-  --bar-late: #e0564f;          /* projected completion past due */
-  --bar-late-ink: #2a0c0a;
-  --bar-border: rgba(255, 255, 255, 0.13);
 
-  /* --- calendar lane shading ------------------------------------------ */
-  --cal-closure: rgba(9, 11, 17, 0.55);    /* non-working: nights/weekends */
-  --cal-overtime: rgba(224, 166, 60, 0.10); /* premium window tint */
-
-  /* --- citation highlight (the evidence architecture made spatial) ---- */
-  --cite-bar: #35c9c2;          /* a cited bar glows teal */
-  --cite-ink: #04201e;          /* dark ink on a teal cite tag */
-  --cite-glow: 0 0 0 2px rgba(53, 201, 194, 0.9), 0 0 12px 2px rgba(53, 201, 194, 0.45);
-  --cite-lane: rgba(53, 201, 194, 0.10);  /* a cited resource lane tint */
-  --select: #b06cf0;            /* the shared selection (clicked bar) */
-  --select-glow: 0 0 0 2px rgba(176, 108, 240, 0.95);
-
-  /* --- registers (never blend — CLAUDE.md honesty armor) -------------- */
-  --reg-testimony: #35c9c2;     /* evidence / decisions */
-  --reg-judgment: #e0a63c;      /* findings / triage */
-  --reg-testimony-fill: rgba(53, 201, 194, 0.08);
-  --reg-judgment-fill: rgba(224, 166, 60, 0.08);
-  --on-accent: #08131f;         /* dark ink on a teal action button */
-
-  /* --- voice input (Session 3.7): recording state + interim overlay --- *
-   * Tap-to-talk. The mic latches into an unmistakable recording state; the
-   * interim transcript streams into a FIXED-FOOTPRINT floating overlay so it
-   * never reflows the row the mic lives in (R-M1 spirit: nothing under an
-   * active pointer moves). Both affordances are tokenized.                */
-  --voice-rec-fill: var(--bar-late);            /* the mic while recording */
-  --voice-rec-ink: var(--ink-inverse);
-  --voice-rec-edge: var(--bar-late);
-  --voice-rec-dot: #ff6b60;                     /* the pulsing "recording" dot */
+  /* --- voice input timing / geometry (Session 3.7) -------------------- */
   --voice-rec-pulse-ms: 1200ms;
-  --voice-overlay-bg: var(--panel-float);
-  --voice-overlay-ink: var(--ink);
-  --voice-overlay-label: var(--voice-rec-dot);  /* the "recording" caption ink */
-  --voice-overlay-edge: var(--grid);
-  --voice-overlay-h: 40px;                       /* FIXED height — the overlay never grows */
-  --voice-overlay-shadow: var(--shadow-2);
+  --voice-overlay-h: 40px;                       /* FIXED height — never grows */
   --voice-overlay-radius: var(--radius);
 
-  /* --- certificate grade chips ---------------------------------------- */
-  --grade-c1: #2fbf71;
-  --grade-c0: #8b93a7;
-  --grade-conditional: #e0a63c;
-  --grade-rejected: #e0564f;
-  --grade-ink: #0b0d12;         /* dark ink on a colored grade chip */
+  /* --- gesture surface: OPACITY MULTIPLIERS (feel-mirrored, CU5) ------ *
+   * These are the emphasis knobs Daryn re-tunes per theme at the feel panel
+   * (applyFeel mirrors them inline onto :root; only one theme renders at once).
+   * They are timing/emphasis, not color — so they are theme-invariant here and
+   * the light/dark COLORS they modulate carry the actual look. The dim-dominates-
+   * green SEMANTICS carry as a design decision; the numbers iterate. */
+  --shade-green-opacity: 0.5;
+  --shade-dim-opacity: 1.0;
+  --ghost-opacity: 0.42;
+  --ghost-infeasible-opacity: 0.3;
+  --trace-ghost-opacity: 0.28;
 
-  /* =======================================================================
-   * Gesture surface (3.2b) — the drag interaction layer. Visual tokens live
-   * here; the NUMERIC feel knobs (snap radii, falloff, pulse period, budget)
-   * live in drag/feel.js and the tuning panel (CU6) mirrors its CSS-visible
-   * subset onto the custom properties below at runtime.
-   * ==================================================================== */
-  /* Tier-0 shading (CU1, R-DP2/R-DP6): green legal / amber displace / dim */
-  --shade-green: rgba(47, 191, 113, 0.22);
-  --shade-green-edge: rgba(47, 191, 113, 0.5);
-  --shade-amber: rgba(224, 166, 60, 0.20);
-  --shade-dim: rgba(8, 10, 15, 0.42);            /* eligible-but-illegal wash */
-  --shade-dim-capability: rgba(8, 10, 15, 0.62); /* wrong machine (stronger) */
-  --shade-green-opacity: 0.5;        /* (feel-mirrored, CU5) legal-zone emphasis */
-  --shade-dim-opacity: 1.0;          /* (feel-mirrored, CU5) forbidden-zone emphasis */
+  /* tentative bar timing / hatch pitch (feel-mirrored) */
+  --tentative-pulse-ms: 1100ms;
+  --tentative-hatch-px: 6px;
+  /* change-trace stroke width (feel-mirrored) */
+  --trace-width-px: 2px;
 
-  /* Tier-1 ghosts (CU2): source-distinguished only subtly (border style) */
-  --ghost-fill: rgba(139, 147, 167, 0.22);
-  --ghost-forced-edge: #7bd4c9;      /* forced-alternative (the priced road) */
-  --ghost-pool-edge: #8b93a7;        /* pool (the cheap near-optimal option) */
-  --ghost-tag-bg: #14202a;
-  --ghost-tag-ink: #cfe0ff;
-  --ghost-better: #2fbf71;           /* a cheaper alternative */
-  --ghost-worse: #e0a63c;            /* a pricier alternative */
-  --ghost-opacity: 0.42;             /* (feel-mirrored) */
-  --ghost-infeasible-opacity: 0.3;   /* (feel-mirrored) */
-
-  /* the carried / tentative bar (CU3/CU4, R-DP7a) */
-  --carry-legal: #3b6fd6;
-  --carry-dim: #656c80;
-  --carry-outline: rgba(255, 255, 255, 0.13);  /* legal-carry outline */
-  --tentative-edge: #b06cf0;         /* distinct visual state pending verdict */
-  --tentative-hatch: rgba(176, 108, 240, 0.35);
-  --tentative-glow-0: rgba(176, 108, 240, 0.5);  /* pulse keyframe 0/100% */
-  --tentative-glow-1: rgba(176, 108, 240, 0.15); /* pulse keyframe 50% */
-  --tentative-pulse-ms: 1100ms;      /* (feel-mirrored) */
-  --tentative-hatch-px: 6px;         /* (feel-mirrored) */
-
-  /* change traces (CU5, R-DP7) */
-  --trace-line: #b06cf0;
-  --trace-old: rgba(139, 147, 167, 0.5);
-  --trace-width-px: 2px;             /* (feel-mirrored) */
-  --trace-ghost-opacity: 0.28;       /* (feel-mirrored) */
-
-  /* the mid-drag refusal reason (R-DP2) */
-  --reason-bg: #2a0c0a;
-  --reason-ink: #ffd9d5;
-  --reason-edge: var(--bar-late);
-
-  /* =======================================================================
-   * R-M1 — MOTION CARRIES REGISTER (docs/04 R-M1 ruling). NAMED-BUT-UNCONSUMED
-   * this session: the token surface Session 3.6 implements against. Semantics
-   * are FIXED by the ruling; these numbers are feel-tunable (mirrored from
-   * drag/feel.js motion.* by applyFeel(), so the tuning panel drives them
-   * before any rule consumes them). Do not wire these into an animation until
-   * 3.6 — that is the whole point of building the surface first.
-   * ==================================================================== */
-  /* (a) REJECTION — return-home: fast snap-back, NO settling ease, brief shake */
+  /* --- R-M1 motion TIMING (docs/04 R-M1). The motion COLORS (highlight, pin-
+   * lock ring) live per theme; only the durations / easings / amplitudes are
+   * here. Feel-mirrored from drag/feel.js motion.* by applyFeel(). ---------- */
   --motion-reject-dur: 200ms;
   --motion-reject-ease: cubic-bezier(0.45, 0, 0.9, 0.35);  /* refuses, never settles */
   --motion-reject-shake-amp: 3px;
   --motion-reject-shake-dur: 140ms;
-  /* (b) REFLOW — bars after a committed re-solve: smooth, SIMULTANEOUS, eased */
   --motion-reflow-dur: 340ms;
   --motion-reflow-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
-  --motion-reflow-highlight: rgba(53, 201, 194, 0.5);
   --motion-reflow-highlight-dur: 600ms;
-  /* (c) OWN PLACEMENT — committed drop: never moves; static pin-lock ring */
   --motion-pinlock-dur: 220ms;
-  --motion-pinlock-ring: rgba(47, 191, 113, 0.9);
-  /* (d) GHOSTS — fade in/out ONLY; price/verdict labels fade WITH their bars */
   --motion-ghost-fade-dur: 350ms;
   --motion-ghost-fade-ease: ease-out;
 
-  /* STANDING PIN (R-DP8) — a persistent, subtle marker on a bar carrying an
-   * accepted, still-held commitment. Deliberately quieter than the transient
-   * pin-lock (which animates then settles): a thin amber left-edge + a faint
-   * ring, always on, so a committed placement is legible at a glance without
-   * shouting. Amber (not the pin-lock green) says "held", not "just placed". */
-  --standing-pin-edge: rgba(214, 158, 46, 0.95);
-  --standing-pin-ring: rgba(214, 158, 46, 0.34);
+  /* --- semantic aliases (resolve against the ACTIVE theme) ------------ *
+   * Pure references — theme-invariant MAPPINGS onto per-theme colors. Kept here
+   * (not duplicated in both theme files) because var() resolves lazily against
+   * the element's computed custom properties, so each alias picks up the active
+   * theme's source token automatically. */
+  --voice-rec-fill: var(--bar-late);            /* the mic while recording */
+  --voice-rec-ink: var(--ink-inverse);
+  --voice-rec-edge: var(--bar-late);
+  --voice-overlay-bg: var(--panel-float);
+  --voice-overlay-ink: var(--ink);
+  --voice-overlay-label: var(--voice-rec-dot);  /* the "recording" caption ink */
+  --voice-overlay-edge: var(--grid);
+  --voice-overlay-shadow: var(--shadow-2);
 }

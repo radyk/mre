@@ -20,7 +20,12 @@ import { fileURLToPath } from "node:url";
 
 const SHOTS = resolve(dirname(fileURLToPath(import.meta.url)), "shots");
 mkdirSync(SHOTS, { recursive: true });
-const shot = (page, name) => page.screenshot({ path: resolve(SHOTS, `${name}.png`) });
+// Theme is a harness dimension (4.1 CU3): the active theme comes from the
+// Playwright project's metadata; every boot renders in it and screenshots are
+// suffixed by it so light + dark captures coexist (shots/ is gitignored).
+const theme = () => test.info().project.metadata?.theme || "light";
+const themeParam = () => `&theme=${theme()}`;
+const shot = (page, name) => page.screenshot({ path: resolve(SHOTS, `${name}__${theme()}.png`) });
 
 const SCHEDULE = "sched-multi-route-fixture";
 const ACCEPTANCE_Q = "why is ORD-000012 on F001-RES001?";
@@ -29,7 +34,7 @@ const DRIFT_MAX_PX = 1.0;      // 0.0 expected; allow sub-pixel rounding
 
 async function boot(page, extra = "") {
   await page.request.post("/__test__/reset").catch(() => {});  // clean lifecycle (3.8)
-  await page.goto(`/?schedule=${SCHEDULE}${extra}`);
+  await page.goto(`/?schedule=${SCHEDULE}${themeParam()}${extra}`);
   await page.waitForFunction(() => window.__cockpit && window.__cockpit.ready === true, { timeout: 20000 });
   const err = await page.evaluate(() => window.__cockpit.error || null);
   expect(err, "cockpit booted without error").toBeNull();
@@ -227,4 +232,35 @@ test("registers — testimony and judgment render visibly distinct", async ({ pa
   const jBorder = await page.locator(".msg.answer.judgment").first().evaluate((el) => getComputedStyle(el).borderLeftColor);
   expect(tBorder).not.toBe(jBorder);
   await shot(page, "06_registers");
+});
+
+test("theme — light is the shipped default; the toggle flips attribute + palette (4.1)", async ({ page }) => {
+  // Boot WITHOUT any theme param (fresh, isolated context → no stored pref): the
+  // shipped default must be light. This is theme-independent, so it asserts the
+  // same thing under both projects.
+  await page.request.post("/__test__/reset").catch(() => {});
+  await page.goto(`/?schedule=${SCHEDULE}`);
+  await page.waitForFunction(() => window.__cockpit && window.__cockpit.ready === true, { timeout: 20000 });
+  expect(await page.evaluate(() => document.documentElement.getAttribute("data-theme"))).toBe("light");
+
+  const bgHex = () => page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue("--bg").trim());
+  const lum = (hex) => { const m = hex.match(/[0-9a-f]{2}/gi).map((h) => parseInt(h, 16)); return 0.299 * m[0] + 0.587 * m[1] + 0.114 * m[2]; };
+  const lightBg = await bgHex();
+
+  // the chrome toggle exists and is labelled with an accessible name
+  const toggle = page.locator("#theme-toggle");
+  await expect(toggle).toBeVisible();
+  expect(await toggle.getAttribute("aria-label")).toMatch(/theme: light/i);
+
+  // toggle → dark: attribute flips, the palette is a DIFFERENT design (paper
+  // gives way to a genuinely dark base, not a tint)
+  await toggle.click();
+  expect(await page.evaluate(() => document.documentElement.getAttribute("data-theme"))).toBe("dark");
+  const darkBg = await bgHex();
+  expect(darkBg).not.toBe(lightBg);
+  expect(lum(lightBg), "light paper far brighter than the dark base").toBeGreaterThan(lum(darkBg) + 100);
+  // the URL now carries the chosen theme (a shareable, reload-stable choice)
+  expect(page.url()).toMatch(/theme=dark/);
+  await shot(page, "08_theme_toggle");
 });

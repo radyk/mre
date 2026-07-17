@@ -17,7 +17,10 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SHOTS = resolve(HERE, "shots");
 mkdirSync(SHOTS, { recursive: true });
-const shot = (page, name) => page.screenshot({ path: resolve(SHOTS, `${name}.png`) });
+// Theme dimension (4.1 CU3): the gesture surface renders on both data-themes;
+// the active one comes from the Playwright project's metadata.
+const theme = () => test.info().project.metadata?.theme || "light";
+const shot = (page, name) => page.screenshot({ path: resolve(SHOTS, `${name}__${theme()}.png`) });
 
 const SCHEDULE = "sched-multi-route-distinct";
 const DIST = resolve(HERE, "fixtures", "distinct");
@@ -50,7 +53,7 @@ async function boot(page) {
   // publish in a prior test supersedes its base, which would break a later boot
   // of that base id. Reset BEFORE navigation so the page's meta read is clean.
   await page.request.post("/__test__/reset").catch(() => {});
-  await page.goto(`/?schedule=${SCHEDULE}`);
+  await page.goto(`/?schedule=${SCHEDULE}&theme=${theme()}`);
   await page.waitForFunction(() => window.__cockpit && window.__cockpit.ready === true, { timeout: 20000 });
   const err = await page.evaluate(() => window.__cockpit.error || null);
   expect(err, "cockpit booted without error").toBeNull();

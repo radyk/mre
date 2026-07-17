@@ -7,12 +7,16 @@
 //   ?schedule=<id>   the schedule to render (else the first base schedule)
 //   ?api=<baseUrl>   optional absolute API base (default: same origin / proxy)
 //   ?ask=<question>  optional: auto-run one question after load (demo/harness)
+//   ?theme=<name>    optional: light (default) | dark — the shipped default is
+//                    light (Session 4.1). A per-deployment default is a tier-2
+//                    preference for when that layer lands; a URL/config param now.
 
 const params = new URLSearchParams(location.search);
 export const CONFIG = {
   base: params.get("api") || "",
   scheduleId: params.get("schedule") || "",
   autoAsk: params.get("ask") || "",
+  theme: params.get("theme") || "",
 };
 
 // An API error that carries the HTTP status + a ``superseded`` flag so callers

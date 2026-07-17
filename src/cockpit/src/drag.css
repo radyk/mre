@@ -40,16 +40,22 @@
 /* --- CU3/CU4: the carried / tentative bar ------------------------------- */
 .carry-bar {
   position: absolute; border-radius: var(--bar-radius);
-  font: var(--fw-bold) var(--fs-xs)/1 var(--font-mono); color: var(--ink-inverse);
+  font: var(--fw-bold) var(--fs-xs)/1 var(--font-mono); color: var(--carry-ink);
   display: flex; align-items: center; padding: 0 var(--bar-pad-x); overflow: hidden;
   box-shadow: var(--shadow-2);
 }
 .carry-bar.legal { background: var(--carry-legal); outline: 2px solid var(--carry-outline); }
 .carry-bar.dim  { background: var(--carry-dim); opacity: 0.7; }
+/* Tentative: a NOT-YET-REAL hatch over a theme backing. On dark the backing is
+ * transparent (hatch sits on the dark board); on light it is translucent paper
+ * so the ghostly hatch reads while the DARK label stays legible (--tentative-ink). */
 .carry-bar.tentative {
-  background: repeating-linear-gradient(45deg,
-    var(--tentative-hatch) 0, var(--tentative-hatch) var(--tentative-hatch-px),
-    transparent var(--tentative-hatch-px), transparent calc(var(--tentative-hatch-px) * 2));
+  color: var(--tentative-ink);
+  background:
+    repeating-linear-gradient(45deg,
+      var(--tentative-hatch) 0, var(--tentative-hatch) var(--tentative-hatch-px),
+      transparent var(--tentative-hatch-px), transparent calc(var(--tentative-hatch-px) * 2)),
+    var(--tentative-backing);
   border: 1.5px solid var(--tentative-edge);
   animation: tentative-pulse var(--tentative-pulse-ms) ease-in-out infinite;
 }

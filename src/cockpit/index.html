@@ -1,9 +1,23 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>MRE · Reasoning Cockpit</title>
+    <!-- Theme before first paint (Session 4.1) — no flash. Light is the shipped
+         default; a ?theme=dark deep link or a stored preference overrides it.
+         The real toggle + URL sync live in main.js; this only stamps the
+         attribute early so the correct theme file wins from the first frame. -->
+    <script>
+      (function () {
+        try {
+          var q = new URLSearchParams(location.search).get("theme");
+          var t = q || localStorage.getItem("mre-theme") || "light";
+          document.documentElement.setAttribute(
+            "data-theme", t === "dark" ? "dark" : "light");
+        } catch (e) { /* default light attribute already set */ }
+      })();
+    </script>
   </head>
   <body>
     <div id="app">

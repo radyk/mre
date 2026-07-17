@@ -94,6 +94,61 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4.1 — light theme as the
+shipped default; theme as a first-class token dimension 2026-07-17.** Product
+decision (Daryn's charter, ratified in docs/04): this product's visual language is
+TRUST — the document, the ledger, dark ink on light paper; the dark cockpit
+signalled *developer tool*. **Light is now the shipped default; dark is an option**
+— and light is a DESIGNED theme, not an inversion. **CU1 — theme architecture:**
+`src/cockpit/src/tokens.css` split into a STRUCTURAL layer (typography, spacing,
+geometry, radii, motion TIMING — durations/easings/amplitudes — and the feel-panel
+opacity multipliers; all theme-invariant, no color) + two COLOR files
+(`theme-light.css` = `:root, :root[data-theme="light"]` — declared for a bare
+`:root` too so the board renders light before any JS, NO flash on the default path;
+`theme-dark.css` = `:root[data-theme="dark"]`, equal-specificity attribute selector,
+overrides cleanly). Semantic ALIASES that are pure `var()` references (e.g.
+`--voice-rec-fill: var(--bar-late)`) stay structural and resolve lazily against the
+active theme. One chrome toggle in the top strip (shows the theme you'd switch TO); a
+no-flash inline `<head>` script stamps `data-theme` from `?theme=`/`localStorage`
+before first paint; `main.js` keeps it synced to URL + storage. Theme choice is a
+**tier-2-class preference** (per-deployment default when that layer lands; URL/config
+param + toggle now). **The feel panel's visual knobs write to the ACTIVE theme** (the
+opacity multipliers mirror to `:root` inline; only one theme renders at once).
+**CU2 — the light theme, designed (not inverted):** warm ivory PAPER bg (`#f6f4ef`),
+dark-slate ink (`#23262d`), a warm-grey chrome/recess/hairline ramp, soft shadows.
+**Lateness palette re-chosen colorblind-safe (deuteranopia checked on the red/amber
+pair)** via THREE redundant cues — on-time BLUE (`#2f63bd`, the CVD anchor); tight
+(`#d98a2b`, LIGHT warm orange) vs late (`#b5271e`, DARKER red) separated by
+LIGHTNESS; and INK POLARITY (tight = dark ink, late = white ink) as a redundant
+channel — all bar ink AA on its fill. Shading re-tuned for paper (dim = a cool grey
+VEIL, green = a legal tint); **Daryn's dim-dominates-green verdict carries as
+SEMANTICS** (opacities re-tune per theme at the feel panel). Ghosts/traces redrawn
+(dark ghost-tag chip keeps prices legible over the board). **The tentative bar was
+the one place carry ink had to become theme-aware** — the hatch used to sit on a
+transparent backing with a hard-coded WHITE label (invisible on paper); 4.1 added
+`--carry-ink`/`--tentative-ink`/`--tentative-backing`, so on light the hatch sits
+over a translucent PAPER backing (reads NOT-YET-REAL) with DARK ink (legible).
+Closures visible without murk; amber STANDING-PIN vs green transient pin-lock both
+re-tuned to read on paper; refusal card / legend / cards / ask panel / ledger dock
+all carry through the same tokens. **Dark kept working — its pre-4.1 colors moved
+VERBATIM under the selector; no design effort on dark this session.** **CU3 —
+contrast pass both themes + harness:** micro-chip typography bumped for AA (`--fs-2xs`
+9→10px, `--fs-xs`→11px, register chip → semibold); the Playwright harness
+**parametrized on `data-theme` via projects** (theme-free `logic` once + `light` +
+`dark` each running EVERY rendering spec; each boot appends `&theme=<project>`, so
+the **C1 label-vs-bar drift regression is asserted per theme**; screenshots + the
+rehearsal report suffixed by theme, `shots/` gitignored). New `cockpit.spec` theme
+test: light is the default (fresh context), the toggle flips attribute + palette
+(paper base far brighter than the dark base — a designed theme, not a tint), the
+chosen theme rides in the URL. **Cockpit JS 94 passed** (logic 6 + light 44 + dark
+44; was 49 single-theme), C1 drift green both themes. Python untouched (frontend-
+only): non-slow suite green as a regression guard. See docs/04 2026-07-17 Session 4.1
+amendment and docs/07 v2.19. Lesson: a theme is a token DIMENSION, not a palette swap
+— split structural from color, let one attribute select, design the light theme
+rather than inverting the dark one; the single hard-coded `ink-inverse` (the
+tentative hatch's white label) was exactly where an inversion would have failed
+silently.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4.0e — accepted
 placements are standing commitments (R-DP8) 2026-07-17.** Live on the gesture
 surface: an accepted, then PUBLISHED, edit was silently reverted by the NEXT edit's

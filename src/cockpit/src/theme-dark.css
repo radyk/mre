@@ -1,0 +1,115 @@
+/* ===========================================================================
+ * DARK theme (Session 4.1). An OPTION, not the default. These are the ratified
+ * pre-4.1 cockpit colors moved VERBATIM under the data-theme selector — dark
+ * keeps working exactly as it did; no design effort was spent improving it this
+ * session (the design pass went into light). The only additions are the three
+ * carry/tentative ink tokens 4.1 introduced (set to preserve today's look).
+ *
+ * Structural tokens (typography, spacing, motion timing, opacity multipliers)
+ * live in tokens.css and are shared with light.
+ * ======================================================================== */
+:root[data-theme="dark"] {
+  /* --- surface --------------------------------------------------------- */
+  --bg: #0e1016;               /* deepest base */
+  --bg-deep: #0a0c11;          /* darker-than-bg wells (inputs, grade ink bg) */
+  --panel: #161a23;
+  --panel-2: #1b2130;
+  --panel-float: rgba(22, 26, 35, 0.96);  /* floating panels over the board */
+  --grid: #262b3a;             /* hairlines / borders */
+  --ink: #e7eaf1;
+  --ink-inverse: #ffffff;      /* text on a saturated accent fill */
+  --muted: #8b93a7;
+  --muted-2: #656c80;
+  --scrim: rgba(14, 16, 22, 0.82);   /* legend / overlay backdrop */
+
+  /* --- elevation ------------------------------------------------------- */
+  --shadow-scrim: 0 1px 4px rgba(0, 0, 0, 0.45);   /* small tags */
+  --shadow-1: 0 1px 4px rgba(0, 0, 0, 0.40);
+  --shadow-2: 0 2px 10px rgba(0, 0, 0, 0.50);      /* carried bar / float */
+  --shadow-3: 0 10px 34px rgba(0, 0, 0, 0.52);     /* cards / panels */
+
+  /* --- bars: lateness-signal coloring --------------------------------- */
+  --bar-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.10);  /* subtle top light */
+  --bar-ontime: #3b6fd6;        /* comfortably early / on time */
+  --bar-ontime-ink: #cfe0ff;
+  --bar-tight: #e0a63c;         /* early but inside the tight band */
+  --bar-tight-ink: #201607;
+  --bar-late: #e0564f;          /* projected completion past due */
+  --bar-late-ink: #2a0c0a;
+  --bar-border: rgba(255, 255, 255, 0.13);
+
+  /* --- calendar lane shading ------------------------------------------ */
+  --cal-closure: rgba(9, 11, 17, 0.55);    /* non-working: nights/weekends */
+  --cal-overtime: rgba(224, 166, 60, 0.10); /* premium window tint */
+
+  /* --- citation highlight --------------------------------------------- */
+  --cite-bar: #35c9c2;          /* a cited bar glows teal */
+  --cite-ink: #04201e;          /* dark ink on a teal cite tag */
+  --cite-glow: 0 0 0 2px rgba(53, 201, 194, 0.9), 0 0 12px 2px rgba(53, 201, 194, 0.45);
+  --cite-lane: rgba(53, 201, 194, 0.10);  /* a cited resource lane tint */
+  --select: #b06cf0;            /* the shared selection (clicked bar) */
+  --select-glow: 0 0 0 2px rgba(176, 108, 240, 0.95);
+
+  /* --- registers (never blend — honesty armor) ------------------------ */
+  --reg-testimony: #35c9c2;     /* evidence / decisions */
+  --reg-judgment: #e0a63c;      /* findings / triage */
+  --reg-testimony-fill: rgba(53, 201, 194, 0.08);
+  --reg-judgment-fill: rgba(224, 166, 60, 0.08);
+  --on-accent: #08131f;         /* dark ink on a teal action button */
+
+  /* --- voice input (Session 3.7) -------------------------------------- */
+  --voice-rec-dot: #ff6b60;                     /* the pulsing "recording" dot */
+
+  /* --- certificate grade chips ---------------------------------------- */
+  --grade-c1: #2fbf71;
+  --grade-c0: #8b93a7;
+  --grade-conditional: #e0a63c;
+  --grade-rejected: #e0564f;
+  --grade-ink: #0b0d12;         /* dark ink on a colored grade chip */
+
+  /* --- gesture surface (3.2b) — Tier-0 shading ------------------------ */
+  --shade-green: rgba(47, 191, 113, 0.22);
+  --shade-green-edge: rgba(47, 191, 113, 0.5);
+  --shade-amber: rgba(224, 166, 60, 0.20);
+  --shade-dim: rgba(8, 10, 15, 0.42);            /* eligible-but-illegal wash */
+  --shade-dim-capability: rgba(8, 10, 15, 0.62); /* wrong machine (stronger) */
+
+  /* Tier-1 ghosts (CU2) */
+  --ghost-fill: rgba(139, 147, 167, 0.22);
+  --ghost-forced-edge: #7bd4c9;      /* forced-alternative (the priced road) */
+  --ghost-pool-edge: #8b93a7;        /* pool (the cheap near-optimal option) */
+  --ghost-tag-bg: #14202a;
+  --ghost-tag-ink: #cfe0ff;
+  --ghost-better: #2fbf71;           /* a cheaper alternative */
+  --ghost-worse: #e0a63c;            /* a pricier alternative */
+
+  /* the carried / tentative bar (CU3/CU4, R-DP7a) */
+  --carry-legal: #3b6fd6;
+  --carry-dim: #656c80;
+  --carry-ink: var(--ink-inverse);             /* label ink on a carried bar */
+  --carry-outline: rgba(255, 255, 255, 0.13);  /* legal-carry outline */
+  --tentative-edge: #b06cf0;         /* distinct visual state pending verdict */
+  --tentative-ink: var(--ink-inverse);
+  --tentative-backing: transparent;  /* hatch sits directly on the dark board */
+  --tentative-hatch: rgba(176, 108, 240, 0.35);
+  --tentative-glow-0: rgba(176, 108, 240, 0.5);  /* pulse keyframe 0/100% */
+  --tentative-glow-1: rgba(176, 108, 240, 0.15); /* pulse keyframe 50% */
+
+  /* change traces (CU5, R-DP7) */
+  --trace-line: #b06cf0;
+  --trace-old: rgba(139, 147, 167, 0.5);
+
+  /* the mid-drag refusal reason (R-DP2) */
+  --reason-bg: #2a0c0a;
+  --reason-ink: #ffd9d5;
+  --reason-edge: var(--bar-late);
+
+  /* R-M1 motion COLORS (timing lives in tokens.css) */
+  --motion-reflow-highlight: rgba(53, 201, 194, 0.5);
+  --motion-pinlock-ring: rgba(47, 191, 113, 0.9);
+
+  /* STANDING PIN (R-DP8) — a persistent, subtle amber marker on a bar carrying
+   * an accepted, still-held commitment. Quieter than the transient pin-lock. */
+  --standing-pin-edge: rgba(214, 158, 46, 0.95);
+  --standing-pin-ring: rgba(214, 158, 46, 0.34);
+}

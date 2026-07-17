@@ -10,9 +10,6 @@ const PORT = 5199;
 
 export default defineConfig({
   testDir: ".",
-  // both the screenshot harness (cockpit.spec.mjs) and the pure-JS Tier-0
-  // legality tests (legality.spec.mjs — no browser needed, but they share the
-  // one built-cockpit webServer).
   testMatch: /\.spec\.mjs$/,
   outputDir: "./shots/_pw",
   timeout: 60_000,
@@ -24,6 +21,22 @@ export default defineConfig({
     viewport: { width: 1540, height: 900 },
     deviceScaleFactor: 2,
   },
+  // Theme is a first-class harness dimension (Session 4.1 CU3): every RENDERING
+  // spec runs on BOTH data-themes (each boot appends &theme=<project theme>; the
+  // C1 label-vs-bar drift regression is therefore asserted per theme). The
+  // pure-JS Tier-0 legality tests have no rendering, so they run once, theme-
+  // free. Screenshots are suffixed by theme (shots/ is gitignored).
+  projects: [
+    { name: "logic", testMatch: /legality\.spec\.mjs$/ },
+    {
+      name: "light", metadata: { theme: "light" },
+      testMatch: /(cockpit|gesture|rehearsal)\.spec\.mjs$/,
+    },
+    {
+      name: "dark", metadata: { theme: "dark" },
+      testMatch: /(cockpit|gesture|rehearsal)\.spec\.mjs$/,
+    },
+  ],
   webServer: {
     // build the cockpit, then serve it + the fixtures. Cross-platform && (cmd
     // on Windows, sh on POSIX). Requires the fixtures to exist
