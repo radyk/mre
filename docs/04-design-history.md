@@ -5280,3 +5280,63 @@ mock the transport at the seam, but exercise the real construction and the real 
 site, or the one exception the mock never throws is exactly the one that reaches the
 user as a 500. And a deterministic route still renders through the LLM: seal the
 RENDER path, not just the router.
+
+### 2026-07-17 — AI-track Session 4A.1c: the testimony validator passed FABRICATED record citations
+
+**The hole, from screenshots.** LLM-rendered answers footnoted records that do not
+exist: `[record: Nothing scheduled for all]` and `[record: evidence_chain_001]`.
+The 4A.1 testimony validator (`_validate_testimony`) checked four things —
+timestamps, time-unit numbers, machine names, and that SOME factual sentence
+carried a footnote — but it **never checked that a cited record id is REAL**. A
+model that invented an id-shaped citation, or stuffed header prose into a
+`[record: …]`, sailed through. Separately, "is there a better schedule" answered
+with PROSE (a schedule listing) instead of a refusal.
+
+**Issue 2 — traced.** `classify("is there a better schedule")` matches the BARE word
+`schedule` in `_SCHEDULE_TRIGGERS` → routes to the schedule LISTING → renders the
+plan as prose. It is not an unsupported question falling through to the interpreter;
+it is a **deterministic mis-route** — an optimality question ("does a BETTER plan
+exist", a re-optimization/what-if the deterministic surface cannot answer) swallowed
+by a listing trigger. And when the listing is empty, the header text "Nothing
+scheduled for all" became the LLM's fabricated citation — the two defects are the
+same root: an unresolvable question reaching the LLM renderer with an empty/garbage
+evidence chain.
+
+**Fix A — every citation must name a real record.** `_build_prompt_material` now
+also returns `known_records` = the real `record_id`s on `bundle.ordered_records`;
+`_validate_testimony` gained rule 5: every `[record: X]` in the answer must be a
+prefix of a real id (the template footnotes an 8-char prefix, so the model may cite
+the prefix), else `"fabricated record citation 'X'"` — which, like any validation
+issue, triggers one regeneration and then the deterministic **template fallback**.
+The bare `?` placeholder (template's missing-id marker) is exempt (not a claim).
+
+**Fix B — a no-evidence bundle never reaches the LLM.** `LLMRenderer.render` now
+short-circuits to the template body BEFORE any LLM call when
+`not bundle.ordered_records`: an honest refusal / near-miss / clarify (authored
+copy) and an empty schedule listing have nothing to testify FROM, so the model
+could only fabricate. This closes the "empty/garbage evidence chain reaches the LLM"
+path for every such bundle in one rule; the authored header IS the answer.
+
+**Fix C — an optimality question is not a schedule listing.** New
+`_OPTIMALITY_TRIGGERS` (`better`, `best`, `optimal`, `improve`, `cheaper`,
+`cheapest`, `worse`, `suboptimal`, `more efficient`); the schedule-listing branch in
+`classify` fires only when NO optimality word is present. "is there a better
+schedule" now falls through to `unsupported` → the honest refusal / interpreter
+bridge, and (by Fix B) that refusal renders verbatim, never as LLM prose.
+
+**Tests.** `test_testimony_validation.py` (fast): the two live symptoms rejected
+(id-shaped + prose-as-citation → template), a real-prefix citation passes, the
+`?` placeholder is exempt, and — Fix B — an empty-evidence / refusal bundle is
+rendered without EVER calling the client (a call-counting fake asserts
+`calls == 0`). `test_interpreter.py`: "is there a better schedule" classifies
+`unsupported` (a normal `schedule` listing still routes) and refuses
+deterministically. `test_ask_chain_api.py` (slow): end-to-end, the better-schedule
+question returns a refusal citing NO records, and an injected fabricating LLM
+(real key + `llm:true`) degrades to the template with no live `[record: …]` footnote
+surviving. The 14 `test_explainer.py` validator call sites updated to thread
+`known_records` (the full-`render()` tests already cite real ids, so they still pass
+through the LLM). **Non-slow Python green (+ the new fast suites)** +
+`test_ask_chain_api.py` 12/12 slow; frontend untouched. See docs/07 v2.21. Lesson:
+"cite a record" is not "cite a REAL record" — validate the id against the bundle,
+and never hand the model an empty evidence chain, because the only citation it can
+then produce is a fabricated one.

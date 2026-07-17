@@ -208,6 +208,25 @@ def test_llm_paraphrases_route_via_mocked_interpreter(explainer, question):
 # Fail-closed
 # ---------------------------------------------------------------------------
 
+def test_optimality_question_does_not_route_to_the_schedule_listing(explainer):
+    """4A.1c: "is there a better schedule" contains the bare word "schedule" and
+    used to route to the schedule LISTING (prose). It asks whether a better plan
+    EXISTS — the deterministic surface can't answer that, so it must fall through
+    to unsupported (→ the honest refusal / interpreter bridge), never a listing."""
+    route_id, _ = explainer.classify("is there a better schedule")
+    assert route_id == "unsupported"
+    # a normal schedule listing still routes
+    assert explainer.classify("what's the schedule for M-GEAR-01")[0] == "schedule"
+
+
+def test_optimality_question_refuses_deterministically(explainer):
+    # With no interpreter (deterministic-only), the better-schedule question
+    # reaches the honest refusal — not a schedule listing rendered as an answer.
+    result = run_ask(explainer, "is there a better schedule", interpreter=None)
+    assert result.route == "REFUSED"
+    assert result.bundle.subject_type == "unsupported"
+
+
 def test_no_interpreter_refuses_honestly(explainer):
     result = run_ask(explainer, "what's cooking on the gear machine", interpreter=None)
     assert result.route == "REFUSED"

@@ -50,6 +50,17 @@ _SCHEDULE_TRIGGERS = frozenset({
     "start on", "finish on",
 })
 
+# Optimality / quality phrasings (4A.1c). "is there a BETTER schedule" contains the
+# bare word "schedule" and would otherwise route to the schedule LISTING and answer
+# with prose — but it asks whether a cheaper/better plan EXISTS, a re-optimization
+# question the deterministic surface cannot answer. When present, the schedule
+# listing route is suppressed so the question falls through to the interpreter /
+# honest refusal-bridge, never a listing masquerading as an answer.
+_OPTIMALITY_TRIGGERS = frozenset({
+    "better", "best", "optimal", "improve", "improvement", "cheaper", "cheapest",
+    "worse", "suboptimal", "more efficient",
+})
+
 # External-ref types that name an order / a machine across the three adapter
 # vocabularies (sample ERP, raw_data, IDS). The explainer routes questions in
 # the CUSTOMER'S vocabulary by matching against the identity map — never by
@@ -298,7 +309,8 @@ class Explainer:
             return "version-diff", base
         if "downtime" in q or "closure" in q or "offline" in q:
             return "downtime", base
-        if any(kw in q for kw in _SCHEDULE_TRIGGERS):
+        if any(kw in q for kw in _SCHEDULE_TRIGGERS) and not any(
+                kw in q for kw in _OPTIMALITY_TRIGGERS):
             return "schedule", base
         if wo_ref:
             return "late-order", base

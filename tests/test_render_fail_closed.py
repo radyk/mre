@@ -27,14 +27,20 @@ _INVALID_KEY = "sk-ant-invalid-DEADBEEF"
 
 
 def _testimony_bundle() -> ExplanationBundle:
-    """A testimony bundle (subject_type not in remediation/triage) → the LLM
-    render path that calls the API."""
+    """A testimony bundle (subject_type not in remediation/triage) WITH an
+    evidence record → the LLM render path that calls the API. (A bundle with an
+    empty evidence chain is short-circuited to the template before any LLM call —
+    see test_testimony_validation.py — so it would not exercise _call_llm.)"""
     return ExplanationBundle(
         question="why is WO-1 on M-GEAR-01?",
         subject_id="op-1",
         subject_type="demand",
         subject_external_name="WO-1",
-        ordered_records=[],
+        ordered_records=[{
+            "record_type": "metric", "record_id": "met-late-0001", "module": "M7",
+            "name": "lateness_minutes", "value": 840.0, "unit": "minutes",
+            "subjects": [],
+        }],
         key_facts={"lateness_minutes": 840.0, "due_date": "2026-07-13"},
         snapshot_id="snap-demo",
         identity_map=None,

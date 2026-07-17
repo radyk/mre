@@ -621,21 +621,35 @@ class LLMRenderer:
             return self._template_fallback(
                 bundle, f"--llm requested but {self._fallback_reason}", "testimony")
 
+        # A bundle with no evidence chain has nothing to testify FROM: an honest
+        # refusal / near-miss / clarify (authored copy), or a header-only summary
+        # (an empty schedule listing — "Nothing scheduled for all"). Handing such a
+        # bundle to the model only invites FABRICATED citations and prose in place
+        # of the authored refusal (4A.1c: screenshots showed
+        # "[record: Nothing scheduled for all]"). Render the template body verbatim
+        # — it IS the answer — and never let an unresolvable question reach the LLM.
+        if not bundle.ordered_records:
+            return self._template_fallback(
+                bundle, "no evidence chain — rendered verbatim", "testimony")
+
         # The LLM-touching body is wrapped so that ANY runtime failure — network,
         # auth (a bad/expired key), rate-limit, a malformed response, a parsing
         # error — degrades to the deterministic template. This method NEVER raises
         # (4A.1b: fail-closed armor, made real for the unmocked API path).
         try:
-            prompt, known_ts, known_time, known_machines = self._build_prompt_material(bundle)
+            prompt, known_ts, known_time, known_machines, known_records = \
+                self._build_prompt_material(bundle)
             text = self._call_llm(prompt)
-            issues = self._validate_testimony(text, known_ts, known_time, known_machines)
+            issues = self._validate_testimony(
+                text, known_ts, known_time, known_machines, known_records)
             if issues:
                 regen_prompt, *_ = self._build_prompt_material(bundle, regen_note=issues)
                 text = self._call_llm(regen_prompt)
                 # Validate against the ORIGINAL known sets — not the regen prompt,
                 # which contains the rejected output in its header and must not
                 # whitelist itself.
-                issues2 = self._validate_testimony(text, known_ts, known_time, known_machines)
+                issues2 = self._validate_testimony(
+                    text, known_ts, known_time, known_machines, known_records)
                 if issues2:
                     body = TemplateRenderer()._render_body(bundle)
                     warn = "[LLM validation failed: {}; fell back to template]".format(
@@ -721,12 +735,14 @@ class LLMRenderer:
         bundle: ExplanationBundle,
         regen_note: Optional[list[str]] = None,
     ) -> tuple:
-        """Return (prompt_text, known_ts, known_time_values, known_machine_names).
+        """Return (prompt_text, known_ts, known_time, known_machines, known_records).
 
-        The three verifiable-value sets are extracted from the base evidence text
-        (prompt without the regen_note header).  This guarantees:
-        - anything shown to the LLM in the evidence section is verifiable, and
-        - rejected values in a regen_note header cannot accidentally whitelist themselves.
+        The verifiable-value sets are extracted from the base evidence text (prompt
+        without the regen_note header) — except known_records, taken straight from
+        the bundle's real record ids.  This guarantees:
+        - anything shown to the LLM in the evidence section is verifiable,
+        - rejected values in a regen_note header cannot whitelist themselves, and
+        - every [record: …] citation must name a REAL record in the bundle (4A.1c).
         """
         context = TemplateRenderer()._render_body(bundle)
         facts = self._extract_precomputed_facts(bundle)
@@ -775,7 +791,15 @@ class LLMRenderer:
 
         known_machines: set = set(_MACHINE_RE.findall(base_evidence))
 
-        return prompt_text, known_ts, known_time, known_machines
+        # The REAL record ids the answer is allowed to cite. The template footnotes
+        # an 8-char prefix ("[record: abcd1234...]"); the LLM is told to cite the
+        # record_id, so a citation is valid iff it is a prefix of a real id.
+        known_records: set = {
+            str(rec.get("record_id")) for rec in bundle.ordered_records
+            if rec.get("record_id")
+        }
+
+        return prompt_text, known_ts, known_time, known_machines, known_records
 
     def _call_llm(self, prompt_text: str) -> str:
         import anthropic  # type: ignore
@@ -807,13 +831,15 @@ class LLMRenderer:
         known_ts: set,
         known_time: set,
         known_machines: set,
+        known_records: Optional[set] = None,
     ) -> list[str]:
         """Return validation issues; empty list means text is acceptable.
 
-        All three known-value sets must come from _build_prompt_material so that
-        only values actually shown to the LLM are considered verifiable.
+        All known-value sets must come from _build_prompt_material so that only
+        values actually shown to the LLM are considered verifiable.
         """
         issues: list[str] = []
+        known_records = known_records or set()
 
         # 1. Timestamps: parse both sides to (year,month,day,hour,minute) and compare.
         #    Tolerates dropped seconds, dropped Z, space-vs-T, UTC suffix, date-only.
@@ -841,6 +867,17 @@ class LLMRenderer:
         factual = [s for s in sentences if re.search(r'\d|M-[A-Z]|WO-', s)]
         if factual and not any('[record:' in s for s in factual):
             issues.append("no [record:] footnotes on factual sentences")
+
+        # 5. Record citations: every [record: X] must name a REAL record in the
+        #    bundle (4A.1c — the LLM fabricated "[record: Nothing scheduled for
+        #    all]" and "[record: evidence_chain_001]"). The template footnotes an
+        #    8-char prefix, so a citation is valid iff it prefixes a real id.
+        for cite in re.findall(r'\[record:\s*([^\]]*?)\s*\]', text):
+            cid = cite.strip().rstrip('.').strip()   # drop the template's trailing "..."
+            if cid in ("", "?"):
+                continue                             # template placeholder, not a claim
+            if not any(rid == cid or rid.startswith(cid) for rid in known_records):
+                issues.append(f"fabricated record citation '{cite.strip()}'")
 
         return issues
 

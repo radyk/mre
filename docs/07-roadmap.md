@@ -1,6 +1,31 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.20 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.21 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.21:** **AI-track Session 4A.1c — the testimony validator passed FABRICATED
+record citations** 2026-07-17 (docs/04 amendment). LLM answers footnoted records
+that don't exist (`[record: Nothing scheduled for all]`,
+`[record: evidence_chain_001]` — screenshots), and "is there a better schedule"
+answered with a schedule LISTING (prose) instead of a refusal. **Issue traced:** the
+4A.1 validator checked timestamps/numbers/machines + that SOME footnote existed, but
+never that a cited id is REAL; and `classify` matched the bare word "schedule" in
+"is there a **better** schedule" → a listing (a deterministic mis-route of an
+optimality question). **Fixes:** (A) `_build_prompt_material` also returns
+`known_records`; `_validate_testimony` rule 5 — every `[record: X]` must prefix a
+real bundle record id, else regen → template fallback (the `?` placeholder exempt).
+(B) `LLMRenderer.render` short-circuits to the template BEFORE any LLM call when the
+bundle has no evidence chain (refusal / near-miss / clarify / empty listing have
+nothing to testify from — the model could only fabricate). (C) new
+`_OPTIMALITY_TRIGGERS` suppress the schedule-listing route on better/best/optimal/
+improve/cheaper phrasings → "is there a better schedule" falls to `unsupported` → the
+honest refusal (rendered verbatim by fix B). **Tests:** `test_testimony_validation.py`
+(fabricated id + prose-as-citation rejected; real-prefix passes; empty/refusal bundle
+never calls the client — `calls == 0`); `test_interpreter.py` (better-schedule →
+unsupported/REFUSED, normal listing still routes); `test_ask_chain_api.py` slow
+(better-schedule refuses citing no records; an injected fabricating LLM degrades to
+template). **Non-slow Python green** + ask-chain 12/12; frontend untouched. Lesson:
+"cite a record" ≠ "cite a REAL record" — validate the id against the bundle, and
+never hand the model an empty evidence chain.
 
 **v2.20:** **AI-track Session 4A.1b — the ask endpoint 500'd with a real API key
 (mocked fail-closed ≠ real-path fail-closed)** 2026-07-17 (docs/04 amendment).

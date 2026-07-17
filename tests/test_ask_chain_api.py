@@ -162,6 +162,41 @@ class TestAskFailClosedWithRealKey:
         assert res.status_code == 200, res.text
         assert "[rendered by: template" in res.json()["data"]["answer"]
 
+    def test_better_schedule_question_refuses_not_a_listing(self, solved):
+        """4A.1c issue 2: "is there a better schedule" produced prose (a schedule
+        listing) instead of a refusal. It must reach the honest refusal — never a
+        listing masquerading as an answer, and never a fabricated citation."""
+        res = self._ask_no_llm(solved, "is there a better schedule")
+        assert res.status_code == 200, res.text
+        data = res.json()["data"]
+        assert data["bundle"]["route"] in ("REFUSED", "NEAR_MISS", "CLARIFY")
+        assert data["bundle"]["subject_type"] in ("unsupported", "near_miss", "clarify")
+        assert "[record:" not in data["answer"], "a refusal must cite no records"
+
+    def test_fabricated_citation_falls_back_to_template(self, solved, monkeypatch):
+        """4A.1c issue 1: an LLM answer that cites a non-existent record id must be
+        rejected (fabricated "[record: evidence_chain_001]") — validation catches
+        it and the answer degrades to the deterministic template."""
+        if not solved.wo:
+            pytest.skip("no work_order external ref in this fixture")
+        pytest.importorskip("anthropic")
+        monkeypatch.setenv("ANTHROPIC_API_KEY", self._KEY)
+        from mre.modules.renderers import LLMRenderer
+        monkeypatch.setattr(LLMRenderer, "_call_llm", lambda _s, _p: (
+            f"{solved.wo} finished 840 min late. [record: evidence_chain_001]"))
+        res = solved.client.post(f"/schedules/{solved.sid}/ask",
+                                 json={"question": f"why is {solved.wo} late?", "llm": True})
+        assert res.status_code == 200, res.text
+        answer = res.json()["data"]["answer"]
+        assert "[rendered by: template" in answer
+        # the fabricated citation is not presented as a live footnote (it may be
+        # NAMED in the honest "validation failed" reason — that is the point)
+        assert "[record: evidence_chain_001]" not in answer
+
+    def _ask_no_llm(self, solved, question):
+        return solved.client.post(f"/schedules/{solved.sid}/ask",
+                                  json={"question": question})
+
     def test_taxonomy_question_is_unbreakable_by_the_whole_ai_stack(self, solved, monkeypatch):
         """CU3 — the ordering guarantee: a taxonomy-shaped question routes and
         renders deterministically with the ENTIRE AI layer forcibly broken (both

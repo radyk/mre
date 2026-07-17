@@ -94,6 +94,41 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.1c — the
+testimony validator passed FABRICATED record citations 2026-07-17.** Live
+(screenshots): LLM answers footnoted records that don't exist —
+`[record: Nothing scheduled for all]`, `[record: evidence_chain_001]` — and "is
+there a better schedule" answered with a schedule LISTING (prose) instead of a
+refusal. **Cause:** the 4A.1 validator checked timestamps/numbers/machines + that
+SOME footnote existed, but **never that a cited id is REAL**; and
+`classify("is there a better schedule")` matched the BARE word "schedule" →
+routed to the listing (a deterministic mis-route of an optimality question — "does
+a BETTER plan EXIST" is re-optimization the deterministic surface can't answer).
+The two defects share a root: an unresolvable question reaching the LLM renderer
+with an empty/garbage evidence chain. **Fix A (citations must be real):**
+`_build_prompt_material` also returns `known_records` (the real `record_id`s on the
+bundle); `_validate_testimony` rule 5 — every `[record: X]` must PREFIX a real id
+(the template footnotes an 8-char prefix), else regen → **template fallback** (the
+bare `?` placeholder exempt). **Fix B (no-evidence → never the LLM):**
+`LLMRenderer.render` short-circuits to the template body BEFORE any LLM call when
+`not bundle.ordered_records` — a refusal / near-miss / clarify / empty listing has
+nothing to testify from, so the model could only fabricate; authored header IS the
+answer. **Fix C (optimality ≠ listing):** new `_OPTIMALITY_TRIGGERS` (better/best/
+optimal/improve/cheaper/…) suppress the schedule-listing route → "is there a better
+schedule" falls to `unsupported` → the honest refusal (rendered verbatim by B).
+**Tests:** `tests/test_testimony_validation.py` (id-shaped + prose-as-citation
+rejected → template; real-prefix passes; `?` exempt; empty/refusal bundle renders
+with `calls == 0` — LLM never touched); `tests/test_interpreter.py` (better-schedule
+→ unsupported/REFUSED, normal listing still routes); `tests/test_ask_chain_api.py`
+slow (better-schedule refuses citing NO records; an injected fabricating LLM with a
+real key degrades to template, no live `[record: …]` survives). The 14
+`test_explainer.py` validator call sites thread `known_records`. **Non-slow Python
+green** (+ new fast suites) + ask-chain **12/12** slow; frontend untouched
+(backend-only). See the docs/04 2026-07-17 Session 4A.1c amendment and docs/07
+v2.21. Lesson: "cite a record" is not "cite a REAL record" — validate the id against
+the bundle, and never hand the model an empty evidence chain, because the only
+citation it can then produce is a fabricated one.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.1b — the ask
 endpoint 500'd with a real API key (mocked fail-closed ≠ real-path fail-closed)
 2026-07-17.** Live: with `ANTHROPIC_API_KEY` set (+ the DEV build's `llm: true`),
