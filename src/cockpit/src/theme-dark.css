@@ -112,4 +112,39 @@
    * an accepted, still-held commitment. Quieter than the transient pin-lock. */
   --standing-pin-edge: rgba(214, 158, 46, 0.95);
   --standing-pin-ring: rgba(214, 158, 46, 0.34);
+
+  /* --- planner surface (Session 4.2) — DARK colors ------------------- */
+  --cap-offshift: rgba(9, 11, 17, 0.42);          /* nights / weekends */
+  --cap-closure: rgba(9, 11, 17, 0.62);           /* generic closure */
+  --cap-closure-hatch: rgba(180, 186, 200, 0.14);
+  --cap-maint: rgba(224, 166, 60, 0.14);          /* planned maintenance */
+  --cap-maint-hatch: rgba(224, 166, 60, 0.34);
+  --cap-overtime: rgba(224, 166, 60, 0.12);       /* premium window */
+  --cap-openidle: rgba(47, 191, 113, 0.07);       /* open, unbooked */
+
+  /* Time anchors (CU2). now = a bright graphite/white line on the dark board;
+   * due = red; release = blue. */
+  --marker-now: #d7dbe4;
+  --marker-now-label-bg: #d7dbe4;
+  --marker-now-label-ink: #0e1016;
+  --marker-due: var(--bar-late);
+  --marker-release: var(--bar-ontime);
+  --marker-label-ink: #0e1016;
+  --tick-shift: rgba(180, 186, 200, 0.22);
+
+  /* Operation anatomy (CU5). */
+  --setup-hatch: rgba(0, 0, 0, 0.34);
+  --chunk-link: rgba(180, 186, 200, 0.45);
+
+  /* Row-label strip (CU4). */
+  --rs-ink: var(--muted);
+  --rs-util-cool: #3fbf76;
+  --rs-util-warm: #e0a63c;
+  --rs-util-hot: #e0564f;
+
+  /* Hover cards (CU3). */
+  --hc-bg: var(--panel-float);
+  --hc-ink: var(--ink);
+  --hc-edge: var(--grid);
+  --hc-shadow: var(--shadow-3);
 }

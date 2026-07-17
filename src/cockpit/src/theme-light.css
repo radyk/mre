@@ -131,4 +131,46 @@
    * stays distinct from the transient green pin-lock ring even on light. */
   --standing-pin-edge: rgba(165, 98, 14, 0.95);
   --standing-pin-ring: rgba(165, 98, 14, 0.40);
+
+  /* --- planner surface (Session 4.2) — LIGHT colors ------------------- *
+   * Capacity-state bands over warm paper. Distinct at a glance AND legible under
+   * the bars: off-shift a faint cool veil; closure a stronger grey with a hatch;
+   * planned maintenance an AMBER hatch (a declared, scheduled exception, not just
+   * "closed"); overtime a warm premium tint; open-idle a faint green wash
+   * (capacity going unused). Reasons carry from the 1.6 CalendarWindow.reason. */
+  --cap-offshift: rgba(56, 62, 78, 0.055);        /* nights / weekends */
+  --cap-closure: rgba(56, 62, 78, 0.15);          /* generic closure */
+  --cap-closure-hatch: rgba(56, 62, 78, 0.22);
+  --cap-maint: rgba(176, 110, 20, 0.13);          /* planned maintenance */
+  --cap-maint-hatch: rgba(176, 110, 20, 0.34);
+  --cap-overtime: rgba(191, 120, 20, 0.11);       /* premium window */
+  --cap-openidle: rgba(22, 126, 60, 0.055);       /* open, unbooked */
+
+  /* Time anchors (CU2). now = a strong graphite line (the present, neutral but
+   * unmissable); due = red (the deadline, the lateness hue); release = blue (the
+   * earliest-availability, the CVD anchor). */
+  --marker-now: #2b2f38;
+  --marker-now-label-bg: #2b2f38;
+  --marker-now-label-ink: #ffffff;
+  --marker-due: var(--bar-late);
+  --marker-release: var(--bar-ontime);
+  --marker-label-ink: #ffffff;
+  --tick-shift: rgba(120, 124, 136, 0.35);        /* subtle shift boundary */
+
+  /* Operation anatomy (CU5). Setup = a darker leading hatch on the bar; the
+   * split-op kinship connector = a dashed slate line across each pause. */
+  --setup-hatch: rgba(0, 0, 0, 0.26);
+  --chunk-link: rgba(56, 62, 78, 0.5);
+
+  /* Row-label strip (CU4): utilization heat + the booked/gap facts. */
+  --rs-ink: var(--muted);
+  --rs-util-cool: #2f7d4e;      /* < 50% */
+  --rs-util-warm: #a5620e;      /* 50–85% */
+  --rs-util-hot: #b5271e;       /* ≥ 85% */
+
+  /* Hover cards (CU3): a floating paper card, dark ink, soft elevation. */
+  --hc-bg: var(--panel-float);
+  --hc-ink: var(--ink);
+  --hc-edge: var(--grid);
+  --hc-shadow: var(--shadow-3);
 }

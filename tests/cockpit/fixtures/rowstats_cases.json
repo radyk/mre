@@ -1,0 +1,75 @@
+{
+  "_comment": "Shared numeric fixtures pinning row_intelligence.py (Python) to rowstats.js (the cockpit port). Both test suites read THIS file and assert the SAME numbers, so the visible-window utilization / booked-through / next-gap the planner sees is the solver's window arithmetic, not a re-derivation. Minutes are ints from an arbitrary origin. util is rounded to 4 dp.",
+  "cases": [
+    {
+      "name": "two-shifts-half-booked",
+      "windows": [[0, 120], [180, 300]],
+      "occupancy": [[0, 60], [200, 260]],
+      "util_window": [0, 300],
+      "util": 0.5,
+      "booked_through": 260,
+      "gap_from": 0,
+      "next_gap": 60
+    },
+    {
+      "name": "gap-before-a-booking",
+      "windows": [[0, 120], [180, 300]],
+      "occupancy": [[0, 60], [200, 260]],
+      "util_window": [180, 300],
+      "util": 0.5,
+      "booked_through": 260,
+      "gap_from": 190,
+      "next_gap": 190
+    },
+    {
+      "name": "fully-booked-first-window",
+      "windows": [[0, 480]],
+      "occupancy": [[0, 480]],
+      "util_window": [0, 480],
+      "util": 1.0,
+      "booked_through": 480,
+      "gap_from": 0,
+      "next_gap": null
+    },
+    {
+      "name": "empty-row",
+      "windows": [[0, 480], [600, 1080]],
+      "occupancy": [],
+      "util_window": [0, 1080],
+      "util": 0.0,
+      "booked_through": null,
+      "gap_from": 0,
+      "next_gap": 0
+    },
+    {
+      "name": "no-open-capacity-in-window",
+      "windows": [[0, 120]],
+      "occupancy": [[0, 60]],
+      "util_window": [200, 400],
+      "util": null,
+      "booked_through": 60,
+      "gap_from": 200,
+      "next_gap": null
+    },
+    {
+      "name": "occupancy-bleeds-over-closure-clamped",
+      "windows": [[0, 120], [180, 300]],
+      "occupancy": [[60, 260]],
+      "util_window": [0, 300],
+      "util": 0.5833,
+      "booked_through": 260,
+      "gap_from": 0,
+      "next_gap": 0
+    },
+    {
+      "name": "next-gap-mid-window-after-booking",
+      "windows": [[0, 600]],
+      "occupancy": [[0, 120], [180, 300]],
+      "util_window": [0, 600],
+      "util": 0.4,
+      "booked_through": 300,
+      "gap_from": 100,
+      "next_gap": 120
+    }
+  ]
+}

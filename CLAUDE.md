@@ -94,6 +94,52 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4.2 — planner surface
+pass 1 (read layer only) 2026-07-17.** The first pass at making the cockpit read
+like a PLANNER's board, not a demo Gantt — under one hard rule: **render only
+what the model can source truthfully.** No interaction/solver changes.
+**Contract 1.5 → 1.6 (additive):** `CalendarWindow.reason` (a closure/overtime
+window carries its exception reason — the assembler was DROPPING it, collapsing
+every closure to `kind="closure"`); `ServiceOutcomeBlock.customer_name` (resolved
+via identity map — never a UUID on screen) `/ quantity`+`quantity_uom`
+(`Demand.quantity` is a `Quantity {value,uom}`); `ResourceLane.booked_through` `/
+next_open_gap` (per-row absolute facts, server-computed over the SAME flattened
+windows the solver's eligibility uses via new `src/mre/modules/row_intelligence.py`
+on `eligibility.flatten_resource_windows`). **CU1 — capacity backgrounds + shift
+structure:** per-row banding off-shift (complement of declared windows) / closure
+/ planned-maintenance / overtime (premium) / open-idle (regular ∩ no-work), both
+themes, tokenized, pure-computed in `src/cockpit/legality/capacity.js`; shift-
+boundary ticks. **CU2 — time anchors:** a now-line from the run's REFERENCE DATE
+(the 3.3b epoch, never wall clock — absent, not faked, when reference_date is
+null); due+release markers for the SELECTED order only; one `markers.js` overlay
+tracking vis pan/zoom at ~0px drift. **CU3 — hover cards, planner-voiced:** a job
+card (order/qty/due/customer/routing/late-tight/pin) + a downtime card (which
+calendar state, reason, reopen time), via vis's own hit-test, external refs only.
+**CU4 — row intelligence:** utilization % over the VISIBLE window (recomputed
+live on pan), booked-through, next-gap — never from the DOM; `rowstats.js` is a
+byte-for-byte port of `row_intelligence.py`, the two PINNED by shared fixtures
+(`fixtures/rowstats_cases.json`, asserted from BOTH sides); a subtle row-label
+strip. **CU5 — operation anatomy:** setup as a hatched leading bar segment (first
+visual appearance of setup, from `phases.setup`); split ops as linked pieces with
+a dashed kinship connector across each pause — WITHOUT disturbing the single-item
+identity drag/citation/rebind rely on (single-chunk bars byte-unchanged; the
+split path is additive); the R-DP8 standing-pin unified into the commitment
+marker family. **Rider:** the dev question-ledger empty state reworded from "no
+dev ledger (set MRE_DEV)" to planner copy naming what it is. **Harness:** a hand-
+authored contract-1.6 planner fixture (`tools/build_planner_fixture.py` →
+`fixtures/planner/`) exercising every feature the demo scenarios lack;
+`planner.spec.mjs` screenshot-asserts each CU on BOTH themes; `rowstats.spec.mjs`
+(logic) pins the port. **Non-slow Python 1148 passed, 0 failed**; **cockpit JS 113**
+(was 94: +10 planner ×2 themes, +9 rowstats). **Named debts (R-AI1):** the
+unplanned-downtime doorway (no observed-actuals channel — the band slot is
+RESERVED, not painted — a planned closure is sourceable, a machine that actually
+broke is not); utilization/gap have NO ask route yet (AI-track 2). Downtime cards
+align with the existing calendar question route. See the docs/04 2026-07-17
+Session 4.2 amendment and docs/07 v2.22. Lesson: a planner's board is mostly
+ABSENCE made legible — off-shift, idle, closed, waiting; render only what you can
+source, and where you can't (unplanned downtime), reserve the slot and name the
+debt rather than paint a plausible lie.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.1c — the
 testimony validator passed FABRICATED record citations 2026-07-17.** Live
 (screenshots): LLM answers footnoted records that don't exist —

@@ -1,6 +1,24 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.21 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.22 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.22:** **Session 4.2 — planner surface pass 1 (read layer only)** 2026-07-17
+(docs/04 amendment). The cockpit now reads like a planner's board: capacity-state
+backgrounds (off-shift / closure / planned-maintenance / overtime / open-idle,
+CU1), a reference-date now-line + due/release markers (CU2), planner-voiced job +
+downtime hover cards (CU3), per-row utilization / booked-through / next-open-gap
+(CU4), and operation anatomy — setup segments, split-op kinship, the unified
+pin/lock marker (CU5). Both themes, all tokenized/feel-tunable. Contract **1.5 →
+1.6** (additive: `CalendarWindow.reason`; `ServiceOutcomeBlock.customer_name /
+quantity`; `ResourceLane.booked_through / next_open_gap`). No interaction/solver
+changes — everything renders only what the model can source truthfully; row
+intelligence is computed via `row_intelligence.py` / `rowstats.js` over the
+solver's own flattened windows, pinned by shared fixtures. **Named debts (R-AI1):**
+unplanned-downtime doorway (no observed-actuals channel — the band slot is
+reserved, not painted); utilization/gap have NO ask route yet (AI-track 2). Rider:
+the dev question-ledger empty state reworded to planner-comprehensible copy.
+Non-slow Python **1148**; cockpit JS **113**. See the docs/04 2026-07-17
+Session 4.2 amendment.
 
 **v2.21:** **AI-track Session 4A.1c — the testimony validator passed FABRICATED
 record citations** 2026-07-17 (docs/04 amendment). LLM answers footnoted records

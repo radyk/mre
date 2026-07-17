@@ -35,7 +35,8 @@ RUN = "run-t"
 def _world() -> dict:
     demands = [
         {"id": "d-1", "snapshot_id": SNAP, "due": "2026-02-02T16:00:00+00:00",
-         "customer_ref": "cust-9", "commitment_class": "standard"},
+         "customer_ref": "cust-9", "commitment_class": "standard",
+         "quantity": {"value": 500.0, "uom": "ea"}},
         {"id": "d-2", "snapshot_id": SNAP, "due": "2026-02-03T16:00:00+00:00",
          "customer_ref": None, "commitment_class": "standard"},
     ]
@@ -112,6 +113,7 @@ def _world() -> dict:
     imap.register("d-1", "ERP", "work_order", "WO-1001")
     imap.register("d-2", "IDS", "order_id", "WO-1002")
     imap.register("r-1", "ERP", "machine_id", "M-01")
+    imap.register("cust-9", "ERP", "customer_id", "Acme Aerospace")
 
     evidence = [
         {"record_type": "run_context_open", "module": "M3", "run_id": "rc-m3",
@@ -161,7 +163,7 @@ def doc(world) -> ScheduleDocument:
 class TestHeader:
     def test_versioned_from_day_one(self, doc):
         # 1.1 (2026-07-13): additive annotations.pool block for pool members
-        assert doc.contract_version == CONTRACT_VERSION == "1.5"
+        assert doc.contract_version == CONTRACT_VERSION == "1.6"
 
     def test_pool_annotation_absent_on_ordinary_documents(self, doc):
         assert doc.annotations.pool is None
@@ -288,6 +290,16 @@ class TestServiceOutcomes:
         assert s1.customer_ref == "cust-9"
         assert s1.tardiness_cost == 30.0
 
+    def test_customer_name_and_quantity_resolved(self, doc):
+        # 1.6: the external customer (never a UUID on screen) + the demand qty.
+        s1 = doc.service_outcomes[0]
+        assert s1.customer_name == "Acme Aerospace"
+        assert s1.quantity == 500.0
+        assert s1.quantity_uom == "ea"
+        # a demand with no customer resolves to None, not a fabricated name.
+        s2 = [s for s in doc.service_outcomes if s.demand_ref == "d-2"][0]
+        assert s2.customer_name is None
+
 
 # ---------------------------------------------------------------------------
 # Resource lanes + calendar shading
@@ -307,6 +319,26 @@ class TestResourceLanes:
         regs = [w for w in doc.resources[0].calendar_windows
                 if w.kind == "regular"]
         assert not any(w.start.date().isoformat() == "2026-02-04" for w in regs)
+
+    def test_closure_window_carries_its_reason(self, doc):
+        # 1.6: a planned-maintenance closure names its reason (CU1/CU3); an
+        # overtime window names its reason; regular windows carry None.
+        by_kind = {}
+        for w in doc.resources[0].calendar_windows:
+            by_kind.setdefault(w.kind, w)
+        assert by_kind["closure"].reason == "planned_maintenance"
+        assert by_kind["overtime"].reason == "overtime"
+        assert by_kind["regular"].reason is None
+
+    def test_row_intelligence_booked_and_gap_surface(self, doc):
+        # 1.6 CU4: the row facts are populated from the flattened windows (the op
+        # runs to 2026-02-03T09:00), computed via row_intelligence, not the DOM.
+        lane = doc.resources[0]
+        assert lane.booked_through is not None
+        assert lane.booked_through.isoformat() == "2026-02-03T09:00:00+00:00"
+        # the next open slot at/after booked-through exists in-horizon.
+        assert lane.next_open_gap is not None
+        assert lane.next_open_gap >= lane.booked_through
 
 
 # ---------------------------------------------------------------------------

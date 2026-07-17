@@ -104,12 +104,21 @@ function supersededBanner(hostEl, successorId) {
 function legend(hostEl) {
   const el = document.createElement("div");
   el.className = "legend";
+  // Two groups: the lateness signal on the bars, and the capacity-state
+  // backgrounds (Session 4.2 CU1). A hatched swatch marks the hatched bands.
   el.innerHTML = `
     <span><span class="sw" style="background: var(--bar-ontime)"></span>on time / early</span>
     <span><span class="sw" style="background: var(--bar-tight)"></span>tight</span>
     <span><span class="sw" style="background: var(--bar-late)"></span>late</span>
-    <span><span class="sw" style="background: var(--cal-closure)"></span>closure</span>
-    <span><span class="sw" style="background: var(--cite-bar)"></span>cited by the answer</span>`;
+    <span class="lg-gap"></span>
+    <span><span class="sw" style="background: var(--cap-offshift)"></span>off shift</span>
+    <span><span class="sw sw-hatch-closure"></span>closure</span>
+    <span><span class="sw sw-hatch-maint"></span>maintenance</span>
+    <span><span class="sw" style="background: var(--cap-overtime); border:1px solid var(--standing-pin-edge)"></span>overtime</span>
+    <span><span class="sw" style="background: var(--cap-openidle)"></span>open · idle</span>
+    <span class="lg-gap"></span>
+    <span><span class="sw sw-now"></span>now</span>
+    <span><span class="sw" style="background: var(--cite-bar)"></span>cited</span>`;
   hostEl.appendChild(el);
 }
 

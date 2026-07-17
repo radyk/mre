@@ -13,8 +13,13 @@
 import { Timeline } from "vis-timeline/standalone";
 import { DataSet } from "vis-data";
 import "vis-timeline/styles/vis-timeline-graph2d.min.css";
+import { capacityBands, shiftBoundaries } from "../legality/capacity.js";
+import { rowUtilization } from "../legality/rowstats.js";
+import { createMarkers } from "./markers.js";
+import { createHoverCards } from "./hovercards.js";
 
 const ms = (iso) => new Date(iso).getTime();
+const MIN_MS = 60000;
 
 // Lateness bands (minutes). Colors live in tokens.css; only the NUMERIC
 // thresholds are here (feel-iteration tunes the hue via tokens, the band via
@@ -50,61 +55,159 @@ export function createBoard(hostEl, initialDoc) {
   }
   rebuildDemandLookups();
 
-  // --- groups (rows) in document order ---------------------------------
+  // --- groups (rows) in document order, each carrying a row-label strip -
+  // (CU4): utilization over the VISIBLE window (recomputed live on pan/zoom),
+  // booked-through, and next-open-gap. The absolute two come from the document
+  // (server-computed via row_intelligence over the solver's own windows); util
+  // is recomputed client-side from the SAME arithmetic (rowstats.js), never DOM.
+  const fmtClock = (iso) => (iso == null ? "—" : new Date(iso).toLocaleString(undefined, {
+    month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false,
+  }));
+  // vis-timeline renders a group's `content` as HTML only when it's a DOM node
+  // (a string is escaped to text), so the strip is built as an element.
+  function rowStripEl(r, utilPct) {
+    const util = utilPct == null ? "—" : `${Math.round(utilPct * 100)}%`;
+    const bt = r.booked_through ? fmtClock(r.booked_through) : "—";
+    const gap = r.next_open_gap ? fmtClock(r.next_open_gap) : "—";
+    const utilCls = utilPct == null ? "" : utilPct >= 0.85 ? "hot" : utilPct >= 0.5 ? "warm" : "cool";
+    const el = document.createElement("div");
+    el.innerHTML =
+      `<div class="row-name"></div>`
+      + `<div class="row-strip">`
+      + `<span class="rs-util ${utilCls}" title="utilization over the visible window">${util}</span>`
+      + `<span class="rs-sep">·</span>`
+      + `<span class="rs-booked" title="booked through">▉ ${bt}</span>`
+      + `<span class="rs-gap" title="next open gap">◷ ${gap}</span>`
+      + `</div>`;
+    el.querySelector(".row-name").textContent = nameOf(r.resource_id);
+    return el;
+  }
   const groups = new DataSet(
-    doc.resources.map((r, i) => ({ id: r.resource_id, content: nameOf(r.resource_id), order: i })),
+    doc.resources.map((r, i) => ({ id: r.resource_id, content: rowStripEl(r, null), order: i })),
   );
 
   // --- bars + calendar backgrounds -------------------------------------
-  const opToItem = new Map();   // operation_ref -> item id
+  const opToItem = new Map();   // operation_ref -> item id (first piece for splits)
   const woToItems = new Map();  // work_order    -> [item id,...]
   const items = new DataSet();
+  const occByRes = new Map();   // resource_id -> [{start,end} ms] (CU1/CU4 occupancy)
+  const splitPieceToAssignment = new Map();  // piece item id -> assignment (splits)
+
+  // Setup segment (CU5): the fraction of a bar the setup phase occupies, exposed
+  // as an inline CSS var so the bar renders a distinct leading setup portion —
+  // the first visual appearance of setup on the board.
+  function setupFrac(a, s, e) {
+    const su = a.phases && a.phases.setup;
+    if (!su || e <= s) return 0;
+    const f = (ms(su.end) - s) / (e - s);
+    return Math.max(0, Math.min(1, f));
+  }
+  function barStyle(a, s, e) {
+    const f = setupFrac(a, s, e);
+    return f > 0 ? `--setup-frac:${f.toFixed(4)};` : "";
+  }
+  function barTitle(a, label) {
+    return `${label} · ${nameOf(a.resource_id)} · op ${a.op_seq}`
+      + (a.standing_pin ? " · committed (accepted edit)" : "")
+      + ((a.chunks || []).length > 1 ? ` · ${a.chunks.length} pieces (split)` : "");
+  }
 
   let minT = Infinity, maxT = -Infinity;
   for (const a of doc.assignments) {
-    const s = ms(a.chunks[0].start);
-    const e = ms(a.chunks[a.chunks.length - 1].end);
+    const chunks = a.chunks || [];
+    if (!chunks.length) continue;
+    const s = ms(chunks[0].start);
+    const e = ms(chunks[chunks.length - 1].end);
     minT = Math.min(minT, s); maxT = Math.max(maxT, e);
+    if (!occByRes.has(a.resource_id)) occByRes.set(a.resource_id, []);
+    occByRes.get(a.resource_id).push({ start: s, end: e });
     const wos = a.work_orders || [];
-    // worst (largest) lateness across the bar's demands drives its color.
-    const lateness = wos
-      .map((w) => latenessByWO.get(w))
+    const lateness = wos.map((w) => latenessByWO.get(w))
       .filter((v) => v != null)
       .reduce((m, v) => (m == null || v > m ? v : m), null);
     const band = latenessBand(lateness);
     const label = wos.join(", ") || nameOf(a.resource_id);
-    // R-DP8 CU2: a bar carrying a STANDING commitment (an accepted, still-held
-    // pin) wears a subtle standing-pin marker — distinct from the transient
-    // green pin-lock of a just-accepted drop (that fades; this persists).
+    // R-DP8 CU2 + CU5: the pin/lock indicator family — a standing commitment (an
+    // accepted, still-held pin) wears the persistent marker; siblings in the
+    // family (transient pin-lock, reflow) are added later by rebind().
     const pinCls = a.standing_pin ? " standing-pin" : "";
-    items.add({
-      id: a.assignment_id, group: a.resource_id, start: s, end: e,
-      type: "range", className: `bar late-${band}${pinCls}`, editable: false,
-      content: label,
-      title: `${label} · ${nameOf(a.resource_id)} · op ${a.op_seq}`
-        + (a.standing_pin ? " · committed (accepted edit)" : ""),
-    });
-    opToItem.set(a.operation_ref, a.assignment_id);
-    for (const w of wos) {
-      if (!woToItems.has(w)) woToItems.set(w, []);
-      woToItems.get(w).push(a.assignment_id);
-    }
-  }
 
-  // calendar closures / overtime as background shading (regular = default).
-  for (const r of doc.resources) {
-    for (const [wi, w] of (r.calendar_windows || []).entries()) {
-      if (w.kind === "regular") continue;
-      if (ms(w.end) <= minT || ms(w.start) >= maxT) continue; // cull off-window
+    if (chunks.length <= 1) {
+      // the common case: ONE range item, id = assignment_id (identity preserved).
       items.add({
-        id: `cal-${r.resource_id}-${wi}`, group: r.resource_id, type: "background",
-        start: ms(w.start), end: ms(w.end), className: `cal-${w.kind}`,
+        id: a.assignment_id, group: a.resource_id, start: s, end: e,
+        type: "range", className: `bar late-${band}${pinCls}`, editable: false,
+        style: barStyle(a, s, e), content: label, title: barTitle(a, label),
+      });
+      opToItem.set(a.operation_ref, a.assignment_id);
+      for (const w of wos) {
+        if (!woToItems.has(w)) woToItems.set(w, []);
+        woToItems.get(w).push(a.assignment_id);
+      }
+    } else {
+      // split/chunked op (CU5): one piece per chunk, visually linked as ONE job
+      // (kinship styling + a dashed connector across each pause). The first
+      // piece anchors the op for citation/selection; every piece maps back to
+      // the op so a click on any piece scopes the whole job.
+      const firstId = `${a.assignment_id}~c0`;
+      opToItem.set(a.operation_ref, firstId);
+      chunks.forEach((c, i) => {
+        const cs = ms(c.start), ce = ms(c.end);
+        const edge = i === 0 ? "chunk-first" : i === chunks.length - 1 ? "chunk-last" : "chunk-mid";
+        const pieceId = `${a.assignment_id}~c${i}`;
+        items.add({
+          id: pieceId, group: a.resource_id, start: cs, end: ce,
+          type: "range",
+          className: `bar late-${band}${pinCls} chunk-piece ${edge}`, editable: false,
+          style: i === 0 ? barStyle(a, cs, ce) : "",
+          content: i === 0 ? label : "", title: barTitle(a, label),
+        });
+        splitPieceToAssignment.set(pieceId, a);
+        for (const w of wos) {
+          if (!woToItems.has(w)) woToItems.set(w, []);
+          woToItems.get(w).push(pieceId);
+        }
+        // dashed kinship connector across the pause before this piece.
+        if (i > 0) {
+          const prevEnd = ms(chunks[i - 1].end);
+          if (cs > prevEnd) {
+            items.add({
+              id: `${a.assignment_id}~link${i}`, group: a.resource_id,
+              type: "background", start: prevEnd, end: cs, className: "chunk-link",
+            });
+          }
+        }
       });
     }
   }
 
   const pad = 6 * 3600000;
   const win = { start: minT - pad, end: maxT + pad };
+  const bandSpan = { start: minT, end: maxT };
+
+  // --- capacity-state backgrounds (CU1) --------------------------------
+  // Per-row banding for off-shift / closure / planned-maintenance / overtime /
+  // open-idle, computed over the DATA span from the row's flattened calendar
+  // windows + occupancy (capacity.js). Rendered as vis background items so they
+  // track pan/zoom natively. Booked regular time is NOT banded — the bar covers
+  // it. (Unplanned/observed downtime is deliberately absent — no doorway yet.)
+  const capIds = [];
+  function renderCapacityBands() {
+    if (capIds.length) { items.remove(capIds); capIds.length = 0; }
+    for (const r of doc.resources) {
+      const occ = occByRes.get(r.resource_id) || [];
+      for (const [bi, b] of capacityBands(r.calendar_windows, occ, bandSpan).entries()) {
+        if (b.end <= bandSpan.start || b.start >= bandSpan.end) continue;
+        const id = `cap-${r.resource_id}-${bi}`;
+        items.add({
+          id, group: r.resource_id, type: "background",
+          start: b.start, end: b.end, className: `cap-${b.kind}`,
+        });
+        capIds.push(id);
+      }
+    }
+  }
+  renderCapacityBands();
 
   // --- the timeline (read-only) ----------------------------------------
   const timeline = new Timeline(hostEl, items, groups, {
@@ -130,7 +233,85 @@ export function createBoard(hostEl, initialDoc) {
   // set the initial window explicitly (see the start/end note above) and
   // redraw once layout has settled so the overlay tracks the painted geometry.
   timeline.setWindow(win.start, win.end, { animation: false });
-  requestAnimationFrame(() => { timeline.redraw(); renderOverlay(); });
+
+  // --- time-anchor markers + shift ticks (CU2/CU1) ---------------------
+  const markers = createMarkers(timeline);
+  // now-line from the run's reference date (the 3.3b epoch) — never wall clock;
+  // absent when the run is "now"-anchored (reference_date null).
+  markers.setNow(doc.reference_date || null);
+  // shift boundaries: the union of every row's regular shift edges in span.
+  function refreshShiftTicks() {
+    const set = new Set();
+    for (const r of doc.resources)
+      for (const t of shiftBoundaries(r.calendar_windows, bandSpan.start, bandSpan.end)) set.add(t);
+    markers.setShiftBoundaries([...set].sort((a, b) => a - b));
+  }
+  refreshShiftTicks();
+
+  // --- row-label strip: live utilization over the visible window (CU4) --
+  // Booked-through + next-gap are server-computed (document); utilization is the
+  // one window-relative number, recomputed here from the SAME arithmetic
+  // (rowstats.js) over the visible window — never off the DOM.
+  const openWinsByRes = new Map();
+  for (const r of doc.resources) {
+    const open = [];
+    for (const w of r.calendar_windows || [])
+      if (w.kind === "regular" || w.kind === "overtime") open.push([ms(w.start), ms(w.end)]);
+    openWinsByRes.set(r.resource_id, open);
+  }
+  function refreshRowStrips() {
+    const w = timeline.getWindow();
+    const lo = w.start.getTime(), hi = w.end.getTime();
+    for (const r of doc.resources) {
+      const occ = (occByRes.get(r.resource_id) || []).map((o) => [o.start, o.end]);
+      const util = rowUtilization(openWinsByRes.get(r.resource_id) || [], occ, lo, hi);
+      groups.update({ id: r.resource_id, content: rowStripEl(r, util) });
+    }
+  }
+  timeline.on("rangechanged", refreshRowStrips);
+
+  requestAnimationFrame(() => {
+    timeline.redraw(); renderOverlay(); markers.redraw(); refreshRowStrips();
+  });
+
+  // --- band index for the downtime hover (CU3) -------------------------
+  const bandsByRes = new Map();
+  function rebuildBandIndex() {
+    bandsByRes.clear();
+    for (const r of doc.resources)
+      bandsByRes.set(r.resource_id, capacityBands(r.calendar_windows, occByRes.get(r.resource_id) || [], bandSpan));
+  }
+  rebuildBandIndex();
+  function bandAt(resourceId, timeMs) {
+    for (const b of bandsByRes.get(resourceId) || [])
+      if (timeMs >= b.start && timeMs < b.end) return b;
+    return null;
+  }
+  // minutes from a closure/off-shift band's end until the row's next open
+  // (regular/overtime) window — "reopens in …". null when none in span.
+  function reopenMinutes(resourceId, band) {
+    const opens = (openWinsByRes.get(resourceId) || []).map(([s]) => s).filter((s) => s >= band.end).sort((a, b) => a - b);
+    return opens.length ? Math.round((opens[0] - band.start) / MIN_MS) : null;
+  }
+  // job facts for a bar (or a split piece) → the job hover card.
+  function jobFor(itemId) {
+    const a = doc.assignments.find((x) => x.assignment_id === itemId)
+      || splitPieceToAssignment.get(itemId);
+    if (!a) return null;
+    const wo = (a.work_orders || [])[0] || null;
+    const so = doc.service_outcomes.find((s) => s.work_order === wo);
+    const lateness = so ? so.lateness_min : null;
+    const status = latenessBand(lateness);
+    return {
+      order: wo, qty: so?.quantity ?? null, uom: so?.quantity_uom ?? null,
+      due: so?.due ?? null, customer: so?.customer_name ?? null,
+      opSeq: a.op_seq, status, standingPin: !!a.standing_pin,
+      resourceName: nameOf(a.resource_id),
+    };
+  }
+  const hoverCards = createHoverCards(hostEl, timeline, {
+    jobFor, bandAt, reopenMinutes, resourceName: nameOf,
+  });
 
   // --- pan/zoom suppression (3.2c) -------------------------------------
   // vis owns a built-in Hammer pan/zoom on the center container: a horizontal
@@ -198,8 +379,13 @@ export function createBoard(hostEl, initialDoc) {
   // The shared-selection payload (planner vocabulary — work_order + resource
   // external_name, never canonical ids). One builder so a bar CLICK and a
   // programmatic select() notify the ask panel identically (the deictic seam).
+  // Resolves a split-op piece back to its assignment (the whole job is scoped).
+  function assignmentFor(itemId) {
+    return doc.assignments.find((x) => x.assignment_id === itemId)
+      || splitPieceToAssignment.get(itemId) || null;
+  }
   function selectionPayload(itemId) {
-    const a = doc.assignments.find((x) => x.assignment_id === itemId);
+    const a = assignmentFor(itemId);
     if (!a) return null;
     return {
       operation_ref: a.operation_ref,
@@ -209,10 +395,26 @@ export function createBoard(hostEl, initialDoc) {
     };
   }
 
+  // The selected order's due + release markers (CU2): scope the time anchors to
+  // just the bar the planner clicked. Release = the order's release floor from
+  // the Tier-0 interaction facts (earliest_start) when loaded; due from the
+  // service outcome. Cleared on an empty / calendar selection.
+  function scopeOrderMarkers(itemId) {
+    const a = itemId ? assignmentFor(itemId) : null;
+    if (!a) { markers.setOrder(null); return; }
+    const wo = (a.work_orders || [])[0] || null;
+    const so = doc.service_outcomes.find((s) => s.work_order === wo);
+    let release = null;
+    const facts = interactionPayload?.operations?.find((o) => o.operation_ref === a.operation_ref);
+    if (facts && facts.earliest_start) release = facts.earliest_start;
+    markers.setOrder({ due: so?.due ?? null, release, label: wo || "" });
+  }
+
   timeline.on("select", (props) => {
     const itemId = props.items && props.items[0];
-    if (!itemId || String(itemId).startsWith("cal-")) return;
+    if (!itemId || String(itemId).startsWith("cal-") || String(itemId).startsWith("cap-")) return;
     setSelected(itemId);
+    scopeOrderMarkers(itemId);
     const payload = selectionPayload(itemId);
     if (payload && selectCb) selectCb(payload);
   });
@@ -363,8 +565,20 @@ export function createBoard(hostEl, initialDoc) {
     // the reflow highlight is a one-shot — retire the class once it has faded.
     for (const id of highlightIds) setTimeout(() => toggleClass(id, "reflow-moved", false), highlightDur + 60);
 
+    // the new version may have moved bars → occupancy changed. Rebuild the row
+    // context (bands, band index, strips) from the live doc so the planner
+    // surface stays truthful after an accept (Session 4.2). Single-chunk bars
+    // only on the edit path; split rendering is untouched.
+    occByRes.clear();
+    for (const a of doc.assignments) {
+      const ch = a.chunks || []; if (!ch.length) continue;
+      if (!occByRes.has(a.resource_id)) occByRes.set(a.resource_id, []);
+      occByRes.get(a.resource_id).push({ start: ms(ch[0].start), end: ms(ch[ch.length - 1].end) });
+    }
+    renderCapacityBands(); rebuildBandIndex(); refreshShiftTicks();
+
     requestAnimationFrame(() => {
-      timeline.redraw(); renderOverlay();
+      timeline.redraw(); renderOverlay(); markers.redraw(); refreshRowStrips();
       if (!reduce) setTimeout(() => hostEl.classList.remove("reflowing"), reflowDur + 60);
     });
   }
@@ -402,6 +616,7 @@ export function createBoard(hostEl, initialDoc) {
       if (!id) return;
       timeline.setSelection([id]);
       setSelected(id);
+      scopeOrderMarkers(id);
       // vis emits 'select' only on user interaction, not on setSelection — so a
       // programmatic select must notify the shared-selection callback itself,
       // or the ask panel's deictic scope would silently miss it (CU3).
@@ -440,6 +655,31 @@ export function createBoard(hostEl, initialDoc) {
       });
       return { window: this.getWindow(), cited: out };
     },
+    // --- Session 4.2 planner-surface probes (harness) ------------------
+    markers,
+    hoverCards,
+    // count of each capacity-band kind currently in the DataSet (CU1).
+    capacityProbe() {
+      const out = {};
+      for (const it of items.get())
+        if (String(it.id).startsWith("cap-")) {
+          const k = (it.className || "").replace("cap-", "");
+          out[k] = (out[k] || 0) + 1;
+        }
+      return out;
+    },
+    // the row-strip facts + live utilization for a resource by external name (CU4).
+    rowStatsProbe(externalName) {
+      const r = doc.resources.find((x) => nameOf(x.resource_id) === externalName);
+      if (!r) return null;
+      const w = timeline.getWindow();
+      const occ = (occByRes.get(r.resource_id) || []).map((o) => [o.start, o.end]);
+      const util = rowUtilization(openWinsByRes.get(r.resource_id) || [], occ,
+        w.start.getTime(), w.end.getTime());
+      return { util, booked_through: r.booked_through, next_open_gap: r.next_open_gap };
+    },
+    // marker overlay probe (CU2): now-line drift + which markers/ticks are drawn.
+    markerProbe() { return markers.probe(); },
     _debug: { opToItem, woToItems, itemToOp, doc },
   };
 }

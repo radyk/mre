@@ -70,6 +70,17 @@ Version history:
   standing-pinned op as a moved consequence (a committed placement cannot be
   moved). Default False (a root solve has no standing pins); a 1.4 consumer
   ignores it. MINOR: additive with an empty default.
+- 1.6 (2026-07-17, Session 4.2): additive — the planner-surface read layer.
+  * ``CalendarWindow.reason`` — a non-regular window (closure / overtime) now
+    carries its calendar-exception reason (planned_maintenance / holiday /
+    breakdown / overtime), so the cockpit shades a planned-maintenance closure
+    distinctly from generic off-shift and names it in the downtime hover. None
+    on base-pattern regular windows. UNPLANNED (observed-actuals) downtime has
+    no doorway yet and is deliberately NOT sourced (docs/04 4.2 debt).
+  * ``ServiceOutcomeBlock.customer_name`` / ``quantity`` — the external customer
+    (resolved via the identity map, never a UUID on screen) and the demand
+    quantity, for the job-card hover. Both None when the source is absent.
+  All three are additive with None defaults; a 1.5 consumer ignores them. MINOR.
 """
 from __future__ import annotations
 
@@ -80,7 +91,7 @@ from pydantic import BaseModel, model_validator
 
 from mre.contracts.vocabularies import ScheduleStatus
 
-CONTRACT_VERSION = "1.5"
+CONTRACT_VERSION = "1.6"
 
 # Exact decomposition tolerance: cost components are currency values
 # accumulated in float; "exactly" means to the cent, matching the
@@ -131,6 +142,17 @@ class CalendarWindow(BaseModel):
     start: datetime
     end: datetime
     kind: Literal["regular", "overtime", "closure"]
+    reason: Optional[str] = None               # exception reason for a non-regular
+    #                                            window (planned_maintenance / holiday
+    #                                            / breakdown / overtime); None on a
+    #                                            base-pattern regular window (1.6). Lets
+    #                                            the cockpit render a planned-maintenance
+    #                                            closure distinctly and name it in the
+    #                                            downtime hover. UNPLANNED (observed)
+    #                                            downtime is NOT sourced here — there is
+    #                                            no observed-actuals doorway yet (a named
+    #                                            debt, docs/04 4.2); only calendar-declared
+    #                                            exceptions carry a reason.
 
 
 class ResourceLane(BaseModel):
@@ -140,6 +162,17 @@ class ResourceLane(BaseModel):
     facility: Optional[str] = None
     pool: Optional[str] = None                 # pool external name if mapped
     calendar_windows: list[CalendarWindow] = []
+    booked_through: Optional[datetime] = None  # last assignment end on this row (1.6):
+    #                                            the moment it is booked through; None
+    #                                            when the row carries no work. Computed
+    #                                            via row_intelligence over the same
+    #                                            flattened windows the solver uses.
+    next_open_gap: Optional[datetime] = None   # earliest open, unbooked minute at/after
+    #                                            the reference date (1.6) — the next slot
+    #                                            the row could take work; None when none
+    #                                            exists in-horizon. Visible-window
+    #                                            utilization is recomputed client-side as
+    #                                            the planner pans (same arithmetic).
 
 
 class Chunk(BaseModel):
@@ -191,6 +224,14 @@ class ServiceOutcomeBlock(BaseModel):
     demand_ref: str                            # canonical UUID
     work_order: Optional[str] = None           # external
     customer_ref: Optional[str] = None         # canonical UUID
+    customer_name: Optional[str] = None        # external customer vocabulary (1.6):
+    #                                            resolved via the identity map so the
+    #                                            job-card hover never shows a UUID; None
+    #                                            when the demand has no customer or it
+    #                                            does not resolve.
+    quantity: Optional[float] = None           # Demand.quantity value (1.6) — surfaced
+    #                                            for the job-card hover; None when absent.
+    quantity_uom: Optional[str] = None         # its unit of measure (1.6), e.g. "ea".
     due: Optional[datetime] = None
     projected_completion: datetime
     lateness_min: int                          # negative = early

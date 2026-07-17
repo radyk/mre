@@ -1,0 +1,20 @@
+{
+ "why is ORD-102 late?": {
+  "answer": "ORD-102 finishes late: its op is split across the planned-maintenance closure on F001-RES002 (Jan 7), pausing until the row reopens Jan 8.\n\nregister: testimony",
+  "bundle": {
+   "register": "testimony",
+   "subject_type": "late_orders",
+   "cited_refs": {
+    "operations": [
+     "op-102"
+    ],
+    "resources": [
+     "res-002"
+    ],
+    "demands": [
+     "d-102"
+    ]
+   }
+  }
+ }
+}

@@ -55,6 +55,7 @@ _ORDER_REF_TYPES = ("work_order", "order_id")
 _RESOURCE_REF_TYPES = ("machine_id", "resource_id")
 _POOL_REF_TYPES = ("pool_id", "workcenter_id", "workcenter")
 _FACILITY_REF_TYPES = ("facility", "facility_id")
+_CUSTOMER_REF_TYPES = ("customer_id", "customer")
 
 _LOCK_CONSTRAINT_TYPES = ("frozen_assignment", "pinned_window")
 
@@ -174,10 +175,22 @@ def assemble_schedule_document(
         lateness = svc.get("lateness_minutes")
         if lateness is None:
             lateness = _iso_minutes(svc.get("lateness")) or 0.0
+        customer_ref = demand.get("customer_ref")
+        # Demand.quantity is a Quantity {value, uom} (dict in the snapshot).
+        qraw = demand.get("quantity")
+        qty = qraw.get("value") if isinstance(qraw, dict) else qraw
+        quom = qraw.get("uom") if isinstance(qraw, dict) else None
         svc_blocks.append(ServiceOutcomeBlock(
             demand_ref=svc.get("demand_ref", ""),
             work_order=_external_name(identity_map, svc.get("demand_ref", ""), _ORDER_REF_TYPES),
-            customer_ref=demand.get("customer_ref"),
+            customer_ref=customer_ref,
+            # Resolve the customer to its external vocabulary (1.6) so the job-card
+            # hover never renders a UUID; None when there's no customer or it does
+            # not resolve through the identity map.
+            customer_name=(_external_name(identity_map, customer_ref, _CUSTOMER_REF_TYPES)
+                           if customer_ref else None),
+            quantity=float(qty) if qty is not None else None,
+            quantity_uom=quom,
             due=_parse_dt(demand.get("due")),
             projected_completion=_parse_dt(svc.get("projected_completion")),
             lateness_min=int(lateness),
@@ -189,6 +202,11 @@ def assemble_schedule_document(
     # Resource lanes with flattened calendar windows
     # ------------------------------------------------------------------
     cals_by_id = {c["id"]: c for c in calendars}
+    # Row intelligence (1.6 CU4): per-row booked-through + next-open-gap, computed
+    # over the SAME flattened minute windows the solver's eligibility uses, never
+    # from anything rendered. See row_intelligence.py.
+    row_booked, row_gap = _row_intelligence(
+        asgn_blocks, resources, cals_by_id, horizon, reference_date)
     lanes: list[ResourceLane] = []
     for res in resources:
         rid = res["id"]
@@ -204,6 +222,8 @@ def assemble_schedule_document(
             calendar_windows=_calendar_windows(
                 cals_by_id.get(res.get("calendar_ref") or ""), horizon
             ),
+            booked_through=row_booked.get(rid),
+            next_open_gap=row_gap.get(rid),
         ))
     lanes.sort(key=lambda r: (r.external_name or "", r.resource_id))
 
@@ -443,19 +463,25 @@ def _calendar_windows(cal: Optional[dict], horizon: Optional[HorizonBlock]) -> l
             continue
         w_start, w_end = _parse_dt(e["window"]["start"]), _parse_dt(e["window"]["end"])
         kind = e.get("type", "closure")
+        reason = e.get("reason", "planned_maintenance") if kind == "closure" else e.get("reason")
         if kind == "closure":
             closures.append(CalendarException(
                 window=TimeWindow(start=w_start, end=w_end),
                 type=CalendarExceptionType.CLOSURE,
-                reason=CalendarExceptionReason(e.get("reason", "planned_maintenance")),
+                reason=CalendarExceptionReason(reason),
             ))
             if w_end > horizon.start and w_start < horizon.end:
-                out.append(CalendarWindow(start=w_start, end=w_end, kind="closure"))
+                # Carry the exception reason (1.6) so the cockpit can shade a
+                # planned-maintenance closure distinctly and name it in the hover.
+                out.append(CalendarWindow(
+                    start=w_start, end=w_end, kind="closure", reason=reason))
         else:  # added capacity
             if w_end > horizon.start and w_start < horizon.end:
+                is_ot = e.get("reason") == "overtime"
                 out.append(CalendarWindow(
                     start=w_start, end=w_end,
-                    kind="overtime" if e.get("reason") == "overtime" else "regular",
+                    kind="overtime" if is_ot else "regular",
+                    reason=(e.get("reason") if is_ot else None),
                 ))
 
     for w in flatten_calendar(cal.get("base_pattern", {}), closures,
@@ -464,6 +490,60 @@ def _calendar_windows(cal: Optional[dict], horizon: Optional[HorizonBlock]) -> l
 
     out.sort(key=lambda w: (w.start.isoformat(), w.kind))
     return out
+
+def _row_intelligence(
+    asgn_blocks: list[AssignmentBlock],
+    resources: list[dict],
+    cals_by_id: dict[str, dict],
+    horizon: Optional[HorizonBlock],
+    reference_date: Optional[datetime],
+) -> tuple[dict[str, Optional[datetime]], dict[str, Optional[datetime]]]:
+    """Per-resource booked-through + next-open-gap absolute timestamps (1.6 CU4).
+
+    Occupancy is the union of every assignment's chunk spans on the row, in
+    minutes from the horizon origin; open windows come from the SAME
+    ``flatten_resource_windows`` the solver's eligibility uses, so the numbers
+    are the model's, not a re-derivation. Returns two rid → datetime|None maps.
+    With no horizon (nothing to flatten) both are empty."""
+    booked: dict[str, Optional[datetime]] = {}
+    gap: dict[str, Optional[datetime]] = {}
+    if horizon is None:
+        return booked, gap
+    from mre.modules.eligibility import flatten_resource_windows
+    from mre.modules.row_intelligence import (
+        booked_through_min, next_available_gap_min,
+    )
+
+    origin = horizon.start
+
+    def _to_min(dt: datetime) -> int:
+        return int((dt - origin).total_seconds() // 60)
+
+    def _to_dt(m: int) -> datetime:
+        return origin + timedelta(minutes=m)
+
+    resources_by_id = {r["id"]: r for r in resources}
+    windows_by_res = flatten_resource_windows(
+        resources_by_id, cals_by_id, horizon.start, horizon.end)
+
+    occ_by_res: dict[str, list[tuple[int, int]]] = {}
+    for a in asgn_blocks:
+        if not a.chunks:
+            continue
+        s = _to_min(a.chunks[0].start)
+        e = _to_min(a.chunks[-1].end)
+        occ_by_res.setdefault(a.resource_id, []).append((s, e))
+
+    from_min = _to_min(reference_date) if reference_date else 0
+    from_min = max(0, from_min)
+    for rid in resources_by_id:
+        occ = occ_by_res.get(rid, [])
+        bt = booked_through_min(occ)
+        booked[rid] = _to_dt(bt) if bt is not None else None
+        ng = next_available_gap_min(windows_by_res.get(rid, []), occ, from_min)
+        gap[rid] = _to_dt(ng) if ng is not None else None
+    return booked, gap
+
 
 def _interaction_block(
     edges: list[dict],

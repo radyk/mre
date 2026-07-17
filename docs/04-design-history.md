@@ -5340,3 +5340,110 @@ through the LLM). **Non-slow Python green (+ the new fast suites)** +
 "cite a record" is not "cite a REAL record" — validate the id against the bundle,
 and never hand the model an empty evidence chain, because the only citation it can
 then produce is a fabricated one.
+
+### 2026-07-17 — Session 4.2: planner surface pass 1 (read layer only)
+
+The first pass at making the cockpit read like a PLANNER's board, not a demo
+Gantt — capacity state, time anchors, hover intelligence, row intelligence, and
+operation anatomy — with a hard rule: **render only what the model can source
+truthfully.** No interaction changes, no solver changes; everything below reads
+existing data (plus three additive contract fields the data already justified).
+
+**Scope discipline (the read-layer test).** Unplanned / observed downtime is OUT
+— there is no observed-actuals doorway yet, so a machine that broke has no
+truthful place on this board (rendering it would be inventing state). The
+background architecture RESERVES the slot; the doorway debt is named below per
+R-AI1. Everything shipped is derivable from the canonical model: calendar
+windows + their exception reasons, assignment chunks + setup phases, service
+outcomes, and the flattened windows the solver's eligibility already computes.
+
+**Contract 1.5 → 1.6 (additive, three fields the data already had).**
+- `CalendarWindow.reason` — a closure/overtime window now carries its
+  calendar-exception reason (planned_maintenance / holiday / breakdown /
+  overtime). The assembler was collapsing every closure to `kind="closure"` and
+  DROPPING the reason; 1.6 keeps it, so the board shades a planned-maintenance
+  closure distinctly from generic off-shift and the downtime hover names it.
+- `ServiceOutcomeBlock.customer_name` / `quantity` (+`quantity_uom`) — the
+  external customer (resolved through the identity map, never a UUID on screen)
+  and the demand quantity, for the job-card hover. `Demand.quantity` is a
+  `Quantity {value, uom}` (not a scalar) — surfaced as both.
+- `ResourceLane.booked_through` / `next_open_gap` — per-row absolute facts
+  computed server-side over the SAME flattened windows the solver's eligibility
+  uses (new `row_intelligence.py`, built on `eligibility.flatten_resource_
+  windows`), so a row that reads "booked through Thu" is booked through Thu by
+  canonical minutes, not by anything rendered.
+
+**CU1 — capacity-state backgrounds + shift structure.** Per-row banding for
+off-shift / closure / planned-maintenance / overtime (premium) / open-idle,
+distinct on BOTH themes (tokenized, feel-tunable). Off-shift = the complement of
+every declared window in the data span; open-idle = regular capacity minus
+booked work; closure/maintenance/overtime come straight from the 1.6 window
+kind+reason. Shift boundaries render as subtle ticks in the markers overlay. All
+pure-computed in `legality/capacity.js`.
+
+**CU2 — time anchors.** A now-line from the run's REFERENCE DATE (the 3.3b
+epoch), never wall clock — absent (not faked) when the run is "now"-anchored
+(reference_date null), because a wall-clock "now" on a fixed-epoch schedule is a
+lie. Due + release markers render for the SELECTED/hovered order only (release
+from the Tier-0 `earliest_start`). All in one `markers.js` overlay tracking vis
+pan/zoom at ~0px drift (the C1 discipline, extended).
+
+**CU3 — hover cards, planner-voiced.** A job card (order, qty, due, customer,
+routing position, late/tight status, standing-pin state) and a downtime/closure
+card (which calendar state, its reason, when the row reopens), driven by vis's
+own hit-test. External refs everywhere; a UUID never reaches the card.
+
+**CU4 — row intelligence.** Per-row utilization % over the VISIBLE window
+(recomputed live as the planner pans), booked-through, and next-open-gap — all
+from the same window arithmetic, never the rendered DOM. `row_intelligence.py`
+is the canonical definition; `legality/rowstats.js` is a byte-for-byte port; the
+two are pinned together by shared numeric fixtures
+(`fixtures/rowstats_cases.json`, asserted from BOTH sides). A subtle row-label
+strip carries it.
+
+**CU5 — operation anatomy.** Setup rendered as a distinct hatched leading
+portion of a bar (the first visual appearance of setup, from `phases.setup`);
+split/chunked ops rendered as linked pieces with a dashed kinship connector
+across each pause (they read as ONE job) — WITHOUT disturbing the single-item
+identity the drag/citation/rebind paths rely on (single-chunk bars, all existing
+fixtures, are byte-unchanged; the split path is additive); the standing-pin
+(R-DP8) indicator unified into the commitment marker family.
+
+**Rider.** The dev question-ledger empty state was reworded from the cryptic "no
+dev ledger (set MRE_DEV)" to planner-comprehensible copy that names what the
+panel IS ("Unanswered-question log (off) — set MRE_DEV=1 in the API environment
+to record refusals for review") — its label had confused the person who
+commissioned it twice.
+
+**Harness.** A hand-authored contract-1.6 planner fixture
+(`tools/build_planner_fixture.py` → `fixtures/planner/`) exercises every read-
+layer feature the demo scenarios don't produce (closures, maintenance, overtime,
+setup, a split op across a closure, a standing pin, customers/quantities).
+`planner.spec.mjs` screenshot-asserts each CU on BOTH themes; `rowstats.spec.mjs`
+(logic project) pins the JS port to the shared fixtures. Python: contract 1.6
+fields + `row_intelligence` parity (`test_row_intelligence.py`,
+`test_schedule_document.py`). **Non-slow Python 1148 passed, 0 failed**;
+**cockpit JS 113 passed** (was 94: +10 planner ×2 themes, +9 rowstats logic).
+
+**Question-pathway notes (R-AI1).** Each new surface's AI reach, named:
+- downtime/closure cards align with the EXISTING downtime/calendar question
+  route (the explainer already answers "why is X closed" style questions);
+- **utilization / booked-through / next-gap have NO ask route yet** — you can
+  see a row is 90% booked but cannot yet ASK "which rows are overloaded?" This is
+  a named debt for AI-track Session 2 (a row-economics question domain), not
+  built this session.
+
+**Named debt — the unplanned-downtime doorway.** The capacity-band architecture
+reserves the slot for observed/unplanned downtime (a machine that actually broke,
+distinct from a calendar-declared closure), but there is no observed-actuals
+ingestion doorway (docs/06 has no WIP/actuals downtime channel). Until that
+doorway exists, only calendar-declared exceptions carry a reason and only
+calendar-declared closures band the board. This is the read-layer's honest edge:
+we render what the model knows, and the model does not yet know about downtime it
+was not told to plan.
+
+Lesson: a planner's board is mostly ABSENCE made legible — off-shift, idle,
+closed, waiting. The discipline that makes it trustworthy is the same one that
+makes the answers trustworthy: render only what you can source, and where you
+can't (unplanned downtime), reserve the slot and name the debt rather than paint
+a plausible lie.

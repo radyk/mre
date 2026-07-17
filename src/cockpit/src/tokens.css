@@ -109,6 +109,29 @@
   --motion-ghost-fade-dur: 350ms;
   --motion-ghost-fade-ease: ease-out;
 
+  /* --- planner surface (Session 4.2) — STRUCTURAL geometry/timing ----- *
+   * Colors live per theme (theme-light/theme-dark). These are the knobs the
+   * feel panel tunes: band emphasis opacities, marker/tick widths, the setup
+   * hatch pitch, the row-strip type scale, hover-card geometry. */
+  --cap-offshift-opacity: 1.0;      /* nights / weekends veil */
+  --cap-closure-opacity: 1.0;       /* generic closure */
+  --cap-maint-opacity: 1.0;         /* planned-maintenance exception */
+  --cap-overtime-opacity: 1.0;      /* premium (overtime) window */
+  --cap-openidle-opacity: 1.0;      /* open, unbooked capacity */
+  --cap-hatch-px: 7px;              /* closure/maintenance hatch pitch */
+
+  --marker-now-width: 2px;          /* the reference-date "now" line */
+  --marker-due-width: 2px;
+  --marker-release-width: 2px;
+  --tick-shift-width: 1px;          /* subtle shift-boundary ticks */
+  --marker-label-fs: var(--fs-2xs);
+
+  --setup-hatch-px: 4px;            /* setup leading-segment hatch pitch (CU5) */
+  --chunk-link-width: 2px;          /* split-op kinship connector (CU5) */
+
+  --row-strip-fs: var(--fs-2xs);    /* the row-label strip micro-type (CU4) */
+  --hover-card-w: 244px;            /* job / downtime hover card (CU3) */
+
   /* --- semantic aliases (resolve against the ACTIVE theme) ------------ *
    * Pure references — theme-invariant MAPPINGS onto per-theme colors. Kept here
    * (not duplicated in both theme files) because var() resolves lazily against

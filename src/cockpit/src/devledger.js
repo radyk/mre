@@ -45,7 +45,12 @@ export function mountDevLedger(hostEl) {
     body.innerHTML = `<div class="dl-empty">loading…</div>`;
     const data = await ledgerRefusals(30);
     if (!data) {
-      body.innerHTML = `<div class="dl-empty">no dev ledger (set MRE_DEV)</div>`;
+      // Planner-comprehensible empty state (Session 4.2 rider): name what the
+      // panel IS, not just the flag to flip. (Its prior label confused the
+      // person who commissioned it — twice.)
+      body.innerHTML = `<div class="dl-empty">Unanswered-question log (off) —
+        set <code>MRE_DEV=1</code> in the API environment to record refusals
+        for review.</div>`;
       return;
     }
     const clusters = data.clusters || [];

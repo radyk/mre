@@ -62,6 +62,14 @@ html, body {
   backdrop-filter: blur(3px);
 }
 .legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: var(--radius-xs); margin-right: 5px; vertical-align: middle; }
+.legend .lg-gap { width: 1px; align-self: stretch; border-left: 1px solid var(--grid); margin: 0 2px; }
+.legend .sw.sw-hatch-closure {
+  background: repeating-linear-gradient(45deg, var(--cap-closure) 0 3px, var(--cap-closure-hatch) 3px 5px);
+}
+.legend .sw.sw-hatch-maint {
+  background: repeating-linear-gradient(-45deg, var(--cap-maint) 0 3px, var(--cap-maint-hatch) 3px 5px);
+}
+.legend .sw.sw-now { width: 3px; border-radius: 0; background: var(--marker-now); }
 
 /* --- vis-timeline theming (references tokens) --------------------------- */
 .vis-timeline { border: 0; font-size: var(--fs-sm); font-family: var(--font-ui); }
@@ -77,6 +85,7 @@ html, body {
   background: var(--bar-ontime); border-color: var(--bar-border);
   color: var(--bar-ontime-ink); border-radius: var(--bar-radius);
   box-shadow: var(--bar-sheen);
+  position: absolute; overflow: hidden;   /* clip the setup hatch (CU5) to the bar */
 }
 .vis-item.bar.late-ontime { background: var(--bar-ontime); color: var(--bar-ontime-ink); }
 .vis-item.bar.late-tight  { background: var(--bar-tight);  color: var(--bar-tight-ink); }
@@ -97,11 +106,125 @@ html, body {
   box-shadow: var(--shadow-scrim);
 }
 
-/* calendar-lane background shading */
+/* calendar-lane background shading (legacy cal-* kept; superseded by cap-* below) */
 .vis-item.vis-background.cal-closure { background: var(--cal-closure); }
 .vis-item.vis-background.cal-overtime { background: var(--cal-overtime); }
 /* a cited resource lane glows */
 .vis-item.vis-background.cited-lane { background: var(--cite-lane); }
+
+/* =========================================================================
+ * Session 4.2 — planner surface (read layer).
+ * ====================================================================== */
+
+/* --- CU1: capacity-state background bands ------------------------------- */
+.vis-item.vis-background.cap-offshift { background: var(--cap-offshift); opacity: var(--cap-offshift-opacity); }
+.vis-item.vis-background.cap-openidle { background: var(--cap-openidle); opacity: var(--cap-openidle-opacity); }
+.vis-item.vis-background.cap-overtime {
+  background: var(--cap-overtime); opacity: var(--cap-overtime-opacity);
+  border-left: 1px solid var(--standing-pin-edge); border-right: 1px solid var(--standing-pin-edge);
+}
+.vis-item.vis-background.cap-closure {
+  opacity: var(--cap-closure-opacity);
+  background:
+    repeating-linear-gradient(45deg, transparent 0, transparent calc(var(--cap-hatch-px) - 1px),
+      var(--cap-closure-hatch) calc(var(--cap-hatch-px) - 1px), var(--cap-closure-hatch) var(--cap-hatch-px)),
+    var(--cap-closure);
+}
+.vis-item.vis-background.cap-maintenance {
+  opacity: var(--cap-maint-opacity);
+  background:
+    repeating-linear-gradient(-45deg, transparent 0, transparent calc(var(--cap-hatch-px) - 1px),
+      var(--cap-maint-hatch) calc(var(--cap-hatch-px) - 1px), var(--cap-maint-hatch) var(--cap-hatch-px)),
+    var(--cap-maint);
+}
+
+/* --- CU5: setup leading segment + split-op kinship --------------------- */
+/* setup occupies the first --setup-frac of the bar, rendered as a distinct
+ * hatched leading portion — the first visual appearance of setup on the board. */
+.vis-item.bar.has-setup::before,
+.vis-item.bar[style*="--setup-frac"]::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: calc(var(--setup-frac, 0) * 100%);
+  background: repeating-linear-gradient(45deg,
+    transparent 0, transparent calc(var(--setup-hatch-px) - 1px),
+    var(--setup-hatch) calc(var(--setup-hatch-px) - 1px), var(--setup-hatch) var(--setup-hatch-px));
+  border-right: 1px solid var(--setup-hatch);
+  border-radius: var(--bar-radius) 0 0 var(--bar-radius);
+  pointer-events: none;
+}
+/* a split op's pieces read as ONE job: shared fill, edges rounded only on the
+ * outer ends, a dashed connector spanning each pause. */
+.vis-item.bar.chunk-piece { border-radius: 0; }
+.vis-item.bar.chunk-piece.chunk-first { border-radius: var(--bar-radius) 0 0 var(--bar-radius); }
+.vis-item.bar.chunk-piece.chunk-last  { border-radius: 0 var(--bar-radius) var(--bar-radius) 0; }
+.vis-item.vis-background.chunk-link {
+  background: none;
+  border-top: var(--chunk-link-width) dashed var(--chunk-link);
+  height: 0; align-self: center; margin-top: auto; margin-bottom: auto;
+  opacity: 0.9;
+}
+
+/* --- CU4: row-label strip (in the vis-left group labels) ---------------- */
+.vis-labelset .vis-label .vis-inner { display: block; }
+.row-name { font-weight: var(--fw-semibold); color: var(--ink); line-height: var(--lh-tight); }
+.row-strip {
+  display: flex; gap: 6px; align-items: baseline; margin-top: 2px;
+  font: var(--fw-medium) var(--row-strip-fs)/1 var(--font-mono); color: var(--rs-ink);
+  white-space: nowrap;
+}
+.row-strip .rs-util { font-weight: var(--fw-bold); }
+.row-strip .rs-util.cool { color: var(--rs-util-cool); }
+.row-strip .rs-util.warm { color: var(--rs-util-warm); }
+.row-strip .rs-util.hot  { color: var(--rs-util-hot); }
+.row-strip .rs-sep { opacity: 0.5; }
+.row-strip .rs-booked, .row-strip .rs-gap { color: var(--muted-2); }
+
+/* --- CU2/CU1: time-anchor markers + shift ticks (overlay) --------------- */
+.marker-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 4; }
+.marker { position: absolute; top: 0; bottom: 0; }
+.marker.now { width: var(--marker-now-width); background: var(--marker-now); }
+.marker.due { width: var(--marker-due-width); background: var(--marker-due); }
+.marker.release { width: var(--marker-release-width); background: var(--marker-release); }
+.marker.due, .marker.release { opacity: 0.85; }
+.marker .marker-label {
+  position: absolute; top: 2px; left: 3px; white-space: nowrap;
+  font: var(--fw-bold) var(--marker-label-fs)/1 var(--font-mono);
+  padding: 1px 4px; border-radius: var(--radius-xs); color: var(--marker-label-ink);
+  box-shadow: var(--shadow-scrim);
+}
+.marker.now .marker-label { background: var(--marker-now-label-bg); color: var(--marker-now-label-ink); }
+.marker.due .marker-label { background: var(--marker-due); }
+.marker.release .marker-label { background: var(--marker-release); }
+.tick.shift { position: absolute; top: 0; bottom: 0; width: var(--tick-shift-width); background: var(--tick-shift); }
+
+/* --- CU3: planner-voiced hover cards ----------------------------------- */
+.hover-card {
+  position: absolute; z-index: 20; width: var(--hover-card-w); max-width: var(--hover-card-w);
+  background: var(--hc-bg); color: var(--hc-ink);
+  border: 1px solid var(--hc-edge); border-left-width: 3px; border-radius: var(--radius);
+  box-shadow: var(--hc-shadow); padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-xs); pointer-events: none; backdrop-filter: blur(3px);
+}
+.hover-card.hidden { display: none; }
+.hover-card.job.late   { border-left-color: var(--bar-late); }
+.hover-card.job.tight  { border-left-color: var(--bar-tight); }
+.hover-card.job.ontime { border-left-color: var(--bar-ontime); }
+.hover-card.downtime.maintenance { border-left-color: var(--standing-pin-edge); }
+.hover-card.downtime.closure { border-left-color: var(--muted); }
+.hover-card.downtime.offshift { border-left-color: var(--muted-2); }
+.hover-card.downtime.overtime { border-left-color: var(--bar-tight); }
+.hc-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); margin-bottom: var(--sp-1); }
+.hc-order, .hc-dt-title { font: var(--fw-bold) var(--fs-sm)/1.1 var(--font-mono); color: var(--ink); }
+.hc-status { font: var(--fw-bold) var(--fs-2xs)/1 var(--font-mono); padding: 1px 5px; border-radius: var(--radius-xs); color: var(--ink-inverse); }
+.hc-status.late { background: var(--bar-late); }
+.hc-status.tight { background: var(--bar-tight); color: var(--bar-tight-ink); }
+.hc-status.ontime { background: var(--bar-ontime); }
+.hc-grid { display: grid; grid-template-columns: auto 1fr; gap: 1px var(--sp-2); margin: 0; }
+.hc-grid dt { color: var(--muted-2); text-transform: uppercase; letter-spacing: var(--ls-caps); font-size: var(--fs-2xs); }
+.hc-grid dd { margin: 0; color: var(--ink); }
+.hc-pin { margin-top: var(--sp-2); padding-top: var(--sp-1); border-top: 1px dashed var(--hc-edge); color: var(--standing-pin-edge); font-weight: var(--fw-semibold); }
+.hover-card .hc-sub { color: var(--muted); }
+.hover-card .hc-sub b { color: var(--ink); }
 
 /* =========================================================================
  * Ask panel (CU4) — embeds M10; registers render VISIBLY DISTINCT.

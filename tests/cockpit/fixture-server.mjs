@@ -22,6 +22,9 @@ const PORT = parseInt(process.env.PORT || "5199", 10);
 const DIRS = {
   "sched-multi-route-fixture": FIX,
   "sched-multi-route-distinct": resolve(FIX, "distinct"),
+  // the hand-authored planner-surface fixture (Session 4.2): closures /
+  // maintenance / overtime / setup / a split op / standing pin / customers.
+  "sched-planner-fixture": resolve(FIX, "planner"),
 };
 // An accepted edit mints a new version id ``<base>-edit`` (CU1); a CHAINED edit
 // appends another ``-edit``. All map back to the base fixture directory so a

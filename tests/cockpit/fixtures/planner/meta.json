@@ -1,0 +1,8 @@
+{
+ "id": "sched-planner-fixture",
+ "schedule_id": "sched-planner-fixture",
+ "status": "published",
+ "contract_version": "1.6",
+ "grade": "ACCEPTED",
+ "costing_grade": "C1"
+}

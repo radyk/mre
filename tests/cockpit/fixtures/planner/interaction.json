@@ -1,0 +1,77 @@
+{
+ "schedule_id": "sched-planner-fixture",
+ "contract_version": "1.6",
+ "interaction": {
+  "operations": [
+   {
+    "operation_ref": "op-100",
+    "eligible_resource_ids": [
+     "res-001",
+     "res-003"
+    ],
+    "dim_reasons": {},
+    "working_min": 240,
+    "setup_min": 30,
+    "earliest_start": "2026-01-05T07:00:00Z",
+    "resumable": false
+   },
+   {
+    "operation_ref": "op-101",
+    "eligible_resource_ids": [
+     "res-001"
+    ],
+    "dim_reasons": {},
+    "working_min": 240,
+    "setup_min": 0,
+    "earliest_start": "2026-01-05T09:00:00Z",
+    "resumable": false
+   },
+   {
+    "operation_ref": "op-102",
+    "eligible_resource_ids": [
+     "res-002"
+    ],
+    "dim_reasons": {},
+    "working_min": 420,
+    "setup_min": 0,
+    "earliest_start": "2026-01-06T12:00:00Z",
+    "resumable": true
+   },
+   {
+    "operation_ref": "op-103",
+    "eligible_resource_ids": [
+     "res-003"
+    ],
+    "dim_reasons": {},
+    "working_min": 300,
+    "setup_min": 0,
+    "earliest_start": "2026-01-06T07:00:00Z",
+    "resumable": false
+   },
+   {
+    "operation_ref": "op-104",
+    "eligible_resource_ids": [
+     "res-003"
+    ],
+    "dim_reasons": {},
+    "working_min": 120,
+    "setup_min": 0,
+    "earliest_start": "2026-01-06T12:00:00Z",
+    "resumable": false
+   },
+   {
+    "operation_ref": "op-105",
+    "eligible_resource_ids": [
+     "res-001",
+     "res-002"
+    ],
+    "dim_reasons": {},
+    "working_min": 300,
+    "setup_min": 0,
+    "earliest_start": "2026-01-08T07:00:00Z",
+    "resumable": false
+   }
+  ],
+  "precedence_edges": []
+ }
+}
