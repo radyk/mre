@@ -122,6 +122,10 @@ const server = createServer(async (req, res) => {
           a.resource_id = pin.pin_resource_id;
           a.chunks[0].start = pin.pin_start_iso;
           a.chunks[a.chunks.length - 1].end = new Date(new Date(pin.pin_start_iso).getTime() + span).toISOString();
+          // R-DP8 CU2: a pinned op carries a STANDING commitment — mark it so the
+          // board renders the standing-pin marker (mirrors the real assembler,
+          // which sets standing_pin from the version's cumulative lineage pins).
+          a.standing_pin = true;
         }
       }
       res.writeHead(200, { "content-type": "application/json" });

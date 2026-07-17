@@ -125,6 +125,7 @@ def sandbox_pin_resolve(
     budget_s: float = SANDBOX_BUDGET_S,
     runs_subdir: str = "runs",
     deterministic: bool = True,
+    standing_pins: Optional[list[dict]] = None,
 ) -> SandboxResult:
     """Re-solve with one op pinned to (machine + time), the rest free, under a
     hard `budget_s`. Returns a classified :class:`SandboxResult`.
@@ -133,6 +134,12 @@ def sandbox_pin_resolve(
     the latency FLOOR (a trivially feasible re-solve the solver must confirm
     within budget); the CI regression uses this. A caller may pin any op at any
     (resource, start) to price a real drag (R-DP1 literalness).
+
+    ``standing_pins`` are the lineage's ACCEPTED commitments (R-DP8): every one is
+    compiled as a hard constraint alongside the new drop, so the re-solve can
+    never silently relocate a placement the planner already committed. A drop that
+    is infeasible against a standing pin returns an honest INFEASIBLE verdict that
+    NAMES the blocking commitment — never a quiet sacrifice of the older pin.
     """
     from mre.contracts.vocabularies import ModuleCode, RunStatus
     from mre.modules.calendar_utils import flatten_all_calendars
@@ -143,6 +150,7 @@ def sandbox_pin_resolve(
     from mre.modules.solution_pool import (
         _incumbent_objective, _m5_horizon, _placements, _read_evidence,
     )
+    from mre.modules import standing_pins as sp
     from mre.reporter import Reporter
 
     out_dir = Path(out_dir)
@@ -209,15 +217,25 @@ def sandbox_pin_resolve(
     # never actually tested (right time, wrong machine). An un-pinnable target is
     # a PROVEN-ILLEGAL placement (R-DP2 return-home), not a happy verdict, so
     # short-circuit to an infeasible verdict before spending the solve budget.
-    if pin_op_id not in var_map.op_start:
+    try:
+        sp.apply_pin(model, var_map, pin_op_id, pin_resource_id, pin_start_min)
+    except sp.PinUnsatisfiable as exc:
         return _pin_unsatisfiable(budget_s, pin_op_id, pin_resource_id,
-                                  pin_start_dt, "op has no schedulable start")
-    lit = var_map.op_assign.get(pin_op_id, {}).get(pin_resource_id)
-    if lit is None:
+                                  pin_start_dt, exc.reason)
+    # R-DP8: compile the lineage's ACCEPTED pins as hard constraints too, so the
+    # re-solve holds every prior commitment fixed (skip the op being dragged — the
+    # new drop re-commits it). A standing pin that cannot bind is a genuine lineage
+    # inconsistency → honest infeasible, never a silent skip.
+    new_pin = {"operation_ref": pin_op_id, "resource_id": pin_resource_id,
+               "start": pin_start_dt.isoformat()}
+    try:
+        sp.apply_standing_pins(model, var_map, standing_pins, horizon_start,
+                               skip_op=pin_op_id)
+    except sp.PinUnsatisfiable as exc:
         return _pin_unsatisfiable(budget_s, pin_op_id, pin_resource_id,
-                                  pin_start_dt, "op is not eligible on the target resource")
-    model.add(var_map.op_start[pin_op_id] == pin_start_min)
-    model.add(lit == 1)
+                                  pin_start_dt,
+                                  f"a standing commitment could not be held: {exc.reason}")
+    standing_ops = sp.standing_pin_ops(standing_pins)
 
     r_rep = Reporter.begin(
         module=ModuleCode.M6, purpose="sandbox pin re-solve",
@@ -238,6 +256,16 @@ def sandbox_pin_resolve(
 
     outcome = classify_sandbox_outcome(solve_result.status, wall, budget_s)
     feasible = solve_result.status in ("OPTIMAL", "FEASIBLE")
+    # R-DP8: an INFEASIBLE drop may be blocked by a standing commitment. If a
+    # standing pin directly overlaps the drop on its resource, say WHICH decision
+    # blocks it (an authored reason), rather than a bare "pin infeasible" — the
+    # planner must never be left guessing why their move was refused, nor have an
+    # older commitment quietly sacrificed to make room.
+    if not feasible and standing_pins:
+        conflict = sp.detect_conflict(new_pin, standing_pins, var_map, horizon_start)
+        if conflict is not None:
+            return _pin_conflict(budget_s, pin_op_id, pin_resource_id,
+                                 pin_start_dt, conflict)
     # R-DP1 post-condition (4.0 hotfix): with the machine + time pins now
     # mandatory, a feasible solve MUST place the pinned op exactly where pinned.
     # Belt-and-suspenders against any residual model looseness — if it did not,
@@ -273,7 +301,7 @@ def sandbox_pin_resolve(
     if feasible:
         moves = _moved_set(
             solve_result.solve_values, incumbent_placement, horizon_start,
-            pin_op_id,
+            pin_op_id, exclude_ops=standing_ops,
         )
         _annotate_move_reasons(moves, solve_result.solve_values, horizon_start,
                                pin_op_id)
@@ -314,6 +342,28 @@ def _pin_unsatisfiable(budget_s: float, pin_op_id: str, pin_resource_id: str,
     )
 
 
+def _pin_conflict(budget_s: float, pin_op_id: str, pin_resource_id: str,
+                  pin_start_dt: datetime, conflict) -> SandboxResult:
+    """The drop is infeasible because it OVERLAPS a standing commitment on the
+    same resource (R-DP8). An honest infeasible verdict that NAMES the blocking
+    decision — the planner sees which commitment is in the way, and the older pin
+    is never quietly sacrificed to make room. ``conflict.op_id`` is a canonical
+    operation id; the cockpit resolves it to planner vocabulary."""
+    return SandboxResult(
+        outcome=SANDBOX_VERDICT, status="INFEASIBLE", within_budget=True,
+        wall_time_s=0.0, budget_s=budget_s, applied_time_limit_s=budget_s,
+        feasible=False, objective=None, delta_pct=None, delta_abs=None,
+        cost_delta_abs=None, cost_delta_pct=None,
+        message="this placement conflicts with a commitment you already made — "
+                "it overlaps a placement you accepted earlier",
+        moves=[],
+        pin={"operation_ref": pin_op_id, "resource_id": pin_resource_id,
+             "start": pin_start_dt.isoformat(),
+             "conflict_op_ref": conflict.op_id,
+             "conflict_resource_id": conflict.resource_id},
+    )
+
+
 def _cost_delta_dollars(reader, solve_values, ops, wps, resources, fuls,
                         demands, cost_model, var_map) -> tuple:
     """The DOLLAR cost delta of a pinned re-solve vs the base schedule (exit-audit
@@ -349,12 +399,21 @@ def _moved_set(
     horizon_start: datetime,
     pin_op_id: str,
     tolerance_min: int = 1,
+    exclude_ops: Optional[set[str]] = None,
 ) -> list[dict]:
     """Compare the re-solve's placements to the incumbent, op by op, and emit
     the displaced set old → new. The pinned op is always included (flagged) so
     the tentative bar is part of the traced change even when only its neighbours
     truly moved. Sorted: pinned first, then largest start shift, so the delta
-    card's line items lead with the biggest displacements (R-DP7c)."""
+    card's line items lead with the biggest displacements (R-DP7c).
+
+    ``exclude_ops`` are ops carrying a STANDING commitment (R-DP8): they are held
+    fixed by the standing pins, so a committed op can NEVER be a moved consequence
+    — it is structurally excluded here (not filtered downstream), the CU2
+    guarantee. The freshly-dropped ``pin_op_id`` is exempt from the exclusion: it
+    IS the change being shown."""
+    exclude = (exclude_ops or set()) - {pin_op_id}
+
     def _new_placement(op_id: str):
         rid = solve_values.op_resource.get(op_id)
         smin = solve_values.op_start_minutes.get(op_id)
@@ -364,6 +423,8 @@ def _moved_set(
 
     moves: list[dict] = []
     for op_id, (old_rid, old_start) in incumbent_placement.items():
+        if op_id in exclude:
+            continue
         new = _new_placement(op_id)
         if new is None:
             continue

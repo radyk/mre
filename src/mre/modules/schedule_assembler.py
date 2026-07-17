@@ -80,10 +80,16 @@ def assemble_schedule_document(
     parent_schedule_id: Optional[str] = None,
     pool_block: Optional[PoolBlock] = None,
     edges: Optional[list[dict]] = None,
+    standing_pin_ops: Optional[set[str]] = None,
 ) -> ScheduleDocument:
     """Assemble the versioned schedule document. Entity args are persisted
     entity dicts (SnapshotReader shape); evidence_records are the run's raw
     JSONL records.
+
+    ``standing_pin_ops`` are the operation ids carrying a STANDING commitment on
+    this version's lineage (R-DP8 CU2): their assignment blocks are marked
+    ``standing_pin=True`` so the cockpit renders a subtle standing-pin marker and
+    knows never to list them as a moved consequence.
 
     ``edges`` are PrecedenceEdge entity dicts. When provided, the contract-1.2
     ``interaction`` block is built (the Tier-0 client-side legality payload);
@@ -132,14 +138,16 @@ def assemble_schedule_document(
     # ------------------------------------------------------------------
     # Assignments
     # ------------------------------------------------------------------
+    pinned_ops = standing_pin_ops or set()
     asgn_blocks: list[AssignmentBlock] = []
     for asgn in assignments:
         op = ops_by_id.get(asgn.get("operation_ref", ""), {})
         chunks = _chunks(asgn)
         resource_id = _assigned_resource(asgn)
+        op_ref = asgn.get("operation_ref", "")
         asgn_blocks.append(AssignmentBlock(
             assignment_id=asgn["id"],
-            operation_ref=asgn.get("operation_ref", ""),
+            operation_ref=op_ref,
             workpackage_ref=asgn.get("workpackage_ref", ""),
             work_orders=wp_orders.get(asgn.get("workpackage_ref", ""), []),
             op_seq=int(op.get("sequence", 0)),
@@ -150,6 +158,7 @@ def assemble_schedule_document(
             phases=_phases(op, chunks),
             in_overtime_min=_overtime_minutes(asgn, decisions_by_id),
             decision_ref=asgn.get("decision_ref", "") or "",
+            standing_pin=op_ref in pinned_ops,
         ))
     asgn_blocks.sort(key=lambda a: (
         a.chunks[0].start.isoformat() if a.chunks else "",
@@ -247,11 +256,13 @@ def build_document_from_run(
     run_id: str,
     runs_subdir: str = "runs",
     parent_schedule_id: Optional[str] = None,
+    standing_pin_ops: Optional[set[str]] = None,
 ) -> ScheduleDocument:
     """Rebuild the document from a persisted pipeline run directory.
 
     Reads the snapshot's entities + identity map and the evidence JSONL
     under ``out_dir/<runs_subdir>/``, then calls the pure assembler.
+    ``standing_pin_ops`` (R-DP8) marks the lineage's committed ops.
     """
     from mre.modules.snapshot_store import SnapshotStore
 
@@ -290,6 +301,7 @@ def build_document_from_run(
         evidence_records=evidence,
         parent_schedule_id=parent_schedule_id,
         edges=list(reader.iter_entities("precedenceedge")),
+        standing_pin_ops=standing_pin_ops,
     )
 
 

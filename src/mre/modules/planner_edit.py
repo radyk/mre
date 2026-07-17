@@ -74,10 +74,17 @@ def apply_planner_edit(
     budget_s: float = 15.0,
     runs_subdir: str = "runs",
     deterministic: bool = True,
+    standing_pins: Optional[list[dict]] = None,
 ) -> PlannerEditResult:
     """Materialize an accepted edit as a child snapshot + a ``planner_edit``
     Decision, under ``out_dir`` (a freshly minted run directory whose
     ``snapshots/`` already contains a copy of the base snapshot).
+
+    ``standing_pins`` are the lineage's prior ACCEPTED commitments (R-DP8): each
+    is compiled as a hard constraint alongside the new drop, so the re-solve holds
+    every earlier decision fixed and can never silently revert one. A new drop
+    that is infeasible against a standing commitment raises (nothing accepted, the
+    base stands) with the blocking commitment named.
 
     Returns a :class:`PlannerEditResult`; the caller assembles the document from
     ``child_snapshot_id`` and registers it as a proposed schedule. Raises on an
@@ -97,6 +104,7 @@ def apply_planner_edit(
     from mre.modules.solution_pool import (
         _incumbent_objective, _m5_horizon, _placements, _read_evidence,
     )
+    from mre.modules import standing_pins as sp
     from mre.reporter import Reporter
 
     if not authority:
@@ -169,19 +177,28 @@ def apply_planner_edit(
     # must NEVER place the op anywhere but where the planner dropped it, so an
     # un-pinnable target is a hard error (nothing accepted, the base stands) —
     # never a silent skip.
-    if pin_op_id not in var_map.op_start:
+    try:
+        sp.apply_pin(model, var_map, pin_op_id, pin_resource_id, pin_start_min)
+    except sp.PinUnsatisfiable as exc:
         raise RuntimeError(
-            f"planner edit: op {pin_op_id} has no schedulable start variable to "
-            "pin — nothing accepted; the base version stands")
-    model.add(var_map.op_start[pin_op_id] == pin_start_min)
-    assign = var_map.op_assign.get(pin_op_id, {})
-    lit = assign.get(pin_resource_id)
-    if lit is None:
+            f"planner edit: {exc.reason} (op {pin_op_id} → {pin_resource_id}) — "
+            "R-DP1 requires the pinned resource be honoured; nothing accepted, "
+            "the base stands") from exc
+    # R-DP8: hold every prior ACCEPTED commitment of this lineage fixed too — the
+    # new drop re-commits pin_op_id (skip it), the rest are compiled as hard
+    # constraints so the re-solve can NEVER revert a decision the planner already
+    # made. A standing pin that cannot bind is a lineage inconsistency and aborts
+    # the accept (loudly, base stands).
+    new_pin = {"operation_ref": pin_op_id, "resource_id": pin_resource_id,
+               "start": pin_start_dt.isoformat()}
+    try:
+        sp.apply_standing_pins(model, var_map, standing_pins, horizon_start,
+                               skip_op=pin_op_id)
+    except sp.PinUnsatisfiable as exc:
         raise RuntimeError(
-            f"planner edit: op {pin_op_id} is not eligible on resource "
-            f"{pin_resource_id} (eligible: {sorted(assign)}) — R-DP1 requires the "
-            "pinned resource be honoured; nothing accepted, the base stands")
-    model.add(lit == 1)
+            f"planner edit: a standing commitment could not be held ({exc.reason}) "
+            "— nothing accepted; the base version stands") from exc
+    standing_ops = sp.standing_pin_ops(standing_pins)
 
     r_rep = Reporter.begin(
         module=ModuleCode.M6, purpose="planner-edit re-solve",
@@ -200,6 +217,15 @@ def apply_planner_edit(
     r_rep.end(RunStatus.SUCCESS if feasible else RunStatus.PARTIAL)
 
     if not feasible:
+        # R-DP8: if a standing commitment directly blocks the drop, name it in the
+        # refusal rather than a bare "infeasible" — the older pin is never quietly
+        # sacrificed to make room.
+        conflict = sp.detect_conflict(new_pin, standing_pins, var_map, horizon_start)
+        if conflict is not None:
+            raise RuntimeError(
+                f"planner edit: this placement conflicts with a commitment you "
+                f"already made — it overlaps op {conflict.op_id[:8]} on resource "
+                f"{conflict.resource_id[:8]}; nothing accepted, the base stands")
         raise RuntimeError(
             f"planner edit infeasible with the pin held (status={solve_result.status}) "
             "— nothing accepted; the base version stands")
@@ -232,7 +258,7 @@ def apply_planner_edit(
             delta_pct = round(delta_abs / incumbent_objective * 100.0, 4)
 
     moves = _moved_set(solve_result.solve_values, incumbent_placement,
-                       horizon_start, pin_op_id)
+                       horizon_start, pin_op_id, exclude_ops=standing_ops)
     _annotate_move_reasons(moves, solve_result.solve_values, horizon_start, pin_op_id)
 
     # 4. Extract canonical entities into the child snapshot — a REAL schedule.

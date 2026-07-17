@@ -170,11 +170,17 @@ class ScenarioRunner:
         time_limit_seconds: float = 30.0,
         base_context: Optional[dict] = None,
         warm_start: bool = True,
+        standing_pins: Optional[list[dict]] = None,
     ) -> None:
         self._store = store
         self._runs_dir = Path(runs_dir)
         self._runs_dir.mkdir(parents=True, exist_ok=True)
         self._time_limit = time_limit_seconds
+        # R-DP8: the lineage's accepted commitments, held as hard constraints
+        # during the scenario solve so a what-if respects placements the planner
+        # already committed. A pin the scenario re-planned away is skipped (an
+        # exploratory scenario may legitimately reshape the op set).
+        self._standing_pins = standing_pins or []
         # Warm-start (docs/07 Phase 2): seed the scenario solve with the
         # base schedule as a CP-SAT solution hint. Without it, a scenario
         # solve is a fresh search over tied-cost alternatives and the diff
@@ -387,6 +393,26 @@ class ScenarioRunner:
                     f"({hint_stats['skipped_structure_changed']} structure-changed, "
                     f"{hint_stats['skipped_invalidated_resource']} on modified calendars)"
                 ),
+            )
+
+        # 8b. R-DP8: hold the lineage's accepted commitments as hard constraints.
+        # A pin whose op the scenario re-planned away is skipped (returned in
+        # ``applied`` only if it bound); a bound-but-ineligible pin raises. The
+        # applied count is recorded as evidence so a scenario that could not honour
+        # a commitment is never silent.
+        if self._standing_pins:
+            from mre.contracts.vocabularies import RecordTier
+            from mre.modules import standing_pins as sp
+            applied = sp.apply_standing_pins(
+                model, var_map, self._standing_pins, horizon_start)
+            r_rep.record_event(
+                status_text="standing_pins_applied",
+                payload={"requested": len(self._standing_pins),
+                         "applied": len(applied),
+                         "skipped": len(self._standing_pins) - len(applied)},
+                tier=RecordTier.SUPPORTING,
+                message=(f"R-DP8: held {len(applied)} of {len(self._standing_pins)} "
+                         "accepted commitment(s) during the scenario solve"),
             )
 
         from mre.modules.solve_runner import SolveRunner

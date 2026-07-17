@@ -5063,3 +5063,84 @@ untouched (backend-only), JS stays 48/48. See docs/07 v2.17. Lesson: a bound
 validated against a short test prefix is a bound with an unmeasured margin — pin the
 budget to the REAL deployment path length, and prefer making the limit not exist
 (`\\?\`) over racing it with an ever-tighter cap.
+
+### 2026-07-17 — Session 4.0e: accepted placements are standing commitments (R-DP8)
+
+**The observed revert, named.** Live on the gesture surface: an accepted, then
+PUBLISHED, edit was silently reverted by the NEXT edit's re-solve. The delta card
+was honest about it — it listed "ORD-000003 RES002→RES001 −1440min" as a
+*consequence* of the new drop — but a placement the planner already committed
+should not be movable at all. The culprit: the accept/sandbox re-solve pinned only
+the ONE op being dropped; every prior accepted pin was free again, so the optimizer
+did exactly what it is paid to do and undid a cost-neutral cross-machine move to
+recover a few dollars. A commitment that survives only until the next solve is not
+a commitment.
+
+**The ruling (R-DP8), transcribed.** An accepted edit's pin persists in the
+schedule lineage as a STANDING constraint — compiled into EVERY subsequent sandbox,
+accept, and scenario solve of that lineage — until explicitly released. An accepted
+placement is a commitment WITH AUTHORITY (the `planner_edit` Decision), not a
+one-solve preference. Rationale: the planner must never have to re-defend a decision
+they already made; a cost-neutral edit is exactly the kind the optimizer will
+otherwise silently undo. Release is a future explicit verb (`unpin`), named as a
+carry-forward, not built now.
+
+**CU1 — persistence.** Standing pins live in ONE place structurally: a new
+`schedules.pins_json` column carries the CUMULATIVE lineage pins of each version —
+every accepted `(op, resource, start)` from the root down to and including this
+version (empty on a root solve). An accept composes the new set from the base's
+(`standing_pins.compose_lineage_pins`: the drop's op re-committed in place, or
+appended if fresh — order-stable, never duplicated) and stores it; a migration
+(`Registry._migrate`) ALTERs the column into pre-4.0e databases so old rows read as
+no-pins. Publish/supersede are untouched — the pins belong to the lineage row, not
+the pool, so they carry through both. Every subsequent sandbox/accept/scenario
+solve gathers the base version's pins (`Registry.schedule_pins`) and compiles ALL
+of them as hard constraints alongside the new drop. **The single seam:**
+`src/mre/modules/standing_pins.py` — the primary drop AND the standing pins go
+through the SAME `apply_pin` (both axes mandatory, `PinUnsatisfiable` on a missing
+start var / literal — never skipped-and-vouched, the 4.0-hotfix lesson), so the two
+can never diverge in how they bind (the 4.0b "give the layers ONE function to call"
+discipline). `sandbox.py`, `planner_edit.py`, and `scenario.py` all delegate to it.
+**Conflict handled honestly:** a drop that is INFEASIBLE against the standing pins
+returns a verdict that NAMES the blocking commitment — `detect_conflict` reports a
+conflict ONLY on a provable same-resource interval overlap (durations from the
+new `VariableMap.op_durations`, the solver's own minute durations), so an
+infeasibility that is actually precedence/calendar is never mis-blamed on a
+commitment — rather than quietly sacrificing the older pin. In a scenario the pins
+are best-effort (a what-if may legitimately re-plan an op away; the applied count
+lands in evidence as `standing_pins_applied`, never silent).
+
+**CU2 — visibility.** Schedule contract **1.4 → 1.5** (additive
+`AssignmentBlock.standing_pin`): the assembler marks every op carrying a standing
+commitment from the version's cumulative pins. The cockpit renders a subtle,
+PERSISTENT standing-pin marker on those bars (a thin amber left edge + faint ring,
+tokenized `--standing-pin-*`) — deliberately quieter than, and distinct from, the
+transient green pin-lock of a just-accepted drop (which animates then fades). And
+the delta card can NEVER list a standing-pinned op as a moved consequence: it is
+STRUCTURALLY excluded in `_moved_set` (`exclude_ops`, the freshly-dropped op
+exempt) and in the cockpit's ghost-drop `movedSetFromDoc` — not filtered
+downstream, removed at the source. (A pinned op cannot move anyway, so it would not
+appear; the structural exclusion is the belt to that suspenders, and the CU2
+guarantee in code.)
+
+**CU3 — the regression that was missing.** `tests/test_standing_pins.py`: fast
+units for the shared seam (pin accessors reading both record shapes, lineage
+composition, apply/skip, conflict overlap-detection, moved-set exclusion) + registry
+pins round-trip + the pre-4.0e migration; and the two-edit chain END TO END (slow,
+`multi_route_distinct`) — edit A a cost-neutral CROSS-MACHINE move (the kind the
+optimizer reverts) accepted + PUBLISHED, edit B accepted on a different op → assert
+A's placement is UNCHANGED in B's version, A stays `standing_pin=True`, and A's op
+appears in NO moved-set of edit B's `planner_edit` Decision; plus a drop that lands
+ON a standing commitment's slot is refused (sandbox infeasible, accept 409, base
+stands). The cockpit harness drives the same flow visually
+(`gesture.spec.mjs`): edit A accept→publish, edit B accept → A's committed row is
+held through B's rebind and A's bar wears the standing-pin marker (the fixture
+server composes every ancestor pin into `GET /schedule` and flags them, exactly as
+the real assembler does). **Non-slow Python 1118 passed** (+15, 0 failed) + slow
+`standing_pins` **2/2**, `planner_edit`/`sandbox`/`scenario` **55/55**,
+`forced_alternatives`/`eligibility`/`api_endpoints` green, solver goldens
+byte-identical; **cockpit JS 49/49** (+1). See docs/07 v2.18. Lesson: a hard
+constraint that lives for exactly one solve is a preference; a commitment must be
+COMPILED into every solve of its lineage, held in the registry, and structurally
+un-moveable — the optimizer will otherwise, correctly and quietly, undo the very
+decisions the planner made by hand.

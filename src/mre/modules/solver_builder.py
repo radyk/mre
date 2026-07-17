@@ -70,6 +70,11 @@ class VariableMap:
     tardiness: dict[str, Any] = field(default_factory=dict)
     # op_id → [resource_id, ...] eligible resources (plain strings, no ortools)
     op_eligible: dict[str, list[str]] = field(default_factory=dict)
+    # op_id → total working minutes (setup + run, or the in-flight remainder).
+    # Plain ints, no ortools — exposed so pin tooling can reason about a pinned
+    # op's occupied interval [start, start+duration) without re-parsing entity
+    # durations (used by standing-pin conflict detection, R-DP8).
+    op_durations: dict[str, int] = field(default_factory=dict)
     # resource_id → [(start_min, end_min), ...] available calendar windows
     cal_windows: dict[str, list[tuple[int, int]]] = field(default_factory=dict)
     # op_id → [{"used": BoolVar, "start": IntVar, "end": IntVar,
@@ -771,6 +776,10 @@ class SolverBuilder:
         if obj_terms:
             model.minimize(sum(obj_terms))
 
+        # Expose per-op durations (setup+run / in-flight remainder) so pin tooling
+        # can compute a pinned op's occupied interval (R-DP8 conflict detection)
+        # without re-parsing entity duration fields. Pure data; no model change.
+        var_map.op_durations = dict(op_durations)
         return model, var_map
 
     # ------------------------------------------------------------------

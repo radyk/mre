@@ -64,7 +64,13 @@ CREATE TABLE IF NOT EXISTS schedules (
     is_scenario        INTEGER NOT NULL DEFAULT 0,
     parent_schedule_id TEXT,
     document_path      TEXT NOT NULL,
-    created_at         TEXT NOT NULL
+    created_at         TEXT NOT NULL,
+    -- The CUMULATIVE standing pins of this version's lineage (R-DP8): every
+    -- accepted (op, resource, start) commitment from the root down to and
+    -- including this version. A JSON list; empty on a root solve. Gathered and
+    -- compiled into every subsequent sandbox/accept/scenario solve so an accepted
+    -- placement is never silently reverted.
+    pins_json          TEXT
 );
 -- Solution pools live in their OWN tables, never in schedules: pool members
 -- can therefore never appear in any schedule listing (the scenario
@@ -144,6 +150,16 @@ class Registry:
         self._db_path = self.data_root / "registry.sqlite"
         with self._conn() as con:
             con.executescript(_SCHEMA)
+            self._migrate(con)
+
+    @staticmethod
+    def _migrate(con: sqlite3.Connection) -> None:
+        """Additive column migrations for pre-existing databases (CREATE TABLE IF
+        NOT EXISTS never adds a column to an already-created table). Each ADD is
+        guarded so re-running is a no-op."""
+        cols = {r["name"] for r in con.execute("PRAGMA table_info(schedules)")}
+        if "pins_json" not in cols:
+            con.execute("ALTER TABLE schedules ADD COLUMN pins_json TEXT")
 
     def _conn(self) -> sqlite3.Connection:
         # One connection per operation: safe across FastAPI background tasks.
@@ -254,16 +270,35 @@ class Registry:
         submission_id: Optional[str] = None,
         is_scenario: bool = False,
         parent_schedule_id: Optional[str] = None,
+        pins: Optional[list[dict]] = None,
     ) -> None:
         with self._conn() as con:
             con.execute(
                 "INSERT INTO schedules (id, run_id, submission_id, snapshot_id, status, "
-                "contract_version, is_scenario, parent_schedule_id, document_path, created_at) "
-                "VALUES (?,?,?,?,?,?,?,?,?,?)",
+                "contract_version, is_scenario, parent_schedule_id, document_path, "
+                "created_at, pins_json) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                 (schedule_id, run_id, submission_id, snapshot_id, status,
                  contract_version, int(is_scenario), parent_schedule_id,
-                 str(document_path), _now()),
+                 str(document_path), _now(), json.dumps(pins or [])),
             )
+
+    def schedule_pins(self, schedule_id: str) -> list[dict]:
+        """The cumulative STANDING pins of a version's lineage (R-DP8): every
+        accepted (op, resource, start) commitment from the root to this version.
+        Empty for a root solve or an unknown id. Compiled into every subsequent
+        sandbox/accept/scenario solve so no committed placement is silently
+        reverted."""
+        with self._conn() as con:
+            row = con.execute(
+                "SELECT pins_json FROM schedules WHERE id=?", (schedule_id,)
+            ).fetchone()
+        if not row or not row["pins_json"]:
+            return []
+        try:
+            return json.loads(row["pins_json"]) or []
+        except (ValueError, TypeError):
+            return []
 
     def get_schedule(self, schedule_id: str) -> Optional[dict]:
         with self._conn() as con:

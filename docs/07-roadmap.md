@@ -1,6 +1,30 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.17 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.18 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.18:** **Session 4.0e — accepted placements are standing commitments (R-DP8)**
+2026-07-17 (docs/04 amendment). Live: an accepted, then PUBLISHED, edit was
+silently reverted by the next edit's re-solve — the delta card honestly listed the
+reverted op as a "consequence," but a placement the planner committed should not be
+movable at all. Cause: the re-solve pinned only the ONE op being dropped; every
+prior accepted pin was free again, so the optimizer undid a cost-neutral move to
+recover a few dollars. **Ruling (R-DP8):** an accepted pin persists in the lineage
+as a STANDING constraint — compiled into EVERY subsequent sandbox/accept/scenario
+solve until an explicit (future) `unpin`. **CU1 persistence:** cumulative lineage
+pins live on the version (`schedules.pins_json` + a migration); a single seam
+`src/mre/modules/standing_pins.py` applies the primary drop AND the standing pins
+through the SAME `apply_pin` (both axes mandatory), and NAMES a blocking commitment
+on a provable overlap (`VariableMap.op_durations`) rather than quietly sacrificing
+the older pin. **CU2 visibility:** contract **1.4 → 1.5** (`AssignmentBlock
+.standing_pin`) → a subtle persistent standing-pin marker on committed bars, and a
+standing-pinned op is STRUCTURALLY excluded from every moved-set (never a
+consequence). **CU3:** `tests/test_standing_pins.py` — the two-edit chain (A
+accept+publish, B accept → A unchanged, in no moved-set) + conflict-refusal +
+fast units/migration; `gesture.spec.mjs` drives it visually. **Non-slow Python 1118
+passed** (+15) + slow `standing_pins`/`planner_edit`/`sandbox`/`scenario` green,
+goldens byte-identical; **cockpit JS 49/49**. Release (`unpin`) named as a
+carry-forward. Queue before Phase-4 design unchanged: Daryn's grand feel pass +
+export.
 
 **v2.17:** **Session 4.0d — MAX_PATH survives the bound (the 4.0c fix was validated
 in a short prefix)** 2026-07-16 (docs/04 amendment). Live: post-4.0c, **every**
@@ -263,7 +287,7 @@ The ticketing client. Entry conditions (the no-half-baked rule): Phase 1 exit pa
 2. Interruptibility: three classes (docs/05)
 3. ChangeoverRule: attribute-keyed (docs/05)
 4. Min/max lags: OperationSpec vs precedence edge (docs/05; lean = edge)
-5. Drop-pin default: machine / start / both — **RESOLVED 2026-07-11 → R-DP1–R-DP7** (both-as-displayed; commit-or-return; semantic snap; gesture=command/language=wish; HOLD/DEFER; legality epistemics; change legibility). See docs/04 2026-07-11 amendments.
+5. Drop-pin default: machine / start / both — **RESOLVED 2026-07-11 → R-DP1–R-DP7** (both-as-displayed; commit-or-return; semantic snap; gesture=command/language=wish; HOLD/DEFER; legality epistemics; change legibility), extended **2026-07-17 → R-DP8** (an accepted placement is a STANDING commitment, compiled into every subsequent solve of its lineage until an explicit `unpin`). See docs/04 2026-07-11 + 2026-07-17 amendments. **Carry-forward:** the `unpin` release verb (named, not built).
 
 ## 7. Standing risks
 

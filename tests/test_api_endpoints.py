@@ -177,7 +177,7 @@ class TestScheduleDocument:
     def test_document_validates_against_contract(self, api):
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
         parsed = ScheduleDocument.model_validate(doc)
-        assert parsed.contract_version == "1.4"
+        assert parsed.contract_version == "1.5"
         assert parsed.schedule_id == api.schedule_id
         assert parsed.run_id == api.run["id"]
         assert parsed.solver.deterministic is True
@@ -227,7 +227,7 @@ class TestScheduleMeta:
     def test_meta_joins_the_certificate_grade(self, api):
         meta = _data(api.client.get(f"/schedules/{api.schedule_id}/meta"))
         assert meta["id"] == api.schedule_id
-        assert meta["contract_version"] == "1.4"
+        assert meta["contract_version"] == "1.5"
         assert meta["grade"] == "ACCEPTED"
         assert meta["costing_grade"] == "C1"
         assert meta["submission_id"] == api.submission["submission_id"]
@@ -252,7 +252,7 @@ class TestScheduleInteraction:
         data = _data(api.client.get(
             f"/schedules/{api.schedule_id}/interaction"))
         assert data["schedule_id"] == api.schedule_id
-        assert data["contract_version"] == "1.4"
+        assert data["contract_version"] == "1.5"
         block = InteractionBlock.model_validate(data["interaction"])
         # one entry per scheduled op, each with its eligible set + the graph
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))

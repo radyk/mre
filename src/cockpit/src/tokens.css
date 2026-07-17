@@ -201,4 +201,12 @@
   /* (d) GHOSTS — fade in/out ONLY; price/verdict labels fade WITH their bars */
   --motion-ghost-fade-dur: 350ms;
   --motion-ghost-fade-ease: ease-out;
+
+  /* STANDING PIN (R-DP8) — a persistent, subtle marker on a bar carrying an
+   * accepted, still-held commitment. Deliberately quieter than the transient
+   * pin-lock (which animates then settles): a thin amber left-edge + a faint
+   * ring, always on, so a committed placement is legible at a glance without
+   * shouting. Amber (not the pin-lock green) says "held", not "just placed". */
+  --standing-pin-edge: rgba(214, 158, 46, 0.95);
+  --standing-pin-ring: rgba(214, 158, 46, 0.34);
 }

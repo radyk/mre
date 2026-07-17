@@ -110,6 +110,16 @@
   100% { box-shadow: 0 0 0 2px var(--motion-pinlock-ring), var(--bar-sheen); }
 }
 
+/* STANDING PIN (R-DP8 CU2) — a bar carrying an accepted, still-held commitment.
+ * A persistent, subtle marker (no animation): a thin amber left edge + faint
+ * ring, so a committed placement reads at a glance and is never mistaken for the
+ * transient just-accepted pin-lock (green, animated, fades). Combines cleanly
+ * with pin-lock on the freshly-dropped bar (both can be present after accept). */
+.vis-item.bar.standing-pin {
+  border-left: 3px solid var(--standing-pin-edge);
+  box-shadow: 0 0 0 1px var(--standing-pin-ring), var(--bar-sheen);
+}
+
 /* Reduced motion — instant transitions, semantics intact. Rejection stays
  * distinct via the reason text channel (the shake is dropped, not the meaning);
  * reflow/pin-lock jump to their end-states; ghosts appear without a fade. */

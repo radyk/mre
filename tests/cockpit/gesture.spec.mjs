@@ -491,6 +491,41 @@ test("edit→accept→publish→edit: editing continues on the published version
   await shot(page, "g13_publish_then_edit");
 });
 
+// R-DP8 (Session 4.0e) — an accepted placement is a STANDING commitment. The
+// live specimen: a published edit was reverted by the NEXT edit's re-solve, and
+// the delta card honestly listed the reverted op as a "consequence." After
+// edit A is accepted + published, editing B must leave A's placement UNCHANGED
+// and A's bar must wear the standing-pin marker (never a moved consequence). The
+// fixture server composes every ancestor pin into GET /schedule + flags them
+// standing_pin, exactly as the real assembler does from the lineage's pins.
+test("an accepted+published edit is held through the next edit — standing commitment (R-DP8, CU2/CU3)", async ({ page }) => {
+  await boot(page);
+  expect(priced.length, "the fixture carries ≥2 priced ghosts").toBeGreaterThanOrEqual(2);
+
+  // edit A → accept → publish
+  const cA = await editAccept(page, priced[0]);
+  const opA = cA.op;
+  expect(cA.acc.state.phase).toBe("accepted");
+  await page.evaluate(() => window.__cockpit.drag.publish());
+
+  // edit B (a DIFFERENT op) → accept
+  const cB = await editAccept(page, priced[1]);
+  expect(cB.op, "edit B is a different op").not.toBe(opA);
+  expect(cB.acc.state.phase, "the second edit reaches accept").toBe("accepted");
+
+  // A's placement is UNCHANGED after B's rebind — the commitment was not reverted.
+  const aPlace = await page.evaluate((o) => window.__cockpit.board.placementOf(o), opA);
+  expect(aPlace.group, "R-DP8: A's committed machine is held through edit B")
+    .toBe(cA.place.resource_id);
+  expect(Math.abs(Date.parse(aPlace.start) - Date.parse(cA.place.start)))
+    .toBeLessThanOrEqual(60000);
+
+  // A's bar wears the persistent standing-pin marker (CU2).
+  const aMotion = await page.evaluate((o) => window.__cockpit.board.motionOf(o), opA);
+  expect(aMotion, "A's bar carries the standing-pin marker").toContain("standing-pin");
+  await shot(page, "g15_standing_commitment");
+});
+
 test("a deep link to a superseded version loads read-only with a jump to current (CU3)", async ({ page }) => {
   // set up a superseded base: accept then publish supersedes it.
   await boot(page);

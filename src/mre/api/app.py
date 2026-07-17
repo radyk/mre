@@ -526,6 +526,8 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
             pin_start_iso=req.pin_start_iso,
             budget_s=req.budget_s if req.budget_s is not None else SANDBOX_BUDGET_S,
             deterministic=req.deterministic,
+            # R-DP8: hold the lineage's accepted commitments during the re-solve.
+            standing_pins=registry.schedule_pins(schedule_id),
         )
         return _ok(result.summary())
 
@@ -903,19 +905,25 @@ def _execute_whatif(registry: Registry, run: dict, base_schedule: dict,
         longpath.copytree(base_out / "snapshots" / base_snap,
                           out_dir / "snapshots" / base_snap)
         base_ctx = derive_base_context(base_out / "runs")
+        # R-DP8: a scenario of a lineage that carries accepted commitments must
+        # respect them — the standing pins are held during the scenario solve too.
+        base_pins = registry.schedule_pins(base_schedule["id"])
         runner = ScenarioRunner(
             SnapshotStore(out_dir / "snapshots"),
             out_dir / "scenario_runs",
             time_limit_seconds=time_limit or base_ctx.get("time_limit", 30.0),
             base_context=base_ctx,
+            standing_pins=base_pins,
         )
         scenario = Scenario(base_snapshot_id=base_snap, modifications=modifications)
         result = runner.run(scenario)
 
+        from mre.modules import standing_pins as sp
         document = build_document_from_run(
             out_dir, result.scenario_snapshot_id, run_id,
             runs_subdir="scenario_runs",
             parent_schedule_id=base_schedule["id"],
+            standing_pin_ops=sp.standing_pin_ops(base_pins),
         )
         doc_path = _persist_document(document, out_dir)
         (out_dir / "diff.json").write_text(
@@ -950,6 +958,7 @@ def _execute_accept(registry: Registry, base_schedule: dict, req: "AcceptRequest
     from mre.modules.planner_edit import apply_planner_edit
     from mre.modules.scenario import derive_base_context
     from mre.modules.schedule_assembler import build_document_from_run
+    from mre.modules import standing_pins as sp
 
     base_run = registry.get_run(base_schedule["run_id"])
     base_out = Path(base_run["out_dir"])
@@ -984,15 +993,22 @@ def _execute_accept(registry: Registry, base_schedule: dict, req: "AcceptRequest
                           out_dir / "snapshots" / base_snap)
         base_ctx = derive_base_context(Path(root_run["out_dir"]) / "runs")
         base_ctx["base_runs_dir"] = str(base_out / "runs")
+        # R-DP8: the lineage's standing commitments are held during the accept
+        # re-solve; the NEW version's cumulative pins = the base's, with this
+        # drop's op re-committed (or appended if fresh).
+        base_pins = registry.schedule_pins(base_schedule["id"])
         result = apply_planner_edit(
             out_dir=out_dir, base_snapshot_id=base_snap,
             pin_op_id=req.pin_op_id, pin_resource_id=req.pin_resource_id,
             pin_start_iso=req.pin_start_iso, authority=req.authority,
             base_context=base_ctx, budget_s=budget_s,
+            standing_pins=base_pins,
         )
+        new_pins = sp.compose_lineage_pins(base_pins, result.pin)
         document = build_document_from_run(
             out_dir, result.child_snapshot_id, run_id,
             runs_subdir="runs", parent_schedule_id=base_schedule["id"],
+            standing_pin_ops=sp.standing_pin_ops(new_pins),
         )
         doc_path = _persist_document(document, out_dir)
         registry.register_schedule(
@@ -1001,6 +1017,7 @@ def _execute_accept(registry: Registry, base_schedule: dict, req: "AcceptRequest
             contract_version=CONTRACT_VERSION, document_path=doc_path,
             submission_id=base_schedule["submission_id"],
             is_scenario=False, parent_schedule_id=base_schedule["id"],
+            pins=new_pins,
         )
         registry.finish_run(run_id, "succeeded", result={
             "schedule_id": document.schedule_id,

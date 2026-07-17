@@ -63,6 +63,13 @@ Version history:
   ("no_calendar_window" / "wip_fixed"); empty on documents with no such prune.
   MINOR: both are additive with empty defaults; a 1.3 consumer ignores
   ``dim_reasons`` and reads a strictly-narrower (never-wider) eligible set.
+- 1.5 (2026-07-17, Session 4.0e): additive — ``AssignmentBlock.standing_pin``.
+  True on an operation carrying a STANDING commitment (an accepted, still-held
+  pin) on this version's lineage (docs/04 R-DP8). The cockpit renders a subtle
+  standing-pin marker on those bars and, structurally, never lists a
+  standing-pinned op as a moved consequence (a committed placement cannot be
+  moved). Default False (a root solve has no standing pins); a 1.4 consumer
+  ignores it. MINOR: additive with an empty default.
 """
 from __future__ import annotations
 
@@ -73,7 +80,7 @@ from pydantic import BaseModel, model_validator
 
 from mre.contracts.vocabularies import ScheduleStatus
 
-CONTRACT_VERSION = "1.4"
+CONTRACT_VERSION = "1.5"
 
 # Exact decomposition tolerance: cost components are currency values
 # accumulated in float; "exactly" means to the cent, matching the
@@ -173,6 +180,10 @@ class AssignmentBlock(BaseModel):
     phases: Phases = Phases()
     in_overtime_min: int = 0                   # overtime evidence (Decision)
     decision_ref: str = ""                     # reconstructed-alternatives Decision
+    standing_pin: bool = False                 # a still-held accepted commitment
+    #                                            on this lineage (R-DP8, 1.5): the
+    #                                            board marks it and never lists it
+    #                                            as a moved consequence
 
 
 class ServiceOutcomeBlock(BaseModel):

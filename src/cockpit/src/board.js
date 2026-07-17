@@ -73,10 +73,16 @@ export function createBoard(hostEl, initialDoc) {
       .reduce((m, v) => (m == null || v > m ? v : m), null);
     const band = latenessBand(lateness);
     const label = wos.join(", ") || nameOf(a.resource_id);
+    // R-DP8 CU2: a bar carrying a STANDING commitment (an accepted, still-held
+    // pin) wears a subtle standing-pin marker — distinct from the transient
+    // green pin-lock of a just-accepted drop (that fades; this persists).
+    const pinCls = a.standing_pin ? " standing-pin" : "";
     items.add({
       id: a.assignment_id, group: a.resource_id, start: s, end: e,
-      type: "range", className: `bar late-${band}`, editable: false,
-      content: label, title: `${label} · ${nameOf(a.resource_id)} · op ${a.op_seq}`,
+      type: "range", className: `bar late-${band}${pinCls}`, editable: false,
+      content: label,
+      title: `${label} · ${nameOf(a.resource_id)} · op ${a.op_seq}`
+        + (a.standing_pin ? " · committed (accepted edit)" : ""),
     });
     opToItem.set(a.operation_ref, a.assignment_id);
     for (const w of wos) {
@@ -337,12 +343,15 @@ export function createBoard(hostEl, initialDoc) {
       const e = ms(a.chunks[a.chunks.length - 1].end);
       const { band, label } = barVisual(a);
       let cn = `bar late-${band}`;
+      if (a.standing_pin) cn += " standing-pin";   // R-DP8 CU2: persistent marker
       if (pinnedOp && a.operation_ref === pinnedOp) cn += " pin-lock";
       else if (movedOps && movedOps.has(a.operation_ref)) { cn += " reflow-moved"; highlightIds.push(a.assignment_id); }
       items.update({
         id: a.assignment_id, group: a.resource_id, start: s, end: e,
         type: "range", className: cn, editable: false,
-        content: label, title: `${label} · ${nameOf(a.resource_id)} · op ${a.op_seq}`,
+        content: label,
+        title: `${label} · ${nameOf(a.resource_id)} · op ${a.op_seq}`
+          + (a.standing_pin ? " · committed (accepted edit)" : ""),
       });
       opToItem.set(a.operation_ref, a.assignment_id);
       itemToOp.set(a.assignment_id, a.operation_ref);

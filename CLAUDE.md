@@ -94,6 +94,59 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4.0e — accepted
+placements are standing commitments (R-DP8) 2026-07-17.** Live on the gesture
+surface: an accepted, then PUBLISHED, edit was silently reverted by the NEXT edit's
+re-solve — the delta card was honest ("ORD-000003 RES002→RES001 −1440min" listed as
+a *consequence*), but a placement the planner already committed must not be movable
+at all. **Cause:** the accept/sandbox re-solve pinned only the ONE op being dropped;
+every prior accepted pin was free again, so the optimizer (correctly, for its
+objective) undid a cost-neutral cross-machine move to recover a few dollars — a
+commitment that survives only until the next solve is no commitment. **Ruling
+(R-DP8, docs/04 verbatim):** an accepted edit's pin persists in the schedule lineage
+as a STANDING constraint — compiled into EVERY subsequent sandbox, accept, and
+scenario solve of that lineage — until explicitly released; an accepted placement is
+a commitment WITH AUTHORITY (the `planner_edit` Decision), not a one-solve
+preference. Release (`unpin`) is a NAMED carry-forward, not built. **CU1 —
+persistence:** cumulative lineage pins live on the version
+(`schedules.pins_json` + a `Registry._migrate` that ALTERs the column into pre-4.0e
+DBs so old rows read as no-pins); an accept composes the new set
+(`standing_pins.compose_lineage_pins`: the drop's op re-committed in place / a fresh
+op appended, order-stable, never duplicated). The SINGLE seam is new
+`src/mre/modules/standing_pins.py` — the primary drop AND the standing pins bind
+through the SAME `apply_pin` (both axes mandatory, `PinUnsatisfiable` never
+skipped-and-vouched — the 4.0-hotfix lesson; the 4.0b "give the layers ONE function
+to call" discipline); `sandbox.py`/`planner_edit.py`/`scenario.py` all delegate
+(`Registry.schedule_pins` gathers them at the API). **Conflict handled honestly:** a
+drop INFEASIBLE against the standing pins returns a verdict that NAMES the blocking
+commitment (`detect_conflict`, a conflict ONLY on a provable same-resource interval
+overlap via the new `VariableMap.op_durations`, so precedence/calendar infeasibility
+is never mis-blamed) — never a quiet sacrifice of the older pin. In a scenario the
+pins are best-effort (a what-if may re-plan an op away; the applied count lands in
+evidence as `standing_pins_applied`, never silent). **CU2 — visibility:** schedule
+contract **1.4 → 1.5** (additive `AssignmentBlock.standing_pin`) — a subtle
+PERSISTENT standing-pin marker (thin amber edge + faint ring, tokenized
+`--standing-pin-*`, distinct from the transient green pin-lock that fades), and a
+standing-pinned op is STRUCTURALLY excluded from every moved-set (`_moved_set`
+`exclude_ops`, the freshly-dropped op exempt; the cockpit ghost path
+`movedSetFromDoc` too) — removed at the source, not filtered. **CU3 — the missing
+regression:** `tests/test_standing_pins.py` — fast units (shared seam + registry
+round-trip + the pre-4.0e migration) + the two-edit chain END TO END (slow,
+`multi_route_distinct`): edit A a cost-neutral cross-machine move accepted +
+PUBLISHED, edit B accepted → A's placement UNCHANGED in B's version, A stays
+`standing_pin=True`, A's op in NO moved-set of B's Decision; plus a drop onto a
+commitment's slot refused (sandbox infeasible, accept 409). The cockpit harness
+drives the same flow visually (`gesture.spec.mjs` — the fixture server composes
+every ancestor pin into `GET /schedule` + flags them, as the real assembler does).
+**Non-slow Python 1118 passed** (+15, 0 failed) + slow `standing_pins` **2/2**,
+`planner_edit`/`sandbox`/`scenario` **55/55**, `forced_alternatives`/`eligibility`/
+`api_endpoints` green, solver goldens byte-identical; **cockpit JS 49/49** (+1). See
+the docs/04 2026-07-17 Session 4.0e amendment and docs/07 v2.18. Lesson: a hard
+constraint that lives for exactly one solve is a preference; a commitment must be
+compiled into every solve of its lineage, held in the registry, and structurally
+un-moveable — the optimizer will otherwise, correctly and quietly, undo the very
+decisions the planner made by hand.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4.0d — MAX_PATH survives
 the bound (the 4.0c fix was validated in a short prefix) 2026-07-16.** Follow-up to
 4.0c: on Daryn's real stack **every** accept still failed `FileNotFoundError

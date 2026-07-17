@@ -425,11 +425,14 @@ export function createGestureController(board, geometry, opts) {
       const newRid = a.resource_id, newStart = a.chunks?.[0]?.start;
       const old = asgByOp.get(op);
       if (!old || !newStart) continue;
+      const isPin = op === pinnedOp;
+      // R-DP8 CU2: a standing-pinned op is a held commitment — never a moved
+      // consequence. Structurally excluded here (unless it IS the dropped op).
+      if (old.standing_pin && !isPin) continue;
       const oldRid = old.resource_id, oldStart = old.chunks?.[0]?.start;
       if (!oldStart) continue;
       const delta = Math.round((ms(newStart) - ms(oldStart)) / MIN);
       const changed = newRid !== oldRid || Math.abs(delta) >= 1;
-      const isPin = op === pinnedOp;
       if (!changed && !isPin) continue;
       moves.push({
         operation_ref: op, from_resource: oldRid, to_resource: newRid,
