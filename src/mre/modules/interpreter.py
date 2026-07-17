@@ -184,11 +184,16 @@ class Interpreter:
         if _client is not None:
             self.available = True
         elif self._api_key:
+            # Construction is fail-closed: no package OR any other client-build
+            # failure leaves the interpreter simply UNAVAILABLE (→ the honest
+            # refusal path), never a raise. interpret() is likewise fail-closed
+            # (returns None on any exception), so the whole interpreter surface is
+            # incapable of surfacing as a 5xx (4A.1b).
             try:
                 import anthropic  # type: ignore
                 self._client = anthropic.Anthropic(api_key=self._api_key)
                 self.available = True
-            except ImportError:
+            except Exception:  # noqa: BLE001 — construction must never raise
                 self.available = False
 
     def _prompt(self, question: str) -> str:

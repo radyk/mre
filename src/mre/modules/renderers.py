@@ -591,44 +591,64 @@ class LLMRenderer:
         elif not self._api_key:
             self._fallback_reason = "ANTHROPIC_API_KEY not set"
         else:
+            # Construction is fail-closed: ImportError (no package) OR any other
+            # exception the SDK might raise while building a client (a malformed
+            # proxy env, an eager-validation change in a future SDK) degrades to
+            # the template, never propagates. (4A.1b: the real-key path was never
+            # exercised, so an `except ImportError` was mistaken for a full seal.)
             try:
                 import anthropic  # type: ignore
                 self._client = anthropic.Anthropic(api_key=self._api_key)
                 self._available = True
             except ImportError:
                 self._fallback_reason = "anthropic package not installed"
+            except Exception as exc:  # noqa: BLE001 — construction must never raise
+                self._fallback_reason = f"client construction failed: {type(exc).__name__}"
+
+    def _template_fallback(self, bundle: ExplanationBundle, reason: str,
+                           register: Optional[str] = None) -> str:
+        """The single degradation target: render the deterministic template body
+        and mark WHY the LLM path was not used. Every fail-closed exit routes
+        here so an operator always sees an honest ``[rendered by: template …]``."""
+        body = TemplateRenderer()._render_body(bundle)
+        reg = register or _register_for(bundle)
+        return f"{body}\n[rendered by: template — {reason} | register: {reg}]"
 
     def render(self, bundle: ExplanationBundle) -> str:
         if bundle.subject_type in ("remediation", "triage"):
             return self._render_register(bundle)
         if not self._available:
-            body = TemplateRenderer()._render_body(bundle)
-            return (
-                body
-                + f"\n[rendered by: template — --llm requested but {self._fallback_reason}"
-                + " | register: testimony]"
-            )
+            return self._template_fallback(
+                bundle, f"--llm requested but {self._fallback_reason}", "testimony")
 
-        prompt, known_ts, known_time, known_machines = self._build_prompt_material(bundle)
-        text = self._call_llm(prompt)
-        issues = self._validate_testimony(text, known_ts, known_time, known_machines)
-        if issues:
-            regen_prompt, *_ = self._build_prompt_material(bundle, regen_note=issues)
-            text = self._call_llm(regen_prompt)
-            # Validate against the ORIGINAL known sets — not the regen prompt, which
-            # contains the rejected output in its header and must not whitelist itself.
-            issues2 = self._validate_testimony(text, known_ts, known_time, known_machines)
-            if issues2:
-                body = TemplateRenderer()._render_body(bundle)
-                warn = "[LLM validation failed: {}; fell back to template]".format(
-                    "; ".join(issues2[:2])
-                )
-                return (
-                    body + "\n" + warn
-                    + "\n[rendered by: template (LLM validated) | register: testimony]"
-                )
-
-        return text + f"\n[rendered by: LLM ({self._model}) | register: testimony]"
+        # The LLM-touching body is wrapped so that ANY runtime failure — network,
+        # auth (a bad/expired key), rate-limit, a malformed response, a parsing
+        # error — degrades to the deterministic template. This method NEVER raises
+        # (4A.1b: fail-closed armor, made real for the unmocked API path).
+        try:
+            prompt, known_ts, known_time, known_machines = self._build_prompt_material(bundle)
+            text = self._call_llm(prompt)
+            issues = self._validate_testimony(text, known_ts, known_time, known_machines)
+            if issues:
+                regen_prompt, *_ = self._build_prompt_material(bundle, regen_note=issues)
+                text = self._call_llm(regen_prompt)
+                # Validate against the ORIGINAL known sets — not the regen prompt,
+                # which contains the rejected output in its header and must not
+                # whitelist itself.
+                issues2 = self._validate_testimony(text, known_ts, known_time, known_machines)
+                if issues2:
+                    body = TemplateRenderer()._render_body(bundle)
+                    warn = "[LLM validation failed: {}; fell back to template]".format(
+                        "; ".join(issues2[:2])
+                    )
+                    return (
+                        body + "\n" + warn
+                        + "\n[rendered by: template (LLM validated) | register: testimony]"
+                    )
+            return text + f"\n[rendered by: LLM ({self._model}) | register: testimony]"
+        except Exception as exc:  # noqa: BLE001 — render must never raise
+            return self._template_fallback(
+                bundle, f"LLM error: {type(exc).__name__}", "testimony")
 
     def _render_register(self, bundle: ExplanationBundle) -> str:
         """Remediation / judgment-triage register (handoff §3): the deterministic
@@ -655,23 +675,30 @@ class LLMRenderer:
             return (body + f"\n[rendered by: template — {self._fallback_reason} "
                     f"| register: {register}]")
 
-        allowed = allowed_numbers(body)
-        prompt = (
-            f"{intro}\n\n"
-            "RULES (violating any causes fallback to the source text):\n"
-            "1. Do NOT introduce any number, percentage, or § reference not "
-            "present below.\n"
-            "2. Do NOT invent causes, thresholds, or fixes — only what appears "
-            "below.\n"
-            "3. Keep every rule_id, catalog note version, and § citation.\n\n"
-            f"SOURCE (authored):\n{body}\n"
-        )
-        text = self._call_llm(prompt)
-        if unverifiable_numbers(text, allowed):
-            return (body + "\n[LLM validation failed: invented a value; fell "
-                    f"back to authored text]\n[rendered by: template (LLM "
-                    f"validated) | register: {register}]")
-        return text + f"\n[rendered by: LLM ({self._model}) | register: {register}]"
+        # Same fail-closed seal as render(): the authored body is ground truth, so
+        # any LLM failure degrades to it — never a 5xx.
+        try:
+            allowed = allowed_numbers(body)
+            prompt = (
+                f"{intro}\n\n"
+                "RULES (violating any causes fallback to the source text):\n"
+                "1. Do NOT introduce any number, percentage, or § reference not "
+                "present below.\n"
+                "2. Do NOT invent causes, thresholds, or fixes — only what appears "
+                "below.\n"
+                "3. Keep every rule_id, catalog note version, and § citation.\n\n"
+                f"SOURCE (authored):\n{body}\n"
+            )
+            text = self._call_llm(prompt)
+            if unverifiable_numbers(text, allowed):
+                return (body + "\n[LLM validation failed: invented a value; fell "
+                        f"back to authored text]\n[rendered by: template (LLM "
+                        f"validated) | register: {register}]")
+            return text + f"\n[rendered by: LLM ({self._model}) | register: {register}]"
+        except Exception as exc:  # noqa: BLE001 — register render must never raise
+            return (body + f"\n[LLM error: {type(exc).__name__}; fell back to "
+                    f"authored text]\n[rendered by: template (LLM error) "
+                    f"| register: {register}]")
 
     def render_judgment(self, question: str, history: Any, fallback_bundle: ExplanationBundle) -> str:
         """Conversational turn in dialogue mode — reasons over prior evidence bundles."""
@@ -681,8 +708,13 @@ class LLMRenderer:
                 body
                 + f"\n[rendered by: template — {self._fallback_reason} | register: testimony]"
             )
-        text = self._llm_judgment(question, history)
-        return text + f"\n[rendered by: LLM ({self._model}) | register: judgment]"
+        try:
+            text = self._llm_judgment(question, history)
+            return text + f"\n[rendered by: LLM ({self._model}) | register: judgment]"
+        except Exception as exc:  # noqa: BLE001 — judgment render must never raise
+            body = TemplateRenderer()._render_body(fallback_bundle)
+            return (body + f"\n[LLM error: {type(exc).__name__}; fell back to "
+                    "template]\n[rendered by: template (LLM error) | register: testimony]")
 
     def _build_prompt_material(
         self,

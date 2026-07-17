@@ -1,6 +1,34 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.19 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.20 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.20:** **AI-track Session 4A.1b — the ask endpoint 500'd with a real API key
+(mocked fail-closed ≠ real-path fail-closed)** 2026-07-17 (docs/04 amendment).
+With `ANTHROPIC_API_KEY` set and the DEV build's `llm: true`, a **taxonomy-shaped**
+question that routes DETERMINISTICALLY ("why is ORD-000004 on F001-RES002?")
+returned **HTTP 500** on `/ask`. **Diagnosis:** the 4A.1 fail-closed tests all
+injected a MOCK client, so the real `_call_llm` call site was never run;
+`anthropic.Anthropic(bad_key)` does not raise (a bad key surfaces only on the first
+CALL), and `render()` had **no try/except** around `self._client.messages.create(...)`
+— its `anthropic.AuthenticationError` (a non-`ImportError`) propagated out of the
+synchronous handler → 500. The layer is response/request execution in the RENDERER;
+a deterministic route still renders through the LLM. **Fix (defense in depth):**
+`LLMRenderer.render`/`_render_register`/`render_judgment` each wrap the whole
+LLM-touching body in one `try/except` → deterministic TEMPLATE via a single
+`_template_fallback` (never raises); `LLMRenderer`/`Interpreter` construction
+broadened `except ImportError` → `except Exception`; the API `/ask` path adds the
+outer belt — deterministic re-route on a routing raise + the single
+`_render_fail_closed` render seam, both logging `EVENT ask.llm_degraded`. **Tests
+(the missing real-path):** `test_ask_chain_api.py` `TestAskFailClosedWithRealKey`
+drives the endpoint with a genuine (invalid) key + `llm:true`, injecting an auth
+failure / a garbage response / a raised exception — each **200 + `[rendered by:
+template]`**; plus the CU3 ordering test (both interpreter and renderer forced to
+raise → the taxonomy question still routes `late-orders`/`deterministic` and
+renders). Fast unit coverage in `test_render_fail_closed.py` (8) on the unmocked
+renderer. **Non-slow Python 1126 passed** (+8) + slow ask-chain 10/10; frontend
+untouched. Lesson: a fail-closed guarantee proved only against a MOCK is unproven —
+exercise real construction and the real call site, and seal the RENDER path, not
+just the router.
 
 **v2.19:** **Session 4.1 — light theme as the shipped default; theme as a
 first-class token dimension** 2026-07-17 (docs/04 amendment). Product decision

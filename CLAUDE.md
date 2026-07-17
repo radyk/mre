@@ -94,6 +94,44 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.1b — the ask
+endpoint 500'd with a real API key (mocked fail-closed ≠ real-path fail-closed)
+2026-07-17.** Live: with `ANTHROPIC_API_KEY` set (+ the DEV build's `llm: true`),
+the **taxonomy-shaped** question "why is ORD-000004 on F001-RES002?" — which routes
+DETERMINISTICALLY — returned **HTTP 500** on `/ask`. The 4A.1 fail-closed tests all
+injected a MOCK client, so the real path was never run (the named CI caveat) —
+exactly what lived in the gap. **CU1 diagnosis (reproduced, layer named):**
+`anthropic.Anthropic(bad_key)` does NOT raise (a bad key surfaces only on the first
+CALL); the call `self._client.messages.create(...)` in `LLMRenderer._call_llm`
+raises `anthropic.AuthenticationError` (a non-`ImportError`) and **`render()` had no
+try/except around it**, so it propagated out of the synchronous handler → 500. The
+layer is **response/request execution in the RENDERER**, not construction and not
+the interpreter (whose `interpret()` already returns `None` on any exception); and a
+deterministic route still renders THROUGH the LLM (testimony is prettified), so the
+ordering guarantee must cover RENDER, not just classify-vs-interpret. **CU2 sealed
+structurally (defense in depth):** `LLMRenderer.render`/`_render_register`/
+`render_judgment` each wrap the whole LLM-touching body in one `try/except` →
+deterministic TEMPLATE via a single `_template_fallback` (the renderer now NEVER
+raises); `LLMRenderer`/`Interpreter` construction broadened `except ImportError` →
+`except Exception`; the API `/ask` path adds the outer belt — `_answer_question`
+re-routes DETERMINISTICALLY on a routing raise (interpreter off, ledger not double-
+written) and renders through the single `_render_fail_closed` seam, both logging
+`EVENT ask.llm_degraded`. A 5xx from the AI stack is no longer reachable. **CU3 the
+ordering guarantee as a test:** `test_ask_chain_api.py` `TestAskFailClosedWithRealKey`
+drives the endpoint with a genuine (invalid) key + `llm:true`, injecting an auth
+failure / a garbage response / a raised exception at the call seam — each **200 +
+`[rendered by: template]`**; the ordering test forces BOTH `Interpreter.interpret`
+and `LLMRenderer._call_llm` to raise and asserts the taxonomy question still reaches
+`route=late-orders`/`source=deterministic` and renders (template). Fast unmocked-
+renderer coverage in `tests/test_render_fail_closed.py` (8 — auth/garbage/raised/
+malformed-parse/register/construction-raise, real `anthropic.Anthropic` build).
+**Non-slow Python 1126 passed** (+8, 0 failed) + slow ask-chain **10/10**; frontend
+untouched (backend-only). See the docs/04 2026-07-17 Session 4A.1b amendment and
+docs/07 v2.20. Lesson: a fail-closed guarantee proved only against a MOCK is
+unproven — exercise real construction and the real call site (the one exception the
+mock never throws is the one that reaches the user as a 500), and seal the RENDER
+path, not just the router.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4.1 — light theme as the
 shipped default; theme as a first-class token dimension 2026-07-17.** Product
 decision (Daryn's charter, ratified in docs/04): this product's visual language is

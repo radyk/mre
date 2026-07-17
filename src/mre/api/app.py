@@ -1085,6 +1085,27 @@ def _ledger_path(registry: Registry) -> Path:
     return Path(registry.data_root) / "ledger" / "questions.jsonl"
 
 
+def _render_fail_closed(bundle: Any, use_llm: bool, log: Any) -> str:
+    """Render a bundle, guaranteeing a string and never a raise (4A.1b).
+
+    The LLMRenderer is itself internally sealed (never raises), so this is the
+    outer belt: on the DEV/LLM path a construction/network/auth/parsing/validation
+    failure degrades to the deterministic TEMPLATE render and logs one Event. A
+    taxonomy-shaped question therefore always renders, whatever the AI stack does.
+    """
+    from mre.modules.renderers import LLMRenderer, TemplateRenderer
+
+    if use_llm:
+        try:
+            return LLMRenderer().render(bundle)
+        except Exception as exc:  # noqa: BLE001 — render must never surface as 5xx
+            log.warning(
+                "EVENT ask.llm_degraded: LLM render raised %s: %s — "
+                "degraded to template render", type(exc).__name__, exc,
+            )
+    return TemplateRenderer().render(bundle)
+
+
 def _answer_question(out_dir: Path, snapshot_id: str, question: str,
                      use_llm: bool, runs_subdir: str = "runs",
                      context: Optional[dict] = None,
@@ -1101,7 +1122,6 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
     from mre.modules.explainer import Explainer
     from mre.modules.interpreter import Interpreter, run_ask
     from mre.modules.question_ledger import QuestionLedger
-    from mre.modules.renderers import LLMRenderer, TemplateRenderer
     from mre.modules.snapshot_store import SnapshotStore
 
     index_path = out_dir / "evidence_index.json"
@@ -1114,28 +1134,47 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
 
     store = SnapshotStore(out_dir / "snapshots")
     explainer = Explainer(store, index, snapshot_id=snapshot_id)
+    _log = logging.getLogger("mre.api")
+    ledger = QuestionLedger(ledger_path) if ledger_path is not None else None
 
+    # --- routing (deterministic; the LLM interpreter only on a miss) ----------
+    # The interpreter is available only when a key is set; without one it is
+    # simply off (deterministic-only, zero regression). It never authors an
+    # answer — it maps phrasing onto the closed route taxonomy, and it is
+    # fail-closed at the source (construction + interpret cannot raise). This
+    # guard is the belt to that suspenders: should anything in the routing
+    # surface still throw, the question re-routes DETERMINISTICALLY (interpreter
+    # off, ledger already handled) so the answer is never lost to a 5xx.
     if question.strip().lower() == "summarize":
         bundle = explainer.summarize_run()
         ask_meta = {"resolved_question": question, "route": "summarize",
                     "source": "deterministic", "confidence": None}
     else:
-        ledger = QuestionLedger(ledger_path) if ledger_path is not None else None
-        # The interpreter is available only when a key is set; without one it is
-        # simply off (deterministic-only, zero regression). It never authors an
-        # answer — it maps phrasing onto the closed route taxonomy.
-        interpreter = Interpreter() if os.environ.get("ANTHROPIC_API_KEY") else None
-        result = run_ask(explainer, question, context=context,
-                         interpreter=interpreter, ledger=ledger,
-                         schedule_id=schedule_id, session_id=session_id)
+        try:
+            interpreter = Interpreter() if os.environ.get("ANTHROPIC_API_KEY") else None
+            result = run_ask(explainer, question, context=context,
+                             interpreter=interpreter, ledger=ledger,
+                             schedule_id=schedule_id, session_id=session_id)
+        except Exception as exc:  # noqa: BLE001 — the ask surface must never 5xx
+            _log.warning(
+                "EVENT ask.llm_degraded: routing surface raised %s: %s — "
+                "re-routed deterministically (interpreter off)",
+                type(exc).__name__, exc,
+            )
+            result = run_ask(explainer, question, context=context,
+                             interpreter=None, ledger=None,
+                             schedule_id=schedule_id, session_id=session_id)
         bundle = result.bundle
         ask_meta = {"resolved_question": result.resolved_question,
                     "route": result.route, "source": result.source,
                     "confidence": result.confidence,
                     "resolution_note": result.resolution_note}
 
-    renderer = LLMRenderer() if use_llm else TemplateRenderer()
-    answer = renderer.render(bundle)
+    # --- render (the LLM renderer is the real hazard; it is internally sealed
+    #     and this boundary is the outer belt: ANY failure — construction,
+    #     network, auth, parsing, validation — degrades to the deterministic
+    #     TEMPLATE + a logged Event, never a 5xx) --------------------------------
+    answer = _render_fail_closed(bundle, use_llm, _log)
     return answer, {
         "subject_id": bundle.subject_id,
         "subject_type": bundle.subject_type,
