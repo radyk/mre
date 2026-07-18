@@ -49,6 +49,7 @@
   --bar-late: #b5271e;          /* late — DARK red, WHITE ink */
   --bar-late-ink: #ffffff;
   --bar-border: rgba(0, 0, 0, 0.16);
+  --bar-sep: rgba(20, 22, 28, 0.32);  /* CU7: adjacent-bar seam at coarse zoom */
 
   /* --- calendar lane shading: visible without murk -------------------- */
   --cal-closure: rgba(56, 62, 78, 0.13);   /* non-working: a cool grey veil */
@@ -152,7 +153,10 @@
   --marker-now: #2b2f38;
   --marker-now-label-bg: #2b2f38;
   --marker-now-label-ink: #ffffff;
-  --marker-due: var(--bar-late);
+  /* due = a NEUTRAL slate, rendered DASHED (Session 4.3 CU4) — decoupled from the
+   * late-alarm red so a MET due date reads as a reference line, not a problem;
+   * distinct from the solid dark now line and the solid blue release line. */
+  --marker-due: #5f6675;
   --marker-release: var(--bar-ontime);
   --marker-label-ink: #ffffff;
   --tick-shift: rgba(120, 124, 136, 0.35);        /* subtle shift boundary */

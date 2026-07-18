@@ -33,7 +33,8 @@ export function createMarkers(timeline) {
 
   function line(cls, ms, label) {
     const x = toX(ms);
-    if (x == null || x < -2 || x > width() + 2) return;
+    const w = width();
+    if (x == null || x < -2 || x > w + 2) return;
     const el = document.createElement("div");
     el.className = `marker ${cls}`;
     el.style.left = `${x}px`;
@@ -41,6 +42,10 @@ export function createMarkers(timeline) {
       const tag = document.createElement("span");
       tag.className = "marker-label";
       tag.textContent = label;
+      // CU4: keep the full word on-screen. Near the right edge the chip is
+      // anchored to the LEFT of its line, so "release · ORD-…" never clips to a
+      // fragment ("…ase"); overflow-hidden on the overlay would otherwise cut it.
+      if (x > w - 130) tag.classList.add("flip");
       el.appendChild(tag);
     }
     overlay.appendChild(el);

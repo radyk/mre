@@ -626,6 +626,10 @@ export function createBoard(hostEl, initialDoc) {
     highlight,
     clearHighlight,
     fit() { timeline.setWindow(win.start, win.end, { animation: false }); },
+    // Pointer/keyboard zoom path (Session 4.3 CU5): the board chrome's +/−
+    // buttons drive vis's own zoom (Ctrl+wheel / trackpad pinch unchanged).
+    zoomIn(pct = 0.5) { timeline.zoomIn(pct); },
+    zoomOut(pct = 0.5) { timeline.zoomOut(pct); },
     setWindow(startIso, endIso) { timeline.setWindow(new Date(startIso), new Date(endIso), { animation: false }); renderOverlay(); },
     getWindow() { const w = timeline.getWindow(); return { start: w.start.toISOString(), end: w.end.toISOString() }; },
     // C1 drift probe (CU5 standing regression): for each cited bar, the overlay

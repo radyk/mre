@@ -5639,3 +5639,125 @@ BEFORE the solve so the check is against a claim rather than a rationalisation, 
 sabotage menu every item of which is mechanically proven right about itself, and a
 trace you can walk by hand and by evidence to the same answer. The auditor's trust
 comes from trying to break it and failing, not from being told it works.
+
+## Amendment — 2026-07-18: Session 4.3 — Glass Box audit riders + R-DP9 (the no-op drop)
+
+Eight small findings from Daryn's live Glass Box audit, batched. No solver / model /
+contract changes; frontend + one ruling + docs + env. The theme throughout: absence
+made legible (bands, markers), chrome that never fights itself (the ledger/legend
+collision), and a commitment surface that does not manufacture commitments out of
+gestures that changed nothing.
+
+**The ruling (R-DP9), transcribed.** A drop within snap tolerance of the op's
+INCUMBENT placement is a NO-OP: the bar settles home with a brief "already here"
+cue, and NOTHING is committed — no sandbox re-solve, no zero-delta edit, no
+`planner_edit` Decision, no standing pin. Rationale: a commitment that commits
+nothing is not free. A zero-delta accepted pin (R-DP8) would be compiled as a hard
+constraint into EVERY future solve of the lineage and would pollute the edit
+narrative ("you changed 4 things" when one of them moved the bar back onto itself).
+The tolerance is the EXISTING snap token — `feel.snap.grid_px` converted to a
+minute distance through the current zoom's px→minutes factor, so "basically did not
+move" means the same on-screen distance at any zoom. This is the mirror image of
+R-DP8: R-DP8 says a real commitment must survive every solve; R-DP9 says a
+non-commitment must never become one.
+
+**CU0 — `.env.local` end to end (verified, not rebuilt).** `dev_api.ps1` already
+loads a gitignored `.env.local` at the repo root into the API's process env on
+startup (KEY=VALUE, `#`/blank ignored, quotes stripped, existing env wins) — so a
+key in the file reaches the M10 LLM renderer with no terminal typing (the 4B.0
+rider claim held). Missing pieces built: a committed `.env.local.example` (no real
+secret; `git check-ignore` confirms `.env.local` is ignored and the `.example` is
+not) and a README dev section documenting the `cp .env.local.example .env.local`
+flow as the intended, no-typing path. gitleaks still guards a real-key commit.
+
+**CU1 — the ledger/legend collision (SECOND occlusion incident), made structural.**
+The 4.0c fix moved the DEV question-ledger dock to bottom-LEFT to clear the ask
+composer — but bottom-left is where the legend lives, so a `position:fixed` dock at
+`z-40` sat on top of it. The fix is layout, not z-index: a new `.board-chrome` row
+(`position:absolute; left/right:sp-3; bottom:sp-3; display:flex;
+justify-content:space-between; flex-wrap:wrap-reverse`) holds the legend (left) and
+a right cluster (the zoom controls + the ledger dock). The ledger is no longer a
+free floating panel — it is a thin TAB in that row whose refusal body drops UPWARD
+over board space (`bottom: calc(100% + sp-1)`), never over chrome. `wrap-reverse`
+means that when the board is too narrow to hold both, the right cluster lifts ABOVE
+the legend rather than colliding with it. The legend is visible by default on first
+load (it always was; now it can never be occluded). The harness serves the
+production build (no dev auto-mount), so `window.__cockpit.mountDevLedger()` exposes
+the REAL dock for the test, which expands it and asserts bounding-box
+non-intersection of {tab, expanded body} × {legend, ask column} at two viewport
+widths (1540 and 1100 — the latter wraps).
+
+**CU2 — R-DP9 implemented.** `controller.drop()` gains an `isNoOpDrop(target)` guard
+BEFORE the ghost/sandbox branches: same resource AND within `grid_px×pxToMin` of the
+incumbent start → `noOpReturn()` settles the carry home (a gentle snap, NOT the
+R-M1a reject shake — this is "already here", not a refusal) and shows a neutral
+`.drag-noop` cue, with no card and no network. The state probe carries `noop:true`.
+This surfaced in the existing gesture harness immediately: nine sandbox-path tests
+dropped AT `incumbent(op)` as a convenient "legal, non-ghost" target — which R-DP9
+correctly reclassifies as a no-op. Those tests now compute a genuine legal move on
+the incumbent machine (a shared `legalMove()` helper reading
+`tier0For(op).legal_regions`, dropped with altKey so it is not snapped back) and a
+new test proves the incumbent drop is a no-op with `/sandbox` never called.
+
+**CU3 — empty delta-card copy.** A verdict whose moved-set is empty (the re-solve
+reproduced the incumbent schedule — distinct from CU2, which never calls the
+sandbox) now reads "equivalent placement — nothing else moved" (authored) instead
+of blank space under the "Same cost" headline. Skipped while ghost consequences are
+still loading (they may yet fill).
+
+**CU4 — marker/band legibility.** (a) The due marker was `--marker-due:
+var(--bar-late)` — a MET due date rendered in the late-alarm red, reading as a
+problem. It is decoupled to a NEUTRAL slate (`#5f6675` light / `#9aa3b5` dark) and
+rendered as a DASHED outline (a repeating vertical gradient), distinct from the
+solid dark now-line and the solid blue release-line. (b) Marker labels near the
+right edge were clipped by the overlay's `overflow:hidden` to a fragment ("…ase");
+`markers.js` now flips the chip to the LEFT of its line (`right:3px`) when the line
+is within ~130px of the right edge, so the full word always shows. (c) Downtime
+hover cards now state the WINDOW ("17:00 – 05:00") in addition to the reopen time,
+which itself now reads as a weekday+time ("reopens Mon 05:00"). (d) The legend is
+visible by default (CU1).
+
+**CU5 — zoom affordance.** The board had no pointer/keyboard zoom path — a
+trackpad-less mouse was stuck at one scale (Ctrl+wheel worked but was
+undiscoverable). Added a `.board-zoom` +/− control in the chrome row's right cluster
+(`board.zoomIn/zoomOut` → vis's own `timeline.zoomIn/zoomOut`; Ctrl+wheel and
+trackpad pinch unchanged) and a first-load `.board-hint` ("Ctrl+scroll to zoom")
+that fades out so it never becomes permanent chrome. **Accessibility note:** the
+zoom buttons carry `aria-label`s ("zoom out" / "zoom in"); they give a
+keyboard-reachable, pointer-only zoom path for users who cannot perform the
+Ctrl+wheel/pinch gesture. The board itself remains read-only.
+
+**CU6 — newer-schedule detection (extends 3.8's superseded self-heal).** The 3.8
+work handled a bound schedule that was explicitly SUPERSEDED; it did nothing for a
+bound schedule that is merely STALE — perfectly valid, but older than a newer solve
+of the same submission sitting in the registry while a tab lingers (this cost five
+audit rounds). A new pure `freshness.js` `findNewerSchedule(boundId, schedules)`
+scans the listing (ordered oldest→newest by created_at, scenarios excluded) for the
+newest LIVE schedule of the SAME submission strictly newer than the bound one; it
+never crosses submission scope and never guesses when the scope is unknown. On a
+live (non-superseded) boot the cockpit offers a dismissible "A newer schedule
+exists · Open it" info bar (calmer than the amber superseded banner). Pinned by
+`freshness.spec.mjs` (logic project) + a negative e2e (no false-positive banner on a
+current boot).
+
+**CU7 — packed bars distinct at coarse zoom.** At day zoom, temporally-adjacent
+same-lateness bars abutted with only a faint 0.16-alpha border and read as one
+merged bar. Each bar now carries a right-edge SEAM (`box-shadow: inset -1px 0 0 0
+var(--bar-sep)`, a per-theme token) so packed bars always show a boundary. Asserted
+at day zoom on the busy multi_route row (12 back-to-back bars — the same packing
+shape as glass_box CUT-01, which motivated the finding; the glass_box CSV set has no
+committed cockpit fixture, so the hermetic assertion runs on multi_route, an
+accommodation named here rather than a new solve path in CI).
+
+**Tests.** Cockpit JS **137 passed** (was 113): +6 `freshness.spec.mjs` (logic),
++8 cockpit.spec (CU1 ledger-chrome, CU5 zoom, CU6 negative, CU7 packed × light+dark),
++6 planner.spec (CU4 due-decouple / label-flip / band-window × light+dark), +4
+gesture.spec (R-DP9 no-op, CU3 equivalent × light+dark). Nine pre-existing
+sandbox-path gesture tests migrated off the now-no-op incumbent drop to a real move.
+Python untouched (frontend + docs + env only); the non-slow suite runs green
+(1171 passed) as a regression guard. See docs/07 v2.25 and CLAUDE.md → Session 4.3.
+Lesson: two of these were the same bug wearing different clothes — a control that
+fights the thing beside it (the ledger over the legend) and a gesture that
+fabricates a commitment out of no change (the no-op drop). The cure for both is to
+make the structure say the truth: one layout row that cannot overlap itself, and a
+drop that changed nothing changes nothing.

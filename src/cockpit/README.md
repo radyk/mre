@@ -145,7 +145,20 @@ gated three ways, so it can only ever improve fluency, never fabricate:
   /schedules/{id}/ask` only when `import.meta.env.DEV` is true (i.e. `vite dev`).
   The production `npm run build` the harness serves always renders templates.
 - **Key required, in the environment.** The API honors the flag only when
-  `ANTHROPIC_API_KEY` is set in the **API server's** environment (terminal 1):
+  `ANTHROPIC_API_KEY` is set in the **API server's** environment (terminal 1).
+  The intended way — **no terminal typing** — is a gitignored `.env.local` at the
+  repo root, which `dev_api.ps1` loads on startup:
+
+  ```powershell
+  cp .env.local.example .env.local      # then edit .env.local, set ANTHROPIC_API_KEY
+  .\src\cockpit\dev_api.ps1             # loads .env.local into the API's environment
+  ```
+
+  `.env.local` is `KEY=VALUE` per line (`#` comments and blank lines ignored,
+  surrounding quotes stripped); an already-set environment variable is never
+  overwritten, so an exported key still wins. It is **gitignored** and CI's
+  gitleaks scan guards against a commit — see `.env.local.example` (committed,
+  no real secret). Equivalently, export it by hand before the script:
 
   ```powershell
   $env:ANTHROPIC_API_KEY = "sk-ant-…"   # NEVER commit this — gitleaks scans for it

@@ -52,10 +52,46 @@ html, body {
 .board-host { position: relative; min-width: 0; overflow: hidden; }
 #tl { height: 100%; }
 
+/* --- board chrome row (Session 4.3 CU1) --------------------------------- *
+ * ONE layout row along the board bottom holding the legend (left) and the
+ * zoom controls + dev question-ledger dock (right). Structural, so nothing can
+ * float over the legend or the ask column at any width (the SECOND occlusion
+ * incident): the row wraps UPWARD (wrap-reverse) when narrow — the right cluster
+ * lifts over board space, the legend stays put, they never intersect. */
+.board-chrome {
+  position: absolute; left: var(--sp-3); right: var(--sp-3); bottom: var(--sp-3);
+  z-index: 8; display: flex; align-items: flex-end; justify-content: space-between;
+  gap: var(--sp-3); flex-wrap: wrap-reverse; pointer-events: none;
+}
+.board-chrome > * { pointer-events: auto; }
+.board-chrome .bc-right { display: flex; align-items: flex-end; gap: var(--sp-2); }
+
+/* --- zoom affordance (Session 4.3 CU5): pointer/keyboard path to zoom, so a
+ * trackpad-less mouse is never stuck at one scale (Ctrl+wheel unchanged). */
+.board-zoom {
+  display: inline-flex; gap: 0;
+  background: var(--panel-float); border: 1px solid var(--grid);
+  border-radius: var(--radius); box-shadow: var(--shadow-1); overflow: hidden;
+}
+.board-zoom button {
+  background: transparent; border: 0; color: var(--muted); cursor: pointer;
+  font: var(--fw-bold) var(--fs-lg)/1 var(--font-mono); padding: 4px 10px; min-width: 30px;
+}
+.board-zoom button:hover { color: var(--ink); background: var(--panel-2); }
+.board-zoom button + button { border-left: 1px solid var(--grid); }
+.board-hint {
+  align-self: center; font-size: var(--fs-xs); color: var(--muted-2);
+  background: var(--scrim); border: 1px solid var(--grid);
+  border-radius: var(--radius); padding: var(--sp-1) var(--sp-2);
+  pointer-events: none; transition: opacity var(--dur) var(--ease);
+}
+.board-hint.fade { opacity: 0; }
+
 /* --- legend ------------------------------------------------------------- */
+/* A flex child of .board-chrome (Session 4.3 CU1) — no longer absolutely
+ * positioned; visible by default on first load (CU4). */
 .legend {
-  position: absolute; left: var(--sp-3); bottom: var(--sp-3); z-index: 6;
-  display: flex; gap: var(--sp-3); flex-wrap: wrap;
+  display: flex; gap: var(--sp-3); flex-wrap: wrap; align-items: center; min-width: 0;
   background: var(--scrim); border: 1px solid var(--grid);
   border-radius: var(--radius); padding: var(--sp-2) var(--sp-3);
   color: var(--muted); font-size: var(--fs-sm); pointer-events: none;
@@ -84,7 +120,9 @@ html, body {
 .vis-item.bar {
   background: var(--bar-ontime); border-color: var(--bar-border);
   color: var(--bar-ontime-ink); border-radius: var(--bar-radius);
-  box-shadow: var(--bar-sheen);
+  /* CU7 (Session 4.3): a right-edge seam so temporally-adjacent bars at coarse
+   * (day) zoom read as DISTINCT items — packed must never look like one bar. */
+  box-shadow: inset -1px 0 0 0 var(--bar-sep), var(--bar-sheen);
   position: absolute; overflow: hidden;   /* clip the setup hatch (CU5) to the bar */
 }
 .vis-item.bar.late-ontime { background: var(--bar-ontime); color: var(--bar-ontime-ink); }
@@ -183,7 +221,13 @@ html, body {
 .marker-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 4; }
 .marker { position: absolute; top: 0; bottom: 0; }
 .marker.now { width: var(--marker-now-width); background: var(--marker-now); }
-.marker.due { width: var(--marker-due-width); background: var(--marker-due); }
+/* due = a DASHED vertical line in a neutral slate (CU4) — a reference deadline,
+ * decoupled from the solid late-alarm red. */
+.marker.due {
+  width: var(--marker-due-width);
+  background-image: repeating-linear-gradient(to bottom,
+    var(--marker-due) 0 5px, transparent 5px 9px);
+}
 .marker.release { width: var(--marker-release-width); background: var(--marker-release); }
 .marker.due, .marker.release { opacity: 0.85; }
 .marker .marker-label {
@@ -192,6 +236,9 @@ html, body {
   padding: 1px 4px; border-radius: var(--radius-xs); color: var(--marker-label-ink);
   box-shadow: var(--shadow-scrim);
 }
+/* CU4: near the right edge the chip is anchored to the LEFT of its line so the
+ * full word shows (never clipped to "…ase"). markers.js adds .flip. */
+.marker .marker-label.flip { left: auto; right: 3px; }
 .marker.now .marker-label { background: var(--marker-now-label-bg); color: var(--marker-now-label-ink); }
 .marker.due .marker-label { background: var(--marker-due); }
 .marker.release .marker-label { background: var(--marker-release); }
@@ -346,6 +393,16 @@ html, body {
   margin-left: auto; text-transform: uppercase; letter-spacing: var(--ls-caps);
   font-size: var(--fs-xs); opacity: 0.85;
 }
+/* Newer-schedule notice (Session 4.3 CU6): the bound version is fine but a newer
+ * one exists in the same scope — a calmer, dismissible info bar (not the amber
+ * superseded state), offering a one-click jump. */
+.superseded-banner.newer { background: var(--reg-testimony); }
+.superseded-banner.newer .sb-jump { color: var(--reg-testimony); background: var(--ink-inverse); }
+.superseded-banner .sb-dismiss {
+  margin-left: auto; background: transparent; border: 1px solid var(--ink-inverse);
+  color: var(--ink-inverse); border-radius: var(--radius-sm); cursor: pointer;
+  padding: var(--sp-1) var(--sp-2); font-weight: var(--fw-semibold); font-size: var(--fs-xs);
+}
 /* The ask panel's superseded notice mirrors the banner language + jump. */
 .ask .msg.superseded-note { border-left: 3px solid var(--grade-conditional); }
 .ask .msg.superseded-note .jump-current {
@@ -372,13 +429,21 @@ html, body {
 /* Docked bottom-LEFT (board side), not bottom-right — the ask composer owns the
  * right column, so the ledger must never sit over it (session 4.0c). Collapsible:
  * collapsed → just the header bar; expanded → the refusal body drops open. */
+/* Session 4.3 CU1: docked as a thin TAB in the board-chrome's right cluster —
+ * no longer a free `position:fixed` panel, so it can never float over the legend
+ * or the ask column. The header IS the tab; the refusal body drops UPWARD over
+ * board space when expanded (bottom:100%), never over chrome. */
 .dev-ledger {
-  position: fixed; left: var(--sp-3); bottom: var(--sp-3); z-index: 40;
-  width: 320px; max-height: 42vh; display: flex; flex-direction: column;
+  position: relative; z-index: 8; display: flex; flex-direction: column;
   background: var(--panel); border: 1px solid var(--grid); border-radius: var(--radius);
-  box-shadow: var(--shadow-2); font: var(--fs-xs)/1.4 var(--font-mono);
+  box-shadow: var(--shadow-1); font: var(--fs-xs)/1.4 var(--font-mono);
 }
-.dev-ledger.collapsed { max-height: none; }
+.dev-ledger .dl-body {
+  position: absolute; right: 0; bottom: calc(100% + var(--sp-1));
+  width: 320px; max-width: 60vw; max-height: 42vh; overflow-y: auto;
+  background: var(--panel); border: 1px solid var(--grid); border-radius: var(--radius);
+  box-shadow: var(--shadow-3);
+}
 .dev-ledger.collapsed .dl-body { display: none; }
 .dev-ledger.collapsed .dl-head { border-bottom: 0; }
 .dev-ledger .dl-head {

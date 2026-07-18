@@ -264,3 +264,101 @@ test("theme — light is the shipped default; the toggle flips attribute + palet
   expect(page.url()).toMatch(/theme=dark/);
   await shot(page, "08_theme_toggle");
 });
+
+// --- Session 4.3 riders ----------------------------------------------------
+
+// CU1: the question-ledger dock and the legend share ONE structural chrome row —
+// nothing may occlude the legend or the ask column at any width (the SECOND
+// occlusion incident). The harness serves the production build (no auto-mount),
+// so it mounts the REAL dev ledger via the harness seam, expands it, and asserts
+// bounding-box non-intersection at two widths.
+test("CU1 — the ledger dock never occludes the legend or ask column (two widths)", async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__cockpit.mountDevLedger());
+  await expect(page.locator(".dev-ledger")).toBeVisible();
+  await expect(page.locator(".legend")).toBeVisible();
+  await page.locator(".dev-ledger .dl-toggle").click();   // expand → body drops UP over board
+  await expect(page.locator(".dev-ledger .dl-body")).toBeVisible();
+
+  const rects = () => page.evaluate(() => {
+    const box = (sel) => { const el = document.querySelector(sel); if (!el) return null;
+      const r = el.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom }; };
+    return { legend: box(".legend"), ledger: box(".dev-ledger"),
+      body: box(".dev-ledger .dl-body"), ask: box(".ask") };
+  });
+  const overlap = (a, b) => !!a && !!b && a.left < b.right - 0.5 && b.left < a.right - 0.5
+    && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
+
+  for (const [w, h] of [[1540, 900], [1100, 780]]) {
+    await page.setViewportSize({ width: w, height: h });
+    await page.waitForTimeout(120);
+    const R = await rects();
+    expect(R.legend, `legend present @${w}`).not.toBeNull();
+    expect(R.ledger, `ledger present @${w}`).not.toBeNull();
+    expect(overlap(R.ledger, R.legend), `ledger tab vs legend @${w}`).toBe(false);
+    expect(overlap(R.body, R.legend), `ledger body vs legend @${w}`).toBe(false);
+    expect(overlap(R.ledger, R.ask), `ledger tab vs ask @${w}`).toBe(false);
+    expect(overlap(R.body, R.ask), `ledger body vs ask @${w}`).toBe(false);
+  }
+  await shot(page, "09_ledger_chrome");
+});
+
+// CU5: the +/− zoom controls give a pointer/keyboard zoom path; a first-load hint
+// names the Ctrl+scroll gesture.
+test("CU5 — zoom controls change the window; the first-load hint is present", async ({ page }) => {
+  await boot(page);
+  await expect(page.locator("#board-hint")).toContainText("Ctrl+scroll to zoom");
+  await expect(page.locator(".board-zoom .bz-in")).toBeVisible();
+  await expect(page.locator(".board-zoom .bz-out")).toBeVisible();
+
+  const span = async () => page.evaluate(() => {
+    const w = window.__cockpit.getWindow();
+    return Date.parse(w.end) - Date.parse(w.start);
+  });
+  const s0 = await span();
+  await page.locator(".board-zoom .bz-in").click();
+  await page.waitForTimeout(150);
+  const s1 = await span();
+  expect(s1, "zoom in narrows the window").toBeLessThan(s0);
+  await page.locator(".board-zoom .bz-out").click();
+  await page.locator(".board-zoom .bz-out").click();
+  await page.waitForTimeout(150);
+  expect(await span(), "zoom out widens it again").toBeGreaterThan(s1);
+});
+
+// CU6: on a current version no "newer schedule" banner appears (the positive
+// path is pinned in freshness.spec.mjs; here we prove the wiring doesn't
+// false-positive on a normal boot).
+test("CU6 — no newer-schedule banner when the bound version is current", async ({ page }) => {
+  await boot(page);
+  await page.waitForTimeout(250);   // the freshness check is background work
+  expect(await page.locator("#newer-banner").count()).toBe(0);
+});
+
+// CU7: temporally-adjacent bars must read as DISTINCT at coarse (day) zoom —
+// packed must never look overlapping. Each bar carries a seam; no two bars on a
+// row truly overlap.
+test("CU7 — packed bars read as distinct at day zoom (seam present, no overlap)", async ({ page }) => {
+  await boot(page);
+  // zoom to ~1 day on the busy multi_route rows (F001-RES001 packs 12 bars).
+  await page.evaluate(() => window.__cockpit.setWindow("2026-01-05T06:00:00Z", "2026-01-06T06:00:00Z"));
+  await page.waitForTimeout(150);
+  // the CU7 separating seam (an inset box-shadow) is present on bars.
+  const shadow = await page.locator(".vis-item.bar").first().evaluate((el) => getComputedStyle(el).boxShadow);
+  expect(shadow, "bars carry a seam box-shadow").toContain("inset");
+  // and no two bars on the same row actually OVERLAP (touching is fine; the seam
+  // separates them visually — a >1px overlap would read as one merged bar).
+  const overlaps = await page.evaluate(() => {
+    const bars = [...document.querySelectorAll(".vis-item.bar")]
+      .map((el) => el.getBoundingClientRect()).filter((r) => r.width > 0)
+      .sort((a, b) => a.top - b.top || a.left - b.left);
+    let bad = 0;
+    for (let i = 1; i < bars.length; i++) {
+      const a = bars[i - 1], b = bars[i];
+      if (Math.abs(a.top - b.top) < 3 && b.left < a.right - 1) bad++;
+    }
+    return bad;
+  });
+  expect(overlaps, "no two adjacent bars overlap at day zoom").toBe(0);
+  await shot(page, "10_packed_day_zoom");
+});

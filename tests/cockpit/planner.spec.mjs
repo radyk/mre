@@ -119,3 +119,72 @@ test("CU5 — setup segment, split-op kinship, and the pin indicator family", as
   expect(await page.locator(".vis-item.bar.standing-pin").count()).toBeGreaterThan(0);
   await shot(page, "p5_anatomy");
 });
+
+// --- Session 4.3 CU4: marker + band legibility ----------------------------
+test("CU4 — the due marker is decoupled from the late-alarm red and rendered dashed", async ({ page }) => {
+  await boot(page);
+  // token-level: the due marker hue is NOT the late-bar red (a met due date must
+  // not read as a problem).
+  const [markerDue, barLate] = await page.evaluate(() => [
+    getComputedStyle(document.documentElement).getPropertyValue("--marker-due").trim(),
+    getComputedStyle(document.documentElement).getPropertyValue("--bar-late").trim(),
+  ]);
+  expect(markerDue, "due hue decoupled from the late red").not.toBe(barLate);
+
+  // scope a due marker, then assert it renders as an OUTLINE (dashed gradient),
+  // not a solid alarm line.
+  await page.evaluate(() => {
+    const doc = window.__cockpit.doc;
+    const a = doc.assignments.find((x) => (x.work_orders || []).includes("ORD-102"));
+    window.__cockpit.board.select(a.operation_ref);
+  });
+  const dueImg = await page.locator(".marker.due").first().evaluate((el) => getComputedStyle(el).backgroundImage);
+  expect(dueImg, "due marker is a dashed outline").toContain("gradient");
+});
+
+test("CU4 — marker labels stay full words near the right edge (no '…ase' clipping)", async ({ page }) => {
+  await boot(page);
+  const due = await page.evaluate(() => {
+    const doc = window.__cockpit.doc;
+    const a = doc.assignments.find((x) => (x.work_orders || []).includes("ORD-102"));
+    window.__cockpit.board.select(a.operation_ref);
+    const so = doc.service_outcomes.find((s) => s.work_order === "ORD-102");
+    return so ? so.due : null;
+  });
+  expect(due, "ORD-102 carries a due date").not.toBeNull();
+  // put the due date near the right edge of the window, where a naive label would
+  // clip to a fragment.
+  await page.evaluate((d) => {
+    const t = Date.parse(d);
+    window.__cockpit.setWindow(new Date(t - 20 * 3600000).toISOString(),
+      new Date(t + 2 * 3600000).toISOString());
+  }, due);
+  await page.waitForTimeout(150);
+  const info = await page.evaluate(() => {
+    const lbl = document.querySelector(".marker.due .marker-label");
+    const ov = document.querySelector(".marker-overlay");
+    if (!lbl || !ov) return null;
+    const l = lbl.getBoundingClientRect(), o = ov.getBoundingClientRect();
+    return { text: lbl.textContent, flip: lbl.classList.contains("flip"),
+      labelRight: l.right, ovRight: o.right };
+  });
+  expect(info, "the due marker + label are on screen near the right edge").not.toBeNull();
+  expect(info.text, "the full word, not a fragment").toContain("due");
+  expect(info.labelRight, "label not clipped past the board's right edge")
+    .toBeLessThanOrEqual(info.ovRight + 1);
+});
+
+test("CU4 — a downtime band card states its window AND its reopen time", async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => {
+    const doc = window.__cockpit.doc;
+    const rid = doc.resources.find((r) => r.external_name === "F001-RES002").resource_id;
+    window.__cockpit.board.hoverCards._showBand(rid, Date.parse("2026-01-07T12:00:00Z"));
+  });
+  const dt = page.locator(".hover-card.downtime");
+  await expect(dt).toBeVisible();
+  // the closed WINDOW itself, as a HH:MM – HH:MM span…
+  expect(await dt.innerText(), "the card states the window span").toMatch(/\d{2}:\d{2}\s*–\s*\d{2}:\d{2}/);
+  // …and when it lifts.
+  await expect(dt).toContainText("reopens");
+});

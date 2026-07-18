@@ -4,11 +4,13 @@
 import "./cockpit.css";
 import {
   CONFIG, resolveScheduleId, getSchedule, getScheduleMeta, resolveSuccessor,
+  listSchedules,
 } from "./api.js";
 import { createBoard } from "./board.js";
 import { createAskPanel } from "./askpanel.js";
 import { wireInteraction } from "./interaction.js";
 import { mountDevLedger } from "./devledger.js";
+import { findNewerSchedule } from "./freshness.js";
 
 // Rewrite the address bar to bind the given schedule version WITHOUT a reload
 // (session 3.8 CU1): a live accept/publish stays in the same session, but the
@@ -101,12 +103,22 @@ function supersededBanner(hostEl, successorId) {
   return el;
 }
 
-function legend(hostEl) {
-  const el = document.createElement("div");
-  el.className = "legend";
+// The board chrome row (Session 4.3 CU1/CU5): the legend (left) + a right cluster
+// holding a first-load "Ctrl+scroll to zoom" hint, the +/− zoom controls, and
+// (dev only) the question-ledger dock. ONE structural row, so nothing floats over
+// the legend or the ask column at any width (the SECOND occlusion incident). The
+// legend is visible by default on first load (CU4). Returns { chrome, right } —
+// the dev ledger docks into `right`.
+function mountBoardChrome(boardHost, board) {
+  const host = boardHost.parentElement;            // .board-host (position: relative)
+  const chrome = document.createElement("div");
+  chrome.className = "board-chrome";
+
+  const lg = document.createElement("div");
+  lg.className = "legend";
   // Two groups: the lateness signal on the bars, and the capacity-state
   // backgrounds (Session 4.2 CU1). A hatched swatch marks the hatched bands.
-  el.innerHTML = `
+  lg.innerHTML = `
     <span><span class="sw" style="background: var(--bar-ontime)"></span>on time / early</span>
     <span><span class="sw" style="background: var(--bar-tight)"></span>tight</span>
     <span><span class="sw" style="background: var(--bar-late)"></span>late</span>
@@ -119,7 +131,53 @@ function legend(hostEl) {
     <span class="lg-gap"></span>
     <span><span class="sw sw-now"></span>now</span>
     <span><span class="sw" style="background: var(--cite-bar)"></span>cited</span>`;
-  hostEl.appendChild(el);
+  chrome.appendChild(lg);
+
+  const right = document.createElement("div");
+  right.className = "bc-right";
+
+  // CU5: a first-load hint naming the trackpad-free zoom gesture; fades out so it
+  // never becomes permanent chrome.
+  const hint = document.createElement("div");
+  hint.className = "board-hint";
+  hint.id = "board-hint";
+  hint.textContent = "Ctrl+scroll to zoom";
+  right.appendChild(hint);
+  setTimeout(() => hint.classList.add("fade"), 6000);
+  setTimeout(() => { if (hint.isConnected) hint.remove(); }, 6600);
+
+  // CU5: the +/− zoom controls (pointer/keyboard path; Ctrl+wheel unchanged).
+  const zoom = document.createElement("div");
+  zoom.className = "board-zoom";
+  zoom.innerHTML = `
+    <button type="button" class="bz-out" aria-label="zoom out" title="zoom out">−</button>
+    <button type="button" class="bz-in" aria-label="zoom in" title="zoom in">+</button>`;
+  zoom.querySelector(".bz-in").addEventListener("click", () => board.zoomIn());
+  zoom.querySelector(".bz-out").addEventListener("click", () => board.zoomOut());
+  right.appendChild(zoom);
+
+  chrome.appendChild(right);
+  host.appendChild(chrome);
+  return { chrome, right };
+}
+
+// A dismissible "a newer schedule exists" info bar (Session 4.3 CU6): the bound
+// version is valid but stale — a newer solve of the same submission exists. One
+// click jumps; a dismiss keeps the current view. Distinct from the superseded
+// banner (that version is dead; this one is merely older).
+function newerBanner(hostEl, newId) {
+  const el = document.createElement("div");
+  el.className = "superseded-banner newer";
+  el.id = "newer-banner";
+  const short = (newId || "").slice(0, 8);
+  el.innerHTML = `
+    <span class="sb-msg">A newer schedule exists.</span>
+    <button class="sb-jump" id="newer-jump">Open it (${short}) →</button>
+    <button class="sb-dismiss" id="newer-dismiss" title="stay on this version">✕</button>`;
+  hostEl.prepend(el);
+  el.querySelector("#newer-jump").addEventListener("click", () => jumpToVersion(newId));
+  el.querySelector("#newer-dismiss").addEventListener("click", () => el.remove());
+  return el;
 }
 
 async function boot() {
@@ -139,7 +197,7 @@ async function boot() {
     setUrlSchedule(id);
     paintTopStrip(strip, doc, meta);
     const board = createBoard(boardHost, doc);
-    legend(boardHost.parentElement);
+    const chrome = mountBoardChrome(boardHost, board);
 
     // A deep link to a SUPERSEDED version loads read-only behind a banner that
     // offers the current version (session 3.8 CU3) — never a raw error, never an
@@ -185,10 +243,25 @@ async function boot() {
       doc, meta,
     };
 
+    // CU6: expose the real dev-ledger mount for the harness (which serves the
+    // production build, so the auto-mount below is skipped) — a debug seam on the
+    // existing harness object, never auto-invoked in production.
+    window.__cockpit.mountDevLedger = () => mountDevLedger(chrome.right);
+
     if (superseded) {
       supersededBanner(app, meta.successor_id || null);
       window.__cockpit.successorId = meta.successor_id || null;
     } else {
+      // CU6: a stale tab should notice a newer solve of the same submission —
+      // offer a one-click jump. Only for a live (non-superseded) version; the
+      // listing is background work, so a failure never blocks the board.
+      listSchedules().then(({ schedules }) => {
+        const newerId = findNewerSchedule(id, schedules || []);
+        if (newerId && newerId !== id) {
+          newerBanner(app, newerId);
+          window.__cockpit.newerId = newerId;
+        }
+      }).catch(() => {});
       // Fetch the Tier-0 interaction payload in the BACKGROUND, after first
       // paint (R-T1d) — the board is already interactive read-only; the 3.2b
       // gesture surface stands up when it arrives. Never blocks render or ask.
@@ -218,7 +291,7 @@ async function boot() {
     // The refusal-cluster dev panel (CU3, R-AI1(d)) — DEV-build-only, like the
     // feel tuning panel. Reads the DEV-gated /ledger/refusals; absent in the
     // production build the harness serves.
-    if (import.meta.env?.DEV) mountDevLedger(app);
+    if (import.meta.env?.DEV) mountDevLedger(chrome.right);
 
     if (CONFIG.autoAsk) panel.run(CONFIG.autoAsk);
   } catch (e) {

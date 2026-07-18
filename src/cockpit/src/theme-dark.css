@@ -37,6 +37,7 @@
   --bar-late: #e0564f;          /* projected completion past due */
   --bar-late-ink: #2a0c0a;
   --bar-border: rgba(255, 255, 255, 0.13);
+  --bar-sep: rgba(0, 0, 0, 0.55);  /* CU7: adjacent-bar seam at coarse zoom */
 
   /* --- calendar lane shading ------------------------------------------ */
   --cal-closure: rgba(9, 11, 17, 0.55);    /* non-working: nights/weekends */
@@ -127,7 +128,9 @@
   --marker-now: #d7dbe4;
   --marker-now-label-bg: #d7dbe4;
   --marker-now-label-ink: #0e1016;
-  --marker-due: var(--bar-late);
+  /* due = a NEUTRAL slate, rendered DASHED (Session 4.3 CU4) — decoupled from the
+   * late-alarm red so a MET due date never reads as a problem. */
+  --marker-due: #9aa3b5;
   --marker-release: var(--bar-ontime);
   --marker-label-ink: #0e1016;
   --tick-shift: rgba(180, 186, 200, 0.22);

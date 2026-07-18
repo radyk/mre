@@ -87,6 +87,11 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     // moved-set from the vouching schedule — say so while it loads (R-DP7).
     const pending = !returnHome && result.consequences_pending
       ? `<div class="dc-note pending">consequences loading…</div>` : "";
+    // Session 4.3 CU3: a verdict whose moved-set is empty (the re-solve reproduced
+    // the same schedule) reads as an authored line, never blank space under the
+    // headline. Skipped while consequences are still loading (they may yet fill).
+    const equivalent = !returnHome && !result.consequences_pending && lines.length === 0
+      ? `<div class="dc-note">equivalent placement — nothing else moved</div>` : "";
 
     card.innerHTML = `
       <div class="dc-head">
@@ -95,6 +100,7 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
       </div>
       ${returnHome ? `<div class="dc-reason">${result.message || "couldn't verify this placement"}</div>` : ""}
       ${lineHtml ? `<div class="dc-lines">${lineHtml}</div>` : ""}
+      ${equivalent}
       ${pending}
       <div class="dc-actions">
         ${returnHome ? "" : `<button class="dc-accept">Accept</button>`}

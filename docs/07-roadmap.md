@@ -1,6 +1,32 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.24 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.25 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.25:** **Session 4.3 — Glass Box audit riders + R-DP9 (the no-op drop)**
+2026-07-18 (docs/04 amendment). Eight small findings from Daryn's live audit,
+batched; no solver/model/contract changes. **R-DP9 ruled:** a drop within snap
+tolerance of the op's INCUMBENT placement is a NO-OP — settle home with an "already
+here" cue, commit nothing (no sandbox, no zero-delta Decision, no standing pin); the
+mirror of R-DP8 (a real commitment must survive every solve; a non-commitment must
+never become one). **CU0:** verified `dev_api.ps1` loads a gitignored `.env.local`
+end to end (a key reaches the LLM renderer with no terminal typing); added a
+committed `.env.local.example` + README dev section. **CU1:** the ledger/legend
+collision (SECOND occlusion incident) made STRUCTURAL — a `.board-chrome` row holds
+the legend (left) + zoom/ledger (right); the ledger is a thin tab whose body drops
+UPWARD over board space, `wrap-reverse` lifts the right cluster above the legend when
+narrow; bounding-box non-intersection asserted at two widths. **CU2:** R-DP9
+implemented (`isNoOpDrop` guard + neutral cue). **CU3:** an empty moved-set verdict
+reads "equivalent placement — nothing else moved", not blank space. **CU4:** the due
+marker decoupled from the late-alarm red (neutral slate, DASHED outline) so a met due
+date is not a problem; marker chips flip left near the right edge (full words, no
+"…ase"); downtime cards state the window ("17:00 – 05:00") + reopen weekday. **CU5:**
++/− zoom controls (pointer/keyboard path; Ctrl+wheel unchanged) + a first-load hint;
+aria-labelled (accessibility note in docs/04). **CU6:** newer-schedule detection
+(pure `findNewerSchedule`, same-submission scope) offers a dismissible jump — the
+stale tab now notices. **CU7:** temporally-adjacent bars carry a right-edge seam so
+packed ≠ overlapping at day zoom. **Cockpit JS 137** (was 113); non-slow Python green
+(1171) as a regression guard; frontend + docs + env only. See the docs/04 2026-07-18
+Session 4.3 amendment.
 
 **v2.24:** **Session 4B.1 — Glass Box instruments (hand-auditable dataset,
 sabotage menu, walkthrough)** 2026-07-18 (docs/04 amendment). The instruments for

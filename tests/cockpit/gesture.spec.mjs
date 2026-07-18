@@ -48,6 +48,35 @@ const priced = alternatives.members.filter((m) => m.verdict === "priced" && m.la
 const byOp = sandbox.by_op;
 const opFor = (outcome) => Object.keys(byOp).find((op) => byOp[op].outcome === outcome);
 
+// A genuine legal MOVE for an op — a Tier-0-legal start on the incumbent machine
+// well away from the incumbent placement and clear of any ghost (R-DP9, CU2:
+// dropping AT the incumbent is now a NO-OP, so the sandbox-path tests must move
+// the bar somewhere real). Returned exact (dropped with altKey → no snap), so it
+// stays a real move and hits the op-keyed canned sandbox.
+async function legalMove(page, op) {
+  const mv = await page.evaluate((op) => {
+    const d = window.__cockpit.drag;
+    const a = window.__cockpit.doc.assignments.find((x) => x.operation_ref === op);
+    const rid = a.resource_id, inc = Date.parse(a.chunks[0].start);
+    const row = (d.tier0For(op).rows || []).find((r) => r.resource_id === rid);
+    const ghosts = d.ghostsFor(op).filter((g) => g.resource_id === rid).map((g) => Date.parse(g.start));
+    const MIN = 60000, FAR = 120 * MIN;
+    const nearGhost = (t) => ghosts.some((g) => Math.abs(g - t) < 30 * MIN);
+    for (const reg of (row && row.legal_regions) || []) {
+      const s = Date.parse(reg.start), e = Date.parse(reg.end);
+      for (const cand of [s, s + FAR, e - FAR, e]) {
+        if (cand < s || cand > e) continue;
+        if (Math.abs(cand - inc) < FAR) continue;
+        if (nearGhost(cand)) continue;
+        return { resource_id: rid, start: new Date(cand).toISOString() };
+      }
+    }
+    return null;
+  }, op);
+  if (!mv) throw new Error(`no legal move found for ${op}`);
+  return mv;
+}
+
 async function boot(page) {
   // Clear the fixture server's per-session version lifecycle (session 3.8): a
   // publish in a prior test supersedes its base, which would break a later boot
@@ -213,10 +242,10 @@ test("drop onto a ghost → near-instant verdict card + traces (CU4/CU5)", async
 test("legal drop off a ghost → sandbox verdict via /sandbox (CU4)", async ({ page }) => {
   await boot(page);
   const op = opFor("verdict");           // canned VERDICT, keyed by op
-  const inc = incumbent(op);             // incumbent spot is legal + not a ghost
+  const mv = await legalMove(page, op);  // a genuine legal move (not the no-op incumbent, R-DP9)
   const st = await page.evaluate(([op, rid, start]) =>
-    window.__cockpit.drag.dropAt(op, rid, start).then(() => window.__cockpit.drag.state()),
-    [op, inc.resource_id, inc.start]);
+    window.__cockpit.drag.dropAt(op, rid, start, /*altKey*/ true).then(() => window.__cockpit.drag.state()),
+    [op, mv.resource_id, mv.start]);
   expect(st.phase).toBe("verdict");
   expect(st.result.outcome).toBe("verdict");
   await expect(page.locator(".delta-card.verdict")).toBeVisible();
@@ -225,7 +254,7 @@ test("legal drop off a ghost → sandbox verdict via /sandbox (CU4)", async ({ p
 test("Tier-0 shading clears on drop → tentative, stays cleared through verdict (CU1)", async ({ page }) => {
   await boot(page);
   const op = opFor("verdict");           // canned VERDICT → a real tentative window
-  const inc = incumbent(op);
+  const mv = await legalMove(page, op);
   // grab first: the wash is painted while asking "where can it go"
   await page.evaluate((op) => window.__cockpit.drag.grab(op), op);
   expect(await page.locator(".drag-shade .shade-row").count(),
@@ -235,7 +264,7 @@ test("Tier-0 shading clears on drop → tentative, stays cleared through verdict
   // re-solve is still in flight): the drop answered "where", so the legality
   // wash + ghosts must already be gone, leaving only the tentative bar.
   const obs = await page.evaluate(([op, rid, start]) => {
-    const p = window.__cockpit.drag.dropAt(op, rid, start);
+    const p = window.__cockpit.drag.dropAt(op, rid, start, /*altKey*/ true);
     const atDrop = {
       phase: window.__cockpit.drag.state().phase,
       shade: document.querySelectorAll(".drag-shade .shade-row").length,
@@ -249,7 +278,7 @@ test("Tier-0 shading clears on drop → tentative, stays cleared through verdict
         ghosts: document.querySelectorAll(".drag-ghosts .ghost-bar").length,
       },
     }));
-  }, [op, inc.resource_id, inc.start]);
+  }, [op, mv.resource_id, mv.start]);
 
   expect(obs.atDrop.phase).toBe("tentative");
   expect(obs.atDrop.shade, "wash cleared the instant the bar is dropped").toBe(0);
@@ -274,10 +303,10 @@ test("Tier-0 shading clears on drop → tentative, stays cleared through verdict
 test("flagged outcome → 'bound not proven' card (CU4, R-T1c outcome 2)", async ({ page }) => {
   await boot(page);
   const op = opFor("feasible_unproven");
-  const inc = incumbent(op);
+  const mv = await legalMove(page, op);
   const st = await page.evaluate(([op, rid, start]) =>
-    window.__cockpit.drag.dropAt(op, rid, start).then(() => window.__cockpit.drag.state()),
-    [op, inc.resource_id, inc.start]);
+    window.__cockpit.drag.dropAt(op, rid, start, /*altKey*/ true).then(() => window.__cockpit.drag.state()),
+    [op, mv.resource_id, mv.start]);
   expect(st.result.outcome).toBe("feasible_unproven");
   await expect(page.locator(".delta-card.feasible_unproven")).toBeVisible();
   await expect(page.locator(".dc-status")).toContainText("not proven");
@@ -287,10 +316,10 @@ test("flagged outcome → 'bound not proven' card (CU4, R-T1c outcome 2)", async
 test("no verdict → return home with reason (CU4, R-T1c outcome 3 / R-DP2)", async ({ page }) => {
   await boot(page);
   const op = opFor("no_verdict");
-  const inc = incumbent(op);
+  const mv = await legalMove(page, op);
   await page.evaluate(([op, rid, start]) =>
-    window.__cockpit.drag.dropAt(op, rid, start).then(() => new Promise((r) => setTimeout(r, 350))),
-    [op, inc.resource_id, inc.start]);
+    window.__cockpit.drag.dropAt(op, rid, start, /*altKey*/ true).then(() => new Promise((r) => setTimeout(r, 350))),
+    [op, mv.resource_id, mv.start]);
   await expect(page.locator(".delta-card.return-home")).toBeVisible();
   await expect(page.locator(".dc-reason")).toContainText("verify");
   // the bar returned home: the gesture is over (idle), overlays cleared.
@@ -304,11 +333,11 @@ test("no verdict → return home with reason (CU4, R-T1c outcome 3 / R-DP2)", as
 test("accept mints a new proposed version; publish supersedes it (CU1, R-DP7)", async ({ page }) => {
   await boot(page);
   const op = opFor("verdict");
-  const inc = incumbent(op);
+  const mv = await legalMove(page, op);
   // drop → verdict; Accept is a LIVE control now (no longer stubbed disabled)
   const v = await page.evaluate(([op, rid, start]) =>
-    window.__cockpit.drag.dropAt(op, rid, start).then(() => window.__cockpit.drag.state()),
-    [op, inc.resource_id, inc.start]);
+    window.__cockpit.drag.dropAt(op, rid, start, /*altKey*/ true).then(() => window.__cockpit.drag.state()),
+    [op, mv.resource_id, mv.start]);
   expect(v.phase).toBe("verdict");
   await expect(page.locator(".dc-accept")).toBeEnabled();
 
@@ -348,10 +377,10 @@ test("accept mints a new proposed version; publish supersedes it (CU1, R-DP7)", 
 test("a refused accept is LOUD — the card shows the refusal, never a silent return-home (4.0c, R-M1a)", async ({ page }) => {
   await boot(page);
   const op = opFor("verdict");
-  const inc = incumbent(op);
+  const mv = await legalMove(page, op);
   const v = await page.evaluate(([op, rid, start]) =>
-    window.__cockpit.drag.dropAt(op, rid, start).then(() => window.__cockpit.drag.state()),
-    [op, inc.resource_id, inc.start]);
+    window.__cockpit.drag.dropAt(op, rid, start, /*altKey*/ true).then(() => window.__cockpit.drag.state()),
+    [op, mv.resource_id, mv.start]);
   expect(v.phase).toBe("verdict");
 
   // The server refuses the accept with a 409 that is NOT "superseded" (an
@@ -641,10 +670,10 @@ test("drop onto a ghost → FULL moved-set from the member doc (CU4)", async ({ 
 test("delta card shows a 'why' clause on a major move (CU3)", async ({ page }) => {
   await boot(page);
   const op = opFor("verdict");            // canned verdict carries a reasoned move
-  const inc = incumbent(op);
+  const mv = await legalMove(page, op);
   await page.evaluate(([op, rid, start]) =>
-    window.__cockpit.drag.dropAt(op, rid, start).then(() => {}),
-    [op, inc.resource_id, inc.start]);
+    window.__cockpit.drag.dropAt(op, rid, start, /*altKey*/ true).then(() => {}),
+    [op, mv.resource_id, mv.start]);
   await expect(page.locator(".delta-card.verdict")).toBeVisible();
   // the major consequence names WHY — occupancy, in planner vocabulary.
   const why = page.locator(".delta-card .dc-why").first();
@@ -846,13 +875,13 @@ test("voice: Escape cancels recording WITHOUT submitting (CU2)", async ({ page }
 test("R-M1a rejection: return-home is a snap-back (no settle) ending at origin", async ({ page }) => {
   await boot(page);
   const op = opFor("no_verdict");
-  const inc = incumbent(op);
+  const mv = await legalMove(page, op);
   const origin = await page.evaluate((o) => window.__cockpit.board.placementOf(o), op);
   // a canned no_verdict drop → REJECTION
   const obs = await page.evaluate(([o, rid, start]) =>
-    window.__cockpit.drag.dropAt(o, rid, start).then(() => ({
+    window.__cockpit.drag.dropAt(o, rid, start, /*altKey*/ true).then(() => ({
       rejecting: !!document.querySelector(".carry-bar.rejecting"),   // the snap-back class
-    })), [op, inc.resource_id, inc.start]);
+    })), [op, mv.resource_id, mv.start]);
   expect(obs.rejecting, "return-home uses the reject snap-back (R-M1a)").toBe(true);
   // after it completes the board is UNCHANGED — the op sits at its origin
   await page.waitForFunction(() => window.__cockpit.drag.state().phase === "idle", { timeout: 2000 });
@@ -907,9 +936,9 @@ test("R-M1 reduced-motion: instant transitions, semantics intact", async ({ page
   await boot(page);
   // rejection still returns to origin (no shake), still distinct via the card
   const op = opFor("no_verdict");
-  const inc = incumbent(op);
+  const mv = await legalMove(page, op);
   const origin = await page.evaluate((o) => window.__cockpit.board.placementOf(o), op);
-  await page.evaluate(([o, r, s]) => window.__cockpit.drag.dropAt(o, r, s), [op, inc.resource_id, inc.start]);
+  await page.evaluate(([o, r, s]) => window.__cockpit.drag.dropAt(o, r, s, /*altKey*/ true), [op, mv.resource_id, mv.start]);
   await page.waitForFunction(() => window.__cockpit.drag.state().phase === "idle", { timeout: 2000 });
   expect(await page.evaluate((o) => window.__cockpit.board.placementOf(o), op)).toEqual(origin);
   await expect(page.locator(".delta-card.return-home")).toBeVisible();   // meaning survives
@@ -924,4 +953,56 @@ test("R-M1 reduced-motion: instant transitions, semantics intact", async ({ page
   })));
   expect(m.motion, "pin-lock confirmation present even under reduced motion").toContain("pin-lock");
   expect(m.reflowing, "no reflow transition class under reduced motion").toBe(false);
+});
+
+// ---------------------------------------------------------------------------
+// Session 4.3 — R-DP9 (CU2) + empty moved-set copy (CU3)
+// ---------------------------------------------------------------------------
+
+// R-DP9: a drop within snap tolerance of the op's INCUMBENT placement is a
+// NO-OP — the bar settles home with an "already here" cue and NOTHING is
+// committed: no sandbox re-solve, no zero-delta edit, no Decision, no standing
+// pin. A commitment that commits nothing still constrains every future solve.
+test("R-DP9 (CU2): a drop back on the incumbent is a NO-OP — no sandbox, no card", async ({ page }) => {
+  await boot(page);
+  const op = opFor("verdict");
+  const inc = incumbent(op);
+  let sandboxCalls = 0;
+  await page.route("**/sandbox", (route) => { sandboxCalls++; return route.continue(); });
+
+  const res = await page.evaluate(([op, rid, start]) => {
+    const r = window.__cockpit.drag.dropAt(op, rid, start);   // exact incumbent → snaps home
+    return { noop: !!(r && r.noop) };
+  }, [op, inc.resource_id, inc.start]);
+  expect(res.noop, "drop() returned a no-op result").toBe(true);
+
+  // the cue is shown; no delta card is raised
+  await expect(page.locator(".drag-noop")).toContainText("already here");
+  expect(await page.locator(".delta-card:not(.hidden)").count(), "no delta card for a no-op").toBe(0);
+
+  await page.waitForFunction(() => window.__cockpit.drag.state().phase === "idle", { timeout: 2000 });
+  const st = await page.evaluate(() => window.__cockpit.drag.state());
+  expect(st.noop, "state records the no-op").toBe(true);
+  expect(sandboxCalls, "the sandbox was never called for a no-op drop").toBe(0);
+  await shot(page, "g13_noop");
+});
+
+// CU3: a verdict whose moved-set is empty (the re-solve reproduced the same
+// schedule) reads as an authored line, never blank space under the headline.
+test("CU3: an empty moved-set verdict reads 'equivalent placement — nothing else moved'", async ({ page }) => {
+  await boot(page);
+  const op = opFor("verdict");
+  const mv = await legalMove(page, op);
+  await page.route("**/sandbox", (route) => route.fulfill({
+    status: 200, contentType: "application/json",
+    body: JSON.stringify({ api_version: "1", data: {
+      outcome: "verdict", status: "OPTIMAL", feasible: true, within_budget: true,
+      delta_pct: 0, delta_abs: 0, cost_delta_abs: 0, cost_delta_pct: 0, moves: [],
+    } }),
+  }));
+  await page.evaluate(([op, rid, start]) =>
+    window.__cockpit.drag.dropAt(op, rid, start, /*altKey*/ true), [op, mv.resource_id, mv.start]);
+  await expect(page.locator(".delta-card.verdict")).toBeVisible();
+  await expect(page.locator(".delta-card")).toContainText("equivalent placement — nothing else moved");
+  await shot(page, "g14_equivalent");
 });

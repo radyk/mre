@@ -94,6 +94,62 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4.3 — Glass Box audit
+riders + R-DP9 (the no-op drop) 2026-07-18.** Eight small findings from Daryn's live
+Glass Box audit, batched — no solver/model/contract changes (frontend + one ruling
++ docs + env). **R-DP9 ruled** (docs/04, transcribed): a drop within snap tolerance
+of the op's INCUMBENT placement is a NO-OP — the bar settles home with an "already
+here" cue and NOTHING is committed (no sandbox re-solve, no zero-delta edit, no
+`planner_edit` Decision, no standing pin); tolerance = the existing snap token
+(`feel.snap.grid_px × pxToMin`, so "basically didn't move" is a screen distance at
+any zoom). The mirror of R-DP8: a real commitment must survive every solve; a
+non-commitment must never become one. **CU0 — `.env.local` verified end to end:**
+`dev_api.ps1` already loads a gitignored `.env.local` at the repo root into the API
+env on startup (existing env wins), so a key reaches the M10 LLM renderer with NO
+terminal typing (the 4B.0 claim held); added a committed `.env.local.example`
+(gitleaks-guarded; `.env.local` ignored, the `.example` not) + a cockpit README dev
+section documenting the `cp .env.local.example .env.local` flow. **CU1 — the
+ledger/legend collision (SECOND occlusion incident) made STRUCTURAL:** a new
+`.board-chrome` row (`justify-content:space-between; flex-wrap:wrap-reverse`) holds
+the legend (left) + a right cluster (zoom controls + the DEV question-ledger dock);
+the ledger is no longer `position:fixed` but a thin TAB whose refusal body drops
+UPWARD over board space (`bottom:calc(100%+sp-1)`), never over chrome — `wrap-reverse`
+lifts the right cluster ABOVE the legend when the board is too narrow, so they can
+never intersect; legend visible by default. Harness serves the production build, so
+`window.__cockpit.mountDevLedger()` mounts the REAL dock for a bounding-box
+non-intersection assertion of {tab, body} × {legend, ask} at two widths (1540/1100).
+**CU2 — R-DP9 implemented:** `controller.drop()` short-circuits `isNoOpDrop(target)`
+(same resource + within `grid_px×pxToMin`) → `noOpReturn()` (gentle settle, NOT the
+R-M1a reject shake) + a neutral `.drag-noop` cue, no card/network; `state().noop`.
+Nine existing sandbox-path gesture tests dropped AT `incumbent(op)` — R-DP9 correctly
+reclassifies that as a no-op — so they migrated to a genuine legal move (a shared
+`legalMove()` reading `tier0For(op).legal_regions`, altKey/no-snap). **CU3 — empty
+delta-card copy:** a verdict with an empty moved-set reads "equivalent placement —
+nothing else moved" (authored), not blank space under "Same cost". **CU4 —
+marker/band legibility:** the due marker decoupled from `--bar-late` to a NEUTRAL
+slate rendered DASHED (a met due date is a reference line, not an alarm), distinct
+from the solid now/release lines; marker chips FLIP left near the right edge (full
+words, no "…ase" clip); downtime hover cards state the WINDOW ("17:00 – 05:00") +
+reopen weekday; legend visible by default. **CU5 — zoom affordance:** `.board-zoom`
++/− controls (→ vis's `zoomIn/zoomOut`; Ctrl+wheel/pinch unchanged) + a fading
+first-load "Ctrl+scroll to zoom" hint; aria-labelled (accessibility note in docs/04).
+**CU6 — newer-schedule detection** (extends 3.8's superseded self-heal): pure
+`freshness.js` `findNewerSchedule(boundId, schedules)` — the newest LIVE schedule of
+the SAME submission strictly newer than the bound one (never cross-scope, never
+guesses on unknown scope) → a dismissible "A newer schedule exists · Open it" info
+bar; the stale tab now notices. **CU7 — packed bars distinct:** a right-edge SEAM
+(`box-shadow: inset -1px 0 0 0 var(--bar-sep)`, per-theme token) so temporally-
+adjacent bars read as DISTINCT at day zoom (asserted on the busy multi_route row —
+the glass_box CUT-01 packing shape; no committed glass_box cockpit fixture, an
+accommodation named). **Cockpit JS 137 passed** (was 113: +6 freshness logic,
++8 cockpit, +6 planner, +4 gesture ×themes); **non-slow Python 1171 passed, 0 failed**
+(frontend/docs/env only — regression guard). See the docs/04 2026-07-18 Session 4.3
+amendment and docs/07 v2.25. Lesson: two of these were the same bug in different
+clothes — a control that fights the thing beside it (the ledger over the legend) and
+a gesture that fabricates a commitment out of no change (the no-op drop); the cure
+for both is to make the structure say the truth — one layout row that cannot overlap
+itself, and a drop that changed nothing changes nothing.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.1 — Glass Box
 instruments (the hand-auditable dataset, sabotage menu, walkthrough) 2026-07-18.**
 Instruments so Daryn can verify, at his own pace, that (a) the gate catches

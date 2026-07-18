@@ -114,6 +114,11 @@ export function createGestureController(board, geometry, opts) {
   const pricingTip = document.createElement("div");
   pricingTip.className = "drag-pricing hidden";
   root.appendChild(pricingTip);
+  // R-DP9 (CU2): a brief "already here" cue for a no-op drop (a drop within snap
+  // tolerance of the incumbent). Calmer than a refusal — no shake, no card.
+  const noopTip = document.createElement("div");
+  noopTip.className = "drag-noop hidden";
+  root.appendChild(noopTip);
   timeline.dom.centerContainer.appendChild(root);
   // the overlay only intercepts pointer events while a gesture is active
   root.style.pointerEvents = "none";
@@ -202,6 +207,7 @@ export function createGestureController(board, geometry, opts) {
   function grab(opRef) {
     if (!ctx.opFacts.get(opRef)) return false;   // no Tier-0 facts → not grabbable
     cancelSilently();
+    S.lastDropWasNoop = false;   // R-DP9: reset the no-op flag each fresh grab
     const t0 = performance.now();
     S.phase = "grabbed";
     S.op = opRef;
@@ -335,6 +341,13 @@ export function createGestureController(board, geometry, opts) {
     if (S.phase !== "dragging" && S.phase !== "grabbed") return;
     const t = S.target;
     if (!t || !t.legal) return returnHome(t?.reason || "not a legal placement");
+
+    // R-DP9 (CU2): a drop within snap tolerance of the op's INCUMBENT placement
+    // is a NO-OP — nothing to commit. Settle home with an "already here" cue; no
+    // sandbox call, no zero-delta Decision, no standing pin for an unchanged
+    // placement (a commitment that commits nothing still constrains every future
+    // solve and pollutes the edit narrative — docs/04 R-DP9).
+    if (isNoOpDrop(t)) return noOpReturn();
 
     // dropped ONTO a ghost? (snapped to a ghost anchor, or coincident with a
     // drawn ghost on this row) → near-instant card from the vouching schedule.
@@ -616,6 +629,7 @@ export function createGestureController(board, geometry, opts) {
     while (svg.firstChild) svg.removeChild(svg.firstChild);
     reasonTip.classList.add("hidden");
     hidePricing();
+    noopTip.classList.add("hidden");
   }
 
   // Clear ONLY the Tier-0 legality overlays (shade + ghosts + the refusal
@@ -637,6 +651,52 @@ export function createGestureController(board, geometry, opts) {
   // ---------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------
+  // R-DP9 (CU2): is the drop target effectively the op's incumbent placement?
+  // Same resource AND within the coarse snap tolerance (the existing snap token,
+  // zoom-independent via the px→minutes factor) of the incumbent start.
+  function isNoOpDrop(t) {
+    const inc = incumbentOf(S.op);
+    if (!inc || t.resource_id !== inc.resource_id) return false;
+    const pxToMin = geometry.pxToMinutes(1) || 1;
+    const tolMin = (feel.snap.grid_px || 8) * pxToMin;
+    return Math.abs(t.time_ms - inc.start_ms) / MIN <= tolMin;
+  }
+
+  // Settle the carry gently home (no reject-shake — this is "already here", not a
+  // refusal) and show the cue. NO card, NO sandbox, NO Decision (R-DP9).
+  function noOpReturn() {
+    reasonTip.classList.add("hidden");
+    S.lastDropWasNoop = true;
+    const reduce = reduceMotion();
+    const snapMs = reduce ? 0 : (feel.motion?.reject_dur_ms ?? 200);
+    const inc = incumbentOf(S.op);
+    const bar = layers.tentative.querySelector(".carry-bar");
+    if (inc) {
+      S.target = { resource_id: inc.resource_id, time_ms: inc.start_ms, legal: true };
+      const dur = durationMinOf(S.op) * MIN;
+      const home = geometry.barRect(inc.resource_id, inc.start_ms, inc.start_ms + dur);
+      if (bar && home) {
+        bar.classList.remove("legal", "dim", "tentative");
+        if (!reduce) { bar.classList.add("rejecting"); void bar.offsetWidth; }
+        bar.style.left = `${home.x}px`;
+        bar.style.top = `${home.top + 3}px`;
+      }
+    }
+    showNoOp();
+    setTimeout(() => {
+      root.classList.remove("active", "refusing", "returning");
+      clearOverlays();
+      S.phase = "idle"; S.op = null; S.tier0 = null; S.target = null;
+    }, snapMs + 30);
+    return { returned: true, noop: true, reason: "already here" };
+  }
+
+  function showNoOp() {
+    noopTip.textContent = "already here — nothing to change";
+    noopTip.classList.remove("hidden");
+    setTimeout(() => noopTip.classList.add("hidden"), 1600);
+  }
+
   function nearestLegalBoundary(resourceId, timeMs) {
     const row = S.tier0.rows.find((r) => r.resource_id === resourceId);
     if (!row || !row.legal_regions.length) return null;
@@ -742,6 +802,7 @@ export function createGestureController(board, geometry, opts) {
     // probes for the screenshot harness / standing regressions
     state: () => ({
       phase: S.phase, op: S.op, acceptedId: S.acceptedId || null,
+      noop: S.lastDropWasNoop || false,   // R-DP9 (CU2): the last drop was a no-op
       grabToShadeMs: S.grabToShadeMs, dropToVerdictMs: S.dropToVerdictMs,
       acceptToDoneMs: S.acceptToDoneMs || null,
       priceToGhostsMs: (S.priceToGhostsMs || {})[S.op] || null,

@@ -18,16 +18,14 @@ const fmtDay = (iso) => {
   });
 };
 
-// minutes → a compact "2d 3h" / "5h 10m" duration (for "reopens in …").
-function humanDur(mins) {
-  if (mins == null || mins < 0) return null;
-  const d = Math.floor(mins / 1440), h = Math.floor((mins % 1440) / 60), m = Math.round(mins % 60);
-  const parts = [];
-  if (d) parts.push(`${d}d`);
-  if (h) parts.push(`${h}h`);
-  if (!d && m) parts.push(`${m}m`);
-  return parts.length ? parts.join(" ") : "0m";
-}
+// clock time (CU4): "17:00" — for the closed/idle WINDOW span on a downtime card.
+const fmtHM = (msVal) => new Date(msVal).toLocaleString(undefined, {
+  hour: "2-digit", minute: "2-digit", hour12: false,
+});
+// weekday + time (CU4): "Mon 05:00" — for "reopens …".
+const fmtWeekdayTime = (msVal) => new Date(msVal).toLocaleString(undefined, {
+  weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false,
+});
 
 const CLOSURE_LABEL = {
   planned_maintenance: "Planned maintenance",
@@ -94,15 +92,18 @@ export function createHoverCards(hostEl, timeline, ctx) {
 
   function downtimeCard(band, reopenMin, resourceName) {
     card.className = `hover-card downtime ${band.kind}`;
-    const reopen = humanDur(reopenMin);
+    // CU4: state the WINDOW ("17:00 – 05:00") and the reopen time ("reopens Mon
+    // 05:00") — a downtime card should say when it closed and when it lifts.
+    const windowLine = `<div class="hc-sub">${fmtHM(band.start)} – ${fmtHM(band.end)}</div>`;
     const reopenLine = band.kind === "openidle"
       ? `<div class="hc-sub">available now — no work booked here</div>`
-      : (reopen != null
-          ? `<div class="hc-sub">reopens in <b>${reopen}</b> · ${fmtDay(new Date(band.start + (reopenMin || 0) * 60000).toISOString())}</div>`
+      : (reopenMin != null
+          ? `<div class="hc-sub">reopens <b>${fmtWeekdayTime(band.start + reopenMin * 60000)}</b></div>`
           : `<div class="hc-sub">no further open window this horizon</div>`);
     card.innerHTML = `
       <div class="hc-head"><span class="hc-dt-title">${bandTitle(band)}</span></div>
       <div class="hc-sub hc-res"></div>
+      ${band.kind === "openidle" ? "" : windowLine}
       ${reopenLine}`;
     card.querySelector(".hc-res").textContent = resourceName || "";
     shown = true;
