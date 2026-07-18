@@ -395,6 +395,12 @@ class SolverBuilder:
         # ------------------------------------------------------------------
         wp_op_map: dict[str, list[str]] = {}  # wp_id → [op_ids]
         op_durations: dict[str, int] = {}     # op_id → total minutes (setup + run)
+        # Per-resource durations for a HETEROGENEOUS op (docs/06 §5.3 alternative
+        # groups: an eligible machine that runs the op at its own speed). Only
+        # populated when the eligible set spans >1 distinct duration; a
+        # homogeneous op is absent and every consumer falls back to the
+        # op_durations[oid] scalar — the no-map byte-identical guarantee.
+        op_res_durations: dict[str, dict[str, int]] = {}
         op_families: dict[str, str] = {}      # op_id → setup_family
         res_op_intervals: dict[str, list[Any]] = {rid: [] for rid in resources}
         # Ops that get the R-C3 chunk encoding this build. splittable=true
@@ -503,16 +509,61 @@ class SolverBuilder:
             var_map.op_eligible[oid] = eligible
             var_map.op_assign[oid] = {}
 
+            # Per-resource durations (docs/06 §5.3): an eligible machine listed
+            # in the op's resource_run/setup_durations runs the op at its own
+            # speed; every other eligible machine runs at the scalar default.
+            res_setup_durs = op.get("resource_setup_durations", {}) or {}
+            res_run_durs = op.get("resource_run_durations", {}) or {}
+
+            def _res_dur(rid: str) -> int:
+                s = (_td_to_minutes(_parse_td(res_setup_durs[rid]))
+                     if rid in res_setup_durs else setup_min)
+                r = (_td_to_minutes(_parse_td(res_run_durs[rid]))
+                     if rid in res_run_durs else run_min)
+                return s + r
+
+            dur_by_res = {rid: _res_dur(rid) for rid in eligible}
+            heterogeneous = len(set(dur_by_res.values())) > 1
+
             min_chunk_raw = op.get("min_chunk")
             min_chunk_min = _td_to_minutes(_parse_td(min_chunk_raw)) if min_chunk_raw else 0
             if is_effectively_resumable(op.get("splittable", False), total_min, min_chunk_min):
                 # R-C3 resumable operation — chunk-boundary-interval encoding
                 # (docs/05 R-C3, spike 2 productionized: tools/chunking_spike2_report.md).
+                # Per-alternative durations on a resumable op are a NAMED
+                # carry-forward (docs/04 Session 4B.0): the chunk-slot encoding
+                # would need per-resource working minutes. It uses the scalar
+                # default here; splittable is a STEP attribute that must AGREE
+                # across the group, so a rate-varying alternative group is
+                # non-resumable in practice (the CU4 fixture is splittable=false).
                 resumable_op_ids.add(oid)
                 self._build_resumable_operation(
                     model, var_map, oid, eligible, total_min, min_chunk_min,
                     cal_windows, horizon_minutes, wp_earliest_min, res_op_intervals,
                 )
+                continue
+
+            if heterogeneous:
+                # Variable-duration encoding: the op's end depends on which
+                # machine is chosen. s_var/e_var are linked NOT by a fixed
+                # e==s+total but by each resource's own optional interval
+                # (start+size==end enforced-iff-present); exactly one is present,
+                # so e_var resolves to the chosen machine's duration.
+                op_res_durations[oid] = dur_by_res
+                min_dur = min(dur_by_res.values())
+                s_var = model.new_int_var(wp_earliest_min, horizon_minutes - min_dur, f"s_{oid}")
+                e_var = model.new_int_var(wp_earliest_min + min_dur, horizon_minutes, f"e_{oid}")
+                var_map.op_start[oid] = s_var
+                var_map.op_end[oid]   = e_var
+                for rid in eligible:
+                    bv = model.new_bool_var(f"assign_{oid}_{rid}")
+                    iv = model.new_optional_interval_var(
+                        s_var, dur_by_res[rid], e_var, bv, f"iv_{oid}_{rid}")
+                    var_map.op_assign[oid][rid] = bv
+                if var_map.op_assign[oid]:
+                    model.add_exactly_one(var_map.op_assign[oid].values())
+                else:
+                    model.add(s_var == horizon_minutes)
                 continue
 
             # Start and end variables for this operation
@@ -562,9 +613,11 @@ class SolverBuilder:
             s_var = var_map.op_start[oid]
             e_var = var_map.op_end[oid]
             dur   = op_durations[oid]
+            res_durs = op_res_durations.get(oid)  # heterogeneous ops only
 
             for rid, bv in var_map.op_assign.get(oid, {}).items():
-                iv = model.new_optional_interval_var(s_var, dur, e_var, bv, f"iv2_{oid}_{rid}")
+                d = res_durs[rid] if res_durs is not None else dur
+                iv = model.new_optional_interval_var(s_var, d, e_var, bv, f"iv2_{oid}_{rid}")
                 res_op_intervals.setdefault(rid, []).append(iv)
 
         for rid, intervals in res_op_intervals.items():
@@ -710,10 +763,14 @@ class SolverBuilder:
             if oid not in op_durations or oid in complete_op_ids:
                 continue
             dur = op_durations[oid]
+            res_durs = op_res_durations.get(oid)  # heterogeneous ops only
             for rid, bv in var_map.op_assign.get(oid, {}).items():
                 rate_int = int(rates.get(rid, 0.0) * _COST_SCALE)
+                # A per-alternative duration (docs/06 §5.3) prices this machine
+                # at its OWN speed × its rate; homogeneous ops use the scalar.
+                d = res_durs[rid] if res_durs is not None else dur
                 if rate_int > 0:
-                    obj_terms.append(bv * dur * rate_int)
+                    obj_terms.append(bv * d * rate_int)
 
         # Setup cost: fixed_per_setup × (number of operations that run)
         fixed_setup = int(

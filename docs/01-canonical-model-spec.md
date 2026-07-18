@@ -187,11 +187,13 @@ No `predecessors` list and no `dwell_duration` (docs/05 §4 surgery, R-A2/A3, R-
 { mode: capability | explicit_set,
   capability_ref  (when mode = capability),
   resource_refs   (when mode = explicit_set),
+  rate_overrides  { resource_ref → { base_setup, run_rate } }  (optional),
   count }
 ```
 
 - One Operation may carry **several requirements simultaneously** (machine *and* tool). This unifies tooling into the general resource mechanism — no parallel tool system.
 - **Capability requirement vs. explicit resource restriction are distinct facts with different explanation semantics** ("no capable machine was free" vs. "the routing restricts this to two machines"). When the ERP is ambiguous, the adapter records the safe interpretation (`explicit_set`) and emits an `AMBIGUOUS_SOURCE` finding.
+- **`rate_overrides` — per-alternative time model (docs/06 §5.3).** When the eligible machines of an `explicit_set` requirement run the operation at *different speeds*, each such machine's own `(base_setup, run_rate)` is recorded here, keyed by its `resource_ref`. The scalars on the OperationSpec (`base_setup`, `run_rate`) remain the **default** for any eligible resource **absent** from the map. `rate_overrides` is quantity-INDEPENDENT (exactly like `run_rate`); the Planner projects it onto per-resource durations on the Operation instance, the Solver Builder gives each machine its own interval duration, and the extractor prices the chosen machine at its own honest rate. **An explicit empty map (no override) is a guaranteed byte-identical solve** to the pre-`rate_overrides` model (the defaults-reproduce-baseline gate; tested).
 
 ### 5.6 Resource — *anything finite*
 

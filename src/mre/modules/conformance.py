@@ -677,6 +677,43 @@ class ConformanceGate:
                detail={"transition_rows": len(setup_transitions)})
 
         # ------------------------------------------------------------
+        # Conditional integrity: alternative-group step attributes agree
+        # (docs/06 §5.3). Rows sharing one (route_id, sequence) are ONE
+        # operation's eligible set; per-alternative setup_minutes/
+        # run_minutes_per_unit are legitimate, but setup_family / dwell /
+        # splittable / min_chunk are STEP properties of the operation and must
+        # match across the group. Disagreement is resolved first-row-wins
+        # downstream (the adapter); the gate flags it so the discrepancy is
+        # visible on the certificate rather than silently absorbed.
+        _STEP_ATTRS = ("setup_family", "dwell_minutes", "splittable", "min_chunk_minutes")
+        alt_groups: dict[tuple[str, str], list[dict]] = {}
+        for rl in routing_lines:
+            if str(rl.get("active", "0")).strip() != "1":
+                continue
+            key = (rl.get("route_id", ""), str(rl.get("sequence", "")).strip())
+            alt_groups.setdefault(key, []).append(rl)
+
+        def _norm(v: object) -> str:
+            return str(v if v is not None else "").strip().lower()
+
+        disagreeing: list[str] = []
+        for (route_id, seq), rows in alt_groups.items():
+            if len(rows) < 2:
+                continue
+            for attr in _STEP_ATTRS:
+                if len({_norm(r.get(attr)) for r in rows}) > 1:
+                    disagreeing.append(f"{route_id}:{seq}:{attr}")
+        record(RuleId.ALTERNATIVE_STEP_ATTRIBUTES_AGREE,
+               RuleOutcome.DEGRADED if disagreeing else RuleOutcome.SATISFIED,
+               _subjects("route_line", sorted(disagreeing)) if disagreeing
+               else _submission_subject(),
+               f"{len(disagreeing)} alternative-group step-attribute disagreement(s); "
+               "first row wins" if disagreeing
+               else "alternative-group step attributes agree",
+               disposition=FindingDisposition.PROCEEDED_FLAGGED,
+               detail={"disagreements": sorted(disagreeing)})
+
+        # ------------------------------------------------------------
         # Conditional integrity: customer references have a master
         # (fires only when customer weighting is declared — §3-correct silence)
         # ------------------------------------------------------------

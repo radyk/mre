@@ -16,6 +16,7 @@ raw_data_profile.md
 # API/runtime data root and deploy secrets/artifacts
 mre_api_data/
 _data/
+.env.local
 deploy/azure/.env
 deploy/.smoke_*/
 *_baseline.json

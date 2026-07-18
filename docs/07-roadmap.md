@@ -1,6 +1,33 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.22 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.23 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.23:** **Session 4B.0 — IDS alternative-resource doorway: per-alternative rates**
+2026-07-18 (docs/04 amendment). Connector-track opener. The alternative-resource
+doorway (docs/06 §5.3) was half-built: eligible *sets* entered through the CSV since
+Session 3.1, but per-alternative *rates* did not. **CU1 (adapter truth, test-first):**
+`IDSAdapter` grouped repeated `(route_id, sequence)` rows into one `explicit_set`
+OperationSpec (not last-wins, not two ops, not a crash) but read the time model from
+the FIRST ROW ONLY — silently dropping every alternative's own
+`run_minutes_per_unit`. The existing multi-eligible scenario DID enter through the
+CSV doorway (so B2 pipeline-proof for eligible *sets* was not one-sided); it was
+per-alternative *rates* that were unproven. **CU2 (spec):** docs/06 → v0.5 (§5.3
+alternative groups: per-alternative setup/run → `rate_overrides`; step attrs must
+agree; `active=false` removes a row; zero active = unroutable; identical triples =
+duplicates; `role` reserved); docs/01 §5.5 `ResourceRequirement.rate_overrides`;
+registry → **33 rules** (`ids.alternative_step_attributes_agree`, AMBIGUOUS_SOURCE,
+first-row-wins). **CU3 (implement):** the adapter captures per-alternative
+`rate_overrides`; the Planner projects them onto per-resource durations; the Solver
+Builder builds a **variable-duration** encoding for a heterogeneous op (homogeneous
+ops keep the exact scalar path → byte-identical goldens, the no-map guarantee); the
+extractor prices the chosen machine honestly. **CU4 (pipeline proof):** new
+`multi_route_rates` generator scenario (per-alternative run times through the CSV,
+equal rates so price is purely duration) + a counterfactual that pins the slow
+alternative and asserts a duration exactly 60 min longer and strictly higher cost,
+priced end to end — B2 pipeline-proven honestly. Named debts: resumable-op +
+rate_overrides (uses scalar default), heterogeneous-op pin conflict-detection scalar.
+Non-slow Python **1160 passed, 0 failed**; goldens byte-identical. See the docs/04
+2026-07-18 Session 4B.0 amendment.
 
 **v2.22:** **Session 4.2 — planner surface pass 1 (read layer only)** 2026-07-17
 (docs/04 amendment). The cockpit now reads like a planner's board: capacity-state

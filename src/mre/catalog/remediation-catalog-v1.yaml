@@ -403,6 +403,31 @@ rules:
       degraded: "the matrix doorway inconsistency exceeds tolerance; triage is required"
     note_version: 1
 
+  - rule_id: ids.alternative_step_attributes_agree
+    meaning: >
+      Rows sharing one (route_id, sequence) in §5.3 routing_lines are ONE
+      operation's eligible resource set (an alternative group). Per-alternative
+      setup_minutes and run_minutes_per_unit are legitimate — a faster machine
+      is priced at its own speed. But setup_family, dwell_minutes, splittable,
+      and min_chunk_minutes are properties of the OPERATION, not of the machine
+      that runs it; every row in the group must state the same value. A
+      disagreement is resolved first-row-wins downstream, so the plan proceeds,
+      but the contradiction is disclosed rather than silently absorbed.
+    typical_causes:
+      - the eligible set was assembled by hand and a step attribute was edited on one row only
+      - a per-machine export carried machine-specific splittable/min_chunk flags into an operation-level column
+      - setup_family left blank on one alternative row and populated on another
+    fix_looks_like: >
+      Make setup_family / dwell_minutes / splittable / min_chunk_minutes
+      identical across every §5.3 row that shares a (route_id, sequence). Vary
+      only setup_minutes / run_minutes_per_unit per alternative — those are the
+      per-machine time model; the rest describe the operation itself.
+    verify: resubmit; the alternative-group step-attribute finding clears
+    outcome_phrasing:
+      flagged: "an alternative group disagrees on a step attribute; first row wins, disclosed"
+      degraded: "alternative-group step-attribute disagreement requires triage; first row was used"
+    note_version: 1
+
   - rule_id: ids.customer_references_have_master
     meaning: >
       When customer weighting is declared (§3 priority_precedence) and

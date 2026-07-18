@@ -1,10 +1,12 @@
 # Incoming Data Specification (IDS)
 
-**Document 6** · Status: Draft v0.4 (living document) · Companions: *01 Canonical Model*, *02 Evidence Contract*, *03 PoC Plan*, *04 Design History*, *05 Constraint Catalog (in progress)*
+**Document 6** · Status: Draft v0.5 (living document) · Companions: *01 Canonical Model*, *02 Evidence Contract*, *03 PoC Plan*, *04 Design History*, *05 Constraint Catalog (in progress)*
 
 **v0.2 changes:** cost model REQUIRED with a minimal core (§5.9); customer and priority doorways (§5.10, §3); setup transitions (§5.11); locks (§5.12); overtime expression (§5.6, §5.9); extension & pipeline-proof clause (§8); costing-completeness grade on the certificate (§4).
 
 **v0.3 changes:** `wip_status.csv` doorway for in-flight work / soft-start rescheduling (§5.13); `wip_progress_basis` manifest declaration (§3); WIP gate checks (§4 Tier 2); the reschedule-from-a-point invariant amendment (§5.13).
+
+**v0.5 changes:** §5.3 **alternative groups** made real — repeated (route_id, sequence) rows carry a **per-alternative time model** (`setup_minutes`/`run_minutes_per_unit` read per row → `ResourceRequirement.rate_overrides`, docs/01 §5.5; the solver builds per-resource durations, the extractor prices the chosen machine's honest rate), while `setup_family`/`dwell`/`splittable`/`min_chunk` are **STEP attributes that must agree** across the group (new rule `ids.alternative_step_attributes_agree`, AMBIGUOUS_SOURCE, first-row-wins) — registry now **33 rules**; `active=false` removes a row; zero active rows = unroutable; identical triples remain duplicates; `role` column RESERVED (B3). Empty overrides ⇒ byte-identical solves (the no-map guarantee). Before v0.5 the adapter silently DROPPED every non-first row's time (a per-alternative rate never reached the solver) — the latent silent-wrong this closes.
 
 **v0.4 changes:** §4 rewritten as the **Rule Registry** (32 named rules, registry v0.2), replacing the prose tier list — closed outcome vocabulary (satisfied/flagged/degraded/violated), grade as a pure function of outcomes, naming convention + governance + permanent status column; seven checks made real (required_columns_parse, key_fields_populated, routes_resolve_to_lines [unfolded from orders_resolve_to_routes], order_dates_internally_consistent, facility_references_consistent, decision_relevant_attributes_populated, optional_columns_are_not_sparse); the transition-matrix converse split; `manifest_semantics_declared` recoded MALFORMED_FIELD→AMBIGUOUS_SOURCE.
 
@@ -99,7 +101,7 @@ The gate runs as an evidence-emitting module (standard finding vocabulary). Outp
 | **CONDITIONALLY ACCEPTED** | Quantified gaps within thresholds; submitter triages each class: fix / waive-with-exclusion / block. |
 | **ACCEPTED** | Proceeds; quality flags disclosed. |
 
-### 4.1 The Rule Registry (v0.2 of the registry; IDS v0.4)
+### 4.1 The Rule Registry (v0.3 of the registry; IDS v0.5)
 
 The gate is a **registry of named rules**, not a prose tier list. The registry
 below is the constitution; `src/mre/contracts/ids_rules.py` is its executable
@@ -135,7 +137,7 @@ distinguishes an informational quality flag from a WARNING flag at the same
 outcome.
 
 **Status column** (implemented / unimplemented) — the same honesty convention as
-docs/05's MP/PP column. All 32 read *implemented*; the column is permanent: the
+docs/05's MP/PP column. All 33 read *implemented*; the column is permanent: the
 registry never again silently claims a check the gate does not have.
 
 **Boolean structural — satisfied/violated:**
@@ -185,6 +187,7 @@ the new definitions (recorded in the anomaly catalog, not hand-tuned).
 | ids.wip_in_progress_rows_carry_progress | MALFORMED_FIELD | §5.13 | implemented |
 | ids.wip_actual_starts_are_at_or_before_reference_date | VALUE_OUT_OF_RANGE | §5.13 | implemented |
 | ids.wip_completion_is_internally_consistent | VALUE_OUT_OF_RANGE | §5.13 | implemented |
+| ids.alternative_step_attributes_agree | AMBIGUOUS_SOURCE | §5.3 | implemented |
 
 `customer_references_have_master` fires only when customer weighting is declared
 in the manifest (`priority_precedence`) — §3-correct silence otherwise, recorded
@@ -246,7 +249,14 @@ route_id ✓ · facility_id ✓ · product_id (blank/0 = generic route: valid) �
 ### 5.3 routing_lines.csv
 route_id ✓ · sequence ✓ · resource_id ✓ (→ resources) · active ✓ · setup_minutes, run_minutes_per_unit, dwell_minutes (optional; when present they OVERRIDE product-level times — the preferred, per-operation time model) · setup_family · splittable, min_chunk_minutes.
 
-**Eligible sets (docs/05 B2, no schema change):** an operation's *eligible resource set* is expressed as **multiple rows sharing one (route_id, sequence) but naming different resource_id** — the adapter groups them into one OperationSpec whose ResourceRequirement is `explicit_set` over the whole set (`routing_lines.resource_id → explicit_set`). One row per sequence — the common case — is a single-element set, identical to the pre-grouping behaviour (the defaults-reproduce-baseline gate). The per-operation time model (setup/run overrides) is a property of the operation, read once from the sequence's first row; a multi-eligible operation's cost differential lives on the *resources* (per-resource `cost_rate`, §5.5, and/or `calendar_id`, §5.6), never on the op time — so a single `run_rate` still holds and the choice of machine, not the duration, carries the price.
+**Eligible sets / alternative groups (docs/05 B2, no schema change):** an operation's *eligible resource set* is expressed as **multiple active rows sharing one (route_id, sequence) but naming different resource_id** — the adapter groups them into one OperationSpec whose ResourceRequirement is `explicit_set` over the whole set (`routing_lines.resource_id → explicit_set`). A repeated (route_id, sequence) **always** means an OR-group of eligible machines; a **single active row per sequence — the common case — is a single-element set, byte-identical to the pre-grouping behaviour** (the defaults-reproduce-baseline gate).
+
+Within a group, columns split into two kinds:
+
+- **Per-alternative time model** — `setup_minutes` and `run_minutes_per_unit` are read **per row**: an alternative machine may run the operation at its own speed (a faster machine, a slower spill valve). The first row's values are the operation's DEFAULT; any alternative whose row resolves to a different (setup, run) carries a `rate_override` keyed by its resource (docs/01 §5.5, `ResourceRequirement.rate_overrides`). The solver builds a per-resource duration and the extractor prices the chosen machine at its own honest rate. An all-agree group carries no overrides and is byte-identical to a single-rate group. A multi-eligible operation's cost differential therefore lives on **both** the *resource* (per-resource `cost_rate`, §5.5, and/or `calendar_id`, §5.6) **and** its own per-alternative time — the choice of machine carries the price, whether through rate or duration.
+- **Step attributes** — `setup_family`, `dwell_minutes`, `splittable`, `min_chunk_minutes` describe the **operation**, not the machine that runs it, so every row in a group **must agree**. Disagreement is a Tier-2 finding (`ids.alternative_step_attributes_agree`, AMBIGUOUS_SOURCE); it is resolved **first-row-wins** downstream (the operation proceeds) but the contradiction is disclosed on the certificate rather than silently absorbed.
+
+**Row lifecycle within a group:** `active=false` removes a row from the eligible set (a decommissioned or not-yet-qualified machine); a sequence with **zero active rows is an unroutable step** (it fails `ids.operation_durations_computable` / route→line resolution — the operation has no machine). **Identical triples** (same route_id, sequence, resource_id) remain **duplicates**, not an eligible set of one machine listed twice — first occurrence wins. The column name `role` is **RESERVED** (docs/05 B3, capability/tool roles); it is not read today and must not be repurposed.
 
 ### 5.4 products.csv
 product_id ✓ · uom ✓ · facility_id · product_group · costing_lot_size, setup_minutes, production_minutes (REQUIRED as a set iff routing_lines omit per-op times; semantics per manifest) · cost_price.

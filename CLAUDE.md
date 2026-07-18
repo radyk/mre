@@ -94,6 +94,64 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.0 — IDS
+alternative-resource doorway: per-alternative rates (connector-track opener)
+2026-07-18.** The alternative-resource doorway (docs/06 §5.3) was HALF-built:
+eligible *sets* entered through the CSV since Session 3.1, but per-alternative
+*rates* did not. **CU1 (adapter truth, test-FIRST):** `IDSAdapter` grouped
+repeated `(route_id, sequence)` rows into ONE `explicit_set` OperationSpec (not
+last-wins, not two ops, not a crash) but read the time model from the FIRST ROW
+ONLY — silently DROPPING every alternative's own `run_minutes_per_unit` (a
+per-alternative rate never reached the solver: the latent silent-wrong, now a
+standing regression `tests/test_ids_alternative_groups.py`). And the existing
+multi-eligible scenario DID enter through the CSV doorway (generator writes the
+rows, `test_multi_route` runs the full pipeline), so B2 pipeline-proof for
+eligible *sets* was NOT one-sided — it was per-alternative *rates* that were
+unproven. **CU2 (spec):** docs/06 → **v0.5** (§5.3 alternative groups:
+per-alternative `setup_minutes`/`run_minutes_per_unit` → `rate_overrides`;
+`setup_family`/`dwell`/`splittable`/`min_chunk` are STEP attributes that must
+AGREE; `active=false` removes a row; zero active = unroutable; identical triples
+= duplicates; `role` RESERVED for B3); docs/01 §5.5
+`ResourceRequirement.rate_overrides {resource_ref → {base_setup, run_rate}}`
+(empty ⇒ byte-identical guarantee); registry → **33 rules**
+(`ids.alternative_step_attributes_agree`, AMBIGUOUS_SOURCE, conditional/degraded,
+first-row-wins). **CU3 (implement):** new `ResourceRateOverride` struct +
+`ResourceRequirement.rate_overrides`; `Operation.resource_setup_durations` /
+`resource_run_durations` (qty-resolved Planner projections); the adapter captures
+per-alternative overrides (first row = default, differing alternatives = an
+override); the gate detects step-attribute disagreement (`the gate checks; it
+never repairs` — the adapter proceeds first-row-wins); the Solver Builder builds a
+**variable-duration** encoding for a HETEROGENEOUS op (the end var linked by each
+machine's own optional interval, not a fixed `e==s+total`) while a HOMOGENEOUS op
+keeps the exact scalar path untouched — the no-map byte-identical guarantee; the
+extractor prices the chosen machine from the solved end−start (already honest) and
+prices ALTERNATIVES at their own per-resource duration (reducing exactly to the
+historical `(alt_rate−rate)×dur` when durations agree). Remediation catalog note
+(note_version 1, cites §5.3). **CU4 (pipeline proof, doorway-first):** new
+`multi_route_rates` generator scenario (per-alternative run times through the CSV,
+EQUAL rates so price is purely duration); the counterfactual
+(`tests/test_multi_route_rates.py`, slow) PINS the slow alternative and asserts,
+through a real re-solve + extraction, a duration exactly 60 min longer and a
+strictly higher cost — **B2 pipeline-proven honestly**; the coverage anomaly
+`alternative_step_disagreement` fires the new gate rule. **Non-slow Python 1160
+passed, 0 failed** (+12); goldens (sample_data schedule.csv + ledger)
+byte-identical; slow guards green (multi_route pool + eligibility_consistency
+13/13; multi_route_rates counterfactual 2/2). Frontend untouched. **Riders:**
+`dev_api.ps1` loads `.env.local` + defaults `MRE_DEV=1` in dev; `dev_cockpit.ps1`
+gains `-Resume` (reuse the last solved schedule, skip submit/solve/alternatives);
+Fix-B extension — refusal/near-miss/clarify/refusals bundles short-circuit to
+AUTHORED copy with NO LLM round-trip (defense-in-depth over the 4A.1c no-evidence
+guard). **Named debts (R-AI1):** a resumable (splittable) op WITH rate_overrides
+uses the scalar default duration (per-resource chunk-slot minutes are a follow-up;
+the CU4 fixture is splittable=false, so latent); a heterogeneous op's
+`var_map.op_durations` scalar (setup-transition adjacency + R-DP8 pin conflict
+detection) is the DEFAULT representative — rate-varying pins unexercised this
+session. See the docs/04 2026-07-18 Session 4B.0 amendment and docs/07 v2.23.
+Lesson: a doorway proved for the STRUCTURE (eligible sets) is not proved for the
+VALUES that ride through it (per-alternative rates) — read the adapter's truth
+before trusting the claim, and where two rows disagree on a machine property vs an
+operation property, split them: vary the rate, agree on the step.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4.2 — planner surface
 pass 1 (read layer only) 2026-07-17.** The first pass at making the cockpit read
 like a PLANNER's board, not a demo Gantt — under one hard rule: **render only

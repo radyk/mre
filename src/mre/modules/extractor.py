@@ -36,7 +36,7 @@ from mre.contracts.vocabularies import (
     DecisionBasis, DecisionType, DriverCode, RecordTier,
     ResourceRequirementMode, ScheduleStatus,
 )
-from mre.modules.solver_builder import SolveValues
+from mre.modules.solver_builder import SolveValues, _parse_td, _td_to_minutes
 
 if TYPE_CHECKING:
     from mre.modules.snapshot_store import SnapshotWriter
@@ -178,6 +178,26 @@ class Extractor:
                 cal_windows=cal_windows,
             )
 
+            # Per-alternative duration (docs/06 §5.3): an eligible machine may
+            # run this op at its OWN speed. The chosen cost is authoritative
+            # (dur_min from the solved end−start); an alternative is priced at
+            # its own duration × its own rate. For a homogeneous op every
+            # alternative's duration equals dur_min, so this reduces exactly to
+            # the historical (alt_rate − rate) × dur_min.
+            res_setup_durs = op.get("resource_setup_durations", {}) or {}
+            res_run_durs = op.get("resource_run_durations", {}) or {}
+            default_setup_min = _td_to_minutes(_parse_td(op.get("setup_duration", "PT0S")))
+            default_run_min = _td_to_minutes(_parse_td(op.get("run_duration", "PT0S")))
+
+            def _alt_dur_min(rid: str) -> int:
+                if rid not in res_setup_durs and rid not in res_run_durs:
+                    return dur_min
+                s = (_td_to_minutes(_parse_td(res_setup_durs[rid]))
+                     if rid in res_setup_durs else default_setup_min)
+                r = (_td_to_minutes(_parse_td(res_run_durs[rid]))
+                     if rid in res_run_durs else default_run_min)
+                return s + r
+
             # Reconstructed alternatives — calendar-blocked resources get a
             # different consequence message so the AI layer can explain them.
             alternatives: list[DecisionAlternative] = []
@@ -194,7 +214,7 @@ class Extractor:
                         ))
                         continue
                 alt_rate = rates.get(rid, 0.0)
-                cost_diff = (alt_rate - rate) * dur_min
+                cost_diff = alt_rate * _alt_dur_min(rid) - rate * dur_min
                 if cost_diff > 0:
                     consequence = f"Would cost ${cost_diff:.2f} more."
                 elif cost_diff < 0:

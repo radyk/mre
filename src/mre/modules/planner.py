@@ -202,6 +202,7 @@ class Planner:
                     continue
                 op_id = _uid("op", wp_id, spec_id)
                 run_duration = _compute_run_duration(total_qty, spec)
+                res_setup_durs, res_run_durs = _resolve_resource_durations(spec, total_qty)
 
                 obs = wip_by_spec.get(spec_id)
                 wip_fields, wip_sidecars = _resolve_op_wip(
@@ -222,6 +223,8 @@ class Planner:
                     setup_family=spec.get("setup_family", ""),
                     setup_duration=_parse_td(spec.get("base_setup", "PT0S")),
                     run_duration=run_duration,
+                    resource_setup_durations=res_setup_durs,
+                    resource_run_durations=res_run_durs,
                     splittable=bool(spec.get("splittable", False)),
                     min_chunk=_parse_td(spec_min_chunk) if spec_min_chunk else None,
                     **wip_fields,
@@ -742,6 +745,12 @@ def _op_provenance(
         _drv("setup_family", "planner.copy_spec",        spec_inputs[2:3]),
         _drv("setup_duration", "planner.copy_base_setup", spec_inputs[3:4]),
         _drv("run_duration", "demand.quantity * spec.run_rate", run_duration_inputs),
+        # Per-alternative resolved durations (docs/06 §5.3): the requirement's
+        # rate_overrides projected onto quantity — derived from the same inputs
+        # as run_duration plus the requirement that carries the overrides.
+        _drv("resource_setup_durations", "planner.resolve_rate_overrides", spec_inputs[1:2]),
+        _drv("resource_run_durations", "demand.quantity * requirement.rate_overrides.run_rate",
+             run_duration_inputs + spec_inputs[1:2]),
         _drv("splittable",  "planner.copy_splittable",   spec_inputs[4:5]),
         _drv("min_chunk",   "planner.copy_min_chunk",    spec_inputs[5:6]),
     ]
@@ -960,6 +969,31 @@ def _compute_run_duration(total_qty: float, spec: dict) -> timedelta:
     rate_td = _parse_td(spec.get("run_rate", "PT0S"))
     rate_secs = rate_td.total_seconds()
     return timedelta(seconds=total_qty * rate_secs)
+
+
+def _resolve_resource_durations(
+    spec: dict, total_qty: float
+) -> tuple[dict[str, timedelta], dict[str, timedelta]]:
+    """Project the requirement's rate_overrides (docs/06 §5.3) onto quantity-
+    resolved per-resource durations — the instance analogue of run_duration.
+
+    Returns (resource_setup_durations, resource_run_durations), each keyed by
+    the eligible resource_ref that declared its OWN time. Resources absent from
+    the override map are not in the returned dicts (the solver/extractor fall
+    back to the scalar setup_duration / run_duration). Empty overrides ⇒ two
+    empty maps ⇒ byte-identical pre-4B.0 behaviour."""
+    reqs = spec.get("resource_requirements") or []
+    if not reqs:
+        return {}, {}
+    overrides = reqs[0].get("rate_overrides") or {}
+    res_setup: dict[str, timedelta] = {}
+    res_run: dict[str, timedelta] = {}
+    for res_id, ov in overrides.items():
+        res_setup[res_id] = _parse_td(ov.get("base_setup", "PT0S"))
+        res_run[res_id] = timedelta(
+            seconds=total_qty * _parse_td(ov.get("run_rate", "PT0S")).total_seconds()
+        )
+    return res_setup, res_run
 
 
 def _parse_td(s: str | None) -> timedelta:

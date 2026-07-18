@@ -119,6 +119,17 @@ SCENARIOS: dict[str, dict[str, Any]] = {
         with_customers=False, cost_profile="C1",
         multi_route=True, multi_route_distinct=True,
     ),
+    # Per-ALTERNATIVE RATES (docs/06 §5.3, Session 4B.0): an operation's
+    # eligible machines run it at DIFFERENT speeds — distinct
+    # run_minutes_per_unit per routing_lines alternative row, entering through
+    # the CSV doorway. Rates are EQUAL across machines, so the price of pinning
+    # the slow alternative is PURELY its longer duration (the counterfactual
+    # proof that per-alternative time is priced end-to-end). Step attributes
+    # agree, so the gate grades it ACCEPTED with no disagreement finding.
+    "multi_route_rates": dict(
+        orders=6, resources=4, facilities=1, anomalies=[],
+        with_customers=False, cost_profile="C0", multi_route_rates=True,
+    ),
     # A FEEL fixture (feel=True), NOT a truth-bearing test scenario: a lively,
     # multi-eligible, loaded board for hands-on iteration of the cockpit gesture
     # surface. Seeds no anomalies and asserts nothing — generate() writes a
@@ -749,6 +760,79 @@ def _apply_multi_route(ds: Dataset, rng: random.Random,
     }
 
 
+def _apply_multi_route_rates(ds: Dataset, rng: random.Random) -> dict:
+    """Per-alternative RATES (docs/06 §5.3, Session 4B.0): an operation's
+    eligible machines run it at DIFFERENT speeds via distinct
+    run_minutes_per_unit rows sharing one (route_id, sequence). Enters through
+    the CSV doorway (routing_lines), so the adapter's rate_overrides, the
+    solver's per-resource durations, and the extractor's honest pricing are all
+    exercised end-to-end — the counterfactual (pin the slow alternative → longer
+    duration, higher cost) is the proof.
+
+    Rates are EQUAL across every machine (resource_rates cleared → all bill the
+    cost-model default), so the entire cost differential between a fast and a
+    slow placement is its DURATION. Layout (1 facility, all on CAL-STD):
+
+      PROD-RATE (2 steps):
+        seq10 {R0 run=60, R1 run=120}  ← the counterfactual target: R1 is the
+                                          SLOW alternative (2× the fast time)
+        seq20 {R2 run=30}              ← single-eligible successor (a real chain)
+
+    Every op is a qty=1 block, base_setup=0, so working-minutes == run_minutes.
+    """
+    ref = ds.reference_date
+    ds.cost_model["refinements"]["resource_rates"] = {}  # equal rate everywhere
+    R = [r["resource_id"] for r in ds.resources]
+    ds.products, ds.routings, ds.routing_lines, ds.orders = [], [], [], []
+
+    pid, route_id = "PROD-RATE", "RT-PROD-RATE"
+    ds.products.append({
+        "product_id": pid, "uom": "EA", "facility_id": ds.facilities[0],
+        "product_group": "multi_route_rates", "costing_lot_size": "1",
+        "setup_minutes": "0", "production_minutes": "60", "cost_price": "10.0",
+    })
+    ds.routings.append({
+        "route_id": route_id, "facility_id": ds.facilities[0], "product_id": pid,
+        "status": "active", "approved": "Y", "version": "1",
+        "effective_from": ref.isoformat(),
+    })
+    # seq10: fast R0 (60) vs slow R1 (120); STEP attributes identical.
+    step10 = [(R[0], "60"), (R[1], "120")]
+    for res_id, run in step10:
+        ds.routing_lines.append({
+            "route_id": route_id, "sequence": "10", "resource_id": res_id,
+            "active": "1", "setup_minutes": "0", "run_minutes_per_unit": run,
+            "dwell_minutes": "0", "setup_family": "", "splittable": "false",
+            "min_chunk_minutes": "",
+        })
+    # seq20: single-eligible successor.
+    ds.routing_lines.append({
+        "route_id": route_id, "sequence": "20", "resource_id": R[2],
+        "active": "1", "setup_minutes": "0", "run_minutes_per_unit": "30",
+        "dwell_minutes": "0", "setup_family": "", "splittable": "false",
+        "min_chunk_minutes": "",
+    })
+
+    for i in range(6):
+        oid = f"ORD-{i + 1:06d}"
+        due = ref + timedelta(days=10)
+        ds.orders.append({
+            "order_id": oid, "product_id": pid, "route_id": route_id,
+            "quantity": "1", "due_date": due.isoformat(),
+            "created_date": ref.isoformat(), "release_date": ref.isoformat(),
+            "facility_id": ds.facilities[0], "customer_id": "",
+            "priority_class": "", "commitment_class": "standard",
+        })
+
+    return {
+        "target_route": route_id, "target_sequence": 10,
+        "fast_resource": R[0], "fast_run_minutes": 60,
+        "slow_resource": R[1], "slow_run_minutes": 120,
+        "successor_resource": R[2],
+        "expected_slow_costlier_than_fast": True,
+    }
+
+
 def _apply_busy_board(ds: Dataset, rng: random.Random) -> dict:
     """FEEL fixture — a lively cockpit board for hands-on iteration of the
     gesture surface (grab → shade → ghosts → magnets → drop → traces). This is
@@ -1005,6 +1089,30 @@ def _anomaly_setup_family_without_matrix(ds: Dataset, rng: random.Random, _: Any
     return {
         "anomaly": "setup_family_without_matrix", "param": None,
         "expected_finding_code": "AMBIGUOUS_SOURCE", "expected_severity": "warning",
+        "expected_disposition": "proceeded_flagged", "expected_grade_floor": "CONDITIONAL",
+    }
+
+
+def _anomaly_alternative_step_disagreement(ds: Dataset, rng: random.Random, _: Any = None) -> dict:
+    """A repeated (route_id, sequence) group — an operation's eligible set
+    (docs/06 §5.3) — whose alternative rows DISAGREE on a STEP attribute. A
+    per-alternative setup/run time is legitimate; splittable is a property of
+    the OPERATION, not the machine, so a mismatch is an ambiguity. First row
+    wins downstream; the gate flags it (ids.alternative_step_attributes_agree)."""
+    line = ds.routing_lines[0]
+    route_id, seq = line["route_id"], line["sequence"]
+    other = next((r["resource_id"] for r in ds.resources
+                  if r["resource_id"] != line["resource_id"]), line["resource_id"])
+    ds.routing_lines.append({
+        "route_id": route_id, "sequence": seq, "resource_id": other,
+        "active": "1", "setup_minutes": "", "run_minutes_per_unit": "",
+        "dwell_minutes": line.get("dwell_minutes", "0"), "setup_family": "",
+        # disagrees with the first row's splittable=false — the STEP conflict.
+        "splittable": "true", "min_chunk_minutes": "",
+    })
+    return {
+        "anomaly": "alternative_step_disagreement", "param": None,
+        "expected_finding_code": "AMBIGUOUS_SOURCE", "expected_severity": "error",
         "expected_disposition": "proceeded_flagged", "expected_grade_floor": "CONDITIONAL",
     }
 
@@ -1386,6 +1494,7 @@ _ANOMALY_FUNCS = {
     "stale_due_dates": _anomaly_stale_due_dates,
     "placeholder_dates": _anomaly_placeholder_dates,
     "setup_family_without_matrix": _anomaly_setup_family_without_matrix,
+    "alternative_step_disagreement": _anomaly_alternative_step_disagreement,
     "unused_transition_matrix": _anomaly_unused_transition_matrix,
     "uncovered_priority_class": _anomaly_uncovered_priority_class,
     "customer_without_master": _anomaly_customer_without_master,
@@ -1431,6 +1540,7 @@ RULE_TO_ANOMALY: dict[str, str] = {
     "ids.orders_use_active_routes": "inactive_route_refs:3",
     "ids.priority_classes_priced": "uncovered_priority_class",
     "ids.setup_families_have_transition_matrix": "setup_family_without_matrix",
+    "ids.alternative_step_attributes_agree": "alternative_step_disagreement",
     "ids.transition_matrix_references_declared_families": "unused_transition_matrix",
     "ids.customer_references_have_master": "customer_without_master",
     "ids.locks_reference_known_entities": "lock_on_unknown_order:2",
@@ -1574,6 +1684,8 @@ def generate(
     if preset.get("multi_route"):
         truth_extra["multi_route"] = _apply_multi_route(
             ds, rng, distinct_rates=preset.get("multi_route_distinct", False))
+    if preset.get("multi_route_rates"):
+        truth_extra["multi_route_rates"] = _apply_multi_route_rates(ds, rng)
     if preset.get("busy_board"):
         truth_extra["busy_board"] = _apply_busy_board(ds, rng)
 

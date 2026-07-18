@@ -614,9 +614,23 @@ class LLMRenderer:
         reg = register or _register_for(bundle)
         return f"{body}\n[rendered by: template — {reason} | register: {reg}]"
 
+    # Refusal / fallback bundles are AUTHORED copy — the honest refusal, the
+    # near-miss bridge, the clarify prompt, the ledger meta-listing. There is
+    # nothing to testify FROM and nothing for the model to improve; the authored
+    # header IS the answer. These short-circuit to the template with NO LLM
+    # round-trip, regardless of whether the bundle happens to carry records
+    # (Session 4B.0 Fix-B extension of the 4A.1c no-evidence guard — defense in
+    # depth: an unresolvable question must never reach the LLM renderer).
+    _AUTHORED_COPY_SUBJECTS = frozenset({
+        "unsupported", "near_miss", "clarify", "refusals",
+    })
+
     def render(self, bundle: ExplanationBundle) -> str:
         if bundle.subject_type in ("remediation", "triage"):
             return self._render_register(bundle)
+        if bundle.subject_type in self._AUTHORED_COPY_SUBJECTS:
+            return self._template_fallback(
+                bundle, "authored copy — rendered verbatim", "testimony")
         if not self._available:
             return self._template_fallback(
                 bundle, f"--llm requested but {self._fallback_reason}", "testimony")

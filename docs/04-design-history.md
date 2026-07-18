@@ -5447,3 +5447,83 @@ closed, waiting. The discipline that makes it trustworthy is the same one that
 makes the answers trustworthy: render only what you can source, and where you
 can't (unplanned downtime), reserve the slot and name the debt rather than paint
 a plausible lie.
+
+---
+
+## Amendment — 2026-07-18: Session 4B.0 — IDS alternative-resource doorway (per-alternative rates), spec + adapter truth + pipeline proof
+
+Connector-track opener. Design settled in a parallel thread, re-applied to the
+live repo here (not merged as external files). The doorway was HALF-built: eligible
+*sets* entered through the CSV since Session 3.1, but per-alternative *rates* did not.
+
+**CU1 — adapter truth, established by test FIRST (before any spec edit).** What did
+`IDSAdapter` do with repeated `(route_id, sequence)` rows naming different
+`resource_id`? Answer (pinned by `tests/test_ids_alternative_groups.py::TestAdapterTruth`):
+it grouped them into ONE `explicit_set` OperationSpec over the whole eligible set —
+NOT last-wins, NOT two operations, NOT a crash. But the per-operation TIME model
+(setup/run) was read from the FIRST row ONLY, so a submitter who gave a distinct
+`run_minutes_per_unit` per alternative machine had every non-first row silently
+DROPPED — a per-alternative rate never reached the solver. A silent-wrong, now a
+standing regression. **And the second CU1 question: does the existing multi-eligible
+scenario enter through the CSV doorway or adapter-side construction?** Through the
+CSV — the `multi_route` generator writes the rows and `test_multi_route` runs the
+full pipeline (generate → gate → adapter → solve). So B2 pipeline-proof for eligible
+SETS was NOT one-sided; it was per-alternative RATES that were unproven, and CU4
+restores that leg honestly.
+
+**Decision.** (a) Per-alternative `setup_minutes`/`run_minutes_per_unit` are
+first-class: captured in `ResourceRequirement.rate_overrides {resource_ref →
+{base_setup, run_rate}}` (docs/01 §5.5), the first row the default, any differing
+alternative an override; an all-agree group carries an empty map and solves
+byte-identically (the no-map guarantee, tested). (b) `setup_family`/`dwell`/
+`splittable`/`min_chunk` are STEP attributes of the OPERATION, not the machine —
+they must agree across a group; disagreement is a new Tier-2 rule
+`ids.alternative_step_attributes_agree` (registry #33, AMBIGUOUS_SOURCE, conditional/
+degraded), resolved first-row-wins with a catalog note (note_version 1). (c) The
+solver builds PER-RESOURCE durations for a heterogeneous op (a variable-duration
+encoding: the end var is linked by each machine`s own optional interval, not a
+fixed `e==s+total`); a homogeneous op keeps the exact scalar path untouched, which
+is what makes the no-map guarantee hold. (d) The extractor prices the chosen
+machine from the solved end−start (already honest) and prices ALTERNATIVES at their
+own per-resource duration — reducing exactly to the historical `(alt_rate−rate)×dur`
+when durations agree.
+
+**Follow-through.**
+- Contracts: `ResourceRateOverride` struct + `ResourceRequirement.rate_overrides`;
+  `Operation.resource_setup_durations` / `resource_run_durations` (qty-resolved
+  projections, the instance analogue of `run_duration`, derived provenance).
+- Adapter groups repeated-sequence rows, first-row default + per-alternative
+  overrides; STEP attributes first-row-wins (the gate owns detection — "the gate
+  checks; it never repairs").
+- Gate: new rule + check (group by (route,seq), compare the four step attrs);
+  ids_rules.py registry → 33, coverage anomaly `alternative_step_disagreement`,
+  remediation catalog note (cites §5.3).
+- CU4 pipeline proof: new `multi_route_rates` generator scenario (per-alternative
+  run times through the CSV, EQUAL rates so price is purely duration). The
+  counterfactual (`test_multi_route_rates.py`, slow) pins the slow alternative and
+  asserts, through a real re-solve + extraction, a duration exactly 60 min longer
+  and a strictly higher cost — priced end to end. B2 pipeline-proven, honestly.
+
+**Named carry-forwards (debts, not built).** (1) A `splittable` (resumable) op WITH
+rate_overrides uses the scalar default duration — per-resource chunk-slot working
+minutes are a follow-up; splittable is a STEP attribute that must agree, and the
+CU4 fixture is splittable=false, so the case is latent. (2) A heterogeneous op`s
+`var_map.op_durations` scalar (used by setup-transition adjacency and R-DP8
+standing-pin conflict detection) is the DEFAULT duration, a representative — pins on
+rate-varying ops are not exercised this session. (3) A pre-existing systemic
++1-minute offset on solved op durations (it hits homogeneous ops identically) is
+unrelated and untouched; the counterfactual states its invariant as the delta,
+which is exact.
+
+Reconciliation note: the parallel design thread targeted "docs/06 v0.4"; the live
+repo was ALREADY v0.4, so this lands as **v0.5** (registry v0.3).
+
+Non-slow Python **1160 passed, 0 failed**; slow guards green (multi_route pool +
+eligibility_consistency 13/13; multi_route_rates counterfactual 2/2). Goldens
+(sample_data schedule.csv + ledger) byte-identical. See docs/06 §5.3 + §4, docs/01
+§5.5, docs/05 B2, docs/07 v2.23.
+
+Lesson: a doorway proved for the STRUCTURE (eligible sets) is not proved for the
+VALUES that ride through it (per-alternative rates) — read the adapter`s truth
+before trusting the claim, and where the two rows disagree on a machine property vs
+an operation property, split them: vary the rate, agree on the step.

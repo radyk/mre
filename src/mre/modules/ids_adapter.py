@@ -41,8 +41,8 @@ from typing import Any, Optional
 from mre.contracts.entities import (
     Calendar, CalendarException, Constraint, CostModel, Demand, EntityRef,
     ExternalRef, OperationSpec, PrecedenceEdge, Process, Product, Quantity,
-    Resource, ResourceRequirement, SetupCostBasis, TardinessWeights, TimeWindow,
-    WipOperationObservation,
+    Resource, ResourceRateOverride, ResourceRequirement, SetupCostBasis,
+    TardinessWeights, TimeWindow, WipOperationObservation,
 )
 from mre.contracts.provenance import (
     DefaultedProvenance, DerivedProvenance, InputRef, ObservedProvenance,
@@ -399,34 +399,57 @@ class IDSAdapter:
                 seq = int(rl.get("sequence", "0") or "0")
                 lines_by_seq.setdefault(seq, []).append(rl)
 
+            def _row_time(row: dict) -> tuple[timedelta, timedelta, str]:
+                """(base_setup, run_rate, run_formula) for one routing_lines row,
+                resolving per-op overrides else the product-level fallback — the
+                single resolution both the default (first row) and each
+                alternative's rate_override read through."""
+                orun = _num(row.get("run_minutes_per_unit"))
+                oset = _num(row.get("setup_minutes"))
+                if orun > 0:
+                    rr, rf = timedelta(minutes=orun), "ids_routing_line_override"
+                elif lot_size > 0 and prod_minutes > 0:
+                    rr, rf = timedelta(minutes=prod_minutes / lot_size), "legacy_author_definition_v1"
+                else:
+                    rr, rf = timedelta(0), "unavailable"
+                bs = timedelta(minutes=oset if oset > 0 else prod_setup)
+                return bs, rr, rf
+
             for seq in sorted(lines_by_seq):
                 seq_lines = lines_by_seq[seq]
                 # Resolve every eligible resource; preserve first-seen order and
                 # drop unresolvable references (same skip as the single-line path).
+                # Keep the ROW each resource was first seen on so its own
+                # per-alternative time model (docs/06 §5.3) can be read.
                 resolved: list[str] = []
+                row_for_res: dict[str, dict] = {}
                 for rl in seq_lines:
                     res_id = identity_map.resolve("IDS", "resource_id", rl.get("resource_id", ""))
                     if res_id is not None and res_id not in resolved:
                         resolved.append(res_id)
+                        row_for_res[res_id] = rl
                 if not resolved:
                     continue
-                rl = seq_lines[0]  # the op's time model is read from the first row
+                rl = seq_lines[0]  # STEP attributes + the DEFAULT time: first row wins
                 spec_id = _stable_id("operationspec", f"{route_id}:{ext_pid}:{seq}")
 
-                override_run = _num(rl.get("run_minutes_per_unit"))
-                override_setup = _num(rl.get("setup_minutes"))
-                if override_run > 0:
-                    run_rate = timedelta(minutes=override_run)
-                    run_formula = "ids_routing_line_override"
-                elif lot_size > 0 and prod_minutes > 0:
-                    run_rate = timedelta(minutes=prod_minutes / lot_size)
-                    run_formula = "legacy_author_definition_v1"
-                else:
-                    run_rate = timedelta(0)
-                    run_formula = "unavailable"
-                base_setup = timedelta(minutes=override_setup if override_setup > 0 else prod_setup)
+                base_setup, run_rate, run_formula = _row_time(rl)
 
-                req = ResourceRequirement(mode=ResourceRequirementMode.EXPLICIT_SET, resource_refs=resolved)
+                # Per-alternative time (docs/06 §5.3): any eligible resource whose
+                # own row resolves to a DIFFERENT (base_setup, run_rate) than the
+                # first-row default carries a rate_override. All-agree ⇒ empty map
+                # ⇒ byte-identical pre-4B.0 solves (the no-map guarantee). The
+                # first row's resource is the default and needs no override.
+                rate_overrides: dict[str, ResourceRateOverride] = {}
+                for res_id in resolved:
+                    bs, rr, _ = _row_time(row_for_res[res_id])
+                    if (bs, rr) != (base_setup, run_rate):
+                        rate_overrides[res_id] = ResourceRateOverride(base_setup=bs, run_rate=rr)
+
+                req = ResourceRequirement(
+                    mode=ResourceRequirementMode.EXPLICIT_SET, resource_refs=resolved,
+                    rate_overrides=rate_overrides,
+                )
                 min_chunk_raw = _num(rl.get("min_chunk_minutes"))
                 spec = OperationSpec(
                     id=spec_id, snapshot_id=snapshot_id, sequence=seq,

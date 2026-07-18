@@ -78,6 +78,7 @@ class RuleId(str, Enum):
     WIP_ACTUAL_STARTS_ARE_AT_OR_BEFORE_REFERENCE_DATE = (
         "ids.wip_actual_starts_are_at_or_before_reference_date")
     WIP_COMPLETION_IS_INTERNALLY_CONSISTENT = "ids.wip_completion_is_internally_consistent"
+    ALTERNATIVE_STEP_ATTRIBUTES_AGREE = "ids.alternative_step_attributes_agree"
 
     # --- Quality (satisfied / flagged; fixed informational consequence) ---
     DURATIONS_WITHIN_PLAUSIBLE_RANGE = "ids.durations_within_plausible_range"
@@ -197,6 +198,11 @@ RULE_REGISTRY: dict[RuleId, RuleSpec] = {
               FindingCode.VALUE_OUT_OF_RANGE, "§5.13"),
         _spec(RuleId.WIP_COMPLETION_IS_INTERNALLY_CONSISTENT, _C,
               FindingCode.VALUE_OUT_OF_RANGE, "§5.13"),
+        _spec(RuleId.ALTERNATIVE_STEP_ATTRIBUTES_AGREE, _C,
+              FindingCode.AMBIGUOUS_SOURCE, "§5.3",
+              note="alternative-group rows sharing (route_id, sequence) must agree "
+                   "on STEP attributes (setup_family / dwell / splittable / "
+                   "min_chunk); disagreement is first-row-wins with this flag"),
         # Quality
         _spec(RuleId.DURATIONS_WITHIN_PLAUSIBLE_RANGE, _Q, FindingCode.STATISTICAL_OUTLIER,
               "§4", note="today measures run-rate outliers vs family median; the rule "
@@ -212,7 +218,7 @@ RULE_REGISTRY: dict[RuleId, RuleSpec] = {
     ]
 }
 
-assert len(RULE_REGISTRY) == 32, f"registry must hold 32 rules, has {len(RULE_REGISTRY)}"
+assert len(RULE_REGISTRY) == 33, f"registry must hold 33 rules, has {len(RULE_REGISTRY)}"
 
 
 def outcome_severity(rule: RuleSpec, outcome: RuleOutcome) -> FindingSeverity:

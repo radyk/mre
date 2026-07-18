@@ -67,6 +67,24 @@ class TimeWindow(BaseModel):
     end: datetime
 
 
+class ResourceRateOverride(BaseModel):
+    """Per-alternative time model for one eligible resource of an explicit_set
+    requirement (docs/06 §5.3 alternative groups; docs/01 §5.5).
+
+    A multi-eligible operation is expressed as repeated routing_lines rows
+    sharing one (route_id, sequence) but naming different resource_id. When an
+    alternative machine runs the operation at a DIFFERENT speed (its own
+    setup_minutes / run_minutes_per_unit), that per-alternative time lands here,
+    keyed by resource_ref on the requirement's ``rate_overrides``. The scalar
+    ``OperationSpec.base_setup`` / ``run_rate`` remain the DEFAULT for any
+    eligible resource with no override — an empty map is byte-identical old
+    behaviour (the defaults-reproduce-baseline guarantee). Quantity-INDEPENDENT,
+    exactly like ``run_rate``: the Planner resolves it against demand quantity.
+    """
+    base_setup: timedelta = timedelta(0)
+    run_rate: timedelta = timedelta(0)
+
+
 class ResourceRequirement(BaseModel):
     """Struct (not entity) — no id or snapshot_id.
 
@@ -77,6 +95,11 @@ class ResourceRequirement(BaseModel):
     capability_ref: Optional[str] = None
     resource_refs: list[str] = []
     count: int = 1
+    # Per-alternative time model (docs/06 §5.3). resource_ref → its own
+    # (base_setup, run_rate); resources absent from the map fall back to the
+    # OperationSpec scalar defaults. Empty ⇒ every alternative shares one
+    # duration (the pre-4B.0 model; byte-identical solves).
+    rate_overrides: dict[str, ResourceRateOverride] = {}
 
     @model_validator(mode="after")
     def _mode_consistency(self) -> ResourceRequirement:
@@ -297,6 +320,14 @@ class Operation(BaseModel):
     setup_family: str = ""
     setup_duration: timedelta = timedelta(0)
     run_duration: timedelta = timedelta(0)
+    # Per-alternative resolved durations (docs/06 §5.3): resource_ref → its own
+    # quantity-resolved setup / run duration, projected by the Planner from the
+    # requirement's rate_overrides (the instance analogue of run_duration).
+    # A resource absent from these maps runs at the scalar setup_duration /
+    # run_duration above; both empty ⇒ every eligible machine shares one
+    # duration (byte-identical pre-4B.0 solves).
+    resource_setup_durations: dict[str, timedelta] = {}
+    resource_run_durations: dict[str, timedelta] = {}
     splittable: bool = False
     min_chunk: Optional[timedelta] = None
     # WIP landing (docs/06 §5.13, docs/01 §5.4): observed execution state at

@@ -55,6 +55,7 @@ from mre.contracts.entities import (
     Resource,
     ResourceAssignment,
     ResourcePool,
+    ResourceRateOverride,
     ResourceRequirement,
     Schedule,
     ServiceOutcome,
@@ -99,7 +100,8 @@ __all__ = [
     "CostModel", "Demand", "EntityRef", "ExternalRef", "Fulfillment",
     "Operation", "OperationSpec", "PhaseWindows", "Process", "Product",
     "Quantity", "Resource", "ResourceAssignment", "ResourcePool",
-    "ResourceRequirement", "Schedule", "ServiceOutcome", "SetupCostBasis",
+    "ResourceRateOverride", "ResourceRequirement", "Schedule", "ServiceOutcome",
+    "SetupCostBasis",
     "TardinessWeights", "TimeWindow", "WorkPackage",
     # provenance
     "DefaultedProvenance", "DerivedProvenance", "InputRef", "ObservedProvenance",
