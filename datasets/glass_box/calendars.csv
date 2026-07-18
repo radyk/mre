@@ -1,0 +1,12 @@
+calendar_id,row_type,day_of_week,start_time,end_time,exception_date,exception_type,reason
+CAL-STD,pattern,0,07:00,19:00,,,
+CAL-STD,pattern,1,07:00,19:00,,,
+CAL-STD,pattern,2,07:00,19:00,,,
+CAL-STD,pattern,3,07:00,19:00,,,
+CAL-STD,pattern,4,07:00,19:00,,,
+CAL-HEAT,pattern,0,07:00,19:00,,,
+CAL-HEAT,pattern,1,07:00,19:00,,,
+CAL-HEAT,pattern,2,07:00,19:00,,,
+CAL-HEAT,pattern,3,07:00,19:00,,,
+CAL-HEAT,pattern,4,07:00,19:00,,,
+CAL-HEAT,exception,,07:00,19:00,2026-01-10,added,overtime

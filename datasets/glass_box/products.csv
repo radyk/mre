@@ -1,0 +1,10 @@
+product_id,uom,facility_id,product_group,costing_lot_size,setup_minutes,production_minutes,cost_price
+P-WIDGET,EA,F001,fabricated,1,20,4,25.0
+P-SPACER,EA,F001,spacer,1,0,900,15.0
+P-RUSH,EA,F001,fabricated,1,20,3,30.0
+P-BRACKET,EA,F001,bracket,1,15,5,20.0
+P-PANEL-RED,EA,F001,panel,1,20,3,18.0
+P-PANEL-BLUE,EA,F001,panel,1,20,3,18.0
+P-HEAT,EA,F001,heat,1,30,570,40.0
+P-SHIM,EA,F001,fabricated,1,10,1,5.0
+P-BASIC,EA,F001,fabricated,1,10,2,12.0

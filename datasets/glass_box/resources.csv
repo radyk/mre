@@ -1,0 +1,6 @@
+resource_id,facility_id,resource_type,parallel_units,calendar_id,pool_id,cost_rate
+CUT-01,F001,workcenter,1,CAL-STD,,
+PRESS-FAST,F001,workcenter,1,CAL-STD,,
+PRESS-SLOW,F001,workcenter,1,CAL-STD,,
+PAINT-01,F001,workcenter,1,CAL-STD,,
+HEAT-01,F001,workcenter,1,CAL-HEAT,,

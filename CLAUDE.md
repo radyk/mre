@@ -94,6 +94,69 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.1 — Glass Box
+instruments (the hand-auditable dataset, sabotage menu, walkthrough) 2026-07-18.**
+Instruments so Daryn can verify, at his own pace, that (a) the gate catches
+deliberate data defects with the right rule/severity/disposition and (b) every
+placement in the solved schedule traces back to a row he authored — "read the story
+of the solve." This session BUILDS the instruments; it does not run the audit (that
+is Daryn's, by design). No solver/model/contract changes — dataset + docs + one
+dev-script wiring + one standing test. **CU1 — the glass_box dataset:** a
+HAND-AUTHORED, committed IDS submission at `datasets/glass_box/` (manifest + six
+required CSVs + cost_model.json), human-readable IDs Daryn can open in Excel: 15
+orders, 5 machines (`CUT-01`/`PRESS-FAST`/`PRESS-SLOW`/`PAINT-01`/`HEAT-01`), ref
+date Monday 2026-01-05, flat $60/h so a cost difference IS a time difference. NOT
+generator output — authored by hand but borrowing the PROVEN minute values from the
+generator's narrative builders (470-min contention op, 600-min-op / 5-weekday-slot
+overtime economics, the 4B.0 fast/slow-press rate split) so the stories are
+reliable, then re-verified by real solve. Seven features present EXACTLY ONCE: (1)
+alternative group with honest per-machine rates (`RT-BRACKET` seq10 PRESS-FAST 5
+min/u vs PRESS-SLOW 10 — one order takes the slow press, ~$250 more, not late); (2)
+a splittable 900-min op (`ORD-03`) pausing at the overnight closure (two chunks); (3)
+one order late BY DESIGN from pure capacity contention (`ORD-04` high holds `CUT-01`
+Monday → `ORD-05` standard slips to Tuesday, data CLEAN, cause traceable); (4) a
+Saturday overtime window rescuing `ORD-11` (600 min × 1.5 = 900) while `ORD-10` takes
+Friday; (5) a two-machine precedence chain (`P-WIDGET` CUT→PAINT); (6) a setup_family
+changeover (RED `ORD-09` / BLUE `ORD-12` on `PAINT-01`, 90-min colour change); (7)
+the control (`ORD-13`, comfortably early). `README.md` narrates the story as
+PREDICTIONS AUTHORED BEFORE THE SOLVE (contradiction = a finding, not a rewrite —
+they held). Verified live: gate **ACCEPTED/C2/0 findings**; deterministic solve
+reproduces all seven byte-identically; total $6956.83 = production 5006 + overtime
+900 + setup 680 + tardiness 370.83 (decomposes exactly). **CU2 — the sabotage menu**
+(`SABOTAGE_MENU.md`, one page): ten keyed one-cell edits (file · row · column →
+value), each naming the rule caught (a real id from the 33), outcome/severity/grade,
+and the certificate line — broken product ref (`ids.orders_resolve_to_products`),
+impossible due date (`order_dates_internally_consistent`/TEMPORAL_IMPOSSIBILITY),
+alt-group step-attr mismatch (#33 `alternative_step_attributes_agree`/AMBIGUOUS_SOURCE,
+first-row-wins), statistical outlier (`durations_within_plausible_range`/INFO/**still
+ACCEPTED**), duplicate identity, blank key (`key_fields_populated`/MALFORMED_FIELD/
+**REJECTED**), unroutable step (`routes_resolve_to_lines`), a false-positive CONTROL
+(a legal edit that trips NOTHING), facility mismatch, inactive route used
+(`orders_use_active_routes`/LOW_CONFIDENCE_INPUT). Each verified ONCE, mechanically,
+so no menu item is wrong about itself. Two build findings recorded: the outlier rule
+is a PRODUCT-GROUP statistical check (needs ≥3 members with a low median — the clean
+set groups the simple products into one `fabricated` family so the outlier has a
+home); a NEGATIVE quantity is NOT a checked defect (no quantity-sign rule), so the
+"malformed field" item uses a blank key — the gap noted, not papered over. **CU3 —
+the walkthrough** (`WALKTHROUGH.md`, planner-voiced): clean submit → read + interrogate
+the certificate (three registers: `what's wrong?`/`how do I fix the worst one?`/`what
+should I fix first?`) → sabotage in batches → fix → solve → READ THE STORY (per-feature
+question + receipt table, verified against the real explainer — e.g. `why is ORD-05
+late?` → CAPACITY_BLOCKED on CUT-01 + 890-min metric) + the ORD-05 TRACE EXERCISE
+(CSV row → gate → canonical entity → solver placement → cost ledger → "why" answer).
+Exit bar: "you tried to catch it lying and could not." **CU4 — wiring:** `dev_api.ps1
+-Scenario glass_box` copies the committed dataset verbatim into `_data/mrd` (no
+generator; `.md`/gate_output excluded); ledger + LLM env already flow via `.env.local`
+/ `MRE_DEV=1` / `MRE_DATA_ROOT` so audit questions are recorded (AI-track-2 fuel);
+`.gitignore` gains `datasets/**/gate_output/`. **Tests:** new `tests/test_glass_box.py`
+**19 passed** (1 clean gate + 10 sabotage items + 8 story, Part C slow); full non-slow
+Python suite green; frontend untouched. See the docs/04 2026-07-18 Session 4B.1
+amendment and docs/07 v2.24. Lesson: to make a system auditable you build the audit's
+INSTRUMENTS, not its verdict — a dataset small enough to hold in one's head,
+predictions authored BEFORE the solve, a sabotage menu every item of which is proven
+right about itself, and a trace walkable by hand and by evidence to the same answer;
+trust comes from trying to break it and failing.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.0 — IDS
 alternative-resource doorway: per-alternative rates (connector-track opener)
 2026-07-18.** The alternative-resource doorway (docs/06 §5.3) was HALF-built:

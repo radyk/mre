@@ -1,0 +1,5 @@
+from_family,to_family,setup_minutes,setup_cost,scrap_units
+PAINT_RED,PAINT_BLUE,90,60,
+PAINT_BLUE,PAINT_RED,90,60,
+PAINT_RED,PAINT_RED,15,10,
+PAINT_BLUE,PAINT_BLUE,15,10,

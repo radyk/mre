@@ -10,6 +10,11 @@ param(
     # lively, multi-eligible, loaded FEEL fixture built for gesture-surface
     # feel-iteration. Pass any generator scenario, e.g.
     #   .\src\cockpit\dev_api.ps1 -Scenario multi_route_distinct
+    #
+    # The special value 'glass_box' serves the HAND-AUTHORED committed auditor
+    # dataset (datasets/glass_box) instead of running the generator — it is
+    # copied verbatim into _data/mrd so its CSVs reach the API unchanged. See
+    # datasets/glass_box/README.md.
     [string]$Scenario = 'busy_board'
 )
 $ErrorActionPreference = 'Stop'
@@ -50,9 +55,25 @@ if ($null -eq [Environment]::GetEnvironmentVariable('MRE_DEV', 'Process')) {
 Write-Host "[dev_api] repo root:      $repo"
 Write-Host "[dev_api] MRE_DATA_ROOT:  $env:MRE_DATA_ROOT"
 Write-Host "[dev_api] MRE_DEV:        $env:MRE_DEV"
-Write-Host "[dev_api] generating $Scenario submission -> _data/mrd"
-python tools/generate_erp_dataset.py --scenario $Scenario --out _data/mrd
-if ($LASTEXITCODE -ne 0) { throw "dataset generation failed (exit $LASTEXITCODE)" }
+
+$mrd = Join-Path $repo '_data\mrd'
+if ($Scenario -eq 'glass_box') {
+    # Hand-authored committed auditor dataset — copy verbatim, do not generate.
+    $src = Join-Path $repo 'datasets\glass_box'
+    if (-not (Test-Path $src)) { throw "glass_box dataset not found at $src" }
+    Write-Host "[dev_api] serving hand-authored glass_box dataset -> _data/mrd"
+    if (Test-Path $mrd) { Remove-Item -Recurse -Force $mrd }
+    New-Item -ItemType Directory -Force -Path $mrd | Out-Null
+    # Copy the submission CSVs + manifest + cost_model, not the companion docs
+    # or any stray gate_output.
+    Get-ChildItem -Path $src -File | Where-Object {
+        $_.Extension -in '.csv', '.json'
+    } | Copy-Item -Destination $mrd
+} else {
+    Write-Host "[dev_api] generating $Scenario submission -> _data/mrd"
+    python tools/generate_erp_dataset.py --scenario $Scenario --out _data/mrd
+    if ($LASTEXITCODE -ne 0) { throw "dataset generation failed (exit $LASTEXITCODE)" }
+}
 
 Write-Host "[dev_api] starting API on http://localhost:8000  (leave this running)"
 Write-Host "[dev_api] then run dev_cockpit.ps1 in another terminal"

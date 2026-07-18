@@ -5527,3 +5527,115 @@ Lesson: a doorway proved for the STRUCTURE (eligible sets) is not proved for the
 VALUES that ride through it (per-alternative rates) — read the adapter`s truth
 before trusting the claim, and where the two rows disagree on a machine property vs
 an operation property, split them: vary the rate, agree on the step.
+
+## Amendment — 2026-07-18: Session 4B.1 — Glass Box instruments (the hand-auditable dataset, sabotage menu, and walkthrough)
+
+Purpose: give Daryn the instruments to verify, at his own pace, that (a) the gate
+catches deliberate data defects with the right rule/severity/disposition, and
+(b) every placement in the solved schedule traces back to a row he authored —
+"read the story of the solve." This session BUILDS the instruments; it does not
+run the audit (that is Daryn's, by design). No solver/model/contract changes —
+this is a dataset + docs + one dev-script wiring + one standing test.
+
+**CU1 — the glass_box dataset (a story, not a soup).** A HAND-AUTHORED, committed
+IDS submission at `datasets/glass_box/` (manifest + the six required CSVs +
+`cost_model.json`) — human-readable IDs Daryn can open in Excel and hold in his
+head: 15 orders, 5 machines (`CUT-01`, `PRESS-FAST`, `PRESS-SLOW`, `PAINT-01`,
+`HEAT-01`), one facility, reference date Monday 2026-01-05, a flat $60/h rate so a
+cost difference IS a time difference. It is NOT generator output — it was authored
+by hand, borrowing the PROVEN minute values from the generator's narrative
+builders (`_apply_bottleneck`'s 470-min contention op, `_apply_overtime_required`'s
+600-min-op / 5-weekday-slots economics, the 4B.0 fast/slow-press rate split) so the
+stories are reliable, then re-verified by real solve. Each of the seven features is
+present EXACTLY ONCE with a nameable purpose: (1) an alternative group with honest
+per-machine rates — `RT-BRACKET` seq10 on `PRESS-FAST` (5 min/unit) vs `PRESS-SLOW`
+(10), three orders due Monday so exactly one takes the slow press (~$250 more, not
+late); (2) a splittable 900-min op (`ORD-03`) that pauses at the overnight closure
+and resumes (two chunks, no cost billed to the pause); (3) one order late BY DESIGN
+from pure capacity contention (`ORD-04` high-priority holds `CUT-01` Monday, `ORD-05`
+standard slips to Tuesday — data clean, cause traceable); (4) a Saturday overtime
+window on `HEAT-01` that rescues `ORD-11` (600 min at the 1.5× premium = 900) while
+`ORD-10` takes Friday; (5) a two-machine precedence chain (`P-WIDGET`: CUT→PAINT);
+(6) a setup_family changeover (RED `ORD-09` / BLUE `ORD-12` on `PAINT-01`, a 90-min
+colour change from `setup_transitions.csv`); (7) the control (`ORD-13`, comfortably
+early). Everything else (the boring `P-BASIC` background on HEAT) is deliberately
+unremarkable. A README-style companion (`datasets/glass_box/README.md`) narrates
+the INTENDED story as PREDICTIONS AUTHORED BEFORE THE SOLVE — what each order WILL
+do and WHY, from the input alone — with the discipline stated in the doc: if the
+solve contradicts a prediction that is a FINDING, not a licence to rewrite the
+prediction. (The predictions held; `test_glass_box.py` pins them.) Verified live:
+gate **ACCEPTED / C2 / 0 findings**; deterministic solve (`--solver-workers 1
+--solver-seed 0`) reproduces all seven, byte-identical across runs; total
+$6956.83 = production 5006 + overtime 900 + setup 680 + tardiness 370.83, the ledger
+decomposing exactly.
+
+**CU2 — the sabotage menu (one page, committed).** `datasets/glass_box/
+SABOTAGE_MENU.md` — ten keyed one-cell edits, each naming file · row · column →
+value, the rule caught (a real id from the 33), the outcome/severity, the resulting
+grade, and what the certificate conversation should say: (1) broken product ref →
+`ids.orders_resolve_to_products` degraded/CONDITIONAL; (2) impossible due date →
+`ids.order_dates_internally_consistent` TEMPORAL_IMPOSSIBILITY/CONDITIONAL; (3)
+alternative-group step-attribute mismatch (rule #33) →
+`ids.alternative_step_attributes_agree` AMBIGUOUS_SOURCE/CONDITIONAL (first-row-wins,
+disclosed); (4) statistical outlier rate → `ids.durations_within_plausible_range`
+STATISTICAL_OUTLIER flagged/INFO/**still ACCEPTED**; (5) duplicate identity →
+`ids.order_identities_unique` DUPLICATE_IDENTITY/CONDITIONAL; (6) blank key field →
+`ids.key_fields_populated` MALFORMED_FIELD violated/**REJECTED**; (7) unroutable
+step (zero active rows) → `ids.routes_resolve_to_lines` ORPHAN_ENTITY/CONDITIONAL;
+(8) the **false-positive CONTROL** — a legal quantity change that must trip NOTHING;
+(9) facility mismatch → `ids.facility_references_consistent`; (10) an inactive route
+used by a live order → `ids.orders_use_active_routes` LOW_CONFIDENCE_INPUT. Each row
+was verified ONCE, mechanically, so Daryn never meets a menu item that is wrong about
+itself — the verification is frozen in `test_glass_box.py`
+(`test_sabotage_menu_item`, parametrised). Two calibration findings during the build,
+recorded because they shaped the menu: the outlier rule is a PRODUCT-GROUP
+statistical check (>10× the family median of `production_minutes/costing_lot_size`),
+so it needs ≥3 members with a low median — the clean dataset groups the simple
+fabricated products into one `fabricated` family so the outlier sabotage has a home
+(a lone product is its own median and can never be an outlier); and a NEGATIVE
+quantity is NOT a checked defect (the gate has no quantity-sign rule), so the
+"malformed field" item uses a blank key (which is caught, hard) — the negative-value
+gap is noted here, not papered over.
+
+**CU3 — the walkthrough (one committed doc, planner-voiced).** `datasets/glass_box/
+WALKTHROUGH.md` — the session script: clean submit → read the certificate →
+interrogate it (the three registers: `what's wrong?` testimony, `how do I fix the
+worst one?` remediation citing the catalog note + IDS §, `what should I fix first?`
+judgment) → apply sabotages in batches (rejections / conditionals / disclosures /
+the control) → certificate catches them → fix → solve → READ THE STORY: a table
+giving, for each of the seven features, the exact question to type (verified working
+against the real explainer — e.g. `why is ORD-05 late?` returns CAPACITY_BLOCKED on
+CUT-01 + the 890-min lateness metric; `why is ORD-08 on PRESS-SLOW?` surfaces
+PRESS-FAST as the priced alternative) and where the receipt lives (which record type,
+which bar, which hover). Includes the TRACE EXERCISE: follow ORD-05 CSV row →
+gate (no finding — lateness is a scheduling outcome, not a data defect) → canonical
+Demand/WorkPackage/Operation → solver placement (Tuesday, driver CAPACITY_BLOCKED) →
+cost ledger line ($470 production + $370.83 tardiness) → the "why" answer, the same
+record chain reached two ways. Exit bar, stated in the doc: "you tried to catch it
+lying and could not."
+
+**CU4 — wiring.** `dev_api.ps1` gains a `glass_box` special case: instead of running
+the generator it copies the committed `datasets/glass_box/*.csv|*.json` verbatim into
+`_data/mrd` (companion `.md` docs and any stray `gate_output/` excluded), so the
+existing dev flow (`dev_cockpit.ps1` submit → solve → alternatives) serves it
+unchanged. The ledger + LLM env already flow through `.env.local` / `MRE_DEV=1` /
+`MRE_DATA_ROOT=./_data` (set before the branch), so Daryn's questions during the
+audit are recorded to the question ledger (AI-track-2 fuel). `.gitignore` gains
+`datasets/**/gate_output/` so a gate run beside the committed dataset never gets
+committed.
+
+**Tests.** New `tests/test_glass_box.py` (the standing guard): Part A — the clean
+dataset gates ACCEPTED/C2/0-findings; Part B — the ten sabotage items, each tripping
+exactly its claimed rule/outcome/grade and the control tripping nothing; Part C
+(slow) — the real solve reproduces the seven narrative features deterministically
+(exactly one late order = ORD-05, overtime rescue on Saturday, the spacer split, one
+slow-press placement, the changeover, the chain, the early control). **19 passed**
+(1 clean + 10 sabotage + 8 story). Full non-slow Python suite green (frontend
+untouched — this is a dataset/docs/dev-script session).
+
+Lesson: to make a system auditable you build the audit's INSTRUMENTS, not the
+audit's verdict — a dataset small enough to hold in one's head, predictions authored
+BEFORE the solve so the check is against a claim rather than a rationalisation, a
+sabotage menu every item of which is mechanically proven right about itself, and a
+trace you can walk by hand and by evidence to the same answer. The auditor's trust
+comes from trying to break it and failing, not from being told it works.

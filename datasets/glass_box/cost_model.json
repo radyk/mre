@@ -1,0 +1,27 @@
+{
+  "version": "glass-box-v1",
+  "currency": "USD",
+  "core": {
+    "default_resource_rate_per_hour": 60.0,
+    "setup_cost_per_setup": 40.0,
+    "tardiness_cost_per_hour": 25.0,
+    "priority_multipliers": {
+      "standard": 1.0,
+      "high": 3.0,
+      "critical": 8.0
+    }
+  },
+  "refinements": {
+    "resource_rates": {
+      "CUT-01": 60.0,
+      "PRESS-FAST": 60.0,
+      "PRESS-SLOW": 60.0,
+      "PAINT-01": 60.0,
+      "HEAT-01": 60.0
+    },
+    "overtime_premium_multiplier": 1.5,
+    "transition_costs": null,
+    "scrap_cost_per_unit": null,
+    "inventory_carrying": null
+  }
+}

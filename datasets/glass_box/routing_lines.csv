@@ -1,0 +1,12 @@
+route_id,sequence,resource_id,active,setup_minutes,run_minutes_per_unit,dwell_minutes,setup_family,splittable,min_chunk_minutes
+RT-WIDGET,10,CUT-01,1,20,4,0,,false,
+RT-WIDGET,20,PAINT-01,1,20,4,0,,false,
+RT-SPACER,10,CUT-01,1,0,900,0,,true,60
+RT-RUSH,10,CUT-01,1,20,3,0,,false,
+RT-BRACKET,10,PRESS-FAST,1,15,5,0,,false,
+RT-BRACKET,10,PRESS-SLOW,1,15,10,0,,false,
+RT-PANEL-RED,10,PAINT-01,1,20,3,0,PAINT_RED,false,
+RT-PANEL-BLUE,10,PAINT-01,1,20,3,0,PAINT_BLUE,false,
+RT-HEAT,10,HEAT-01,1,30,570,0,,false,
+RT-SHIM,10,CUT-01,1,10,1,0,,false,
+RT-BASIC,10,HEAT-01,1,10,2,0,,false,

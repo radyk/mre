@@ -1,6 +1,31 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.23 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.24 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.24:** **Session 4B.1 — Glass Box instruments (hand-auditable dataset,
+sabotage menu, walkthrough)** 2026-07-18 (docs/04 amendment). The instruments for
+Daryn to verify — at his own pace — that the gate catches deliberate defects and
+that every placement traces to a row he authored. **CU1:** a HAND-AUTHORED,
+committed IDS submission at `datasets/glass_box/` (15 orders, 5 machines, ref date
+2026-01-05, flat $60/h so cost = time) with the seven narrative features present
+EXACTLY ONCE (alternative-group per-machine rates, a splittable op that pauses at a
+closure, one order late by pure contention, a Saturday-overtime rescue, a
+two-machine precedence chain, a setup_family changeover, and the comfortably-early
+control) — gate ACCEPTED/C2/0-findings, deterministic solve reproduces all seven,
+ledger decomposes exactly ($6956.83). A `README.md` narrates the story as
+predictions AUTHORED BEFORE the solve (contradiction = a finding, not a rewrite).
+**CU2:** `SABOTAGE_MENU.md` — ten keyed one-cell edits, each naming the rule caught
+(a real id from the 33), outcome/severity/grade, and the certificate line, with a
+false-positive CONTROL that must trip nothing; every item verified once mechanically
+(`test_glass_box.py`). **CU3:** `WALKTHROUGH.md` — the session script (submit → read
++ interrogate the certificate's three registers → sabotage in batches → fix → solve
+→ read the story of the solve), a per-feature question/receipt table, and the ORD-05
+trace exercise (CSV row → gate → canonical entity → solver placement → cost ledger →
+"why" answer). Exit bar: "you tried to catch it lying and could not." **CU4:**
+`dev_api.ps1 -Scenario glass_box` copies the committed dataset into `_data/mrd`
+(no generator); ledger + LLM env already flow so audit questions are recorded.
+**19 new tests** (1 clean + 10 sabotage + 8 story); full non-slow Python green;
+frontend untouched. See the docs/04 2026-07-18 Session 4B.1 amendment.
 
 **v2.23:** **Session 4B.0 — IDS alternative-resource doorway: per-alternative rates**
 2026-07-18 (docs/04 amendment). Connector-track opener. The alternative-resource

@@ -16,6 +16,8 @@ raw_data_profile.md
 # API/runtime data root and deploy secrets/artifacts
 mre_api_data/
 _data/
+# Gate output written beside a committed dataset (runtime artifact)
+datasets/**/gate_output/
 .env.local
 deploy/azure/.env
 deploy/.smoke_*/

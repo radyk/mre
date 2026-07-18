@@ -1,0 +1,18 @@
+{
+  "ids_version": "0.2",
+  "source_system": "GlassBox hand-authored",
+  "submitter": "mre-team",
+  "extract_timestamp": "2026-01-05T00:00:00+00:00",
+  "reference_date": "2026-01-05",
+  "timezone": "UTC",
+  "facility_scope": ["F001"],
+  "semantics": {
+    "production_minutes_basis": "per_operation",
+    "production_minutes_per": "costing_lot",
+    "due_date_time_of_day": "end_of_day",
+    "quantity_uom_source": "products.uom",
+    "setup_minutes_scope": "per_operation",
+    "unlisted_transition_default": "base_setup"
+  },
+  "notes": "Glass Box hand-authored auditor dataset. 15 orders, 5 machines, seven named narrative features (see README.md). Do NOT regenerate: edit the CSVs directly in Excel."
+}
