@@ -5,11 +5,23 @@ column, and the value to change; the rule that must catch it; the outcome,
 severity, and grade it produces; and what the certificate conversation should say.
 **Item 8 is the control — a legal edit that must trip *nothing*.**
 
-Apply an edit, re-run the gate, and read the certificate:
+**Work on a throwaway copy — never the committed set.** Make a gitignored sandbox
+once, then apply edits, re-run the gate on the COPY, and read the certificate:
 
 ```
-python -m mre.gate datasets/glass_box     # (work on a copy so the clean set stays clean)
+# 1. make the sandbox copy (once):
+.\src\cockpit\dev_audit_sandbox.ps1                       # -> _sandbox\glass_box_audit (gitignored)
+
+# 2. edit a cell in _sandbox\glass_box_audit\<file>.csv per a row below, then:
+python -m mre.gate _sandbox\glass_box_audit               # terminal: read the certificate
+#   or serve it in the cockpit:
+.\src\cockpit\dev_api.ps1 -DatasetPath _sandbox\glass_box_audit
 ```
+
+The committed `datasets/glass_box` stays clean throughout (so `test_glass_box`
+stays green). To reset the sandbox to clean, re-run the helper with `-Force`.
+(No PowerShell? The two-liner is just `mkdir -p _sandbox && cp -r datasets/glass_box
+_sandbox/glass_box_audit`, then `python -m mre.gate _sandbox/glass_box_audit`.)
 
 Every row below was verified once, mechanically, in `tests/test_glass_box.py`
 (`test_sabotage_menu_item`) — so no menu item is wrong about itself. The gate

@@ -37,8 +37,18 @@ python -m mre.ask --out gb_out "why is ORD-05 late?"
 
 ## Act 2 — sabotage it, in batches
 
-Work on a **copy** so the committed dataset stays clean. Open `SABOTAGE_MENU.md`
-and apply the edits a few at a time, re-running the gate after each batch.
+Work on a **throwaway sandbox copy** so the committed dataset stays clean — make
+it once:
+
+```
+.\src\cockpit\dev_audit_sandbox.ps1        # -> _sandbox\glass_box_audit (gitignored)
+```
+
+Now open `SABOTAGE_MENU.md` and apply its edits a few at a time to the CSVs under
+`_sandbox\glass_box_audit\`, re-running the gate on the **copy** after each batch
+(`python -m mre.gate _sandbox\glass_box_audit`, or serve it in the cockpit with
+`.\src\cockpit\dev_api.ps1 -DatasetPath _sandbox\glass_box_audit`). The committed
+`datasets/glass_box` never changes.
 
 - **Batch A (the rejections):** item 6 (blank `order_id`). Expect **REJECTED** —
   and notice the solve refuses to run at all. A rejected submission never becomes a
@@ -63,9 +73,11 @@ reporting.
 
 ## Act 3 — fix it, solve it, and read the story of the solve
 
-Restore the clean dataset, solve it (`dev_cockpit.ps1`, or the `python -m mre …`
-line above), and open the board. Now walk the seven stories. For each, here is the
-question to ask and **where the receipt lives**.
+Go back to the clean dataset — either reset the sandbox
+(`.\src\cockpit\dev_audit_sandbox.ps1 -Force`) or simply serve the committed set
+again (`.\src\cockpit\dev_api.ps1 -Scenario glass_box`) — solve it (`dev_cockpit.ps1`,
+or the `python -m mre …` line above), and open the board. Now walk the seven
+stories. For each, here is the question to ask and **where the receipt lives**.
 
 | # | Story | Ask this / look here | The receipt |
 |---|-------|----------------------|-------------|

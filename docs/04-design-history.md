@@ -5839,3 +5839,28 @@ docs/07 v2.26 and CLAUDE.md → Session 4.4. Lesson: "notice the newer schedule"
 depends on the human, so the sixth incident needed the second. Follow automatically
 when nothing is at stake, yield to the banner the moment something is, and make the two
 boards nameable so a human can tell which one they are on.
+
+## Amendment — 2026-07-19: Session 4.4 rider — the sabotage-audit workflow contradiction (fix the mechanism, not the doc)
+
+The Glass Box `SABOTAGE_MENU.md` told the auditor to "work on a copy so the clean set
+stays clean," but `dev_api.ps1 -Scenario glass_box` served ONLY the committed folder —
+so the only way to actually see a sabotage in the cockpit was to edit
+`datasets/glass_box` directly. This bit for real: a mid-audit session left
+`orders.csv` dirtied with sabotage item #1 (`ORD-01 product_id → PROD-NOPE`), which
+turned three `test_glass_box` cases red until it was restored. The instruction was
+right; the mechanism didn't support it. **Fixed the mechanism, not the doc.**
+`dev_api.ps1` gains **`-DatasetPath <folder>`** — serve ANY submission folder verbatim
+(its `.csv`/`.json` copied into `_data/mrd`, no generator), through the same
+`Copy-Submission` seam the glass_box shortcut now uses. A tiny helper
+`src/cockpit/dev_audit_sandbox.ps1` copies `datasets/glass_box` into
+`_sandbox/glass_box_audit` (a new **gitignored** `_sandbox/` tree; `-Force` resets it),
+and the menu/walkthrough are rewritten to the real cycle: copy once → edit the CSVs in
+the sandbox → `python -m mre.gate _sandbox\glass_box_audit` (or `dev_api.ps1
+-DatasetPath _sandbox\glass_box_audit`). The committed dataset is never touched, so
+`test_glass_box` (which already `copytree`s the dataset into a temp dir before
+sabotaging — the test path was never the problem) stays green throughout an audit.
+Verified end to end: the helper builds the gitignored copy, the gate on the sabotaged
+copy returns CONDITIONAL/1-finding exactly as the menu predicts, and
+`datasets/glass_box/orders.csv` shows no change. Lesson: when a documented workflow and
+the tool disagree, the tool is the bug — a "work on a copy" instruction with no
+copy-serving path is an instruction that guarantees the opposite.

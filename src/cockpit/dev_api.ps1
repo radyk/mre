@@ -15,7 +15,16 @@ param(
     # dataset (datasets/glass_box) instead of running the generator — it is
     # copied verbatim into _data/mrd so its CSVs reach the API unchanged. See
     # datasets/glass_box/README.md.
-    [string]$Scenario = 'busy_board'
+    [string]$Scenario = 'busy_board',
+
+    # Serve ANY submission folder verbatim (its .csv + .json copied into
+    # _data/mrd, no generator). This is the sabotage-audit path: copy the clean
+    # glass_box set into a gitignored sandbox, edit CSVs there, and serve THAT —
+    # so the committed dataset is never dirtied (see dev_audit_sandbox.ps1 and
+    # datasets/glass_box/SABOTAGE_MENU.md). Overrides -Scenario when set. Accepts
+    # a relative (to the repo root) or absolute path, e.g.
+    #   .\src\cockpit\dev_api.ps1 -DatasetPath _sandbox\glass_box_audit
+    [string]$DatasetPath = ''
 )
 $ErrorActionPreference = 'Stop'
 
@@ -57,18 +66,33 @@ Write-Host "[dev_api] MRE_DATA_ROOT:  $env:MRE_DATA_ROOT"
 Write-Host "[dev_api] MRE_DEV:        $env:MRE_DEV"
 
 $mrd = Join-Path $repo '_data\mrd'
-if ($Scenario -eq 'glass_box') {
-    # Hand-authored committed auditor dataset — copy verbatim, do not generate.
-    $src = Join-Path $repo 'datasets\glass_box'
-    if (-not (Test-Path $src)) { throw "glass_box dataset not found at $src" }
-    Write-Host "[dev_api] serving hand-authored glass_box dataset -> _data/mrd"
+
+# Copy a submission folder's CSVs + manifest + cost_model into _data/mrd verbatim
+# (not companion .md docs or any stray gate_output). The single seam both the
+# glass_box shortcut and the -DatasetPath audit path serve through.
+function Copy-Submission([string]$src) {
+    if (-not (Test-Path $src)) { throw "submission folder not found: $src" }
     if (Test-Path $mrd) { Remove-Item -Recurse -Force $mrd }
     New-Item -ItemType Directory -Force -Path $mrd | Out-Null
-    # Copy the submission CSVs + manifest + cost_model, not the companion docs
-    # or any stray gate_output.
     Get-ChildItem -Path $src -File | Where-Object {
         $_.Extension -in '.csv', '.json'
     } | Copy-Item -Destination $mrd
+}
+
+if ($DatasetPath) {
+    # Serve any folder verbatim (the sabotage-audit path). Resolve relative to the
+    # repo root (Set-Location already put us there); accept absolute too.
+    $src = if ([System.IO.Path]::IsPathRooted($DatasetPath)) { $DatasetPath }
+           else { Join-Path $repo $DatasetPath }
+    if (-not (Test-Path $src)) { throw "dataset folder not found: $src (from -DatasetPath '$DatasetPath')" }
+    $src = (Resolve-Path $src).Path
+    Write-Host "[dev_api] serving dataset folder verbatim -> _data/mrd"
+    Write-Host "[dev_api]   $src"
+    Copy-Submission $src
+} elseif ($Scenario -eq 'glass_box') {
+    # Hand-authored committed auditor dataset — copy verbatim, do not generate.
+    Write-Host "[dev_api] serving hand-authored glass_box dataset -> _data/mrd"
+    Copy-Submission (Join-Path $repo 'datasets\glass_box')
 } else {
     Write-Host "[dev_api] generating $Scenario submission -> _data/mrd"
     python tools/generate_erp_dataset.py --scenario $Scenario --out _data/mrd
