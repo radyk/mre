@@ -311,18 +311,37 @@ class Registry:
         """Registry-level metadata for a schedule, joined to its submission's
         certificate GRADE. The grade is a submission property (it lives in the
         certificate store, not the derived-not-invented schedule document), so
-        the cockpit's top strip reads it here rather than from the document."""
+        the cockpit's top strip reads it here rather than from the document.
+
+        Also carries a HUMAN-SCALE identity (Session 4.4 CU3): ``created_at`` and
+        a ``generation`` counter (this schedule's 1-based ordinal among the data
+        root's non-scenario schedules, oldest→newest). Two visually-similar
+        boards are then distinguishable at a glance ("solve #3 · 09:41") — the
+        hex id alone was proven insufficient across the six stale-tab incidents.
+        """
         with self._conn() as con:
             row = con.execute(
                 "SELECT s.id, s.run_id, s.submission_id, s.snapshot_id, "
                 "       s.status, s.contract_version, s.is_scenario, "
-                "       s.parent_schedule_id, c.grade, c.costing_grade "
+                "       s.parent_schedule_id, s.created_at, c.grade, c.costing_grade "
                 "FROM schedules s "
                 "LEFT JOIN certificates c ON c.submission_id = s.submission_id "
                 "WHERE s.id=?",
                 (schedule_id,),
             ).fetchone()
-        return dict(row) if row else None
+            if row is None:
+                return None
+            meta = dict(row)
+            # generation = how many non-scenario schedules exist up to and
+            # including this one (created_at asc). A monotonic solve counter for
+            # the data root — the human-scale "solve #N" the strip shows.
+            gen = con.execute(
+                "SELECT COUNT(*) AS n FROM schedules "
+                "WHERE is_scenario=0 AND created_at <= ?",
+                (meta.get("created_at"),),
+            ).fetchone()
+        meta["generation"] = int(gen["n"]) if gen else None
+        return meta
 
     def list_schedules(self, include_scenarios: bool = False) -> list[dict]:
         """Default listing NEVER includes what-if scenarios — the evidence-

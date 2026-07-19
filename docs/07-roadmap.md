@@ -1,6 +1,32 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.25 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.26 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.26:** **Session 4.4 — schedule freshness done right (the sixth stale-tab
+incident)** 2026-07-19 (docs/04 amendment). The behavior contract: **the cockpit must
+never leave the user unknowingly on anything but the newest relevant schedule.** 4.3's
+newer-schedule detection was real but half-scoped (same submission only), and the
+sixth incident proved that blind to the RESUBMIT workflow — a data fix in Excel →
+re-submit mints a NEW submission id → the newer solve was never offered. **CU1 —
+scope fix:** `findNewerSchedule` compares against the newest LIVE schedule across the
+whole DATA ROOT, not the same submission ("relevant" for single-tenant/dev = the
+root); strictly newer by `created_at`, a same-instant tie is NOT newer (unrelated live
+boards never cross-follow); multi-tenant scoping NAMED as a future concern, not
+pre-built. **CU2 — auto-follow (the real fix):** with NO uncommitted user state, a
+newer schedule appearing while viewing auto-follows (reload onto the new version + a
+brief R-M1-legible toast "Switched to the new schedule · View previous", one click
+back via a `sessionStorage` handoff). With uncommitted state — a drag mid-flight, an
+open card, or a pinned conversation (`panel.hasUserState()`: live selection / built-up
+Q&A / ask in flight) — NEVER auto-switch; fall back to the 4.3 banner and let the
+planner decide. Re-checks on window focus + tab re-show + a 30s backstop (focus is the
+return-from-Excel signal). **CU3 — identity visible:** `/meta` carries a `generation`
+counter (1-based monotonic "solve #N" over the root's non-scenario schedules) +
+`created_at`; the strip shows "solve #3 · 09:41", hex in the title — two
+visually-similar boards distinguishable at a glance. Harness: `POST
+/__test__/add-schedule` injects a newer schedule; the three CU2 flows + CU3 + a
+strengthened CU6 (no spurious follow on a normal boot) driven end to end. **Cockpit JS
+146** (was 137); **non-slow Python 1172** (additive `get_schedule_meta`). See the
+docs/04 2026-07-19 Session 4.4 amendment.
 
 **v2.25:** **Session 4.3 — Glass Box audit riders + R-DP9 (the no-op drop)**
 2026-07-18 (docs/04 amendment). Eight small findings from Daryn's live audit,

@@ -65,14 +65,35 @@ function applyTheme(t) {
 }
 function toggleTheme() { return applyTheme(currentTheme() === "dark" ? "light" : "dark"); }
 
+// A HUMAN-SCALE schedule identity (Session 4.4 CU3): the hex alone was proven
+// insufficient across six stale-tab incidents — two visually-similar boards read
+// identically. The registry carries a generation counter + a created_at, so the
+// strip shows "solve #3 · 09:41". Falls back to the short hex when the registry
+// pre-dates these fields (a plain document, a pool member) — never a blank.
+function scheduleIdentity(doc, meta) {
+  const shortId = (doc.schedule_id || "").slice(0, 8);
+  const gen = meta && meta.generation;
+  let clock = null;
+  if (meta && meta.created_at) {
+    const t = new Date(meta.created_at);
+    if (!Number.isNaN(t.getTime())) {
+      clock = t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+  }
+  if (gen && clock) return { label: `solve #${gen} · ${clock}`, title: shortId };
+  if (gen) return { label: `solve #${gen}`, title: shortId };
+  if (clock) return { label: `${shortId} · ${clock}`, title: shortId };
+  return { label: shortId, title: shortId };
+}
+
 function paintTopStrip(el, doc, meta) {
-  const shortId = doc.schedule_id.slice(0, 8);
   const grade = meta?.grade || "—";
   const costing = meta?.costing_grade ? ` / ${meta.costing_grade}` : "";
   const gcls = GRADE_CLASS[(meta?.grade || "").toUpperCase()] || "g-c0";
+  const ident = scheduleIdentity(doc, meta);
   el.innerHTML = `
     <span class="brand">Reasoning Cockpit</span>
-    <span class="ver">contract ${doc.contract_version} · ${shortId}</span>
+    <span class="ver" title="${ident.title}">contract ${doc.contract_version} · <span class="sched-ident">${ident.label}</span></span>
     <span class="status">${doc.status}</span>
     <span class="grade ${gcls}"><span class="lbl">certificate</span> ${grade}${costing}</span>
     <button class="theme-toggle" id="theme-toggle"></button>`;
@@ -162,9 +183,12 @@ function mountBoardChrome(boardHost, board) {
 }
 
 // A dismissible "a newer schedule exists" info bar (Session 4.3 CU6): the bound
-// version is valid but stale — a newer solve of the same submission exists. One
-// click jumps; a dismiss keeps the current view. Distinct from the superseded
-// banner (that version is dead; this one is merely older).
+// version is valid but stale — a newer solve exists in the data root. One click
+// jumps; a dismiss keeps the current view. Distinct from the superseded banner
+// (that version is dead; this one is merely older). Shown ONLY when the planner
+// has uncommitted state (Session 4.4 CU2) — an edit-in-flight, an open card, or a
+// pinned conversation outranks freshness, so we let the user decide rather than
+// auto-switch. With no such state the cockpit auto-follows instead (see below).
 function newerBanner(hostEl, newId) {
   const el = document.createElement("div");
   el.className = "superseded-banner newer";
@@ -178,6 +202,78 @@ function newerBanner(hostEl, newId) {
   el.querySelector("#newer-jump").addEventListener("click", () => jumpToVersion(newId));
   el.querySelector("#newer-dismiss").addEventListener("click", () => el.remove());
   return el;
+}
+
+// Session 4.4 CU2 — the auto-follow toast. When the cockpit follows a newer
+// schedule automatically (no uncommitted state), it reloads onto the new version;
+// this brief, R-M1-legible toast then confirms the switch on the NEW page and
+// offers a one-click way BACK to the previous version. The handoff across the
+// reload rides sessionStorage (same tab, same origin) — set before the jump,
+// read + cleared on the next boot.
+const FOLLOW_KEY = "mre-followed-from";
+function autoFollow(prevId, newId) {
+  try { sessionStorage.setItem(FOLLOW_KEY, prevId); } catch { /* private mode */ }
+  jumpToVersion(newId);
+}
+function followedToast(hostEl, prevId) {
+  const el = document.createElement("div");
+  el.className = "followed-toast";
+  el.id = "followed-toast";
+  const short = (prevId || "").slice(0, 8);
+  el.innerHTML = `
+    <span class="ft-msg">Switched to the new schedule.</span>
+    <button class="ft-back" id="ft-back">View previous (${short}) →</button>`;
+  hostEl.prepend(el);
+  el.querySelector("#ft-back").addEventListener("click", () => {
+    try { sessionStorage.removeItem(FOLLOW_KEY); } catch { /* ignore */ }
+    jumpToVersion(prevId);   // going back is an explicit act — never re-followed
+  });
+  // fade out after a spell, but keep the "view previous" affordance reachable
+  // until it does (R-M1: motion reads as a settle, not an alarm).
+  setTimeout(() => el.classList.add("fade"), 7000);
+  setTimeout(() => { if (el.isConnected) el.remove(); }, 7600);
+  return el;
+}
+
+// The freshness watch (Session 4.4 CU2): re-checks the listing for a newer live
+// schedule on window focus / tab re-show and on a slow poll, and — the exact
+// moment a planner returns from Excel after a data fix — either FOLLOWS it (no
+// uncommitted state) or offers the banner (uncommitted state present). Idempotent
+// per newer id so a banner is never stacked; the auto-follow reload resets state.
+function installFreshnessWatch({ app, boundId, hasUncommittedState }) {
+  let offeredId = null;      // the newer id we've already surfaced a banner for
+  let inFlight = false;
+  const currentBound = () => (window.__cockpit && window.__cockpit.scheduleId) || boundId;
+  async function check() {
+    if (inFlight) return;
+    inFlight = true;
+    try {
+      const { schedules } = await listSchedules();
+      const id = currentBound();
+      const newerId = findNewerSchedule(id, schedules || []);
+      if (!newerId || newerId === id) return;
+      if (hasUncommittedState()) {
+        // uncommitted state → never auto-switch; offer the banner (once per id).
+        if (offeredId === newerId && document.getElementById("newer-banner")) return;
+        document.getElementById("newer-banner")?.remove();
+        newerBanner(app, newerId);
+        offeredId = newerId;
+        if (window.__cockpit) window.__cockpit.newerId = newerId;
+      } else {
+        autoFollow(id, newerId);   // clean slate → follow the newest, reload
+      }
+    } catch { /* background work; a listing failure never blocks the board */ }
+    finally { inFlight = false; }
+  }
+  // Focus + visibility are the return-from-Excel signals; the interval is a slow
+  // backstop for a tab left open in the foreground while a resubmit lands.
+  window.addEventListener("focus", check);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") check();
+  });
+  const timer = setInterval(check, 30000);
+  if (window.__cockpit) window.__cockpit.checkFreshness = check;   // harness seam
+  return { check, stop: () => clearInterval(timer) };
 }
 
 async function boot() {
@@ -248,20 +344,38 @@ async function boot() {
     // existing harness object, never auto-invoked in production.
     window.__cockpit.mountDevLedger = () => mountDevLedger(chrome.right);
 
+    // If this boot is the landing after an auto-follow (Session 4.4 CU2),
+    // confirm the switch with a toast that offers a one-click way back. The
+    // previous id was stashed in sessionStorage before the reload.
+    let followedFrom = null;
+    try { followedFrom = sessionStorage.getItem(FOLLOW_KEY); } catch { /* ignore */ }
+    if (followedFrom) {
+      try { sessionStorage.removeItem(FOLLOW_KEY); } catch { /* ignore */ }
+      if (followedFrom !== id) {
+        followedToast(app, followedFrom);
+        window.__cockpit.followedFrom = followedFrom;
+      }
+    }
+
     if (superseded) {
       supersededBanner(app, meta.successor_id || null);
       window.__cockpit.successorId = meta.successor_id || null;
     } else {
-      // CU6: a stale tab should notice a newer solve of the same submission —
-      // offer a one-click jump. Only for a live (non-superseded) version; the
-      // listing is background work, so a failure never blocks the board.
-      listSchedules().then(({ schedules }) => {
-        const newerId = findNewerSchedule(id, schedules || []);
-        if (newerId && newerId !== id) {
-          newerBanner(app, newerId);
-          window.__cockpit.newerId = newerId;
-        }
-      }).catch(() => {});
+      // Session 4.4 CU1/CU2: a stale tab must never leave the planner unknowingly
+      // on anything but the newest relevant schedule. The watch re-checks the
+      // whole data root on focus / tab re-show / a slow poll and either FOLLOWS
+      // the newest live schedule (no uncommitted state — the resubmit-from-Excel
+      // case) or offers the banner (uncommitted state present, user decides).
+      // Runs only for a live (non-superseded) version; listing is background work.
+      const hasUncommittedState = () => {
+        const drag = window.__cockpit && window.__cockpit.drag;
+        const phase = drag && drag.state ? drag.state().phase : "idle";
+        const dragBusy = !!phase && phase !== "idle";
+        const panelBusy = !!(panel && panel.hasUserState && panel.hasUserState());
+        return dragBusy || panelBusy;
+      };
+      const watch = installFreshnessWatch({ app, boundId: id, hasUncommittedState });
+      watch.check();   // notice a newer solve at boot too (the return-from-Excel tab)
       // Fetch the Tier-0 interaction payload in the BACKGROUND, after first
       // paint (R-T1d) — the board is already interactive read-only; the 3.2b
       // gesture surface stands up when it arrives. Never blocks render or ask.

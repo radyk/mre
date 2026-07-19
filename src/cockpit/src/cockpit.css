@@ -403,6 +403,29 @@ html, body {
   color: var(--ink-inverse); border-radius: var(--radius-sm); cursor: pointer;
   padding: var(--sp-1) var(--sp-2); font-weight: var(--fw-semibold); font-size: var(--fs-xs);
 }
+/* Auto-follow toast (Session 4.4 CU2): after the cockpit follows a newer
+ * schedule automatically, this brief testimony-toned bar confirms the switch on
+ * the new page and offers a one-click way back. Fades (R-M1: a settle, not an
+ * alarm) but stays reachable while visible. Reduced motion drops the fade. */
+.followed-toast {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--reg-testimony); color: var(--ink-inverse);
+  font-size: var(--fs-sm); font-weight: var(--fw-medium);
+  transition: opacity var(--motion-reflow-dur, 320ms) ease;
+}
+.followed-toast .ft-msg { flex: 0 0 auto; }
+.followed-toast .ft-back {
+  margin-left: auto; background: var(--ink-inverse); color: var(--reg-testimony);
+  border: none; border-radius: var(--radius-sm); cursor: pointer;
+  padding: var(--sp-1) var(--sp-3); font-weight: var(--fw-semibold); font-size: var(--fs-sm);
+}
+.followed-toast.fade { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .followed-toast { transition: none; }
+}
+/* The human-scale schedule identity in the top strip (Session 4.4 CU3). */
+.topstrip .sched-ident { font-variant-numeric: tabular-nums; }
 /* The ask panel's superseded notice mirrors the banner language + jump. */
 .ask .msg.superseded-note { border-left: 3px solid var(--grade-conditional); }
 .ask .msg.superseded-note .jump-current {

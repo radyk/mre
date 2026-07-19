@@ -31,7 +31,11 @@ const DIRS = {
 // rebind serves a coherent document (the harness asserts the state transitions,
 // not a distinct moved-bar fixture). Strip EVERY trailing ``-edit`` so chained
 // versions (``<base>-edit-edit``) still resolve to the base dir (session 3.8).
-const dirFor = (id) => DIRS[id] || DIRS[id.replace(/(-edit)+$/, "")] || FIX;
+const dirFor = (id) => {
+  const ex = _EXTRA.find((e) => e.id === id);       // an injected newer schedule
+  if (ex) return DIRS[ex.base] || FIX;
+  return DIRS[id] || DIRS[id.replace(/(-edit)+$/, "")] || FIX;
+};
 // On-demand pricing state (session 3.3 CU1): ops POSTed for pricing this
 // session, keyed "<scheduleId>|<opId>". A GET /alternatives merges their ghosts.
 const _PRIMED = new Set();
@@ -50,10 +54,18 @@ const _EDITS = new Map();
 let _PARENT = new Map();
 let _SUPERSEDED = new Set();
 let _SUCCESSOR = new Map();
+// Session 4.4: injected "newer schedules" that appear in the DATA-ROOT listing
+// while a tab is bound to an older one — the resubmit-while-viewing case. Each is
+// {id, base, created_at, status, submission_id}; a GET /schedules merges them AND
+// each resolves as a real schedule (doc/meta served from its `base` fixture dir),
+// so an auto-follow reload actually lands on a coherent board. Cleared per test.
+let _EXTRA = [];
 function resetState() {
   _PRIMED.clear(); _EDITS.clear();
   _PARENT = new Map(); _SUPERSEDED = new Set(); _SUCCESSOR = new Map();
+  _EXTRA = [];
 }
+const extraFor = (id) => _EXTRA.find((e) => e.id === id) || null;
 const supersededError = (res, sid) => {
   res.writeHead(409, { "content-type": "application/json" });
   return res.end(errEnv(409, `schedule ${sid} is superseded`));
@@ -93,13 +105,36 @@ const server = createServer(async (req, res) => {
       res.writeHead(200, { "content-type": "application/json" });
       return res.end(envelope({ reset: true }));
     }
+    // Session 4.4: inject a "newer schedule" into the data-root listing to drive
+    // the resubmit-while-viewing auto-follow. Body {id, base, created_at?,
+    // status?, submission_id?}. `base` names the fixture dir its doc/meta serve
+    // from so an auto-follow lands on a coherent board.
+    if (p === "/__test__/add-schedule" && req.method === "POST") {
+      const b = JSON.parse((await body(req)) || "{}");
+      _EXTRA.push({
+        id: b.id, base: b.base || "sched-multi-route-distinct",
+        created_at: b.created_at || "2026-01-05T11:00:00Z",
+        status: b.status || "proposed",
+        submission_id: b.submission_id ?? "sub-resubmit",
+        generation: b.generation ?? null,
+      });
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(envelope({ added: b.id }));
+    }
     if (p === "/schedules" && req.method === "GET") {
-      // both fixtures listed; the harness always selects via ?schedule=…
+      // static fixtures (tied created_at → none is "newer" than another) + any
+      // injected newer schedules, ordered oldest→newest as the real API does.
       const metas = [];
       for (const dir of new Set(Object.values(DIRS))) {
         const m = await loadMaybe("meta.json", dir);
-        if (m) metas.push(m);
+        if (m && !_SUPERSEDED.has(m.id)) metas.push(m);
       }
+      for (const e of _EXTRA) {
+        metas.push({ id: e.id, status: _SUPERSEDED.has(e.id) ? "superseded" : e.status,
+          created_at: e.created_at, submission_id: e.submission_id,
+          is_scenario: 0, contract_version: "1.3" });
+      }
+      metas.sort((a, b2) => String(a.created_at || "").localeCompare(String(b2.created_at || "")));
       res.writeHead(200, { "content-type": "application/json" });
       return res.end(envelope({ schedules: metas }));
     }
@@ -138,6 +173,12 @@ const server = createServer(async (req, res) => {
     if (mMeta && req.method === "GET") {
       const sid = mMeta[1];
       const meta = { ...(await load("meta.json", dirFor(sid))), id: sid };
+      const ex = extraFor(sid);
+      if (ex) {
+        meta.created_at = ex.created_at; meta.status = ex.status;
+        meta.submission_id = ex.submission_id;
+        if (ex.generation != null) meta.generation = ex.generation;
+      }
       const dec = _EDITS.get(sid);
       // an -edit version reads as proposed/published; a superseded one carries
       // its live successor so the cockpit can offer "view current" (CU3).

@@ -5761,3 +5761,81 @@ fights the thing beside it (the ledger over the legend) and a gesture that
 fabricates a commitment out of no change (the no-op drop). The cure for both is to
 make the structure say the truth: one layout row that cannot overlap itself, and a
 drop that changed nothing changes nothing.
+
+## Amendment — 2026-07-19: Session 4.4 — schedule freshness done right (the sixth stale-tab incident)
+
+The behavior contract, stated plainly: **the cockpit must never leave the user
+unknowingly on anything but the newest relevant schedule.** Six times now a stale
+tab has been the root of a live-audit finding, and 4.3's CU6 newer-schedule
+detection — real, but half-scoped — was the fifth-and-a-half: it noticed a newer
+solve only of the SAME SUBMISSION. The sixth incident proved that blind to the
+workflow the audit actually uses. In Daryn's ledger the resubmit path is: fix a data
+defect in Excel → **re-submit** (which mints a NEW submission id) → re-solve → return
+to the cockpit tab. The newer schedule is a different submission, so 4.3's
+same-submission `findNewerSchedule` returned null every time. The tab sat stale and
+never said so.
+
+**CU1 — freshness scope fix.** `findNewerSchedule` now compares against the newest
+LIVE (non-superseded) schedule across the whole **DATA ROOT**, not the same
+submission. For a single-tenant / dev deployment — which is what exists — "relevant"
+IS the root: the newest solve is the one the planner means, whatever submission
+produced it. "Strictly newer" is by `created_at` (the real listing is
+`ORDER BY created_at`; the function reads it), with an explicit rule that a
+**same-instant tie is NOT newer** — two live boards minted at the same moment are not
+a progression of one another, which is what keeps unrelated schedules from
+cross-following. Superseded rows and (belt-and-suspenders) scenarios are never
+offered. **Multi-tenant scoping is a NAMED future concern, not silently pre-built:**
+a real tenant boundary is a property the data root does not model today, and inventing
+a scope the system cannot yet source truthfully would be exactly the kind of plausible
+lie docs/01 forbids. When a second tenant exists, the scope narrows from "the root" to
+"the tenant's schedules" — recorded here as the trigger, deliberately unwritten now.
+
+**CU2 — auto-follow on resubmit (the real fix).** Noticing is not enough; a banner the
+planner has to see and click is still a tab left stale until they do. So when a newer
+schedule appears while the cockpit is bound to an older one AND there is **no
+uncommitted user state**, the cockpit **follows it automatically** — a full reload onto
+the new version, then a brief, R-M1-legible toast ("Switched to the new schedule ·
+View previous (<id8>)") that confirms the switch and offers one click back. The handoff
+across the reload rides `sessionStorage` (same tab, same origin): the previous id is
+stashed before the jump and read + cleared on the next boot. **With uncommitted state
+present, the cockpit NEVER auto-switches** — it falls back to the 4.3 banner and lets
+the planner decide. An edit-in-flight outranks freshness; generalized, *any* user
+investment does. "Uncommitted state" = a drag phase that is not `idle` (a tentative
+edit, an open delta card, an accept/publish in flight) **or** a pinned conversation in
+the ask panel (a live bar selection, a built-up Q&A history, or an ask mid-round-trip —
+new `panel.hasUserState()`). The watch re-checks on **window focus** and **tab
+re-show** (`visibilitychange`) and on a slow 30s interval backstop; focus is the
+load-bearing signal, because a planner returning from Excel after a data fix is the
+exact moment the newer schedule became relevant. Idempotent per newer id (a banner is
+never stacked); the auto-follow reload resets watch state, so a chain never loops (the
+followed-to version is newest → nothing newer → no re-follow).
+
+**CU3 — identity made visible.** Across all six incidents the hex id was insufficient:
+two visually-similar boards read identically, so a stale one was indistinguishable from
+the fresh one at a glance. The registry's `get_schedule_meta` now carries a
+**`generation`** counter (this schedule's 1-based ordinal among the data root's
+non-scenario schedules, `created_at` asc — a monotonic "solve #N") and its
+**`created_at`**; the top strip renders a human-scale identity — **"solve #3 · 09:41"**
+— with the short hex kept in the element `title` for debugging. It degrades to the hex
+(a plain document, a pool member without these fields) rather than showing a blank.
+
+**Tests.** New harness seam in the fixture server: `POST /__test__/add-schedule`
+injects a newer schedule into the data-root listing (resolving as a real doc/meta from
+a chosen base fixture dir, so an auto-follow lands on a coherent board), cleared per
+test. `freshness.spec.mjs` rewritten for the cross-root `created_at` semantics (the
+resubmit-under-a-new-submission case now IS offered; the tie is not; superseded and
+scenarios skipped; position fallback). `cockpit.spec.mjs` drives the three CU2 flows
+end to end — resubmit-while-viewing **auto-follows** (URL advances + toast + one click
+back to the previous id), an **uncommitted selection** shows the banner and **never**
+changes the URL, and a **window focus** rechecks and follows — plus CU3 (the strip
+shows "solve #N · HH:MM") and a strengthened CU6 (no spurious auto-follow on a normal
+boot: the static fixtures tie on `created_at`). `test_api_endpoints.py` asserts `/meta`
+carries `created_at` + an integer `generation ≥ 1`. **Cockpit JS 146 passed** (was 137:
++1 freshness logic, +4 cockpit.spec × light+dark = +8, minus the one 4.3 freshness
+logic test folded into the rewrite). **Non-slow Python 1172 passed** (backend change is
+additive to `get_schedule_meta`; registry/api/planner_edit/standing_pins green). See
+docs/07 v2.26 and CLAUDE.md → Session 4.4. Lesson: "notice the newer schedule" and
+"the user is now on the newer schedule" are different guarantees — the first still
+depends on the human, so the sixth incident needed the second. Follow automatically
+when nothing is at stake, yield to the banner the moment something is, and make the two
+boards nameable so a human can tell which one they are on.

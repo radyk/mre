@@ -328,11 +328,83 @@ test("CU5 — zoom controls change the window; the first-load hint is present", 
 
 // CU6: on a current version no "newer schedule" banner appears (the positive
 // path is pinned in freshness.spec.mjs; here we prove the wiring doesn't
-// false-positive on a normal boot).
-test("CU6 — no newer-schedule banner when the bound version is current", async ({ page }) => {
+// false-positive on a normal boot). Session 4.4: also proves no spurious
+// auto-follow — the static fixtures tie on created_at, so none is "newer".
+test("CU6 — no newer-schedule banner (and no auto-follow) when the bound version is current", async ({ page }) => {
   await boot(page);
-  await page.waitForTimeout(250);   // the freshness check is background work
+  const before = page.url();
+  await page.waitForTimeout(300);   // the freshness check is background work
   expect(await page.locator("#newer-banner").count()).toBe(0);
+  expect(await page.locator("#followed-toast").count()).toBe(0);
+  expect(page.url(), "no spurious auto-follow on a normal boot").toBe(before);
+});
+
+// --- Session 4.4: schedule freshness done right ----------------------------
+// Inject a newer schedule into the data-root listing (a resubmit landing while
+// the tab is bound to an older solve), then drive the freshness watch.
+const injectNewer = (page, id, created_at = "2026-01-05T12:00:00Z") =>
+  page.request.post("/__test__/add-schedule", {
+    data: { id, base: "sched-multi-route-distinct", created_at, generation: 4 },
+  });
+
+// CU2 — the real fix: with NO uncommitted state, a newer schedule appearing while
+// viewing auto-follows (reloads onto the new version) and confirms with a toast
+// that offers a one-click way back.
+test("CU2 — resubmit while viewing auto-follows to the newer schedule", async ({ page }) => {
+  await boot(page);
+  const NEWER = "sched-newer-autofollow";
+  await injectNewer(page, NEWER);
+  await page.evaluate(() => { window.__cockpit.checkFreshness(); return true; });
+  await page.waitForURL((u) => new URL(u).searchParams.get("schedule") === NEWER, { timeout: 10000 });
+  await page.waitForFunction(() => window.__cockpit && window.__cockpit.ready === true, { timeout: 20000 });
+  // landed on the new version; the toast confirms the switch + offers back.
+  await expect(page.locator("#followed-toast")).toBeVisible();
+  await expect(page.locator("#followed-toast")).toContainText("Switched to the new schedule");
+  await expect(page.locator("#ft-back")).toContainText("View previous");
+  // one click back returns to the previous version (and never re-follows it).
+  await page.locator("#ft-back").click();
+  await page.waitForURL((u) => new URL(u).searchParams.get("schedule") === SCHEDULE, { timeout: 10000 });
+});
+
+// CU2 — uncommitted user state (here: a live bar selection = a pinned deictic
+// scope) outranks freshness: the banner is offered, the board is NEVER yanked.
+test("CU2 — uncommitted state shows the banner, never auto-switches", async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => {
+    const op = window.__cockpit.doc.assignments[0].operation_ref;
+    window.__cockpit.select(op);
+  });
+  expect(await page.evaluate(() => window.__cockpit.panel.hasUserState())).toBe(true);
+  const before = page.url();
+  await injectNewer(page, "sched-newer-blocked");
+  await page.evaluate(() => { window.__cockpit.checkFreshness(); return true; });
+  await page.waitForTimeout(400);
+  expect(page.url(), "no auto-switch with uncommitted state").toBe(before);
+  await expect(page.locator("#newer-banner")).toBeVisible();
+  await expect(page.locator("#newer-banner")).toContainText("A newer schedule exists");
+  expect(await page.locator("#followed-toast").count()).toBe(0);
+});
+
+// CU2 — a window focus rechecks freshness: the exact moment a planner returns
+// from Excel after a data fix.
+test("CU2 — a window focus rechecks freshness and follows", async ({ page }) => {
+  await boot(page);
+  const NEWER = "sched-newer-onfocus";
+  await injectNewer(page, NEWER);
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await page.waitForURL((u) => new URL(u).searchParams.get("schedule") === NEWER, { timeout: 10000 });
+  expect(new URL(page.url()).searchParams.get("schedule")).toBe(NEWER);
+});
+
+// CU3 — the top strip carries a human-scale identity (generation + clock), not
+// just the hex, so two visually-similar boards are distinguishable at a glance.
+test("CU3 — the top strip shows a human-scale schedule identity", async ({ page }) => {
+  await boot(page);
+  const ver = await page.locator(".topstrip .ver").innerText();
+  expect(ver).toContain("contract 1.3");
+  expect(ver, "generation counter is shown").toMatch(/solve #\d+/);
+  expect(ver, "a clock time accompanies it").toMatch(/\d{2}:\d{2}/);
+  await expect(page.locator(".topstrip .sched-ident")).toBeVisible();
 });
 
 // CU7: temporally-adjacent bars must read as DISTINCT at coarse (day) zoom —

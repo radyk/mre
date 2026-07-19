@@ -94,6 +94,59 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4.4 — schedule freshness
+done right (the sixth stale-tab incident) 2026-07-19.** The behavior contract: **the
+cockpit must never leave the user unknowingly on anything but the newest relevant
+schedule.** 4.3's newer-schedule detection was real but half-scoped, and the sixth
+incident proved it blind to the RESUBMIT workflow (fix data in Excel → re-submit mints
+a NEW submission id → re-solve → the newer solve was never offered because it was a
+different submission). Frontend + one additive `/meta` field + docs; no
+solver/model/contract changes. **CU1 — freshness scope fix:** `findNewerSchedule`
+(`src/cockpit/src/freshness.js`) compares against the newest LIVE (non-superseded)
+schedule across the whole **DATA ROOT**, not the same submission — "relevant" for
+single-tenant/dev IS the root; strictly newer by `created_at` (the listing is
+`ORDER BY created_at`), a **same-instant tie is NOT newer** (unrelated live boards
+never cross-follow), superseded + scenarios never offered. **Multi-tenant scoping is a
+NAMED future concern** (docs/04), deliberately NOT pre-built — a tenant boundary is a
+property the data root does not model today, so inventing that scope would be the kind
+of plausible lie docs/01 forbids; when a second tenant exists the scope narrows from
+"the root" to "the tenant's schedules". **CU2 — auto-follow on resubmit (the real
+fix):** noticing still depends on the human, so when a newer schedule appears while the
+cockpit is bound to an older one AND there is **no uncommitted user state**, the
+cockpit **follows it automatically** — a full reload onto the new version + a brief
+R-M1-legible toast ("Switched to the new schedule · View previous (<id8>)", one click
+back via a `sessionStorage` handoff stashed before the jump and read on the next
+boot). **With uncommitted state present, NEVER auto-switch** — fall back to the 4.3
+banner, planner decides. "Uncommitted" = a drag phase ≠ `idle` (tentative edit / open
+delta card / accept-publish in flight) **or** a pinned conversation (new
+`panel.hasUserState()`: a live bar selection, a built-up Q&A history, or an ask
+mid-round-trip). An edit-in-flight outranks freshness; generalized, any user
+investment does. The watch re-checks on **window focus** + **tab re-show**
+(`visibilitychange`) + a 30s interval backstop — focus is the load-bearing signal (a
+planner returning from Excel after a data fix is the exact moment). Idempotent per
+newer id (no stacked banner); the follow-reload resets state so a chain never loops.
+**CU3 — identity made visible:** `Registry.get_schedule_meta` now carries a
+**`generation`** counter (1-based ordinal among the data root's non-scenario schedules,
+`created_at` asc — a monotonic "solve #N") + **`created_at`**; the top strip renders a
+human-scale identity — **"solve #3 · 09:41"** — with the short hex kept in the element
+`title`, degrading to the hex (a plain doc / pool member) rather than a blank. Across
+all six incidents the hex alone was insufficient: two visually-similar boards read
+identically. **Harness:** new `POST /__test__/add-schedule` fixture-server seam injects
+a newer schedule into the data-root listing (resolving as a real doc/meta from a base
+fixture dir so an auto-follow lands on a coherent board), cleared per test; the three
+CU2 flows driven end to end (resubmit-while-viewing **auto-follows** — URL advances +
+toast + one click back; an **uncommitted selection** shows the banner and the URL
+**never** changes; a **window focus** rechecks + follows), plus CU3 (strip shows "solve
+#N · HH:MM") and a strengthened CU6 (no spurious auto-follow on a normal boot — the
+static fixtures tie on `created_at`). **Cockpit JS 146 passed** (was 137: +1 freshness
+logic, +8 cockpit.spec CU2/CU3 × light+dark); **non-slow Python 1172 passed** (+1
+`/meta` identity assertion; `get_schedule_meta` change is additive). See the docs/04
+2026-07-19 Session 4.4 amendment and docs/07 v2.26. Lesson: "notice the newer schedule"
+and "the user is now on the newer schedule" are different guarantees — the first still
+depends on the human, so the sixth incident needed the second; follow automatically
+when nothing is at stake, yield to the banner the moment something is, and make the two
+boards nameable so a human can tell which one they are on.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4.3 — Glass Box audit
 riders + R-DP9 (the no-op drop) 2026-07-18.** Eight small findings from Daryn's live
 Glass Box audit, batched — no solver/model/contract changes (frontend + one ruling

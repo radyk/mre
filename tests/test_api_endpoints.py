@@ -233,6 +233,16 @@ class TestScheduleMeta:
         assert meta["submission_id"] == api.submission["submission_id"]
         assert meta["is_scenario"] in (0, False)
 
+    def test_meta_carries_human_scale_identity(self, api):
+        """Session 4.4 CU3: the strip shows "solve #N · HH:MM", not just the hex —
+        two visually-similar boards must be distinguishable at a glance."""
+        meta = _data(api.client.get(f"/schedules/{api.schedule_id}/meta"))
+        assert meta.get("created_at"), "a creation timestamp for the clock"
+        # generation is a 1-based monotonic solve counter for the data root; a
+        # freshly-solved single schedule is solve #1.
+        assert isinstance(meta.get("generation"), int)
+        assert meta["generation"] >= 1
+
     def test_meta_unknown_schedule_404(self, api):
         _error(api.client.get("/schedules/nope/meta"), 404)
 

@@ -31,6 +31,9 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
   // later rephrase (R-AI1(d)). The server is stateless — the client carries this.
   const sessionId = `sess-${Math.random().toString(36).slice(2, 10)}`;
   const askHistory = [];   // [{question, resolved_question, route, order, machine}]
+  // Session 4.4 CU2: a question in flight is uncommitted user state — freshness
+  // must never yank the board out from under an ask that is mid-round-trip.
+  let asking = false;
 
   function currentSelectionRefs() {
     const wo = selection && (selection.work_orders || [])[0];
@@ -138,6 +141,7 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
     if (!question.trim()) return;
     appendYou(question);
     inputEl.value = "";
+    asking = true;
     try {
       const res = await ask(scheduleId, question, useLlm, {
         history: askHistory.slice(-4),
@@ -168,6 +172,8 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
       el.innerHTML = `<div class="who">error</div><pre></pre>`;
       el.querySelector("pre").textContent = String(e.message || e);
       logEl.appendChild(el); scrollDown();
+    } finally {
+      asking = false;
     }
   }
 
@@ -253,6 +259,11 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
     // stale): drop the deictic scope so the next "why is this here?" is composed
     // from a fresh click on the rebound board (session 3.8 CU1).
     clearSelection() { selection = null; renderScope(); },
+    // Session 4.4 CU2: is the planner mid-investigation on THIS board? A live bar
+    // selection (a pinned deictic scope), a conversation already built up, or an
+    // ask in flight all count — auto-follow must yield the banner to any of them
+    // ("an edit-in-flight outranks freshness", generalized to any user state).
+    hasUserState() { return selection != null || askHistory.length > 0 || asking; },
     // voice availability + a programmatic "speak this answer" seam for the
     // harness (which has no microphone): drive run() with {spoken:true}.
     voiceAvailable: () => speechRecognitionAvailable(),
