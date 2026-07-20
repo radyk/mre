@@ -404,6 +404,48 @@ class TestAuditCorpusClean:
             a = _answer(clean, q)
             assert "`" not in a and "**" not in a, f"formatting leaked in {q!r}: {a}"
 
+    # ------- Session 4A.2d — R-AI2 correctness (CU1–CU3) + judgment voice -------
+
+    def test_4d_cu1_deictic_resolves_against_selection_with_machine_present(self, clean):
+        # "why is this on CUT-01" — a machine ref is present, but the deictic
+        # "this" still needs a subject. It resolves against the live selection on
+        # EVERY route; the literal token never reaches a route as an entity.
+        ctx = {"selection": {"order": "ORD-05"}}
+        res, a = _ask(clean, "why is this on CUT-01", ctx)
+        assert res.route == "why-on-machine"
+        assert "ORD-05" in res.resolved_question
+        assert "this" not in res.resolved_question.lower().split("on")[0]
+
+    def test_4d_cu1_deictic_no_selection_clarifies(self, clean):
+        res, a = _ask(clean, "why is this on CUT-01", None)
+        assert res.route == "CLARIFY"
+        assert "this" not in a.lower().split("register")[0] or "which order" in a.lower()
+
+    def test_4d_cu2_no_scope_placeholder_ever(self, clean):
+        # "Nothing scheduled for all" — a scope placeholder — is unrepresentable.
+        a = _answer(clean, "show me the schedule").lower()
+        assert "nothing scheduled for all" not in a
+        assert "full schedule" in a          # a conversational lead, not a raw dump
+
+    def test_4d_cu3_direct_timing_leads_with_completion(self, clean):
+        # A direct "when does X finish" leads with the asked quantity (completion),
+        # the table only supplements.
+        a = _answer(clean, "when does ORD-13 finish")
+        head = a.split("[rendered by")[0]
+        assert "completes" in head.lower()
+        assert "ORD-13" in head
+        # the completion sentence precedes any table row
+        assert head.lower().index("completes") < (head.find("seq=") if "seq=" in head else len(head))
+
+    def test_4d_judgment_offered_on_late_order(self, clean):
+        # R-AI2(c) — a late order blocked by earlier work carries a LABELED
+        # judgment offering the tradeoff, never blended into the testimony.
+        a = _answer(clean, "why is ORD-05 late")
+        assert "My take:" in a
+        # the judgment names the tradeoff (pull the blocker, or accept the delay)
+        take = a.split("My take:")[1].lower()
+        assert "accept" in take or "pull" in take
+
     def test_cu6_no_jargon_leaks_across_the_corpus(self, clean):
         for q in ("why is ord-05 late", "what data problems exist?",
                   "how many jobs in total", "what product is ord-01",
@@ -492,6 +534,12 @@ def test_cu10_zero_confident_wrong(clean, sabotaged):
          lambda a: "nothing to prioritize" not in a.lower()),
         ("how do i fix the problems", clean, None,
          lambda a: "nothing to remediate" not in a.lower()),
+        # Session 4A.2d specimens — the voice pass (correct AND conversational)
+        ("show me the schedule", clean, None,
+         lambda a: "nothing scheduled for all" not in a.lower() and "full schedule" in a.lower()),
+        ("when does ORD-13 finish", clean, None, lambda a: "completes" in a.lower()),
+        ("why is this on CUT-01", clean, {"selection": {"order": "ORD-05"}},
+         lambda a: "ord-05" in a.lower()),
     ]
     wrong = []
     for q, ex, ctx, ok in corpus:

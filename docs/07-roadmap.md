@@ -1,6 +1,37 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.29 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.30 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.30:** **AI-track Session 4A.2d — R-AI2 (conversational-by-default) + the
+4A.2c correctness specimens** 2026-07-20 (docs/04 R-AI2 ruling + amendment).
+Correctness and voice land in ONE session so neither ships without the other.
+**R-AI2 ruled** (verbatim, docs/04): the voice is conversational; the template is
+a fail-closed FLOOR written as sentences, not a register; judgment ("My take:") is
+a labeled first-class guest, never blended into testimony; the transcript
+convention (=== headers, meta-footers in the planner's view) dies; guards gate
+CONTENT, never voice. **Part 2 (correctness):** **CU1** — a deictic (this/that/it)
+resolves against the live selection on EVERY route; a machine ref no longer
+short-circuits resolution when a pronoun is also present ("why is this on CUT-01"),
+and no subject → CLARIFY — the literal token never reaches a route as an entity.
+**CU2** — "Nothing scheduled for all" (a scope placeholder) is unrepresentable; an
+empty listing with no filter reads as an honest sentence, and the placeholder only
+ever names a REAL entity. **CU3** — a direct timing question leads with the asked
+quantity ("ORD-13 completes … — 8.5 day(s) early"), the seq= table supplementing.
+**Part 3 (voice pass):** the `=== q ===` transcript header removed (the answer
+opens with the answer; the `[rendered by]` footer kept as delivery metadata, the
+cockpit register chip being the R-AI2(d) indicator — footer-line hiding in the
+cockpit view is a named 4A.3 follow-up); the schedule listing re-rendered as a
+colleague sentence with the rows as supplement; why-on-machine composed as a
+sentence ("{order} is on {machine} because {plain cause}"); a LABELED judgment
+offered on a late order blocked by earlier work ("My take: pull {blocker}'s start
+earlier, or accept the N minutes"). Backend-only (explainer + interpreter +
+renderers + planner_language + corpus + docs); no solver/model/contract/frontend
+changes. Named: the "My take:" offer rides the template floor (the LLM testimony
+path keeps its no-opinion rules — a dedicated judgment turn is a follow-up); the
+cockpit footer-line hiding is 4A.3. Non-slow Python **1209 passed**, 0 failed; the
+slow AI-voice corpus green (+5 specimens, re-graded on facts-correct AND
+question-answered AND voice-conversational). See the docs/04 2026-07-20 R-AI2 +
+Session 4A.2d amendments.
 
 **v2.29:** **Session 4A.2b — the listening-session findings** 2026-07-20 (docs/04
 amendment). Daryn's first live conversation surfaced four delivery gaps between

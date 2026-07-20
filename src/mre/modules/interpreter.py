@@ -114,6 +114,14 @@ def _last_route(history: list[dict]) -> Optional[str]:
     return None
 
 
+def _has_pronoun(ql: str) -> bool:
+    """A bare back-reference pronoun (it/that/this/them/those/these) present as a
+    word — the CU1 signal that a deictic subject still needs resolving even when a
+    machine ref is also named."""
+    words = re.findall(r"[a-z']+", ql)
+    return any(p in words for p in _ELLIPSIS_PRONOUNS)
+
+
 def _has_ellipsis(ql: str) -> bool:
     words = re.findall(r"[a-z']+", ql)
     if any(p in words for p in _ELLIPSIS_PRONOUNS):
@@ -156,8 +164,16 @@ def resolve_followup(question: str, context: Optional[dict], explainer: Any) -> 
         refs = ", ".join(dict.fromkeys(r for _t, r in fnotes))
         return ResolvedQuestion(text=fq, resolved=True, note=f"assuming {refs}")
 
-    # Already names a resolvable ref → nothing to resolve.
-    if explainer._find_order_ref(q) or explainer._find_machine_ref(q):
+    # Already names a resolvable ORDER → nothing to resolve (an order ref fully
+    # anchors the question). A MACHINE ref alone anchors it too — UNLESS a deictic
+    # pronoun is also present ("why is this on CUT-01"): the pronoun still needs a
+    # subject, and CU1 (Session 4A.2c) requires this/that/it resolve against the
+    # live selection on EVERY route — the literal token never reaches a route as an
+    # entity. So a machine-only question with no pronoun short-circuits; one with a
+    # pronoun falls through to the ellipsis resolver below.
+    if explainer._find_order_ref(q):
+        return ResolvedQuestion(text=q, resolved=False)
+    if explainer._find_machine_ref(q) and not _has_pronoun(ql):
         return ResolvedQuestion(text=q, resolved=False)
 
     # CU5 — bare "but why?" resolves to the last subject's cause-chain (why-late),

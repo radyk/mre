@@ -6220,3 +6220,103 @@ reading two finding sets can contradict, a blind pronoun substitution can
 fabricate a question; the cure for each is to make the seam carry the truth (pin
 the fact, share the source, strip at one place, validate the rewrite) rather than
 trust that it will.
+
+## Amendment — 2026-07-20: R-AI2 ruling — THE VOICE IS CONVERSATIONAL; THE TEMPLATE IS A FLOOR, NOT A REGISTER
+
+Ruled in the design thread, transcribed here verbatim (append-only; settled).
+Implemented AI-track Session 4A.2d (same day, below).
+
+--- RULING TEXT BEGINS ---
+R-AI2 — THE VOICE IS CONVERSATIONAL; THE TEMPLATE IS A FLOOR,
+NOT A REGISTER.
+(a) Every planner-facing answer renders as prose a colleague
+would speak — facts pinned (per the 4A.2b uncompressible-fact
+contract), receipts attached, warmth intact. Raw tabular/debug
+renderings (seq= rows, arrow spans, scope placeholders) are
+NEVER a final answer surface; tables may SUPPLEMENT a sentence,
+never replace it.
+(b) The template register exists as the fail-closed floor —
+rendered only when the LLM path is unavailable or validation
+rejects — and even the floor is written as sentences, not dumps.
+(c) The judgment register ("My take:") is a first-class part of
+fantastic: opinions are welcome wherever evidence grounds them,
+always labeled, never blended into testimony. Routes should
+OFFER judgment where the evidence supports one (a late order's
+"My take: pull ORD-13's start or accept the 890 minutes").
+(d) Framing is conversational: no === headers, no meta-footers
+in the planner's view (validation state moves to a subtle
+verified/degraded indicator); the transcript convention dies.
+(e) Guards gate CONTENT, never voice: refusals, clarifies, and
+fallbacks pass through the same pinned-fact conversational
+render. Honesty and warmth are not a trade.
+--- RULING TEXT ENDS ---
+
+## Amendment — 2026-07-20: AI-track Session 4A.2d — R-AI2 (conversational-by-default) + 4A.2c correctness
+
+R-AI2 implemented alongside the 4A.2c correctness specimens in ONE session, by
+design: correctness and voice land together so neither ships without the other.
+Backend-only (explainer + interpreter + renderers + planner_language + the audit
+corpus + docs); no solver/model/contract/frontend changes.
+
+**Part 2 — correctness (4A.2c specimens).**
+- **CU1 — deictic resolution on EVERY route.** `resolve_followup` short-circuited
+  the instant ANY ref was present, so "why is this on CUT-01" kept the literal
+  "this" (a machine ref anchored the question while the pronoun went unresolved).
+  Now an ORDER ref anchors; a MACHINE ref anchors ONLY when no deictic pronoun is
+  also present (`_has_pronoun`). A bare `this/that/it` resolves against the live
+  selection / last subject on every route; with no subject at all it CLARIFIES —
+  the literal token never reaches a route as an entity.
+- **CU2 — no scope placeholder as an answer.** `_schedule_query` produced
+  "Nothing scheduled for all" when a listing resolved to nothing with no filter.
+  The empty message is now an honest sentence ("I don't see any scheduled
+  operations matching that.") when the scope is `all`, and "Nothing scheduled for
+  CUT-01" only for a REAL entity — the placeholder-in-prose is unrepresentable.
+- **CU3 — direct questions lead with the asked quantity.** A single-order timing
+  question ("when does ORD-13 finish") now leads with the completion —
+  "ORD-13 completes 2026-01-07 10:40 — 8.5 day(s) early (due …)." — computed from
+  the last operation's end against the demand's due date; the seq= table follows
+  ONLY as a supplement (R-AI2(a)).
+
+**Part 3 — the voice pass.**
+- **The transcript convention dies (R-AI2(d)).** The `=== {question} ===` header
+  that echoed the question back is gone from `_render_body`; the answer opens with
+  the answer. The `[rendered by: … | register: …]` footer is retained as delivery
+  metadata (the honesty armor the fail-closed suites assert on) — the cockpit
+  already surfaces the register as a subtle chip (`askpanel.js`), which IS the
+  R-AI2(d) verified/degraded indicator; hiding the literal footer LINE from the
+  cockpit's rendered text is a named frontend follow-up (4A.3), this session being
+  backend-only.
+- **The schedule listing rendered as a colleague sentence (the flagship).** A full
+  listing leads "The full schedule — N operation(s) across M machine(s), machine
+  by machine:"; a scoped listing leads with its label + count; the rows supplement
+  the sentence, never stand alone as the answer.
+- **why-on-machine reads as a sentence.** With the transcript header gone, the
+  order name rode only in the echoed question; the route now composes "{order} is
+  on {machine} because {plain cause}." from the assignment's driver, the decision
+  supplementing below.
+- **Judgment offered where evidence grounds it (R-AI2(c)).** A late order blocked
+  by earlier work carries a LABELED "My take: pull {blocker}'s start earlier on
+  {machine}, or accept the N minutes late — nothing else frees this slot." —
+  authored, structured on the bundle, rendered under "My take:", never blended
+  into the testimony above it. The remediation/triage bodies were already
+  sentence-form (a lead sentence + prose items); their backtick emphasis is
+  stripped at the single delivery seam (`strip_formatting`).
+- **Guards keep their voice (R-AI2(e)).** Refusal / clarify / near-miss already
+  render as authored sentences; unchanged — honesty and warmth do not trade.
+
+**The corpus, re-graded under the tightened rubric.** `tests/test_ai_voice.py`
+gains the 4A.2d specimens (deictic-with-machine resolves / no-selection clarifies,
+the no-scope-placeholder + full-schedule lead, the direct-timing completion lead,
+the labeled judgment on a late order) as fast-and-slow assertions, folded into the
+zero-confident-wrong aggregate. The audit corpus predicates now measure three axes
+— facts correct AND question answered AND voice conversational.
+
+**Named / not addressed.** The LLM testimony path renders facts under its strict
+no-opinion rules, so the "My take:" judgment offer currently rides the TEMPLATE
+floor (the delivery surface in CI and whenever the LLM is unavailable); wiring the
+judgment offer through a dedicated LLM judgment turn on the same route is a
+follow-up. The footer-line hiding in the cockpit view (R-AI2(d)) is the 4A.3
+frontend follow-up above. Lesson: a voice is not a register — the template is the
+fail-closed FLOOR written as sentences, the LLM is the default, and judgment is a
+labeled guest at the table; the transcript header and the scope placeholder were
+the two places the machine's shape still showed through the prose.

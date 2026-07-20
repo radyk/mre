@@ -141,9 +141,12 @@ class TemplateRenderer:
             + f"\n[rendered by: template | register: {_register_for(bundle)}]")
 
     def _render_body(self, bundle: ExplanationBundle) -> str:
+        # R-AI2(d) (Session 4A.2d) — the transcript convention dies: no "=== q ==="
+        # header echoing the question back at the planner. The answer opens with
+        # the answer. (The [rendered by: … | register: …] footer is delivery
+        # metadata — the cockpit surfaces the register as a chip; hiding the
+        # literal footer line in the cockpit view is a named 4A.3 follow-up.)
         lines: list[str] = []
-        lines.append(f"=== {bundle.question} ===")
-        lines.append("")
 
         self._render_header(lines, bundle)
 
@@ -204,6 +207,15 @@ class TemplateRenderer:
     def _render_header(self, lines: list[str], bundle: ExplanationBundle) -> None:
         if bundle.subject_type == "demand":
             kf = bundle.key_facts
+            # why-on-machine (Session 4A.2d): lead with a sentence naming the order,
+            # the machine, and the cause; the assignment decision supplements below.
+            if kf.get("machine_ref"):
+                name = bundle.subject_external_name
+                cause = kf.get("cause")
+                because = f" because {cause}" if cause else ""
+                lines.append(f"{name} is on {kf['machine_ref']}{because}.")
+                lines.append("")
+                return
             lateness = kf.get("lateness_minutes")
             due = kf.get("due_date", "unknown")
             name = bundle.subject_external_name
@@ -221,6 +233,11 @@ class TemplateRenderer:
                         f"{prio} until {blk['until']}.")
                 elif kf.get("driver_phrase"):
                     lines.append(f"The binding cause: {kf['driver_phrase']}.")
+                # R-AI2(c) — a labeled judgment, offered (never blended into the
+                # testimony above), only where the evidence grounds the tradeoff.
+                if kf.get("take"):
+                    lines.append("")
+                    lines.append(f"My take: {kf['take']}")
             elif lateness is not None:
                 early = abs(int(lateness))
                 span = (f"{round(early / 1440, 1)} days" if early >= 1440
@@ -379,10 +396,41 @@ class TemplateRenderer:
             kf = bundle.key_facts
             rows = kf.get("rows", [])
             label = kf.get("filter_label", "all")
+            direct = kf.get("direct_answer")
+            # CU3 — a direct timing question leads with the completion; the table
+            # below only supplements it (R-AI2(a): a table never replaces a
+            # sentence).
+            if direct and direct.get("finish"):
+                dd = direct.get("delta_days")
+                if dd is None:
+                    span = ""
+                else:
+                    mag = abs(dd)
+                    span = (f" — {mag:g} day(s) {'late' if direct['late'] else 'early'}"
+                            if mag >= 0.05 else " — right on its due date")
+                due = f" (due {direct['due']})" if direct.get("due") else ""
+                lines.append(
+                    f"{direct['order']} completes {direct['finish']}{span}{due}.")
+                if direct.get("begin"):
+                    lines.append(f"It starts {direct['begin']}.")
+                lines.append("")
             if not rows:
-                lines.append(kf.get("empty_message") or f"Nothing scheduled for {label}.")
+                lines.append(kf.get("empty_message")
+                             or "I don't see any scheduled operations matching that.")
             else:
-                lines.append(f"Schedule for {label} ({len(rows)} operation(s)):")
+                # A conversational lead, then the table as supplement. Full listing
+                # vs a single row-scope read differently.
+                m = kf.get("machine_count", len({r["machine"] for r in rows}))
+                if direct:
+                    lead = (f"{label} runs across {len(rows)} operation(s):"
+                            if len(rows) > 1 else "Its schedule:")
+                elif label == "all":
+                    lead = (f"The full schedule — {len(rows)} operation(s) across "
+                            f"{m} machine(s), machine by machine:")
+                else:
+                    lead = (f"{label}: {len(rows)} operation(s)"
+                            + (f" across {m} machine(s)" if m > 1 else "") + ":")
+                lines.append(lead)
                 lines.append("")
                 cur_machine = None
                 for row in rows:

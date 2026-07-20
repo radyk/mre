@@ -871,6 +871,17 @@ class Explainer:
                 break
         blocked = self._blocked_by(wo_ref) if (lateness or 0) > 0 else None
 
+        # R-AI2(c) (Session 4A.2d) — offer a LABELED judgment where the evidence
+        # grounds one: a late order blocked by earlier work carries the concrete
+        # tradeoff a colleague would voice ("pull the blocker earlier, or accept
+        # the N minutes"). Structured here (authored), rendered under "My take:",
+        # never blended into the testimony.
+        take = None
+        if blocked and (lateness or 0) > 0:
+            take = (f"pull {blocked['blocker_order']}'s start earlier on "
+                    f"{blocked['machine']}, or accept the {int(lateness)} minutes "
+                    "late — nothing else frees this slot.")
+
         return ExplanationBundle(
             question=f"Why is {wo_ref} late?",
             subject_id=demand_id,
@@ -885,6 +896,7 @@ class Explainer:
                 "driver_code": driver_code,
                 "driver_phrase": driver_phrase(driver_code),
                 "blocked_by": blocked,
+                "take": take,
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
@@ -902,6 +914,13 @@ class Explainer:
             r for r in records
             if r.get("record_type") == "decision" and r.get("decision_type") == "assignment"
         ]
+        # The assignment's driver in plain language, so the answer leads with a
+        # conversational sentence (Session 4A.2d) rather than a bare decision dump.
+        cause = None
+        for r in assignment_records:
+            cause = driver_phrase(r.get("driver"))
+            if cause:
+                break
 
         return ExplanationBundle(
             question=f"Why is {wo_ref} on {machine_ref}?",
@@ -909,7 +928,8 @@ class Explainer:
             subject_type="demand",
             subject_external_name=wo_ref,
             ordered_records=assignment_records or records,
-            key_facts={"machine_ref": machine_ref},
+            key_facts={"machine_ref": machine_ref, "cause": cause,
+                       "order": wo_ref},
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )
@@ -1831,16 +1851,45 @@ class Explainer:
                 "lateness_minutes": lateness_min,
             })
 
+        # CU2 (Session 4A.2d) — a scope-placeholder is never a final answer. An
+        # empty listing scoped to a real entity is an honest sentence ("Nothing
+        # scheduled for CUT-01"); an empty listing scoped to "all" (no filter
+        # resolved) must NOT read "Nothing scheduled for all" — say plainly there
+        # is nothing to list, naming no placeholder.
         empty_msg = ""
         if not row_dicts:
-            parts = [p for p in [
-                flt.get("machine") or (
-                    "pool" if flt.get("pool_words") else None
-                ),
-                flt.get("work_order"),
-                f"on {flt['time_from'].date()}" if flt.get("time_from") else None,
-            ] if p]
-            empty_msg = f"Nothing scheduled for {label}."
+            empty_msg = ("I don't see any scheduled operations matching that."
+                         if label == "all"
+                         else f"Nothing scheduled for {label}.")
+
+        # CU3 (Session 4A.2d) — a direct "when does X finish / start" question
+        # leads with the asked quantity (the completion), then the table
+        # supplements. Computed for a single-order listing when the question is a
+        # timing question; the demand's due date grounds the early/late span.
+        direct = None
+        _timing = any(w in q for w in
+                      ("when", "finish", "complete", "done", "ready", "due", "start"))
+        if flt.get("work_order") and row_dicts and _timing:
+            order = flt["work_order"]
+            ends = [r["end"] for r in row_dicts if r["end"]]
+            starts = [r["start"] for r in row_dicts if r["start"]]
+            finish = max(ends) if ends else ""
+            begin = min(starts) if starts else ""
+            dem = self._demand_by_order(order)
+            due = dem.get("due") if dem else None
+            delta_days = None
+            fdt = _to_dt(finish)
+            ddt = _to_dt(due)
+            if fdt is not None and ddt is not None:
+                delta_days = round((ddt - fdt).total_seconds() / 86400, 1)
+            direct = {
+                "order": order,
+                "finish": finish,
+                "begin": begin,
+                "due": _fmt_date(due),
+                "delta_days": delta_days,
+                "late": (delta_days is not None and delta_days < 0),
+            }
 
         return ExplanationBundle(
             question=question,
@@ -1852,6 +1901,8 @@ class Explainer:
                 "filter_label": label,
                 "rows": row_dicts,
                 "total_rows": len(row_dicts),
+                "machine_count": len({r["machine"] for r in row_dicts}),
+                "direct_answer": direct,
                 "empty_message": empty_msg,
             },
             snapshot_id=self._snap_id,
@@ -2135,6 +2186,28 @@ def _weekday(s: Optional[str]) -> Optional[str]:
 def _parse_ts(s: str) -> datetime:
     """Parse 'Z'-suffixed or offset ISO timestamp to aware datetime."""
     return datetime.fromisoformat(s.replace("Z", "+00:00"))
+
+
+def _to_dt(s: Optional[str]) -> Optional[datetime]:
+    """Best-effort naive datetime from an ISO timestamp, a 'YYYY-MM-DD HH:MM'
+    display string, or a bare date. Timezone dropped (both operands come from the
+    same run's grid, so a day-count is stable). None when unparseable."""
+    if not s:
+        return None
+    txt = str(s).replace("Z", "").strip()
+    txt = re.sub(r"[+-]\d{2}:?\d{2}$", "", txt).strip()
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M:%S",
+                "%Y-%m-%dT%H:%M", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(txt[:len("2026-01-07T10:40:00")], fmt)
+        except ValueError:
+            continue
+    try:
+        from datetime import date as _d
+        d = _d.fromisoformat(txt[:10])
+        return datetime(d.year, d.month, d.day)
+    except ValueError:
+        return None
 
 
 def _fmt_ts(s: str) -> str:

@@ -94,6 +94,56 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.2d — R-AI2
+(conversational-by-default) + the 4A.2c correctness specimens 2026-07-20.**
+Correctness and voice land in ONE session so neither ships without the other.
+Backend-only (explainer + interpreter + renderers + planner_language + corpus +
+docs); no solver/model/contract/frontend changes. **R-AI2 ruled** (verbatim,
+docs/04): the voice is conversational; the **template is a fail-closed FLOOR
+written as sentences, not a register**; judgment ("My take:") is a LABELED
+first-class guest, never blended into testimony; the transcript convention (===
+headers, meta-footers in the planner's view) dies; guards gate CONTENT, never
+voice. **Part 2 (correctness): CU1 — deictic on EVERY route:** `resolve_followup`
+short-circuited the instant ANY ref appeared, so "why is this on CUT-01" kept the
+literal "this" (the machine ref anchored while the pronoun went unresolved) — now
+an ORDER ref anchors, a MACHINE ref anchors ONLY when no deictic pronoun is present
+(`_has_pronoun`), a bare this/that/it resolves against the live selection / last
+subject on every route, and no subject → CLARIFY (the literal token never reaches a
+route as an entity). **CU2 — no scope placeholder as an answer:** "Nothing
+scheduled for all" is unrepresentable — an empty listing with no filter reads
+"I don't see any scheduled operations matching that.", and the placeholder only
+ever names a REAL entity. **CU3 — direct questions lead with the asked quantity:**
+a single-order timing question ("when does ORD-13 finish") leads with the
+completion ("ORD-13 completes 2026-01-07 10:40 — 8.5 day(s) early (due …)"),
+computed from the last op's end vs the demand's due; the `seq=` table SUPPLEMENTS
+(R-AI2(a)). **Part 3 (voice pass):** the `=== {question} ===` transcript header
+removed from `_render_body` (the answer opens with the answer); the
+`[rendered by: … | register: …]` footer KEPT as delivery metadata (the honesty
+armor the fail-closed suites assert on) — the cockpit surfaces the register as a
+subtle chip (`askpanel.js`), which IS the R-AI2(d) indicator, so hiding the literal
+footer LINE in the cockpit view is a named 4A.3 frontend follow-up; the schedule
+LISTING re-rendered as a colleague sentence ("The full schedule — N operation(s)
+across M machine(s), machine by machine:") with rows as supplement; **why-on-machine
+composed as a sentence** ("{order} is on {machine} because {plain cause}" from the
+assignment driver — the order name rode only in the removed echoed question); a
+LABELED judgment offered where evidence grounds it ("My take: pull {blocker}'s
+start earlier on {machine}, or accept the N minutes late — nothing else frees this
+slot.", authored + structured on the bundle, under "My take:", never blended);
+remediation/triage bodies were already sentence-form (backtick emphasis stripped at
+the single `strip_formatting` seam). **The corpus re-graded** on three axes (facts
+correct AND question answered AND voice conversational): `tests/test_ai_voice.py`
+gains the 4A.2d specimens (deictic-with-machine resolves / no-selection clarifies /
+no-scope-placeholder + full-schedule lead / direct-timing completion / labeled
+judgment), folded into the zero-confident-wrong aggregate. **Non-slow Python 1209
+passed**, 0 failed; the slow AI-voice corpus green. **Named:** the "My take:" offer
+rides the TEMPLATE floor (the LLM testimony path keeps its no-opinion rules — a
+dedicated judgment turn is a follow-up); the cockpit footer-line hiding is 4A.3.
+See the docs/04 2026-07-20 R-AI2 + Session 4A.2d amendments and docs/07 v2.30.
+Lesson: a voice is not a register — the template is the fail-closed FLOOR written as
+sentences, the LLM is the default, and judgment is a labeled guest; the transcript
+header and the scope placeholder were the two places the machine's shape still
+showed through the prose.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.2b — the
 listening-session findings 2026-07-20.** Daryn's first LIVE conversation with the
 4A.2 voice (the question ledger is the transcript) exposed four gaps between what
