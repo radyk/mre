@@ -144,6 +144,10 @@ SABOTAGE = [
     # 7 — unroutable step (zero active rows)
     ("unroutable_step", "routing_lines.csv", _mutate_bracket_unroutable,
      "CONDITIONAL", "ids.routes_resolve_to_lines", "degraded", "ORPHAN_ENTITY"),
+    # 7b — negative order quantity (rule #34, Session 4.5): invalid demand
+    ("negative_quantity", "orders.csv", _set_cell("ORD-09", 3, "-60"),
+     "CONDITIONAL", "ids.order_quantities_are_positive", "degraded",
+     "VALUE_OUT_OF_RANGE"),
     # 8 — CONTROL: a legal change flags nothing (false-positive guard)
     ("control_legal_change", "orders.csv", _set_cell("ORD-01", 3, "55"),
      "ACCEPTED", None, None, None),
@@ -204,6 +208,46 @@ def _by_order(rows, oid):
 
 def _end_date(iso: str) -> date:
     return date.fromisoformat(iso[:10])
+
+
+@pytest.mark.slow
+class TestUnguardedEdgesDownstream:
+    """Session 4.5 CU1/CU2 — the gate finding is only half the guarantee; the
+    OFFENDING ORDER must also be gone from the solve, never scheduled early."""
+
+    def _solve_mutated(self, tmp_path, fname, mutate):
+        sub = _copy_dataset(tmp_path)
+        _rewrite_csv(sub / fname, mutate)
+        out = tmp_path / "out"
+        rc = mre_main([
+            "--submission", str(sub), "--out", str(out),
+            "--snapshot-id", "snap-4-5", "--solver-workers", "1", "--solver-seed", "0",
+        ])
+        assert rc == 0, f"pipeline exit {rc}"
+        rows = list(csv.DictReader(
+            (out / "schedule.csv").read_text(encoding="utf-8").splitlines()))
+        return rows
+
+    def test_negative_quantity_order_excluded_no_floored_op(self, tmp_path):
+        # CU2 downstream: ORD-09 quantity -60 is excluded; it produces NO
+        # operation. If the -60 had laundered through a duration floor it would
+        # appear as a 1-minute op (-60 x 3 min = -180 -> max(1, .) = 1). It
+        # must be absent entirely.
+        rows = self._solve_mutated(tmp_path, "orders.csv", _set_cell("ORD-09", 3, "-60"))
+        assert all(r["work_orders"] != "ORD-09" for r in rows), (
+            "ORD-09 (-60 qty) must be excluded, not scheduled")
+        # the rest of the plan still solves (a healthy order stays)
+        assert any(r["work_orders"] == "ORD-13" for r in rows)
+
+    def test_zero_active_bracket_excluded_not_early(self, tmp_path):
+        # CU1 downstream: RT-BRACKET seq10 with zero active rows makes ORD-06/07/08
+        # unroutable. They must be EXCLUDED — absent from the solve — never
+        # scheduled as a vacuous, operation-less (and therefore EARLY) fulfillment.
+        rows = self._solve_mutated(tmp_path, "routing_lines.csv", _mutate_bracket_unroutable)
+        for oid in ("ORD-06", "ORD-07", "ORD-08"):
+            assert all(r["work_orders"] != oid for r in rows), (
+                f"{oid} on the zero-active bracket route must be excluded")
+        assert any(r["work_orders"] == "ORD-13" for r in rows)
 
 
 @pytest.mark.slow

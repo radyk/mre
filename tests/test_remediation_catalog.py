@@ -47,7 +47,7 @@ class TestRuleNoteCompleteness:
         assert note.rule_id == rule_id
 
     def test_note_count_equals_registry(self):
-        assert len(CATALOG.rules) == len(RULE_REGISTRY) == 33
+        assert len(CATALOG.rules) == len(RULE_REGISTRY) == 34
 
     def test_no_orphan_rule_notes(self):
         registry_ids = set(RULE_REGISTRY)

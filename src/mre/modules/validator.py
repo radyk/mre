@@ -234,6 +234,15 @@ class Validator:
             except (TypeError, ValueError):
                 continue
             if qty_value <= 0.0:
+                # Severity semantics (docs/02 §4.3, Session 4.5 CU3): a quantity
+                # <= 0 is an invalid demand — you cannot make -60 units. This is
+                # an ERROR, and an ERROR carries a consequence: the demand is
+                # EXCLUDED from planning, never proceeded-flagged into a
+                # floored-duration op that reads as an early fulfillment. The
+                # named specimen the Glass Box audit caught (VALUE_OUT_OF_RANGE
+                # emitted ERROR but disposition proceeded_flagged) is closed by
+                # acting here.
+                excluded_demand_ids.add(d["id"])
                 reporter.record_finding(
                     code=FindingCode.VALUE_OUT_OF_RANGE,
                     severity=FindingSeverity.ERROR,
@@ -241,9 +250,9 @@ class Validator:
                     evidence={
                         "demand_id": d["id"],
                         "quantity": qty_value,
-                        "reason": "Demand quantity must be > 0",
+                        "reason": "Demand quantity must be > 0; demand excluded from planning",
                     },
-                    disposition=FindingDisposition.PROCEEDED_FLAGGED,
+                    disposition=FindingDisposition.EXCLUDED,
                     tier=RecordTier.SUPPORTING,
                 )
 

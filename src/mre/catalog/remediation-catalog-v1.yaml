@@ -289,6 +289,26 @@ rules:
       degraded: "duplicate identities exceed the conditional threshold; triage is required"
     note_version: 1
 
+  - rule_id: ids.order_quantities_are_positive
+    meaning: >
+      Every order's quantity must be greater than zero. A zero or negative
+      quantity is not a small order — it is not an order at all; you cannot
+      make -60 units, and a negative quantity flowing into duration arithmetic
+      produces a negative operation length.
+    typical_causes:
+      - a credit/return line exported into the demand feed with a negative sign
+      - a spreadsheet edit that flipped or blanked the quantity cell
+      - a units/sign convention mismatch in the extract mapping
+    fix_looks_like: >
+      Correct the offending §5.1 quantity at the source to a positive value, or
+      remove the row if it is not a real production demand. Waived orders are
+      excluded — an invalid quantity cannot be planned around.
+    verify: resubmit; the certificate lists the offending orders with their quantity
+    outcome_phrasing:
+      flagged: "non-positive quantities present, within tolerance; excluded and disclosed"
+      degraded: "non-positive quantities exceed the conditional threshold; the orders are excluded and triage is required"
+    note_version: 1
+
   - rule_id: ids.order_dates_internally_consistent
     meaning: >
       Within each order, the dates must tell a possible story — due on or

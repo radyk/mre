@@ -8,9 +8,11 @@ design thread:
   threshold that escapes the band (closest escape first); then `flagged` with
   WARNING before INFO; quality flags last.
 
-Severity is already (outcome, category) via ``outcome_severity`` — reused here,
-never re-derived. Judgment phrasing names the arithmetic the ordering rests on
-(rule, measured value, threshold, distance); ``triage_arithmetic`` exposes it.
+Ordering is outcome-driven (grade distance); the displayed severity is the
+finding's own, honest severity (Session 4.5: severity derives from disposition,
+so a proceeded flag is WARNING and a quality flag is INFO — no re-derivation
+here). Judgment phrasing names the arithmetic the ordering rests on (rule,
+measured value, threshold, distance); ``triage_arithmetic`` exposes it.
 """
 from __future__ import annotations
 
@@ -18,7 +20,7 @@ from typing import Any, Optional
 
 from mre.catalog import RemediationCatalog, load_catalog
 from mre.contracts.ids_rules import (
-    RULE_REGISTRY, RuleCategory, RuleId, RuleOutcome, outcome_severity,
+    RULE_REGISTRY, RuleCategory, RuleId,
     resolve_threshold_band,
 )
 
@@ -114,14 +116,8 @@ def triage_arithmetic(finding: dict,
 
 
 def _severity_label(finding: dict) -> str:
-    rule_id = _rule_of(finding)
-    spec = RULE_REGISTRY.get(rule_id) if rule_id else None
-    outcome_str = finding.get("evidence", {}).get("outcome")
-    if spec is not None and outcome_str:
-        try:
-            return outcome_severity(spec, RuleOutcome(outcome_str)).value.upper()
-        except (ValueError, KeyError):
-            pass
+    # The finding's own severity is now the honest consequence (Session 4.5);
+    # display it directly rather than re-deriving from the outcome.
     return str(finding.get("severity", "info")).upper()
 
 

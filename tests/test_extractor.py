@@ -105,6 +105,38 @@ def _make_reporter(tmp_path, snap_id):
 
 
 # ---------------------------------------------------------------------------
+# Session 4.5 CU1 — a vacuous fulfillment is unrepresentable
+# ---------------------------------------------------------------------------
+
+class TestVacuousFulfillmentUnrepresentable:
+    def test_operationless_fulfillment_raises(self, tmp_path):
+        """A ServiceOutcome requires >=1 real operation. A fulfillment whose
+        WorkPackage has no operations would default its completion to the
+        horizon start and read as EARLY — a plausible lie about an order that
+        was never scheduled. The extractor must refuse it, not materialize it."""
+        from mre.modules.extractor import Extractor
+        sv = _solve_values(op_start=0, op_end=150, wp_end=150, tard_min=0)
+        wps = [_wp("wp-1", [])]                       # no operations
+        fuls = [_fulfillment("f-1", "d-1", "wp-1")]
+        demands = [_demand("d-1", DUE_WED)]
+        rep = _make_reporter(tmp_path, "snap-vac")
+        with pytest.raises(ValueError, match="vacuous fulfillment"):
+            Extractor().extract(sv, "snap-vac", [], wps, [_resource("res-1")],
+                                fuls, demands, _costmodel(), rep)
+
+    def test_real_operation_fulfillment_is_fine(self, tmp_path):
+        """The healthy path still works — a WP with >=1 operation yields a
+        ServiceOutcome without complaint."""
+        from mre.modules.extractor import Extractor
+        sv = _solve_values(op_start=0, op_end=150, wp_end=150, tard_min=0)
+        result = Extractor().extract(
+            sv, "snap-ok", [_operation("op-1", "wp-1")], [_wp("wp-1", ["op-1"])],
+            [_resource("res-1")], [_fulfillment("f-1", "d-1", "wp-1")],
+            [_demand("d-1", DUE_WED)], _costmodel(), _make_reporter(tmp_path, "snap-ok"))
+        assert len(result.service_outcomes) == 1
+
+
+# ---------------------------------------------------------------------------
 # Assignment creation
 # ---------------------------------------------------------------------------
 

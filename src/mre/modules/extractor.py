@@ -297,6 +297,25 @@ class Extractor:
             fid = ful["id"]
             d_id  = ful["demand_ref"]
             wp_id = ful["workpackage_ref"]
+
+            # Session 4.5 CU1 — fulfillment requires reality. A ServiceOutcome is
+            # the per-customer completion truth; it must rest on >=1 real
+            # operation. A fulfillment whose WorkPackage has no operations is
+            # vacuous — its completion would default to the horizon start and
+            # read as EARLY, a plausible lie about an order that was never
+            # scheduled. Such a demand must have been excluded upstream (the
+            # unroutable/orphan-demand path). If one reaches here it is a
+            # pipeline defect, not a schedulable outcome: raise rather than
+            # materialize a vacuous outcome.
+            wp = wps_by_id.get(wp_id)
+            if not wp or not wp.get("operations"):
+                raise ValueError(
+                    f"vacuous fulfillment {fid[:8]} (demand {d_id[:8]}): its "
+                    f"WorkPackage has no operations. A ServiceOutcome requires "
+                    f">=1 real operation or an explicit exclusion (Session 4.5 "
+                    f"CU1) — an operation-less demand must be excluded upstream, "
+                    f"never scheduled as an early completion.")
+
             demand = demands_by_id.get(d_id, {})
 
             due_dt = _parse_dt(demand.get("due", ""))

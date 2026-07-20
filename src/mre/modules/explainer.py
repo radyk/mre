@@ -85,6 +85,12 @@ _TRIAGE_TRIGGERS = (
 _REMEDIATION_TRIGGERS = ("how do i fix", "how to fix", "how do we fix",
                          "how can i fix", "remediat", "how do i resolve",
                          "how to resolve")
+# The excluded-orders story (Session 4.5 CU4): which orders were dropped from
+# the plan and why — enumerated from ALL layers (gate, adapter, validator), so
+# the certificate conversation is never blinder than dq_report.md.
+_EXCLUDED_ORDERS_TRIGGERS = ("exclud", "left out", "dropped from the plan",
+                             "which orders were left", "left off the plan",
+                             "what was left out", "orders were dropped")
 
 # The sandbox/edit question domain (Phase 3 CU2) — over the planner_edit
 # Decisions an accepted edit records (docs/02 planner_edit, basis=observed).
@@ -136,6 +142,7 @@ ROUTE_TAXONOMY: dict[str, dict] = {
     "remediation":           {"params": [],          "canonical": "how do I fix the submission's problems?"},
     "triage":                {"params": [],          "canonical": "what should I fix first?"},
     "certificate-testimony": {"params": [],          "canonical": "what is wrong with the submission?"},
+    "excluded-orders":       {"params": [],          "canonical": "which orders were excluded from the plan?"},
     "edit-summary":          {"params": [],          "canonical": "summarize my changes and what they cost"},
     "edit-cost":             {"params": [],          "canonical": "what did this move cost?"},
     "ledger-refusals":       {"params": [],          "canonical": "what questions couldn't you answer recently?"},
@@ -288,6 +295,8 @@ class Explainer:
         if any(t in q for t in _REMEDIATION_TRIGGERS):
             limit = 1 if ("worst" in q or "top " in q or "the one" in q) else None
             return "remediation", {**base, "limit": limit}
+        if any(t in q for t in _EXCLUDED_ORDERS_TRIGGERS):
+            return "excluded-orders", base
         if any(t in q for t in _CERT_TESTIMONY_TRIGGERS):
             return "certificate-testimony", base
 
@@ -328,6 +337,8 @@ class Explainer:
             return self._explain_how_to_fix(q, params.get("limit"))
         if route_id == "certificate-testimony":
             return self._explain_data_problems(entity_ref=params.get("order"))
+        if route_id == "excluded-orders":
+            return self._explain_excluded_orders(q)
         if route_id == "edit-cost":
             return self._explain_edit_cost(q)
         if route_id == "edit-summary":
@@ -656,6 +667,65 @@ class Explainer:
                 "total_findings": len(findings),
                 "codes": codes,
                 "entity_ref": entity_ref,
+            },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _explain_excluded_orders(self, question: str) -> ExplanationBundle:
+        """The excluded-orders story (Session 4.5 CU4): enumerate every order
+        dropped from the plan and why — a finding with disposition ``excluded``
+        or ``blocked``, from ANY layer (gate rule, adapter, validator). The
+        customer's report card may never be blinder than dq_report.md, which
+        already lists adapter + validator exclusions; this makes the same data
+        enumerable in the certificate conversation. Full conversational polish is
+        4A.2 — this surfaces the DATA (each excluded order, in the customer's
+        vocabulary, with its reason/code/severity/module)."""
+        excluded = [
+            f for f in self._index.all_findings()
+            if f.get("disposition") in ("excluded", "blocked")
+        ]
+        excluded = sorted(
+            excluded,
+            key=lambda r: (
+                {"blocker": 0, "error": 1, "warning": 2, "info": 3}.get(
+                    r.get("severity", "info"), 9),
+                r.get("seq", 0),
+            ),
+        )
+        # Enumerate each excluded order in the customer's vocabulary — the
+        # external ref when the subject resolves through the identity map, else
+        # the IDS-space order_id the finding already carries (a REJECTED run has
+        # only that identity). Never an id-shape regex (Phase-1 audit lesson).
+        orders: list[dict] = []
+        for f in excluded:
+            for s in f.get("subjects", []):
+                sid = str(s.get("entity_id", "")) if isinstance(s, dict) else ""
+                if not sid:
+                    continue
+                label = None
+                if self._identity_map is not None:
+                    erefs = self._identity_map.external_refs(sid)
+                    if erefs:
+                        label = erefs[0].value
+                ev = f.get("evidence", {})
+                orders.append({
+                    "order": label or ev.get("order_id") or ev.get("demand_id") or sid,
+                    "code": f.get("code", ""),
+                    "severity": f.get("severity", ""),
+                    "module": f.get("module", ""),
+                    "reason": f.get("message", "") or ev.get("reason", ""),
+                })
+        return ExplanationBundle(
+            question=question or "which orders were excluded from the plan?",
+            subject_id=self._snap_id,
+            subject_type="findings",
+            subject_external_name="excluded orders",
+            ordered_records=excluded,
+            key_facts={
+                "excluded_orders": orders,
+                "excluded_count": len(orders),
+                "codes": sorted({o["code"] for o in orders}),
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,

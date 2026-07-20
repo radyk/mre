@@ -94,6 +94,59 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4.5 — the unguarded-edge
+family + severity semantics 2026-07-20.** Four findings from Daryn's live Glass Box
+audit: three architectural misses, one disease. No solver/model/frontend changes
+(contracts + gate + validator + adapter + extractor + explainer + docs). **CU3 —
+severity means something (the disease):** a finding could wear `error` while its
+disposition said the run proceeded — a label claiming a consequence the system never
+delivered (the named specimen: `VALUE_OUT_OF_RANGE` emitted ERROR + proceeded_flagged,
+the demand riding into a floored 1-minute op). `contracts.records.Finding` now
+enforces at construction that `error`⇒`excluded`/`blocked` and `blocker`⇒`blocked`;
+`proceeded_flagged`/`defaulted`/`auto_corrected` are illegal for error/blocker
+severity (demote honestly → WARNING, or act → exclude). Systemically (Daryn's call
+over the narrow reading), the **M0 gate's finding severity now derives from the
+DISPOSITION** (`ids_rules.finding_severity`, replacing outcome→severity
+`outcome_severity`): blocked→BLOCKER, excluded→ERROR, proceeded_flagged/defaulted→
+WARNING, quality→INFO. The **grade** stays a pure function of the OUTCOME vocabulary
+(`grade_from_outcomes`) — so a `degraded` rule that proceeds flagged now emits a
+WARNING finding while still degrading the grade to CONDITIONAL; the two axes agree.
+Blast radius reconciled: the gate's DEGRADED-but-proceeded family (dup order_id,
+inverted dates, alt-step disagreement, inactive routes) demote ERROR→WARNING; the
+adapter's DUPLICATE_IDENTITY (which drops the dup) changes disposition
+proceeded_flagged→EXCLUDED (it *acts*); `triage` reads the finding's honest severity.
+docs/02 §4.3 updated same commit; the pipeline stop is grade-driven
+(`go = grade != REJECTED`), so no control flow moved. **CU2 — quantities guarded at
+the gate:** new **rule #34 `ids.order_quantities_are_positive`** (conditional
+integrity, VALUE_OUT_OF_RANGE, §5.1; registry **33→34**) — a per-order quantity ≤ 0
+degrades to CONDITIONAL and names the order (distinct from `in_scope_orders_exist`),
+registered per add-never-repurpose with its anomaly twin (`_anomaly_negative_quantity`
++ `RULE_TO_ANOMALY` + coverage-matrix), a catalog note (resolvable §5.1 cite, not
+quarantined). glass_box ORD-09 = −60 asserts a gate finding AND no floored op
+downstream. **CU1 — fulfillment requires reality:** a ServiceOutcome must rest on ≥1
+real operation — the extractor **raises** rather than materialize a vacuous
+operation-less fulfillment (whose completion would default to horizon start and read
+EARLY); upstream, the IDS adapter takes the **orphan-demand path** for an unroutable
+order (route → zero operations, all alternative rows inactive) — excluded loudly with
+an ORPHAN_ENTITY finding, absent from outcomes (the exclusion recorded AT the existing
+`if not spec_ids: continue` guard, not after it). RT-BRACKET zero-active asserts
+EXCLUDED, never EARLY. **CU5 — duration floors never launder garbage:**
+`solver_builder._td_to_minutes` keeps the legitimate sub-minute→1 floor but **raises
+on a negative duration** (−60 units × 3 min = −180 → the innermost seam refuses; the
+upstream gate/validator exclude the demand long before). **CU4 — validator findings
+reach the certificate:** a new `excluded-orders` route (ROUTE_TAXONOMY + classify +
+`_explain_excluded_orders`) enumerates every `excluded`/`blocked` finding from all
+layers (gate, adapter, validator) in the customer's order vocabulary, so the
+certificate conversation is never blinder than dq_report.md (full rendering polish
+deferred to 4A.2). **Non-slow Python 1190 passed** (was 1172; +18), 0 failed;
+frontend untouched. SABOTAGE_MENU.md updated in lockstep (DEGRADED-but-proceeded items
+read WARNING; item 7b negative-quantity added). See the docs/04 2026-07-20 Session 4.5
+amendment and docs/07 v2.27. Lesson: an audit's value is the edges it finds where a
+guarantee was only proven from the inside — a demand with no operation, a quantity
+with no floor of legitimacy, a severity with no consequence; the cure for each is to
+make the illegal state unrepresentable (raise, exclude, refuse to construct) rather
+than launder it into something plausible.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4.4 — schedule freshness
 done right (the sixth stale-tab incident) 2026-07-19.** The behavior contract: **the
 cockpit must never leave the user unknowingly on anything but the newest relevant

@@ -1,6 +1,8 @@
 # Incoming Data Specification (IDS)
 
-**Document 6** · Status: Draft v0.5 (living document) · Companions: *01 Canonical Model*, *02 Evidence Contract*, *03 PoC Plan*, *04 Design History*, *05 Constraint Catalog (in progress)*
+**Document 6** · Status: Draft v0.6 (living document) · Companions: *01 Canonical Model*, *02 Evidence Contract*, *03 PoC Plan*, *04 Design History*, *05 Constraint Catalog (in progress)*
+
+**v0.6 changes (Session 4.5):** new rule **#34 `ids.order_quantities_are_positive`** (conditional integrity, VALUE_OUT_OF_RANGE, §5.1) — a zero/negative order quantity is an invalid demand (you cannot make -60 units); it degrades the grade to CONDITIONALLY ACCEPTED and the order is excluded downstream (registry now **34 rules**). And a **severity-semantics** change with docs/02 §4.3: the gate's finding severity now derives from the **disposition** (`finding_severity`), not the rule outcome — a `degraded` rule that proceeds flagged emits a `warning` finding (the grade still degrades via the outcome), so an `error`/`blocker` severity always carries an acting disposition.
 
 **v0.2 changes:** cost model REQUIRED with a minimal core (§5.9); customer and priority doorways (§5.10, §3); setup transitions (§5.11); locks (§5.12); overtime expression (§5.6, §5.9); extension & pipeline-proof clause (§8); costing-completeness grade on the certificate (§4).
 
@@ -174,6 +176,7 @@ the new definitions (recorded in the anomaly catalog, not hand-tuned).
 | rule_id | finding code | IDS ref | status |
 |---|---|---|---|
 | ids.order_identities_unique | DUPLICATE_IDENTITY | §5.1, App A | implemented |
+| ids.order_quantities_are_positive | VALUE_OUT_OF_RANGE | §5.1 | implemented |
 | ids.order_dates_internally_consistent | TEMPORAL_IMPOSSIBILITY | §5.1 | implemented |
 | ids.facility_references_consistent | ORPHAN_ENTITY | §3, §5.5 | implemented |
 | ids.orders_use_active_routes | LOW_CONFIDENCE_INPUT | §5.2 | implemented |

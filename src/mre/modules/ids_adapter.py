@@ -350,6 +350,15 @@ class IDSAdapter:
         for route_id, ext_pid in sorted(pairs_needed):
             prod_first_process.setdefault(ext_pid, process_id_for_pair[(route_id, ext_pid)])
 
+        # A (route, product) whose route resolves to ZERO operations is
+        # unroutable (docs/06 §5.3: zero active alternative rows = unroutable);
+        # the route header exists but no active line does. Session 4.5 CU1: an
+        # order on such a pair must take the orphan-demand path — excluded
+        # loudly, absent from planning — never a routable demand that produces a
+        # vacuous fulfillment reading as an early completion. Populated in the
+        # process loop below.
+        unroutable_pairs: set[tuple[str, str]] = set()
+
         product_id_map: dict[str, str] = {}
         product_count = 0
         for ext_pid, prow in product_map.items():
@@ -485,6 +494,12 @@ class IDSAdapter:
                 op_spec_count += 1
 
             if not spec_ids:
+                # Zero operations resolved (all alternative rows inactive / no
+                # active line at any sequence): the pair is unroutable. Record it
+                # so the demand loop excludes the order rather than letting it
+                # ride through planning as a zero-operation WorkPackage that would
+                # complete at the horizon start and read EARLY (Session 4.5 CU1).
+                unroutable_pairs.add((route_id, ext_pid))
                 continue
 
             for pred_spec_id, succ_spec_id in _synthesize_precedence_pairs(spec_ids):
@@ -541,8 +556,13 @@ class IDSAdapter:
                 reporter.record_finding(
                     code=FindingCode.DUPLICATE_IDENTITY, severity=FindingSeverity.ERROR,
                     subjects=[EntityRef(entity_id=dup_id, entity_type="demand")],
-                    evidence={"order_id": ext_oid, "reason": "duplicate order_id; first occurrence kept"},
-                    disposition=FindingDisposition.PROCEEDED_FLAGGED, tier=RecordTier.SUPPORTING,
+                    evidence={"order_id": ext_oid,
+                              "reason": "duplicate order_id; first occurrence kept, "
+                                        "this duplicate row excluded"},
+                    # Severity semantics (docs/02 §4.3, Session 4.5): this ERROR
+                    # acts — the duplicate row is dropped (the `continue` below),
+                    # so the honest disposition is EXCLUDED, not proceeded_flagged.
+                    disposition=FindingDisposition.EXCLUDED, tier=RecordTier.SUPPORTING,
                 )
                 continue
             seen_order_ids.add(ext_oid)
@@ -566,6 +586,21 @@ class IDSAdapter:
                     subjects=[EntityRef(entity_id=excl_id, entity_type="demand")],
                     evidence={"order_id": ext_oid, "product_id": ext_pid, "route_id": route_id,
                               "reason": "no computable operation duration (see gate duration_computability)"},
+                    disposition=FindingDisposition.EXCLUDED, tier=RecordTier.SUPPORTING,
+                )
+                continue
+            if (route_id, ext_pid) in unroutable_pairs:
+                # Session 4.5 CU1: the route resolves to zero operations — the
+                # order is unroutable. Exclude it loudly (the orphan-demand path)
+                # rather than build a demand that would ride through planning as
+                # a vacuous, operation-less fulfillment reading as EARLY.
+                excl_id = _stable_id("demand_excluded", ext_oid)
+                reporter.record_finding(
+                    code=FindingCode.ORPHAN_ENTITY, severity=FindingSeverity.ERROR,
+                    subjects=[EntityRef(entity_id=excl_id, entity_type="demand")],
+                    evidence={"order_id": ext_oid, "product_id": ext_pid, "route_id": route_id,
+                              "reason": "route resolves to zero operations (no active routing "
+                                        "lines); order is unroutable and excluded from planning"},
                     disposition=FindingDisposition.EXCLUDED, tier=RecordTier.SUPPORTING,
                 )
                 continue

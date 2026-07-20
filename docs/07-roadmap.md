@@ -1,6 +1,25 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.26 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.27 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.27:** **Session 4.5 — the unguarded-edge family + severity semantics**
+2026-07-20 (docs/04 amendment). Four findings from Daryn's live Glass Box audit —
+three architectural misses and one disease. **CU3 (the disease):** severity meant
+nothing — a finding could claim `error` while proceeding. `contracts.records.Finding`
+now enforces error/blocker ⇒ acting disposition; the M0 gate's finding severity
+derives from the DISPOSITION (`finding_severity`), grade still from the outcome, so
+a degraded-but-proceeded rule is honestly a WARNING (the specimen:
+VALUE_OUT_OF_RANGE/proceed). **CU2:** new gate **rule #34
+`ids.order_quantities_are_positive`** (registry now 34) — a quantity ≤ 0 degrades
+to CONDITIONAL and the order is excluded. **CU1:** a ServiceOutcome requires ≥1
+real operation — the extractor refuses a vacuous fulfillment; the adapter takes
+the orphan-demand path for an unroutable order (zero-active route), EXCLUDED not
+EARLY. **CU5:** `_td_to_minutes` raises on a negative duration (the -180→1min
+laundering closed at the seam). **CU4:** an `excluded-orders` certificate route
+enumerates every exclusion from all layers, so the report card is never blinder
+than dq_report.md. Non-slow Python 1190 passed (+18); frontend untouched. docs/02
+§4.3 severity table + docs/06 v0.6 updated same commit. See the docs/04
+2026-07-20 Session 4.5 amendment.
 
 **v2.26:** **Session 4.4 — schedule freshness done right (the sixth stale-tab
 incident)** 2026-07-19 (docs/04 amendment). The behavior contract: **the cockpit must

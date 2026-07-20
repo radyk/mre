@@ -37,7 +37,9 @@ from typing import Optional
 
 from pydantic import BaseModel, model_validator
 
-from mre.contracts.vocabularies import FindingCode, FindingSeverity
+from mre.contracts.vocabularies import (
+    FindingCode, FindingDisposition, FindingSeverity,
+)
 
 
 class RuleId(str, Enum):
@@ -63,6 +65,7 @@ class RuleId(str, Enum):
 
     # --- Conditional integrity (satisfied / flagged / degraded) ---
     ORDER_IDENTITIES_UNIQUE = "ids.order_identities_unique"
+    ORDER_QUANTITIES_ARE_POSITIVE = "ids.order_quantities_are_positive"
     ORDER_DATES_INTERNALLY_CONSISTENT = "ids.order_dates_internally_consistent"
     FACILITY_REFERENCES_CONSISTENT = "ids.facility_references_consistent"
     ORDERS_USE_ACTIVE_ROUTES = "ids.orders_use_active_routes"
@@ -175,6 +178,12 @@ RULE_REGISTRY: dict[RuleId, RuleSpec] = {
         # Conditional integrity
         _spec(RuleId.ORDER_IDENTITIES_UNIQUE, _C, FindingCode.DUPLICATE_IDENTITY,
               "§5.1, App A", thresholds_ref=_APP_A),
+        _spec(RuleId.ORDER_QUANTITIES_ARE_POSITIVE, _C, FindingCode.VALUE_OUT_OF_RANGE,
+              "§5.1", note="an order quantity must be > 0; a zero/negative quantity is "
+                           "an invalid demand (you cannot make -60 units) — the order is "
+                           "excluded downstream and the submission grade degrades. A "
+                           "plausible-value class distinct from in_scope_orders_exist "
+                           "(which counts whether ANY valid order remains)"),
         _spec(RuleId.ORDER_DATES_INTERNALLY_CONSISTENT, _C,
               FindingCode.TEMPORAL_IMPOSSIBILITY, "§5.1"),
         _spec(RuleId.FACILITY_REFERENCES_CONSISTENT, _C, FindingCode.ORPHAN_ENTITY, "§3, §5.5"),
@@ -218,26 +227,38 @@ RULE_REGISTRY: dict[RuleId, RuleSpec] = {
     ]
 }
 
-assert len(RULE_REGISTRY) == 33, f"registry must hold 33 rules, has {len(RULE_REGISTRY)}"
+assert len(RULE_REGISTRY) == 34, f"registry must hold 34 rules, has {len(RULE_REGISTRY)}"
 
 
-def outcome_severity(rule: RuleSpec, outcome: RuleOutcome) -> FindingSeverity:
-    """Finding severity for a non-satisfied outcome (docs/06 §4 / handoff §B3).
+# Finding severity derives from the DISPOSITION — what the system actually did —
+# not from the rule outcome. This is the Session 4.5 cure for "severity means
+# nothing": the outcome vocabulary drives the GRADE (grade_from_outcomes); the
+# per-entity consequence drives the finding SEVERITY, and the Finding contract
+# (records.Finding) enforces that error/blocker severities carry an acting
+# disposition. A DEGRADED rule that proceeds flagged therefore emits a WARNING
+# finding (the run proceeded) while still degrading the grade to CONDITIONAL via
+# its outcome — the two axes no longer contradict each other.
+_SEVERITY_BY_DISPOSITION: dict[FindingDisposition, FindingSeverity] = {
+    FindingDisposition.BLOCKED: FindingSeverity.BLOCKER,
+    FindingDisposition.EXCLUDED: FindingSeverity.ERROR,
+    FindingDisposition.PROCEEDED_FLAGGED: FindingSeverity.WARNING,
+    FindingDisposition.DEFAULTED: FindingSeverity.WARNING,
+    FindingDisposition.AUTO_CORRECTED: FindingSeverity.INFO,
+}
 
-    flagged→WARNING, degraded→ERROR, violated→BLOCKER — with one exception the
-    registry states explicitly: quality rules carry a *fixed informational*
-    consequence and can never degrade a grade, so a quality flag is emitted at
-    INFO. (Reconciles handoff §B3's single mapping with §A's "quality: fixed
-    INFO consequence" — recorded in docs/04.)"""
-    if outcome == RuleOutcome.SATISFIED:
-        raise ValueError("satisfied outcomes emit no finding")
-    if rule.category == RuleCategory.QUALITY:
+
+def finding_severity(category: RuleCategory,
+                     disposition: FindingDisposition) -> FindingSeverity:
+    """Finding severity for a non-satisfied gate outcome (docs/06 §4, Session
+    4.5). Quality rules carry a *fixed informational* consequence and can never
+    degrade a grade, so a quality finding is always INFO; every other rule's
+    finding severity is the honest consequence of its disposition (``blocked``→
+    BLOCKER, ``excluded``→ERROR, ``proceeded_flagged``/``defaulted``→WARNING,
+    ``auto_corrected``→INFO). Severity is decoupled from the outcome so it can
+    never again claim a consequence the disposition did not deliver."""
+    if category == RuleCategory.QUALITY:
         return FindingSeverity.INFO
-    return {
-        RuleOutcome.FLAGGED: FindingSeverity.WARNING,
-        RuleOutcome.DEGRADED: FindingSeverity.ERROR,
-        RuleOutcome.VIOLATED: FindingSeverity.BLOCKER,
-    }[outcome]
+    return _SEVERITY_BY_DISPOSITION[disposition]
 
 
 class ThresholdBand(BaseModel):

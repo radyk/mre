@@ -92,6 +92,30 @@ Every record carries:
 
 Disposition is what connects data quality to schedule quality — it answers "did any data problems affect this schedule?"
 
+**Severity carries a consequence (enforced, Session 4.5).** Severity and
+disposition are not free to disagree: a severity is a *claim about what happened
+to the entity*, and the disposition must back it.
+
+- `blocker` ⇒ disposition `blocked` (the run cannot proceed).
+- `error` ⇒ disposition `excluded` (or `blocked`) — the entity does not survive
+  this run. **`proceeded_flagged` is not a legal disposition for `error`
+  severity**: a run that proceeded past the entity intact is, by definition, not
+  an error-severity consequence. The cure is to *demote honestly* (the run
+  proceeded → `warning`) or to *act* (exclude / block). The named specimen is
+  `VALUE_OUT_OF_RANGE` emitted at `error` while the demand proceeded_flagged into
+  a floored-duration operation — a label claiming a consequence the disposition
+  never delivered.
+- `warning` / `info` ⇒ any disposition (the run proceeded; the flag is disclosed).
+
+This is enforced at construction in `contracts.records.Finding`, so no module —
+gate, validator, or adapter — can emit a lying severity. It also decouples the
+M0 gate's finding severity from the rule *outcome*: the outcome vocabulary
+(satisfied/flagged/degraded/violated) drives the certificate GRADE, while the
+finding severity now derives from the DISPOSITION (`finding_severity`). A
+`degraded` rule that proceeds flagged therefore emits a `warning` finding while
+still degrading the grade to CONDITIONALLY ACCEPTED — the two axes agree instead
+of contradicting.
+
 **Finding codes (18), grouped by pipeline layer of origin:**
 
 *Adapter (ERP-shape):*

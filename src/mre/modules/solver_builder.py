@@ -1334,7 +1334,25 @@ def _parse_td(s: str | None) -> timedelta:
 
 
 def _td_to_minutes(td: timedelta) -> int:
-    return max(1, int(td.total_seconds() / 60))
+    """Minutes for a duration, floored at 1 (a real sub-minute op still occupies
+    a slot — the documented 1-minute floor).
+
+    A NEGATIVE duration is not a small duration — it is garbage from invalid
+    input (e.g. a run_duration computed from a negative order quantity: -60 units
+    x 3 min/unit = -180 min). Session 4.5 CU5: a floor must never launder such a
+    value into a plausible 1-minute op. It raises at the seam instead, so a
+    negative duration is a loud failure, not a silent 1-minute op that schedules
+    early. The upstream gate (rule #34) and validator (VALUE_OUT_OF_RANGE)
+    exclude the offending demand long before the solver; this is the last,
+    innermost guard that refuses to proceed if one ever reaches here."""
+    secs = td.total_seconds()
+    if secs < 0:
+        raise ValueError(
+            f"negative computed duration ({secs:.0f}s = {secs / 60:.1f} min) reached "
+            "the solver — a duration floor must not launder invalid input into a "
+            "1-minute op (Session 4.5 CU5). The demand should have been excluded "
+            "upstream (gate rule #34 / validator VALUE_OUT_OF_RANGE).")
+    return max(1, int(secs / 60))
 
 
 def _place_inflight_remaining(

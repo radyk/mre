@@ -5864,3 +5864,109 @@ copy returns CONDITIONAL/1-finding exactly as the menu predicts, and
 `datasets/glass_box/orders.csv` shows no change. Lesson: when a documented workflow and
 the tool disagree, the tool is the bug — a "work on a copy" instruction with no
 copy-serving path is an instruction that guarantees the opposite.
+
+### 2026-07-20 — Session 4.5: the unguarded-edge family + severity semantics
+
+**The Glass Box audit close (opening act).** The instruments built in 4B.1 did
+their job: an auditor with the clean dataset in hand, a sabotage menu, and a
+walkthrough set out to catch the system lying and, mostly, could not — except at
+three unguarded edges, and one disease underneath them. The three misses share a
+shape: a demand with **no reality behind it** (an unroutable order, all
+alternative rows inactive) rode through planning as a *vacuous fulfillment* whose
+completion defaulted to the horizon start and read EARLY; a **negative order
+quantity** (-60 units) passed the gate unremarked and, downstream, its negative
+computed duration was **floored to a plausible 1-minute op** rather than refused;
+and the certificate **report card was blinder than dq_report.md** — the validator
+layer's exclusions and errors never surfaced in the certificate conversation. The
+disease under all three: **severity meant nothing.** A finding could wear
+`error` while its disposition said the run proceeded — the label claimed a
+consequence the system never delivered (`VALUE_OUT_OF_RANGE` at ERROR,
+proceeded_flagged, into a floored op). This session guards the three edges and
+cures the disease: an error carries a consequence, a fulfillment requires
+reality, a quantity is guarded at the gate, a duration floor never launders
+garbage, and the customer's report card sees everything dq_report does.
+*(Synthesized from the four findings this session addresses; Daryn's verbatim
+Glass Box audit summary was not recoverable after the session /clear — replace
+this opening act with his text if a verbatim transcription is wanted.)*
+
+**CU3 — severity means something (the disease).** `contracts.records.Finding`
+now enforces at construction that an `error` severity carries an acting
+disposition (`excluded`/`blocked`) and a `blocker` specifically `blocks` —
+`proceeded_flagged`/`defaulted`/`auto_corrected` are no longer legal for
+error/blocker severity. The named specimen (`VALUE_OUT_OF_RANGE` emitted ERROR +
+proceeded_flagged, the demand riding into a floored op) is closed by *acting*:
+the validator now EXCLUDES a quantity ≤ 0 demand. Systemically (Daryn's call over
+the narrow reading), the M0 gate's **finding severity now derives from the
+DISPOSITION** (`ids_rules.finding_severity`, replacing the outcome→severity
+`outcome_severity`): `blocked`→BLOCKER, `excluded`→ERROR,
+`proceeded_flagged`/`defaulted`→WARNING, quality→INFO. The **grade** stays a pure
+function of the *outcome* vocabulary (satisfied/flagged/degraded/violated), so a
+`degraded` rule that proceeds flagged now emits a WARNING finding while still
+degrading the grade to CONDITIONALLY ACCEPTED — the two axes agree instead of
+contradicting. Blast radius reconciled honestly: the gate's DEGRADED-but-proceeded
+family (dup order_id, inverted dates, alt-step disagreement, inactive routes)
+demote ERROR→WARNING; the adapter's DUPLICATE_IDENTITY (which drops the dup)
+changes its disposition proceeded_flagged→EXCLUDED (it *acts*); `triage` reads the
+finding's own honest severity now, not a re-derived one. docs/02 §4.3 updated same
+commit. The pipeline stop is grade-driven (`go = grade != REJECTED`), so moving
+banded-violated findings off BLOCKER changed no control flow.
+
+**CU2 — quantities guarded at the gate (rule #34).** New
+`ids.order_quantities_are_positive` (conditional integrity, VALUE_OUT_OF_RANGE,
+§5.1): a per-order quantity ≤ 0 degrades the grade to CONDITIONAL and names the
+offending order (distinct from `in_scope_orders_exist`, which asks only whether
+ANY valid order remains). Registered per add-never-repurpose with its anomaly twin
+(`_anomaly_negative_quantity` + `RULE_TO_ANOMALY` + `_ANOMALY_FUNCS`), a
+coverage-matrix entry (the registry count is now **34**, and the
+completeness-by-construction test carries it), and a catalog note (with a
+resolvable §5.1 cite, so it is not quarantined). The glass_box ORD-09 = -60 case
+asserts a gate finding (CONDITIONAL) AND — downstream — no floored-duration op:
+the order is absent from the solve entirely.
+
+**CU1 — fulfillment requires reality.** A ServiceOutcome is the per-customer
+completion truth; it must rest on ≥1 real operation. The extractor now **refuses**
+to materialize a ServiceOutcome for a fulfillment whose WorkPackage has no
+operations (raise, not a vacuous EARLY outcome — the same "make the illegal state
+unrepresentable" discipline as CU5). Upstream, the IDS adapter takes the
+**orphan-demand path** for an unroutable order (a route resolving to zero
+operations — all alternative rows inactive): it is excluded loudly with an
+ORPHAN_ENTITY finding tied to the order, absent from outcomes, never a
+zero-operation WorkPackage. (Found in the build: the adapter's existing
+`if not spec_ids: continue` already skipped the empty process — the exclusion had
+to be recorded *at that guard*, not after it.) The RT-BRACKET zero-active case
+asserts EXCLUDED, never EARLY, at both the gate (menu item 7) and downstream.
+
+**CU5 — duration floors never launder garbage.** `solver_builder._td_to_minutes`
+kept a legitimate 1-minute floor for a real sub-minute op but **raises on a
+negative duration** — a negative is not a small duration, it is garbage from
+invalid input (-60 units × 3 min = -180 min → `max(1, .)` = 1 was the laundering).
+The -180 path is closed at the seam: the upstream gate/validator exclude the
+offending demand long before the solver, and this is the innermost guard that
+refuses to proceed if one ever reaches it.
+
+**CU4 — validator findings reach the certificate.** The certificate testimony
+route already read `all_findings()` (validator included); the gap was an
+enumerable **excluded-orders story**. New `excluded-orders` route (ROUTE_TAXONOMY
++ classify triggers + `_explain_excluded_orders`) enumerates every finding with
+disposition `excluded`/`blocked` from ANY layer (gate, adapter, validator),
+resolved to the customer's order vocabulary with reason/code/severity/module —
+so the certificate conversation is never blinder than dq_report.md. Full
+conversational rendering polish is deferred to 4A.2; this CU makes the DATA
+reachable.
+
+**Tests.** New `tests/test_unguarded_edges.py` (CU3 contract invariant + gate
+disposition-driven severity; CU5 seam raises on negative, floors a real
+sub-minute op; CU4 excluded-orders enumerated, count == store's excluded set);
+`test_extractor.py` gains the vacuous-fulfillment guard (raise) + healthy-path
+control; `test_glass_box.py` gains the `negative_quantity` sabotage item (Part B)
+and the two downstream slow tests (−60 excluded / no floored op; zero-active
+bracket excluded, not EARLY); registry/catalog counts → 34; the generator's
+duplicate_order_ids truth row severity error→warning. **Non-slow Python 1190
+passed** (was 1172; +18), 0 failed; frontend untouched. SABOTAGE_MENU.md updated
+in lockstep (the DEGRADED-but-proceeded items now read WARNING; item 7b added).
+See docs/07 v2.27 and CLAUDE.md → 4.5. Lesson: an audit's value is the edges it
+finds where the guarantee was only proven from the inside — a demand with no
+operation, a quantity with no floor of legitimacy, a severity with no
+consequence; the cure for each is to make the illegal state unrepresentable
+(raise, exclude, or refuse to construct) rather than to launder it into something
+plausible.

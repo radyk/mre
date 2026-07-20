@@ -1012,9 +1012,24 @@ def _anomaly_duplicate_order_ids(ds: Dataset, rng: random.Random, n: int) -> dic
         ds.orders.append(dict(o))
     return {
         "anomaly": "duplicate_order_ids", "param": n, "affected_count": n,
-        "expected_finding_code": "DUPLICATE_IDENTITY", "expected_severity": "error",
+        "expected_finding_code": "DUPLICATE_IDENTITY", "expected_severity": "warning",
         "expected_disposition": "proceeded_flagged", "expected_grade_floor": "CONDITIONAL",
     }
+
+
+def _anomaly_negative_quantity(ds: Dataset, rng: random.Random, n: int) -> dict:
+    """Rule #34 (Session 4.5): flip n orders' quantity negative. An invalid
+    demand — you cannot make -60 units — degrades the grade to CONDITIONAL and
+    the order is excluded downstream. Leaves at least one clean order so
+    in_scope_orders_exist stays satisfied (this rule is about the offending
+    order, not about zero valid orders remaining)."""
+    n = int(n)
+    victims = rng.sample(ds.orders, min(n, max(0, len(ds.orders) - 1)))
+    for o in victims:
+        o["quantity"] = "-" + str(o.get("quantity") or "60").lstrip("-")
+    return _entry("negative_quantity", "VALUE_OUT_OF_RANGE",
+                  "ids.order_quantities_are_positive", "degraded", "error",
+                  "excluded", "CONDITIONAL", param=n, affected_count=len(victims))
 
 
 def _anomaly_zero_lot_size(ds: Dataset, rng: random.Random, n: int) -> dict:
@@ -1487,6 +1502,7 @@ _ANOMALY_FUNCS = {
     "orphan_route_refs": _anomaly_orphan_route_refs,
     "lineless_routes": _anomaly_lineless_routes,
     "duplicate_order_ids": _anomaly_duplicate_order_ids,
+    "negative_quantity": _anomaly_negative_quantity,
     "zero_lot_size": _anomaly_zero_lot_size,
     "inactive_route_refs": _anomaly_inactive_route_refs,
     "inverted_dates": _anomaly_inverted_dates,
@@ -1535,6 +1551,7 @@ RULE_TO_ANOMALY: dict[str, str] = {
     "ids.routes_resolve_to_lines": "lineless_routes:1",
     "ids.operation_durations_computable": "zero_lot_size:2",
     "ids.order_identities_unique": "duplicate_order_ids:3",
+    "ids.order_quantities_are_positive": "negative_quantity:2",
     "ids.order_dates_internally_consistent": "inverted_dates:2",
     "ids.facility_references_consistent": "foreign_facility:2",
     "ids.orders_use_active_routes": "inactive_route_refs:3",

@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from mre.contracts.entities import EntityRef
 from mre.contracts.vocabularies import (
@@ -139,6 +139,39 @@ class Finding(BaseModel):
     evidence: dict[str, Any]
     disposition: FindingDisposition
     disposition_detail: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _severity_carries_a_consequence(self) -> "Finding":
+        """Severity semantics (docs/02 §4.3, Session 4.5): a severity must be
+        matched by what the system actually DID. ``error`` means "entity
+        excluded, run proceeds" and ``blocker`` means "run cannot proceed" — so
+        a finding at either severity must carry an acting disposition
+        (``excluded`` / ``blocked``). ``proceeded_flagged`` / ``defaulted`` /
+        ``auto_corrected`` describe a run that continued past the entity intact;
+        pairing one of those with ``error``/``blocker`` is the contradiction the
+        Glass Box audit named (VALUE_OUT_OF_RANGE/proceed): the label claims a
+        consequence the disposition did not deliver. The cure is to demote the
+        severity honestly (the run proceeded → ``warning``) or to act (exclude /
+        block). A ``blocker`` must specifically ``block``.
+
+        Enforced at construction so no module — gate, validator, or adapter —
+        can emit a lying severity; the fix is a code change at the emit site,
+        never a suppression here."""
+        acting = (FindingDisposition.EXCLUDED, FindingDisposition.BLOCKED)
+        if self.severity == FindingSeverity.BLOCKER and (
+                self.disposition != FindingDisposition.BLOCKED):
+            raise ValueError(
+                f"Finding severity 'blocker' requires disposition 'blocked', "
+                f"got '{self.disposition.value}' (code={self.code.value}); a "
+                f"blocker must block — demote to a lower severity or block.")
+        if self.severity == FindingSeverity.ERROR and self.disposition not in acting:
+            raise ValueError(
+                f"Finding severity 'error' requires an acting disposition "
+                f"('excluded' or 'blocked'), got '{self.disposition.value}' "
+                f"(code={self.code.value}); 'proceeded_flagged' is no longer a "
+                f"legal disposition for error severity — demote honestly to "
+                f"'warning' (the run proceeded) or exclude the entity.")
+        return self
 
 
 class Metric(BaseModel):

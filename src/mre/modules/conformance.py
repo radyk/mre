@@ -9,8 +9,10 @@ Rule identity, finding code, category, and thresholds live in
 ``mre.contracts.ids_rules`` (the single source that also renders docs/06 §4);
 this module only *evaluates* the conditions. Every emit site carries a
 ``rule_id`` from that registry — there are no anonymous checks. Grade is a
-pure function of rule outcomes (``grade_from_outcomes``); severity derives from
-the outcome (``outcome_severity``). Banded rules always record their
+pure function of rule outcomes (``grade_from_outcomes``); finding severity
+derives from the DISPOSITION — what the system did — via ``finding_severity``
+(Session 4.5), so an error/blocker finding always carries an acting disposition.
+Banded rules always record their
 measurement as a Metric and emit a Finding only on a non-satisfied outcome, so
 a clean submission carries no spurious "100% resolved" findings.
 
@@ -40,7 +42,7 @@ from pydantic import BaseModel, ValidationError
 from mre.contracts.entities import EntityRef
 from mre.contracts.ids_rules import (
     RULE_REGISTRY, GateFindingEvidence, Measured, RuleId, RuleOutcome,
-    grade_from_outcomes, outcome_severity,
+    finding_severity, grade_from_outcomes,
 )
 from mre.contracts.vocabularies import (
     FindingDisposition, FindingSeverity, RecordTier,
@@ -193,7 +195,8 @@ class ConformanceGate:
                 thresholds_ref=spec.thresholds_ref, check=check, detail=detail or {},
             )
             rec = reporter.record_finding(
-                code=spec.finding_code, severity=outcome_severity(spec, outcome),
+                code=spec.finding_code,
+                severity=finding_severity(spec.category, disposition),
                 subjects=subjects, evidence=ev.as_evidence(),
                 disposition=disposition, message=message, tier=tier,
             )
@@ -574,6 +577,31 @@ class ConformanceGate:
                if dup_count else "order identities unique",
                disposition=FindingDisposition.PROCEEDED_FLAGGED,
                detail={"duplicate_count": dup_count})
+
+        # ------------------------------------------------------------
+        # Conditional integrity: order quantities are positive (rule #34,
+        # docs/06 §5.1). A zero/negative order quantity is an invalid demand —
+        # you cannot make -60 units. Distinct from in_scope_orders_exist (which
+        # asks whether ANY valid order remains): this names each offending order
+        # so the certificate can point at it, degrades the grade, and the demand
+        # is excluded downstream (validator VALUE_OUT_OF_RANGE). The gate checks;
+        # it never repairs — the disposition is EXCLUDED (the demand does not
+        # survive planning), so the finding is an honest ERROR.
+        # ------------------------------------------------------------
+        nonpositive_qty = [
+            o.get("order_id") for o in orders
+            if (o.get("order_id") or "").strip()
+            and (o.get("quantity") or "").strip()
+            and _num(o.get("quantity")) <= 0
+        ]
+        record(RuleId.ORDER_QUANTITIES_ARE_POSITIVE,
+               RuleOutcome.DEGRADED if nonpositive_qty else RuleOutcome.SATISFIED,
+               _subjects("order_id", nonpositive_qty),
+               f"{len(nonpositive_qty)} order(s) have a quantity <= 0 "
+               "(invalid demand; excluded from planning)"
+               if nonpositive_qty else "order quantities are positive",
+               disposition=FindingDisposition.EXCLUDED,
+               detail={"count": len(nonpositive_qty)})
 
         # ------------------------------------------------------------
         # Conditional integrity: order dates internally consistent
