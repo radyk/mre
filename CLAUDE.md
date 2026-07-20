@@ -94,6 +94,77 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.2 — the
+voice (the AI/CERTIFICATE floor + the wow layer) 2026-07-20.** The founder's Glass
+Box close: *the core is trustworthy — I tried to catch it lying and could not; the
+voice is inadequate to it. The AI is the differentiator and must be fantastic, not
+merely good.* Session 4.5 took the ARCHITECTURE half; this takes the
+AI/CERTIFICATE half — the conversation's voice — driven by the ~14-finding failure
+taxonomy whose specimens live verbatim in the question ledger
+(`_data/ledger/questions.jsonl`). Backend-only (M10 explainer + interpreter +
+renderers + one authored module + the audit-corpus regression + docs); no
+solver/model/contract/frontend changes. **Split honestly (the close's "split,
+don't shrink"):** ships **Part 1 (the floor, CU1–CU6) + CU7 (morning briefing) +
+CU9 (proactive excluded) + CU10 (the measurement)**; **CU8 (answers driving the
+board's spatial layer — "show me")** is NAMED and deferred to **4A.3 ("the wow
+layer, spatial")** — a frontend surface on a different substrate (the backend
+`cited_refs` machinery already exists), kept intact not crammed. **Foundation —
+`src/mre/modules/planner_language.py`** (R-AI1(c): authored, a human edits the
+strings): `DRIVER_PHRASING` (all 12 DriverCodes → plain cause), `FINDING_PHRASING`
+(all 18 FindingCodes), `STAGE_NAMES` (module id → pipeline-stage word),
+`strip_jargon`/`has_jargon`, and `compose_finding_sentence`/`compose_findings`
+(the (subject, offending value, plain cause, catalog fix) composition with
+cross-layer coalescence); a completeness test pins every code to a phrase.
+**CU1 — the relevance guard (keystone):** a route fires only when the question
+SHAPE matches, not merely because an entity id appears; a named entity that does
+not resolve HERE gets the excluded/unknown answer, never a global "Yes." Two
+evidence-derived vocabularies (NO id-shape assumption): `_excluded_labels` (orders
+dropped by any layer's findings) + `_order_shape_patterns` (each real order ref
+generalized — `ORD-01` → `^ORD-\d+$` — so a token of this dataset's shape that
+resolves to nothing is a named-but-unresolvable order); `_order_mention` uses
+these ONLY to choose refuse-vs-global, never to resolve. The answer-the-noun
+catch-all (`if wo_ref: return "late-order"` — "what product is ORD-01" → lateness)
+is gone (a bare order → its own schedule; an unresolved order → `unknown-entity`),
+and the `"diff" in "different"` substring bug (move-it → nonsense self-diff) is
+fixed with word boundaries. **CU2 — subject in every finding render:** the
+findings answer leads with (subject, cause, offending value, severity, catalog
+fix), coalesced, replacing the subject-blind "Total findings: N | Codes:" header
+(dq_report already composes subject+cause; adopting the shared composer there is a
+named follow-up). **CU3 — drill-down:** `drill-down` route opens the full composed
+finding behind "tell me more about finding N / that." **CU4 — the blocked-by
+chain:** `_blocked_by` reads the solved occupancy to name the concrete cause
+behind `CAPACITY_BLOCKED` ("CUT-01 was held by ORD-13 until Mon 18:50"); why-late
+and start-reason render the causal story, not the bare code; "why can't X start
+earlier" resolves via conversational context onto the same story. **CU5 — the
+missing route families:** `order-attributes` (product/qty/customer/due/release/
+priority — the hover card, askable), `inventory` (counts + splits),
+`integrity-check` (double-booking → "conflict-free by construction"),
+`start-reason` (the release bound cited to `earliest_start`, or the blocked-by
+chain). **CU6 — coherence:** the register-tag seam fixed — `register_of` (chip) and
+`_register_for` (envelope) resolve through ONE `REGISTER_BY_SUBJECT`, so they can
+never disagree (enumerating findings is TESTIMONY, was mislabeled judgment via a
+`"codes" in key_facts` heuristic); same-defect-multiple-layers coalesces to
+"confirmed at N layers"; module tags (`M4 DECISION`) → stage names (`scheduling`);
+the `identity_v1: demand <uuid> → WorkPackage` plumbing stripped; a
+citation-breadth cap shows 8 records then "… and N more." **CU7 — the morning
+briefing:** `briefing` route answers "what should I worry about today?" as a
+TRIAGE — fires ranked by lateness × priority (customer_weight), the common cause
+named if one repeats, the one DQ item that matters. **CU9 — proactive excluded:**
+`_excluded_summary` volunteers exclusions in relevant answers ("14 of 15
+scheduled; ORD-06 excluded — ask why"), inverting the certificate-silence gap into
+a trust feature. **CU10 — the measurement:** `tests/test_ai_voice.py` — fast units
+(the planner-language layer, the register seam, coalescence, jargon strip) + the
+slow **audit corpus** (every specimen re-run against a real Glass Box solve, clean
++ a bracket-unroutable sabotage excluding ORD-06/07/08), each asserted
+correct-and-on-question / honest-bridge / honest-refusal, the aggregate asserted
+**zero confident-wrong** — the audit made a standing regression. **Non-slow Python
+1202 passed** (was 1190; +12), 0 failed; frontend untouched. See the docs/04
+2026-07-20 Session 4A.2 amendment and docs/07 v2.28. Lesson: the voice was
+inadequate not because the machine was wrong but because the answer wore the
+machine's vocabulary, not the planner's — the cure is one authored bridge (codes →
+plain cause), a relevance guard that refuses to answer the wrong noun, and an
+audit corpus that measures whether the differentiator is differentiating.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4.5 — the unguarded-edge
 family + severity semantics 2026-07-20.** Four findings from Daryn's live Glass Box
 audit: three architectural misses, one disease. No solver/model/frontend changes

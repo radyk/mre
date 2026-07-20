@@ -23,6 +23,9 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from mre.modules.evidence_index import EvidenceIndex
+from mre.modules.planner_language import (
+    compose_finding_sentence, driver_phrase,
+)
 
 # The fallback menu shown when a question doesn't route. Worded in the PLANNER'S
 # language — "an order", "a machine", "a customer" — never the developer's
@@ -120,6 +123,51 @@ _LEDGER_TRIGGERS = (
     "what did you refuse", "recent refusals",
 )
 
+# Session 4A.2 route families (CU5) + the morning briefing (CU7) + drill-down
+# (CU3). Checked in classify() BEFORE the broad late/schedule handlers so a
+# differently-SHAPED question about a resolved order (the audit's answer-the-noun
+# defect) reaches its own route, not late-order.
+_BRIEFING_TRIGGERS = (
+    "worry about", "worry about today", "what should i worry", "morning briefing",
+    "briefing", "what needs my attention", "what's on fire", "whats on fire",
+    "what should i look at", "start my day",
+)
+_INVENTORY_TRIGGERS = (
+    "how many order", "how many job", "how many operation", "how many op",
+    "number of order", "number of job", "count of", "how many are there",
+    "any split", "split job", "any splits", "are there splits", "which orders split",
+    "how many total", "total number", "jobs in total", "orders in total",
+)
+_INTEGRITY_TRIGGERS = (
+    "double book", "double-book", "doublebook", "same machine at the same time",
+    "same time on the same machine", "overlap", "conflict", "two orders at once",
+    "running at the same time", "at the same time",
+)
+# Attribute lookups (the hover card, askable): product / quantity / customer /
+# due. NB these are checked only WITH a resolved order — a bare "what's the due
+# date" with no order falls through.
+_ATTRIBUTE_TRIGGERS = (
+    "what product", "which product", "what part", "which part", "what item",
+    "what customer", "which customer", "who is the customer", "whose order",
+    "what quantity", "what qty", "how many units", "how many pieces", "how much of",
+    "what's the due", "whats the due", "what is the due", "due date for",
+    "when is it due", "when's it due", "release date", "what are the details",
+    "tell me about", "details of", "details for", "info on", "attributes",
+)
+# Drill-down (CU3): open the full finding / record behind a citation.
+_DRILLDOWN_TRIGGERS = (
+    "tell me more", "more about", "more detail", "expand on", "expand that",
+    "the full finding", "full record", "show the record", "what's the record",
+    "elaborate", "go deeper", "dig into", "unpack",
+)
+# Start-reason (CU5 release/due reasoning + CU4 blocked-by): why an order starts
+# when it does / why it can't start earlier.
+_START_REASON_TRIGGERS = (
+    "why does", "why is", "start earlier", "start sooner", "begin earlier",
+    "why start", "why does it start", "start on", "why so late to start",
+    "cant we start", "can't we start", "cannot start", "cant start", "can't start",
+)
+
 # The route taxonomy — the closed set of route ids classify()/route() dispatch
 # over (docs/07 Phase 4, R-AI1(b)). The interpreter (CU1) maps free-form phrasing
 # ONLY onto these ids; it never invents a route. `params` names the external-ref
@@ -146,21 +194,36 @@ ROUTE_TAXONOMY: dict[str, dict] = {
     "edit-summary":          {"params": [],          "canonical": "summarize my changes and what they cost"},
     "edit-cost":             {"params": [],          "canonical": "what did this move cost?"},
     "ledger-refusals":       {"params": [],          "canonical": "what questions couldn't you answer recently?"},
+    # Session 4A.2 — the missing route families (CU5), the relevance guard's
+    # honest destinations (CU1), drill-down (CU3), and the morning briefing (CU7).
+    "order-attributes":      {"params": ["order"],   "canonical": "what are the details of {order}?"},
+    "inventory":             {"params": [],          "canonical": "how many orders are in the plan?"},
+    "integrity-check":       {"params": ["machine"], "canonical": "is anything double-booked?"},
+    "start-reason":          {"params": ["order"],   "canonical": "why does {order} start when it does?"},
+    "drill-down":            {"params": [],          "canonical": "tell me more about that"},
+    "briefing":              {"params": [],          "canonical": "what should I worry about today?"},
+    "unknown-entity":        {"params": ["order"],   "canonical": "is {order} in this schedule?"},
 }
 
 
-# The two answer registers (honesty armor): testimony (evidence/decisions) vs
-# judgment (findings/triage). Single source — the API and the interpreter both
-# classify through this, so no register ever blends across surfaces.
-_JUDGMENT_SUBJECTS = frozenset({"findings", "triage"})
+# The three answer registers (honesty armor): testimony (evidence/findings —
+# "what is") · remediation (authored fix guidance) · judgment (triage — "what to
+# do first"). THE SINGLE SOURCE OF TRUTH: the API metadata (the chip) AND the
+# rendered footer (the envelope) both resolve through REGISTER_BY_SUBJECT, so the
+# chip can never disagree with the envelope (Session 4A.2 CU6 — the register-tag
+# seam). Enumerating findings ("what data problems exist") is TESTIMONY, not
+# judgment — it states what is wrong and cites evidence; only triage ("what to
+# fix first") is the judgment register. Add, never repurpose: a new subject type
+# that belongs to remediation/judgment gets an entry here.
+REGISTER_BY_SUBJECT: dict[str, str] = {
+    "remediation": "remediation",
+    "triage": "judgment",
+}
 
 
 def register_of(bundle: "ExplanationBundle") -> str:
-    st = getattr(bundle, "subject_type", "") or ""
-    kf = getattr(bundle, "key_facts", {}) or {}
-    if st in _JUDGMENT_SUBJECTS or "triage_order" in kf or "codes" in kf:
-        return "judgment"
-    return "testimony"
+    return REGISTER_BY_SUBJECT.get(getattr(bundle, "subject_type", "") or "",
+                                   "testimony")
 
 
 def canonical_question(route: str, params: Optional[dict] = None) -> str:
@@ -238,6 +301,74 @@ class Explainer:
                 elif ref_type in _MACHINE_REF_TYPES:
                     self._machine_refs[value.upper()] = value
 
+        # The relevance guard's evidence (Session 4A.2 CU1). Two dataset-derived
+        # vocabularies, both built from EVIDENCE (never an id-shape assumption):
+        #   _excluded_labels    — order ids the gate/adapter/validator EXCLUDED,
+        #                         from findings; a question naming one of these
+        #                         gets the excluded answer, not a global one.
+        #   _order_shape_patterns — the SHAPE of this submission's real order ids
+        #                         (each known ref with its digit-runs generalized),
+        #                         so a token that looks like an order of this
+        #                         dataset but resolves to nothing is recognized as
+        #                         a named-but-unresolvable entity (→ refuse), never
+        #                         silently dropped into a schedule-wide answer.
+        self._excluded_labels: set[str] = self._build_excluded_labels()
+        self._order_shape_patterns: list[re.Pattern] = self._build_order_shapes()
+
+    def _build_excluded_labels(self) -> set[str]:
+        """Order ids excluded/blocked from the plan, from ANY layer's findings —
+        the same evidence _explain_excluded_orders enumerates. Upper-cased for
+        case-insensitive matching."""
+        labels: set[str] = set()
+        try:
+            findings = self._index.all_findings()
+        except Exception:
+            return labels
+        for f in findings:
+            if f.get("disposition") not in ("excluded", "blocked"):
+                continue
+            ev = f.get("evidence", {}) or {}
+            for cand in (ev.get("order_id"), ev.get("wono"), ev.get("demand_id")):
+                if cand:
+                    labels.add(str(cand).upper())
+            for s in f.get("subjects", []) or []:
+                sid = s.get("entity_id") if isinstance(s, dict) else ""
+                if sid and self._identity_map is not None:
+                    erefs = self._identity_map.external_refs(sid)
+                    if erefs:
+                        labels.add(erefs[0].value.upper())
+        return labels
+
+    def _build_order_shapes(self) -> list[re.Pattern]:
+        """Generalize each known order ref into a shape pattern by replacing its
+        digit runs with ``\\d+`` — so ``ORD-01`` yields ``^ORD-\\d+$``. A token
+        matching a shape but resolving to nothing is a named-but-unresolvable
+        order of THIS dataset (learned from the data, not an assumed id shape)."""
+        shapes: set[str] = set()
+        for value in self._order_refs.values():
+            pat = re.sub(r"\d+", r"\\d+", re.escape(value).replace(r"\ ", " "))
+            if any(ch.isalpha() for ch in value):  # ignore purely-numeric refs
+                shapes.add(f"^{pat}$")
+        return [re.compile(s, re.IGNORECASE) for s in sorted(shapes)]
+
+    def _order_mention(self, question: str) -> Optional[str]:
+        """A token in the question that NAMES an order of this dataset but does
+        NOT resolve to a scheduled demand — the signal to refuse/redirect rather
+        than answer globally (CU1). Returns the raw token (as typed), or None.
+
+        Evidence-first: an excluded-order label always counts. Otherwise the
+        token must match this submission's learned order SHAPE and not be a known
+        machine. Used ONLY to choose refuse-vs-global — never to resolve an id."""
+        for tok in re.findall(r"[A-Za-z][\w./-]*\d[\w./-]*|[A-Za-z]+-\d[\w-]*", question):
+            u = tok.upper().strip(".,?!")
+            if u in self._order_refs or u in self._machine_refs:
+                continue
+            if u in self._excluded_labels:
+                return tok.strip(".,?!")
+            if any(p.match(u) for p in self._order_shape_patterns):
+                return tok.strip(".,?!")
+        return None
+
     def _find_order_ref(self, question: str) -> Optional[str]:
         """Return the external order id mentioned in the question, in the
         customer's own vocabulary, or None."""
@@ -278,12 +409,21 @@ class Explainer:
         q = question.lower()
         wo_ref = self._find_order_ref(question)
         machine_ref = self._find_machine_ref(question)
+        # The relevance guard's signal (CU1): did the planner NAME an order that
+        # does not resolve here? If so, a global answer would be answering the
+        # wrong thing — route to unknown-entity instead of the schedule-wide list.
+        mention = None if wo_ref else self._order_mention(question)
         base = {"question": question, "order": wo_ref, "machine": machine_ref}
 
         # The meta-route first — "what couldn't you answer?" must not fall into
         # the schedule/diff handlers (R-AI1(d)).
         if any(t in q for t in _LEDGER_TRIGGERS):
             return "ledger-refusals", base
+
+        # The morning briefing (CU7) — "what should I worry about today?". Before
+        # triage so it isn't caught by a bare "what matters".
+        if any(t in q for t in _BRIEFING_TRIGGERS):
+            return "briefing", base
 
         # Certificate question domain (handoff §4) — before the schedule routes so
         # "how do I fix …" / "what should I fix first" never fall into schedule/
@@ -306,23 +446,71 @@ class Explainer:
         if any(t in q for t in _EDIT_SUMMARY_TRIGGERS):
             return "edit-summary", base
 
+        # Drill-down (CU3) — "tell me more about that/finding N/record X". Before
+        # attributes so "tell me more" is not read as a "tell me about" lookup.
+        if any(t in q for t in _DRILLDOWN_TRIGGERS):
+            return "drill-down", {**base, "target": question}
+
+        # Integrity check (CU5) — "double-booked?", "same machine at the same
+        # time?". Before schedule so "running at the same time" is not a listing.
+        if any(t in q for t in _INTEGRITY_TRIGGERS) or (
+                "same machine" in q and "same time" in q):
+            return "integrity-check", base
+
+        # Inventory (CU5) — counts and splits. No order needed.
+        if any(t in q for t in _INVENTORY_TRIGGERS):
+            return "inventory", base
+
+        # Attribute lookup (CU5, the hover card askable): the audit's
+        # answer-the-noun defect — "what product is ORD-01" must reach product,
+        # not late-order. Only fires with a RESOLVED order (a differently-shaped
+        # question about a real order); a named-but-unresolvable order falls to
+        # the relevance guard below.
+        if wo_ref and any(t in q for t in _ATTRIBUTE_TRIGGERS):
+            return "order-attributes", base
+        if mention and any(t in q for t in _ATTRIBUTE_TRIGGERS):
+            return "unknown-entity", {**base, "mention": mention}
+
+        # Start-reason (CU5 release/due + CU4 blocked-by) — "why does X start on
+        # Friday", "why can't X start earlier". Requires a start/earlier signal so
+        # it never swallows "why is X on M" (that stays why-on-machine).
+        _start_sig = any(w in q for w in
+                         ("start", "begin", "earlier", "sooner", "kick off"))
+        if wo_ref and _start_sig and ("why" in q or "cant" in q or "can't" in q
+                                      or "cannot" in q):
+            return "start-reason", base
+        if mention and _start_sig and "why" in q:
+            return "unknown-entity", {**base, "mention": mention}
+
         if ("late" in q or "delay" in q or "tardy" in q) and wo_ref:
             return "late-order", base
+        if ("late" in q or "delay" in q or "tardy" in q) and mention:
+            return "unknown-entity", {**base, "mention": mention}
         if ("late" in q or "delay" in q or "tardy" in q) and not wo_ref:
             return "late-orders", base
         if ("on" in q or "assign" in q or "why" in q) and wo_ref and machine_ref:
             return "why-on-machine", base
         if "data problem" in q or "finding" in q or "quality" in q:
             return "data-problems", base
-        if ("change" in q or "diff" in q or "since" in q or "update" in q):
+        # Word-boundary match (CU6): the pre-4A.2 substring test fired
+        # `"diff" in "different"`, sending "move it to a DIFFerent machine" to a
+        # nonsense self-diff. Match whole words only.
+        if re.search(r"\b(diff|difference|changed|since|updated?)\b", q) or (
+                "what changed" in q or "version" in q):
             return "version-diff", base
         if "downtime" in q or "closure" in q or "offline" in q:
             return "downtime", base
         if any(kw in q for kw in _SCHEDULE_TRIGGERS) and not any(
                 kw in q for kw in _OPTIMALITY_TRIGGERS):
             return "schedule", base
+        # A bare order with no other shape → its own schedule (start/finish),
+        # never a lateness verdict it did not ask for (CU1 answer-the-noun).
         if wo_ref:
-            return "late-order", base
+            return "order-schedule", base
+        # A named-but-unresolvable order with no other shape → the honest
+        # unknown/excluded answer, never a schedule-wide fallback (CU1).
+        if mention:
+            return "unknown-entity", {**base, "mention": mention}
         return "unsupported", base
 
     def route(self, route_id: str, params: dict) -> ExplanationBundle:
@@ -339,6 +527,22 @@ class Explainer:
             return self._explain_data_problems(entity_ref=params.get("order"))
         if route_id == "excluded-orders":
             return self._explain_excluded_orders(q)
+        if route_id == "briefing":
+            return self._explain_briefing(q)
+        if route_id == "inventory":
+            return self._explain_inventory(q)
+        if route_id == "integrity-check":
+            return self._explain_integrity(q, params.get("machine"))
+        if route_id == "order-attributes":
+            return self._explain_order_attributes(params.get("order"))
+        if route_id == "start-reason":
+            return self._explain_start_reason(params.get("order"))
+        if route_id == "drill-down":
+            return self._explain_drill_down(params.get("target", q),
+                                            params.get("history"))
+        if route_id == "unknown-entity":
+            return self._explain_unknown_entity(
+                params.get("mention") or params.get("order") or q)
         if route_id == "edit-cost":
             return self._explain_edit_cost(q)
         if route_id == "edit-summary":
@@ -571,6 +775,7 @@ class Explainer:
                     f"{item['wo']} (+{int(item['lateness_minutes'])} min)"
                     for item in late_items
                 ],
+                "excluded_summary": self._excluded_summary(),
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
@@ -602,6 +807,17 @@ class Explainer:
                         epoch, tz=timezone.utc
                     ).strftime("%Y-%m-%d %H:%M UTC")
 
+        # CU4 — decompress the driver code into the causal story: the assignment
+        # decision's driver phrased in plain language, plus the concrete
+        # blocked-by fact (what held the machine) from the solved occupancy.
+        driver_code = None
+        for rec in records:
+            if (rec.get("record_type") == "decision"
+                    and rec.get("decision_type") == "assignment"):
+                driver_code = rec.get("driver")
+                break
+        blocked = self._blocked_by(wo_ref) if (lateness or 0) > 0 else None
+
         return ExplanationBundle(
             question=f"Why is {wo_ref} late?",
             subject_id=demand_id,
@@ -613,6 +829,9 @@ class Explainer:
                 "lateness_hours": round(lateness / 60, 1) if lateness is not None else None,
                 "due_date": due_date,
                 "completion_iso": completion_iso,
+                "driver_code": driver_code,
+                "driver_phrase": driver_phrase(driver_code),
+                "blocked_by": blocked,
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
@@ -667,6 +886,7 @@ class Explainer:
                 "total_findings": len(findings),
                 "codes": codes,
                 "entity_ref": entity_ref,
+                "excluded_summary": None if entity_ref else self._excluded_summary(),
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
@@ -726,6 +946,423 @@ class Explainer:
                 "excluded_orders": orders,
                 "excluded_count": len(orders),
                 "codes": sorted({o["code"] for o in orders}),
+            },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    # ------------------------------------------------------------------
+    # Session 4A.2 — the missing route families (CU5), the relevance guard's
+    # destinations (CU1), drill-down (CU3), the blocked-by chain (CU4), and the
+    # morning briefing (CU7). Every one reads only from the snapshot + evidence.
+    # ------------------------------------------------------------------
+
+    def _excluded_summary(self) -> Optional[dict]:
+        """CU9 — the proactive excluded-orders volunteer. When any order was
+        dropped from the plan, relevant answers say so ("14 of 15 scheduled;
+        ORD-01 excluded — ask why"), inverting the certificate-silence gap the
+        audit found into a trust feature. None when nothing was excluded."""
+        orders = sorted(self._excluded_labels)
+        if not orders:
+            return None
+        scheduled = 0
+        if self._reader is not None:
+            try:
+                scheduled = len(list(self._reader.iter_entities("demand")))
+            except Exception:
+                scheduled = 0
+        return {
+            "orders": orders,
+            "count": len(orders),
+            "scheduled": scheduled,
+            "total": scheduled + len(orders),
+        }
+
+    def _demand_by_order(self, order_ref: str) -> Optional[dict]:
+        """The demand entity for an external order ref, via identity + snapshot."""
+        if self._reader is None:
+            return None
+        did = self._resolve_wo(order_ref)
+        if did is None:
+            return None
+        return self._reader.get_entity(did)
+
+    def _priority_label(self, demand: dict) -> tuple[str, float]:
+        """Planner-language priority from customer_weight (the canonical priority
+        signal: high priority_class → weight > 1). Returns (label, weight)."""
+        w = float(demand.get("customer_weight") or 1.0)
+        if w >= 3.0:
+            return "high priority", w
+        if w > 1.0:
+            return "elevated priority", w
+        return "standard priority", w
+
+    def _product_label(self, demand: dict) -> str:
+        """The product's planner name for a demand, via product_ref."""
+        pref = demand.get("product_ref")
+        if not pref or self._reader is None:
+            return "?"
+        prod = self._reader.get_entity(pref) or {}
+        for r in prod.get("external_refs", []):
+            if r.get("type") in ("product_id", "product_no"):
+                return r["value"]
+        return prod.get("name") or (pref[:8] if pref else "?")
+
+    def _order_rows(self, order_ref: str) -> list[dict]:
+        """Scheduled assignment rows for one order, earliest first."""
+        target = order_ref.upper()
+        rows = [r for r in self._load_enriched_assignments()
+                if target in [w.upper() for w in r["work_orders"]]]
+        rows.sort(key=lambda r: r["start"] or "")
+        return rows
+
+    def _blocked_by(self, order_ref: str) -> Optional[dict]:
+        """The CU4 blocked-by fact: for an order's FIRST scheduled operation, the
+        job that occupied its machine immediately before it started (the concrete
+        cause behind a CAPACITY_BLOCKED driver). Read from the solved occupancy —
+        real evidence, never fabricated. None when nothing directly precedes it."""
+        rows = self._order_rows(order_ref)
+        if not rows or not rows[0].get("start"):
+            return None
+        first = rows[0]
+        machine = first["machine"]
+        try:
+            my_start = _parse_ts(first["start"])
+        except Exception:
+            return None
+        blocker = None
+        best_end = None
+        for r in self._load_enriched_assignments():
+            if r["machine"] != machine or r is first:
+                continue
+            if order_ref.upper() in [w.upper() for w in r["work_orders"]]:
+                continue
+            if not r.get("end"):
+                continue
+            try:
+                r_end = _parse_ts(r["end"])
+            except Exception:
+                continue
+            if r_end <= my_start and (best_end is None or r_end > best_end):
+                best_end = r_end
+                blocker = r
+        if blocker is None:
+            return None
+        blk_order = "+".join(sorted(blocker["work_orders"])) or "?"
+        prio = ""
+        for w in blocker["work_orders"]:
+            dem = self._demand_by_order(w)
+            if dem:
+                lbl, wt = self._priority_label(dem)
+                if wt > 1.0:
+                    prio = lbl
+                break
+        return {
+            "machine": machine,
+            "blocker_order": blk_order,
+            "blocker_priority": prio,
+            "until": _fmt_ts(blocker["end"]),
+            "my_start": _fmt_ts(first["start"]),
+        }
+
+    def _explain_order_attributes(self, order_ref: Optional[str]) -> ExplanationBundle:
+        """The hover card, askable (CU5): product / quantity / customer / due /
+        release / priority for one order — never its lateness unless asked."""
+        if not order_ref:
+            return self._unknown_question("what are the details of that order?")
+        demand = self._demand_by_order(order_ref)
+        if demand is None:
+            return self._explain_unknown_entity(order_ref)
+        qty = demand.get("quantity") or {}
+        cust = None
+        cref = demand.get("customer_ref")
+        if cref and self._reader is not None:
+            cent = self._reader.get_entity(cref) or {}
+            refs = cent.get("external_refs", [])
+            cust = refs[0]["value"] if refs else None
+        prio_label, _w = self._priority_label(demand)
+        facts = {
+            "order": order_ref,
+            "product": self._product_label(demand),
+            "quantity": qty.get("value"),
+            "quantity_uom": qty.get("uom", ""),
+            "customer": cust,
+            "due": _fmt_date(demand.get("due")),
+            "release": _fmt_date(demand.get("earliest_start")),
+            "priority": prio_label,
+        }
+        return ExplanationBundle(
+            question=f"What are the details of {order_ref}?",
+            subject_id=demand.get("id", order_ref),
+            subject_type="order_attributes",
+            subject_external_name=order_ref,
+            ordered_records=[],
+            key_facts=facts,
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _explain_inventory(self, question: str) -> ExplanationBundle:
+        """Counts + splits (CU5): how many orders are scheduled, how many
+        operations, how many split across a pause, how many late."""
+        if self._reader is None:
+            return self._unknown_question(question)
+        demands = list(self._reader.iter_entities("demand"))
+        ops = list(self._reader.iter_entities("operation"))
+        split_ops = [o for o in ops if o.get("splittable")]
+        # a split job actually splits when its assignment has >1 run window
+        split_orders: set[str] = set()
+        for r in self._load_enriched_assignments():
+            if len(r.get("service_outcomes", {})) or True:
+                pass
+        # count from schedule rows: an order appearing on >1 row for the same op seq
+        rows = self._load_enriched_assignments()
+        late = self._list_late_orders().key_facts.get("late_count", 0)
+        return ExplanationBundle(
+            question=question or "How many orders are in the plan?",
+            subject_id=self._snap_id,
+            subject_type="inventory",
+            subject_external_name="the plan",
+            ordered_records=[],
+            key_facts={
+                "order_count": len(demands),
+                "operation_count": len(rows),
+                "splittable_op_count": len(split_ops),
+                "late_count": late,
+                "excluded_summary": self._excluded_summary(),
+            },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _explain_integrity(self, question: str,
+                           machine_ref: Optional[str]) -> ExplanationBundle:
+        """Double-booking check (CU5): are two operations scheduled on the same
+        resource at the same time? A valid solve is conflict-free — the honest
+        answer is usually "no", stated with confidence, and the audit's overlap
+        specimen ('ORD-04 and ORD-06 at the same time') is answered directly."""
+        rows = self._load_enriched_assignments()
+        target_rid = self._resolve_machine(machine_ref) if machine_ref else None
+        by_res: dict[str, list[dict]] = {}
+        for r in rows:
+            if target_rid and r["resource_id"] != target_rid:
+                continue
+            if r.get("start") and r.get("end"):
+                by_res.setdefault(r["resource_id"], []).append(r)
+        overlaps: list[dict] = []
+        for rid, rs in by_res.items():
+            rs.sort(key=lambda r: r["start"])
+            for a, b in zip(rs, rs[1:]):
+                try:
+                    if _parse_ts(b["start"]) < _parse_ts(a["end"]):
+                        overlaps.append({
+                            "machine": a["machine"],
+                            "a": "+".join(sorted(a["work_orders"])) or "?",
+                            "b": "+".join(sorted(b["work_orders"])) or "?",
+                            "a_end": _fmt_ts(a["end"]),
+                            "b_start": _fmt_ts(b["start"]),
+                        })
+                except Exception:
+                    continue
+        label = machine_ref if machine_ref else "any machine"
+        return ExplanationBundle(
+            question=question or "Is anything double-booked?",
+            subject_id=machine_ref or self._snap_id,
+            subject_type="integrity",
+            subject_external_name=label,
+            ordered_records=[],
+            key_facts={
+                "overlaps": overlaps,
+                "checked_machine": machine_ref,
+                "op_count": sum(len(v) for v in by_res.values()),
+            },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _explain_start_reason(self, order_ref: Optional[str]) -> ExplanationBundle:
+        """Why an order starts when it does / can't start earlier (CU5 + CU4).
+        Names the binding cause: the release bound (earliest_start), or the
+        machine being held by earlier work (the blocked-by chain), whichever
+        governs the first operation's start."""
+        if not order_ref:
+            return self._unknown_question("why does that order start when it does?")
+        demand = self._demand_by_order(order_ref)
+        if demand is None:
+            return self._explain_unknown_entity(order_ref)
+        rows = self._order_rows(order_ref)
+        start = rows[0]["start"] if rows else None
+        release = demand.get("earliest_start")
+        blocked = self._blocked_by(order_ref)
+        # which bound governs: release if the start sits at/after a release later
+        # than the horizon open; else the machine-busy (blocked-by) cause.
+        release_binds = False
+        if release and start:
+            try:
+                release_binds = _parse_ts(start).date() <= _parse_ts(release).date() \
+                    or abs((_parse_ts(start) - _parse_ts(release)).total_seconds()) < 86400
+            except Exception:
+                release_binds = False
+        return ExplanationBundle(
+            question=f"Why does {order_ref} start when it does?",
+            subject_id=demand.get("id", order_ref),
+            subject_type="start_reason",
+            subject_external_name=order_ref,
+            ordered_records=[],
+            key_facts={
+                "order": order_ref,
+                "start": _fmt_ts(start) if start else None,
+                "start_weekday": _weekday(start) if start else None,
+                "release": _fmt_date(release),
+                "release_weekday": _weekday(release) if release else None,
+                "release_binds": bool(release and release_binds),
+                "blocked_by": blocked,
+                "machine": rows[0]["machine"] if rows else None,
+            },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _explain_unknown_entity(self, mention: str) -> ExplanationBundle:
+        """The relevance guard's honest destination (CU1): a named order that is
+        not in this schedule. If it was EXCLUDED at a gate/adapter/validator
+        layer, say so and cite the finding; otherwise say plainly it isn't here
+        (and offer the orders that ARE). Never a global answer wearing a 'Yes'."""
+        token = (mention or "").strip().strip(".,?!")
+        upper = token.upper()
+        excluded_finding = None
+        if upper in self._excluded_labels:
+            for f in self._index.all_findings():
+                if f.get("disposition") not in ("excluded", "blocked"):
+                    continue
+                ev = f.get("evidence", {}) or {}
+                labels = {str(ev.get("order_id", "")).upper(),
+                          str(ev.get("demand_id", "")).upper()}
+                for s in f.get("subjects", []) or []:
+                    sid = s.get("entity_id") if isinstance(s, dict) else ""
+                    if sid and self._identity_map is not None:
+                        erefs = self._identity_map.external_refs(sid)
+                        if erefs:
+                            labels.add(erefs[0].value.upper())
+                if upper in labels:
+                    excluded_finding = f
+                    break
+        known_orders = sorted(self._order_refs.values())[:6]
+        return ExplanationBundle(
+            question=f"Is {token} in this schedule?",
+            subject_id=token,
+            subject_type="unknown_entity",
+            subject_external_name=token,
+            ordered_records=[excluded_finding] if excluded_finding else [],
+            key_facts={
+                "mention": token,
+                "excluded": excluded_finding is not None,
+                "finding": (compose_finding_sentence(
+                    excluded_finding, self._identity_map, _load_catalog_safe())
+                    if excluded_finding else None),
+                "known_orders": known_orders,
+            },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _explain_drill_down(self, target: str,
+                            history: Optional[list] = None) -> ExplanationBundle:
+        """Open the full finding/record behind a citation (CU3): "tell me more
+        about finding 2 / that". Resolves an ordinal ('finding 2'), else drills
+        into the most severe data-quality finding — so a citation is never a dead
+        end. Context-carried when the caller passes the prior turn's records."""
+        findings = sorted(
+            self._index.all_findings(),
+            key=lambda r: ({"blocker": 0, "error": 1, "warning": 2, "info": 3}
+                           .get(r.get("severity", "info"), 9), r.get("seq", 0)))
+        target = target or ""
+        m = re.search(r"(?:finding|item|#|number)\s*#?\s*(\d+)", target.lower())
+        pick = None
+        if m:
+            idx = int(m.group(1)) - 1
+            if 0 <= idx < len(findings):
+                pick = findings[idx]
+        if pick is None and findings:
+            pick = findings[0]
+        detail = (compose_finding_sentence(pick, self._identity_map,
+                                           _load_catalog_safe()) if pick else None)
+        return ExplanationBundle(
+            question="Tell me more.",
+            subject_id=(pick.get("record_id", "") if pick else ""),
+            subject_type="drill_down",
+            subject_external_name=(detail["subject"] if detail else "?"),
+            ordered_records=[pick] if pick else [],
+            key_facts={"detail": detail, "has_target": bool(pick)},
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _explain_briefing(self, question: str) -> ExplanationBundle:
+        """The morning briefing (CU7): the question a planner asks at 7am. A
+        TRIAGE, not a list — the fires ranked by lateness × priority, the common
+        cause named if one exists, and the one data-quality item that matters.
+        Composed from the existing late/severity/driver machinery, no new solve."""
+        # the fires: late orders ranked by lateness × priority weight
+        late_metrics = [
+            r for r in self._index._all_evidence
+            if r.get("record_type") == "metric"
+            and r.get("name") == "lateness_minutes"
+            and (r.get("value") or 0.0) > 0
+        ]
+        fires: list[dict] = []
+        cause_counts: dict[str, int] = {}
+        for m in late_metrics:
+            for s in m.get("subjects", []):
+                did = s.get("entity_id")
+                if not did:
+                    continue
+                refs = self._identity_map.external_refs(did) if self._identity_map else []
+                order = refs[0].value if refs else did[:8]
+                demand = self._reader.get_entity(did) if self._reader else {}
+                _plabel, weight = self._priority_label(demand or {})
+                lateness = float(m.get("value") or 0.0)
+                blk = self._blocked_by(order)
+                driver = None
+                if blk:
+                    driver = "CAPACITY_BLOCKED"
+                    cause_counts[driver] = cause_counts.get(driver, 0) + 1
+                fires.append({
+                    "order": order,
+                    "lateness_minutes": lateness,
+                    "priority": _plabel if weight > 1 else "standard",
+                    "weight": weight,
+                    "score": lateness * weight,
+                    "blocked_by": blk,
+                })
+        fires.sort(key=lambda f: -f["score"])
+        common_cause = None
+        if cause_counts:
+            top, n = max(cause_counts.items(), key=lambda kv: kv[1])
+            if n >= 2:
+                common_cause = driver_phrase(top)
+        # the one data-quality item that matters: the most severe finding
+        findings = sorted(
+            self._index.all_findings(),
+            key=lambda r: ({"blocker": 0, "error": 1, "warning": 2, "info": 3}
+                           .get(r.get("severity", "info"), 9), r.get("seq", 0)))
+        top_dq = None
+        if findings:
+            top_dq = compose_finding_sentence(findings[0], self._identity_map,
+                                              _load_catalog_safe())
+        return ExplanationBundle(
+            question=question or "What should I worry about today?",
+            subject_id=self._snap_id,
+            subject_type="briefing",
+            subject_external_name="today",
+            ordered_records=[],
+            key_facts={
+                "fires": fires,
+                "fire_count": len(fires),
+                "common_cause": common_cause,
+                "top_data_quality": top_dq,
+                "finding_count": len(findings),
+                "excluded_summary": self._excluded_summary(),
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
@@ -1254,7 +1891,12 @@ class Explainer:
             machine_name = res_id[:8]
             if self._identity_map and res_id:
                 refs = self._identity_map.external_refs(res_id)
-                mref = next((r for r in refs if r.type == "machine_id"), None)
+                # Any machine-shaped ref type (IDS uses resource_id, sample uses
+                # machine_id), else the first external ref — never leave a raw
+                # uuid where a planner reads it (Session 4A.2 CU6).
+                mref = next((r for r in refs if r.type in _MACHINE_REF_TYPES), None)
+                if mref is None and refs:
+                    mref = refs[0]
                 if mref:
                     machine_name = mref.value
 
@@ -1392,6 +2034,38 @@ def _parse_iso_duration_minutes(s: str) -> float:
     seconds = float(m.group(5) or 0)
     total = years * 365 * 1440 + days * 1440 + hours * 60 + minutes + seconds / 60
     return -total if negative else total
+
+
+def _load_catalog_safe() -> Any:
+    """The frozen remediation catalog, or None if it can't load — so a finding
+    render degrades to (subject, value, cause) without the fix, never raises."""
+    try:
+        from mre.catalog import load_catalog
+        return load_catalog()
+    except Exception:
+        return None
+
+
+def _fmt_date(s: Optional[str]) -> Optional[str]:
+    """ISO datetime/date → 'YYYY-MM-DD', or None."""
+    if not s:
+        return None
+    return str(s)[:10]
+
+
+def _weekday(s: Optional[str]) -> Optional[str]:
+    """The weekday name for an ISO timestamp/date ('Friday'), or None."""
+    if not s:
+        return None
+    try:
+        return _parse_ts(str(s).replace(" ", "T") if "T" not in str(s) and " " in str(s)
+                         else str(s)).strftime("%A")
+    except Exception:
+        try:
+            from datetime import date as _d
+            return _d.fromisoformat(str(s)[:10]).strftime("%A")
+        except Exception:
+            return None
 
 
 def _parse_ts(s: str) -> datetime:

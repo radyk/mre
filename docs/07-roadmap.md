@@ -1,6 +1,37 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.27 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.28 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.28:** **Session 4A.2 — the voice (the AI/CERTIFICATE floor + the wow layer)**
+2026-07-20 (docs/04 amendment). The founder's Glass Box close: *the core is
+trustworthy; the voice is inadequate to it — the AI is the differentiator and
+must be fantastic, not merely good.* This session takes the AI/CERTIFICATE half of
+the close, driven by the ~14-finding failure taxonomy whose specimens live
+verbatim in the question ledger. Backend-only. **Split honestly:** ships Part 1
+(the floor, CU1–CU6) + CU7 (morning briefing) + CU9 (proactive excluded) + CU10
+(the measurement); **CU8 (spatial "show me")** is NAMED and deferred to **4A.3**.
+New authored `planner_language.py` (12 driver + 18 finding codes → plain cause,
+stage names, jargon strip, the four-part finding-sentence composer with
+coalescence). **CU1 (keystone):** the relevance guard — a route fires only when
+the SHAPE matches; a named-but-unresolvable order gets the excluded/unknown
+answer, never a global "Yes" (evidence-derived excluded-labels + a dataset-learned
+order shape, no id-shape assumption); the answer-the-noun catch-all and the
+`"diff" in "different"` bug are gone. **CU2:** findings render (subject, offending
+value, plain cause, catalog fix), coalesced — replacing the subject-blind "Total
+findings" header. **CU3:** drill-down opens the full finding behind a citation.
+**CU4:** the blocked-by chain reads the solved occupancy ("CUT-01 held by ORD-13
+until Mon 18:50"); driver codes decompressed to plain cause. **CU5:** the missing
+route families (attribute lookup, inventory, integrity/double-booking check,
+release/start reasoning). **CU6:** the register-tag seam fixed (chip==envelope via
+one `REGISTER_BY_SUBJECT`; enumerating findings is testimony), layer coalescence,
+module-id → stage-name, jargon strip, citation-breadth cap. **CU7:** the morning
+briefing as a triage (fires by lateness × priority, common cause, the one DQ item).
+**CU9:** exclusions volunteered in relevant answers. **CU10:** `tests/
+test_ai_voice.py` — the audit corpus as standing acceptance, every specimen
+re-run against a real Glass Box solve, **zero confident-wrong** asserted. Non-slow
+Python **1202 passed** (+12), 0 failed. See the docs/04 2026-07-20 Session 4A.2
+amendment. **Carried:** CU8 → 4A.3; the presentation findings (UTC-vs-local clock
+labeling; move-it could bridge to the board-edit gesture) remain named.
 
 **v2.27:** **Session 4.5 — the unguarded-edge family + severity semantics**
 2026-07-20 (docs/04 amendment). Four findings from Daryn's live Glass Box audit —

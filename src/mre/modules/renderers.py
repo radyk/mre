@@ -17,6 +17,9 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from mre.modules.explainer import ExplanationBundle
+from mre.modules.planner_language import (
+    driver_phrase, has_jargon, stage_name, strip_jargon,
+)
 
 # Patterns for post-render validation
 # Captures full timestamp: date + optional time + optional timezone
@@ -107,12 +110,24 @@ def _resolve_name(entity_id: str, entity_type: str, identity_map: Any) -> str:
 # TemplateRenderer
 # ---------------------------------------------------------------------------
 
-# Which answer register each certificate subject_type belongs to (handoff §4).
-_REGISTER_BY_SUBJECT = {"remediation": "remediation", "triage": "judgment"}
-
-
+# The register the rendered footer (the envelope) declares — resolved through
+# the SAME single source the API metadata (the chip) uses, so chip == envelope
+# always (Session 4A.2 CU6 — the register-tag seam).
 def _register_for(bundle: ExplanationBundle) -> str:
-    return _REGISTER_BY_SUBJECT.get(bundle.subject_type, "testimony")
+    from mre.modules.explainer import register_of
+    return register_of(bundle)
+
+
+# Subject types whose whole answer is composed in the header in planner language
+# (Session 4A.2). They never dump the raw evidence chain.
+_HEADER_ONLY_SUBJECTS = frozenset({
+    "findings", "order_attributes", "inventory", "integrity", "start_reason",
+    "unknown_entity", "drill_down", "briefing",
+})
+
+# The citation-breadth cap (CU6): a schedule-wide answer shows at most this many
+# raw records before summarizing "… and N more".
+CITATION_CAP = 8
 
 
 class TemplateRenderer:
@@ -141,6 +156,13 @@ class TemplateRenderer:
         if bundle.subject_type in ("edits", "edit_cost"):
             return "\n".join(lines)
 
+        # Session 4A.2 — these subject types compose their whole answer in the
+        # header in planner language (CU2/CU4/CU5/CU7). They never dump the raw
+        # M1<M7 evidence chain, whose module ids and uuids are exactly the jargon
+        # the audit flagged (CU6).
+        if bundle.subject_type in _HEADER_ONLY_SUBJECTS:
+            return "\n".join(lines).rstrip()
+
         if not bundle.ordered_records:
             if bundle.subject_type == "diff":
                 self._render_diff(lines, bundle.key_facts)
@@ -155,10 +177,20 @@ class TemplateRenderer:
                 lines.append("  (no evidence records found)")
             return "\n".join(lines)
 
-        lines.append(f"Evidence chain ({len(bundle.ordered_records)} record(s)):")
+        # Citation-breadth cap (CU6): a schedule-wide subject cited dozens of
+        # records — a wall of footnotes, never 13 highlighted bars. Show the
+        # first CITATION_CAP and name how many more, rather than dump everything.
+        records = bundle.ordered_records
+        capped = len(records) > CITATION_CAP
+        shown = records[:CITATION_CAP] if capped else records
+        lines.append(f"Evidence chain ({len(records)} record(s)):")
         lines.append("")
-        for i, rec in enumerate(bundle.ordered_records, 1):
+        for i, rec in enumerate(shown, 1):
             self._render_record(lines, i, rec, bundle.identity_map)
+        if capped:
+            lines.append(f"  … and {len(records) - CITATION_CAP} more record(s) "
+                         "(ask about a specific order to narrow this).")
+            lines.append("")
 
         return "\n".join(lines)
 
@@ -168,18 +200,32 @@ class TemplateRenderer:
 
     def _render_header(self, lines: list[str], bundle: ExplanationBundle) -> None:
         if bundle.subject_type == "demand":
-            lateness = bundle.key_facts.get("lateness_minutes")
-            due = bundle.key_facts.get("due_date", "unknown")
+            kf = bundle.key_facts
+            lateness = kf.get("lateness_minutes")
+            due = kf.get("due_date", "unknown")
+            name = bundle.subject_external_name
             if lateness is not None and float(lateness) > 0:
-                lines.append(
-                    f"{bundle.subject_external_name} completed "
-                    f"{int(lateness)} minutes past its due date ({due})."
-                )
+                hrs = kf.get("lateness_hours")
+                span = f"{int(lateness)} minutes" + (f" ({hrs}h)" if hrs else "")
+                lines.append(f"{name} finished {span} past its due date ({due}).")
+                # CU4 — the causal story, not the bare driver code.
+                blk = kf.get("blocked_by")
+                if blk:
+                    prio = f", {blk['blocker_priority']}" if blk.get("blocker_priority") else ""
+                    lines.append(
+                        f"It couldn't start until {blk['my_start']} because "
+                        f"{blk['machine']} was held by {blk['blocker_order']}"
+                        f"{prio} until {blk['until']}.")
+                elif kf.get("driver_phrase"):
+                    lines.append(f"The binding cause: {kf['driver_phrase']}.")
             elif lateness is not None:
+                early = abs(int(lateness))
+                span = (f"{round(early / 1440, 1)} days" if early >= 1440
+                        else f"{round(early / 60, 1)}h" if early >= 60
+                        else f"{early} minutes")
                 lines.append(
-                    f"{bundle.subject_external_name} completed "
-                    f"{abs(int(lateness))} minutes early (due {due})."
-                )
+                    f"No — {name} is on time. It finished {span} early "
+                    f"(due {due}).")
             lines.append("")
 
         elif bundle.subject_type == "run":
@@ -206,6 +252,7 @@ class TemplateRenderer:
                 lines.append(f"{count} late order(s):")
                 for item in orders:
                     lines.append(f"  - {item}")
+            self._render_excluded_note(lines, bundle)
             lines.append("")
 
         elif bundle.subject_type == "downtime":
@@ -390,12 +437,208 @@ class TemplateRenderer:
                 lines.append("")
 
         elif bundle.subject_type == "findings":
+            self._render_findings(lines, bundle)
+
+        elif bundle.subject_type == "order_attributes":
+            kf = bundle.key_facts
+            lines.append(f"{kf.get('order', '?')}:")
+            lines.append(f"  Product   : {kf.get('product', '?')}")
+            qty = kf.get("quantity")
+            if qty is not None:
+                lines.append(f"  Quantity  : {int(qty) if float(qty).is_integer() else qty}"
+                             f" {kf.get('quantity_uom', '')}".rstrip())
+            lines.append(f"  Customer  : {kf.get('customer') or 'not specified'}")
+            lines.append(f"  Due       : {kf.get('due') or 'unknown'}")
+            if kf.get("release"):
+                lines.append(f"  Released  : {kf.get('release')}")
+            lines.append(f"  Priority  : {kf.get('priority', 'standard priority')}")
+            lines.append("")
+
+        elif bundle.subject_type == "inventory":
             kf = bundle.key_facts
             lines.append(
-                f"Total findings: {kf.get('total_findings', '?')} "
-                f"| Codes: {', '.join(kf.get('codes', []))}"
+                f"{kf.get('order_count', 0)} order(s) are in the plan, "
+                f"scheduled across {kf.get('operation_count', 0)} operation(s)."
             )
+            sp = kf.get("splittable_op_count", 0)
+            if sp:
+                lines.append(f"{sp} operation(s) can split across a pause "
+                             "(e.g. an overnight closure).")
+            else:
+                lines.append("No operations are set to split across a pause.")
+            late = kf.get("late_count", 0)
+            lines.append(f"{late} order(s) finish late."
+                         if late else "Every order finishes on time.")
+            self._render_excluded_note(lines, bundle)
             lines.append("")
+
+        elif bundle.subject_type == "integrity":
+            kf = bundle.key_facts
+            overlaps = kf.get("overlaps", [])
+            scope = kf.get("checked_machine") or "any machine"
+            if not overlaps:
+                lines.append(
+                    f"No double-booking on {scope}: no two operations are "
+                    f"scheduled on the same machine at the same time "
+                    f"({kf.get('op_count', 0)} operation(s) checked). The "
+                    "schedule is conflict-free by construction — the solver "
+                    "enforces one job per machine at a time.")
+            else:
+                lines.append(f"Found {len(overlaps)} overlap(s):")
+                for o in overlaps:
+                    lines.append(f"  {o['a']} and {o['b']} both on {o['machine']} "
+                                 f"— {o['a']} runs to {o['a_end']}, "
+                                 f"{o['b']} starts {o['b_start']}")
+            lines.append("")
+
+        elif bundle.subject_type == "start_reason":
+            self._render_start_reason(lines, bundle)
+
+        elif bundle.subject_type == "unknown_entity":
+            self._render_unknown_entity(lines, bundle)
+
+        elif bundle.subject_type == "drill_down":
+            kf = bundle.key_facts
+            detail = kf.get("detail")
+            if not detail:
+                lines.append("There's nothing more to show — no finding or record "
+                             "matched.")
+            else:
+                self._render_finding_detail(lines, detail)
+            lines.append("")
+
+        elif bundle.subject_type == "briefing":
+            self._render_briefing(lines, bundle)
+
+    # ------------------------------------------------------------------
+    # Session 4A.2 composed-answer helpers
+    # ------------------------------------------------------------------
+
+    def _render_findings(self, lines: list[str], bundle: ExplanationBundle) -> None:
+        """CU2 — every finding as (subject, offending value, plain cause, catalog
+        fix), coalesced across layers (CU6). Statistics are supporting cast."""
+        from mre.modules.explainer import _load_catalog_safe
+        from mre.modules.planner_language import compose_findings
+        composed = compose_findings(bundle.ordered_records, bundle.identity_map,
+                                    _load_catalog_safe())
+        entity = bundle.key_facts.get("entity_ref")
+        if not composed:
+            if entity:
+                lines.append(f"No data-quality problems found for {entity}.")
+            else:
+                lines.append("No data-quality problems — the submission is clean.")
+            lines.append("")
+            self._render_excluded_note(lines, bundle)
+            return
+        head = (f"{len(composed)} data-quality problem(s)"
+                + (f" for {entity}" if entity else "") + ":")
+        lines.append(head)
+        lines.append("")
+        for i, c in enumerate(composed, 1):
+            self._render_finding_detail(lines, c, ordinal=i)
+        self._render_excluded_note(lines, bundle)
+
+    def _render_finding_detail(self, lines: list[str], c: dict,
+                               ordinal: Optional[int] = None) -> None:
+        prefix = f"  {ordinal}. " if ordinal else "  "
+        sev = str(c.get("severity", "info")).upper()
+        lines.append(f"{prefix}{c['cause']}  [{sev}]")
+        if c.get("layer_count", 0) > 1:
+            where = ", ".join(c.get("layers", [])) or f"{c['layer_count']} layers"
+            lines.append(f"       confirmed at {c['layer_count']} layers ({where})")
+        if c.get("fix"):
+            lines.append(f"       Fix: {c['fix']}")
+
+    def _render_start_reason(self, lines: list[str], bundle: ExplanationBundle) -> None:
+        kf = bundle.key_facts
+        name = bundle.subject_external_name
+        start = kf.get("start")
+        wd = kf.get("start_weekday")
+        when = f"{wd} ({start})" if wd and start else (start or "when it does")
+        blk = kf.get("blocked_by")
+        if kf.get("release_binds") and kf.get("release"):
+            rwd = kf.get("release_weekday")
+            rel = f"{rwd} {kf['release']}" if rwd else kf["release"]
+            lines.append(
+                f"{name} starts {when} because it isn't released for production "
+                f"until {rel} — nothing can begin before its release date.")
+        elif blk:
+            prio = f", {blk['blocker_priority']}" if blk.get("blocker_priority") else ""
+            lines.append(
+                f"{name} starts {when} because {blk['machine']} was busy: it was "
+                f"held by {blk['blocker_order']}{prio} until {blk['until']}, so "
+                f"{name} took the next opening.")
+        elif start:
+            lines.append(f"{name} starts {when}; it takes the first opening its "
+                         "machine and its earlier steps allow.")
+        else:
+            lines.append(f"{name} isn't scheduled, so it has no start to explain.")
+        lines.append("")
+
+    def _render_unknown_entity(self, lines: list[str], bundle: ExplanationBundle) -> None:
+        kf = bundle.key_facts
+        token = kf.get("mention", "that order")
+        if kf.get("excluded") and kf.get("finding"):
+            c = kf["finding"]
+            lines.append(
+                f"{token} isn't in this schedule — it was excluded before the "
+                f"solve. {c['cause']}.")
+            if c.get("fix"):
+                lines.append(f"Fix: {c['fix']}")
+        else:
+            lines.append(f"{token} isn't in this schedule — I don't see it among "
+                         "the planned orders.")
+            known = kf.get("known_orders") or []
+            if known:
+                lines.append(f"Orders I do have include: {', '.join(known)}.")
+        lines.append("")
+
+    def _render_briefing(self, lines: list[str], bundle: ExplanationBundle) -> None:
+        kf = bundle.key_facts
+        fires = kf.get("fires", [])
+        if not fires:
+            lines.append("Nothing is late today — every order is on track.")
+        else:
+            lines.append(f"{len(fires)} order(s) need attention today, worst first:")
+            lines.append("")
+            for f in fires:
+                mins = int(f["lateness_minutes"])
+                tag = f" · {f['priority']}" if f.get("priority") and f["priority"] != "standard" else ""
+                line = f"  • {f['order']} — {mins} min late{tag}"
+                blk = f.get("blocked_by")
+                if blk:
+                    line += (f" (held behind {blk['blocker_order']} on "
+                             f"{blk['machine']})")
+                lines.append(line)
+            if kf.get("common_cause"):
+                lines.append("")
+                lines.append(f"Common thread: {kf['common_cause']}.")
+        # the one data-quality item that matters
+        dq = kf.get("top_data_quality")
+        if dq:
+            lines.append("")
+            extra = ""
+            if kf.get("finding_count", 0) > 1:
+                extra = f" (plus {kf['finding_count'] - 1} more)"
+            lines.append(f"Data to watch: {dq['cause']}{extra}.")
+            if dq.get("fix"):
+                lines.append(f"  Fix: {dq['fix']}")
+        self._render_excluded_note(lines, bundle)
+        lines.append("")
+
+    def _render_excluded_note(self, lines: list[str], bundle: ExplanationBundle) -> None:
+        """CU9 — a schedule with exclusions volunteers them in relevant answers
+        so the certificate silence is inverted into a trust feature."""
+        kf = bundle.key_facts
+        ex = kf.get("excluded_summary")
+        if ex and ex.get("count"):
+            lines.append("")
+            names = ", ".join(ex.get("orders", [])[:4])
+            more = "" if len(ex.get("orders", [])) <= 4 else " …"
+            lines.append(
+                f"Note: {ex['scheduled']} of {ex['total']} orders are scheduled; "
+                f"{ex['count']} excluded ({names}{more}) — ask \"why was "
+                f"{ex['orders'][0]} excluded?\" for the reason.")
 
     def _render_register_body(self, bundle: ExplanationBundle) -> str:
         from mre.modules.remediation import render_remediation_body
@@ -465,13 +708,13 @@ class TemplateRenderer:
         elif rt == "finding":
             self._render_finding(lines, idx, rec, module, rid_short)
         elif rt == "event":
-            lines.append(f"[{idx}] {module} EVENT")
+            lines.append(f"[{idx}] EVENT ({stage_name(module)})")
             msg = (rec.get("message") or "")[:120]
             if msg:
                 lines.append(f"    {msg}")
             lines.append(f"    [record: {rid_short}...]")
         else:
-            lines.append(f"[{idx}] {module} {rt.upper()}")
+            lines.append(f"[{idx}] {rt.upper()} ({stage_name(module)})")
             lines.append(f"    [record: {rid_short}...]")
         lines.append("")
 
@@ -481,7 +724,7 @@ class TemplateRenderer:
         dt = (rec.get("decision_type") or "?").upper()
         driver = rec.get("driver", "?")
         basis = rec.get("basis", "?")
-        lines.append(f"[{idx}] {module} DECISION  | {dt}  | {basis}")
+        lines.append(f"[{idx}] DECISION  | {dt}  ({stage_name(module)})")
 
         if dt == "DEMAND_MERGE":
             subjects = rec.get("subjects", [])
@@ -507,7 +750,8 @@ class TemplateRenderer:
             resource_id = chosen.get("resource_id", "")
             resource_name = _resolve_name(resource_id, "resource", identity_map)
             lines.append(f"    Assigned to: {resource_name}")
-            lines.append(f"    Driver: {driver}")
+            phrase = driver_phrase(driver)
+            lines.append(f"    Why: {phrase}" if phrase else f"    Driver: {driver}")
             if basis == "reconstructed":
                 lines.append(
                     "    Note: This is a reconstruction from the solved schedule."
@@ -520,9 +764,14 @@ class TemplateRenderer:
                 lines.append(f"    Alternative: {alt_name}  - {consequence}")
 
         else:
-            lines.append(f"    Driver: {driver}")
-            msg = (rec.get("message") or "")[:120]
-            if msg:
+            phrase = driver_phrase(driver)
+            lines.append(f"    Reason: {phrase}" if phrase else f"    Driver: {driver}")
+            # CU6 — an INTERPRETATION decision's message is internal identity
+            # plumbing ("identity_v1: demand <uuid> -> 1 WorkPackage"); it says
+            # nothing a planner needs and only leaks jargon. Render a message
+            # only when it survives the jargon strip as real planner content.
+            msg = strip_jargon((rec.get("message") or "")[:160])
+            if msg and len(re.sub(r"[^A-Za-z]", "", msg)) > 6 and not has_jargon(msg):
                 lines.append(f"    {msg}")
 
         lines.append(f"    [record: {rid_short}...]")
@@ -551,7 +800,7 @@ class TemplateRenderer:
             subject_name = _resolve_name(
                 s.get("entity_id", ""), s.get("entity_type", ""), identity_map
             )
-        lines.append(f"[{idx}] {module} METRIC  | {name}")
+        lines.append(f"[{idx}] METRIC  | {name}  ({stage_name(module)})")
         subj_part = f" ({subject_name})" if subject_name else ""
         sep = " " if display_unit else ""
         lines.append(f"    Value: {display_value}{sep}{display_unit}{subj_part}")
@@ -560,7 +809,7 @@ class TemplateRenderer:
     def _render_finding(self, lines, idx, rec, module, rid_short) -> None:
         code = rec.get("code", "?")
         severity = rec.get("severity", "?")
-        lines.append(f"[{idx}] {module} FINDING  | {code}  | {severity}")
+        lines.append(f"[{idx}] FINDING  | {code}  | {severity}  ({stage_name(module)})")
         detail = rec.get("disposition_detail") or rec.get("message") or ""
         if detail:
             lines.append(f"    {str(detail)[:160]}")
