@@ -5867,27 +5867,51 @@ copy-serving path is an instruction that guarantees the opposite.
 
 ### 2026-07-20 — Session 4.5: the unguarded-edge family + severity semantics
 
-**The Glass Box audit close (opening act).** The instruments built in 4B.1 did
-their job: an auditor with the clean dataset in hand, a sabotage menu, and a
-walkthrough set out to catch the system lying and, mostly, could not — except at
-three unguarded edges, and one disease underneath them. The three misses share a
-shape: a demand with **no reality behind it** (an unroutable order, all
-alternative rows inactive) rode through planning as a *vacuous fulfillment* whose
-completion defaulted to the horizon start and read EARLY; a **negative order
-quantity** (-60 units) passed the gate unremarked and, downstream, its negative
-computed duration was **floored to a plausible 1-minute op** rather than refused;
-and the certificate **report card was blinder than dq_report.md** — the validator
-layer's exclusions and errors never surfaced in the certificate conversation. The
-disease under all three: **severity meant nothing.** A finding could wear
-`error` while its disposition said the run proceeded — the label claimed a
-consequence the system never delivered (`VALUE_OUT_OF_RANGE` at ERROR,
-proceeded_flagged, into a floored op). This session guards the three edges and
-cures the disease: an error carries a consequence, a fulfillment requires
-reality, a quantity is guarded at the gate, a duration floor never launders
-garbage, and the customer's report card sees everything dq_report does.
-*(Synthesized from the four findings this session addresses; Daryn's verbatim
-Glass Box audit summary was not recoverable after the session /clear — replace
-this opening act with his text if a verbatim transcription is wanted.)*
+**The Glass Box audit close — founder's close (Daryn Radke, conducted live over
+~3 days, transcribed from the design thread).**
+
+*GATE: 8 catches, 1 correct silence, 1 miss.* Catches: broken product ref →
+excluded; impossible dates → validator exclusion; alt-group step-attribute
+mismatch → rule #33 first-row-wins (disposition proven by byte-identical
+economics); statistical outlier → flagged, grade preserved; identical duplicate →
+deduped, schedule untouched; blank order_id → REJECTED/409 solve refusal;
+unroutable step → flagged; broken facility ref → flagged. Correct silence: the
+false-positive control (qty 50→55) produced zero findings and a +$40.00 delta
+attributed exactly (5 units × 4 min × 2 ops × $1/min). Miss: negative quantity —
+no gate rule (now rule #34, this session).
+
+*ARCHITECTURE: 3 misses, one disease* — unguarded edges resolved by ambient
+arithmetic, then vouched for: (1) **silent exclusion** — past-due order dropped by
+the validator while the certificate read ACCEPTED/0; (2) **vacuous fulfillment** —
+unroutable orders reported EARLY-complete at T00:00 with zero operations; (3)
+**absurd fulfillment** — quantity −60 floored to a 1-minute op reported EARLY, the
+validator having stated "quantity must be > 0" and proceeded.
+
+*TRACE (ORD-05, by hand):* CSV row → hover card → "why" answer → ledger arithmetic
+(890 min × $25/h = $370.83, verified by division). Trace HELD end to end.
+Presentation findings: unlabeled UTC-vs-local clocks disagreeing across surfaces;
+causal narration stops at driver codes.
+
+*AI/CERTIFICATE:* failure taxonomy saturated (~14 named findings) —
+answer-the-noun and answer-the-wrong-noun; subject-blind finding renders ×6; no
+drill-down; no coalescence; register-tag seam ×4; layer/driver jargon; markdown
+leak; citation-breadth absurdity; the product's best document (dq_report.md)
+unreachable from the conversation.
+
+*FOUNDER'S VERDICT:* the core is trustworthy — I tried to catch it lying and could
+not; the voice is inadequate to it. The AI is the differentiator and must be
+fantastic, not merely good.
+
+This session (4.5) takes the ARCHITECTURE half of the close: the three unguarded
+edges (silent exclusion via severity semantics, vacuous fulfillment, absurd
+fulfillment) and the disease under them — **severity meant nothing** — plus the
+GATE miss (rule #34) and the first reach at the AI/CERTIFICATE blindness (the
+excluded-orders story, so dq_report's data becomes reachable from the
+conversation). The rest of the AI/CERTIFICATE taxonomy — the voice being
+"inadequate to the core" — is the named work ahead (4A.2 and the AI track): the
+differentiator the founder's verdict points at. The presentation findings
+(UTC-vs-local clock labeling; causal narration stopping at driver codes) are
+carried, not addressed here.
 
 **CU3 — severity means something (the disease).** `contracts.records.Finding`
 now enforces at construction that an `error` severity carries an acting

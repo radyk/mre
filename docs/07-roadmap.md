@@ -19,7 +19,18 @@ laundering closed at the seam). **CU4:** an `excluded-orders` certificate route
 enumerates every exclusion from all layers, so the report card is never blinder
 than dq_report.md. Non-slow Python 1190 passed (+18); frontend untouched. docs/02
 §4.3 severity table + docs/06 v0.6 updated same commit. See the docs/04
-2026-07-20 Session 4.5 amendment.
+2026-07-20 Session 4.5 amendment. **Audit carry-forwards (founder's close, NOT
+addressed this session):** the founder's verdict is *"the core is trustworthy — I
+tried to catch it lying and could not; the voice is inadequate to it. The AI is
+the differentiator and must be fantastic, not merely good."* Named work ahead: (a)
+**the AI/CERTIFICATE voice** — a saturated ~14-finding failure taxonomy
+(answer-the-noun / answer-the-wrong-noun; subject-blind finding renders; no
+drill-down; no coalescence; register-tag seam; layer/driver jargon; markdown leak;
+citation-breadth absurdity; dq_report.md unreachable from the conversation — the
+last only *partially* reached by 4.5 CU4) → the AI track / 4A.2, the
+differentiator; (b) **presentation** — unlabeled UTC-vs-local clocks disagreeing
+across surfaces, and causal narration that stops at driver codes rather than
+plain cause.
 
 **v2.26:** **Session 4.4 — schedule freshness done right (the sixth stale-tab
 incident)** 2026-07-19 (docs/04 amendment). The behavior contract: **the cockpit must
