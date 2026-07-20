@@ -34,6 +34,8 @@ from typing import Any, Optional
 
 from mre.modules.ask_fallback_copy import (
     CLARIFY_NO_SUBJECT,
+    CLARIFY_SET_REFERENCE,
+    CLARIFY_VERIFICATION,
     NEAR_MISS_LEAD,
     route_offer,
 )
@@ -52,6 +54,24 @@ _ELLIPSIS_PRONOUNS = ("it", "that", "this", "them", "those", "these")
 _COST_FOLLOWUP = ("how much", "what did it cost", "what's the cost", "whats the cost",
                    "and the cost", "the cost", "cost?")
 _EDIT_ROUTES = ("edit-summary", "edit-cost")
+
+# CU5 (Session 4A.2b) — the rewrite-confidence guard. Three shapes a naive
+# pronoun substitution would mangle into a confident-wrong answer:
+#   bare-why      — "but why?" is not a fresh question; it asks for the LAST
+#                   subject's cause-chain (its lateness reason), not a refusal.
+#   verification  — "is that correct?" asks the assistant to confirm its own prior
+#                   claim; it can't be routed to schedule data — clarify.
+#   set-reference — "10 of those" refers to a GROUP; substituting one order id
+#                   ("10 of ORD-05") is nonsense — clarify, never guess.
+_BARE_WHY_RE = re.compile(
+    r"^(?:but|so|and|ok(?:ay)?|well|hmm|wait)?\s*(?:but\s+)?(?:why|how come)"
+    r"(?:\s+is\s+(?:that|this|it))?(?:\s+though)?\s*\??$", re.IGNORECASE)
+_VERIFY_RE = re.compile(
+    r"\b(?:is|are|was|were)\s+(?:that|this|those|these|it)\s+"
+    r"(?:correct|right|true|accurate|ok|okay)\b|\bare you sure\b", re.IGNORECASE)
+_SET_PRONOUN_RE = re.compile(
+    r"\b(?:\d+|some|many|few|several|most|all|how many|which|any)\s+of\s+"
+    r"(those|them|these)\b", re.IGNORECASE)
 
 
 @dataclass
@@ -127,9 +147,43 @@ def resolve_followup(question: str, context: Optional[dict], explainer: Any) -> 
     history = context.get("history") or []
     selection = context.get("selection") or {}
 
+    # CU6 — fuzzy id tolerance, BEFORE any exact-resolution check: a near-miss id
+    # (ord-o5 / ORD-5 / ord 05) is rewritten to its canonical ref with a visible
+    # assumption. An id matching nothing here is left alone (→ the relevance
+    # guard's honest "isn't in this schedule").
+    fq, fnotes = explainer.rewrite_fuzzy_orders(q)
+    if fnotes:
+        refs = ", ".join(dict.fromkeys(r for _t, r in fnotes))
+        return ResolvedQuestion(text=fq, resolved=True, note=f"assuming {refs}")
+
     # Already names a resolvable ref → nothing to resolve.
     if explainer._find_order_ref(q) or explainer._find_machine_ref(q):
         return ResolvedQuestion(text=q, resolved=False)
+
+    # CU5 — bare "but why?" resolves to the last subject's cause-chain (why-late),
+    # never a refusal; with no prior subject it clarifies.
+    if _BARE_WHY_RE.match(ql):
+        last = _last_subject(history, selection)
+        ref = last.get("order")
+        if ref:
+            return ResolvedQuestion(text=f"why is {ref} late?", resolved=True,
+                                    note=f"resolved against {ref}")
+        return ResolvedQuestion(text=q, resolved=False, needs_clarification=True,
+                                note=CLARIFY_NO_SUBJECT)
+
+    # CU5 — a verification of a prior claim ("is that correct?") can't be routed to
+    # schedule data; ask what to check rather than answer the wrong order.
+    if _VERIFY_RE.search(ql):
+        return ResolvedQuestion(text=q, resolved=False, needs_clarification=True,
+                                note=CLARIFY_VERIFICATION)
+
+    # CU5 — a SET-referring follow-up ("10 of those") must not be rewritten into a
+    # single-order question; name the ambiguity, offer the well-formed question.
+    m_set = _SET_PRONOUN_RE.search(ql)
+    if m_set:
+        return ResolvedQuestion(
+            text=q, resolved=False, needs_clarification=True,
+            note=CLARIFY_SET_REFERENCE.format(pron=m_set.group(1)))
 
     # If the deterministic router ALREADY handles the raw question, never touch
     # it — otherwise a question that merely CONTAINS a pronoun ("summarize what I

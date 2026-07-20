@@ -58,6 +58,22 @@ CLARIFY_NO_SUBJECT = (
     "e.g. \"why is that order late?\" becomes \"why is <order> late?\"."
 )
 
+# CU5 (Session 4A.2b) — the rewrite-confidence guard's clarify bodies. A
+# follow-up whose referent is a SET ("10 of those", "how many of them"), or that
+# asks the assistant to confirm a prior claim ("is that correct"), must NOT be
+# silently rewritten into a single-order question and answered. Name the ambiguity
+# and offer the well-formed question, never a guess.
+CLARIFY_SET_REFERENCE = (
+    "\"{pron}\" looks like it refers to a group, not one order — I won't guess "
+    "which. Did you mean the flagged orders? Ask e.g. \"which orders have "
+    "issues?\" or name a specific order."
+)
+CLARIFY_VERIFICATION = (
+    "I can't confirm a previous statement as \"correct\" — I answer from the "
+    "evidence, not my own claims. Re-ask what you want checked, e.g. \"how many "
+    "orders have data problems?\"."
+)
+
 # The meta-route header (R-AI1(d) — the ledger answering about itself).
 REFUSAL_META_EMPTY = "No unanswered questions have been logged recently."
 REFUSAL_META_LEAD = "Questions I couldn't answer recently ({n}):"

@@ -89,6 +89,30 @@ def triage_findings(findings: list[dict],
     return sorted(actionable, key=lambda f: _sort_key(f, catalog))
 
 
+def advisory_findings(findings: list[dict],
+                      catalog: Optional[RemediationCatalog] = None) -> list[dict]:
+    """The findings that are REAL problems but require no action — a validator
+    warning that proceeded (proceeded_flagged / defaulted), or any finding
+    carrying no gate outcome to prioritize (Session 4A.2b CU2). These are what a
+    testimony answer counts; the judgment/remediation registers must acknowledge
+    them ("no action required") rather than claim the submission is clean."""
+    catalog = catalog or load_catalog()
+    actionable = {id(f) for f in triage_findings(findings, catalog)}
+    return [f for f in findings if id(f) not in actionable and f.get("code")]
+
+
+def _advisory_meaning(finding: dict) -> str:
+    """The plain-language meaning of an advisory finding — the same authored
+    bridge testimony uses, so the two registers say the SAME thing about it."""
+    from mre.modules.planner_language import compose_finding_sentence
+    c = compose_finding_sentence(finding, None, None)
+    sev = str(finding.get("severity", "info")).upper()
+    line = f"{c['cause']} [{sev}]"
+    if c.get("fix"):
+        line += f" — Fix: {c['fix']}"
+    return line
+
+
 def triage_arithmetic(finding: dict,
                       catalog: Optional[RemediationCatalog] = None) -> dict[str, Any]:
     """The arithmetic the judgment register names: rule, outcome, measured
@@ -129,7 +153,12 @@ def render_triage_body(findings: list[dict],
     record."""
     catalog = catalog or load_catalog()
     ordered = triage_findings(findings, catalog)
+    advisory = advisory_findings(findings, catalog)
     if not ordered:
+        # CU2 — never claim "clean" opposite a reported problem. If testimony
+        # counts advisory findings, judgment acknowledges them (no action needed).
+        if advisory:
+            return _render_advisory_only(advisory)
         return "Fix-first order: nothing to prioritize — no non-satisfied findings."
     lines = [f"Fix-first order ({len(ordered)} finding(s)); all `violated` first, "
              "then `degraded` by closest escape, then flags (WARNING before INFO, "
@@ -153,4 +182,22 @@ def render_triage_body(findings: list[dict],
             lines.append("       count-based degrade — no Appendix A rate distance")
         elif sev == "INFO":
             lines.append("       quality flag — informational, cannot degrade the grade")
+    if advisory:
+        lines.append("")
+        lines.append(f"Plus {len(advisory)} advisory finding(s) (no action "
+                     "required):")
+        for f in advisory:
+            lines.append(f"  - {_advisory_meaning(f)}")
+    return "\n".join(lines)
+
+
+def _render_advisory_only(advisory: list[dict]) -> str:
+    """Body when there is nothing actionable but real advisory findings exist —
+    coherent with testimony (CU2), never "clean" opposite a reported problem. The
+    same count testimony reports, framed as needing no action."""
+    n = len(advisory)
+    lines = [f"{n} advisory finding(s), no action required — the plan proceeded "
+             "on defaulted inputs, but worth knowing:", ""]
+    for f in advisory:
+        lines.append(f"  - {_advisory_meaning(f)}")
     return "\n".join(lines)

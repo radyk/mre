@@ -95,6 +95,80 @@ class TestPlannerLanguage:
         assert "identity_v1" not in out and "WorkPackage" not in out
 
 
+class TestFormattingStrip:
+    """CU3 (Session 4A.2b) — markdown / backtick leakage stripped at one seam."""
+
+    def test_strip_formatting_removes_markdown_and_backticks(self):
+        from mre.modules.planner_language import strip_formatting
+        out = strip_formatting("## Header\nall `violated` first and **bold** __x__")
+        assert "`" not in out and "**" not in out and "__" not in out
+        assert not out.lstrip().startswith("#")
+        assert "violated" in out and "bold" in out and "Header" in out
+
+    def test_strip_formatting_leaves_structure(self):
+        from mre.modules.planner_language import strip_formatting
+        s = "=== q ===\n  - item\n[record: abcd1234...]\ncites IDS §5.1"
+        assert strip_formatting(s) == s          # brackets/bullets/§ untouched
+
+    def test_strip_formatting_idempotent(self):
+        from mre.modules.planner_language import strip_formatting
+        once = strip_formatting("`x` **y**")
+        assert strip_formatting(once) == once
+
+
+class TestNamedInput:
+    """CU4 (Session 4A.2b) — a defaulted-input finding names the INPUT (planner
+    words), the affected orders (capped), and a fix; never bare indices."""
+
+    def test_low_confidence_names_input_affected_and_fix(self):
+        finding = {
+            "code": "LOW_CONFIDENCE_INPUT", "severity": "warning",
+            "disposition": "proceeded_flagged", "module": "M3",
+            "evidence": {"attribute": "customer_weight", "affected_count": 13,
+                         "reason": "customer_weight is defaulted/synthesized for "
+                                   "13 demands; tardiness priority is unreliable"},
+            "subjects": [],
+        }
+        c = compose_finding_sentence(finding, None, None)
+        assert "customer priority weight" in c["cause"]
+        assert "customer_weight" not in c["cause"]      # raw column never leaks
+        assert "13 order" in c["cause"]
+        assert c["input"] == "the customer priority weight"
+        assert c["affected"]["count"] == 13
+        assert c["fix"] and "priority" in c["fix"].lower()
+
+
+class TestRegisterCoherence:
+    """CU2 (Session 4A.2b) — remediation/triage never contradict testimony. An
+    advisory finding (no gate outcome) renders "no action required", never
+    "nothing"/"clean" opposite a reported problem."""
+
+    def _advisory(self):
+        return [{"code": "LOW_CONFIDENCE_INPUT", "severity": "warning",
+                 "disposition": "proceeded_flagged", "module": "M3",
+                 "evidence": {"attribute": "customer_weight", "affected_count": 13},
+                 "subjects": []}]
+
+    def test_triage_advisory_not_nothing(self):
+        from mre.modules.triage import render_triage_body
+        body = render_triage_body(self._advisory())
+        assert "advisory" in body.lower() and "no action required" in body.lower()
+        assert "nothing to prioritize" not in body.lower()
+        assert "customer priority weight" in body
+
+    def test_remediation_advisory_not_nothing(self):
+        from mre.modules.remediation import render_remediation_body
+        body = render_remediation_body(self._advisory())
+        assert "advisory" in body.lower() and "no action required" in body.lower()
+        assert "nothing to remediate" not in body.lower()
+
+    def test_truly_clean_still_reads_clean(self):
+        from mre.modules.triage import render_triage_body
+        from mre.modules.remediation import render_remediation_body
+        assert "nothing to prioritize" in render_triage_body([])
+        assert "nothing to remediate" in render_remediation_body([])
+
+
 class TestRegisterSeam:
     """CU6 — the chip (API metadata) and the envelope (rendered footer) resolve
     through the SAME source, so they can never disagree."""
@@ -181,6 +255,14 @@ def _answer(explainer: Explainer, q: str, ctx=None) -> str:
     return TemplateRenderer().render(res.bundle)
 
 
+def _ask(explainer: Explainer, q: str, ctx=None):
+    """Return (AskResult, rendered_text) so a specimen can assert on route /
+    resolved_question / resolution_note as well as the prose."""
+    from mre.modules.interpreter import run_ask
+    res = run_ask(explainer, q, context=ctx)
+    return res, TemplateRenderer().render(res.bundle)
+
+
 @pytest.mark.slow
 class TestAuditCorpusClean:
     """The specimens whose correct answer is against the clean plan."""
@@ -248,6 +330,79 @@ class TestAuditCorpusClean:
     def test_cu3_drill_down_opens_a_finding(self, clean):
         a = _answer(clean, "tell me more about finding 1")
         assert "[WARNING]" in a or "warning" in a.lower()
+
+    # ------- Session 4A.2b — the listening-session specimens -------
+
+    def test_4b_cu1_why_late_names_the_culprit_order(self, clean):
+        # CU1 — the rendered sentence names the blocking ORDER + release time,
+        # not "busy with other work".
+        a = _answer(clean, "why is ORD-05 late")
+        assert "held by" in a.lower()
+        assert "busy with other work" not in a.split("Evidence chain")[0].lower()
+
+    def test_4b_cu1_blocked_by_pinned_into_llm_facts(self, clean):
+        # CU1 — the blocker is pinned as a fact the LLM must quote, so it can't be
+        # compressed back down to the driver phrase live.
+        from mre.modules.renderers import LLMRenderer
+        b = clean.answer("why is ORD-05 late")
+        facts = LLMRenderer()._extract_precomputed_facts(b)
+        assert facts.get("blocked_by_order")
+        assert facts.get("blocking_machine") == "CUT-01"
+        assert facts.get("blocking_until")
+
+    def test_4b_cu5_bare_why_resolves_to_cause_chain(self, clean):
+        ctx = {"history": [{"order": "ORD-05", "route": "late-order"}]}
+        res, a = _ask(clean, "but why?", ctx)
+        assert res.route == "late-order"
+        assert res.resolved_question == "why is ORD-05 late?"
+        assert "held by" in a.lower()
+
+    def test_4b_cu5_set_reference_clarifies(self, clean):
+        ctx = {"history": [{"order": "ORD-05", "route": "late-order"}]}
+        res, a = _ask(clean, "and 10 of those have issues?", ctx)
+        assert res.route == "CLARIFY"
+        assert "10 of ORD-05" not in a          # never the mangled rewrite
+        assert "group" in a.lower() or "which orders" in a.lower()
+
+    def test_4b_cu5_verification_clarifies(self, clean):
+        ctx = {"history": [{"order": "ORD-05", "route": "late-order"}]}
+        res, a = _ask(clean, "you said i have 10 orders with issues is that correct", ctx)
+        assert res.route == "CLARIFY"
+        assert "confirm" in a.lower() or "evidence" in a.lower()
+
+    def test_4b_cu6_fuzzy_ids_resolve_with_assumption(self, clean):
+        for q in ("why ir ord-o5 late", "why is ORD-5 late", "why is ord 05 late"):
+            res, a = _ask(clean, q)
+            assert res.route == "late-order", q
+            assert "ORD-05" in res.resolved_question, q
+            assert "assuming ORD-05" in res.resolution_note, q
+            assert "held by" in a.lower(), q
+
+    def test_4b_cu6_unresolvable_near_miss_says_so(self, clean):
+        # An id of this dataset's shape that resolves to nothing is not fuzzy-
+        # matched into a real order — it gets the honest "isn't in this schedule".
+        res, a = _ask(clean, "why is ORD-99 late")
+        assert res.route in ("unknown-entity", "late-orders")
+        assert "isn't in this schedule" in a.lower() or "excluded" in a.lower() \
+            or "ord-99" not in a.lower()
+
+    def test_4b_cu2_registers_agree_on_the_advisory(self, clean):
+        # CU2 end-to-end: testimony reports the problem; triage/remediation call it
+        # advisory (no action), never "clean"/"nothing" — and all name the input.
+        testimony = _answer(clean, "what data problems exist?").lower()
+        triage = _answer(clean, "what should I fix first?").lower()
+        remediation = _answer(clean, "how do i fix the problems").lower()
+        assert "customer priority weight" in testimony
+        assert "no action required" in triage and "nothing to prioritize" not in triage
+        assert "no action required" in remediation and "nothing to remediate" not in remediation
+        assert "customer priority weight" in triage
+
+    def test_4b_cu3_no_markdown_or_backticks_across_corpus(self, clean):
+        for q in ("why is ord-05 late", "what data problems exist?",
+                  "what should I fix first?", "how do i fix the problems",
+                  "what should I worry about today"):
+            a = _answer(clean, q)
+            assert "`" not in a and "**" not in a, f"formatting leaked in {q!r}: {a}"
 
     def test_cu6_no_jargon_leaks_across_the_corpus(self, clean):
         for q in ("why is ord-05 late", "what data problems exist?",
@@ -322,6 +477,21 @@ def test_cu10_zero_confident_wrong(clean, sabotaged):
          lambda a: "ord-05" in a.lower()),
         ("what data problems exist?", sabotaged, None,
          lambda a: "Total findings:" not in a),
+        # Session 4A.2b specimens
+        ("why ir ord-o5 late", clean, None, lambda a: "held by" in a.lower()),
+        ("why is ORD-5 late", clean, None, lambda a: "held by" in a.lower()),
+        ("but why?", clean, {"history": [{"order": "ORD-05", "route": "late-order"}]},
+         lambda a: "held by" in a.lower()),
+        ("and 10 of those have issues?", clean,
+         {"history": [{"order": "ORD-05", "route": "late-order"}]},
+         lambda a: "10 of ORD-05" not in a),
+        ("you said i have 10 orders with issues is that correct", clean,
+         {"history": [{"order": "ORD-05", "route": "late-order"}]},
+         lambda a: "Schedule for ORD-05" not in a),
+        ("what should I fix first?", clean, None,
+         lambda a: "nothing to prioritize" not in a.lower()),
+        ("how do i fix the problems", clean, None,
+         lambda a: "nothing to remediate" not in a.lower()),
     ]
     wrong = []
     for q, ex, ctx, ok in corpus:

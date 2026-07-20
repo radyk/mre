@@ -6111,3 +6111,112 @@ because the machine was wrong but because the answer was in the machine's
 vocabulary, not the planner's — the cure is one authored bridge (codes → plain
 cause), a relevance guard that refuses to answer the wrong noun, and an audit
 corpus that measures whether the differentiator is differentiating.
+
+
+## Amendment — 2026-07-20: Session 4A.2b — the listening-session findings
+
+Daryn's first live conversation with the finished 4A.2 voice (the question ledger
+is the transcript) surfaced four gaps between what 4A.2 CLAIMED and what it
+DELIVERED, plus two frontier items. Every specimen is in
+`_data/ledger/questions.jsonl` and is now a standing test. Backend-only
+(planner_language + explainer + interpreter + renderers + remediation/triage +
+ask_fallback_copy + the corpus + docs); no solver/model/contract/frontend changes.
+The pattern across all four: 4A.2 built the machinery correctly but the DELIVERY
+seam — the LLM rewrite, the register split, the formatting pass, the context
+resolver — could still undo it.
+
+**CU1 — the blocked-by chain must name the culprit.** The deterministic why-late
+sentence already read "It couldn't start until Tue 07:00 because CUT-01 was held
+by ORD-13 until Mon 18:50" — the culprit order and release time, exactly as
+wanted. But live (DEV build, `llm:true`) the LLM renderer compressed it back to
+the driver phrase "the machine was busy with other work": the blocker was in the
+EVIDENCE-chain text handed to the model, not in the PRE-COMPUTED FACTS it is told
+to quote verbatim, so the model was free to paraphrase it away. Fix:
+`LLMRenderer._extract_precomputed_facts` now emits `blocked_by_order`,
+`blocking_machine`, `blocking_until`, `blocked_start`, and (when elevated)
+`blocking_order_priority` — pinned facts the prompt contract forbids recomputing
+or dropping. The rendered sentence is the acceptance test (deterministic path
+unchanged; the LLM path can no longer summarize the culprit out).
+
+**CU2 — cross-register coherence.** Testimony ("what data problems exist?")
+reported "1 data-quality problem" (the validator's `LOW_CONFIDENCE_INPUT`
+advisory — `customer_weight` synthesized for 13 demands, disposition
+`proceeded_flagged`), while remediation and triage said "nothing to remediate" /
+"nothing to prioritize". The cause: testimony reads `all_findings()`; the
+certificate registers read `_certificate_findings()` (rule_id + gate outcome),
+which the advisory — a validator finding with neither — is absent from. The two
+registers were reasoning over different sets and contradicting each other. Fix:
+one source (`Explainer._report_findings()` = `all_findings()`) feeds both
+registers; `triage.advisory_findings()` splits the actionable set from the
+advisory rest, and the register bodies render advisory findings as "N advisory
+finding(s), no action required — …" (never "clean"/"nothing" opposite a reported
+problem). A truly clean submission still reads clean. Coherence is now structural:
+same finding set, different register verb.
+
+**CU3 — formatting leakage, all registers.** Markdown headers (the LLM's reworded
+remediation) and backtick code spans (the authored `` `violated` `` in the triage
+header; catalog/LLM prose) reached the planner as raw `#`/`**`/`` ` ``. Fix: a
+single seam — `planner_language.strip_formatting` — applied at both renderers'
+public entry points (`TemplateRenderer.render`, `LLMRenderer.render` /
+`render_judgment`, via a thin `_render_inner`), stripping markdown emphasis /
+backticks / ATX headers while leaving structural markers (`[record: …]`, the
+`===` banner, `- `/`• ` bullets, `§` cites) untouched. Not a per-route patch —
+one function every register passes through at delivery.
+
+**CU4 — subject / value / cause / fix on every finding path.** The advisory
+rendered as "10 orders rests on an input the system is only weakly sure of" — the
+generic finding phrase, a capped subject count, no named input, no fix. Fix:
+`compose_finding_sentence` now, for a finding carrying a defaulted/synthesized
+`attribute`, names the INPUT in planner words (`ATTRIBUTE_PHRASING`: `customer_weight`
+→ "the customer priority weight", never the raw column), reports the affected
+orders (a capped sample + the finding's own `affected_count`, 13 not the 10 capped
+subjects), and carries a fix (authored `INPUT_FIX`, else a code-level catalog
+fallback where one coaches something specific). `_catalog_fix` falls back to the
+finding-code fallback note when there is no rule_id, so a validator advisory still
+gets a fix. Citations never degenerate to bare indices — the affected orders are
+named.
+
+**CU5 — rewrite-confidence guard.** The context resolver blindly substituted the
+last order into any elliptical follow-up: "and 10 of those have issues?" became
+"and 10 of ORD-05 have issues?" (answered with ORD-05's schedule — nonsense), and
+"…is that correct" became "…is ORD-05 correct" (same). Meanwhile a bare "but why?"
+after a lateness answer refused outright. Fix, in `resolve_followup` before the
+generic substitution: (a) a bare "but why?" / "why?" / "so why" resolves to the
+last subject's cause-chain (→ "why is ORD-05 late?"), never a refusal; (b) a
+verification of a prior claim ("is that correct/right/sure") CLARIFIES ("I can't
+confirm a previous statement — re-ask what you want checked") — the assistant
+answers from evidence, not its own claims; (c) a SET-referring follow-up ("N of
+those/them", "how many of those") CLARIFIES naming the ambiguity ("'those' looks
+like a group, not one order — did you mean the flagged orders?"), never a
+single-order rewrite. Both mangled specimens are now tests; "but why?" answers.
+
+**CU6 — fuzzy entity tolerance.** "ord-o5" (letter-o for zero) fell to the
+late-orders LIST; "ORD-5" (unpadded) hit the relevance guard as an unresolvable
+mention; "ord 05" (space for hyphen) split into unresolved tokens. Fix: each real
+order ref compiles to a tolerant pattern (`Explainer._build_order_fuzzy` —
+optional separator, leading zeros optional, `o`/`0` interchangeable), and
+`rewrite_fuzzy_orders` rewrites a near-miss to its canonical ref with a VISIBLE
+assumption ("assuming ORD-05", surfaced through the same `resolved_question` /
+"interpreted as" channel as CU2). The learned relevance guard stays: an id of the
+dataset's shape that fuzzy-matches nothing is still the honest "isn't in this
+schedule" (a value collision drops both patterns — never guess).
+
+**The corpus.** `tests/test_ai_voice.py` gains the 4A.2b specimens: fast units
+(the strip seam, the named-input compose, register coherence) and slow corpus
+entries (the culprit-naming sentence, the blocker pinned into LLM facts, bare-why,
+the set/verification clarifies, the three fuzzy variants, the unresolvable
+near-miss, cross-register coherence end to end, no-markdown across the corpus),
+each folded into the zero-confident-wrong aggregate. Non-slow Python **1209
+passed** (was 1202; +12), 0 failed; the slow AI-voice corpus green; frontend
+untouched.
+
+**Frontier / named, not addressed.** The board's spatial "show me" (4A.2's CU8 →
+4A.3). UTC-vs-local clock labeling (the sentences render `07:00` in the run's
+epoch; a planner reads local — a labeling pass, not a data change). "Move it to a
+different machine" could bridge to the board-edit gesture rather than refuse
+(carried from 4A.2). Lesson: a claim proven in the deterministic template is not
+proven in DELIVERY — the LLM rewrite can compress a pinned fact, two registers
+reading two finding sets can contradict, a blind pronoun substitution can
+fabricate a question; the cure for each is to make the seam carry the truth (pin
+the fact, share the source, strip at one place, validate the rewrite) rather than
+trust that it will.

@@ -18,7 +18,7 @@ from typing import Any, Optional
 
 from mre.modules.explainer import ExplanationBundle
 from mre.modules.planner_language import (
-    driver_phrase, has_jargon, stage_name, strip_jargon,
+    driver_phrase, has_jargon, stage_name, strip_formatting, strip_jargon,
 )
 
 # Patterns for post-render validation
@@ -134,8 +134,11 @@ class TemplateRenderer:
     """Deterministic text renderer.  No external calls."""
 
     def render(self, bundle: ExplanationBundle) -> str:
-        return (self._render_body(bundle)
-                + f"\n[rendered by: template | register: {_register_for(bundle)}]")
+        # CU3 — the single delivery seam: strip markdown/backticks from every
+        # register's output here, so no register can leak formatting.
+        return strip_formatting(
+            self._render_body(bundle)
+            + f"\n[rendered by: template | register: {_register_for(bundle)}]")
 
     def _render_body(self, bundle: ExplanationBundle) -> str:
         lines: list[str] = []
@@ -543,6 +546,15 @@ class TemplateRenderer:
         prefix = f"  {ordinal}. " if ordinal else "  "
         sev = str(c.get("severity", "info")).upper()
         lines.append(f"{prefix}{c['cause']}  [{sev}]")
+        # CU4 — name the affected orders (a capped sample, never bare indices),
+        # so a finding that names an input still points at the orders it touched.
+        aff = c.get("affected") or {}
+        sample = aff.get("sample") or []
+        if sample:
+            more = ""
+            if aff.get("count") and aff["count"] > len(sample):
+                more = f" … {aff['count']} in all"
+            lines.append(f"       Affected: {', '.join(sample)}{more}")
         if c.get("layer_count", 0) > 1:
             where = ", ".join(c.get("layers", [])) or f"{c['layer_count']} layers"
             lines.append(f"       confirmed at {c['layer_count']} layers ({where})")
@@ -875,6 +887,12 @@ class LLMRenderer:
     })
 
     def render(self, bundle: ExplanationBundle) -> str:
+        # CU3 — the single delivery seam (mirrors TemplateRenderer.render): every
+        # register — testimony, remediation, judgment, the authored fallbacks —
+        # returns through _render_inner and is stripped of markdown/backticks here.
+        return strip_formatting(self._render_inner(bundle))
+
+    def _render_inner(self, bundle: ExplanationBundle) -> str:
         if bundle.subject_type in ("remediation", "triage"):
             return self._render_register(bundle)
         if bundle.subject_type in self._AUTHORED_COPY_SUBJECTS:
@@ -978,6 +996,10 @@ class LLMRenderer:
                     f"| register: {register}]")
 
     def render_judgment(self, question: str, history: Any, fallback_bundle: ExplanationBundle) -> str:
+        return strip_formatting(
+            self._render_judgment_inner(question, history, fallback_bundle))
+
+    def _render_judgment_inner(self, question: str, history: Any, fallback_bundle: ExplanationBundle) -> str:
         """Conversational turn in dialogue mode — reasons over prior evidence bundles."""
         if not self._available:
             body = TemplateRenderer()._render_body(fallback_bundle)
@@ -1086,6 +1108,18 @@ class LLMRenderer:
                 facts["lateness_hours"] = f"{kf['lateness_hours']}h"
         if kf.get("due_date"):
             facts["due_date"] = str(kf["due_date"])
+        # CU1 — the blocked-by chain, pinned as facts the model must QUOTE, never
+        # compress. Live, the LLM rewrote "held by ORD-04 until Mon 14:50" down to
+        # "busy with other work" (the driver phrase). Enumerate the culprit order,
+        # its machine, the release time, and its priority so it cannot be dropped.
+        blk = kf.get("blocked_by")
+        if blk:
+            facts["blocking_machine"] = str(blk.get("machine", ""))
+            facts["blocked_by_order"] = str(blk.get("blocker_order", ""))
+            facts["blocking_until"] = str(blk.get("until", ""))
+            facts["blocked_start"] = str(blk.get("my_start", ""))
+            if blk.get("blocker_priority"):
+                facts["blocking_order_priority"] = str(blk["blocker_priority"])
         return facts
 
     def _validate_testimony(

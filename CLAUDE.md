@@ -94,6 +94,55 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.2b — the
+listening-session findings 2026-07-20.** Daryn's first LIVE conversation with the
+4A.2 voice (the question ledger is the transcript) exposed four gaps between what
+4A.2 CLAIMED and what it DELIVERED — the machinery was right but the delivery seam
+(the LLM rewrite, the register split, the formatting pass, the context resolver)
+could still undo it. Backend-only (planner_language + explainer + interpreter +
+renderers + remediation/triage + ask_fallback_copy + corpus + docs); no
+solver/model/contract/frontend changes. **CU1 — the blocked-by chain names the
+culprit:** the deterministic why-late sentence already named the blocking order +
+release time ("CUT-01 was held by ORD-13 until Mon 18:50"), but the live LLM path
+compressed it back to the driver phrase ("busy with other work") because the
+blocker rode in the EVIDENCE text, not the PRE-COMPUTED FACTS the model must quote
+— now `_extract_precomputed_facts` pins `blocked_by_order`/`blocking_machine`/
+`blocking_until`/priority, quotable and uncompressible. **CU2 — cross-register
+coherence:** testimony read `all_findings()` and reported the validator's
+`LOW_CONFIDENCE_INPUT` advisory ("1 problem") while remediation/triage read only
+`_certificate_findings()` (rule_id + gate outcome) and said "nothing" — the two
+registers contradicting; now one source (`_report_findings()`) feeds both,
+`triage.advisory_findings()` splits actionable from advisory, and the bodies
+render "N advisory finding(s), no action required — …" (never "clean" opposite a
+reported problem; a truly clean run still reads clean). **CU3 — formatting
+leakage:** markdown/backtick stripping at ONE seam (`planner_language.strip_formatting`,
+applied at both renderers' public entry points), leaving `[record:]`/`===`/
+bullets/§ intact — not per-route. **CU4 — named input on every finding path:** a
+defaulted-input finding names the INPUT in planner words (`ATTRIBUTE_PHRASING`:
+`customer_weight` → "the customer priority weight", never the raw column), the
+affected orders (capped sample + `affected_count` 13, not the 10 capped subjects),
+and a fix (authored `INPUT_FIX`, else a code-level catalog fallback via the
+extended `_catalog_fix`); citations never degenerate to bare indices. **CU5 —
+rewrite-confidence guard** (`resolve_followup`): a bare "but why?" resolves to the
+last subject's cause-chain (→ "why is ORD-05 late?"), never a refusal; a
+verification of a prior claim ("is that correct") and a SET-referring follow-up
+("10 of those") CLARIFY (naming the ambiguity), never a mangled single-order
+rewrite ("10 of ORD-05"). **CU6 — fuzzy entity tolerance:** each real order ref
+compiles to a tolerant pattern (`_build_order_fuzzy`: optional separator, leading
+zeros optional, `o`/`0` interchangeable), so near-miss ids (ord-o5 / ORD-5 / ord
+05) resolve to the canonical order with a VISIBLE assumption ("assuming ORD-05",
+via the `resolved_question` channel); an id of the dataset's shape that matches
+nothing still gets the honest "isn't in this schedule". Every specimen entered the
+standing corpus (`tests/test_ai_voice.py`) and the zero-confident-wrong aggregate.
+**Non-slow Python 1209 passed** (was 1202; +7 fast), 0 failed; frontend untouched.
+**Frontier/named:** the board's spatial "show me" (4A.3); UTC-vs-local clock
+labeling; "move it to a different machine" bridging to the edit gesture rather
+than refusing. See the docs/04 2026-07-20 Session 4A.2b amendment and docs/07
+v2.29. Lesson: a claim proven in the deterministic template is not proven in
+DELIVERY — the seam (LLM rewrite, register split, pronoun substitution) can undo
+it; make the seam carry the truth (pin the fact, share the source, strip at one
+place, validate the rewrite) rather than trust it.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.2 — the
 voice (the AI/CERTIFICATE floor + the wow layer) 2026-07-20.** The founder's Glass
 Box close: *the core is trustworthy — I tried to catch it lying and could not; the

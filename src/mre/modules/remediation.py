@@ -26,7 +26,9 @@ from mre.contracts.ids_rules import (
     RULE_REGISTRY, RuleId, RuleOutcome, resolve_threshold_band,
 )
 from mre.contracts.vocabularies import FindingCode
-from mre.modules.triage import triage_findings
+from mre.modules.triage import (
+    _advisory_meaning, _render_advisory_only, advisory_findings, triage_findings,
+)
 
 _NUM_RE = re.compile(r"\d+(?:\.\d+)?%?")
 
@@ -219,7 +221,12 @@ def render_remediation_body(findings: list[dict], *,
     as the LLM path's fail-closed fallback."""
     catalog = catalog or load_catalog()
     items = build_remediation_items(findings, catalog, limit=limit)
+    advisory = advisory_findings(findings, catalog)
     if not items:
+        # CU2 — coherent with testimony: acknowledge advisory findings rather than
+        # claim there is nothing to remediate opposite a reported problem.
+        if advisory:
+            return _render_advisory_only(advisory)
         return f"{heading}: nothing to remediate — no non-satisfied findings."
     n = len(items)
     header = (f"{heading} — {n} finding(s), worst first:"
@@ -228,4 +235,10 @@ def render_remediation_body(findings: list[dict], *,
     for i, item in enumerate(items, 1):
         blocks.append(f"{i}. {item.text}")
         blocks.append("")
-    return "\n".join(blocks).rstrip()
+    body = "\n".join(blocks).rstrip()
+    if advisory and limit is None:
+        body += ("\n\n" + f"Plus {len(advisory)} advisory finding(s) "
+                 "(no action required):")
+        for f in advisory:
+            body += f"\n  - {_advisory_meaning(f)}"
+    return body

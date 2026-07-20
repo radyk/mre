@@ -1,6 +1,39 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.28 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.29 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.29:** **Session 4A.2b — the listening-session findings** 2026-07-20 (docs/04
+amendment). Daryn's first live conversation surfaced four delivery gaps between
+4A.2's claims and its behavior, plus frontier items; every specimen is in the
+question ledger and now in the standing corpus. **CU1 — the blocked-by chain names
+the culprit:** the deterministic why-late sentence already named the blocking
+order + release time ("CUT-01 was held by ORD-13 until Mon 18:50"); live, the LLM
+path compressed it back to the driver phrase ("busy with other work"), so the
+blocker (order, machine, release time, priority) is now PINNED into the LLM's
+pre-computed facts — quotable, never compressible. **CU2 — cross-register
+coherence:** testimony counted the advisory validator finding ("1 problem") while
+remediation/triage — reasoning over only gate-certificate findings — said
+"nothing"; the two registers now reason over the SAME finding set and render an
+advisory ("N advisory finding(s), no action required — …") rather than "clean"
+opposite a reported problem. **CU3 — formatting leakage:** markdown + backtick
+stripping at ONE delivery seam (`planner_language.strip_formatting`, applied in
+both renderers' public entry points), not per-route. **CU4 — named input on every
+finding path:** a defaulted-input finding names the INPUT in planner words ("the
+customer priority weight", never the raw column), the affected orders (capped
+sample + count), and a fix (authored `INPUT_FIX`, or a code-level catalog
+fallback). **CU5 — rewrite-confidence guard:** a bare "but why?" resolves to the
+last subject's cause-chain; a SET-referring follow-up ("10 of those") and a
+verification of a prior claim ("is that correct") CLARIFY instead of being mangled
+into a single-order question. **CU6 — fuzzy entity tolerance:** near-miss ids
+(ord-o5 / ORD-5 / ord 05) resolve to the canonical order with a visible assumption
+("assuming ORD-05"); an id of the dataset's shape resolving to nothing still gets
+the honest "isn't in this schedule". Backend-only (planner_language + explainer +
+interpreter + renderers + remediation/triage + ask_fallback_copy + corpus + docs);
+no solver/model/contract/frontend changes. Named/frontier (not addressed): the
+board's spatial "show me" (4A.3); UTC-vs-local clock labeling; "move it to a
+different machine" bridging to the edit gesture rather than refusing. Non-slow
+Python **1209 passed** (was 1202; +7 fast), 0 failed. See the docs/04 2026-07-20
+Session 4A.2b amendment.
 
 **v2.28:** **Session 4A.2 — the voice (the AI/CERTIFICATE floor + the wow layer)**
 2026-07-20 (docs/04 amendment). The founder's Glass Box close: *the core is

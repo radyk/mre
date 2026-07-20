@@ -79,6 +79,65 @@ STAGE_NAMES: dict[str, str] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Input attributes → the planner's word for them (Session 4A.2b CU4). A finding
+# that rests on a defaulted/synthesized input names the INPUT in plain language
+# (never the raw column name), plus an authored fix where one exists. Add, never
+# repurpose.
+# ---------------------------------------------------------------------------
+ATTRIBUTE_PHRASING: dict[str, str] = {
+    "customer_weight": "the customer priority weight",
+    "yield_factor": "the yield factor",
+    "run_rate_seconds": "the run rate",
+    "setup_minutes": "the setup time",
+    "due": "the due date",
+    "earliest_start": "the release date",
+    "quantity": "the order quantity",
+}
+
+# Authored one-line fixes for a weakly-known input, keyed by attribute. The
+# generic catalog fallback for LOW_CONFIDENCE_INPUT coaches nothing specific, so
+# the conversation carries the concrete fix (R-AI1(c): authored, human-edited).
+INPUT_FIX: dict[str, str] = {
+    "customer_weight": "Declare each order's customer priority (its weight) in "
+                       "the submission so tardiness ranking isn't defaulted.",
+    "yield_factor": "Provide the observed yield for each affected step so the "
+                    "quantity isn't run at a defaulted rate.",
+    "run_rate_seconds": "Provide the measured run rate for each affected step so "
+                        "durations aren't defaulted.",
+}
+
+
+def attribute_phrase(attr: Optional[str]) -> Optional[str]:
+    """Planner-language name for a defaulted/synthesized input attribute, or a
+    de-underscored fallback; None when absent."""
+    if not attr:
+        return None
+    return ATTRIBUTE_PHRASING.get(str(attr), str(attr).replace("_", " "))
+
+
+# ---------------------------------------------------------------------------
+# Formatting strip (Session 4A.2b CU3). Markdown emphasis / backtick code spans /
+# ATX headers leak into every register when the LLM rewords (remediation headers)
+# or when authored text quotes a term in backticks (the testimony `violated`
+# specimen). A SINGLE seam every register passes through at delivery, so no
+# per-route patch is needed. Structural markers a planner relies on ([record: …],
+# the === banner, "- "/"• " bullets, § citations) are left untouched.
+# ---------------------------------------------------------------------------
+_FORMATTING_RE = re.compile(r"`+|\*\*+|__+|~~")
+_ATX_HEADER_RE = re.compile(r"(?m)^[ \t]{0,3}#{1,6}[ \t]+")
+
+
+def strip_formatting(text: str) -> str:
+    """Remove markdown emphasis, backtick code spans, and ATX headers from a
+    rendered answer. Idempotent; leaves prose, brackets, and bullets intact."""
+    if not text:
+        return text
+    out = _FORMATTING_RE.sub("", text)
+    out = _ATX_HEADER_RE.sub("", out)
+    return out
+
+
 def stage_name(module: Optional[str]) -> str:
     """Friendly pipeline-stage label for a module id, or a neutral 'the system'."""
     if not module:
@@ -168,6 +227,32 @@ def finding_subject_label(finding: dict, identity_map: Any = None) -> str:
     return ", ".join(labels)
 
 
+def finding_affected(finding: dict, identity_map: Any = None) -> dict:
+    """The orders a finding touches, as a count + a capped sample of real order
+    labels (CU4 — never a wall of ids, never bare indices). Uses the finding's
+    own ``affected_count`` when it carries one (it can exceed the capped subjects
+    list), else the subject count."""
+    sample: list[str] = []
+    for s in finding.get("subjects", []) or []:
+        eid = s.get("entity_id") if isinstance(s, dict) else getattr(s, "entity_id", "")
+        if not eid:
+            continue
+        label = None
+        if identity_map is not None:
+            erefs = identity_map.external_refs(eid)
+            if erefs:
+                label = erefs[0].value
+        if label:
+            sample.append(label)
+        if len(sample) >= 3:
+            break
+    ev = finding.get("evidence", {}) or {}
+    count = ev.get("affected_count")
+    if not isinstance(count, int):
+        count = len(finding.get("subjects", []) or [])
+    return {"count": count, "sample": sorted(set(sample))}
+
+
 def finding_offending_value(finding: dict) -> Optional[str]:
     """The concrete offending value the finding recorded, if any — the number,
     the blank, the two disagreeing values. Pulled from evidence; None when the
@@ -196,23 +281,56 @@ def compose_finding_sentence(finding: dict, identity_map: Any = None,
       severity — the finding's own honest severity (Session 4.5)
     """
     code = finding.get("code", "")
+    ev = finding.get("evidence", {}) or {}
     subject = finding_subject_label(finding, identity_map)
     value = finding_offending_value(finding)
-    cause = f"{subject} {finding_phrase(code)}"
-    if value is not None:
-        cause += f" ({value})"
+    affected = finding_affected(finding, identity_map)
+    input_phrase = attribute_phrase(ev.get("attribute"))
+
+    # CU4 — a finding that rests on a defaulted/synthesized INPUT names the input
+    # in planner language (never the raw column), the affected orders, and why it
+    # matters — not a generic "rests on an input the system is only weakly sure
+    # of". The input is the subject of the sentence, so the cause is rebuilt.
+    if input_phrase and (ev.get("attribute") is not None):
+        n = affected.get("count") or 0
+        tail = _reason_tail(ev.get("reason"))
+        cause = (f"{input_phrase} is only weakly known"
+                 + (f" for {n} order(s)" if n else "")
+                 + (f", so {tail}" if tail else ""))
+    else:
+        cause = f"{subject} {finding_phrase(code)}"
+        if value is not None:
+            cause += f" ({value})"
+
     fix = None
     if catalog is not None:
         fix = _catalog_fix(finding, catalog)
+    if fix is None:
+        fix = INPUT_FIX.get(str(ev.get("attribute") or ""))
     return {
         "subject": subject,
         "value": value,
         "code": code,
         "cause": cause,
         "fix": fix,
+        "input": input_phrase,
+        "affected": affected,
         "severity": finding.get("severity", "info"),
         "disposition": finding.get("disposition", ""),
     }
+
+
+def _reason_tail(reason: Optional[str]) -> Optional[str]:
+    """The consequence clause of a finding's ``reason`` in planner words: the part
+    after the last ';', with the raw attribute name and 'demands' de-jargoned.
+    None when there's nothing useful to say."""
+    if not reason:
+        return None
+    tail = str(reason).split(";")[-1].strip()
+    tail = strip_jargon(tail)
+    tail = re.sub(r"\bdemands?\b", "orders", tail)
+    tail = re.sub(r"\bcustomer_weight\b", "customer priority", tail)
+    return tail or None
 
 
 _SEV_RANK = {"blocker": 0, "error": 1, "warning": 2, "info": 3}
@@ -249,20 +367,33 @@ def compose_findings(findings: list[dict], identity_map: Any = None,
 
 
 def _catalog_fix(finding: dict, catalog: Any) -> Optional[str]:
-    """The frozen catalog's authored one-line fix for a finding's rule, if the
-    finding carries a registry rule_id and the catalog has a note for it."""
+    """The frozen catalog's authored one-line fix for a finding: the rule-level
+    note's ``fix_looks_like`` when the finding carries a registry rule_id, else a
+    code-level fallback's guidance where one applies (CU4 — a validator advisory
+    with no rule still gets a fix). Generic-placeholder guidance is rejected."""
     ev = finding.get("evidence", {}) or {}
     rid = ev.get("rule_id")
-    if not rid:
-        return None
+    if rid:
+        try:
+            from mre.contracts.ids_rules import RuleId
+            note = catalog.note_for_rule(RuleId(rid))
+        except Exception:
+            note = None
+        if note is not None:
+            fix = getattr(note, "fix_looks_like", None) or getattr(note, "how_to_fix", None)
+            if fix:
+                return re.sub(r"\s+", " ", str(fix)).strip()
+    # No rule note — try a code-level fallback that actually coaches a fix.
+    code = finding.get("code", "")
     try:
-        from mre.contracts.ids_rules import RuleId
-        note = catalog.note_for_rule(RuleId(rid))
+        from mre.contracts.vocabularies import FindingCode
+        fb = catalog.fallback_for_code(FindingCode(code))
     except Exception:
-        return None
-    if note is None:
-        return None
-    fix = getattr(note, "fix_looks_like", None) or getattr(note, "how_to_fix", None)
-    if fix:
-        return re.sub(r"\s+", " ", str(fix)).strip()
+        fb = None
+    if fb is not None and getattr(fb, "remediation_applies", False):
+        guidance = re.sub(r"\s+", " ", str(getattr(fb, "guidance", "") or "")).strip()
+        # the catalog uses a placeholder ("generic; a rule-level note …") when it
+        # has nothing specific — don't surface that as a fix.
+        if guidance and "generic" not in guidance.lower():
+            return guidance
     return None

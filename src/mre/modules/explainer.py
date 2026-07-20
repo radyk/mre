@@ -314,6 +314,12 @@ class Explainer:
         #                         silently dropped into a schedule-wide answer.
         self._excluded_labels: set[str] = self._build_excluded_labels()
         self._order_shape_patterns: list[re.Pattern] = self._build_order_shapes()
+        # Fuzzy-id tolerance (Session 4A.2b CU6): each real order ref compiled to
+        # a pattern that also matches its near-miss spellings — a letter 'o' for a
+        # zero (ord-o5), a missing leading zero (ORD-5), a space for the hyphen
+        # (ord 05) — so a near-miss resolves (with a visible assumption) instead of
+        # falling to the wrong route. Built from the learned refs, never assumed.
+        self._order_fuzzy: list[tuple[re.Pattern, str]] = self._build_order_fuzzy()
 
     def _build_excluded_labels(self) -> set[str]:
         """Order ids excluded/blocked from the plan, from ANY layer's findings —
@@ -350,6 +356,53 @@ class Explainer:
             if any(ch.isalpha() for ch in value):  # ignore purely-numeric refs
                 shapes.add(f"^{pat}$")
         return [re.compile(s, re.IGNORECASE) for s in sorted(shapes)]
+
+    def _build_order_fuzzy(self) -> list[tuple[re.Pattern, str]]:
+        """One tolerant pattern per real order ref: its alpha prefix, then an
+        optional separator, then the numeric part with leading zeros optional and
+        'o'/'0' interchangeable. So ``ORD-05`` also matches ``ORD-5`` / ``ord-o5``
+        / ``ord 05``. Refs with no alpha prefix or no trailing number are skipped
+        (nothing to disambiguate); a value collision drops both (never guess)."""
+        out: list[tuple[re.Pattern, str]] = []
+        by_key: dict[tuple[str, int], list[str]] = {}
+        for value in self._order_refs.values():
+            m = re.match(r"^(.*?)(\d+)$", value)
+            if not m:
+                continue
+            prefix = m.group(1).rstrip(" -_")
+            if not prefix or not prefix[-1].isalpha():
+                continue
+            num = int(m.group(2))
+            by_key.setdefault((prefix.upper(), num), []).append(value)
+        for (prefix_u, num), values in by_key.items():
+            if len(values) != 1:
+                continue  # two refs share prefix+value — ambiguous, never guess
+            value = values[0]
+            prefix = re.match(r"^(.*?)\d+$", value).group(1).rstrip(" -_")
+            digits_re = "".join("[0oO]" if ch == "0" else re.escape(ch)
+                                for ch in str(num))
+            pat = re.compile(
+                rf"\b{re.escape(prefix)}[\s\-_]?[0oO]*{digits_re}\b", re.IGNORECASE)
+            out.append((pat, value))
+        return out
+
+    def rewrite_fuzzy_orders(self, question: str) -> tuple[str, list[tuple[str, str]]]:
+        """Rewrite each near-miss order id in the question to its canonical ref,
+        returning (new_question, [(matched_text, canonical_ref), …]). A token that
+        already resolves EXACTLY is left alone (not a near-miss). The caller
+        surfaces the assumption; an id matching nothing here is never rewritten."""
+        new_q = question
+        notes: list[tuple[str, str]] = []
+        for pat, ref in self._order_fuzzy:
+            m = pat.search(new_q)
+            if not m:
+                continue
+            matched = m.group(0)
+            if self._find_order_ref(matched):
+                continue  # exact already — not a near-miss
+            new_q = new_q[: m.start()] + ref + new_q[m.end():]
+            notes.append((matched.strip(), ref))
+        return new_q, notes
 
     def _order_mention(self, question: str) -> Optional[str]:
         """A token in the question that NAMES an order of this dataset but does
@@ -1401,8 +1454,19 @@ class Explainer:
                     break
         return hits
 
+    def _report_findings(self) -> list[dict]:
+        """The finding set the certificate registers reason over — the SAME set
+        testimony enumerates (Session 4A.2b CU2). remediation/triage previously
+        saw only gate-certificate findings (rule_id + outcome), so an ACCEPTED
+        submission carrying a validator ADVISORY (a real warning that proceeded)
+        made testimony say "1 problem" while remediation/triage said "nothing" —
+        the two registers contradicting each other. Reasoning over one source
+        makes them coherent by construction; the register bodies split actionable
+        from advisory themselves."""
+        return self._index.all_findings()
+
     def _explain_how_to_fix(self, question: str, limit: Optional[int]) -> ExplanationBundle:
-        findings = self._certificate_findings()
+        findings = self._report_findings()
         return ExplanationBundle(
             question=question,
             subject_id=self._snap_id,
@@ -1415,7 +1479,7 @@ class Explainer:
         )
 
     def _explain_fix_first(self, question: str) -> ExplanationBundle:
-        findings = self._certificate_findings()
+        findings = self._report_findings()
         return ExplanationBundle(
             question=question,
             subject_id=self._snap_id,
