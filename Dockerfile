@@ -96,6 +96,12 @@ COPY tests ./tests
 COPY tools ./tools
 COPY sample_data ./sample_data
 COPY sample_data_v2 ./sample_data_v2
+# Spec text + the committed Glass Box dataset are test INPUTS: spec-derived
+# tests read docs/ (test_remediation_catalog lints against docs/06) and the
+# gate/sabotage tests read datasets/glass_box. Neither ships in the runtime
+# image. (session 2.4b — the first real container build found these absent.)
+COPY docs ./docs
+COPY datasets ./datasets
 RUN chown -R mre:mre /app
 
 USER mre

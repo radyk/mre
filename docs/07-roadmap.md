@@ -1,6 +1,41 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.31 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.32 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.32:** **Session 2.4b (partial) — the FIRST real container build; in-container
+CI CONFIRMED** 2026-07-21 (docs/04 amendment). Docker became available, so the 2.4
+CU1 carry-forward ran: build the image per the Dockerfile and run the fast suite
+INSIDE the built container (green CI on the image AS SHIPPED, not the checkout).
+The never-built image found **seven** fixes across the four predicted classes —
+(1) **lockfile drift**: `numpy==2.5.1` needs Python ≥3.12 but the image ships
+3.11-slim → repinned `numpy==2.4.6` (the lock had been regenerated on a 3.14 host;
+a base bump was rejected — it would break the pinned ortools cp311 wheel); (2)
+**missing runtime dep**: `mre.catalog` imports `yaml` (reached by the certificate's
+remediation register) but PyYAML was in neither lock → added `pyyaml==6.0.3` (the
+shipped image couldn't import the register until this); (3) **missing test inputs**:
+`docs/` was `.dockerignore`-excluded and `datasets/` never COPYd, but spec-derived
+tests read `docs/06` and the Glass Box gate/sabotage tests read `datasets/glass_box`
+→ un-ignored docs + `COPY docs`/`COPY datasets` into the **test** stage only
+(runtime stays lean); (4) **a shipped-code bug the mock hid** (mocked≠real, cf.
+4A.1b): a dead unguarded `import anthropic` in `LLMRenderer._call_llm`/`_llm_judgment`
+made an injected-client render raise `ModuleNotFoundError` wherever the SDK is
+absent → removed (the guarded construction import stays); (5) **latent fragility**:
+`mre.demo`'s `__file__`-relative sample-data path resolved into the venv when
+installed → robust `_sample_data_dir` (env / checkout / cwd); (6) **layout
+assumptions**: three architectural guards (`declared_but_unread`, explainer
+NoWritePath, solver_builder SixInputRule) read `src/` source the image omits →
+resolve via the imported package's `__file__` (the source that actually ships).
+**Verified:** runtime image builds as shipped; **1200 passed / 23 skipped / 0
+failed inside the built test image**; compose stack up (API + `/data` ext4 volume,
+non-root `mre`); **`/health` from INSIDE the container**; **`deploy/smoke.py`
+against the CONTAINERIZED API** → ACCEPTED/C1, 60 assignments, 2.31 s. **The 2.4b
+qualification PARTIALLY retires — in-container CI CONFIRMED; live `az deployment` +
+cloud smoke remain PARKED on the Azure trigger** (no live subscription). See the
+docs/04 2026-07-21 Session 2.4b amendment. Lesson: a never-built image always has
+something; the stale-install false-green lesson applies to images — make the
+artifact match reality (pin the shipped Python, ship what you import, copy what
+tests read) and point layout-coupled code/tests at the installed package, not the
+checkout.
 
 **v2.31:** **Session 4B.2 — the pilot_scale plant + the measurements that decide
 the slicing architecture** 2026-07-21 (docs/04 R-SC1/R-SC2 rulings + amendment).

@@ -1135,7 +1135,11 @@ class LLMRenderer:
         return prompt_text, known_ts, known_time, known_machines, known_records
 
     def _call_llm(self, prompt_text: str) -> str:
-        import anthropic  # type: ignore
+        # No `import anthropic` here: the client is already built (or injected)
+        # by __init__, so this path must not require the SDK to be importable.
+        # The stray import made an injected-client call fail with
+        # ModuleNotFoundError wherever the package is absent — masked on any dev
+        # host that happened to have it installed (session 2.4b, in-container).
         response = self._client.messages.create(
             model=self._model,
             max_tokens=512,
@@ -1228,7 +1232,7 @@ class LLMRenderer:
 
     def _llm_judgment(self, question: str, history: Any) -> str:
         prompt = self._build_judgment_prompt(question, history)
-        import anthropic  # type: ignore
+        # See _call_llm: the client is already built/injected; no SDK import here.
         response = self._client.messages.create(
             model=self._model,
             max_tokens=512,

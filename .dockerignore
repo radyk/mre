@@ -23,9 +23,16 @@ runs/
 raw_data/
 raw_data_profile.md
 
-# Docs and deploy scaffolding are not needed to build/run the service image
-docs/
+# Legacy and deploy scaffolding are not needed to build/run the service image.
+# docs/ IS in the context: spec-derived tests read the spec text (e.g.
+# test_remediation_catalog lints the catalog against docs/06). Only the test
+# stage COPYs docs/ + datasets/ — the shipped runtime stage copies neither, so
+# it stays lean (session 2.4b, first real container build).
 legacy/
 deploy/
 *.md
 !README.md
+
+# Generated gate output inside committed datasets is never source (mirrors
+# .gitignore); keep it out of the test image so a stale run never ships.
+datasets/**/gate_output/

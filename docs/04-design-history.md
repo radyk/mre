@@ -6495,3 +6495,115 @@ per-machine op count) at once while a look-ahead pull keeps the far-due monster
 job on time — proven, not asserted, by the with/without-gravity counterfactual.
 The window that matters is the plant's own lead time, and you FIND it (the knee),
 you don't guess it.
+
+## Amendment — 2026-07-21: Session 2.4b (partial) — the FIRST real container build (in-container CI confirmed)
+
+Docker became available on the dev machine, so the session 2.4 CU1 carry-forward
+finally ran: **build the image per the existing Dockerfile and run the fast suite
+INSIDE the built container** — green CI on the image *as shipped*, not the
+checkout (the stale-install false-green lesson, applied to images). As predicted,
+the first real build of a never-built image found several things; each is named
+below, fixed, and re-verified. (Operational note only: the local Docker engine
+had to be relaunched once — its `docker-desktop` WSL distro had not provisioned on
+first install — before any build could run. No repo relevance.)
+
+**What the build found — seven fixes across the four predicted classes (lockfile
+drift · missing deps · missing COPY entries · path assumptions).**
+
+1. **Lockfile drift (runtime build, stage 1).** `requirements.lock` pinned
+   `numpy==2.5.1`, but numpy 2.5.x **requires Python ≥3.12** while the image ships
+   `python:3.11-slim` (a deliberate, pinned choice — the `ortools==9.15.6755`
+   cp311 wheel + the `test_ortools_pin` drift guard target 3.11). The lock had
+   been regenerated on the current **Python 3.14** dev host, so its transitive
+   numpy pin drifted to a version the shipped interpreter cannot install. Fix:
+   pin `numpy==2.4.6` (the newest release installable on 3.11) with a comment
+   tying the pin to the Dockerfile base — **not** a base-image bump, which would
+   break the pinned ortools wheel.
+
+2. **Missing runtime dependency (in-container collection).** `mre.catalog.models`
+   does a top-level `import yaml` (it loads the frozen `remediation-catalog-v1.yaml`),
+   reached at runtime by `mre.modules.remediation` — the certificate's remediation
+   register — yet **PyYAML was pinned in neither lock**. The shipped runtime image
+   therefore could not import `mre.modules.remediation` at all; the certificate
+   remediation path would crash `ModuleNotFoundError` in the container. It only
+   worked on the dev host because PyYAML happened to be installed there. Fix: add
+   `pyyaml==6.0.3` to `requirements.lock` (a genuine *runtime* dependency, not
+   dev). A guarded scan confirmed the only other unlocked third-party import in
+   `src/mre` is `anthropic`, which is *deliberately* absent and lazily/try-guarded
+   (fail-closed to the template) — correctly not locked.
+
+3. **Missing test inputs — COPY entries + a `.dockerignore` exclusion.** The
+   `test` stage never received two directories the suite reads: `docs/` (excluded
+   by `.dockerignore`; `test_remediation_catalog` lints the catalog's §-citations
+   against `docs/06-incoming-data-spec.md` at collection time) and `datasets/`
+   (the 11 non-slow Glass Box gate/sabotage tests read `datasets/glass_box`). Fix:
+   drop the blanket `docs/` exclusion so it enters the build context, `COPY docs`
+   + `COPY datasets` into the **test** stage only (the shipped runtime stage
+   copies neither, so it stays lean), and add `datasets/**/gate_output/` to
+   `.dockerignore` to mirror `.gitignore`.
+
+4. **A shipped-code bug the mock had hidden (mocked ≠ real, again — cf. 4A.1b).**
+   `LLMRenderer._call_llm` and `_llm_judgment` each did a **dead, unguarded**
+   `import anthropic` — unused (both use the already-built/injected `self._client`).
+   With a fake client injected (as the fail-closed and judgment suites do) and the
+   SDK absent (as in the shipped image), that stray import raised
+   `ModuleNotFoundError`, degrading the render to the template — so nine LLM tests
+   that assert `[rendered by: LLM …]` failed. On any dev host with `anthropic`
+   installed the import was a silent no-op, which is exactly why it was never
+   caught. Fix: remove both dead imports (the *legitimate* guarded construction
+   import in `__init__` stays). A caller that supplies a client must not need the
+   SDK importable — defense in depth over the 4A.1b/4A.1c fail-closed seals.
+
+5. **Latent shipped-code fragility — a repo-layout data path.** `mre.demo`
+   computed `SAMPLE_DATA_V1 = Path(__file__).parent.parent.parent / "sample_data"`,
+   which resolves to the repo root in a source checkout but **into the venv**
+   (`/opt/venv/lib/python3.11/sample_data`) when the wheel is installed — so the
+   demo pipeline broke in the container (21 `test_demo` errors). Fix: a
+   `_sample_data_dir` helper resolving `MRE_SAMPLE_DATA_ROOT` → source-checkout
+   path (if it exists) → cwd (where the test image COPYs the data into the pytest
+   rootdir). Identical behavior on the host; robust when installed.
+
+6. **Test/layout assumptions — three architectural guards read the checkout, not
+   the artifact.** `test_declared_but_unread` (the declared-but-unread guard),
+   `test_explainer::TestNoWritePath` (M10 has no write path), and
+   `test_solver_builder::TestSixInputRule` (the Solver Builder never reads the
+   provenance sidecar) all read module **source** from a hardcoded `src/mre/…`
+   path — but the test image deliberately omits `src/` so `import mre` resolves to
+   the installed wheel. Fix: resolve each module's source via the **imported
+   package** (`Path(mre_module.__file__)`), which reads `site-packages/mre` in the
+   image and `src/mre` in a checkout — the same source, and now the source that
+   actually ships.
+
+**Verification (all green).** Runtime image builds as shipped (593 MB, non-root
+`mre`, curl healthcheck); the test image (1.24 GB, `FROM runtime` + dev lock +
+suites) runs `pytest -q -m "not slow"` **inside the built image → 1200 passed, 23
+skipped, 0 failed, 0 errors** (85 s; the 23 skips are environment-conditional —
+raw_data gauntlet absent, no live LLM key — not silent failures; the count differs
+slightly from the host's 1209 for the same reason). The **compose stack** comes up
+locally (API + a named `/data` ext4 volume, `data_root_writable:true`); **`/health`
+responds from INSIDE the container** (`docker exec … curl localhost:8000/health` →
+`status: ok`) and from the host's published port; and **`deploy/smoke.py` runs
+against the CONTAINERIZED API** (not bare uvicorn) → gate ACCEPTED/C1, a 60-
+assignment schedule + one what-if, 2.31 s (clean_small; the assignment count
+matches the scale-ladder baseline). The CI workflow (`.github/workflows/ci.yml`)
+already encodes exactly this sequence; these fixes make its steps pass unchanged.
+
+**The 2.4b qualification PARTIALLY retires.** *In-container CI is CONFIRMED* — the
+image builds, the fast suite is green inside the shipped layers, the compose stack
+serves `/health`, and the provider-agnostic smoke passes against the container.
+**Live `az deployment group create` + a cloud smoke run remain PARKED on the Azure
+trigger** (no live subscription; the Bicep is still ARM-unvalidated), per the
+pilot-prep ruling — deploy-verified-**in-container** now, deploy-verified-**in-cloud**
+still outstanding. docs/07 carry-forward updated in lockstep.
+
+Lesson: a never-built image always has something, and every one of these was
+invisible until the artifact itself was built and run — the lock resolves against
+the dev host's Python, not the image's; a dependency imported by shipped code sits
+unlocked because the host happened to have it; a `.dockerignore` and a COPY
+manifest silently omit what the suite reads; a stray SDK import passes wherever the
+SDK is installed; and code or tests that compute paths from `__file__`/`src/` bind
+to the checkout, not the wheel. The cure is uniform: make the artifact match
+reality — pin to the shipped interpreter, ship what you import, copy what you
+read — and point layout-coupled code and tests at the **installed package**, never
+the source tree. The stale-install false-green lesson applies to images too;
+building one is the only way to learn what it assumed.

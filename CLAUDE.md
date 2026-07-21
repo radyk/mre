@@ -94,6 +94,71 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 2.4b (partial) — the
+FIRST real container build; in-container CI CONFIRMED 2026-07-21.** Docker became
+available on the dev machine, so the session 2.4 CU1 carry-forward finally ran:
+build the image per the existing Dockerfile and run the fast suite **INSIDE the
+built container** — green CI on the image AS SHIPPED, not the checkout (the
+stale-install false-green lesson, applied to images). The first build of a
+never-built image found **seven** fixes across the four predicted classes
+(lockfile drift · missing deps · missing COPY entries · path assumptions), each
+named honestly in docs/04. **(1) Lockfile drift:** `requirements.lock` pinned
+`numpy==2.5.1`, which requires Python ≥3.12, but the image ships `python:3.11-slim`
+(a deliberate pin — the `ortools==9.15.6755` cp311 wheel + `test_ortools_pin`
+target 3.11); the lock had been regenerated on the current **Python 3.14** dev
+host → repinned `numpy==2.4.6` (newest 3.11-installable), NOT a base bump (which
+would break the pinned ortools wheel). **(2) Missing runtime dep:**
+`mre.catalog.models` does a top-level `import yaml` (loads the frozen remediation
+catalog), reached at runtime by `mre.modules.remediation` (the certificate's
+remediation register), but **PyYAML was in neither lock** — the shipped image
+could not import the register (worked on the host only because PyYAML happened to
+be installed) → added `pyyaml==6.0.3` to `requirements.lock` (a real runtime dep;
+`anthropic` is correctly NOT locked — it is lazily/try-guarded, fail-closed).
+**(3) Missing test inputs:** the `test` stage never received `docs/`
+(`.dockerignore`-excluded; `test_remediation_catalog` lints §-cites against
+`docs/06` at collection) or `datasets/` (11 non-slow Glass Box gate/sabotage tests
+read `datasets/glass_box`) → dropped the blanket `docs/` exclusion, `COPY docs` +
+`COPY datasets` into the **test stage only** (runtime stays lean), added
+`datasets/**/gate_output/` to `.dockerignore`. **(4) A shipped-code bug the mock
+hid (mocked≠real, cf. 4A.1b):** `LLMRenderer._call_llm`/`_llm_judgment` each did a
+**dead, unguarded** `import anthropic` (unused — the client is injected/prebuilt),
+so an injected-fake-client render raised `ModuleNotFoundError` wherever the SDK is
+absent, degrading nine LLM tests to the template; masked on any host with
+`anthropic` installed → removed both (the guarded construction import in `__init__`
+stays). **(5) Latent fragility:** `mre.demo`'s `SAMPLE_DATA_V1 =
+Path(__file__).parent.parent.parent / "sample_data"` resolves into the venv when
+installed (21 `test_demo` errors) → robust `_sample_data_dir` (env override /
+source-checkout / cwd). **(6) Layout assumptions:** three architectural guards
+(`declared_but_unread`, explainer `TestNoWritePath`, solver_builder
+`TestSixInputRule`) read module source from a hardcoded `src/mre/…` path the image
+omits by design → resolve the source via the **imported package** (`Path(module
+.__file__)`) — reads `site-packages/mre` in the image, `src/mre` in a checkout, the
+same source, and now the source that actually ships. **Verified all green:**
+runtime image builds as shipped (593 MB, non-root `mre`, curl healthcheck); the
+fast suite runs **inside the built test image → 1200 passed, 23 skipped, 0 failed,
+0 errors** (85 s; the 23 skips are environment-conditional — raw_data gauntlet
+absent, no live LLM key — not silent failures); the **compose stack** comes up
+(API + a named `/data` ext4 volume, `data_root_writable:true`); **`/health`
+responds from INSIDE the container** (`docker exec … curl localhost:8000/health` →
+`status: ok`) and the host port; and **`deploy/smoke.py` runs against the
+CONTAINERIZED API** (not bare uvicorn) → gate ACCEPTED/C1, a 60-assignment schedule
++ one what-if, 2.31 s (matching the scale-ladder baseline). The CI workflow already
+encodes exactly this sequence; the fixes make its steps pass unchanged. **The 2.4b
+qualification PARTIALLY retires: in-container CI CONFIRMED; live `az deployment
+group create` + cloud smoke remain PARKED on the Azure trigger** (no live
+subscription; the Bicep is still ARM-unvalidated), per the pilot-prep ruling —
+deploy-verified-**in-container** now, deploy-verified-**in-cloud** still
+outstanding. No solver/model/contract/frontend changes; 8 files (requirements.lock
++ Dockerfile + .dockerignore + `demo.py` + `renderers.py` + three guard tests).
+See the docs/04 2026-07-21 Session 2.4b amendment and docs/07 v2.32. Lesson: a
+never-built image always has something, invisible until you build and run the
+artifact itself — the lock resolves against the dev host's Python not the image's,
+a dependency imported by shipped code sits unlocked because the host had it, a
+`.dockerignore`/COPY manifest silently omits what the suite reads, a stray SDK
+import passes wherever the SDK is installed, and `__file__`/`src/`-relative paths
+bind to the checkout not the wheel; the cure is uniform — make the artifact match
+reality and point layout-coupled code and tests at the installed package.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.2 — the pilot_scale
 plant + the measurements that decide the slicing architecture 2026-07-21.** Two
 rulings transcribed verbatim into docs/04. **R-SC1** — the historical ticketing
@@ -1715,10 +1780,11 @@ becomes the default when the Phase-3 publish workflow exists (auto-warm is
 opt-in until then) · **pool must become slice-aware before serving
 sliced-mode schedules** (2.3 probe carry: members rebuild from the run's
 M5 horizon, not a sliced run's per-slice selection) · **cloud deploy
-in-cloud confirmation** (2.4 carry: live `az deployment` from `deploy/azure/`
-+ cloud smoke, and the first in-container CI run — Docker/Azure both
-unavailable in session 2.4, so verified locally only). [extractor
-sunk-setup billing — RESOLVED 2.4 CU0.5.]
+in-cloud confirmation** (2.4 carry, PARTIALLY retired 2.4b: the **in-container
+CI run is now CONFIRMED** — image built + fast suite green inside it + compose
+`/health` + containerized smoke; **live `az deployment` from `deploy/azure/` +
+cloud smoke remain PARKED** on the Azure trigger, Bicep still ARM-unvalidated).
+[extractor sunk-setup billing — RESOLVED 2.4 CU0.5.]
 
 **Do not hand-maintain a duplicate task list here** — docs/07 is authoritative
 and updated same-day per its W2 rule; this section records only position,

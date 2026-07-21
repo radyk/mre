@@ -26,7 +26,10 @@ from mre.modules.renderers import TemplateRenderer, _resolve_name
 class TestNoWritePath:
     def test_explainer_does_not_import_reporter(self):
         import ast
-        src = Path("src/mre/modules/explainer.py").read_text(encoding="utf-8")
+        import mre.modules.explainer as _explainer_mod
+        # Read the source of the IMPORTED module (site-packages in the shipped
+        # image, src/mre in a checkout) — not a hardcoded src/ path the image omits.
+        src = Path(_explainer_mod.__file__).read_text(encoding="utf-8")
         tree = ast.parse(src)
         imported_names = []
         for node in ast.walk(tree):
@@ -43,7 +46,10 @@ class TestNoWritePath:
 
     def test_explainer_does_not_import_snapshot_writer(self):
         import ast
-        src = Path("src/mre/modules/explainer.py").read_text(encoding="utf-8")
+        import mre.modules.explainer as _explainer_mod
+        # Read the source of the IMPORTED module (site-packages in the shipped
+        # image, src/mre in a checkout) — not a hardcoded src/ path the image omits.
+        src = Path(_explainer_mod.__file__).read_text(encoding="utf-8")
         tree = ast.parse(src)
         imported_names = []
         for node in ast.walk(tree):

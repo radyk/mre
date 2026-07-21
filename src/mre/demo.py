@@ -8,6 +8,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import sys
 from datetime import datetime, timezone
@@ -15,8 +16,29 @@ from pathlib import Path
 
 UTC = timezone.utc
 
-SAMPLE_DATA_V1 = Path(__file__).parent.parent.parent / "sample_data"
-SAMPLE_DATA_V2 = Path(__file__).parent.parent.parent / "sample_data_v2"
+
+def _sample_data_dir(name: str) -> Path:
+    """Locate a committed sample-data directory.
+
+    The sample data is repo fixture data, not packaged into the wheel, so a
+    ``__file__``-relative path only resolves in a source checkout. Resolve it
+    robustly instead: an explicit ``MRE_SAMPLE_DATA_ROOT`` wins; otherwise the
+    source-checkout location (repo_root/<name>, three parents up) if it exists;
+    otherwise the current working directory (where the test image COPYs
+    sample_data/ into the pytest rootdir). (session 2.4b: the installed wheel's
+    ``__file__``-relative path pointed into the venv and broke the demo.)
+    """
+    override = os.environ.get("MRE_SAMPLE_DATA_ROOT")
+    if override:
+        return Path(override) / name
+    checkout = Path(__file__).resolve().parent.parent.parent / name
+    if checkout.exists():
+        return checkout
+    return Path.cwd() / name
+
+
+SAMPLE_DATA_V1 = _sample_data_dir("sample_data")
+SAMPLE_DATA_V2 = _sample_data_dir("sample_data_v2")
 
 
 def _sep(title: str) -> None:

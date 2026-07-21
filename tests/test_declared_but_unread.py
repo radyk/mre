@@ -150,10 +150,17 @@ def adapter_provenance():
 
 @pytest.fixture(scope="module")
 def consumer_source():
+    # Resolve each module's source via the IMPORTED package, not a hardcoded
+    # "src/" path: the installed wheel (the shipped-image layout the CI runs
+    # against) has the source under site-packages/mre, not src/. In a source
+    # checkout mre.__file__ still points into src/mre, so this reads the same
+    # files either way — and it tests the source that actually ships.
+    import mre
+    pkg = Path(mre.__file__).resolve().parent               # .../mre
     text = ""
-    root = Path(__file__).parent.parent
     for rel in _CONSUMER_MODULES:
-        text += (root / rel).read_text(encoding="utf-8")
+        sub = rel.split("src/mre/", 1)[-1]                  # -> "modules/validator.py"
+        text += (pkg / sub).read_text(encoding="utf-8")
     return text
 
 

@@ -24,9 +24,20 @@ pydantic-core==2.46.4
 annotated-types==0.7.0
 typing_extensions==4.15.0
 
+# --- remediation catalog (YAML loader for remediation-catalog-v1.yaml) ---
+# Imported at module load by mre.catalog.models (shipped runtime code, reached
+# by the certificate's remediation register). Was installed on the dev host but
+# never locked — the shipped image could not import mre.modules.remediation
+# until this was added (session 2.4b, first real container build).
+pyyaml==6.0.3
+
 # --- solver (OR-Tools CP-SAT) ---
 ortools==9.15.6755
-numpy==2.5.1
+# numpy is a transitive OR-Tools dep. Pinned to the newest release installable
+# on the SHIPPED interpreter (python:3.11-slim); 2.5.x requires Python >=3.12.
+# Keep this consistent with the Dockerfile base when regenerating the lock on a
+# newer dev host (session 2.4b: the lock had drifted to a 3.12+-only numpy).
+numpy==2.4.6
 protobuf==6.33.6
 absl-py==2.5.0
 immutabledict==4.3.1

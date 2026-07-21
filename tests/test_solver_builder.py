@@ -142,8 +142,10 @@ class TestSixInputRule:
         """The Solver Builder must never read the provenance sidecar (docs/01 §8.6)."""
         import ast
         from pathlib import Path
-        src = (Path(__file__).parent.parent /
-               "src" / "mre" / "modules" / "solver_builder.py").read_text()
+        import mre.modules.solver_builder as _sb_mod
+        # Source of the IMPORTED module (site-packages in the shipped image,
+        # src/mre in a checkout) — not a hardcoded src/ path the image omits.
+        src = Path(_sb_mod.__file__).read_text()
         tree = ast.parse(src)
         for node in ast.walk(tree):
             if isinstance(node, (ast.Import, ast.ImportFrom)):
