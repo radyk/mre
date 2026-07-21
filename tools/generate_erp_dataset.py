@@ -141,6 +141,17 @@ SCENARIOS: dict[str, dict[str, Any]] = {
         with_customers=False, cost_profile="C1",
         busy_board=True, feel=True,
     ),
+    # The pilot_scale plant (Session 4B.2, R-SC1/R-SC2): a hand-AUTHORED plant
+    # at the historical extract's VOLUME, sized against pilot_profile.json.
+    # 15 machines in capability groups with honest differing rates, setup
+    # families, populated priorities, splittable long jobs. Not a gate-anomaly
+    # scenario (feel=True → a scale marker, not a truth manifest); it is the
+    # substrate for the rolling-horizon measurements (tools/pilot_measurements.py).
+    "pilot_scale": dict(
+        orders=400, resources=15, facilities=1, anomalies=[],
+        with_customers=False, cost_profile="C2",
+        pilot_scale=True, feel=True,
+    ),
 }
 
 
@@ -950,6 +961,291 @@ def _apply_busy_board(ds: Dataset, rng: random.Random) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# pilot_scale — the authored plant sized against pilot_profile.json (Session
+# 4B.2, R-SC1). The profile (extracted from the historical ticketing data) is
+# INTELLIGENCE: it supplies volumes, order-size distribution, family
+# cardinality, machine count, and lead-time shape. Every plant PHYSICS value —
+# calendars, downtime, capability groups + alternates at honest differing
+# rates, setup families, priority/customer weights, splittable long jobs — is
+# AUTHORED HERE, deliberately, at Glass-Box discipline. See
+# datasets/pilot_scale/PREDICTIONS.md for the behaviors predicted before solving.
+# ---------------------------------------------------------------------------
+
+# Capability groups (single facility). Each machine carries a $/h cost_rate; a
+# group's alternates give the operation a real cross-machine choice. Two flavors
+# of "honest differing rate":
+#   * a $/h split at equal speed (CUT / MILL / FINISH),
+#   * a run-TIME split at equal $/h (the fast/slow PRESS pair — glass_box's
+#     RT-BRACKET pattern; the slow machine bills its own longer duration).
+_PILOT_MACHINES = {
+    "CUT":    [("CUT-01", 55.0), ("CUT-02", 58.0), ("CUT-03", 62.0)],
+    "PRESS":  [("PRESS-FAST", 60.0), ("PRESS-SLOW", 60.0)],
+    "MILL":   [("MILL-01", 65.0), ("MILL-02", 68.0)],
+    "PAINT":  [("PAINT-01", 50.0), ("PAINT-02", 50.0)],
+    "HEAT":   [("HEAT-01", 70.0), ("HEAT-02", 70.0)],   # own calendar CAL-HEAT
+    "FINISH": [("FINISH-01", 45.0), ("FINISH-02", 47.0), ("FINISH-03", 49.0)],
+    "ASM":    [("ASM-01", 80.0)],                        # single-machine bottleneck
+}
+
+# For the PRESS pair, the slow alternate runs at 2x the per-unit time. Expressed
+# per docs/06 §5.3 as a per-alternative run_minutes_per_unit override.
+_PILOT_PRESS_SLOW_MULT = 2
+
+# Groups whose steps carry ALTERNATES (a real cross-machine choice the pool/ghost
+# machinery prices). Every other group routes each step to ONE machine, so a
+# window's assignment search stays small enough to solve to OPTIMAL fast.
+_PILOT_ALTERNATE_GROUPS = {"CUT", "PRESS"}
+
+# Products: (product_id, family, [route steps]). Each step is
+# (group, per_unit_run_min, setup_min, splittable, min_chunk, setup_family).
+# per_unit_run is multiplied by order quantity for the op's working minutes;
+# quantities are drawn (capped) from the profile's order-size shape.
+_PILOT_PRODUCTS = [
+    ("P-WIDGET",   "fabricated", [("CUT", 4, 20, False, 0, ""),
+                                  ("MILL", 3, 15, False, 0, ""),
+                                  ("PAINT", 3, 20, False, 0, "")]),
+    ("P-BRACKET",  "bracket",    [("PRESS", 5, 15, False, 0, "")]),
+    ("P-PANEL-RED", "panel",     [("CUT", 3, 15, False, 0, ""),
+                                  ("PAINT", 3, 20, False, 0, "PAINT_RED")]),
+    ("P-PANEL-BLU", "panel",     [("CUT", 3, 15, False, 0, ""),
+                                  ("PAINT", 3, 20, False, 0, "PAINT_BLUE")]),
+    ("P-SHAFT",    "machined",   [("CUT", 3, 15, False, 0, ""),
+                                  ("MILL", 4, 20, False, 0, ""),
+                                  ("HEAT", 2, 30, False, 0, ""),
+                                  ("FINISH", 2, 10, False, 0, "")]),
+    ("P-SPACER",   "spacer",     [("CUT", 30, 0, True, 60, "")]),   # splittable monster
+    ("P-GEAR",     "gearing",    [("CUT", 3, 15, False, 0, ""),
+                                  ("MILL", 4, 20, False, 0, ""),
+                                  ("FINISH", 3, 10, False, 0, "")]),
+    ("P-PLATE",    "plate",      [("PRESS", 4, 15, False, 0, ""),
+                                  ("PAINT", 3, 20, False, 0, "")]),
+    ("P-HOUSING",  "assembly",   [("PRESS", 5, 15, False, 0, ""),
+                                  ("MILL", 4, 20, False, 0, ""),
+                                  ("ASM", 6, 30, False, 0, ""),
+                                  ("PAINT", 4, 20, False, 0, "")]),
+    ("P-HUB",      "machined",   [("MILL", 4, 20, False, 0, ""),
+                                  ("ASM", 5, 30, False, 0, ""),
+                                  ("FINISH", 3, 10, False, 0, "")]),
+]
+
+# Customer master (priorities POPULATED — the Glass Box's warning: an empty
+# priority column is a silent lie). Weight rides through priority_class.
+_PILOT_CUSTOMERS = [
+    ("CUST-ACME", "Acme Industrial", "critical"),
+    ("CUST-BOLT", "Bolt Manufacturing", "high"),
+    ("CUST-CIVIC", "Civic Supply", "standard"),
+    ("CUST-DELTA", "Delta Works", "standard"),
+]
+
+
+# A working day is 720 min (07:00-19:00). Non-splittable ops must fit one, so a
+# non-splittable order's quantity is capped by its heaviest routing step; the
+# multi-shift ("monster") work lives DELIBERATELY only on the splittable product.
+_PILOT_SHIFT_MIN = 720
+_PILOT_MAX_OP_MIN = 680  # headroom below a shift for setup + run
+
+
+def _pilot_qty(rng: random.Random, profile: dict, splittable: bool,
+               max_run: int, max_setup: int) -> int:
+    """Draw an order quantity from the profile's size SHAPE, capped so per-op
+    working minutes stay tractable (a slice must solve in seconds, and a
+    non-splittable op must fit one 720-min shift). The heavy tail is preserved
+    (a minority of large orders) but TRUNCATED — an AUTHORED simplification,
+    named in PREDICTIONS.md: the extract's p99 is 200,000 units; a pilot op
+    cannot be 200,000 x run_minutes and still fit a horizon."""
+    if splittable:
+        return rng.choice([20, 30, 40, 50])          # 600-1500 min at 30/u
+    qty_cap = max(1, (_PILOT_MAX_OP_MIN - max_setup) // max(1, max_run))
+    r = rng.random()
+    if r < 0.55:
+        q = rng.randint(10, 40)                       # small (~p10-p50)
+    elif r < 0.85:
+        q = rng.randint(40, 90)                       # medium (~p50-p75)
+    elif r < 0.97:
+        q = rng.randint(90, 150)                      # large (~p75-p90)
+    else:
+        q = rng.randint(150, 220)                     # tail (then capped)
+    return min(q, qty_cap)
+
+
+def _apply_pilot_scale(ds: Dataset, rng: random.Random, n_orders: int) -> dict:
+    """Build the pilot_scale plant: authored physics at the profile's volume.
+
+    Returns a descriptive marker (pilot_scale is a FEEL/scale fixture, not a
+    truth-bearing gate scenario — it seeds no anomalies and asserts gate
+    behavior only via the ACCEPTED expectation)."""
+    ref = ds.reference_date
+    _profile_path = Path(__file__).resolve().parent.parent / "datasets" / "pilot_scale" / "pilot_profile.json"
+    profile = json.loads(_profile_path.read_text(encoding="utf-8")) if _profile_path.exists() else {}
+
+    fac = ds.facilities[0]
+    ds.products, ds.routings, ds.routing_lines, ds.orders = [], [], [], []
+    ds.resources, ds.calendars, ds.setup_transitions, ds.customers = [], [], [], []
+
+    # --- machines + capability groups + per-machine $/h rate ------------------
+    rate_by_res: dict[str, float] = {}
+    heat_ids: list[str] = []
+    for group, members in _PILOT_MACHINES.items():
+        for rid, rate in members:
+            cal = "CAL-HEAT" if group == "HEAT" else "CAL-STD"
+            if group == "HEAT":
+                heat_ids.append(rid)
+            ds.resources.append({
+                "resource_id": rid, "facility_id": fac, "resource_type": "workcenter",
+                "parallel_units": "1", "calendar_id": cal, "pool_id": "", "cost_rate": "",
+            })
+            rate_by_res[rid] = rate
+
+    # --- calendars: weekday shifts + weekend closure + planned maintenance +
+    #     an overtime window (AUTHORED downtime; §5.6 patterns + exceptions) ---
+    for dow in range(0, 5):  # Mon-Fri 07:00-19:00 (a 720-min working day)
+        ds.calendars.append({
+            "calendar_id": "CAL-STD", "row_type": "pattern", "day_of_week": str(dow),
+            "start_time": "07:00", "end_time": "19:00",
+            "exception_date": "", "exception_type": "", "reason": "",
+        })
+        ds.calendars.append({
+            "calendar_id": "CAL-HEAT", "row_type": "pattern", "day_of_week": str(dow),
+            "start_time": "07:00", "end_time": "19:00",
+            "exception_date": "", "exception_type": "", "reason": "",
+        })
+    # Planned maintenance: CAL-STD closed the second Wednesday (a plant-wide
+    # closure day). Authored as a closure exception with a reason.
+    maint_day = ref + timedelta(days=(2 - ref.weekday()) % 7 + 7)  # a Wednesday, wk 2
+    ds.calendars.append({
+        "calendar_id": "CAL-STD", "row_type": "exception", "day_of_week": "",
+        "start_time": "", "end_time": "", "exception_date": maint_day.isoformat(),
+        "exception_type": "closure", "reason": "planned_maintenance",
+    })
+    # Overtime: HEAT opens the first Saturday (an added window — the rescue slot).
+    ot_sat = ref + timedelta(days=(5 - ref.weekday()) % 7)
+    ds.calendars.append({
+        "calendar_id": "CAL-HEAT", "row_type": "exception", "day_of_week": "",
+        "start_time": "07:00", "end_time": "19:00",
+        "exception_date": ot_sat.isoformat(), "exception_type": "added", "reason": "overtime",
+    })
+
+    # --- setup families / changeover matrix (PAINT colours) -------------------
+    ds.setup_transitions = [
+        {"from_family": "PAINT_RED", "to_family": "PAINT_BLUE", "setup_minutes": "90",
+         "setup_cost": "60", "scrap_units": ""},
+        {"from_family": "PAINT_BLUE", "to_family": "PAINT_RED", "setup_minutes": "90",
+         "setup_cost": "60", "scrap_units": ""},
+        {"from_family": "PAINT_RED", "to_family": "PAINT_RED", "setup_minutes": "15",
+         "setup_cost": "10", "scrap_units": ""},
+        {"from_family": "PAINT_BLUE", "to_family": "PAINT_BLUE", "setup_minutes": "15",
+         "setup_cost": "10", "scrap_units": ""},
+    ]
+    ds.manifest["semantics"]["unlisted_transition_default"] = "base_setup"
+
+    # --- products / routes / routing lines (alternates as eligible sets) ------
+    # Alternates (an operation eligible on >1 machine) drive the priced
+    # cross-machine choice, but every op with alternates multiplies the solver's
+    # assignment search. To keep a WINDOW solvable to OPTIMAL fast (the slicing
+    # thesis) we author alternates ONLY where the predictions turn on them — the
+    # CUT $/h split and the PRESS fast/slow pair — and route every OTHER step to a
+    # single machine (round-robin across the group, so all machines carry load).
+    for p_idx, (pid, family, steps) in enumerate(_PILOT_PRODUCTS):
+        route_id = f"RT-{pid[2:]}"
+        # A representative per-unit run for the product master (first step).
+        ds.products.append({
+            "product_id": pid, "uom": "EA", "facility_id": fac,
+            "product_group": family, "costing_lot_size": "1",
+            "setup_minutes": str(steps[0][2]), "production_minutes": str(steps[0][1]),
+            "cost_price": str(round(rng.uniform(10, 40), 2)),
+        })
+        ds.routings.append({
+            "route_id": route_id, "facility_id": fac, "product_id": pid,
+            "status": "active", "approved": "Y", "version": "1",
+            "effective_from": ref.isoformat(),
+        })
+        for step_idx, (group, run, setup, splittable, min_chunk, sfam) in enumerate(steps):
+            seq = (step_idx + 1) * 10
+            all_members = _PILOT_MACHINES[group]
+            if group in _PILOT_ALTERNATE_GROUPS:
+                members = all_members                    # eligible set (priced choice)
+            else:
+                members = [all_members[p_idx % len(all_members)]]  # one machine
+            for m_idx, (rid, _rate) in enumerate(members):
+                # PRESS-SLOW bills its own longer per-alternative run time.
+                eff_run = run
+                if group == "PRESS" and rid.endswith("SLOW"):
+                    eff_run = run * _PILOT_PRESS_SLOW_MULT
+                ds.routing_lines.append({
+                    "route_id": route_id, "sequence": str(seq), "resource_id": rid,
+                    "active": "1", "setup_minutes": str(setup),
+                    "run_minutes_per_unit": str(eff_run),
+                    "dwell_minutes": "0", "setup_family": sfam,   # STEP attr — agrees across alternates
+                    "splittable": "true" if splittable else "false",
+                    "min_chunk_minutes": str(min_chunk) if splittable else "",
+                })
+
+    # --- customers (priorities POPULATED) -------------------------------------
+    for cid, name, pclass in _PILOT_CUSTOMERS:
+        ds.customers.append({"customer_id": cid, "name": name,
+                             "priority_class": pclass, "notes": ""})
+    ds.manifest["semantics"]["priority_precedence"] = "customer_over_order"
+
+    # --- orders: volume + size + due shape from the profile; priority mix -----
+    prods = _PILOT_PRODUCTS
+    # Family skew mirrors the profile; the ASM-bound products (housing/hub) are
+    # kept modest so the single ASM-01 bottleneck binds under load without
+    # SATURATING the plant (a saturated plant is uniformly late — no knee to
+    # measure). Order = widget/bracket/panelR/panelB/shaft/spacer/gear/plate/housing/hub.
+    fam_weights = [4, 3, 3, 3, 3, 1, 3, 3, 1, 1]
+    # Lead-time band (days) from the profile, scaled to a bounded pilot horizon.
+    # Spread WIDER than the raw median so the plant is moderately loaded (most
+    # orders feasible on time, a tight/late minority) rather than front-loaded
+    # and saturated — the regime where a longer look-ahead actually buys cost.
+    lt = (profile.get("lead_time_days") or {})
+    lead_p50 = max(14, int(lt.get("p50", 7) or 7) * 2)
+    lead_p90 = int(lt.get("p90", 18) or 18)
+    lead_min = 4
+    lead_max = max(lead_p90 + 12, 30)
+    splittable_products = {"P-SPACER"}
+    priority_ladder = (["critical"] * 1 + ["high"] * 2 + ["standard"] * 7)  # 10/20/70
+    late_by_design = 0
+    for i in range(n_orders):
+        pid, family, steps = rng.choices(prods, weights=fam_weights, k=1)[0]
+        route_id = f"RT-{pid[2:]}"
+        splittable = pid in splittable_products
+        max_run = max(s[1] for s in steps)
+        max_setup = max(s[2] for s in steps)
+        qty = _pilot_qty(rng, profile, splittable, max_run, max_setup)
+        # Due date: sample a lead in [lead_min, lead_max] biased to the median.
+        lead = min(lead_max, max(lead_min, int(rng.triangular(lead_min, lead_max, lead_p50))))
+        due = ref + timedelta(days=lead)
+        pclass = rng.choice(priority_ladder)
+        cust = next((cid for cid, _n, pc in _PILOT_CUSTOMERS if pc == pclass), "CUST-CIVIC")
+        oid = f"ORD-{i + 1:06d}"
+        ds.orders.append({
+            "order_id": oid, "product_id": pid, "route_id": route_id,
+            "quantity": str(qty), "due_date": due.isoformat(),
+            "created_date": ref.isoformat(), "release_date": "",
+            "facility_id": fac, "customer_id": cust,
+            "priority_class": pclass, "commitment_class": pclass,
+        })
+
+    # cost model: priced overtime premium so the Saturday HEAT window has a price.
+    ds.cost_model["refinements"]["resource_rates"] = dict(rate_by_res)
+    ds.cost_model["refinements"]["overtime_premium_multiplier"] = 1.5
+
+    n_res = len(ds.resources)
+    return {
+        "plant": "pilot_scale",
+        "n_orders": n_orders, "n_resources": n_res,
+        "capability_groups": list(_PILOT_MACHINES.keys()),
+        "products": [p[0] for p in _PILOT_PRODUCTS],
+        "setup_families": ["PAINT_RED", "PAINT_BLUE"],
+        "splittable_products": sorted(splittable_products),
+        "maintenance_day": maint_day.isoformat(),
+        "overtime_saturday": ot_sat.isoformat(),
+        "reference_date": ref.isoformat(),
+        "profile_source": "datasets/pilot_scale/pilot_profile.json",
+    }
+
+
+# ---------------------------------------------------------------------------
 # Anomaly catalog v1 — each returns a truth_manifest entry
 # ---------------------------------------------------------------------------
 
@@ -1705,6 +2001,8 @@ def generate(
         truth_extra["multi_route_rates"] = _apply_multi_route_rates(ds, rng)
     if preset.get("busy_board"):
         truth_extra["busy_board"] = _apply_busy_board(ds, rng)
+    if preset.get("pilot_scale"):
+        truth_extra["pilot_scale"] = _apply_pilot_scale(ds, rng, n_orders)
 
     anomaly_entries: list[dict] = []
     for spec in anomaly_specs:

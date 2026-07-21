@@ -63,6 +63,7 @@ class SolveRunner:
         nonoptimal_gap_threshold: float = 0.01,
         num_search_workers: Optional[int] = None,
         random_seed: Optional[int] = None,
+        deterministic_time: Optional[float] = None,
     ) -> None:
         """num_search_workers/random_seed are optional determinism knobs.
 
@@ -78,6 +79,12 @@ class SolveRunner:
         self._gap_threshold = nonoptimal_gap_threshold
         self._num_search_workers = num_search_workers
         self._random_seed = random_seed
+        # A DETERMINISTIC-time budget (CP-SAT max_deterministic_time): unlike the
+        # wall-clock max_time_in_seconds, a truncated solve under this budget is
+        # REPRODUCIBLE run-to-run (with num_search_workers=1 + a fixed seed). The
+        # rolling-horizon measurement (Session 4B.2) uses it so a budgeted window
+        # solve is a deterministic measurement, not a wall-clock lottery.
+        self._deterministic_time = deterministic_time
 
     def solve(
         self,
@@ -94,6 +101,8 @@ class SolveRunner:
             solver.parameters.num_search_workers = self._num_search_workers
         if self._random_seed is not None:
             solver.parameters.random_seed = self._random_seed
+        if self._deterministic_time is not None:
+            solver.parameters.max_deterministic_time = self._deterministic_time
 
         # Solution callback for streaming
         class _Cb(cp.CpSolverSolutionCallback):

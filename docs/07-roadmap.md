@@ -1,6 +1,41 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.30 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.31 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.31:** **Session 4B.2 — the pilot_scale plant + the measurements that decide
+the slicing architecture** 2026-07-21 (docs/04 R-SC1/R-SC2 rulings + amendment).
+**R-SC1** — the historical ticketing extract is INTELLIGENCE, not a fixture:
+demoted to a PROFILE source (`tools/extract_pilot_profile.py` →
+`datasets/pilot_scale/pilot_profile.json`; volumes/order-size/family-cardinality/
+machine-count/lead-time SHAPE only), plant physics AUTHORED in a synthetic
+pilot_scale plant; the raw_data gate bypass exits the test path (gauntlet tests
+removed). **R-SC2** — SLICING IS A ROLLING HORIZON with a frozen zone + gravity
+admission (must-start-by / weighted-criticality / setup-family affinity); window
+length chosen by MEASUREMENT.
+
+**The slicing plan of record.** The blessed operational mode is the rolling
+horizon (`src/mre/modules/rolling_horizon.py`): the spine runs once
+(`prepare_plant`), then per window admit demands by the time window PLUS the three
+gravity pulls, build a model over the admitted-and-uncommitted operations
+(earliness-pulled, floored at the window start), solve deterministically, and
+COMMIT the frozen front (every operation starting inside it); committed work is in
+the past for every future window, so it constrains nothing and needs no pin. The
+**measured window curve** (pilot_scale, 60 orders / 141 ops / 15 machines,
+deterministic): cost + lateness fall from a myopic 2–4-day window (~$46k, 7–10
+late) to a **7-day window ($37.7k, 1 late)** and then plateau — the **KNEE is 7
+days ≈ the profile's 7.5-day median lead time**. Deployment rule: **size the
+window to the plant's lead time, and find it by the knee, don't guess.** Frozen
+depth is a separate declared parameter (2 days here). The gravity counterfactual
+proves look-ahead: a monster job whose must-start precedes its due-window finishes
+on time WITH admission and goes 6,781 tardiness-minutes late WITHOUT it. Density
+(9.4 ops/machine, 141 board bars) + per-window interaction cost (sub-second)
+size the cockpit **4B.3 retrofit**, designed FROM these numbers (the cockpit is
+NOT retrofitted this session — pilot_scale has no monolithic solve to render).
+Far-horizon look-ahead pricing, chunk-level frozen commit for splittable ops
+longer than the frozen zone, and RawAdapter retirement are named/parked. Density
++ curve + gravity + latency in the docs/04 measurement table;
+`tests/test_rolling_horizon.py`. See the docs/04 2026-07-21 R-SC1/R-SC2 + Session
+4B.2 amendments.
 
 **v2.30:** **AI-track Session 4A.2d — R-AI2 (conversational-by-default) + the
 4A.2c correctness specimens** 2026-07-20 (docs/04 R-AI2 ruling + amendment).

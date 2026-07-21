@@ -6320,3 +6320,178 @@ frontend follow-up above. Lesson: a voice is not a register — the template is 
 fail-closed FLOOR written as sentences, the LLM is the default, and judgment is a
 labeled guest at the table; the transcript header and the scope placeholder were
 the two places the machine's shape still showed through the prose.
+
+## Amendment — 2026-07-21: R-SC1 + R-SC2 rulings — the historical extract is intelligence; slicing is a rolling horizon with gravity
+
+Ruled in the design thread, transcribed here verbatim (append-only; settled).
+Implemented Session 4B.2 (below).
+
+--- RULING TEXT BEGINS ---
+R-SC1 — THE HISTORICAL EXTRACT IS INTELLIGENCE, NOT A FIXTURE.
+The ticketing extract is demoted from test data to a profile
+source: it supplies volumes, order-size distributions, product-
+family cardinality, machine count, demand-arrival and due-date
+shapes. All plant physics (calendars, downtime, capabilities,
+setup families, alternates, priorities) are AUTHORED deliberately
+in a pilot_scale synthetic plant — Glass Box discipline at their
+volume. The raw_data gate bypass is DELETED, not retired: the
+extract exits the test path entirely.
+
+R-SC2 — SLICING IS A ROLLING HORIZON WITH A FROZEN ZONE AND
+GRAVITY ADMISSION. Solve a window of declared length; commit only
+the frozen front; roll and re-solve (committed work enters as
+fixed via the WIP machinery; warm-start carries the incumbent).
+Inclusion = the time window PLUS gravity: (a) must-start-by pull
+(latest-feasible-start inside the window admits the job),
+(b) weighted-criticality pull, (c) setup-family affinity with
+in-window work. Window length is chosen by MEASUREMENT — the
+knee of the cost-vs-window curve — and declared per deployment.
+Far-horizon look-ahead pricing: named, parked.
+--- RULING TEXT ENDS ---
+
+## Amendment — 2026-07-21: Session 4B.2 — the pilot_scale plant + the slicing measurements
+
+Implements R-SC1/R-SC2. No solver/model/contract/frontend changes — a profile
+tool, a generator scenario, a rolling-horizon runner (new module), a measurement
+harness, and docs. The session BUILDS the instruments and RUNS the measurements;
+it does NOT retrofit the cockpit (that is designed AFTER the numbers, CU5).
+
+**CU1 — profile extraction (`tools/extract_pilot_profile.py`).** Streams the
+historical extract (`OpenWorkOrder.csv` = the backlog, `Product.csv`,
+`Routing.csv`, `RoutingLines.csv`; the 189 MB `SalesOrder.csv` demand history is
+deliberately NOT read) and emits `datasets/pilot_scale/pilot_profile.json` +
+`PROFILE_PROVENANCE.md` (what is MEASURED vs. AUTHORED, verbatim). Measured
+shapes: **3,472** open work orders, **20,743** products, **40** product families,
+**174** workcenters across **14** facilities, order quantity median 500 / p90
+10,000 / max 10M (heavy-tailed), routing depth median **8** ops/route, lead time
+median 7.5 d / p90 17.5 d. Under R-SC1 the extract now carries SHAPES only, no
+plant physics.
+
+**CU2 — the pilot_scale plant (`_apply_pilot_scale`, generator scenario).**
+Authored at Glass-Box discipline, sized against the profile (NOT copied from it):
+one facility, **15 machines in 7 capability groups** with honest differing rates
+(a $/h split on CUT/MILL/FINISH; a run-TIME split on the fast/slow PRESS pair),
+**setup families** (PAINT_RED/PAINT_BLUE + a 90-min changeover matrix), a
+plant-wide **maintenance closure** + a **Saturday overtime** window, **populated
+priorities/customers** (Acme critical / Bolt high / Civic-Delta standard — the
+Glass Box's warning honored), and a **splittable** long-job product (P-SPACER).
+Gate: **ACCEPTED / C2 / 0 findings**; at 400 orders the only advisory is the
+resumable-density warning on the CUT machines — the exact chunk-slot killer the
+solver-gap probe named, surfaced honestly as the slicing motivation. Quantities
+are capped so a non-splittable op fits one 720-min shift; routes are 1–4 ops:
+authored simplifications, named in `PREDICTIONS.md` (~8 behaviors predicted
+before the solve).
+
+**CU3 — the rolling-horizon runner (`src/mre/modules/rolling_horizon.py`).** The
+spine (gate → adapter → validator → planner) runs once (`prepare_plant`); the
+rolling loop then works at the M5/M6/M7 level. Per window: admit demands by the
+time window PLUS the three **gravity** pulls (must-start-by / weighted-criticality
+/ setup-family affinity); build a model over the admitted-and-not-yet-committed
+operations; warm-start from the previous window's placements; apply any R-DP8
+standing pins that live in the window; solve deterministically. **The FROZEN
+ZONE** commits every operation whose solved END falls inside the frozen front —
+and, because the next window's floor IS the frozen end, committed work always
+ends before every future window begins: it can never conflict and never needs a
+pin. This is the rolling-horizon form of R-SC2's "committed work enters as fixed
+via the WIP machinery" — in a rolling design it reduces to "committed work is in
+the past." Reported cost is ONE exact `Extractor` pass over the fully-pinned
+committed union (same method for every window setting → a fair curve). NAMED
+debt: an operation LONGER than the frozen zone (a large splittable P-SPACER) cannot
+commit incrementally in v1 and is force-committed at its final placement; chunk-
+level frozen-front commit is the follow-up.
+
+**CU4 — THE MEASUREMENTS (`tools/pilot_measurements.py`).** See the measurement
+table below.
+
+**CU5 — honest scoping.** The cockpit is NOT retrofitted this session (see the
+scoping note below the table). The retrofit is designed AFTER CU4's numbers — the
+point of the numbers.
+
+**The measurement table** (pilot_scale, 60 orders / 141 operations / 15 machines,
+reference Monday 2026-01-05; deterministic: solver-workers 1, seed 0, a CP-SAT
+DETERMINISTIC-time budget of 0.5 units/window — a truncated window solve under a
+deterministic-time budget is reproducible run-to-run, unlike a wall-clock limit;
+`tools/pilot_measurements_report.json`).
+
+*(a) Density* — the number that sizes the cockpit: **141 operations across 15
+machines = 9.4 ops/machine, ~5.4 ops/day over the 26-day due span, 141
+board-visible bars.** (At the profile's fuller volume this scales linearly — the
+whole-backlog board is what the retrofit must handle.)
+
+*(b) The window curve* — total cost + service vs. window length, frozen zone
+fixed at 2 days:
+
+| window (d) | total cost | on-time | late | tardiness (min) | roll solve (s) | windows |
+|---|---|---|---|---|---|---|
+| 2 | 46,017 | 50 | 10 | 18,479 | 23.3 | 11 |
+| 4 | 46,051 | 53 | 7 | 16,861 | 36.9 | 11 |
+| **7** | **37,690** | **59** | **1** | **601** | 34.4 | 11 |
+| 10 | 38,247 | 58 | 2 | 2,586 | 42.7 | 9 |
+
+**The knee is the 7-day window.** A myopic 2–4-day horizon leaves 7–10 orders late
+(~17–18k tardiness minutes) at ~$46k; widening to 7 days collapses lateness to a
+single order (601 tardiness minutes) AND drops cost to $37.7k; going to 10 days
+buys nothing (slightly worse — diminishing returns plus budget noise). **Seven
+days ≈ the profile's 7.5-day median lead time** — the deployment window should be
+sized to the plant's lead time, and this is how you measure it rather than guess.
+(Note: at moderate load, total cost is production-dominated and nearly
+window-invariant between 2 and 4 days; the window length's early value is SERVICE —
+fewer late orders — with the cost drop arriving once the horizon is long enough to
+sequence the bottleneck work well.)
+
+*(c) Gravity's counterfactual* — a monster job (a deep chain whose latest-feasible
+start precedes its due-window), windowed WITH vs WITHOUT admission:
+
+| admission | on-time | late | tardiness (min) | total cost |
+|---|---|---|---|---|
+| WITH gravity | 4 | 0 | 0 | $6,151 |
+| WITHOUT gravity | 3 | 1 | 6,781 | $8,976 |
+
+**Gravity bought something.** The must-start-by pull admits the monster early
+enough to finish on time; without it the job is admitted only when its due enters
+the window, starts ~8 days too late, and lands 6,781 tardiness-minutes late (+$2,825).
+The price-bought-something rule, applied to look-ahead.
+
+*(d) Interaction latencies at scale* — one window's model (build 0.011s, solve
+0.002s OPTIMAL for a small window; a loaded mid-roll window is bounded by the
+per-window budget above, sub-second-to-a-few-seconds). Grab→shade, on-demand ghost
+pricing, and a single-pin sandbox verdict all operate on ONE window's model (tens
+of ops), never the whole backlog — so the cockpit retrofit prices its interactions
+against a slice, and the numbers say a slice is cheap. (The measured first 4-day
+window admitted 0 operations — pilot due dates start beyond 4 days — a harness
+artifact; the representative per-window solve is the curve's ~2–4 s budgeted figure.)
+
+**CU5 — honest scoping (the cockpit is NOT retrofitted this session).** Loading
+pilot_scale in the cockpit read-only is NOT trivially possible: the cockpit renders
+a solved schedule DOCUMENT from the API, and pilot_scale has no monolithic solve
+(that intractability is the thesis). A SINGLE window solves and could be rendered as
+an ordinary schedule (tens of bars), but wiring the rolling runner's committed
+schedule into a contract document + serving it — and making the board slice-aware —
+is the **4B.3 retrofit**, to be designed FROM these numbers (density 141 bars / 9.4
+per machine; per-window interaction cost sub-second): that is the point of measuring
+first. No screenshot is manufactured for a board the product cannot yet honestly
+render whole.
+
+**R-SC1 deletion + supporting changes.** Per R-SC1 the historical extract exits
+the test path: `TestGauntletReproducesBaseline` (test_defaults_reproduce_baseline)
+and the merge_v2 gauntlet test (test_planner_merge_v2) are REMOVED — the extract
+is now only PROFILED. (The synthetic `raw_data_mini` fixture tests remain: they
+exercise RawAdapter mechanics, never the historical extract; folding those onto an
+IDS fixture and retiring RawAdapter is a NAMED follow-up.) Determinism support:
+`SolveRunner` gains an additive `deterministic_time` knob (CP-SAT
+`max_deterministic_time`) — a budgeted window solve is reproducible run-to-run,
+which is what lets a time-bounded rolling measurement be a MEASUREMENT rather than
+a wall-clock lottery. A reduced-alternate authoring choice (alternates only on
+CUT/PRESS) keeps per-window assignment search small so a window solves fast; every
+other step routes to one machine (all 15 still carry load). Non-slow Python suite
+green (the two gauntlet tests removed were slow/skip-when-absent); new
+`tests/test_rolling_horizon.py` (fast units + slow roll + the gravity counterfactual).
+
+Lesson: a historical extract's value is its SHAPE, not its rows — measure the
+shape, author the physics, and you get a plant you can predict and a schedule you
+can trust; and the reason slicing works is not "less work" but that a rolling
+window with gravity admission caps the two killers (chunk-slot volume and
+per-machine op count) at once while a look-ahead pull keeps the far-due monster
+job on time — proven, not asserted, by the with/without-gravity counterfactual.
+The window that matters is the plant's own lead time, and you FIND it (the knee),
+you don't guess it.

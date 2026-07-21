@@ -1,0 +1,98 @@
+{
+  "orders": 60,
+  "reference_date": "2026-01-05",
+  "deterministic": true,
+  "solver_workers": 1,
+  "seed": 0,
+  "det_time_units_per_window": 0.5,
+  "density": {
+    "orders": 60,
+    "operations": 141,
+    "machines": 15,
+    "due_span_days": 26,
+    "ops_per_machine": 9.4,
+    "ops_per_day_slice": 5.4,
+    "board_visible_bars": 141
+  },
+  "window_curve": [
+    {
+      "window_days": 2,
+      "frozen_days": 2,
+      "total_cost": 46017.08,
+      "roll_solve_wall_s": 23.286,
+      "measured_wall_s": 24.5,
+      "n_windows": 11,
+      "on_time": 50,
+      "late": 10,
+      "tardiness_min": 18479,
+      "uncommitted_forced": 0
+    },
+    {
+      "window_days": 4,
+      "frozen_days": 2,
+      "total_cost": 46051.18,
+      "roll_solve_wall_s": 36.907,
+      "measured_wall_s": 37.8,
+      "n_windows": 11,
+      "on_time": 53,
+      "late": 7,
+      "tardiness_min": 16861,
+      "uncommitted_forced": 0
+    },
+    {
+      "window_days": 7,
+      "frozen_days": 2,
+      "total_cost": 37689.88,
+      "roll_solve_wall_s": 34.432,
+      "measured_wall_s": 35.2,
+      "n_windows": 11,
+      "on_time": 59,
+      "late": 1,
+      "tardiness_min": 601,
+      "uncommitted_forced": 0
+    },
+    {
+      "window_days": 10,
+      "frozen_days": 2,
+      "total_cost": 38247.17,
+      "roll_solve_wall_s": 42.676,
+      "measured_wall_s": 43.6,
+      "n_windows": 9,
+      "on_time": 58,
+      "late": 2,
+      "tardiness_min": 2586,
+      "uncommitted_forced": 0
+    }
+  ],
+  "knee_window_days": 7,
+  "gravity": {
+    "config": {
+      "chain_len": 8,
+      "op_minutes": 600,
+      "due_day": 12,
+      "monster_order": "ORD-MONSTER"
+    },
+    "with_gravity": {
+      "late": 0,
+      "on_time": 4,
+      "tardiness_min": 0,
+      "total_cost": 6151.0
+    },
+    "without_gravity": {
+      "late": 1,
+      "on_time": 3,
+      "tardiness_min": 6781,
+      "total_cost": 8976.42
+    },
+    "gravity_bought": true
+  },
+  "latencies": {
+    "window_days": 4,
+    "admitted_demands": 0,
+    "window_free_ops": 0,
+    "window_build_s": 0.011,
+    "window_solve_s": 0.002,
+    "window_solve_status": "OPTIMAL",
+    "note": "grab->shade / on-demand ghost pricing / single-pin sandbox all operate on this window's model (free_ops above), not the full backlog; build+solve of one window is the cost that bounds them."
+  }
+}

@@ -1,0 +1,200 @@
+{
+  "provenance": {
+    "source_dir": "raw_data",
+    "source_files": [
+      "OpenWorkOrder.csv",
+      "Product.csv",
+      "Routing.csv",
+      "RoutingLines.csv"
+    ],
+    "not_read": [
+      "SalesOrder.csv (189 MB demand history; OpenWorkOrder IS the backlog)"
+    ],
+    "ruling": "R-SC1 \u2014 the extract is intelligence, not a fixture; this profile carries SHAPES only, no plant physics."
+  },
+  "backlog": {
+    "open_work_order_count": 3472,
+    "product_count": 20743,
+    "route_count": 3856
+  },
+  "order_quantity": {
+    "n": 3472,
+    "min": 1.0,
+    "max": 10000000.0,
+    "mean": 15029.296,
+    "p10": 38.0,
+    "p25": 147.0,
+    "p50": 500.0,
+    "p75": 2000.0,
+    "p90": 10000.0,
+    "p99": 200000.0
+  },
+  "product_family": {
+    "family_count": 40,
+    "top_families": [
+      {
+        "group": "PG102",
+        "count": 9255,
+        "share": 0.4462
+      },
+      {
+        "group": "PG111",
+        "count": 5088,
+        "share": 0.2453
+      },
+      {
+        "group": "PG101",
+        "count": 2800,
+        "share": 0.135
+      },
+      {
+        "group": "PG103",
+        "count": 1186,
+        "share": 0.0572
+      },
+      {
+        "group": "PG112",
+        "count": 1020,
+        "share": 0.0492
+      },
+      {
+        "group": "PG107",
+        "count": 241,
+        "share": 0.0116
+      },
+      {
+        "group": "PG12D",
+        "count": 240,
+        "share": 0.0116
+      },
+      {
+        "group": "PG113",
+        "count": 169,
+        "share": 0.0081
+      },
+      {
+        "group": "PG106",
+        "count": 164,
+        "share": 0.0079
+      },
+      {
+        "group": "PG12E",
+        "count": 83,
+        "share": 0.004
+      },
+      {
+        "group": "PG123",
+        "count": 75,
+        "share": 0.0036
+      },
+      {
+        "group": "PG124",
+        "count": 60,
+        "share": 0.0029
+      }
+    ]
+  },
+  "product_minutes": {
+    "setup_minutes": {
+      "n": 20743,
+      "min": 0.0,
+      "max": 532.0,
+      "mean": 43.633,
+      "p10": 1.0,
+      "p25": 16.0,
+      "p50": 36.0,
+      "p75": 51.0,
+      "p90": 88.0,
+      "p99": 176.0
+    },
+    "production_minutes": {
+      "n": 20219,
+      "min": 1.0,
+      "max": 13560.0,
+      "mean": 1204.92,
+      "p10": 12.0,
+      "p25": 19.0,
+      "p50": 288.0,
+      "p75": 2684.0,
+      "p90": 2684.0,
+      "p99": 7433.0
+    }
+  },
+  "routing": {
+    "distinct_workcenter_count": 174,
+    "ops_per_route": {
+      "n": 3856,
+      "min": 1.0,
+      "max": 13.0,
+      "mean": 7.934,
+      "p10": 7.0,
+      "p25": 7.0,
+      "p50": 8.0,
+      "p75": 9.0,
+      "p90": 10.0,
+      "p99": 12.0
+    }
+  },
+  "machines": {
+    "facility_count": 14,
+    "workcenters_per_facility": {
+      "n": 14,
+      "min": 3.0,
+      "max": 39.0,
+      "mean": 12.429,
+      "p10": 3.0,
+      "p25": 5.0,
+      "p50": 9.0,
+      "p75": 15.0,
+      "p90": 31.0,
+      "p99": 39.0
+    },
+    "backlog_facility_count": 11,
+    "top_facilities_by_backlog": [
+      {
+        "facility": "F006",
+        "work_orders": 851
+      },
+      {
+        "facility": "F00A",
+        "work_orders": 638
+      },
+      {
+        "facility": "F00Z",
+        "work_orders": 504
+      },
+      {
+        "facility": "F005",
+        "work_orders": 400
+      },
+      {
+        "facility": "F008",
+        "work_orders": 354
+      },
+      {
+        "facility": "F004",
+        "work_orders": 276
+      },
+      {
+        "facility": "F001",
+        "work_orders": 261
+      },
+      {
+        "facility": "F00B",
+        "work_orders": 108
+      }
+    ]
+  },
+  "lead_time_days": {
+    "n": 3472,
+    "min": -198.93980081018518,
+    "max": 41.620654664351854,
+    "mean": 8.59,
+    "p10": 1.9919472569444443,
+    "p25": 2.6820115740740738,
+    "p50": 7.53813912037037,
+    "p75": 12.417660416666667,
+    "p90": 17.55316145833333,
+    "p99": 31.5492534375
+  }
+}

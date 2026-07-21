@@ -94,6 +94,65 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.2 — the pilot_scale
+plant + the measurements that decide the slicing architecture 2026-07-21.** Two
+rulings transcribed verbatim into docs/04. **R-SC1** — the historical ticketing
+extract is INTELLIGENCE, not a fixture: demoted to a PROFILE source; all plant
+physics AUTHORED in a synthetic plant at Glass-Box discipline; the raw_data gate
+bypass exits the test path. **R-SC2** — slicing is a ROLLING HORIZON with a FROZEN
+ZONE + GRAVITY admission (a: must-start-by, b: weighted-criticality, c: setup-family
+affinity); window length chosen by MEASUREMENT (the cost-vs-window knee). No
+solver/model/contract/frontend changes (one additive `SolveRunner.deterministic_time`
+knob); a profile tool + a generator scenario + a new module + a measurement harness
++ docs. **CU1** `tools/extract_pilot_profile.py` streams the extract
+(`OpenWorkOrder`/`Product`/`Routing`/`RoutingLines`; the 189 MB `SalesOrder` NOT
+read) → `datasets/pilot_scale/pilot_profile.json` + `PROFILE_PROVENANCE.md`
+(measured-vs-authored). Measured: 3,472 WOs, 20,743 products, 40 families, 174
+workcenters, order-qty median 500 / p90 10k, routing depth median 8, lead time
+median 7.5 d. **CU2** the `pilot_scale` generator scenario (`_apply_pilot_scale`,
+feel=True): 15 machines / 7 capability groups, honest differing rates ($/h split on
+CUT + fast/slow run split on PRESS — **alternates authored ONLY on CUT/PRESS** so a
+window's assignment search stays small; other steps route to one machine, all 15
+carry load), setup families (PAINT colours + matrix), maintenance closure + Saturday
+overtime, POPULATED priorities/customers (the Glass Box's warning honoured),
+splittable P-SPACER. Gate **ACCEPTED/C2**; the only advisory is the resumable-density
+warning on CUT — the exact chunk-slot killer the solver-gap probe named. Quantities
+capped to a shift, routes 1–4 ops: authored simplifications, named in
+`PREDICTIONS.md` (~8 behaviours predicted before the solve). **CU3**
+`src/mre/modules/rolling_horizon.py` — `prepare_plant` (spine once) +
+`run_rolling_horizon`: per window, admit by time-window + the three gravity pulls;
+build over admitted-and-uncommitted ops with an ABSOLUTE origin (ref) + free ops
+floored at t0 + an EARLINESS incentive (weight-1 op_start, dominated by tardiness
+~42/min at _COST_SCALE=100) so the FROZEN FRONT actually fills; commit every op
+STARTING inside the frozen zone (op-level, so a long job freezes piecewise);
+committed work is in the PAST for future windows → constrains nothing, needs no pin;
+R-DP8 standing pins compile into whichever window holds them; final cost = ONE exact
+`Extractor` pass over the pinned union (same method for every window setting → a fair
+curve). Determinism via CP-SAT `max_deterministic_time` (a budgeted window solve is
+reproducible — **verified bit-identical across two trials**), workers 1, seed 0.
+**CU4 the measurements (`tools/pilot_measurements.py`, docs/04 table):** density
+**141 ops / 15 machines = 9.4 ops/machine, ~5.4 ops/day, 141 board bars**; the
+**window curve knee is 7 days** — cost + lateness fall from ~$46k / 7–10 late at a
+2–4-day window to **$37.7k / 1 late at 7 days**, then plateau (10 days slightly
+worse) — and **7 d ≈ the profile's 7.5-day median lead time** (size the window to
+the plant's lead time, find it by the knee); the gravity counterfactual proves
+look-ahead (a monster job WITH gravity finishes on time, WITHOUT it lands 6,781
+tardiness-minutes / +$2,825 late — price-bought-something applied to look-ahead);
+per-window interaction cost sub-second. **CU5 — honest scoping:** the cockpit is NOT
+retrofitted — pilot_scale has no monolithic solve to render whole; a single window
+is renderable but the slice-aware board + rolling-schedule-to-document wiring is the
+**4B.3 retrofit, designed FROM these numbers** (the point of measuring first). Named
+debts: chunk-level frozen commit for splittable ops longer than the frozen zone
+(force-resolved in the final pass); RawAdapter full retirement; far-horizon
+look-ahead pricing. `tests/test_rolling_horizon.py` (fast units + slow roll +
+gravity counterfactual); the two removed gauntlet tests were slow/skip-when-absent.
+See the docs/04 2026-07-21 R-SC1/R-SC2 + Session 4B.2 amendments and docs/07 v2.31.
+Lesson: a historical extract's value is its SHAPE not its rows; slicing works not
+because it is "less work" but because a rolling window with gravity caps both
+killers (chunk-slot volume + per-machine op count) while a look-ahead pull keeps the
+far-due monster on time; and the window that matters is the plant's own lead time —
+you FIND it (the knee), you don't guess it.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.2d — R-AI2
 (conversational-by-default) + the 4A.2c correctness specimens 2026-07-20.**
 Correctness and voice land in ONE session so neither ships without the other.

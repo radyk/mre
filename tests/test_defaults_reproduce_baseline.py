@@ -114,41 +114,9 @@ class TestSampleDataReproducesBaseline:
         assert current == golden
 
 
-@pytest.mark.skipif(
-    not (REPO / "raw_data").exists(),
-    reason="gauntlet regression needs the local (gitignored) raw_data extract; "
-           "skipped on a fresh checkout / in the CI container",
-)
-class TestGauntletReproducesBaseline:
-    """'The gauntlet' = raw_data (the real ticketing extract), sliced to the
-    documented 173-exclusion window (--horizon-days 2) for a fast, real,
-    reproducible regression fixture rather than the full 2864-demand solve."""
-
-    def test_schedule_csv_identical(self, tmp_path):
-        stdout = _run_mre(
-            ["--raw-data", str(REPO / "raw_data"), "--plant-config", str(REPO / "plant_config.json"),
-             "--snapshot-id", "snap-gaunt-regress", "--horizon-days", "2", "--time-limit", "30"],
-            tmp_path,
-        )
-        golden = (FIXTURES / "gauntlet_schedule.csv").read_text(encoding="utf-8")
-        current = (tmp_path / "schedule.csv").read_text(encoding="utf-8")
-        assert current == golden, "gauntlet schedule.csv changed after the precedence-edge surgery"
-
-    def test_cost_ledger_identical(self, tmp_path):
-        stdout = _run_mre(
-            ["--raw-data", str(REPO / "raw_data"), "--plant-config", str(REPO / "plant_config.json"),
-             "--snapshot-id", "snap-gaunt-regress2", "--horizon-days", "2", "--time-limit", "30"],
-            tmp_path,
-        )
-        golden = json.loads((FIXTURES / "gauntlet_summary.json").read_text(encoding="utf-8"))
-        current = _extract_summary(stdout)
-        assert current == golden
-
-    def test_still_173_infeasible_subset_exclusions(self, tmp_path):
-        """Named regression anchor (docs/05/07 cite this number repeatedly)."""
-        stdout = _run_mre(
-            ["--raw-data", str(REPO / "raw_data"), "--plant-config", str(REPO / "plant_config.json"),
-             "--snapshot-id", "snap-gaunt-regress3", "--horizon-days", "2", "--time-limit", "30"],
-            tmp_path,
-        )
-        assert "173 errors" in stdout
+# NOTE (Session 4B.2, R-SC1): the gauntlet regression (TestGauntletReproducesBaseline)
+# was REMOVED here — the historical ticketing extract (raw_data/) has exited the
+# test path entirely. The extract is now demoted to a PROFILE source only
+# (tools/extract_pilot_profile.py → datasets/pilot_scale/pilot_profile.json); all
+# plant physics is authored deliberately in the pilot_scale synthetic plant. The
+# sample_data baseline above remains the deterministic-reproduction anchor.

@@ -358,20 +358,8 @@ class TestProfitableMergeAccepted:
 
 
 # ---------------------------------------------------------------------------
-# (iii) Gauntlet solves FEASIBLE under merge_by_family_v2 (slow, --runslow)
+# (iii) Gauntlet solves FEASIBLE under merge_by_family_v2 — REMOVED (Session
+# 4B.2, R-SC1): the historical ticketing extract (raw_data/) has exited the test
+# path entirely; it is now a PROFILE source only (see tools/extract_pilot_profile.py).
+# The merge_by_family_v2 mechanics remain covered by the synthetic fixtures above.
 # ---------------------------------------------------------------------------
-
-@pytest.mark.slow
-class TestGauntletFeasibleWithV2:
-    def test_gauntlet_solves_feasible(self, tmp_path):
-        from mre.__main__ import main
-
-        raw_data = Path(__file__).parent.parent / "raw_data"
-        plant_config = Path(__file__).parent.parent / "plant_config.json"
-        out_dir = tmp_path / "gauntlet_v2"
-        rc = main([
-            "--raw-data", str(raw_data), "--plant-config", str(plant_config),
-            "--out", str(out_dir), "--policy", "merge_by_family_v2",
-            "--time-limit", "120",
-        ])
-        assert rc == 0
