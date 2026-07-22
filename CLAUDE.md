@@ -94,6 +94,75 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.2c — measurement-
+integrity errands (post-audit) 2026-07-22.** A read-only audit of Session 4B.2
+produced an errand list; this session executes it — scoped fixes, tests, and docs
+only, **NO** rolling-horizon mechanism redesign and no window-curve re-run (CU1's
+load-bearing test passed). Deterministic throughout (PYTHONHASHSEED=0, workers 1,
+seed 42). Two additive test seams on `rolling_horizon.py` (a default-on
+`earliness_incentive` toggle + a behavior-neutral `window_observer` hook, plus
+real per-window build-wall recording); production behavior unchanged
+(goldens/determinism unaffected). **CU1 (load-bearing) — earliness-incentive
+boundedness:** the incentive is a GLOBAL weight-1/min ASAP pull on every free op,
+not a frozen-front subset (its "fills the frozen front" comment overclaimed →
+corrected). Counterfactual (on vs off, deterministic, the 7-day knee): its reach
+is bounded **IN COST** — total +$74.30 (**+0.290%**, within a 1%-of-total epsilon
+justified by the ≥100:1 tardiness dominance), setup identical, tardiness 0, no
+priced line worsens (the extractor prices production+setup+tardiness only, so an
+ASAP pull has no JIT/inventory line to inflate) → **(a)+(b) PASS**; but it is
+**NOT placement-neutral** — it relocates a 7-op job to a dearer-but-earlier
+machine, and that relocation IS the +$74.30 → **(c) recorded as xfail** with the
+measured numbers, not tuned away (re-scoping to a strict zero-cost tiebreaker is
+left to the working thread). **CU2 — latency RE-MEASURED on a LOADED window:** the
+committed 4B.2 figure was measured on a **0-op window** (void, a harness
+artifact); re-measured on the MOST-LOADED 7-day window (**44 free ops**, demo
+density): build 0.028s · solve-to-first-feasible 0.275s · solve-to-budget 4.95s
+(FEASIBLE, hits the 0.5-unit budget) · a forced-alternative sandbox re-solve
+(one op, 3 eligible, pinned to a non-default resource) 3.826s — so a proven
+verdict / priced ghost is **seconds (~4–5s), NOT sub-second**; grab→shade is only
+build + Tier-0 payload (no solve). **All pilot_scale figures are DEMO density (60
+orders / 141 ops / 15 machines); pilot volume (174 workcenters) latency is
+UNMEASURED, pending connector-era data.** **CU3 — rolling-determinism golden:**
+`tools/rolling_golden.py` + committed `tests/fixtures/baselines/
+rolling_pilot_golden.json` (digest `b595c724…`, 24 orders / window 7 / frozen 3 →
+54 committed ops, $14,708.38, 0 late) — two subprocess rolls agree with each other
+AND the golden (detects DRIFT, not just intra-run nondeterminism); a fast
+in-process smoke guards intra-run determinism. **CU4 — the untested mechanisms
+(audit Q7):** frozen-front commit (exactly the ops starting inside [t0,frozen_end)
+commit this window; the split has teeth) + absolute origin (a committed op is
+never re-placed, never re-enters as free work, and NO pin RECORDS are minted — the
+frozen commit is a bare `{resource,start,end}` placement, not an R-DP8 Decision).
+**CU5 — PREDICTIONS.md GRADED** (post-hoc deterministic solve + committed report):
+**3 CORRECT / 3 PARTIAL / 1 WRONG / 2 NOT-EVALUABLE** — CORRECT #3 (CUT
+concentrates on the cheapest) + #4 (PAINT colours separate, 0 changeovers); WRONG
+**#6 (ASM-01 is the binding constraint)** — at this light load ASM-01 carries 4
+ops and is not the busiest (MILL-01 23), ≤1 late so nothing concentrates;
+NOT-EVALUABLE #5 (splittable chunking not visible in `committed_ops`) + #7
+(priority — a data fact surfaced: pilot priority rides `customer_weight` 1/3/8, NOT
+`commitment_class` which flattened to "standard"; and the light load never forces
+priority to visibly lead). **CU7 —** `deploy/ci_local.ps1` reproduces the ci.yml
+image-as-shipped gate locally (build runtime → build test → fast suite
+in-container → /health), ci.yml named as source of truth. **Named debt:**
+per-component gravity ablation (the counterfactual proved the BUNDLE of three
+pulls; setup-family affinity is the priced-air candidate). **R-SC1 wording
+corrected:** the gate bypass exited the TEST path (gauntlet tests removed); live
+gate-free raw paths remain (`__main__.py --raw-data`, `gauntlet_rescue_report.py`,
+`solver_gap_probe.py`, `calibrate_outliers.py`) — owned Phase-4 debt (RawAdapter
+retirement), not "DELETED". **Full non-slow Python suite green: 1211 passed, 20
+skipped, 0 failed** (+1 fast determinism smoke this session; the slow ladder —
+determinism golden, earliness bound + its xfail, frozen-front split, absolute
+origin, roll-converges, gravity counterfactual — green separately). The audit's
+1209-vs-1210 note reconciles as a skip/environment difference, not failures: the
+count drifts up as sessions add tests (1209 at 4A.2d → 1211 now), and the built
+container reports 1200 because environment-conditional tests skip there (no live
+LLM key, raw_data extract absent), not because anything fails. See the docs/04 2026-07-22 Session
+4B.2c amendment and docs/07 v2.33. Lesson: an audit's errands are where the
+measurements earn their trust — a latency figure on an empty window measured
+nothing; a determinism claim with no committed golden is an assertion; a global
+incentive is only "bounded" once proven in COST and honest about where it is NOT
+neutral in PLACEMENT; and a prediction graded WRONG or NOT-EVALUABLE teaches more
+than the ones that held.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 2.4b (partial) — the
 FIRST real container build; in-container CI CONFIRMED 2026-07-21.** Docker became
 available on the dev machine, so the session 2.4 CU1 carry-forward finally ran:
@@ -203,7 +272,11 @@ worse) — and **7 d ≈ the profile's 7.5-day median lead time** (size the wind
 the plant's lead time, find it by the knee); the gravity counterfactual proves
 look-ahead (a monster job WITH gravity finishes on time, WITHOUT it lands 6,781
 tardiness-minutes / +$2,825 late — price-bought-something applied to look-ahead);
-per-window interaction cost sub-second. **CU5 — honest scoping:** the cockpit is NOT
+per-window interaction cost sub-second [CORRECTED by Session 4B.2c CU2: that figure
+was measured on a 0-op window and is VOID; on the MOST-LOADED 7-day window (44 free
+ops) build is 0.028s and a first-feasible verdict 0.275s, but a proven/budgeted
+verdict or a forced-alternative priced ghost is SECONDS (~4–5s), not sub-second —
+and all figures are demo density, pilot volume unmeasured]. **CU5 — honest scoping:** the cockpit is NOT
 retrofitted — pilot_scale has no monolithic solve to render whole; a single window
 is renderable but the slice-aware board + rolling-schedule-to-document wiring is the
 **4B.3 retrofit, designed FROM these numbers** (the point of measuring first). Named

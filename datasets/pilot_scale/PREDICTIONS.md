@@ -86,3 +86,34 @@ silent lie): Acme (critical), Bolt (high), Civic/Delta (standard).
   multiply the per-window assignment search and defeat the "a window solves fast"
   property the whole rolling architecture depends on — so the cross-machine
   choice is placed deliberately where the predictions turn on it.
+
+## Graded against the measured solve (Session 4B.2c, 2026-07-22)
+
+Graded post-hoc against a deterministic rolling solve of the 60-order pilot_scale
+(window 7 / frozen 2, seed 42, PYTHONHASHSEED=0) plus the committed
+`tools/pilot_measurements_report.json`. Honest grades — a WRONG recorded is the
+discipline working. **Score: 3 CORRECT · 3 PARTIAL · 1 WRONG · 2 NOT-EVALUABLE**
+(predictions 1–8), plus the authored-simplification block CORRECT by construction.
+
+| # | Prediction | Grade | Evidence |
+|---|---|---|---|
+| 1 | Monolith bad, slice good | **PARTIAL** | The slice half holds — the window curve converges (7-day → $37.7k, 1 late) and a LOADED window reaches first-feasible in 0.275s. But the monolith was NOT solved this session (asserted, not measured), and "a window solves to OPTIMAL well under a second" is CONTRADICTED for a loaded window: solve-to-budget is 4.95s **FEASIBLE**, not OPTIMAL (CU2). |
+| 2 | PRESS-SLOW is spillover only | **PARTIAL** | Consistent but under-exercised: PRESS-FAST carried 17 ops, **PRESS-SLOW 0** — FAST was never saturated at this load, so SLOW correctly stayed idle. The priced-spillover event (a SLOW placement billing its 2× duration) never occurred, so that half is unverified. |
+| 3 | CUT concentrates on the cheapest | **CORRECT** | CUT-01 ($55) 20 ops / CUT-02 ($58) 14 / CUT-03 ($62) 5 — load concentrates on the cheapest machine, spilling to dearer ones only under load, exactly as predicted. |
+| 4 | PAINT colours separate to avoid changeovers | **CORRECT** | RED batched on PAINT-01, BLUE on PAINT-02 → **0 colour changeovers paid** on either machine. The optimizer separated the families to dodge the 90-min matrix. |
+| 5 | Splittable spacers chunk at the closure | **NOT-EVALUABLE** | 3 splittable P-SPACER ops exist (min_chunk PT1H), but `committed_ops` stores one start/end per op — the per-chunk pause at the overnight/maintenance closure is not visible in the committed artifact (needs run-window inspection). |
+| 6 | ASM-01 is the binding constraint | **WRONG** (at this load) | ASM-01 carried just 4 ops / 1,210 min and is NOT the busiest machine (MILL-01 23 ops / 5,081 min; CUT-01 20). At 60 orders the plant is barely contended (≤1 late), so no lateness "concentrates" anywhere and ASM-01 is not binding. The prediction may hold at heavier load; as stated for the measured instance it is wrong. |
+| 7 | Priority orders lead under contention | **NOT-EVALUABLE** | Two findings: (i) priority IS populated but rode **`customer_weight`** (1.0×45 / 3.0×10 / 8.0×5), while canonical `commitment_class` flattened to "standard" for all 60 demands — the priority label did not survive into that field. (ii) At this low-contention load, weight-8 (critical) work does not visibly lead: its mean start-day (~10.4) ≈ standard's (~10.4), confounded by due dates. No contention to force the comparison. |
+| 8 | Maintenance Wed + Saturday overtime bend the schedule | **PARTIAL** | Consistent conditional behavior: **0 Saturday ops** (overtime unused — nothing late needed the 1.5× premium), and work flows around the maintenance Wednesday (the only op spanning 2026-01-14 is a splittable P-SPACER pausing across it, not a closure violation). The premium-vs-tardiness trade never fired because the plant wasn't late enough to trigger it. |
+| — | Authored simplifications (qty capped / routes 1–4 / 15 machines·1 facility / alternates on CUT·PRESS) | **CORRECT** | 15 resources confirmed; 141 ops / 60 orders ≈ 2.35 ops/order (in the 1–4 band); the forced-alternative probe found an op with 3 eligible machines on a CUT step, others single-eligible — all as authored. |
+
+**What the grading taught.** The two most useful grades are the WRONG (P6) and the
+two NOT-EVALUABLE (P5, P7). P6 and P7 share a root: **the 60-order demo instance is
+too lightly loaded to exercise the contention the predictions turn on** — ASM-01
+never becomes a bottleneck and priority never has to break a tie because almost
+nothing is late. A heavier instance (or the pilot volume) is needed to grade the
+contention predictions; that is named as connector-era work. P7 also surfaced a
+concrete data fact worth carrying: pilot_scale priority lives in `customer_weight`,
+not `commitment_class`. The predictions that DID hold cleanly (P3 cheapest-machine
+concentration, P4 colour separation) are the ones about the plant's *physics*,
+which the solve reproduces regardless of load.

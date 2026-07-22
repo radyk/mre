@@ -174,56 +174,123 @@ def measure_density(plant) -> dict:
 # CU4d — interaction latencies on ONE window's model
 # ---------------------------------------------------------------------------
 
-def measure_latencies(submission, out_dir, window_days=4) -> dict:
-    """Time the interaction primitives on ONE window's model: the interaction
-    payload build (grab->shade input), on-demand ghost pricing, and a single-pin
-    sandbox verdict. Reuses the shipped machinery on a windowed model so the
-    numbers reflect a slice, not the whole backlog."""
-    from mre.modules.rolling_horizon import _build_window, _admit
-    plant = prepare_plant(submission, out_dir, reference_date=REF)
-    ref = plant.reference_date
-    window_start = ref
-    window_end = ref + timedelta(days=window_days)
-    candidates = plant.schedulable_demands
-    admitted, _ = _admit(plant, candidates, window_start, window_end, True, 3.0)
-    free_ops = [op for did in admitted
-                for op in plant.ops_by_wp.get(plant.wp_of_demand.get(did), [])]
+def measure_latencies(plant, det_time=4.0, window_days=7, frozen_days=2) -> dict:
+    """CU2 (4B.2c) — interaction latency on the MOST LOADED window of the
+    deployment (7-day) configuration, NOT the first (near-empty) window.
 
-    horizon_end = (max(_dt(d["due"]) for d in candidates if d.get("due"))).replace(
-        hour=23, minute=59, second=59) + timedelta(days=90)
+    The 4B.2 committed figure was measured on a 0-op window (a harness artifact);
+    it is void. Here we roll the deployment window, keep the window with the most
+    free ops (the worst case the cockpit must interact against), and measure on
+    THAT model: build time, solve-to-first-feasible, solve-to-budget, and one
+    forced-alternative re-solve (one op pinned to a non-default resource — the
+    Tier-2 sandbox gesture the cockpit retrofit actually needs)."""
+    from mre.modules.rolling_horizon import _build_window
+    from mre.modules.solve_runner import SolveRunner
+    from mre.modules.solver_builder import add_required_resource_cut
+    from mre.modules import standing_pins as sp
+
+    # --- find the most-loaded window of the 7-day roll --------------------------
+    loaded = {"free_op_count": -1}
+    def _observe(b):
+        nonlocal loaded
+        if b["free_op_count"] > loaded["free_op_count"]:
+            loaded = b
+    run_rolling_horizon(plant, window_days=window_days, frozen_days=frozen_days,
+                        gravity=True, deterministic=True, seed=42,
+                        det_time=det_time, member_time_limit_s=30.0,
+                        window_observer=_observe)
+    if loaded["free_op_count"] <= 0:
+        return {"error": "no loaded window found", "window_days": window_days}
+
+    free_ops = loaded["free_ops"]
+    pinned_ops = loaded["pinned_ops"]
+    committed = loaded["committed"]
+    ref = loaded["ref"]
+    t0_min = loaded["t0_min"]
+
+    # --- rebuild that exact window standalone; time the build -------------------
     t0 = time.perf_counter()
-    model, var_map = _build_window(plant, free_ops, [], ref, horizon_end)
+    model, var_map = _build_window(plant, free_ops, pinned_ops, ref,
+                                   loaded["win_horizon_end"])
     build_s = time.perf_counter() - t0
 
-    from mre.modules.solve_runner import SolveRunner
-    t0 = time.perf_counter()
-    solve = SolveRunner(time_limit_seconds=20.0, num_search_workers=1,
-                        random_seed=0).solve(model, var_map, None)
-    solve_s = time.perf_counter() - t0
+    # replicate the rolling loop's window constraints (floor + carried pins +
+    # earliness incentive) so the timed model IS the one the roll solves.
+    free_start_vars = []
+    for op in free_ops:
+        v = var_map.op_start.get(op["id"])
+        if v is not None:
+            model.add(v >= t0_min)
+            free_start_vars.append(v)
+    for op in pinned_ops:
+        c = committed.get(op["id"])
+        if not c or op["id"] not in var_map.op_start:
+            continue
+        smin = int(round((_dt(c["start"]) - ref).total_seconds() / 60.0))
+        try:
+            sp.apply_pin(model, var_map, op["id"], c["resource"], max(0, smin))
+        except Exception:
+            pass
+    if var_map.objective_terms and free_start_vars:
+        model.minimize(sum(var_map.objective_terms) + sum(free_start_vars))
 
-    # grab->shade input: the Tier-0 pinnable-resources computation over the
-    # window's operations (the payload the cockpit shades from). Timed here as
-    # the server-side compute; the client redraw is separate (measured in JS).
-    shade_s = None
-    try:
-        from mre.modules import eligibility as elig
-        t0 = time.perf_counter()
-        for op in free_ops[: min(200, len(free_ops))]:
-            _ = op  # payload assembly is O(ops x eligible) — measured as a batch
-        shade_s = time.perf_counter() - t0
-    except Exception:
-        pass
+    # --- solve-to-first-feasible (deterministic) --------------------------------
+    from ortools.sat.python import cp_model as cp
+    s1 = cp.CpSolver()
+    s1.parameters.num_search_workers = 1
+    s1.parameters.random_seed = 42
+    s1.parameters.stop_after_first_solution = True
+    t0 = time.perf_counter()
+    st1 = s1.Solve(model)
+    first_feasible_s = time.perf_counter() - t0
+    first_status = {cp.OPTIMAL: "OPTIMAL", cp.FEASIBLE: "FEASIBLE"}.get(st1, "UNKNOWN")
+
+    # --- solve-to-budget (deterministic-time budget: reproducible) --------------
+    t0 = time.perf_counter()
+    budget_solve = SolveRunner(time_limit_seconds=30.0, num_search_workers=1,
+                               random_seed=42, deterministic_time=det_time
+                               ).solve(model, var_map, None)
+    budget_s = time.perf_counter() - t0
+
+    # --- forced-alternative re-solve (the Tier-2 sandbox gesture) ---------------
+    # pick one free op with >1 eligible resource, read the resource the budget
+    # solve chose, pin it to a DIFFERENT eligible one, re-solve to budget.
+    fa = {"available": False}
+    sv = budget_solve.solve_values
+    for op in free_ops:
+        oid = op["id"]
+        elig = list(var_map.op_assign.get(oid, {}).keys())
+        chosen = sv.op_resource.get(oid)
+        alt = next((r for r in elig if r != chosen), None)
+        if len(elig) > 1 and chosen and alt:
+            add_required_resource_cut(model, var_map, oid, alt)
+            t0 = time.perf_counter()
+            fa_solve = SolveRunner(time_limit_seconds=30.0, num_search_workers=1,
+                                   random_seed=42, deterministic_time=det_time
+                                   ).solve(model, var_map, None)
+            fa = {"available": True, "op_eligible_count": len(elig),
+                  "resolve_s": round(time.perf_counter() - t0, 3),
+                  "status": fa_solve.status}
+            break
 
     return {
         "window_days": window_days,
-        "admitted_demands": len(admitted),
+        "loaded_window_index": loaded["index"],
         "window_free_ops": len(free_ops),
+        "window_pinned_ops": len(pinned_ops),
         "window_build_s": round(build_s, 3),
-        "window_solve_s": round(solve_s, 3),
-        "window_solve_status": solve.status,
-        "note": ("grab->shade / on-demand ghost pricing / single-pin sandbox all "
-                 "operate on this window's model (free_ops above), not the full "
-                 "backlog; build+solve of one window is the cost that bounds them."),
+        "solve_to_first_feasible_s": round(first_feasible_s, 3),
+        "solve_to_first_feasible_status": first_status,
+        "solve_to_budget_s": round(budget_s, 3),
+        "solve_to_budget_status": budget_solve.status,
+        "det_time_budget_units": det_time,
+        "forced_alternative_resolve": fa,
+        "note": ("Measured on the MOST-LOADED window of the deployment 7-day roll "
+                 "(worst case). grab->shade / on-demand ghost pricing / single-pin "
+                 "sandbox all operate on ONE such window's model; build + a "
+                 "single-pin re-solve is the cost that bounds the cockpit's "
+                 "interactions. These are demo-density figures (60 orders / 15 "
+                 "machines); pilot volume (174 workcenters) is UNMEASURED."),
     }
 
 
@@ -321,9 +388,10 @@ def main(argv=None):
     }
     print("   ", report["gravity"]["with_gravity"], "vs", report["gravity"]["without_gravity"])
 
-    # --- CU4d interaction latencies ------------------------------------------
-    print("[measure] CU4d interaction latencies ...")
-    report["latencies"] = measure_latencies(sub, scratch / "latency", window_days=4)
+    # --- CU4d interaction latencies (on the LOADED 7-day window) --------------
+    print("[measure] CU4d interaction latencies (loaded window) ...")
+    report["latencies"] = measure_latencies(plant, det_time=args.det_time,
+                                             window_days=7, frozen_days=args.frozen)
     print("   ", report["latencies"])
 
     REPORT.write_text(json.dumps(report, indent=2), encoding="utf-8")
@@ -356,10 +424,18 @@ def render_table(report: dict) -> str:
         lines.append(f"| WITHOUT gravity | {og['on_time']} | {og['late']} | {og['tardiness_min']} | {og['total_cost']} |")
         lines.append(f"\nGravity bought something: **{g['gravity_bought']}**.\n")
     lt = report.get("latencies", {})
-    if lt:
-        lines.append(f"**Interaction latency** (one {lt['window_days']}-day window, "
-                     f"{lt['window_free_ops']} free ops): build {lt['window_build_s']}s, "
-                     f"solve {lt['window_solve_s']}s ({lt['window_solve_status']}).")
+    if lt and "window_free_ops" in lt:
+        fa = lt.get("forced_alternative_resolve", {})
+        fa_s = f", forced-alt re-solve {fa['resolve_s']}s ({fa['status']})" if fa.get("available") else ""
+        lines.append(
+            f"**Interaction latency** (MOST-LOADED window of the 7-day roll, "
+            f"index {lt.get('loaded_window_index')}, {lt['window_free_ops']} free "
+            f"+ {lt.get('window_pinned_ops', 0)} pinned ops): build "
+            f"{lt['window_build_s']}s, solve-to-first-feasible "
+            f"{lt.get('solve_to_first_feasible_s')}s "
+            f"({lt.get('solve_to_first_feasible_status')}), solve-to-budget "
+            f"{lt.get('solve_to_budget_s')}s ({lt.get('solve_to_budget_status')})"
+            f"{fa_s}. Demo density; pilot volume UNMEASURED.")
     return "\n".join(lines)
 
 

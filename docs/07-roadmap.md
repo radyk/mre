@@ -1,6 +1,38 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.32 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.33 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.33:** **Session 4B.2c — measurement-integrity errands (post-audit)**
+2026-07-22 (docs/04 amendment). A read-only audit of 4B.2 produced an errand
+list; this session executes it — scoped fixes/tests/docs only, NO mechanism
+redesign, no window-curve re-run. **CU1 (load-bearing):** the earliness incentive
+(`rolling_horizon.py`) is a GLOBAL weight-1/min ASAP pull (its "fills the frozen
+front" comment overclaimed — corrected). Counterfactual (incentive on vs off,
+deterministic): its reach is bounded **IN COST** — total +$74.30 (+0.290%, within
+a 1% epsilon), no priced line worsens (extractor prices production+setup+tardiness
+only, so an ASAP pull has no JIT/inventory downside) → **PASS**; but it is **not
+placement-neutral** (it relocates a 7-op job to a dearer-but-earlier machine,
+paying that $74.30) → that assertion is recorded as **xfail** with the numbers,
+not tuned away. **CU2:** the committed 4B.2 latency was measured on a **0-op
+window** (void); RE-MEASURED on the MOST-LOADED 7-day window (44 free ops): build
+0.028s, solve-to-first-feasible 0.275s, solve-to-budget 4.95s (FEASIBLE), a
+forced-alternative sandbox re-solve 3.826s — a proven verdict/priced ghost is
+**seconds, not sub-second**; all figures are DEMO density (60/141/15), pilot
+volume (174 workcenters) UNMEASURED. **CU3:** a rolling-determinism GOLDEN
+(`tools/rolling_golden.py` + committed `rolling_pilot_golden.json`, digest
+`b595c724…`) — two subprocess rolls agree with each other and the golden (detects
+DRIFT, not just intra-run). **CU4:** mechanism tests via a new `window_observer`
+hook — frozen-front commit split (exactly the inside-zone ops commit) + absolute
+origin (committed ops never re-placed, no pin RECORDS minted). **CU5:**
+PREDICTIONS.md GRADED — **3 CORRECT / 3 PARTIAL / 1 WRONG / 2 NOT-EVALUABLE**
+(WRONG: ASM-01 not the bottleneck at this light load; a data fact surfaced —
+pilot priority rides `customer_weight`, not `commitment_class`). **CU7:**
+`deploy/ci_local.ps1` reproduces the ci.yml image-as-shipped gate locally. Named
+debt: per-component gravity ablation (the counterfactual proved the BUNDLE;
+setup-family affinity is the priced-air candidate). R-SC1 wording corrected (the
+gate bypass exited the TEST path; live raw paths remain, Phase-4 debt). Two
+rolling-runner additions are test seams (default-on incentive toggle + observer),
+production behavior unchanged. See the docs/04 2026-07-22 Session 4B.2c amendment.
 
 **v2.32:** **Session 2.4b (partial) — the FIRST real container build; in-container
 CI CONFIRMED** 2026-07-21 (docs/04 amendment). Docker became available, so the 2.4

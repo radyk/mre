@@ -6607,3 +6607,143 @@ reality — pin to the shipped interpreter, ship what you import, copy what you
 read — and point layout-coupled code and tests at the **installed package**, never
 the source tree. The stale-install false-green lesson applies to images too;
 building one is the only way to learn what it assumed.
+
+## Amendment — 2026-07-22: Session 4B.2c — measurement-integrity errands (post-audit)
+
+A read-only audit of Session 4B.2 (2026-07-22) verified its claims and produced an
+errand list; this session executes it. Scoped fixes, tests, and docs only — NO
+redesign of the rolling-horizon mechanism, no re-run of the window curve (CU1's
+load-bearing test passed). Deterministic throughout: PYTHONHASHSEED=0,
+--solver-workers 1, seed 42 (some legacy fixtures at seed 0). Files: the rolling
+runner gains two additive test seams (`earliness_incentive` toggle + a
+`window_observer` hook) and records real per-window build wall time; the
+measurement tool re-measures latency on a LOADED window; a determinism golden +
+driver; CU4 mechanism tests; the PREDICTIONS grade; this amendment; a local
+in-container CI script.
+
+**CU1 — earliness-incentive boundedness (the load-bearing item).** The incentive
+(`rolling_horizon.py` ~:448) is a GLOBAL weight-1/min ASAP pull on every free op,
+NOT a frozen-front subset; its comment overclaimed scope ("fills the frozen
+front") and is corrected to say so. The ruling: it STAYS AS-IS provided its reach
+is proven bounded. Counterfactual (`test_earliness_incentive_is_bounded`, +xfail
+sibling): one representative roll on the 40-order small_plant (window 7 / frozen 2,
+seed 42) WITH vs WITHOUT the incentive. **Result: (a) + (b) PASS** — total cost ON
+$25,694.98 vs OFF $25,620.68 = **+$74.30 (+0.290%)**, within a 1%-of-total epsilon
+(justified: the earliness weight is 1/min, tardiness ≥100/min in objective units,
+so the incentive is dominated ≥100:1 and any movement is second-order sequencing);
+setup identical ($3,520), tardiness 0 both; no priced line worsens beyond epsilon.
+There is no JIT/inventory line for an ASAP pull to inflate (the extractor prices
+production + setup + tardiness only), so pulling earlier has no priced DOWNSIDE.
+**(c) FAILS (recorded as xfail, not tuned away):** the incentive is NOT
+placement-neutral — it relocates a 7-op job across machines (440fbc69 → df5aa682)
+to start it earlier, and that relocation IS the +$74.30 (a dearer machine was free
+sooner). So the incentive can pay a small, BOUNDED production premium to pull work
+early. The load-bearing guarantee (reach bounded IN COST) holds; the placement-
+identity claim does not. Re-scoping the incentive to a strict zero-cost tiebreaker
+is a design decision left to the working thread. The toggle defaults on (production
+behavior unchanged).
+
+**CU2 — latency RE-MEASURED on a LOADED window (the 4B.2 figure was void).** The
+committed 4B.2 latency was measured on a window that admitted **0 operations**
+(`window_free_ops:0` — pilot due dates start beyond the first 4-day window; a
+harness artifact); it measured nothing and is SUPERSEDED. The new
+`measure_latencies` rolls the deployment 7-day window, keeps the MOST-LOADED
+window (the worst case the cockpit interacts against), and measures on that model.
+Loaded window (index 1, **44 free ops**, 60-order pilot_scale, det-time 0.5,
+deterministic): **build 0.028 s · solve-to-first-feasible 0.275 s (FEASIBLE) ·
+solve-to-budget 4.95 s (FEASIBLE, hits the 0.5-unit budget, not OPTIMAL) ·
+forced-alternative re-solve 3.826 s (one op with 3 eligible machines pinned to a
+non-default resource — the Tier-2 sandbox gesture, FEASIBLE).** The honest cockpit
+story: grab→shade needs only the build (0.028 s) + the Tier-0 payload (no solve); a
+sandbox verdict to FIRST FEASIBLE is ~0.3 s, but a proven/budgeted verdict and a
+priced ghost are **seconds** (≈4–5 s), NOT the "sub-second" the 4B.2 amendment
+stated for the void window. **All pilot_scale figures are DEMO DENSITY** (60 orders
+/ 141 ops / 15 machines); model build scales with resource + calendar count, so
+**pilot volume (174 workcenters) latency is UNMEASURED**, pending connector-era
+data. `pilot_measurements_report.json` `latencies` block replaced.
+
+**CU3 — rolling-determinism golden.** The 4B.2 "bit-identical across two trials"
+claim had no committed regression. Added `tools/rolling_golden.py` (a driver
+emitting a canonical, hashable committed-schedule + cost ledger) and
+`tests/test_rolling_horizon.py::test_rolling_determinism_golden` (slow): two
+SUBPROCESS rolls (PYTHONHASHSEED=0 + workers 1 + seed 42 + det-time budget) agree
+byte-for-byte with each other AND with the committed
+`tests/fixtures/baselines/rolling_pilot_golden.json` (schedule digest
+`b595c724…`, 24 orders / window 7 / frozen 3 → 54 committed ops, $14,708.38, 0
+late). Mirrors `test_defaults_reproduce_baseline`'s subprocess pattern; a fast
+in-process `test_rolling_determinism_smoke` (truncated horizon) guards intra-run
+determinism without the subprocess cost. Future sessions now detect DRIFT, not
+just intra-run nondeterminism; the regenerate-and-recommit path is named in the
+failure message.
+
+**CU4 — the untested rolling mechanisms (audit Q7).** Two slow tests over a new
+additive `window_observer` hook (behavior-neutral; it hands the caller each
+window's raw rebuild inputs + the frozen-front split): **(a) frozen-front commit**
+(`test_frozen_front_commit_splits_inside_from_outside`) — in every solved window
+the committed-this-window set equals EXACTLY the ops whose solved start falls in
+[t0, frozen_end); nothing at/after frozen_end commits this window; at least one
+window exhibits both (the split has teeth). **(b) absolute origin**
+(`test_absolute_origin_no_replacement_no_pin_records`) — a committed op is never
+re-placed in a later window and never re-enters as free work; and the persisted-pin
+machinery (`apply_standing_pins` / `normalize_pin` / `compose_lineage_pins`) is
+NEVER invoked during a plain roll, so the frozen commit mints **no pin RECORDS** —
+`committed_ops` entries are bare `{resource,start,end}` placements, not R-DP8
+standing-pin Decisions. **(c) deterministic budget** is covered by CU3 (cross-
+referenced, not duplicated).
+
+**CU5 — PREDICTIONS.md graded** (post-hoc, deterministic 60-order solve +
+committed report; graded section appended to the file). **Score: 3 CORRECT · 3
+PARTIAL · 1 WRONG · 2 NOT-EVALUABLE** (predictions 1–8) + the authored-
+simplification block CORRECT. CORRECT: #3 (CUT concentrates on the cheapest —
+CUT-01 20 ops / CUT-02 14 / CUT-03 5) and #4 (PAINT colours separate — 0
+changeovers, RED on PAINT-01 / BLUE on PAINT-02). WRONG: **#6 (ASM-01 is the
+binding constraint)** — at this load ASM-01 carried 4 ops / 1,210 min and is not
+the busiest (MILL-01 23 ops / 5,081 min), with ≤1 late so no lateness concentrates
+anywhere; the discipline working. NOT-EVALUABLE: #5 (splittable chunking not
+visible in `committed_ops`) and #7 (priority) — #7 surfaced a concrete data fact:
+pilot_scale priority rides **`customer_weight`** (1.0×45 / 3.0×10 / 8.0×5), while
+canonical `commitment_class` flattened to "standard" for all 60 demands, and the
+low-contention load never forces critical work to visibly lead. The root shared by
+#6/#7: the 60-order demo instance is too lightly loaded to exercise contention;
+heavier/pilot volume is connector-era work.
+
+**Named debt — per-component gravity ablation.** The gravity counterfactual
+(`test_gravity_counterfactual`, CU4c of 4B.2) proves the BUNDLE — all three pulls
+(must-start-by, weighted-criticality, setup-family affinity) on vs all off. No
+INDIVIDUAL component is proven; **setup-family affinity is the priced-air
+candidate** (it may contribute nothing on its own). A per-component ablation is
+named, not built.
+
+**Budget note (strengthens the 7-day knee).** The window curve used a per-slice
+deterministic budget with near-constant window counts (n_windows 11/11/11/9), so
+LARGER windows solved MORE operations under the SAME per-slice budget — a bias
+AGAINST the larger windows. The 7-day knee therefore holds despite, not because of,
+the budget allocation: it would only look better with a per-op-normalized budget.
+
+**R-SC1 wording correction.** The 4B.2 amendment said the raw-data gate bypass was
+"DELETED"; that overstated it. What was deleted is the bypass FROM THE TEST PATH
+(the two gauntlet regression tests). **Live gate-free raw paths remain**:
+`src/mre/__main__.py --raw-data` and the three tools `gauntlet_rescue_report.py`,
+`solver_gap_probe.py`, `calibrate_outliers.py` all still construct RawAdapter and
+skip the M0 gate. These are **owned Phase-4 debt** (RawAdapter full retirement),
+not deleted this session.
+
+**docs/07 lineage note (retroactive).** The docs/07 version jumped v1.9 → v2.0 at
+Session 3.1 with no recorded rationale (the audit flagged the gap). Legitimized
+retroactively: **v2.x marks the cockpit / Phase-3 production line** (the read-only
+cockpit shipped at 3.1). Nothing is renumbered.
+
+**Verification.** Full non-slow Python suite green; the new slow ladder
+(`test_rolling_horizon.py`: determinism golden, earliness bound + its xfail,
+frozen-front split, absolute origin, plus the existing roll-converges and gravity
+counterfactual) green. No solver/model/contract/frontend changes — the two
+rolling-runner additions are test seams (a default-on incentive toggle and an
+observer hook); production behavior is unchanged (goldens/determinism unaffected).
+
+Lesson: an audit's errands are where the measurements earn their trust — a latency
+figure taken on an empty window measured nothing; a determinism claim with no
+committed golden is an assertion; a global incentive is only "bounded" once you
+prove it in COST and admit where it is NOT neutral in PLACEMENT; and a prediction
+graded WRONG (ASM-01 not binding) or NOT-EVALUABLE (priority, at a load with no
+contention) teaches more than the ones that held. Measure the worst case, commit
+the golden, name what you could not evaluate.

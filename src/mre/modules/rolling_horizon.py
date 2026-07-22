@@ -355,6 +355,8 @@ def run_rolling_horizon(
     crit_threshold: float = 3.0,
     standing_pins: Optional[list[dict]] = None,
     max_windows: Optional[int] = None,
+    earliness_incentive: bool = True,
+    window_observer: Optional[Any] = None,
 ) -> RollingResult:
     """Roll a window of `window_days`, committing the frozen front of
     `frozen_days`, until every operation is committed."""
@@ -423,12 +425,14 @@ def run_rolling_horizon(
         # those fully in the past cannot conflict with free work floored at t0.
         pinned_ops = [op for op in all_ops_of_sched
                       if op["id"] in committed and _dt(committed[op["id"]]["end"]) > t0]
+        committed_at_build = dict(committed)   # pin sources, before this window commits
 
         win_horizon_end = min(global_horizon_end,
                               window_end + timedelta(days=_WINDOW_TAIL_DAYS))
         t_b = _t.perf_counter()
         model, var_map = _build_window(plant, free_ops, pinned_ops, ref, win_horizon_end)
-        total_build += _t.perf_counter() - t_b
+        build_wall = _t.perf_counter() - t_b
+        total_build += build_wall
 
         free_start_vars = []
         for op in free_ops:
@@ -445,10 +449,20 @@ def run_rolling_horizon(
                 sp.apply_pin(model, var_map, op["id"], c["resource"], max(0, smin))
             except Exception:
                 pass
-        # EARLINESS incentive: a weight-1-per-minute ASAP pull, strictly dominated
-        # by tardiness (~42 units/min at _COST_SCALE=100) and setup — a pure
-        # tiebreaker that fills the frozen front so the roll makes progress.
-        if var_map.objective_terms and free_start_vars:
+        # EARLINESS incentive: a GLOBAL weight-1-per-minute ASAP pull on EVERY
+        # free op in the window (NOT just the frozen-front subset — its reach is
+        # the whole admitted set), strictly dominated by tardiness (~42 units/min
+        # at _COST_SCALE=100) and setup, so it never overrides those. It biases
+        # ties toward earlier starts so the frozen front fills and the roll makes
+        # progress. Its COST reach is BOUNDED but not zero: it can pay a small
+        # production premium to pull a job onto an earlier-free-but-dearer machine
+        # (measured +0.290% total on the 40-order small_plant — a 7-op relocation).
+        # It is NOT placement-neutral. Boundedness is proven by
+        # tests/test_rolling_horizon.py::test_earliness_incentive_is_bounded
+        # (total within a 1% epsilon, no priced line worsens); the placement
+        # premium is recorded there as an xfail. When the builder already set an
+        # objective, leaving this off keeps that objective unchanged.
+        if earliness_incentive and var_map.objective_terms and free_start_vars:
             model.minimize(sum(var_map.objective_terms) + sum(free_start_vars))
         if last_placements:
             apply_solution_hints(model, var_map, last_placements)
@@ -464,6 +478,8 @@ def run_rolling_horizon(
         total_solve += solve_wall
 
         committed_this = 0
+        win_starts: dict = {}          # op_id -> solved start_min (for the observer)
+        win_committed_ids: list = []   # ops committed THIS window (frozen front)
         if solve.status in ("OPTIMAL", "FEASIBLE"):
             sv = solve.solve_values
             placements = []
@@ -475,6 +491,7 @@ def run_rolling_horizon(
                 if res is None:
                     continue
                 s_min = sv.op_start_minutes[oid]
+                win_starts[oid] = s_min
                 s_dt = ref + timedelta(minutes=s_min)
                 e_dt = ref + timedelta(minutes=sv.op_end_minutes[oid])
                 placements.append({"operation_ref": oid, "resource_id": res,
@@ -487,6 +504,7 @@ def run_rolling_horizon(
                     committed[oid] = {"resource": res, "start": s_dt.isoformat(),
                                       "end": e_dt.isoformat()}
                     committed_this += 1
+                    win_committed_ids.append(oid)
             last_placements = placements
 
         windows.append(WindowMetric(
@@ -495,7 +513,24 @@ def run_rolling_horizon(
             admitted_demands=len(admitted), free_ops=len(free_ops),
             committed_this_window=committed_this, gravity_admits=reasons,
             status=solve.status, objective=solve.objective,
-            solve_wall_s=round(solve_wall, 3), build_wall_s=0.0))
+            solve_wall_s=round(solve_wall, 3), build_wall_s=round(build_wall, 3)))
+
+        # Observer hook (measurement only, no behavior change): hand the caller
+        # the raw inputs needed to REBUILD this exact window's model standalone
+        # (for latency timing on a LOADED window — Session 4B.2c CU2).
+        if window_observer is not None:
+            window_observer({
+                "index": i, "free_ops": list(free_ops),
+                "pinned_ops": list(pinned_ops),
+                "committed": committed_at_build,
+                "ref": ref, "win_horizon_end": win_horizon_end,
+                "t0_min": t0_min, "frozen_end_min": frozen_end_min,
+                "free_op_count": len(free_ops),
+                "win_starts": win_starts, "committed_this_ids": win_committed_ids,
+                "committed_after": dict(committed),
+                "solve_status": solve.status,
+                "solve_wall_s": round(solve_wall, 3),
+                "build_wall_s": round(build_wall, 3)})
 
         if len(committed) >= total_op_count:
             break
