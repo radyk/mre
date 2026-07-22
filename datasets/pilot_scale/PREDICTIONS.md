@@ -107,6 +107,34 @@ discipline working. **Score: 3 CORRECT · 3 PARTIAL · 1 WRONG · 2 NOT-EVALUABL
 | 8 | Maintenance Wed + Saturday overtime bend the schedule | **PARTIAL** | Consistent conditional behavior: **0 Saturday ops** (overtime unused — nothing late needed the 1.5× premium), and work flows around the maintenance Wednesday (the only op spanning 2026-01-14 is a splittable P-SPACER pausing across it, not a closure violation). The premium-vs-tardiness trade never fired because the plant wasn't late enough to trigger it. |
 | — | Authored simplifications (qty capped / routes 1–4 / 15 machines·1 facility / alternates on CUT·PRESS) | **CORRECT** | 15 resources confirmed; 141 ops / 60 orders ≈ 2.35 ops/order (in the 1–4 band); the forced-alternative probe found an op with 3 eligible machines on a CUT step, others single-eligible — all as authored. |
 
+## R-SC3 mechanism-change prediction (Session 4B.2d, 2026-07-22, BEFORE the re-run)
+
+The 4B.2 hidden weight-1/min earliness incentive is replaced by the R-SC3 two-stage
+solve (stage 1 = cost + priced earliness at the declared `earliness_value` 0.05
+$/min; stage 2 = cap cost, minimize op-start earliness). **Prediction: the 7-day
+knee SURVIVES** — window sizing is driven by tardiness/look-ahead (gravity + window
+length ≈ the plant's 7.5-day lead time), not by the earliness mechanism, so the
+shape of the cost-vs-window curve is unchanged. **Dollar figures move UP slightly**
+at each window: the declared 0.05 $/min now explicitly pays a small, bounded
+production premium to pull work onto earlier-but-dearer CUT/PRESS machines (the
+old hidden incentive paid a similar ~0.3% premium implicitly; making it a declared
+coefficient of comparable size keeps the move small and in the same direction).
+The coeff=0 curve should sit at or slightly BELOW the old figures (pure cost, no
+paid earliness). *(Grade appended after the re-run, below the table.)*
+
+**GRADE: CORRECT** (re-run 2026-07-22, 60 orders, frozen 2, seed 42, det_time 4.0;
+full table in docs/04). The **7-day knee SURVIVES on the FLOOR curve** (coeff 0):
+lateness resolves at window 7 (0 late; window 4 still 1 late), and 7 is the
+smallest window within 1% of the best cost ($37,065 vs the $36,998 window-10 best;
+window 4's $37,469 is just outside the band). The **demo dollar figures move UP**
+vs the floor at every window ($42,839/$37,707/$37,805/$38,063 vs the floor's
+$41,110/$37,469/$37,065/$36,998) — the declared 0.05 $/min premium, sub-2% at every
+window, every dollar carrying an EARLINESS_PREFERENCE driver. Honest wrinkle the
+re-run surfaced: the demo curve's own cost *minimum* is at window 4, because a
+larger window lets paid earliness buy more dearer-but-earlier placements, so the
+premium grows monotonically with the window — which is why the knee is read off the
+FLOOR curve (lateness, not the premium, sizes the window).
+
 **What the grading taught.** The two most useful grades are the WRONG (P6) and the
 two NOT-EVALUABLE (P5, P7). P6 and P7 share a root: **the 60-order demo instance is
 too lightly loaded to exercise the contention the predictions turn on** — ASM-01

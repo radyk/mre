@@ -1229,6 +1229,11 @@ def _apply_pilot_scale(ds: Dataset, rng: random.Random, n_orders: int) -> dict:
     # cost model: priced overtime premium so the Saturday HEAT window has a price.
     ds.cost_model["refinements"]["resource_rates"] = dict(rate_by_res)
     ds.cost_model["refinements"]["overtime_premium_multiplier"] = 1.5
+    # R-SC3 demo: a DEFAULTED (authored) earliness_value so the $74-class trade
+    # fires (a CUT op pulled onto a dearer-but-earlier machine). $0.05/min is well
+    # under the cheapest machine's per-minute rate ($45/h = $0.75/min → the sane
+    # band), so it is used as declared, not flagged. See PROFILE_PROVENANCE.md.
+    ds.cost_model["refinements"]["earliness_value"] = 0.05
 
     n_res = len(ds.resources)
     return {
@@ -1326,6 +1331,18 @@ def _anomaly_negative_quantity(ds: Dataset, rng: random.Random, n: int) -> dict:
     return _entry("negative_quantity", "VALUE_OUT_OF_RANGE",
                   "ids.order_quantities_are_positive", "degraded", "error",
                   "excluded", "CONDITIONAL", param=n, affected_count=len(victims))
+
+
+def _anomaly_bad_earliness_value(ds: Dataset, rng: random.Random, n: Any = None) -> dict:
+    """Rule #35 (R-SC3): declare a NEGATIVE earliness_value in cost_model
+    refinements. earliness_value prices op-start earliness ($/minute); a
+    negative value is invalid — it cannot be honored, so it degrades the grade
+    to CONDITIONAL and is defaulted to 0 downstream (earliness reverts to a free
+    tiebreak). The gate checks; the adapter defaults."""
+    ds.cost_model.setdefault("refinements", {})["earliness_value"] = -1.0
+    return _entry("bad_earliness_value", "VALUE_OUT_OF_RANGE",
+                  "ids.earliness_value_sane", "degraded", "warning",
+                  "defaulted", "CONDITIONAL")
 
 
 def _anomaly_zero_lot_size(ds: Dataset, rng: random.Random, n: int) -> dict:
@@ -1799,6 +1816,7 @@ _ANOMALY_FUNCS = {
     "lineless_routes": _anomaly_lineless_routes,
     "duplicate_order_ids": _anomaly_duplicate_order_ids,
     "negative_quantity": _anomaly_negative_quantity,
+    "bad_earliness_value": _anomaly_bad_earliness_value,
     "zero_lot_size": _anomaly_zero_lot_size,
     "inactive_route_refs": _anomaly_inactive_route_refs,
     "inverted_dates": _anomaly_inverted_dates,
@@ -1852,6 +1870,7 @@ RULE_TO_ANOMALY: dict[str, str] = {
     "ids.facility_references_consistent": "foreign_facility:2",
     "ids.orders_use_active_routes": "inactive_route_refs:3",
     "ids.priority_classes_priced": "uncovered_priority_class",
+    "ids.earliness_value_sane": "bad_earliness_value",
     "ids.setup_families_have_transition_matrix": "setup_family_without_matrix",
     "ids.alternative_step_attributes_agree": "alternative_step_disagreement",
     "ids.transition_matrix_references_declared_families": "unused_transition_matrix",

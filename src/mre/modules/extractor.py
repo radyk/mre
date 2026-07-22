@@ -94,6 +94,11 @@ class Extractor:
         setup_fixed: float = cost_model.get(
             "setup_cost_basis", {}
         ).get("fixed_per_setup", 0.0)
+        # R-SC3: declared price of op-start earliness ($/min). 0 => earliness is a
+        # pure zero-cost tiebreak and no assignment is attributed to it (the byte-
+        # identical guarantee for pre-R-SC3 datasets); positive => a dearer-but-
+        # earlier eligible placement is attributed to EARLINESS_PREFERENCE.
+        earliness_value: float = float(cost_model.get("earliness_value", 0.0) or 0.0)
         base_w: float = cost_model.get("tardiness_weights", {}).get("base_weight", 1.0)
         cc_mult: dict = cost_model.get("tardiness_weights", {}).get(
             "commitment_class_multipliers", {}
@@ -175,7 +180,7 @@ class Extractor:
             driver = self._assignment_driver(
                 chosen_rid, eligible_rids, rates,
                 op_start_min=start_min, op_end_min=end_min,
-                cal_windows=cal_windows,
+                cal_windows=cal_windows, earliness_value=earliness_value,
             )
 
             # Per-alternative duration (docs/06 §5.3): an eligible machine may
@@ -284,6 +289,7 @@ class Extractor:
                 "production_cost": op_cost,
                 "overtime_minutes": ot_min,
                 "decision_ref": decision_id,
+                "driver": driver.value,
             }
             assignments.append(asgn)
 
@@ -599,10 +605,18 @@ class Extractor:
         op_start_min: int = 0,
         op_end_min: int = 0,
         cal_windows: Optional[dict] = None,
+        earliness_value: float = 0.0,
     ) -> DriverCode:
         """Classify the primary driver for this assignment choice.
 
-        Priority: CALENDAR_WINDOW > COST_TRADEOFF > CAPACITY_BLOCKED.
+        Priority: CALENDAR_WINDOW > COST_TRADEOFF > EARLINESS_PREFERENCE >
+        CAPACITY_BLOCKED. EARLINESS_PREFERENCE fires only when a positive
+        earliness_value is declared (R-SC3) AND a dearer-than-cheapest eligible
+        machine was chosen — under the declared model, paying more per unit for
+        an eligible machine is the earliness preference being exercised (the only
+        priced reason to prefer a dearer eligible machine is an earlier start;
+        tardiness has its own weight). With earliness_value == 0 this branch is
+        unreachable, so pre-R-SC3 datasets classify byte-identically.
         """
         if not eligible or len(eligible) == 1:
             return DriverCode.CAPACITY_BLOCKED
@@ -620,6 +634,10 @@ class Extractor:
         other_rates = [rates.get(r, 0.0) for r in eligible if r != chosen_rid]
         if other_rates and chosen_rate < min(other_rates):
             return DriverCode.COST_TRADEOFF
+        # EARLINESS_PREFERENCE: a declared earliness price chose a dearer eligible
+        # machine (a strictly-cheaper eligible alternative existed and was passed).
+        if earliness_value > 0 and other_rates and chosen_rate > min(other_rates):
+            return DriverCode.EARLINESS_PREFERENCE
         return DriverCode.CAPACITY_BLOCKED
 
 

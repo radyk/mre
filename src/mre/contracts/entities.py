@@ -394,6 +394,11 @@ class CostModel(BaseModel):
     tardiness_weights: TardinessWeights = TardinessWeights(base_weight=1.0)
     overtime_premium: float = 0.0
     inventory_carrying: float = 0.0
+    # R-SC3 (docs/06 §5.9): declared price of op-start earliness ($/minute).
+    # 0 (the default) => earliness is a pure zero-cost lexicographic tiebreak
+    # (the R-SC3(1) FLOOR); positive => earliness enters the primary objective
+    # at this price and every placement it buys is traceable to it.
+    earliness_value: float = 0.0
 
 
 # ---------------------------------------------------------------------------

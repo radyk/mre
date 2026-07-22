@@ -94,6 +94,60 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.2d — R-SC3:
+earliness as tiebreak + declared coefficient 2026-07-22.** Supersedes the 4B.2
+hidden weight-1/min earliness incentive (4B.2c proved it spent an undeclared
++$74.30 = +0.290%, recorded as an xfail). **R-SC3 (docs/04, verbatim):** earliness
+is a ZERO-COST lexicographic tiebreak (the FLOOR — among cost-optimal schedules the
+solver prefers earlier starts, always/unconditionally); PAID earliness is a
+declared `CostModel.earliness_value` ($/min, default 0); no internal undeclared
+weight may move placement (the 4B.2 incentive is REMOVED, not re-scoped);
+idle-minutes-as-objective is rejected as provably inert (total idle is conserved
+for a fixed book — only its POSITION moves) and belongs in evidence Metrics.
+**CU1 — two-stage solve** (`rolling_horizon.py`): stage 1 minimizes cost (+
+`earliness_value × Σ free-op starts` ONLY when the coefficient is positive — the
+priced term is omitted entirely at 0, never ×0); stage 2 caps the stage-1 objective
+at `round(best)` and re-minimizes `Σ free-op starts`, warm-started via `add_hint`
+under a small deterministic budget (`_STAGE2_DET_TIME_S=2.0`; on exhaustion the
+stage-1 incumbent stands, never a worse-cost schedule). Applied per window, in
+`_final_extract`, and in a new non-rolling `reference_solve`. The
+`earliness_incentive` seam is DELETED; the run takes an `earliness_value` override
+(None ⇒ the declared value). **CU2 — the IDS doorway (full pathway):** docs/06 §5.9
+`refinements.earliness_value`; **rule #35 `ids.earliness_value_sane`** (registry
+**34→35**, conditional/VALUE_OUT_OF_RANGE — negative/unparseable ⇒ DEGRADED
+defaulted-to-0, dearer-than-cheapest-per-minute ⇒ FLAGGED units error; the gate
+checks, never repairs) + anomaly `bad_earliness_value` + coverage-matrix entry;
+`IDSAdapter` records **observed** provenance when declared, **defaulted** (0) when
+absent; a remediation-catalog note; `pilot_scale` sets a DEFAULTED demo value
+**0.05 $/min** (PROFILE_PROVENANCE.md rationale; under the $0.75/min sane band).
+**CU3 — driver `EARLINESS_PREFERENCE`** (DriverCode **12→13**, docs/02): the
+extractor attributes a dearer-than-cheapest eligible placement to it ONLY when
+earliness_value > 0 (byte-identical classification at 0 → pre-R-SC3 goldens
+unaffected); AI-reachable via the EXISTING `why-on-machine` route (driver-agnostic
+`driver_phrase`), NO new route bolted on. **CU4 — the 4B.2c xfail flipped to two
+hard passes** (8-order pilot MONOLITH, where the floor's cost-invariance is
+*provable*): **(a)** coeff 0 two-stage == plain cost-only to the cent
+(**$5,719.83**, production/setup/tardiness all identical, epsilon 0 — 4B.2c's
+assertion (c) finally passing; the floor's start-sum falls 36,544→23,549 min,
+earlier & free); **(b)** coeff 0.05 = **+$33.60** total, start-sum 23,549→16,452
+(gained 7,097 min), `33.60 ≤ 0.05×7097 = 354.85`, **2 placements cite
+EARLINESS_PREFERENCE**. **CU5 — per-resource manned-idle Metric**
+(`compute_manned_idle_metrics`: calendar-open-to-last-placement minus busy, on
+`RollingResult.idle_metrics`; hand-checked unit). **CU6 — window curve re-run**
+(both coefficients, deterministic) + the rolling golden **regenerated DELIBERATELY**
+(24-order/window-7: $14,708.38 → $14,904.05, +$195.67 production-only, digest
+`b595c724…→ef30a4bb…`, bit-identical across two subprocess rolls) — a named golden
+regen, not a silent one. Prediction (authored before the re-run): the 7-day knee
+survives; dollar figures move up slightly — GRADED in PREDICTIONS.md. **Full
+non-slow Python suite green: 1219 passed, 0 failed** (+8: extractor driver
+attribution ×3, idle metric, the two CU4 passes replacing the old bound+xfail,
+etc.); the slow rolling ladder green with **NO xfails remaining**. See the docs/04
+2026-07-22 Session 4B.2d amendment and docs/07 v2.34. Lesson: a hidden weight that
+"just makes the front fill" is undeclared money — make it a two-stage lexicographic
+tiebreak (free) plus a declared coefficient (priced and traceable to an
+`EARLINESS_PREFERENCE` driver); the floor is then provably placement-neutral in
+money, and a golden that legitimately changes is regenerated in the open.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.2c — measurement-
 integrity errands (post-audit) 2026-07-22.** A read-only audit of Session 4B.2
 produced an errand list; this session executes it — scoped fixes, tests, and docs

@@ -40,8 +40,8 @@ PLAN_SOLVE_FINDING_CODES = {
 
 
 class TestDriverCodes:
-    def test_exactly_12(self):
-        assert len(DriverCode) == 12
+    def test_exactly_13(self):
+        assert len(DriverCode) == 13
 
     def test_all_names_present(self):
         names = {d.value for d in DriverCode}
@@ -50,6 +50,7 @@ class TestDriverCodes:
             "CAPABILITY_LIMITED", "SETUP_AMORTIZATION", "SEQUENCE_DEPENDENCY",
             "CALENDAR_WINDOW", "FROZEN_COMMITMENT", "DATA_EXCLUSION",
             "POLICY_RULE", "SOLVER_LIMIT", "NO_ALTERNATIVE",
+            "EARLINESS_PREFERENCE",   # R-SC3 (2026-07-22)
         }
         assert names == expected
 

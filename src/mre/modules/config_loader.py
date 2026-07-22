@@ -87,12 +87,13 @@ def load_cost_model(
         ),
         overtime_premium=raw.get("overtime_premium", 0.0),
         inventory_carrying=raw.get("inventory_carrying", 0.0),
+        earliness_value=raw.get("earliness_value", 0.0),   # R-SC3
     )
 
     attrs = [
         "version", "effective_from", "resource_rates",
         "setup_cost_basis", "tardiness_weights",
-        "overtime_premium", "inventory_carrying",
+        "overtime_premium", "inventory_carrying", "earliness_value",
     ]
     provenance = [_defaulted(cm_id, a, snapshot_id, policy_label) for a in attrs]
     return cm, provenance, unresolved_keys

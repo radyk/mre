@@ -118,7 +118,8 @@ class DecisionType(str, Enum):
 
 
 class DriverCode(str, Enum):
-    """Primary driver codes for Decisions. Exactly 12 per spec docs/02 §4.2."""
+    """Primary driver codes for Decisions. Exactly 13 per spec docs/02 §4.2
+    (EARLINESS_PREFERENCE added 2026-07-22, R-SC3; add, never repurpose)."""
     COST_TRADEOFF = "COST_TRADEOFF"
     DUE_DATE_PRESSURE = "DUE_DATE_PRESSURE"
     CAPACITY_BLOCKED = "CAPACITY_BLOCKED"
@@ -131,6 +132,9 @@ class DriverCode(str, Enum):
     POLICY_RULE = "POLICY_RULE"
     SOLVER_LIMIT = "SOLVER_LIMIT"
     NO_ALTERNATIVE = "NO_ALTERNATIVE"
+    # A dearer-but-earlier placement purchased by the declared earliness_value
+    # coefficient (R-SC3(2), docs/06 §5.9). Fires only when earliness_value > 0.
+    EARLINESS_PREFERENCE = "EARLINESS_PREFERENCE"
 
 
 class FindingCode(str, Enum):

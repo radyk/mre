@@ -74,6 +74,37 @@ def test_latest_feasible_start_precedes_due(small_plant):
         assert _latest_feasible_start(p, d) <= _dt(d["due"])
 
 
+def test_manned_idle_metric_matches_hand_computation():
+    """CU5 (R-SC3): per-resource manned-idle = calendar-open (to the last
+    committed placement) minus busy. Hand-checked on a two-machine one-day fixture:
+    ref Mon 2026-01-05, shift 07:00-19:00; op1 fills R1 07:00-11:00 (240 min), op2
+    runs R2 07:00-08:00 (60 min). sched_end = 11:00 => open window per machine is
+    240 min; R1 idle 0, R2 idle 180."""
+    from mre.modules.rolling_horizon import compute_manned_idle_metrics
+    from datetime import timedelta
+    ref = datetime(2026, 1, 5, tzinfo=timezone.utc)   # a Monday, midnight
+    calendars = [{"id": "CAL", "base_pattern": {"weekdays": [0, 1, 2, 3, 4],
+                  "shift_start": "07:00", "shift_end": "19:00"}, "exceptions": []}]
+    resources = [{"id": "R1", "calendar_ref": "CAL"},
+                 {"id": "R2", "calendar_ref": "CAL"}]
+
+    def iso(h, m=0):
+        return (ref + timedelta(hours=h, minutes=m)).isoformat()
+    committed = {
+        "op1": {"resource": "R1", "start": iso(7), "end": iso(11)},   # 240 min
+        "op2": {"resource": "R2", "start": iso(7), "end": iso(8)},    # 60 min
+    }
+    metrics = compute_manned_idle_metrics(resources, calendars, committed, ref,
+                                          ref + timedelta(days=2))
+    by_res = {m["resource_id"]: m for m in metrics}
+    assert by_res["R1"]["calendar_open_minutes"] == 240
+    assert by_res["R1"]["busy_minutes"] == 240
+    assert by_res["R1"]["manned_idle_minutes"] == 0
+    assert by_res["R2"]["calendar_open_minutes"] == 240
+    assert by_res["R2"]["busy_minutes"] == 60
+    assert by_res["R2"]["manned_idle_minutes"] == 180
+
+
 # ---------------------------------------------------------------------------
 # CU4 (4B.2c) — the untested rolling mechanisms (audit Q7).
 #   (a) frozen-front commit: ops STARTING inside the frozen zone commit this
@@ -232,99 +263,101 @@ def test_rolling_determinism_golden():
 
 
 # ---------------------------------------------------------------------------
-# slow — CU1 (4B.2c): the EARLINESS incentive's reach is BOUNDED.
+# slow — CU4 (R-SC3): the FLOOR is cost-neutral; PAID earliness buys what it says.
 #
-# The incentive (rolling_horizon.py ~:448) is a GLOBAL weight-1/min ASAP pull on
-# every free op, not a frozen-front subset. The ruling: it STAYS AS-IS provided
-# its reach is proven bounded — it is a tiebreaker among cost-equal solutions,
-# never overriding a priced decision. Counterfactual: one representative rolling
-# solve (the 7-day knee) WITH vs WITHOUT the incentive, deterministic. Assert:
-#   (a) the evaluated Extractor-ledger TOTAL differs by at most a small epsilon;
-#   (b) no priced cost line worsens with the incentive on (there is no JIT/
-#       inventory line for an ASAP pull to inflate — extractor prices production
-#       + setup + tardiness only — so pulling earlier has no priced downside);
-#   (c) placement differences are slack-only: no operation is RELOCATED across
-#       machines (a priced choice); the incentive only shifts start times.
+# R-SC3 replaced the 4B.2 hidden weight-1/min incentive with a two-stage solve:
+# stage 1 minimizes cost (+ priced earliness at the declared earliness_value);
+# stage 2 caps the stage-1 objective and re-minimizes op-start earliness (the
+# zero-cost lexicographic tiebreak). These tests flip 4B.2c's xfail into two hard
+# passes, measured on a small pilot MONOLITH where cost-invariance of the FLOOR is
+# PROVABLE (a single solve capping cost at its optimum can only reshuffle starts,
+# never change cost — unlike a rolling roll, whose frozen choices propagate).
 #
-# EPSILON: the earliness weight is 1/min; tardiness is >=100/min in objective
-# units (base_weight 1.0 x _COST_SCALE 100, larger for priority classes), so the
-# incentive is dominated >=100:1. Any ledger movement is therefore second-order
-# sequencing among cost-tied placements, not a priced consequence of pulling
-# early. We bound the total change at 1% of the incentive-OFF total — well below
-# the production cost of relocating even a handful of ops across machines.
+# (a) coefficient = 0 — the FLOOR is placement-neutral IN MONEY: two-stage vs a
+#     plain cost-only solve (stage 1 only) have IDENTICAL Extractor-ledger costs
+#     (epsilon 0, not 1%); any placement delta is earlier-at-equal-cost only.
+#     This is 4B.2c's assertion (c) finally passing — the corrected, honest claim.
+# (b) coefficient > 0 (the pilot_scale demo value) — PAID earliness bought what it
+#     says: (i) total earliness-minutes strictly improve; (ii) the cost increase is
+#     <= earliness_value x earliness-minutes-gained (bounded by construction:
+#     stage 1 minimizes cost + coeff*earliness, so any accepted (cost, earliness)
+#     obeys cost + coeff*earliness <= the coeff=0 pair's — rearranged, the bound);
+#     (iii) >=1 purchased placement's Decision cites the CU3 EARLINESS_PREFERENCE
+#     driver.
 #
-# RESULT (Session 4B.2c, measured on the 40-order small_plant, window 7 / frozen
-# 2, seed 42, PYTHONHASHSEED=0): (a) and (b) PASS — total ON $25,694.98 vs OFF
-# $25,620.68 = +$74.30 (+0.290%, < the $256 epsilon); setup identical ($3,520),
-# tardiness 0 both. (c) FAILS: the incentive relocated a 7-op job across machines
-# (440fbc69 -> df5aa682) to start it earlier, raising production by exactly the
-# +$74.30 total delta. So the incentive is NOT a pure zero-cost slack move — it
-# can pay a SMALL, BOUNDED production premium (here 0.29%) to pull work earlier,
-# because on distinct-rate machines an earlier-available machine may be dearer.
-# The load-bearing guarantee (reach is bounded IN COST) holds; the placement-
-# identity claim (c) does not. (a)+(b) are the live regression below; (c) is
-# recorded as xfail with these numbers — re-scoping the incentive to a strict
-# zero-cost tiebreaker is a design decision for the working thread, not here.
+# MEASURED (Session 4B.2d, 8-order pilot monolith, seed 42, PYTHONHASHSEED=0, demo
+# earliness_value 0.05 $/min): (a) cost-only == floor == $5,719.83 to the cent
+# (production 4,999.83 / setup 720 / tardiness 0, all identical); the floor's
+# start-sum falls 36,544 -> 23,549 min (earlier, free). (b) demo total $5,753.43 =
+# +$33.60; start-sum 23,549 -> 16,452 (gained 7,097 min); 33.60 <= 0.05*7097 =
+# 354.85; 2 placements cite EARLINESS_PREFERENCE.
 # ---------------------------------------------------------------------------
 
-_EARLINESS_EPS_FRACTION = 0.01   # see EPSILON note above
+@pytest.fixture(scope="module")
+def tiny_plant(tmp_path_factory):
+    """An 8-order pilot_scale plant — small enough to solve as ONE monolith (no
+    rolling), so the FLOOR's cost-invariance is provable, not merely bounded."""
+    from generate_erp_dataset import generate
+    d = tmp_path_factory.mktemp("pilot_tiny")
+    generate(d / "sub", scenario="pilot_scale", orders=8, seed=1)
+    return prepare_plant(d / "sub", d / "prep", reference_date=REF)
+
+
+def _start_minutes_sum(placements) -> int:
+    return sum(int((_dt(c["start"]) - REF).total_seconds() / 60)
+              for c in placements.values())
 
 
 @pytest.mark.slow
-def test_earliness_incentive_is_bounded(small_plant):
-    """(a) + (b): the incentive's COST reach is bounded — total within epsilon
-    and no priced line worsens beyond it. The load-bearing guarantee."""
-    common = dict(window_days=7, frozen_days=2, gravity=True,
-                  deterministic=True, seed=42, member_time_limit_s=8.0)
-    r_on = run_rolling_horizon(small_plant, earliness_incentive=True, **common)
-    r_off = run_rolling_horizon(small_plant, earliness_incentive=False, **common)
+def test_earliness_floor_is_placement_neutral_in_money(tiny_plant):
+    """(a): coefficient 0 — the two-stage FLOOR and a plain cost-only solve have
+    IDENTICAL ledger costs (epsilon 0); placement deltas are earlier-at-equal-cost
+    only. 4B.2c's assertion (c), corrected and passing."""
+    from mre.modules.rolling_horizon import reference_solve
 
-    led_on, led_off = r_on.cost_ledger, r_off.cost_ledger
-    total_on, total_off = led_on["total_cost"], led_off["total_cost"]
-    eps = max(1.0, _EARLINESS_EPS_FRACTION * total_off)
+    led_cost, _, _, tot_cost, pl_cost = reference_solve(
+        tiny_plant, earliness_value=0.0, two_stage=False, seed=42, det_time=4.0)
+    led_floor, _, _, tot_floor, pl_floor = reference_solve(
+        tiny_plant, earliness_value=0.0, two_stage=True, seed=42, det_time=4.0)
 
-    # (a) total cost within epsilon
-    assert abs(total_on - total_off) <= eps, (
-        f"earliness incentive moved total cost beyond epsilon: "
-        f"on={total_on:.2f} off={total_off:.2f} eps={eps:.2f}")
-
-    # (b) no priced line worsens with the incentive ON (allow epsilon of noise).
-    # There is no JIT/inventory line for an ASAP pull to inflate — the extractor
-    # prices production + setup + tardiness only — so pulling earlier has no
-    # priced DOWNSIDE; the only movement is a small production premium bounded
-    # by epsilon (see the RESULT note above).
+    assert abs(tot_cost - tot_floor) < 1e-6, (
+        f"floor moved total cost: cost-only={tot_cost:.4f} floor={tot_floor:.4f}")
     for line in ("production_cost", "setup_cost", "tardiness_cost"):
-        on_v = led_on.get(line, 0.0)
-        off_v = led_off.get(line, 0.0)
-        assert on_v <= off_v + eps, (
-            f"priced line {line} WORSENED with the incentive on beyond epsilon: "
-            f"on={on_v:.2f} off={off_v:.2f} eps={eps:.2f}")
+        assert abs(led_cost.get(line, 0.0) - led_floor.get(line, 0.0)) < 1e-6, (
+            f"floor changed priced line {line}: "
+            f"{led_cost.get(line)} vs {led_floor.get(line)}")
+    # any placement delta is earlier-at-equal-cost only (never later on net).
+    assert _start_minutes_sum(pl_floor) <= _start_minutes_sum(pl_cost)
 
 
 @pytest.mark.slow
-@pytest.mark.xfail(reason=(
-    "MEASURED FINDING (4B.2c): the earliness incentive is NOT placement-neutral. "
-    "On the 40-order small_plant (window 7 / frozen 2, seed 42) it relocates a "
-    "7-op job across machines (440fbc69 -> df5aa682) to start it earlier, paying "
-    "+$74.30 production (+0.290% of total). So assertion (c) 'changes no priced "
-    "quantity' is FALSE: the incentive trades a small, bounded production premium "
-    "for an earlier start. The COST bound (a)+(b) holds; this placement claim "
-    "does not. Re-scoping the incentive to a strict zero-cost tiebreaker is a "
-    "design decision for the working thread."), strict=False)
-def test_earliness_incentive_placements_are_slack_only(small_plant):
-    """(c): no op committed in both runs is RELOCATED across machines. This is a
-    stronger claim than cost-boundedness and reality violates it (xfail) — the
-    incentive pays a bounded premium to pull work onto an earlier-free machine."""
-    common = dict(window_days=7, frozen_days=2, gravity=True,
-                  deterministic=True, seed=42, member_time_limit_s=8.0)
-    r_on = run_rolling_horizon(small_plant, earliness_incentive=True, **common)
-    r_off = run_rolling_horizon(small_plant, earliness_incentive=False, **common)
-    relocated = [oid for oid, c_on in r_on.committed_ops.items()
-                 if oid in r_off.committed_ops
-                 and c_on["resource"] != r_off.committed_ops[oid]["resource"]]
-    assert not relocated, (
-        f"earliness incentive RELOCATED {len(relocated)} op(s) across machines "
-        f"(a priced choice, not a slack move): {relocated[:5]}")
+def test_earliness_coefficient_bought_earliness(tiny_plant):
+    """(b): coefficient > 0 (the demo value) — paid earliness bought what it says:
+    (i) earliness-minutes strictly improve, (ii) the cost increase is bounded by
+    coeff x earliness-minutes-gained, (iii) >=1 placement cites the driver."""
+    from mre.contracts.vocabularies import DriverCode
+    from mre.modules.rolling_horizon import reference_solve
+
+    coeff = float(tiny_plant.cost_model.get("earliness_value", 0.0))
+    assert coeff > 0, "pilot_scale must declare a positive demo earliness_value"
+
+    _, _, _, tot_off, pl_off = reference_solve(
+        tiny_plant, earliness_value=0.0, two_stage=True, seed=42, det_time=4.0)
+    _, _, drivers_on, tot_on, pl_on = reference_solve(
+        tiny_plant, earliness_value=None, two_stage=True, seed=42, det_time=4.0)
+
+    gained = _start_minutes_sum(pl_off) - _start_minutes_sum(pl_on)
+    # (i) earliness-minutes strictly improve — the price bought something.
+    assert gained > 0, f"paid earliness did not improve start-sum (gained={gained})"
+    # (ii) the cost increase is at most coeff x earliness-minutes-gained.
+    cost_increase = tot_on - tot_off
+    assert cost_increase <= coeff * gained + 1e-6, (
+        f"cost increase {cost_increase:.2f} exceeds coeff*gained "
+        f"{coeff * gained:.2f} (coeff={coeff}, gained={gained})")
+    # (iii) at least one purchased placement is attributed to the driver.
+    purchased = [oid for oid, d in drivers_on.items()
+                 if d == DriverCode.EARLINESS_PREFERENCE.value]
+    assert purchased, "no placement cited EARLINESS_PREFERENCE (raise the demo value)"
 
 
 # ---------------------------------------------------------------------------

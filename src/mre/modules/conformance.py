@@ -812,6 +812,51 @@ class ConformanceGate:
                detail={"uncovered_classes": uncovered, "known_classes": sorted(priority_multipliers)})
 
         # ------------------------------------------------------------
+        # Conditional integrity: earliness_value sane (R-SC3, rule #35)
+        # cost_model refinements.earliness_value prices op-start earliness
+        # plant-wide ($/minute). Optional (absent => satisfied, treated as 0).
+        # Negative/unparseable => DEGRADED (invalid; defaulted to 0 downstream).
+        # A positive value dearer than the cheapest resource's PER-MINUTE rate is
+        # almost certainly a unit error (hours vs minutes) => FLAGGED. The gate
+        # checks; the adapter proceeds (defaulting an invalid value to 0).
+        # ------------------------------------------------------------
+        cm_refinements = (cost_model or {}).get("refinements", {}) or {}
+        if cost_model is not None and not cost_model_bad_json \
+                and "earliness_value" in cm_refinements:
+            raw_ev = cm_refinements.get("earliness_value")
+            try:
+                ev = float(raw_ev)
+                ev_parsed = True
+            except (TypeError, ValueError):
+                ev, ev_parsed = 0.0, False
+            # cheapest per-minute resource rate: min positive hourly candidate / 60
+            hourly = [_num(core.get("default_resource_rate_per_hour"))]
+            hourly += [_num(v) for v in (cm_refinements.get("resource_rates") or {}).values()]
+            hourly += [_num(r.get("cost_rate")) for r in resources if str(r.get("cost_rate") or "").strip()]
+            positive_hourly = [h for h in hourly if h > 0]
+            cheapest_per_min = (min(positive_hourly) / 60.0) if positive_hourly else None
+
+            if not ev_parsed or ev < 0:
+                ev_outcome = RuleOutcome.DEGRADED
+                ev_msg = (f"earliness_value is not a valid non-negative number "
+                          f"({raw_ev!r}); it is defaulted to 0")
+                ev_disp = FindingDisposition.DEFAULTED
+            elif cheapest_per_min is not None and ev > cheapest_per_min:
+                ev_outcome = RuleOutcome.FLAGGED
+                ev_msg = (f"earliness_value {ev:g} $/min exceeds the cheapest resource "
+                          f"rate {cheapest_per_min:.4f} $/min — likely a units error "
+                          f"(hours vs minutes)")
+                ev_disp = FindingDisposition.PROCEEDED_FLAGGED
+            else:
+                ev_outcome = RuleOutcome.SATISFIED
+                ev_msg = "earliness_value within a sane band"
+                ev_disp = FindingDisposition.PROCEEDED_FLAGGED
+            record(RuleId.EARLINESS_VALUE_SANE, ev_outcome, _submission_subject(),
+                   ev_msg, disposition=ev_disp,
+                   detail={"earliness_value": raw_ev,
+                           "cheapest_resource_rate_per_min": cheapest_per_min})
+
+        # ------------------------------------------------------------
         # Quality (informational; never degrades a grade)
         # ------------------------------------------------------------
         ref_date = (date.fromisoformat(manifest["reference_date"][:10])

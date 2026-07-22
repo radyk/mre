@@ -309,6 +309,34 @@ rules:
       degraded: "non-positive quantities exceed the conditional threshold; the orders are excluded and triage is required"
     note_version: 1
 
+  - rule_id: ids.earliness_value_sane
+    meaning: >
+      cost_model refinements.earliness_value (R-SC3) is the declared price of
+      starting work early — dollars per MINUTE of op-start earliness, applied
+      plant-wide. It is a preference, not a service guarantee: it biases the
+      optimizer toward earlier starts and, when positive, will pay a small,
+      bounded production premium to pull a job onto a machine that is free
+      earlier. It is optional; absent, earliness is a pure zero-cost tiebreak.
+    typical_causes:
+      - a value entered in dollars per HOUR (or per day) rather than per minute
+        — the single most common slip, so a value dearer than running the
+        machine is treated as a units error and flagged
+      - a negative or non-numeric cell surviving the extract mapping
+      - copying an hourly resource rate into the earliness column by mistake
+    fix_looks_like: >
+      Declare the §5.9 cost_model refinements.earliness_value in DOLLARS PER
+      MINUTE and check the units: if a minute of earliness is worth more than a
+      minute of the cheapest machine's time, you have almost certainly entered an
+      hourly figure — divide by 60. A negative or unparseable value cannot be
+      honored and is defaulted to 0 (earliness reverts to a free tiebreak);
+      correct it at the source to price earliness. Leave the field absent to opt
+      out of paid earliness entirely.
+    verify: resubmit; the certificate reports earliness_value against the cheapest per-minute rate
+    outcome_phrasing:
+      flagged: "earliness_value is dearer than the cheapest machine per minute — likely an hours-vs-minutes units error; it is used as declared but flagged"
+      degraded: "earliness_value is negative or unparseable; it is defaulted to 0 (earliness reverts to a free tiebreak) and triage is required"
+    note_version: 1
+
   - rule_id: ids.order_dates_internally_consistent
     meaning: >
       Within each order, the dates must tell a possible story — due on or

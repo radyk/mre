@@ -71,9 +71,11 @@ Every record carries:
 
 **The planner-edit Decision (Phase 3, R-DP7).** When a planner drops a bar and *accepts* the Tier-2 verdict, the accept records a `planner_edit` Decision and mints a NEW proposed schedule version (the base is never mutated). `basis` is `observed` — the pin is a directly observed human command, not a solver reconstruction (the *consequences* the re-solve computes are reconstructed evidence in that new version's own run, as always). `chosen` carries the pin (operation, resource, start), the priced delta, and the moved-set count; `alternatives` carries the road not taken (keeping the incumbent placement, at its known cost). `authority` is mandatory. Publish (proposed → published) is a separate act that supersedes the prior version and invalidates its pools/alternatives; it is not itself a Decision but a status transition recorded in the registry.
 
-**Driver codes (12):**
+**Driver codes (13):**
 
-`COST_TRADEOFF` · `DUE_DATE_PRESSURE` · `CAPACITY_BLOCKED` · `CAPABILITY_LIMITED` · `SETUP_AMORTIZATION` · `SEQUENCE_DEPENDENCY` · `CALENDAR_WINDOW` · `FROZEN_COMMITMENT` · `DATA_EXCLUSION` · `POLICY_RULE` · `SOLVER_LIMIT` · `NO_ALTERNATIVE`
+`COST_TRADEOFF` · `DUE_DATE_PRESSURE` · `CAPACITY_BLOCKED` · `CAPABILITY_LIMITED` · `SETUP_AMORTIZATION` · `SEQUENCE_DEPENDENCY` · `CALENDAR_WINDOW` · `FROZEN_COMMITMENT` · `DATA_EXCLUSION` · `POLICY_RULE` · `SOLVER_LIMIT` · `NO_ALTERNATIVE` · `EARLINESS_PREFERENCE`
+
+`EARLINESS_PREFERENCE` (added 2026-07-22, R-SC3): a placement on a dearer-but-earlier eligible machine that a positive `CostModel.earliness_value` (docs/06 §5.9) *bought*. It fires only when earliness_value > 0; with the 0 default the earliness floor is a pure zero-cost tiebreak and no assignment is attributed to it, so pre-R-SC3 datasets classify byte-identically. Under the declared model the only priced reason to prefer a dearer eligible machine is an earlier start (tardiness has its own weight), so a dearer-than-cheapest eligible choice is attributed to the earliness preference.
 
 **The reconstruction principle.** A CP-SAT solve makes thousands of implicit decisions; the solver's internal search is not observable. What is recorded is the reconstruction at solution-extraction time: for each task in the final solution, re-derive the alternative set and consequences from the model's own data (eligible resources, occupancy, cost parameters). Cheap and honest — and always marked `basis: reconstructed`, so the AI layer never overclaims. The correct phrasing is "X was chosen; the alternatives would have cost…" — never "the solver chose X *because*…". Improving-solution snapshots during the solve stream through the same mechanism via the solver callback.
 

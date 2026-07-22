@@ -8,7 +8,7 @@ vocabulary to plain planner language, per R-AI1(c): intelligence accrues in a
 reviewable artifact (this file), never in model state.
 
 Three authored dictionaries + two composers:
-  - ``DRIVER_PHRASING``  — the 12 DriverCodes → plain cause (CU4).
+  - ``DRIVER_PHRASING``  — the 13 DriverCodes → plain cause (CU4).
   - ``FINDING_PHRASING`` — the 18 FindingCodes → plain cause (CU2).
   - ``JARGON`` / ``strip_jargon`` — module/provenance tokens a planner
     should never see in an answer (CU6).
@@ -42,6 +42,8 @@ DRIVER_PHRASING: dict[str, str] = {
     "POLICY_RULE": "a scheduling policy required it",
     "SOLVER_LIMIT": "the solver reached its time budget before improving further",
     "NO_ALTERNATIVE": "there was no other feasible option",
+    "EARLINESS_PREFERENCE": "a declared earliness preference paid a little more to "
+                            "start it sooner on a machine that was free earlier",
 }
 
 # ---------------------------------------------------------------------------

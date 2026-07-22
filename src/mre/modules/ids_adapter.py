@@ -684,6 +684,12 @@ class IDSAdapter:
         # ------------------------------------------------------------
         cm_id = _stable_id("costmodel", cost_model_raw.get("version", "ids-v1"))
         refinements = cost_model_raw.get("refinements", {}) or {}
+        # R-SC3 (docs/06 §5.9): earliness_value ($/minute of op-start earliness).
+        # PRESENT in the submission => an OBSERVED fact; ABSENT => the default 0
+        # is DEFAULTED provenance, never observed (a preference the plant never
+        # declared must not be recorded as one it did).
+        earliness_declared = "earliness_value" in refinements
+        earliness_value = _num(refinements.get("earliness_value"), 0.0)
         cm = CostModel(
             id=cm_id, snapshot_id=snapshot_id, version=1, effective_from=None,
             resource_rates=resource_rates,
@@ -697,10 +703,17 @@ class IDSAdapter:
             ),
             overtime_premium=_num(refinements.get("overtime_premium_multiplier")),
             inventory_carrying=_num(refinements.get("inventory_carrying")),
+            earliness_value=earliness_value,
         )
         cm_prov = _def_list(cm_id, ["version", "effective_from", "resource_rates", "setup_cost_basis",
                                    "tardiness_weights", "overtime_premium", "inventory_carrying"],
                             snapshot_id, "ids_cost_model_v1")
+        if earliness_declared:
+            cm_prov.append(_obs(cm_id, "earliness_value", snapshot_id,
+                                "refinements.earliness_value"))
+        else:
+            cm_prov.append(_def(cm_id, "earliness_value", snapshot_id,
+                                "ids_cost_model_v1_default_zero"))
         writer.write_entity(cm, cm_prov)
 
         # ------------------------------------------------------------

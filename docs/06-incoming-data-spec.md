@@ -103,7 +103,7 @@ The gate runs as an evidence-emitting module (standard finding vocabulary). Outp
 | **CONDITIONALLY ACCEPTED** | Quantified gaps within thresholds; submitter triages each class: fix / waive-with-exclusion / block. |
 | **ACCEPTED** | Proceeds; quality flags disclosed. |
 
-### 4.1 The Rule Registry (v0.3 of the registry; IDS v0.5)
+### 4.1 The Rule Registry (v0.3 of the registry; IDS v0.5; 35 rules)
 
 The gate is a **registry of named rules**, not a prose tier list. The registry
 below is the constitution; `src/mre/contracts/ids_rules.py` is its executable
@@ -139,7 +139,7 @@ distinguishes an informational quality flag from a WARNING flag at the same
 outcome.
 
 **Status column** (implemented / unimplemented) — the same honesty convention as
-docs/05's MP/PP column. All 33 read *implemented*; the column is permanent: the
+docs/05's MP/PP column. All 35 read *implemented*; the column is permanent: the
 registry never again silently claims a check the gate does not have.
 
 **Boolean structural — satisfied/violated:**
@@ -181,6 +181,7 @@ the new definitions (recorded in the anomaly catalog, not hand-tuned).
 | ids.facility_references_consistent | ORPHAN_ENTITY | §3, §5.5 | implemented |
 | ids.orders_use_active_routes | LOW_CONFIDENCE_INPUT | §5.2 | implemented |
 | ids.priority_classes_priced | UNMAPPABLE_VALUE | §5.9, App A | implemented |
+| ids.earliness_value_sane | VALUE_OUT_OF_RANGE | §5.9 | implemented |
 | ids.setup_families_have_transition_matrix | AMBIGUOUS_SOURCE | §5.11 | implemented |
 | ids.transition_matrix_references_declared_families | AMBIGUOUS_SOURCE | §5.11 | implemented |
 | ids.customer_references_have_master | AMBIGUOUS_SOURCE | §5.10 | implemented |
@@ -294,12 +295,15 @@ The mission is **cost-optimized scheduling**; economics are not optional. The re
     "overtime_premium_multiplier": 1.5,
     "transition_costs": "see setup_transitions.csv",
     "scrap_cost_per_unit": null,
-    "inventory_carrying": null
+    "inventory_carrying": null,
+    "earliness_value": 0.05
   }
 }
 ```
 
 `core` is Tier-1 required in full. `priority_multipliers` keys must cover every priority/commitment class used in orders/customers (Tier-2 check otherwise). Customer priority **is a cost coefficient**: there is a priced cost to failing high-priority customers, and it enters the objective as the per-demand tardiness weight.
+
+**`earliness_value` (optional refinement; R-SC3).** Currency **per minute** of op-start earliness, applied plant-wide (`>= 0`; **absent ⇒ 0**). Semantics: it **prices earliness**, biasing the optimizer toward earlier starts and, when positive, willing to pay a small bounded production premium to pull a job onto a machine that is free earlier — it is a **preference, not a service guarantee** (a service guarantee is a due date, priced as tardiness). **0 makes earliness a pure zero-cost tiebreak** (among cost-optimal schedules the solver prefers earlier starts; no priced term is created). It is a *declared* coefficient precisely so no internal, undeclared weight can move placement (R-SC3(3)): schedule slack at the horizon tail is an option on unknown future demand, and only a human declaration prices it. Units matter — a value dearer than the cheapest resource's per-minute rate is almost certainly an hours-vs-minutes slip, and the gate flags it (rule `ids.earliness_value_sane`, §4).
 
 ### 5.10 customers.csv (optional*, doorway)
 customer_id ✓ · name · priority_class ✓ (→ priority_multipliers) · notes. Order-level priority interacts per manifest `priority_precedence`.

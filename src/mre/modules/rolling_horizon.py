@@ -1,4 +1,19 @@
-"""Rolling-horizon (sliced) solve runner — Session 4B.2, R-SC2.
+"""Rolling-horizon (sliced) solve runner — Session 4B.2, R-SC2 / R-SC3.
+
+R-SC3 (docs/04, Session 4B.2d): earliness is a ZERO-COST TIEBREAK, and PAID
+earliness is a declared cost-model coefficient — NOT the hidden weight-1/min
+incentive 4B.2 shipped. Each window (and the final pricing pass) solves in TWO
+STAGES:
+  * Stage 1 minimizes sum(objective_terms) [+ earliness_value×Σ free-op starts
+    when a positive earliness_value is declared — the priced-earliness term is
+    OMITTED ENTIRELY when the coefficient is 0, never multiplied by zero];
+  * Stage 2 caps the stage-1 objective at its optimum and re-minimizes Σ free-op
+    starts (warm-started from stage 1) — the lexicographic "prefer earlier among
+    cost-optimal placements" floor. A small deterministic budget bounds stage 2;
+    on exhaustion the stage-1 incumbent stands (never a worse-cost schedule).
+This replaces the 4B.2 hidden incentive (removed, not re-scoped): no internal
+undeclared weight influences placement; a placement a positive coefficient buys
+is traceable via the EARLINESS_PREFERENCE driver (docs/02).
 
 R-SC2 (docs/04): slicing is a ROLLING HORIZON with a FROZEN ZONE and GRAVITY
 admission. Solve a window of declared length; commit only the frozen front;
@@ -74,6 +89,83 @@ def parse_iso_duration_minutes(s: Optional[str]) -> int:
 def _dt(iso: str) -> datetime:
     d = datetime.fromisoformat(iso)
     return d if d.tzinfo else d.replace(tzinfo=UTC)
+
+
+# R-SC3: a small deterministic budget for the stage-2 earliness tiebreak. Warm-
+# started from a feasible stage-1 incumbent, so budget exhaustion is benign — the
+# stage-1 schedule stands and is never worse in cost.
+_STAGE2_DET_TIME_S = 2.0
+
+
+def _earliness_coeff_scaled(cost_model: dict, override: Optional[float]) -> int:
+    """The earliness coefficient in CP-SAT objective units (dollars × _COST_SCALE
+    per minute-of-start). override wins when given (tests / measurement); else the
+    declared CostModel.earliness_value. 0 ⇒ 0 ⇒ the priced term is omitted."""
+    from mre.modules.solver_builder import _COST_SCALE
+    val = override if override is not None else float(cost_model.get("earliness_value", 0.0) or 0.0)
+    return int(round(max(0.0, val) * _COST_SCALE))
+
+
+def _hint_from_solve(model, var_map, sv) -> None:
+    """Re-seed the model's solution hints from a completed solve (stage-1 →
+    stage-2 warm start). Clears prior hints first so no variable is double-hinted
+    (CP-SAT rejects duplicate hint entries)."""
+    model.clear_hints()
+    for oid, smin in sv.op_start_minutes.items():
+        v = var_map.op_start.get(oid)
+        if v is not None:
+            model.add_hint(v, smin)
+        ev = var_map.op_end.get(oid)
+        emin = sv.op_end_minutes.get(oid)
+        if ev is not None and emin is not None:
+            model.add_hint(ev, emin)
+        res = sv.op_resource.get(oid)
+        if res is not None:
+            for r2, bv in var_map.op_assign.get(oid, {}).items():
+                model.add_hint(bv, 1 if r2 == res else 0)
+
+
+def _two_stage_solve(model, var_map, free_start_vars, earliness_coeff_scaled, *,
+                     workers, seed, deterministic, member_time_limit_s,
+                     stage1_det_time, stage2_det_time=_STAGE2_DET_TIME_S):
+    """R-SC3 two-stage solve on an already-built model (constraints/pins applied,
+    warm-start hints seeded by the caller). Returns (SolveResult, stage2_ran).
+
+    Stage 1 minimizes cost (+ priced earliness at earliness_coeff_scaled); stage
+    2 caps the stage-1 objective at round(best) and re-minimizes Σ free-op starts
+    (the zero-cost tiebreak). With no objective terms or no free-op starts, only
+    stage 1 runs. On a stage-2 non-solution the stage-1 incumbent stands."""
+    from mre.modules.solve_runner import SolveRunner
+
+    terms = var_map.objective_terms
+
+    def _runner(det):
+        return SolveRunner(time_limit_seconds=member_time_limit_s,
+                           num_search_workers=workers, random_seed=seed,
+                           deterministic_time=(det if deterministic else None))
+
+    # STAGE 1 — cost (+ priced earliness when declared). When the coefficient is
+    # 0 the priced term is omitted entirely (the builder's own minimize(sum(terms))
+    # stands); when positive it enters the primary objective at its price.
+    if terms and earliness_coeff_scaled > 0 and free_start_vars:
+        model.minimize(sum(terms) + earliness_coeff_scaled * sum(free_start_vars))
+    s1 = _runner(stage1_det_time).solve(model, var_map, None)
+    if (not terms or not free_start_vars or s1.objective is None
+            or s1.status not in ("OPTIMAL", "FEASIBLE")):
+        return s1, False
+
+    # STAGE 2 — cap the stage-1 objective, re-minimize the raw earliness.
+    best = int(round(s1.objective))
+    if earliness_coeff_scaled > 0:
+        model.add(sum(terms) + earliness_coeff_scaled * sum(free_start_vars) <= best)
+    else:
+        model.add(sum(terms) <= best)
+    model.minimize(sum(free_start_vars))
+    _hint_from_solve(model, var_map, s1.solve_values)
+    s2 = _runner(stage2_det_time).solve(model, var_map, None)
+    if s2.status in ("OPTIMAL", "FEASIBLE"):
+        return s2, True
+    return s1, False   # stage-2 budget exhausted → keep the stage-1 incumbent
 
 
 # ---------------------------------------------------------------------------
@@ -258,6 +350,100 @@ class RollingResult:
     late: int
     total_tardiness_minutes: float
     uncommitted_ops: int
+    earliness_value: float = 0.0           # R-SC3 coefficient in force ($/min)
+    op_drivers: dict = field(default_factory=dict)      # op_id -> DriverCode value
+    idle_metrics: list = field(default_factory=list)    # CU5 per-resource idle
+
+
+# ---------------------------------------------------------------------------
+# CU5 (R-SC3) — manned-idle minutes as an EVIDENCE metric (never an objective).
+# Total idle is conserved for a fixed book (only its position moves), so it is
+# provably inert as an objective and belongs in Metrics — R-SC3(3).
+# ---------------------------------------------------------------------------
+
+def _merge_intervals(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    out: list[tuple[int, int]] = []
+    for s, e in sorted(intervals):
+        if e <= s:
+            continue
+        if out and s <= out[-1][1]:
+            out[-1] = (out[-1][0], max(out[-1][1], e))
+        else:
+            out.append((s, e))
+    return out
+
+
+def _overlap_minutes(a: list[tuple[int, int]], b: list[tuple[int, int]]) -> int:
+    """Total minutes where merged interval-lists a and b overlap."""
+    total = 0
+    for s1, e1 in a:
+        for s2, e2 in b:
+            lo, hi = max(s1, s2), min(e1, e2)
+            if hi > lo:
+                total += hi - lo
+    return total
+
+
+def compute_manned_idle_metrics(resources, calendars, committed, ref,
+                                horizon_end) -> list[dict]:
+    """Per-resource manned-idle minutes within the scheduled horizon:
+    calendar-OPEN minutes (from `ref` to the last committed placement) minus
+    the minutes a committed placement actually occupies an open window. Pure
+    arithmetic over the flattened calendars and the committed placements — no
+    solve, no objective. Returns one dict per resource with a machine-scheduled
+    op, sorted by resource_id (deterministic)."""
+    flat = flatten_all_calendars(calendars, ref, horizon_end)
+    windows_by_cal: dict[str, list[tuple[int, int]]] = {}
+    for cal in flat:
+        wins = []
+        for w in cal.get("horizon_resolved", []):
+            s = int(round((_dt(w["start"]) - ref).total_seconds() / 60.0))
+            e = int(round((_dt(w["end"]) - ref).total_seconds() / 60.0))
+            if e > s:
+                wins.append((s, e))
+        windows_by_cal[cal["id"]] = _merge_intervals(wins)
+    cal_of_res = {r["id"]: r.get("calendar_ref") for r in resources}
+
+    busy_by_res: dict[str, list[tuple[int, int]]] = {}
+    sched_end = 0
+    for oid, c in committed.items():
+        s = int(round((_dt(c["start"]) - ref).total_seconds() / 60.0))
+        e = int(round((_dt(c["end"]) - ref).total_seconds() / 60.0))
+        busy_by_res.setdefault(c["resource"], []).append((s, e))
+        sched_end = max(sched_end, e)
+
+    metrics: list[dict] = []
+    for rid in sorted(busy_by_res):
+        cal_id = cal_of_res.get(rid)
+        open_wins = [(s, e) for (s, e) in windows_by_cal.get(cal_id, []) if s < sched_end]
+        open_wins = _merge_intervals([(s, min(e, sched_end)) for s, e in open_wins])
+        busy = _merge_intervals(busy_by_res[rid])
+        open_min = sum(e - s for s, e in open_wins)
+        busy_open = _overlap_minutes(open_wins, busy)
+        metrics.append({
+            "resource_id": rid,
+            "calendar_open_minutes": open_min,
+            "busy_minutes": busy_open,
+            "manned_idle_minutes": max(0, open_min - busy_open),
+        })
+    return metrics
+
+
+def record_idle_metrics(reporter, metrics: list[dict], snapshot_id: str) -> None:
+    """Emit per-resource manned-idle Metrics plus a plant-level rollup that
+    decomposes EXACTLY (rollup_of the per-resource values) — the consolidator's
+    decomposition rule. No-op when reporter is None (the measurement harness)."""
+    if reporter is None or not metrics:
+        return
+    from mre.contracts.entities import EntityRef
+    from mre.contracts.vocabularies import RecordTier
+    for m in metrics:
+        reporter.record_metric(
+            name="manned_idle_minutes", value=float(m["manned_idle_minutes"]),
+            unit="minutes",
+            subjects=[EntityRef(entity_id=m["resource_id"], entity_type="resource")],
+            tier=RecordTier.SUPPORTING,
+            message=f"{m['resource_id']}: {m['manned_idle_minutes']} manned-idle min")
 
 
 # ---------------------------------------------------------------------------
@@ -355,12 +541,16 @@ def run_rolling_horizon(
     crit_threshold: float = 3.0,
     standing_pins: Optional[list[dict]] = None,
     max_windows: Optional[int] = None,
-    earliness_incentive: bool = True,
+    earliness_value: Optional[float] = None,
     window_observer: Optional[Any] = None,
 ) -> RollingResult:
     """Roll a window of `window_days`, committing the frozen front of
-    `frozen_days`, until every operation is committed."""
-    from mre.modules.solve_runner import SolveRunner
+    `frozen_days`, until every operation is committed.
+
+    R-SC3: `earliness_value` ($/min of op-start earliness) overrides the declared
+    CostModel.earliness_value when given (None => read the declared value); 0 =>
+    earliness is a pure zero-cost tiebreak (the FLOOR). Every window solves in the
+    two-stage shape (_two_stage_solve)."""
     from mre.modules import standing_pins as sp
 
     if frozen_days > window_days:
@@ -387,6 +577,9 @@ def run_rolling_horizon(
     total_solve = total_build = 0.0
     workers = 1 if deterministic else None
     sp_norm = [sp.normalize_pin(p) for p in (standing_pins or [])]
+    earliness_used = (float(earliness_value) if earliness_value is not None
+                      else float(plant.cost_model.get("earliness_value", 0.0) or 0.0))
+    coeff_scaled = _earliness_coeff_scaled(plant.cost_model, earliness_value)
 
     # A windowed build only needs to reach far enough to place near-term work
     # (free ops are earliness-pulled and floored at t0), so a MODEST horizon
@@ -449,31 +642,22 @@ def run_rolling_horizon(
                 sp.apply_pin(model, var_map, op["id"], c["resource"], max(0, smin))
             except Exception:
                 pass
-        # EARLINESS incentive: a GLOBAL weight-1-per-minute ASAP pull on EVERY
-        # free op in the window (NOT just the frozen-front subset — its reach is
-        # the whole admitted set), strictly dominated by tardiness (~42 units/min
-        # at _COST_SCALE=100) and setup, so it never overrides those. It biases
-        # ties toward earlier starts so the frozen front fills and the roll makes
-        # progress. Its COST reach is BOUNDED but not zero: it can pay a small
-        # production premium to pull a job onto an earlier-free-but-dearer machine
-        # (measured +0.290% total on the 40-order small_plant — a 7-op relocation).
-        # It is NOT placement-neutral. Boundedness is proven by
-        # tests/test_rolling_horizon.py::test_earliness_incentive_is_bounded
-        # (total within a 1% epsilon, no priced line worsens); the placement
-        # premium is recorded there as an xfail. When the builder already set an
-        # objective, leaving this off keeps that objective unchanged.
-        if earliness_incentive and var_map.objective_terms and free_start_vars:
-            model.minimize(sum(var_map.objective_terms) + sum(free_start_vars))
+        # Warm-start + standing pins seed BEFORE stage 1 (the two-stage solve
+        # re-seeds its own hints from the stage-1 incumbent).
         if last_placements:
             apply_solution_hints(model, var_map, last_placements)
         if sp_norm:
             sp.apply_standing_pins(model, var_map, sp_norm, var_map.horizon_start)
 
+        # R-SC3 two-stage: stage 1 minimizes cost (+ priced earliness when a
+        # positive coefficient is declared); stage 2 caps the stage-1 objective
+        # and re-minimizes Σ free-op starts (the zero-cost earliest-start tiebreak
+        # that makes the frozen front fill). No hidden weight-1 incentive.
         t_s = _t.perf_counter()
-        solve = SolveRunner(time_limit_seconds=member_time_limit_s,
-                            num_search_workers=workers, random_seed=seed,
-                            deterministic_time=(det_time if deterministic else None)
-                            ).solve(model, var_map, None)
+        solve, _stage2 = _two_stage_solve(
+            model, var_map, free_start_vars, coeff_scaled,
+            workers=workers, seed=seed, deterministic=deterministic,
+            member_time_limit_s=member_time_limit_s, stage1_det_time=det_time)
         solve_wall = _t.perf_counter() - t_s
         total_solve += solve_wall
 
@@ -539,11 +723,16 @@ def run_rolling_horizon(
     # places any leftovers (a demand the window cap never reached) FREELY around
     # them, then extracts the exact decomposed cost. Same method for every
     # window setting => a fair curve.
-    ledger, svc, tot_cost, uncommitted = _final_extract(plant, committed, seed,
-                                                        deterministic, sched, det_time)
+    ledger, svc, tot_cost, uncommitted, op_drivers = _final_extract(
+        plant, committed, seed, deterministic, sched, det_time, coeff_scaled,
+        earliness_used)
     on_time = sum(1 for s in svc if s.get("lateness_minutes", 0) <= 0)
     late = sum(1 for s in svc if s.get("lateness_minutes", 0) > 0)
     tard = sum(max(0, s.get("lateness_minutes", 0)) for s in svc)
+
+    # CU5: manned-idle minutes over the committed placements (evidence, not objective).
+    idle = compute_manned_idle_metrics(plant.resources, plant.calendars, committed,
+                                       ref, global_horizon_end)
 
     return RollingResult(
         window_days=window_days, frozen_days=frozen_days, gravity=gravity,
@@ -552,21 +741,44 @@ def run_rolling_horizon(
         total_build_wall_s=round(total_build, 3),
         total_cost=tot_cost, cost_ledger=ledger, service_outcomes=svc,
         on_time=on_time, late=late, total_tardiness_minutes=tard,
-        uncommitted_ops=uncommitted)
+        uncommitted_ops=uncommitted, earliness_value=earliness_used,
+        op_drivers=op_drivers, idle_metrics=idle)
 
 
 # ---------------------------------------------------------------------------
 # final exact cost — one Extractor pass over the fully-pinned committed union
 # ---------------------------------------------------------------------------
 
-def _final_extract(plant, committed, seed, deterministic, sched, det_time=8.0):
+def reference_solve(plant, *, seed=42, deterministic=True, det_time=4.0,
+                    earliness_value=None, two_stage=True):
+    """A NON-rolling reference solve: build the full model over every schedulable
+    op (no windowing, no pins), solve it, and extract the exact ledger. Used by
+    the R-SC3 counterfactual tests where cost-invariance of the FLOOR is provable
+    (a single solve with a cost cap can only reshuffle starts, never change cost).
+    `two_stage=False` gives the plain cost-only baseline (stage 1 only).
+    Returns (cost_ledger, service_outcomes, op_drivers, total_cost, placements)
+    where placements is op_id -> {resource, start(iso), end(iso)}."""
+    sched = plant.schedulable_demands
+    coeff = _earliness_coeff_scaled(plant.cost_model, earliness_value)
+    ev_used = (float(earliness_value) if earliness_value is not None
+               else float(plant.cost_model.get("earliness_value", 0.0) or 0.0))
+    placements: dict = {}
+    ledger, svc, tot, _leftover, drivers = _final_extract(
+        plant, placements, seed, deterministic, sched, det_time,
+        coeff if two_stage else 0, ev_used if two_stage else 0.0,
+        two_stage=two_stage)
+    return ledger, svc, drivers, tot, placements
+
+
+def _final_extract(plant, committed, seed, deterministic, sched, det_time=8.0,
+                   coeff_scaled=0, earliness_value=0.0, two_stage=True):
     """Build the full model over every scheduled demand's operations, PIN the
     committed operations to their rolling placement, let any leftovers place
-    FREELY around the pins (so they cannot conflict), solve, then extract the
-    exact decomposed ledger + service outcomes. Returns
-    (ledger, service_outcomes, total_cost, leftover_count)."""
+    FREELY around the pins (so they cannot conflict), solve in the same R-SC3
+    two-stage shape, then extract the exact decomposed ledger + service outcomes.
+    `two_stage=False` runs stage 1 only (the plain cost-only baseline).
+    Returns (ledger, service_outcomes, total_cost, leftover_count, op_drivers)."""
     from mre.modules.solver_builder import SolverBuilder
-    from mre.modules.solve_runner import SolveRunner
     from mre.modules.extractor import Extractor
     from mre.modules import standing_pins as sp
 
@@ -594,22 +806,31 @@ def _final_extract(plant, committed, seed, deterministic, sched, det_time=8.0):
         fuls + demands, plant.constraints, plant.cost_model)
 
     hstart = var_map.horizon_start
+    pinned_oids: set = set()
     for oid, c in committed.items():
         if oid not in var_map.op_start:
             continue
         start_min = int(round((_dt(c["start"]) - hstart).total_seconds() / 60.0))
         try:
             sp.apply_pin(model, var_map, oid, c["resource"], max(0, start_min))
+            pinned_oids.add(oid)
         except Exception:
             pass  # a splittable/edge case that resists pinning — priced by solve
 
     workers = 1 if deterministic else None
-    solve = SolveRunner(time_limit_seconds=120.0, num_search_workers=workers,
-                        random_seed=seed,
-                        deterministic_time=(det_time * 4 if deterministic else None)
-                        ).solve(model, var_map, None)
+    # Free starts for the two-stage tiebreak = the leftover (unpinned) ops; the
+    # pinned committed ops are fixed, so earliness only shapes any leftover placement.
+    # two_stage=False (the plain cost-only baseline) suppresses stage 2 entirely.
+    free_start_vars = ([var_map.op_start[o["id"]] for o in ops
+                        if o["id"] not in pinned_oids and o["id"] in var_map.op_start]
+                       if two_stage else [])
+    solve, _stage2 = _two_stage_solve(
+        model, var_map, free_start_vars, coeff_scaled,
+        workers=workers, seed=seed, deterministic=deterministic,
+        member_time_limit_s=120.0,
+        stage1_det_time=(det_time * 4), stage2_det_time=(det_time * 2))
     if solve.status not in ("OPTIMAL", "FEASIBLE"):
-        return {}, [], None, len([o for o in ops if o["id"] not in committed])
+        return {}, [], None, len([o for o in ops if o["id"] not in committed]), {}
 
     # record any leftover (uncommitted) operations' placements from this solve
     sv = solve.solve_values
@@ -627,12 +848,21 @@ def _final_extract(plant, committed, seed, deterministic, sched, det_time=8.0):
             "end": (sv.horizon_start + timedelta(minutes=sv.op_end_minutes[oid])).isoformat()}
         leftovers += 1
 
+    # The extractor's earliness attribution must reflect the RUN's effective
+    # coefficient (a coeff-0 override must not attribute EARLINESS_PREFERENCE even
+    # when the snapshot declares a positive earliness_value).
+    extract_cm = dict(plant.cost_model)
+    extract_cm["earliness_value"] = earliness_value
     result = Extractor().extract(
         solve_values=solve.solve_values, snapshot_id=plant.snapshot_id,
         operations=ops, workpackages=wps, resources=plant.resources,
-        fulfillments=fuls, demands=demands, cost_model=plant.cost_model,
+        fulfillments=fuls, demands=demands, cost_model=extract_cm,
         reporter=None, cal_windows=var_map.cal_windows,
         op_eligible=var_map.op_eligible, snapshot_writer=None,
         overtime_windows=var_map.overtime_windows, is_scenario=True)
     ledger = result.cost_ledger
-    return ledger, result.service_outcomes, ledger.get("total_cost"), leftovers
+    # op -> primary driver (the extractor attributes a dearer-but-earlier eligible
+    # placement to EARLINESS_PREFERENCE when earliness_value > 0 — R-SC3 / CU3).
+    op_drivers = {a["operation_ref"]: a.get("driver") for a in result.assignments}
+    return (ledger, result.service_outcomes, ledger.get("total_cost"),
+            leftovers, op_drivers)

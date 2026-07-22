@@ -70,6 +70,7 @@ class RuleId(str, Enum):
     FACILITY_REFERENCES_CONSISTENT = "ids.facility_references_consistent"
     ORDERS_USE_ACTIVE_ROUTES = "ids.orders_use_active_routes"
     PRIORITY_CLASSES_PRICED = "ids.priority_classes_priced"
+    EARLINESS_VALUE_SANE = "ids.earliness_value_sane"
     SETUP_FAMILIES_HAVE_TRANSITION_MATRIX = "ids.setup_families_have_transition_matrix"
     TRANSITION_MATRIX_REFERENCES_DECLARED_FAMILIES = (
         "ids.transition_matrix_references_declared_families")
@@ -153,7 +154,7 @@ _C = RuleCategory.CONDITIONAL
 _Q = RuleCategory.QUALITY
 _APP_A = "App A"
 
-# The Rule Registry v0.2 (32 rules). Order is documentation order (docs/06 §4).
+# The Rule Registry v0.3 (35 rules). Order is documentation order (docs/06 §4).
 RULE_REGISTRY: dict[RuleId, RuleSpec] = {
     r.rule_id: r for r in [
         # Boolean structural
@@ -190,6 +191,14 @@ RULE_REGISTRY: dict[RuleId, RuleSpec] = {
         _spec(RuleId.ORDERS_USE_ACTIVE_ROUTES, _C, FindingCode.LOW_CONFIDENCE_INPUT, "§5.2"),
         _spec(RuleId.PRIORITY_CLASSES_PRICED, _C, FindingCode.UNMAPPABLE_VALUE,
               "§5.9, App A", thresholds_ref=_APP_A),
+        _spec(RuleId.EARLINESS_VALUE_SANE, _C, FindingCode.VALUE_OUT_OF_RANGE,
+              "§5.9", note="cost_model refinements.earliness_value (R-SC3) prices "
+                           "op-start earliness plant-wide ($/minute). Optional; "
+                           "absent => 0. A negative or unparseable value is invalid "
+                           "(degraded, defaulted to 0 downstream); a positive value "
+                           "dearer than the cheapest resource's per-minute rate is "
+                           "almost certainly a unit error (hours vs minutes) and is "
+                           "flagged — the gate checks, never repairs"),
         _spec(RuleId.SETUP_FAMILIES_HAVE_TRANSITION_MATRIX, _C,
               FindingCode.AMBIGUOUS_SOURCE, "§5.11"),
         _spec(RuleId.TRANSITION_MATRIX_REFERENCES_DECLARED_FAMILIES, _C,
@@ -227,7 +236,7 @@ RULE_REGISTRY: dict[RuleId, RuleSpec] = {
     ]
 }
 
-assert len(RULE_REGISTRY) == 34, f"registry must hold 34 rules, has {len(RULE_REGISTRY)}"
+assert len(RULE_REGISTRY) == 35, f"registry must hold 35 rules, has {len(RULE_REGISTRY)}"
 
 
 # Finding severity derives from the DISPOSITION — what the system actually did —

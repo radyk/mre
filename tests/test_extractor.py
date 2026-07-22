@@ -230,6 +230,38 @@ class TestAlternativeConsequenceWording:
         assert cons["resource:res-3"] == "Would cost $300.00 more."
 
 
+class TestEarlinessDriverAttribution:
+    """R-SC3 / CU3: a dearer-but-earlier eligible placement is attributed to
+    EARLINESS_PREFERENCE only when a positive earliness_value is declared — with
+    earliness_value == 0 the classification is byte-identical to pre-R-SC3."""
+
+    def _driver(self, chosen, rates, earliness_value):
+        from mre.modules.extractor import Extractor
+        from mre.contracts.vocabularies import DriverCode
+        return Extractor()._assignment_driver(
+            chosen, list(rates), rates, op_start_min=0, op_end_min=100,
+            cal_windows=None, earliness_value=earliness_value)
+
+    def test_dearer_chosen_with_earliness_is_earliness_preference(self):
+        from mre.contracts.vocabularies import DriverCode
+        # res-2 ($12) chosen over the cheaper eligible res-1 ($10), earliness on.
+        d = self._driver("res-2", {"res-1": 10.0, "res-2": 12.0}, earliness_value=0.05)
+        assert d == DriverCode.EARLINESS_PREFERENCE
+
+    def test_zero_earliness_is_byte_identical(self):
+        from mre.contracts.vocabularies import DriverCode
+        # same dearer choice, earliness OFF -> the pre-R-SC3 classification stands.
+        d = self._driver("res-2", {"res-1": 10.0, "res-2": 12.0}, earliness_value=0.0)
+        assert d != DriverCode.EARLINESS_PREFERENCE
+        assert d == DriverCode.CAPACITY_BLOCKED
+
+    def test_cheapest_chosen_stays_cost_tradeoff(self):
+        from mre.contracts.vocabularies import DriverCode
+        # earliness on, but the cheapest eligible was chosen -> COST_TRADEOFF wins.
+        d = self._driver("res-1", {"res-1": 10.0, "res-2": 12.0}, earliness_value=0.05)
+        assert d == DriverCode.COST_TRADEOFF
+
+
 # ---------------------------------------------------------------------------
 # ServiceOutcomes (per-Demand tardiness, D-07)
 # ---------------------------------------------------------------------------

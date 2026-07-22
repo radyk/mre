@@ -215,7 +215,11 @@ def measure_latencies(plant, det_time=4.0, window_days=7, frozen_days=2) -> dict
     build_s = time.perf_counter() - t0
 
     # replicate the rolling loop's window constraints (floor + carried pins +
-    # earliness incentive) so the timed model IS the one the roll solves.
+    # R-SC3 stage-1 priced-earliness objective) so the timed model IS the one the
+    # roll solves. We time STAGE 1 (the dominant cost); the stage-2 earliness
+    # tiebreak adds a small warm-started deterministic budget on top.
+    from mre.modules.rolling_horizon import _earliness_coeff_scaled
+    coeff = _earliness_coeff_scaled(plant.cost_model, None)
     free_start_vars = []
     for op in free_ops:
         v = var_map.op_start.get(op["id"])
@@ -231,8 +235,8 @@ def measure_latencies(plant, det_time=4.0, window_days=7, frozen_days=2) -> dict
             sp.apply_pin(model, var_map, op["id"], c["resource"], max(0, smin))
         except Exception:
             pass
-    if var_map.objective_terms and free_start_vars:
-        model.minimize(sum(var_map.objective_terms) + sum(free_start_vars))
+    if var_map.objective_terms and coeff > 0 and free_start_vars:
+        model.minimize(sum(var_map.objective_terms) + coeff * sum(free_start_vars))
 
     # --- solve-to-first-feasible (deterministic) --------------------------------
     from ortools.sat.python import cp_model as cp

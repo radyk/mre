@@ -43,3 +43,18 @@ solve:
 The extract's real per-product minutes and family cardinality *inform* the
 authored physics (so the synthetic plant feels like this one), but no physics
 value is copied blind from a single extract row.
+
+## R-SC3 — the demo `earliness_value` is DEFAULTED (authored), not measured
+
+`cost_model.refinements.earliness_value = 0.05` ($/minute of op-start earliness)
+is an **authored demo choice**, provenance **defaulted** at the dataset-authoring
+level (the historical extract carries no earliness preference to measure — a
+plant's willingness to pay for early starts is a business declaration, not an
+extract fact). Rationale: 0.05 $/min is small enough to sit well under the
+cheapest machine's per-minute rate ($45/h = $0.75/min, the R-SC3 sanity band, so
+it is used as declared and not flagged) yet large enough to make the $74-class
+trade fire — a CUT op pulled onto a dearer-but-earlier machine, the live specimen
+the counterfactual (`test_earliness_incentive_bought_earliness`) needs. Once it
+reaches the generated `cost_model.json`, the submission *declares* it, so the
+adapter records it **observed** (a declared submission fact); the *authoring*
+provenance — that we chose it for the demo — is this note.

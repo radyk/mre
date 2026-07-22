@@ -824,11 +824,13 @@ class RawAdapter:
             ),
             overtime_premium=float(cm_cfg.get("overtime_premium_multiplier", 0.0) or 0.0),
             inventory_carrying=0.0,
+            earliness_value=0.0,   # R-SC3: not declared in raw config; defaulted
         )
         cm_prov = _def_list(cm_id,
                             ["version", "effective_from", "resource_rates",
                              "setup_cost_basis", "tardiness_weights",
-                             "overtime_premium", "inventory_carrying"],
+                             "overtime_premium", "inventory_carrying",
+                             "earliness_value"],
                             snapshot_id, cm_version_label)
         writer.write_entity(cm, cm_prov)
         if not cm_cfg:

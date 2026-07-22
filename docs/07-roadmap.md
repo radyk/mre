@@ -1,6 +1,26 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.33 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.34 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.34:** **Session 4B.2d — R-SC3: earliness as tiebreak + declared coefficient**
+2026-07-22 (docs/04 amendment). Supersedes the 4B.2 hidden weight-1/min earliness
+incentive (4B.2c proved it spent an undeclared +$74.30). **R-SC3:** earliness is a
+ZERO-COST lexicographic tiebreak (the FLOOR: among cost-optimal schedules, prefer
+earlier starts), and PAID earliness is a declared `CostModel.earliness_value`
+($/min); no internal undeclared weight may move placement; idle-minutes are
+conserved and belong in Metrics, never the objective. **CU1** two-stage solve
+(stage 1 = cost + priced earliness; stage 2 = cap cost, minimize op-start
+earliness) replaces the incentive. **CU2** full IDS doorway: §5.9 column + rule
+#35 `ids.earliness_value_sane` (registry 34→35) + adapter provenance
+(observed/defaulted) + catalog note + pilot_scale demo value 0.05 $/min. **CU3**
+driver `EARLINESS_PREFERENCE` (12→13), reachable via the existing why-on-machine
+route. **CU4** 4B.2c's xfail FLIPPED to two hard passes on an 8-order monolith: (a)
+coeff 0 floor == plain cost-only to the cent ($5,719.83, epsilon 0); (b) coeff 0.05
+= +$33.60, start-sum gained 7,097 min, bound holds, 2 placements cite the driver.
+**CU5** per-resource manned-idle Metric. **CU6** window curve re-run (both
+coefficients) + golden regenerated DELIBERATELY ($14,708.38 → $14,904.05,
+production-only). Full non-slow suite green (1219); slow rolling ladder green, no
+xfails.
 
 **v2.33:** **Session 4B.2c — measurement-integrity errands (post-audit)**
 2026-07-22 (docs/04 amendment). A read-only audit of 4B.2 produced an errand

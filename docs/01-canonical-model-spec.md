@@ -298,6 +298,7 @@ Setup transition matrices are Constraint instances (`setup_transition`, provenan
 | `setup_cost_basis` | fixed per setup + scrap cost/unit | |
 | `tardiness_weights` | base weight × commitment_class multipliers | Rush multiplier lives here, not in code |
 | `overtime_premium` | multiplier | **Live** (docs/06 §5.6/§5.9): minutes scheduled inside overtime `added` calendar windows price at rate × this multiplier; ≤ 1 (including the 0 default) disables the premium and creates no solver machinery |
+| `earliness_value` | number, $/minute | **Live** (R-SC3, docs/06 §5.9): the declared price of op-start earliness. **0 (the default) ⇒ earliness is a pure zero-cost lexicographic tiebreak** (among cost-optimal schedules the solver prefers earlier starts, and no priced term is created); **positive ⇒ earliness enters the primary objective at this price** and every placement it buys is traceable to it as an `EARLINESS_PREFERENCE` driver (docs/02). A *preference*, not a service guarantee — it is not idle-minutes-in-the-objective (idle is conserved for a fixed book and is a Metric, never an objective term) |
 | deferred slots | `inventory_carrying` | Named now, zero for PoC |
 
 Answers "why did the schedule change when nothing else did": the weights changed, and that is a diffable, versioned fact.
