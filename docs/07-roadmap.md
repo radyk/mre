@@ -1,6 +1,41 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.37 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.38 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.38:** **Session 4B.4 — R-SC3 extended to ALL solve paths (the monolithic
+floor) + the founder's conversational fixes** 2026-07-23 (docs/04 amendment). The
+founder's live listening session found the R-SC3 floor (earlier starts among
+cost-optimal placements) was implemented on the ROLLING path only — the monolithic
+schedule of record still parked cost-equal work arbitrarily (ORD-000038 sat behind a
+free earlier slot at $0.00 delta). **CU1:** a shared `solver_builder.solve_two_stage`
+lifts the exact two-stage shape into the monolithic path (`__main__`): stage 1
+minimizes cost (+ the declared `earliness_value` term), recorded so the M6
+solve_complete objective stays the COST objective; stage 2 caps that optimum and
+re-minimizes the sum of free-op starts (warm-started, deterministic budget). One
+floor, unscoped. Per-site audit: the schedule of record gets stage 2; the re-solves
+(sandbox beat two, scenario, planner_edit) are exempt (they warm-start from the
+two-stage incumbent, inheriting the floor, and diff against it); solution_pool exempt
+(diversity is its secondary objective); forced_alternatives + beat one exempt
+(pricing / feasibility probes). `sample_data_schedule.csv` regenerated DELIBERATELY —
+cost ledger IDENTICAL pre/post (24769.00 / 19429 / 4500 / 840, verified), only
+placements moved net-earlier; rolling goldens BYTE-IDENTICAL. **CU2:** an `advice`
+route scopes recommendation questions honestly (what the product can do + intervention
+recommendation is not yet supported), never the late-orders status recital; the
+clarify/near-miss leads no longer echo a frustrated sentence verbatim. **CU3:** three
+routes added before the bare-"schedule" branch — `solve-time` + `machine-count` (cheap
+document/evidence reads) + `maintenance` (shape-recognized, honest not-yet) — killing
+the "I don't see any scheduled operations" category-error insult. **CU4:** typed
+anaphora ("that machine" binds only to a machine, then recency; no type match ->
+clarify) + repair-on-correction (re-answer the prior question with the corrected
+referent, never a menu-dump). **CU5:** list-expansion — "list them"/"the numbers"
+re-fires the last route in list form. **CU6:** (a) order-schedule states earliness
+once, per-row only when rows differ; (b) "Customer: not specified" coaches the
+customers doorway. **Named debt (not built):** the absence-explaining route pair
+("why the gap X-Y" / "why is machine M unused"), the calendar-awareness cluster, and
+the action bridge (4A.3 — this session is standing evidence it is next). Non-slow
+Python 1243 passed, 0 failed; slow ladders green (`test_ai_voice` 63, glass_box +
+ask_chain 34, all re-solve exemption ladders). See the docs/04 2026-07-23 Session
+4B.4 amendment.
 
 **v2.37:** **Session 4B.3c — rolling parity: sliced runs become first-class
 citizens** 2026-07-23 (docs/04 amendment). Retires the three named debts that were

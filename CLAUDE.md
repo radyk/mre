@@ -100,6 +100,72 @@ path referencing the OneDrive path is a defect to fix. Relocation confirmed: `gi
 fsck --full` clean; non-slow suite green (the one defect — an editable-install
 `.pth` still pointing at OneDrive — was repointed at `C:\dev\mre\src`).
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.4 — R-SC3 extended to
+ALL solve paths (the monolithic floor) + the founder's conversational fixes
+2026-07-23.** The founder's live listening session found the R-SC3 floor (earlier
+starts among cost-optimal placements — "the solver," UNSCOPED) was implemented on the
+ROLLING path only; the monolithic schedule of record still solved cost-only and
+PARKED cost-equal work arbitrarily (ORD-000038 sat at 14:39 behind a FREE 11:21 slot,
+$0.00 to drag). **CU1 — monolithic two-stage parity:** a shared reporter-aware
+`solver_builder.solve_two_stage` lifts the exact shape rolling proved — stage 1
+minimizes cost (+ the declared `earliness_value` term, omitted at 0), recorded to M6
+so the solve_complete objective the assembler + `_incumbent_objective` read stays the
+COST objective; stage 2 caps that optimum at `round(best)` and re-minimizes the SUM of
+free-op starts (warm-started via `add_hint`, `_STAGE2_DET_TIME_S=2.0` deterministic
+budget), on exhaustion the stage-1 incumbent stands. `__main__` (CLI + API monolithic
+schedule of record) uses it; rolling keeps its OWN private copy (goldens must stay
+byte-identical). The floor minimizes the SUM of starts (net-earlier, not per-op
+monotonic — one op may go later to pull others earlier at equal cost; the SAME
+objective rolling uses, one floor). **Per-site audit (default yes / exempt with
+reason):** schedule of record → STAGE 2; sandbox beat two + scenario + planner_edit →
+exempt (warm-start from the two-stage incumbent inherits the floor; they price a
+CHANGE vs the record); solution_pool → exempt (DIVERSITY is its secondary objective);
+forced_alternatives + beat one → exempt (pricing / feasibility probes); demo.py →
+exempt (standalone wrapper). **Named golden regen (cost-identity verified):**
+`sample_data_schedule.csv` regenerated DELIBERATELY — the cost ledger is IDENTICAL
+pre/post (24769.00 / 19429 / 4500 / 840, `test_cost_ledger_identical` untouched),
+per-op production cost unchanged, byte-identical across two subprocess rolls; ONLY
+placements moved (30 earlier / 13 later / 47 same / 3 equal-cost machine swaps). Had
+any COST changed it would be a defect (stop, don't regen) — it did not; **rolling
+goldens BYTE-IDENTICAL** (CU1 touches monolithic only). `tests/test_two_stage_
+monolithic.py` (fast): cost-equal-earlier-slot taken, cost-neutrality epsilon 0,
+determinism. The 4B.3a earliness_forcing hedge fixture (a correct CU1 side-effect —
+the monolithic path now PRICES a declared earliness_value) re-tuned to 0.004
+(< 0.005 ⇒ coeff rounds to 0 ⇒ placement unmoved, while raw value > 0 keeps the
+docs/02 §4.2 ATTRIBUTION firing — isolating attribution from placement).
+**CU2 — the recommendation-shape guard (the worst failure):** four "what should I do
+about lateness" phrasings each got the are-there-late-orders STATUS RECITAL — a new
+`advice` route (`_ADVICE_TRIGGERS`, after triage/remediation/briefing, before the
+edit/late/schedule branches) scopes HONESTLY (what the product can do today — explain
+why each late order is late, what it waits on, price a what-if on the board — and that
+intervention recommendation is not yet supported), never a recital, never an invented
+intervention (that is 4A.3); the clarify/near-miss/refusal leads no longer echo a
+frustrated sentence verbatim (`ask_fallback_copy.safe_parsed`). **CU3 — the
+category-error insult split:** `solve-time` + `machine-count` (cheap document/evidence
+reads) + `maintenance` (shape-recognized honest not-yet) added BEFORE the
+bare-"schedule" branch, so "how long did this solve take" / "how many machines" / "is
+there any maintenance scheduled" / "does this use workcenters" stop getting "I don't
+see any scheduled operations." **CU4 — typed anaphora + repair-on-correction:** "that
+machine" binds by TYPE first then recency (never to an order four turns back); no type
+match → clarify; a correction ("i was asking about X, not Y") re-answers the PRIOR
+question with the corrected referent (checked before the order/machine short-circuit),
+never a menu-dump. **CU5 — list-expansion:** "list them"/"the numbers"/"which ones"
+re-fires the last route in list form (minimal slice). **CU6:** (a) order-schedule
+states earliness once, per-row only when rows differ; (b) "Customer: not specified"
+coaches the customers doorway. **Named debt (docs/04, not built):** the
+absence-explaining route pair ("why the gap X–Y" / "why is machine M unused" — the
+manned-idle Metric grounds the latter); the calendar-awareness cluster; the action
+bridge (4A.3 — this session is standing evidence it is next). Non-slow Python **1243
+passed, 0 failed** (+4); slow `test_ai_voice` **63** (+11), `test_glass_box` +
+`test_ask_chain_api` **34**, all re-solve exemption ladders green. See the docs/04
+2026-07-23 Session 4B.4 amendment and docs/07 v2.38. Lesson: "the solver prefers
+earlier starts" is ONE floor or it is a lie — lift the same two-stage shape (not a
+second one), record the COST objective so nothing downstream shifts, and prove cost
+identity before regenerating a golden that legitimately moved; and a confident answer
+to the WRONG question (the advice recital, the category-error insult, the cross-type
+anaphora bind, the menu-dump) is worse than a refusal — recognize the SHAPE and scope
+honestly.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.3c — rolling parity:
 sliced runs become first-class citizens 2026-07-23.** Retires the three named debts
 that were one fact — a rolling-horizon run was second-class in persistence and the

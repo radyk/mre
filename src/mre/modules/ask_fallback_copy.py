@@ -44,6 +44,10 @@ ROUTE_OFFERS = {
     "edit-summary": "summarize the edits you made and what they cost",
     "edit-cost": "break down what your last move cost",
     "ledger-refusals": "list the questions I couldn't answer recently",
+    "advice": "explain why each order is late and price a what-if move",
+    "solve-time": "tell you how long the solve took",
+    "machine-count": "list the machines in the plan",
+    "maintenance": "show one machine's downtime (calendar closures)",
 }
 
 # Generic planner nouns when a param slot has nothing resolved to fill it.
@@ -77,6 +81,38 @@ CLARIFY_VERIFICATION = (
 # The meta-route header (R-AI1(d) — the ledger answering about itself).
 REFUSAL_META_EMPTY = "No unanswered questions have been logged recently."
 REFUSAL_META_LEAD = "Questions I couldn't answer recently ({n}):"
+
+
+# CU2 (Session 4B.4) — a clarify/near-miss/refusal lead echoes the user's question
+# verbatim ('… to answer "{q}"'). When the question carries FRUSTRATION or
+# META-COMMENTARY ("this is not helpful. if i open up hours…") echoing it back reads
+# as tone-deaf and repeats the complaint at the user. Detect those markers and drop
+# the verbatim clause entirely (the lead then stands on its own); a plain question
+# is echoed unchanged.
+_FRUSTRATION_MARKERS = (
+    "not helpful", "unhelpful", "useless", "that's wrong", "thats wrong",
+    "you're wrong", "youre wrong", "no.", "stop", "come on", "seriously",
+    "frustrat", "annoying", "terrible", "awful", "this is not", "that is not",
+    "you keep", "you always", "again", "still wrong", "wtf", "ugh",
+)
+
+
+def _has_meta_commentary(q: str) -> bool:
+    ql = (q or "").lower()
+    return any(m in ql for m in _FRUSTRATION_MARKERS)
+
+
+def safe_parsed(q: str) -> str:
+    """The question to echo in a fallback lead, or '' to drop the echo. Empty when
+    the question carries frustration / meta-commentary — never repeat a complaint
+    back at the planner (CU2)."""
+    return "" if _has_meta_commentary(q) else (q or "")
+
+
+# Frustration-free variants of the fallback leads (used when the echo is dropped).
+CLARIFY_LEAD_NO_ECHO = "I need one more detail to answer that."
+NEAR_MISS_LEAD_NO_ECHO = "I can't answer that one exactly."
+UNSUPPORTED_LEAD_NO_ECHO = "I can't answer that question yet."
 
 
 def route_offer(route: str, params: dict | None = None) -> str:

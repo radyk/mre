@@ -424,7 +424,7 @@ def main(argv: list[str] | None = None) -> int:
     # -----------------------------------------------------------------------
     # M6: Solve Runner
     # -----------------------------------------------------------------------
-    from mre.modules.solve_runner import SolveRunner
+    from mre.modules.solver_builder import solve_two_stage, _COST_SCALE
 
     r_rep = Reporter.begin(
         module=ModuleCode.M6, purpose="solve run",
@@ -433,11 +433,23 @@ def main(argv: list[str] | None = None) -> int:
                 "random_seed": args.solver_seed},
         trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
     )
-    solve_result = SolveRunner(
+    # R-SC3 (Session 4B.4 CU1): two-stage solve — stage 1 minimizes cost (recorded
+    # to r_rep exactly as the pre-4B.4 single solve, so the M6 solve_complete
+    # objective the assembler reads stays the COST objective), stage 2 caps that
+    # optimum and re-minimizes Σ op-start (the zero-cost earliest-start FLOOR).
+    # The monolithic schedule of record now places cost-equal work at the earliest
+    # slot, unscoped, like the rolling path. No pins in the CLI path, so the
+    # earliness sum is over every op start.
+    _earliness_value = float(cost_model.get("earliness_value", 0.0) or 0.0)
+    _earliness_coeff = int(round(max(0.0, _earliness_value) * _COST_SCALE))
+    solve_result, _stage2_ran = solve_two_stage(
+        model, var_map,
+        stage1_reporter=r_rep,
+        earliness_coeff_scaled=_earliness_coeff,
         time_limit_seconds=args.time_limit,
         num_search_workers=args.solver_workers,
         random_seed=args.solver_seed,
-    ).solve(model, var_map, r_rep)
+    )
     r_rep.end(RunStatus.SUCCESS if solve_result.status in ("OPTIMAL", "FEASIBLE") else RunStatus.PARTIAL)
     _p(
         f"solver      : status={solve_result.status}, "

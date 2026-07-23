@@ -168,6 +168,54 @@ _START_REASON_TRIGGERS = (
     "cant we start", "can't we start", "cannot start", "cant start", "can't start",
 )
 
+# CU2 (Session 4B.4) — RECOMMENDATION / ADVICE shape. The founder asked four ways
+# "what should I do about lateness" ("would you recommend overtime …", "what
+# should i do so those orders are not late", "if i open up hours what machines
+# should i run", "how i can avoid late orders") and each got the are-there-late-
+# orders STATUS RECITAL — confident, cited, wrong-question, three times. Advice-
+# seeking phrasings route to an HONEST SCOPING answer (what the product CAN do
+# today + that intervention recommendation is not a supported question yet), never
+# a status recital. Checked BEFORE the late/schedule branches (the phrasings
+# contain "late" / "machines" / "run"), AFTER triage/remediation/briefing (so
+# "what should I fix first" / "what should I worry about" keep their own routes).
+_ADVICE_TRIGGERS = (
+    "recommend", "would you recommend", "do you recommend", "suggest",
+    "what should i do", "what do i do", "what can i do",
+    "how can i avoid", "how do i avoid", "how i can avoid", "how i avoid",
+    "how can i prevent", "how do i prevent", "how to avoid", "avoid late",
+    "prevent late", "reduce late", "less late", "fewer late", "not be late",
+    "keep them on time", "make them on time", "get them on time",
+    "if i open", "if i add", "if i run", "if i change", "if i turn on",
+    "open up hours", "add hours", "add overtime", "run overtime",
+    "what machines should i", "which machines should i", "what should i run",
+    "how can i improve", "how do i improve", "what would you do",
+)
+
+# CU3 (Session 4B.4) — cheap META routes that are pure document/evidence reads,
+# plus maintenance/calendar shape-recognition. Checked BEFORE the bare-"schedule"
+# listing branch, because "how long did this SCHEDULE take to solve" and "is there
+# any maintenance SCHEDULED" both contain a schedule trigger and were misrouting to
+# the listing (the category-error insult "I don't see any scheduled operations").
+_SOLVE_TIME_TRIGGERS = (
+    "how long did", "how long to solve", "solve time", "time to solve",
+    "how long did it take", "how long did this take", "how long did the solve",
+    "take to solve", "took to solve", "solving take", "how fast did",
+    "how long to build", "wall time", "how long did the run",
+)
+_MACHINE_LIST_TRIGGERS = (
+    "how many machines", "how many resources", "how many work center",
+    "how many workcenter", "list the machines", "list machines",
+    "what machines are there", "which machines are there", "number of machines",
+    "how many machine", "list the resources", "what resources", "name the machines",
+    "does this schedule use workcenter", "use workcenters", "using workcenters",
+    "what work centers", "which work centers",
+)
+_MAINTENANCE_TRIGGERS = (
+    "maintenance", "any maintenance", "is there maintenance", "planned maintenance",
+    "shift pattern", "shifts", "off-shift", "off shift", "shift schedule",
+    "which shifts", "what shifts", "calendar", "working hours", "operating hours",
+)
+
 # The route taxonomy — the closed set of route ids classify()/route() dispatch
 # over (docs/07 Phase 4, R-AI1(b)). The interpreter (CU1) maps free-form phrasing
 # ONLY onto these ids; it never invents a route. `params` names the external-ref
@@ -203,6 +251,13 @@ ROUTE_TAXONOMY: dict[str, dict] = {
     "drill-down":            {"params": [],          "canonical": "tell me more about that"},
     "briefing":              {"params": [],          "canonical": "what should I worry about today?"},
     "unknown-entity":        {"params": ["order"],   "canonical": "is {order} in this schedule?"},
+    # Session 4B.4 — the advice/recommendation SCOPING route (CU2) and the cheap
+    # meta routes (CU3): solve timing + machine listing are pure document/evidence
+    # reads; maintenance is shape-recognized with an honest not-yet.
+    "advice":                {"params": [],          "canonical": "what should I do about the late orders?"},
+    "solve-time":            {"params": [],          "canonical": "how long did the solve take?"},
+    "machine-count":         {"params": [],          "canonical": "how many machines are there?"},
+    "maintenance":           {"params": [],          "canonical": "is any maintenance scheduled?"},
     # Session 4B.3c CU4 — the ROLLING (sliced-world) routes. Live only when the
     # schedule is a rolling document (the /ask path delegates to rolling_questions,
     # which answers from the document's RollingBlock — the connector-era snapshot a
@@ -501,6 +556,14 @@ class Explainer:
         if any(t in q for t in _CERT_TESTIMONY_TRIGGERS):
             return "certificate-testimony", base
 
+        # CU2 (Session 4B.4) — advice/recommendation SCOPING. Before the edit/late/
+        # schedule branches so an advice-seeking phrasing ("would you recommend
+        # overtime …", "what should i do so those orders are not late") never lands
+        # on the late-orders status recital. After triage/remediation/briefing so
+        # "what should I fix first"/"what should I worry about" keep their routes.
+        if any(t in q for t in _ADVICE_TRIGGERS):
+            return "advice", base
+
         # The sandbox/edit question domain (3.4 CU2) — before schedule/diff.
         if any(t in q for t in _EDIT_COST_TRIGGERS):
             return "edit-cost", base
@@ -561,6 +624,16 @@ class Explainer:
             return "version-diff", base
         if "downtime" in q or "closure" in q or "offline" in q:
             return "downtime", base
+        # CU3 (Session 4B.4) — cheap meta reads + maintenance shape, BEFORE the
+        # bare-"schedule" listing branch (these phrasings contain "schedule"/
+        # "scheduled"/"machines" and were misrouting to the listing → the
+        # category-error "I don't see any scheduled operations" insult).
+        if any(t in q for t in _SOLVE_TIME_TRIGGERS):
+            return "solve-time", base
+        if any(t in q for t in _MACHINE_LIST_TRIGGERS):
+            return "machine-count", base
+        if any(t in q for t in _MAINTENANCE_TRIGGERS):
+            return "maintenance", base
         if any(kw in q for kw in _SCHEDULE_TRIGGERS) and not any(
                 kw in q for kw in _OPTIMALITY_TRIGGERS):
             return "schedule", base
@@ -590,6 +663,14 @@ class Explainer:
             return self._explain_excluded_orders(q)
         if route_id == "briefing":
             return self._explain_briefing(q)
+        if route_id == "advice":
+            return self._explain_advice(q)
+        if route_id == "solve-time":
+            return self._explain_solve_time(q)
+        if route_id == "machine-count":
+            return self._explain_machine_count(q)
+        if route_id == "maintenance":
+            return self._explain_maintenance(q)
         if route_id == "inventory":
             return self._explain_inventory(q)
         if route_id == "integrity-check":
@@ -1717,6 +1798,86 @@ class Explainer:
         if machine:
             examples.append(f"what's running on {machine} — that machine's schedule")
         return examples + list(_SUPPORTED_ROUTES)
+
+    def _authored_bundle(self, subject_type: str, question: str,
+                         key_facts: dict) -> ExplanationBundle:
+        """A header-only authored-copy bundle (no evidence chain) — the shape the
+        scoping / meta-read answers use. subject_type drives the renderer branch."""
+        return ExplanationBundle(
+            question=question, subject_id="", subject_type=subject_type,
+            subject_external_name="?", ordered_records=[],
+            key_facts={"parsed": question, **key_facts},
+            snapshot_id=self._snap_id, identity_map=self._identity_map)
+
+    def _late_order_count(self) -> int:
+        """Cheap count of demands that finish late, from the service outcomes.
+        Defensive — 0 when outcomes cannot be read."""
+        n = 0
+        try:
+            from mre.modules.sandbox import _svc_lateness_min
+            for s in self._reader.iter_entities("serviceoutcome"):
+                if _svc_lateness_min(s) > 0:
+                    n += 1
+        except Exception:
+            return 0
+        return n
+
+    def _explain_advice(self, question: str) -> ExplanationBundle:
+        """CU2 — the HONEST SCOPING answer for a recommendation/advice question.
+
+        NEVER a status recital and NEVER an invented intervention. States what the
+        product CAN do today (explain why each late order is late; what each is
+        waiting on; price a what-if move on the board via the sandbox) and that
+        recommending an intervention (open overtime, add a machine) is not yet a
+        supported question. Conversational register (R-AI2), no === headers."""
+        late = self._late_order_count()
+        return self._authored_bundle("advice", question, {"late_count": late})
+
+    def _explain_solve_time(self, question: str) -> ExplanationBundle:
+        """CU3 — how long the solve took. A pure evidence read of the M6 run's
+        open→close wall time (the solve stage). Honest not-yet when unavailable."""
+        def _iso(x):
+            try:
+                return datetime.fromisoformat(str(x).replace("Z", "+00:00"))
+            except (ValueError, TypeError):
+                return None
+        seconds = None
+        try:
+            m6 = [r for r in self._index.runs() if r.get("module") == "M6"]
+            for r in m6:
+                dt_o, dt_c = _iso(r.get("timestamp_open")), _iso(r.get("timestamp_close"))
+                if dt_o and dt_c:
+                    seconds = max(seconds or 0.0, (dt_c - dt_o).total_seconds())
+        except Exception:
+            seconds = None
+        return self._authored_bundle("solve_time", question,
+                                     {"solve_seconds": seconds})
+
+    def _explain_machine_count(self, question: str) -> ExplanationBundle:
+        """CU3 — how many machines / list the machines. A pure document read of the
+        resource entities, rendered in the planner's external vocabulary."""
+        names: list[str] = []
+        try:
+            for r in self._reader.iter_entities("resource"):
+                nm = None
+                for ref in (r.get("external_refs") or []):
+                    if ref.get("ref_type") in _MACHINE_REF_TYPES or ref.get("value"):
+                        nm = ref.get("value")
+                        break
+                names.append(nm or r.get("id", "?"))
+        except Exception:
+            names = []
+        names = sorted(dict.fromkeys(names))
+        return self._authored_bundle("machine_count", question,
+                                     {"machine_count": len(names), "machines": names})
+
+    def _explain_maintenance(self, question: str) -> ExplanationBundle:
+        """CU3 — maintenance / shift / calendar shape-recognition. Answered with an
+        honest not-yet that names the per-machine downtime route that DOES exist
+        (the calendar-awareness cluster is named as debt in docs/04, not built)."""
+        machine = min(self._machine_refs.values()) if self._machine_refs else None
+        return self._authored_bundle("maintenance", question,
+                                     {"example_machine": machine})
 
     def _explain_downtime(self, question: str) -> ExplanationBundle:
         """Sum calendar closure windows for a named resource, pool, or setup family."""

@@ -1,268 +1,209 @@
-SESSION 4B.3c CLOSE-OUT -- rolling parity: sliced runs become first-class citizens
-Date: 2026-07-23
-Repo: C:\dev\mre  (branch master)
+SESSION 4B.4 CLOSE-OUT
+R-SC3 extended to ALL solve paths (the monolithic floor) + the founder's
+conversational fixes
+2026-07-23
 
-================================================================================
+Deterministic settings for all solver work: PYTHONHASHSEED=0, --solver-workers 1,
+--solver-seed 42/0.
+
+======================================================================
 SUMMARY
-================================================================================
-Retired the three named debts that were, in truth, one fact: a rolling-horizon
-run was a second-class citizen in persistence and the API. prepare_plant ran
-M0-M4 only and build_rolling_view extracted in-memory with snapshot_writer=None,
-so no window-0 canonical snapshot existed; a rolling document carried no
-interaction payload, so the cockpit could not compute Tier-0 on a sliced board;
-and the M10 Explainer read persisted snapshots only, so both "ask why" (4B.3b)
-and the rolling questions (4B.3a) routed to named-debt responses. This session
-makes a rolling run first-class -- persisted, interaction-bearing,
-sandbox-gestured, conversationally answerable.
+======================================================================
+The founder's live listening session (2026-07-23, monolithic run) surfaced one
+solver finding (the R-SC3 earlier-start floor was implemented on the rolling path
+only; the monolithic schedule of record parked cost-equal work arbitrarily) and a
+set of conversational failures. This session closed the solver gap first
+(everything waited on its goldens), then the conversational fixes.
 
-Deterministic throughout (PYTHONHASHSEED=0, workers 1, seed 42/0). Schedule
-contract bumped 1.7 -> 1.8 (additive). Monolithic AND rolling goldens
-byte-identical.
+Result: non-slow Python 1243 passed, 0 failed. All affected slow ladders green.
+Monolithic golden regenerated with cost identity verified and stated; rolling
+goldens byte-identical.
 
-ACCEPTANCE BAR (the sentence this session was graded against):
-  a rolling run on pilot_scale, served through the API, renders a sliced board
-  where a sandbox gesture produces a feasibility ghost, then a priced layered
-  card, and "ask why" plus "why isn't {order} scheduled yet?" receive live
-  conversational answers grounded in the run's evidence.
-STATUS: MET end to end, proven through the HTTP API (test_api_endpoints.py::
-TestRollingTwoBeatAPI drives the served rolling document + interaction + the
-two-beat + the rolling questions; test_rolling_two_beat.py drives the module
-layer incl. the forced contradiction and the why-on-machine grounding). One
-honest residual on the beat-two cost delta is named below; it does not fail the
-bar.
+======================================================================
+CU1 - MONOLITHIC TWO-STAGE PARITY
+======================================================================
+CLAIMED: lift the two-stage shape into the monolithic solve path; audit every
+solve call-site; regenerate monolithic goldens deliberately with cost identity
+verified; rolling goldens byte-identical.
 
-================================================================================
-PER-CU: CLAIMED vs PROVEN
-================================================================================
+PROVEN:
+- solver_builder.solve_two_stage added: a shared, reporter-aware helper mirroring
+  rolling_horizon._two_stage_solve. Stage 1 minimizes cost (+ the declared
+  earliness_value term when a positive coefficient is declared, omitted at 0),
+  recorded to the M6 reporter so the solve_complete objective the assembler and
+  _incumbent_objective read stays the COST objective. Stage 2 caps that optimum at
+  round(best) and re-minimizes the SUM of free-op starts, warm-started via add_hint,
+  under a deterministic budget (_STAGE2_DET_TIME_S = 2.0); on exhaustion the stage-1
+  incumbent stands. The returned SolveResult carries stage 1's objective/telemetry
+  with stage 2's placements.
+- __main__ (CLI + API monolithic schedule of record) uses it. No pins in that path,
+  so the earliness sum is over every op start.
+- Per-site audit (stated in docs/04):
+    __main__ monolithic solve            -> STAGE 2 (the fix)
+    sandbox.feasibility_ghost (beat one) -> exempt (first-feasible probe)
+    sandbox.sandbox_pin_resolve (beat 2) -> exempt (warm-starts from the two-stage
+                                            incumbent; prices a CHANGE vs the record)
+    scenario re-solve                    -> exempt (what-if diffed vs incumbent)
+    planner_edit accept                  -> exempt (commits a pinned placement)
+    solution_pool                        -> exempt (DIVERSITY is its 2nd objective)
+    forced_alternatives                  -> exempt (per-machine pricing probe)
+    demo.py                              -> exempt (standalone demo wrapper)
+  All re-solve exemptions validated green on their slow ladders.
+- Golden regen: sample_data_schedule.csv regenerated. Cost ledger IDENTICAL pre/post
+  (total 24769.00, production 19429.00, setup 4500.00, tardiness 840.00 - every
+  value unchanged; test_cost_ledger_identical passes untouched). Per-op production
+  cost unchanged on every row. New CSV byte-identical across two subprocess rolls.
+  Rolling goldens BYTE-IDENTICAL (rolling determinism golden green; rolling_two_beat
+  goldens survive).
+- Tests: tests/test_two_stage_monolithic.py (fast, hand-built CP-SAT model) - (a)
+  cost-equal earlier slot is TAKEN (start sum is the provable minimum), (b)
+  cost-neutrality vs stage-1-only epsilon 0, (c) determinism run-to-run, + the
+  stage-2-skipped path. End-to-end proof: test_defaults_reproduce_baseline.
 
-CU1 -- the rolling run persists a real window-0 snapshot
-  CLAIMED  the rolling path executes the full spine for the current window
-           (M0 gate through solve and extraction); an identified canonical
-           snapshot with evidence records, basis rules intact; the run
-           registered like any run; frozen-front commitment state persists; the
-           completeness invariant holds against the PERSISTED document;
-           determinism -- if persisting changes any byte it is a defect.
-  PROVEN   build_rolling_view gains persist=True (the API rolling worker sets
-           it). When set: the Extractor runs is_scenario=False,
-           snapshot_writer=store.extend_snapshot(snap_id) + an M7 reporter, so
-           Assignment/ServiceOutcome/Schedule entities land in the canonical
-           snapshot and assignment Decisions land in evidence (RECONSTRUCTED
-           basis); an M5 run records the builder's ACTUAL horizon_start (the grid
-           the placements are written in) and an M6 solve_complete event records
-           the objective. test_window0_persists_a_readable_run asserts the
-           snapshot + evidence are readable by the sandbox helpers (_placements /
-           _m5_horizon / _incumbent_objective) and that placements == the window
-           op set (nothing beyond leaks in). Determinism: a direct probe showed
-           the persist digest == the no-persist digest (identical), so
-           persistence OBSERVES, never influences; the rolling-determinism golden
-           is byte-identical (test_rolling_determinism_golden green).
-           test_completeness_invariant_holds_on_the_PERSISTED_document counts the
-           on-disk artifact.
-  STATUS   DELIVERED.
+NAMED / NUANCE (not a shortfall, stated honestly):
+- The task close said "only placements may differ, only earlier". The floor
+  minimizes the SUM of starts (the same objective rolling uses) - a GLOBAL minimum,
+  so it is NET-earlier, not per-op monotonic: it may push one cost-equal op later to
+  pull others earlier when that lowers the total (sample_data: 30 earlier, 13 later,
+  47 same, 3 equal-cost machine swaps). This is faithful to the ratified rolling
+  floor; a per-op-monotonic rule would create two DIFFERENT floors. Cost identity
+  (the load-bearing invariant) holds exactly.
+- The 4B.3a earliness_forcing hedge fixture broke because post-CU1 the monolithic
+  path now PRICES a declared earliness_value (correct R-SC3 behavior) and 0.05/min
+  moved ORD-06 off the dearer machine. Re-tuned to 0.004 (< 0.005 => coefficient
+  rounds to 0 => placement unmoved, raw value > 0 => the docs/02 4.2 ATTRIBUTION
+  still fires), isolating attribution from placement. Documented in the fixture and
+  docs/04.
 
-CU2 -- the rolling document gains its interaction payload
-  CLAIMED  the rolling document carries the interaction payload for the ACTIVE
-           WINDOW; committed bars and tray items remain non-targets; additive
-           contract bump; monolithic goldens byte-identical.
-  PROVEN   assemble_rolling_document builds _interaction_block over the
-           ACTIVE-WINDOW asgn_blocks only, so committed (frozen-front) bars carry
-           NO interaction op and are non-targets BY CONSTRUCTION (the gesture
-           surface only builds targets for ops in the payload); occupancy still
-           comes from assignments[] (committed included), so committed work blocks
-           a drop. Schedule contract 1.7 -> 1.8 (additive: interaction has existed
-           since 1.2, split since 1.3; no new field). Monolithic
-           defaults-reproduce-baseline golden byte-identical.
-           test_rolling_document_carries_interaction_for_the_window asserts the
-           payload ops == the active set and no committed op leaks in.
-  STATUS   DELIVERED.
+======================================================================
+CU2 - THE RECOMMENDATION-SHAPE GUARD
+======================================================================
+CLAIMED: advice-seeking phrasings route to an honest scoping answer, never the
+late-orders recital; four founder phrasings join the corpus (recital = fail); the
+clarify template must never echo a frustrated/meta sentence verbatim.
 
-CU3 -- the two-beat endpoints accept a rolling schedule
-  CLAIMED  POST .../sandbox/feasibility and the beat-two path work against a
-           rolling schedule id; beat one first-feasible against the active window
-           with committed work held via standing pins; beat two prices against the
-           persisted window-0 incumbent; all 4B.3b invariants re-proven;
-           no-committed-work now load-bearing; the forced infeasible contradiction
-           demonstrable by gesturing at a committed slot on a REAL rolling run.
-  PROVEN   feasibility_ghost/sandbox_pin_resolve gain restrict_op_ids (a shared
-           _restrict_window) so the sandbox re-solves the WINDOW against the
-           persisted incumbent -- aligned because the builder derives the same
-           horizon over the same ops. The API's _rolling_gesture_context reads the
-           persisted document and hands the endpoints the window op set + the
-           frozen-front placements as standing pins. Beat one RELAXES the frozen
-           front; beat two HOLDS it (committed_pins joined with any accepted-edit
-           lineage pins). test_two_beat_runs_against_a_rolling_schedule proves
-           no-money-by-construction, correlation, decomposition-sums-exactly, and
-           no_committed_work_changes (asserted against the moves -- LOAD-BEARING,
-           the frozen front is real committed work).
-           test_forced_infeasible_contradiction_on_a_committed_slot forces the
-           contradiction end to end on a real rolling run: gesture an active op at
-           a committed slot -> beat one feasible, beat two infeasible NAMING the
-           blocking commitment. test_forced_alternative_inherits_the_two_beat_
-           shape_on_rolling proves the cross-machine pin runs the identical path.
-           Playwright: rolling.two_beat.spec.mjs drives the full flow on the
-           rolling fixture board, both themes.
+PROVEN:
+- New `advice` route (_ADVICE_TRIGGERS in explainer.classify, checked after
+  triage/remediation/briefing, before the edit/late/schedule branches). The answer
+  states what the product can do today (explain why each late order is late; what it
+  waits on; price a what-if on the board) and that intervention recommendation is
+  not yet supported. Conversational register, no === headers. Does NOT recommend
+  interventions (4A.3, out of scope).
+- All four founder phrasings route to `advice` (TestSession4B4.test_cu2_advice_...)
+  and three are folded into test_cu10_zero_confident_wrong.
+- Frustration echo: ask_fallback_copy.safe_parsed drops the verbatim echo when the
+  question carries frustration/meta markers; renderers use the _NO_ECHO lead
+  variants for clarify/near-miss/unsupported. Proven by
+  test_cu2_clarify_never_echoes_frustration.
 
-           HONEST NUANCE (the "beat one holds committed via standing pins"
-           wording): the CU brief phrased beat one as holding the frozen front,
-           but the 4B.3b mechanism -- which this CU wires, not redesigns -- has
-           beat one RELAX committed work so beat two can contradict it. Holding it
-           in beat one too would make both beats infeasible on a committed-slot
-           drop (no contradiction). The delivered behaviour (beat one relaxes,
-           beat two holds) is what makes the forced contradiction real; that is
-           the correct reading of "the mechanism 4B.3b proved rolling-ready."
-  STATUS   DELIVERED.
+======================================================================
+CU3 - FALLBACK TAXONOMY SPLIT + CHEAP META ROUTES
+======================================================================
+CLAIMED: split the fallback (entity-miss vs shape-unrecognized vs shape-unrouted);
+add solve-time + machine-count meta routes; maintenance -> shape + honest not-yet.
 
-CU4 -- the Explainer reads the rolling run (retires the R-AI1 entry)
-  CLAIMED  the Interpreter/Explainer resolves questions against the persisted
-           rolling snapshot + document; (a) why isn't {order} scheduled yet; (b)
-           what's beyond the horizon / what's frozen; (c) ask why from the
-           beat-two card reaches the conversational layer; zero-confident-wrong;
-           two audit specimens (one answerable, one that must hedge); docs/04
-           R-AI1 entry RETIRED.
-  PROVEN   The three sliced-world routes (beyond-horizon, why-not-scheduled-yet,
-           frozen) are registered in ROUTE_TAXONOMY (a closed set, not an ad-hoc
-           bolt) and answered from the document via rolling_questions in a
-           deterministic /ask pre-route (_try_rolling_answer), logged to the
-           question ledger. why-not-scheduled-yet resolves the order name against
-           the document's own vocabulary (the relevance guard) and HEDGES.
-           Everything else falls through to the Explainer over the persisted
-           window-0 snapshot exactly as a monolithic run:
-           test_ask_why_on_machine_is_grounded_on_the_persisted_run proves CU4(c)
-           "ask why" is a REAL grounded answer (the persisted assignment Decisions
-           are the evidence), not a named-debt tip. Audit specimens:
-           test_rolling_ask_why_not_scheduled_yet_is_answerable_for_a_tray_order
-           (answerable) and test_rolling_ask_why_not_hedges_for_an_already_placed_
-           order + test_rolling_ask_why_not_declines_cleanly_for_an_unknown_order
-           (must hedge/decline). Frontend: the cockpit ask-why button auto-bridges
-           to the ask panel on a rolling board (main.js onAskWhy -> panel.run of a
-           composed "why is {order} on {machine}?"); rolling.two_beat.spec.mjs
-           asserts the panel answers. docs/04 RETIRES the 4B.3a R-AI1 entry and
-           its 4B.3b ask-why extension (both blocked consumers now unblocked).
-  STATUS   DELIVERED. Scope of CU4(c) on the frontend: the ask-why auto-bridge is
-           scoped to the rolling board (this session's subject); a monolithic card
-           keeps its panel-pointer tip (the panel answers there too). The deeper
-           "answer second-order questions FROM the sandbox card object itself"
-           (which alternative, which ledger line moved, which family broke) is
-           served today by asking the grounded Explainer (why-on-machine) + the
-           existing edit-cost/edit-summary routes after accept; a card-object
-           query API is not built and is named here.
+PROVEN:
+- solve-time, machine-count, maintenance routes added BEFORE the bare-"schedule"
+  branch, so the four founder phrasings ("how long did this take to solve", "how
+  many machines", "is there any maintenance scheduled", "does this use workcenters")
+  no longer get "I don't see any scheduled operations matching that".
+- machine-count: a real answer - counts + lists the resource entities in planner
+  vocabulary.
+- solve-time: an answer or an honest not-yet.
+- maintenance: shape-recognized + honest not-yet naming the per-machine downtime
+  route that DOES exist.
+- Tests: TestSession4B4 CU3 specimens + three corpus rows.
 
-CU5 -- riders
-  CLAIMED  (a) the affected_orders column label says lateness/tardiness impact,
-           never "cost impact"; fix if it overclaims. (b) name the per-order
-           production-dollar debt in docs/04.
-  PROVEN   (a) sandboxui.js: the affected-orders header now reads
-           "affected orders -- lateness / tardiness impact" and the empty-cell
-           fallback reads "no lateness change" (was "no cost change"). No header
-           read "cost impact" before; the overclaim was the fallback string, now
-           fixed. (b) docs/04 and CLAUDE.md name the debt: the extractor's ledger
-           does not roll production cost per order (only tardiness is per-Demand),
-           so the card's who-pays layer is tardiness-truth per order plus a
-           whole-plan cost decomposition; a per-order production column is a ledger
-           change, not this session.
-  STATUS   DELIVERED.
+NAMED / NUANCE:
+- solve-time reads the M6 run's open->close wall time via EvidenceIndex.runs() (the
+  run duration), not the solve_complete payload's wall_time_s directly - the index
+  does not reliably expose payload-only events after load(). This is a close,
+  honest approximation of "how long the solve took" (it includes reporter overhead);
+  it degrades to an honest not-yet when unavailable.
+- The explicit three-way fallback MESSAGE split (entity-miss / shape-unrecognized /
+  shape-unrouted) was addressed by ROUTING the recognized shapes to their own
+  answers rather than by adding a third distinct message string. The category-error
+  insult is removed for the named cases; the generic capability menu remains for
+  truly unrecognized shapes.
 
-================================================================================
-UNDERDELIVERED / NAMED GAPS (explicit)
-================================================================================
-1. BEAT-TWO COST DELTA on a suboptimal incumbent. Beat two re-solves the active
-   window holding only the committed front, so on a FEASIBLE (not proven-optimal)
-   window-0 incumbent it can find a globally cheaper window arrangement and report
-   a large favourable cost_delta that reflects re-optimizing the window, not the
-   drag alone. This is HONEST (it is the true window cost with the op pinned vs
-   the incumbent) and is the same behaviour the monolithic sandbox has on a
-   suboptimal incumbent; a better-solved incumbent shrinks it. Not a defect;
-   named so the number is read correctly.
+======================================================================
+CU4 - ENTITY-BINDING RECENCY + REPAIR-ON-CORRECTION
+======================================================================
+CLAIMED: (a) anaphora binds by TYPE first then recency; (b) no type-matching
+referent -> ask, never cross-type bind; (c) a correction re-binds and re-answers
+the prior question, never a menu-dump.
 
-2. CU4(c) DEEPER SANDBOX-CARD QUESTIONS. "ask why" reaches a real grounded
-   why-on-machine answer; querying the sandbox RESULT OBJECT for second-order
-   facts (which alternative, which ledger line moved, which family broke) has no
-   dedicated API -- those are answered via the grounded Explainer + the existing
-   edit-cost routes after accept. Named, not built.
+PROVEN:
+- Typed anaphora: _typed_deictic + _last_typed_subject in resolve_followup. "that
+  machine" binds only to a machine referent (then recency), "that order" only to an
+  order. No type-matching referent -> clarify (CLARIFY_NO_SUBJECT). The founder's
+  "why are there no jobs on that machine" now binds to the machine (with the order
+  turn MORE recent, so untyped recency would have wrongly bound the order).
+- Correction: _CORRECTION_RE checked BEFORE the order/machine short-circuit (so the
+  wrong referent Y in the same sentence does not re-fire the confident-wrong
+  answer). Re-answers the PRIOR question with the corrected referent.
+- Tests: TestSession4B4 CU4 specimens (typed bind, correction re-answers) + a corpus
+  row for the founder's exact "that machine" sequence.
 
-3. CU5b PER-ORDER PRODUCTION-DOLLAR ATTRIBUTION. The ledger does not roll
-   production cost per Demand; the card's who-pays layer is tardiness-truth per
-   order + a whole-plan cost decomposition. A ledger change, not this session.
+NAMED / NUANCE:
+- The correction re-answers only when the corrected referent fills what the prior
+  route needs. A CROSS-TYPE correction (a machine handed to an order route) cannot
+  re-answer the same question, so it clarifies (never a menu-dump, never a
+  confident-wrong re-run) rather than fabricating a mismatched route. This is the
+  honest handling; a full same-question re-answer across types would require an
+  unstated route mapping this session did not invent.
 
-4. FRONTEND ASK-WHY BRIDGE SCOPE. The auto-bridge fires on a rolling board; the
-   monolithic card keeps its panel-pointer tip (the panel answers either way).
-   Extending the auto-bridge to monolithic cards is a trivial follow-up.
+======================================================================
+CU5 - FOLLOW-UP CONTEXT (LIST-EXPANSION SLICE)
+======================================================================
+CLAIMED: the interpreter carries the last route; a short elliptical follow-up
+("list them", "which ones", "the numbers", "show me") re-fires the last route in
+list/expanded form; scoped strictly to list-expansion.
 
-================================================================================
-TEST RESULTS
-================================================================================
-Non-slow Python suite ............ 1239 passed, 0 failed, 20 skipped
-                                   (the new rolling tests are SLOW -- a real solve
-                                    + persist per fixture -- so the non-slow count
-                                    is unchanged, as with 4B.3b)
-Slow -- test_rolling_two_beat .... 11 passed (CU1 persisted-run readability +
-                                   persisted-document completeness, CU2
-                                   interaction payload, CU3 two-beat + no-committed
-                                   + FORCED contradiction + forced-alt, CU4 rolling
-                                   routes + why-not hedge/decline + why-on-machine
-                                   grounding)
-Slow -- TestRollingTwoBeatAPI .... 3 passed (served rolling doc + interaction, the
-                                   two-beat through the HTTP surface, rolling
-                                   questions through /ask)
-Slow -- test_two_beat ............ 15 passed (4B.3b, unchanged)
-Slow -- test_rolling_document .... green
-Monolithic golden (baseline) ..... green (byte-identical)
-Rolling determinism golden ....... green (byte-identical)
-Cockpit JS (Playwright) .......... 176 passed  (was 168; +8 rolling two-beat,
-                                   both themes)
+PROVEN:
+- _LIST_EXPAND in resolve_followup (after the classify short-circuit): re-fires the
+  canonical question of the last answered route (params from the last subject).
+- Founder's pair: "how many late orders" (route late-orders) -> "can you list the
+  numbers" re-fires late-orders. Proven by test_cu5_list_expansion_re_fires_last_route.
 
-================================================================================
-FILES CHANGED
-================================================================================
-Backend:
-  src/mre/modules/rolling_horizon.py     build_rolling_view(persist=...) -- window-0
-                                         persisted as a first-class run (M5/M6/M7
-                                         evidence + snapshot writer); RollingView
-                                         gains win_horizon_start/end + persisted
-  src/mre/modules/schedule_assembler.py  assemble_rolling_document builds the
-                                         interaction payload over active-window ops;
-                                         contract_version=CONTRACT_VERSION
-  src/mre/modules/sandbox.py             _restrict_window + restrict_op_ids on
-                                         feasibility_ghost / sandbox_pin_resolve
-  src/mre/contracts/schedule_document.py CONTRACT_VERSION 1.7 -> 1.8 + history entry
-  src/mre/modules/explainer.py           ROUTE_TAXONOMY += the three rolling routes
-  src/mre/api/app.py                     _rolling_gesture_context + rolling wiring on
-                                         both sandbox endpoints; _try_rolling_answer
-                                         + _rolling_order_ref pre-route in /ask;
-                                         persist=True in _execute_rolling_solve
-Frontend:
-  src/cockpit/src/interaction.js         thread onAskWhy into the controller
-  src/cockpit/src/main.js                onAskWhy bridge (rolling board -> panel.run)
-  src/cockpit/src/drag/controller.js     askWhy falls through to a tip only when the
-                                         bridge doesn't handle it; tip text updated
-                                         (R-AI1 debt retired)
-  src/cockpit/src/drag/sandboxui.js      CU5a affected-orders label + fallback text
-Tools / fixtures:
-  tools/build_rolling_fixture.py         persist + capture the real two-beat
-                                         (interaction/feasibility/sandbox/gesture +
-                                         a forced contradiction); meta 1.8; strip
-                                         inline interaction from schedule.json
-  tests/cockpit/fixtures/rolling/*       regenerated (PYTHONHASHSEED=0) + new
-                                         interaction.json / feasibility.json /
-                                         sandbox.json / gesture.json
-  tests/cockpit/fixtures/rolling_empty/* regenerated
-Tests:
-  tests/test_rolling_two_beat.py         new (11 slow)
-  tests/test_api_endpoints.py            + TestRollingTwoBeatAPI (3 slow); 1.8 asserts
-  tests/test_rolling_document.py         1.8 assert
-  tests/test_schedule_document.py        1.8 assert
-  tests/cockpit/rolling.two_beat.spec.mjs new (4 tests x both themes)
-  tests/cockpit/gesture.spec.mjs         ask-why test title/comment updated (assertion
-                                         unchanged -- new tip still says "conversational
-                                         layer")
-  tests/cockpit/playwright.config.mjs    testMatch += rolling.two_beat
-Docs:
-  docs/04-design-history.md              2026-07-23 Session 4B.3c amendment
-                                         (R-AI1 retirement + CU5b debt)
-  docs/07-roadmap.md                     v2.37
-  CLAUDE.md                              position
+======================================================================
+CU6 - RIDERS
+======================================================================
+CLAIMED: (a) state earliness once, per-row only when rows differ; (b) "Customer:
+not specified" gains a coaching line citing the customers doorway; (c) docs/04 debt
+entries.
 
-================================================================================
-COMMIT
-================================================================================
-Committed to master (4301e6f) and pushed.
+PROVEN:
+- (a) renderers.py schedule rows: per-row lateness shown only when rows DIFFER
+  (single row keeps its marker; multiple same-value rows suppress the repetition).
+  The header already states it once. Proven by
+  test_cu6a_earliness_not_repeated_per_segment (and test_renderer_shows_late_marker
+  still green - single-row late orders keep their marker).
+- (b) "Customer: not specified - declare customers in the submission's customers
+  file to see one here" (jurisdiction rule: coach the IDS requirement).
+- (c) docs/04 debt entries written (not built): the absence-explaining route pair
+  ("why the gap X-Y" / "why is machine M unused", the manned-idle Metric grounding
+  the latter); the calendar-awareness cluster; the action bridge promotion (4A.3 -
+  this listening session is standing evidence it is next).
+
+======================================================================
+OUT OF SCOPE (named only, not built)
+======================================================================
+- The action bridge (4A.3) - intervention recommendation.
+- Full conversational context beyond CU5's list-expansion slice.
+- The calendar/absence routes beyond docs/04 debt entries.
+- Any ledger change.
+
+======================================================================
+VERIFICATION
+======================================================================
+- Non-slow Python: 1243 passed, 0 failed (+4 test_two_stage_monolithic).
+- Slow: test_ai_voice 63 passed (+11 Session 4B.4 specimens); test_glass_box +
+  test_ask_chain_api 34 passed; rolling_horizon + scenario + planner_edit +
+  standing_pins + forced_alternatives 81 passed / 1 skip; sandbox + multi_route +
+  multi_route_rates + rolling_two_beat + solution_pool 40 passed.
+- Monolithic golden regenerated with cost identity verified and stated.
+- Rolling goldens byte-identical (verified: rolling determinism golden green).
+
+Same-commit spec: docs/04 (R-SC3 extension note, named regen, CU6c debts, this
+amendment), docs/07 v2.38, CLAUDE.md.

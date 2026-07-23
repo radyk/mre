@@ -292,6 +292,132 @@ def add_start_diversity_cut(
 
 
 # ---------------------------------------------------------------------------
+# R-SC3 two-stage solve — the earliness FLOOR, extended to every solve path
+# (Session 4B.4, CU1). R-SC3 says "the solver" prefers earlier starts among
+# cost-optimal placements — UNSCOPED. Session 4B.2d implemented it on the rolling
+# path only; the monolithic schedule of record still solved cost-only and parked
+# cost-equal work arbitrarily (the founder's ORD-000038 finding: a free earlier
+# slot behind a later placement at $0.00 delta). This lifts the same two-stage
+# shape rolling_horizon._two_stage_solve proved into a shared, reporter-aware
+# helper the monolithic solve path uses:
+#   * STAGE 1 minimizes cost (the model's own minimize(sum(objective_terms)),
+#     UNCHANGED — plus the priced earliness_value term when a positive coefficient
+#     is declared, exactly as rolling; omitted entirely at 0, never ×0). Stage 1
+#     is byte-identical to the pre-4B.4 single solve, so its recorded telemetry
+#     (the M6 solve_complete objective the assembler + _incumbent_objective read)
+#     stays the COST objective.
+#   * STAGE 2 caps the stage-1 objective at round(best) and re-minimizes the sum
+#     of free-op starts (warm-started via add_hint), under a small deterministic
+#     budget. On budget exhaustion the stage-1 incumbent stands — never a
+#     worse-cost result. Committed/pinned work is excluded from the earliness sum.
+# The recorded evidence is stage 1's (COST objective); the returned placements are
+# stage 2's (equal cost, earlier). Rolling keeps its own private copy (its goldens
+# must stay byte-identical); this is the deliberately-separate monolithic seam.
+# ---------------------------------------------------------------------------
+
+# The stage-2 deterministic-time budget (CP-SAT max_deterministic_time). Warm-
+# started from a feasible stage-1 incumbent, so budget exhaustion is benign — the
+# stage-1 schedule stands and is never worse in cost. Mirrors rolling's token.
+_STAGE2_DET_TIME_S = 2.0
+
+
+def _reseed_hints_from(model, var_map: "VariableMap", solve_values) -> None:
+    """Re-seed the model's solution hints from a completed solve (stage 1 →
+    stage 2 warm start). Clears prior hints first so no variable is double-hinted
+    (CP-SAT rejects duplicate hint entries)."""
+    model.clear_hints()
+    for oid, smin in solve_values.op_start_minutes.items():
+        v = var_map.op_start.get(oid)
+        if v is not None:
+            model.add_hint(v, smin)
+        ev = var_map.op_end.get(oid)
+        emin = solve_values.op_end_minutes.get(oid)
+        if ev is not None and emin is not None:
+            model.add_hint(ev, emin)
+        res = solve_values.op_resource.get(oid)
+        if res is not None:
+            for r2, bv in var_map.op_assign.get(oid, {}).items():
+                model.add_hint(bv, 1 if r2 == res else 0)
+
+
+def solve_two_stage(
+    model,
+    var_map: "VariableMap",
+    *,
+    stage1_reporter=None,
+    free_start_vars: Optional[list] = None,
+    exclude_op_ids: Optional[set] = None,
+    earliness_coeff_scaled: int = 0,
+    time_limit_seconds: float = 60.0,
+    num_search_workers: Optional[int] = None,
+    random_seed: Optional[int] = None,
+    stage1_deterministic_time: Optional[float] = None,
+    stage2_deterministic_time: float = _STAGE2_DET_TIME_S,
+    stage2_time_limit_seconds: Optional[float] = None,
+):
+    """R-SC3 two-stage solve on an already-built model (constraints/pins applied
+    by the caller; the builder has already set minimize(sum(objective_terms))).
+
+    Stage 1 is the model's cost solve (+ priced earliness when
+    ``earliness_coeff_scaled > 0``), recorded to ``stage1_reporter`` exactly as a
+    plain single solve — so the M6 solve_complete telemetry stays the COST
+    objective. Stage 2 caps that objective and re-minimizes the sum of free-op
+    starts (the zero-cost earliest-start tiebreak), warm-started from stage 1,
+    under a deterministic budget; on a non-solution the stage-1 incumbent stands.
+
+    ``free_start_vars`` are the op-start vars stage 2 minimizes; when omitted they
+    default to every ``var_map.op_start`` var except ``exclude_op_ids`` (pinned /
+    committed work, which must not be pulled). The returned :class:`SolveResult`
+    carries stage 1's objective/telemetry with stage 2's placements (equal cost,
+    earlier starts). Returns ``(SolveResult, stage2_ran: bool)``."""
+    from mre.modules.solve_runner import SolveRunner
+
+    terms = var_map.objective_terms
+    if free_start_vars is None:
+        excl = exclude_op_ids or set()
+        free_start_vars = [v for oid, v in var_map.op_start.items() if oid not in excl]
+
+    # STAGE 1 — cost (+ priced earliness when declared). At coefficient 0 the
+    # priced term is omitted entirely (the builder's own minimize stands); the
+    # solve, and its recorded evidence, are byte-identical to the pre-4B.4 path.
+    if terms and earliness_coeff_scaled > 0 and free_start_vars:
+        model.minimize(sum(terms) + earliness_coeff_scaled * sum(free_start_vars))
+    s1 = SolveRunner(
+        time_limit_seconds=time_limit_seconds, num_search_workers=num_search_workers,
+        random_seed=random_seed, deterministic_time=stage1_deterministic_time,
+    ).solve(model, var_map, stage1_reporter)
+    if (not terms or not free_start_vars or s1.objective is None
+            or s1.status not in ("OPTIMAL", "FEASIBLE")):
+        return s1, False
+
+    # STAGE 2 — cap the stage-1 objective, re-minimize the raw earliness sum.
+    best = int(round(s1.objective))
+    if earliness_coeff_scaled > 0:
+        model.add(sum(terms) + earliness_coeff_scaled * sum(free_start_vars) <= best)
+    else:
+        model.add(sum(terms) <= best)
+    model.minimize(sum(free_start_vars))
+    _reseed_hints_from(model, var_map, s1.solve_values)
+    s2 = SolveRunner(
+        time_limit_seconds=(stage2_time_limit_seconds or time_limit_seconds),
+        num_search_workers=num_search_workers, random_seed=random_seed,
+        deterministic_time=stage2_deterministic_time,
+    ).solve(model, var_map, None)   # reporter=None: stage 1 already recorded the cost telemetry
+    if s2.status not in ("OPTIMAL", "FEASIBLE"):
+        return s1, False   # stage-2 budget exhausted → keep the stage-1 incumbent
+
+    # Return stage 1's objective/telemetry (COST) with stage 2's placements
+    # (equal cost, earlier). Downstream reads the recorded stage-1 evidence for
+    # objective; the extractor reads these placements.
+    from mre.modules.solve_runner import SolveResult
+    return SolveResult(
+        status=s2.status, objective=s1.objective, best_bound=s1.best_bound,
+        gap=s1.gap, wall_time=s1.wall_time + s2.wall_time,
+        solutions_found=s2.solutions_found, solve_values=s2.solve_values,
+    ), True
+
+
+# ---------------------------------------------------------------------------
 # SolverBuilder
 # ---------------------------------------------------------------------------
 

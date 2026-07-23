@@ -175,6 +175,7 @@ class TemplateRenderer:
             elif bundle.subject_type in (
                 "downtime", "unsupported", "schedule", "scenario_diff",
                 "near_miss", "clarify", "refusals",
+                "advice", "solve_time", "machine_count", "maintenance",
             ):
                 pass  # header already rendered all content
             elif "error" in bundle.key_facts:
@@ -344,8 +345,13 @@ class TemplateRenderer:
             lines.append("")
 
         elif bundle.subject_type == "unsupported":
+            from mre.modules.ask_fallback_copy import (
+                safe_parsed, UNSUPPORTED_LEAD_NO_ECHO,
+            )
             kf = bundle.key_facts
-            lines.append(f"I can't answer this question yet: \"{kf.get('parsed', '?')}\"")
+            echo = safe_parsed(kf.get("parsed", ""))
+            lines.append(f"I can't answer this question yet: \"{echo}\"" if echo
+                         else UNSUPPORTED_LEAD_NO_ECHO)
             lines.append("")
             lines.append("Supported question types:")
             for route in kf.get("supported_routes", []):
@@ -355,9 +361,13 @@ class TemplateRenderer:
         elif bundle.subject_type == "near_miss":
             # The tiered-fallback bridge (CU4): honest miss + the two nearest
             # routes as concrete follow-ups. All copy is authored (never LLM).
-            from mre.modules.ask_fallback_copy import NEAR_MISS_LEAD, NEAR_MISS_OFFER
+            from mre.modules.ask_fallback_copy import (
+                NEAR_MISS_LEAD, NEAR_MISS_LEAD_NO_ECHO, NEAR_MISS_OFFER, safe_parsed,
+            )
             kf = bundle.key_facts
-            lines.append(NEAR_MISS_LEAD.format(q=kf.get("parsed", "?")))
+            echo = safe_parsed(kf.get("parsed", ""))
+            lines.append(NEAR_MISS_LEAD.format(q=echo) if echo
+                         else NEAR_MISS_LEAD_NO_ECHO)
             lines.append("")
             lines.append(NEAR_MISS_OFFER)
             for offer in kf.get("offers", []):
@@ -367,9 +377,13 @@ class TemplateRenderer:
         elif bundle.subject_type == "clarify":
             # Unresolvable ellipsis (CU2): ask for the missing referent, never
             # guess. The reason is authored fallback copy carried on the bundle.
-            from mre.modules.ask_fallback_copy import CLARIFY_LEAD
+            from mre.modules.ask_fallback_copy import (
+                CLARIFY_LEAD, CLARIFY_LEAD_NO_ECHO, safe_parsed,
+            )
             kf = bundle.key_facts
-            lines.append(CLARIFY_LEAD.format(q=kf.get("parsed", "?")))
+            echo = safe_parsed(kf.get("parsed", ""))
+            lines.append(CLARIFY_LEAD.format(q=echo) if echo
+                         else CLARIFY_LEAD_NO_ECHO)
             reason = kf.get("reason")
             if reason:
                 lines.append(reason)
@@ -432,6 +446,13 @@ class TemplateRenderer:
                             + (f" across {m} machine(s)" if m > 1 else "") + ":")
                 lines.append(lead)
                 lines.append("")
+                # CU6a (Session 4B.4): an order-schedule repeats the SAME order-
+                # completion lateness on every segment ("-13536min early" ×N) — the
+                # header already states it once. Show per-row lateness only when the
+                # rows actually DIFFER (a full listing across orders); suppress it
+                # when every row carries the same value (one order's segments).
+                _lat_values = {row.get("lateness_minutes") for row in rows}
+                _show_row_lat = len(rows) == 1 or len(_lat_values) > 1
                 cur_machine = None
                 for row in rows:
                     if row["machine"] != cur_machine:
@@ -439,7 +460,7 @@ class TemplateRenderer:
                         lines.append(f"  [{cur_machine}]")
                     lateness = row.get("lateness_minutes")
                     lat_str = ""
-                    if lateness is not None:
+                    if lateness is not None and _show_row_lat:
                         lat_str = (
                             f"  +{int(lateness)}min LATE"
                             if lateness > 0
@@ -498,7 +519,14 @@ class TemplateRenderer:
             if qty is not None:
                 lines.append(f"  Quantity  : {int(qty) if float(qty).is_integer() else qty}"
                              f" {kf.get('quantity_uom', '')}".rstrip())
-            lines.append(f"  Customer  : {kf.get('customer') or 'not specified'}")
+            if kf.get("customer"):
+                lines.append(f"  Customer  : {kf.get('customer')}")
+            else:
+                # CU6b (Session 4B.4) — coach the IDS requirement (jurisdiction
+                # rule), never fault the ERP: a customer only appears when the
+                # submission declares one via the customers doorway.
+                lines.append("  Customer  : not specified — declare customers in "
+                             "the submission's customers file to see one here")
             lines.append(f"  Due       : {kf.get('due') or 'unknown'}")
             if kf.get("release"):
                 lines.append(f"  Released  : {kf.get('release')}")
@@ -560,6 +588,63 @@ class TemplateRenderer:
 
         elif bundle.subject_type == "briefing":
             self._render_briefing(lines, bundle)
+
+        elif bundle.subject_type == "advice":
+            # CU2 (Session 4B.4) — the honest SCOPING answer. Conversational,
+            # never a status recital, never an invented intervention.
+            kf = bundle.key_facts
+            late = kf.get("late_count", 0)
+            if late:
+                lines.append(
+                    f"{late} order(s) finish late in this plan. I can't recommend "
+                    "an intervention yet — deciding whether to open overtime, add a "
+                    "machine, or re-prioritise isn't a question I answer today.")
+            else:
+                lines.append(
+                    "I can't recommend an intervention yet — deciding whether to "
+                    "open overtime, add a machine, or re-prioritise isn't a "
+                    "question I answer today.")
+            lines.append("")
+            lines.append("Here's what I can do to help you decide:")
+            lines.append("  - explain why any order is late (\"why is <order> late?\")")
+            lines.append("  - show what an order is waiting on (\"why can't "
+                         "<order> start earlier?\")")
+            lines.append("  - price a what-if on the board: drag a job and I'll "
+                         "cost the move exactly.")
+            lines.append("")
+
+        elif bundle.subject_type == "solve_time":
+            kf = bundle.key_facts
+            secs = kf.get("solve_seconds")
+            if secs is None:
+                lines.append("I don't have the solve's timing recorded for this "
+                             "schedule, so I can't give you a number.")
+            else:
+                lines.append(f"The solve stage took about {secs:.1f} second(s).")
+            lines.append("")
+
+        elif bundle.subject_type == "machine_count":
+            kf = bundle.key_facts
+            machines = kf.get("machines", [])
+            n = kf.get("machine_count", len(machines))
+            lines.append(f"{n} machine(s) carry work in this plan.")
+            if machines:
+                lines.append("")
+                for m in machines:
+                    lines.append(f"  - {m}")
+            lines.append("")
+
+        elif bundle.subject_type == "maintenance":
+            kf = bundle.key_facts
+            ex = kf.get("example_machine")
+            lines.append(
+                "I can't yet answer maintenance, shift, or calendar questions "
+                "across the whole plan — that's on the roadmap, not built yet.")
+            lines.append(
+                "What I can show is one machine's downtime and closures — ask "
+                + (f"\"how much downtime does {ex} have?\"" if ex
+                   else "\"how much downtime does <machine> have?\"") + ".")
+            lines.append("")
 
     # ------------------------------------------------------------------
     # Session 4A.2 composed-answer helpers
@@ -932,6 +1017,9 @@ class LLMRenderer:
     # depth: an unresolvable question must never reach the LLM renderer).
     _AUTHORED_COPY_SUBJECTS = frozenset({
         "unsupported", "near_miss", "clarify", "refusals",
+        # Session 4B.4: the scoping / meta-read answers are authored copy too — the
+        # header IS the answer; nothing to testify from, never the LLM's to rewrite.
+        "advice", "solve_time", "machine_count", "maintenance",
     })
 
     def render(self, bundle: ExplanationBundle) -> str:

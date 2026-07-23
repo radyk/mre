@@ -252,17 +252,25 @@ def sabotaged(tmp_path_factory):
 
 def _mutate_earliness_forcing(sub: Path) -> None:
     """Session 4B.3a CU4b: declare a positive earliness_value and give PRESS-SLOW a
-    hair-higher rate than PRESS-FAST. The rate delta is economically negligible
-    (monolithic solves don't add earliness to the objective — the extractor uses it
-    only for ATTRIBUTION), so the capacity-forced op stays on PRESS-SLOW (ORD-06,
-    because PRESS-FAST holds the other two bracket ops), but the extractor now
-    attributes it to EARLINESS_PREFERENCE by PRICE RANK. That is the docs/02 §4.2
-    named limitation in the flesh — the real cause is capacity forcing, so the
-    answer MUST hedge (name the preference AND that the cheaper machine may just
-    have been busy)."""
+    hair-higher rate than PRESS-FAST, so the capacity-forced op stays on PRESS-SLOW
+    (ORD-06, because PRESS-FAST holds the other two bracket ops) but the extractor
+    attributes it to EARLINESS_PREFERENCE by PRICE RANK — the docs/02 §4.2 named
+    limitation in the flesh (the real cause is capacity, so the answer MUST hedge).
+
+    Session 4B.4 update: the monolithic solve now PRICES a declared earliness_value
+    (CU1's two-stage shape, unscoped R-SC3) — so a large coefficient would MOVE
+    placement (correctly!) and dissolve this capacity-forcing specimen. The
+    limitation being tested is the ATTRIBUTION (which fires on ANY value > 0),
+    independent of placement. So the value is set BELOW the objective's
+    quantization: the extractor's coefficient is round(value × _COST_SCALE=100), so
+    a value < 0.005 scales to 0 and the priced earliness term is omitted from the
+    solve (placement byte-identical to the pre-CU1 capacity-forced schedule), while
+    the RAW value stays > 0 so the attribution still fires. This isolates the
+    attribution limitation from placement movement — exactly what the specimen
+    needs post-CU1."""
     cm_path = sub / "cost_model.json"
     cm = json.loads(cm_path.read_text(encoding="utf-8"))
-    cm["refinements"]["earliness_value"] = 0.05
+    cm["refinements"]["earliness_value"] = 0.004   # > 0 (attribution) but < 0.005 (coeff→0)
     cm["refinements"]["resource_rates"]["PRESS-SLOW"] = 61.0
     cm_path.write_text(json.dumps(cm, indent=2), encoding="utf-8")
 
@@ -545,6 +553,96 @@ class TestAuditCorpusEarlinessHedge:
 
 
 @pytest.mark.slow
+class TestSession4B4:
+    """The founder's listening-session (2026-07-23) conversational failures."""
+
+    # CU2 — the four "what should I do about lateness" phrasings that each got the
+    # are-there-late-orders STATUS RECITAL. They must route to the advice SCOPING
+    # answer, never a recital.
+    _ADVICE_QS = [
+        "would you recommend overtime so i have less late jobs",
+        "but what should i do so those orders are not late",
+        "if i open up hours what machines should i run",
+        "please explain how i can avoid late orders",
+    ]
+
+    def test_cu2_advice_phrasings_scope_never_recite(self, clean):
+        from mre.modules.interpreter import run_ask
+        for q in self._ADVICE_QS:
+            res = run_ask(clean, q)
+            assert res.route == "advice", f"{q!r} routed to {res.route}, not advice"
+            a = TemplateRenderer().render(res.bundle).lower()
+            assert "can't recommend an intervention" in a
+            assert "here's what i can do" in a
+
+    def test_cu2_clarify_never_echoes_frustration(self, clean):
+        # A clarify lead must not repeat a frustrated/meta sentence back verbatim.
+        res, a = _ask(clean, "no this is not helpful tell me about it", None)
+        assert res.route == "CLARIFY"
+        assert "not helpful" not in a.lower()
+
+    # CU3 — the category-error insult: solve-time / machine-count / maintenance /
+    # workcenters got "I don't see any scheduled operations matching that".
+    def test_cu3_solve_time_recognized(self, clean):
+        res, a = _ask(clean, "how long did this schedule take to solve")
+        assert res.route == "solve-time"
+        assert "i don't see any scheduled operations" not in a.lower()
+
+    def test_cu3_machine_count_answers(self, clean):
+        res, a = _ask(clean, "how many machines")
+        assert res.route == "machine-count"
+        assert "machine(s) carry work" in a
+        assert "i don't see any scheduled operations" not in a.lower()
+
+    def test_cu3_workcenters_not_insulted(self, clean):
+        res, a = _ask(clean, "does this schedule use workcenters")
+        assert res.route == "machine-count"
+
+    def test_cu3_maintenance_shape_recognized(self, clean):
+        res, a = _ask(clean, "is there any maintenance scheduled")
+        assert res.route == "maintenance"
+        assert "i don't see any scheduled operations" not in a.lower()
+        assert "downtime" in a.lower()          # names the route that DOES exist
+
+    # CU4 — typed anaphora + repair-on-correction.
+    def test_cu4_that_machine_binds_to_machine_not_order(self, clean):
+        # The order turn is MORE RECENT, so untyped recency would (wrongly) bind
+        # "that machine" to the order; typed binding must pick the machine.
+        ctx = {"history": [{"machine": "CUT-01", "route": "machine-schedule"},
+                           {"order": "ORD-05", "route": "late-order"}]}
+        res, a = _ask(clean, "why are there no jobs on that machine", ctx)
+        assert "CUT-01" in res.resolved_question
+        assert "ORD-05" not in res.resolved_question
+        assert "ord-05" not in a.lower()        # never confidently about the order
+
+    def test_cu4_correction_rebinds_and_reanswers(self, clean):
+        ctx = {"history": [{"order": "ORD-99", "route": "late-order"}]}
+        res, a = _ask(clean, "no i meant ORD-05", ctx)
+        assert res.route == "late-order"        # re-answers the PRIOR question
+        assert "ORD-05" in res.resolved_question
+        assert "Supported question types" not in a   # never a menu-dump
+
+    # CU5 — list-expansion of the immediately prior answer.
+    def test_cu5_list_expansion_re_fires_last_route(self, clean):
+        ctx = {"history": [{"route": "late-orders"}]}
+        res, a = _ask(clean, "can you list the numbers", ctx)
+        assert res.route == "late-orders"
+
+    # CU6a — an order-schedule states earliness once, not once per segment.
+    def test_cu6a_earliness_not_repeated_per_segment(self, clean):
+        # ORD-03 is a two-chunk (splittable) order → multiple same-lateness rows.
+        a = _answer(clean, "when does ORD-03 finish").split("[rendered by")[0]
+        early_markers = a.lower().count("min early") + a.lower().count("min late")
+        assert early_markers <= 1, f"earliness repeated per segment: {a}"
+
+    # CU6b — the customer coaching line names the doorway.
+    def test_cu6b_customer_coaching_when_absent(self, clean):
+        a = _answer(clean, "what customer is ORD-13")  # a control order
+        if "not specified" in a:
+            assert "customers file" in a.lower() or "customers doorway" in a.lower()
+
+
+@pytest.mark.slow
 def test_cu10_zero_confident_wrong(clean, sabotaged, earliness_forcing):
     """The measurement: EVERY audit-corpus question lands correct-and-on-question,
     honest-bridge, or honest-refusal — zero confident-wrong. A confident-wrong
@@ -603,6 +701,26 @@ def test_cu10_zero_confident_wrong(clean, sabotaged, earliness_forcing):
         # a confident single-cause answer is confident-wrong (docs/02 §4.2).
         ("why is ORD-06 on PRESS-SLOW", earliness_forcing, None,
          lambda a: "busy" in a.lower() or "capacity" in a.lower()),
+        # Session 4B.4 — the founder's listening-session failures. An advice
+        # question must NOT be answered with the late-orders status recital; a
+        # solve-time / machine / maintenance question must NOT get the category-
+        # error insult; "that machine" must NOT confidently answer about an order.
+        ("would you recommend overtime so i have less late jobs", clean, None,
+         lambda a: "can't recommend an intervention" in a.lower()),
+        ("but what should i do so those orders are not late", clean, None,
+         lambda a: "can't recommend an intervention" in a.lower()),
+        ("please explain how i can avoid late orders", clean, None,
+         lambda a: "can't recommend an intervention" in a.lower()),
+        ("how long did this schedule take to solve", clean, None,
+         lambda a: "i don't see any scheduled operations" not in a.lower()),
+        ("how many machines", clean, None,
+         lambda a: "carry work" in a.lower()),
+        ("is there any maintenance scheduled", clean, None,
+         lambda a: "i don't see any scheduled operations" not in a.lower()),
+        ("why are there no jobs on that machine", clean,
+         {"history": [{"machine": "CUT-01", "route": "machine-schedule"},
+                      {"order": "ORD-05", "route": "late-order"}]},
+         lambda a: "ord-05" not in a.lower()),
     ]
     wrong = []
     for q, ex, ctx, ok in corpus:

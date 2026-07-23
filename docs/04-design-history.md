@@ -7348,3 +7348,174 @@ gestures; register the sliced routes and hand the Explainer the document and the
 persisted snapshot, and the answers are grounded, not named-debt tips. Make beat one
 relax what beat two holds and the contradiction is real on the rolling substrate,
 not just the monolithic one.
+
+---
+
+### 2026-07-23 — Session 4B.4: R-SC3 extended to ALL solve paths (the monolithic floor) + the founder's conversational fixes
+
+**R-SC3 extension (the founder's finding).** R-SC3 (Session 4B.2d) reads "among
+cost-optimal schedules the solver prefers earlier starts, always/unconditionally"
+— "the solver," UNSCOPED. It was implemented on the ROLLING path only; the
+monolithic schedule of record still solved cost-only and parked cost-equal work
+arbitrarily. The founder's live listening session (2026-07-23, monolithic run,
+cockpit) found the seam: ORD-000038 sat at 14:39 behind a FREE 11:21 slot on the
+same machine, and dragging it earlier cost $0.00 — the floor simply was not being
+applied off the rolling path. **The floor now applies to every cost-minimizing
+schedule of record, not just the rolling one.**
+
+**CU1 — monolithic two-stage parity.** A shared, reporter-aware helper
+`solver_builder.solve_two_stage` lifts the exact two-stage shape
+`rolling_horizon._two_stage_solve` proved: STAGE 1 minimizes cost (the model's own
+`minimize(sum(objective_terms))`, unchanged — plus the priced `earliness_value`
+term when a positive coefficient is declared, exactly as rolling; omitted entirely
+at 0), recorded to the M6 reporter so the solve_complete objective the assembler +
+`_incumbent_objective` read stays the COST objective; STAGE 2 caps that optimum at
+`round(best)` and re-minimizes the SUM of free-op starts (warm-started via
+`add_hint`) under a deterministic budget (`_STAGE2_DET_TIME_S = 2.0`), on exhaustion
+the stage-1 incumbent stands — never a worse-cost result. The returned SolveResult
+carries stage 1's objective/telemetry with stage 2's placements. `__main__` (the CLI
++ API monolithic schedule of record) uses it; no pins in that path, so the earliness
+sum is over every op start. Rolling keeps its OWN private copy (its goldens must stay
+byte-identical) — the shared helper is the deliberately-separate monolithic seam.
+
+**The floor minimizes the SUM of starts (net-earlier, not per-op monotonic).** The
+same objective rolling uses (sum of free-op starts) is a GLOBAL minimum: it can push
+one cost-equal op later to pull others earlier when that lowers the total. On
+sample_data the regen moved 30 ops earlier, 13 later, 47 unchanged, with 3 equal-cost
+machine swaps — one floor, unscoped, faithful to the rolling implementation. The
+founder's ORD-000038 case is resolved because the sum-minimization pulls a cost-equal
+op into a free earlier slot whenever doing so lowers the total. Deviating to a
+per-op-monotonic rule would create two DIFFERENT floors (monolithic vs rolling),
+defeating the point.
+
+**Per-site audit (default: yes, or exempt with a reason).**
+- `__main__` monolithic solve — STAGE 2 (the schedule of record; the fix).
+- `sandbox.feasibility_ghost` (beat one) — exempt: a pure first-feasible feasibility
+  probe (`stop_after_first_solution`); it stops at the first solution by nature.
+- `sandbox.sandbox_pin_resolve` (beat two) — exempt: it prices a CHANGE relative to
+  the record and warm-starts from the (now two-stage) incumbent, inheriting the floor
+  via the accepted hints; an independent stage-2 pass would re-floor globally and
+  perturb the very incumbent it diffs against, enlarging the moved-set.
+- `scenario` re-solve — exempt: a what-if diffed against the incumbent (warm-start
+  inheritance, same reasoning).
+- `planner_edit` accept — exempt: commits a pinned placement; warm-start inheritance;
+  not a fresh schedule of record.
+- `solution_pool` — exempt: its secondary objective is DIVERSITY
+  (`add_start_diversity_cut`), which an earliness tiebreak directly opposes.
+- `forced_alternatives` — exempt: a per-machine PRICING probe; the floor does not
+  change the price it reports.
+- `demo.py` — exempt: a standalone demo convenience wrapper, not the served schedule
+  of record.
+All re-solve exemptions were VALIDATED green on their slow ladders (sandbox,
+planner_edit, scenario, standing_pins, forced_alternatives, solution_pool,
+multi_route) — the two-stage incumbent + warm-start keeps their moved-sets bounded.
+
+**Named golden regen (cost-identity verified).** `sample_data_schedule.csv` was
+regenerated DELIBERATELY. Verified BEFORE regen: the cost ledger is IDENTICAL pre/post
+(total 24769.00, production 19429.00, setup 4500.00, tardiness 840.00 — every value
+unchanged; `test_cost_ledger_identical` passes untouched), per-op production cost
+unchanged on every row, and the new CSV is byte-identical across two subprocess rolls
+(deterministic). ONLY placements moved, net-earlier. Had any COST changed it would be
+a defect (stop, do not regenerate) — it did not. The gauntlet golden is dead (only a
+comment reference remains). Rolling goldens BYTE-IDENTICAL (CU1 touches monolithic
+only — rolling determinism golden + the two-beat goldens survive).
+
+**Tests.** `tests/test_two_stage_monolithic.py` (fast, hand-built CP-SAT model): (a)
+the ORD-000038 class — a cost-equal earlier slot is TAKEN (the start sum is the
+provable minimum); (b) cost-neutrality — the two-stage cost objective == a
+stage-1-only solve to epsilon 0; (c) determinism run-to-run; plus the stage-2-skipped
+path. The real-data end-to-end proof is `test_defaults_reproduce_baseline` (ledger
+identical, placements earlier).
+
+**The earliness_forcing fixture (a correct CU1 side-effect, honestly resolved).**
+Post-CU1 the monolithic path PRICES a declared `earliness_value` (stage 1) — so the
+4B.3a CU4b hedge fixture's 0.05/min actively moved ORD-06 off the dearer PRESS-SLOW
+(R-SC3 working). The limitation that specimen tests is the ATTRIBUTION (docs/02 §4.2,
+fires on ANY value > 0), independent of placement. Fixed by setting the fixture's
+earliness_value below the objective's quantization: the coefficient is
+`round(value * _COST_SCALE=100)`, so a value < 0.005 scales to 0 (priced term omitted,
+placement byte-identical to the capacity-forced schedule) while the RAW value stays
+> 0 (attribution still fires). 0.004 isolates attribution from placement.
+
+**CU2 — the recommendation-shape guard (the worst conversational failure).** Four
+phrasings of "what should I do about lateness" each got the are-there-late-orders
+STATUS RECITAL — confident, cited, wrong-question, three times. A new `advice` route
+(`_ADVICE_TRIGGERS`, checked after triage/remediation/briefing but BEFORE the
+edit/late/schedule branches) routes advice-seeking phrasings to an HONEST SCOPING
+answer: it states what the product CAN do today (explain why each late order is late;
+what each is waiting on; price a what-if move on the board) and that recommending an
+intervention is not yet a supported question — conversational register, no ===
+headers. It does NOT attempt to recommend interventions (that is the 4A.3 action
+bridge, out of scope). The clarify/near-miss/refusal leads no longer echo a
+frustrated/meta sentence verbatim (`ask_fallback_copy.safe_parsed` drops the echo
+when the question carries frustration markers -> the `_NO_ECHO` lead variants).
+
+**CU3 — the category-error insult, split.** "how long did this schedule take to
+solve" / "how many machines" / "is there any maintenance scheduled" / "does this
+schedule use workcenters" all got "I don't see any scheduled operations matching
+that" — an entity-lookup-miss message for a missing question SHAPE (they contain
+"schedule"/"scheduled"/"machines" and misrouted to the listing). Three routes added
+BEFORE the bare-"schedule" branch: `solve-time` (a pure evidence read of the M6 run's
+open->close wall time; honest not-yet when unavailable), `machine-count` (a pure
+document read of the resource entities, counted + listed in planner vocabulary), and
+`maintenance` (shape-recognized with an honest not-yet that names the per-machine
+`downtime` route that DOES exist — the calendar-awareness cluster is NAMED DEBT below,
+not built).
+
+**CU4 — typed anaphora + repair-on-correction.** "why are there no jobs on that
+machine" bound "that machine" to an ORDER four turns back and answered confidently
+about the order. Now anaphora binds by TYPE first (`_typed_deictic` +
+`_last_typed_subject`: "that machine" only to a machine referent, "that order" only to
+an order), then recency; no type-matching referent -> clarify, never cross-type bind.
+A correction utterance (`_CORRECTION_RE`, checked BEFORE the order/machine
+short-circuit so the wrong referent Y in the same sentence does not re-fire the
+confident-wrong answer) re-binds to the corrected referent and RE-ANSWERS the prior
+question — but only when the corrected referent fills what that route needs; a
+cross-type correction clarifies, never a menu-dump.
+
+**CU5 — follow-up context (list-expansion, minimal slice).** "how many late orders" ->
+"can you list the numbers" menu-dumped despite the answer being the prior route's own
+data. A short elliptical follow-up (`_LIST_EXPAND`) now re-fires the LAST answered
+route in list form (canonical question of the last route, params from the last
+subject). Scoped STRICTLY to list-expansion of the immediately prior answer; anything
+more is named future work.
+
+**CU6 — riders.** (a) An order-schedule stated the same order-completion earliness on
+every segment ("-13536min early" xN); it now states earliness once (the header
+already does) and shows per-row lateness only when the rows DIFFER (a single row keeps
+its marker; multiple same-value rows suppress the repetition). (b) "Customer: not
+specified" gains a coaching line citing the customers doorway (jurisdiction rule —
+coach the IDS requirement, never fault the ERP).
+
+**(c) Named debt (docs/04, NOT built this session).**
+- The absence-explaining route pair — "why the gap between X and Y" (occupancy /
+  calendar / setup / slack causes) and "why is machine M unused" (eligibility +
+  lost-on-price; the CU5-4B.2d per-resource manned-idle Metric is the grounding for
+  the latter). The founder's "why are there no jobs on that machine" binds correctly
+  to the machine now but has no absence route to answer it — it falls to an honest
+  not-yet. This route pair is the next conversational build.
+- The calendar-awareness route cluster — maintenance, off-shift, shift-pattern
+  questions across the whole plan (CU3's `maintenance` route recognizes the shape and
+  hedges; the full answer is the cluster).
+- The action bridge (4A.3) — this listening session is standing evidence that 4A.3
+  (intervention recommendation: overtime, added capacity, re-prioritisation) is the
+  next AI session. CU2's advice route scopes to it honestly; it does not build it.
+
+**Verification.** Non-slow Python 1243 passed, 0 failed (+4 two-stage monolithic).
+Slow ladders green: `test_ai_voice` 63 passed (+11 Session 4B.4 specimens, the four
+founder phrasings folded into the zero-confident-wrong aggregate), `test_glass_box` +
+`test_ask_chain_api` 34 passed, and the re-solve exemptions' ladders (sandbox,
+planner_edit, scenario, standing_pins, forced_alternatives, solution_pool, multi_route,
+rolling, rolling_two_beat) all green. Monolithic golden regenerated with cost identity
+stated; rolling goldens byte-identical. Same-commit: this docs/04 amendment (R-SC3
+extension note + named regen + the CU6c debts), docs/07 v2.38, CLAUDE.md.
+
+Lesson: "the solver prefers earlier starts" is one floor or it is a lie — implementing
+it on the rolling path but not the schedule of record means the founder drags a bar
+the engine should have placed. Lift the SAME two-stage shape (not a second one),
+record the COST objective so nothing downstream shifts, and prove cost identity before
+you regenerate a golden that legitimately moved. And a confident answer to the WRONG
+question is worse than a refusal: the advice recital, the category-error insult, the
+cross-type anaphora bind, and the menu-dump were all the machine answering a question
+the planner did not ask — the cure is a route that recognizes the SHAPE and scopes
+honestly to what it can do.

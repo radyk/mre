@@ -73,6 +73,65 @@ _SET_PRONOUN_RE = re.compile(
     r"\b(?:\d+|some|many|few|several|most|all|how many|which|any)\s+of\s+"
     r"(those|them|these)\b", re.IGNORECASE)
 
+# CU4 (Session 4B.4) — TYPED anaphora. "that machine" must bind ONLY to a machine
+# referent, "that order" ONLY to an order — type first, then recency. Binding
+# "that machine" to an order four turns back (the founder's confident-wrong bug)
+# is exactly what these prevent: no type-matching referent → ask, never cross-type.
+_MACHINE_NOUNS = ("machine", "resource", "work center", "workcenter",
+                  "work-center", "line", "cell", "station")
+_ORDER_NOUNS = ("order", "job", "work order", "work-order", "wo")
+
+# A correction utterance ("i was asking about X, not Y" / "no, I meant X") re-binds
+# to the CORRECTED referent (captured group) and re-answers the PRIOR question.
+_CORRECTION_RE = re.compile(
+    r"\b(?:asking about|i meant|i mean|no,?\s*i meant|no,?\s*i was asking about|"
+    r"talking about|referring to|i said)\s+(.+?)"
+    r"(?:\s*,?\s*not\b.*|[?.!]|$)", re.IGNORECASE)
+
+# CU5 (Session 4B.4) — list-expansion of the immediately prior answer. A short
+# elliptical follow-up re-fires the LAST answered route in list form. Scoped
+# STRICTLY to expanding the previous answer (anything more is named future work).
+_LIST_EXPAND = (
+    "list them", "list those", "list the numbers", "list the orders",
+    "list all", "list it", "which ones", "which ones?", "the numbers",
+    "show me", "show them", "show the list", "name them", "can you list",
+    "give me the list", "what are they", "spell them out", "list em",
+)
+
+
+def _typed_deictic(ql: str) -> Optional[str]:
+    """The TYPE a deictic phrase points at: 'machine' for "that/this/the machine",
+    'order' for "that/this/the order/job". None when no typed deictic is present."""
+    for noun in _MACHINE_NOUNS:
+        if re.search(rf"\b(?:that|this|the)\s+{re.escape(noun)}\b", ql):
+            return "machine"
+    for noun in _ORDER_NOUNS:
+        if re.search(rf"\b(?:that|this|the)\s+{re.escape(noun)}\b", ql):
+            return "order"
+    return None
+
+
+def _last_typed_subject(history: list[dict], selection: dict, kind: str) -> Optional[str]:
+    """The most recent referent of the requested TYPE (order|machine) — recency
+    within the type, so "that machine" never binds to an order (CU4a)."""
+    for turn in reversed(history or []):
+        if turn.get(kind):
+            return turn[kind]
+    if selection and selection.get(kind):
+        return selection[kind]
+    return None
+
+
+def _substitute_typed(question: str, ref: str, kind: str) -> str:
+    """Replace "that/this/the <noun>" of the matching type with the external ref."""
+    nouns = _MACHINE_NOUNS if kind == "machine" else _ORDER_NOUNS
+    for noun in nouns:
+        new, n = re.subn(rf"\b(?:that|this|the)\s+{re.escape(noun)}\b", ref,
+                         question, count=1, flags=re.IGNORECASE)
+        if n:
+            return new
+    return f"{question.rstrip(' ?')} for {ref}?"
+
 
 @dataclass
 class Interpretation:
@@ -164,6 +223,35 @@ def resolve_followup(question: str, context: Optional[dict], explainer: Any) -> 
         refs = ", ".join(dict.fromkeys(r for _t, r in fnotes))
         return ResolvedQuestion(text=fq, resolved=True, note=f"assuming {refs}")
 
+    # CU4 — a CORRECTION ("i was asking about X, not Y" / "no, I meant X") re-binds
+    # to the corrected referent and RE-ANSWERS the prior question, never a
+    # menu-dump. Checked BEFORE the order/machine short-circuit because the
+    # sentence also names the wrong referent Y — short-circuiting on Y would repeat
+    # the very confident-wrong answer the planner is correcting.
+    mcorr = _CORRECTION_RE.search(q)
+    if mcorr:
+        phrase = mcorr.group(1).strip()
+        order = explainer._find_order_ref(phrase)
+        machine = explainer._find_machine_ref(phrase)
+        last_route = _last_route(history)
+        if (order or machine) and last_route and last_route in ROUTE_TAXONOMY:
+            needed = ROUTE_TAXONOMY[last_route].get("params", [])
+            params: dict[str, str] = {}
+            if order and ("order" in needed or not needed):
+                params["order"] = order
+            if machine and ("machine" in needed or not needed):
+                params["machine"] = machine
+            # Re-fire the PRIOR question only when the corrected referent fills what
+            # that route needs (or the route is paramless). A cross-type correction
+            # (a machine handed to an order route) can't re-answer the same
+            # question — clarify, never a menu-dump, never a confident-wrong re-run.
+            if all(p in params for p in needed):
+                return ResolvedQuestion(
+                    text=canonical_question(last_route, params), resolved=True,
+                    note=f"corrected to {order or machine}")
+        return ResolvedQuestion(text=q, resolved=False, needs_clarification=True,
+                                note=CLARIFY_NO_SUBJECT)
+
     # Already names a resolvable ORDER → nothing to resolve (an order ref fully
     # anchors the question). A MACHINE ref alone anchors it too — UNLESS a deictic
     # pronoun is also present ("why is this on CUT-01"): the pronoun still needs a
@@ -210,6 +298,20 @@ def resolve_followup(question: str, context: Optional[dict], explainer: Any) -> 
     if route_id != "unsupported":
         return ResolvedQuestion(text=q, resolved=False)
 
+    # CU5 — list-expansion: "list them" / "which ones" / "the numbers" / "show me"
+    # re-fire the LAST answered route in list form. The founder's pair: "how many
+    # late orders" (route late-orders) → "can you list the numbers" lists them,
+    # instead of a menu-dump. Scoped strictly to expanding the prior answer.
+    if any(p in ql for p in _LIST_EXPAND):
+        last_route = _last_route(history)
+        if last_route and last_route in ROUTE_TAXONOMY:
+            last = _last_subject(history, selection)
+            params = {k: last.get(k) for k in ("order", "machine")
+                      if last.get(k)}
+            return ResolvedQuestion(
+                text=canonical_question(last_route, params), resolved=True,
+                note="listing the previous answer")
+
     # "how much?" after an edit answer → the edit-cost domain (CU2 example).
     if any(c in ql for c in _COST_FOLLOWUP) and _last_route(history) in _EDIT_ROUTES:
         return ResolvedQuestion(
@@ -218,6 +320,19 @@ def resolve_followup(question: str, context: Optional[dict], explainer: Any) -> 
         )
 
     if _has_ellipsis(ql):
+        # CU4 — a TYPED deictic ("that machine" / "that order") binds only to a
+        # referent of that TYPE, then recency; no type-matching referent → ask,
+        # never cross-type bind (the "that machine → an order four turns back" bug).
+        kind = _typed_deictic(ql)
+        if kind:
+            ref = _last_typed_subject(history, selection, kind)
+            if ref:
+                return ResolvedQuestion(
+                    text=_substitute_typed(q, ref, kind), resolved=True,
+                    note=f"resolved against {ref}")
+            return ResolvedQuestion(
+                text=q, resolved=False, needs_clarification=True,
+                note=CLARIFY_NO_SUBJECT)
         last = _last_subject(history, selection)
         ref = last.get("order") or last.get("machine")
         if ref:
@@ -287,6 +402,10 @@ class Interpreter:
             "edit-summary": "summary of edits the planner made",
             "edit-cost": "what the planner's last move cost",
             "ledger-refusals": "questions the system couldn't answer",
+            "advice": "advice/recommendation on what to do about lateness or capacity",
+            "solve-time": "how long the solve took",
+            "machine-count": "how many machines / list the machines",
+            "maintenance": "maintenance, shift, or calendar questions",
         }
         for rid in ROUTE_TAXONOMY:
             lines.append(f"  {rid} — {meanings.get(rid, rid)}")
