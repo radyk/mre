@@ -16,7 +16,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "httpx>=0.27"]
+# ``anthropic`` is a REQUIRED dev dependency (Session 4B.3a CU4a): the M10 LLM
+# renderer is lazily/try-guarded in production (fail-closed, correctly unlocked),
+# but tests/test_render_fail_closed.py constructs a real ``anthropic.Anthropic``
+# client to prove the real render path fails closed — so the SDK must be present
+# in the dev/test environment. It was reaching CI only via manual installs until
+# now; pin it as an explicit dev extra so a fresh checkout runs the full suite.
+dev = ["pytest>=8.0", "httpx>=0.27", "anthropic>=0.40"]
 
 [build-system]
 requires = ["setuptools>=68"]

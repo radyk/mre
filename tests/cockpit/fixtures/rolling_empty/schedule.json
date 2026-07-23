@@ -1,0 +1,6176 @@
+{
+  "contract_version": "1.7",
+  "schedule_id": "sched-rolling-empty",
+  "snapshot_id": "snap-rolling",
+  "run_id": "run-fixture",
+  "status": "proposed",
+  "reference_date": "2026-01-05T00:00:00Z",
+  "horizon": {
+    "start": "2026-01-05T00:00:00Z",
+    "end": "2026-03-27T00:00:00Z"
+  },
+  "solver": {
+    "status": "OPTIMAL",
+    "objective": null,
+    "gap": null,
+    "wall_time_s": 0.0,
+    "deterministic": true
+  },
+  "cost_summary": {
+    "total": 5959.533333333333,
+    "production_regular": 5239.533333333333,
+    "production_overtime": 0.0,
+    "setup": 720.0,
+    "tardiness": 0.0,
+    "costmodel_version": 1
+  },
+  "resources": [
+    {
+      "resource_id": "0ec64e4c-748b-5d1e-9889-014909facee0",
+      "external_name": "ASM-01",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-05T07:00:00Z",
+          "end": "2026-02-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-06T07:00:00Z",
+          "end": "2026-02-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-09T07:00:00Z",
+          "end": "2026-02-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-10T07:00:00Z",
+          "end": "2026-02-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-11T07:00:00Z",
+          "end": "2026-02-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-12T07:00:00Z",
+          "end": "2026-02-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-13T07:00:00Z",
+          "end": "2026-02-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-16T07:00:00Z",
+          "end": "2026-02-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-17T07:00:00Z",
+          "end": "2026-02-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-18T07:00:00Z",
+          "end": "2026-02-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-19T07:00:00Z",
+          "end": "2026-02-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-20T07:00:00Z",
+          "end": "2026-02-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-23T07:00:00Z",
+          "end": "2026-02-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-24T07:00:00Z",
+          "end": "2026-02-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-25T07:00:00Z",
+          "end": "2026-02-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-26T07:00:00Z",
+          "end": "2026-02-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-27T07:00:00Z",
+          "end": "2026-02-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-02T07:00:00Z",
+          "end": "2026-03-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-03T07:00:00Z",
+          "end": "2026-03-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-04T07:00:00Z",
+          "end": "2026-03-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-05T07:00:00Z",
+          "end": "2026-03-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-06T07:00:00Z",
+          "end": "2026-03-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-09T07:00:00Z",
+          "end": "2026-03-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-10T07:00:00Z",
+          "end": "2026-03-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-11T07:00:00Z",
+          "end": "2026-03-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-12T07:00:00Z",
+          "end": "2026-03-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-13T07:00:00Z",
+          "end": "2026-03-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-16T07:00:00Z",
+          "end": "2026-03-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-17T07:00:00Z",
+          "end": "2026-03-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-18T07:00:00Z",
+          "end": "2026-03-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-19T07:00:00Z",
+          "end": "2026-03-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-20T07:00:00Z",
+          "end": "2026-03-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-23T07:00:00Z",
+          "end": "2026-03-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-24T07:00:00Z",
+          "end": "2026-03-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-25T07:00:00Z",
+          "end": "2026-03-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-26T07:00:00Z",
+          "end": "2026-03-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-05T07:00:00Z",
+          "end": "2026-02-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-06T07:00:00Z",
+          "end": "2026-02-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-09T07:00:00Z",
+          "end": "2026-02-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-10T07:00:00Z",
+          "end": "2026-02-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-11T07:00:00Z",
+          "end": "2026-02-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-12T07:00:00Z",
+          "end": "2026-02-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-13T07:00:00Z",
+          "end": "2026-02-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-16T07:00:00Z",
+          "end": "2026-02-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-17T07:00:00Z",
+          "end": "2026-02-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-18T07:00:00Z",
+          "end": "2026-02-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-19T07:00:00Z",
+          "end": "2026-02-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-20T07:00:00Z",
+          "end": "2026-02-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-23T07:00:00Z",
+          "end": "2026-02-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-24T07:00:00Z",
+          "end": "2026-02-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-25T07:00:00Z",
+          "end": "2026-02-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-26T07:00:00Z",
+          "end": "2026-02-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-27T07:00:00Z",
+          "end": "2026-02-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-02T07:00:00Z",
+          "end": "2026-03-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-03T07:00:00Z",
+          "end": "2026-03-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-04T07:00:00Z",
+          "end": "2026-03-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-05T07:00:00Z",
+          "end": "2026-03-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-06T07:00:00Z",
+          "end": "2026-03-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-09T07:00:00Z",
+          "end": "2026-03-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-10T07:00:00Z",
+          "end": "2026-03-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-11T07:00:00Z",
+          "end": "2026-03-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-12T07:00:00Z",
+          "end": "2026-03-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-13T07:00:00Z",
+          "end": "2026-03-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-16T07:00:00Z",
+          "end": "2026-03-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-17T07:00:00Z",
+          "end": "2026-03-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-18T07:00:00Z",
+          "end": "2026-03-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-19T07:00:00Z",
+          "end": "2026-03-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-20T07:00:00Z",
+          "end": "2026-03-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-23T07:00:00Z",
+          "end": "2026-03-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-24T07:00:00Z",
+          "end": "2026-03-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-25T07:00:00Z",
+          "end": "2026-03-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-26T07:00:00Z",
+          "end": "2026-03-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "df5aa682-bc17-5d5a-b721-edd24de1725d",
+      "external_name": "CUT-02",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-05T07:00:00Z",
+          "end": "2026-02-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-06T07:00:00Z",
+          "end": "2026-02-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-09T07:00:00Z",
+          "end": "2026-02-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-10T07:00:00Z",
+          "end": "2026-02-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-11T07:00:00Z",
+          "end": "2026-02-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-12T07:00:00Z",
+          "end": "2026-02-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-13T07:00:00Z",
+          "end": "2026-02-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-16T07:00:00Z",
+          "end": "2026-02-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-17T07:00:00Z",
+          "end": "2026-02-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-18T07:00:00Z",
+          "end": "2026-02-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-19T07:00:00Z",
+          "end": "2026-02-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-20T07:00:00Z",
+          "end": "2026-02-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-23T07:00:00Z",
+          "end": "2026-02-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-24T07:00:00Z",
+          "end": "2026-02-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-25T07:00:00Z",
+          "end": "2026-02-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-26T07:00:00Z",
+          "end": "2026-02-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-27T07:00:00Z",
+          "end": "2026-02-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-02T07:00:00Z",
+          "end": "2026-03-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-03T07:00:00Z",
+          "end": "2026-03-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-04T07:00:00Z",
+          "end": "2026-03-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-05T07:00:00Z",
+          "end": "2026-03-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-06T07:00:00Z",
+          "end": "2026-03-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-09T07:00:00Z",
+          "end": "2026-03-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-10T07:00:00Z",
+          "end": "2026-03-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-11T07:00:00Z",
+          "end": "2026-03-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-12T07:00:00Z",
+          "end": "2026-03-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-13T07:00:00Z",
+          "end": "2026-03-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-16T07:00:00Z",
+          "end": "2026-03-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-17T07:00:00Z",
+          "end": "2026-03-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-18T07:00:00Z",
+          "end": "2026-03-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-19T07:00:00Z",
+          "end": "2026-03-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-20T07:00:00Z",
+          "end": "2026-03-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-23T07:00:00Z",
+          "end": "2026-03-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-24T07:00:00Z",
+          "end": "2026-03-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-25T07:00:00Z",
+          "end": "2026-03-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-26T07:00:00Z",
+          "end": "2026-03-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+      "external_name": "CUT-03",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-05T07:00:00Z",
+          "end": "2026-02-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-06T07:00:00Z",
+          "end": "2026-02-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-09T07:00:00Z",
+          "end": "2026-02-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-10T07:00:00Z",
+          "end": "2026-02-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-11T07:00:00Z",
+          "end": "2026-02-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-12T07:00:00Z",
+          "end": "2026-02-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-13T07:00:00Z",
+          "end": "2026-02-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-16T07:00:00Z",
+          "end": "2026-02-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-17T07:00:00Z",
+          "end": "2026-02-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-18T07:00:00Z",
+          "end": "2026-02-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-19T07:00:00Z",
+          "end": "2026-02-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-20T07:00:00Z",
+          "end": "2026-02-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-23T07:00:00Z",
+          "end": "2026-02-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-24T07:00:00Z",
+          "end": "2026-02-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-25T07:00:00Z",
+          "end": "2026-02-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-26T07:00:00Z",
+          "end": "2026-02-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-27T07:00:00Z",
+          "end": "2026-02-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-02T07:00:00Z",
+          "end": "2026-03-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-03T07:00:00Z",
+          "end": "2026-03-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-04T07:00:00Z",
+          "end": "2026-03-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-05T07:00:00Z",
+          "end": "2026-03-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-06T07:00:00Z",
+          "end": "2026-03-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-09T07:00:00Z",
+          "end": "2026-03-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-10T07:00:00Z",
+          "end": "2026-03-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-11T07:00:00Z",
+          "end": "2026-03-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-12T07:00:00Z",
+          "end": "2026-03-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-13T07:00:00Z",
+          "end": "2026-03-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-16T07:00:00Z",
+          "end": "2026-03-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-17T07:00:00Z",
+          "end": "2026-03-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-18T07:00:00Z",
+          "end": "2026-03-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-19T07:00:00Z",
+          "end": "2026-03-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-20T07:00:00Z",
+          "end": "2026-03-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-23T07:00:00Z",
+          "end": "2026-03-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-24T07:00:00Z",
+          "end": "2026-03-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-25T07:00:00Z",
+          "end": "2026-03-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-26T07:00:00Z",
+          "end": "2026-03-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "c3459e27-de11-5e09-be75-5ec5e29b1499",
+      "external_name": "FINISH-01",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-05T07:00:00Z",
+          "end": "2026-02-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-06T07:00:00Z",
+          "end": "2026-02-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-09T07:00:00Z",
+          "end": "2026-02-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-10T07:00:00Z",
+          "end": "2026-02-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-11T07:00:00Z",
+          "end": "2026-02-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-12T07:00:00Z",
+          "end": "2026-02-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-13T07:00:00Z",
+          "end": "2026-02-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-16T07:00:00Z",
+          "end": "2026-02-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-17T07:00:00Z",
+          "end": "2026-02-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-18T07:00:00Z",
+          "end": "2026-02-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-19T07:00:00Z",
+          "end": "2026-02-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-20T07:00:00Z",
+          "end": "2026-02-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-23T07:00:00Z",
+          "end": "2026-02-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-24T07:00:00Z",
+          "end": "2026-02-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-25T07:00:00Z",
+          "end": "2026-02-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-26T07:00:00Z",
+          "end": "2026-02-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-27T07:00:00Z",
+          "end": "2026-02-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-02T07:00:00Z",
+          "end": "2026-03-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-03T07:00:00Z",
+          "end": "2026-03-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-04T07:00:00Z",
+          "end": "2026-03-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-05T07:00:00Z",
+          "end": "2026-03-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-06T07:00:00Z",
+          "end": "2026-03-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-09T07:00:00Z",
+          "end": "2026-03-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-10T07:00:00Z",
+          "end": "2026-03-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-11T07:00:00Z",
+          "end": "2026-03-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-12T07:00:00Z",
+          "end": "2026-03-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-13T07:00:00Z",
+          "end": "2026-03-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-16T07:00:00Z",
+          "end": "2026-03-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-17T07:00:00Z",
+          "end": "2026-03-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-18T07:00:00Z",
+          "end": "2026-03-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-19T07:00:00Z",
+          "end": "2026-03-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-20T07:00:00Z",
+          "end": "2026-03-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-23T07:00:00Z",
+          "end": "2026-03-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-24T07:00:00Z",
+          "end": "2026-03-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-25T07:00:00Z",
+          "end": "2026-03-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-26T07:00:00Z",
+          "end": "2026-03-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "ce249601-8798-576b-88ed-2af0bf016812",
+      "external_name": "FINISH-02",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-05T07:00:00Z",
+          "end": "2026-02-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-06T07:00:00Z",
+          "end": "2026-02-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-09T07:00:00Z",
+          "end": "2026-02-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-10T07:00:00Z",
+          "end": "2026-02-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-11T07:00:00Z",
+          "end": "2026-02-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-12T07:00:00Z",
+          "end": "2026-02-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-13T07:00:00Z",
+          "end": "2026-02-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-16T07:00:00Z",
+          "end": "2026-02-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-17T07:00:00Z",
+          "end": "2026-02-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-18T07:00:00Z",
+          "end": "2026-02-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-19T07:00:00Z",
+          "end": "2026-02-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-20T07:00:00Z",
+          "end": "2026-02-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-23T07:00:00Z",
+          "end": "2026-02-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-24T07:00:00Z",
+          "end": "2026-02-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-25T07:00:00Z",
+          "end": "2026-02-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-26T07:00:00Z",
+          "end": "2026-02-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-27T07:00:00Z",
+          "end": "2026-02-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-02T07:00:00Z",
+          "end": "2026-03-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-03T07:00:00Z",
+          "end": "2026-03-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-04T07:00:00Z",
+          "end": "2026-03-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-05T07:00:00Z",
+          "end": "2026-03-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-06T07:00:00Z",
+          "end": "2026-03-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-09T07:00:00Z",
+          "end": "2026-03-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-10T07:00:00Z",
+          "end": "2026-03-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-11T07:00:00Z",
+          "end": "2026-03-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-12T07:00:00Z",
+          "end": "2026-03-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-13T07:00:00Z",
+          "end": "2026-03-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-16T07:00:00Z",
+          "end": "2026-03-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-17T07:00:00Z",
+          "end": "2026-03-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-18T07:00:00Z",
+          "end": "2026-03-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-19T07:00:00Z",
+          "end": "2026-03-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-20T07:00:00Z",
+          "end": "2026-03-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-23T07:00:00Z",
+          "end": "2026-03-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-24T07:00:00Z",
+          "end": "2026-03-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-25T07:00:00Z",
+          "end": "2026-03-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-26T07:00:00Z",
+          "end": "2026-03-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "8be11cde-195c-5a4e-9ae7-2df8a87c15c5",
+      "external_name": "FINISH-03",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-05T07:00:00Z",
+          "end": "2026-02-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-06T07:00:00Z",
+          "end": "2026-02-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-09T07:00:00Z",
+          "end": "2026-02-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-10T07:00:00Z",
+          "end": "2026-02-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-11T07:00:00Z",
+          "end": "2026-02-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-12T07:00:00Z",
+          "end": "2026-02-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-13T07:00:00Z",
+          "end": "2026-02-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-16T07:00:00Z",
+          "end": "2026-02-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-17T07:00:00Z",
+          "end": "2026-02-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-18T07:00:00Z",
+          "end": "2026-02-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-19T07:00:00Z",
+          "end": "2026-02-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-20T07:00:00Z",
+          "end": "2026-02-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-23T07:00:00Z",
+          "end": "2026-02-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-24T07:00:00Z",
+          "end": "2026-02-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-25T07:00:00Z",
+          "end": "2026-02-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-26T07:00:00Z",
+          "end": "2026-02-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-27T07:00:00Z",
+          "end": "2026-02-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-02T07:00:00Z",
+          "end": "2026-03-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-03T07:00:00Z",
+          "end": "2026-03-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-04T07:00:00Z",
+          "end": "2026-03-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-05T07:00:00Z",
+          "end": "2026-03-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-06T07:00:00Z",
+          "end": "2026-03-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-09T07:00:00Z",
+          "end": "2026-03-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-10T07:00:00Z",
+          "end": "2026-03-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-11T07:00:00Z",
+          "end": "2026-03-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-12T07:00:00Z",
+          "end": "2026-03-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-13T07:00:00Z",
+          "end": "2026-03-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-16T07:00:00Z",
+          "end": "2026-03-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-17T07:00:00Z",
+          "end": "2026-03-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-18T07:00:00Z",
+          "end": "2026-03-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-19T07:00:00Z",
+          "end": "2026-03-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-20T07:00:00Z",
+          "end": "2026-03-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-23T07:00:00Z",
+          "end": "2026-03-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-24T07:00:00Z",
+          "end": "2026-03-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-25T07:00:00Z",
+          "end": "2026-03-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-26T07:00:00Z",
+          "end": "2026-03-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "3793479c-d1e7-5f6c-92c0-a1b03309b8a5",
+      "external_name": "HEAT-01",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-10T07:00:00Z",
+          "end": "2026-01-10T19:00:59Z",
+          "kind": "overtime",
+          "reason": "overtime"
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T07:00:00Z",
+          "end": "2026-01-14T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-05T07:00:00Z",
+          "end": "2026-02-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-06T07:00:00Z",
+          "end": "2026-02-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-09T07:00:00Z",
+          "end": "2026-02-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-10T07:00:00Z",
+          "end": "2026-02-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-11T07:00:00Z",
+          "end": "2026-02-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-12T07:00:00Z",
+          "end": "2026-02-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-13T07:00:00Z",
+          "end": "2026-02-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-16T07:00:00Z",
+          "end": "2026-02-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-17T07:00:00Z",
+          "end": "2026-02-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-18T07:00:00Z",
+          "end": "2026-02-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-19T07:00:00Z",
+          "end": "2026-02-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-20T07:00:00Z",
+          "end": "2026-02-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-23T07:00:00Z",
+          "end": "2026-02-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-24T07:00:00Z",
+          "end": "2026-02-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-25T07:00:00Z",
+          "end": "2026-02-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-26T07:00:00Z",
+          "end": "2026-02-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-27T07:00:00Z",
+          "end": "2026-02-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-02T07:00:00Z",
+          "end": "2026-03-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-03T07:00:00Z",
+          "end": "2026-03-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-04T07:00:00Z",
+          "end": "2026-03-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-05T07:00:00Z",
+          "end": "2026-03-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-06T07:00:00Z",
+          "end": "2026-03-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-09T07:00:00Z",
+          "end": "2026-03-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-10T07:00:00Z",
+          "end": "2026-03-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-11T07:00:00Z",
+          "end": "2026-03-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-12T07:00:00Z",
+          "end": "2026-03-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-13T07:00:00Z",
+          "end": "2026-03-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-16T07:00:00Z",
+          "end": "2026-03-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-17T07:00:00Z",
+          "end": "2026-03-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-18T07:00:00Z",
+          "end": "2026-03-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-19T07:00:00Z",
+          "end": "2026-03-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-20T07:00:00Z",
+          "end": "2026-03-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-23T07:00:00Z",
+          "end": "2026-03-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-24T07:00:00Z",
+          "end": "2026-03-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-25T07:00:00Z",
+          "end": "2026-03-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-26T07:00:00Z",
+          "end": "2026-03-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "dae4e5f7-66f5-5273-bb65-f25bddfb7b7a",
+      "external_name": "HEAT-02",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-10T07:00:00Z",
+          "end": "2026-01-10T19:00:59Z",
+          "kind": "overtime",
+          "reason": "overtime"
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T07:00:00Z",
+          "end": "2026-01-14T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-05T07:00:00Z",
+          "end": "2026-02-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-06T07:00:00Z",
+          "end": "2026-02-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-09T07:00:00Z",
+          "end": "2026-02-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-10T07:00:00Z",
+          "end": "2026-02-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-11T07:00:00Z",
+          "end": "2026-02-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-12T07:00:00Z",
+          "end": "2026-02-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-13T07:00:00Z",
+          "end": "2026-02-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-16T07:00:00Z",
+          "end": "2026-02-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-17T07:00:00Z",
+          "end": "2026-02-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-18T07:00:00Z",
+          "end": "2026-02-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-19T07:00:00Z",
+          "end": "2026-02-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-20T07:00:00Z",
+          "end": "2026-02-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-23T07:00:00Z",
+          "end": "2026-02-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-24T07:00:00Z",
+          "end": "2026-02-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-25T07:00:00Z",
+          "end": "2026-02-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-26T07:00:00Z",
+          "end": "2026-02-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-27T07:00:00Z",
+          "end": "2026-02-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-02T07:00:00Z",
+          "end": "2026-03-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-03T07:00:00Z",
+          "end": "2026-03-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-04T07:00:00Z",
+          "end": "2026-03-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-05T07:00:00Z",
+          "end": "2026-03-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-06T07:00:00Z",
+          "end": "2026-03-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-09T07:00:00Z",
+          "end": "2026-03-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-10T07:00:00Z",
+          "end": "2026-03-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-11T07:00:00Z",
+          "end": "2026-03-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-12T07:00:00Z",
+          "end": "2026-03-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-13T07:00:00Z",
+          "end": "2026-03-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-16T07:00:00Z",
+          "end": "2026-03-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-17T07:00:00Z",
+          "end": "2026-03-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-18T07:00:00Z",
+          "end": "2026-03-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-19T07:00:00Z",
+          "end": "2026-03-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-20T07:00:00Z",
+          "end": "2026-03-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-23T07:00:00Z",
+          "end": "2026-03-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-24T07:00:00Z",
+          "end": "2026-03-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-25T07:00:00Z",
+          "end": "2026-03-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-26T07:00:00Z",
+          "end": "2026-03-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "fd34d391-ffa4-5def-a712-05266480c417",
+      "external_name": "MILL-01",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-05T07:00:00Z",
+          "end": "2026-02-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-06T07:00:00Z",
+          "end": "2026-02-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-09T07:00:00Z",
+          "end": "2026-02-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-10T07:00:00Z",
+          "end": "2026-02-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-11T07:00:00Z",
+          "end": "2026-02-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-12T07:00:00Z",
+          "end": "2026-02-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-13T07:00:00Z",
+          "end": "2026-02-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-16T07:00:00Z",
+          "end": "2026-02-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-17T07:00:00Z",
+          "end": "2026-02-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-18T07:00:00Z",
+          "end": "2026-02-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-19T07:00:00Z",
+          "end": "2026-02-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-20T07:00:00Z",
+          "end": "2026-02-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-23T07:00:00Z",
+          "end": "2026-02-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-24T07:00:00Z",
+          "end": "2026-02-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-25T07:00:00Z",
+          "end": "2026-02-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-26T07:00:00Z",
+          "end": "2026-02-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-27T07:00:00Z",
+          "end": "2026-02-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-02T07:00:00Z",
+          "end": "2026-03-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-03T07:00:00Z",
+          "end": "2026-03-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-04T07:00:00Z",
+          "end": "2026-03-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-05T07:00:00Z",
+          "end": "2026-03-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-06T07:00:00Z",
+          "end": "2026-03-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-09T07:00:00Z",
+          "end": "2026-03-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-10T07:00:00Z",
+          "end": "2026-03-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-11T07:00:00Z",
+          "end": "2026-03-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-12T07:00:00Z",
+          "end": "2026-03-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-13T07:00:00Z",
+          "end": "2026-03-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-16T07:00:00Z",
+          "end": "2026-03-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-17T07:00:00Z",
+          "end": "2026-03-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-18T07:00:00Z",
+          "end": "2026-03-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-19T07:00:00Z",
+          "end": "2026-03-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-20T07:00:00Z",
+          "end": "2026-03-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-23T07:00:00Z",
+          "end": "2026-03-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-24T07:00:00Z",
+          "end": "2026-03-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-25T07:00:00Z",
+          "end": "2026-03-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-26T07:00:00Z",
+          "end": "2026-03-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "14e704b3-938a-539a-aa17-9338ce79fbc5",
+      "external_name": "MILL-02",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-05T07:00:00Z",
+          "end": "2026-02-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-06T07:00:00Z",
+          "end": "2026-02-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-09T07:00:00Z",
+          "end": "2026-02-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-10T07:00:00Z",
+          "end": "2026-02-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-11T07:00:00Z",
+          "end": "2026-02-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-12T07:00:00Z",
+          "end": "2026-02-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-13T07:00:00Z",
+          "end": "2026-02-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-16T07:00:00Z",
+          "end": "2026-02-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-17T07:00:00Z",
+          "end": "2026-02-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-18T07:00:00Z",
+          "end": "2026-02-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-19T07:00:00Z",
+          "end": "2026-02-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-20T07:00:00Z",
+          "end": "2026-02-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-23T07:00:00Z",
+          "end": "2026-02-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-24T07:00:00Z",
+          "end": "2026-02-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-25T07:00:00Z",
+          "end": "2026-02-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-26T07:00:00Z",
+          "end": "2026-02-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-27T07:00:00Z",
+          "end": "2026-02-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-02T07:00:00Z",
+          "end": "2026-03-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-03T07:00:00Z",
+          "end": "2026-03-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-04T07:00:00Z",
+          "end": "2026-03-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-05T07:00:00Z",
+          "end": "2026-03-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-06T07:00:00Z",
+          "end": "2026-03-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-09T07:00:00Z",
+          "end": "2026-03-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-10T07:00:00Z",
+          "end": "2026-03-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-11T07:00:00Z",
+          "end": "2026-03-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-12T07:00:00Z",
+          "end": "2026-03-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-13T07:00:00Z",
+          "end": "2026-03-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-16T07:00:00Z",
+          "end": "2026-03-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-17T07:00:00Z",
+          "end": "2026-03-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-18T07:00:00Z",
+          "end": "2026-03-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-19T07:00:00Z",
+          "end": "2026-03-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-20T07:00:00Z",
+          "end": "2026-03-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-23T07:00:00Z",
+          "end": "2026-03-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-24T07:00:00Z",
+          "end": "2026-03-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-25T07:00:00Z",
+          "end": "2026-03-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-26T07:00:00Z",
+          "end": "2026-03-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "7c78eed8-d762-5640-aeb0-5291be2b161e",
+      "external_name": "PAINT-01",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-05T07:00:00Z",
+          "end": "2026-02-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-06T07:00:00Z",
+          "end": "2026-02-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-09T07:00:00Z",
+          "end": "2026-02-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-10T07:00:00Z",
+          "end": "2026-02-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-11T07:00:00Z",
+          "end": "2026-02-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-12T07:00:00Z",
+          "end": "2026-02-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-13T07:00:00Z",
+          "end": "2026-02-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-16T07:00:00Z",
+          "end": "2026-02-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-17T07:00:00Z",
+          "end": "2026-02-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-18T07:00:00Z",
+          "end": "2026-02-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-19T07:00:00Z",
+          "end": "2026-02-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-20T07:00:00Z",
+          "end": "2026-02-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-23T07:00:00Z",
+          "end": "2026-02-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-24T07:00:00Z",
+          "end": "2026-02-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-25T07:00:00Z",
+          "end": "2026-02-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-26T07:00:00Z",
+          "end": "2026-02-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-27T07:00:00Z",
+          "end": "2026-02-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-02T07:00:00Z",
+          "end": "2026-03-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-03T07:00:00Z",
+          "end": "2026-03-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-04T07:00:00Z",
+          "end": "2026-03-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-05T07:00:00Z",
+          "end": "2026-03-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-06T07:00:00Z",
+          "end": "2026-03-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-09T07:00:00Z",
+          "end": "2026-03-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-10T07:00:00Z",
+          "end": "2026-03-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-11T07:00:00Z",
+          "end": "2026-03-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-12T07:00:00Z",
+          "end": "2026-03-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-13T07:00:00Z",
+          "end": "2026-03-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-16T07:00:00Z",
+          "end": "2026-03-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-17T07:00:00Z",
+          "end": "2026-03-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-18T07:00:00Z",
+          "end": "2026-03-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-19T07:00:00Z",
+          "end": "2026-03-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-20T07:00:00Z",
+          "end": "2026-03-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-23T07:00:00Z",
+          "end": "2026-03-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-24T07:00:00Z",
+          "end": "2026-03-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-25T07:00:00Z",
+          "end": "2026-03-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-26T07:00:00Z",
+          "end": "2026-03-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "d9cc6ac1-db81-5f9d-b946-d33e96f60256",
+      "external_name": "PAINT-02",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-05T07:00:00Z",
+          "end": "2026-02-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-06T07:00:00Z",
+          "end": "2026-02-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-09T07:00:00Z",
+          "end": "2026-02-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-10T07:00:00Z",
+          "end": "2026-02-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-11T07:00:00Z",
+          "end": "2026-02-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-12T07:00:00Z",
+          "end": "2026-02-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-13T07:00:00Z",
+          "end": "2026-02-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-16T07:00:00Z",
+          "end": "2026-02-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-17T07:00:00Z",
+          "end": "2026-02-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-18T07:00:00Z",
+          "end": "2026-02-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-19T07:00:00Z",
+          "end": "2026-02-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-20T07:00:00Z",
+          "end": "2026-02-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-23T07:00:00Z",
+          "end": "2026-02-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-24T07:00:00Z",
+          "end": "2026-02-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-25T07:00:00Z",
+          "end": "2026-02-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-26T07:00:00Z",
+          "end": "2026-02-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-27T07:00:00Z",
+          "end": "2026-02-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-02T07:00:00Z",
+          "end": "2026-03-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-03T07:00:00Z",
+          "end": "2026-03-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-04T07:00:00Z",
+          "end": "2026-03-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-05T07:00:00Z",
+          "end": "2026-03-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-06T07:00:00Z",
+          "end": "2026-03-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-09T07:00:00Z",
+          "end": "2026-03-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-10T07:00:00Z",
+          "end": "2026-03-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-11T07:00:00Z",
+          "end": "2026-03-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-12T07:00:00Z",
+          "end": "2026-03-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-13T07:00:00Z",
+          "end": "2026-03-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-16T07:00:00Z",
+          "end": "2026-03-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-17T07:00:00Z",
+          "end": "2026-03-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-18T07:00:00Z",
+          "end": "2026-03-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-19T07:00:00Z",
+          "end": "2026-03-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-20T07:00:00Z",
+          "end": "2026-03-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-23T07:00:00Z",
+          "end": "2026-03-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-24T07:00:00Z",
+          "end": "2026-03-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-25T07:00:00Z",
+          "end": "2026-03-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-26T07:00:00Z",
+          "end": "2026-03-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "148bd645-8436-53f4-9f8c-def564be43e0",
+      "external_name": "PRESS-FAST",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-05T07:00:00Z",
+          "end": "2026-02-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-06T07:00:00Z",
+          "end": "2026-02-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-09T07:00:00Z",
+          "end": "2026-02-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-10T07:00:00Z",
+          "end": "2026-02-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-11T07:00:00Z",
+          "end": "2026-02-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-12T07:00:00Z",
+          "end": "2026-02-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-13T07:00:00Z",
+          "end": "2026-02-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-16T07:00:00Z",
+          "end": "2026-02-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-17T07:00:00Z",
+          "end": "2026-02-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-18T07:00:00Z",
+          "end": "2026-02-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-19T07:00:00Z",
+          "end": "2026-02-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-20T07:00:00Z",
+          "end": "2026-02-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-23T07:00:00Z",
+          "end": "2026-02-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-24T07:00:00Z",
+          "end": "2026-02-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-25T07:00:00Z",
+          "end": "2026-02-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-26T07:00:00Z",
+          "end": "2026-02-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-27T07:00:00Z",
+          "end": "2026-02-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-02T07:00:00Z",
+          "end": "2026-03-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-03T07:00:00Z",
+          "end": "2026-03-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-04T07:00:00Z",
+          "end": "2026-03-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-05T07:00:00Z",
+          "end": "2026-03-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-06T07:00:00Z",
+          "end": "2026-03-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-09T07:00:00Z",
+          "end": "2026-03-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-10T07:00:00Z",
+          "end": "2026-03-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-11T07:00:00Z",
+          "end": "2026-03-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-12T07:00:00Z",
+          "end": "2026-03-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-13T07:00:00Z",
+          "end": "2026-03-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-16T07:00:00Z",
+          "end": "2026-03-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-17T07:00:00Z",
+          "end": "2026-03-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-18T07:00:00Z",
+          "end": "2026-03-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-19T07:00:00Z",
+          "end": "2026-03-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-20T07:00:00Z",
+          "end": "2026-03-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-23T07:00:00Z",
+          "end": "2026-03-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-24T07:00:00Z",
+          "end": "2026-03-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-25T07:00:00Z",
+          "end": "2026-03-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-26T07:00:00Z",
+          "end": "2026-03-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "edd97059-3d1d-5719-adbf-c9017ee86852",
+      "external_name": "PRESS-SLOW",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-05T07:00:00Z",
+          "end": "2026-02-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-06T07:00:00Z",
+          "end": "2026-02-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-09T07:00:00Z",
+          "end": "2026-02-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-10T07:00:00Z",
+          "end": "2026-02-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-11T07:00:00Z",
+          "end": "2026-02-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-12T07:00:00Z",
+          "end": "2026-02-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-13T07:00:00Z",
+          "end": "2026-02-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-16T07:00:00Z",
+          "end": "2026-02-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-17T07:00:00Z",
+          "end": "2026-02-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-18T07:00:00Z",
+          "end": "2026-02-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-19T07:00:00Z",
+          "end": "2026-02-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-20T07:00:00Z",
+          "end": "2026-02-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-23T07:00:00Z",
+          "end": "2026-02-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-24T07:00:00Z",
+          "end": "2026-02-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-25T07:00:00Z",
+          "end": "2026-02-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-26T07:00:00Z",
+          "end": "2026-02-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-27T07:00:00Z",
+          "end": "2026-02-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-02T07:00:00Z",
+          "end": "2026-03-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-03T07:00:00Z",
+          "end": "2026-03-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-04T07:00:00Z",
+          "end": "2026-03-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-05T07:00:00Z",
+          "end": "2026-03-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-06T07:00:00Z",
+          "end": "2026-03-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-09T07:00:00Z",
+          "end": "2026-03-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-10T07:00:00Z",
+          "end": "2026-03-10T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-11T07:00:00Z",
+          "end": "2026-03-11T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-12T07:00:00Z",
+          "end": "2026-03-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-13T07:00:00Z",
+          "end": "2026-03-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-16T07:00:00Z",
+          "end": "2026-03-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-17T07:00:00Z",
+          "end": "2026-03-17T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-18T07:00:00Z",
+          "end": "2026-03-18T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-19T07:00:00Z",
+          "end": "2026-03-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-20T07:00:00Z",
+          "end": "2026-03-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-23T07:00:00Z",
+          "end": "2026-03-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-24T07:00:00Z",
+          "end": "2026-03-24T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-25T07:00:00Z",
+          "end": "2026-03-25T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-03-26T07:00:00Z",
+          "end": "2026-03-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    }
+  ],
+  "assignments": [
+    {
+      "assignment_id": "rasgn-3523d092-a52a-53b5-b40f-4f2692169bc8",
+      "operation_ref": "3523d092-a52a-53b5-b40f-4f2692169bc8",
+      "workpackage_ref": "93d5172e-4763-5b74-9df1-06fc02d9118f",
+      "work_orders": [
+        "ORD-000004"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "148bd645-8436-53f4-9f8c-def564be43e0",
+      "external_name": "PRESS-FAST",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T09:27:00Z",
+          "working_min": 147
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T07:15:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-602a5f74-4b31-5d72-8f77-145f9a42332a",
+      "operation_ref": "602a5f74-4b31-5d72-8f77-145f9a42332a",
+      "workpackage_ref": "f6af0cc8-9383-5d83-821c-5d41d6267eaa",
+      "work_orders": [
+        "ORD-000008"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T11:12:00Z",
+          "working_min": 252
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T07:15:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-9cf056b8-a5bd-505a-b6ad-154f3bd52ddf",
+      "operation_ref": "9cf056b8-a5bd-505a-b6ad-154f3bd52ddf",
+      "workpackage_ref": "71a0d592-ecb4-56b6-a3c8-8aadef848330",
+      "work_orders": [
+        "ORD-000006"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "df5aa682-bc17-5d5a-b721-edd24de1725d",
+      "external_name": "CUT-02",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T10:24:00Z",
+          "working_min": 204
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T07:20:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-c55323d4-f7de-5db1-ada1-d811315d9644",
+      "operation_ref": "c55323d4-f7de-5db1-ada1-d811315d9644",
+      "workpackage_ref": "d77e28e5-ad51-50c8-83f0-4da443317121",
+      "work_orders": [
+        "ORD-000002"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+      "external_name": "CUT-03",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T12:21:00Z",
+          "working_min": 321
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T07:15:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-c738532d-2e4b-5471-b5a8-c56139cb8938",
+      "operation_ref": "c738532d-2e4b-5471-b5a8-c56139cb8938",
+      "workpackage_ref": "510c68d0-3c77-59f4-992a-dd821f5b9d60",
+      "work_orders": [
+        "ORD-000003"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "14e704b3-938a-539a-aa17-9338ce79fbc5",
+      "external_name": "MILL-02",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T10:00:00Z",
+          "working_min": 180
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T07:20:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-d7cf9be4-3797-579d-afd6-d7542df36742",
+      "operation_ref": "d7cf9be4-3797-579d-afd6-d7542df36742",
+      "workpackage_ref": "9b3f758c-e65a-5e32-b06c-93f171b2ea36",
+      "work_orders": [
+        "ORD-000007"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "edd97059-3d1d-5719-adbf-c9017ee86852",
+      "external_name": "PRESS-SLOW",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T11:39:00Z",
+          "working_min": 279
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T07:15:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-ba3e03fa-7d3c-5b73-a4c5-34674da833d4",
+      "operation_ref": "ba3e03fa-7d3c-5b73-a4c5-34674da833d4",
+      "workpackage_ref": "93d5172e-4763-5b74-9df1-06fc02d9118f",
+      "work_orders": [
+        "ORD-000004"
+      ],
+      "op_seq": 20,
+      "setup_family": "",
+      "resource_id": "d9cc6ac1-db81-5f9d-b946-d33e96f60256",
+      "external_name": "PAINT-02",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T09:28:00Z",
+          "end": "2026-01-05T11:27:00Z",
+          "working_min": 119
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T09:28:00Z",
+          "end": "2026-01-05T09:48:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-78958606-d951-5bc9-adba-168b2645b08d",
+      "operation_ref": "78958606-d951-5bc9-adba-168b2645b08d",
+      "workpackage_ref": "510c68d0-3c77-59f4-992a-dd821f5b9d60",
+      "work_orders": [
+        "ORD-000003"
+      ],
+      "op_seq": 20,
+      "setup_family": "",
+      "resource_id": "0ec64e4c-748b-5d1e-9889-014909facee0",
+      "external_name": "ASM-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T10:01:00Z",
+          "end": "2026-01-05T13:51:00Z",
+          "working_min": 230
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T10:01:00Z",
+          "end": "2026-01-05T10:31:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-7cb19a72-f20a-5f9a-9028-c96dd54e08d0",
+      "operation_ref": "7cb19a72-f20a-5f9a-9028-c96dd54e08d0",
+      "workpackage_ref": "0c11621b-72c0-5d4a-b1c5-d6cf423b8f53",
+      "work_orders": [
+        "ORD-000005"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "df5aa682-bc17-5d5a-b721-edd24de1725d",
+      "external_name": "CUT-02",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T10:24:00Z",
+          "end": "2026-01-06T18:25:00Z",
+          "working_min": 1921
+        }
+      ],
+      "phases": {
+        "setup": null,
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-69d32744-5179-59a1-a167-e0a4ca939f17",
+      "operation_ref": "69d32744-5179-59a1-a167-e0a4ca939f17",
+      "workpackage_ref": "71a0d592-ecb4-56b6-a3c8-8aadef848330",
+      "work_orders": [
+        "ORD-000006"
+      ],
+      "op_seq": 20,
+      "setup_family": "",
+      "resource_id": "fd34d391-ffa4-5def-a712-05266480c417",
+      "external_name": "MILL-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T10:25:00Z",
+          "end": "2026-01-05T12:58:00Z",
+          "working_min": 153
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T10:25:00Z",
+          "end": "2026-01-05T10:40:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-4f7134cb-774f-5e61-a80b-3a1012edf7a9",
+      "operation_ref": "4f7134cb-774f-5e61-a80b-3a1012edf7a9",
+      "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
+      "work_orders": [
+        "ORD-000001"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T11:12:00Z",
+          "end": "2026-01-05T18:12:00Z",
+          "working_min": 420
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T11:12:00Z",
+          "end": "2026-01-05T11:27:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-b3f90698-b2b4-58df-8c7b-e4bed40b8ef8",
+      "operation_ref": "b3f90698-b2b4-58df-8c7b-e4bed40b8ef8",
+      "workpackage_ref": "f6af0cc8-9383-5d83-821c-5d41d6267eaa",
+      "work_orders": [
+        "ORD-000008"
+      ],
+      "op_seq": 20,
+      "setup_family": "PAINT_RED",
+      "resource_id": "7c78eed8-d762-5640-aeb0-5291be2b161e",
+      "external_name": "PAINT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T11:13:00Z",
+          "end": "2026-01-05T15:30:00Z",
+          "working_min": 257
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T11:13:00Z",
+          "end": "2026-01-05T11:33:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-91b05e95-e3f1-51cb-b207-0fc419ac87ad",
+      "operation_ref": "91b05e95-e3f1-51cb-b207-0fc419ac87ad",
+      "workpackage_ref": "9b3f758c-e65a-5e32-b06c-93f171b2ea36",
+      "work_orders": [
+        "ORD-000007"
+      ],
+      "op_seq": 20,
+      "setup_family": "",
+      "resource_id": "d9cc6ac1-db81-5f9d-b946-d33e96f60256",
+      "external_name": "PAINT-02",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T11:40:00Z",
+          "end": "2026-01-05T13:39:00Z",
+          "working_min": 119
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T11:40:00Z",
+          "end": "2026-01-05T12:00:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-aeae3e1c-8ee9-53ba-9f8e-47bf54d06716",
+      "operation_ref": "aeae3e1c-8ee9-53ba-9f8e-47bf54d06716",
+      "workpackage_ref": "510c68d0-3c77-59f4-992a-dd821f5b9d60",
+      "work_orders": [
+        "ORD-000003"
+      ],
+      "op_seq": 30,
+      "setup_family": "",
+      "resource_id": "c3459e27-de11-5e09-be75-5ec5e29b1499",
+      "external_name": "FINISH-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T13:52:00Z",
+          "end": "2026-01-05T16:02:00Z",
+          "working_min": 130
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T13:52:00Z",
+          "end": "2026-01-05T14:02:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-293fbed1-3b30-5e7c-be5c-efd5c62a2dec",
+      "operation_ref": "293fbed1-3b30-5e7c-be5c-efd5c62a2dec",
+      "workpackage_ref": "71a0d592-ecb4-56b6-a3c8-8aadef848330",
+      "work_orders": [
+        "ORD-000006"
+      ],
+      "op_seq": 30,
+      "setup_family": "",
+      "resource_id": "7c78eed8-d762-5640-aeb0-5291be2b161e",
+      "external_name": "PAINT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T15:30:00Z",
+          "end": "2026-01-05T18:08:00Z",
+          "working_min": 158
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T15:30:00Z",
+          "end": "2026-01-05T15:50:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-4da1e197-fd35-5b77-bbc1-d933c8bf0d58",
+      "operation_ref": "4da1e197-fd35-5b77-bbc1-d933c8bf0d58",
+      "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
+      "work_orders": [
+        "ORD-000001"
+      ],
+      "op_seq": 20,
+      "setup_family": "",
+      "resource_id": "fd34d391-ffa4-5def-a712-05266480c417",
+      "external_name": "MILL-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T16:20:00Z",
+          "working_min": 560
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T07:20:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-f90e3c3b-668c-5408-9067-6b8f0d6d09d1",
+      "operation_ref": "f90e3c3b-668c-5408-9067-6b8f0d6d09d1",
+      "workpackage_ref": "d77e28e5-ad51-50c8-83f0-4da443317121",
+      "work_orders": [
+        "ORD-000002"
+      ],
+      "op_seq": 20,
+      "setup_family": "PAINT_BLUE",
+      "resource_id": "d9cc6ac1-db81-5f9d-b946-d33e96f60256",
+      "external_name": "PAINT-02",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T12:26:00Z",
+          "working_min": 326
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T07:20:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-ce245419-fc39-5937-91a8-5f6aa344e844",
+      "operation_ref": "ce245419-fc39-5937-91a8-5f6aa344e844",
+      "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
+      "work_orders": [
+        "ORD-000001"
+      ],
+      "op_seq": 30,
+      "setup_family": "",
+      "resource_id": "c3459e27-de11-5e09-be75-5ec5e29b1499",
+      "external_name": "FINISH-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T13:55:00Z",
+          "working_min": 415
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T07:10:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    }
+  ],
+  "service_outcomes": [
+    {
+      "demand_ref": "9d743574-47fd-5128-9ec2-2823fbb48b6c",
+      "work_order": "ORD-000001",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 135.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-20T23:59:59Z",
+      "projected_completion": "2026-01-07T13:55:00Z",
+      "lateness_min": -19324,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "4b0212db-c16e-53e8-8930-b4f6c63f769a",
+      "work_order": "ORD-000002",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 102.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-17T23:59:59Z",
+      "projected_completion": "2026-01-06T12:26:00Z",
+      "lateness_min": -16533,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "a11593de-eeb8-5dc6-9553-1369b380b411",
+      "work_order": "ORD-000003",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 40.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-20T23:59:59Z",
+      "projected_completion": "2026-01-05T16:02:00Z",
+      "lateness_min": -22077,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "0f093432-1125-5023-a198-205f5e637507",
+      "work_order": "ORD-000004",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 33.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-25T23:59:59Z",
+      "projected_completion": "2026-01-05T11:27:00Z",
+      "lateness_min": -29552,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "5348876d-d02e-545e-9595-69afb825a508",
+      "work_order": "ORD-000005",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 40.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-21T23:59:59Z",
+      "projected_completion": "2026-01-06T18:25:00Z",
+      "lateness_min": -21934,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "12b5e06c-23c3-5dc3-84de-61efe2524eee",
+      "work_order": "ORD-000006",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 46.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-25T23:59:59Z",
+      "projected_completion": "2026-01-05T18:08:00Z",
+      "lateness_min": -29151,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "01d65946-e8f2-5832-829b-b7d797104857",
+      "work_order": "ORD-000007",
+      "customer_ref": "54cff07a-5dcd-5a45-87c6-2f550f97ed76",
+      "customer_name": null,
+      "quantity": 33.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-11T23:59:59Z",
+      "projected_completion": "2026-01-05T13:39:00Z",
+      "lateness_min": -9260,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "cd74a156-474b-57a2-963a-ca1db901174f",
+      "work_order": "ORD-000008",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 79.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-21T23:59:59Z",
+      "projected_completion": "2026-01-05T15:30:00Z",
+      "lateness_min": -23549,
+      "tardiness_cost": 0.0
+    }
+  ],
+  "annotations": {
+    "locks": [],
+    "scenario": {
+      "is_scenario": false,
+      "parent_schedule_id": null
+    },
+    "pool": null
+  },
+  "interaction": null,
+  "rolling": {
+    "reference_origin": "2026-01-05T00:00:00Z",
+    "window_start": "2026-01-05T00:00:00Z",
+    "window_end": "2026-03-06T00:00:00Z",
+    "frozen_until": "2026-01-08T00:00:00Z",
+    "window_days": 60,
+    "frozen_days": 3,
+    "committed_count": 18,
+    "active_count": 0,
+    "beyond_horizon": []
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "what's beyond the horizon?": {
+    "question": "what's beyond the horizon?",
+    "answer": "Nothing is beyond the horizon \u2014 every known order is in the current window.\n\nregister: testimony",
+    "bundle": {
+      "register": "testimony",
+      "subject_type": "beyond-horizon",
+      "cited_refs": {
+        "operations": [],
+        "resources": [],
+        "demands": []
+      }
+    }
+  },
+  "what's frozen?": {
+    "question": "what's frozen?",
+    "answer": "18 operation(s) are frozen and committed \u2014 locked in the frozen zone through 2026-01-08.\n\nregister: testimony",
+    "bundle": {
+      "register": "testimony",
+      "subject_type": "frozen",
+      "cited_refs": {
+        "operations": [],
+        "resources": [],
+        "demands": []
+      }
+    }
+  }
+}

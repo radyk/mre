@@ -11,6 +11,7 @@ import { createAskPanel } from "./askpanel.js";
 import { wireInteraction } from "./interaction.js";
 import { mountDevLedger } from "./devledger.js";
 import { findNewerSchedule } from "./freshness.js";
+import { mountTray } from "./tray.js";
 
 // Rewrite the address bar to bind the given schedule version WITHOUT a reload
 // (session 3.8 CU1): a live accept/publish stays in the same session, but the
@@ -292,8 +293,28 @@ async function boot() {
     // later live rebind + reload stay coherent (session 3.8 CU1).
     setUrlSchedule(id);
     paintTopStrip(strip, doc, meta);
+    // Session 4B.3a CU2: a rolling document docks a beyond-horizon tray below the
+    // board — mark the host BEFORE createBoard so vis sizes the timeline to the
+    // reduced height (board flex:1 + tray fixed) from the first frame.
+    if (doc.rolling) boardHost.parentElement.classList.add("has-tray");
     const board = createBoard(boardHost, doc);
     const chrome = mountBoardChrome(boardHost, board);
+    // Session 4B.3a CU2(d): the beyond-horizon tray — a docked panel of known
+    // future work with no bar to draw. Present only on a rolling document; a
+    // monolithic board mounts nothing. Docked in the board-host, below the board.
+    const tray = mountTray(boardHost.parentElement, doc);
+    // Session 4B.3a CU2: on a rolling board, extend the legend with the sliced-
+    // world vocabulary — the committed (locked) swatch + the frozen-boundary tick.
+    if (doc.rolling) {
+      const lg = chrome.chrome.querySelector(".legend");
+      if (lg) {
+        lg.insertAdjacentHTML("beforeend",
+          `<span class="lg-gap"></span>`
+          + `<span><span class="sw sw-committed"></span>committed</span>`
+          + `<span><span class="sw sw-frozen"></span>frozen boundary</span>`);
+      }
+
+    }
 
     // A deep link to a SUPERSEDED version loads read-only behind a banner that
     // offers the current version (session 3.8 CU3) — never a raw error, never an
@@ -327,7 +348,7 @@ async function boot() {
       getTheme: currentTheme,
       setTheme: applyTheme,
       toggleTheme,
-      board, panel,
+      board, panel, tray,
       ask: (q) => panel.run(q),
       select: (opRef) => board.select(opRef),
       highlight: (refs) => board.highlight(refs),

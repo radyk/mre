@@ -1,0 +1,3831 @@
+{
+  "contract_version": "1.7",
+  "schedule_id": "sched-rolling-fixture",
+  "snapshot_id": "snap-rolling",
+  "run_id": "run-fixture",
+  "status": "proposed",
+  "reference_date": "2026-01-05T00:00:00Z",
+  "horizon": {
+    "start": "2026-01-05T00:00:00Z",
+    "end": "2026-02-05T00:00:00Z"
+  },
+  "solver": {
+    "status": "FEASIBLE",
+    "objective": null,
+    "gap": null,
+    "wall_time_s": 0.0,
+    "deterministic": true
+  },
+  "cost_summary": {
+    "total": 14362.2,
+    "production_regular": 9041.783333333333,
+    "production_overtime": 0.0,
+    "setup": 1520.0,
+    "tardiness": 3800.416666666667,
+    "costmodel_version": 1
+  },
+  "resources": [
+    {
+      "resource_id": "0ec64e4c-748b-5d1e-9889-014909facee0",
+      "external_name": "ASM-01",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "df5aa682-bc17-5d5a-b721-edd24de1725d",
+      "external_name": "CUT-02",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+      "external_name": "CUT-03",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "c3459e27-de11-5e09-be75-5ec5e29b1499",
+      "external_name": "FINISH-01",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "ce249601-8798-576b-88ed-2af0bf016812",
+      "external_name": "FINISH-02",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "8be11cde-195c-5a4e-9ae7-2df8a87c15c5",
+      "external_name": "FINISH-03",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "3793479c-d1e7-5f6c-92c0-a1b03309b8a5",
+      "external_name": "HEAT-01",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-10T07:00:00Z",
+          "end": "2026-01-10T19:00:59Z",
+          "kind": "overtime",
+          "reason": "overtime"
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T07:00:00Z",
+          "end": "2026-01-14T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "dae4e5f7-66f5-5273-bb65-f25bddfb7b7a",
+      "external_name": "HEAT-02",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-10T07:00:00Z",
+          "end": "2026-01-10T19:00:59Z",
+          "kind": "overtime",
+          "reason": "overtime"
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T07:00:00Z",
+          "end": "2026-01-14T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "fd34d391-ffa4-5def-a712-05266480c417",
+      "external_name": "MILL-01",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "14e704b3-938a-539a-aa17-9338ce79fbc5",
+      "external_name": "MILL-02",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "7c78eed8-d762-5640-aeb0-5291be2b161e",
+      "external_name": "PAINT-01",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "d9cc6ac1-db81-5f9d-b946-d33e96f60256",
+      "external_name": "PAINT-02",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "148bd645-8436-53f4-9f8c-def564be43e0",
+      "external_name": "PRESS-FAST",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    },
+    {
+      "resource_id": "edd97059-3d1d-5719-adbf-c9017ee86852",
+      "external_name": "PRESS-SLOW",
+      "facility": null,
+      "pool": null,
+      "calendar_windows": [
+        {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-12T07:00:00Z",
+          "end": "2026-01-12T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-13T07:00:00Z",
+          "end": "2026-01-13T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-14T00:00:00Z",
+          "end": "2026-01-14T23:59:59Z",
+          "kind": "closure",
+          "reason": "planned_maintenance"
+        },
+        {
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-15T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-16T07:00:00Z",
+          "end": "2026-01-16T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-19T07:00:00Z",
+          "end": "2026-01-19T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-20T07:00:00Z",
+          "end": "2026-01-20T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-21T07:00:00Z",
+          "end": "2026-01-21T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-22T07:00:00Z",
+          "end": "2026-01-22T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-23T07:00:00Z",
+          "end": "2026-01-23T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-26T07:00:00Z",
+          "end": "2026-01-26T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-27T07:00:00Z",
+          "end": "2026-01-27T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-28T07:00:00Z",
+          "end": "2026-01-28T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-29T07:00:00Z",
+          "end": "2026-01-29T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-01-30T07:00:00Z",
+          "end": "2026-01-30T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-02T07:00:00Z",
+          "end": "2026-02-02T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-03T07:00:00Z",
+          "end": "2026-02-03T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        },
+        {
+          "start": "2026-02-04T07:00:00Z",
+          "end": "2026-02-04T19:00:00Z",
+          "kind": "regular",
+          "reason": null
+        }
+      ],
+      "booked_through": null,
+      "next_open_gap": null
+    }
+  ],
+  "assignments": [
+    {
+      "assignment_id": "rasgn-2e5480cf-68ff-54c3-8c2b-21978cc8a870",
+      "operation_ref": "2e5480cf-68ff-54c3-8c2b-21978cc8a870",
+      "workpackage_ref": "5cf4c2f8-b166-558e-b520-56aa95886ac9",
+      "work_orders": [
+        "ORD-000023"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "edd97059-3d1d-5719-adbf-c9017ee86852",
+      "external_name": "PRESS-SLOW",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T14:45:00Z",
+          "working_min": 465
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T07:15:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-898edad8-b2cd-5a84-b99c-cbb7b20cf9d4",
+      "operation_ref": "898edad8-b2cd-5a84-b99c-cbb7b20cf9d4",
+      "workpackage_ref": "0bbeecf1-7352-5d63-b928-0609160de4d5",
+      "work_orders": [
+        "ORD-000029"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+      "external_name": "CUT-03",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T11:36:00Z",
+          "working_min": 276
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T07:20:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-8ad19d5c-7054-57e1-b959-38ad76a67982",
+      "operation_ref": "8ad19d5c-7054-57e1-b959-38ad76a67982",
+      "workpackage_ref": "0f226a15-86e0-5c9b-a300-7cc259c398e7",
+      "work_orders": [
+        "ORD-000021"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T07:54:00Z",
+          "working_min": 54
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T07:15:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-dea1e985-c783-5910-91a8-f3966da013c9",
+      "operation_ref": "dea1e985-c783-5910-91a8-f3966da013c9",
+      "workpackage_ref": "617dc556-a238-538f-84af-f4f8fdc26b99",
+      "work_orders": [
+        "ORD-000025"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "148bd645-8436-53f4-9f8c-def564be43e0",
+      "external_name": "PRESS-FAST",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T08:35:00Z",
+          "working_min": 95
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T07:15:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-e6e287c5-8159-5d41-a460-386fede05d05",
+      "operation_ref": "e6e287c5-8159-5d41-a460-386fede05d05",
+      "workpackage_ref": "07d47b21-ded7-5cee-b34f-4acdf5f53f34",
+      "work_orders": [
+        "ORD-000039"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T07:54:00Z",
+          "end": "2026-01-05T09:15:00Z",
+          "working_min": 81
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T07:54:00Z",
+          "end": "2026-01-05T08:09:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-4759891b-cc09-5da6-849c-47017e9ae102",
+      "operation_ref": "4759891b-cc09-5da6-849c-47017e9ae102",
+      "workpackage_ref": "0f226a15-86e0-5c9b-a300-7cc259c398e7",
+      "work_orders": [
+        "ORD-000021"
+      ],
+      "op_seq": 20,
+      "setup_family": "PAINT_BLUE",
+      "resource_id": "d9cc6ac1-db81-5f9d-b946-d33e96f60256",
+      "external_name": "PAINT-02",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T07:55:00Z",
+          "end": "2026-01-05T08:54:00Z",
+          "working_min": 59
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T07:55:00Z",
+          "end": "2026-01-05T08:15:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-81216818-3441-521e-b2bf-3840f5dd5384",
+      "operation_ref": "81216818-3441-521e-b2bf-3840f5dd5384",
+      "workpackage_ref": "617dc556-a238-538f-84af-f4f8fdc26b99",
+      "work_orders": [
+        "ORD-000025"
+      ],
+      "op_seq": 20,
+      "setup_family": "",
+      "resource_id": "d9cc6ac1-db81-5f9d-b946-d33e96f60256",
+      "external_name": "PAINT-02",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T08:54:00Z",
+          "end": "2026-01-05T10:14:00Z",
+          "working_min": 80
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T08:54:00Z",
+          "end": "2026-01-05T09:14:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-1ef9d581-0a7b-5598-bd73-7f9df3f23423",
+      "operation_ref": "1ef9d581-0a7b-5598-bd73-7f9df3f23423",
+      "workpackage_ref": "f1df5554-72af-5616-8462-540100b54e0d",
+      "work_orders": [
+        "ORD-000013"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T09:15:00Z",
+          "end": "2026-01-05T16:21:00Z",
+          "working_min": 426
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T09:15:00Z",
+          "end": "2026-01-05T09:30:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-d88e2997-378e-5ddc-9506-06e91caeb643",
+      "operation_ref": "d88e2997-378e-5ddc-9506-06e91caeb643",
+      "workpackage_ref": "0bbeecf1-7352-5d63-b928-0609160de4d5",
+      "work_orders": [
+        "ORD-000029"
+      ],
+      "op_seq": 20,
+      "setup_family": "",
+      "resource_id": "fd34d391-ffa4-5def-a712-05266480c417",
+      "external_name": "MILL-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T11:37:00Z",
+          "end": "2026-01-05T15:04:00Z",
+          "working_min": 207
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T11:37:00Z",
+          "end": "2026-01-05T11:52:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-1df784af-c106-56fe-a8ac-996c389145de",
+      "operation_ref": "1df784af-c106-56fe-a8ac-996c389145de",
+      "workpackage_ref": "d77e28e5-ad51-50c8-83f0-4da443317121",
+      "work_orders": [
+        "ORD-000002"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T16:21:00Z",
+          "end": "2026-01-05T17:30:00Z",
+          "working_min": 69
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T16:21:00Z",
+          "end": "2026-01-05T16:36:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-d038c02e-f706-595f-9aa5-885c30fcdd24",
+      "operation_ref": "d038c02e-f706-595f-9aa5-885c30fcdd24",
+      "workpackage_ref": "acf21cb8-2e9d-5f2c-90cf-546f14e192ae",
+      "work_orders": [
+        "ORD-000016"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T17:30:00Z",
+          "end": "2026-01-05T18:48:00Z",
+          "working_min": 78
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T17:30:00Z",
+          "end": "2026-01-05T17:45:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-0ab1cd50-a899-53c6-bc2e-275bf91bde33",
+      "operation_ref": "0ab1cd50-a899-53c6-bc2e-275bf91bde33",
+      "workpackage_ref": "d77e28e5-ad51-50c8-83f0-4da443317121",
+      "work_orders": [
+        "ORD-000002"
+      ],
+      "op_seq": 20,
+      "setup_family": "PAINT_RED",
+      "resource_id": "7c78eed8-d762-5640-aeb0-5291be2b161e",
+      "external_name": "PAINT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T17:31:00Z",
+          "end": "2026-01-05T18:45:00Z",
+          "working_min": 74
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T17:31:00Z",
+          "end": "2026-01-05T17:51:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
+      "assignment_id": "rasgn-0533a502-e65c-5b12-b40f-e74b7963d22c",
+      "operation_ref": "0533a502-e65c-5b12-b40f-e74b7963d22c",
+      "workpackage_ref": "2f337c71-d9b4-502a-b263-17bcfb410c75",
+      "work_orders": [
+        "ORD-000034"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "148bd645-8436-53f4-9f8c-def564be43e0",
+      "external_name": "PRESS-FAST",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T18:20:00Z",
+          "working_min": 680
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T07:15:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-07b80dbe-15a8-5775-89b3-f12c339240d1",
+      "operation_ref": "07b80dbe-15a8-5775-89b3-f12c339240d1",
+      "workpackage_ref": "acf21cb8-2e9d-5f2c-90cf-546f14e192ae",
+      "work_orders": [
+        "ORD-000016"
+      ],
+      "op_seq": 20,
+      "setup_family": "PAINT_BLUE",
+      "resource_id": "d9cc6ac1-db81-5f9d-b946-d33e96f60256",
+      "external_name": "PAINT-02",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T08:23:00Z",
+          "working_min": 83
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T07:20:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-b476297e-5fa8-5eb9-a048-2761b657a0d1",
+      "operation_ref": "b476297e-5fa8-5eb9-a048-2761b657a0d1",
+      "workpackage_ref": "f26cc439-5f04-5dae-86a3-165706a6dcf1",
+      "work_orders": [
+        "ORD-000022"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T13:54:00Z",
+          "working_min": 414
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T07:15:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-cba4612a-1986-52df-b54a-ac815e07a1e9",
+      "operation_ref": "cba4612a-1986-52df-b54a-ac815e07a1e9",
+      "workpackage_ref": "07d47b21-ded7-5cee-b34f-4acdf5f53f34",
+      "work_orders": [
+        "ORD-000039"
+      ],
+      "op_seq": 20,
+      "setup_family": "PAINT_RED",
+      "resource_id": "7c78eed8-d762-5640-aeb0-5291be2b161e",
+      "external_name": "PAINT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T08:26:00Z",
+          "working_min": 86
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-06T07:00:00Z",
+          "end": "2026-01-06T07:20:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-4e5af789-06db-5664-b3ee-be590311eb77",
+      "operation_ref": "4e5af789-06db-5664-b3ee-be590311eb77",
+      "workpackage_ref": "f1df5554-72af-5616-8462-540100b54e0d",
+      "work_orders": [
+        "ORD-000013"
+      ],
+      "op_seq": 20,
+      "setup_family": "PAINT_RED",
+      "resource_id": "7c78eed8-d762-5640-aeb0-5291be2b161e",
+      "external_name": "PAINT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-06T08:41:00Z",
+          "end": "2026-01-06T15:52:00Z",
+          "working_min": 431
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-06T08:41:00Z",
+          "end": "2026-01-06T09:01:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-6166e5dd-0bb5-5192-b75f-d6e078e57f41",
+      "operation_ref": "6166e5dd-0bb5-5192-b75f-d6e078e57f41",
+      "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
+      "work_orders": [
+        "ORD-000001"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-06T13:54:00Z",
+          "end": "2026-01-06T15:54:00Z",
+          "working_min": 120
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-06T13:54:00Z",
+          "end": "2026-01-06T14:09:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-3d6b7c52-1b82-5356-973c-4891bb3ec22b",
+      "operation_ref": "3d6b7c52-1b82-5356-973c-4891bb3ec22b",
+      "workpackage_ref": "93d5172e-4763-5b74-9df1-06fc02d9118f",
+      "work_orders": [
+        "ORD-000004"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-06T15:54:00Z",
+          "end": "2026-01-06T17:06:00Z",
+          "working_min": 72
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-06T15:54:00Z",
+          "end": "2026-01-06T16:09:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-a033968e-3f66-529e-b149-c646e0fa79cb",
+      "operation_ref": "a033968e-3f66-529e-b149-c646e0fa79cb",
+      "workpackage_ref": "f6af0cc8-9383-5d83-821c-5d41d6267eaa",
+      "work_orders": [
+        "ORD-000008"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-06T17:06:00Z",
+          "end": "2026-01-06T18:30:00Z",
+          "working_min": 84
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-06T17:06:00Z",
+          "end": "2026-01-06T17:21:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-e40f3d1c-08c1-5cf0-891d-53332e50cea9",
+      "operation_ref": "e40f3d1c-08c1-5cf0-891d-53332e50cea9",
+      "workpackage_ref": "93d5172e-4763-5b74-9df1-06fc02d9118f",
+      "work_orders": [
+        "ORD-000004"
+      ],
+      "op_seq": 20,
+      "setup_family": "PAINT_BLUE",
+      "resource_id": "d9cc6ac1-db81-5f9d-b946-d33e96f60256",
+      "external_name": "PAINT-02",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-06T17:07:00Z",
+          "end": "2026-01-06T18:24:00Z",
+          "working_min": 77
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-06T17:07:00Z",
+          "end": "2026-01-06T17:27:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-32c0ca41-84a0-5cd4-9cc1-7b370e0392b2",
+      "operation_ref": "32c0ca41-84a0-5cd4-9cc1-7b370e0392b2",
+      "workpackage_ref": "0bbeecf1-7352-5d63-b928-0609160de4d5",
+      "work_orders": [
+        "ORD-000029"
+      ],
+      "op_seq": 30,
+      "setup_family": "",
+      "resource_id": "7c78eed8-d762-5640-aeb0-5291be2b161e",
+      "external_name": "PAINT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T10:32:00Z",
+          "working_min": 212
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T07:20:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-665809b3-4c7b-588f-a577-4143682a5423",
+      "operation_ref": "665809b3-4c7b-588f-a577-4143682a5423",
+      "workpackage_ref": "f6af0cc8-9383-5d83-821c-5d41d6267eaa",
+      "work_orders": [
+        "ORD-000008"
+      ],
+      "op_seq": 20,
+      "setup_family": "PAINT_BLUE",
+      "resource_id": "d9cc6ac1-db81-5f9d-b946-d33e96f60256",
+      "external_name": "PAINT-02",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T08:29:00Z",
+          "working_min": 89
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T07:20:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-9699d0fb-82ec-55dc-8f59-c89b191396c5",
+      "operation_ref": "9699d0fb-82ec-55dc-8f59-c89b191396c5",
+      "workpackage_ref": "6fd9c93d-26d8-5e19-80e2-e09882ef7b35",
+      "work_orders": [
+        "ORD-000037"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T10:15:00Z",
+          "working_min": 195
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-07T07:00:00Z",
+          "end": "2026-01-07T07:15:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-787568c8-68db-5e6e-8c4b-13dd66bad64b",
+      "operation_ref": "787568c8-68db-5e6e-8c4b-13dd66bad64b",
+      "workpackage_ref": "14c405af-05bd-5791-a66e-f0458af2df4c",
+      "work_orders": [
+        "ORD-000019"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-07T10:15:00Z",
+          "end": "2026-01-07T17:51:00Z",
+          "working_min": 456
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-07T10:15:00Z",
+          "end": "2026-01-07T10:30:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-73afd775-d06f-5ef0-b1bb-38c9ed9dd318",
+      "operation_ref": "73afd775-d06f-5ef0-b1bb-38c9ed9dd318",
+      "workpackage_ref": "6fd9c93d-26d8-5e19-80e2-e09882ef7b35",
+      "work_orders": [
+        "ORD-000037"
+      ],
+      "op_seq": 20,
+      "setup_family": "",
+      "resource_id": "fd34d391-ffa4-5def-a712-05266480c417",
+      "external_name": "MILL-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-07T10:16:00Z",
+          "end": "2026-01-07T14:36:00Z",
+          "working_min": 260
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-07T10:16:00Z",
+          "end": "2026-01-07T10:36:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-a647785d-e392-5146-a315-73622a4b422c",
+      "operation_ref": "a647785d-e392-5146-a315-73622a4b422c",
+      "workpackage_ref": "f26cc439-5f04-5dae-86a3-165706a6dcf1",
+      "work_orders": [
+        "ORD-000022"
+      ],
+      "op_seq": 20,
+      "setup_family": "PAINT_RED",
+      "resource_id": "7c78eed8-d762-5640-aeb0-5291be2b161e",
+      "external_name": "PAINT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-07T10:32:00Z",
+          "end": "2026-01-07T17:31:00Z",
+          "working_min": 419
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-07T10:32:00Z",
+          "end": "2026-01-07T10:52:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-34f7ddad-0171-5498-bee9-d848f0b7f404",
+      "operation_ref": "34f7ddad-0171-5498-bee9-d848f0b7f404",
+      "workpackage_ref": "6fd9c93d-26d8-5e19-80e2-e09882ef7b35",
+      "work_orders": [
+        "ORD-000037"
+      ],
+      "op_seq": 30,
+      "setup_family": "",
+      "resource_id": "3793479c-d1e7-5f6c-92c0-a1b03309b8a5",
+      "external_name": "HEAT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-07T14:37:00Z",
+          "end": "2026-01-07T17:07:00Z",
+          "working_min": 150
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-07T14:37:00Z",
+          "end": "2026-01-07T15:07:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-03d4c321-252b-55c5-964e-c7c2c651ed06",
+      "operation_ref": "03d4c321-252b-55c5-964e-c7c2c651ed06",
+      "workpackage_ref": "6fd9c93d-26d8-5e19-80e2-e09882ef7b35",
+      "work_orders": [
+        "ORD-000037"
+      ],
+      "op_seq": 40,
+      "setup_family": "",
+      "resource_id": "ce249601-8798-576b-88ed-2af0bf016812",
+      "external_name": "FINISH-02",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T09:10:00Z",
+          "working_min": 130
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T07:10:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-2a163c51-6f2a-5062-aa8b-156f75996cf8",
+      "operation_ref": "2a163c51-6f2a-5062-aa8b-156f75996cf8",
+      "workpackage_ref": "3efb9132-7814-5e24-a212-2556ac6414b0",
+      "work_orders": [
+        "ORD-000027"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T10:15:00Z",
+          "working_min": 195
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T07:15:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-bdc8727e-ef4e-5b3b-916e-7e03635f30b8",
+      "operation_ref": "bdc8727e-ef4e-5b3b-916e-7e03635f30b8",
+      "workpackage_ref": "14c405af-05bd-5791-a66e-f0458af2df4c",
+      "work_orders": [
+        "ORD-000019"
+      ],
+      "op_seq": 20,
+      "setup_family": "PAINT_RED",
+      "resource_id": "7c78eed8-d762-5640-aeb0-5291be2b161e",
+      "external_name": "PAINT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T14:41:00Z",
+          "working_min": 461
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-08T07:00:00Z",
+          "end": "2026-01-08T07:20:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-12c10bca-63fa-5453-893a-faecdbf04154",
+      "operation_ref": "12c10bca-63fa-5453-893a-faecdbf04154",
+      "workpackage_ref": "31af351d-d611-5d21-a14f-faee111e0915",
+      "work_orders": [
+        "ORD-000028"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-08T10:15:00Z",
+          "end": "2026-01-08T18:54:00Z",
+          "working_min": 519
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-08T10:15:00Z",
+          "end": "2026-01-08T10:30:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-00d4f9b5-806b-57f3-8fb6-3b14cd5ab5cf",
+      "operation_ref": "00d4f9b5-806b-57f3-8fb6-3b14cd5ab5cf",
+      "workpackage_ref": "3efb9132-7814-5e24-a212-2556ac6414b0",
+      "work_orders": [
+        "ORD-000027"
+      ],
+      "op_seq": 20,
+      "setup_family": "",
+      "resource_id": "fd34d391-ffa4-5def-a712-05266480c417",
+      "external_name": "MILL-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-08T10:16:00Z",
+          "end": "2026-01-08T14:36:00Z",
+          "working_min": 260
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-08T10:16:00Z",
+          "end": "2026-01-08T10:36:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-5c995b37-2872-5f5b-a7bf-73ed7ba41420",
+      "operation_ref": "5c995b37-2872-5f5b-a7bf-73ed7ba41420",
+      "workpackage_ref": "3efb9132-7814-5e24-a212-2556ac6414b0",
+      "work_orders": [
+        "ORD-000027"
+      ],
+      "op_seq": 30,
+      "setup_family": "",
+      "resource_id": "3793479c-d1e7-5f6c-92c0-a1b03309b8a5",
+      "external_name": "HEAT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-08T14:37:00Z",
+          "end": "2026-01-08T17:07:00Z",
+          "working_min": 150
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-08T14:37:00Z",
+          "end": "2026-01-08T15:07:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-efffb043-bf8f-5681-a13d-117b687edba8",
+      "operation_ref": "efffb043-bf8f-5681-a13d-117b687edba8",
+      "workpackage_ref": "31af351d-d611-5d21-a14f-faee111e0915",
+      "work_orders": [
+        "ORD-000028"
+      ],
+      "op_seq": 20,
+      "setup_family": "PAINT_RED",
+      "resource_id": "7c78eed8-d762-5640-aeb0-5291be2b161e",
+      "external_name": "PAINT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T15:44:00Z",
+          "working_min": 524
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T07:20:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-f9d0b145-1deb-5d10-8b27-9c04e8c7fd0e",
+      "operation_ref": "f9d0b145-1deb-5d10-8b27-9c04e8c7fd0e",
+      "workpackage_ref": "3efb9132-7814-5e24-a212-2556ac6414b0",
+      "work_orders": [
+        "ORD-000027"
+      ],
+      "op_seq": 40,
+      "setup_family": "",
+      "resource_id": "ce249601-8798-576b-88ed-2af0bf016812",
+      "external_name": "FINISH-02",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T09:10:00Z",
+          "working_min": 130
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-09T07:00:00Z",
+          "end": "2026-01-09T07:10:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-1f20da4d-5cca-5a1a-a49e-cd31045801b4",
+      "operation_ref": "1f20da4d-5cca-5a1a-a49e-cd31045801b4",
+      "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
+      "work_orders": [
+        "ORD-000001"
+      ],
+      "op_seq": 20,
+      "setup_family": "PAINT_RED",
+      "resource_id": "7c78eed8-d762-5640-aeb0-5291be2b161e",
+      "external_name": "PAINT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-09T15:59:00Z",
+          "end": "2026-01-09T18:04:00Z",
+          "working_min": 125
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-09T15:59:00Z",
+          "end": "2026-01-09T16:19:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    },
+    {
+      "assignment_id": "rasgn-8430485f-ad78-5438-a05b-2f3fdd306a14",
+      "operation_ref": "8430485f-ad78-5438-a05b-2f3fdd306a14",
+      "workpackage_ref": "63eea2f9-998e-5149-a956-7b85ce3ce1d0",
+      "work_orders": [
+        "ORD-000011"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-15T07:00:00Z",
+          "end": "2026-01-19T08:01:00Z",
+          "working_min": 5821
+        }
+      ],
+      "phases": {
+        "setup": null,
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "active_window"
+    }
+  ],
+  "service_outcomes": [
+    {
+      "demand_ref": "9d743574-47fd-5128-9ec2-2823fbb48b6c",
+      "work_order": "ORD-000001",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 35.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-22T23:59:59Z",
+      "projected_completion": "2026-01-09T18:04:00Z",
+      "lateness_min": -19075,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "4b0212db-c16e-53e8-8930-b4f6c63f769a",
+      "work_order": "ORD-000002",
+      "customer_ref": "0a92a1c8-87bd-543b-b96f-11fd4de7d776",
+      "customer_name": null,
+      "quantity": 18.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-20T23:59:59Z",
+      "projected_completion": "2026-01-05T18:45:00Z",
+      "lateness_min": -21914,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "0f093432-1125-5023-a198-205f5e637507",
+      "work_order": "ORD-000004",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 19.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-19T23:59:59Z",
+      "projected_completion": "2026-01-06T18:24:00Z",
+      "lateness_min": -19055,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "cd74a156-474b-57a2-963a-ca1db901174f",
+      "work_order": "ORD-000008",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 23.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-21T23:59:59Z",
+      "projected_completion": "2026-01-07T08:29:00Z",
+      "lateness_min": -21090,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "a5e2ba83-dca5-5d86-95ce-af8f558e21ed",
+      "work_order": "ORD-000011",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 50.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-12T23:59:59Z",
+      "projected_completion": "2026-01-19T08:01:00Z",
+      "lateness_min": 9121,
+      "tardiness_cost": 3800.416666666667
+    },
+    {
+      "demand_ref": "067ebd35-7d9b-5ca5-92c2-d863f0c0bcbf",
+      "work_order": "ORD-000013",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 137.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-15T23:59:59Z",
+      "projected_completion": "2026-01-06T15:52:00Z",
+      "lateness_min": -13447,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "f4bcc195-b184-5fc3-a418-ad8fcb734656",
+      "work_order": "ORD-000016",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 21.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-14T23:59:59Z",
+      "projected_completion": "2026-01-06T08:23:00Z",
+      "lateness_min": -12456,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "f114217f-2833-5d4e-b4e0-e218b9316c99",
+      "work_order": "ORD-000019",
+      "customer_ref": "0a92a1c8-87bd-543b-b96f-11fd4de7d776",
+      "customer_name": null,
+      "quantity": 147.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-17T23:59:59Z",
+      "projected_completion": "2026-01-08T14:41:00Z",
+      "lateness_min": -13518,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "6cd3c5e9-87de-5380-b426-b977af6bbf6c",
+      "work_order": "ORD-000021",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 13.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-26T23:59:59Z",
+      "projected_completion": "2026-01-05T08:54:00Z",
+      "lateness_min": -31145,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "eeb98ca1-0786-5090-af8f-67b2a65fc13f",
+      "work_order": "ORD-000022",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 133.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-21T23:59:59Z",
+      "projected_completion": "2026-01-07T17:31:00Z",
+      "lateness_min": -20548,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "b111e78d-6fab-523f-b26f-456fa92118e2",
+      "work_order": "ORD-000023",
+      "customer_ref": "0a92a1c8-87bd-543b-b96f-11fd4de7d776",
+      "customer_name": null,
+      "quantity": 45.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-14T23:59:59Z",
+      "projected_completion": "2026-01-05T14:45:00Z",
+      "lateness_min": -13514,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "aebd4d4a-4593-5c09-9a10-ee00b5e6dc53",
+      "work_order": "ORD-000025",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 20.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-14T23:59:59Z",
+      "projected_completion": "2026-01-05T10:14:00Z",
+      "lateness_min": -13785,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "ae00fbbd-df5e-5050-bbc7-cc2fbf702e79",
+      "work_order": "ORD-000027",
+      "customer_ref": "0a92a1c8-87bd-543b-b96f-11fd4de7d776",
+      "customer_name": null,
+      "quantity": 60.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-12T23:59:59Z",
+      "projected_completion": "2026-01-09T09:10:00Z",
+      "lateness_min": -5209,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "03570922-92a1-5544-bc00-9cc1dca64833",
+      "work_order": "ORD-000028",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 168.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-26T23:59:59Z",
+      "projected_completion": "2026-01-09T15:44:00Z",
+      "lateness_min": -24975,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "b2bd7b07-6243-573a-9817-ec6177db24af",
+      "work_order": "ORD-000029",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 64.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-13T23:59:59Z",
+      "projected_completion": "2026-01-07T10:32:00Z",
+      "lateness_min": -9447,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "464d72b3-5a67-5560-880c-4610c9ec582d",
+      "work_order": "ORD-000034",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 133.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-15T23:59:59Z",
+      "projected_completion": "2026-01-06T18:20:00Z",
+      "lateness_min": -13299,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "d0bac15c-3f85-5933-b2fa-e18d9e3e7307",
+      "work_order": "ORD-000037",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 60.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-14T23:59:59Z",
+      "projected_completion": "2026-01-08T09:10:00Z",
+      "lateness_min": -9529,
+      "tardiness_cost": 0.0
+    },
+    {
+      "demand_ref": "6bf6083e-cae0-5057-b310-9413b06e6ce4",
+      "work_order": "ORD-000039",
+      "customer_ref": "58351f79-0af1-550a-b481-40a3cc9f59e4",
+      "customer_name": null,
+      "quantity": 22.0,
+      "quantity_uom": "EA",
+      "due": "2026-01-13T23:59:59Z",
+      "projected_completion": "2026-01-06T08:26:00Z",
+      "lateness_min": -11013,
+      "tardiness_cost": 0.0
+    }
+  ],
+  "annotations": {
+    "locks": [],
+    "scenario": {
+      "is_scenario": false,
+      "parent_schedule_id": null
+    },
+    "pool": null
+  },
+  "interaction": null,
+  "rolling": {
+    "reference_origin": "2026-01-05T00:00:00Z",
+    "window_start": "2026-01-05T00:00:00Z",
+    "window_end": "2026-01-15T00:00:00Z",
+    "frozen_until": "2026-01-06T00:00:00Z",
+    "window_days": 10,
+    "frozen_days": 1,
+    "committed_count": 12,
+    "active_count": 26,
+    "beyond_horizon": [
+      {
+        "demand_ref": "0dee42a9-6527-50b3-bd7c-ddceb9dd94a6",
+        "work_order": "ORD-000012",
+        "customer_name": null,
+        "due": "2026-01-17T23:59:59Z",
+        "earliest_window_estimate": "2026-01-16T23:59:59Z"
+      },
+      {
+        "demand_ref": "f987e22f-3692-5c6e-960e-5f5f37e6d343",
+        "work_order": "ORD-000038",
+        "customer_name": null,
+        "due": "2026-01-17T23:59:59Z",
+        "earliest_window_estimate": "2026-01-16T23:59:59Z"
+      },
+      {
+        "demand_ref": "ff8a63c4-7b48-5b7c-89d0-fa8141bf0d20",
+        "work_order": "ORD-000040",
+        "customer_name": null,
+        "due": "2026-01-17T23:59:59Z",
+        "earliest_window_estimate": "2026-01-15T23:59:59Z"
+      },
+      {
+        "demand_ref": "83d15383-a792-5a1c-bf36-5bbea9033758",
+        "work_order": "ORD-000024",
+        "customer_name": null,
+        "due": "2026-01-18T23:59:59Z",
+        "earliest_window_estimate": "2026-01-17T23:59:59Z"
+      },
+      {
+        "demand_ref": "d2639f3a-a115-5559-8e61-9853b78b9b52",
+        "work_order": "ORD-000030",
+        "customer_name": null,
+        "due": "2026-01-18T23:59:59Z",
+        "earliest_window_estimate": "2026-01-17T23:59:59Z"
+      },
+      {
+        "demand_ref": "a11593de-eeb8-5dc6-9553-1369b380b411",
+        "work_order": "ORD-000003",
+        "customer_name": null,
+        "due": "2026-01-19T23:59:59Z",
+        "earliest_window_estimate": "2026-01-17T23:59:59Z"
+      },
+      {
+        "demand_ref": "db5ffb35-443b-5d15-95c7-51be9ce353df",
+        "work_order": "ORD-000009",
+        "customer_name": null,
+        "due": "2026-01-20T23:59:59Z",
+        "earliest_window_estimate": "2026-01-18T23:59:59Z"
+      },
+      {
+        "demand_ref": "5eab865f-5f3a-5fc6-954e-cec57804a041",
+        "work_order": "ORD-000015",
+        "customer_name": null,
+        "due": "2026-01-20T23:59:59Z",
+        "earliest_window_estimate": "2026-01-18T23:59:59Z"
+      },
+      {
+        "demand_ref": "327fc101-177d-5975-ac66-5d5a3e5e2891",
+        "work_order": "ORD-000018",
+        "customer_name": null,
+        "due": "2026-01-20T23:59:59Z",
+        "earliest_window_estimate": "2026-01-19T23:59:59Z"
+      },
+      {
+        "demand_ref": "7401a6b7-eedd-5df9-b86a-c168c5d5a56d",
+        "work_order": "ORD-000010",
+        "customer_name": null,
+        "due": "2026-01-21T23:59:59Z",
+        "earliest_window_estimate": "2026-01-20T23:59:59Z"
+      },
+      {
+        "demand_ref": "d9c6acb1-0e11-505d-9f7a-0d12ad7809bb",
+        "work_order": "ORD-000017",
+        "customer_name": null,
+        "due": "2026-01-21T23:59:59Z",
+        "earliest_window_estimate": "2026-01-20T23:59:59Z"
+      },
+      {
+        "demand_ref": "349154f5-1de6-5265-a05e-007110c60497",
+        "work_order": "ORD-000032",
+        "customer_name": null,
+        "due": "2026-01-22T23:59:59Z",
+        "earliest_window_estimate": "2026-01-21T23:59:59Z"
+      },
+      {
+        "demand_ref": "01d65946-e8f2-5832-829b-b7d797104857",
+        "work_order": "ORD-000007",
+        "customer_name": null,
+        "due": "2026-01-24T23:59:59Z",
+        "earliest_window_estimate": "2026-01-23T23:59:59Z"
+      },
+      {
+        "demand_ref": "041d21c8-3e04-5631-982f-b85a20c70fac",
+        "work_order": "ORD-000020",
+        "customer_name": null,
+        "due": "2026-01-25T23:59:59Z",
+        "earliest_window_estimate": "2026-01-24T23:59:59Z"
+      },
+      {
+        "demand_ref": "15ab5bad-c690-5475-bca6-8306dd70a713",
+        "work_order": "ORD-000033",
+        "customer_name": null,
+        "due": "2026-01-25T23:59:59Z",
+        "earliest_window_estimate": "2026-01-24T23:59:59Z"
+      },
+      {
+        "demand_ref": "12b5e06c-23c3-5dc3-84de-61efe2524eee",
+        "work_order": "ORD-000006",
+        "customer_name": null,
+        "due": "2026-01-26T23:59:59Z",
+        "earliest_window_estimate": "2026-01-23T23:59:59Z"
+      },
+      {
+        "demand_ref": "008ccd33-850e-5f02-9cb0-21c3abdce443",
+        "work_order": "ORD-000035",
+        "customer_name": null,
+        "due": "2026-01-26T23:59:59Z",
+        "earliest_window_estimate": "2026-01-25T23:59:59Z"
+      },
+      {
+        "demand_ref": "f05a836e-8221-578b-8721-c5802fd6ccca",
+        "work_order": "ORD-000014",
+        "customer_name": null,
+        "due": "2026-01-27T23:59:59Z",
+        "earliest_window_estimate": "2026-01-26T23:59:59Z"
+      },
+      {
+        "demand_ref": "5348876d-d02e-545e-9595-69afb825a508",
+        "work_order": "ORD-000005",
+        "customer_name": null,
+        "due": "2026-01-28T23:59:59Z",
+        "earliest_window_estimate": "2026-01-27T23:59:59Z"
+      },
+      {
+        "demand_ref": "80632455-816e-54ec-95f4-19b0c1dce2d7",
+        "work_order": "ORD-000026",
+        "customer_name": null,
+        "due": "2026-01-28T23:59:59Z",
+        "earliest_window_estimate": "2026-01-27T23:59:59Z"
+      },
+      {
+        "demand_ref": "e2f0a9f9-bb54-52b6-8407-fbac38a2d801",
+        "work_order": "ORD-000031",
+        "customer_name": null,
+        "due": "2026-01-28T23:59:59Z",
+        "earliest_window_estimate": "2026-01-26T23:59:59Z"
+      },
+      {
+        "demand_ref": "82b1ebc6-cb7f-5f14-848a-2cf9b9610b5b",
+        "work_order": "ORD-000036",
+        "customer_name": null,
+        "due": "2026-01-28T23:59:59Z",
+        "earliest_window_estimate": "2026-01-27T23:59:59Z"
+      }
+    ]
+  }
+}

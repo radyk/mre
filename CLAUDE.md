@@ -94,6 +94,54 @@ tests/                Tests derived from the specs — write them from the spec 
 
 ## Current status
 
+**Repository root: `C:\dev\mre`** (relocated 2026-07-23 from the retired
+`C:\Users\radke\OneDrive\Documents\PythonProjects\mre`). Any script/config/absolute
+path referencing the OneDrive path is a defect to fix. Relocation confirmed: `git
+fsck --full` clean; non-slow suite green (the one defect — an editable-install
+`.pth` still pointing at OneDrive — was repointed at `C:\dev\mre\src`).
+
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.3a — the cockpit
+renders the SLICED WORLD (read-only) 2026-07-23.** Phase 3's cockpit rendered ONE
+monolithic solve; pilot_scale produces rolling output (committed/frozen work + an
+active window + admitted-but-unscheduled future work). 4B.3a makes the cockpit
+render it READ-ONLY (no sandbox/gestures-that-solve — that is 4B.3b). **R-T2
+transcribed** (docs/04, the two-beat Tier-2 contract; implemented in 4B.3b).
+**CU1 — the spine:** schedule **contract 1.6 → 1.7 (additive)** — `AssignmentBlock.commitment_state`
+(committed | active_window; None on a monolithic bar), `ScheduleDocument.rolling`
+(a `RollingBlock`: frozen-front boundary, active-window span, reference origin,
+counts, + the **beyond-horizon list** of `BeyondHorizonItem` — future work with no
+bar, carrying a HEDGED earliest-window estimate), and the **COMPLETENESS INVARIANT**
+(every schedulable demand appears EXACTLY ONCE — committed/active/beyond; a gate
+exclusion is certificate-visible — enforced by `schedule_assembler._assert_rolling_completeness`
+which RAISES, and COUNTED by `test_rolling_document`). `rolling_horizon.build_rolling_view`
+solves window 0 (same admission + two-stage engine as the full roll);
+`assemble_rolling_document` consumes it; a `SolveRequest.sliced=true` API path
+(`_execute_rolling_solve`) registers a rolling document like any run. **Monolithic
+goldens byte-identical.** **CU2 — the board:** committed bars render LOCKED (static,
+teal locked edge, no gesture), a labeled frozen-front marker sits at `frozen_until`,
+and a docked **beyond-horizon TRAY** lists future work (empty state shows zero,
+never hidden); real fixture from a real solve; cockpit JS **146 → 156** (both
+themes). A latent fixture-server crash (interaction `writeHead` before a failing
+`load` → `ERR_HTTP_HEADERS_SENT`) was fixed to `loadMaybe`+404. **CU3 — AI
+reachability:** `rolling_questions.py` answers "what's beyond the horizon?", "why
+isn't {order} scheduled yet?" (hedged estimate), "what's frozen?" — deterministic,
+planner-voiced. **NAMED R-AI1 DEBT:** not yet wired into the Interpreter/ledger/
+`ROUTE_TAXONOMY` (the M10 Explainer reads a persisted snapshot, not the rolling
+document — the connector-era work). **CU4 — riders:** (a) `anthropic` added as a
+dev extra (required by `test_render_fail_closed`; correctly still absent from
+`requirements.lock`); (b) the 4A audit corpus gains the attribution-limitation
+specimen — ORD-06 is capacity-forced onto a marginally dearer PRESS-SLOW, attributed
+to EARLINESS_PREFERENCE by price rank (docs/02 §4.2), and the why-on-machine answer
+now HEDGES (`planner_language.driver_hedge`: names the preference AND that capacity
+may bind), joining the zero-confident-wrong corpus. Full non-slow Python suite
+green: **1227 passed, 0 failed** (+8); slow rolling + AI ladders green; cockpit JS
+156. See the docs/04 2026-07-23 amendment and docs/07 v2.35. Lesson: to render a
+sliced world without lying, make the three states exhaustive and COUNT them — a
+completeness invariant that RAISES turns silent exclusion (the Glass Box cardinal
+danger) into a test failure; render only what you can source and put known-but-
+unplaced work in a tray, never faked onto the timeline; and an attribution by price
+rank alone must HEDGE, not name a single cause it cannot prove.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.2d — R-SC3:
 earliness as tiebreak + declared coefficient 2026-07-22.** Supersedes the 4B.2
 hidden weight-1/min earliness incentive (4B.2c proved it spent an undeclared

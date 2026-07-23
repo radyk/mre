@@ -27,6 +27,7 @@ from typing import Any, Optional
 from mre.contracts.schedule_document import (
     Annotations,
     AssignmentBlock,
+    BeyondHorizonItem,
     CalendarWindow,
     Chunk,
     CostSummary,
@@ -38,6 +39,7 @@ from mre.contracts.schedule_document import (
     PoolBlock,
     PrecedenceEdgeBlock,
     ResourceLane,
+    RollingBlock,
     ScenarioBlock,
     ScheduleDocument,
     ServiceOutcomeBlock,
@@ -323,6 +325,229 @@ def build_document_from_run(
         edges=list(reader.iter_entities("precedenceedge")),
         standing_pin_ops=standing_pin_ops,
     )
+
+
+# ---------------------------------------------------------------------------
+# CU1 (Session 4B.3a) — the ROLLING (sliced) document.
+#
+# A monolithic solve → assemble_schedule_document (above). A rolling-horizon solve
+# (pilot_scale, R-SC2) → assemble_rolling_document: it renders the plant AS OF the
+# reference origin from a RollingView (the current window). Same contract, same
+# ResourceLane / AssignmentBlock / ServiceOutcomeBlock shapes; the additions are
+# each bar's commitment_state and the document-level RollingBlock (window metadata
+# + the beyond-horizon tray). The COMPLETENESS INVARIANT is enforced here: every
+# schedulable demand appears exactly once (committed / active / beyond / — for a
+# gate exclusion — certificate-visible), or assembly RAISES rather than ship a
+# document where known work is silently invisible (the Glass Box cardinal danger).
+# ---------------------------------------------------------------------------
+
+_ROLLING_SHIFT_MIN = 720   # nominal working minutes/day (mirrors rolling_horizon)
+
+
+def _earliest_window_estimate(demand: dict, working_min: int,
+                              ref: datetime) -> Optional[datetime]:
+    """A CHEAP, honest estimate of when this beyond-horizon work must first enter
+    a scheduling window: its latest-feasible-start (due − ceil(working-days)),
+    clamped to the reference origin. None when no due date exists — an estimate is
+    only offered when it can be derived, never invented."""
+    due = _parse_dt(demand.get("due"))
+    if due is None:
+        return None
+    days = max(1, -(-max(0, working_min) // _ROLLING_SHIFT_MIN))   # ceil working days
+    est = due - timedelta(days=days)
+    return est if est > ref else ref
+
+
+def assemble_rolling_document(
+    *,
+    plant: Any,
+    view: Any,
+    schedule_id: str,
+    run_id: str,
+    identity_map: Any = None,
+) -> ScheduleDocument:
+    """Assemble a contract-1.7 rolling document from a PreparedPlant + a
+    RollingView (rolling_horizon.build_rolling_view). ``plant`` and ``view`` are
+    duck-typed (attribute access only) to avoid a solver-module import cycle."""
+    ref = view.reference_origin
+    horizon = HorizonBlock(start=ref, end=view.window_end + timedelta(days=21))
+
+    ops_by_id = {o["id"]: o for o in plant.operations}
+    demands_by_id = {d["id"]: d for d in plant.demands}
+
+    # work-order names per workpackage (merged WPs list every order)
+    wp_orders: dict[str, list[str]] = {}
+    for ful in plant.fulfillments:
+        wp_id = ful.get("workpackage_ref", "")
+        name = _external_name(identity_map, ful.get("demand_ref", ""), _ORDER_REF_TYPES)
+        if name:
+            wp_orders.setdefault(wp_id, []).append(name)
+    for names in wp_orders.values():
+        names.sort()
+
+    # ---- assignments: one bar per placed op, with commitment_state ----------
+    placed = view.placed                       # committed ∪ active
+    committed_ops = set(view.committed)
+    asgn_blocks: list[AssignmentBlock] = []
+    for oid, pl in placed.items():
+        op = ops_by_id.get(oid, {})
+        start = _parse_dt(pl["start"])
+        end = _parse_dt(pl["end"])
+        chunks = [Chunk(chunk_seq=1, start=start, end=end,
+                        working_min=int((end - start).total_seconds() // 60))]
+        wp_ref = op.get("workpackage_ref", "")
+        asgn_blocks.append(AssignmentBlock(
+            assignment_id=f"rasgn-{oid}",
+            operation_ref=oid,
+            workpackage_ref=wp_ref,
+            work_orders=wp_orders.get(wp_ref, []),
+            op_seq=int(op.get("sequence", 0)),
+            setup_family=op.get("setup_family", "") or "",
+            resource_id=pl["resource"],
+            external_name=_external_name(identity_map, pl["resource"], _RESOURCE_REF_TYPES),
+            chunks=chunks,
+            phases=_phases(op, chunks),
+            commitment_state="committed" if oid in committed_ops else "active_window",
+        ))
+    asgn_blocks.sort(key=lambda a: (
+        a.chunks[0].start.isoformat() if a.chunks else "", a.operation_ref))
+
+    # ---- service outcomes for the placed (in-window) demands ----------------
+    svc_blocks: list[ServiceOutcomeBlock] = []
+    for svc in view.service_outcomes:
+        demand = demands_by_id.get(svc.get("demand_ref", ""), {})
+        lateness = svc.get("lateness_minutes")
+        if lateness is None:
+            lateness = _iso_minutes(svc.get("lateness")) or 0.0
+        customer_ref = demand.get("customer_ref")
+        qraw = demand.get("quantity")
+        qty = qraw.get("value") if isinstance(qraw, dict) else qraw
+        quom = qraw.get("uom") if isinstance(qraw, dict) else None
+        svc_blocks.append(ServiceOutcomeBlock(
+            demand_ref=svc.get("demand_ref", ""),
+            work_order=_external_name(identity_map, svc.get("demand_ref", ""), _ORDER_REF_TYPES),
+            customer_ref=customer_ref,
+            customer_name=(_external_name(identity_map, customer_ref, _CUSTOMER_REF_TYPES)
+                           if customer_ref else None),
+            quantity=float(qty) if qty is not None else None,
+            quantity_uom=quom,
+            due=_parse_dt(demand.get("due")),
+            projected_completion=_parse_dt(svc.get("projected_completion")),
+            lateness_min=int(lateness),
+            tardiness_cost=float(svc.get("tardiness_cost", 0.0)),
+        ))
+    svc_blocks.sort(key=lambda s: (s.work_order or "", s.demand_ref))
+
+    # ---- resource lanes -----------------------------------------------------
+    cals_by_id = {c["id"]: c for c in plant.calendars}
+    resources_by_id = {r["id"]: r for r in plant.resources}
+    lanes: list[ResourceLane] = []
+    for res in plant.resources:
+        rid = res["id"]
+        pool_name = None
+        pool_refs = res.get("pool_refs") or []
+        if pool_refs:
+            pool_name = _external_name(identity_map, pool_refs[0], _POOL_REF_TYPES) or pool_refs[0]
+        lanes.append(ResourceLane(
+            resource_id=rid,
+            external_name=_external_name(identity_map, rid, _RESOURCE_REF_TYPES),
+            facility=_external_name(identity_map, rid, _FACILITY_REF_TYPES),
+            pool=pool_name,
+            calendar_windows=_calendar_windows(
+                cals_by_id.get(res.get("calendar_ref") or ""), horizon),
+        ))
+    lanes.sort(key=lambda r: (r.external_name or "", r.resource_id))
+
+    # ---- the beyond-horizon tray + window metadata --------------------------
+    working_min_of = getattr(plant, "demand_working_minutes", {}) or {}
+    beyond: list[BeyondHorizonItem] = []
+    for did in view.beyond_demand_ids:
+        d = demands_by_id.get(did, {})
+        customer_ref = d.get("customer_ref")
+        beyond.append(BeyondHorizonItem(
+            demand_ref=did,
+            work_order=_external_name(identity_map, did, _ORDER_REF_TYPES),
+            customer_name=(_external_name(identity_map, customer_ref, _CUSTOMER_REF_TYPES)
+                           if customer_ref else None),
+            due=_parse_dt(d.get("due")),
+            earliest_window_estimate=_earliest_window_estimate(
+                d, int(working_min_of.get(did, 0)), ref),
+        ))
+    beyond.sort(key=lambda b: (b.due or datetime.max.replace(tzinfo=UTC), b.work_order or "", b.demand_ref))
+
+    rolling = RollingBlock(
+        reference_origin=ref,
+        window_start=view.window_start, window_end=view.window_end,
+        frozen_until=view.frozen_end,
+        window_days=view.window_days, frozen_days=view.frozen_days,
+        committed_count=len(view.committed), active_count=len(view.active),
+        beyond_horizon=beyond,
+    )
+
+    # ---- COMPLETENESS INVARIANT (the anti-silent-exclusion clause) ----------
+    # Every schedulable demand appears exactly once — as a placed bar's demand, a
+    # beyond-horizon tray entry, or (a gate exclusion) a certificate-visible one.
+    _assert_rolling_completeness(plant, view, beyond)
+
+    # ---- cost summary (decomposes exactly) ----------------------------------
+    led = view.cost_ledger or {}
+    cost_summary = CostSummary(
+        total=float(led.get("total_cost", 0.0)),
+        production_regular=float(led.get("production_regular_cost",
+                                         led.get("production_cost", 0.0))),
+        production_overtime=float(led.get("production_overtime_cost", 0.0)),
+        setup=float(led.get("setup_cost", 0.0)),
+        tardiness=float(led.get("tardiness_cost", 0.0)),
+    )
+
+    solver = SolverBlock(status=view.status, deterministic=True)
+
+    return ScheduleDocument(
+        contract_version="1.7",
+        schedule_id=schedule_id, snapshot_id=plant.snapshot_id, run_id=run_id,
+        status=ScheduleStatus.PROPOSED,
+        reference_date=ref, horizon=horizon, solver=solver,
+        cost_summary=cost_summary,
+        resources=lanes, assignments=asgn_blocks, service_outcomes=svc_blocks,
+        annotations=Annotations(),
+        rolling=rolling,
+    )
+
+
+def _assert_rolling_completeness(plant, view, beyond) -> None:
+    """Enforce the 1.7 completeness invariant: the union of placed demands,
+    beyond-horizon demands, and gate-excluded demands must cover EVERY demand in
+    the snapshot, and the placed/beyond sets must not overlap. A demand in none of
+    these buckets, or in two at once, is a defect — raise rather than ship a
+    silently-incomplete document."""
+    all_demand_ids = {d["id"] for d in plant.demands}
+    excluded = set(getattr(plant, "excluded_demand_ids", set()) or set())
+    # placed demands = those carrying a bar this window, derived from the placed
+    # ops' workpackages (the source of truth), not the service outcomes.
+    wp_of_op = {o["id"]: o.get("workpackage_ref", "") for o in plant.operations}
+    dem_of_wp: dict[str, list[str]] = {}
+    for f in plant.fulfillments:
+        dem_of_wp.setdefault(f.get("workpackage_ref", ""), []).append(f.get("demand_ref", ""))
+    placed_demand_ids: set[str] = set()
+    for oid in view.placed:
+        for did in dem_of_wp.get(wp_of_op.get(oid, ""), []):
+            placed_demand_ids.add(did)
+    beyond_ids = {b.demand_ref for b in beyond}
+
+    overlap = placed_demand_ids & beyond_ids
+    if overlap:
+        raise ValueError(
+            f"rolling completeness: {len(overlap)} demand(s) both placed AND "
+            f"beyond-horizon (e.g. {sorted(overlap)[:3]})")
+    covered = placed_demand_ids | beyond_ids | excluded
+    schedulable = all_demand_ids - excluded
+    missing = schedulable - placed_demand_ids - beyond_ids
+    if missing:
+        raise ValueError(
+            f"rolling completeness: {len(missing)} schedulable demand(s) appear in "
+            f"NO bucket (committed/active/beyond/excluded) — silent exclusion "
+            f"(e.g. {sorted(missing)[:3]})")
+    _ = covered  # (documents the full cover; the two checks above are the teeth)
 
 
 # ---------------------------------------------------------------------------

@@ -134,6 +134,18 @@
   --marker-release: var(--bar-ontime);
   --marker-label-ink: #0e1016;
   --tick-shift: rgba(180, 186, 200, 0.22);
+  /* Rolling frozen-front boundary (Session 4B.3a CU2): a bright teal divider. */
+  --marker-frozen: #3fd0c8;
+  --marker-frozen-label-bg: #3fd0c8;
+
+  /* Sliced world (Session 4B.3a CU2): committed-bar lock + beyond-horizon tray. */
+  --committed-edge: rgba(63, 208, 200, 0.85);
+  --committed-veil: rgba(63, 208, 200, 0.12);
+  --bt-bg: #12151d;
+  --bt-edge: var(--grid);
+  --bt-accent: #3fd0c8;
+  --bt-ink: var(--ink);
+  --bt-row-bg: rgba(30, 35, 46, 0.9);
 
   /* Operation anatomy (CU5). */
   --setup-hatch: rgba(0, 0, 0, 0.34);

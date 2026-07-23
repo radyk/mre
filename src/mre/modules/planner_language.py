@@ -147,11 +147,34 @@ def stage_name(module: Optional[str]) -> str:
     return STAGE_NAMES.get(str(module).upper(), "the system")
 
 
+# Attribution HEDGES (Session 4B.3a CU4b) — a driver whose reconstruction cannot
+# distinguish its cause from another carries an honest caveat. EARLINESS_PREFERENCE
+# is attributed by PRICE RANK ONLY (docs/02 §4.2 named limitation): a
+# dearer-than-cheapest eligible placement is credited to the earliness preference
+# even when the cheaper machine was simply BUSY (capacity forcing). The extractor
+# has no occupancy check, so the answer must NOT claim earliness as the sole cause.
+DRIVER_ATTRIBUTION_HEDGE: dict[str, str] = {
+    "EARLINESS_PREFERENCE":
+        "— though I'm attributing this by price alone, so I can't be certain the "
+        "earlier start was the real reason rather than the cheaper machine simply "
+        "being busy at the time (capacity pressure can bind here too)",
+}
+
+
 def driver_phrase(code: Optional[str]) -> Optional[str]:
     """Plain-language clause for a driver code, or None if unknown/absent."""
     if not code:
         return None
     return DRIVER_PHRASING.get(str(code).upper())
+
+
+def driver_hedge(code: Optional[str]) -> Optional[str]:
+    """An honest attribution caveat for a driver the reconstruction can't fully
+    disambiguate (Session 4B.3a CU4b), or None. Appended to a why-on-machine cause
+    so a confident single-cause claim never ships where the attribution is by rank."""
+    if not code:
+        return None
+    return DRIVER_ATTRIBUTION_HEDGE.get(str(code).upper())
 
 
 def finding_phrase(code: Optional[str]) -> str:

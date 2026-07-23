@@ -51,6 +51,13 @@ html, body {
 .split { display: grid; grid-template-columns: 1fr 360px; min-height: 0; }
 .board-host { position: relative; min-width: 0; overflow: hidden; }
 #tl { height: 100%; }
+/* Session 4B.3a CU2: with a beyond-horizon tray the board-host becomes a column —
+ * the board takes the remaining height, the tray a fixed strip at the bottom, and
+ * the board-chrome (legend/zoom) lifts to clear the tray. Applied only when a tray
+ * is present (a monolithic board is untouched). */
+.board-host.has-tray { display: flex; flex-direction: column; }
+.board-host.has-tray #tl { flex: 1 1 auto; min-height: 0; height: auto; }
+.board-host.has-tray .board-chrome { bottom: calc(var(--beyond-tray-h) + var(--sp-3)); }
 
 /* --- board chrome row (Session 4.3 CU1) --------------------------------- *
  * ONE layout row along the board bottom holding the legend (left) and the
@@ -202,6 +209,19 @@ html, body {
   opacity: 0.9;
 }
 
+/* --- Session 4B.3a CU2: sliced-world commitment states ------------------ */
+/* a COMMITTED (frozen-front) bar reads LOCKED — a teal locked-edge inset + a
+ * faint lock veil over its lateness fill (R-M1 committed-drop semantics: static,
+ * it never moves and affords no gesture in this read-only session). An
+ * ACTIVE_WINDOW bar renders as today's normal bar (no extra treatment). */
+.vis-item.bar.committed {
+  box-shadow: inset 0 0 0 var(--committed-inset) var(--committed-edge);
+}
+.vis-item.bar.committed::after {
+  content: ""; position: absolute; inset: 0; background: var(--committed-veil);
+  border-radius: inherit; pointer-events: none;
+}
+
 /* --- CU4: row-label strip (in the vis-left group labels) ---------------- */
 .vis-labelset .vis-label .vis-inner { display: block; }
 .row-name { font-weight: var(--fw-semibold); color: var(--ink); line-height: var(--lh-tight); }
@@ -242,6 +262,12 @@ html, body {
 .marker.now .marker-label { background: var(--marker-now-label-bg); color: var(--marker-now-label-ink); }
 .marker.due .marker-label { background: var(--marker-due); }
 .marker.release .marker-label { background: var(--marker-release); }
+/* Session 4B.3a CU2: the rolling frozen-front boundary — a solid teal divider
+ * with a labeled chip ("frozen ▸"); work to its left is committed/locked. */
+.marker.frozen {
+  width: var(--marker-frozen-width); background: var(--marker-frozen); opacity: 0.9;
+}
+.marker.frozen .marker-label { background: var(--marker-frozen-label-bg); }
 .tick.shift { position: absolute; top: 0; bottom: 0; width: var(--tick-shift-width); background: var(--tick-shift); }
 
 /* --- CU3: planner-voiced hover cards ----------------------------------- */
@@ -496,3 +522,51 @@ html, body {
 .dev-ledger .dl-q { flex: 1 1 auto; min-width: 0; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dev-ledger .dl-route { color: var(--muted); flex: 0 0 auto; }
 .dev-ledger .dl-fixed { color: var(--shade-green-edge); flex: 0 0 auto; }
+
+/* =========================================================================
+ * Session 4B.3a CU2(d) — the BEYOND-HORIZON TRAY (the sliced world).
+ * A docked panel of known future work with no bar to draw. Empty state shows
+ * zero, never hidden: an empty tray reads "nothing is beyond the horizon".
+ * ====================================================================== */
+.beyond-tray {
+  flex: 0 0 var(--beyond-tray-h); box-sizing: border-box;
+  display: flex; flex-direction: column; min-height: 0;
+  background: var(--bt-bg); border-top: 2px solid var(--bt-accent);
+  color: var(--bt-ink);
+}
+.beyond-tray .bt-head {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-3); border-bottom: 1px solid var(--bt-edge);
+  flex: 0 0 auto;
+}
+.beyond-tray .bt-title {
+  font: var(--fw-bold) var(--fs-2xs)/1 var(--font-mono);
+  text-transform: uppercase; letter-spacing: var(--ls-caps); color: var(--muted);
+}
+.beyond-tray .bt-count {
+  font: var(--fw-bold) var(--fs-xs)/1 var(--font-mono); color: var(--ink-inverse);
+  background: var(--bt-accent); border-radius: var(--radius-xs);
+  padding: 1px 7px; min-width: 12px; text-align: center;
+}
+.beyond-tray .bt-body {
+  overflow-y: auto; padding: var(--sp-2) var(--sp-3);
+  display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); align-content: flex-start;
+}
+.beyond-tray .bt-empty {
+  color: var(--muted-2); font-size: var(--fs-xs); padding: var(--sp-2) 0;
+}
+.beyond-tray .bt-row {
+  display: inline-flex; gap: var(--sp-2); align-items: baseline;
+  background: var(--bt-row-bg); border: 1px solid var(--bt-edge);
+  border-radius: var(--radius-sm); padding: 2px var(--sp-2); max-width: 100%;
+}
+.beyond-tray .bt-name {
+  font: var(--fw-semibold) var(--fs-xs)/1.2 var(--font-mono); color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.beyond-tray .bt-due { font-size: var(--fs-2xs); color: var(--muted); flex: 0 0 auto; }
+
+/* the legend (Session 4B.3a CU2): a committed swatch (locked edge) + the frozen
+ * boundary tick, so the sliced-world vocabulary is legible. */
+.legend .sw.sw-committed { box-shadow: inset 0 0 0 1.5px var(--committed-edge); background: var(--bar-ontime); }
+.legend .sw.sw-frozen { width: 3px; border-radius: 0; background: var(--marker-frozen); }

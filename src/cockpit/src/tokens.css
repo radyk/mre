@@ -123,8 +123,13 @@
   --marker-now-width: 2px;          /* the reference-date "now" line */
   --marker-due-width: 2px;
   --marker-release-width: 2px;
+  --marker-frozen-width: 2px;       /* rolling frozen-front boundary (4B.3a CU2) */
   --tick-shift-width: 1px;          /* subtle shift-boundary ticks */
   --marker-label-fs: var(--fs-2xs);
+
+  /* --- sliced world (Session 4B.3a CU2) — STRUCTURAL geometry --------- */
+  --committed-inset: 1.5px;         /* the locked-edge inset on a committed bar */
+  --beyond-tray-h: 116px;           /* the docked beyond-horizon tray height */
 
   --setup-hatch-px: 4px;            /* setup leading-segment hatch pitch (CU5) */
   --chunk-link-width: 2px;          /* split-op kinship connector (CU5) */

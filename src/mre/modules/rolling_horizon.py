@@ -356,6 +356,177 @@ class RollingResult:
 
 
 # ---------------------------------------------------------------------------
+# CU1 (Session 4B.3a) — the CURRENT-WINDOW rolling VIEW (what the cockpit renders).
+#
+# A full run_rolling_horizon() rolls to completion, committing every op — so its
+# final RollingResult has no "active but not frozen" state and nothing beyond the
+# horizon. To render THE SLICED WORLD (committed frozen front + an active window +
+# admitted-but-unscheduled future work), the document must capture the plant AS OF
+# the reference origin: window 0. This is the state a rolling-horizon planner
+# actually sees — the current window's schedule plus a tray of known future work.
+# build_rolling_view solves exactly that ONE window (the same admission + two-stage
+# machinery as the full roll) and classifies every schedulable demand into
+# committed / active_window / beyond_horizon — the completeness invariant's states.
+# ---------------------------------------------------------------------------
+
+@dataclass
+class RollingView:
+    """The rolling plant AS OF the reference origin (the current window). Every
+    schedulable demand lands in exactly one bucket: an op placed inside the frozen
+    front (committed), an op placed in the current window past the frozen boundary
+    (active), or a demand with no placed op this window (beyond_horizon)."""
+    reference_origin: datetime
+    window_start: datetime
+    window_end: datetime
+    frozen_end: datetime
+    window_days: int
+    frozen_days: int
+    committed: dict            # op_id -> {resource, start(iso), end(iso)}
+    active: dict               # op_id -> {resource, start(iso), end(iso)}
+    beyond_demand_ids: list    # schedulable demand ids with no placed op this window
+    cost_ledger: dict
+    service_outcomes: list     # ServiceOutcome dicts for the placed (in-window) demands
+    op_drivers: dict           # op_id -> DriverCode value (window solve attribution)
+    earliness_value: float
+    status: str
+
+    @property
+    def placed(self) -> dict:
+        """committed ∪ active — every op with a bar on the board this window."""
+        out = dict(self.committed)
+        out.update(self.active)
+        return out
+
+
+def build_rolling_view(
+    plant: PreparedPlant,
+    window_days: int,
+    frozen_days: int,
+    gravity: bool = True,
+    deterministic: bool = True,
+    seed: int = 42,
+    member_time_limit_s: float = 30.0,
+    det_time: float = 4.0,
+    crit_threshold: float = 3.0,
+    earliness_value: Optional[float] = None,
+) -> RollingView:
+    """Solve the CURRENT window (window 0) and classify the sliced world.
+
+    Reuses the full roll's admission (_admit) and two-stage solve (_two_stage_solve)
+    on window 0 only — so the committed/active split and the gravity admission are
+    the REAL rolling engine, captured at the reference origin rather than rolled to
+    completion. Demands not admitted this window (future work) become the
+    beyond-horizon tray. Placed demands are priced + given service outcomes from
+    the window solve (an honest current-window projection, not a full-roll price)."""
+    if frozen_days > window_days:
+        raise ValueError("frozen_days must be <= window_days")
+    from mre.modules.extractor import Extractor
+
+    ref = plant.reference_date.replace(hour=0, minute=0, second=0, microsecond=0)
+    sched = plant.schedulable_demands
+    if not sched:
+        raise ValueError("no schedulable demands")
+
+    t0 = ref
+    window_end = t0 + timedelta(days=window_days)
+    frozen_end = t0 + timedelta(days=frozen_days)
+    t0_min = int((t0 - ref).total_seconds() / 60.0)
+    frozen_end_min = int((frozen_end - ref).total_seconds() / 60.0)
+    win_horizon_end = window_end + timedelta(days=_WINDOW_TAIL_DAYS)
+
+    coeff_scaled = _earliness_coeff_scaled(plant.cost_model, earliness_value)
+    ev_used = (float(earliness_value) if earliness_value is not None
+               else float(plant.cost_model.get("earliness_value", 0.0) or 0.0))
+
+    def _ops_of(did):
+        return plant.ops_by_wp.get(plant.wp_of_demand.get(did), [])
+
+    # workpackage -> [demand ids] (a merged WP may fulfil several demands)
+    dem_of_wp: dict = {}
+    for d in sched:
+        wp = plant.wp_of_demand.get(d["id"])
+        if wp is not None:
+            dem_of_wp.setdefault(wp, []).append(d["id"])
+
+    admitted, _reasons = _admit(plant, sched, t0, window_end, gravity, crit_threshold)
+    free_ops = [op for did in admitted for op in _ops_of(did)]
+
+    workers = 1 if deterministic else None
+    committed: dict = {}
+    active: dict = {}
+    op_drivers: dict = {}
+    ledger: dict = {}
+    svc: list = []
+    status = "NO_ADMISSION"
+    placed_demand_ids: set = set()
+
+    if free_ops:
+        model, var_map = _build_window(plant, free_ops, [], ref, win_horizon_end)
+        free_start_vars = []
+        for op in free_ops:
+            v = var_map.op_start.get(op["id"])
+            if v is not None:
+                model.add(v >= t0_min)
+                free_start_vars.append(v)
+        solve, _stage2 = _two_stage_solve(
+            model, var_map, free_start_vars, coeff_scaled,
+            workers=workers, seed=seed, deterministic=deterministic,
+            member_time_limit_s=member_time_limit_s, stage1_det_time=det_time)
+        status = solve.status
+        if solve.status in ("OPTIMAL", "FEASIBLE"):
+            sv = solve.solve_values
+            for op in free_ops:
+                oid = op["id"]
+                if oid not in sv.op_start_minutes:
+                    continue
+                res = sv.op_resource.get(oid)
+                if res is None:
+                    continue
+                s_min = sv.op_start_minutes[oid]
+                s_dt = ref + timedelta(minutes=s_min)
+                e_dt = ref + timedelta(minutes=sv.op_end_minutes[oid])
+                placement = {"resource": res, "start": s_dt.isoformat(),
+                             "end": e_dt.isoformat()}
+                if s_min < frozen_end_min:
+                    committed[oid] = placement
+                else:
+                    active[oid] = placement
+                for did in dem_of_wp.get(op.get("workpackage_ref", ""), []):
+                    placed_demand_ids.add(did)
+
+            # price + service outcomes for the placed (in-window) demands, from
+            # THIS window solve (an honest current-window projection).
+            wp_ids = {op["workpackage_ref"] for op in free_ops}
+            wps = [w for w in plant.workpackages if w["id"] in wp_ids]
+            fuls = [f for f in plant.fulfillments if f["workpackage_ref"] in wp_ids]
+            dem_ids = {f["demand_ref"] for f in fuls}
+            demands = [d for d in plant.demands if d["id"] in dem_ids]
+            extract_cm = dict(plant.cost_model)
+            extract_cm["earliness_value"] = ev_used
+            result = Extractor().extract(
+                solve_values=sv, snapshot_id=plant.snapshot_id,
+                operations=free_ops, workpackages=wps, resources=plant.resources,
+                fulfillments=fuls, demands=demands, cost_model=extract_cm,
+                reporter=None, cal_windows=var_map.cal_windows,
+                op_eligible=var_map.op_eligible, snapshot_writer=None,
+                overtime_windows=var_map.overtime_windows, is_scenario=True)
+            ledger = result.cost_ledger
+            svc = result.service_outcomes
+            op_drivers = {a["operation_ref"]: a.get("driver") for a in result.assignments}
+
+    # BEYOND-HORIZON = every schedulable demand with no placed op this window.
+    beyond = [d["id"] for d in sched if d["id"] not in placed_demand_ids]
+
+    return RollingView(
+        reference_origin=ref, window_start=t0, window_end=window_end,
+        frozen_end=frozen_end, window_days=window_days, frozen_days=frozen_days,
+        committed=committed, active=active, beyond_demand_ids=beyond,
+        cost_ledger=ledger, service_outcomes=svc, op_drivers=op_drivers,
+        earliness_value=ev_used, status=status)
+
+
+
+# ---------------------------------------------------------------------------
 # CU5 (R-SC3) — manned-idle minutes as an EVIDENCE metric (never an objective).
 # Total idle is conserved for a fixed book (only its position moves), so it is
 # provably inert as an objective and belongs in Metrics — R-SC3(3).

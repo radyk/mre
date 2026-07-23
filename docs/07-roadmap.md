@@ -1,6 +1,32 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.34 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.35 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.35:** **Repo relocation + R-T2 + Session 4B.3a — the cockpit renders the
+sliced world (read-only)** 2026-07-23 (docs/04 amendment). Repo moved to
+`C:\dev\mre` (OneDrive path retired); relocation confirmed — `git fsck` clean, 1219
+passed (one editable-install `.pth` still pointing at OneDrive was the sole defect,
+repointed). **R-T2 transcribed** (two-beat Tier-2 contract: beat one shows no
+money and renders in the R-M1 ghost class; beat two prices + supersedes visibly; a
+contradiction is shown via rejection semantics; beat-one mints no edits —
+IMPLEMENTED in 4B.3b). **4B.3a** makes the cockpit render pilot_scale's rolling
+output READ-ONLY. **CU1** contract **1.6 → 1.7 (additive)**: `AssignmentBlock.commitment_state`
+(committed | active_window), `ScheduleDocument.rolling` (window metadata +
+beyond-horizon list), and the **COMPLETENESS INVARIANT** (every schedulable demand
+appears exactly once — committed/active/beyond — enforced by the assembler,
+COUNTED by a test). `build_rolling_view` (solve window 0) + `assemble_rolling_document`
++ a `SolveRequest.sliced` API path register a rolling document like any run.
+Monolithic goldens byte-identical. **CU2** board renders it: committed bars LOCKED
+(static, no gesture), a labeled frozen-front boundary marker, and a docked
+beyond-horizon TRAY (empty state shows zero, never hidden) — real fixture from a
+real solve; cockpit JS 146 → 156, both themes. **CU3** `rolling_questions.py` answers
+the three rolling questions (beyond / why-not-yet / frozen), planner-voiced +
+hedged; the interpreter/ledger/taxonomy wiring is a NAMED R-AI1 DEBT (rolling runs
+must persist a snapshot the Explainer reads first). **CU4** (a) `anthropic` added as
+a dev extra; (b) the audit corpus gains the attribution-limitation specimen — a
+capacity-forced dearer placement attributed to EARLINESS_PREFERENCE now HEDGES
+(names the preference AND that capacity may bind), joining the zero-confident-wrong
+corpus. Full non-slow suite green (1227); slow rolling + AI ladders green.
 
 **v2.34:** **Session 4B.2d — R-SC3: earliness as tiebreak + declared coefficient**
 2026-07-22 (docs/04 amendment). Supersedes the 4B.2 hidden weight-1/min earliness

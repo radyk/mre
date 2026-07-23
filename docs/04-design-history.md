@@ -6909,3 +6909,179 @@ coefficient (priced and traceable), so the floor is provably placement-neutral i
 money and every dollar the coefficient spends is a named `EARLINESS_PREFERENCE`
 driver; idle-minutes are conserved and belong in Metrics, never the objective; and
 a golden that legitimately changes is regenerated in the open, not silently.
+
+
+## 2026-07-23 — Repo relocation + R-T2 (two-beat Tier-2 contract) + Session 4B.3a: the cockpit renders the sliced world
+
+### Repository relocation confirmation (formal)
+
+The repository moved from `C:\Users\radke\OneDrive\Documents\PythonProjects\mre`
+to `C:\dev\mre`; the OneDrive path is retired. This session opened with the
+mandated relocation errand. Results:
+
+- `git fsck --full` — CLEAN (exit 0). No dangling/broken objects.
+- Non-slow suite from `C:\dev\mre` — **1219 passed, 0 failed** (117 skipped,
+  environment-conditional), matching the 4B.2d baseline (includes
+  `tests/test_render_fail_closed.py` now that the SDK is installed).
+
+**One relocation defect found and fixed:** the editable install's path finder
+(`__editable__.mre-0.0.1.pth` in the user site-packages) still pointed at
+`C:\Users\radke\OneDrive\Documents\PythonProjects\mre\src`, so `import mre` failed
+from the new root (`ModuleNotFoundError: No module named 'mre'`) — the entire suite
+errored on collection until the `.pth` was repointed at `C:\dev\mre\src`. This is
+exactly the "any path referencing OneDrive is a defect to fix" case the session
+prompt named — the retired path was baked into the dev environment's editable
+install, not the repo, so `git fsck`/tests only surfaced it on the first run. No
+in-repo file referenced the old path; `setuptools` being absent from the dev Python
+meant a clean `pip install -e .` couldn't rebuild the finder, so the `.pth` was
+repointed directly (a simple path-based editable install).
+
+### R-T2 — Two-beat Tier-2 interaction contract (transcribed verbatim)
+
+Ruled in the working thread 2026-07-23; IMPLEMENTED IN 4B.3b, recorded here now.
+
+R-T2 — Two-beat Tier-2 interaction contract.
+(1) Beat one never displays a monetary quantity — no figure, no delta, no
+approximation. Feasibility verdict and placement only; the first number the
+planner sees is beat two's priced number.
+(2) Beat one renders in the R-M1 ghost class — it inherits "not real" semantics
+from the existing motion grammar.
+(3) Beat two supersedes visibly; the ghost-to-priced transition is a perceivable
+event (motion tuned at the panel, not by prompts).
+(4) If beat two contradicts beat one (infeasible, or materially different
+placement), the contradiction is SHOWN via R-M1 rejection semantics — never
+silently reconciled.
+(5) Beat-one gestures mint no edits and touch no persistent state; only beat two's
+accepted card can (per R-DP1–9).
+
+### Session 4B.3a amendment — the cockpit renders the sliced world (read-only)
+
+Phase 3's cockpit renders ONE monolithic solve document. pilot_scale produces
+rolling-horizon output (4B.2/4B.2d): committed/frozen work + an active window + an
+admitted-but-unscheduled future book. This session makes the cockpit render that
+world, READ-ONLY (no sandbox, no gestures-that-solve, no Tier-2 — that is 4B.3b).
+The Glass Box audit proved silent exclusion is the cardinal danger; the design
+below exists so no known work can be invisible. Backend spine + contract + frontend
+read layer + AI reachability + riders; no solver/model changes.
+
+**CU1 — the rolling schedule document (the spine).** A rolling solve becomes a
+document through the SAME contract the cockpit already renders — **contract 1.6 →
+1.7 (additive)**, not a parallel format:
+  * `AssignmentBlock.commitment_state` — `committed` (frozen front: locked, static,
+    affords no gesture — R-M1 committed-drop semantics) or `active_window` (solved
+    this window, not yet frozen). None on a monolithic bar (there is no rolling
+    frozen zone) so the board renders it byte-identically.
+  * `ScheduleDocument.rolling` (a `RollingBlock`) — window metadata (frozen-front
+    boundary `frozen_until`, active-window span, reference origin, window/frozen
+    days, committed/active counts) + the **beyond-horizon list**: admitted-but-
+    unscheduled future work (`BeyondHorizonItem`: demand_ref, work_order,
+    customer_name, due, and a cheap `earliest_window_estimate` — the latest-
+    feasible-start clamped to the origin, else absent). None on a monolithic doc.
+  * **The COMPLETENESS INVARIANT** (the anti-silent-exclusion clause): every
+    schedulable demand appears in the document EXACTLY ONCE — as a committed bar's
+    demand, an active-window bar's demand, or a beyond-horizon tray entry (a gate
+    exclusion is certificate-visible, outside this document). The rolling assembler
+    ENFORCES it (`_assert_rolling_completeness` raises on overlap or a demand in no
+    bucket); `test_rolling_document::test_completeness_invariant_every_demand_counted`
+    COUNTS it, so a silent exclusion is a test failure, not an invisible one.
+
+The rolling document renders the plant AS OF the reference origin — the current
+window. `rolling_horizon.build_rolling_view` solves ONE window (window 0) with the
+SAME admission (`_admit`) and two-stage solve (`_two_stage_solve`) the full roll
+uses — so committed/active is the real rolling engine captured at t0, and the tray
+is the future work not admitted this window. `schedule_assembler.assemble_rolling_document`
+consumes the view (duck-typed, no solver import cycle). The API serves it through
+the existing registry: `SolveRequest.sliced=true` (with `window_days`/`frozen_days`)
+routes to a new `_execute_rolling_solve` worker — `prepare_plant` -> `build_rolling_view`
+-> `assemble_rolling_document` -> register a contract-1.7 document like any other
+run (`test_api_endpoints::TestRollingSolve`). **Monolithic documents byte-identical**
+(golden-guarded: every 1.7 field is None/empty-defaulted; `test_defaults_reproduce_baseline`
+green).
+
+**CU2 — the board renders it (read-only).** `board.js` marks committed bars with a
+distinct LOCKED class (a teal locked-edge inset + a faint veil — static, never
+moves, affords no gesture); active-window bars render as today's normal bar. A
+labeled **frozen-front boundary marker** (`markers.js` `setFrozen`) sits at
+`frozen_until` — a teal vertical line "frozen", tracking vis's pan/zoom at 0px
+drift like the other markers. The **beyond-horizon TRAY** (`tray.js`) is a
+deliberately simple docked panel below the board (a column layout only when a tray
+is present — the monolithic board is untouched): a count badge + one row per future
+order (work_order + due), planner vocabulary never a UUID. **Empty state shows
+zero, never hidden** — an empty tray reads "Nothing beyond the horizon", not "there
+is no tray". All new colors/spacing tokenized (tokens.css + per-theme). The legend
+gains committed/frozen swatches on a rolling board. Playwright coverage (both
+themes): mixed committed/active board, the boundary marker at frozen_until, a
+POPULATED tray with badge, the EMPTY tray, and a read-only guard — cockpit JS
+**146 -> 156** (all green). The fixture is a REAL assembled contract-1.7 document
+(`tools/build_rolling_fixture.py`: a 40-order pilot_scale window-10/frozen-1 solve
+-> 12 committed + 26 active + 22 in tray; and an 18-bar empty-tray variant),
+committed so CI needs no solver.
+
+A latent fixture-server bug surfaced and was fixed: the interaction endpoint called
+`writeHead(200)` BEFORE `await load("interaction.json")`, so a fixture without an
+interaction payload (a 1.7 rolling doc carries none) threw AFTER headers were sent
+(`ERR_HTTP_HEADERS_SENT`) and crashed the whole server (every test after the first
+got CONNECTION_REFUSED). Fixed to `loadMaybe` + 404 (mirroring the real API, which
+404s for pool members / pre-1.3 docs) — never write headers before a load that can
+fail.
+
+**CU3 — AI reachability (R-AI1), with a NAMED DEBT.** The three rolling questions
+("what's beyond the horizon?", "why isn't {order} scheduled yet?", "what's
+frozen?") are answered by a new authored module `rolling_questions.py` —
+deterministic, planner-voiced, ID-free, over the contract-1.7 document. The
+beyond-horizon estimate is HEDGED (it is an estimate, never a placement); the
+why-not answer states the due date and, if present, the earliest-window estimate,
+hedged, or says honestly it cannot estimate; an unknown order gets the honest "it's
+in the current window or not in this schedule". `test_rolling_questions.py` (7 fast
+units) asserts each shape against the REAL committed rolling fixture.
+
+**NAMED R-AI1 DEBT:** these answers are NOT yet wired into the free-phrasing
+`Interpreter`, the question ledger, or the deterministic `ROUTE_TAXONOMY`. The M10
+`Explainer` answers over a persisted canonical snapshot + evidence index; a rolling
+run's sliced state lives in the schedule document's RollingBlock, NOT in a snapshot
+the Explainer reads. Wiring these three shapes into the full taxonomy (free phrasing
+-> the ledger -> the interpreter) cleanly requires a rolling run to persist a
+canonical snapshot the Explainer reads — the connector-era work. Until then
+`rolling_questions.py` is the deterministic, reviewable-artifact surface a caller
+(the cockpit ask panel via its fixture asks; a future explainer route) delegates the
+three shapes to. This session did NOT bolt an ad-hoc route onto the router (the
+session prompt's instruction: "where it cannot [route through existing taxonomy],
+name the R-AI1 debt explicitly").
+
+**CU4 — riders.** (a) `pyproject` dev extras gain `anthropic>=0.40` — a REQUIRED
+dev dependency (`tests/test_render_fail_closed.py` constructs a real
+`anthropic.Anthropic` to prove the real render path fails closed), present only via
+manual installs until now; it is correctly still ABSENT from `requirements.lock`
+(the runtime import is lazily/try-guarded, fail-closed), so no lock covers it. (b)
+The 4A audit corpus gains the queued specimen — ORD-06 is CAPACITY-FORCED onto the
+marginally dearer PRESS-SLOW (glass_box mutated: `earliness_value=0.05`, PRESS-SLOW
+$60 -> $61) with a positive earliness_value, so the extractor attributes it to
+`EARLINESS_PREFERENCE` by PRICE RANK (docs/02 §4.2's named limitation: a
+dearer-than-cheapest choice is credited to the earliness preference, with no
+occupancy check to distinguish capacity forcing). The graded-correct answer now
+HEDGES: `planner_language.driver_hedge`/`DRIVER_ATTRIBUTION_HEDGE` appends an honest
+caveat to the why-on-machine cause when the driver is EARLINESS_PREFERENCE — "I'm
+attributing this by price alone, so I can't be certain the earlier start was the
+real reason rather than the cheaper machine simply being busy at the time (capacity
+pressure can bind here too)". A confidently unhedged single-cause answer would grade
+WRONG on the zero-confident-wrong axis; the new specimen (a fixture where the rate
+delta is economically negligible so the placement stays but the attribution fires)
+proves the hedge, and joins the standing zero-confident-wrong corpus.
+
+**Verification.** Full non-slow Python suite green: **1227 passed, 0 failed** (+8:
+7 rolling-questions units + 1 beyond-horizon-estimate unit; the rolling document
+x4, rolling API x1, and audit-corpus earliness specimen are slow). Slow ladders
+green: the rolling determinism golden + frozen-front + gravity + the 5 new rolling
+document/API tests; the AI-voice earliness hedge specimen + the zero-confident-wrong
+corpus (now with the earliness specimen). Cockpit JS **156 passed** (+10 rolling,
+both themes). Monolithic goldens byte-identical. Same-commit spec updates: the
+schedule-document contract (1.7), docs/04 (this amendment + R-T2 + relocation),
+docs/07 v2.35, CLAUDE.md (position + repo path).
+
+Lesson: to render a sliced world without lying, make the document's THREE states
+exhaustive and COUNT them — a completeness invariant that raises turns "silent
+exclusion" (the Glass Box cardinal danger) into a test failure; render only what
+you can source (committed/active are solved placements; the tray is known work with
+no bar, shown as a tray, never faked onto the timeline); and where an attribution
+is by price rank only, the honest answer HEDGES rather than name a single cause it
+cannot actually prove.

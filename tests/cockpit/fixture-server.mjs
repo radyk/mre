@@ -25,6 +25,11 @@ const DIRS = {
   // the hand-authored planner-surface fixture (Session 4.2): closures /
   // maintenance / overtime / setup / a split op / standing pin / customers.
   "sched-planner-fixture": resolve(FIX, "planner"),
+  // the SLICED (rolling-horizon) fixtures (Session 4B.3a CU2): a real assembled
+  // contract-1.7 document — committed frozen front + active window + a POPULATED
+  // beyond-horizon tray; and an EMPTY-tray variant for the empty-state screenshot.
+  "sched-rolling-fixture": resolve(FIX, "rolling"),
+  "sched-rolling-empty": resolve(FIX, "rolling_empty"),
 };
 // An accepted edit mints a new version id ``<base>-edit`` (CU1); a CHAINED edit
 // appends another ``-edit``. All map back to the base fixture directory so a
@@ -193,9 +198,17 @@ const server = createServer(async (req, res) => {
     }
     const mInteract = p.match(/^\/schedules\/([^/]+)\/interaction$/);
     if (mInteract && req.method === "GET") {
-      // the Tier-0 payload, served separately (contract 1.3, R-T1d)
+      // the Tier-0 payload, served separately (contract 1.3, R-T1d). loadMaybe +
+      // 404 when a fixture has none (a rolling/1.7 doc carries no interaction
+      // payload) — mirrors the real API, and never writes headers before a load
+      // that can fail (the ERR_HTTP_HEADERS_SENT crash class).
+      const inter = await loadMaybe("interaction.json", dirFor(mInteract[1]));
+      if (!inter) {
+        res.writeHead(404, { "content-type": "application/json" });
+        return res.end(errEnv(404, "no interaction payload for this schedule"));
+      }
       res.writeHead(200, { "content-type": "application/json" });
-      return res.end(envelope(await load("interaction.json", dirFor(mInteract[1]))));
+      return res.end(envelope(inter));
     }
     // On-demand pricing (session 3.3 CU1): POST /alternatives/op/<op> primes the
     // op; a later GET /alternatives merges in its priced ghosts (replaying the

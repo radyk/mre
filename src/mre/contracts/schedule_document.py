@@ -81,6 +81,29 @@ Version history:
     (resolved via the identity map, never a UUID on screen) and the demand
     quantity, for the job-card hover. Both None when the source is absent.
   All three are additive with None defaults; a 1.5 consumer ignores them. MINOR.
+- 1.7 (2026-07-23, Session 4B.3a): additive — the SLICED (rolling-horizon) world.
+  A monolithic solve is ONE document rendering a whole plan; a rolling-horizon
+  solve (pilot_scale, R-SC2) renders the plant AS OF the reference origin — a
+  current window of committed + active-window work, with future work known but
+  not yet placed. Three additions, all None/empty-defaulted so a monolithic
+  document and its 1.6-and-earlier consumers are byte-unchanged:
+  * ``AssignmentBlock.commitment_state`` — ``committed`` (frozen-front: locked,
+    static, affords no gesture) or ``active_window`` (solved this window, not yet
+    frozen). None on a monolithic bar (there is no rolling frozen zone), so the
+    board renders it exactly as before.
+  * ``ScheduleDocument.rolling`` — a ``RollingBlock`` carrying the window metadata
+    (frozen-front boundary, active-window span, reference origin) and the
+    BEYOND-HORIZON list: admitted-but-unscheduled future work (known Demands with
+    no placement yet — id, name, due, and a cheap earliest-window estimate when
+    derivable, else absent). None on a monolithic document.
+  * The COMPLETENESS INVARIANT (the anti-silent-exclusion clause, docs/01 /
+    the Glass Box audit): every schedulable Demand in the snapshot appears in the
+    document EXACTLY ONCE — as a committed placement, an active-window placement,
+    a beyond-horizon tray entry, or (if the gate excluded it) a certificate-
+    visible exclusion. A Demand in none of these is a defect. The rolling
+    assembler enforces it; ``test_rolling_document`` counts.
+  MINOR: every field is additive with a None/empty default; a 1.6 consumer
+  ignores ``rolling`` and reads ``commitment_state`` as absent.
 """
 from __future__ import annotations
 
@@ -91,7 +114,7 @@ from pydantic import BaseModel, model_validator
 
 from mre.contracts.vocabularies import ScheduleStatus
 
-CONTRACT_VERSION = "1.6"
+CONTRACT_VERSION = "1.7"
 
 # Exact decomposition tolerance: cost components are currency values
 # accumulated in float; "exactly" means to the cent, matching the
@@ -217,6 +240,15 @@ class AssignmentBlock(BaseModel):
     #                                            on this lineage (R-DP8, 1.5): the
     #                                            board marks it and never lists it
     #                                            as a moved consequence
+    commitment_state: Optional[Literal["committed", "active_window"]] = None
+    #                                            rolling-horizon state (1.7): the
+    #                                            frozen front commits (``committed``
+    #                                            — locked, static, no gesture) while
+    #                                            the rest of the current window is
+    #                                            ``active_window`` (solved, not yet
+    #                                            frozen). None on a monolithic bar —
+    #                                            there is no rolling frozen zone, so
+    #                                            the board renders it unchanged.
 
 
 class ServiceOutcomeBlock(BaseModel):
@@ -319,6 +351,46 @@ class InteractionBlock(BaseModel):
     precedence_edges: list[PrecedenceEdgeBlock] = []
 
 
+class BeyondHorizonItem(BaseModel):
+    """One admitted-but-unscheduled future job (contract 1.7): known work with
+    no placement yet — it has no bar to draw, so it lives in the board's tray.
+    The tray is the ghost-job answer at board level: known work is ALWAYS visible
+    somewhere, so no schedulable demand can be silently invisible (the Glass Box
+    cardinal danger)."""
+    demand_ref: str                            # canonical UUID
+    work_order: Optional[str] = None           # external (customer vocabulary)
+    customer_name: Optional[str] = None        # external customer, via identity map
+    due: Optional[datetime] = None
+    earliest_window_estimate: Optional[datetime] = None
+    #                                            a CHEAP, honest estimate of when
+    #                                            this work must first enter a
+    #                                            scheduling window (its
+    #                                            latest-feasible-start, clamped to
+    #                                            the reference origin); None when
+    #                                            not derivable (no due). It is an
+    #                                            estimate, never a placement — the
+    #                                            AI answer hedges accordingly.
+
+
+class RollingBlock(BaseModel):
+    """The rolling-horizon (sliced) metadata (contract 1.7, R-SC2). Present only
+    on a rolling document; None on a monolithic one. The document renders the
+    plant AS OF ``reference_origin`` — the current planning moment — so the board
+    shows the current window (committed frozen front + active-window work) and the
+    tray shows everything beyond it."""
+    reference_origin: datetime                 # the roll's t0 (the current moment)
+    window_start: datetime                     # the current window [t0, t0+window)
+    window_end: datetime
+    frozen_until: datetime                     # the frozen-front boundary: work
+    #                                            starting before this is committed;
+    #                                            the board draws a labeled marker here
+    window_days: int
+    frozen_days: int
+    committed_count: int = 0                   # bars in the ``committed`` state
+    active_count: int = 0                      # bars in the ``active_window`` state
+    beyond_horizon: list[BeyondHorizonItem] = []   # the tray (may be empty)
+
+
 class Annotations(BaseModel):
     locks: list[str] = []                      # F1/A7 pins, rendered
     scenario: ScenarioBlock = ScenarioBlock()
@@ -341,3 +413,5 @@ class ScheduleDocument(BaseModel):
     service_outcomes: list[ServiceOutcomeBlock] = []
     annotations: Annotations = Annotations()
     interaction: Optional[InteractionBlock] = None   # contract 1.2 (Tier-0 payload)
+    rolling: Optional[RollingBlock] = None           # contract 1.7 (sliced world);
+    #                                                  None on a monolithic document

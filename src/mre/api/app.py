@@ -65,6 +65,13 @@ class SolveRequest(BaseModel):
     # so it runs strictly after the schedule is registered). Opt-in until
     # the publish workflow (Phase 3) makes warming-on-publish the default.
     pool: bool = False
+    # SLICED (rolling-horizon) solve (Session 4B.3a CU1, R-SC2): instead of a
+    # monolithic solve, render the plant AS OF the reference origin — the current
+    # window (committed frozen front + active window) plus a beyond-horizon tray.
+    # Registers a contract-1.7 rolling document like any other run.
+    sliced: bool = False
+    window_days: int = 7            # the rolling window length (the knee is ~7d)
+    frozen_days: int = 2            # the frozen-front length (<= window_days)
 
 
 class PoolRequest(BaseModel):
@@ -296,10 +303,11 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
             params=req.model_dump(),
         )
         files_dir = Path(sub["dir"]) / "files"
+        worker = _execute_rolling_solve if req.sliced else _execute_solve
         if req.sync:
-            _execute_solve(registry, run, files_dir, req, submission_id)
+            worker(registry, run, files_dir, req, submission_id)
         else:
-            background.add_task(_execute_solve, registry, run, files_dir, req,
+            background.add_task(worker, registry, run, files_dir, req,
                                 submission_id)
         return _ok({"run_id": run["id"], "status": registry.get_run(run["id"])["status"]},
                    status_code=202)
@@ -750,6 +758,45 @@ def _execute_solve(registry: Registry, run: dict, files_dir: Path,
         registry.create_pool(pool_id, document.schedule_id)
         _execute_pool(registry, pool_id,
                       registry.get_schedule(document.schedule_id), {})
+
+
+def _execute_rolling_solve(registry: Registry, run: dict, files_dir: Path,
+                           req: SolveRequest, submission_id: str) -> None:
+    """Rolling-horizon (sliced) solve worker (Session 4B.3a CU1): run the spine
+    once (prepare_plant), solve the CURRENT window (build_rolling_view), assemble
+    the contract-1.7 rolling document, and register it like any other schedule.
+    The document renders the plant AS OF the reference origin — a committed frozen
+    front + an active window + a beyond-horizon tray (the sliced world)."""
+    from mre.contracts.schedule_document import CONTRACT_VERSION
+    from mre.modules.rolling_horizon import prepare_plant, build_rolling_view
+    from mre.modules.schedule_assembler import assemble_rolling_document
+
+    run_id, out_dir = run["id"], Path(run["out_dir"])
+    try:
+        plant = prepare_plant(files_dir, out_dir, policy=req.policy)
+        view = build_rolling_view(
+            plant, window_days=req.window_days, frozen_days=req.frozen_days,
+            deterministic=req.deterministic, member_time_limit_s=req.time_limit)
+        idmap = plant.store.load_snapshot(plant.snapshot_id).read_identity_map()
+        schedule_id = f"rolling-{run_id[:12]}"
+        document = assemble_rolling_document(
+            plant=plant, view=view, schedule_id=schedule_id,
+            run_id=run_id, identity_map=idmap)
+        doc_path = _persist_document(document, out_dir)
+        registry.register_schedule(
+            schedule_id=document.schedule_id, run_id=run_id,
+            snapshot_id=plant.snapshot_id, status=document.status.value,
+            contract_version=CONTRACT_VERSION, document_path=doc_path,
+            submission_id=submission_id,
+        )
+        registry.finish_run(run_id, "succeeded", result={
+            "schedule_id": document.schedule_id, "sliced": True,
+            "committed": view.committed and len(view.committed) or 0,
+            "beyond_horizon": len(view.beyond_demand_ids),
+        })
+    except Exception as exc:  # noqa: BLE001 — background task must not raise
+        registry.finish_run(run_id, "failed",
+                            error=f"rolling solve: {type(exc).__name__}: {exc}")
 
 
 def _execute_pool(registry: Registry, pool_id: str, schedule_row: dict,

@@ -131,12 +131,17 @@ export function createBoard(hostEl, initialDoc) {
     // accepted, still-held pin) wears the persistent marker; siblings in the
     // family (transient pin-lock, reflow) are added later by rebind().
     const pinCls = a.standing_pin ? " standing-pin" : "";
+    // Session 4B.3a CU2: a rolling bar's commitment_state — a COMMITTED (frozen-
+    // front) bar is static/locked (R-M1 committed-drop semantics), an
+    // ACTIVE_WINDOW bar renders as today's normal bar. None on a monolithic bar.
+    const commitCls = a.commitment_state === "committed" ? " committed"
+      : a.commitment_state === "active_window" ? " active-window" : "";
 
     if (chunks.length <= 1) {
       // the common case: ONE range item, id = assignment_id (identity preserved).
       items.add({
         id: a.assignment_id, group: a.resource_id, start: s, end: e,
-        type: "range", className: `bar late-${band}${pinCls}`, editable: false,
+        type: "range", className: `bar late-${band}${pinCls}${commitCls}`, editable: false,
         style: barStyle(a, s, e), content: label, title: barTitle(a, label),
       });
       opToItem.set(a.operation_ref, a.assignment_id);
@@ -239,6 +244,9 @@ export function createBoard(hostEl, initialDoc) {
   // now-line from the run's reference date (the 3.3b epoch) — never wall clock;
   // absent when the run is "now"-anchored (reference_date null).
   markers.setNow(doc.reference_date || null);
+  // Session 4B.3a CU2: the rolling frozen-front boundary — a labeled vertical
+  // marker at the frozen_until timestamp; work left of it is committed/locked.
+  markers.setFrozen(doc.rolling ? doc.rolling.frozen_until : null);
   // shift boundaries: the union of every row's regular shift edges in span.
   function refreshShiftTicks() {
     const set = new Set();
@@ -684,6 +692,17 @@ export function createBoard(hostEl, initialDoc) {
     },
     // marker overlay probe (CU2): now-line drift + which markers/ticks are drawn.
     markerProbe() { return markers.probe(); },
+    // Session 4B.3a CU2: the sliced-world probe — the rolling block + the count of
+    // each commitment_state currently on the board (committed / active_window).
+    rollingProbe() {
+      const states = {};
+      for (const a of doc.assignments) {
+        const k = a.commitment_state || "none";
+        states[k] = (states[k] || 0) + 1;
+      }
+      return { rolling: doc.rolling || null, states,
+               tray: (doc.rolling && doc.rolling.beyond_horizon) || [] };
+    },
     _debug: { opToItem, woToItems, itemToOp, doc },
   };
 }

@@ -160,6 +160,21 @@
   --marker-release: var(--bar-ontime);
   --marker-label-ink: #ffffff;
   --tick-shift: rgba(120, 124, 136, 0.35);        /* subtle shift boundary */
+  /* Rolling frozen-front boundary (Session 4B.3a CU2): a deep teal — the "past
+   * this line is committed" divider, distinct from now (graphite) / due / release. */
+  --marker-frozen: #0f6b6b;
+  --marker-frozen-label-bg: #0f6b6b;
+
+  /* Sliced world (Session 4B.3a CU2): a committed (frozen-front) bar reads
+   * LOCKED — a darker inset edge + a faint lock tint over its lateness fill; the
+   * beyond-horizon tray = a recessed paper panel with a teal accent. */
+  --committed-edge: rgba(15, 107, 107, 0.85);
+  --committed-veil: rgba(15, 107, 107, 0.10);
+  --bt-bg: #efece5;
+  --bt-edge: var(--grid);
+  --bt-accent: #0f6b6b;
+  --bt-ink: var(--ink);
+  --bt-row-bg: var(--panel-float);
 
   /* Operation anatomy (CU5). Setup = a darker leading hatch on the bar; the
    * split-op kinship connector = a dashed slate line across each pause. */

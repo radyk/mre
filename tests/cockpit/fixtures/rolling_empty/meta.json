@@ -1,0 +1,10 @@
+{
+  "id": "sched-rolling-empty",
+  "schedule_id": "sched-rolling-empty",
+  "status": "proposed",
+  "contract_version": "1.7",
+  "grade": "ACCEPTED",
+  "costing_grade": "C2",
+  "created_at": "2026-01-05T09:41:00Z",
+  "generation": 1
+}

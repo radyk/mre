@@ -18,6 +18,7 @@ specimen fails here.
 """
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 
@@ -247,6 +248,39 @@ def sabotaged(tmp_path_factory):
                    "--solver-seed", "0"])
     assert rc == 0
     return _explainer_for(out, "snap-s")
+
+
+def _mutate_earliness_forcing(sub: Path) -> None:
+    """Session 4B.3a CU4b: declare a positive earliness_value and give PRESS-SLOW a
+    hair-higher rate than PRESS-FAST. The rate delta is economically negligible
+    (monolithic solves don't add earliness to the objective — the extractor uses it
+    only for ATTRIBUTION), so the capacity-forced op stays on PRESS-SLOW (ORD-06,
+    because PRESS-FAST holds the other two bracket ops), but the extractor now
+    attributes it to EARLINESS_PREFERENCE by PRICE RANK. That is the docs/02 §4.2
+    named limitation in the flesh — the real cause is capacity forcing, so the
+    answer MUST hedge (name the preference AND that the cheaper machine may just
+    have been busy)."""
+    cm_path = sub / "cost_model.json"
+    cm = json.loads(cm_path.read_text(encoding="utf-8"))
+    cm["refinements"]["earliness_value"] = 0.05
+    cm["refinements"]["resource_rates"]["PRESS-SLOW"] = 61.0
+    cm_path.write_text(json.dumps(cm, indent=2), encoding="utf-8")
+
+
+@pytest.fixture(scope="module")
+def earliness_forcing(tmp_path_factory):
+    """A Glass Box solve where ORD-06 is capacity-forced onto the (now marginally
+    dearer) PRESS-SLOW with a positive earliness_value — so the extractor
+    attributes the placement to EARLINESS_PREFERENCE even though capacity, not
+    earliness, actually bound it (docs/02 §4.2). CU4b's hedge specimen."""
+    sub = _copy_dataset(tmp_path_factory.mktemp("voice_ef_in"))
+    _mutate_earliness_forcing(sub)
+    out = tmp_path_factory.mktemp("voice_ef_out")
+    rc = mre_main(["--submission", str(sub), "--out", str(out),
+                   "--snapshot-id", "snap-ef", "--solver-workers", "1",
+                   "--solver-seed", "0"])
+    assert rc == 0
+    return _explainer_for(out, "snap-ef")
 
 
 def _answer(explainer: Explainer, q: str, ctx=None) -> str:
@@ -487,7 +521,31 @@ class TestAuditCorpusSabotaged:
 
 
 @pytest.mark.slow
-def test_cu10_zero_confident_wrong(clean, sabotaged):
+class TestAuditCorpusEarlinessHedge:
+    """Session 4B.3a CU4b — the attribution-limitation specimen. ORD-06 is
+    capacity-forced onto PRESS-SLOW, but a positive earliness_value makes the
+    extractor attribute it to EARLINESS_PREFERENCE (docs/02 §4.2: dearer-than-
+    cheapest ⇒ EARLINESS_PREFERENCE, by price rank, with no occupancy check). A
+    graded-correct answer HEDGES — it names the preference AND that capacity
+    pressure may bind; a confidently unhedged single-cause answer is wrong."""
+
+    def test_why_on_dearer_machine_hedges_to_the_limitation(self, earliness_forcing):
+        res_and = _ask(earliness_forcing, "why is ORD-06 on PRESS-SLOW")
+        res, a = res_and
+        assert res.route == "why-on-machine"
+        low = a.lower()
+        # names the placement and the earliness attribution…
+        assert "ord-06" in low and "press-slow" in low
+        assert "earliness" in low
+        # …AND hedges to the limitation (does NOT claim earliness as the sole
+        # cause): the cheaper machine may simply have been busy (capacity forcing).
+        assert "busy" in low or "capacity" in low, (
+            "the answer must hedge — a confident single-cause EARLINESS_PREFERENCE "
+            "answer is wrong (docs/02 §4.2 attribution limitation)")
+
+
+@pytest.mark.slow
+def test_cu10_zero_confident_wrong(clean, sabotaged, earliness_forcing):
     """The measurement: EVERY audit-corpus question lands correct-and-on-question,
     honest-bridge, or honest-refusal — zero confident-wrong. A confident-wrong
     answer is one that answers a DIFFERENT question than asked, or renders
@@ -540,6 +598,11 @@ def test_cu10_zero_confident_wrong(clean, sabotaged):
         ("when does ORD-13 finish", clean, None, lambda a: "completes" in a.lower()),
         ("why is this on CUT-01", clean, {"selection": {"order": "ORD-05"}},
          lambda a: "ord-05" in a.lower()),
+        # Session 4B.3a CU4b — the attribution-limitation specimen. A
+        # capacity-forced placement attributed to EARLINESS_PREFERENCE must HEDGE;
+        # a confident single-cause answer is confident-wrong (docs/02 §4.2).
+        ("why is ORD-06 on PRESS-SLOW", earliness_forcing, None,
+         lambda a: "busy" in a.lower() or "capacity" in a.lower()),
     ]
     wrong = []
     for q, ex, ctx, ok in corpus:

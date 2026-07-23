@@ -30,11 +30,11 @@ export default defineConfig({
     { name: "logic", testMatch: /(legality|rowstats|freshness)\.spec\.mjs$/ },
     {
       name: "light", metadata: { theme: "light" },
-      testMatch: /(cockpit|gesture|rehearsal|planner)\.spec\.mjs$/,
+      testMatch: /(cockpit|gesture|rehearsal|planner|rolling)\.spec\.mjs$/,
     },
     {
       name: "dark", metadata: { theme: "dark" },
-      testMatch: /(cockpit|gesture|rehearsal|planner)\.spec\.mjs$/,
+      testMatch: /(cockpit|gesture|rehearsal|planner|rolling)\.spec\.mjs$/,
     },
   ],
   webServer: {

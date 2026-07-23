@@ -25,6 +25,7 @@ export function createMarkers(timeline) {
   let nowMs = null;              // reference-date line (persistent)
   let order = null;             // {due, release, label} for the scoped order
   let shiftTicks = [];          // ms boundaries
+  let frozenMs = null;          // rolling frozen-front boundary (Session 4B.3a CU2)
 
   const toX = (ms) => {
     try { return timeline.body.util.toScreen(new Date(ms)); } catch { return null; }
@@ -62,6 +63,8 @@ export function createMarkers(timeline) {
       el.style.left = `${x}px`;
       overlay.appendChild(el);
     }
+    // the rolling frozen-front boundary: everything LEFT of it is committed/locked.
+    if (frozenMs != null) line("frozen", frozenMs, "frozen ▸");
     if (order) {
       if (order.release != null) line("release", order.release, `release · ${order.label}`);
       if (order.due != null) line("due", order.due, `due · ${order.label}`);
@@ -77,6 +80,8 @@ export function createMarkers(timeline) {
   return {
     el: overlay,
     setNow(iso) { nowMs = clsSafe(iso); redraw(); },
+    // the rolling frozen-front boundary (Session 4B.3a CU2); null clears it.
+    setFrozen(iso) { frozenMs = clsSafe(iso); redraw(); },
     // scope the due/release markers to one order (null clears them).
     setOrder(o) {
       order = o && (o.due != null || o.release != null)
@@ -97,6 +102,8 @@ export function createMarkers(timeline) {
         nowDriftPx: (nowX != null && canonical != null) ? +Math.abs(nowX - canonical).toFixed(1) : null,
         due: !!overlay.querySelector(".marker.due"),
         release: !!overlay.querySelector(".marker.release"),
+        frozen: !!overlay.querySelector(".marker.frozen"),
+        frozenMs,
         ticks: overlay.querySelectorAll(".tick.shift").length,
       };
     },

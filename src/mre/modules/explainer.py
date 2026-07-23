@@ -24,7 +24,7 @@ from typing import Any, Optional
 
 from mre.modules.evidence_index import EvidenceIndex
 from mre.modules.planner_language import (
-    compose_finding_sentence, driver_phrase,
+    compose_finding_sentence, driver_phrase, driver_hedge,
 )
 
 # The fallback menu shown when a question doesn't route. Worded in the PLANNER'S
@@ -916,10 +916,17 @@ class Explainer:
         ]
         # The assignment's driver in plain language, so the answer leads with a
         # conversational sentence (Session 4A.2d) rather than a bare decision dump.
+        # Session 4B.3a CU4b: an EARLINESS_PREFERENCE attribution is by PRICE RANK
+        # only (docs/02 §4.2), so append the honest hedge — it cannot distinguish
+        # earliness from capacity forcing; a confident single-cause answer would
+        # grade wrong on the zero-confident-wrong axis.
         cause = None
         for r in assignment_records:
             cause = driver_phrase(r.get("driver"))
             if cause:
+                hedge = driver_hedge(r.get("driver"))
+                if hedge:
+                    cause = f"{cause} {hedge}"
                 break
 
         return ExplanationBundle(

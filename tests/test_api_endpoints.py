@@ -177,7 +177,7 @@ class TestScheduleDocument:
     def test_document_validates_against_contract(self, api):
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
         parsed = ScheduleDocument.model_validate(doc)
-        assert parsed.contract_version == "1.6"
+        assert parsed.contract_version == "1.7"
         assert parsed.schedule_id == api.schedule_id
         assert parsed.run_id == api.run["id"]
         assert parsed.solver.deterministic is True
@@ -227,7 +227,7 @@ class TestScheduleMeta:
     def test_meta_joins_the_certificate_grade(self, api):
         meta = _data(api.client.get(f"/schedules/{api.schedule_id}/meta"))
         assert meta["id"] == api.schedule_id
-        assert meta["contract_version"] == "1.6"
+        assert meta["contract_version"] == "1.7"
         assert meta["grade"] == "ACCEPTED"
         assert meta["costing_grade"] == "C1"
         assert meta["submission_id"] == api.submission["submission_id"]
@@ -262,7 +262,7 @@ class TestScheduleInteraction:
         data = _data(api.client.get(
             f"/schedules/{api.schedule_id}/interaction"))
         assert data["schedule_id"] == api.schedule_id
-        assert data["contract_version"] == "1.6"
+        assert data["contract_version"] == "1.7"
         block = InteractionBlock.model_validate(data["interaction"])
         # one entry per scheduled op, each with its eligible set + the graph
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
@@ -611,3 +611,52 @@ class TestSandbox:
 
     def test_sandbox_404_for_unknown_schedule(self, api):
         _error(api.client.post("/schedules/nope/sandbox", json={}), 404)
+
+
+# ---------------------------------------------------------------------------
+# Rolling (sliced) solve — Session 4B.3a CU1
+# ---------------------------------------------------------------------------
+
+class TestRollingSolve:
+    """A sliced (rolling-horizon) solve registers a contract-1.7 rolling document
+    like any other run: the API serves it through the same registry, and the
+    served document carries the sliced world (committed / active / beyond-horizon
+    tray) with the completeness invariant enforced by the assembler."""
+
+    @pytest.mark.slow
+    def test_sliced_solve_registers_a_rolling_document(self, tmp_path_factory):
+        root = tmp_path_factory.mktemp("api_rolling_root")
+        sub_src = tmp_path_factory.mktemp("sub_roll") / "pilot"
+        generate(sub_src, scenario="pilot_scale", orders=30, seed=1)
+
+        client = TestClient(create_app(data_root=root))
+        sub = _data(client.post("/submissions", json={"path": str(sub_src)}))
+        assert sub["grade"] != "REJECTED"
+
+        solve = _data(client.post(
+            f"/submissions/{sub['submission_id']}/solve",
+            json={"sliced": True, "window_days": 10, "frozen_days": 1,
+                  "time_limit": 10, "deterministic": True, "sync": True},
+        ), status=202)
+        run = _data(client.get(f"/runs/{solve['run_id']}"))
+        assert run["status"] == "succeeded", run.get("error")
+        assert run["result"]["sliced"] is True
+
+        sid = run["result"]["schedule_id"]
+        doc = _data(client.get(f"/schedules/{sid}"))
+        assert doc["contract_version"] == "1.7"
+        assert doc["rolling"] is not None
+        r = doc["rolling"]
+        # the sliced world: committed + active bars, and a populated tray.
+        states = {}
+        for a in doc["assignments"]:
+            states[a["commitment_state"]] = states.get(a["commitment_state"], 0) + 1
+        assert states.get("committed", 0) > 0
+        assert r["committed_count"] == states.get("committed", 0)
+        assert len(r["beyond_horizon"]) > 0            # future work in the tray
+        # window metadata is present and coherent.
+        assert r["frozen_days"] == 1 and r["window_days"] == 10
+        assert r["frozen_until"] and r["reference_origin"]
+        # the schedule appears in the default listing like any other run.
+        listing = _data(client.get("/schedules"))["schedules"]
+        assert any(s["id"] == sid for s in listing)
