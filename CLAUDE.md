@@ -100,6 +100,61 @@ path referencing the OneDrive path is a defect to fix. Relocation confirmed: `gi
 fsck --full` clean; non-slow suite green (the one defect — an editable-install
 `.pth` still pointing at OneDrive — was repointed at `C:\dev\mre\src`).
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.3b — the two-beat
+sandbox (R-T2 implemented) 2026-07-23.** 4B.3a rendered the sliced world read-only;
+4B.3b makes the Tier-2 sandbox + forced-alternative gestures a TWO-BEAT interaction
+per R-T2. **No solver/model/schedule-document changes** — the two-beat rides module
+dataclasses + new API endpoints, so monolithic AND rolling goldens stay
+byte-identical. Deterministic throughout. **CU1 — beat one, the feasibility ghost:**
+`sandbox.feasibility_ghost()` + `POST /schedules/{id}/sandbox/feasibility` — a
+FIRST-FEASIBLE solve under a small deterministic budget (`FEASIBILITY_BUDGET_S=2.0`
++ CP-SAT `stop_after_first_solution`, an additive default-off `SolveRunner` knob)
+returning feasibility + placement (positions only) + a `correlation_id` DERIVED FROM
+THE PIN. The `FeasibilityGhost` type carries NO money BY CONSTRUCTION (no
+cost/delta/price/objective field; `test_feasibility_ghost_has_no_monetary_field`
+asserts field ABSENCE against a `_MONEY_FIELD_TOKENS` blocklist). Beat one RELAXES
+the lineage's committed work (pins only the dragged op) — which is what lets beat
+two contradict it — and MINTS NOTHING (`test_beat_one_mints_nothing`: no child
+snapshot, no entity, no Decision). **CU2 — beat two, the LAYERED priced card:**
+`sandbox_pin_resolve` enriched via ONE in-memory extract diffed against the base.
+ALWAYS-VISIBLE (decision-sufficient): signed `cost_delta_abs`; feasible/rejected;
+the moved op's placement; `dominant_driver` in `driver_phrase` language, HEDGED by
+price rank (docs/02 §4.2); `affected_orders` (top-N, per-Demand tardiness-$ +
+lateness-min deltas — never per-WorkPackage); `lateness_delta_min`; and
+`no_committed_work_changes` ASSERTED against the moved-set (R-DP8 standing pins hold
+committed work immovable). DETAIL (a disclosure, default-closed feel token): cost
+decomposition by ledger line (tardiness/setup/production-regular/production-overtime
++ explicit "other" REMAINDER) summing EXACTLY to the verdict (`test_beat_two_
+decomposition_sums_exactly` — rollup_of) + operational consequences. Ghost→card
+SUPERSEDES through a perceivable transition (`sandbox.supersede_ms` token). (A base
+ServiceOutcome stores `lateness` as an ISO duration, the fresh extract as
+`lateness_minutes`; `_svc_lateness_min` normalizes both — found by a real-solve
+probe.) **CU3 — the contradiction (R-T2(4)), SHOWN not reconciled:** a pure
+`beat_two_contradicts` + its JS mirror. INFEASIBLE is FORCED end-to-end (two ops on
+one resource; hold B as a standing pin, drop A onto B's slot → beat one feasible
+[relaxed], beat two infeasible [holds B] — `test_contradiction_infeasible_is_forced_
+via_a_standing_pin`, runs not skips; frontend R-M1 snap-back). MOVED is unit-proven +
+frontend-exercised and NAMED: a pinned op is pinned to the SAME (resource,start) in
+BOTH beats, so it can never relocate between exact-pin beats — what diverges in a
+real solve is the CONSEQUENCE set (the moved-set already shows it); the frontend
+relocation path is exercised via a canned `feasibility.json`. **CU4 — forced
+alternatives inherit the shape:** a cross-machine pin runs the identical two-beat
+path (`test_forced_alternative_gesture_runs_the_same_two_beat_path`). **"Ask why"**
+ships but routes to a graceful NAMED-DEBT response — the SAME R-AI1 rolling-explainer
+connector debt (docs/04 4B.3a entry EXTENDED with this second blocked consumer, not
+double-booked). **Rolling active-window wiring is NAMED debt** (the rolling snapshot
+persists no incumbent + a rolling doc carries no interaction payload — connector-era
+work); the two-beat is DELIVERED + PROVEN on real monolithic solves + the gesture
+fixtures, rolling-READY (committed work held via standing pins). **Non-slow Python
+1239 passed, 0 failed** (+12); slow two-beat **15** (no skips) + sandbox/planner_edit
+slow ladder green; **cockpit JS 156 → 168** (+12, both themes). Goldens
+byte-identical. See the docs/04 2026-07-23 Session 4B.3b amendment and docs/07 v2.36.
+Lesson: a two-beat is honest only if beat one CANNOT lie — no money BY CONSTRUCTION
+(field absence, tested); make beat one a real RELAXATION so beat two can genuinely
+contradict it, forcing the contradiction you can (standing-pin conflict) end-to-end
+and naming the one you can't; and hold the priced card to the ledger — the lines
+SUM to the verdict, with an explicit remainder, or it claims what evidence can't back.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.3a — the cockpit
 renders the SLICED WORLD (read-only) 2026-07-23.** Phase 3's cockpit rendered ONE
 monolithic solve; pilot_scale produces rolling output (committed/frozen work + an

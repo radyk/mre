@@ -7085,3 +7085,144 @@ you can source (committed/active are solved placements; the tray is known work w
 no bar, shown as a tray, never faked onto the timeline); and where an attribution
 is by price rank only, the honest answer HEDGES rather than name a single cause it
 cannot actually prove.
+
+## 2026-07-23 — Session 4B.3b: the two-beat sandbox (R-T2 implemented)
+
+4B.3a made the cockpit render the sliced world READ-ONLY. This session makes the
+Tier-2 sandbox and forced-alternative gestures INTERACTIVE as a TWO-BEAT
+interaction per R-T2 (transcribed verbatim in the 2026-07-23 R-T2 amendment above).
+Backend spine + API + frontend + tests; NO solver/model/contract-document changes
+(the schedule-document contract is untouched — the two-beat rides module dataclasses
++ new API endpoints, so the monolithic AND rolling goldens stay byte-identical).
+Deterministic throughout (PYTHONHASHSEED=0, workers 1, seed 42/0).
+
+**CU1 — beat one: the feasibility ghost (no money, by construction).** A new
+`sandbox.feasibility_ghost()` runs a FIRST-FEASIBLE solve under a SMALL
+deterministic budget (`FEASIBILITY_BUDGET_S=2.0`, `max_deterministic_time=1.0` +
+CP-SAT `stop_after_first_solution`, an additive `SolveRunner` knob, default off).
+It returns a `FeasibilityGhost` dataclass that CANNOT represent money BY
+CONSTRUCTION — it has no cost/delta/price/objective field; `test_two_beat`'s
+`test_feasibility_ghost_has_no_monetary_field` asserts field ABSENCE (against a
+`_MONEY_FIELD_TOKENS` blocklist), not emptiness. It carries only feasibility +
+placement (resource + start/end, positions only) + a `correlation_id`. The
+correlation id is DERIVED PURELY FROM THE PIN (`correlation_id_for(snapshot, op,
+resource, start)`), so beat one and beat two compute the SAME id with no server
+state. Beat one is a RELAXATION of the full budgeted solve: it pins ONLY the
+dragged op and does NOT hold the lineage's committed/standing work — which is
+exactly what lets beat two contradict it (CU3). API: `POST /schedules/{id}/
+sandbox/feasibility`. **R-T2(5) — mints nothing:** `test_beat_one_mints_nothing`
+asserts no child snapshot, no new canonical entity, and zero Decision records after
+a beat-one call (its Reporter records are read-only telemetry under the sandbox run
+dir, exactly as the priced re-solve's are).
+
+**CU2 — beat two: the LAYERED priced card.** `sandbox_pin_resolve` (beat two) is
+enriched: ONE in-memory extract of the re-solve gives the new ledger + per-Demand
+service outcomes + drivers; diffed against the base (its persisted summary + service
+outcomes) it produces the two layers.
+  * ALWAYS-VISIBLE (decision-sufficient on its own): signed total `cost_delta_abs`;
+    feasible/rejected; the moved op's final placement (the pinned move); `dominant_
+    driver` in `driver_phrase` language, HEDGED where the attribution is by price
+    rank (docs/02 §4.2 EARLINESS_PREFERENCE, via `driver_hedge`); `affected_orders`
+    (top-N by |tardiness Δ|, each with per-Demand tardiness-$ and lateness-min
+    deltas — per-Demand truth, never per-WorkPackage); `lateness_delta_min` (net
+    tardiness-minutes introduced/recovered); and `no_committed_work_changes` — the
+    standing R-DP8 invariant, ASSERTED against the moved-set (a standing-pinned op
+    is structurally excluded, so it is True by construction and `test_no_committed_
+    work_changes_holds_with_a_standing_pin` pins it).
+  * DETAIL (same card, a native disclosure defaulting closed — a feel token
+    `sandbox.detail_open`): the cost decomposition by ledger line (tardiness /
+    setup / production-regular / production-overtime + an explicit "other placement
+    changes" REMAINDER), summing EXACTLY to `cost_delta_abs` — `test_beat_two_
+    decomposition_sums_exactly_to_the_verdict` enforces the rollup_of discipline
+    (the card may never claim arithmetic the ledger cannot back). Plus the full
+    operational consequences (the moved-set line items, from 3.3 CU3, each with its
+    occupancy "why"). NB: a persisted base ServiceOutcome stores `lateness` as an
+    ISO 8601 duration, the fresh extract as `lateness_minutes` — `_svc_lateness_min`
+    normalizes both (found + fixed by a real-solve probe: base was silently read as
+    0 minutes before the fix).
+  The frontend `sandboxui.js` renders both layers; the always-visible layer is
+  decision-sufficient without the detail layer (asserted in `gesture.spec`).
+  SUPERSESSION (R-T2(3)): the beat-one ghost card is replaced by the priced card
+  through a PERCEIVABLE transition — `.delta-card.superseded` + `.carry-bar.pricing-
+  ghost` fade, timed by the `sandbox.supersede_ms` feel token (never hardcoded).
+
+**CU3 — the contradiction path (R-T2(4)), SHOWN not reconciled.** Beat two may
+contradict beat one two ways; a pure detector `sandbox.beat_two_contradicts` (and
+its JS mirror in `controller.js`) classifies both, and the frontend shows each.
+  * INFEASIBLE — FORCED with a REAL fixture, end-to-end. Because beat one RELAXES
+    the lineage's committed work while beat two HOLDS it, a drop that overlaps a
+    standing commitment is FEASIBLE at beat one but INFEASIBLE at beat two. `test_
+    contradiction_infeasible_is_forced_via_a_standing_pin` constructs this on the
+    distinct fixture (two ops on one resource; hold B as a standing pin, drop A onto
+    B's slot) and asserts beat one feasible / beat two infeasible / detector fires —
+    it runs, not skips. The frontend shows it as an R-M1 rejection snap-back with the
+    reason.
+  * MOVED — the pinned op is pinned to the SAME (resource, start) in BOTH beats, so
+    under exact-pin semantics the PINNED op can never relocate between beats (a real
+    property, NAMED here). Forcing a real backend divergence of the pinned op is
+    therefore impossible with current constraint coverage; per the session's
+    fallback instruction, the MOVED code path is proven at UNIT level
+    (`TestContradictionDetector`, hand-built inputs) and exercised in the frontend
+    via a canned `feasibility.json` whose ghost start is shifted relative to the
+    pin (`gesture.spec` asserts the ghost visibly relocates — `.carry-bar.
+    relocating` — before the priced card lands). What DOES diverge in a real solve
+    is the CONSEQUENCE set (neighbours settle differently because beat two holds
+    committed work); the moved-set already renders that. Gap named, not papered.
+
+**CU4 — forced alternatives inherit the shape.** A forced-alternative gesture
+(pin an op to a CHOSEN, non-incumbent resource) is the IDENTICAL two-beat path —
+same `feasibility_ghost` → `sandbox_pin_resolve`, a cross-machine pin, no parallel
+machinery. `test_forced_alternative_gesture_runs_the_same_two_beat_path` drives it
+end-to-end (beat one feasible, beat two prices it, its decomposition still sums
+exactly); the cockpit drop-onto-a-priced-ghost path renders the same layered card.
+
+**CU2 — the "ask why" affordance + the NAMED-DEBT extension.** The card's "Ask why"
+button hands a SECOND-ORDER question (alternatives / causal depth) to the
+conversational layer WITH the sandbox context. The Interpreter/Explainer reads a
+persisted snapshot, not this live sandbox context — so the affordance ships but
+routes to a GRACEFUL NAMED-DEBT response rather than a broken hand-off. This is the
+SAME R-AI1 connector debt the 4B.3a rolling-explainer named; extending that entry
+rather than opening a new one (per the session instruction "do NOT double-book"):
+the R-AI1 rolling-explainer connector now has TWO blocked consumers — (1) the three
+rolling questions (`rolling_questions.py`, 4B.3a), and (2) the sandbox "ask why"
+hand-off (4B.3b). Both wait on a rolling/sandbox run persisting a canonical snapshot
+the Explainer reads; until then each is answered by its own reviewable authored
+surface (the deterministic rolling answers; the graceful named-debt tip), never an
+ad-hoc route bolted onto the router.
+
+**Rolling active-window scope (named honestly).** The session framed the two-beat
+"against the ACTIVE WINDOW of a rolling document." The two-beat MECHANISM is
+rolling-CORRECT — beat two holds committed work immovable via standing pins ("no
+committed work changes" is by construction, whatever holds the commitments), and the
+INFEASIBLE contradiction is precisely a committed-work conflict. But wiring it
+against a LIVE rolling document is blocked by two prerequisites the rolling path does
+not yet build: (a) the rolling snapshot persists NO window-0 assignments (prepare_
+plant runs M0–M4 only; build_rolling_view extracts in-memory with snapshot_writer=
+None), so the sandbox has no incumbent to warm-start/diff against; and (b) a rolling
+document carries no interaction payload, so the cockpit cannot even compute Tier-0
+for a rolling board. Both are the SAME connector-era work as the R-AI1 debt (a
+rolling run persisting a canonical snapshot). This session therefore delivers and
+PROVES the two-beat on the substrate where the Tier-2 sandbox lives today — real
+monolithic solves + the gesture fixtures — with the committed-work handling
+generic (standing pins) so it is rolling-ready. The rolling-document wiring is
+NAMED debt, not silently skipped. Under-delivered vs. the headline "active window";
+delivered: the full two-beat contract, provable.
+
+**Verification.** Non-slow Python **1239 passed, 0 failed** (+12: 9 fast two-beat
+contract/correlation/detector units + 3 API two-beat). Slow: `test_two_beat` **15
+passed** (beat-one/beat-two correlation, decomposition-sums-exactly, no-committed-
+work, mints-nothing, the FORCED infeasible contradiction, forced-alt e2e — no
+skips); sandbox + planner_edit slow ladder **23 passed**. Cockpit JS **156 → 168**
+(+12: 6 new two-beat gesture tests × both themes — feasibility ghost, layered card,
+infeasible + moved contradictions, ask-why named-debt, forced-alt). Monolithic AND
+rolling goldens byte-identical; rolling determinism golden green. Same-commit spec:
+this docs/04 amendment, docs/07 v2.36, CLAUDE.md.
+
+Lesson: a two-beat interaction is honest only if beat one CANNOT lie — make the
+beat-one type carry no money BY CONSTRUCTION (field absence, tested), not by
+convention; make beat one a real RELAXATION (drop the committed work) so beat two
+can genuinely contradict it, and force the contradiction you CAN (the standing-pin
+conflict) end-to-end while naming the one you can't (a pinned op never relocates
+between exact-pin beats); and hold the priced card to the ledger — the decomposition
+lines must SUM to the verdict, with an explicit remainder, or the card is making a
+claim the evidence can't back.

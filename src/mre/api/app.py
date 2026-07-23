@@ -104,16 +104,33 @@ class OpAlternativesRequest(BaseModel):
     sync: bool = False
 
 
+class FeasibilityRequest(BaseModel):
+    """BEAT ONE of the R-T2 two-beat interaction: a first-feasible feasibility
+    check for a dropped bar under a SMALL deterministic budget. Returns
+    feasibility + placement + a correlation id — NEVER a monetary quantity
+    (R-T2(1)). Mints nothing (R-T2(5)). Beat two (POST /sandbox) prices it."""
+    pin_op_id: Optional[str] = None
+    pin_resource_id: Optional[str] = None
+    pin_start_iso: Optional[str] = None
+    budget_s: Optional[float] = None    # override the FEASIBILITY_BUDGET_S token
+    deterministic: bool = True
+
+
 class SandboxRequest(BaseModel):
     """Tier-2 sandbox re-solve for a dropped bar (R-DP1/R-T1c). Pin one op at
     (machine + time exactly as displayed) and re-solve its surroundings under a
     hard, visible budget. Omitting the pin fields pins the first incumbent op at
-    its own placement — the latency-floor case the CI regression uses."""
+    its own placement — the latency-floor case the CI regression uses.
+
+    ``correlation_id`` (R-T2, Session 4B.3b) links this priced BEAT TWO to its
+    BEAT ONE feasibility ghost; the response echoes the server-recomputed id so a
+    beat-two contradiction is always attributable to the same gesture."""
     pin_op_id: Optional[str] = None
     pin_resource_id: Optional[str] = None
     pin_start_iso: Optional[str] = None
     budget_s: Optional[float] = None    # override the SANDBOX_BUDGET_S token
     deterministic: bool = True
+    correlation_id: Optional[str] = None
 
 
 class AcceptRequest(BaseModel):
@@ -519,6 +536,27 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
     # holds for at most the budget (the cockpit shows a countdown and never
     # blocks its own board during the wait).
     # ------------------------------------------------------------------
+
+    @app.post("/schedules/{schedule_id}/sandbox/feasibility")
+    def sandbox_feasibility(schedule_id: str, req: FeasibilityRequest):
+        """BEAT ONE (R-T2): a first-feasible feasibility ghost for a dropped bar.
+        Feasibility verdict + placement + a correlation id, NO money (R-T2(1));
+        mints nothing (R-T2(5)). The cockpit renders the placement in the R-M1
+        ghost class, then fires POST /sandbox (beat two) to price it."""
+        from mre.modules.sandbox import FEASIBILITY_BUDGET_S, feasibility_ghost
+        row = _live_schedule(registry, schedule_id)
+        if row["is_scenario"]:
+            raise HTTPException(409, "sandbox re-solves run against a base "
+                                     "schedule; a what-if scenario is itself one")
+        run = registry.get_run(row["run_id"])
+        result = feasibility_ghost(
+            out_dir=Path(run["out_dir"]), snapshot_id=row["snapshot_id"],
+            pin_op_id=req.pin_op_id, pin_resource_id=req.pin_resource_id,
+            pin_start_iso=req.pin_start_iso,
+            budget_s=req.budget_s if req.budget_s is not None else FEASIBILITY_BUDGET_S,
+            deterministic=req.deterministic,
+        )
+        return _ok(result.summary())
 
     @app.post("/schedules/{schedule_id}/sandbox")
     def sandbox(schedule_id: str, req: SandboxRequest):

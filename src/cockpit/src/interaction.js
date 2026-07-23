@@ -13,7 +13,7 @@
 // the background, so a schedule-version change is picked up without ever
 // blocking on the network.
 import {
-  getScheduleInteraction, getScheduleAlternatives, postSandbox,
+  getScheduleInteraction, getScheduleAlternatives, postSandbox, postFeasibility,
   priceOpAlternatives, getAlternativeMember, postAccept, postPublish,
   getSchedule,
 } from "./api.js";
@@ -57,6 +57,7 @@ export function wireInteraction(id, board, hook, opts = {}) {
   // coverage + full-consequences work needs (session 3.3 CU1/CU4).
   const api = {
     postSandbox,
+    postFeasibility,          // R-T2 beat one (Session 4B.3b)
     priceOpAlternatives,
     getAlternativeMember,
     getAlternatives: getScheduleAlternatives,

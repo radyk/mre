@@ -64,6 +64,7 @@ class SolveRunner:
         num_search_workers: Optional[int] = None,
         random_seed: Optional[int] = None,
         deterministic_time: Optional[float] = None,
+        stop_after_first_solution: bool = False,
     ) -> None:
         """num_search_workers/random_seed are optional determinism knobs.
 
@@ -85,6 +86,12 @@ class SolveRunner:
         # rolling-horizon measurement (Session 4B.2) uses it so a budgeted window
         # solve is a deterministic measurement, not a wall-clock lottery.
         self._deterministic_time = deterministic_time
+        # Stop at the FIRST feasible solution (Session 4B.3b, R-T2 beat one): a
+        # cheap "is this placement possible at all" verdict — a RELAXATION of the
+        # full budgeted solve, never a priced/optimal one. With workers=1 + a fixed
+        # seed the first-feasible solution is reproducible. Off by default so every
+        # existing caller (the priced/optimal path) is byte-unchanged.
+        self._stop_after_first_solution = stop_after_first_solution
 
     def solve(
         self,
@@ -103,6 +110,8 @@ class SolveRunner:
             solver.parameters.random_seed = self._random_seed
         if self._deterministic_time is not None:
             solver.parameters.max_deterministic_time = self._deterministic_time
+        if self._stop_after_first_solution:
+            solver.parameters.stop_after_first_solution = True
 
         # Solution callback for streaming
         class _Cb(cp.CpSolverSolutionCallback):

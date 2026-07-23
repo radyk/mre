@@ -660,3 +660,48 @@ class TestRollingSolve:
         # the schedule appears in the default listing like any other run.
         listing = _data(client.get("/schedules"))["schedules"]
         assert any(s["id"] == sid for s in listing)
+
+
+# ---------------------------------------------------------------------------
+# The R-T2 two-beat sandbox endpoints (Session 4B.3b): beat one (feasibility,
+# no money) → beat two (the priced sandbox), correlated.
+# ---------------------------------------------------------------------------
+
+class TestTwoBeatSandbox:
+    """Both beats reached through the API surface: beat one carries no money and
+    correlates with beat two; beat two's decomposition sums exactly."""
+
+    _MONEY = ("cost", "delta", "price", "dollar", "objective", "ledger",
+              "tardiness")
+
+    def test_beat_one_response_carries_no_monetary_key(self, api):
+        data = _data(api.client.post(
+            f"/schedules/{api.schedule_id}/sandbox/feasibility",
+            json={"deterministic": True}))
+        # R-T2(1): no monetary quantity of ANY kind in the beat-one payload.
+        offenders = [k for k in data for tok in self._MONEY if tok in k.lower()]
+        assert offenders == [], f"beat one leaked money keys: {offenders}"
+        assert "correlation_id" in data and data["correlation_id"].startswith("corr-")
+        assert data["feasible"] in (True, False)
+        # placement carries positions only (no cost) for a feasible ghost
+        for p in data.get("placement", []):
+            assert not any(tok in k.lower() for k in p for tok in self._MONEY)
+
+    def test_beat_two_correlates_and_decomposes_exactly(self, api):
+        pin = {"deterministic": True}
+        one = _data(api.client.post(
+            f"/schedules/{api.schedule_id}/sandbox/feasibility", json=pin))
+        two = _data(api.client.post(
+            f"/schedules/{api.schedule_id}/sandbox", json=pin))
+        # same gesture → same correlation id (both default to the first op)
+        assert two["correlation_id"] == one["correlation_id"]
+        # beat two IS where money lives; the lines sum to the verdict
+        if two["feasible"] and two.get("cost_lines") is not None:
+            s = round(sum(l["delta"] for l in two["cost_lines"]), 2)
+            assert abs(s - (two.get("cost_delta_abs") or 0.0)) < 0.01
+        # the always-visible invariant is asserted, not assumed
+        assert two["no_committed_work_changes"] is True
+
+    def test_feasibility_unknown_schedule_404(self, api):
+        _error(api.client.post("/schedules/nope/sandbox/feasibility",
+                               json={}), 404)

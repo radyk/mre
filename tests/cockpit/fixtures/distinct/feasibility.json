@@ -1,0 +1,7 @@
+{
+  "_comment": "R-T2 beat-one feasibility ghosts (Session 4B.3b). Per-op overrides that FORCE the CU3 contradiction cases against the canned beat-two (sandbox.json). Ops without an entry synthesize a ghost from their sandbox entry (feasible + placement, no money). The `contradiction` hint is interpreted by the fixture server: `infeasible` = beat one feasible while beat two returns no_verdict; `moved` = beat one feasible but the placement start shifted materially from beat two's pin (the frontend relocation code-path proof — a real exact-pin backend cannot relocate a pinned op between beats, so this exercises the frontend, docs/04).",
+  "by_op": {
+    "a1ba867e-e117-5c7f-85c4-344a7571508c": { "contradiction": "infeasible" },
+    "2ac19cbb-a85e-53c4-a2aa-3b839f230dd6": { "contradiction": "moved" }
+  }
+}

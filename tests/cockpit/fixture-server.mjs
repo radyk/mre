@@ -75,6 +75,65 @@ const supersededError = (res, sid) => {
   res.writeHead(409, { "content-type": "application/json" });
   return res.end(errEnv(409, `schedule ${sid} is superseded`));
 };
+// R-T2 (Session 4B.3b) — the harness stand-in for the two-beat contract. A
+// stable correlation id per (schedule, pin), a beat-one ghost synthesized from
+// the canned beat-two entry (feasibility + placement, NO money), and the layered
+// beat-two enrichment (correlation + cost decomposition summing to the verdict +
+// affected orders + driver) injected when a fixture doesn't already carry it.
+function _corrId(sid, pin) {
+  const raw = `${sid}|${pin.pin_op_id}|${pin.pin_resource_id}|${pin.pin_start_iso}`;
+  let h = 0;
+  for (let i = 0; i < raw.length; i++) { h = (h * 31 + raw.charCodeAt(i)) | 0; }
+  return "corr-" + (h >>> 0).toString(16).padStart(8, "0");
+}
+function _feasibilityFrom(canned, pin, sid) {
+  if (!canned) return null;
+  const feasible = !!canned.feasible && canned.outcome !== "no_verdict";
+  const pinMove = (canned.moves || []).find((m) => m.pinned);
+  const placement = feasible ? [{
+    operation_ref: pin.pin_op_id,
+    resource_id: pin.pin_resource_id || (pinMove && pinMove.to_resource),
+    start: pin.pin_start_iso || (pinMove && pinMove.to_start),
+    end: pinMove ? pinMove.to_start : pin.pin_start_iso,
+    pinned: true,
+  }] : [];
+  return {
+    feasible, within_budget: true, wall_time_s: 0.02, budget_s: 2.0,
+    status: feasible ? "FEASIBLE" : "INFEASIBLE",
+    message: feasible ? "this placement is possible — pricing it now"
+                      : "this placement isn't possible here",
+    placement,
+    pin: { operation_ref: pin.pin_op_id, resource_id: pin.pin_resource_id,
+           start: pin.pin_start_iso },
+  };
+}
+function _enrichBeatTwo(result, pin, sid) {
+  if (!result.correlation_id) result.correlation_id = _corrId(sid, pin);
+  if (result.no_committed_work_changes == null) result.no_committed_work_changes = true;
+  // a ledger-backed cost delta + a decomposition summing EXACTLY to it (the
+  // real backend derives this from the re-solve ledger; the harness supplies a
+  // coherent stand-in when the fixture doesn't carry one).
+  if (result.feasible && result.cost_delta_abs == null && result.delta_abs != null) {
+    result.cost_delta_abs = Math.round((result.delta_abs / 100) * 100) / 100;
+    result.cost_delta_pct = result.delta_pct;
+  }
+  if (result.feasible && result.cost_lines == null) {
+    const total = result.cost_delta_abs || 0;
+    result.cost_lines = [
+      { line: "tardiness", delta: 0 },
+      { line: "setup", delta: 0 },
+      { line: "production (regular)", delta: Math.round(total * 100) / 100 },
+      { line: "production (overtime)", delta: 0 },
+      { line: "other placement changes", delta: 0 },
+    ];
+  }
+  if (result.feasible && result.affected_orders == null) result.affected_orders = [];
+  if (result.feasible && result.lateness_delta_min == null) result.lateness_delta_min = 0;
+  if (result.feasible && result.dominant_driver == null) {
+    result.dominant_driver = { code: "COST_TRADEOFF",
+      phrase: "it was the cheaper option once every cost was weighed", hedge: null };
+  }
+}
 const load = async (name, dir = FIX) => JSON.parse(await readFile(join(dir, name), "utf-8"));
 const loadMaybe = async (name, dir) => {
   const full = join(dir, name);
@@ -254,9 +313,51 @@ const server = createServer(async (req, res) => {
       res.writeHead(200, { "content-type": "application/json" });
       return res.end(envelope(alt));
     }
-    // Tier-2 sandbox re-solve (R-DP1/R-T1c) — canned by pinned op. Returns the
-    // outcome the fixture recorded for this op (verdict / flagged / no_verdict),
-    // else the default verdict.
+    // BEAT ONE (R-T2, Session 4B.3b): a first-feasible feasibility ghost —
+    // feasibility + placement + a correlation id, NO money (R-T2(1)). Synthesized
+    // from the canned sandbox entry for this op (the harness stands in for the
+    // real feasibility_ghost, whose end-to-end truth the Python tests prove). A
+    // canned `feasibility.json` overrides per-op to force the CONTRADICTION cases.
+    const mFeas = p.match(/^\/schedules\/([^/]+)\/sandbox\/feasibility$/);
+    if (mFeas && req.method === "POST") {
+      const sid = mFeas[1];
+      if (_SUPERSEDED.has(sid)) return supersededError(res, sid);
+      const dir = dirFor(sid);
+      const pin = JSON.parse((await body(req)) || "{}");
+      const feas = await loadMaybe("feasibility.json", dir);
+      const canned = feas && feas.by_op && feas.by_op[pin.pin_op_id];
+      const sb = await loadMaybe("sandbox.json", dir);
+      const sbCanned = (sb && sb.by_op && sb.by_op[pin.pin_op_id]) || (sb && sb.default);
+      // A `contradiction` hint FORCES a beat-one/beat-two divergence (CU3):
+      //   "infeasible" — beat one feasible (beat two's canned no_verdict makes it);
+      //   "moved"      — beat one feasible but placing the op materially elsewhere
+      //                  than beat two's pin (start shifted relative to THIS pin).
+      let ghost;
+      if (canned && canned.contradiction) {
+        ghost = _feasibilityFrom({ ...(sbCanned || {}), feasible: true,
+                                   outcome: "verdict",
+                                   moves: [{ pinned: true, to_resource: pin.pin_resource_id,
+                                             to_start: pin.pin_start_iso }] }, pin, sid);
+        if (canned.contradiction === "moved" && ghost.placement[0]) {
+          const shifted = new Date(Date.parse(pin.pin_start_iso) + 2 * 3600 * 1000).toISOString();
+          ghost.placement[0].start = shifted;
+        }
+      } else {
+        ghost = canned || _feasibilityFrom(sbCanned, pin, sid);
+      }
+      if (!ghost) {
+        res.writeHead(404, { "content-type": "application/json" });
+        return res.end(errEnv(404, "no canned feasibility for this fixture"));
+      }
+      ghost.correlation_id = _corrId(sid, pin);
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(envelope(ghost));
+    }
+    // BEAT TWO — Tier-2 sandbox re-solve (R-DP1/R-T1c) — canned by pinned op.
+    // Returns the outcome the fixture recorded for this op (verdict / flagged /
+    // no_verdict), else the default verdict, ENRICHED with the R-T2 layered-card
+    // fields (correlation id, cost decomposition, affected orders, driver) if the
+    // fixture doesn't carry them (Session 4B.3b).
     const mSandbox = p.match(/^\/schedules\/([^/]+)\/sandbox$/);
     if (mSandbox && req.method === "POST") {
       if (_SUPERSEDED.has(mSandbox[1])) return supersededError(res, mSandbox[1]);
@@ -265,8 +366,9 @@ const server = createServer(async (req, res) => {
         res.writeHead(404, { "content-type": "application/json" });
         return res.end(errEnv(404, "no canned sandbox for this fixture"));
       }
-      const { pin_op_id } = JSON.parse((await body(req)) || "{}");
-      const result = (sb.by_op && sb.by_op[pin_op_id]) || sb.default;
+      const pin = JSON.parse((await body(req)) || "{}");
+      const result = { ...((sb.by_op && sb.by_op[pin.pin_op_id]) || sb.default) };
+      _enrichBeatTwo(result, pin, mSandbox[1]);
       res.writeHead(200, { "content-type": "application/json" });
       return res.end(envelope(result));
     }

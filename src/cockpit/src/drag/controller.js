@@ -131,18 +131,25 @@ export function createGestureController(board, geometry, opts) {
     opGhosts: [],           // ghosts for the grabbed op
     drawnGhosts: [],        // ghost descriptors with rects (hit-testing)
     target: null,           // {resource_id, time_ms, legal, reason, anchor}
-    result: null,           // last sandbox result
+    result: null,           // last sandbox result (beat two)
     traces: [],             // drawn moved-set
     grabToShadeMs: null,
     dropToVerdictMs: null,
+    // R-T2 two-beat (Session 4B.3b)
+    ghost: null,            // beat-one FeasibilityGhost
+    correlationId: null,    // links beat one → beat two
+    dropToGhostMs: null,    // grab→drop→feasibility ghost latency
+    contradiction: null,    // {infeasible, moved} if beat two contradicted beat one
+    askWhyContext: null,    // the sandbox context an "ask why" hands off
   };
 
-  // --- the delta card (CU4 + CU1 accept/publish) -----------------------
+  // --- the delta card (CU4 + CU1 accept/publish + R-T2 ask-why) --------
   const card = createDeltaCard(board.host.parentElement || board.host, {
     onDiscard: discard,
     onNavigate: (opRef) => navigateToOp(opRef),
     onAccept: accept,
     onPublish: publish,
+    onAskWhy: (result) => askWhy(result),
   });
 
   // ---------------------------------------------------------------------
@@ -354,25 +361,71 @@ export function createGestureController(board, geometry, opts) {
     const ghost = ghostAt(t.resource_id, t.time_ms);
     if (ghost) return dropOnGhost(ghost);
 
-    // otherwise a Tier-2 sandbox re-solve (R-T1c) behind the tentative bar.
+    // otherwise the R-T2 TWO-BEAT sandbox behind the tentative bar.
     S.phase = "tentative";
     clearLegalityOverlays();             // the drop answered "where" — clear the wash (CU1)
     renderCarry();                       // promote carry → tentative style
-    card.showPending(feel.sandbox.budget_s, feel.sandbox.countdown_tick_ms);
-    const t0 = performance.now();
+    return twoBeat(t);
+  }
+
+  // R-T2 two-beat interaction (Session 4B.3b):
+  //   BEAT ONE — a first-feasible feasibility ghost (no money, R-T2(1)); the
+  //     carry bar reads the R-M1 ghost register while it prices (R-T2(2)).
+  //   BEAT TWO — the priced, budgeted re-solve; it SUPERSEDES the ghost visibly
+  //     (R-T2(3)). A beat-two contradiction (infeasible / materially moved) is
+  //     SHOWN via R-M1 semantics, never silently reconciled (R-T2(4)).
+  function twoBeat(t) {
     const pin = {
       pin_op_id: S.op, pin_resource_id: t.resource_id,
       pin_start_iso: new Date(t.time_ms).toISOString(),
-      budget_s: feel.sandbox.budget_s,
     };
-    return api.postSandbox(scheduleId, pin).then((result) => {
+    S.ghost = null; S.correlationId = null; S.contradiction = null;
+    // BEAT ONE — feasibility ghost. The carry wears the ghost register; the card
+    // shows a NON-MONETARY "pricing…" state.
+    markCarryGhost(true);
+    card.showPricing(feel.sandbox.feasibility_budget_s, feel.sandbox.countdown_tick_ms);
+    const t0 = performance.now();
+    if (!api.postFeasibility) return _beatTwo(pin, t, t0, null);   // degrade: skip beat one
+    return api.postFeasibility(scheduleId, { ...pin, budget_s: feel.sandbox.feasibility_budget_s })
+      .then((ghost) => {
+        S.dropToGhostMs = +(performance.now() - t0).toFixed(2);
+        if (ghost === null) return _beatTwo(pin, t, t0, null);   // endpoint absent
+        S.ghost = ghost;
+        S.correlationId = ghost.correlation_id;
+        if (!ghost.feasible) {
+          // beat one already proves it impossible — snap back (no beat two).
+          markCarryGhost(false);
+          return returnHome(ghost.message || "this placement isn't possible");
+        }
+        return _beatTwo(pin, t, t0, ghost);
+      }).catch((e) => {
+        if (e && e.superseded && handleSuperseded()) return;
+        return _beatTwo(pin, t, t0, null);   // beat one failed → try to price anyway
+      });
+  }
+
+  function _beatTwo(pin, t, t0, ghost) {
+    // BEAT TWO — the priced re-solve. Show the countdown for the (longer) budget.
+    card.showPending(feel.sandbox.budget_s, feel.sandbox.countdown_tick_ms);
+    const pin2 = { ...pin, budget_s: feel.sandbox.budget_s,
+                   correlation_id: S.correlationId || undefined };
+    return api.postSandbox(scheduleId, pin2).then((result) => {
       S.dropToVerdictMs = +(performance.now() - t0).toFixed(2);
-      applyResult(result);
+      applyResultTwoBeat(result, ghost);
       return result;
     }).catch((e) => {
       if (e && e.superseded && handleSuperseded()) return;
+      markCarryGhost(false);
       returnHome(`sandbox error: ${e.message || e}`);
     });
+  }
+
+  // The carry bar's ghost register during beat one (R-T2(2)): the "not yet real"
+  // look, distinct from the tentative-committed style. Consumes the R-M1 ghost
+  // fade timing tokens.
+  function markCarryGhost(on) {
+    const bar = layers.tentative.querySelector(".carry-bar");
+    if (bar) bar.classList.toggle("pricing-ghost", !!on);
   }
 
   // Drop onto a ghost: the placement is a complete solved schedule's vouched-for
@@ -470,6 +523,95 @@ export function createGestureController(board, geometry, opts) {
     renderCarry();                        // tentative bar stays put (R-DP1)
     S.traces = renderTraces(layers.traces, svg, result.moves || [], durationMinOf, geometry, board.getWindow());
     card.showResult(result, { nameOf, woOf });
+  }
+
+  // BEAT TWO applied over BEAT ONE (R-T2). The priced result SUPERSEDES the
+  // feasibility ghost visibly; a CONTRADICTION (beat two infeasible, or the same
+  // op materially relocated) is SHOWN via R-M1 semantics (R-T2(4)), never
+  // silently reconciled.
+  function applyResultTwoBeat(result, ghost) {
+    S.result = result;
+    markCarryGhost(false);
+    const verdict = ghost ? beatTwoContradicts(ghost, result) : { infeasible: false, moved: false };
+    S.contradiction = verdict.infeasible || verdict.moved
+      ? { infeasible: verdict.infeasible, moved: verdict.moved } : null;
+
+    const returnHome_ = result.outcome === "no_verdict" || !result.feasible;
+    if (returnHome_) {
+      // CONTRADICTION (infeasible): beat one said possible, beat two proved not —
+      // SHOW it as an R-M1 rejection with the reason (R-T2(4)).
+      card.showResult(result, { nameOf, woOf });
+      return returnHome(result.message, /*keepCard*/ true);
+    }
+
+    S.phase = "verdict";
+    // CONTRADICTION (moved): the ghost showed one placement, beat two settled the
+    // op materially elsewhere → the ghost VISIBLY RELOCATES before the card lands.
+    const relocate = verdict.moved;
+    const land = () => {
+      renderCarry();                      // tentative bar stays at the pin (R-DP1)
+      S.traces = renderTraces(layers.traces, svg, result.moves || [], durationMinOf, geometry, board.getWindow());
+      // R-T2(3): the priced card SUPERSEDES the ghost — a perceivable transition.
+      card.showResult(result, { nameOf, woOf },
+                      { detailOpen: feel.sandbox.detail_open, superseded: true });
+    };
+    if (relocate && !reduceMotion()) {
+      const bar = layers.tentative.querySelector(".carry-bar");
+      if (bar) {
+        bar.classList.add("relocating");
+        setTimeout(() => { if (bar.isConnected) bar.classList.remove("relocating"); land(); },
+                   feel.sandbox.supersede_ms || 260);
+        return;
+      }
+    }
+    land();
+  }
+
+  // R-T2(4) detector — the JS mirror of sandbox.beat_two_contradicts. Beat two
+  // contradicts beat one when it proves the placement infeasible (beat one
+  // relaxed the committed work) OR places the SAME op materially elsewhere.
+  function beatTwoContradicts(ghost, result) {
+    const gFeasible = !!ghost.feasible;
+    const rFeasible = !!result.feasible && result.outcome !== "no_verdict";
+    const infeasible = gFeasible && !rFeasible;
+    let moved = false;
+    if (gFeasible && rFeasible) {
+      const gPin = (ghost.placement || []).find((p) => p.pinned);
+      const rPin = result.pin || {};
+      if (gPin) {
+        const sameRes = gPin.resource_id === rPin.resource_id;
+        const shift = (gPin.start && rPin.start)
+          ? Math.abs(ms(rPin.start) - ms(gPin.start)) / MIN : 0;
+        moved = !sameRes || shift >= 1;
+      }
+    }
+    return { infeasible, moved, contradicts: infeasible || moved };
+  }
+
+  // R-T2 "ask why" affordance (CU2): hand a SECOND-ORDER question (alternatives /
+  // causal depth) off to the conversational layer WITH the sandbox context. The
+  // interpreter/explainer reads a persisted snapshot, not this live sandbox
+  // context (the 4B.3a R-AI1 rolling-explainer debt — see docs/04), so until that
+  // connector lands the affordance ships but routes to a graceful NAMED-DEBT
+  // response rather than a broken hand-off. The context is stashed on the hook so
+  // a future conversational bridge can consume it without re-deriving anything.
+  function askWhy(result) {
+    const ctx = {
+      operation_ref: result?.pin?.operation_ref || S.op,
+      correlation_id: result?.correlation_id || S.correlationId,
+      dominant_driver: result?.dominant_driver || null,
+      cost_delta_abs: result?.cost_delta_abs ?? null,
+    };
+    S.askWhyContext = ctx;
+    if (opts.onAskWhy) return opts.onAskWhy(ctx);   // a real conversational bridge
+    // graceful named-debt fallback (R-AI1 connector debt, docs/04 4B.3a/4B.3b)
+    reasonTip.textContent =
+      "Deeper “what if” questions about this sandbox aren’t wired into "
+      + "the conversational layer yet — that’s the rolling-explainer connector "
+      + "(a named R-AI1 debt).";
+    reasonTip.classList.remove("hidden");
+    setTimeout(() => reasonTip.classList.add("hidden"), 4200);
+    return ctx;
   }
 
   // Release over dim / no verdict: the bar goes home as a REJECTION (R-M1a) —
@@ -810,6 +952,16 @@ export function createGestureController(board, geometry, opts) {
       ghosts: S.drawnGhosts.map((g) => ({ source: g.source, resource_id: g.resource_id, label: g.label || null, delta_pct: g.delta_pct })),
       result: S.result && { outcome: S.result.outcome, delta_pct: S.result.delta_pct, moves: (S.result.moves || []).length },
       traces: S.traces.length,
+      // R-T2 two-beat (Session 4B.3b): the beat-one ghost + correlation + any
+      // beat-two contradiction, for the harness to assert the two beats.
+      correlationId: S.correlationId || null,
+      dropToGhostMs: S.dropToGhostMs,
+      feasibilityGhost: S.ghost && {
+        feasible: !!S.ghost.feasible, correlation_id: S.ghost.correlation_id,
+        placement: (S.ghost.placement || []).length,
+      },
+      contradiction: S.contradiction,
+      askWhyContext: S.askWhyContext,
     }),
     tier0For: (opRef) => computeTier0(opRef, ctx, { ghosts: ghostIndex.get(opRef) || [] }),
     ghostsFor: (opRef) => ghostIndex.get(opRef) || [],

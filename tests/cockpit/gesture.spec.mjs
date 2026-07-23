@@ -675,7 +675,9 @@ test("delta card shows a 'why' clause on a major move (CU3)", async ({ page }) =
     window.__cockpit.drag.dropAt(op, rid, start, /*altKey*/ true).then(() => {}),
     [op, mv.resource_id, mv.start]);
   await expect(page.locator(".delta-card.verdict")).toBeVisible();
-  // the major consequence names WHY — occupancy, in planner vocabulary.
+  // R-T2 layered card (4B.3b): the full operational consequences (moved-set)
+  // live in the DETAIL layer — open it to read the "why" clause.
+  await page.locator(".delta-card .dc-detail-layer > summary").click();
   const why = page.locator(".delta-card .dc-why").first();
   await expect(why).toBeVisible();
   await expect(why).toContainText("blocked on");
@@ -689,6 +691,10 @@ test("delta-card line → navigate to the traced bar (CU5, R-DP7c)", async ({ pa
   await page.evaluate(([op, rid, start]) =>
     window.__cockpit.drag.dropAt(op, rid, start),
     [op, g.label.placement.resource_id, g.label.placement.start]);
+  // R-T2 layered card (4B.3b): the moved-set line items live in the DETAIL
+  // layer — open the disclosure, then click a line to navigate to its bar.
+  const detail = page.locator(".delta-card .dc-detail-layer > summary");
+  if (await detail.count()) await detail.click();
   const line = page.locator(".delta-card .dc-line").first();
   await expect(line).toBeVisible();
   await line.click();
@@ -1005,4 +1011,118 @@ test("CU3: an empty moved-set verdict reads 'equivalent placement — nothing el
   await expect(page.locator(".delta-card.verdict")).toBeVisible();
   await expect(page.locator(".delta-card")).toContainText("equivalent placement — nothing else moved");
   await shot(page, "g14_equivalent");
+});
+
+// ---------------------------------------------------------------------------
+// Session 4B.3b — the R-T2 two-beat interaction: the feasibility ghost (beat
+// one, no money), the layered priced card (beat two), the supersession, the
+// contradiction paths (infeasible snap-back / material relocation), and the
+// forced-alternative gesture inheriting the same shape.
+// ---------------------------------------------------------------------------
+
+test("R-T2 beat one: a legal drop shows a NON-MONETARY feasibility ghost, then beat two prices it", async ({ page }) => {
+  await boot(page);
+  const op = opFor("verdict");
+  const mv = await legalMove(page, op);
+  // BEAT ONE is very fast in the harness; observe that the pricing (beat-one)
+  // card state has NO monetary text, then that beat two lands a priced card.
+  const st = await page.evaluate(([op, rid, start]) =>
+    window.__cockpit.drag.dropAt(op, rid, start, /*altKey*/ true).then(() =>
+      window.__cockpit.drag.state()),
+    [op, mv.resource_id, mv.start]);
+  expect(st.phase).toBe("verdict");
+  // the two beats correlated (a stable id links them)
+  expect(st.correlationId, "beat one/two share a correlation id").toBeTruthy();
+  expect(st.feasibilityGhost, "beat one produced a feasibility ghost").toBeTruthy();
+  expect(st.feasibilityGhost.feasible).toBe(true);
+  // R-T2(3): the priced card SUPERSEDED the ghost (a perceivable transition class)
+  await expect(page.locator(".delta-card.verdict")).toBeVisible();
+  await shot(page, "g20_two_beat_verdict");
+});
+
+test("R-T2 CU2: the always-visible layer is decision-sufficient (total + driver + committed-safe), detail layer collapsed", async ({ page }) => {
+  await boot(page);
+  const op = opFor("verdict");
+  const mv = await legalMove(page, op);
+  await page.evaluate(([op, rid, start]) =>
+    window.__cockpit.drag.dropAt(op, rid, start, /*altKey*/ true).then(() => {}),
+    [op, mv.resource_id, mv.start]);
+  const card = page.locator(".delta-card.verdict");
+  await expect(card).toBeVisible();
+  // always-visible: the moved op's final placement, the dominant driver, and the
+  // standing "no committed work changes" invariant line
+  await expect(card.locator(".dc-placement")).toBeVisible();
+  await expect(card.locator(".dc-driver")).toBeVisible();
+  await expect(card.locator(".dc-note.committed-safe")).toContainText("no committed work changes");
+  // "ask why" affordance ships
+  await expect(card.locator(".dc-askwhy")).toBeVisible();
+  // the DETAIL layer exists but is COLLAPSED by default (a feel token); its cost
+  // decomposition + operational consequences are behind the disclosure.
+  const details = card.locator(".dc-detail-layer");
+  await expect(details).toBeVisible();
+  expect(await details.evaluate((d) => d.open)).toBe(false);
+  await details.locator("summary").click();
+  await expect(card.locator(".dc-decomp")).toBeVisible();   // cost by line
+  await shot(page, "g21_layered_card");
+});
+
+test("R-T2(4) CONTRADICTION (infeasible): beat one feasible, beat two proves it isn't → R-M1 snap-back with reason", async ({ page }) => {
+  await boot(page);
+  const op = opFor("no_verdict");    // beat two returns no_verdict; feasibility.json forces beat one feasible
+  const mv = await legalMove(page, op);
+  const st = await page.evaluate(([op, rid, start]) =>
+    window.__cockpit.drag.dropAt(op, rid, start, /*altKey*/ true)
+      .then(() => new Promise((r) => setTimeout(r, 400)))
+      .then(() => window.__cockpit.drag.state()),
+    [op, mv.resource_id, mv.start]);
+  // the contradiction is SHOWN, not silently reconciled
+  expect(st.contradiction && st.contradiction.infeasible).toBe(true);
+  await expect(page.locator(".delta-card.return-home")).toBeVisible();
+  await shot(page, "g22_contradiction_infeasible");
+});
+
+test("R-T2(4) CONTRADICTION (moved): the ghost visibly relocates before the card lands", async ({ page }) => {
+  await boot(page);
+  const op = opFor("verdict");       // feasibility.json marks this op 'moved'
+  const mv = await legalMove(page, op);
+  const st = await page.evaluate(([op, rid, start]) =>
+    window.__cockpit.drag.dropAt(op, rid, start, /*altKey*/ true).then(() =>
+      window.__cockpit.drag.state()),
+    [op, mv.resource_id, mv.start]);
+  // beat two placed the op materially elsewhere than the ghost showed → a moved
+  // contradiction (the frontend relocation code-path; the backend exact-pin case
+  // is unit-proven and named in docs/04).
+  expect(st.contradiction && st.contradiction.moved).toBe(true);
+  // it still lands a priced card (a move is a divergence, not a refusal)
+  await expect(page.locator(".delta-card.verdict")).toBeVisible();
+});
+
+test("R-T2 CU2: the 'ask why' affordance routes to a graceful NAMED-DEBT response (R-AI1 connector)", async ({ page }) => {
+  await boot(page);
+  const op = opFor("verdict");
+  const mv = await legalMove(page, op);
+  await page.evaluate(([op, rid, start]) =>
+    window.__cockpit.drag.dropAt(op, rid, start, /*altKey*/ true).then(() => {}),
+    [op, mv.resource_id, mv.start]);
+  await page.locator(".delta-card .dc-askwhy").click();
+  // it ships (a real hand-off isn't wired — that's the named R-AI1 debt) and says so
+  const tip = page.locator(".drag-reason");
+  await expect(tip).toBeVisible();
+  await expect(tip).toContainText("conversational layer");
+  const ctx = await page.evaluate(() => window.__cockpit.drag.state().askWhyContext);
+  expect(ctx && ctx.operation_ref).toBe(op);
+});
+
+test("R-T2 CU4: the forced-alternative gesture (drop onto a priced ghost) inherits the same card shape", async ({ page }) => {
+  await boot(page);
+  const g = priced[0];
+  const op = g.label.target_operation_ref;
+  const st = await page.evaluate(([op, rid, start]) =>
+    window.__cockpit.drag.dropAt(op, rid, start).then(() =>
+      window.__cockpit.drag.state()),
+    [op, g.label.placement.resource_id, g.label.placement.start]);
+  expect(st.phase).toBe("verdict");
+  await expect(page.locator(".delta-card")).toBeVisible();
+  // the same layered card renders (accept + ask-why + discard)
+  await expect(page.locator(".delta-card .dc-actions")).toBeVisible();
 });

@@ -54,6 +54,17 @@ export const DEFAULT_FEEL = {
   sandbox: {
     budget_s: 15.0,
     countdown_tick_ms: 100,
+    // R-T2 beat one (Session 4B.3b): the small feasibility budget the ghost
+    // paces against (server-authoritative FEASIBILITY_BUDGET_S; this only paces
+    // the "pricing…" ghost's animation).
+    feasibility_budget_s: 2.0,
+    // R-T2 beat-two card: whether the DETAIL layer (cost decomposition +
+    // operational consequences) starts expanded. The always-visible layer is
+    // decision-sufficient on its own; this is a feel token (Daryn tunes it).
+    detail_open: false,
+    // R-T2(3): the ghost→priced-card supersession is a PERCEIVABLE transition
+    // (ms). Motion tuned here, never by prompts.
+    supersede_ms: 260,
   },
   // --- bar geometry (Session 3.5 token pass) — the board bar corner radius,
   // mirrored to --bar-radius so ghosts/carry/traces stay visually consistent. ---
@@ -110,6 +121,9 @@ export function applyFeel(feel, root = document.documentElement) {
   s.setProperty("--trace-ghost-opacity", String(feel.trace.ghost_of_old_opacity));
   // bar geometry (3.5 token pass)
   if (feel.bars) s.setProperty("--bar-radius", `${feel.bars.radius_px}px`);
+  // R-T2 (4B.3b): the ghost→priced-card supersession transition (R-T2(3)).
+  if (feel.sandbox && feel.sandbox.supersede_ms != null)
+    s.setProperty("--sandbox-supersede", `${feel.sandbox.supersede_ms}ms`);
   // R-M1 motion tokens (unconsumed until 3.6, but panel-tunable now — mirroring
   // them here is what makes the surface live for the 3.6 implementation).
   if (feel.motion) {

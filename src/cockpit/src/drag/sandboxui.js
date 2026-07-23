@@ -17,11 +17,31 @@
 // verdict → accepted → published, each step honest about what happened. Discard
 // restores everything at any pre-publish step (the controller animates it).
 
-export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPublish }) {
+export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPublish, onAskWhy }) {
   const card = document.createElement("div");
   card.className = "delta-card hidden";
   hostEl.appendChild(card);
   let countdownTimer = null;
+
+  // BEAT ONE (R-T2): the feasibility ghost's NON-MONETARY state. R-T2(1): no
+  // figure, no delta — only "possible, pricing it now". The board draws the
+  // placement in the R-M1 ghost class; this card slot reads the same register.
+  function showPricing(feasibilityBudgetS = 2.0, tickMs = 100) {
+    _stopCountdown();
+    card.className = "delta-card pricing";
+    card.innerHTML = `
+      <div class="dc-head"><span class="dc-outcome pricing">checking feasibility…</span>
+        <span class="dc-status">beat 1 · placement only, no price yet</span></div>
+      <div class="dc-countdown"><div class="dc-countdown-fill" style="width:100%"></div></div>
+      <div class="dc-note">this is possible here — pricing it now</div>`;
+    const fill = card.querySelector(".dc-countdown-fill");
+    const t0 = performance.now();
+    countdownTimer = setInterval(() => {
+      const frac = Math.max(0, 1 - (performance.now() - t0) / (feasibilityBudgetS * 1000));
+      fill.style.width = `${(frac * 100).toFixed(1)}%`;
+      if (frac <= 0) _stopCountdown();
+    }, tickMs);
+  }
 
   function hide() {
     _stopCountdown();
@@ -52,17 +72,24 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     }, tickMs);
   }
 
-  // VERDICT / FLAGGED / RETURN-HOME. `nameOf(rid)` and `woOf(opRef)` resolve
-  // planner vocabulary for the line items. Returns the card element.
-  function showResult(result, { nameOf, woOf }) {
+  // VERDICT / FLAGGED / RETURN-HOME — BEAT TWO, the LAYERED priced card (R-T2
+  // CU2). `nameOf(rid)`/`woOf(opRef)` resolve planner vocabulary; `opts.detailOpen`
+  // (a feel token) sets the detail layer's default expansion; `opts.superseded`
+  // (R-T2(3)) plays the ghost→card transition. Returns the card element.
+  //
+  // ALWAYS-VISIBLE layer (decision-sufficient ON ITS OWN): signed total + verdict,
+  // the moved op's final placement, top-N affected orders with per-order deltas,
+  // lateness introduced/recovered, the dominant driver (hedged), and the standing
+  // "no committed work changes" line. DETAIL layer (same card, a disclosure): the
+  // cost decomposition by ledger line + the full operational consequences.
+  function showResult(result, { nameOf, woOf } = {}, opts = {}) {
     _stopCountdown();
     const outcome = result.outcome;
     const returnHome = outcome === "no_verdict" || !result.feasible;
-    card.className = `delta-card ${returnHome ? "return-home" : outcome}`;
+    card.className = `delta-card ${returnHome ? "return-home" : outcome}`
+      + (opts.superseded ? " superseded" : "");
 
-    const headline = returnHome
-      ? "Returned home"
-      : _deltaHeadline(result);
+    const headline = returnHome ? "Returned home" : _deltaHeadline(result);
     const status = {
       verdict: "verdict · proven within budget",
       feasible_unproven: "flagged · bound not proven",
@@ -75,23 +102,31 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
       const from = nameOf(m.from_resource), to = nameOf(m.to_resource);
       const move = m.resource_changed ? `${from} → ${to}` : `${to}`;
       const shift = m.start_delta_min ? ` · ${m.start_delta_min > 0 ? "+" : ""}${m.start_delta_min}min` : "";
-      // the "why" clause (session 3.3 CU3): each major consequence names its
-      // reason, sourced from the re-solve's own occupancy arithmetic.
       const why = _reasonClause(m.reason, { nameOf, woOf });
       return `<button class="dc-line${m.pinned ? " pinned" : ""}" data-op="${m.operation_ref}">
         <span class="dc-wo">${wo}</span><span class="dc-move">${move}${shift}</span>
         ${m.pinned ? '<span class="dc-pin">dropped</span>' : ""}
         ${why ? `<span class="dc-why">${why}</span>` : ""}</button>`;
     }).join("");
-    // CU4: a ghost drop traces the dropped bar instantly, then fills in the full
-    // moved-set from the vouching schedule — say so while it loads (R-DP7).
     const pending = !returnHome && result.consequences_pending
       ? `<div class="dc-note pending">consequences loading…</div>` : "";
-    // Session 4.3 CU3: a verdict whose moved-set is empty (the re-solve reproduced
-    // the same schedule) reads as an authored line, never blank space under the
-    // headline. Skipped while consequences are still loading (they may yet fill).
     const equivalent = !returnHome && !result.consequences_pending && lines.length === 0
       ? `<div class="dc-note">equivalent placement — nothing else moved</div>` : "";
+
+    // --- always-visible extras (CU2) ------------------------------------
+    const alwaysVisible = returnHome ? "" : [
+      _placementLine(result, { nameOf, woOf }),
+      _latenessLine(result),
+      _affectedOrdersHtml(result),
+      _driverLine(result),
+      // the standing invariant, always shown (a true guarantee, stated plainly)
+      result.no_committed_work_changes !== false
+        ? `<div class="dc-note committed-safe">no committed work changes</div>` : "",
+    ].filter(Boolean).join("");
+
+    // --- detail layer (CU2): cost decomposition + operational consequences ---
+    const detail = returnHome ? "" : _detailLayer(result, lineHtml, equivalent, pending,
+      { open: !!opts.detailOpen });
 
     card.innerHTML = `
       <div class="dc-head">
@@ -99,11 +134,11 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
         <span class="dc-status">${status}</span>
       </div>
       ${returnHome ? `<div class="dc-reason">${result.message || "couldn't verify this placement"}</div>` : ""}
-      ${lineHtml ? `<div class="dc-lines">${lineHtml}</div>` : ""}
-      ${equivalent}
-      ${pending}
+      ${alwaysVisible}
+      ${detail}
       <div class="dc-actions">
         ${returnHome ? "" : `<button class="dc-accept">Accept</button>`}
+        ${returnHome ? "" : `<button class="dc-askwhy">Ask why</button>`}
         <button class="dc-discard">Discard</button>
       </div>`;
 
@@ -116,10 +151,82 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
         onAccept && onAccept();
       });
     }
+    const askBtn = card.querySelector(".dc-askwhy");
+    if (askBtn) askBtn.addEventListener("click", () => onAskWhy && onAskWhy(result));
     for (const b of card.querySelectorAll(".dc-line")) {
       b.addEventListener("click", () => onNavigate && onNavigate(b.dataset.op));
     }
+    // R-T2(3): a perceivable ghost→card transition. Retrigger the class.
+    if (opts.superseded) { void card.offsetWidth; card.classList.add("superseded"); }
     return card;
+  }
+
+  // The moved op's FINAL placement (always-visible): where the dropped bar landed.
+  function _placementLine(result, { nameOf, woOf }) {
+    const pin = (result.moves || []).find((m) => m.pinned) || null;
+    const rid = pin ? pin.to_resource : (result.pin && result.pin.resource_id);
+    const opRef = pin ? pin.operation_ref : (result.pin && result.pin.operation_ref);
+    if (!rid) return "";
+    const wo = (woOf && woOf(opRef)) || (opRef || "").slice(0, 8) || "the op";
+    const when = pin ? _shortDate(pin.to_start) : _shortDate(result.pin && result.pin.start);
+    return `<div class="dc-placement"><b>${wo}</b> → ${(nameOf && nameOf(rid)) || rid}${when ? ` · ${when}` : ""}</div>`;
+  }
+
+  // Lateness introduced (+) or recovered (−), as one plain statement.
+  function _latenessLine(result) {
+    const d = result.lateness_delta_min;
+    if (d == null || d === 0) return `<div class="dc-lateness on-time">no change to lateness</div>`;
+    const hrs = (Math.abs(d) / 60).toFixed(1);
+    return d > 0
+      ? `<div class="dc-lateness worse">introduces ${hrs}h of lateness</div>`
+      : `<div class="dc-lateness better">recovers ${hrs}h of lateness</div>`;
+  }
+
+  // Top-N affected orders, each with its own tardiness ($) + lateness (min) delta.
+  function _affectedOrdersHtml(result) {
+    const orders = result.affected_orders || [];
+    if (!orders.length) return "";
+    const rows = orders.map((o) => {
+      const wo = o.work_order || (o.demand_ref || "").slice(0, 8);
+      const t = o.tardiness_delta;
+      const tstr = (t != null && Math.abs(t) >= 0.005)
+        ? `${t > 0 ? "+" : "−"}$${Math.abs(t).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "";
+      const l = o.lateness_delta_min;
+      const lstr = (l != null && l !== 0)
+        ? `${l > 0 ? "+" : "−"}${Math.abs(l)}min` : "";
+      return `<div class="dc-order"><span class="dc-wo">${wo}</span>
+        <span class="dc-order-delta">${[tstr, lstr].filter(Boolean).join(" · ") || "no cost change"}</span></div>`;
+    }).join("");
+    return `<div class="dc-orders"><div class="dc-orders-h">affected orders</div>${rows}</div>`;
+  }
+
+  // The dominant driver in plain language, HEDGED where the attribution is by
+  // price rank alone (docs/02 §4.2 — EARLINESS_PREFERENCE).
+  function _driverLine(result) {
+    const d = result.dominant_driver;
+    if (!d || !d.phrase) return "";
+    const hedge = d.hedge ? ` ${d.hedge}` : "";
+    return `<div class="dc-driver">why: ${d.phrase}${hedge}</div>`;
+  }
+
+  // The DETAIL layer as a native disclosure — cost decomposition by ledger line
+  // (summing to the verdict) + the operational consequences (the moved-set).
+  function _detailLayer(result, lineHtml, equivalent, pending, { open }) {
+    const lines = result.cost_lines || [];
+    const decompHtml = lines.length ? lines.map((l) => {
+      const v = l.delta;
+      const vstr = Math.abs(v) < 0.005 ? "$0"
+        : `${v > 0 ? "+" : "−"}$${Math.abs(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+      return `<div class="dc-costline"><span>${l.line}</span><span>${vstr}</span></div>`;
+    }).join("") : "";
+    const decomp = decompHtml
+      ? `<div class="dc-decomp"><div class="dc-decomp-h">cost by line</div>${decompHtml}</div>` : "";
+    const consequences = lineHtml
+      ? `<div class="dc-lines">${lineHtml}</div>` : (equivalent || pending);
+    if (!decomp && !consequences) return "";
+    return `<details class="dc-detail-layer"${open ? " open" : ""}>
+      <summary>details — cost by line, operational consequences</summary>
+      ${decomp}${consequences}</details>`;
   }
 
   // ACCEPTED: the edit is now a NEW proposed version (the base stands untouched).
@@ -238,5 +345,6 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     return `${d > 0 ? "+" : "−"}${Math.abs(d).toFixed(2)}% vs current plan`;
   }
 
-  return { showPending, showResult, showAccepted, showPublished, showRefused, hide, el: card };
+  return { showPending, showPricing, showResult, showAccepted, showPublished,
+           showRefused, hide, el: card };
 }

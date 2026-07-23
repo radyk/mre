@@ -1,6 +1,37 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.35 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.36 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.36:** **Session 4B.3b — the two-beat sandbox (R-T2 implemented)** 2026-07-23
+(docs/04 amendment). Makes the Tier-2 sandbox + forced-alternative gestures a
+TWO-BEAT interaction per R-T2. No solver/model/schedule-document changes (rides
+module dataclasses + new API endpoints; monolithic AND rolling goldens
+byte-identical). **CU1 beat one — the feasibility ghost:** `feasibility_ghost()` +
+`POST /sandbox/feasibility` — a FIRST-FEASIBLE solve (small deterministic budget,
+CP-SAT `stop_after_first_solution`) returning feasibility + placement + a
+correlation id, carrying NO money BY CONSTRUCTION (the `FeasibilityGhost` type has
+no cost field; a contract test asserts field ABSENCE). It RELAXES the committed work
+(so beat two can contradict it) and MINTS NOTHING (tested). **CU2 beat two — the
+LAYERED priced card:** `sandbox_pin_resolve` enriched — an always-visible layer
+(signed total, feasible/rejected, moved-op placement, top-N affected orders with
+per-Demand tardiness/lateness deltas, lateness introduced/recovered, the dominant
+driver hedged, "no committed work changes" asserted) + a detail layer (cost
+decomposition by ledger line summing EXACTLY to the verdict with an explicit "other"
+remainder — rollup_of-tested; + operational consequences). Ghost→card supersedes
+through a perceivable transition (a feel token). **CU3 the contradiction (R-T2(4)),
+shown not reconciled:** the INFEASIBLE case is FORCED end-to-end via a standing-pin
+conflict (beat one relaxes it → feasible; beat two holds it → infeasible); the MOVED
+case is unit-proven + frontend-exercised and NAMED (a pinned op cannot relocate
+between exact-pin beats — what diverges is the consequence set). **CU4** the
+forced-alternative gesture (a cross-machine pin) runs the identical two-beat path.
+**"Ask why"** ships but routes to a graceful NAMED-DEBT response — the SAME R-AI1
+rolling-explainer connector debt (now with two blocked consumers; docs/04 entry
+extended, not double-booked). **Rolling active-window wiring** is NAMED debt (the
+rolling snapshot persists no incumbent + no interaction payload — connector-era
+work); the two-beat is delivered + proven on real monolithic solves + the gesture
+fixtures, rolling-ready (committed work held via standing pins). Non-slow Python
+**1239 passed** (+12); slow two-beat 15 (no skips); cockpit JS **156 → 168**
+(+12, both themes). Goldens byte-identical.
 
 **v2.35:** **Repo relocation + R-T2 + Session 4B.3a — the cockpit renders the
 sliced world (read-only)** 2026-07-23 (docs/04 amendment). Repo moved to

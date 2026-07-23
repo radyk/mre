@@ -114,6 +114,19 @@ export function getAlternativeMember(id, memberIndex) {
   return envelope(`/schedules/${id}/alternatives/${memberIndex}`).catch(() => null);
 }
 
+export function postFeasibility(id, pin) {
+  // BEAT ONE (R-T2): a first-feasible feasibility ghost for a dropped bar — a
+  // fast "can it go here at all" check under a small budget, returning
+  // feasibility + placement + a correlation id, NEVER a monetary quantity
+  // (R-T2(1)). Mints nothing (R-T2(5)). The caller renders the placement in the
+  // R-M1 ghost class, then fires postSandbox (beat two) to price it.
+  return envelope(`/schedules/${id}/sandbox/feasibility`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(pin),
+  });
+}
+
 export function postSandbox(id, pin) {
   // The Tier-2 pinned re-solve (R-DP1/R-T1c) behind a dropped bar: pin one op at
   // (machine + time as displayed), re-solve the surroundings under the budget,
