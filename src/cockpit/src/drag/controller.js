@@ -603,12 +603,15 @@ export function createGestureController(board, geometry, opts) {
       cost_delta_abs: result?.cost_delta_abs ?? null,
     };
     S.askWhyContext = ctx;
-    if (opts.onAskWhy) return opts.onAskWhy(ctx);   // a real conversational bridge
-    // graceful named-debt fallback (R-AI1 connector debt, docs/04 4B.3a/4B.3b)
+    // Session 4B.3c CU4: the conversational bridge is wired (the R-AI1
+    // rolling-explainer connector is retired). If the host handled the ask
+    // (returned truthy), we're done; otherwise fall through to the tip.
+    if (opts.onAskWhy && opts.onAskWhy(ctx)) return ctx;
+    // Fallback when no bridge is available (or it couldn't compose a question):
+    // point the planner at the ask panel — the answer lives there now.
     reasonTip.textContent =
-      "Deeper “what if” questions about this sandbox aren’t wired into "
-      + "the conversational layer yet — that’s the rolling-explainer connector "
-      + "(a named R-AI1 debt).";
+      "Ask “why is this on this machine?” in the panel — the conversational "
+      + "layer answers it, grounded in this run's evidence.";
     reasonTip.classList.remove("hidden");
     setTimeout(() => reasonTip.classList.add("hidden"), 4200);
     return ctx;

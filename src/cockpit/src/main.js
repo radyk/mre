@@ -405,6 +405,25 @@ async function boot() {
       // production `vite build` the harness serves — so tuning never ships.
       wireInteraction(id, board, window.__cockpit, {
         doc, devMode: !!import.meta.env?.DEV, onSuperseded,
+        // Session 4B.3c CU4: "ask why" from a beat-two card bridges to the ask
+        // panel with a real, grounded question. The rolling-explainer connector is
+        // wired (the R-AI1 debt is retired), so this is a live answer, not a tip.
+        // The question is composed from the moved op's INCUMBENT placement (the
+        // board's truth): why the op is where it is — the context a planner weighing
+        // the move actually wants. Returns true so the controller skips its tip.
+        onAskWhy: (ctx) => {
+          // Scoped to the sliced board (this session's subject); a monolithic card
+          // keeps its panel-pointer tip. Both are honest — neither claims a debt.
+          if (!doc.rolling) return false;
+          const op = ctx && ctx.operation_ref;
+          const a = op && (doc.assignments || []).find((x) => x.operation_ref === op);
+          const wo = a && (a.work_orders || [])[0];
+          const mach = a && a.external_name;
+          if (!wo || !mach) return false;      // unresolvable → controller's tip
+          if (board.select) board.select(op);  // scope the board to the op
+          panel.run(`why is ${wo} on ${mach}?`);
+          return true;
+        },
         // An accepted/published edit rebinds the cockpit to the new version FULLY
         // (session 3.8 CU1): the address bar, the strip (new id + live status),
         // the ask panel target, the shared selection, and the harness hook all

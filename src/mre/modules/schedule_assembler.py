@@ -30,6 +30,7 @@ from mre.contracts.schedule_document import (
     BeyondHorizonItem,
     CalendarWindow,
     Chunk,
+    CONTRACT_VERSION,
     CostSummary,
     HorizonBlock,
     InteractionBlock,
@@ -489,6 +490,22 @@ def assemble_rolling_document(
     # beyond-horizon tray entry, or (a gate exclusion) a certificate-visible one.
     _assert_rolling_completeness(plant, view, beyond)
 
+    # ---- interaction payload for the ACTIVE WINDOW (contract 1.8, CU2) -------
+    # The SAME Tier-0 legality arithmetic the monolithic board carries, computed
+    # for the ACTIVE-WINDOW ops only — so committed (frozen-front) bars carry NO
+    # interaction op and are therefore non-targets BY CONSTRUCTION (the gesture
+    # surface only builds targets for ops in the payload), exactly as the
+    # beyond-horizon tray is. Occupancy still comes from assignments[] (all placed
+    # bars, committed included), so committed work blocks a drop; and beat one is a
+    # real feasibility solve that holds precedence, so any Tier-0 permissiveness is
+    # caught downstream (R-DP6 backstop).
+    active_asgn = [a for a in asgn_blocks if a.commitment_state == "active_window"]
+    interaction = _interaction_block(
+        plant.edges, active_asgn, ops_by_id, plant.resources,
+        plant.fulfillments, demands_by_id, plant.workpackages,
+        plant.calendars, horizon,
+    )
+
     # ---- cost summary (decomposes exactly) ----------------------------------
     led = view.cost_ledger or {}
     cost_summary = CostSummary(
@@ -503,13 +520,14 @@ def assemble_rolling_document(
     solver = SolverBlock(status=view.status, deterministic=True)
 
     return ScheduleDocument(
-        contract_version="1.7",
+        contract_version=CONTRACT_VERSION,
         schedule_id=schedule_id, snapshot_id=plant.snapshot_id, run_id=run_id,
         status=ScheduleStatus.PROPOSED,
         reference_date=ref, horizon=horizon, solver=solver,
         cost_summary=cost_summary,
         resources=lanes, assignments=asgn_blocks, service_outcomes=svc_blocks,
         annotations=Annotations(),
+        interaction=interaction,
         rolling=rolling,
     )
 

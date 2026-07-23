@@ -104,6 +104,20 @@ Version history:
     assembler enforces it; ``test_rolling_document`` counts.
   MINOR: every field is additive with a None/empty default; a 1.6 consumer
   ignores ``rolling`` and reads ``commitment_state`` as absent.
+- 1.8 (2026-07-23, Session 4B.3c): additive — a ROLLING document now carries the
+  ``interaction`` (Tier-0 legality) payload for its ACTIVE WINDOW, so the cockpit
+  can shade legal drop zones and target a gesture on a sliced board exactly as it
+  does on a monolithic one. No new field: ``interaction`` has been an optional
+  block since 1.2 (delivered via the split ``/interaction`` endpoint since 1.3) and
+  was simply None on rolling documents until now. Committed (frozen-front) bars and
+  the beyond-horizon tray remain non-targets — the client reads
+  ``commitment_state`` and never offers a gesture on a committed bar. Underneath,
+  the rolling run now persists its window-0 solve as a first-class canonical run
+  (assignments / service outcomes / evidence), so the Tier-2 sandbox and the M10
+  Explainer read it exactly as a monolithic run (the connector-era prerequisite the
+  4B.3a/4B.3b debts named). A monolithic document is byte-unchanged apart from the
+  version string; a 1.7 consumer ignores nothing new (the field already existed).
+  MINOR.
 """
 from __future__ import annotations
 
@@ -114,7 +128,7 @@ from pydantic import BaseModel, model_validator
 
 from mre.contracts.vocabularies import ScheduleStatus
 
-CONTRACT_VERSION = "1.7"
+CONTRACT_VERSION = "1.8"
 
 # Exact decomposition tolerance: cost components are currency values
 # accumulated in float; "exactly" means to the cent, matching the

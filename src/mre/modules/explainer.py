@@ -203,6 +203,14 @@ ROUTE_TAXONOMY: dict[str, dict] = {
     "drill-down":            {"params": [],          "canonical": "tell me more about that"},
     "briefing":              {"params": [],          "canonical": "what should I worry about today?"},
     "unknown-entity":        {"params": ["order"],   "canonical": "is {order} in this schedule?"},
+    # Session 4B.3c CU4 — the ROLLING (sliced-world) routes. Live only when the
+    # schedule is a rolling document (the /ask path delegates to rolling_questions,
+    # which answers from the document's RollingBlock — the connector-era snapshot a
+    # rolling run now persists is what unblocks this). A closed set (ROLLING_ROUTES),
+    # not an ad-hoc bolt: registered here so the ledger + interpreter recognize them.
+    "beyond-horizon":        {"params": [],          "canonical": "what's beyond the horizon?"},
+    "why-not-scheduled-yet": {"params": ["order"],   "canonical": "why isn't {order} scheduled yet?"},
+    "frozen":                {"params": [],          "canonical": "what's frozen?"},
 }
 
 

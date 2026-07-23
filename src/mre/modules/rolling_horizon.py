@@ -389,6 +389,13 @@ class RollingView:
     op_drivers: dict           # op_id -> DriverCode value (window solve attribution)
     earliness_value: float
     status: str
+    # CU1 (4B.3c): the builder's actual horizon origin for the window solve and the
+    # window horizon end — the grid the persisted assignments were written in (so a
+    # sandbox re-solve rebuilds against exactly the same clock). ``persisted`` marks
+    # a view whose window-0 solve was written to the canonical snapshot as a run.
+    win_horizon_start: Optional[datetime] = None
+    win_horizon_end: Optional[datetime] = None
+    persisted: bool = False
 
     @property
     def placed(self) -> dict:
@@ -409,6 +416,7 @@ def build_rolling_view(
     det_time: float = 4.0,
     crit_threshold: float = 3.0,
     earliness_value: Optional[float] = None,
+    persist: bool = False,
 ) -> RollingView:
     """Solve the CURRENT window (window 0) and classify the sliced world.
 
@@ -417,7 +425,17 @@ def build_rolling_view(
     the REAL rolling engine, captured at the reference origin rather than rolled to
     completion. Demands not admitted this window (future work) become the
     beyond-horizon tray. Placed demands are priced + given service outcomes from
-    the window solve (an honest current-window projection, not a full-roll price)."""
+    the window solve (an honest current-window projection, not a full-roll price).
+
+    ``persist`` (Session 4B.3c CU1): when True, the window-0 solve is written to
+    the plant's canonical snapshot as a FIRST-CLASS RUN — Assignment / ServiceOutcome
+    / Schedule entities (extractor ``snapshot_writer``, ``is_scenario=False``, so
+    solution-extraction assignments carry RECONSTRUCTED basis as everywhere), plus
+    M5 horizon + M6 solve_complete evidence under the plant's ``runs/``. This makes
+    the sliced run readable by the Tier-2 sandbox and the M10 Explainer exactly as a
+    monolithic run — the connector-era prerequisite the 4B.3a/4B.3b debts named.
+    Persistence OBSERVES the solve; it never influences it (the solve values and the
+    determinism golden are unchanged — persisting is a pure write after the solve)."""
     if frozen_days > window_days:
         raise ValueError("frozen_days must be <= window_days")
     from mre.modules.extractor import Extractor
@@ -460,8 +478,26 @@ def build_rolling_view(
     status = "NO_ADMISSION"
     placed_demand_ids: set = set()
 
+    # CU1 persistence wiring — reporters + snapshot writer are opened only when
+    # ``persist`` is set (the API rolling worker). runs_dir mirrors the spine's
+    # (plant.out_dir / "runs"), so window-0 evidence sits beside the M0–M4 records.
+    runs_dir = plant.out_dir / "runs"
+    win_horizon_start = ref
+
     if free_ops:
         model, var_map = _build_window(plant, free_ops, [], ref, win_horizon_end)
+        win_horizon_start = var_map.horizon_start
+        # CU1: ONE M5 run recording the builder's ACTUAL horizon_start
+        # (max(min earliest, ref)) — the grid the assignments are written in — so
+        # _m5_horizon(evidence) aligns the sandbox/Explainer pin arithmetic with
+        # the persisted placements. Recorded after the build so it is exact.
+        if persist:
+            _report(ModuleCode.M5, "rolling window-0 model build",
+                    plant.snapshot_id, runs_dir,
+                    {"horizon_start": win_horizon_start.isoformat(),
+                     "horizon_end": win_horizon_end.isoformat(),
+                     "window_days": window_days, "frozen_days": frozen_days}
+                    ).end(RunStatus.SUCCESS)
         free_start_vars = []
         for op in free_ops:
             v = var_map.op_start.get(op["id"])
@@ -503,13 +539,35 @@ def build_rolling_view(
             demands = [d for d in plant.demands if d["id"] in dem_ids]
             extract_cm = dict(plant.cost_model)
             extract_cm["earliness_value"] = ev_used
+
+            # CU1: persist the window-0 solve as a first-class run. The M6
+            # solve_complete event carries the objective (_incumbent_objective
+            # reads it); the extractor writes Assignment/ServiceOutcome/Schedule
+            # into the plant's snapshot (is_scenario=False → a real schedule).
+            e_rep = None
+            m7_writer = None
+            if persist:
+                s_rep = _report(ModuleCode.M6, "rolling window-0 solve",
+                                plant.snapshot_id, runs_dir,
+                                {"num_search_workers": workers, "random_seed": seed})
+                s_rep.record_event(
+                    status_text="solve_complete",
+                    payload={"status": solve.status, "objective": solve.objective})
+                s_rep.end(RunStatus.SUCCESS)
+                e_rep = _report(ModuleCode.M7, "rolling window-0 extraction",
+                                plant.snapshot_id, runs_dir)
+                m7_writer = plant.store.extend_snapshot(plant.snapshot_id)
             result = Extractor().extract(
                 solve_values=sv, snapshot_id=plant.snapshot_id,
                 operations=free_ops, workpackages=wps, resources=plant.resources,
                 fulfillments=fuls, demands=demands, cost_model=extract_cm,
-                reporter=None, cal_windows=var_map.cal_windows,
-                op_eligible=var_map.op_eligible, snapshot_writer=None,
-                overtime_windows=var_map.overtime_windows, is_scenario=True)
+                reporter=e_rep, cal_windows=var_map.cal_windows,
+                op_eligible=var_map.op_eligible, snapshot_writer=m7_writer,
+                overtime_windows=var_map.overtime_windows,
+                is_scenario=not persist)
+            if persist:
+                m7_writer.finalize()
+                e_rep.end(RunStatus.SUCCESS)
             ledger = result.cost_ledger
             svc = result.service_outcomes
             op_drivers = {a["operation_ref"]: a.get("driver") for a in result.assignments}
@@ -522,6 +580,8 @@ def build_rolling_view(
         frozen_end=frozen_end, window_days=window_days, frozen_days=frozen_days,
         committed=committed, active=active, beyond_demand_ids=beyond,
         cost_ledger=ledger, service_outcomes=svc, op_drivers=op_drivers,
+        win_horizon_start=win_horizon_start, win_horizon_end=win_horizon_end,
+        persisted=persist,
         earliness_value=ev_used, status=status)
 
 

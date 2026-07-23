@@ -1,0 +1,72 @@
+{
+  "by_op": {
+    "8ad19d5c-7054-57e1-b959-38ad76a67982": {
+      "correlation_id": "corr-62d2e07a6b67ae75",
+      "feasible": true,
+      "within_budget": true,
+      "wall_time_s": 0.48,
+      "budget_s": 2.0,
+      "status": "FEASIBLE",
+      "message": "this placement is possible \u2014 pricing it now",
+      "placement": [
+        {
+          "operation_ref": "8ad19d5c-7054-57e1-b959-38ad76a67982",
+          "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+          "start": "2026-01-08T07:00:00+00:00",
+          "end": "2026-01-08T07:54:00+00:00",
+          "pinned": true
+        }
+      ],
+      "pin": {
+        "operation_ref": "8ad19d5c-7054-57e1-b959-38ad76a67982",
+        "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+        "start": "2026-01-08T07:00:00+00:00"
+      }
+    },
+    "9699d0fb-82ec-55dc-8f59-c89b191396c5": {
+      "correlation_id": "corr-b5ef6c23e8b5d471",
+      "feasible": true,
+      "within_budget": true,
+      "wall_time_s": 0.526,
+      "budget_s": 2.0,
+      "status": "FEASIBLE",
+      "message": "this placement is possible \u2014 pricing it now",
+      "placement": [
+        {
+          "operation_ref": "9699d0fb-82ec-55dc-8f59-c89b191396c5",
+          "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+          "start": "2026-01-05T07:00:00+00:00",
+          "end": "2026-01-05T10:15:00+00:00",
+          "pinned": true
+        },
+        {
+          "operation_ref": "e6e287c5-8159-5d41-a460-386fede05d05",
+          "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+          "start": "2026-01-05T07:00:00+00:00",
+          "end": "2026-01-05T08:21:00+00:00",
+          "pinned": false
+        },
+        {
+          "operation_ref": "d038c02e-f706-595f-9aa5-885c30fcdd24",
+          "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+          "start": "2026-01-05T09:25:00+00:00",
+          "end": "2026-01-05T10:43:00+00:00",
+          "pinned": false
+        },
+        {
+          "operation_ref": "85695f95-c3bd-544d-9fb8-99aa26eb8c57",
+          "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+          "start": "2026-01-05T08:21:00+00:00",
+          "end": "2026-01-05T09:25:00+00:00",
+          "pinned": false
+        }
+      ],
+      "pin": {
+        "operation_ref": "9699d0fb-82ec-55dc-8f59-c89b191396c5",
+        "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+        "start": "2026-01-05T07:00:00+00:00"
+      }
+    }
+  },
+  "contra_op": "9699d0fb-82ec-55dc-8f59-c89b191396c5"
+}

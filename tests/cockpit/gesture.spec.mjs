@@ -1097,7 +1097,7 @@ test("R-T2(4) CONTRADICTION (moved): the ghost visibly relocates before the card
   await expect(page.locator(".delta-card.verdict")).toBeVisible();
 });
 
-test("R-T2 CU2: the 'ask why' affordance routes to a graceful NAMED-DEBT response (R-AI1 connector)", async ({ page }) => {
+test("R-T2 CU2: the 'ask why' affordance on a MONOLITHIC card points to the conversational layer", async ({ page }) => {
   await boot(page);
   const op = opFor("verdict");
   const mv = await legalMove(page, op);
@@ -1105,7 +1105,10 @@ test("R-T2 CU2: the 'ask why' affordance routes to a graceful NAMED-DEBT respons
     window.__cockpit.drag.dropAt(op, rid, start, /*altKey*/ true).then(() => {}),
     [op, mv.resource_id, mv.start]);
   await page.locator(".delta-card .dc-askwhy").click();
-  // it ships (a real hand-off isn't wired — that's the named R-AI1 debt) and says so
+  // Session 4B.3c: the R-AI1 rolling-explainer connector is RETIRED. On a rolling
+  // board the ask-why auto-bridges to the panel (see rolling.two_beat.spec); on a
+  // monolithic card it points the planner at the conversational layer (which now
+  // answers), not at a debt.
   const tip = page.locator(".drag-reason");
   await expect(tip).toBeVisible();
   await expect(tip).toContainText("conversational layer");

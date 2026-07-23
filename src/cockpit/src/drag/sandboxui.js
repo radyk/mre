@@ -182,7 +182,11 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
       : `<div class="dc-lateness better">recovers ${hrs}h of lateness</div>`;
   }
 
-  // Top-N affected orders, each with its own tardiness ($) + lateness (min) delta.
+  // Top-N affected orders, each with its own tardiness ($) + lateness (min)
+  // delta. CU5a (4B.3c): this column is the per-Demand LATENESS/TARDINESS impact
+  // ONLY — the ledger does not roll PRODUCTION dollars per order (a named debt), so
+  // the header must never read "cost impact". The tardiness dollars shown are the
+  // per-Demand tardiness penalty, part of the whole-plan cost decomposition below.
   function _affectedOrdersHtml(result) {
     const orders = result.affected_orders || [];
     if (!orders.length) return "";
@@ -195,9 +199,9 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
       const lstr = (l != null && l !== 0)
         ? `${l > 0 ? "+" : "−"}${Math.abs(l)}min` : "";
       return `<div class="dc-order"><span class="dc-wo">${wo}</span>
-        <span class="dc-order-delta">${[tstr, lstr].filter(Boolean).join(" · ") || "no cost change"}</span></div>`;
+        <span class="dc-order-delta">${[tstr, lstr].filter(Boolean).join(" · ") || "no lateness change"}</span></div>`;
     }).join("");
-    return `<div class="dc-orders"><div class="dc-orders-h">affected orders</div>${rows}</div>`;
+    return `<div class="dc-orders"><div class="dc-orders-h">affected orders — lateness / tardiness impact</div>${rows}</div>`;
   }
 
   // The dominant driver in plain language, HEDGED where the attribution is by

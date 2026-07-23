@@ -100,6 +100,64 @@ path referencing the OneDrive path is a defect to fix. Relocation confirmed: `gi
 fsck --full` clean; non-slow suite green (the one defect — an editable-install
 `.pth` still pointing at OneDrive — was repointed at `C:\dev\mre\src`).
 
+**Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.3c — rolling parity:
+sliced runs become first-class citizens 2026-07-23.** Retires the three named debts
+that were one fact — a rolling-horizon run was second-class in persistence and the
+API (no persisted window-0 snapshot; no interaction payload; the Explainer read
+persisted snapshots only). **CU1:** `build_rolling_view(persist=True)` (the API
+rolling worker sets it) writes the window-0 solve as a FIRST-CLASS RUN —
+Assignment/ServiceOutcome/Schedule into the canonical snapshot (`is_scenario=False`,
+RECONSTRUCTED basis) + assignment Decisions + an M5 run recording the builder's
+ACTUAL horizon_start + an M6 `solve_complete` objective — so the Tier-2 sandbox and
+the M10 Explainer read a rolling run exactly as a monolithic one. Persistence
+OBSERVES, never influences: the persist digest == the no-persist digest (proven) and
+the rolling-determinism golden survives byte-identical; the completeness invariant is
+now COUNTED against the PERSISTED document. **CU2:** `assemble_rolling_document`
+carries the Tier-0 `interaction` payload for the ACTIVE-WINDOW ops (committed
+frozen-front bars carry no interaction op → non-targets BY CONSTRUCTION; occupancy
+still comes from `assignments[]` so committed work blocks a drop). Schedule
+**contract 1.7 → 1.8** (additive — `interaction` has existed since 1.2/1.3; no new
+field; monolithic goldens byte-identical bar the version string). **CU3:**
+`feasibility_ghost`/`sandbox_pin_resolve` gain `restrict_op_ids` (a shared
+`_restrict_window`) so the two-beat re-solves the WINDOW against the persisted
+window-0 incumbent, aligned because the builder derives the same horizon over the
+same ops; the API's `_rolling_gesture_context` reads the persisted document and hands
+the endpoints the window op set + the frozen-front placements as standing pins. Beat
+one RELAXES the frozen front; beat two HOLDS it — the standing-pin mechanism 4B.3b
+proved rolling-ready, now wired. All 4B.3b invariants re-proven on the rolling
+substrate (no-money-by-construction, correlation, decomposition-sums-exactly), with
+`no_committed_work_changes` now LOAD-BEARING; the FORCED infeasible contradiction is
+demonstrated on a REAL rolling run — gesture an active op at a COMMITTED slot → beat
+one feasible, beat two infeasible NAMING the blocking commitment. Forced alternatives
+inherit the identical path. **CU4 — R-AI1 rolling-explainer debt RETIRED:** the three
+sliced-world routes (`beyond-horizon`/`why-not-scheduled-yet`/`frozen`) are registered
+in `ROUTE_TAXONOMY` (a closed set) and answered from the document via
+`rolling_questions` in a `/ask` pre-route (`_try_rolling_answer`), logged to the
+ledger; `why-not` resolves the order name against the document's own vocabulary (the
+relevance guard) and HEDGES. Everything else falls through to the Explainer over the
+persisted window-0 snapshot exactly as a monolithic run — **CU4(c) "ask why" from a
+beat-two card is a REAL grounded answer** (the persisted assignment Decisions are the
+evidence); the cockpit ask-why button auto-bridges to the ask panel on a rolling
+board. **CU5 riders:** (a) the beat-two card's affected-orders column label reads
+lateness/tardiness impact, never "cost"; (b) NAMED DEBT — per-order PRODUCTION-dollar
+attribution (the ledger does not roll production cost per order; a ledger change, not
+this session). **Named residual:** beat two re-solves the active window holding only
+the committed front, so on a FEASIBLE (not proven-optimal) window-0 incumbent it can
+report a large favourable `cost_delta` reflecting window re-optimization, not the drag
+alone — honest (the true window cost with the op pinned), same as the monolithic
+sandbox on a suboptimal incumbent. **ACCEPTANCE BAR MET end to end** (proven through
+the HTTP API): a rolling run on pilot_scale, served, renders a sliced board where a
+gesture produces a feasibility ghost then a priced layered card, and "ask why" +
+"why isn't {order} scheduled yet?" receive live answers grounded in the run's
+evidence. Non-slow Python **1239 passed, 0 failed**; new slow ladders —
+`test_rolling_two_beat` **11**, `TestRollingTwoBeatAPI` **3**; both goldens
+byte-identical; cockpit JS **168 → 176** (+8 rolling two-beat, both themes). See the
+docs/04 2026-07-23 Session 4B.3c amendment and docs/07 v2.37. Lesson: the three named
+debts were one fact wearing three coats — a rolling run that persists nothing cannot
+be sandboxed, shaded, or explained; persist the window-0 solve as a real run and all
+three fall together, and make beat one relax what beat two holds so the R-T2
+contradiction is load-bearing on the rolling substrate too.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.3b — the two-beat
 sandbox (R-T2 implemented) 2026-07-23.** 4B.3a rendered the sliced world read-only;
 4B.3b makes the Tier-2 sandbox + forced-alternative gestures a TWO-BEAT interaction

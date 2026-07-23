@@ -7226,3 +7226,125 @@ conflict) end-to-end while naming the one you can't (a pinned op never relocates
 between exact-pin beats); and hold the priced card to the ledger — the decomposition
 lines must SUM to the verdict, with an explicit remainder, or the card is making a
 claim the evidence can't back.
+
+## 2026-07-23 — Session 4B.3c: rolling parity — sliced runs become first-class citizens
+
+Retires the three named debts that were, in truth, one fact: a rolling-horizon run
+was a second-class citizen in persistence and the API. `prepare_plant` ran M0–M4
+only and `build_rolling_view` extracted in-memory with `snapshot_writer=None`, so no
+window-0 canonical snapshot existed; a rolling document carried no interaction
+payload, so the cockpit could not compute Tier-0 on a sliced board; and the M10
+Explainer read persisted snapshots only, so both "ask why" (4B.3b) and the rolling
+questions (4B.3a) routed to named-debt responses. This session makes a rolling run a
+first-class run — persisted, interaction-bearing, sandbox-gestured, and
+conversationally answerable — so the acceptance-bar sentence holds end to end: a
+rolling run on pilot_scale, served through the API, renders a sliced board where a
+sandbox gesture produces a feasibility ghost, then a priced layered card, and "ask
+why" plus "why isn't {order} scheduled yet?" receive live answers grounded in the
+run's evidence. Deterministic throughout (PYTHONHASHSEED=0, workers 1, seed 42/0).
+
+**CU1 — the rolling run persists a real window-0 snapshot.** `build_rolling_view`
+gains `persist` (the API rolling worker sets it). When set, the window-0 solve is
+written as a FIRST-CLASS RUN: the Extractor runs with `is_scenario=False`,
+`snapshot_writer=store.extend_snapshot(snap_id)` and an M7 reporter, so
+Assignment / ServiceOutcome / Schedule entities land in the plant's canonical
+snapshot and assignment Decisions land in evidence (RECONSTRUCTED basis, as
+everywhere); an M5 run records the builder's ACTUAL horizon_start (max(min
+earliest, ref) — the grid the placements are written in, so `_m5_horizon(evidence)`
+aligns the sandbox/Explainer pin arithmetic with the persisted placements), and an
+M6 `solve_complete` event records the objective (`_incumbent_objective` reads it).
+Persistence OBSERVES the solve and never influences it — the solve values, and the
+rolling-determinism golden, are unchanged (persisting is a pure write after the
+solve; the golden runs `run_rolling_horizon`, untouched). The frozen front's
+committed assignments persist with their `commitment_state`; the completeness
+invariant (4B.3a) is now COUNTED against the PERSISTED document
+(`test_completeness_invariant_holds_on_the_PERSISTED_document`), not only the
+in-memory view.
+
+**CU2 — the rolling document gains its interaction payload.** `assemble_rolling_
+document` now builds the SAME Tier-0 legality payload (`_interaction_block`) the
+monolithic board carries, over the window's placed ops, so the cockpit shades legal
+drop zones and targets a gesture on a sliced board. Committed (frozen-front) bars
+and beyond-horizon tray items remain non-targets — the client reads
+`commitment_state` and never offers a gesture on a committed bar; occupancy still
+comes from `assignments[]` (committed included), so committed work blocks a drop.
+Schedule contract **1.7 → 1.8** (additive: `interaction` — optional since 1.2, split
+since 1.3 — is now POPULATED on a rolling document; no new field). Monolithic
+goldens byte-identical (only the version string moves).
+
+**CU3 — the two-beat endpoints accept a rolling schedule.** `feasibility_ghost` and
+`sandbox_pin_resolve` gain `restrict_op_ids` (the window op set); a shared
+`_restrict_window` filters the loaded ops/wps/fuls/demands to the active window, so
+the sandbox re-solves the WINDOW (not the whole plant) against the persisted
+window-0 incumbent — and because the builder derives the SAME horizon over the same
+ops, the pin arithmetic aligns. The API's `_rolling_gesture_context` reads the
+persisted document and hands the endpoints the window op set + the frozen-front
+placements as standing pins. Beat one RELAXES the frozen front (no committed pins);
+beat two HOLDS it (committed_pins joined with any accepted-edit lineage pins) — the
+same standing-pin mechanism 4B.3b proved rolling-ready, now wired, not redesigned.
+All 4B.3b invariants re-proven on the rolling substrate: no-money-by-construction,
+correlation, decomposition-sums-exactly, and `no_committed_work_changes` — the last
+now LOAD-BEARING (the frozen front is real committed work). The FORCED infeasible
+contradiction is demonstrated on a REAL rolling run: gesture an active op at a
+COMMITTED slot -> beat one feasible (frozen front relaxed), beat two infeasible
+(frozen front held), the verdict NAMING the blocking commitment
+(`test_forced_infeasible_contradiction_on_a_committed_slot`). Forced alternatives
+inherit the identical path.
+
+**CU4 — the Explainer reads the rolling run (R-AI1 debt RETIRED).** The three
+sliced-world routes (`beyond-horizon`, `why-not-scheduled-yet`, `frozen`) are
+registered in `ROUTE_TAXONOMY` (a closed set, not an ad-hoc bolt) and answered from
+the persisted document via `rolling_questions` in a deterministic pre-route in the
+`/ask` path (`_try_rolling_answer`), logged to the question ledger as first-class
+labeled data. `why-not-scheduled-yet` resolves the order name against the document's
+own vocabulary (the relevance guard — never echoes a phantom id) and HEDGES (a tray
+order gets admitted/due/estimate, never a placement; a placed order is told it is
+already in the window; an unknown token gets an honest clarify). Everything else —
+`why is {order} on {machine}` (an "ask why" from a beat-two card), which orders are
+late, the order schedule — falls through to the Explainer over the persisted
+window-0 snapshot exactly as a monolithic run: **CU4(c) "ask why" is now a real
+grounded answer**, not a named-debt tip (the persisted assignment Decisions are the
+evidence it cites). The 4B.3a R-AI1 rolling-explainer entry and its 4B.3b "ask why"
+extension are both RETIRED here: both blocked consumers are now unblocked.
+
+**CU5 — riders.** (a) The beat-two card's `affected_orders` carries per-Demand
+TARDINESS ($) and LATENESS (min) deltas ONLY; the frontend column label reads
+lateness/tardiness impact, never "cost impact" (fixed where it overclaimed). (b)
+NAMED DEBT — per-order PRODUCTION-dollar attribution: the extractor's ledger does
+not roll production cost up per order (only tardiness is per-Demand), so the card's
+who-pays layer is tardiness-truth per order plus a whole-plan cost decomposition; a
+per-order production-dollar column would require the extractor to attribute
+production cost per Demand (a ledger change, not this session).
+
+**A residual, named honestly.** The two-beat's beat two re-solves the active window
+holding only the committed front, so on a FEASIBLE (not proven-optimal) window-0
+incumbent it can find a globally cheaper window arrangement and report a large
+favourable `cost_delta` that reflects re-optimizing the window, not the drag alone.
+This is honest (it IS the true window cost with the op pinned vs the incumbent) and
+is the same behaviour the monolithic sandbox has on a suboptimal incumbent; a
+better-solved incumbent shrinks it. Not a defect; recorded so the number is read
+correctly.
+
+**Verification.** The session's new tests are slow (a rolling solve + persist per
+fixture); the non-slow Python suite stays green at **1239 passed, 0 failed**. New
+slow ladders: `test_rolling_two_beat.py` **11 passed** (CU1 persisted-run
+readability + persisted-document completeness, CU2 interaction payload, CU3
+two-beat + no-committed + FORCED contradiction + forced-alt, CU4 rolling routes +
+why-not hedge/decline + why-on-machine grounding); `test_api_endpoints.py::
+TestRollingTwoBeatAPI` **3 passed** (served rolling doc + interaction, the two-beat
+through the HTTP surface, rolling questions through `/ask`). Monolithic AND rolling
+goldens byte-identical (`test_defaults_reproduce_baseline`, rolling determinism
+golden green). Cockpit JS: the rolling two-beat spec added (both themes). Same-commit
+spec: schedule contract 1.8, this docs/04 amendment (R-AI1 retirement + the CU5b
+debt), docs/07 v2.37, CLAUDE.md.
+
+Lesson: the three named debts were one fact wearing three coats — a rolling run that
+persists nothing cannot be sandboxed, cannot be shaded, cannot be explained. Persist
+the window-0 solve as a real run and all three fall together: restrict the sandbox
+build to the window (so it re-solves the slice, aligned with the persisted
+incumbent) and the frozen front becomes standing pins that make the R-T2
+contradiction load-bearing; carry the same interaction payload and the sliced board
+gestures; register the sliced routes and hand the Explainer the document and the
+persisted snapshot, and the answers are grounded, not named-debt tips. Make beat one
+relax what beat two holds and the contradiction is real on the rolling substrate,
+not just the monolithic one.

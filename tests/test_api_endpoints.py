@@ -177,7 +177,7 @@ class TestScheduleDocument:
     def test_document_validates_against_contract(self, api):
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
         parsed = ScheduleDocument.model_validate(doc)
-        assert parsed.contract_version == "1.7"
+        assert parsed.contract_version == "1.8"
         assert parsed.schedule_id == api.schedule_id
         assert parsed.run_id == api.run["id"]
         assert parsed.solver.deterministic is True
@@ -227,7 +227,7 @@ class TestScheduleMeta:
     def test_meta_joins_the_certificate_grade(self, api):
         meta = _data(api.client.get(f"/schedules/{api.schedule_id}/meta"))
         assert meta["id"] == api.schedule_id
-        assert meta["contract_version"] == "1.7"
+        assert meta["contract_version"] == "1.8"
         assert meta["grade"] == "ACCEPTED"
         assert meta["costing_grade"] == "C1"
         assert meta["submission_id"] == api.submission["submission_id"]
@@ -262,7 +262,7 @@ class TestScheduleInteraction:
         data = _data(api.client.get(
             f"/schedules/{api.schedule_id}/interaction"))
         assert data["schedule_id"] == api.schedule_id
-        assert data["contract_version"] == "1.7"
+        assert data["contract_version"] == "1.8"
         block = InteractionBlock.model_validate(data["interaction"])
         # one entry per scheduled op, each with its eligible set + the graph
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
@@ -644,7 +644,7 @@ class TestRollingSolve:
 
         sid = run["result"]["schedule_id"]
         doc = _data(client.get(f"/schedules/{sid}"))
-        assert doc["contract_version"] == "1.7"
+        assert doc["contract_version"] == "1.8"
         assert doc["rolling"] is not None
         r = doc["rolling"]
         # the sliced world: committed + active bars, and a populated tray.
@@ -705,3 +705,88 @@ class TestTwoBeatSandbox:
     def test_feasibility_unknown_schedule_404(self, api):
         _error(api.client.post("/schedules/nope/sandbox/feasibility",
                                json={}), 404)
+
+
+# ---------------------------------------------------------------------------
+# Session 4B.3c — the two-beat + the rolling questions, through the API, on a
+# REAL sliced (rolling-horizon) run: the connector-era wiring end to end.
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def rolling_api(tmp_path_factory):
+    """A sliced (rolling) solve on pilot_scale, served through the API — a wide
+    window so the current-window has both a committed front and an active band."""
+    root = tmp_path_factory.mktemp("rolling_api_data")
+    sub_src = tmp_path_factory.mktemp("rsub") / "pilot"
+    generate(sub_src, scenario="pilot_scale", orders=40, seed=1)
+    client = TestClient(create_app(data_root=root))
+    sub = _data(client.post("/submissions", json={"path": str(sub_src)}))
+    assert sub["grade"] in ("ACCEPTED",)
+    solve = _data(client.post(
+        f"/submissions/{sub['submission_id']}/solve",
+        json={"sliced": True, "window_days": 14, "frozen_days": 3,
+              "time_limit": 10, "deterministic": True, "sync": True},
+    ), status=202)
+    run = _data(client.get(f"/runs/{solve['run_id']}"))
+    assert run["status"] == "succeeded", run.get("error")
+    return SimpleNamespace(client=client, schedule_id=run["result"]["schedule_id"])
+
+
+@pytest.mark.slow
+class TestRollingTwoBeatAPI:
+    """The acceptance-bar path: a rolling run, served, with the two-beat gesture
+    and a live conversational answer — all through the HTTP surface."""
+
+    def _cross_machine_active(self, client, sid):
+        doc = _data(client.get(f"/schedules/{sid}"))
+        inter = _data(client.get(f"/schedules/{sid}/interaction"))["interaction"]
+        iops = {o["operation_ref"]: o for o in inter["operations"]}
+        for a in doc["assignments"]:
+            if a.get("commitment_state") != "active_window":
+                continue
+            io = iops.get(a["operation_ref"])
+            if io and len(io["eligible_resource_ids"]) > 1:
+                alt = [r for r in io["eligible_resource_ids"] if r != a["resource_id"]]
+                if alt:
+                    return a["operation_ref"], alt[0], a["chunks"][0]["start"]
+        return None
+
+    def test_served_document_is_rolling_with_interaction(self, rolling_api):
+        doc = _data(rolling_api.client.get(f"/schedules/{rolling_api.schedule_id}"))
+        assert doc["contract_version"] == "1.8"
+        assert doc["rolling"] is not None
+        assert doc["rolling"]["beyond_horizon"], "empty tray"
+        # the split-endpoint interaction payload is served for the active window
+        inter = _data(rolling_api.client.get(
+            f"/schedules/{rolling_api.schedule_id}/interaction"))
+        assert inter["interaction"]["operations"]
+
+    def test_two_beat_gesture_through_the_api(self, rolling_api):
+        c, sid = rolling_api.client, rolling_api.schedule_id
+        tgt = self._cross_machine_active(c, sid)
+        assert tgt is not None, "no cross-machine active op on the served board"
+        op, alt, start = tgt
+        pin = {"pin_op_id": op, "pin_resource_id": alt, "pin_start_iso": start,
+               "deterministic": True}
+        one = _data(c.post(f"/schedules/{sid}/sandbox/feasibility", json=pin))
+        assert one["feasible"] is True
+        # beat one carries no money (R-T2(1))
+        assert not any(t in k.lower() for k in one
+                       for t in ("cost", "delta", "price", "objective", "tardiness"))
+        two = _data(c.post(f"/schedules/{sid}/sandbox", json=pin))
+        assert two["correlation_id"] == one["correlation_id"]
+        assert two["feasible"] is True
+        assert two["no_committed_work_changes"] is True
+        if two.get("cost_lines"):
+            s = round(sum(l["delta"] for l in two["cost_lines"]), 2)
+            assert abs(s - (two.get("cost_delta_abs") or 0.0)) < 0.01
+
+    def test_rolling_questions_answer_through_ask(self, rolling_api):
+        c, sid = rolling_api.client, rolling_api.schedule_id
+        r = _data(c.post(f"/schedules/{sid}/ask",
+                         json={"question": "what's beyond the horizon?"}))
+        assert r["bundle"]["route"] == "beyond-horizon"
+        assert "beyond" in r["answer"].lower()
+        r2 = _data(c.post(f"/schedules/{sid}/ask",
+                          json={"question": "what's frozen?"}))
+        assert r2["bundle"]["route"] == "frozen"

@@ -1,7 +1,7 @@
 {
   "what's beyond the horizon?": {
     "question": "what's beyond the horizon?",
-    "answer": "22 order(s) are known but not yet scheduled \u2014 they sit beyond the current window and will enter a later one. Nearest due: ORD-000012.\n\nregister: testimony",
+    "answer": "14 order(s) are known but not yet scheduled \u2014 they sit beyond the current window and will enter a later one. Nearest due: ORD-000018.\n\nregister: testimony",
     "bundle": {
       "register": "testimony",
       "subject_type": "beyond-horizon",
@@ -14,13 +14,30 @@
   },
   "what's frozen?": {
     "question": "what's frozen?",
-    "answer": "12 operation(s) are frozen and committed \u2014 locked in the frozen zone through 2026-01-06.\n\nregister: testimony",
+    "answer": "38 operation(s) are frozen and committed \u2014 locked in the frozen zone through 2026-01-08.\n\nregister: testimony",
     "bundle": {
       "register": "testimony",
       "subject_type": "frozen",
       "cited_refs": {
         "operations": [],
         "resources": [],
+        "demands": []
+      }
+    }
+  },
+  "why is ORD-000021 on CUT-01?": {
+    "question": "why is ORD-000021 on CUT-01?",
+    "answer": "ORD-000021 is on CUT-01 because the machine was the lowest-cost eligible placement for it in this window.\n\nregister: testimony",
+    "bundle": {
+      "register": "testimony",
+      "subject_type": "operation",
+      "cited_refs": {
+        "operations": [
+          "8ad19d5c-7054-57e1-b959-38ad76a67982"
+        ],
+        "resources": [
+          "440fbc69-bb11-5b15-944c-9f0844e57db6"
+        ],
         "demands": []
       }
     }

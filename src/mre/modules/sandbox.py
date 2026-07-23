@@ -208,6 +208,27 @@ def classify_sandbox_outcome(status: str, wall_time_s: float,
     return SANDBOX_NO_VERDICT
 
 
+def _restrict_window(ops, wps, fuls, demands, restrict_op_ids):
+    """Restrict the loaded entity sets to a rolling ACTIVE WINDOW (Session 4B.3c
+    CU3). ``restrict_op_ids`` is the set of operation ids the window solve placed
+    (committed ∪ active — every op with a persisted assignment). Restricting the
+    build to exactly that set makes the sandbox re-solve the WINDOW, not the whole
+    plant: the SolverBuilder derives the same horizon_start the window-0 solve did
+    (it was built over the same ops), so the pin arithmetic aligns with the
+    persisted placements, and the beyond-horizon (future) work never re-enters as
+    free ops. None ⇒ no restriction (a monolithic schedule)."""
+    if restrict_op_ids is None:
+        return ops, wps, fuls, demands
+    keep = set(restrict_op_ids)
+    ops = [o for o in ops if o["id"] in keep]
+    wp_ids = {o.get("workpackage_ref", "") for o in ops}
+    wps = [w for w in wps if w["id"] in wp_ids]
+    fuls = [f for f in fuls if f.get("workpackage_ref", "") in wp_ids]
+    dem_ids = {f.get("demand_ref", "") for f in fuls}
+    demands = [d for d in demands if d["id"] in dem_ids]
+    return ops, wps, fuls, demands
+
+
 def feasibility_ghost(
     out_dir: Path | str,
     snapshot_id: str,
@@ -218,6 +239,7 @@ def feasibility_ghost(
     det_time_s: float = FEASIBILITY_DET_TIME_S,
     runs_subdir: str = "runs",
     deterministic: bool = True,
+    restrict_op_ids: Optional[set] = None,
 ) -> FeasibilityGhost:
     """BEAT ONE (R-T2): a first-feasible feasibility verdict + placement for a
     dropped bar, under a SMALL deterministic budget, carrying NO monetary
@@ -259,6 +281,11 @@ def feasibility_ghost(
     costmodels = list(reader.iter_entities("costmodel"))
     incumbent_assignments = list(reader.iter_entities("assignment"))
     cost_model = costmodels[0] if costmodels else {}
+
+    # CU3: on a rolling schedule, restrict the build to the ACTIVE WINDOW's ops so
+    # beat one re-solves the window (not the whole plant), aligned with the
+    # persisted window-0 incumbent.
+    ops, wps, fuls, demands = _restrict_window(ops, wps, fuls, demands, restrict_op_ids)
 
     evidence = _read_evidence(out_dir / runs_subdir)
     ctx = derive_base_context(out_dir / runs_subdir)
@@ -393,6 +420,7 @@ def sandbox_pin_resolve(
     runs_subdir: str = "runs",
     deterministic: bool = True,
     standing_pins: Optional[list[dict]] = None,
+    restrict_op_ids: Optional[set] = None,
 ) -> SandboxResult:
     """Re-solve with one op pinned to (machine + time), the rest free, under a
     hard `budget_s`. Returns a classified :class:`SandboxResult`.
@@ -437,6 +465,12 @@ def sandbox_pin_resolve(
     costmodels = list(reader.iter_entities("costmodel"))
     incumbent_assignments = list(reader.iter_entities("assignment"))
     cost_model = costmodels[0] if costmodels else {}
+
+    # CU3: on a rolling schedule, restrict the build to the ACTIVE WINDOW's ops.
+    # Beat two ALSO holds the committed frozen front (passed as ``standing_pins``),
+    # so it can legitimately contradict beat one (which relaxed them) — the R-T2
+    # contradiction, now on a real rolling substrate.
+    ops, wps, fuls, demands = _restrict_window(ops, wps, fuls, demands, restrict_op_ids)
 
     evidence = _read_evidence(out_dir / runs_subdir)
     ctx = derive_base_context(out_dir / runs_subdir)

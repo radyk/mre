@@ -163,7 +163,7 @@ def doc(world) -> ScheduleDocument:
 class TestHeader:
     def test_versioned_from_day_one(self, doc):
         # 1.1 (2026-07-13): additive annotations.pool block for pool members
-        assert doc.contract_version == CONTRACT_VERSION == "1.7"
+        assert doc.contract_version == CONTRACT_VERSION == "1.8"
 
     def test_pool_annotation_absent_on_ordinary_documents(self, doc):
         assert doc.annotations.pool is None

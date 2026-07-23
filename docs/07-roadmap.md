@@ -1,6 +1,36 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.36 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.37 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.37:** **Session 4B.3c — rolling parity: sliced runs become first-class
+citizens** 2026-07-23 (docs/04 amendment). Retires the three named debts that were
+one fact — a rolling run was second-class in persistence and the API. **CU1:**
+`build_rolling_view(persist=True)` writes the window-0 solve as a FIRST-CLASS RUN —
+Assignment/ServiceOutcome/Schedule into the canonical snapshot (`is_scenario=False`,
+RECONSTRUCTED basis) + assignment Decisions + M5 horizon + M6 solve_complete
+evidence — so the sandbox and Explainer read it exactly as a monolithic run;
+persistence OBSERVES, never influences (persist digest == no-persist digest, proven;
+the rolling determinism golden survives); the completeness invariant is now counted
+against the PERSISTED document. **CU2:** the rolling document carries the Tier-0
+`interaction` payload for its ACTIVE WINDOW (committed bars carry no interaction op →
+non-targets by construction). Schedule **contract 1.7 → 1.8** (additive; the field
+existed since 1.2). **CU3:** `feasibility_ghost`/`sandbox_pin_resolve` gain
+`restrict_op_ids` so the two-beat endpoints re-solve the WINDOW against the persisted
+incumbent; the API's `_rolling_gesture_context` hands them the window op set + the
+frozen front as standing pins. All 4B.3b invariants re-proven on the rolling
+substrate — `no_committed_work_changes` now LOAD-BEARING; the FORCED infeasible
+contradiction demonstrated by gesturing an active op at a committed slot (beat one
+relaxes → feasible; beat two holds → infeasible, naming the commitment). **CU4:** the
+three sliced-world routes registered in `ROUTE_TAXONOMY` and answered from the
+document via `rolling_questions` in a `/ask` pre-route (logged to the ledger),
+hedging honestly; everything else falls through to the Explainer over the persisted
+snapshot — **"ask why" is a real grounded answer now (R-AI1 rolling-explainer debt
+RETIRED)**; the cockpit ask-why button auto-bridges to the ask panel on a rolling
+board. **CU5:** (a) the card's affected-orders column label reads lateness/tardiness
+impact, never cost; (b) named debt — per-order production-dollar attribution (a
+ledger change). Non-slow Python **1239 passed, 0 failed**; new slow: rolling two-beat
+**11** + rolling API **3**; both goldens byte-identical; cockpit JS **168 → 176**
+(+8 rolling two-beat, both themes).
 
 **v2.36:** **Session 4B.3b — the two-beat sandbox (R-T2 implemented)** 2026-07-23
 (docs/04 amendment). Makes the Tier-2 sandbox + forced-alternative gestures a

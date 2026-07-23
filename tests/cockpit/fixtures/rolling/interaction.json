@@ -1,0 +1,264 @@
+{
+  "schedule_id": "sched-rolling-fixture",
+  "contract_version": "1.8",
+  "interaction": {
+    "operations": [
+      {
+        "operation_ref": "03d4c321-252b-55c5-964e-c7c2c651ed06",
+        "eligible_resource_ids": [
+          "ce249601-8798-576b-88ed-2af0bf016812"
+        ],
+        "dim_reasons": {},
+        "working_min": 130,
+        "setup_min": 10,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "1ab1fd36-05fa-5532-8c2d-c62f87eb034e",
+        "eligible_resource_ids": [
+          "c3459e27-de11-5e09-be75-5ec5e29b1499"
+        ],
+        "dim_reasons": {},
+        "working_min": 301,
+        "setup_min": 10,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "1ef9d581-0a7b-5598-bd73-7f9df3f23423",
+        "eligible_resource_ids": [
+          "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+          "440fbc69-bb11-5b15-944c-9f0844e57db6",
+          "df5aa682-bc17-5d5a-b721-edd24de1725d"
+        ],
+        "dim_reasons": {},
+        "working_min": 426,
+        "setup_min": 15,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "34f7ddad-0171-5498-bee9-d848f0b7f404",
+        "eligible_resource_ids": [
+          "3793479c-d1e7-5f6c-92c0-a1b03309b8a5"
+        ],
+        "dim_reasons": {},
+        "working_min": 150,
+        "setup_min": 30,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "4759891b-cc09-5da6-849c-47017e9ae102",
+        "eligible_resource_ids": [
+          "d9cc6ac1-db81-5f9d-b946-d33e96f60256"
+        ],
+        "dim_reasons": {},
+        "working_min": 59,
+        "setup_min": 20,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "4aa9121a-fbfa-50fd-a30d-3f649e567a09",
+        "eligible_resource_ids": [
+          "d9cc6ac1-db81-5f9d-b946-d33e96f60256"
+        ],
+        "dim_reasons": {},
+        "working_min": 398,
+        "setup_min": 20,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "4e5af789-06db-5664-b3ee-be590311eb77",
+        "eligible_resource_ids": [
+          "7c78eed8-d762-5640-aeb0-5291be2b161e"
+        ],
+        "dim_reasons": {},
+        "working_min": 431,
+        "setup_min": 20,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "665809b3-4c7b-588f-a577-4143682a5423",
+        "eligible_resource_ids": [
+          "d9cc6ac1-db81-5f9d-b946-d33e96f60256"
+        ],
+        "dim_reasons": {},
+        "working_min": 89,
+        "setup_min": 20,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "73afd775-d06f-5ef0-b1bb-38c9ed9dd318",
+        "eligible_resource_ids": [
+          "fd34d391-ffa4-5def-a712-05266480c417"
+        ],
+        "dim_reasons": {},
+        "working_min": 260,
+        "setup_min": 20,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "772edfb4-b932-5e2c-b1e7-755300920b10",
+        "eligible_resource_ids": [
+          "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+          "440fbc69-bb11-5b15-944c-9f0844e57db6",
+          "df5aa682-bc17-5d5a-b721-edd24de1725d"
+        ],
+        "dim_reasons": {},
+        "working_min": 5521,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": true
+      },
+      {
+        "operation_ref": "787568c8-68db-5e6e-8c4b-13dd66bad64b",
+        "eligible_resource_ids": [
+          "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+          "440fbc69-bb11-5b15-944c-9f0844e57db6",
+          "df5aa682-bc17-5d5a-b721-edd24de1725d"
+        ],
+        "dim_reasons": {},
+        "working_min": 456,
+        "setup_min": 15,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "8430485f-ad78-5438-a05b-2f3fdd306a14",
+        "eligible_resource_ids": [
+          "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+          "440fbc69-bb11-5b15-944c-9f0844e57db6",
+          "df5aa682-bc17-5d5a-b721-edd24de1725d"
+        ],
+        "dim_reasons": {},
+        "working_min": 2941,
+        "setup_min": 0,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": true
+      },
+      {
+        "operation_ref": "8ad19d5c-7054-57e1-b959-38ad76a67982",
+        "eligible_resource_ids": [
+          "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+          "440fbc69-bb11-5b15-944c-9f0844e57db6",
+          "df5aa682-bc17-5d5a-b721-edd24de1725d"
+        ],
+        "dim_reasons": {},
+        "working_min": 54,
+        "setup_min": 15,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "9699d0fb-82ec-55dc-8f59-c89b191396c5",
+        "eligible_resource_ids": [
+          "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+          "440fbc69-bb11-5b15-944c-9f0844e57db6",
+          "df5aa682-bc17-5d5a-b721-edd24de1725d"
+        ],
+        "dim_reasons": {},
+        "working_min": 195,
+        "setup_min": 15,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "a033968e-3f66-529e-b149-c646e0fa79cb",
+        "eligible_resource_ids": [
+          "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+          "440fbc69-bb11-5b15-944c-9f0844e57db6",
+          "df5aa682-bc17-5d5a-b721-edd24de1725d"
+        ],
+        "dim_reasons": {},
+        "working_min": 84,
+        "setup_min": 15,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "a647785d-e392-5146-a315-73622a4b422c",
+        "eligible_resource_ids": [
+          "7c78eed8-d762-5640-aeb0-5291be2b161e"
+        ],
+        "dim_reasons": {},
+        "working_min": 419,
+        "setup_min": 20,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "bdc8727e-ef4e-5b3b-916e-7e03635f30b8",
+        "eligible_resource_ids": [
+          "7c78eed8-d762-5640-aeb0-5291be2b161e"
+        ],
+        "dim_reasons": {},
+        "working_min": 461,
+        "setup_min": 20,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      },
+      {
+        "operation_ref": "f9d0b145-1deb-5d10-8b27-9c04e8c7fd0e",
+        "eligible_resource_ids": [
+          "ce249601-8798-576b-88ed-2af0bf016812"
+        ],
+        "dim_reasons": {},
+        "working_min": 130,
+        "setup_min": 10,
+        "earliest_start": "2026-01-05T00:00:00Z",
+        "resumable": false
+      }
+    ],
+    "precedence_edges": [
+      {
+        "predecessor_ref": "1ef9d581-0a7b-5598-bd73-7f9df3f23423",
+        "successor_ref": "4e5af789-06db-5664-b3ee-be590311eb77",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "34f7ddad-0171-5498-bee9-d848f0b7f404",
+        "successor_ref": "03d4c321-252b-55c5-964e-c7c2c651ed06",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "73afd775-d06f-5ef0-b1bb-38c9ed9dd318",
+        "successor_ref": "34f7ddad-0171-5498-bee9-d848f0b7f404",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "787568c8-68db-5e6e-8c4b-13dd66bad64b",
+        "successor_ref": "bdc8727e-ef4e-5b3b-916e-7e03635f30b8",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "8ad19d5c-7054-57e1-b959-38ad76a67982",
+        "successor_ref": "4759891b-cc09-5da6-849c-47017e9ae102",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "9699d0fb-82ec-55dc-8f59-c89b191396c5",
+        "successor_ref": "73afd775-d06f-5ef0-b1bb-38c9ed9dd318",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      },
+      {
+        "predecessor_ref": "a033968e-3f66-529e-b149-c646e0fa79cb",
+        "successor_ref": "665809b3-4c7b-588f-a577-4143682a5423",
+        "min_lag_min": 0,
+        "max_lag_min": null
+      }
+    ]
+  }
+}

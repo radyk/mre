@@ -549,12 +549,17 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
             raise HTTPException(409, "sandbox re-solves run against a base "
                                      "schedule; a what-if scenario is itself one")
         run = registry.get_run(row["run_id"])
+        # CU3: a rolling schedule restricts beat one to the active window; beat one
+        # RELAXES the frozen front (committed_pins are not held here) so beat two
+        # can contradict it.
+        window_op_ids, _committed = _rolling_gesture_context(row)
         result = feasibility_ghost(
             out_dir=Path(run["out_dir"]), snapshot_id=row["snapshot_id"],
             pin_op_id=req.pin_op_id, pin_resource_id=req.pin_resource_id,
             pin_start_iso=req.pin_start_iso,
             budget_s=req.budget_s if req.budget_s is not None else FEASIBILITY_BUDGET_S,
             deterministic=req.deterministic,
+            restrict_op_ids=window_op_ids,
         )
         return _ok(result.summary())
 
@@ -566,6 +571,12 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
             raise HTTPException(409, "sandbox re-solves run against a base "
                                      "schedule; a what-if scenario is itself one")
         run = registry.get_run(row["run_id"])
+        # CU3: a rolling schedule restricts beat two to the active window AND holds
+        # the frozen front (committed_pins) as standing pins joined with any
+        # accepted-edit lineage pins — so a drop onto a committed slot is refused,
+        # naming the blocking commitment (the R-T2 contradiction, load-bearing on
+        # the rolling substrate).
+        window_op_ids, committed_pins = _rolling_gesture_context(row)
         result = sandbox_pin_resolve(
             out_dir=Path(run["out_dir"]), snapshot_id=row["snapshot_id"],
             pin_op_id=req.pin_op_id, pin_resource_id=req.pin_resource_id,
@@ -573,7 +584,8 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
             budget_s=req.budget_s if req.budget_s is not None else SANDBOX_BUDGET_S,
             deterministic=req.deterministic,
             # R-DP8: hold the lineage's accepted commitments during the re-solve.
-            standing_pins=registry.schedule_pins(schedule_id),
+            standing_pins=(registry.schedule_pins(schedule_id) or []) + committed_pins,
+            restrict_op_ids=window_op_ids,
         )
         return _ok(result.summary())
 
@@ -626,6 +638,14 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
     def ask(schedule_id: str, req: AskRequest):
         row = _live_schedule(registry, schedule_id)
         run = registry.get_run(row["run_id"])
+        # CU4: hand the persisted document to the answerer so a rolling schedule's
+        # sliced-world questions route from the RollingBlock. Read best-effort — a
+        # missing/unreadable doc simply means the monolithic Explainer path.
+        document = None
+        try:
+            document = json.loads(Path(row["document_path"]).read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            document = None
         answer, bundle_meta = _answer_question(
             Path(run["out_dir"]), row["snapshot_id"], req.question,
             use_llm=req.llm and bool(os.environ.get("ANTHROPIC_API_KEY")),
@@ -634,6 +654,7 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
             ledger_path=_ledger_path(registry),
             schedule_id=schedule_id,
             session_id=req.session_id,
+            document=document,
         )
         return _ok({"question": req.question, "answer": answer,
                     "bundle": bundle_meta})
@@ -681,6 +702,42 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
 # ---------------------------------------------------------------------------
 # Workers (module-level so background tasks are picklable/testable)
 # ---------------------------------------------------------------------------
+
+def _rolling_gesture_context(row: dict) -> tuple[Optional[set], list[dict]]:
+    """For a ROLLING schedule (Session 4B.3c CU3), read the persisted document and
+    return ``(window_op_ids, committed_pins)``:
+
+      * ``window_op_ids`` — the ops the window-0 solve placed (committed ∪ active);
+        the sandbox restricts its re-solve to exactly this set, so it re-solves the
+        ACTIVE WINDOW, not the whole plant, aligned with the persisted incumbent.
+      * ``committed_pins`` — the frozen-front placements as standing-pin dicts;
+        beat two holds them (real committed work), beat one relaxes them, which is
+        what lets beat two legitimately contradict beat one on a real rolling run.
+
+    Returns ``(None, [])`` on a monolithic document (no rolling block) — the
+    sandbox then behaves exactly as before."""
+    try:
+        doc = json.loads(Path(row["document_path"]).read_text(encoding="utf-8"))
+    except Exception:
+        return None, []
+    if not doc.get("rolling"):
+        return None, []
+    window_op_ids: set = set()
+    committed_pins: list[dict] = []
+    for a in doc.get("assignments", []):
+        oid = a.get("operation_ref")
+        if not oid:
+            continue
+        window_op_ids.add(oid)
+        chunks = a.get("chunks") or []
+        if a.get("commitment_state") == "committed" and chunks:
+            committed_pins.append({
+                "operation_ref": oid,
+                "resource_id": a.get("resource_id"),
+                "start": chunks[0].get("start"),
+            })
+    return window_op_ids, committed_pins
+
 
 def _persist_document(document: Any, out_dir: Path) -> Path:
     """Persist a schedule document under the split-endpoint discipline
@@ -814,7 +871,8 @@ def _execute_rolling_solve(registry: Registry, run: dict, files_dir: Path,
         plant = prepare_plant(files_dir, out_dir, policy=req.policy)
         view = build_rolling_view(
             plant, window_days=req.window_days, frozen_days=req.frozen_days,
-            deterministic=req.deterministic, member_time_limit_s=req.time_limit)
+            deterministic=req.deterministic, member_time_limit_s=req.time_limit,
+            persist=True)
         idmap = plant.store.load_snapshot(plant.snapshot_id).read_identity_map()
         schedule_id = f"rolling-{run_id[:12]}"
         document = assemble_rolling_document(
@@ -1191,23 +1249,98 @@ def _render_fail_closed(bundle: Any, use_llm: bool, log: Any) -> str:
     return TemplateRenderer().render(bundle)
 
 
+def _rolling_order_ref(question: str, document: dict) -> Optional[str]:
+    """Resolve an order (work-order) name mentioned in ``question`` against the
+    rolling document's known orders — the tray plus every placed bar's work_orders.
+    Returns the work-order string (planner vocabulary) or None. No id-shape regex:
+    only names the document actually carries can match (the relevance guard)."""
+    q = (question or "").lower()
+    names: set = set()
+    for it in (document.get("rolling") or {}).get("beyond_horizon", []) or []:
+        if it.get("work_order"):
+            names.add(it["work_order"])
+    for a in document.get("assignments", []) or []:
+        for wo in a.get("work_orders", []) or []:
+            names.add(wo)
+    for s in document.get("service_outcomes", []) or []:
+        if s.get("work_order"):
+            names.add(s["work_order"])
+    # longest-name-first so "ORD-012" wins over a prefix "ORD-01"
+    for name in sorted(names, key=len, reverse=True):
+        if name and name.lower() in q:
+            return name
+    return None
+
+
+def _try_rolling_answer(question: str, document: Optional[dict],
+                        ledger_path: Optional[Path], schedule_id: Optional[str],
+                        session_id: Optional[str]) -> Optional[tuple[str, dict]]:
+    """CU4: answer a rolling (sliced-world) question from the document, or return
+    None to fall through to the Explainer. Deterministic + planner-voiced; logs the
+    ask to the question ledger so a rolling ask is first-class labeled data."""
+    if not document or not document.get("rolling"):
+        return None
+    from mre.modules import rolling_questions as rq
+    route = rq.classify_rolling(question, document)
+    if route is None:
+        return None
+    if route == "beyond-horizon":
+        answer = rq.answer_beyond_horizon(document)
+    elif route == "frozen":
+        answer = rq.answer_frozen(document)
+    else:  # why-not-scheduled-yet
+        order_ref = _rolling_order_ref(question, document)
+        answer = rq.answer_why_not_scheduled_yet(document, order_ref)
+    if ledger_path is not None:
+        try:
+            from mre.modules.question_ledger import QuestionLedger
+            QuestionLedger(ledger_path).record(
+                question, question, route, source="deterministic",
+                answer_register="testimony", schedule_id=schedule_id,
+                session_id=session_id)
+        except Exception:  # noqa: BLE001 — logging must never break the answer
+            pass
+    meta = {"subject_id": None, "subject_type": "rolling",
+            "subject_external_name": None, "snapshot_id": document.get("snapshot_id"),
+            "record_count": 0, "register": "testimony",
+            "cited_refs": {"operations": [], "resources": [], "demands": []},
+            "resolved_question": question, "route": route,
+            "source": "deterministic", "confidence": None, "resolution_note": None}
+    return answer, meta
+
+
 def _answer_question(out_dir: Path, snapshot_id: str, question: str,
                      use_llm: bool, runs_subdir: str = "runs",
                      context: Optional[dict] = None,
                      ledger_path: Optional[Path] = None,
                      schedule_id: Optional[str] = None,
-                     session_id: Optional[str] = None) -> tuple[str, dict]:
+                     session_id: Optional[str] = None,
+                     document: Optional[dict] = None) -> tuple[str, dict]:
     """Route a question through the M10 explainer for a persisted run.
 
     Session 4A.1: the deterministic router is now wrapped by the interpreter +
     conversational context + question ledger (``run_ask``). Deterministic
     phrasings route exactly as before (zero regression / zero LLM); only a
-    miss falls through to the interpreter, and every ask is logged."""
+    miss falls through to the interpreter, and every ask is logged.
+
+    Session 4B.3c CU4: on a ROLLING document, the three sliced-world shapes
+    (beyond-horizon / why-not-scheduled-yet / frozen) are answered FIRST, from the
+    document's RollingBlock via ``rolling_questions`` — the live wiring that retires
+    the R-AI1 rolling-explainer debt. Everything else (why-on-machine, order
+    schedule, …) falls through to the Explainer over the persisted window-0
+    snapshot exactly as a monolithic run, so "ask why" from a beat-two card is a
+    real grounded answer now."""
     from mre.modules.evidence_index import EvidenceIndex
     from mre.modules.explainer import Explainer
     from mre.modules.interpreter import Interpreter, run_ask
     from mre.modules.question_ledger import QuestionLedger
     from mre.modules.snapshot_store import SnapshotStore
+
+    # --- rolling pre-route (deterministic, from the document) ------------------
+    rolling_answer = _try_rolling_answer(question, document, ledger_path,
+                                         schedule_id, session_id)
+    if rolling_answer is not None:
+        return rolling_answer
 
     index_path = out_dir / "evidence_index.json"
     if index_path.exists():

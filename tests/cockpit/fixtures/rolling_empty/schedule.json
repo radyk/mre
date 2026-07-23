@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.7",
+  "contract_version": "1.8",
   "schedule_id": "sched-rolling-empty",
   "snapshot_id": "snap-rolling",
   "run_id": "run-fixture",
@@ -17,8 +17,8 @@
     "deterministic": true
   },
   "cost_summary": {
-    "total": 5959.533333333333,
-    "production_regular": 5239.533333333333,
+    "total": 5971.083333333333,
+    "production_regular": 5251.083333333333,
     "production_overtime": 0.0,
     "setup": 720.0,
     "tardiness": 0.0,
@@ -5531,6 +5531,37 @@
       "commitment_state": "committed"
     },
     {
+      "assignment_id": "rasgn-4f7134cb-774f-5e61-a80b-3a1012edf7a9",
+      "operation_ref": "4f7134cb-774f-5e61-a80b-3a1012edf7a9",
+      "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
+      "work_orders": [
+        "ORD-000001"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+      "external_name": "CUT-03",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T14:00:00Z",
+          "working_min": 420
+        }
+      ],
+      "phases": {
+        "setup": {
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-05T07:15:00Z"
+        },
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
       "assignment_id": "rasgn-602a5f74-4b31-5d72-8f77-145f9a42332a",
       "operation_ref": "602a5f74-4b31-5d72-8f77-145f9a42332a",
       "workpackage_ref": "f6af0cc8-9383-5d83-821c-5d41d6267eaa",
@@ -5584,37 +5615,6 @@
         "setup": {
           "start": "2026-01-05T07:00:00Z",
           "end": "2026-01-05T07:20:00Z"
-        },
-        "teardown": null
-      },
-      "in_overtime_min": 0,
-      "decision_ref": "",
-      "standing_pin": false,
-      "commitment_state": "committed"
-    },
-    {
-      "assignment_id": "rasgn-c55323d4-f7de-5db1-ada1-d811315d9644",
-      "operation_ref": "c55323d4-f7de-5db1-ada1-d811315d9644",
-      "workpackage_ref": "d77e28e5-ad51-50c8-83f0-4da443317121",
-      "work_orders": [
-        "ORD-000002"
-      ],
-      "op_seq": 10,
-      "setup_family": "",
-      "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
-      "external_name": "CUT-03",
-      "chunks": [
-        {
-          "chunk_seq": 1,
-          "start": "2026-01-05T07:00:00Z",
-          "end": "2026-01-05T12:21:00Z",
-          "working_min": 321
-        }
-      ],
-      "phases": {
-        "setup": {
-          "start": "2026-01-05T07:00:00Z",
-          "end": "2026-01-05T07:15:00Z"
         },
         "teardown": null
       },
@@ -5807,11 +5807,11 @@
       "commitment_state": "committed"
     },
     {
-      "assignment_id": "rasgn-4f7134cb-774f-5e61-a80b-3a1012edf7a9",
-      "operation_ref": "4f7134cb-774f-5e61-a80b-3a1012edf7a9",
-      "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
+      "assignment_id": "rasgn-c55323d4-f7de-5db1-ada1-d811315d9644",
+      "operation_ref": "c55323d4-f7de-5db1-ada1-d811315d9644",
+      "workpackage_ref": "d77e28e5-ad51-50c8-83f0-4da443317121",
       "work_orders": [
-        "ORD-000001"
+        "ORD-000002"
       ],
       "op_seq": 10,
       "setup_family": "",
@@ -5821,8 +5821,8 @@
         {
           "chunk_seq": 1,
           "start": "2026-01-05T11:12:00Z",
-          "end": "2026-01-05T18:12:00Z",
-          "working_min": 420
+          "end": "2026-01-05T16:33:00Z",
+          "working_min": 321
         }
       ],
       "phases": {
