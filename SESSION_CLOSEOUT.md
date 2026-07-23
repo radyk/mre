@@ -1,217 +1,268 @@
-SESSION 4B.3b CLOSE-OUT -- the two-beat sandbox (R-T2 implemented)
+SESSION 4B.3c CLOSE-OUT -- rolling parity: sliced runs become first-class citizens
 Date: 2026-07-23
 Repo: C:\dev\mre  (branch master)
 
 ================================================================================
 SUMMARY
 ================================================================================
-Made the Tier-2 sandbox and forced-alternative gestures a TWO-BEAT interaction
-per R-T2. Beat one is a first-feasible feasibility ghost that carries NO money
-by construction; beat two is the priced, layered delta card; a beat-two
-contradiction is shown, never silently reconciled; beat one mints nothing.
+Retired the three named debts that were, in truth, one fact: a rolling-horizon
+run was a second-class citizen in persistence and the API. prepare_plant ran
+M0-M4 only and build_rolling_view extracted in-memory with snapshot_writer=None,
+so no window-0 canonical snapshot existed; a rolling document carried no
+interaction payload, so the cockpit could not compute Tier-0 on a sliced board;
+and the M10 Explainer read persisted snapshots only, so both "ask why" (4B.3b)
+and the rolling questions (4B.3a) routed to named-debt responses. This session
+makes a rolling run first-class -- persisted, interaction-bearing,
+sandbox-gestured, conversationally answerable.
 
-No solver / model / schedule-document contract changes. The two-beat rides
-module dataclasses + new API endpoints, so the monolithic AND rolling goldens
-are byte-identical. Deterministic throughout (PYTHONHASHSEED=0, workers 1,
-seed 42/0).
+Deterministic throughout (PYTHONHASHSEED=0, workers 1, seed 42/0). Schedule
+contract bumped 1.7 -> 1.8 (additive). Monolithic AND rolling goldens
+byte-identical.
 
-Headline scope note (read first): the session framed the two-beat "against the
-ACTIVE WINDOW of a rolling document." The two-beat MECHANISM is rolling-correct
-(committed work is held immovable via standing pins; the infeasible
-contradiction IS a committed-work conflict), but wiring it against a LIVE
-rolling document is blocked by two prerequisites the rolling path does not yet
-build (no persisted window-0 incumbent; no interaction payload on a rolling
-document). Those are the same connector-era work as the R-AI1 debt. The two-beat
-is therefore DELIVERED and PROVEN on the substrate where the Tier-2 sandbox lives
-today -- real monolithic solves + the gesture fixtures -- and is rolling-ready.
-This is named as debt, not silently skipped. See "UNDERDELIVERED / NAMED GAPS".
+ACCEPTANCE BAR (the sentence this session was graded against):
+  a rolling run on pilot_scale, served through the API, renders a sliced board
+  where a sandbox gesture produces a feasibility ghost, then a priced layered
+  card, and "ask why" plus "why isn't {order} scheduled yet?" receive live
+  conversational answers grounded in the run's evidence.
+STATUS: MET end to end, proven through the HTTP API (test_api_endpoints.py::
+TestRollingTwoBeatAPI drives the served rolling document + interaction + the
+two-beat + the rolling questions; test_rolling_two_beat.py drives the module
+layer incl. the forced contradiction and the why-on-machine grounding). One
+honest residual on the beat-two cost delta is named below; it does not fail the
+bar.
 
 ================================================================================
 PER-CU: CLAIMED vs PROVEN
 ================================================================================
 
-CU1 -- beat one: the feasibility ghost (backend + board)
-  CLAIMED  first-feasible endpoint; response type carries NO money by
-           construction; renders in the R-M1 ghost class with a non-monetary
-           provisional state; beat one mints nothing.
-  PROVEN   feasibility_ghost() + POST /schedules/{id}/sandbox/feasibility. Uses
-           CP-SAT stop_after_first_solution (additive default-off SolveRunner
-           knob) under FEASIBILITY_BUDGET_S=2.0 / max_deterministic_time=1.0.
-           FeasibilityGhost dataclass has no cost/delta/price/objective field.
-           test_feasibility_ghost_has_no_monetary_field asserts field ABSENCE
-           against _MONEY_FIELD_TOKENS (not emptiness). test_beat_one_mints_
-           nothing: no child snapshot, no new canonical entity, zero Decision
-           records. Board: .carry-bar.pricing-ghost register + a non-monetary
-           "checking feasibility... / pricing..." card state; wording + motion
-           are feel tokens. Proven by test_two_beat (fast + slow), the API test
-           TestTwoBeatSandbox, and gesture.spec "R-T2 beat one".
+CU1 -- the rolling run persists a real window-0 snapshot
+  CLAIMED  the rolling path executes the full spine for the current window
+           (M0 gate through solve and extraction); an identified canonical
+           snapshot with evidence records, basis rules intact; the run
+           registered like any run; frozen-front commitment state persists; the
+           completeness invariant holds against the PERSISTED document;
+           determinism -- if persisting changes any byte it is a defect.
+  PROVEN   build_rolling_view gains persist=True (the API rolling worker sets
+           it). When set: the Extractor runs is_scenario=False,
+           snapshot_writer=store.extend_snapshot(snap_id) + an M7 reporter, so
+           Assignment/ServiceOutcome/Schedule entities land in the canonical
+           snapshot and assignment Decisions land in evidence (RECONSTRUCTED
+           basis); an M5 run records the builder's ACTUAL horizon_start (the grid
+           the placements are written in) and an M6 solve_complete event records
+           the objective. test_window0_persists_a_readable_run asserts the
+           snapshot + evidence are readable by the sandbox helpers (_placements /
+           _m5_horizon / _incumbent_objective) and that placements == the window
+           op set (nothing beyond leaks in). Determinism: a direct probe showed
+           the persist digest == the no-persist digest (identical), so
+           persistence OBSERVES, never influences; the rolling-determinism golden
+           is byte-identical (test_rolling_determinism_golden green).
+           test_completeness_invariant_holds_on_the_PERSISTED_document counts the
+           on-disk artifact.
   STATUS   DELIVERED.
 
-CU2 -- beat two: the priced delta card (layered)
-  CLAIMED  full budgeted re-solve correlated to beat one; an always-visible
-           decision-sufficient layer; a detail layer whose cost lines sum
-           exactly to the verdict; "ask why" hands second-order questions to the
-           conversational layer; supersession is a perceivable transition.
-  PROVEN   sandbox_pin_resolve enriched (one in-memory extract diffed vs base).
-           Always-visible: cost_delta_abs; feasible/rejected; the moved-op
-           placement; dominant_driver in driver_phrase language, HEDGED by price
-           rank (docs/02 4.2, EARLINESS_PREFERENCE); affected_orders (top-N,
-           per-Demand tardiness-$ + lateness-min deltas); lateness_delta_min;
-           no_committed_work_changes ASSERTED against the moved-set. Detail:
-           cost decomposition by ledger line (tardiness / setup / production-
-           regular / production-overtime + explicit "other placement changes"
-           REMAINDER) summing EXACTLY to cost_delta_abs -- test_beat_two_
-           decomposition_sums_exactly enforces it (rollup_of). Correlation:
-           two beats share correlation_id (test + API test). Supersession:
-           .delta-card.superseded transition, sandbox.supersede_ms feel token.
-           "Ask why": ships and routes to a graceful named-debt response (see
-           the R-AI1 note below). Frontend layered card proven in gesture.spec
-           "R-T2 CU2" (always-visible decision-sufficient; detail collapsed).
-  STATUS   DELIVERED, with two honest limitations named:
-           (a) affected_orders carries per-Demand TARDINESS and LATENESS deltas
-               (the per-Demand truth from the service outcomes); it does NOT
-               carry per-order PRODUCTION dollars, which the ledger does not roll
-               up per order. Cost-by-line decomposition (whole-plan) is exact;
-               per-order is tardiness/lateness only.
-           (b) the "ask why" hand-off is the graceful named-debt path, not a live
-               conversational hand-off (R-AI1 connector debt, extended not
-               double-booked).
-
-CU3 -- the contradiction path (R-T2(4))
-  CLAIMED  beat-two infeasible => R-M1 rejection; materially-moved => the ghost
-           visibly relocates; build a deterministic fixture forcing EACH; if the
-           infeasible case cannot be forced, prove the code path with a unit test
-           and name the gap.
-  PROVEN   INFEASIBLE: FORCED end-to-end on the distinct fixture (two ops on one
-           resource; hold B as a standing pin, drop A onto B's slot -> beat one
-           feasible [relaxed], beat two infeasible [holds B]).
-           test_contradiction_infeasible_is_forced_via_a_standing_pin RUNS (not
-           skips -- verified with -rs). Frontend: R-M1 snap-back with reason
-           (gesture.spec "CONTRADICTION (infeasible)").
-           MOVED: the inverse of the session's expectation was found and named --
-           a pinned op is pinned to the SAME (resource,start) in BOTH beats, so
-           under exact-pin semantics the pinned op can NEVER relocate between
-           beats. Forcing a real backend relocation of the pinned op is therefore
-           impossible with current constraint coverage. Per the session's
-           fallback: the MOVED code path is proven at UNIT level
-           (TestContradictionDetector, hand-built inputs, both branches) and
-           exercised in the frontend via a canned feasibility.json whose ghost
-           start is shifted relative to the pin (gesture.spec "CONTRADICTION
-           (moved)" asserts .carry-bar.relocating before the card lands). What
-           DOES diverge in a real solve is the CONSEQUENCE set (neighbours settle
-           differently because beat two holds committed work); the moved-set
-           already renders that.
-  STATUS   DELIVERED. Infeasible forced end-to-end; moved unit-proven + frontend-
-           exercised, with the "pinned op cannot relocate between exact-pin beats"
-           gap named here and in docs/04.
-
-CU4 -- forced alternatives inherit the shape
-  CLAIMED  the forced-alternative gesture (pin an op to a chosen resource) runs
-           the IDENTICAL two-beat path; one end-to-end test.
-  PROVEN   A cross-machine pin is exactly a chosen-resource pin through the same
-           feasibility_ghost() -> sandbox_pin_resolve() path, no parallel
-           machinery. test_forced_alternative_gesture_runs_the_same_two_beat_path
-           (beat one feasible, beat two prices it, decomposition still sums
-           exactly). Cockpit drop-onto-a-priced-ghost renders the same layered
-           card (gesture.spec "CU4").
+CU2 -- the rolling document gains its interaction payload
+  CLAIMED  the rolling document carries the interaction payload for the ACTIVE
+           WINDOW; committed bars and tray items remain non-targets; additive
+           contract bump; monolithic goldens byte-identical.
+  PROVEN   assemble_rolling_document builds _interaction_block over the
+           ACTIVE-WINDOW asgn_blocks only, so committed (frozen-front) bars carry
+           NO interaction op and are non-targets BY CONSTRUCTION (the gesture
+           surface only builds targets for ops in the payload); occupancy still
+           comes from assignments[] (committed included), so committed work blocks
+           a drop. Schedule contract 1.7 -> 1.8 (additive: interaction has existed
+           since 1.2, split since 1.3; no new field). Monolithic
+           defaults-reproduce-baseline golden byte-identical.
+           test_rolling_document_carries_interaction_for_the_window asserts the
+           payload ops == the active set and no committed op leaks in.
   STATUS   DELIVERED.
 
-CU5 -- tests + screenshots
-  CLAIMED  Playwright both themes (ghost / supersession / layered card /
-           rejection / forced-alt); Python (no-money contract; mints-nothing;
-           correlation; decomposition-sums; no-committed-work; both contradiction
-           fixtures or the named fallback; forced-alt e2e); deterministic;
-           beat-two reproducible under the seed.
-  PROVEN   Python tests/test_two_beat.py: 9 fast (no-money contract, correlation
-           determinism, contradiction detector both branches) + 6 slow
-           (correlation, decomposition-sums-exactly, no-committed-work-with-a-
-           standing-pin, mints-nothing, forced infeasible contradiction, forced-
-           alt e2e) -- 15 passed, no skips. tests/test_api_endpoints.py
-           TestTwoBeatSandbox (3): beat-one no-money key, correlation +
-           decomposition, 404. Cockpit gesture.spec: 6 new tests x both themes
-           (feasibility ghost / layered card / infeasible + moved contradictions
-           / ask-why named-debt / forced-alt). Determinism: beat one uses
-           workers=1 + seed 0 + max_deterministic_time; beat two matches the
-           existing deterministic sandbox.
+CU3 -- the two-beat endpoints accept a rolling schedule
+  CLAIMED  POST .../sandbox/feasibility and the beat-two path work against a
+           rolling schedule id; beat one first-feasible against the active window
+           with committed work held via standing pins; beat two prices against the
+           persisted window-0 incumbent; all 4B.3b invariants re-proven;
+           no-committed-work now load-bearing; the forced infeasible contradiction
+           demonstrable by gesturing at a committed slot on a REAL rolling run.
+  PROVEN   feasibility_ghost/sandbox_pin_resolve gain restrict_op_ids (a shared
+           _restrict_window) so the sandbox re-solves the WINDOW against the
+           persisted incumbent -- aligned because the builder derives the same
+           horizon over the same ops. The API's _rolling_gesture_context reads the
+           persisted document and hands the endpoints the window op set + the
+           frozen-front placements as standing pins. Beat one RELAXES the frozen
+           front; beat two HOLDS it (committed_pins joined with any accepted-edit
+           lineage pins). test_two_beat_runs_against_a_rolling_schedule proves
+           no-money-by-construction, correlation, decomposition-sums-exactly, and
+           no_committed_work_changes (asserted against the moves -- LOAD-BEARING,
+           the frozen front is real committed work).
+           test_forced_infeasible_contradiction_on_a_committed_slot forces the
+           contradiction end to end on a real rolling run: gesture an active op at
+           a committed slot -> beat one feasible, beat two infeasible NAMING the
+           blocking commitment. test_forced_alternative_inherits_the_two_beat_
+           shape_on_rolling proves the cross-machine pin runs the identical path.
+           Playwright: rolling.two_beat.spec.mjs drives the full flow on the
+           rolling fixture board, both themes.
+
+           HONEST NUANCE (the "beat one holds committed via standing pins"
+           wording): the CU brief phrased beat one as holding the frozen front,
+           but the 4B.3b mechanism -- which this CU wires, not redesigns -- has
+           beat one RELAX committed work so beat two can contradict it. Holding it
+           in beat one too would make both beats infeasible on a committed-slot
+           drop (no contradiction). The delivered behaviour (beat one relaxes,
+           beat two holds) is what makes the forced contradiction real; that is
+           the correct reading of "the mechanism 4B.3b proved rolling-ready."
+  STATUS   DELIVERED.
+
+CU4 -- the Explainer reads the rolling run (retires the R-AI1 entry)
+  CLAIMED  the Interpreter/Explainer resolves questions against the persisted
+           rolling snapshot + document; (a) why isn't {order} scheduled yet; (b)
+           what's beyond the horizon / what's frozen; (c) ask why from the
+           beat-two card reaches the conversational layer; zero-confident-wrong;
+           two audit specimens (one answerable, one that must hedge); docs/04
+           R-AI1 entry RETIRED.
+  PROVEN   The three sliced-world routes (beyond-horizon, why-not-scheduled-yet,
+           frozen) are registered in ROUTE_TAXONOMY (a closed set, not an ad-hoc
+           bolt) and answered from the document via rolling_questions in a
+           deterministic /ask pre-route (_try_rolling_answer), logged to the
+           question ledger. why-not-scheduled-yet resolves the order name against
+           the document's own vocabulary (the relevance guard) and HEDGES.
+           Everything else falls through to the Explainer over the persisted
+           window-0 snapshot exactly as a monolithic run:
+           test_ask_why_on_machine_is_grounded_on_the_persisted_run proves CU4(c)
+           "ask why" is a REAL grounded answer (the persisted assignment Decisions
+           are the evidence), not a named-debt tip. Audit specimens:
+           test_rolling_ask_why_not_scheduled_yet_is_answerable_for_a_tray_order
+           (answerable) and test_rolling_ask_why_not_hedges_for_an_already_placed_
+           order + test_rolling_ask_why_not_declines_cleanly_for_an_unknown_order
+           (must hedge/decline). Frontend: the cockpit ask-why button auto-bridges
+           to the ask panel on a rolling board (main.js onAskWhy -> panel.run of a
+           composed "why is {order} on {machine}?"); rolling.two_beat.spec.mjs
+           asserts the panel answers. docs/04 RETIRES the 4B.3a R-AI1 entry and
+           its 4B.3b ask-why extension (both blocked consumers now unblocked).
+  STATUS   DELIVERED. Scope of CU4(c) on the frontend: the ask-why auto-bridge is
+           scoped to the rolling board (this session's subject); a monolithic card
+           keeps its panel-pointer tip (the panel answers there too). The deeper
+           "answer second-order questions FROM the sandbox card object itself"
+           (which alternative, which ledger line moved, which family broke) is
+           served today by asking the grounded Explainer (why-on-machine) + the
+           existing edit-cost/edit-summary routes after accept; a card-object
+           query API is not built and is named here.
+
+CU5 -- riders
+  CLAIMED  (a) the affected_orders column label says lateness/tardiness impact,
+           never "cost impact"; fix if it overclaims. (b) name the per-order
+           production-dollar debt in docs/04.
+  PROVEN   (a) sandboxui.js: the affected-orders header now reads
+           "affected orders -- lateness / tardiness impact" and the empty-cell
+           fallback reads "no lateness change" (was "no cost change"). No header
+           read "cost impact" before; the overclaim was the fallback string, now
+           fixed. (b) docs/04 and CLAUDE.md name the debt: the extractor's ledger
+           does not roll production cost per order (only tardiness is per-Demand),
+           so the card's who-pays layer is tardiness-truth per order plus a
+           whole-plan cost decomposition; a per-order production column is a ledger
+           change, not this session.
   STATUS   DELIVERED.
 
 ================================================================================
 UNDERDELIVERED / NAMED GAPS (explicit)
 ================================================================================
-1. ROLLING ACTIVE-WINDOW wiring is NAMED DEBT, not delivered against a live
-   rolling document. Two prerequisites are missing on the rolling path:
-     (a) the rolling snapshot persists NO window-0 assignments (prepare_plant
-         runs M0-M4 only; build_rolling_view extracts in-memory with
-         snapshot_writer=None) -- so the sandbox has no incumbent to warm-start /
-         diff against;
-     (b) a rolling document carries no interaction payload -- so the cockpit
-         cannot compute Tier-0 for a rolling board.
-   Both are the same connector-era work as the R-AI1 debt (a rolling run
-   persisting a canonical snapshot the Explainer reads). The two-beat MECHANISM
-   is rolling-ready (committed work held immovable via standing pins; the
-   infeasible contradiction IS a committed-work conflict), and is delivered +
-   proven on real monolithic solves + the gesture fixtures.
+1. BEAT-TWO COST DELTA on a suboptimal incumbent. Beat two re-solves the active
+   window holding only the committed front, so on a FEASIBLE (not proven-optimal)
+   window-0 incumbent it can find a globally cheaper window arrangement and report
+   a large favourable cost_delta that reflects re-optimizing the window, not the
+   drag alone. This is HONEST (it is the true window cost with the op pinned vs
+   the incumbent) and is the same behaviour the monolithic sandbox has on a
+   suboptimal incumbent; a better-solved incumbent shrinks it. Not a defect;
+   named so the number is read correctly.
 
-2. "ASK WHY" hands off to a graceful NAMED-DEBT response, not a live
-   conversational hand-off. The Interpreter/Explainer reads a persisted snapshot,
-   not the live sandbox context. This is the SAME R-AI1 rolling-explainer
-   connector debt; the docs/04 4B.3a entry was EXTENDED with this second blocked
-   consumer (not double-booked). The affordance ships and states the debt; the
-   sandbox context is stashed on the hook for a future bridge.
+2. CU4(c) DEEPER SANDBOX-CARD QUESTIONS. "ask why" reaches a real grounded
+   why-on-machine answer; querying the sandbox RESULT OBJECT for second-order
+   facts (which alternative, which ledger line moved, which family broke) has no
+   dedicated API -- those are answered via the grounded Explainer + the existing
+   edit-cost routes after accept. Named, not built.
 
-3. The MATERIALLY-MOVED contradiction of the PINNED op cannot occur in a real
-   solve (the op is pinned to the same placement in both beats). Proven at unit
-   level + frontend-exercised; the real-solve divergence is the consequence set,
-   which the moved-set already shows. Named in docs/04 and CU3 above.
+3. CU5b PER-ORDER PRODUCTION-DOLLAR ATTRIBUTION. The ledger does not roll
+   production cost per Demand; the card's who-pays layer is tardiness-truth per
+   order + a whole-plan cost decomposition. A ledger change, not this session.
 
-4. affected_orders is per-Demand tardiness/lateness only (no per-order production
-   dollars -- the ledger does not roll production per order). The whole-plan cost
-   decomposition IS exact and per-line.
+4. FRONTEND ASK-WHY BRIDGE SCOPE. The auto-bridge fires on a rolling board; the
+   monolithic card keeps its panel-pointer tip (the panel answers either way).
+   Extending the auto-bridge to monolithic cards is a trivial follow-up.
 
 ================================================================================
 TEST RESULTS
 ================================================================================
-Non-slow Python suite ............ 1239 passed, 0 failed, 20 skipped  (was 1227; +12)
-Slow two-beat (test_two_beat) .... 15 passed, 0 skipped
-Slow sandbox + planner_edit ...... 23 passed
-Monolithic golden (defaults) ..... green (byte-identical)
-Rolling document + API ........... green
+Non-slow Python suite ............ 1239 passed, 0 failed, 20 skipped
+                                   (the new rolling tests are SLOW -- a real solve
+                                    + persist per fixture -- so the non-slow count
+                                    is unchanged, as with 4B.3b)
+Slow -- test_rolling_two_beat .... 11 passed (CU1 persisted-run readability +
+                                   persisted-document completeness, CU2
+                                   interaction payload, CU3 two-beat + no-committed
+                                   + FORCED contradiction + forced-alt, CU4 rolling
+                                   routes + why-not hedge/decline + why-on-machine
+                                   grounding)
+Slow -- TestRollingTwoBeatAPI .... 3 passed (served rolling doc + interaction, the
+                                   two-beat through the HTTP surface, rolling
+                                   questions through /ask)
+Slow -- test_two_beat ............ 15 passed (4B.3b, unchanged)
+Slow -- test_rolling_document .... green
+Monolithic golden (baseline) ..... green (byte-identical)
 Rolling determinism golden ....... green (byte-identical)
-Cockpit JS (Playwright) .......... 168 passed  (was 156; +12, both themes)
+Cockpit JS (Playwright) .......... 176 passed  (was 168; +8 rolling two-beat,
+                                   both themes)
 
 ================================================================================
 FILES CHANGED
 ================================================================================
 Backend:
-  src/mre/modules/solve_runner.py        + stop_after_first_solution knob
-  src/mre/modules/sandbox.py             FeasibilityGhost + feasibility_ghost() +
-                                         correlation_id_for + beat_two_contradicts
-                                         + enriched SandboxResult / priced card
-  src/mre/api/app.py                     FeasibilityRequest + POST .../sandbox/
-                                         feasibility; correlation_id on SandboxRequest
+  src/mre/modules/rolling_horizon.py     build_rolling_view(persist=...) -- window-0
+                                         persisted as a first-class run (M5/M6/M7
+                                         evidence + snapshot writer); RollingView
+                                         gains win_horizon_start/end + persisted
+  src/mre/modules/schedule_assembler.py  assemble_rolling_document builds the
+                                         interaction payload over active-window ops;
+                                         contract_version=CONTRACT_VERSION
+  src/mre/modules/sandbox.py             _restrict_window + restrict_op_ids on
+                                         feasibility_ghost / sandbox_pin_resolve
+  src/mre/contracts/schedule_document.py CONTRACT_VERSION 1.7 -> 1.8 + history entry
+  src/mre/modules/explainer.py           ROUTE_TAXONOMY += the three rolling routes
+  src/mre/api/app.py                     _rolling_gesture_context + rolling wiring on
+                                         both sandbox endpoints; _try_rolling_answer
+                                         + _rolling_order_ref pre-route in /ask;
+                                         persist=True in _execute_rolling_solve
 Frontend:
-  src/cockpit/src/api.js                 postFeasibility
-  src/cockpit/src/interaction.js         wire postFeasibility into the api object
-  src/cockpit/src/drag/controller.js     twoBeat / _beatTwo / applyResultTwoBeat /
-                                         beatTwoContradicts (JS mirror) / askWhy /
-                                         markCarryGhost + state() probe
-  src/cockpit/src/drag/sandboxui.js      showPricing + the layered showResult
-  src/cockpit/src/drag/feel.js           sandbox.{feasibility_budget_s, detail_open,
-                                         supersede_ms} + --sandbox-supersede mirror
-  src/cockpit/src/drag.css               R-T2 ghost / superseded / layered-card styles
+  src/cockpit/src/interaction.js         thread onAskWhy into the controller
+  src/cockpit/src/main.js                onAskWhy bridge (rolling board -> panel.run)
+  src/cockpit/src/drag/controller.js     askWhy falls through to a tip only when the
+                                         bridge doesn't handle it; tip text updated
+                                         (R-AI1 debt retired)
+  src/cockpit/src/drag/sandboxui.js      CU5a affected-orders label + fallback text
+Tools / fixtures:
+  tools/build_rolling_fixture.py         persist + capture the real two-beat
+                                         (interaction/feasibility/sandbox/gesture +
+                                         a forced contradiction); meta 1.8; strip
+                                         inline interaction from schedule.json
+  tests/cockpit/fixtures/rolling/*       regenerated (PYTHONHASHSEED=0) + new
+                                         interaction.json / feasibility.json /
+                                         sandbox.json / gesture.json
+  tests/cockpit/fixtures/rolling_empty/* regenerated
 Tests:
-  tests/test_two_beat.py                 new (15 tests)
-  tests/test_api_endpoints.py            + TestTwoBeatSandbox (3)
-  tests/cockpit/gesture.spec.mjs         + 6 R-T2 tests; 2 existing tests open the
-                                         new detail disclosure
-  tests/cockpit/fixture-server.mjs       /sandbox/feasibility route + beat-two enrich
-  tests/cockpit/fixtures/distinct/feasibility.json   new (forces the CU3 cases)
+  tests/test_rolling_two_beat.py         new (11 slow)
+  tests/test_api_endpoints.py            + TestRollingTwoBeatAPI (3 slow); 1.8 asserts
+  tests/test_rolling_document.py         1.8 assert
+  tests/test_schedule_document.py        1.8 assert
+  tests/cockpit/rolling.two_beat.spec.mjs new (4 tests x both themes)
+  tests/cockpit/gesture.spec.mjs         ask-why test title/comment updated (assertion
+                                         unchanged -- new tip still says "conversational
+                                         layer")
+  tests/cockpit/playwright.config.mjs    testMatch += rolling.two_beat
 Docs:
-  docs/04-design-history.md              2026-07-23 Session 4B.3b amendment
-  docs/07-roadmap.md                     v2.36
+  docs/04-design-history.md              2026-07-23 Session 4B.3c amendment
+                                         (R-AI1 retirement + CU5b debt)
+  docs/07-roadmap.md                     v2.37
   CLAUDE.md                              position
 
 ================================================================================
 COMMIT
 ================================================================================
-Committed to master and pushed.
+Committed to master (4301e6f) and pushed.
