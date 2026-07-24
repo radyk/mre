@@ -39,6 +39,7 @@ from mre.modules.ask_fallback_copy import (
     NEAR_MISS_LEAD,
     route_offer,
 )
+from mre.modules.capabilities import coaching_concept
 from mre.modules.explainer import ROUTE_TAXONOMY, canonical_question, register_of
 
 # Confidence gates (design tokens): at/above HIGH the interpreter's route answers
@@ -120,6 +121,35 @@ def _last_typed_subject(history: list[dict], selection: dict, kind: str) -> Opti
     if selection and selection.get(kind):
         return selection[kind]
     return None
+
+
+def _demonstrative_deictic(ql: str) -> Optional[str]:
+    """The TYPE a DEMONSTRATIVE deictic points at — 'machine' for "this/that
+    machine", 'order' for "this/that order/job". Unlike ``_typed_deictic`` this
+    excludes "the …" (a definite article does not imply a live referent — "the
+    order of operations" is not a deixis), so it is safe to resolve BEFORE the
+    router short-circuit (Session 4A.3 CU3)."""
+    for noun in _MACHINE_NOUNS:
+        if re.search(rf"\b(?:this|that)\s+{re.escape(noun)}\b", ql):
+            return "machine"
+    for noun in _ORDER_NOUNS:
+        if re.search(rf"\b(?:this|that)\s+{re.escape(noun)}\b", ql):
+            return "order"
+    return None
+
+
+def _typed_subject_with_source(history: list[dict], selection: dict,
+                              kind: str) -> tuple[Optional[str], Optional[str]]:
+    """The referent for a typed deictic, SELECTION FIRST then conversational
+    recency (Session 4A.3 CU3): a live board selection of the matching type binds
+    before any stale history turn, and the source is returned so the resolution can
+    say which context won. Returns (ref, "selection"|"history"|None)."""
+    if selection and selection.get(kind):
+        return selection[kind], "selection"
+    for turn in reversed(history or []):
+        if turn.get(kind):
+            return turn[kind], "history"
+    return None, None
 
 
 def _substitute_typed(question: str, ref: str, kind: str) -> str:
@@ -289,6 +319,42 @@ def resolve_followup(question: str, context: Optional[dict], explainer: Any) -> 
             text=q, resolved=False, needs_clarification=True,
             note=CLARIFY_SET_REFERENCE.format(pron=m_set.group(1)))
 
+    # CU4c (Session 4A.3) — menu-selection follow-up. After a coaching MENU (the
+    # immediately-prior route was coaching), a short reply naming a listed
+    # capability routes to that concept's coaching, NOT to entity binding — the
+    # menu is the live context. The founder's "what about wip" (after the menu that
+    # LISTED wip) bound to an order and dumped ops. An ordinal ("the second one")
+    # clarifies (the menu order is not a stable contract).
+    if _last_route(history) == "coaching":
+        concept = coaching_concept(q)
+        if concept and len(re.findall(r"[a-z']+", ql)) <= 5:
+            return ResolvedQuestion(text=f"how do i enable {concept}?", resolved=True,
+                                    note=f"coaching on {concept}")
+        if re.search(r"\b(first|second|third|1st|2nd|3rd|number\s*\d|the \w+ one)\b", ql):
+            return ResolvedQuestion(
+                text=q, resolved=False, needs_clarification=True,
+                note="Which capability do you mean? Name it — e.g. \"how do I "
+                     "enable splittable?\".")
+
+    # CU3/CU4d (Session 4A.3) — a DEMONSTRATIVE typed deictic ("this order" / "that
+    # machine") with a bindable referent resolves HERE, BEFORE the router
+    # short-circuit — otherwise "why is this order late" routes to the bare
+    # late-orders LIST before the deictic ("this order") is ever bound (the
+    # founder's specimen). SELECTION FIRST (a live board selection wins over stale
+    # conversation), then recency; a demonstratively-named type with no matching
+    # referent CLARIFIES, never a cross-type or stale bind.
+    dkind = _demonstrative_deictic(ql)
+    if dkind:
+        ref, src = _typed_subject_with_source(history, selection, dkind)
+        if ref:
+            note = f"resolved against {ref}"
+            if src == "selection":
+                note += " (from board selection)"
+            return ResolvedQuestion(text=_substitute_typed(q, ref, dkind),
+                                    resolved=True, note=note)
+        return ResolvedQuestion(text=q, resolved=False, needs_clarification=True,
+                                note=CLARIFY_NO_SUBJECT)
+
     # If the deterministic router ALREADY handles the raw question, never touch
     # it — otherwise a question that merely CONTAINS a pronoun ("summarize what I
     # changed and what IT cost", "why does THIS edit cost that much") would be
@@ -408,6 +474,9 @@ class Interpreter:
             "solve-time": "how long the solve took",
             "machine-count": "how many machines / list the machines",
             "maintenance": "maintenance, shift, or calendar questions",
+            "swap-move": "why not swap / move two orders (bridges to the board gesture)",
+            "gap-between": "why there is a gap / slack between two orders on a machine",
+            "machine-idle": "why a machine is unused / idle",
         }
         for rid in ROUTE_TAXONOMY:
             lines.append(f"  {rid} — {meanings.get(rid, rid)}")

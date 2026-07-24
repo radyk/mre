@@ -49,6 +49,9 @@ ROUTE_OFFERS = {
     "solve-time": "tell you how long the solve took",
     "machine-count": "list the machines in the plan",
     "maintenance": "show one machine's downtime (calendar closures)",
+    "swap-move": "weigh swapping {order} with another order and how to price it",
+    "gap-between": "explain the gap before {order} on its machine",
+    "machine-idle": "explain why {machine} carries no work",
 }
 
 # Generic planner nouns when a param slot has nothing resolved to fill it.

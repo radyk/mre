@@ -1,6 +1,33 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.39 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.40 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.40:** **AI-track Session 4A.3 — the action bridge: the conversation reaches the
+board** 2026-07-24 (docs/04 amendment + the CU7a resolving amendment). The founder's
+round-three listening session (solve #5 pinned) found the register ladder works where
+wired but the conversation could not REACH the board. Backend + a cockpit tooltip + the
+selection channel; no solver/model/contract change, no golden moved. **Part 0 — CU7a
+overturned:** the ORD-000019 → ORD-000015 blocked-by claim is CONFIRMED TRUE on the live
+board; the 4A.3-pre "fabrication" verdict was an artifact of auditing against a re-solve
+of a DIFFERENT world (CP-SAT non-reproducibility biting the audit). `_blocked_by`
+exonerated. STANDING PROTOCOL: conversational-claim audits run against the pinned run's
+persisted document, never a re-solve. **CU1 — the swap/move bridge (flagship):** "why
+not just swap X and Y" now routes to `swap-move` and answers the R-AI3 ladder —
+TESTIMONY (both orders' placements + slack/lateness) + a grounded TAKE (who can afford
+the slot) + the BRIDGE to the real board gesture the two-beat sandbox prices; the panel
+proposes, the human drags (M10 has no write path). **CU2 — the absence pair (promoted
+from debt):** `gap-between` names the gap's cause on the shared machine (occupancy /
+closure / off-shift / upstream / else honestly unexplained, never vouched);
+`machine-idle` redirects a used machine without naming the wrong noun, scopes an idle
+one honestly. **CU3 — selection reaches the interpreter:** a demonstrative deictic
+("this order") resolves SELECTION-FIRST before the router short-circuit, the interpreted
+line naming the source. **CU4 — coaching fixes:** bare concept names + an
+enable/use/explain verb reach coaching; a NEW overtime concept (§5.6/§5.9); a
+menu-selection follow-up ("what about wip") coaches the concept, not an entity. **CU5 —
+riders:** the job-bar tooltip gains span + lateness/slack. Non-slow Python 1255 passed,
+0 failed (+6 fast); slow `test_ai_voice` green with the new specimens; cockpit planner
+tooltip spec green both themes. See the docs/04 2026-07-24 Session 4A.3 + CU7a resolving
+amendments.
 
 **v2.39:** **AI-track Session 4A.3-pre — R-AI3 (the register ladder): restore
 judgment, add invitation, fix the round-two exam findings** 2026-07-24 (docs/04

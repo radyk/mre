@@ -75,6 +75,10 @@ test("CU3 — job card carries planner vocabulary; downtime card names the closu
   await expect(card).toContainText("Globex Corp");
   await expect(card).toContainText("120 ea");
   await expect(card).toContainText("committed");     // standing-pin state
+  // CU5a (Session 4A.3): the bar's span + its lateness/slack figure.
+  await expect(card).toContainText("When");
+  await expect(card).toContainText("Slack");
+  await expect(card).toContainText("→");             // start → end span
   // never a UUID on the card.
   expect(await card.innerText()).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}/);
   await shot(page, "p3_jobcard");

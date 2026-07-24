@@ -126,6 +126,86 @@ class TestCapabilitiesRegistry:
         assert wants_capability(q, coaching_concept(q))
         assert not wants_capability("i want to see the schedule", None)
 
+    # CU4a (Session 4A.3) — a menu MUST match every item it lists: asking a bare
+    # concept slug (or its space-spelled form) resolves to that concept.
+    def test_every_menu_concept_resolves_by_its_own_name(self):
+        from mre.modules.capabilities import CAPABILITIES, coaching_concept
+        for note in CAPABILITIES:
+            assert coaching_concept(note.concept) == note.concept, note.concept
+            spaced = note.concept.replace("_", " ")
+            assert coaching_concept(f"explain {spaced}") == note.concept, note.concept
+
+    # CU4b (Session 4A.3) — overtime is a BUILT capability, now coachable.
+    def test_overtime_is_a_coachable_concept(self):
+        from mre.modules.capabilities import coaching_concept, note_for_concept
+        assert coaching_concept("can i use overtime to help") == "overtime"
+        note = note_for_concept("overtime")
+        assert note is not None and note.ids_ref == "§5.6"
+        assert "overtime" in note.how.lower() and "cost_model" in note.how
+
+    def test_coaching_intent_needs_a_named_concept_and_a_verb(self):
+        from mre.modules.capabilities import coaching_intent, coaching_concept
+        assert coaching_intent("please explain wip", coaching_concept("please explain wip"))
+        assert coaching_intent("can i use overtime to help",
+                               coaching_concept("can i use overtime to help"))
+        # bare "wip" (a menu-name reply) is intent enough
+        assert coaching_intent("wip", "wip")
+        # no concept named → never coaching, whatever the verb
+        assert not coaching_intent("can i use the schedule", None)
+
+
+class TestSelectionPriority:
+    """CU3 (Session 4A.3) — a live board selection wins over stale conversation."""
+
+    def test_typed_subject_prefers_selection_over_history(self):
+        from mre.modules.interpreter import _typed_subject_with_source
+        history = [{"order": "ORD-99", "route": "late-order"}]     # stale
+        selection = {"order": "ORD-05"}                             # live
+        ref, src = _typed_subject_with_source(history, selection, "order")
+        assert ref == "ORD-05" and src == "selection"
+
+    def test_typed_subject_falls_back_to_history_without_selection(self):
+        from mre.modules.interpreter import _typed_subject_with_source
+        ref, src = _typed_subject_with_source(
+            [{"machine": "CUT-01"}], {}, "machine")
+        assert ref == "CUT-01" and src == "history"
+
+    def test_demonstrative_deictic_excludes_the_definite_article(self):
+        from mre.modules.interpreter import _demonstrative_deictic
+        assert _demonstrative_deictic("whats the end time of this order") == "order"
+        assert _demonstrative_deictic("why is that machine idle") == "machine"
+        # "the order of operations" is not a deixis
+        assert _demonstrative_deictic("what is the order of operations") is None
+
+
+@pytest.mark.slow
+class TestSwapMoveClassify:
+    """CU1/CU2 (Session 4A.3) — swap/move + absence classification (against the
+    clean glass_box solve, so the order/machine refs resolve)."""
+
+    def test_swap_two_orders_routes_to_swap_move(self, clean):
+        rid, params = clean.classify("why not just swap ORD-04 and ORD-05")
+        assert rid == "swap-move" and params["kind"] == "swap"
+        assert {params["order_a"], params["order_b"]} == {"ORD-04", "ORD-05"}
+
+    def test_move_one_order_routes_to_swap_move(self, clean):
+        rid, params = clean.classify("move ORD-05 earlier")
+        assert rid == "swap-move" and params["kind"] == "move"
+
+    def test_gap_between_two_orders_routes(self, clean):
+        rid, params = clean.classify("why is there a gap between ORD-09 and ORD-02")
+        assert rid == "gap-between"
+
+    def test_machine_idle_routes(self, clean):
+        rid, _ = clean.classify("why is CUT-01 idle")
+        assert rid == "machine-idle"
+
+    def test_move_it_with_no_order_does_not_fire(self, clean):
+        # a bare "it" (no resolved order) must NOT become swap-move — it stays the
+        # honest non-self-diff refusal (the 4B.4 move-it specimen, un-regressed).
+        rid, _ = clean.classify("can we move it to a different machine")
+        assert rid != "swap-move"
+
 
 class TestHypothesisAndPolarity:
     """CU5 (hypothesis content) + CU3 (start-reason polarity) — pure logic."""
@@ -798,10 +878,15 @@ class TestSession4A3:
         assert "late order(s):" not in a             # not the are-there-late list
         assert "splittable" in a.lower() or "can't recommend an intervention" in a.lower()
 
-    def test_cu5_overtime_hypothesis_is_advice(self, clean):
+    def test_cu5_overtime_hypothesis_now_coaches_overtime(self, clean):
+        # Session 4A.3 CU4b: overtime became a coachable capability, so a hypothesis
+        # NAMING it now routes to coaching (here's how to enable overtime) — exactly
+        # the CU5 rule (a hypothesis naming a config concept coaches the knob), never
+        # a status recital. Pre-4A.3 overtime was not a concept, so this was advice.
         res, a = _ask(clean, "overtime would probably help with the late ones")
-        assert res.route == "advice"
+        assert res.route == "coaching"
         assert "late order(s):" not in a
+        assert "overtime" in a.lower() and "5.6" in a
 
     # ---- CU6 — the sycophancy guard --------------------------------------------
 
@@ -824,6 +909,104 @@ class TestSession4A3:
         res, a = _ask(clean, "no i meant ORD-04", ctx)
         assert "ORD-04" in res.resolved_question      # yielded to the correction
         assert "Supported question types" not in a    # never a menu-dump
+
+
+@pytest.mark.slow
+class TestSession4A3Bridge:
+    """Session 4A.3 — the action bridge: the conversation reaches the board.
+    CU1 (swap/move bridge), CU2 (absence pair), CU3 (selection), CU4 (coaching)."""
+
+    # ---- CU1 — the swap/move bridge (the flagship) -----------------------------
+
+    def test_cu1_swap_bridges_to_the_board_with_slack_facts(self, clean):
+        # ORD-05 is 890 min late; ORD-04 has slack (both on CUT-01). The flagship:
+        # never a status recital — testimony (both orders' facts) + a grounded take
+        # (who can afford the slot) + the concrete board gesture the sandbox prices.
+        res, a = _ask(clean, "why not just swap ORD-04 and ORD-05")
+        assert res.route == "swap-move"
+        assert "ORD-04" in a and "ORD-05" in a       # both orders' facts
+        assert "890" in a                             # the hurting order's lateness
+        assert "My take:" in a                        # the grounded take (labeled)
+        assert "CUT-01" in a and "sandbox" in a.lower()   # the concrete gesture
+        assert "late order(s):" not in a              # NOT a status recital
+        # honest about jurisdiction: the panel proposes, it never executes
+        assert "can't drag bars" in a.lower() or "you make the gesture" in a.lower()
+
+    def test_cu1_move_one_order_bridges(self, clean):
+        res, a = _ask(clean, "move ORD-05 earlier")
+        assert res.route == "swap-move"
+        assert "sandbox" in a.lower() and "ORD-05" in a
+
+    # ---- CU2 — the absence-explaining pair -------------------------------------
+
+    def test_cu2_gap_names_the_upstream_gate(self, clean):
+        # ORD-02's paint step waits for its cut step — an upstream hand-off, not a
+        # mystery. Never a status recital.
+        res, a = _ask(clean, "why is there a gap between ORD-09 and ORD-02")
+        assert res.route == "gap-between"
+        low = a.lower()
+        assert "paint-01" in low                      # names the shared machine
+        assert "hand-off" in low or "earlier step" in low or "off-shift" in low
+        assert "late order(s):" not in a
+
+    def test_cu2_gap_names_off_shift(self, clean):
+        # ORD-04 → ORD-05 on CUT-01 spans the overnight off-shift.
+        res, a = _ask(clean, "why is there slack between ORD-04 and ORD-05")
+        assert res.route == "gap-between"
+        assert "off-shift" in a.lower() or "closed" in a.lower() or "reopens" in a.lower()
+
+    def test_cu2_machine_idle_used_machine_redirects_no_order_names(self, clean):
+        # A machine that carries work isn't idle — say so and redirect, WITHOUT
+        # naming its orders (answering the wrong noun would confidently mislead).
+        res, a = _ask(clean, "why is CUT-01 not being used")
+        assert res.route == "machine-idle"
+        assert "isn't idle" in a.lower() and "carries" in a.lower()
+        assert "ORD-05" not in a                       # never the wrong-noun listing
+
+    # ---- CU3 — a live board selection wins over stale conversation --------------
+
+    def test_cu3_selection_beats_stale_conversation(self, clean):
+        # ORD-13 is SELECTED; the conversation last named ORD-05. "this order" must
+        # bind to the live selection, and the resolution must say the source won.
+        ctx = {"history": [{"order": "ORD-05", "route": "late-order"}],
+               "selection": {"order": "ORD-13", "machine": "HEAT-01"}}
+        res, a = _ask(clean, "whats the end time of this order", ctx)
+        assert "ORD-13" in res.resolved_question
+        assert "ORD-05" not in res.resolved_question
+        assert "board selection" in (res.resolution_note or "")
+
+    def test_cu3_this_order_late_answers_the_bound_order(self, clean):
+        # CU4d — deictic/selection resolution runs BEFORE the bare-late list, so
+        # "why is this order late" (with a selection) answers THAT order, not all.
+        ctx = {"selection": {"order": "ORD-05", "machine": "CUT-01"}}
+        res, a = _ask(clean, "why is this order late", ctx)
+        assert res.route == "late-order"
+        assert "ORD-05" in res.resolved_question
+
+    def test_cu3_demonstrative_without_a_referent_clarifies(self, clean):
+        # No selection, no history — "this order" must clarify, never list all late.
+        res, a = _ask(clean, "why is this order late", {})
+        assert res.route == "CLARIFY"
+
+    # ---- CU4 — coaching-registry fixes -----------------------------------------
+
+    def test_cu4a_explain_wip_reaches_coaching(self, clean):
+        res, a = _ask(clean, "please explain wip")
+        assert res.route == "coaching"
+        assert "5.13" in a and "wip_status" in a.lower()
+
+    def test_cu4b_use_overtime_reaches_coaching(self, clean):
+        res, a = _ask(clean, "can i use overtime to help")
+        assert res.route == "coaching"
+        assert "overtime" in a.lower() and "5.6" in a
+
+    def test_cu4c_menu_followup_binds_to_the_concept_not_an_order(self, clean):
+        # After a coaching MENU, "what about wip" coaches wip — not entity binding.
+        ctx = {"history": [{"order": "ORD-05", "route": "coaching"}]}
+        res, a = _ask(clean, "what about wip", ctx)
+        assert res.route == "coaching"
+        assert "wip_status" in a.lower()
+        assert "Schedule for ORD-05" not in a          # never dumps the order's ops
 
 
 def _late_record_prefix(explainer) -> str:

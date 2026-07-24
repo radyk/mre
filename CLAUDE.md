@@ -100,6 +100,70 @@ path referencing the OneDrive path is a defect to fix. Relocation confirmed: `gi
 fsck --full` clean; non-slow suite green (the one defect — an editable-install
 `.pth` still pointing at OneDrive — was repointed at `C:\dev\mre\src`).
 
+**Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.3 — the
+action bridge: the conversation reaches the board 2026-07-24.** The founder's
+round-three listening session (solve #5 pinned) proved the register ladder works
+where wired but found the remaining wall: the conversation could DESCRIBE the board
+and never REACH it. Backend + a cockpit tooltip + the selection channel; no solver/
+model/contract change; NO golden moved. **PART 0 — CU7a OVERTURNED (docs/04, first):**
+the ORD-000019 → ORD-000015 blocked-by claim is CONFIRMED TRUE on the live board; the
+4A.3-pre "fabrication" verdict was an artifact of auditing against a DETERMINISTIC
+RE-SOLVE OF A DIFFERENT WORLD (CP-SAT non-reproducibility biting the audit itself —
+14:23 belonged to a third order in that world, not the pinned one). `_blocked_by`
+EXONERATED, untouched. STANDING PROTOCOL (recorded): a conversational-claim audit runs
+against the PINNED run's persisted document, never a re-solve; a listening session pins
+the run id at the start. **CU1 — the swap/move bridge (the flagship):** "why not just
+swap X and Y" (asked three ways, routed to start-reason / generic advice / an op-dump)
+now routes to a new `swap-move` route answering the R-AI3 ladder — TESTIMONY (both
+orders' placements + slack/lateness from the persisted document) + a grounded TAKE
+("ORD-04 has ~0.2 day(s) of slack; ORD-05 is the one hurting at 890 min late — giving it
+ORD-04's earlier slot is the move worth pricing") + the BRIDGE (the concrete gesture the
+two-beat sandbox prices: "Drag ORD-05's first op onto ORD-04's slot on CUT-01 and the
+board will run a sandbox and price the swap exactly"). The panel PROPOSES; it never
+drags bars / mints edits / solves (M10 no write path, R-DP1–9); the orders' assignment
+Decisions ride as `ordered_records` so the existing `cited_refs` lit-bars channel
+highlights both — no new board machinery. **CU2 — the absence pair (promoted from
+named debt):** `gap-between` (`_gap_cause`) names the gap's cause on the two orders'
+shared machine, checked in order — occupancy / calendar closure / OFF-SHIFT (windows
+derived from `base_pattern` when `horizon_resolved` is empty) / the later op's release
+or upstream step — else HONESTLY unexplained (post-R-SC3 cost-equal slack is eliminated,
+so an ungated gap is flagged, never a vouched cause); `machine-idle` says a used machine
+isn't idle and redirects WITHOUT naming its orders (answering the wrong noun would
+mislead), scopes a genuinely-idle one honestly grounded in the manned-idle Metric. The
+document reader was EXTENDED (`_machine_working_windows` base-pattern fallback), never
+approximated. **CU3 — selection reaches the interpreter:** the `/ask` payload already
+carried the board selection; the fix is PRIORITY — a DEMONSTRATIVE typed deictic ("this
+order" / "that machine", `_demonstrative_deictic`, excluding the definite article)
+resolves BEFORE the router short-circuit (so "why is this order late" binds the deictic
+before the bare late-orders list — CU4d), SELECTION-FIRST (`_typed_subject_with_source`
+returns the source) then recency then clarify; the interpreted line shows which context
+won ("… [from board selection]"); with no selection the 4B.4 rules are unchanged.
+**CU4 — coaching-registry fixes:** (a) `coaching_concept` matches the bare slug (and
+space/underscore variants) + a new `coaching_intent` (named concept + enable/use/
+support/explain verb) so "please explain wip" / bare "wip" / "can i use overtime to
+help" all reach coaching (a menu must match every item it lists — a reverse-guard test
+pins it); (b) a NEW `overtime` CapabilityNote (a BUILT capability — the Phase-1 premium
++ Saturday windows — coaching the calendar `added`/overtime exception §5.6 + the
+cost-model premium §5.9); (c) a coaching-menu follow-up ("what about wip") coaches the
+concept, not an entity; an ordinal clarifies; (d) deictic/selection before the bare-late
+branch (shared with CU3). Side-effect NAMED: overtime becoming coachable means a
+hypothesis naming it ("overtime would probably help") now coaches the knob (the 4A.3-pre
+CU5 rule) — one pinned test updated to the improved routing (not a golden).
+**CU5 — riders:** the board job-bar hover tooltip gains the bar's span (start → end) +
+its lateness/slack figure (`fmtSlack`) — the two facts a planner reads a bar for.
+**Named debt:** aggregate-cause coaching ("why so many late"); the docs/05
+structured-constraint surface (prose-locked); machine-idle eligibility names no specific
+ops on a genuinely-idle machine (no eligible-set read on the monolithic path). Non-slow
+Python **1255 passed, 0 failed** (+6 fast: capability menu-name/overtime/coaching-intent,
+selection-priority ×3); slow `test_ai_voice` green with the new specimens; cockpit
+planner tooltip spec green both themes. See the docs/04 2026-07-24 Session 4A.3 + CU7a
+resolving amendments and docs/07 v2.40. Lesson: a conversation that can describe the
+board but never reach it is half a tool — the bridge is honest only when it proposes the
+REAL gesture and names who performs it (the human drags, the sandbox prices, M10 never
+writes); the absence routes name the cause you can prove and flag honestly the gap you
+can't; and a live selection is context the planner is POINTING AT, so it must win over
+what they said three turns ago, and the answer must say which one it used.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.3-pre —
 R-AI3 (the register ladder): restore judgment, add invitation, fix the round-two
 exam findings 2026-07-24.** The founder's round-two listening session found four

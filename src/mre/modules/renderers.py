@@ -137,6 +137,9 @@ def _register_for(bundle: ExplanationBundle) -> str:
 _HEADER_ONLY_SUBJECTS = frozenset({
     "findings", "order_attributes", "inventory", "integrity", "start_reason",
     "unknown_entity", "drill_down", "briefing", "contested_fact",
+    # Session 4A.3 — the swap/move bridge + the absence pair compose their whole
+    # answer in the header (the R-AI3 ladder in planner language).
+    "swap_move", "gap_between", "machine_idle",
 })
 
 # The citation-breadth cap (CU6): a schedule-wide answer shows at most this many
@@ -711,6 +714,141 @@ class TemplateRenderer:
                     lines.append("  - " + ", ".join(coachable))
             lines.append("")
 
+        elif bundle.subject_type == "swap_move":
+            self._render_swap_move(lines, bundle)
+
+        elif bundle.subject_type == "gap_between":
+            self._render_gap(lines, bundle)
+
+        elif bundle.subject_type == "machine_idle":
+            self._render_machine_idle(lines, bundle)
+
+    # ------------------------------------------------------------------
+    # Session 4A.3 composed-answer helpers (the swap/move bridge + absence pair)
+    # ------------------------------------------------------------------
+
+    def _render_swap_move(self, lines: list[str], bundle: ExplanationBundle) -> None:
+        """CU1 — the R-AI3 ladder: TESTIMONY (both orders' facts) -> a labeled TAKE
+        -> the BRIDGE to the board gesture. The label is the boundary; the panel
+        proposes the move, it never executes it (M10 has no write path)."""
+        kf = bundle.key_facts
+        a = kf.get("a") or {}
+        b = kf.get("b")
+
+        def _fact_line(f: dict) -> str:
+            o = f.get("order", "?")
+            p = f.get("placement") or {}
+            where = (f" on {p['machine']} (starts {p['start']})"
+                     if p.get("machine") else "")
+            if f.get("late"):
+                status = f"{int(f['lateness'])} min late"
+            elif f.get("slack_days") is not None and f["slack_days"] > 0.05:
+                status = f"{f['slack_days']:g} day(s) early"
+            elif f.get("slack_days") is not None:
+                status = "right on its due date"
+            else:
+                status = "scheduled"
+            return f"  {o}: {status}{where}."
+
+        lines.append(_fact_line(a))
+        if b:
+            lines.append(_fact_line(b))
+        take = kf.get("take")
+        if take:
+            lines.append("")
+            lines.append(f"My take: {take}")
+        bridge = kf.get("bridge")
+        if bridge:
+            lines.append("")
+            lines.append(bridge)
+            lines.append("I can't drag bars or change the plan myself — you make the "
+                         "gesture and I'll read what the sandbox says.")
+        lines.append("")
+
+    def _render_gap(self, lines: list[str], bundle: ExplanationBundle) -> None:
+        """CU2 — name the cause of the gap between two ops on their shared machine,
+        or report it honestly when nothing gates it (never vouch a cause)."""
+        kf = bundle.key_facts
+        a, b = kf.get("order_a"), kf.get("order_b")
+        if kf.get("no_orders"):
+            lines.append("Tell me which two orders and I'll read the gap between them "
+                         "on their shared machine — e.g. \"why is there a gap between "
+                         "ORD-04 and ORD-05?\".")
+            lines.append("")
+            return
+        if kf.get("no_second"):
+            lines.append(f"I read the gap between two jobs on a shared machine — name "
+                         f"the other order too, e.g. \"why is there a gap between {a} "
+                         "and <other order>?\".")
+            lines.append("")
+            return
+        cause = kf.get("cause")
+        m = kf.get("machine")
+        gap = kf.get("gap_min")
+        if cause == "no_shared_machine":
+            lines.append(f"{a} and {b} don't run on the same machine, so there's no "
+                         "shared-machine gap between them to explain.")
+        elif cause == "adjacent":
+            lines.append(f"There's essentially no gap — {kf['earlier_order']} finishes "
+                         f"{kf['earlier_end']} on {m} and {kf['later_order']} starts "
+                         f"right after ({kf['later_start']}).")
+        elif cause == "occupied":
+            lines.append(f"The gap on {m} between {kf['earlier_order']} "
+                         f"({kf['earlier_end']}) and {kf['later_order']} "
+                         f"({kf['later_start']}) isn't idle — {kf['occupier']} runs "
+                         f"there ({kf['occupier_window']}).")
+        elif cause == "closure":
+            c = kf["closure"]
+            lines.append(f"The ~{int(gap)} min gap on {m} is a calendar closure — "
+                         f"{c['reason']} from {c['start']} to {c['end']} — so no work "
+                         "can run there.")
+        elif cause == "off_shift":
+            lines.append(f"The gap on {m} between {kf['earlier_order']} "
+                         f"({kf['earlier_end']}) and {kf['later_order']} "
+                         f"({kf['later_start']}) is off-shift — {m} is closed then and "
+                         f"reopens at {kf['reopen']}, which is when {kf['later_order']} "
+                         "takes the next opening.")
+        elif cause == "release":
+            lines.append(f"{kf.get('later_order', b)} can't move up because it isn't "
+                         f"released until {kf['release']}; nothing runs before its "
+                         f"release date, so {m} sits open until then.")
+        elif cause == "upstream":
+            lines.append(f"{kf.get('later_order', b)} can't move up because its earlier "
+                         f"step doesn't finish on {kf['upstream_machine']} until "
+                         f"{kf['upstream_until']} — {m} waits for that hand-off.")
+        else:  # unexplained
+            lines.append(f"There's about a {int(gap)} min gap on {m} between "
+                         f"{kf['earlier_order']} ({kf['earlier_end']}) and "
+                         f"{kf['later_order']} ({kf['later_start']}), and I can't tie "
+                         "it to another job, a closure, or a release on the evidence I "
+                         "have. Post-R-SC3 the schedule doesn't leave cost-equal slack, "
+                         "so a gap with no visible gate is worth flagging — drag one "
+                         "bar into it and the sandbox will say if the move is feasible.")
+        lines.append("")
+
+    def _render_machine_idle(self, lines: list[str], bundle: ExplanationBundle) -> None:
+        """CU2 — a machine that carries work is not idle (redirect to its schedule,
+        no order names); a genuinely idle machine gets an eligibility-honest scope."""
+        kf = bundle.key_facts
+        m = kf.get("machine", "?")
+        n = kf.get("op_count", 0)
+        if n:
+            span = (f", running from {kf['first']} to {kf['last']}"
+                    if kf.get("first") and kf.get("last") else "")
+            lines.append(f"{m} isn't idle — it carries {n} operation(s){span}. Ask "
+                         f"\"what's running on {m}?\" for the list.")
+        else:
+            lines.append(f"No work landed on {m} in this plan.")
+            mih = kf.get("manned_idle_hours")
+            if mih is not None:
+                lines.append(f"Its manned calendar sat open about {mih:g}h with "
+                             "nothing booked.")
+            lines.append("Usually that means every operation it could run was cheaper "
+                         "or freer on another machine, or nothing in this book was "
+                         "eligible for it. Ask \"what's running on <machine>?\" to see "
+                         "where the work went.")
+        lines.append("")
+
     # ------------------------------------------------------------------
     # Session 4A.2 composed-answer helpers
     # ------------------------------------------------------------------
@@ -1169,6 +1307,9 @@ class LLMRenderer:
         # Session 4A.3-pre CU6: the contested-fact restatement is authored warmth
         # over a pinned fact — the LLM must never soften it into capitulation.
         "contested_fact",
+        # Session 4A.3: the swap/move bridge + the absence pair are authored — the
+        # take + gesture bridge are composed on the evidence, never LLM-improvised.
+        "swap_move", "gap_between", "machine_idle",
     })
 
     def render(self, bundle: ExplanationBundle) -> str:

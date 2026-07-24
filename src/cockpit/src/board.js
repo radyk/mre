@@ -310,11 +310,18 @@ export function createBoard(hostEl, initialDoc) {
     const so = doc.service_outcomes.find((s) => s.work_order === wo);
     const lateness = so ? so.lateness_min : null;
     const status = latenessBand(lateness);
+    // Session 4A.3 CU5a: the tooltip carries the bar's own span + its lateness/slack
+    // figure — the two facts a planner reads a bar for. Span from the chunks (a
+    // split op's first-start → last-end).
+    const chunks = a.chunks || [];
+    const start = chunks.length ? chunks[0].start : null;
+    const end = chunks.length ? chunks[chunks.length - 1].end : null;
     return {
       order: wo, qty: so?.quantity ?? null, uom: so?.quantity_uom ?? null,
       due: so?.due ?? null, customer: so?.customer_name ?? null,
       opSeq: a.op_seq, status, standingPin: !!a.standing_pin,
       resourceName: nameOf(a.resource_id),
+      start, end, latenessMin: lateness,
     };
   }
   const hoverCards = createHoverCards(hostEl, timeline, {

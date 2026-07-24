@@ -24,8 +24,8 @@ from typing import Any, Optional
 
 from mre.modules.evidence_index import EvidenceIndex
 from mre.modules.capabilities import (
-    CAPABILITIES, coaching_concept, is_capability_question, note_for_concept,
-    wants_capability,
+    CAPABILITIES, coaching_concept, coaching_intent, is_capability_question,
+    note_for_concept, wants_capability,
 )
 from mre.modules.planner_language import (
     compose_finding_sentence, driver_phrase, driver_hedge,
@@ -270,6 +270,46 @@ def _is_hypothesis(q: str) -> bool:
     return any(o in q for o in _HYPOTHESIS_OUTCOMES)
 
 
+# CU1 (Session 4A.3) — SWAP / MOVE intent (the flagship). "why not just swap X and
+# Y", "switch X and Y", "move X earlier / to M". The answer bridges to the board
+# gesture — the two-beat sandbox prices the drag — never a status recital.
+_SWAP_MARKERS = ("swap", "switch", "trade place", "trade the", "exchange",
+                 "flip the order", "put them in the other")
+_MOVE_MARKERS = ("move ", "put ", "shift ", "relocate", "reassign", "reschedule ",
+                 "give it an earlier", "give it the earlier")
+
+
+def _swap_move_kind(q: str) -> Optional[str]:
+    """'swap' when the question proposes exchanging two jobs' slots, 'move' when it
+    proposes relocating one, else None. The caller enforces the order count (swap
+    needs two, move one)."""
+    if any(m in q for m in _SWAP_MARKERS):
+        return "swap"
+    if any(m in q for m in _MOVE_MARKERS):
+        return "move"
+    return None
+
+
+# CU2 (Session 4A.3) — the absence-explaining pair, promoted from named debt.
+#   gap-between  — "why is there a gap / slack between X and Y", "why not run X
+#                  right after Y": resolve the gap on the shared machine, name its
+#                  CAUSE (occupancy / closure / upstream gate), or report honestly.
+#   machine-idle — "why is M unused / idle": eligibility + where the work went.
+_GAP_MARKERS = (
+    "gap between", "slack between", "space between", "time between", "why not run",
+    "right after", "straight after", "just after", "back to back", "back-to-back",
+    "immediately after", "why the gap", "why is there a gap", "why is there slack",
+    "why the space", "why isn't it right after", "why not right after",
+    "why is there space", "gap before", "why is there a delay between",
+)
+_IDLE_MARKERS = (
+    "unused", "not used", "not being used", "sitting idle", "idle",
+    "doing nothing", "no jobs on", "nothing on", "no work on", "empty",
+    "not doing anything", "why is nothing running on", "carrying no work",
+    "why isn't anything on", "why are there no jobs on", "no jobs running on",
+)
+
+
 # The route taxonomy — the closed set of route ids classify()/route() dispatch
 # over (docs/07 Phase 4, R-AI1(b)). The interpreter (CU1) maps free-form phrasing
 # ONLY onto these ids; it never invents a route. `params` names the external-ref
@@ -307,6 +347,16 @@ ROUTE_TAXONOMY: dict[str, dict] = {
     "unknown-entity":        {"params": ["order"],   "canonical": "is {order} in this schedule?"},
     # Session 4A.3-pre CU6 — the sycophancy guard: the user contests a cited fact.
     "contested-fact":        {"params": ["order"],   "canonical": "is {order} really on time?"},
+    # Session 4A.3 CU1 — the swap/move bridge (the flagship): reason over two orders'
+    # slack/lateness and bridge to the board gesture the two-beat sandbox prices.
+    "swap-move":             {"params": ["order"],
+                              "canonical": "why not swap {order} with another order?"},
+    # Session 4A.3 CU2 — the absence-explaining pair: the gap between two ops on a
+    # shared machine, and why a machine carries no (or little) work.
+    "gap-between":           {"params": ["order"],
+                              "canonical": "why is there a gap before {order}?"},
+    "machine-idle":          {"params": ["machine"],
+                              "canonical": "why is {machine} idle?"},
     # Session 4B.4 — the advice/recommendation SCOPING route (CU2) and the cheap
     # meta routes (CU3): solve timing + machine listing are pure document/evidence
     # reads; maintenance is shape-recognized with an honest not-yet.
@@ -555,6 +605,16 @@ class Explainer:
         m = re.search(r'WO-[\w-]+', question, re.IGNORECASE)
         return m.group().upper() if m else None
 
+    def _find_order_refs(self, question: str) -> list[str]:
+        """Every distinct external order ref named in the question, in order of
+        appearance — the swap/move + gap routes reason over TWO orders (CU1/CU2)."""
+        out: list[str] = []
+        for tok in re.findall(r"[\w][\w./-]*", question):
+            hit = self._order_refs.get(tok.upper().strip(".,?!"))
+            if hit and hit not in out:
+                out.append(hit)
+        return out
+
     def _find_machine_ref(self, question: str) -> Optional[str]:
         for tok in re.findall(r"[\w][\w./-]*", question):
             hit = self._machine_refs.get(tok.upper().strip(".,?!"))
@@ -626,7 +686,7 @@ class Explainer:
         # splitting were allowed fewer orders would be late" — routes here too: the
         # honest answer is how to enable that knob, not a lateness recital.
         _concept = coaching_concept(q)
-        if (is_capability_question(q) or wants_capability(q, _concept)
+        if (is_capability_question(q) or coaching_intent(q, _concept)
                 or (_concept and _is_hypothesis(q))):
             return "coaching", {**base, "concept": _concept}
 
@@ -692,6 +752,27 @@ class Explainer:
         if (wo_ref and any(m in q for m in _CONTEST_MARKERS)
                 and any(s in q for s in _STATUS_WORDS)):
             return "contested-fact", base
+
+        # CU1 (Session 4A.3) — the swap/move bridge. Before the late/why-on-machine/
+        # schedule branches so "why not swap X and Y" / "move X earlier" never fall
+        # into a status recital. A swap needs two resolved orders; a move needs one.
+        order_refs = self._find_order_refs(question)
+        sm_kind = _swap_move_kind(q)
+        if sm_kind == "swap" and len(order_refs) >= 2:
+            return "swap-move", {**base, "order_a": order_refs[0],
+                                 "order_b": order_refs[1], "kind": "swap"}
+        if sm_kind == "move" and order_refs:
+            return "swap-move", {**base, "order_a": order_refs[0],
+                                 "order_b": order_refs[1] if len(order_refs) >= 2 else None,
+                                 "kind": "move"}
+        # CU2 (Session 4A.3) — the absence pair. gap-between needs an order (or a
+        # machine) + a gap marker; machine-idle needs a machine + an idle marker.
+        if any(g in q for g in _GAP_MARKERS) and (order_refs or machine_ref):
+            return "gap-between", {**base,
+                                   "order_a": order_refs[0] if order_refs else None,
+                                   "order_b": order_refs[1] if len(order_refs) >= 2 else None}
+        if any(w in q for w in _IDLE_MARKERS) and machine_ref:
+            return "machine-idle", base
 
         if ("late" in q or "delay" in q or "tardy" in q) and wo_ref:
             return "late-order", base
@@ -770,6 +851,15 @@ class Explainer:
             return self._explain_start_reason(params.get("order"), q)
         if route_id == "contested-fact":
             return self._explain_contested(params.get("order"), q)
+        if route_id == "swap-move":
+            return self._explain_swap_move(params.get("order_a") or params.get("order"),
+                                           params.get("order_b"),
+                                           params.get("kind", "swap"), q)
+        if route_id == "gap-between":
+            return self._explain_gap(params.get("order_a") or params.get("order"),
+                                     params.get("order_b"), params.get("machine"), q)
+        if route_id == "machine-idle":
+            return self._explain_machine_idle(params.get("machine"), q)
         if route_id == "drill-down":
             return self._explain_drill_down(params.get("target", q),
                                             params.get("history"))
@@ -1581,6 +1671,358 @@ class Explainer:
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )
+
+    # ------------------------------------------------------------------
+    # Session 4A.3 — the swap/move bridge (CU1) + the absence pair (CU2)
+    # ------------------------------------------------------------------
+
+    def _assignment_records(self, order_ref: str) -> list[dict]:
+        """The order's assignment Decisions — surfaced as ordered_records so the
+        cockpit's cited_refs lights the order's bars (the lit-bars channel; no new
+        board machinery). Best-effort, [] on any read failure."""
+        did = self._resolve_wo(order_ref)
+        if did is None or self._reader is None:
+            return []
+        try:
+            recs = self._index.lineage_walk(did, snapshot_reader=self._reader)
+        except Exception:
+            return []
+        return [r for r in recs if r.get("record_type") == "decision"
+                and r.get("decision_type") == "assignment"]
+
+    def _order_slack_facts(self, order_ref: str) -> Optional[dict]:
+        """Placement + slack/lateness for one order, read from the persisted
+        document (never fabricated): first-op machine + start, lateness minutes, and
+        days early (due − completion). None when the order does not resolve."""
+        dem = self._demand_by_order(order_ref)
+        if dem is None:
+            return None
+        rows = self._order_rows(order_ref)
+        late = self._order_lateness(order_ref)
+        placement = None
+        if rows and rows[0].get("start"):
+            placement = {"machine": rows[0]["machine"],
+                         "start": _fmt_ts(rows[0]["start"])}
+        slack_days = None
+        if rows and rows[-1].get("end"):
+            fdt = _to_dt(rows[-1]["end"])
+            ddt = _to_dt(dem.get("due"))
+            if fdt is not None and ddt is not None:
+                slack_days = round((ddt - fdt).total_seconds() / 86400, 1)
+        return {"order": order_ref, "placement": placement, "lateness": late,
+                "slack_days": slack_days,
+                "late": (late is not None and late > 0),
+                "records": self._assignment_records(order_ref)}
+
+    def _explain_swap_move(self, order_a: Optional[str], order_b: Optional[str],
+                           kind: str, question: str) -> ExplanationBundle:
+        """CU1 — the swap/move bridge (the flagship). The R-AI3 ladder: TESTIMONY
+        (both orders' placements + slack/lateness), a grounded TAKE (which slot
+        changes hands, who can afford it), then the BRIDGE (the concrete board
+        gesture the two-beat sandbox prices). The panel proposes; the human drags —
+        M10 has no write path."""
+        if not order_a:
+            return self._unknown_question(question)
+        fa = self._order_slack_facts(order_a)
+        if fa is None:
+            return self._explain_unknown_entity(order_a)
+        fb = self._order_slack_facts(order_b) if order_b else None
+        if order_b and fb is None:
+            return self._explain_unknown_entity(order_b)
+        take, bridge = self._swap_take_and_bridge(fa, fb, kind)
+        records = list(fa.get("records") or [])
+        if fb:
+            records += list(fb.get("records") or [])
+        a_pub = {k: v for k, v in fa.items() if k != "records"}
+        b_pub = {k: v for k, v in fb.items() if k != "records"} if fb else None
+        return ExplanationBundle(
+            question=question or f"why not swap {order_a}?",
+            subject_id=fa["order"], subject_type="swap_move",
+            subject_external_name=order_a, ordered_records=records,
+            key_facts={"kind": kind, "a": a_pub, "b": b_pub,
+                       "take": take, "bridge": bridge},
+            snapshot_id=self._snap_id, identity_map=self._identity_map)
+
+    def _swap_take_and_bridge(self, fa: dict, fb: Optional[dict],
+                              kind: str) -> tuple[Optional[str], Optional[str]]:
+        """The grounded take + the board-gesture bridge for a swap/move. The take
+        names who can afford the slot (slack) vs who is hurting (late); the bridge
+        names the real drag the two-beat sandbox prices. Never an ungrounded opinion
+        (R-AI3(2)): a take only where the evidence supports one."""
+        a = fa["order"]
+        if not fb:
+            slot = fa.get("placement") or {}
+            take = None
+            if fa["late"]:
+                take = (f"{a} is {int(fa['lateness'])} min late — the move worth "
+                        "pricing is the one that gives it an earlier opening.")
+            bridge = (f"Drag {a}'s first operation to the earlier slot you have in "
+                      "mind and the board will run a sandbox and price the move "
+                      "exactly.")
+            return take, bridge
+        b = fb["order"]
+        # who's hurting (late) vs who can afford the slot (slack)
+        if fa["late"] and not fb["late"]:
+            hurting, slack = fa, fb
+        elif fb["late"] and not fa["late"]:
+            hurting, slack = fb, fa
+        elif fa["late"] and fb["late"]:
+            hurting = fa if (fa["lateness"] or 0) >= (fb["lateness"] or 0) else fb
+            slack = fb if hurting is fa else fa
+        else:
+            slack = fa if (fa["slack_days"] or 0) >= (fb["slack_days"] or 0) else fb
+            hurting = fb if slack is fa else fa
+        slot = slack.get("placement") or {}
+        if hurting["late"]:
+            sd = slack.get("slack_days")
+            slack_phrase = (f"~{sd:g} day(s) of slack" if sd and sd > 0
+                            else "room to give")
+            take = (f"{slack['order']} has {slack_phrase} to spend; {hurting['order']} "
+                    f"is the one hurting ({int(hurting['lateness'])} min late) — giving "
+                    f"it {slack['order']}'s earlier slot is the move worth pricing.")
+            bridge = None
+            if slot.get("machine"):
+                bridge = (f"Drag {hurting['order']}'s first operation onto "
+                          f"{slack['order']}'s slot on {slot['machine']} and the board "
+                          "will run a sandbox and price the swap exactly.")
+            return take, bridge
+        take = (f"Both {a} and {b} already finish on time, so a swap mostly shuffles "
+                "free slack — worth pricing only if you want one to finish sooner.")
+        bridge = None
+        if slot.get("machine"):
+            bridge = (f"Drag {a}'s first operation onto {b}'s slot on "
+                      f"{slot['machine']} and the sandbox will cost the move.")
+        return take, bridge
+
+    def _closure_in_window(self, machine_name: str, start_dt, end_dt) -> Optional[dict]:
+        """A calendar closure on a machine overlapping [start_dt, end_dt), or None.
+        Naive datetimes throughout (one run's grid), so no tz-mix comparison."""
+        if self._reader is None or start_dt is None or end_dt is None:
+            return None
+        rid = self._resolve_machine(machine_name)
+        if rid is None:
+            return None
+        resources = {r["id"]: r for r in self._reader.iter_entities("resource")}
+        calendars = {c["id"]: c for c in self._reader.iter_entities("calendar")}
+        res = resources.get(rid)
+        cal = calendars.get(res.get("calendar_ref")) if res else None
+        if not cal:
+            return None
+        for exc in cal.get("exceptions", []):
+            if exc.get("type") != "closure":
+                continue
+            w = exc.get("window", {})
+            cs, ce = _to_dt(w.get("start")), _to_dt(w.get("end"))
+            if cs is None or ce is None:
+                continue
+            if cs < end_dt and ce > start_dt:
+                return {"reason": exc.get("reason", "closure"),
+                        "start": _fmt_ts(w.get("start", "")),
+                        "end": _fmt_ts(w.get("end", ""))}
+        return None
+
+    def _machine_working_windows(self, machine_name: str, from_dt=None,
+                                 to_dt=None) -> list[tuple]:
+        """Absolute (start_dt, end_dt) working windows for a machine's calendar.
+        Prefers the solver's flattened ``horizon_resolved``; falls back to the
+        ``base_pattern`` (weekday shift) expanded over [from_dt, to_dt]. [] when
+        unavailable — the gap resolver then skips the off-shift check (never a
+        false claim)."""
+        rid = self._resolve_machine(machine_name)
+        if rid is None or self._reader is None:
+            return []
+        resources = {r["id"]: r for r in self._reader.iter_entities("resource")}
+        calendars = {c["id"]: c for c in self._reader.iter_entities("calendar")}
+        res = resources.get(rid)
+        cal = calendars.get(res.get("calendar_ref")) if res else None
+        if not cal:
+            return []
+        out: list[tuple] = []
+        for w in cal.get("horizon_resolved", []) or []:
+            s = _to_dt(w.get("start") if isinstance(w, dict) else getattr(w, "start", None))
+            e = _to_dt(w.get("end") if isinstance(w, dict) else getattr(w, "end", None))
+            if s is not None and e is not None:
+                out.append((s, e))
+        if out or from_dt is None or to_dt is None:
+            return out
+        # Fall back to the base pattern (weekday + shift start/end) expanded over
+        # the range — the shape glass_box and most authored plants use.
+        bp = cal.get("base_pattern") or {}
+        weekdays = set(bp.get("weekdays") or [])
+        ss, se = bp.get("shift_start"), bp.get("shift_end")
+        if not (weekdays and ss and se):
+            return []
+        try:
+            from datetime import date as _date, timedelta as _tdelta
+            sh, sm = (int(x) for x in str(ss).split(":")[:2])
+            eh, em = (int(x) for x in str(se).split(":")[:2])
+        except Exception:
+            return []
+        d = from_dt.date() - _tdelta(days=1)
+        stop = to_dt.date() + _tdelta(days=1)
+        while d <= stop:
+            if d.weekday() in weekdays:
+                out.append((datetime(d.year, d.month, d.day, sh, sm),
+                            datetime(d.year, d.month, d.day, eh, em)))
+            d += _tdelta(days=1)
+        return out
+
+    def _gap_cause(self, order_a: str, order_b: str) -> dict:
+        """The cause of the gap between order_a and order_b on their shared machine,
+        checked in order: another op occupies it / a closure covers it / the later
+        op's release or upstream step gates it / else honestly unexplained. Read from
+        the solved occupancy — never a fabricated cause."""
+        rows = self._load_enriched_assignments()
+
+        def _order_rows_m(ref):
+            return {r["machine"]: r for r in rows
+                    if r.get("start") and ref.upper() in
+                    [w.upper() for w in r["work_orders"]]}
+
+        a_by_m, b_by_m = _order_rows_m(order_a), _order_rows_m(order_b)
+        shared = [m for m in a_by_m if m in b_by_m]
+        result: dict[str, Any] = {"machine": None, "gap_min": None, "cause": None}
+        if not shared:
+            result["cause"] = "no_shared_machine"
+            return result
+        machine = shared[0]
+        ra, rb = a_by_m[machine], b_by_m[machine]
+        sa, sb = _to_dt(ra["start"]), _to_dt(rb["start"])
+        if sa is None or sb is None:
+            result["cause"] = "unexplained"
+            return result
+        if sa <= sb:
+            earlier, later, earlier_ref, later_ref = ra, rb, order_a, order_b
+        else:
+            earlier, later, earlier_ref, later_ref = rb, ra, order_b, order_a
+        e_end, l_start = _to_dt(earlier["end"]), _to_dt(later["start"])
+        result.update({
+            "machine": machine,
+            "earlier_order": "+".join(sorted(earlier["work_orders"])) or earlier_ref,
+            "later_order": "+".join(sorted(later["work_orders"])) or later_ref,
+            "earlier_end": _fmt_ts(earlier["end"]),
+            "later_start": _fmt_ts(later["start"]),
+        })
+        if e_end is None or l_start is None:
+            result["cause"] = "unexplained"
+            return result
+        gap_min = round((l_start - e_end).total_seconds() / 60.0, 0)
+        result["gap_min"] = gap_min
+        if gap_min <= 1:
+            result["cause"] = "adjacent"
+            return result
+        # 1. another op occupies the interval
+        for r in rows:
+            if r["machine"] != machine or r is earlier or r is later or not r.get("start"):
+                continue
+            s, e = _to_dt(r["start"]), _to_dt(r["end"])
+            if s is not None and e is not None and s < l_start and e > e_end:
+                result["cause"] = "occupied"
+                result["occupier"] = "+".join(sorted(r["work_orders"])) or "?"
+                result["occupier_window"] = f"{_fmt_ts(r['start'])} → {_fmt_ts(r['end'])}"
+                return result
+        # 2. a calendar closure covers part of the window
+        closure = self._closure_in_window(machine, e_end, l_start)
+        if closure:
+            result["cause"] = "closure"
+            result["closure"] = closure
+            return result
+        # 2b. the machine is off-shift for (essentially) the whole gap — no open
+        #     capacity between the two ops, so the later one waits for the reopen.
+        wins = self._machine_working_windows(machine, e_end, l_start)
+        if wins:
+            open_min = 0.0
+            for (ws, we) in wins:
+                lo, hi = max(ws, e_end), min(we, l_start)
+                if hi > lo:
+                    open_min += (hi - lo).total_seconds() / 60.0
+            if open_min <= max(2.0, 0.05 * gap_min):
+                result["cause"] = "off_shift"
+                result["reopen"] = _fmt_ts(later["start"])
+                return result
+        # 3. the later op's release or its upstream step gates it
+        ldem = self._demand_by_order(later_ref)
+        release = ldem.get("earliest_start") if ldem else None
+        rdt = _to_dt(release) if release else None
+        if rdt is not None and rdt > e_end:
+            result["cause"] = "release"
+            result["release"] = _fmt_date(release)
+            result["later_order"] = later_ref
+            return result
+        lrows = sorted([r for r in rows if r.get("start") and later_ref.upper() in
+                        [w.upper() for w in r["work_orders"]]],
+                       key=lambda r: r["start"])
+        for i, r in enumerate(lrows):
+            if r is later and i > 0:
+                prev = lrows[i - 1]
+                pend = _to_dt(prev["end"])
+                if pend is not None and pend > e_end:
+                    result["cause"] = "upstream"
+                    result["later_order"] = later_ref
+                    result["upstream_machine"] = prev["machine"]
+                    result["upstream_until"] = _fmt_ts(prev["end"])
+                    return result
+                break
+        result["cause"] = "unexplained"
+        return result
+
+    def _explain_gap(self, order_a: Optional[str], order_b: Optional[str],
+                     machine: Optional[str], question: str) -> ExplanationBundle:
+        """CU2 — "why is there a gap/slack between X and Y". Resolve the gap on the
+        shared machine and name its cause (occupancy / closure / upstream gate), or
+        report it honestly when nothing gates it (post-R-SC3, cost-equal slack is
+        eliminated — an unexplained gap is worth flagging, not vouching a cause)."""
+        if not order_a:
+            return self._authored_bundle("gap_between", question, {"no_orders": True})
+        if self._demand_by_order(order_a) is None:
+            return self._explain_unknown_entity(order_a)
+        if order_b and self._demand_by_order(order_b) is None:
+            return self._explain_unknown_entity(order_b)
+        facts: dict[str, Any] = {"order_a": order_a, "order_b": order_b}
+        if order_b:
+            facts.update(self._gap_cause(order_a, order_b))
+        else:
+            facts["no_second"] = True
+        return self._authored_bundle("gap_between", question, facts)
+
+    def _manned_idle_hours(self, rid: Optional[str]) -> Optional[float]:
+        """The resource's manned-idle time in hours from a manned_idle Metric
+        (4B.2d CU5), or None when not recorded. Grounds the machine-idle answer."""
+        if not rid:
+            return None
+        for r in self._index._all_evidence:
+            name = r.get("name") or ""
+            if (r.get("record_type") == "metric" and "manned_idle" in name
+                    and any(s.get("entity_id") == rid for s in r.get("subjects", []))):
+                v = r.get("value")
+                if isinstance(v, (int, float)):
+                    return round(v / 60.0, 1) if "minute" in name else round(v, 1)
+        return None
+
+    def _explain_machine_idle(self, machine_ref: Optional[str],
+                              question: str) -> ExplanationBundle:
+        """CU2 — "why is M unused/idle". A machine that carries work is not idle
+        (redirect to its schedule, no order names — avoids answering the wrong
+        noun); a genuinely idle machine gets eligibility-honest scoping grounded in
+        the manned-idle Metric where present."""
+        if not machine_ref:
+            return self._unknown_question(question)
+        rid = self._resolve_machine(machine_ref)
+        rows = [r for r in self._load_enriched_assignments()
+                if (rid and r["resource_id"] == rid)
+                or r["machine"].upper() == machine_ref.upper()]
+        facts: dict[str, Any] = {"machine": machine_ref, "op_count": len(rows)}
+        if rows:
+            try:
+                rows.sort(key=lambda r: r["start"] or "")
+                facts["first"] = _fmt_ts(rows[0]["start"])
+                facts["last"] = _fmt_ts(rows[-1]["end"])
+            except Exception:
+                pass
+        else:
+            facts["idle"] = True
+            facts["manned_idle_hours"] = self._manned_idle_hours(rid)
+        return self._authored_bundle("machine_idle", question, facts)
 
     def _explain_unknown_entity(self, mention: str) -> ExplanationBundle:
         """The relevance guard's honest destination (CU1): a named order that is

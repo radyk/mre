@@ -27,6 +27,21 @@ const fmtWeekdayTime = (msVal) => new Date(msVal).toLocaleString(undefined, {
   weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false,
 });
 
+// CU5a: the lateness/slack figure a planner reads a bar for. Positive = late,
+// negative/zero = early slack. Minutes under an hour, hours under a day, else days.
+const fmtSlack = (min) => {
+  if (min == null) return "—";
+  if (min > 0) {
+    const m = Math.round(min);
+    return m >= 1440 ? `${(m / 1440).toFixed(1)}d late`
+      : m >= 60 ? `${(m / 60).toFixed(1)}h late` : `${m} min late`;
+  }
+  const e = Math.round(-min);
+  if (e <= 0) return "on its due date";
+  return e >= 1440 ? `${(e / 1440).toFixed(1)}d early`
+    : e >= 60 ? `${(e / 60).toFixed(1)}h early` : `${e} min early`;
+};
+
 const CLOSURE_LABEL = {
   planned_maintenance: "Planned maintenance",
   breakdown: "Recorded downtime",
@@ -72,11 +87,18 @@ export function createHoverCards(hostEl, timeline, ctx) {
     const statusCls = job.status === "late" ? "late" : job.status === "tight" ? "tight" : "ontime";
     const statusTxt = job.status === "late" ? "LATE" : job.status === "tight" ? "TIGHT" : "on time";
     const qty = job.qty != null ? `${job.qty}${job.uom ? " " + job.uom : ""}` : "—";
+    // CU5a: the bar's span and its lateness/slack figure — the two facts a planner
+    // reads a bar for. Span "Jan 6 07:00 → 14:50"; slack "890 min late" / "0.2d early".
+    const span = (job.start != null && job.end != null)
+      ? `${fmtDay(job.start)} → ${fmtDay(job.end)}` : "—";
+    const slack = fmtSlack(job.latenessMin);
     card.className = `hover-card job ${statusCls}`;
     card.innerHTML = `
       <div class="hc-head"><span class="hc-order"></span>
         <span class="hc-status ${statusCls}">${statusTxt}</span></div>
       <dl class="hc-grid">
+        <dt>When</dt><dd class="hc-when"></dd>
+        <dt>Slack</dt><dd class="hc-slack">${slack}</dd>
         <dt>Qty</dt><dd class="hc-qty"></dd>
         <dt>Customer</dt><dd class="hc-cust"></dd>
         <dt>Due</dt><dd>${fmtDay(job.due)}</dd>
@@ -84,6 +106,7 @@ export function createHoverCards(hostEl, timeline, ctx) {
         <dt>Machine</dt><dd class="hc-res"></dd>
       </dl>${pin}`;
     card.querySelector(".hc-order").textContent = job.order || "—";
+    card.querySelector(".hc-when").textContent = span;
     card.querySelector(".hc-qty").textContent = qty;
     card.querySelector(".hc-cust").textContent = job.customer || "—";
     card.querySelector(".hc-res").textContent = job.resourceName || "—";

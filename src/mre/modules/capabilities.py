@@ -146,6 +146,27 @@ CAPABILITIES: tuple[CapabilityNote, ...] = (
                   "in progress", "reschedule from", "shop floor state",
                   "soft start"),
     ),
+    # A BUILT capability (the Phase-1 overtime premium + Saturday overtime windows),
+    # added Session 4A.3 CU4b: the founder asked "can i use overtime to help" and it
+    # found no concept. Jurisdiction rule intact — coach the calendar `added`/overtime
+    # exception (§5.6) and the cost-model premium (§5.9), never ERP shift surgery.
+    CapabilityNote(
+        concept="overtime",
+        enables="extra working hours beyond the regular shift — an overtime window a "
+                "job can run in when the regular calendar is closed, priced at a "
+                "premium so the schedule only buys those hours when they pay for "
+                "themselves (e.g. a Saturday shift that rescues a tight order)",
+        how="add an `added` exception row with reason `overtime` on that resource's "
+            "calendar in calendars.csv (the window it opens), and set an "
+            "overtime_premium_multiplier in cost_model.json (the premium its hours "
+            "bill at)",
+        ids_ref="§5.6",
+        rationale="the overtime doorway — added-exception overtime windows priced by "
+                  "the cost-model premium (docs/05 R-B3, the manned-calendar model)",
+        triggers=("overtime", "extra hours", "extra shift", "work the weekend",
+                  "weekend shift", "saturday shift", "sunday shift", "extend the shift",
+                  "extend shifts", "longer shifts", "more hours", "open the weekend"),
+    ),
 )
 
 
@@ -173,19 +194,56 @@ _WANT_RE = re.compile(
     r"\b(?:i want|i'd like|i would like|i need|i wish|i'm trying to|"
     r"i am trying to|we want|we'd like|we need)\b", re.IGNORECASE)
 
+# CU4 (Session 4A.3) — a coach-INTENT verb: enable / use / support / explain /
+# configure. Together with a named concept it is a coaching question independent of
+# the exact interrogative — "explain wip", "can i use overtime to help", "how do i
+# set up alternates". The founder's round-three misses ("please explain wip",
+# "can i use overtime to help") were coaching questions the narrow want/enable
+# shapes did not recognize.
+_COACH_VERB_RE = re.compile(
+    r"\b(?:enable|allow|turn on|switch on|configure|set up|set-up|use|using|"
+    r"support|supports|declare|explain|describe|understand|"
+    r"what is|what'?s|tell me about|"
+    r"how (?:do|can|would|should) (?:i|we|you)|"
+    r"can (?:i|we|you) (?:use|do|add|set|turn|enable|allow|configure))\b",
+    re.IGNORECASE)
+
+# The concept slugs themselves (and space-normalized), so the menu a coaching answer
+# prints ("splittable, earliness_value, …, overtime") matches every item it lists:
+# asking a bare slug — "wip", "overtime", "setup_family" — resolves to that concept.
+_CONCEPT_SLUGS = {c.concept for c in CAPABILITIES}
+_CONCEPT_SLUGS_SPACED = {c.concept.replace("_", " ") for c in CAPABILITIES}
+
 
 def wants_capability(question: str, concept: Optional[str]) -> bool:
     """True for a want/wish phrasing that names a known capability concept."""
     return bool(concept) and bool(_WANT_RE.search(question or ""))
 
 
+def coaching_intent(question: str, concept: Optional[str]) -> bool:
+    """True when the question NAMES a known capability concept AND expresses an
+    intent to enable / use / understand / configure it (CU4). Gated on `concept`,
+    so it never sweeps in an unrelated question. Covers 'i want X', 'can i use X',
+    'explain X', and the bare menu name 'X'."""
+    if not concept:
+        return False
+    ql = (question or "").strip().lower()
+    if ql in _CONCEPT_SLUGS or ql.replace("_", " ") in _CONCEPT_SLUGS_SPACED:
+        return True          # a bare menu-name reply ("wip", "overtime")
+    return bool(_WANT_RE.search(question or "") or _COACH_VERB_RE.search(ql))
+
+
 def coaching_concept(question: str) -> Optional[str]:
-    """The capability concept a question names (by trigger substring), or None.
-    Most-specific first (registry order), so 'span downtime' binds to splittable
-    before a bare 'split' would."""
+    """The capability concept a question names, or None. Matched by trigger
+    substring OR by the concept slug itself (underscore- or space-spelled), so a
+    menu name always resolves. Most-specific first (registry order), so 'span
+    downtime' binds to splittable before a bare 'split' would."""
     ql = (question or "").lower()
+    qn = ql.replace("_", " ")
     for note in CAPABILITIES:
-        if any(t in ql for t in note.triggers):
+        slug = note.concept.replace("_", " ")
+        if (note.concept in ql or slug in qn
+                or any(t in ql for t in note.triggers)):
             return note.concept
     return None
 

@@ -104,12 +104,15 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
     logEl.appendChild(el); scrollDown();
   }
 
-  function appendResolved(resolved) {
+  function appendResolved(resolved, note) {
     clearEmpty();
     const el = document.createElement("div");
     el.className = "msg resolved-note";
     el.innerHTML = `<div class="who">interpreted as</div><pre></pre>`;
-    el.querySelector("pre").textContent = resolved;
+    // CU3 (Session 4A.3): when a live board selection supplied the referent, show
+    // WHICH context won ("… [from board selection]") so the planner can see it.
+    const src = note && note.includes("board selection") ? "  [from board selection]" : "";
+    el.querySelector("pre").textContent = resolved + src;
     logEl.appendChild(el); scrollDown();
   }
 
@@ -151,7 +154,8 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
       // CU2: an elliptical follow-up the server resolved shows the question it
       // actually answered (the deictic pattern from 3.2d, generalized).
       const resolved = res.bundle && res.bundle.resolved_question;
-      if (resolved && resolved !== question) appendResolved(resolved);
+      const note = res.bundle && res.bundle.resolution_note;
+      if (resolved && resolved !== question) appendResolved(resolved, note);
       appendAnswer(res.answer, res.bundle);
       // remember this turn (subject refs from the live selection) for follow-ups
       const refs = currentSelectionRefs();
