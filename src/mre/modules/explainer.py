@@ -23,6 +23,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from mre.modules.evidence_index import EvidenceIndex
+from mre.modules.capabilities import (
+    CAPABILITIES, coaching_concept, is_capability_question, note_for_concept,
+    wants_capability,
+)
 from mre.modules.planner_language import (
     compose_finding_sentence, driver_phrase, driver_hedge,
 )
@@ -216,6 +220,56 @@ _MAINTENANCE_TRIGGERS = (
     "which shifts", "what shifts", "calendar", "working hours", "operating hours",
 )
 
+# CU6 (Session 4A.3-pre / R-AI3(4)) — the sycophancy guard. A CONTEST marker
+# signals the user is pushing back on a cited fact; a STATUS word says the fact
+# under dispute is on-time/late/early. Together (with an order ref) they route to
+# the warm-evidence restatement, which never folds and never hardens.
+_CONTEST_MARKERS = (
+    "isn't", "isnt", "aren't", "arent", "wasn't", "wasnt", "weren't", "werent",
+    "are you sure", "you sure", "you're wrong", "youre wrong", "that's wrong",
+    "thats wrong", "you are wrong", "i thought", "thought it was", "thought it wa",
+    "supposed to be", "no way", "can't be", "cant be", "cannot be", "surely",
+    "shouldn't it be", "shouldnt it be", "but it's", "but its",
+)
+_STATUS_WORDS = ("on time", "on-time", "late", "early", "not late", "fine",
+                 "on schedule", "ahead")
+
+
+# CU5 (Session 4A.3-pre) — the hypothesis-content guard. An intervention
+# STATEMENT — a conditional/hypothetical about changing the plant or the
+# submission ("maybe if splitting were allowed fewer orders would be late",
+# "overtime would probably help") — is advice CONTENT, not a status question. The
+# 4B.4 advice guard covered advice PHRASINGS (interrogatives); this covers advice
+# CONTENT (a hypothesis wearing a declarative shape) so it never keyword-matches
+# "late" into the status recital. A hypothesis = a conditional/speculative marker
+# AND a plant/outcome word (so a plain "the order is late" is not swept in).
+# Deliberately NOT bare "would fix/help/reduce/make" — "and what would fix it?" is
+# an ellipsis follow-up, not an intervention hypothesis. A hypothesis is a
+# CONDITIONAL about changing the plant ("maybe if …", "if we added …") or a hedged
+# suggestion ("… would probably help").
+_HYPOTHESIS_MARKERS = (
+    "maybe if", "what if", "if i ", "if we ", "if you ", "if splitting",
+    "if overtime", "if i open", "if we open", "if i add", "if we add",
+    "would probably", "probably help", "probably reduce", "probably fix",
+    "i bet", "i think it would", "i think that would", "might help",
+    "might reduce", "might fix", "if i allow", "if we allow", "if allowed",
+    "were allowed", "was allowed",
+)
+_HYPOTHESIS_OUTCOMES = (
+    "late", "on time", "fewer", "less", "reduce", "help", "better", "faster",
+    "improve", "avoid", "prevent", "fix", "catch up", "make the due",
+)
+
+
+def _is_hypothesis(q: str) -> bool:
+    """True when the question is an intervention HYPOTHESIS (a conditional/
+    speculative statement about changing the plant or submission), not a status
+    question — so it routes to advice/coaching, never a status recital (CU5)."""
+    if not any(m in q for m in _HYPOTHESIS_MARKERS):
+        return False
+    return any(o in q for o in _HYPOTHESIS_OUTCOMES)
+
+
 # The route taxonomy — the closed set of route ids classify()/route() dispatch
 # over (docs/07 Phase 4, R-AI1(b)). The interpreter (CU1) maps free-form phrasing
 # ONLY onto these ids; it never invents a route. `params` names the external-ref
@@ -251,10 +305,16 @@ ROUTE_TAXONOMY: dict[str, dict] = {
     "drill-down":            {"params": [],          "canonical": "tell me more about that"},
     "briefing":              {"params": [],          "canonical": "what should I worry about today?"},
     "unknown-entity":        {"params": ["order"],   "canonical": "is {order} in this schedule?"},
+    # Session 4A.3-pre CU6 — the sycophancy guard: the user contests a cited fact.
+    "contested-fact":        {"params": ["order"],   "canonical": "is {order} really on time?"},
     # Session 4B.4 — the advice/recommendation SCOPING route (CU2) and the cheap
     # meta routes (CU3): solve timing + machine listing are pure document/evidence
     # reads; maintenance is shape-recognized with an honest not-yet.
     "advice":                {"params": [],          "canonical": "what should I do about the late orders?"},
+    # Session 4A.3-pre CU4 — the coaching/capability retrieval route: "how do I
+    # enable X / does MRE support W". Answered from the authored capability
+    # registry (capabilities.py) with a docs/06 § citation.
+    "coaching":              {"params": [],          "canonical": "how do I enable that?"},
     "solve-time":            {"params": [],          "canonical": "how long did the solve take?"},
     "machine-count":         {"params": [],          "canonical": "how many machines are there?"},
     "maintenance":           {"params": [],          "canonical": "is any maintenance scheduled?"},
@@ -556,12 +616,29 @@ class Explainer:
         if any(t in q for t in _CERT_TESTIMONY_TRIGGERS):
             return "certificate-testimony", base
 
+        # CU4 (Session 4A.3-pre) — coaching/capability retrieval. "how do I enable
+        # X", "does MRE support W", "i want orders to span downtime, how" — a
+        # capability question, answered from the authored registry with a § cite.
+        # Checked BEFORE advice/downtime because the anchor ("span downtime") both
+        # reads as advice-adjacent and contains "downtime" (which would otherwise
+        # fall to the calendar route → the "No calendar closures for all" nonsense).
+        # An intervention HYPOTHESIS that NAMES a config concept (CU5) — "maybe if
+        # splitting were allowed fewer orders would be late" — routes here too: the
+        # honest answer is how to enable that knob, not a lateness recital.
+        _concept = coaching_concept(q)
+        if (is_capability_question(q) or wants_capability(q, _concept)
+                or (_concept and _is_hypothesis(q))):
+            return "coaching", {**base, "concept": _concept}
+
         # CU2 (Session 4B.4) — advice/recommendation SCOPING. Before the edit/late/
         # schedule branches so an advice-seeking phrasing ("would you recommend
         # overtime …", "what should i do so those orders are not late") never lands
         # on the late-orders status recital. After triage/remediation/briefing so
         # "what should I fix first"/"what should I worry about" keep their routes.
-        if any(t in q for t in _ADVICE_TRIGGERS):
+        # CU5 (Session 4A.3-pre) — an intervention HYPOTHESIS with no named config
+        # concept ("overtime would probably help") is advice CONTENT, not a status
+        # question: route it here by SHAPE, never keyword-match "late" into a recital.
+        if any(t in q for t in _ADVICE_TRIGGERS) or _is_hypothesis(q):
             return "advice", base
 
         # The sandbox/edit question domain (3.4 CU2) — before schedule/diff.
@@ -605,6 +682,16 @@ class Explainer:
             return "start-reason", base
         if mention and _start_sig and "why" in q:
             return "unknown-entity", {**base, "mention": mention}
+
+        # CU6 (Session 4A.3-pre / R-AI3(4)) — the sycophancy guard. A user CONTESTS
+        # a cited fact ("isn't ORD-05 on time?", "surely ORD-05 isn't late"). Meet
+        # it with warm EVIDENCE, never capitulation and never a curt re-assertion.
+        # Checked before the late/order-schedule branches so the contradiction is
+        # answered as a contest, not a bare schedule listing. Requires an order ref,
+        # a contest marker, and a status claim (on-time / late / early).
+        if (wo_ref and any(m in q for m in _CONTEST_MARKERS)
+                and any(s in q for s in _STATUS_WORDS)):
+            return "contested-fact", base
 
         if ("late" in q or "delay" in q or "tardy" in q) and wo_ref:
             return "late-order", base
@@ -665,6 +752,8 @@ class Explainer:
             return self._explain_briefing(q)
         if route_id == "advice":
             return self._explain_advice(q)
+        if route_id == "coaching":
+            return self._explain_coaching(q, params.get("concept"))
         if route_id == "solve-time":
             return self._explain_solve_time(q)
         if route_id == "machine-count":
@@ -678,7 +767,9 @@ class Explainer:
         if route_id == "order-attributes":
             return self._explain_order_attributes(params.get("order"))
         if route_id == "start-reason":
-            return self._explain_start_reason(params.get("order"))
+            return self._explain_start_reason(params.get("order"), q)
+        if route_id == "contested-fact":
+            return self._explain_contested(params.get("order"), q)
         if route_id == "drill-down":
             return self._explain_drill_down(params.get("target", q),
                                             params.get("history"))
@@ -905,6 +996,8 @@ class Explainer:
                         "lateness_minutes": m.get("value"),
                     })
 
+        worst = max(late_items, key=lambda it: it["lateness_minutes"],
+                    default=None) if late_items else None
         return ExplanationBundle(
             question="Are there any late orders?",
             subject_id="all",
@@ -917,6 +1010,7 @@ class Explainer:
                     f"{item['wo']} (+{int(item['lateness_minutes'])} min)"
                     for item in late_items
                 ],
+                "worst_late_order": worst["wo"] if worst else None,
                 "excluded_summary": self._excluded_summary(),
             },
             snapshot_id=self._snap_id,
@@ -1349,11 +1443,18 @@ class Explainer:
             identity_map=self._identity_map,
         )
 
-    def _explain_start_reason(self, order_ref: Optional[str]) -> ExplanationBundle:
-        """Why an order starts when it does / can't start earlier (CU5 + CU4).
-        Names the binding cause: the release bound (earliest_start), or the
-        machine being held by earlier work (the blocked-by chain), whichever
-        governs the first operation's start."""
+    def _explain_start_reason(self, order_ref: Optional[str],
+                              question: str = "") -> ExplanationBundle:
+        """Why an order starts when it does (CU5 + CU4 + CU3 polarity).
+
+        POLARITY matters (Session 4A.3-pre CU3). "why can't X start EARLIER / why
+        isn't it SOONER / what's blocking it" asks about the LOWER bound — answer
+        with the binding cause (release date, or the machine held by earlier work).
+        "why is X starting so EARLY / it's not due until {date} / it already
+        started" asks the OPPOSITE — why it's early at all — and the honest answer
+        is the R-SC3 floor: finishing early is free, so among cost-equal options
+        the schedule starts work as soon as it can, banking slack. Answering a
+        why-early question with a lower-bound cause is confident-wrong."""
         if not order_ref:
             return self._unknown_question("why does that order start when it does?")
         demand = self._demand_by_order(order_ref)
@@ -1372,6 +1473,18 @@ class Explainer:
                     or abs((_parse_ts(start) - _parse_ts(release)).total_seconds()) < 86400
             except Exception:
                 release_binds = False
+        # CU3 — is this a why-EARLY question? ("early" as an adjective, never the
+        # comparative "earlier"/"sooner" which asks the lower-bound question).
+        early = _is_why_early(question)
+        # is the placement genuinely ahead of its due date? (grounds the floor).
+        due = demand.get("due")
+        early_by_days = None
+        fdt = _to_dt(rows[-1]["end"]) if rows else None  # completion vs due
+        ddt = _to_dt(due)
+        if fdt is not None and ddt is not None:
+            early_by_days = round((ddt - fdt).total_seconds() / 86400, 1)
+        # did a declared earliness_value drive it? (the assignment driver).
+        driver = self._first_assignment_driver(order_ref)
         return ExplanationBundle(
             question=f"Why does {order_ref} start when it does?",
             subject_id=demand.get("id", order_ref),
@@ -1387,6 +1500,83 @@ class Explainer:
                 "release_binds": bool(release and release_binds),
                 "blocked_by": blocked,
                 "machine": rows[0]["machine"] if rows else None,
+                "why_early": early,
+                "due": _fmt_date(due),
+                "early_by_days": early_by_days,
+                "earliness_priced": (str(driver).upper() == "EARLINESS_PREFERENCE"),
+            },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _first_assignment_driver(self, order_ref: str) -> Optional[str]:
+        """The driver code on the order's first-operation assignment decision, or
+        None — read from the lineage, used to detect a declared earliness push."""
+        did = self._resolve_wo(order_ref)
+        if did is None or self._reader is None:
+            return None
+        try:
+            records = self._index.lineage_walk(did, snapshot_reader=self._reader)
+        except Exception:
+            return None
+        for rec in records:
+            if (rec.get("record_type") == "decision"
+                    and rec.get("decision_type") == "assignment"):
+                return rec.get("driver")
+        return None
+
+    def _order_lateness(self, order_ref: str) -> Optional[float]:
+        """The order's lateness in minutes (positive = late, negative/zero = early/
+        on time), from the lateness_minutes metric, or None when not recorded."""
+        did = self._resolve_wo(order_ref)
+        if did is None:
+            return None
+        for r in self._index._all_evidence:
+            if (r.get("record_type") == "metric"
+                    and r.get("name") == "lateness_minutes"
+                    and any(s.get("entity_id") == did for s in r.get("subjects", []))):
+                v = r.get("value")
+                if isinstance(v, (int, float)):
+                    return float(v)
+        return None
+
+    def _explain_contested(self, order_ref: Optional[str],
+                           question: str) -> ExplanationBundle:
+        """CU6 / R-AI3(4) — the user contests a cited fact. Meet it with warm
+        EVIDENCE: restate what the record shows and offer to walk the chain. Never
+        capitulate ("you're right, my mistake") and never harden (a curt
+        re-assertion). The renderer composes the warmth; this assembles the facts.
+
+        contested-wrong: the record contradicts the user's claim → hold, warmly.
+        contested-agree: the record agrees with the user → confirm plainly."""
+        if not order_ref:
+            return self._unknown_question(question)
+        demand = self._demand_by_order(order_ref)
+        if demand is None:
+            return self._explain_unknown_entity(order_ref)
+        ql = (question or "").lower()
+        # what the user is claiming: not-late (on time / early / fine) vs late.
+        claims_not_late = any(s in ql for s in
+                              ("on time", "on-time", "not late", "on schedule",
+                               "fine", "ahead", "early"))
+        lateness = self._order_lateness(order_ref)
+        is_late = lateness is not None and lateness > 0
+        due = _fmt_date(demand.get("due"))
+        return ExplanationBundle(
+            question=f"Is {order_ref} really on time?",
+            subject_id=demand.get("id", order_ref),
+            subject_type="contested_fact",
+            subject_external_name=order_ref,
+            ordered_records=[],
+            key_facts={
+                "order": order_ref,
+                "lateness_minutes": lateness,
+                "is_late": is_late,
+                "claims_not_late": claims_not_late,
+                "due": due,
+                # contested-wrong when the record contradicts the claim either way.
+                "contested": (is_late and claims_not_late)
+                             or (not is_late and not claims_not_late and lateness is not None),
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
@@ -1829,9 +2019,61 @@ class Explainer:
         product CAN do today (explain why each late order is late; what each is
         waiting on; price a what-if move on the board via the sandbox) and that
         recommending an intervention (open overtime, add a machine) is not yet a
-        supported question. Conversational register (R-AI2), no === headers."""
+        supported question. Conversational register (R-AI2), no === headers.
+
+        R-AI3(2) — the scoping answer ENDS with a GROUNDED judgment where the
+        evidence supports one (the disclaimer covers the action BRIDGE only, not
+        the judgment register): the worst late order's slip traced to the concrete
+        commitment holding its machine, named as the single biggest lever. Absent
+        on a clean plan (nothing to ground a take on)."""
         late = self._late_order_count()
-        return self._authored_bundle("advice", question, {"late_count": late})
+        return self._authored_bundle(
+            "advice", question,
+            {"late_count": late, "take": self._advice_take()})
+
+    def _advice_take(self) -> Optional[str]:
+        """A grounded lever for the advice route (R-AI3(2)): the worst late order,
+        the commitment its start waits behind, named as the biggest lever. From the
+        SAME solved occupancy the why-late chain reads — never an invented
+        intervention. None when nothing is late (no take to ground)."""
+        worst = None
+        worst_late = 0.0
+        for item in self._list_late_orders().key_facts.get("late_orders", []):
+            # items read "WO (+N min)"; recover order + minutes without re-solving
+            m = re.match(r"^(.*?)\s*\(\+(\d+)\s*min\)$", item)
+            if not m:
+                continue
+            mins = float(m.group(2))
+            if mins > worst_late:
+                worst_late, worst = mins, m.group(1)
+        if not worst:
+            return None
+        blk = self._blocked_by(worst)
+        if blk:
+            return (f"{worst}'s {int(worst_late)}-minute slip traces to "
+                    f"{blk['blocker_order']} holding {blk['machine']} until "
+                    f"{blk['until']} — pulling that earlier is the single biggest "
+                    "lever the board gives you today.")
+        return (f"{worst} is the worst slip at {int(worst_late)} minutes — start "
+                "there; ask \"why is it late?\" and I'll walk the chain.")
+
+    def _explain_coaching(self, question: str,
+                          concept: Optional[str]) -> ExplanationBundle:
+        """CU4 — the coaching/capability answer. RETRIEVE the authored note for the
+        named concept from the capability registry and render its `enables` +
+        `how` + § citation (jurisdiction rule: coach the IDS requirement, never ERP
+        surgery). A capability question that names no known concept gets an honest
+        not-yet that lists what CAN be coached — never an entity-lookup miss."""
+        note = note_for_concept(concept) if concept else None
+        coachable = [c.concept for c in CAPABILITIES]
+        return self._authored_bundle("coaching", question, {
+            "concept": concept,
+            "enables": note.enables if note else None,
+            "how": note.how if note else None,
+            "ids_ref": note.ids_ref if note else None,
+            "rationale": note.rationale if note else None,
+            "coachable": coachable,
+        })
 
     def _explain_solve_time(self, question: str) -> ExplanationBundle:
         """CU3 — how long the solve took. A pure evidence read of the M6 run's
@@ -2325,6 +2567,29 @@ def _parse_iso_duration_minutes(s: str) -> float:
     seconds = float(m.group(5) or 0)
     total = years * 365 * 1440 + days * 1440 + hours * 60 + minutes + seconds / 60
     return -total if negative else total
+
+
+_WHY_EARLY_RE = re.compile(
+    r"\bso early\b|\btoo early\b|\bvery early\b|\bquite early\b"
+    r"|\balready (?:start|runn|goi|beg|under ?way)"
+    r"|\bnot due (?:until|for|till)\b|\bbefore (?:it'?s|its) due\b"
+    r"|\bahead of (?:its? |the )?(?:due|schedule)\b|\bwell ahead\b"
+    r"|\bwhy so soon\b|\bstart(?:s|ed|ing)? (?:so )?early\b"
+    r"|\brunning early\b|\bearly\?", re.IGNORECASE)
+
+
+def _is_why_early(question: str) -> bool:
+    """True when the question asks why an order is EARLY (an adjective/soon cue),
+    NOT the comparative "why can't it start EARLIER/SOONER" (the lower-bound
+    question). The comparative forms are excluded so the two never collide."""
+    ql = (question or "").lower()
+    if any(w in ql for w in ("earlier", "sooner", "cant start", "can't start",
+                             "cannot start", "start earlier", "not sooner")):
+        # a comparative "why not earlier" is a LOWER-bound question, unless it ALSO
+        # carries a strong why-early cue (a due-date comparison).
+        if not ("not due" in ql or "already start" in ql or "so early" in ql):
+            return False
+    return bool(_WHY_EARLY_RE.search(ql))
 
 
 def _load_catalog_safe() -> Any:

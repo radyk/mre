@@ -100,6 +100,92 @@ path referencing the OneDrive path is a defect to fix. Relocation confirmed: `gi
 fsck --full` clean; non-slow suite green (the one defect — an editable-install
 `.pth` still pointing at OneDrive — was repointed at `C:\dev\mre\src`).
 
+**Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.3-pre —
+R-AI3 (the register ladder): restore judgment, add invitation, fix the round-two
+exam findings 2026-07-24.** The founder's round-two listening session found four
+gaps against the 4B.4 voice; R-AI3 ratifies the fix (verbatim, docs/04): every
+answer starts with the facts — TESTIMONY is the base (zero-confident-wrong,
+absolute); a labeled "My take:" EARNS ITS PLACE above it (grounded, on causal/
+diagnostic/advice answers, ABSENT on lookups); an INVITATION may end it (a
+question, a supported route, never an action); DISAGREEMENT is met with warm
+evidence, never capitulation; registers stack testimony → take → invitation, the
+label the boundary. Backend-only (explainer + renderers + interpreter + authored
+ask copy + a NEW authored capability registry + corpus + docs); no solver/model/
+contract/frontend changes; NO golden moved. **CU1 — judgment restored + the
+archaeology named:** the flagship late-order specimen returned pure testimony, no
+"My take:". CAUSE (one-line archaeology): 4A.2d authored the take onto the TEMPLATE
+floor ONLY and named it debt ("the LLM testimony path renders facts under its
+strict no-opinion rules, so the take rides the TEMPLATE floor"); the DEV/live LLM
+build showed the take merely inside the EVIDENCE CHAIN (not the pre-computed facts)
+and its 2–3-sentence no-opinion prompt paraphrased it away. FIX: the authored take
+is APPENDED deterministically after the LLM testimony (`renderers._append_take`),
+so a model that omits it cannot drop it — authored (composed on the bundle from
+evidence), never LLM-improvised. Takes on why-late (flagship) + the advice route's
+scoping answer (which now ENDS with grounded judgment — the disclaimer covers the
+action BRIDGE only); lookups carry NONE (a negative test). REGRESSION GUARD: a
+standing LLM-path test (injected client returns testimony WITHOUT the take → the
+render must still contain "My take:"). Named non-addition: a why-on-machine
+priced-alternative take is deferred (the EARLINESS_PREFERENCE hedge already carries
+labeled epistemic judgment there; a cost-take needs the alternatives payload and
+risks an ungrounded opinion — R-AI3(2) forbids ungrounded). **CU2 — invitations
+(minimal honest slice):** one authored, question-phrased offer of a SUPPORTED route
+on late-orders ("Want the cause chain for the worst one?") / why-late ("Want to see
+what else queues behind {machine}?") / data-problems (>1 problem, "Want the
+fix-first ordering?"); absent on lookups; frequency discipline (at most one), both
+directions tested. **CU3 — start-reason polarity:** "why so early / it's not due
+until {date} / already started" now answers the R-SC3 FLOOR in plain words
+(finishing early is free; cost-equal work placed as early as it can, banking slack)
++ the concrete lower bound as supporting testimony + the EARLINESS_PREFERENCE note
+when a declared coefficient moved it — `_is_why_early` detects the adjective/
+due-vs-start cue and EXCLUDES the comparative "earlier"/"sooner" (which keeps the
+lower-bound chain; the two never collide). **CU4 — coaching/capability retrieval:**
+a new `coaching` route answers "how do I enable X / does MRE support W / i want Z,
+how" by RETRIEVING from a NEW authored structured registry
+(`src/mre/modules/capabilities.py`: a frozen `dict[concept → CapabilityNote]` with
+an authored `enables`/`how` + a docs/06 § citation borrowed verbatim from the gate's
+`RULE_REGISTRY` `ids_ref`) — never generated, never prose-read (jurisdiction rule:
+coach the IDS field + §, never ERP surgery). Anchor: "i want orders to span
+downtime, how" → splittable=true + min_chunk_minutes on the routing line, §5.3
+(rationale docs/05 R-C3); seven concepts seeded (splittable, earliness_value,
+setup_family, alternates, customers, locks, wip); an unknown-concept capability
+question lists what CAN be coached. Fixed in passing: "No calendar closures found
+for all resources" → "No downtime is declared for any resource." + that question
+now reaches coaching. NAMED DEBT (prose-locked): docs/05 has no structured backing,
+so the fuller "why can't it do X" constraint-coaching surface is NOT built —
+retrieval is never taught to read prose. **CU5 — the hypothesis-content guard:** an
+intervention STATEMENT ("maybe if splitting were allowed fewer orders would be
+late", "overtime would probably help") routes to coaching/advice by CONTENT SHAPE
+(`_is_hypothesis`: a conditional/speculative marker + a plant/outcome word), never a
+"late" keyword-match into the status recital; deliberately NOT bare "would
+fix/help" ("and what would fix it?" is an ellipsis follow-up — a regression caught
+and pinned). **CU6 — the sycophancy guard (R-AI3(4)):** a contested cited fact
+("isn't ORD-05 on time?") routes to `contested-fact` — warm EVIDENCE (restate the
+record: "…890 minutes past its due date — I'm not going to call it on time when the
+evidence says otherwise") + an offer to walk the chain, never capitulation ("you're
+right, my mistake") and never a curt re-assertion (both graded FAIL); authored over
+a pinned fact, LLM short-circuited. Two specimens: contested-WRONG (hold warmly) +
+contested-RIGHT (an accurate correction — the correction-rebind yields). **CU7a —
+the ORD-000019 → ORD-000015 blocked-by claim: FABRICATION (severe), filed,
+blocked-by NOT touched:** mechanically verified against a deterministic busy_board
+re-solve (the F001-RES002/ORD-0000xx world; workers 1 seed 42 PYTHONHASHSEED=0, two
+solves byte-identical) — the shared-machine kernel is real (both op10 on
+F001-RES002) but the adjacency + 14:23 timestamp are stitched from unrelated facts
+(the two ops are ~4 days apart; 14:23 belongs to ORD-000039 on F001-RES006). The
+deterministic `_blocked_by` reads immediate same-machine occupancy and could not
+have produced a cross-machine timestamp → the transcript's retelling, not the
+mechanism (origin unresolved, not exonerated). **CU7b named debt:** aggregate-cause
+coaching ("why so many late orders" → the binding-constraint story) + the
+bare-elliptical "why so many" against the 4B.4 context slice. Non-slow Python **1249
+passed, 0 failed** (+6 fast: capability registry ×4, hypothesis/polarity ×2); slow
+`test_ai_voice` **78** (+15 R-AI3 specimens), `test_glass_box` + `test_ask_chain_api`
+**34**. See the docs/04 2026-07-24 R-AI3 ruling + Session 4A.3-pre amendment and
+docs/07 v2.39. Lesson: a ruling without a test atrophies — the "My take:" judgment
+was authored once and quietly detached the moment the LLM became the default,
+because nothing guarded the delivery path it rode; pin the authored insight through
+the seam (append it, don't trust the model), guard the flagship with a standing
+test, and make the register ladder structural so a warm opinion or an offered next
+step can never be mistaken for the evidence beneath it.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); Session 4B.4 — R-SC3 extended to
 ALL solve paths (the monolithic floor) + the founder's conversational fixes
 2026-07-23.** The founder's live listening session found the R-SC3 floor (earlier

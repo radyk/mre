@@ -81,6 +81,20 @@ def _to_minutes(value: float, unit: str) -> float:
     return value * 60.0 if unit.lower().startswith('h') else value
 
 
+def _append_take(text: str, bundle: ExplanationBundle) -> str:
+    """R-AI3(1,2,5) — a labeled judgment rides AFTER the testimony, never inside
+    it. The take is AUTHORED (composed on the bundle from evidence, `key_facts`),
+    so appending it deterministically here — rather than trusting the LLM to keep
+    it — is what stops the testimony prompt's no-opinion rules from paraphrasing
+    it away (the 4A.2d detachment: the take rode the TEMPLATE floor only, and the
+    live LLM path showed it merely inside the evidence chain and dropped it). The
+    label is the boundary; nothing above it may masquerade as fact."""
+    take = bundle.key_facts.get("take") if bundle.key_facts else None
+    if not take or "My take:" in text:
+        return text
+    return f"{text.rstrip()}\n\nMy take: {take}"
+
+
 
 
 # ---------------------------------------------------------------------------
@@ -122,7 +136,7 @@ def _register_for(bundle: ExplanationBundle) -> str:
 # (Session 4A.2). They never dump the raw evidence chain.
 _HEADER_ONLY_SUBJECTS = frozenset({
     "findings", "order_attributes", "inventory", "integrity", "start_reason",
-    "unknown_entity", "drill_down", "briefing",
+    "unknown_entity", "drill_down", "briefing", "contested_fact",
 })
 
 # The citation-breadth cap (CU6): a schedule-wide answer shows at most this many
@@ -175,7 +189,7 @@ class TemplateRenderer:
             elif bundle.subject_type in (
                 "downtime", "unsupported", "schedule", "scenario_diff",
                 "near_miss", "clarify", "refusals",
-                "advice", "solve_time", "machine_count", "maintenance",
+                "advice", "solve_time", "machine_count", "maintenance", "coaching",
             ):
                 pass  # header already rendered all content
             elif "error" in bundle.key_facts:
@@ -239,6 +253,13 @@ class TemplateRenderer:
                 if kf.get("take"):
                     lines.append("")
                     lines.append(f"My take: {kf['take']}")
+                # CU2 (R-AI3(3)) — the register ladder's final rung: an invitation
+                # to the obvious next question. Only when a blocking machine is
+                # named (a concrete follow-up exists), at most one.
+                if blk and blk.get("machine"):
+                    from mre.modules.ask_fallback_copy import INVITE_WHY_LATE
+                    lines.append("")
+                    lines.append(INVITE_WHY_LATE.format(machine=blk["machine"]))
             elif lateness is not None:
                 early = abs(int(lateness))
                 span = (f"{round(early / 1440, 1)} days" if early >= 1440
@@ -274,6 +295,10 @@ class TemplateRenderer:
                 for item in orders:
                     lines.append(f"  - {item}")
             self._render_excluded_note(lines, bundle)
+            if count and kf.get("worst_late_order"):
+                from mre.modules.ask_fallback_copy import INVITE_LATE_ORDERS
+                lines.append("")
+                lines.append(INVITE_LATE_ORDERS.format(order=kf["worst_late_order"]))
             lines.append("")
 
         elif bundle.subject_type == "downtime":
@@ -282,7 +307,12 @@ class TemplateRenderer:
             closures = kf.get("closures", [])
             total = kf.get("total_hours", 0.0)
             if not closures:
-                lines.append(f"No calendar closures found for {subject}.")
+                # CU4 (Session 4A.3-pre) — correct grammar: no closures are
+                # DECLARED for the resource(s), not "found for all resources".
+                if subject == "all resources":
+                    lines.append("No downtime is declared for any resource.")
+                else:
+                    lines.append(f"No downtime is declared for {subject}.")
             else:
                 lines.append(f"Downtime for {subject}:")
                 for c in closures:
@@ -589,6 +619,9 @@ class TemplateRenderer:
         elif bundle.subject_type == "briefing":
             self._render_briefing(lines, bundle)
 
+        elif bundle.subject_type == "contested_fact":
+            self._render_contested(lines, bundle)
+
         elif bundle.subject_type == "advice":
             # CU2 (Session 4B.4) — the honest SCOPING answer. Conversational,
             # never a status recital, never an invented intervention.
@@ -611,6 +644,13 @@ class TemplateRenderer:
                          "<order> start earlier?\")")
             lines.append("  - price a what-if on the board: drag a job and I'll "
                          "cost the move exactly.")
+            # R-AI3(2) — end with a GROUNDED judgment where the evidence supports
+            # one. The disclaimer above covers the action BRIDGE only; the take
+            # names the biggest lever from the same occupancy evidence.
+            take = kf.get("take")
+            if take:
+                lines.append("")
+                lines.append(f"My take: {take}")
             lines.append("")
 
         elif bundle.subject_type == "solve_time":
@@ -646,6 +686,31 @@ class TemplateRenderer:
                    else "\"how much downtime does <machine> have?\"") + ".")
             lines.append("")
 
+        elif bundle.subject_type == "coaching":
+            # CU4 (Session 4A.3-pre) — the retrieved capability answer: what the
+            # knob enables, how to declare it (the submission field), and the spec
+            # § it cites. Jurisdiction rule: coach the IDS requirement, never ERP
+            # surgery. An unrecognized capability question lists what CAN be coached.
+            kf = bundle.key_facts
+            how = kf.get("how")
+            if how:
+                lines.append(f"Yes — {kf.get('enables')}.")
+                lines.append("")
+                lines.append(f"To enable it: {how}. See the incoming-data spec "
+                             f"{kf.get('ids_ref')}.")
+            else:
+                coachable = kf.get("coachable") or []
+                lines.append(
+                    "That's a configuration question, and I can point you to the "
+                    "submission setting for it — but I don't recognize which "
+                    "capability you mean.")
+                if coachable:
+                    lines.append("")
+                    lines.append("Capabilities I can coach today (each names the "
+                                 "submission field and its spec section):")
+                    lines.append("  - " + ", ".join(coachable))
+            lines.append("")
+
     # ------------------------------------------------------------------
     # Session 4A.2 composed-answer helpers
     # ------------------------------------------------------------------
@@ -673,6 +738,12 @@ class TemplateRenderer:
         for i, c in enumerate(composed, 1):
             self._render_finding_detail(lines, c, ordinal=i)
         self._render_excluded_note(lines, bundle)
+        # CU2 (R-AI3(3)) — invite the obvious next question (the fix-first order),
+        # only on a general data-problems answer with more than one problem to rank.
+        if len(composed) > 1 and not entity:
+            from mre.modules.ask_fallback_copy import INVITE_DATA_PROBLEMS
+            lines.append("")
+            lines.append(INVITE_DATA_PROBLEMS)
 
     def _render_finding_detail(self, lines: list[str], c: dict,
                                ordinal: Optional[int] = None) -> None:
@@ -701,6 +772,35 @@ class TemplateRenderer:
         wd = kf.get("start_weekday")
         when = f"{wd} ({start})" if wd and start else (start or "when it does")
         blk = kf.get("blocked_by")
+        # CU3 (Session 4A.3-pre) — a why-EARLY question is answered with the R-SC3
+        # floor (finishing early is free; cost-equal work is placed as early as it
+        # can go to bank slack), NOT a lower-bound cause. The concrete lower bound
+        # (release / first opening / a blocker) supports it as testimony.
+        if kf.get("why_early"):
+            eb = kf.get("early_by_days")
+            span = ""
+            if eb is not None and eb >= 0.05:
+                span = f" — it finishes about {eb:g} day(s) ahead of its due date" + (
+                    f" ({kf['due']})" if kf.get("due") else "")
+            lines.append(
+                f"{name} starts {when} because finishing early costs nothing here: "
+                "among equally-cheap options the schedule starts work as soon as it "
+                f"can, banking slack{span}.")
+            if kf.get("earliness_priced"):
+                lines.append(
+                    "A declared earliness preference also paid a little to pull it "
+                    "onto a machine that was free earlier.")
+            # the concrete lower bound, as supporting testimony
+            if kf.get("release_binds") and kf.get("release"):
+                rwd = kf.get("release_weekday")
+                rel = f"{rwd} {kf['release']}" if rwd else kf["release"]
+                lines.append(f"The earliest it could begin is its release date, {rel}.")
+            elif blk:
+                lines.append(
+                    f"The earliest opening on {blk['machine']} came free at "
+                    f"{blk['until']} (held before that by {blk['blocker_order']}).")
+            lines.append("")
+            return
         if kf.get("release_binds") and kf.get("release"):
             rwd = kf.get("release_weekday")
             rel = f"{rwd} {kf['release']}" if rwd else kf["release"]
@@ -769,6 +869,50 @@ class TemplateRenderer:
             if dq.get("fix"):
                 lines.append(f"  Fix: {dq['fix']}")
         self._render_excluded_note(lines, bundle)
+        lines.append("")
+
+    def _render_contested(self, lines: list[str], bundle: ExplanationBundle) -> None:
+        """CU6 / R-AI3(4) — warm evidence, never capitulation, never hardening.
+        Restate what the record shows and offer to walk the chain."""
+        kf = bundle.key_facts
+        order = kf.get("order", "that order")
+        lateness = kf.get("lateness_minutes")
+        due = kf.get("due")
+        due_clause = f" (due {due})" if due else ""
+        if kf.get("is_late") and kf.get("claims_not_late"):
+            # contested-wrong: hold, warmly, on the evidence.
+            mins = int(lateness) if lateness is not None else 0
+            lines.append(
+                f"I can see why you'd hope so, but the record has {order} finishing "
+                f"{mins} minutes past its due date{due_clause} — I'm not going to "
+                "call it on time when the evidence says otherwise.")
+            lines.append(
+                f"Happy to walk the chain with you though: ask \"why is {order} "
+                "late?\" and I'll show exactly what held it up.")
+        elif (not kf.get("is_late")) and (not kf.get("claims_not_late")) \
+                and lateness is not None:
+            # the user thinks it's late; the record says it isn't — good news, warmly.
+            early = abs(int(lateness))
+            span = (f"{round(early / 1440, 1)} day(s)" if early >= 1440
+                    else f"{round(early / 60, 1)}h" if early >= 60
+                    else f"{early} minute(s)")
+            lines.append(
+                f"Good news — the record actually has {order} finishing on time, "
+                f"{span} early{due_clause}, not late.")
+            lines.append(
+                f"Want the detail? Ask \"when does {order} finish?\" and I'll show "
+                "the timeline.")
+        else:
+            # the record AGREES with the user — confirm plainly, still offer the chain.
+            if kf.get("is_late"):
+                mins = int(lateness) if lateness is not None else 0
+                lines.append(
+                    f"Yes — the record agrees: {order} finishes {mins} minutes "
+                    f"late{due_clause}.")
+                lines.append(f"Ask \"why is {order} late?\" for the cause chain.")
+            else:
+                lines.append(
+                    f"Yes — the record agrees: {order} finishes on time{due_clause}.")
         lines.append("")
 
     def _render_excluded_note(self, lines: list[str], bundle: ExplanationBundle) -> None:
@@ -1020,6 +1164,11 @@ class LLMRenderer:
         # Session 4B.4: the scoping / meta-read answers are authored copy too — the
         # header IS the answer; nothing to testify from, never the LLM's to rewrite.
         "advice", "solve_time", "machine_count", "maintenance",
+        # Session 4A.3-pre CU4: the coaching answer is retrieved authored copy.
+        "coaching",
+        # Session 4A.3-pre CU6: the contested-fact restatement is authored warmth
+        # over a pinned fact — the LLM must never soften it into capitulation.
+        "contested_fact",
     })
 
     def render(self, bundle: ExplanationBundle) -> str:
@@ -1076,7 +1225,8 @@ class LLMRenderer:
                         body + "\n" + warn
                         + "\n[rendered by: template (LLM validated) | register: testimony]"
                     )
-            return text + f"\n[rendered by: LLM ({self._model}) | register: testimony]"
+            return (_append_take(text, bundle)
+                    + f"\n[rendered by: LLM ({self._model}) | register: testimony]")
         except Exception as exc:  # noqa: BLE001 — render must never raise
             return self._template_fallback(
                 bundle, f"LLM error: {type(exc).__name__}", "testimony")

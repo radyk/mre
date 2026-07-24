@@ -403,6 +403,8 @@ class Interpreter:
             "edit-cost": "what the planner's last move cost",
             "ledger-refusals": "questions the system couldn't answer",
             "advice": "advice/recommendation on what to do about lateness or capacity",
+            "coaching": "how to enable a capability / configure the submission (e.g. "
+                        "spanning downtime, alternates, customers, earliness)",
             "solve-time": "how long the solve took",
             "machine-count": "how many machines / list the machines",
             "maintenance": "maintenance, shift, or calendar questions",

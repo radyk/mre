@@ -1,7 +1,7 @@
-SESSION 4B.4 CLOSE-OUT
-R-SC3 extended to ALL solve paths (the monolithic floor) + the founder's
-conversational fixes
-2026-07-23
+SESSION 4A.3-pre CLOSE-OUT
+R-AI3 (the register ladder): restore judgment, add invitation, fix the
+round-two exam findings
+2026-07-24
 
 Deterministic settings for all solver work: PYTHONHASHSEED=0, --solver-workers 1,
 --solver-seed 42/0.
@@ -9,201 +9,158 @@ Deterministic settings for all solver work: PYTHONHASHSEED=0, --solver-workers 1
 ======================================================================
 SUMMARY
 ======================================================================
-The founder's live listening session (2026-07-23, monolithic run) surfaced one
-solver finding (the R-SC3 earlier-start floor was implemented on the rolling path
-only; the monolithic schedule of record parked cost-equal work arbitrarily) and a
-set of conversational failures. This session closed the solver gap first
-(everything waited on its goldens), then the conversational fixes.
+The founder's round-two listening session (2026-07-24) ran four failures against
+the 4B.4 voice. R-AI3 was ruled (the register ladder: every answer starts with the
+facts) and transcribed verbatim to docs/04. This session implemented it.
 
-Result: non-slow Python 1243 passed, 0 failed. All affected slow ladders green.
-Monolithic golden regenerated with cost identity verified and stated; rolling
-goldens byte-identical.
+Backend-only: explainer + renderers + interpreter + authored ask copy + a NEW
+authored capability registry + the audit corpus + docs. No solver/model/contract/
+frontend changes. NO golden moved (none of the changed source files touches a solve
+path, and the full non-slow suite is green including the solver golden guards).
 
-======================================================================
-CU1 - MONOLITHIC TWO-STAGE PARITY
-======================================================================
-CLAIMED: lift the two-stage shape into the monolithic solve path; audit every
-solve call-site; regenerate monolithic goldens deliberately with cost identity
-verified; rolling goldens byte-identical.
-
-PROVEN:
-- solver_builder.solve_two_stage added: a shared, reporter-aware helper mirroring
-  rolling_horizon._two_stage_solve. Stage 1 minimizes cost (+ the declared
-  earliness_value term when a positive coefficient is declared, omitted at 0),
-  recorded to the M6 reporter so the solve_complete objective the assembler and
-  _incumbent_objective read stays the COST objective. Stage 2 caps that optimum at
-  round(best) and re-minimizes the SUM of free-op starts, warm-started via add_hint,
-  under a deterministic budget (_STAGE2_DET_TIME_S = 2.0); on exhaustion the stage-1
-  incumbent stands. The returned SolveResult carries stage 1's objective/telemetry
-  with stage 2's placements.
-- __main__ (CLI + API monolithic schedule of record) uses it. No pins in that path,
-  so the earliness sum is over every op start.
-- Per-site audit (stated in docs/04):
-    __main__ monolithic solve            -> STAGE 2 (the fix)
-    sandbox.feasibility_ghost (beat one) -> exempt (first-feasible probe)
-    sandbox.sandbox_pin_resolve (beat 2) -> exempt (warm-starts from the two-stage
-                                            incumbent; prices a CHANGE vs the record)
-    scenario re-solve                    -> exempt (what-if diffed vs incumbent)
-    planner_edit accept                  -> exempt (commits a pinned placement)
-    solution_pool                        -> exempt (DIVERSITY is its 2nd objective)
-    forced_alternatives                  -> exempt (per-machine pricing probe)
-    demo.py                              -> exempt (standalone demo wrapper)
-  All re-solve exemptions validated green on their slow ladders.
-- Golden regen: sample_data_schedule.csv regenerated. Cost ledger IDENTICAL pre/post
-  (total 24769.00, production 19429.00, setup 4500.00, tardiness 840.00 - every
-  value unchanged; test_cost_ledger_identical passes untouched). Per-op production
-  cost unchanged on every row. New CSV byte-identical across two subprocess rolls.
-  Rolling goldens BYTE-IDENTICAL (rolling determinism golden green; rolling_two_beat
-  goldens survive).
-- Tests: tests/test_two_stage_monolithic.py (fast, hand-built CP-SAT model) - (a)
-  cost-equal earlier slot is TAKEN (start sum is the provable minimum), (b)
-  cost-neutrality vs stage-1-only epsilon 0, (c) determinism run-to-run, + the
-  stage-2-skipped path. End-to-end proof: test_defaults_reproduce_baseline.
-
-NAMED / NUANCE (not a shortfall, stated honestly):
-- The task close said "only placements may differ, only earlier". The floor
-  minimizes the SUM of starts (the same objective rolling uses) - a GLOBAL minimum,
-  so it is NET-earlier, not per-op monotonic: it may push one cost-equal op later to
-  pull others earlier when that lowers the total (sample_data: 30 earlier, 13 later,
-  47 same, 3 equal-cost machine swaps). This is faithful to the ratified rolling
-  floor; a per-op-monotonic rule would create two DIFFERENT floors. Cost identity
-  (the load-bearing invariant) holds exactly.
-- The 4B.3a earliness_forcing hedge fixture broke because post-CU1 the monolithic
-  path now PRICES a declared earliness_value (correct R-SC3 behavior) and 0.05/min
-  moved ORD-06 off the dearer machine. Re-tuned to 0.004 (< 0.005 => coefficient
-  rounds to 0 => placement unmoved, raw value > 0 => the docs/02 4.2 ATTRIBUTION
-  still fires), isolating attribution from placement. Documented in the fixture and
-  docs/04.
+Result: non-slow Python 1249 passed, 0 failed (+6 fast). Slow test_ai_voice 78
+passed (+15 R-AI3 specimens; 4 folded into the zero-confident-wrong aggregate).
+test_glass_box + test_ask_chain_api 34 passed.
 
 ======================================================================
-CU2 - THE RECOMMENDATION-SHAPE GUARD
+PER-CU: CLAIMED vs PROVEN
 ======================================================================
-CLAIMED: advice-seeking phrasings route to an honest scoping answer, never the
-late-orders recital; four founder phrasings join the corpus (recital = fail); the
-clarify template must never echo a frustrated/meta sentence verbatim.
 
-PROVEN:
-- New `advice` route (_ADVICE_TRIGGERS in explainer.classify, checked after
-  triage/remediation/briefing, before the edit/late/schedule branches). The answer
-  states what the product can do today (explain why each late order is late; what it
-  waits on; price a what-if on the board) and that intervention recommendation is
-  not yet supported. Conversational register, no === headers. Does NOT recommend
-  interventions (4A.3, out of scope).
-- All four founder phrasings route to `advice` (TestSession4B4.test_cu2_advice_...)
-  and three are folded into test_cu10_zero_confident_wrong.
-- Frustration echo: ask_fallback_copy.safe_parsed drops the verbatim echo when the
-  question carries frustration/meta markers; renderers use the _NO_ECHO lead
-  variants for clarify/near-miss/unsupported. Proven by
-  test_cu2_clarify_never_echoes_frustration.
+CU1 - restore judgment + the regression guard
+  CLAIMED: find where "My take:" detached; restore it through the pre-computed-
+    facts pattern so the LLM cannot paraphrase it away; extend takes to routes
+    where evidence grounds them; negative test for lookups; flagship regression
+    guard; advice route ends with grounded judgment.
+  PROVEN:
+    - Archaeology (one line, from docs/04, not a guess): the take rode the
+      TEMPLATE floor ONLY - authored there in 4A.2d and NAMED as debt in 4A.2d's
+      own close-out ("the LLM testimony path renders facts under its strict
+      no-opinion rules, so the 'My take:' offer currently rides the TEMPLATE
+      floor"). The DEV/live LLM build showed the take merely inside the EVIDENCE
+      CHAIN (not the pre-computed facts) and its 2-3-sentence no-opinion prompt
+      paraphrased it away. Never a code regression; a detachment the LLM default
+      made visible.
+    - FIX: renderers._append_take appends the AUTHORED take after the LLM
+      testimony on the success path, so a model that omits it cannot drop it.
+      Proven by a standing LLM-path test (injected client returns testimony
+      WITHOUT the take -> the render still contains "My take:").
+    - Takes on why-late (flagship) and the advice route (which now ENDS with a
+      grounded take naming the worst slip's biggest lever). Lookups carry none -
+      a negative test (machine-count / inventory / product) asserts no "My take:".
+  UNDERDELIVERED (named): the why-on-machine "priced alternative" take was
+    DELIBERATELY NOT added. The EARLINESS_PREFERENCE hedge already provides a
+    labeled epistemic judgment on why-on-machine, and a cost-take there needs the
+    forced-alternatives price payload and would risk an UNGROUNDED opinion, which
+    R-AI3(2) forbids ("may never be ungrounded"). why-late + advice deliver the
+    causal + aggregate/diagnostic takes; why-on-machine-priced is deferred.
+
+CU2 - invitations (minimal honest slice)
+  CLAIMED: one authored invitation per route with an obvious follow-up, phrased as
+    a question proposing a SUPPORTED route; frequency discipline; presence + absence
+    tests.
+  PROVEN: INVITE_LATE_ORDERS / INVITE_WHY_LATE / INVITE_DATA_PROBLEMS in
+    ask_fallback_copy (authored). late-orders -> "Want the cause chain for the worst
+    one? Ask 'why is ORD-05 late?'"; why-late -> "Want to see what else queues behind
+    CUT-01?"; data-problems (>1 problem) -> "Want the fix-first ordering?". Tests:
+    presence on the three routes, ABSENCE on lookups. The register ladder stacks
+    testimony -> take -> invitation on the why-late answer.
+
+CU3 - start-reason polarity
+  CLAIMED: "why so early / not due until {date}" -> earliness floor answer + lower
+    bound; "why late / not sooner" keeps the lower-bound chain; corpus specimens.
+  PROVEN: _is_why_early detects the adjective / due-vs-start / already-started cue
+    and EXCLUDES the comparative "earlier"/"sooner". A why-early answers the R-SC3
+    floor in plain words (finishing early is free; cost-equal work placed as early
+    as it can, banking slack) + the concrete lower bound as supporting testimony +
+    the EARLINESS_PREFERENCE note when a declared coefficient moved it. Specimens:
+    ORD-13 why-early gets the floor; ORD-05 "start sooner" keeps the lower bound.
+
+CU4 - coaching/capability shape (retrieval, not training)
+  CLAIMED: new taxonomy shape retrieving from EXISTING authored corpora + a
+    section citation, jurisdiction rule intact; anchor splittable/min_chunk cites
+    docs/06 5.3; extend the structured registry for anchor cases and NAME
+    prose-locked scope as debt; fix "No calendar closures found for all resources".
+  PROVEN: a NEW authored structured registry, src/mre/modules/capabilities.py -
+    frozen dict[concept -> CapabilityNote] carrying authored enables/how + a docs/06
+    section citation borrowed verbatim from the gate's RULE_REGISTRY ids_ref
+    strings. The `coaching` route retrieves it; anchor "i want orders to span
+    downtime, how" -> splittable=true + min_chunk_minutes on the routing line,
+    5.3. Seven concepts seeded. Jurisdiction rule intact (coach the IDS field + its
+    section, never ERP surgery). Grammar fixed: "No downtime is declared for any
+    resource." + that question now reaches coaching. NAMED DEBT: docs/05 is PROSE
+    with no structured backing (confirmed by an Explore pass), so the fuller
+    constraint-coaching surface ("why can't it do X") is prose-locked and NOT built;
+    retrieval is never taught to read prose.
+  NOTE: the recommendation was to author a NEW registry (RULE_REGISTRY and the
+    remediation catalog are both FINDINGS-keyed and need a certificate finding as
+    input, which a coaching question does not have). Followed.
+
+CU5 - the hypothesis-content guard
+  CLAIMED: intervention STATEMENTS route to advice/coaching by content shape, never
+    a status recital; corpus specimen.
+  PROVEN: _is_hypothesis (a conditional/speculative marker + a plant/outcome word).
+    A hypothesis naming a config concept -> coaching; one without -> advice. The
+    founder's "maybe if splitting were allowed fewer orders would be late" ->
+    coaching (splittable). "overtime would probably help" -> advice. Deliberately
+    NOT bare "would fix/help": caught and pinned a regression ("and what would fix
+    it?" is an ellipsis follow-up, not a hypothesis) - three interpreter tests
+    initially failed and were fixed by tightening the markers.
+
+CU6 - the sycophancy guard (R-AI3(4))
+  CLAIMED: a contested cited fact -> restate evidence warmly + offer to walk the
+    chain; capitulation and hardening both FAIL; >=2 specimens (one contested-wrong,
+    one contested-RIGHT that yields).
+  PROVEN: the `contested-fact` route (contest marker + status word + order ref).
+    Warm restatement over a pinned fact, LLM short-circuited so it cannot be
+    softened. contested-WRONG ("isn't ORD-05 on time?") holds warmly, offers the
+    chain, no capitulation. contested-RIGHT: an accurate correction ("no i meant
+    ORD-04") yields via the existing correction-rebind and re-answers for the
+    corrected referent.
+
+CU7a - verify the ORD-000019 -> ORD-000015 blocked-by claim
+  CLAIMED: verify against the current golden's world; TRUE -> confirmation; FALSE ->
+    fabrication specimen, grade severe, STOP short of fixing blocked-by; report.
+  PROVEN: VERDICT FALSE (fabrication). Mechanically verified against a deterministic
+    busy_board re-solve (the only world matching F001-RES002 / ORD-0000xx naming;
+    workers 1, seed 42, PYTHONHASHSEED=0; two solves byte-identical on the relevant
+    rows). The shared-machine KERNEL is real (both orders' op10 land on F001-RES002)
+    but the adjacency + 14:23 timestamp are stitched from unrelated facts:
+    ORD-000019 op10 ends 2026-01-05 18:25 (not 2026-01-06 14:23) and ORD-000015 op10
+    begins 2026-01-09 15:07 (~4 days later, ten orders between them); the only op
+    anywhere ending at exactly 2026-01-06 14:23 is ORD-000039 op30 on F001-RES006 (a
+    different order on a different machine). Filed severe in docs/04. blocked-by NOT
+    touched this session. Note: the deterministic _blocked_by reads immediate
+    same-machine occupancy and could not have produced a cross-machine timestamp,
+    which points to the transcript's retelling rather than the mechanism; the
+    founder's exact live board/seed is not recorded, so the origin is unresolved,
+    not exonerated. A future audit should re-check with the recorded board.
+
+CU7b - docs/04 debt entries (named, not built)
+  PROVEN: two debts recorded in the docs/04 amendment - aggregate-cause coaching
+    ("why so many late orders" -> the binding-constraint story) and the
+    bare-elliptical "why so many" against the 4B.4 context slice.
 
 ======================================================================
-CU3 - FALLBACK TAXONOMY SPLIT + CHEAP META ROUTES
+DOCS + VERIFICATION
 ======================================================================
-CLAIMED: split the fallback (entity-miss vs shape-unrecognized vs shape-unrouted);
-add solve-time + machine-count meta routes; maintenance -> shape + honest not-yet.
+Same-commit: docs/04 (R-AI3 ruling verbatim + the Session 4A.3-pre amendment,
+including the CU1 archaeology line, the CU4 prose-locked debt, and the CU7a
+fabrication finding + CU7b debts), docs/07 v2.39, CLAUDE.md status block.
 
-PROVEN:
-- solve-time, machine-count, maintenance routes added BEFORE the bare-"schedule"
-  branch, so the four founder phrasings ("how long did this take to solve", "how
-  many machines", "is there any maintenance scheduled", "does this use workcenters")
-  no longer get "I don't see any scheduled operations matching that".
-- machine-count: a real answer - counts + lists the resource entities in planner
-  vocabulary.
-- solve-time: an answer or an honest not-yet.
-- maintenance: shape-recognized + honest not-yet naming the per-machine downtime
-  route that DOES exist.
-- Tests: TestSession4B4 CU3 specimens + three corpus rows.
+Non-slow Python: 1249 passed, 169 skipped, 0 failed (595s).
+Slow test_ai_voice: 78 passed (+15 R-AI3 specimens).
+Slow test_glass_box + test_ask_chain_api: 34 passed.
+No golden moved.
 
-NAMED / NUANCE:
-- solve-time reads the M6 run's open->close wall time via EvidenceIndex.runs() (the
-  run duration), not the solve_complete payload's wall_time_s directly - the index
-  does not reliably expose payload-only events after load(). This is a close,
-  honest approximation of "how long the solve took" (it includes reporter overhead);
-  it degrades to an honest not-yet when unavailable.
-- The explicit three-way fallback MESSAGE split (entity-miss / shape-unrecognized /
-  shape-unrouted) was addressed by ROUTING the recognized shapes to their own
-  answers rather than by adding a third distinct message string. The category-error
-  insult is removed for the named cases; the generic capability menu remains for
-  truly unrecognized shapes.
-
-======================================================================
-CU4 - ENTITY-BINDING RECENCY + REPAIR-ON-CORRECTION
-======================================================================
-CLAIMED: (a) anaphora binds by TYPE first then recency; (b) no type-matching
-referent -> ask, never cross-type bind; (c) a correction re-binds and re-answers
-the prior question, never a menu-dump.
-
-PROVEN:
-- Typed anaphora: _typed_deictic + _last_typed_subject in resolve_followup. "that
-  machine" binds only to a machine referent (then recency), "that order" only to an
-  order. No type-matching referent -> clarify (CLARIFY_NO_SUBJECT). The founder's
-  "why are there no jobs on that machine" now binds to the machine (with the order
-  turn MORE recent, so untyped recency would have wrongly bound the order).
-- Correction: _CORRECTION_RE checked BEFORE the order/machine short-circuit (so the
-  wrong referent Y in the same sentence does not re-fire the confident-wrong
-  answer). Re-answers the PRIOR question with the corrected referent.
-- Tests: TestSession4B4 CU4 specimens (typed bind, correction re-answers) + a corpus
-  row for the founder's exact "that machine" sequence.
-
-NAMED / NUANCE:
-- The correction re-answers only when the corrected referent fills what the prior
-  route needs. A CROSS-TYPE correction (a machine handed to an order route) cannot
-  re-answer the same question, so it clarifies (never a menu-dump, never a
-  confident-wrong re-run) rather than fabricating a mismatched route. This is the
-  honest handling; a full same-question re-answer across types would require an
-  unstated route mapping this session did not invent.
-
-======================================================================
-CU5 - FOLLOW-UP CONTEXT (LIST-EXPANSION SLICE)
-======================================================================
-CLAIMED: the interpreter carries the last route; a short elliptical follow-up
-("list them", "which ones", "the numbers", "show me") re-fires the last route in
-list/expanded form; scoped strictly to list-expansion.
-
-PROVEN:
-- _LIST_EXPAND in resolve_followup (after the classify short-circuit): re-fires the
-  canonical question of the last answered route (params from the last subject).
-- Founder's pair: "how many late orders" (route late-orders) -> "can you list the
-  numbers" re-fires late-orders. Proven by test_cu5_list_expansion_re_fires_last_route.
-
-======================================================================
-CU6 - RIDERS
-======================================================================
-CLAIMED: (a) state earliness once, per-row only when rows differ; (b) "Customer:
-not specified" gains a coaching line citing the customers doorway; (c) docs/04 debt
-entries.
-
-PROVEN:
-- (a) renderers.py schedule rows: per-row lateness shown only when rows DIFFER
-  (single row keeps its marker; multiple same-value rows suppress the repetition).
-  The header already states it once. Proven by
-  test_cu6a_earliness_not_repeated_per_segment (and test_renderer_shows_late_marker
-  still green - single-row late orders keep their marker).
-- (b) "Customer: not specified - declare customers in the submission's customers
-  file to see one here" (jurisdiction rule: coach the IDS requirement).
-- (c) docs/04 debt entries written (not built): the absence-explaining route pair
-  ("why the gap X-Y" / "why is machine M unused", the manned-idle Metric grounding
-  the latter); the calendar-awareness cluster; the action bridge promotion (4A.3 -
-  this listening session is standing evidence it is next).
-
-======================================================================
-OUT OF SCOPE (named only, not built)
-======================================================================
-- The action bridge (4A.3) - intervention recommendation.
-- Full conversational context beyond CU5's list-expansion slice.
-- The calendar/absence routes beyond docs/04 debt entries.
-- Any ledger change.
-
-======================================================================
-VERIFICATION
-======================================================================
-- Non-slow Python: 1243 passed, 0 failed (+4 test_two_stage_monolithic).
-- Slow: test_ai_voice 63 passed (+11 Session 4B.4 specimens); test_glass_box +
-  test_ask_chain_api 34 passed; rolling_horizon + scenario + planner_edit +
-  standing_pins + forced_alternatives 81 passed / 1 skip; sandbox + multi_route +
-  multi_route_rates + rolling_two_beat + solution_pool 40 passed.
-- Monolithic golden regenerated with cost identity verified and stated.
-- Rolling goldens byte-identical (verified: rolling determinism golden green).
-
-Same-commit spec: docs/04 (R-SC3 extension note, named regen, CU6c debts, this
-amendment), docs/07 v2.38, CLAUDE.md.
+Files changed:
+  src/mre/modules/capabilities.py       (NEW - the authored capability registry)
+  src/mre/modules/explainer.py          (coaching + contested-fact + hypothesis +
+                                         start-reason polarity + advice take)
+  src/mre/modules/renderers.py          (_append_take + coaching/contested renders +
+                                         invitations + downtime grammar)
+  src/mre/modules/interpreter.py        (coaching meaning in the interpreter prompt)
+  src/mre/modules/ask_fallback_copy.py  (invitations + coaching offer)
+  tests/test_ai_voice.py                (fast registry/polarity units + the R-AI3
+                                         slow corpus + aggregate specimens)
+  tests/test_explainer.py               (downtime grammar assertion updated)
+  docs/04-design-history.md, docs/07-roadmap.md, CLAUDE.md, SESSION_CLOSEOUT.md

@@ -1,6 +1,43 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.38 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.39 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.39:** **AI-track Session 4A.3-pre — R-AI3 (the register ladder): restore
+judgment, add invitation, fix the round-two exam findings** 2026-07-24 (docs/04
+amendment). The founder's round-two listening session ratified R-AI3 — every answer
+starts with the facts; testimony is the base, a labeled "My take:" earns its place
+above it, an invitation may end it, disagreement is met with warm evidence not
+capitulation. Backend-only; no solver/model/contract/frontend changes; no golden
+moved. **CU1 — judgment restored + archaeology named:** the "My take:" rode the
+TEMPLATE floor only (a 4A.2d named debt), so the LLM default paraphrased it away; it
+is now APPENDED (authored) after the LLM testimony so the model cannot drop it, on
+why-late (flagship) + the advice route's scoping answer, ABSENT on lookups (a
+negative test), with a standing LLM-path regression guard. **CU2 — invitations:** one
+authored, question-phrased offer of a SUPPORTED route on late-orders / why-late /
+data-problems; absent on lookups; the ladder stacks testimony → take → invitation.
+**CU3 — start-reason polarity:** "why so early / not due until {date}" now answers the
+R-SC3 floor (finishing early is free; cost-equal work placed as early as it can,
+banking slack) + the concrete lower bound as supporting testimony; "why can't it start
+SOONER" keeps the lower-bound chain. **CU4 — coaching retrieval:** a new `coaching`
+route retrieves from a NEW authored capability registry (`capabilities.py`,
+`dict[concept → CapabilityNote]` with a docs/06 § citation borrowed from the gate's
+`RULE_REGISTRY`); anchor "i want orders to span downtime, how" → splittable=true +
+min_chunk, §5.3; the "No calendar closures found for all resources" nonsense fixed to
+"No downtime is declared for any resource." NAMED DEBT: docs/05 is prose-locked, so
+the fuller constraint-coaching surface is not built. **CU5 — hypothesis-content
+guard:** an intervention STATEMENT ("maybe if splitting were allowed fewer orders
+would be late") routes to coaching/advice by content shape, never the status recital.
+**CU6 — sycophancy guard:** a contested fact ("isn't ORD-05 on time?") is met with warm
+evidence + an offer to walk the chain, never capitulation, never hardening; the
+balance case (an accurate correction) yields. **CU7a:** the founder's ORD-000019 →
+ORD-000015 blocked-by claim mechanically verified against a deterministic busy_board
+re-solve — FALSE (fabrication, filed severe): the shared-machine kernel is real but
+the adjacency + 14:23 timestamp are stitched from unrelated facts (the two ops are ~4
+days apart; 14:23 belongs to a third order on another machine); blocked-by NOT touched
+this session. **CU7b named debt:** aggregate-cause coaching + the bare-elliptical "why
+so many" against the context slice. Non-slow Python 1249 passed, 0 failed; slow
+`test_ai_voice` 78 passed (+15 R-AI3 specimens); `test_glass_box` + `test_ask_chain_api`
+green. See the docs/04 2026-07-24 R-AI3 ruling + Session 4A.3-pre amendment.
 
 **v2.38:** **Session 4B.4 — R-SC3 extended to ALL solve paths (the monolithic
 floor) + the founder's conversational fixes** 2026-07-23 (docs/04 amendment). The

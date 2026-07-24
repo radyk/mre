@@ -96,6 +96,56 @@ class TestPlannerLanguage:
         assert "identity_v1" not in out and "WorkPackage" not in out
 
 
+class TestCapabilitiesRegistry:
+    """CU4 (Session 4A.3-pre) — the authored capability/coaching registry."""
+
+    def test_every_note_carries_a_section_citation_and_triggers(self):
+        from mre.modules.capabilities import CAPABILITIES
+        for note in CAPABILITIES:
+            assert note.ids_ref.startswith("§"), f"{note.concept} has no § citation"
+            assert note.enables and note.how, f"{note.concept} incomplete"
+            assert note.triggers, f"{note.concept} has no triggers"
+
+    def test_span_downtime_binds_to_splittable_and_cites_5_3(self):
+        from mre.modules.capabilities import coaching_concept, note_for_concept
+        assert coaching_concept("i want orders to span downtime") == "splittable"
+        note = note_for_concept("splittable")
+        assert note.ids_ref == "§5.3"
+        assert "splittable=true" in note.how and "min_chunk" in note.how
+
+    def test_capability_shape_recognized_without_a_concept(self):
+        from mre.modules.capabilities import is_capability_question
+        assert is_capability_question("how can this be done")
+        assert is_capability_question("does mre support alternates")
+        # a plain "i want to know" is NOT a capability question
+        assert not is_capability_question("i want to know why ORD-05 is late")
+
+    def test_want_shape_requires_a_named_concept(self):
+        from mre.modules.capabilities import wants_capability, coaching_concept
+        q = "i want orders to span downtime"
+        assert wants_capability(q, coaching_concept(q))
+        assert not wants_capability("i want to see the schedule", None)
+
+
+class TestHypothesisAndPolarity:
+    """CU5 (hypothesis content) + CU3 (start-reason polarity) — pure logic."""
+
+    def test_hypothesis_needs_a_marker_and_an_outcome(self):
+        from mre.modules.explainer import _is_hypothesis
+        assert _is_hypothesis("maybe if splitting is allowed less orders would be late")
+        assert _is_hypothesis("overtime would probably help with the late ones")
+        assert not _is_hypothesis("how many machines")
+        assert not _is_hypothesis("the order is late")   # a fact, not a hypothesis
+
+    def test_why_early_excludes_the_comparative(self):
+        from mre.modules.explainer import _is_why_early
+        assert _is_why_early("why is ORD-13 starting so early")
+        assert _is_why_early("why has it already started? it's not due until Friday")
+        # the comparative "why can't it start EARLIER/SOONER" is the lower bound
+        assert not _is_why_early("why can't we start it earlier")
+        assert not _is_why_early("why can't ORD-05 start sooner")
+
+
 class TestFormattingStrip:
     """CU3 (Session 4A.2b) — markdown / backtick leakage stripped at one seam."""
 
@@ -643,6 +693,151 @@ class TestSession4B4:
 
 
 @pytest.mark.slow
+class TestSession4A3:
+    """R-AI3 — the register ladder. Judgment restored (CU1), invitations (CU2),
+    start-reason polarity (CU3), coaching retrieval (CU4), the hypothesis-content
+    guard (CU5), and the sycophancy guard (CU6)."""
+
+    # ---- CU1 — judgment restored through the LLM path (the reason this exists) --
+
+    def test_cu1_judgment_survives_the_llm_path(self, clean):
+        # The regression: "My take:" rode the TEMPLATE floor only, and the live LLM
+        # path paraphrased it away. It is now APPENDED (authored) after the LLM
+        # testimony, so an LLM that omits it cannot drop it.
+        from mre.modules.renderers import LLMRenderer
+
+        class _Msgs:
+            def create(self, **k):
+                # testimony that OMITS the take (the paraphrase-away failure mode)
+                txt = "ORD-05 finished 890 min late. [record: {}]".format(
+                    _late_record_prefix(clean))
+                return type("R", (), {"content": [type("C", (), {"text": txt})()]})()
+
+        client = type("Cl", (), {"messages": _Msgs()})()
+        bundle = clean.answer("why is ORD-05 late")
+        assert bundle.key_facts.get("take"), "why-late must compute a take"
+        out = LLMRenderer(_client=client).render(bundle)
+        assert "rendered by: LLM" in out          # the LLM path really ran
+        assert "My take:" in out                   # …and the take survived it
+
+    def test_cu1_no_take_on_lookups(self, clean):
+        # Lookups stay testimony-only — a take on "how many machines" is a fail.
+        for q in ("how many machines", "how many jobs in total",
+                  "what product is ord-01"):
+            a = _answer(clean, q)
+            assert "My take:" not in a, f"lookup {q!r} must not carry a take: {a}"
+
+    def test_cu1_advice_ends_with_grounded_judgment(self, clean):
+        # The advice scoping answer ENDS with a grounded take (the disclaimer covers
+        # the action bridge only, not the judgment register).
+        a = _answer(clean, "what should i do so those orders are not late")
+        assert "can't recommend an intervention" in a.lower()
+        assert "My take:" in a                     # grounded judgment present
+        assert "ORD-05" in a                        # named from the evidence
+
+    # ---- CU2 — invitations (minimal honest slice) ------------------------------
+
+    def test_cu2_late_orders_invites_the_cause_chain(self, clean):
+        a = _answer(clean, "are there any late orders")
+        assert "Want the cause chain" in a
+        assert 'why is ORD-05 late' in a           # proposes a SUPPORTED route
+
+    def test_cu2_why_late_invites_the_queue(self, clean):
+        a = _answer(clean, "why is ORD-05 late")
+        assert "queues behind CUT-01" in a          # names the blocking machine
+
+    def test_cu2_no_invitation_on_a_lookup(self, clean):
+        # An invitation on every turn is noise — lookups carry none.
+        for q in ("how many machines", "what product is ord-01"):
+            a = _answer(clean, q)
+            assert "Want " not in a, f"lookup {q!r} carried an invitation: {a}"
+
+    # ---- CU3 — start-reason polarity -------------------------------------------
+
+    def test_cu3_why_early_gets_the_floor_not_a_lower_bound(self, clean):
+        # ORD-13 (the control) is comfortably early. "why so early, not due until…"
+        # must answer the R-SC3 floor (finishing early is free), NOT a lower bound.
+        a = _answer(clean, "why is ORD-13 starting so early? it's not due until "
+                    "next week").lower()
+        assert "banking slack" in a or "finishing early costs nothing" in a
+        assert "ahead of its due date" in a
+
+    def test_cu3_why_not_sooner_keeps_the_lower_bound(self, clean):
+        # The comparative "why can't it start SOONER" is the OPPOSITE question — the
+        # lower-bound chain (held-by / release), not the earliness floor.
+        a = _answer(clean, "why can't ORD-05 start sooner").lower()
+        assert "banking slack" not in a
+        assert "held by" in a or "busy" in a or "releas" in a
+
+    # ---- CU4 — coaching/capability retrieval -----------------------------------
+
+    def test_cu4_span_downtime_coaches_splittable(self, clean):
+        res, a = _ask(clean, "i want orders to span downtime. how can this be done")
+        assert res.route == "coaching"
+        low = a.lower()
+        assert "splittable" in low and "min_chunk" in low
+        assert "5.3" in a                           # the § citation
+        assert "i don't see any scheduled operations" not in low
+        assert "no calendar closures found for all" not in low   # the old nonsense
+
+    def test_cu4_unknown_capability_lists_what_can_be_coached(self, clean):
+        res, a = _ask(clean, "how do i configure the thingamajig")
+        assert res.route == "coaching"
+        assert "coach" in a.lower()
+
+    def test_cu4_downtime_grammar_fixed(self, clean):
+        a = _answer(clean, "how much downtime does the plant have").lower()
+        assert "for all resources" not in a         # the ungrammatical old string
+        assert "no downtime is declared" in a
+
+    # ---- CU5 — the hypothesis-content guard ------------------------------------
+
+    def test_cu5_splitting_hypothesis_is_not_a_recital(self, clean):
+        res, a = _ask(clean, "maybe if splitting is allowed less orders would be late")
+        assert res.route in ("coaching", "advice")   # never the status recital
+        assert "late order(s):" not in a             # not the are-there-late list
+        assert "splittable" in a.lower() or "can't recommend an intervention" in a.lower()
+
+    def test_cu5_overtime_hypothesis_is_advice(self, clean):
+        res, a = _ask(clean, "overtime would probably help with the late ones")
+        assert res.route == "advice"
+        assert "late order(s):" not in a
+
+    # ---- CU6 — the sycophancy guard --------------------------------------------
+
+    def test_cu6_contested_wrong_holds_warmly(self, clean):
+        # ORD-05 is late; the user insists it's on time. Restate the evidence
+        # warmly and offer the chain — never capitulate, never harden.
+        res, a = _ask(clean, "isn't ORD-05 on time")
+        assert res.route == "contested-fact"
+        low = a.lower()
+        assert "past its due" in low                 # restates the evidence
+        assert "walk the chain" in low or "why is ORD-05 late" in a  # offers the chain
+        assert "you're right" not in low and "my mistake" not in low  # no capitulation
+        assert "on time when the evidence" in low    # holds, warmly
+
+    def test_cu6_contested_right_yields_and_corrects(self, clean):
+        # The balance: when the user's correction is ACCURATE, the answer yields.
+        # A fuzzy assumption (ORD-o5 → ORD-05) is corrected to a different order;
+        # the assistant re-answers for the corrected order, not the assumed one.
+        ctx = {"history": [{"order": "ORD-99", "route": "late-order"}]}
+        res, a = _ask(clean, "no i meant ORD-04", ctx)
+        assert "ORD-04" in res.resolved_question      # yielded to the correction
+        assert "Supported question types" not in a    # never a menu-dump
+
+
+def _late_record_prefix(explainer) -> str:
+    """The 8-char prefix of a real lateness record on the clean plan (so an
+    injected LLM testimony can footnote a REAL id and pass the citation guard)."""
+    b = explainer.answer("why is ORD-05 late")
+    for rec in b.ordered_records:
+        rid = rec.get("record_id")
+        if rid:
+            return rid[:8]
+    return "met-late"
+
+
+@pytest.mark.slow
 def test_cu10_zero_confident_wrong(clean, sabotaged, earliness_forcing):
     """The measurement: EVERY audit-corpus question lands correct-and-on-question,
     honest-bridge, or honest-refusal — zero confident-wrong. A confident-wrong
@@ -721,6 +916,20 @@ def test_cu10_zero_confident_wrong(clean, sabotaged, earliness_forcing):
          {"history": [{"machine": "CUT-01", "route": "machine-schedule"},
                       {"order": "ORD-05", "route": "late-order"}]},
          lambda a: "ord-05" not in a.lower()),
+        # Session 4A.3-pre — R-AI3. A why-EARLY question must get the earliness
+        # floor, not a lower-bound cause; a capability/coaching question must
+        # retrieve the knob, not an entity-lookup miss; an intervention hypothesis
+        # must not be a status recital; a contested fact must be held on evidence,
+        # never capitulated.
+        ("why is ORD-13 starting so early? it's not due until next week", clean,
+         None, lambda a: "banking slack" in a.lower()
+         or "finishing early costs nothing" in a.lower()),
+        ("i want orders to span downtime. how can this be done", clean, None,
+         lambda a: "splittable" in a.lower() and "5.3" in a),
+        ("maybe if splitting is allowed less orders would be late", clean, None,
+         lambda a: "late order(s):" not in a),
+        ("isn't ORD-05 on time", clean, None,
+         lambda a: "past its due" in a.lower() and "you're right" not in a.lower()),
     ]
     wrong = []
     for q, ex, ctx, ok in corpus:

@@ -721,9 +721,12 @@ class TestDowntimeRoute:
         assert "24.0h" in text or "24h" in text
 
     def test_renderer_no_closures_text(self, downtime_explainer):
+        # Session 4A.3-pre CU4 — corrected grammar: "No downtime is declared for
+        # {subject}", never the ungrammatical "…closures found for all resources".
         bundle = downtime_explainer.answer("How much downtime does casting have?")
         text = TemplateRenderer().render(bundle)
-        assert "No calendar closures" in text
+        assert "No downtime is declared" in text
+        assert "for all resources" not in text
 
 
 # ---------------------------------------------------------------------------

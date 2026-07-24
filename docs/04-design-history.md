@@ -7519,3 +7519,167 @@ question is worse than a refusal: the advice recital, the category-error insult,
 cross-type anaphora bind, and the menu-dump were all the machine answering a question
 the planner did not ask — the cure is a route that recognizes the SHAPE and scopes
 honestly to what it can do.
+
+## Amendment — 2026-07-24: R-AI3 ruling — THE REGISTER LADDER: EVERY ANSWER STARTS WITH THE FACTS
+
+Ruled in the design thread, transcribed here verbatim (append-only; settled).
+Implemented Session 4A.3-pre (same day, below).
+
+--- RULING TEXT BEGINS ---
+R-AI3 — The register ladder. Every answer starts with the facts.
+(1) TESTIMONY is the base of every answer: cited, validated, held
+to zero-confident-wrong absolutely. No other register may replace
+or precede it.
+(2) TAKES are labeled ("My take:"), evidence-grounded, and EARN
+THEIR PLACE: they appear on causal / diagnostic / advice-shaped
+answers where the evidence supports an actionable insight, and are
+ABSENT on simple lookups. A take may be provisional; it may never
+be ungrounded. Takes are graded on groundedness and usefulness,
+not provable optimality.
+(3) INVITATIONS: where an obvious next question exists, the answer
+may end by offering it ("want me to show which orders queue behind
+it?"). An invitation proposes conversation, never an action.
+(4) DISAGREEMENT is met with warm evidence, never capitulation:
+when the user contests a cited fact, restate the evidence kindly
+and offer to walk the chain; do not fold, do not harden.
+(5) Registers stack in order: testimony, then take, then
+invitation. The label is the boundary; nothing above the label may
+masquerade as fact.
+--- RULING TEXT ENDS ---
+
+## Amendment — 2026-07-24: AI-track Session 4A.3-pre — R-AI3 (the register ladder): restore judgment, add invitation, fix the round-two exam findings
+
+The founder's round-two listening session (2026-07-24) ran four failures against
+the 4B.4 voice; R-AI3 ratifies the fix. Backend-only (explainer + renderers +
+interpreter + authored ask copy + a NEW authored capability registry + the audit
+corpus + docs); no solver/model/contract/frontend changes; no golden moved.
+
+**CU1 — the judgment register restored, and the archaeology named.** The flagship
+late-order specimen (ORD-000004 blocked by ORD-000009 on F001-RES004) returned pure
+testimony, no "My take:". THE CAUSE (one-line archaeology, not a guess): 4A.2d
+authored the "My take:" onto the TEMPLATE floor ONLY and NAMED that as debt in its
+own close-out ("the LLM testimony path renders facts under its strict no-opinion
+rules, so the 'My take:' judgment offer currently rides the TEMPLATE floor"). The
+DEV/live build renders through `LLMRenderer`, whose prompt shows the take merely
+inside the EVIDENCE CHAIN (not the pre-computed facts) and asks for 2-3 sentences of
+no-opinion testimony — so the take was paraphrased away. It was never a code
+regression; it was a detachment the LLM default made visible. THE FIX: the authored
+take is now APPENDED deterministically after the LLM testimony
+(`renderers._append_take`, on the testimony success path), so an LLM that omits it
+cannot drop it — the take is authored (composed on the bundle from evidence), never
+LLM-improvised, and the label is the boundary (R-AI3(5)). Takes earn their place:
+why-late (the flagship) and the advice route's scoping answer both carry a grounded
+take; lookups (machine-count, inventory, order-attributes, order-schedule) carry
+NONE — enforced by a NEGATIVE test. The advice route now ENDS with grounded judgment
+(the worst slip traced to the commitment holding its machine, named as the biggest
+lever) — the disclaimer covers the action BRIDGE only, not the judgment register.
+REGRESSION GUARD: the flagship now has a standing LLM-path test (an injected client
+returns testimony WITHOUT the take; the rendered answer must still contain "My
+take:") plus the lookups-have-no-take negative.
+
+**CU2 — invitations (R-AI3(3), minimal honest slice).** Authored one invitation per
+route where an obvious follow-up exists, phrased as a QUESTION proposing a SUPPORTED
+route (never an action, never an unbuilt capability): late-orders -> "Want the cause
+chain for the worst one? Ask 'why is {order} late?'"; why-late -> "Want to see what
+else queues behind {machine}? ..."; data-problems (>1 problem) -> "Want the fix-first
+ordering? ...". Copy in `ask_fallback_copy` (authored). Frequency discipline: at most
+one, only on those routes, absent on lookups (tested both ways). The register ladder
+stacks testimony -> take -> invitation on the why-late answer.
+
+**CU3 — start-reason polarity.** "why is X starting so early / it's not due until
+{date} / it already started" was answered with LOWER-BOUND causes (blocked-by,
+release date) — why it isn't EARLIER — the opposite of the question. Post-R-SC3
+earliness is deliberate, so the route now detects polarity (`_is_why_early`: an
+"early" adjective / due-vs-start / already-started cue, EXCLUDING the comparative
+"earlier"/"sooner" which is the lower-bound question) and answers a why-early with
+the R-SC3 FLOOR in plain words ("finishing early costs nothing here; among
+equally-cheap options the schedule starts work as soon as it can, banking slack"),
+plus the concrete lower bound (release / first opening / blocker) as supporting
+testimony, plus the EARLINESS_PREFERENCE note when a declared coefficient moved it.
+"why can't X start sooner" keeps the existing lower-bound chain (the two never
+collide).
+
+**CU4 — the coaching/capability shape (retrieval, not training).** A new taxonomy
+route `coaching` answers "how do I enable X / does MRE support W / i want Z, how".
+It RETRIEVES from a NEW authored structured registry (`src/mre/modules/
+capabilities.py`) — a frozen `dict[concept -> CapabilityNote]` carrying an authored
+`enables`/`how` + a docs/06 § citation borrowed verbatim from the gate's
+`RULE_REGISTRY` `ids_ref` strings — never generated, never read from prose
+(jurisdiction rule intact: coach the IDS field + its §, never ERP surgery). Anchor:
+"i want orders to span downtime. how can this be done" -> set splittable=true +
+min_chunk_minutes on the routing line, citing §5.3 (rationale docs/05 R-C3). Seven
+concepts seeded (splittable, earliness_value, setup_family, alternates, customers,
+locks, wip). A capability question naming no known concept gets an honest not-yet
+listing what CAN be coached, never an entity-lookup miss. Fixed in passing: the "No
+calendar closures found for all resources" template -> "No downtime is declared for
+any resource." (correct grammar), and that question now reaches coaching, not the
+calendar route. NAMED DEBT (prose-locked): docs/05 (the constraint catalog) is PROSE
+with no structured backing, so the fuller "why can't it do X / what constraints
+exist" coaching surface is NOT built — this registry covers only the submission
+doorway/refinement capabilities whose fields and § citations are already structured.
+Retrieval is not taught to read prose.
+
+**CU5 — the hypothesis-content guard.** An intervention STATEMENT ("maybe if
+splitting were allowed fewer orders would be late", "overtime would probably help")
+keyword-matched "late" into the status recital. The advice classifier now considers
+CONTENT SHAPE (`_is_hypothesis`: a conditional/speculative marker AND a plant/outcome
+word), not just interrogative phrasing: a hypothesis naming a config concept routes
+to coaching (the honest answer is how to enable that knob); one with no named concept
+routes to advice. Deliberately NOT bare "would fix/help" — "and what would fix it?"
+is an ellipsis follow-up, not a hypothesis (a regression caught and pinned).
+
+**CU6 — the sycophancy guard (R-AI3(4)).** A user contesting a cited fact ("isn't
+ORD-05 on time?" against a lateness record) now routes to `contested-fact`: warm
+EVIDENCE — restate what the record shows ("... finishing 890 minutes past its due
+date — I'm not going to call it on time when the evidence says otherwise") and offer
+to walk the chain — never capitulation ("you're right, my mistake") and never a curt
+re-assertion (both graded FAIL). The restatement is authored over a pinned fact and
+short-circuits the LLM so it can never be softened. Two specimens: contested-WRONG
+(hold warmly) and contested-RIGHT (an accurate correction — the existing correction-
+rebind yields and re-answers for the corrected referent; the guard is against folding
+under pressure, not against ever being wrong).
+
+**CU7a — the ORD-000019 -> ORD-000015 blocked-by claim: FABRICATION (severe), filed,
+blocked-by NOT touched this session.** The founder's round-two transcript claimed
+ORD-000019's bar on F001-RES002 ends 2026-01-06 14:23 exactly where ORD-000015
+begins. Mechanically verified against a DETERMINISTIC re-solve of the only world
+matching the F001-RES002/ORD-0000xx naming (the `busy_board` generator scenario, 40
+orders, six F001 resources, ref 2026-01-05; solver-workers 1, seed 42,
+PYTHONHASHSEED=0; two solves byte-identical on the relevant rows). VERDICT: FALSE.
+The shared-machine KERNEL is real — both orders' op10 DO land on F001-RES002 — but
+the adjacency and timestamp are stitched from unrelated facts: ORD-000019 op10 ends
+2026-01-05 18:25 (not 2026-01-06 14:23) and ORD-000015 op10 begins 2026-01-09 15:07,
+~4 days later with ten other orders' ops between them; the only operation anywhere
+ending at exactly 2026-01-06 14:23 is ORD-000039 op30 on a DIFFERENT machine
+(F001-RES006). Per the ruling, this is filed as a fabrication specimen and graded
+severe, and blocked-by is NOT modified this session. Note for a future audit: the
+deterministic `_blocked_by` reads immediate SAME-MACHINE occupancy and could not have
+produced a cross-machine 14:23 timestamp, which points to the transcript's retelling
+rather than the mechanism — the founder's exact live board/seed is not recorded, so
+the origin is unresolved, not exonerated.
+
+**CU7b — named debt (docs/04, NOT built this session).**
+- Aggregate-cause coaching — "why are there so many late orders?" -> the
+  binding-constraint story (which resource/commitment is the common thread across
+  the late set). CU1's advice take names the single worst lever; the aggregate cause
+  is the fuller answer.
+- Bare-elliptical "why so many" against the 4B.4 context slice — an ellipsis with no
+  order that should resolve against the prior late-orders answer's set, not clarify.
+
+**Verification.** Non-slow Python 1249 passed, 0 failed (+6 fast: the capability
+registry ×4, hypothesis/polarity ×2). Slow `test_ai_voice` 78 passed (+15 R-AI3
+specimens — CU1 judgment-through-the-LLM + no-take-on-lookups + advice-grounded-
+judgment, CU2 invitations present/absent, CU3 polarity both directions, CU4 coaching
++ grammar, CU5 hypothesis ×2, CU6 sycophancy hold + yield), with 4 folded into the
+zero-confident-wrong aggregate. `test_glass_box` + `test_ask_chain_api` green. NO
+golden moved. Same-commit: the R-AI3 ruling verbatim + this amendment (docs/04),
+docs/07 v2.39, CLAUDE.md.
+
+Lesson: a ruling without a test atrophies — the "My take:" judgment was authored once
+and quietly detached the moment the LLM became the default, because nothing guarded
+the delivery path it actually rode. Pin the authored insight through the seam (append
+it, don't trust the model to keep it), and guard the flagship with a standing test.
+And the register ladder is honesty made structural: testimony first and always, the
+take clearly labeled above the facts, the invitation last — so a warm opinion or an
+offered next step can never be mistaken for the evidence beneath it, and a contested
+fact is met with the record, not a fold.

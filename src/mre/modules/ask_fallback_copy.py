@@ -45,6 +45,7 @@ ROUTE_OFFERS = {
     "edit-cost": "break down what your last move cost",
     "ledger-refusals": "list the questions I couldn't answer recently",
     "advice": "explain why each order is late and price a what-if move",
+    "coaching": "show how to enable that capability in the submission",
     "solve-time": "tell you how long the solve took",
     "machine-count": "list the machines in the plan",
     "maintenance": "show one machine's downtime (calendar closures)",
@@ -81,6 +82,21 @@ CLARIFY_VERIFICATION = (
 # The meta-route header (R-AI1(d) — the ledger answering about itself).
 REFUSAL_META_EMPTY = "No unanswered questions have been logged recently."
 REFUSAL_META_LEAD = "Questions I couldn't answer recently ({n}):"
+
+
+# ---------------------------------------------------------------------------
+# Invitations (Session 4A.3-pre, CU2 / R-AI3(3)). Where an OBVIOUS next question
+# exists, an answer may END by offering it — as a QUESTION, proposing a SUPPORTED
+# route, never an action, never an unbuilt capability. Authored here (never
+# LLM-improvised), one per route, and rendered at most once (the register ladder's
+# final rung: testimony, then take, then invitation). Frequency discipline: only
+# the routes below carry one; lookups (counts, lists, one order's attributes) do
+# NOT — an invitation on every turn is noise, not help.
+INVITE_LATE_ORDERS = ('Want the cause chain for the worst one? Ask '
+                      '"why is {order} late?"')
+INVITE_WHY_LATE = ('Want to see what else queues behind {machine}? Ask '
+                   '"what\'s running on {machine}?"')
+INVITE_DATA_PROBLEMS = 'Want the fix-first ordering? Ask "what should I fix first?"'
 
 
 # CU2 (Session 4B.4) — a clarify/near-miss/refusal lead echoes the user's question
