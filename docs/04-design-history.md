@@ -7811,3 +7811,171 @@ dual lesson to the swap bridge: name the cause you can prove (occupancy, closure
 off-shift, upstream) and flag honestly the gap you can't, never vouch one. And a live
 selection is context the planner is POINTING AT — it must win over what they said three
 turns ago, and the answer must say which one it used.
+
+
+### R-AI4 — Evaluation of the conversational layer (ruling, transcribed verbatim)
+
+**Ruled 2026-07-24 (Session 4A.3b). The conversational layer had the slowest
+evaluation loop in the system — solver changes get machine-speed verdicts (goldens,
+counterfactuals) while conversational changes waited for a founder listening session
+of ~a dozen questions an evening. Three rounds of founder exams found every major
+seam, all DISCOVERY failures the corpus was structurally blind to (it grades only
+questions someone already added). R-AI4 ratifies the instrument that inverts the
+economics: automated sweeps discover at scale, Claude triages against the rulings,
+the founder judges the felt bar from a short triaged list.**
+
+(1) TWO AXES, DIFFERENT SEMANTICS. Truth is the floor: facts cited and correct
+against the pinned run's persisted document, no fabrication, hedges where heuristics
+are heuristic — a truth miss is a defect, binary, non-negotiable. Conversation is the
+goal: responsiveness (the question asked, at the level asked), register fit (ladder
+rungs present where earned, absent where not), context carry (follow-ups,
+corrections, deixis, selection, menus), human surface (planner units, one voice, no
+evidence-speak or template nonsense), graceful edges (honest scoping, never a
+category-error insult). A truthful answer that fails conversation fails the bar.
+
+(2) ROLES. Automated sweeps discover candidate failures; Claude triages transcripts
+and grades against the rulings, minting corpus specimens and session errands; the
+founder's listening sessions are the final arbiter of the felt bar and the sole
+source of trust-calibration judgments. No answer pattern ships as "fantastic" on
+machine grading alone.
+
+(3) FLUENCY, NOT ENGAGEMENT. Invitations exist to complete the thought, never to
+extend the session: every offer is the evidence chain's next link or the decision's
+next input, composed from the answer's own facts, proposing only questions the
+product can answer today. Silence is the correct register when the thought is
+complete.
+
+(4) Audits of conversational claims run against the pinned run's persisted document,
+never a re-solve (the CU7a protocol, restated here as law).
+
+
+### 2026-07-24 — Session 4A.3b: the exam harness (evaluation at machine speed, judgment where it belongs)
+
+Builds the instrument R-AI4 ratifies. Backend + tests + docs; **no solver / model /
+contract / frontend-substrate change; no golden moved.** The one behavioral change to
+shipped answers is CU4 (invitation coverage) — additive authored copy on two more
+route families, each opening a live route.
+
+**PART 1 — R-AI4 transcribed verbatim** (above, first). The ruling's four clauses:
+two axes with different semantics (truth is a binary floor; conversation is the
+graded goal); roles (sweeps discover, Claude triages, the founder is final arbiter);
+fluency not engagement (invitations complete the thought, silence is a register); and
+audits run against the pinned document, never a re-solve (the CU7a protocol as law).
+
+**CU1 — the runner** (`src/mre/ai_exam/`, `python -m mre.ai_exam`). Fires a question
+SCRIPT through the REAL ask path (`_answer_question` — interpreter, explainer,
+renderer, validator, LLM LIVE when a key is present; nothing mocked) against a pinned
+persisted run. CONVERSATION STATE PERSISTS across the file: a question file is a
+conversation script. Script format (`script.py`): plain question lines; `SELECT
+order=… machine=…` (simulate the board selection the panel sends; an op selection
+sets both slots); `SELECT clear`; `RESET` (clear all state — many conversations per
+bank); `#` comments; a malformed directive is a parse FINDING, never a silent drop.
+**Conversation-state fidelity, named honestly:** history turns are built the way the
+cockpit builds them (`askpanel.js` `currentSelectionRefs`) — order/machine from the
+ACTIVE board selection, NOT from the answer's resolved subject; a conversation carries
+subject across turns via SELECT, the channel the panel actually sends. Enriching
+history beyond what the cockpit transmits would let the harness PASS follow-ups the
+shipped product fails — the honest choice is to match the client. Transcript output
+(`report.py`) is plain ASCII in the founder's paste format: question, interpreted-as
+line WITH resolution source, answer verbatim, register/renderer tags, validator notes,
+lit-bars count + cited refs (a dark lit-bars regression is visible in text).
+Ask-path failures (exceptions, timeouts) are captured as findings, never crash the
+run (`ThreadPoolExecutor` per-question timeout). A live-call counter wraps
+`anthropic…Messages.create` (honest instrumentation, never a mock — the real client
+makes the real call, we only tally it); `--limit` and per-question `--timeout`;
+`--llm auto|on|off`. **A found trap made structural:** a missing/wiped run dir makes
+the Explainer fall to certificate-only mode with an EMPTY vocabulary, and every entity
+question then SILENTLY misroutes (late-order → the bare late-orders list; swap →
+refuse) — so the runner reads the target's health (`Vocab.healthy`) and, on an empty
+vocabulary, fires a loud `target-unloadable` finding and runs NOTHING rather than emit
+a transcript of garbage.
+
+**CU2 — the banks** (versioned, `tests/ai_exam/banks/`, headers name generation date
++ taxonomy version). (a) `regression_founder.txt`: every founder-exam finding rounds
+1–3 VERBATIM including typos ("why os ORD-09 not running … instead of a gap between",
+"can you list the numbers", "i was asking about the machine not the jo", "what about
+wip. what do you mean", "maybe if splitting is allowed less orders would be late", the
+three swap phrasings + the solve-#5 "swap order N and order M" variants, the why-early
+pair, the contested-fact pushes, "whats the end time of this order" with a SELECT), as
+conversation scripts preserving sequence, pilot ids adapted to the glass_box world,
+phrasing preserved exactly. (b) `sweep_routes.txt` (120 probes) + `sweep_traps.txt`
+(62 probes): paraphrase fans per route (clean + sloppy/typo'd register), polarity
+traps, hypothesis-statements, wrong-entity + cross-type probes, ordinal + named menu
+follow-ups, elliptical chains, contested-fact both directions, selection-vs-history
+conflicts, and dark-lit-bars probes. **210 probes total, 182 sweep**, all parse clean.
+
+**CU3 — the triage rubric** (`tests/ai_exam/RUBRIC.md`) implementing R-AI4(1): the
+truth-floor checks (T1 citation validity vs the pinned document, T2 no fabrication,
+T3 hedges) and the five conversation dimensions (responsiveness, register fit, context
+carry, human surface, graceful edges) with graded examples from the founder's real
+transcripts (round one's truthful-filing-cabinet as the canonical truth-passes /
+conversation-fails anchor). Output buckets verbatim: DEFECTS → corpus + errand list;
+CONVERSATION FAILURES → triaged by frequency/severity; JUDGMENT CALLS → the founder,
+target under ten per sweep; EXEMPLARS → calibration anchors. A founder-precedent log
+records verdicts so calibration compounds. **MECHANICAL PRE-TRIAGE (built,
+`sidecar.py`):** the runner emits a findings sidecar with everything checkable without
+judgment — exception / empty / validator failure / an interpreted-as entity absent
+from the pinned document / an evidence-shaped route citing zero records + lighting zero
+bars / an invitation offering a route that does not exist (the reverse-guard applied to
+output) / target-unloadable. The sidecar SEEDS the triage; it never grades
+conversation.
+
+**CU4 — invitation generalization** (R-AI4(3) implemented). (a) Coverage extended
+beyond the three 4A.3-pre routes: coaching (offer what the submission already declares
+— a live data-problems door) and gap-between (offer the shared machine's schedule — a
+live machine-schedule door) join late-orders / why-late / data-problems; swap-move is
+NOT double-invited (the sandbox gesture is itself the offer); lookups stay silent.
+(b) Contextual composition: invitations are AUTHORED PATTERNS per route family
+(`ask_fallback_copy.INVITATIONS`), slots filled from the answer's own facts (the
+blocker's machine, the shared machine) via `invitation_line` — never LLM-improvised.
+(c) THE REAL-DOORS GUARD: every pattern's PROBE (the proposed follow-up in isolation)
+must classify to a supported route; `tests/ai_exam/test_real_doors.py` asserts each
+one classifies to its documented route (fast — a lightweight Explainer with an injected
+vocabulary, no solve). Nothing offers a door into a wall. (d) Silence discipline:
+missing-slot invitations are never half-emitted; lookups carry none (un-regressed).
+
+**CU5 — the first sweep + the proof of the loop.** The runner's own tests
+(`tests/ai_exam/test_runner.py`) green: script parsing, the six sidecar checks,
+state persistence, SELECT/RESET, the target-health guard (a dead target fires loud +
+runs nothing), and the real-doors reverse-guard. The first sweep ran the full
+regression scripts + 182 sweep probes (210 questions) against a pinned glass_box clean
+solve (snapshot `snap-exam`, deterministic workers 1 seed 0), committed under
+`tests/ai_exam/sweeps/2026-07-24/`. **Fixed NOTHING the sweep discovered — discovery,
+not repair (the next session's errand list, triaged in the working thread).** The
+sweep's mechanical counts are reported in the close-out; conversation-quality triage
+goes to the working thread (Claude) and the founder, per R-AI4(2).
+
+**CU6 riders.** (a) The parallel-load screenshot-flake class is named as standing debt
+below (two members). (b) The corpus gained the founder's live solve-#5 swap phrasings
+("why not just swap order 5 and order 4" and variants), world-adapted, alongside the
+glass_box anchor (in `regression_founder.txt` and the `test_ai_voice` swap specimens).
+
+**OUT OF SCOPE (named, not built):** repairing anything the sweep discovers (next
+session's errand list); CI-asserting LLM PROSE (the exam asserts the deterministic
+layer and structural properties only — take present, no uncited numbers, validator
+verdict, real doors — never prose matching; quality judgment goes to humans and
+Claude); automated conversation-quality scoring (R-AI4(2): grading is Claude's and the
+founder's, not a metric's).
+
+**Named debt (docs/04): the parallel-load screenshot-flake class.** Two known members
+— the 3.1c cockpit 0-bars flake and the 4A.3 planner due-marker flake — both pass in
+isolation and both intermittently fail only under parallel harness load (a
+readiness/timing race, not a logic defect; the isolation pass is the evidence). This
+is a harness-era cleanup candidate (a shared readiness-wait for the fixture server),
+not fixed tonight — named so a future harness pass owns it rather than re-diagnosing it.
+
+**Verification.** The runner's tests green (fast script/sidecar/real-doors +
+slow end-to-end). CU4 reverse-guard + invitation specimens green; the existing
+invitation / coaching / lookup-silence tests un-regressed. Non-slow Python suite green;
+`test_ai_voice` slow green with the CU4 specimens. First sweep transcript + sidecar
+committed. Same-commit: R-AI4 (verbatim) + this amendment (docs/04), docs/07 same-day,
+CLAUDE.md. No golden moved; no solver/model/contract/frontend-substrate change.
+
+Lesson: the AI layer was the differentiator with the slowest feedback loop — every
+founder round found DISCOVERY failures a corpus that only grades known questions is
+blind to by construction. The cure is the product's own philosophy turned on itself:
+fire hundreds of probes at machine speed, let the mechanical floor (validator,
+fabrication, dark bars, dead doors) catch what is checkable without judgment, and
+reserve human judgment for the felt bar — evidence first, judgment labeled, the founder
+the final arbiter. And an instrument that can silently score a wiped run as "answered"
+is worse than none: make the dead target fire loud, like everything else here.

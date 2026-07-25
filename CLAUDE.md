@@ -100,6 +100,97 @@ path referencing the OneDrive path is a defect to fix. Relocation confirmed: `gi
 fsck --full` clean; non-slow suite green (the one defect — an editable-install
 `.pth` still pointing at OneDrive — was repointed at `C:\dev\mre\src`).
 
+**Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.3b — the
+exam harness: evaluation at machine speed, judgment where it belongs 2026-07-24.**
+The AI layer is the product differentiator with the SLOWEST evaluation loop — solver
+changes get machine-speed verdicts (goldens, counterfactuals) while conversational
+changes waited for a founder listening session of ~a dozen questions an evening;
+three founder rounds found every seam, all DISCOVERY failures a corpus that grades
+only known questions is structurally blind to. This session builds the instrument
+that inverts the economics. **R-AI4 ruled** (verbatim, docs/04): (1) TWO AXES —
+truth is a binary FLOOR (facts correct vs the pinned document, no fabrication, hedges
+where heuristic; a miss is a defect), conversation is the graded GOAL (responsiveness,
+register fit, context carry, human surface, graceful edges); a truthful answer that
+fails conversation fails the bar. (2) ROLES — sweeps discover, Claude triages against
+the rulings, the founder's listening session is the final arbiter of the felt bar; no
+pattern ships "fantastic" on machine grading alone. (3) FLUENCY NOT ENGAGEMENT —
+invitations complete the thought (the evidence chain's next link, composed from the
+answer's own facts, proposing only what the product can answer), silence is a register.
+(4) Conversational-claim audits run against the pinned run's persisted document, never
+a re-solve (the CU7a protocol as law). Backend + tests + docs; **no solver/model/
+contract/frontend-substrate change; NO golden moved** (the sole behavior change is CU4,
+additive invitation copy on two routes). **CU1 — the runner (`src/mre/ai_exam/`,
+`python -m mre.ai_exam --run <id> --questions <f> --transcript <o>`):** fires a question
+SCRIPT through the REAL ask path (`_answer_question` — interpreter/explainer/renderer/
+validator, LLM LIVE when a key is present; nothing mocked) against a pinned run, with
+conversation state PERSISTING across the file (a question file is a conversation script;
+`SELECT`/`RESET`/`#` directives + plain question lines; a malformed directive is a parse
+FINDING, never a silent drop). Fidelity named honestly: history turns are built the way
+the cockpit builds them (order/machine from the ACTIVE board SELECT, not the answer's
+resolved subject) — enriching beyond what the panel sends would let the harness PASS
+follow-ups the shipped product fails. Plain-ASCII transcript (founder paste format:
+question, interpreted-as WITH resolution source, answer verbatim, register/renderer tags,
+validator notes, lit-bars count + cited refs). Ask-path failures captured as findings,
+never a crash (per-question timeout); a live-call counter (honest, wraps the real client,
+never a mock); `--limit`/`--timeout`/`--llm auto|on|off`. **A found trap made
+structural:** a wiped/missing run dir makes the Explainer fall to empty-vocabulary
+certificate-only mode and every entity question SILENTLY misroutes — so the runner reads
+`Vocab.healthy` and, on an empty vocabulary, fires a loud `target-unloadable` finding and
+runs NOTHING rather than emit a transcript of garbage. **CU2 — the banks
+(`tests/ai_exam/banks/`, versioned, dated headers):** `regression_founder.txt` (founder
+rounds 1–3 VERBATIM incl. typos — the gap/adjacency line, "can you list the numbers",
+"not the jo", "what about wip", the splitting hypothesis, the three swaps + solve-#5
+variants, the why-early pair, the contested pushes, the SELECT deixis — as conversation
+scripts, pilot ids adapted to glass_box, phrasing exact) + `sweep_routes.txt` (120,
+paraphrase fans per route) + `sweep_traps.txt` (62: polarity, hypothesis, wrong-entity/
+cross-type, menu follow-ups, elliptical chains, contested both ways, selection-vs-history,
+dark-bars). **210 probes, 182 sweep.** **CU3 — the rubric (`tests/ai_exam/RUBRIC.md`):**
+the truth-floor checks (T1 citation validity vs the pinned document, T2 no fabrication,
+T3 hedges) + the five conversation dimensions with graded examples from the founder's
+real transcripts (round one's truthful filing-cabinet as the truth-passes/conversation-
+fails anchor) + four output buckets (DEFECTS→corpus+errand; CONVERSATION FAILURES→triaged
+by frequency/severity; JUDGMENT CALLS→the founder, under ten/sweep; EXEMPLARS→calibration)
++ a founder-precedent log. The MECHANICAL PRE-TRIAGE is BUILT (`sidecar.py`): six checks
+(exception / empty / validator failure / interpreted-as entity absent from the pinned
+document / an evidence-shaped route citing zero records + lighting zero bars / an
+invitation offering a nonexistent route — the reverse-guard on output) that SEED triage,
+never grade conversation. **CU4 — invitation generalization (R-AI4(3)):** coaching (offer
+what the submission already declares → data-problems) and gap-between (offer the shared
+machine's schedule → machine-schedule) join late-orders/why-late/data-problems;
+swap-move NOT double-invited (the gesture is the offer); lookups silent. Invitations are
+AUTHORED PATTERNS (`ask_fallback_copy.INVITATIONS`) slot-filled from the answer's own
+facts via `invitation_line`, never LLM-improvised; every pattern's PROBE classifies to its
+documented live route (a fast reverse-guard, `tests/ai_exam/test_real_doors.py`) — no door
+into a wall. **CU5 — the first sweep + proof of the loop:** runner tests green (script
+parsing, six sidecar checks, state persistence, SELECT/RESET, target-health, real-doors);
+the first sweep ran LIVE (96 calls, 210 questions) against a pinned glass_box solve
+(snapshot snap-exam, workers 1 seed 0), transcript + sidecar committed under
+`tests/ai_exam/sweeps/2026-07-24/`. **Fixed NOTHING discovered — discovery, not repair
+(next session's errand list).** Sidecar counts: **dark-evidence 29** (order-schedule/
+start-reason/machine-schedule populate no `cited_refs` — a real dark-lit-bars seed),
+**validator 11** (LLM findings-testimony failing validation, falling back — the
+fail-closed floor working), **absent-entity 3** (the wrong-entity traps, correctly
+refused). Headline discovery (fixed nothing): "but why?" CLARIFIES rather than resolves
+when no selection carried the prior subject — the harness faithfully reproduces the
+cockpit's selection-only history, exposing a test-vs-reality gap. **CU6 riders:** (a) the
+parallel-load screenshot-flake class named as standing debt (two members — 3.1c 0-bars,
+4A.3 planner due-marker; both pass in isolation, race only under parallel harness load; a
+harness-era cleanup candidate); (b) the corpus gained the solve-#5 natural-language swap
+phrasings, PINNED as a known gap ("order 5" does not yet resolve to ORD-05 → swap route
+doesn't fire — report, not repair). **OUT OF SCOPE (named):** repairing sweep findings
+(next session); CI-asserting LLM PROSE (the exam asserts the deterministic layer +
+structural properties only — take present, no uncited numbers, validator verdict, real
+doors — never prose matching); automated conversation-quality scoring (grading is Claude's
+and the founder's, not a metric's). Runner + real-doors + CU4/CU6b specimens green;
+**Non-slow Python 1278 passed, 0 failed** (+23 fast: 14 runner + 9 real-doors);
+`test_ai_voice` slow green with the new specimens. See the
+docs/04 2026-07-24 R-AI4 + Session 4A.3b amendments and docs/07 v2.41. Lesson: the
+differentiator had the slowest feedback loop, and a corpus that grades only known
+questions is blind to discovery by construction — turn the product's own philosophy on
+itself (fire hundreds of probes at machine speed, let the mechanical floor catch what is
+checkable, reserve human judgment for the felt bar), and make a dead target fire loud, or
+the instrument silently scores a wiped run as "answered."
+
 **Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.3 — the
 action bridge: the conversation reaches the board 2026-07-24.** The founder's
 round-three listening session (solve #5 pinned) proved the register ladder works

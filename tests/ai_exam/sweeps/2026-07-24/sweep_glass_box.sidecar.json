@@ -1,0 +1,273 @@
+{
+  "target": "out-dir:gb_pinned",
+  "snapshot": "snap-exam",
+  "started_at": "2026-07-25T00:57:03Z",
+  "llm_mode": "live",
+  "questions": 210,
+  "llm_calls": 96,
+  "finding_counts": {
+    "dark-evidence": 29,
+    "validator": 11,
+    "absent-entity": 3
+  },
+  "findings": [
+    {
+      "kind": "dark-evidence",
+      "lineno": 36,
+      "question": "whats the end time of this order",
+      "detail": "route 'order-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 58,
+      "question": "why is ORD-13 starting so early? it's not due until next week",
+      "detail": "route 'start-reason' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 60,
+      "question": "why can't ORD-05 start sooner",
+      "detail": "route 'start-reason' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "validator",
+      "lineno": 78,
+      "question": "what's wrong with the submission",
+      "detail": "LLM testimony failed validation; fell back to template"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 105,
+      "question": "how come ORD-05 missed its due date",
+      "detail": "route 'order-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 107,
+      "question": "whats holding up ORD-05",
+      "detail": "route 'order-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 109,
+      "question": "reason ORD-05 is behind",
+      "detail": "route 'order-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 133,
+      "question": "what does PAINT-01 have queued",
+      "detail": "route 'machine-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 134,
+      "question": "whats on HEAT-01",
+      "detail": "route 'machine-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 135,
+      "question": "list the jobs on PRESS-FAST",
+      "detail": "route 'machine-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 141,
+      "question": "what's the timeline for ORD-03",
+      "detail": "route 'order-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 144,
+      "question": "what time does ORD-11 finish",
+      "detail": "route 'order-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 145,
+      "question": "whens ord-13 done",
+      "detail": "route 'order-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "validator",
+      "lineno": 157,
+      "question": "what data problems exist",
+      "detail": "LLM testimony failed validation; fell back to template"
+    },
+    {
+      "kind": "validator",
+      "lineno": 158,
+      "question": "are there any data quality issues",
+      "detail": "LLM testimony failed validation; fell back to template"
+    },
+    {
+      "kind": "validator",
+      "lineno": 159,
+      "question": "what's wrong with the input data",
+      "detail": "LLM testimony failed validation; fell back to template"
+    },
+    {
+      "kind": "validator",
+      "lineno": 160,
+      "question": "show me the data findings",
+      "detail": "LLM testimony failed validation; fell back to template"
+    },
+    {
+      "kind": "validator",
+      "lineno": 161,
+      "question": "any problems with the submission data",
+      "detail": "LLM testimony failed validation; fell back to template"
+    },
+    {
+      "kind": "validator",
+      "lineno": 162,
+      "question": "whats wrong with the data",
+      "detail": "LLM testimony failed validation; fell back to template"
+    },
+    {
+      "kind": "validator",
+      "lineno": 176,
+      "question": "what's the fix for these findings",
+      "detail": "LLM testimony failed validation; fell back to template"
+    },
+    {
+      "kind": "validator",
+      "lineno": 181,
+      "question": "what's wrong with the submission",
+      "detail": "LLM testimony failed validation; fell back to template"
+    },
+    {
+      "kind": "validator",
+      "lineno": 184,
+      "question": "tell me about the certificate",
+      "detail": "LLM testimony failed validation; fell back to template"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 200,
+      "question": "what's the priority of ORD-04",
+      "detail": "route 'order-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 214,
+      "question": "is CUT-01 overbooked",
+      "detail": "route 'machine-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 219,
+      "question": "why does ORD-13 start when it does",
+      "detail": "route 'start-reason' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 220,
+      "question": "why does ORD-05 begin at that time",
+      "detail": "route 'start-reason' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 221,
+      "question": "what determines when ORD-03 starts",
+      "detail": "route 'order-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 222,
+      "question": "why is ORD-13 starting so early",
+      "detail": "route 'start-reason' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 223,
+      "question": "why can't ORD-05 start earlier",
+      "detail": "route 'start-reason' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 246,
+      "question": "whats between ORD-09 and ORD-12",
+      "detail": "route 'order-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 313,
+      "question": "why is ORD-13 starting so early",
+      "detail": "route 'start-reason' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 314,
+      "question": "why has ORD-13 already started, it's not due for a week",
+      "detail": "route 'start-reason' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 315,
+      "question": "why can't ORD-05 start sooner",
+      "detail": "route 'start-reason' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 316,
+      "question": "why can't ORD-05 start earlier",
+      "detail": "route 'start-reason' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "absent-entity",
+      "lineno": 334,
+      "question": "why is ORD-99 late",
+      "detail": "interpreted-as names 'ORD-99', absent from the pinned document"
+    },
+    {
+      "kind": "absent-entity",
+      "lineno": 335,
+      "question": "when does ORD-88 finish",
+      "detail": "interpreted-as names 'ORD-88', absent from the pinned document"
+    },
+    {
+      "kind": "absent-entity",
+      "lineno": 337,
+      "question": "why is ORD-000038 late",
+      "detail": "interpreted-as names 'ORD-000038', absent from the pinned document"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 345,
+      "question": "why is ORD-13 idle",
+      "detail": "route 'order-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 362,
+      "question": "what's the end time of this order",
+      "detail": "route 'order-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 387,
+      "question": "ORD-05 is fine, right",
+      "detail": "route 'order-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 389,
+      "question": "ORD-13 missed its date, didn't it",
+      "detail": "route 'order-schedule' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "validator",
+      "lineno": 397,
+      "question": "which orders have data problems",
+      "detail": "LLM testimony failed validation; fell back to template"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 406,
+      "question": "why does ORD-13 start when it does",
+      "detail": "route 'start-reason' cited 0 records and lit 0 bars"
+    }
+  ]
+}

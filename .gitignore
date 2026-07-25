@@ -25,3 +25,5 @@ datasets/**/gate_output/
 deploy/azure/.env
 deploy/.smoke_*/
 *_baseline.json
+# Session 4A.3b — exam-harness scratch (pinned runs, logs); sweeps/ IS committed
+_ai_exam_scratch/

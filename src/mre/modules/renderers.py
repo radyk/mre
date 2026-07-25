@@ -701,6 +701,15 @@ class TemplateRenderer:
                 lines.append("")
                 lines.append(f"To enable it: {how}. See the incoming-data spec "
                              f"{kf.get('ids_ref')}.")
+                # CU4 (R-AI4(3)) — the register ladder's invitation: the obvious
+                # next question after "how do I enable X" is what the submission
+                # already declares (a live door: data-problems). Silent on the
+                # unknown-concept menu (that answer is itself a menu, not complete).
+                from mre.modules.ask_fallback_copy import invitation_line
+                inv = invitation_line("coaching")
+                if inv:
+                    lines.append("")
+                    lines.append(inv)
             else:
                 coachable = kf.get("coachable") or []
                 lines.append(
@@ -824,6 +833,17 @@ class TemplateRenderer:
                          "have. Post-R-SC3 the schedule doesn't leave cost-equal slack, "
                          "so a gap with no visible gate is worth flagging — drag one "
                          "bar into it and the sandbox will say if the move is feasible.")
+        # CU4 (R-AI4(3)) — where a real gap was explained on a known machine, the
+        # neighboring context is the rest of that machine's schedule (a live door:
+        # machine-schedule). Silent on 'adjacent' (no gap — the thought is complete)
+        # and 'no_shared_machine' (no machine to schedule).
+        if m and cause in ("occupied", "closure", "off_shift", "release",
+                           "upstream", "unexplained"):
+            from mre.modules.ask_fallback_copy import invitation_line
+            inv = invitation_line("gap-between", machine=m)
+            if inv:
+                lines.append("")
+                lines.append(inv)
         lines.append("")
 
     def _render_machine_idle(self, lines: list[str], bundle: ExplanationBundle) -> None:

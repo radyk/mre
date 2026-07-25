@@ -1,0 +1,125 @@
+# AI EXAM BANK — traps
+# generated: 2026-07-24  (Session 4A.3b, CU2b)
+# taxonomy : Session 4A.3 route set (docs/07 v2.40)
+# world    : glass_box
+#
+# The failure shapes the founder exams found the hard way, generalized: polarity
+# traps, hypothesis-statements, wrong-entity / cross-type probes, ordinal + named
+# menu follow-ups, elliptical chains, contested-fact both directions, selection-vs-
+# history conflicts, and probes that would catch a dark lit-bars channel. RESET
+# separates independent conversations; within a conversation the sequence matters.
+
+# --- polarity traps: why-early vs why-not-sooner must never collide --------------
+why is ORD-13 starting so early
+why has ORD-13 already started, it's not due for a week
+why can't ORD-05 start sooner
+why can't ORD-05 start earlier
+why is ORD-05 so late but ORD-13 so early
+RESET
+
+# --- hypothesis-statements (coach/advise by content shape, never a status recital) -
+maybe if splitting were allowed fewer orders would be late
+overtime would probably help
+i bet more machines would fix this
+what if we just worked weekends
+splitting might reduce the lateness
+RESET
+
+# --- ellipsis follow-up that is NOT a hypothesis (must not misfire) ---------------
+why is ORD-05 late
+and what would fix it
+RESET
+
+# --- wrong-entity / absent ids (must refuse honestly, never answer globally) ------
+why is ORD-99 late
+when does ORD-88 finish
+what's running on GRINDER-01
+why is ORD-000038 late
+is ZZZ-1 in this schedule
+RESET
+
+# --- cross-type probes (an order name where a machine is asked, and vice versa) ---
+what's running on ORD-05
+why is CUT-01 late
+when does CUT-01 finish
+why is ORD-13 idle
+RESET
+
+# --- coaching menu: named follow-up resolves, ordinal clarifies -------------------
+how do I configure the plant
+what about wip
+RESET
+how do I configure the plant
+the second one
+RESET
+tell me what I can coach
+overtime
+RESET
+
+# --- elliptical chains carried by a live selection --------------------------------
+SELECT order=ORD-05 machine=CUT-01
+why is this order late
+what's the end time of this order
+why is it on that machine
+RESET
+
+# --- selection-vs-history conflict (the live selection must win) ------------------
+why is ORD-13 late
+SELECT order=ORD-05 machine=CUT-01
+why is this order late
+RESET
+
+# --- deixis with NO selection (must clarify, never guess) -------------------------
+why is this order late
+what's the end time of this order
+RESET
+
+# --- corrections re-answer the prior question with the corrected referent ---------
+why is ORD-04 late
+no I meant ORD-05
+RESET
+what's running on CUT-01
+i was asking about PAINT-01 not CUT-01
+RESET
+
+# --- contested fact both directions (hold warmly when wrong; yield when right) ----
+isn't ORD-05 on time
+ORD-05 is fine, right
+isn't ORD-13 late
+ORD-13 missed its date, didn't it
+RESET
+
+# --- list-expansion / set-reference chains ---------------------------------------
+how many orders are late
+list them
+the numbers please
+RESET
+which orders have data problems
+how many of those are critical
+RESET
+
+# --- dark lit-bars probes: evidence-shaped routes that MUST light bars -------------
+why is ORD-05 late
+why is ORD-05 on CUT-01
+when does ORD-05 start and finish
+what's running on CUT-01
+why does ORD-13 start when it does
+RESET
+
+# --- optimality / unsupported (must refuse, never a schedule dump) ----------------
+is there a better schedule
+can you make it cheaper
+what's the optimal plan
+find me a faster schedule
+RESET
+
+# --- frustration / meta-commentary (never echo the complaint back) ----------------
+this is not helpful
+that's wrong, try again
+come on, just tell me
+RESET
+
+# --- rolling-shape probes on a monolithic run (must degrade honestly) -------------
+what's beyond the horizon
+why isn't ORD-05 scheduled yet
+what's frozen

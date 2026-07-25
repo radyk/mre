@@ -1,0 +1,205 @@
+# AI EXAM BANK — route paraphrase fans
+# generated: 2026-07-24  (Session 4A.3b, CU2b)
+# taxonomy : Session 4A.3 route set (docs/07 v2.40)
+# world    : glass_box
+#
+# 6-10 phrasings per route family, planner language, mixing clean and sloppy /
+# typo'd register. Each group probes ONE route; RESET between groups so a fan does
+# not accumulate cross-route state. Regenerating this bank is a reviewed change.
+
+# --- late-order ------------------------------------------------------------------
+why is ORD-05 late
+what's making ORD-05 late
+how come ORD-05 missed its due date
+ORD-05 is late, why
+whats holding up ORD-05
+why did ORD-05 finish late
+reason ORD-05 is behind
+whyy is ord-05 so late
+RESET
+
+# --- late-orders -----------------------------------------------------------------
+which orders are late
+are there any late orders
+show me everything that's late
+what's running late
+any orders behind schedule
+list the late ones
+RESET
+
+# --- why-on-machine --------------------------------------------------------------
+why is ORD-05 on CUT-01
+how come ORD-05 landed on CUT-01
+why did you put ORD-05 on CUT-01
+what made ORD-05 run on CUT-01
+why ORD-04 on CUT-01
+RESET
+
+# --- machine-schedule ------------------------------------------------------------
+what's running on CUT-01
+show CUT-01's schedule
+what does PAINT-01 have queued
+whats on HEAT-01
+list the jobs on PRESS-FAST
+what's next on CUT-01
+RESET
+
+# --- order-schedule --------------------------------------------------------------
+when does ORD-13 start and finish
+what's the timeline for ORD-03
+when will ORD-05 be done
+show ORD-09's schedule
+what time does ORD-11 finish
+whens ord-13 done
+RESET
+
+# --- downtime --------------------------------------------------------------------
+how much downtime does PAINT-01 have
+what closures are on CUT-01
+show HEAT-01's downtime
+when is PRESS-FAST closed
+any downtime on CUT-01
+RESET
+
+# --- data-problems ---------------------------------------------------------------
+what data problems exist
+are there any data quality issues
+what's wrong with the input data
+show me the data findings
+any problems with the submission data
+whats wrong with the data
+RESET
+
+# --- triage ----------------------------------------------------------------------
+what should I fix first
+where do I start fixing
+what's the most important thing to fix
+prioritize the fixes for me
+whats first on the fix list
+RESET
+
+# --- remediation -----------------------------------------------------------------
+how do I fix the submission's problems
+how do I resolve the data issues
+what's the fix for these findings
+how do I clean up the submission
+RESET
+
+# --- certificate-testimony -------------------------------------------------------
+what's wrong with the submission
+is the submission ok
+what did the gate find
+tell me about the certificate
+RESET
+
+# --- excluded-orders -------------------------------------------------------------
+which orders were excluded from the plan
+did any orders get dropped
+what got left out of the schedule
+were any orders excluded
+RESET
+
+# --- order-attributes ------------------------------------------------------------
+what product is ORD-01
+what are the details of ORD-05
+who is the customer for ORD-13
+how many units is ORD-03
+when is ORD-11 due
+what's the priority of ORD-04
+RESET
+
+# --- inventory -------------------------------------------------------------------
+how many orders are in the plan
+how many operations are scheduled
+how many jobs total
+what's the size of this schedule
+count the orders
+RESET
+
+# --- integrity-check -------------------------------------------------------------
+is anything double-booked
+are there any conflicts
+is CUT-01 overbooked
+did any machine get two jobs at once
+RESET
+
+# --- start-reason ----------------------------------------------------------------
+why does ORD-13 start when it does
+why does ORD-05 begin at that time
+what determines when ORD-03 starts
+why is ORD-13 starting so early
+why can't ORD-05 start earlier
+RESET
+
+# --- briefing --------------------------------------------------------------------
+what should I worry about today
+give me the morning briefing
+what needs my attention
+anything I should be concerned about
+whats the status today
+RESET
+
+# --- swap-move -------------------------------------------------------------------
+why not just swap ORD-04 and ORD-05
+can we swap ORD-05 and ORD-04
+what if we move ORD-05 earlier
+move ORD-05 ahead of ORD-04
+why not put ORD-05 first
+RESET
+
+# --- gap-between -----------------------------------------------------------------
+why is there a gap between ORD-09 and ORD-12
+what's the gap between ORD-09 and ORD-12 about
+why the space between ORD-09 and ORD-12 on PAINT-01
+whats between ORD-09 and ORD-12
+RESET
+
+# --- machine-idle ----------------------------------------------------------------
+why is HEAT-01 idle
+why does HEAT-01 have no work
+why is CUT-01 sitting empty
+how come PAINT-01 isn't busy
+RESET
+
+# --- advice ----------------------------------------------------------------------
+what should I do about the late orders
+how do I make fewer orders late
+what can I do to improve the schedule
+help me reduce lateness
+RESET
+
+# --- coaching --------------------------------------------------------------------
+i want orders to span downtime, how
+does MRE support alternate machines
+how do I enable overtime
+can I set setup families
+i want to use customer priorities, how
+RESET
+
+# --- solve-time ------------------------------------------------------------------
+how long did the solve take
+how much time did this take to solve
+solve duration
+RESET
+
+# --- machine-count ---------------------------------------------------------------
+how many machines are there
+how many resources in the plan
+count the machines
+RESET
+
+# --- maintenance -----------------------------------------------------------------
+is any maintenance scheduled
+are there any planned maintenance windows
+when is maintenance
+RESET
+
+# --- customer-schedule -----------------------------------------------------------
+show the schedule for customer Acme
+what's scheduled for customer Beta
+RESET
+
+# --- contested-fact --------------------------------------------------------------
+isn't ORD-05 on time
+ORD-05 isn't actually late, right
+I thought ORD-05 was fine

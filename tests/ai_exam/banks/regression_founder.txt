@@ -1,0 +1,89 @@
+# AI EXAM BANK — founder regression scripts
+# generated: 2026-07-24  (Session 4A.3b, CU2a)
+# taxonomy : Session 4A.3 route set (docs/07 v2.40)
+# world    : glass_box (orders ORD-01..15; machines CUT-01, PRESS-FAST,
+#            PRESS-SLOW, PAINT-01, HEAT-01; ORD-05 late +890 held by ORD-04 on
+#            CUT-01; ORD-13 the early control; ORD-03 splittable; ORD-09 RED /
+#            ORD-12 BLUE on PAINT-01)
+#
+# Every founder-exam finding from rounds one through three, VERBATIM including
+# typos. The SEQUENCE is the test — these are conversation scripts, RESET between
+# conversations. Pilot ids the glass_box world lacks (ord-000038, order 23, ...)
+# are adapted to real ids; PHRASING is preserved exactly. A finding that reopens
+# here is a regression.
+
+# --- Round 3: the gap/adjacency question (verbatim typo; pilot ids adapted) -----
+why os ORD-09 not running right after ORD-12 instead of a gap between
+RESET
+
+# --- Round 3: list-expansion off a count -----------------------------------------
+how many orders are late
+can you list the numbers
+RESET
+
+# --- Round 3: correction on a cross-type referent (verbatim "not the jo") ---------
+why is ORD-05 on CUT-01
+i was asking about the machine not the jo
+RESET
+
+# --- Round 3: the coaching-menu follow-up (verbatim) -----------------------------
+i want to change something about how the plant runs, how
+what about wip. what do you mean
+RESET
+
+# --- Round 3: selection deixis (verbatim question + a live board selection) -------
+SELECT order=ORD-05 machine=CUT-01
+whats the end time of this order
+RESET
+
+# --- Round 3: the swap phrasings, three ways + the solve-#5 variants (adapted) ----
+why not just swap ORD-04 and ORD-05
+can we swap order 4 and order 5
+what if we swapped ORD-05 with ORD-04
+why not just swap order 5 and order 4
+RESET
+
+# --- Round 2b: the "but why?" rewrite-confidence guard ---------------------------
+why is ORD-05 late
+but why?
+RESET
+
+# --- Round 2b: contested fact, the sycophancy guard (both directions) ------------
+isn't ORD-05 on time?
+RESET
+is ORD-13 actually late?
+RESET
+
+# --- Round 2b / R-AI3: start-reason polarity (the why-early / why-not-sooner pair) -
+why is ORD-13 starting so early? it's not due until next week
+RESET
+why can't ORD-05 start sooner
+RESET
+
+# --- Round 2b / R-AI3: the hypothesis-content guard (verbatim) --------------------
+maybe if splitting is allowed less orders would be late
+RESET
+overtime would probably help with the late ones
+RESET
+
+# --- Round 2: the blocked-by chain names the culprit -----------------------------
+why is ORD-05 late
+RESET
+
+# --- Round 3: machine-idle ------------------------------------------------------
+why is HEAT-01 idle
+RESET
+
+# --- Round 1: the filing-cabinet close (register coherence + fix-first) ----------
+what's wrong with the submission
+what should i fix first
+RESET
+
+# --- Round 2b: fuzzy entity tolerance (near-miss id spellings) --------------------
+why is ord-o5 late
+why is ORD-5 late
+RESET
+
+# --- Round 2b: verification of a prior claim (must clarify, never confirm) --------
+which orders are late
+is that correct

@@ -1,6 +1,37 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.40 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.41 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.41:** **AI-track Session 4A.3b — the exam harness: evaluation at machine speed,
+judgment where it belongs** 2026-07-24 (R-AI4 + docs/04 amendment). The AI layer was the
+differentiator with the SLOWEST evaluation loop — solver changes get machine-speed
+verdicts, conversational changes waited for a founder listening session of ~a dozen
+questions an evening; three founder rounds found every seam, all DISCOVERY failures the
+corpus is structurally blind to. **R-AI4 ruled** (verbatim, docs/04): two axes with
+different semantics (truth is a binary floor; conversation is the graded goal); roles
+(sweeps discover, Claude triages, the founder is final arbiter); fluency not engagement
+(invitations complete the thought, silence is a register); audits run against the pinned
+document, never a re-solve. Backend + tests + docs; **no solver/model/contract/frontend
+change; no golden moved** (the one behavior change is CU4, additive invitation copy).
+**CU1 — the runner** (`python -m mre.ai_exam`): fires a question SCRIPT through the REAL
+ask path (interpreter/explainer/renderer/validator, LLM LIVE) against a pinned run, state
+persisting across the file (SELECT/RESET directives); plain-ASCII transcript + a
+mechanical findings sidecar; a `target-unloadable` guard fires loud on a wiped run rather
+than emit garbage. **CU2 — the banks** (`tests/ai_exam/banks/`): founder rounds 1–3
+verbatim (with typos) + paraphrase fans + trap probes — **210 probes, 182 sweep**.
+**CU3 — the rubric** (`RUBRIC.md`): truth-floor checks + five conversation dimensions +
+four output buckets (DEFECTS / CONVERSATION FAILURES / JUDGMENT CALLS / EXEMPLARS) + the
+built mechanical pre-triage. **CU4 — invitation generalization** (R-AI4(3)): coaching +
+gap-between join the invited routes, contextually composed, each opening a live route (a
+fast real-doors reverse-guard proves it). **CU5 — the first sweep** ran live (96 calls,
+210 questions) against a pinned glass_box solve, transcript + sidecar committed under
+`tests/ai_exam/sweeps/2026-07-24/`; discovery only — fixed nothing. Sidecar counts:
+dark-evidence 29, validator 11, absent-entity 3 (all legitimate seeds). **CU6 riders:**
+the parallel-load screenshot-flake class named as standing debt; the corpus gained the
+solve-#5 natural-language swap phrasings (pinned as a known gap — "order 5" does not yet
+resolve to ORD-05). Runner tests + real-doors + CU4 specimens green; non-slow Python
+green; `test_ai_voice` slow green. See the docs/04 2026-07-24 R-AI4 + Session 4A.3b
+amendments.
 
 **v2.40:** **AI-track Session 4A.3 — the action bridge: the conversation reaches the
 board** 2026-07-24 (docs/04 amendment + the CU7a resolving amendment). The founder's

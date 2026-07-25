@@ -100,6 +100,82 @@ INVITE_LATE_ORDERS = ('Want the cause chain for the worst one? Ask '
 INVITE_WHY_LATE = ('Want to see what else queues behind {machine}? Ask '
                    '"what\'s running on {machine}?"')
 INVITE_DATA_PROBLEMS = 'Want the fix-first ordering? Ask "what should I fix first?"'
+# Session 4A.3b CU4 — invitation coverage extended to two more route families with
+# a natural next link. Coaching (you named a capability; the obvious next question
+# is what the submission already declares) and gap-between (you asked about a gap on
+# a machine; the rest of that machine's schedule is the neighboring context). Both
+# open a REAL door (data-problems / machine-schedule), asserted by the reverse-guard.
+INVITE_COACHING = ('Want to check what the submission already declares? Ask '
+                   '"what data problems exist?"')
+INVITE_GAP = ('Want the rest of {machine}\'s schedule? Ask '
+              '"what\'s running on {machine}?"')
+
+
+# ---------------------------------------------------------------------------
+# The invitation registry (Session 4A.3b, CU4 / R-AI4(3)). Invitations are
+# AUTHORED PATTERNS per route family, slots filled from the answer's own
+# pre-computed facts — never LLM-improvised, never static-generic where a
+# contextual fact exists. Every pattern's PROBE (the proposed follow-up in
+# isolation) maps to a live route (``expect_route``); a fast reverse-guard test
+# (``tests/ai_exam/test_real_doors.py``) asserts each one classifies there, so no
+# invitation offers a door into a wall (R-AI4(3)(c)). FLUENCY, NOT ENGAGEMENT: each
+# offer is the evidence chain's next link, and lookups carry NONE (silence is the
+# correct register when the thought is complete).
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class Invitation:
+    key: str                    # the route family this invitation belongs to
+    pattern: str                # the full authored line, with {slot} holes
+    probe: str                  # the proposed follow-up alone (same slots)
+    slots: tuple                # required fact slots; missing one -> no invitation
+    expect_route: str           # the live route the probe opens (the guard checks)
+
+
+INVITATIONS: dict = {
+    "late-orders": Invitation(
+        "late-orders", INVITE_LATE_ORDERS,
+        "why is {order} late?", ("order",), "late-order"),
+    "why-late": Invitation(
+        "why-late", INVITE_WHY_LATE,
+        "what's running on {machine}?", ("machine",), "schedule"),
+    "data-problems": Invitation(
+        "data-problems", INVITE_DATA_PROBLEMS,
+        "what should I fix first?", (), "triage"),
+    "coaching": Invitation(
+        "coaching", INVITE_COACHING,
+        "what data problems exist?", (), "data-problems"),
+    "gap-between": Invitation(
+        "gap-between", INVITE_GAP,
+        "what's running on {machine}?", ("machine",), "schedule"),
+}
+
+
+def invitation_line(key: str, **facts) -> "str | None":
+    """The authored invitation line for a route family, slots filled from facts —
+    or None when a required contextual fact is missing (never a half-filled offer).
+    This is the single seam a renderer calls; it never composes prose of its own."""
+    inv = INVITATIONS.get(key)
+    if inv is None:
+        return None
+    if any(not facts.get(s) for s in inv.slots):
+        return None
+    try:
+        return inv.pattern.format(**{s: facts[s] for s in inv.slots})
+    except (KeyError, IndexError):
+        return None
+
+
+def invitation_probe(key: str, **facts) -> "str | None":
+    """The proposed follow-up question (the door), for the reverse-guard test."""
+    inv = INVITATIONS.get(key)
+    if inv is None or any(not facts.get(s) for s in inv.slots):
+        return None
+    try:
+        return inv.probe.format(**{s: facts[s] for s in inv.slots})
+    except (KeyError, IndexError):
+        return None
 
 
 # CU2 (Session 4B.4) — a clarify/near-miss/refusal lead echoes the user's question

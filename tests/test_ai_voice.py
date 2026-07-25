@@ -206,6 +206,17 @@ class TestSwapMoveClassify:
         rid, _ = clean.classify("can we move it to a different machine")
         assert rid != "swap-move"
 
+    def test_solve5_natural_language_order_numbers_are_a_known_gap(self, clean):
+        # Session 4A.3b CU6b — the founder's live solve-#5 phrasing used
+        # natural-language order numbers ("why not just swap order 15 and order
+        # 23"), world-adapted here to "order 5 and order 4". These do NOT yet
+        # resolve to the canonical ORD-0N refs, so the swap route does not fire —
+        # a discovery from the first exam sweep, PINNED as a known gap (report, not
+        # repair: R-AI4 discovery discipline). A future fix that teaches "order N"
+        # -> ORD-0N flips this assertion visibly.
+        rid, _ = clean.classify("why not just swap order 5 and order 4")
+        assert rid != "swap-move"   # KNOWN GAP: natural-language order numbers unresolved
+
 
 class TestHypothesisAndPolarity:
     """CU5 (hypothesis content) + CU3 (start-reason polarity) — pure logic."""
@@ -1121,3 +1132,25 @@ def test_cu10_zero_confident_wrong(clean, sabotaged, earliness_forcing):
             wrong.append((q, a.split("[rendered by")[0].strip()[:200]))
     assert not wrong, "confident-wrong answers:\n" + "\n".join(
         f"  {q!r} -> {a}" for q, a in wrong)
+
+
+@pytest.mark.slow
+class TestSession4A3bInvitations:
+    """Session 4A.3b CU4 — invitation coverage extended to coaching + gap-between,
+    contextually composed, each opening a REAL door (R-AI4(3))."""
+
+    def test_coaching_invites_what_the_submission_declares(self, clean):
+        a = _answer(clean, "i want orders to span downtime. how can this be done")
+        assert "what data problems exist" in a          # a live door (data-problems)
+        assert "Want " in a
+
+    def test_gap_invites_the_shared_machine_schedule(self, clean):
+        a = _answer(clean, "why is there a gap between ORD-09 and ORD-12")
+        # names the shared machine and offers its schedule (a live door)
+        assert "Want the rest of" in a and "running on" in a
+
+    def test_swap_does_not_double_invite(self, clean):
+        # The swap/move gesture bridge IS the offer; it must not also carry a
+        # separate "Want …? Ask …" invitation (silence discipline).
+        a = _answer(clean, "why not just swap ORD-04 and ORD-05")
+        assert "Want the rest of" not in a and "what data problems exist" not in a

@@ -1,165 +1,176 @@
-SESSION 4A.3 CLOSE-OUT
-The action bridge: the conversation reaches the board
+SESSION 4A.3b CLOSE-OUT
+The exam harness: evaluation at machine speed, judgment where it belongs
 2026-07-24
 
 Deterministic settings for all solver work: PYTHONHASHSEED=0, --solver-workers 1,
---solver-seed 42/0.
+--solver-seed 0 (the glass_box pinned world uses seed 0, matching test_ai_voice).
 
 ======================================================================
 SUMMARY
 ======================================================================
-The founder's round-three listening session (2026-07-24, run pinned: solve #5)
-proved the register ladder works where wired and found the remaining wall: the
-conversation could DESCRIBE the board and never REACH it. This session builds the
-bridge.
+The AI layer is the product differentiator and the bar is "fantastic" -- yet it had
+the slowest evaluation loop in the system. Solver changes get machine-speed verdicts
+(goldens, counterfactuals); conversational changes waited for a founder listening
+session of ~a dozen questions an evening. Three founder rounds found every major seam,
+all DISCOVERY failures a corpus that grades only questions someone already added is
+structurally blind to. This session builds the instrument that inverts the economics:
+automated sweeps discover at scale, Claude triages transcripts against the rulings, the
+founder judges the felt bar from a short triaged list.
 
-Backend (explainer + interpreter + renderers + capabilities + ask copy) + a small
-cockpit tooltip + surfacing the already-sent selection channel. No solver/model/
-contract/frontend-substrate change. NO golden moved (no changed source file touches
-a solve path; the full non-slow suite is green including the solver golden guards).
-
-Result: non-slow Python 1255 passed, 0 failed (+6 fast). Slow test_ai_voice green
-with the new specimens (the whole file: 106 passed with --runslow). Cockpit planner
-tooltip spec: 16 passed (light + dark). The full cockpit JS suite result is recorded
-below.
-
-======================================================================
-PART 0 - CU7a RESOLVING AMENDMENT (docs/04, first)
-======================================================================
-CLAIMED: overturn the 4A.3-pre "fabrication" verdict on the ORD-000019 ->
-  ORD-000015 blocked-by claim (confirmed TRUE on the live board, solve #5); record
-  the standing protocol that audits run against the pinned run's persisted document.
-PROVEN: docs/04 amendment written and appended FIRST, before the session amendment.
-  The verdict is overturned with the mechanism named (CP-SAT non-reproducibility bit
-  the AUDIT, which re-solved a different world); _blocked_by is exonerated and NOT
-  modified this session (verified: no edit to _blocked_by). Standing protocol
-  recorded.
-UNDERDELIVERED: none.
+Backend + tests + docs. NO solver/model/contract/frontend-substrate change. NO golden
+moved. The one behavioral change to shipped answers is CU4 (invitation coverage) --
+additive authored copy on two more route families, each opening a live route.
 
 ======================================================================
 PER-CU: CLAIMED vs PROVEN
 ======================================================================
 
-CU1 - the swap/move bridge (the flagship)
-  CLAIMED: a swap/move intent routes to a new route answering the R-AI3 ladder
-    (testimony + take + bridge to the real board gesture); the panel proposes, the
-    human drags; never a status recital.
-  PROVEN: new swap-move route (classify _swap_move_kind + _find_order_refs;
-    assembler _explain_swap_move + _swap_take_and_bridge; renderer _render_swap_move,
-    header-only + authored-copy so the LLM renders it verbatim). Corpus specimen
-    (slow, against the clean glass_box solve): "why not just swap ORD-04 and ORD-05"
-    -> swap-move; names both orders + the 890-min lateness (testimony), "My take:"
-    (grounded take), CUT-01 + "sandbox" (the gesture), asserts NOT a status recital
-    and the honest "can't drag bars / you make the gesture" jurisdiction line. A move
-    specimen ("move ORD-05 earlier") also bridges. Classify units (slow) pin the
-    swap/move routing and that a bare "it" (no order) never becomes swap-move.
-  UNDERDELIVERED: the cited_refs lit-bars highlight rides the existing channel (the
-    orders' assignment Decisions are carried as ordered_records) but is not asserted
-    by a cockpit test this session - it reuses the proven 3.1 CU4 mechanism.
+PART 1 -- R-AI4 transcribed verbatim into docs/04 (append-only).
+  CLAIMED: the four clauses (two axes; roles; fluency not engagement; audits against
+           the pinned document, never a re-solve).
+  PROVEN : appended verbatim to the docs/04 Amendment log, followed by the Session
+           4A.3b amendment. docs/04 grew, was not truncated.
 
-CU2 - the absence-explaining pair (gap-between + machine-idle)
-  CLAIMED: gap-between resolves the gap on the shared machine and names its cause
-    (occupancy / closure / off-shift / upstream / else honestly unexplained, never
-    vouched); machine-idle gives eligibility + where the work went.
-  PROVEN: gap-between (_gap_cause + _closure_in_window + _machine_working_windows
-    base-pattern fallback + off-shift detection) and machine-idle
-    (_explain_machine_idle) built and rendered. Corpus specimens (slow): the
-    ORD-09/ORD-02 gap names the UPSTREAM hand-off (ORD-02's cut step) on PAINT-01;
-    the ORD-04/ORD-05 gap names OFF-SHIFT; machine-idle on a USED machine (CUT-01)
-    says "isn't idle" + "carries" and asserts NO order name (never the wrong noun).
-    Probed live against the real solve to confirm every branch fires correctly.
-  UNDERDELIVERED: machine-idle on a GENUINELY-idle machine does not enumerate the
-    ops that COULD run there (no eligible-set read on the monolithic path) - it
-    scopes honestly and grounds in the manned-idle Metric where present. Named debt.
+CU1 -- the runner (src/mre/ai_exam/).
+  CLAIMED: python -m mre.ai_exam fires a question script through the REAL ask path,
+           state persisting across the file; SELECT/RESET/comment directives; a
+           plain-ASCII transcript + a mechanical findings sidecar; failures captured
+           not crashed; --limit + per-question timeout + a live-call count.
+  PROVEN : built as script.py (parser), runner.py (ExamRunner + RunTarget + the
+           per-question ThreadPoolExecutor timeout + a live-call counter that wraps
+           the real anthropic client -- honest, never a mock), sidecar.py (six
+           mechanical checks), report.py (transcript + sidecar), __main__.py (CLI:
+           --run <id> via the Registry, or --out-dir for CI). Proven by
+           tests/ai_exam/test_runner.py (14 fast + 5 slow end-to-end) and by the first
+           sweep running 210 questions live. FIDELITY NAMED: history turns are built
+           the way the cockpit builds them (order/machine from the ACTIVE board SELECT,
+           not the answer's resolved subject) -- the honest choice; enriching beyond
+           what the panel sends would let the harness pass follow-ups the shipped
+           product fails.
+  FOUND + FIXED (the instrument, per CU5's exception): a wiped/missing run dir makes
+           the Explainer fall to empty-vocabulary certificate-only mode and every
+           entity question silently misroutes. The runner now reads Vocab.healthy and
+           fires a loud `target-unloadable` finding, running NOTHING, rather than emit
+           a transcript of garbage. Discovered mid-build (the scratchpad temp dir was
+           volatile between shell calls) -- exactly the silent-degradation trap the
+           codebase fights; a slow test pins it.
 
-CU3 - selection context reaches the interpreter
-  CLAIMED: the board selection reaches the interpreter; a demonstrative deictic binds
-    SELECTION-FIRST, then recency, then clarify; the interpreted line shows the
-    source; the founder's exact failure resolves.
-  PROVEN: the /ask payload already carried the selection (verified in api.js /
-    app.py); the fix is priority. _demonstrative_deictic + _typed_subject_with_source
-    (selection-first, returns source) resolve BEFORE the router short-circuit. Fast
-    units: selection beats history; falls back to history without selection; the
-    definite article is excluded. Corpus (slow): ORD-13 SELECTED + ORD-05 in stale
-    history + "whats the end time of this order" -> binds ORD-13, "board selection"
-    in the resolution note, ORD-05 absent; "why is this order late" with a selection
-    answers late-order for THAT order; with no referent it clarifies. Cockpit: the
-    ask-panel "interpreted as" line shows "[from board selection]".
-  UNDERDELIVERED: none. (Frontend needed no new payload - the selection was already
-    sent; only the priority fix and the visible source were added.)
+CU2 -- the banks (tests/ai_exam/banks/, versioned, dated headers).
+  CLAIMED: founder rounds 1-3 verbatim (incl. typos) as conversation scripts +
+           paraphrase fans + trap probes; hundreds of probes.
+  PROVEN : regression_founder.txt (28 questions, the founder findings verbatim; pilot
+           ids adapted to glass_box, phrasing exact), sweep_routes.txt (120),
+           sweep_traps.txt (62). 210 probes total, 182 sweep (> the 150 floor). All
+           parse clean (0 parse errors).
 
-CU4 - coaching-registry fixes
-  CLAIMED: (a) bare concept names / trivial variants match, with a reverse-guard that
-    every menu concept resolves by its own name; (b) an overtime concept (a BUILT
-    capability); (c) a coaching-menu follow-up routes to the concept, not entity
-    binding; (d) deictic/selection before the bare-"late" branch.
-  PROVEN: (a) coaching_concept matches the slug + coaching_intent (concept + verb);
-    fast reverse-guard test: every CAPABILITIES concept resolves by "explain <slug>"
-    and by its bare name. (b) overtime CapabilityNote, ids_ref 5.6, how cites
-    cost_model; fast test + corpus ("can i use overtime to help" -> coaching, 5.6).
-    (c) resolve_followup CU4c intercept: "what about wip" after a coaching menu ->
-    coaching wip, asserts no order op-dump. (d) shared with CU3's pre-short-circuit
-    resolution. Corpus: "please explain wip" -> coaching (5.13, wip_status).
-  UNDERDELIVERED: an ordinal menu reply ("the second one") clarifies rather than
-    mapping to a concept (the menu order is not a stable contract) - intended.
-    Named side-effect: overtime becoming coachable moved one 4A.3-pre test (the
-    "overtime would probably help" hypothesis) from advice to coaching - the CU5
-    rule (a hypothesis naming a config concept coaches the knob). The test was
-    updated to the improved routing. Not a golden.
+CU3 -- the rubric (tests/ai_exam/RUBRIC.md) + the mechanical pre-triage.
+  CLAIMED: the truth-floor checks + five conversation dimensions + four output buckets
+           (verbatim) with graded examples from real transcripts; the sidecar built.
+  PROVEN : RUBRIC.md authored (plain ASCII): the truth checks T1-T3, the C1-C5
+           dimensions, the DEFECTS / CONVERSATION FAILURES / JUDGMENT CALLS / EXEMPLARS
+           buckets, graded examples (round one's filing-cabinet as the canonical
+           truth-passes/conversation-fails anchor), and an empty founder-precedent log
+           to fill after the listening session. The sidecar is built and tested (the
+           six checks, tests/ai_exam/test_runner.py::TestSidecar).
 
-CU5 - riders
-  CLAIMED: (a) the board hover tooltip on job bars gains order id, op seq, start->end,
-    and the lateness/slack figure; (b) docs/04 amendment + honest gap-naming.
-  PROVEN: (a) jobFor now carries start/end (from chunks) + latenessMin; the hovercard
-    job card renders a "When" span (start -> end) and a "Slack" figure (fmtSlack:
-    min/h/d, late vs early). Planner spec asserts When / Slack / the -> span, both
-    themes, green. The card already had order id + op seq + machine. (b) docs/04
-    amendment written (Part 0 first, then the session amendment); the reader was
-    extended (base-pattern working windows), not approximated.
-  UNDERDELIVERED: tooltip content/format is not exposed as feel tokens (the existing
-    card is not tokenized); it matches the existing card's plain style. Minor.
+CU4 -- invitation generalization (R-AI4(3)).
+  CLAIMED: coverage beyond the three 4A.3-pre routes; contextual composition; a
+           real-doors reverse-guard; silence discipline.
+  PROVEN : coaching + gap-between join late-orders/why-late/data-problems; swap-move is
+           NOT double-invited; lookups stay silent. Invitations are authored patterns
+           (ask_fallback_copy.INVITATIONS) slot-filled from the answer's own facts via
+           invitation_line. tests/ai_exam/test_real_doors.py asserts every pattern's
+           probe classifies to its documented live route (fast, no solve). Rendered
+           live in the sweep; three test_ai_voice specimens added (coaching invites,
+           gap invites, swap does not double-invite). Existing invitation/coaching/
+           lookup-silence tests un-regressed.
+
+CU5 -- the first sweep + the proof of the loop.
+  CLAIMED: run the runner against a pinned world (regression + >= 150 sweep probes),
+           commit transcript + sidecar under sweeps/<date>/, fix NOTHING discovered,
+           report the mechanical counts.
+  PROVEN : ran LIVE (LLM on, real key from the gitignored .env.local; network
+           available) -- 210 questions, 96 live LLM calls -- against a pinned glass_box
+           clean solve (snapshot snap-exam, workers 1 seed 0). Transcript + sidecar
+           committed under tests/ai_exam/sweeps/2026-07-24/. NOTHING found by the sweep
+           was repaired (discovery, not repair; the next session's errand list).
+
+CU6 -- riders.
+  CLAIMED: (a) name the parallel-load screenshot-flake class as standing debt;
+           (b) the corpus gains the solve-#5 swap phrasings, world-adapted.
+  PROVEN : (a) named in the docs/04 amendment (two members: 3.1c 0-bars, 4A.3 planner
+           due-marker; both pass in isolation, race only under parallel harness load;
+           a harness-era cleanup candidate). (b) the solve-#5 natural-language swap
+           phrasings ("swap order 5 and order 4") are in regression_founder.txt AND
+           pinned in test_ai_voice as a KNOWN GAP -- they do NOT yet route to swap-move
+           ("order 5" does not resolve to ORD-05); report, not repair.
 
 ======================================================================
-OUT OF SCOPE (named, not built)
+THE FIRST SWEEP'S MECHANICAL COUNTS (the sidecar, NOT a grade)
 ======================================================================
-- The panel executing gestures / minting edits (never; M10 has no write path).
-- Pricing a hypothetical WITHOUT the human's gesture (the sandbox two-beat is the
-  pricing path; the bridge points to it).
-- Aggregate-cause coaching ("why so many late") beyond its existing debt entry.
-- The full docs/05 structured-constraint surface (prose-locked; retrieval never
-  reads prose).
+target   : glass_box clean solve, snapshot snap-exam (workers 1, seed 0)
+llm mode : live (96 live calls; 42 answers rendered by the LLM, 28 carried "My take:")
+questions: 210
+
+  dark-evidence  = 29  -- order-schedule / start-reason / machine-schedule answers
+                         populate no cited_refs (light 0 bars). A real dark-lit-bars
+                         SEED for triage: should "when does ORD-05 finish" highlight
+                         ORD-05's bar? A working-thread judgment; fixed nothing.
+  validator      = 11  -- LLM findings/certificate testimony that failed number/
+                         timestamp/machine validation and fell back to the template
+                         (the fail-closed floor working, ~11% of live renders). A real
+                         seed: the LLM struggles with the findings register; fixed
+                         nothing.
+  absent-entity  =  3  -- ORD-99 / ORD-88 / ORD-000038, the deliberate wrong-entity
+                         traps. Each answer honestly refused ("ORD-99 isn't in this
+                         schedule"); the sidecar correctly seeds the confirmation.
+
+A clean sidecar would NOT be a passing grade; these counts are seeds for Claude's and
+the founder's triage, not verdicts.
+
+HEADLINE DISCOVERY (fixed nothing): "but why?" after "why is ORD-05 late" (no board
+selection active) CLARIFIES rather than resolving to the cause chain -- because the
+harness faithfully reproduces the cockpit's SELECTION-ONLY history (order/machine come
+from the board selection, not the answer subject). This exposes a test-vs-reality gap:
+the 4A.2b unit test that asserts "but why?" resolves passes an ENRICHED context the
+cockpit would not send without a selection. Exactly the kind of DISCOVERY failure the
+exam exists to find; on the working thread's errand list.
 
 ======================================================================
 VERIFICATION
 ======================================================================
-Non-slow Python: 1255 passed, 185 skipped, 0 failed (11m43s; confirmed twice).
-Slow test_ai_voice (--runslow, whole file): 106 passed.
-Cockpit planner spec: 16 passed (light + dark).
-Full cockpit JS suite: 175 passed, 1 failed under the full parallel run (planner
-  CU4 due-marker, light theme) - re-run in ISOLATION both themes PASS (a
-  screenshot-timing flake under parallel load, not a regression; same class as the
-  known 3.1c 0-bars flake). No cockpit test asserts on a hovercard height, so the
-  When/Slack rows cannot have caused it.
-No golden moved. No solver/model/contract/frontend-substrate change.
+  tests/ai_exam/test_real_doors.py ............ 9 passed (fast)
+  tests/ai_exam/test_runner.py (fast) .......... 14 passed
+  tests/ai_exam/test_runner.py (slow e2e) ...... 5 passed
+  test_ai_voice CU4 + CU6b specimens (slow) .... 4 passed
+  existing invitation/coaching/swap/idle (slow)  22 passed, un-regressed
+  non-slow Python suite ........................ 1278 passed, 194 skipped, 0 failed
+                                                 (baseline 1255 + 23 new fast tests)
+  first sweep transcript + sidecar ............. committed (sweeps/2026-07-24/)
+
+Same-commit docs: R-AI4 verbatim + the Session 4A.3b amendment + the flake-class debt
+(docs/04); docs/07 v2.41; CLAUDE.md status block.
 
 ======================================================================
-FILES CHANGED
+OUT OF SCOPE (named, not built)
 ======================================================================
-src/mre/modules/capabilities.py  - overtime concept; coaching_intent;
-                                    coaching_concept slug matching
-src/mre/modules/explainer.py      - swap-move / gap-between / machine-idle routes +
-                                    assemblers + taxonomy + classify + helpers
-src/mre/modules/interpreter.py    - demonstrative selection-first resolution; CU4c
-                                    coaching-menu follow-up; prompt meanings
-src/mre/modules/renderers.py      - swap_move / gap_between / machine_idle renderers;
-                                    header-only + authored-copy sets
-src/mre/modules/ask_fallback_copy.py - route offers for the new routes
-src/cockpit/src/board.js          - jobFor carries span + lateness
-src/cockpit/src/hovercards.js     - job card When/Slack; fmtSlack
-src/cockpit/src/askpanel.js       - resolution line shows the selection source
-tests/test_ai_voice.py            - fast units + slow corpus specimens; one 4A.3-pre
-                                    test updated (overtime hypothesis now coaches)
-tests/cockpit/planner.spec.mjs    - tooltip When/Slack/span assertions
-docs/04-design-history.md         - CU7a resolving amendment + Session 4A.3 amendment
-docs/07-roadmap.md                - v2.40
-CLAUDE.md                         - roadmap-position block
+  - Repairing anything the sweep discovered (the next session's errand list, triaged
+    in the working thread): the 29 dark-evidence routes, the 11 validator fallbacks,
+    the "but why?" selection-only-history gap, the natural-language "order N" swap gap.
+  - CI-asserting LLM PROSE: the exam asserts the deterministic layer + structural
+    properties only (take present, no uncited numbers, validator verdict, real doors)
+    -- never prose matching. The transcript carries quality judgment to humans/Claude.
+  - Automated conversation-quality scoring (R-AI4(2): grading is Claude's and the
+    founder's, not a metric's).
+
+======================================================================
+LESSON
+======================================================================
+The differentiator had the slowest feedback loop, and a corpus that grades only known
+questions is blind to discovery by construction. The cure is the product's own
+philosophy turned on itself: fire hundreds of probes at machine speed, let the
+mechanical floor (validator, fabrication, dark bars, dead doors) catch what is
+checkable without judgment, and reserve human judgment for the felt bar -- evidence
+first, judgment labeled, the founder the final arbiter. And an instrument that can
+silently score a wiped run as "answered" is worse than none: make the dead target fire
+loud, like everything else here.
