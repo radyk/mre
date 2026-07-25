@@ -1,5 +1,5 @@
-SESSION 4A.3b CLOSE-OUT
-The exam harness: evaluation at machine speed, judgment where it belongs
+SESSION 4A.3c CLOSE-OUT
+Sweep repairs: the first triaged errand list
 2026-07-24
 
 Deterministic settings for all solver work: PYTHONHASHSEED=0, --solver-workers 1,
@@ -8,169 +8,185 @@ Deterministic settings for all solver work: PYTHONHASHSEED=0, --solver-workers 1
 ======================================================================
 SUMMARY
 ======================================================================
-The AI layer is the product differentiator and the bar is "fantastic" -- yet it had
-the slowest evaluation loop in the system. Solver changes get machine-speed verdicts
-(goldens, counterfactuals); conversational changes waited for a founder listening
-session of ~a dozen questions an evening. Three founder rounds found every major seam,
-all DISCOVERY failures a corpus that grades only questions someone already added is
-structurally blind to. This session builds the instrument that inverts the economics:
-automated sweeps discover at scale, Claude triages transcripts against the rulings, the
-founder judges the felt bar from a short triaged list.
+The first exam sweep (Session 4A.3b: 210 probes, live LLM, pinned glass_box world)
+was triaged in the working thread per R-AI4(2). This session executes the errand
+list. Discovery already happened; this is repair. After this session the sweep
+re-ran and the repairs show as landed.
 
-Backend + tests + docs. NO solver/model/contract/frontend-substrate change. NO golden
-moved. The one behavioral change to shipped answers is CU4 (invitation coverage) --
-additive authored copy on two more route families, each opening a live route.
+Backend + one cockpit panel field + tests + docs. NO solver/model/contract/
+frontend-substrate change. NO golden moved. Every CU has committed transcript
+evidence behind it (tests/ai_exam/sweeps/2026-07-24/).
 
 ======================================================================
 PER-CU: CLAIMED vs PROVEN
 ======================================================================
 
-PART 1 -- R-AI4 transcribed verbatim into docs/04 (append-only).
-  CLAIMED: the four clauses (two axes; roles; fluency not engagement; audits against
-           the pinned document, never a re-solve).
-  PROVEN : appended verbatim to the docs/04 Amendment log, followed by the Session
-           4A.3b amendment. docs/04 grew, was not truncated.
+CU1 -- the "but why?" defect: resolved-subject context + the test-realism re-audit.
+  CLAIMED: (a) the panel sends the prior answer's resolved subject back as
+           last_answered_subject; the interpreter resolves at priority
+           selection > last answered > history > clarify; the runner carries it
+           exactly as the panel does. (b) re-audit test_ai_voice's context/follow-up
+           fixtures, refactoring any that feed data the cockpit does not send. (c) a
+           slow chain specimen.
+  PROVEN : (a) AskRequest.last_answered_subject (api/app.py) threads to the context;
+           _last_subject / _typed_subject_with_source / _last_typed_subject in
+           interpreter.py take the new argument at the fixed priority; askpanel.js
+           computes lastAnswered via resolvedSubject(bundle) and sends it; runner.py
+           resolved_subject() mirrors askpanel.js ORDER_SUBJECTS/MACHINE_SUBJECTS
+           EXACTLY (ambiguous "schedule" labels carry nothing -- never a guess), and
+           the runner carries it across turns (reset by RESET). (b) FIVE fixtures
+           refactored to realistic context (subject on last_answered_subject, not an
+           order in history): test_cu4_start_earlier_via_context,
+           test_4b_cu5_bare_why_resolves_to_cause_chain,
+           test_4b_cu5_set_reference_clarifies, test_4b_cu5_verification_clarifies,
+           and their three parametrized twins in the zero-confident-wrong corpus.
+           NONE became a KNOWN GAP -- the product fix makes them pass for the right
+           reason (the enriched-history versions passed for behavior reality lacked).
+           (c) test_cu1_but_why_resolves_via_last_answered_subject (slow, in
+           tests/ai_exam/test_runner.py) drives "why is ORD-05 late" -> "but why?"
+           through the runner's real carry: the follow-up DEEPENS (route late-order,
+           resolved_question names ORD-05), never CLARIFIES.
+  EVIDENCE: first sweep transcript L48 "but why?" -> CLARIFY (the defect);
+           post-repair transcript Q[48] "but why?" -> "interpreted as: why is ORD-05
+           late? (resolved against ORD-05)", route late-order.
 
-CU1 -- the runner (src/mre/ai_exam/).
-  CLAIMED: python -m mre.ai_exam fires a question script through the REAL ask path,
-           state persisting across the file; SELECT/RESET/comment directives; a
-           plain-ASCII transcript + a mechanical findings sidecar; failures captured
-           not crashed; --limit + per-question timeout + a live-call count.
-  PROVEN : built as script.py (parser), runner.py (ExamRunner + RunTarget + the
-           per-question ThreadPoolExecutor timeout + a live-call counter that wraps
-           the real anthropic client -- honest, never a mock), sidecar.py (six
-           mechanical checks), report.py (transcript + sidecar), __main__.py (CLI:
-           --run <id> via the Registry, or --out-dir for CI). Proven by
-           tests/ai_exam/test_runner.py (14 fast + 5 slow end-to-end) and by the first
-           sweep running 210 questions live. FIDELITY NAMED: history turns are built
-           the way the cockpit builds them (order/machine from the ACTIVE board SELECT,
-           not the answer's resolved subject) -- the honest choice; enriching beyond
-           what the panel sends would let the harness pass follow-ups the shipped
-           product fails.
-  FOUND + FIXED (the instrument, per CU5's exception): a wiped/missing run dir makes
-           the Explainer fall to empty-vocabulary certificate-only mode and every
-           entity question silently misroutes. The runner now reads Vocab.healthy and
-           fires a loud `target-unloadable` finding, running NOTHING, rather than emit
-           a transcript of garbage. Discovered mid-build (the scratchpad temp dir was
-           volatile between shell calls) -- exactly the silent-degradation trap the
-           codebase fights; a slow test pins it.
+CU2 -- dark evidence: answers about placements light their bars (29 sweep findings).
+  CLAIMED: order-schedule / start-reason / machine-schedule populate cited_refs from
+           the assignment Decisions they narrate, through the existing lit-bars
+           channel; machine-schedule caps at the ops it lists; dark-evidence -> 0 for
+           these routes.
+  PROVEN : _explain_start_reason carries _assignment_records(order); _schedule_query
+           carries _assignment_records_for_ops(narrated_ops, narrated_demands) -- real
+           assignment Decisions whose operation subject is a SHOWN row, so the lit set
+           is exactly the listed rows (capped when the listing truncates). Prose stays
+           deterministic and unchanged: schedule + start_reason are header-only and on
+           the authored-copy render path (records feed lit-bars, never an LLM rewrite
+           of a table nor a redundant evidence-chain dump under a table that already
+           lists the rows). test_cu2_narrating_routes_light_their_bars (slow) asserts
+           lit_bars > 0 and no dark-evidence for all three routes.
+  EVIDENCE: first sweep sidecar dark-evidence=29 (lines 36/58/60/105/107/133/134/135/
+           ...); post-repair sidecar dark-evidence=0. Post-repair transcript spot
+           check: machine-schedule lit-bars=5, start-reason lit-bars=2,
+           order-schedule lit-bars>0.
 
-CU2 -- the banks (tests/ai_exam/banks/, versioned, dated headers).
-  CLAIMED: founder rounds 1-3 verbatim (incl. typos) as conversation scripts +
-           paraphrase fans + trap probes; hundreds of probes.
-  PROVEN : regression_founder.txt (28 questions, the founder findings verbatim; pilot
-           ids adapted to glass_box, phrasing exact), sweep_routes.txt (120),
-           sweep_traps.txt (62). 210 probes total, 182 sweep (> the 150 floor). All
-           parse clean (0 parse errors).
+CU3 -- the findings-register validator rate (11 fallbacks, ~11% of live renders).
+  CLAIMED: extend the register's payload so findings/certificate testimony stops
+           fabricating; target the findings-register validator-fallback rate to ~zero;
+           if a residual class survives, name and pin it rather than widen the
+           validator.
+  PROVEN : the transcript diagnosis was exact -- the LLM footnoted the finding-list
+           ORDINAL as a record ("fabricated record citation '1'"), failing the
+           citation floor and falling back to the template ANYWAY (so findings never
+           delivered LLM fluency live). The composed findings body is authored
+           planner-voiced sentences, the same KIND of composed authored copy every
+           other register in this codebase short-circuits verbatim; "findings" joins
+           LLMRenderer._AUTHORED_COPY_SUBJECTS -> rendered verbatim, a DETERMINISTIC
+           ~zero fallback rate. This is the "register's equivalent" cure the errand
+           permitted; enriching pre-computed facts would not reliably stop a model
+           from footnoting a list ordinal, and the fix never widens the validator's
+           tolerance (the floor's strictness is the floor).
+  RESIDUAL NAMED: the remediation route's own number-validator (_render_register) is
+           LEFT INTACT -- it is the fail-closed floor working as designed, not a
+           defect to repair by weakening it. On the first sweep it fired once
+           (L176 "what's the fix for these findings"); on the post-repair sweep it did
+           not fire (LLM run-to-run variance -- the floor is intact regardless).
+  EVIDENCE: first sweep sidecar validator=11 (findings/certificate testimony);
+           post-repair sidecar validator=0; post-repair transcript has zero
+           "LLM validation failed" lines.
 
-CU3 -- the rubric (tests/ai_exam/RUBRIC.md) + the mechanical pre-triage.
-  CLAIMED: the truth-floor checks + five conversation dimensions + four output buckets
-           (verbatim) with graded examples from real transcripts; the sidecar built.
-  PROVEN : RUBRIC.md authored (plain ASCII): the truth checks T1-T3, the C1-C5
-           dimensions, the DEFECTS / CONVERSATION FAILURES / JUDGMENT CALLS / EXEMPLARS
-           buckets, graded examples (round one's filing-cabinet as the canonical
-           truth-passes/conversation-fails anchor), and an empty founder-precedent log
-           to fill after the listening session. The sidecar is built and tested (the
-           six checks, tests/ai_exam/test_runner.py::TestSidecar).
+CU4 -- the "order N" resolver (the founder's live register, a 4A.3b KNOWN GAP).
+  CLAIMED: "swap order 5 and order 4" / "order 15" / "ord 23" resolve to canonical ids
+           by numeric inference against the pinned world; flip the KNOWN GAP; guard
+           against quantity forms ("show 5 late orders").
+  PROVEN : _build_order_number_index maps each order's trailing number to its ref
+           (unique numbers only -- ambiguous drops, never guessed); rewrite_fuzzy_orders
+           gains an _ORDER_N_RE pass that resolves "order N" / "ord N" against that
+           index and surfaces the same visible "assuming ORD-05" assumption. Resolution
+           is against the world's real ids, zero-padding inferred from the ref; an
+           absent number is left untouched (honest unresolved). The 4A.3b KNOWN GAP
+           test flipped to test_solve5_natural_language_order_numbers_resolve_and_swap;
+           test_bare_order_number_resolves_to_the_canonical_ref added; the negative
+           guard test_order_number_does_not_swallow_a_quantity pins "show 5 late
+           orders" (a count, never ORD-05). Side effect NAMED: "order 2001" now
+           resolves deterministically, so one test_interpreter LLM-miss fixture was
+           re-pointed to "job 2001" (a genuine miss) to keep exercising the paraphrase
+           path.
+  EVIDENCE: post-repair transcript Q[43] "why not just swap order 5 and order 4" ->
+           "interpreted as: why not just swap ORD-05 and ORD-04 (assuming ORD-05,
+           ORD-04)", route swap-move.
 
-CU4 -- invitation generalization (R-AI4(3)).
-  CLAIMED: coverage beyond the three 4A.3-pre routes; contextual composition; a
-           real-doors reverse-guard; silence discipline.
-  PROVEN : coaching + gap-between join late-orders/why-late/data-problems; swap-move is
-           NOT double-invited; lookups stay silent. Invitations are authored patterns
-           (ask_fallback_copy.INVITATIONS) slot-filled from the answer's own facts via
-           invitation_line. tests/ai_exam/test_real_doors.py asserts every pattern's
-           probe classifies to its documented live route (fast, no solve). Rendered
-           live in the sweep; three test_ai_voice specimens added (coaching invites,
-           gap invites, swap does not double-invite). Existing invitation/coaching/
-           lookup-silence tests un-regressed.
+CU5 -- the loop closes: re-sweep + the precedent log.
+  CLAIMED: re-run the full 210-probe bank live against the same pinned world; commit
+           under sweeps/<date>-post-repair; report the mechanical deltas; seed the
+           founder-precedent log with the three working-thread judgment calls.
+  PROVEN : re-ran LIVE (LLM on, real key from .env.local; 72 live calls -- fewer than
+           the first sweep's 96 because findings + schedule are now deterministic
+           authored copy) against the SAME pinned glass_box solve (out-dir gb_pinned,
+           snapshot snap-exam, workers 1 seed 0). Transcript + sidecar committed under
+           tests/ai_exam/sweeps/2026-07-24-post-repair/. RUBRIC.md founder-precedent
+           log seeded with three OPEN entries (lit-bars feel at volume; invitation
+           frequency across broadened coverage; take frequency 28/42 renders).
+  NEW FINDINGS THE REPAIRS SURFACED: none. The post-repair sweep surfaced no new
+           mechanical finding class -- absent-entity is the only remaining kind, and it
+           is unchanged (the deliberate wrong-entity traps, correctly refused).
 
-CU5 -- the first sweep + the proof of the loop.
-  CLAIMED: run the runner against a pinned world (regression + >= 150 sweep probes),
-           commit transcript + sidecar under sweeps/<date>/, fix NOTHING discovered,
-           report the mechanical counts.
-  PROVEN : ran LIVE (LLM on, real key from the gitignored .env.local; network
-           available) -- 210 questions, 96 live LLM calls -- against a pinned glass_box
-           clean solve (snapshot snap-exam, workers 1 seed 0). Transcript + sidecar
-           committed under tests/ai_exam/sweeps/2026-07-24/. NOTHING found by the sweep
-           was repaired (discovery, not repair; the next session's errand list).
-
-CU6 -- riders.
-  CLAIMED: (a) name the parallel-load screenshot-flake class as standing debt;
-           (b) the corpus gains the solve-#5 swap phrasings, world-adapted.
-  PROVEN : (a) named in the docs/04 amendment (two members: 3.1c 0-bars, 4A.3 planner
-           due-marker; both pass in isolation, race only under parallel harness load;
-           a harness-era cleanup candidate). (b) the solve-#5 natural-language swap
-           phrasings ("swap order 5 and order 4") are in regression_founder.txt AND
-           pinned in test_ai_voice as a KNOWN GAP -- they do NOT yet route to swap-move
-           ("order 5" does not resolve to ORD-05); report, not repair.
+CU6 -- rider: docs.
+  PROVEN : docs/04 2026-07-24 Session 4A.3c amendment (append-only) covering the CU1
+           test-realism discipline (a named standing discipline), the CU2 lit-bars
+           ruling, the CU3 register-equivalent cure, the CU4 resolver forms; docs/07
+           v2.42 same-day; CLAUDE.md status block; this close-out.
 
 ======================================================================
-THE FIRST SWEEP'S MECHANICAL COUNTS (the sidecar, NOT a grade)
+THE MECHANICAL DELTAS (sidecar, first sweep -> post-repair)
 ======================================================================
-target   : glass_box clean solve, snapshot snap-exam (workers 1, seed 0)
-llm mode : live (96 live calls; 42 answers rendered by the LLM, 28 carried "My take:")
-questions: 210
+target : glass_box clean solve, out-dir gb_pinned, snapshot snap-exam (workers 1,
+         seed 0)
+         (the pinned world is identical; only the code under test changed)
 
-  dark-evidence  = 29  -- order-schedule / start-reason / machine-schedule answers
-                         populate no cited_refs (light 0 bars). A real dark-lit-bars
-                         SEED for triage: should "when does ORD-05 finish" highlight
-                         ORD-05's bar? A working-thread judgment; fixed nothing.
-  validator      = 11  -- LLM findings/certificate testimony that failed number/
-                         timestamp/machine validation and fell back to the template
-                         (the fail-closed floor working, ~11% of live renders). A real
-                         seed: the LLM struggles with the findings register; fixed
-                         nothing.
-  absent-entity  =  3  -- ORD-99 / ORD-88 / ORD-000038, the deliberate wrong-entity
-                         traps. Each answer honestly refused ("ORD-99 isn't in this
-                         schedule"); the sidecar correctly seeds the confirmation.
+                    first sweep    post-repair    verdict
+  dark-evidence         29             0          repaired (CU2)
+  validator             11             0          repaired (CU3)
+  absent-entity          3             3          unchanged (honest refusals -- the
+                                                  wrong-entity traps ORD-99 / ORD-88 /
+                                                  ORD-000038, correctly refused)
+  llm calls             96            72          fewer -- findings + schedule are now
+                                                  deterministic authored copy
 
-A clean sidecar would NOT be a passing grade; these counts are seeds for Claude's and
-the founder's triage, not verdicts.
-
-HEADLINE DISCOVERY (fixed nothing): "but why?" after "why is ORD-05 late" (no board
-selection active) CLARIFIES rather than resolving to the cause chain -- because the
-harness faithfully reproduces the cockpit's SELECTION-ONLY history (order/machine come
-from the board selection, not the answer subject). This exposes a test-vs-reality gap:
-the 4A.2b unit test that asserts "but why?" resolves passes an ENRICHED context the
-cockpit would not send without a selection. Exactly the kind of DISCOVERY failure the
-exam exists to find; on the working thread's errand list.
+A clean-but-for-the-traps sidecar is NOT a passing grade -- these counts are seeds,
+not verdicts. Conversation quality across the broadened coverage is still Claude's
+read and the founder's call (the three OPEN precedent-log entries).
 
 ======================================================================
 VERIFICATION
 ======================================================================
-  tests/ai_exam/test_real_doors.py ............ 9 passed (fast)
-  tests/ai_exam/test_runner.py (fast) .......... 14 passed
-  tests/ai_exam/test_runner.py (slow e2e) ...... 5 passed
-  test_ai_voice CU4 + CU6b specimens (slow) .... 4 passed
-  existing invitation/coaching/swap/idle (slow)  22 passed, un-regressed
-  non-slow Python suite ........................ 1278 passed, 194 skipped, 0 failed
-                                                 (baseline 1255 + 23 new fast tests)
-  first sweep transcript + sidecar ............. committed (sweeps/2026-07-24/)
-
-Same-commit docs: R-AI4 verbatim + the Session 4A.3b amendment + the flake-class debt
-(docs/04); docs/07 v2.41; CLAUDE.md status block.
+  Full non-slow Python suite: 1278 passed, 198 skipped, 0 failed (807s).
+  Slow test_ai_voice + test_explainer + ai_exam runner: 262 passed (incl. the flipped
+    CU4 specimen, the refactored CU1 fixtures, the CU1 chain + CU2 lit-bars
+    end-to-end specimens).
+  Slow test_glass_box + test_ask_chain_api: 34 passed.
+  Cockpit JS (build + Playwright, both themes): green, incl. the panel's
+    last_answered_subject payload assertion.
+  Post-repair sweep committed: tests/ai_exam/sweeps/2026-07-24-post-repair/.
+  No golden moved. No solver/model/contract/frontend-substrate change.
 
 ======================================================================
 OUT OF SCOPE (named, not built)
 ======================================================================
-  - Repairing anything the sweep discovered (the next session's errand list, triaged
-    in the working thread): the 29 dark-evidence routes, the 11 validator fallbacks,
-    the "but why?" selection-only-history gap, the natural-language "order N" swap gap.
-  - CI-asserting LLM PROSE: the exam asserts the deterministic layer + structural
-    properties only (take present, no uncited numbers, validator verdict, real doors)
-    -- never prose matching. The transcript carries quality judgment to humans/Claude.
-  - Automated conversation-quality scoring (R-AI4(2): grading is Claude's and the
-    founder's, not a metric's).
+  - Anything the post-repair re-sweep newly discovered: nothing new surfaced this
+    time, but any future discovery is the next errand list.
+  - Invitation / take frequency tuning: founder judgment, round four (the OPEN
+    precedent-log entries).
+  - The docs/05 structured-constraint surface (prose-locked).
+  - Harness features beyond CU1's state carry.
 
 ======================================================================
 LESSON
 ======================================================================
-The differentiator had the slowest feedback loop, and a corpus that grades only known
-questions is blind to discovery by construction. The cure is the product's own
-philosophy turned on itself: fire hundreds of probes at machine speed, let the
-mechanical floor (validator, fabrication, dark bars, dead doors) catch what is
-checkable without judgment, and reserve human judgment for the felt bar -- evidence
-first, judgment labeled, the founder the final arbiter. And an instrument that can
-silently score a wiped run as "answered" is worse than none: make the dead target fire
-loud, like everything else here.
+A test that feeds context the shipped surface never sends vouches for behavior reality
+lacks -- the "but why?" specimen passed on enriched history while the real product
+clarified, and only the sweep, firing the honest carry, caught it. The cure is
+two-sided: fix the PRODUCT (carry the resolved subject the way the panel now does) and
+re-audit the TESTS to the real payload, so green means the founder would hear the same.
+And the recurring disease has one recurring cure -- when an answer is composed authored
+copy, render it verbatim; the LLM's fluency is not worth a fabricated citation, and the
+validator that catches the fabrication is the floor, never the thing you loosen.

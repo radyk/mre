@@ -186,6 +186,31 @@ class TestEndToEnd:
             parse_script("why not just swap ORD-04 and ORD-05"))
         assert res.turns[0].lit_bars > 0
 
+    def test_cu1_but_why_resolves_via_last_answered_subject(self, gb_run):
+        # Session 4A.3c CU1 — the founder-register chain. A TYPED "why is ORD-05
+        # late" (no board selection) then "but why?" must DEEPEN the cause chain,
+        # not CLARIFY. The runner carries the prior answer's resolved subject the
+        # way the panel does; the first sweep's failing sequence is the regression.
+        res = ExamRunner(self._target(gb_run), use_llm=False).run(
+            parse_script("why is ORD-05 late\nbut why?\n"))
+        assert res.turns[0].route == "late-order"
+        follow = res.turns[1]
+        assert follow.route == "late-order", "but why? must not CLARIFY"
+        assert "ORD-05" in follow.resolved_question
+        assert follow.error is None
+
+    def test_cu2_narrating_routes_light_their_bars(self, gb_run):
+        # Session 4A.3c CU2 — order-schedule / start-reason / machine-schedule
+        # narrate specific placements, so they light bars (no dark evidence). The
+        # sidecar's dark-evidence check must not fire for these on real placements.
+        res = ExamRunner(self._target(gb_run), use_llm=False).run(parse_script(
+            "whats the end time of ORD-05\n"       # order-schedule
+            "why does ORD-13 start when it does\n"  # start-reason
+            "whats running on CUT-01\n"))           # machine-schedule
+        for t in res.turns:
+            assert t.lit_bars > 0, f"{t.route!r} lit no bars: {t.question!r}"
+            assert not any(f.kind == "dark-evidence" for f in t.findings), t.question
+
     def test_transcript_and_sidecar_render(self, gb_run):
         res = ExamRunner(self._target(gb_run), use_llm=False).run(
             parse_script("why is ORD-05 late\nwhat should i worry about today"))

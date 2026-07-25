@@ -112,14 +112,21 @@ def _typed_deictic(ql: str) -> Optional[str]:
     return None
 
 
-def _last_typed_subject(history: list[dict], selection: dict, kind: str) -> Optional[str]:
-    """The most recent referent of the requested TYPE (order|machine) — recency
-    within the type, so "that machine" never binds to an order (CU4a)."""
+def _last_typed_subject(history: list[dict], selection: dict, kind: str,
+                        last_answered: Optional[dict] = None) -> Optional[str]:
+    """The most recent referent of the requested TYPE (order|machine) — so "that
+    machine" never binds to an order (CU4a). Priority (Session 4A.3c CU1):
+    live board selection > the last answered subject > conversation history. The
+    last-answered subject is the resolved subject of the PRIOR answer, sent back by
+    the panel — the honest carry a history built from the selection channel alone
+    cannot provide (a typed "why is ORD-05 late" leaves no order in history)."""
+    if selection and selection.get(kind):
+        return selection[kind]
+    if last_answered and last_answered.get(kind):
+        return last_answered[kind]
     for turn in reversed(history or []):
         if turn.get(kind):
             return turn[kind]
-    if selection and selection.get(kind):
-        return selection[kind]
     return None
 
 
@@ -138,14 +145,18 @@ def _demonstrative_deictic(ql: str) -> Optional[str]:
     return None
 
 
-def _typed_subject_with_source(history: list[dict], selection: dict,
-                              kind: str) -> tuple[Optional[str], Optional[str]]:
-    """The referent for a typed deictic, SELECTION FIRST then conversational
-    recency (Session 4A.3 CU3): a live board selection of the matching type binds
-    before any stale history turn, and the source is returned so the resolution can
-    say which context won. Returns (ref, "selection"|"history"|None)."""
+def _typed_subject_with_source(history: list[dict], selection: dict, kind: str,
+                              last_answered: Optional[dict] = None
+                              ) -> tuple[Optional[str], Optional[str]]:
+    """The referent for a typed deictic, SELECTION FIRST then the last answered
+    subject then conversational recency (Session 4A.3 CU3 + 4A.3c CU1): a live board
+    selection of the matching type binds before the prior answer's subject, which
+    binds before any stale history turn; the source is returned so the resolution
+    can say which context won. Returns (ref, "selection"|"last answer"|"history"|None)."""
     if selection and selection.get(kind):
         return selection[kind], "selection"
+    if last_answered and last_answered.get(kind):
+        return last_answered[kind], "last answer"
     for turn in reversed(history or []):
         if turn.get(kind):
             return turn[kind], "history"
@@ -185,14 +196,22 @@ class ResolvedQuestion:
 # CU2 — conversational context resolution (deterministic)
 # ---------------------------------------------------------------------------
 
-def _last_subject(history: list[dict], selection: dict) -> dict:
-    """The most recent order/machine subject in the conversation: newest history
-    turn that named one, else the current board selection."""
+def _last_subject(history: list[dict], selection: dict,
+                  last_answered: Optional[dict] = None) -> dict:
+    """The most recent order/machine subject in the conversation. Priority
+    (Session 4A.3c CU1): live board selection > the last answered subject >
+    conversation history. The last-answered subject is the resolved subject of the
+    prior answer, carried back by the panel — without it a bare "but why?" after a
+    TYPED "why is ORD-05 late" resolves to nothing (history built from the selection
+    channel carries no order), the exact seam the first sweep exposed."""
+    if selection and (selection.get("order") or selection.get("machine")):
+        return {"order": selection.get("order"), "machine": selection.get("machine")}
+    if last_answered and (last_answered.get("order") or last_answered.get("machine")):
+        return {"order": last_answered.get("order"),
+                "machine": last_answered.get("machine")}
     for turn in reversed(history or []):
         if turn.get("order") or turn.get("machine"):
             return {"order": turn.get("order"), "machine": turn.get("machine")}
-    if selection and (selection.get("order") or selection.get("machine")):
-        return {"order": selection.get("order"), "machine": selection.get("machine")}
     return {}
 
 
@@ -243,6 +262,12 @@ def resolve_followup(question: str, context: Optional[dict], explainer: Any) -> 
     context = context or {}
     history = context.get("history") or []
     selection = context.get("selection") or {}
+    # The resolved subject of the PRIOR answer, sent back by the panel (Session
+    # 4A.3c CU1): {"order": …} or {"machine": …}. It sits between the live selection
+    # and the conversation history in the resolution priority, so a follow-up after
+    # a TYPED entity question ("why is ORD-05 late" → "but why?") carries a subject
+    # even when nothing was selected on the board.
+    last_answered = context.get("last_answered_subject") or {}
 
     # CU6 — fuzzy id tolerance, BEFORE any exact-resolution check: a near-miss id
     # (ord-o5 / ORD-5 / ord 05) is rewritten to its canonical ref with a visible
@@ -297,7 +322,7 @@ def resolve_followup(question: str, context: Optional[dict], explainer: Any) -> 
     # CU5 — bare "but why?" resolves to the last subject's cause-chain (why-late),
     # never a refusal; with no prior subject it clarifies.
     if _BARE_WHY_RE.match(ql):
-        last = _last_subject(history, selection)
+        last = _last_subject(history, selection, last_answered)
         ref = last.get("order")
         if ref:
             return ResolvedQuestion(text=f"why is {ref} late?", resolved=True,
@@ -345,7 +370,7 @@ def resolve_followup(question: str, context: Optional[dict], explainer: Any) -> 
     # referent CLARIFIES, never a cross-type or stale bind.
     dkind = _demonstrative_deictic(ql)
     if dkind:
-        ref, src = _typed_subject_with_source(history, selection, dkind)
+        ref, src = _typed_subject_with_source(history, selection, dkind, last_answered)
         if ref:
             note = f"resolved against {ref}"
             if src == "selection":
@@ -371,7 +396,7 @@ def resolve_followup(question: str, context: Optional[dict], explainer: Any) -> 
     if any(p in ql for p in _LIST_EXPAND):
         last_route = _last_route(history)
         if last_route and last_route in ROUTE_TAXONOMY:
-            last = _last_subject(history, selection)
+            last = _last_subject(history, selection, last_answered)
             params = {k: last.get(k) for k in ("order", "machine")
                       if last.get(k)}
             return ResolvedQuestion(
@@ -391,7 +416,7 @@ def resolve_followup(question: str, context: Optional[dict], explainer: Any) -> 
         # never cross-type bind (the "that machine → an order four turns back" bug).
         kind = _typed_deictic(ql)
         if kind:
-            ref = _last_typed_subject(history, selection, kind)
+            ref = _last_typed_subject(history, selection, kind, last_answered)
             if ref:
                 return ResolvedQuestion(
                     text=_substitute_typed(q, ref, kind), resolved=True,
@@ -399,7 +424,7 @@ def resolve_followup(question: str, context: Optional[dict], explainer: Any) -> 
             return ResolvedQuestion(
                 text=q, resolved=False, needs_clarification=True,
                 note=CLARIFY_NO_SUBJECT)
-        last = _last_subject(history, selection)
+        last = _last_subject(history, selection, last_answered)
         ref = last.get("order") or last.get("machine")
         if ref:
             return ResolvedQuestion(

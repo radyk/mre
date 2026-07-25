@@ -100,6 +100,50 @@ path referencing the OneDrive path is a defect to fix. Relocation confirmed: `gi
 fsck --full` clean; non-slow suite green (the one defect — an editable-install
 `.pth` still pointing at OneDrive — was repointed at `C:\dev\mre\src`).
 
+**Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.3c — sweep
+repairs: the first triaged errand list 2026-07-24.** Executes the errand list the
+first exam sweep produced (210 probes, live LLM, pinned glass_box), triaged in the
+working thread per R-AI4(2). Discovery already happened; this is repair. Backend + a
+cockpit panel field + tests + docs; **no solver/model/contract/frontend-substrate
+change; no golden moved.** **CU1 — the "but why?" defect:** a follow-up after a TYPED
+entity question CLARIFIED because conversational history is built from the SELECTION
+channel (no order to bind), and a 4A.2b unit test PASSED on enriched context the
+cockpit never sends. The honest fix (product, not harness): the panel sends the prior
+answer's resolved subject as `last_answered_subject` (`AskRequest`, `askpanel.js`
+`resolvedSubject`), and the interpreter resolves at priority **selection > last
+answered > history > clarify** (`_last_subject`/`_typed_subject_with_source`/
+`_last_typed_subject`); the runner carries it identically (`runner.resolved_subject`,
+lockstep with `askpanel.js`) so the harness inherits the fix. Five enriched-context
+`test_ai_voice` fixtures refactored to realistic context — a NAMED standing discipline:
+context/follow-up tests feed only what the shipped surface sends. **CU2 — dark evidence
+(29 findings):** `order-schedule`/`start-reason`/`machine-schedule` populate
+`ordered_records` from the assignment Decisions they narrate (`_assignment_records` /
+new `_assignment_records_for_ops` — the lit set is exactly the shown rows, capped when
+truncated), lighting bars through the existing `cited_refs` channel; prose stays
+deterministic (`schedule`+`start_reason` header-only + authored-copy — no chain dump,
+no LLM rewrite of a table). **CU3 — findings validator rate (11 fallbacks):** the LLM
+footnoted the finding-list ORDINAL as a record (`[record: 1]`); `findings` joins
+`_AUTHORED_COPY_SUBJECTS` (rendered verbatim — the register-equivalent cure), a
+deterministic ~zero rate; the remediation number-validator floor left INTACT (not
+weakened). **CU4 — the "order N" resolver:** "swap order 5 and order 4" / "order 15"
+resolve by numeric inference against the pinned world's real ids
+(`_build_order_number_index` + `_ORDER_N_RE` in `rewrite_fuzzy_orders`, surfacing
+"assuming ORD-05"); the 4A.3b KNOWN GAP flipped; guarded so "show 5 late orders" stays
+a count (the noun must precede the digit). **CU5 — the loop closes:** the full 210-probe
+bank re-ran LIVE (72 calls) against the same pinned world →
+`tests/ai_exam/sweeps/2026-07-24-post-repair/`. **Mechanical deltas: dark-evidence
+29→0, validator 11→0, absent-entity 3→3** (unchanged honest wrong-entity refusals); no
+new finding class surfaced. `RUBRIC.md` founder-precedent log seeded with three OPEN
+judgment calls (lit-bars feel, invitation frequency, take frequency 28/42). **Non-slow
+Python 1278 passed, 0 failed**; slow `test_ai_voice`/`test_explainer`/`ai_exam`
+(262) + `test_glass_box`/`test_ask_chain_api` (34) green; cockpit JS green incl. the
+`last_answered_subject` payload. See the docs/04 2026-07-24 Session 4A.3c amendment and
+docs/07 v2.42. Lesson: a test that feeds context the shipped surface never sends
+vouches for behavior reality lacks — fix the PRODUCT (carry the resolved subject the
+way the panel now does) AND re-audit the TESTS to the real payload; and when an answer
+is composed authored copy, render it verbatim — the LLM's fluency is not worth a
+fabricated citation, and the validator that catches it is the floor, never the variable.
+
 **Roadmap position: Phase 3 COMPLETE (qualified); AI-track Session 4A.3b — the
 exam harness: evaluation at machine speed, judgment where it belongs 2026-07-24.**
 The AI layer is the product differentiator with the SLOWEST evaluation loop — solver

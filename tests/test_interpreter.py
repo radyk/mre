@@ -175,7 +175,10 @@ LLM_TABLE = {
         Interpretation("late-orders", {}, 0.88),
     "what's cooking on the gear machine":
         Interpretation("machine-schedule", {"machine": "GEAR-01"}, 0.85),
-    "give me the finish time for order 2001":
+    # Session 4A.3c CU4: "order 2001" now resolves DETERMINISTICALLY (the new
+    # "order N" number resolver), so it is no longer an LLM miss. Use "job 2001",
+    # which the deterministic router still misses, to exercise the paraphrase path.
+    "give me the finish time for job 2001":
         Interpretation("order-schedule", {"order": "2001"}, 0.83),
     "break down my last edit's price":
         Interpretation("edit-cost", {}, 0.80),
@@ -188,7 +191,7 @@ LLM_EXPECT = {
     "which orders are in trouble": "late_orders",
     "is anything going to miss its deadline": "late_orders",
     "what's cooking on the gear machine": "schedule",
-    "give me the finish time for order 2001": "schedule",
+    "give me the finish time for job 2001": "schedule",
     "break down my last edit's price": "edit_cost",
     "show everything for acme corp": "schedule",
 }

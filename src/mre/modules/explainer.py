@@ -493,6 +493,7 @@ class Explainer:
         # (ord 05) — so a near-miss resolves (with a visible assumption) instead of
         # falling to the wrong route. Built from the learned refs, never assumed.
         self._order_fuzzy: list[tuple[re.Pattern, str]] = self._build_order_fuzzy()
+        self._order_number_index: dict[int, str] = self._build_order_number_index()
 
     def _build_excluded_labels(self) -> set[str]:
         """Order ids excluded/blocked from the plan, from ANY layer's findings —
@@ -559,6 +560,26 @@ class Explainer:
             out.append((pat, value))
         return out
 
+    def _build_order_number_index(self) -> dict[int, str]:
+        """Map each order's trailing NUMBER to its canonical ref, keeping only the
+        numbers a single ref claims (Session 4A.3c CU4). Lets "order 5" / "ord 5"
+        resolve to ORD-05 by numeric inference against the PINNED world's actual ids
+        (never string synthesis; zero-padding is inferred from the real ref). A
+        number two refs share is dropped — ambiguous, so it clarifies, never guesses."""
+        by_num: dict[int, set[str]] = {}
+        for value in self._order_refs.values():
+            m = re.search(r"(\d+)\s*$", value)
+            if not m:
+                continue
+            by_num.setdefault(int(m.group(1)), set()).add(value)
+        return {n: next(iter(vs)) for n, vs in by_num.items() if len(vs) == 1}
+
+    # "order 5" / "ord 5" / "order number 5" / "order #5" — the noun 'order'/'ord'
+    # IMMEDIATELY followed by a number (optionally via number/no./#). The order/ord
+    # must PRECEDE the digit, so "show 5 late orders" (a count) is never swallowed.
+    _ORDER_N_RE = re.compile(
+        r"\b(?:orders?|ord)\s+(?:number\s+|no\.?\s+|#\s*)?(\d+)\b", re.IGNORECASE)
+
     def rewrite_fuzzy_orders(self, question: str) -> tuple[str, list[tuple[str, str]]]:
         """Rewrite each near-miss order id in the question to its canonical ref,
         returning (new_question, [(matched_text, canonical_ref), …]). A token that
@@ -575,6 +596,19 @@ class Explainer:
                 continue  # exact already — not a near-miss
             new_q = new_q[: m.start()] + ref + new_q[m.end():]
             notes.append((matched.strip(), ref))
+
+        # CU4 (Session 4A.3c) — the founder's live register: "swap order 5 and order
+        # 4" / "order 15". Resolve the bare "order N" / "ord N" form to its canonical
+        # ref by numeric inference against the world's real ids. A number no ref
+        # claims is left untouched (→ the honest unresolved/absent path); an
+        # ambiguous number was dropped from the index (never guessed).
+        def _sub_number(m: re.Match) -> str:
+            ref = self._order_number_index.get(int(m.group(1)))
+            if not ref:
+                return m.group(0)
+            notes.append((m.group(0).strip(), ref))
+            return ref
+        new_q = self._ORDER_N_RE.sub(_sub_number, new_q)
         return new_q, notes
 
     def _order_mention(self, question: str) -> Optional[str]:
@@ -1580,7 +1614,11 @@ class Explainer:
             subject_id=demand.get("id", order_ref),
             subject_type="start_reason",
             subject_external_name=order_ref,
-            ordered_records=[],
+            # CU2 (Session 4A.3c) — the answer narrates the order's placement, so it
+            # lights the order's bars through the existing cited_refs channel. The
+            # prose stays deterministic (start_reason is authored copy — see
+            # LLMRenderer._AUTHORED_COPY_SUBJECTS); these records only feed lit-bars.
+            ordered_records=self._assignment_records(order_ref),
             key_facts={
                 "order": order_ref,
                 "start": _fmt_ts(start) if start else None,
@@ -1689,6 +1727,38 @@ class Explainer:
             return []
         return [r for r in recs if r.get("record_type") == "decision"
                 and r.get("decision_type") == "assignment"]
+
+    def _assignment_records_for_ops(self, op_ids: set[str],
+                                    demand_ids: set[str]) -> list[dict]:
+        """Assignment Decisions for a SPECIFIC set of operations (the placements a
+        machine/schedule listing narrates), gathered by walking each demand's
+        lineage and keeping the assignment decisions whose operation subject is in
+        ``op_ids`` (Session 4A.3c CU2). The lit bars are then exactly the rows the
+        answer lists — capped to the shown ops, never a lane's whole history. Real
+        Decision records (real record_ids), so the lit-bars channel and the
+        testimony validator both stay honest. Best-effort, [] on any read failure."""
+        if self._reader is None or not op_ids:
+            return []
+        out: list[dict] = []
+        seen: set[str] = set()
+        for did in demand_ids:
+            try:
+                recs = self._index.lineage_walk(did, snapshot_reader=self._reader)
+            except Exception:
+                continue
+            for r in recs:
+                if (r.get("record_type") != "decision"
+                        or r.get("decision_type") != "assignment"):
+                    continue
+                if not any(s.get("entity_id") in op_ids
+                           for s in r.get("subjects", []) or []):
+                    continue
+                rid = str(r.get("record_id") or id(r))
+                if rid in seen:
+                    continue
+                seen.add(rid)
+                out.append(r)
+        return out
 
     def _order_slack_facts(self, order_ref: str) -> Optional[dict]:
         """Placement + slack/lateness for one order, read from the persisted
@@ -2751,12 +2821,22 @@ class Explainer:
                 "late": (delta_days is not None and delta_days < 0),
             }
 
+        # CU2 (Session 4A.3c) — an order-schedule / machine-schedule answer narrates
+        # specific placements, so it lights their bars through the existing
+        # cited_refs channel. The lit set is exactly the rows shown (capped when the
+        # listing truncates), never a lane's whole history. Real assignment Decisions
+        # (real record_ids), so lit-bars and the testimony validator stay honest;
+        # the prose stays deterministic ("schedule" is authored copy).
+        narrated_ops = {r["operation_ref"] for r in filtered if r.get("operation_ref")}
+        narrated_demands = {d for r in filtered for d in r.get("demand_ids", [])}
+        schedule_records = self._assignment_records_for_ops(narrated_ops, narrated_demands)
+
         return ExplanationBundle(
             question=question,
             subject_id=label,
             subject_type="schedule",
             subject_external_name=label,
-            ordered_records=[],
+            ordered_records=schedule_records,
             key_facts={
                 "filter_label": label,
                 "rows": row_dicts,

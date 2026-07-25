@@ -156,6 +156,30 @@ class ExamResult:
 
 _RENDER_TAG = None  # lazily compiled
 
+# The subject types that unambiguously name an ORDER (their subject_external_name
+# is an order ref) vs a MACHINE — the panel's map for carrying the resolved subject
+# of the prior answer into the next question's context (Session 4A.3c CU1). Kept in
+# lockstep with askpanel.js ORDER_SUBJECTS / MACHINE_SUBJECTS: the runner carries
+# EXACTLY what the panel carries, never more — enriching beyond it would let the
+# harness pass follow-ups the shipped product fails. Ambiguous types (a bare
+# "schedule" label can be an order OR a machine) carry nothing.
+_ORDER_SUBJECT_TYPES = frozenset(
+    {"demand", "start_reason", "contested_fact", "order_attributes"})
+_MACHINE_SUBJECT_TYPES = frozenset({"machine_idle"})
+
+
+def resolved_subject(subject_type: str, subject_external_name: str) -> dict:
+    """The prior answer's subject as an {order|machine} dict, or {} when the type
+    is ambiguous or the name is a placeholder. Mirrors askpanel.js exactly."""
+    name = (subject_external_name or "").strip()
+    if not name or name in ("?", "all"):
+        return {}
+    if subject_type in _ORDER_SUBJECT_TYPES:
+        return {"order": name}
+    if subject_type in _MACHINE_SUBJECT_TYPES:
+        return {"machine": name}
+    return {}
+
 
 def _parse_renderer_tag(answer: str) -> str:
     import re
@@ -214,22 +238,25 @@ class ExamRunner:
 
     # -- one question -------------------------------------------------------
 
-    def _ask(self, question: str, history: list[dict], selection: dict) -> tuple[str, dict]:
+    def _ask(self, question: str, history: list[dict], selection: dict,
+             last_answered: dict) -> tuple[str, dict]:
         from mre.api.app import _answer_question
         return _answer_question(
             self.target.out_dir, self.target.snapshot_id, question,
             use_llm=self.use_llm, runs_subdir=self.target.runs_subdir,
-            context={"history": history, "selection": selection},
+            context={"history": history, "selection": selection,
+                     "last_answered_subject": last_answered},
             ledger_path=self.ledger_path, schedule_id=self.target.label,
             session_id=self.session_id, document=self.target.document,
         )
 
     def _ask_with_timeout(self, question: str, history: list[dict],
-                          selection: dict) -> tuple[Optional[str], Optional[dict], Optional[str]]:
+                          selection: dict, last_answered: dict
+                          ) -> tuple[Optional[str], Optional[dict], Optional[str]]:
         """Returns (answer, meta, error). A per-question timeout / exception is
         captured as an error string, never a crash of the run."""
         with ThreadPoolExecutor(max_workers=1) as ex:
-            fut = ex.submit(self._ask, question, history, selection)
+            fut = ex.submit(self._ask, question, history, selection, last_answered)
             try:
                 answer, meta = fut.result(timeout=self.per_question_timeout)
                 return answer, meta, None
@@ -265,6 +292,9 @@ class ExamRunner:
             return result
         history: list[dict] = []
         selection: dict = {}
+        # The resolved subject of the PRIOR answer, carried into the next question
+        # exactly as the panel does (Session 4A.3c CU1). Reset by RESET.
+        last_answered: dict = {}
         # Comments/selects between questions attach to the NEXT question in the
         # transcript for readability; we buffer them here.
         pending_comments: list[str] = []
@@ -278,6 +308,7 @@ class ExamRunner:
                 if isinstance(item, Reset):
                     history = []
                     selection = {}
+                    last_answered = {}
                     pending_comments.append("[RESET — conversation cleared]")
                     continue
                 if isinstance(item, Select):
@@ -301,7 +332,7 @@ class ExamRunner:
                 asked += 1
                 before = counter.count
                 answer, meta, error = self._ask_with_timeout(
-                    item.text, history[-4:], selection)
+                    item.text, history[-4:], selection, last_answered)
                 turn = TurnRecord(
                     lineno=item.lineno, question=item.text,
                     selection=dict(selection),
@@ -339,5 +370,11 @@ class ExamRunner:
                     "order": selection.get("order"),
                     "machine": selection.get("machine"),
                 })
+                # Carry THIS answer's resolved subject into the next question, the
+                # way the panel does — the honest fix for a follow-up after a TYPED
+                # entity question (CU1). An error turn carries nothing forward.
+                if error is None:
+                    last_answered = resolved_subject(
+                        turn.subject_type, turn.subject_external_name)
             result.total_llm_calls = counter.count
         return result

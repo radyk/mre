@@ -206,16 +206,33 @@ class TestSwapMoveClassify:
         rid, _ = clean.classify("can we move it to a different machine")
         assert rid != "swap-move"
 
-    def test_solve5_natural_language_order_numbers_are_a_known_gap(self, clean):
-        # Session 4A.3b CU6b — the founder's live solve-#5 phrasing used
-        # natural-language order numbers ("why not just swap order 15 and order
-        # 23"), world-adapted here to "order 5 and order 4". These do NOT yet
-        # resolve to the canonical ORD-0N refs, so the swap route does not fire —
-        # a discovery from the first exam sweep, PINNED as a known gap (report, not
-        # repair: R-AI4 discovery discipline). A future fix that teaches "order N"
-        # -> ORD-0N flips this assertion visibly.
-        rid, _ = clean.classify("why not just swap order 5 and order 4")
-        assert rid != "swap-move"   # KNOWN GAP: natural-language order numbers unresolved
+    def test_solve5_natural_language_order_numbers_resolve_and_swap(self, clean):
+        # Session 4A.3c CU4 — the 4A.3b KNOWN GAP FLIPPED. The founder's live
+        # solve-#5 phrasing used natural-language order numbers ("swap order 5 and
+        # order 4"); these now resolve to the canonical ORD-0N refs by numeric
+        # inference against the pinned world, so the swap route fires (through the
+        # full resolve+classify path — the rewrite lives in rewrite_fuzzy_orders,
+        # surfaced with a visible assumption, not in classify).
+        res, _ = _ask(clean, "why not just swap order 5 and order 4")
+        assert res.route == "swap-move"
+        assert "ORD-05" in res.resolved_question and "ORD-04" in res.resolved_question
+        assert "assuming ORD-05" in res.resolution_note
+
+    def test_bare_order_number_resolves_to_the_canonical_ref(self, clean):
+        # "order 15" / "ord 5" resolve by numeric inference (zero-padding inferred
+        # from the real ref); an ambiguous or absent number does not.
+        res, _ = _ask(clean, "why is order 15 late")
+        assert res.route == "late-order" and "ORD-15" in res.resolved_question
+        res, _ = _ask(clean, "order 5")
+        assert "ORD-05" in res.resolved_question
+
+    def test_order_number_does_not_swallow_a_quantity(self, clean):
+        # The noun must PRECEDE the digit: "show 5 late orders" is a COUNT, not
+        # ORD-05 — the number resolver must not rewrite it (CU4 negative guard).
+        newq, notes = clean.rewrite_fuzzy_orders("show 5 late orders")
+        assert notes == [] and "ORD-05" not in newq
+        newq, notes = clean.rewrite_fuzzy_orders("how many orders are late")
+        assert notes == []
 
 
 class TestHypothesisAndPolarity:
@@ -500,8 +517,12 @@ class TestAuditCorpusClean:
         assert "CUT-01" in a                        # the machine, not a uuid
 
     def test_cu4_start_earlier_via_context(self, clean):
-        ctx = {"history": [{"order": "ORD-05", "machine": None,
-                            "route": "late-order"}]}
+        # CU1(b) re-audit (Session 4A.3c): the founder TYPED "why is ORD-05 late"
+        # (no board selection), so the honest carry into the follow-up is
+        # last_answered_subject — NOT an order in history, which the panel sends
+        # only when a bar was selected. Refactored to what the cockpit transmits.
+        ctx = {"history": [{"route": "late-order"}],
+               "last_answered_subject": {"order": "ORD-05"}}
         a = _answer(clean, "but why cant we start it earlier", ctx).lower()
         assert "ord-05" in a and ("held by" in a or "busy" in a or "releas" in a)
 
@@ -534,21 +555,29 @@ class TestAuditCorpusClean:
         assert facts.get("blocking_until")
 
     def test_4b_cu5_bare_why_resolves_to_cause_chain(self, clean):
-        ctx = {"history": [{"order": "ORD-05", "route": "late-order"}]}
+        # CU1(b) re-audit + CU1(a) fix (Session 4A.3c): after a TYPED "why is ORD-05
+        # late" the realistic carry is last_answered_subject, not an order in
+        # history (the panel sends history-order only for a SELECTED bar). This
+        # test previously passed on enriched context the cockpit never sends; now it
+        # passes for the right reason — last_answered resolves the bare "but why?".
+        ctx = {"history": [{"route": "late-order"}],
+               "last_answered_subject": {"order": "ORD-05"}}
         res, a = _ask(clean, "but why?", ctx)
         assert res.route == "late-order"
         assert res.resolved_question == "why is ORD-05 late?"
         assert "held by" in a.lower()
 
     def test_4b_cu5_set_reference_clarifies(self, clean):
-        ctx = {"history": [{"order": "ORD-05", "route": "late-order"}]}
+        ctx = {"history": [{"route": "late-order"}],
+               "last_answered_subject": {"order": "ORD-05"}}
         res, a = _ask(clean, "and 10 of those have issues?", ctx)
         assert res.route == "CLARIFY"
         assert "10 of ORD-05" not in a          # never the mangled rewrite
         assert "group" in a.lower() or "which orders" in a.lower()
 
     def test_4b_cu5_verification_clarifies(self, clean):
-        ctx = {"history": [{"order": "ORD-05", "route": "late-order"}]}
+        ctx = {"history": [{"route": "late-order"}],
+               "last_answered_subject": {"order": "ORD-05"}}
         res, a = _ask(clean, "you said i have 10 orders with issues is that correct", ctx)
         assert res.route == "CLARIFY"
         assert "confirm" in a.lower() or "evidence" in a.lower()
@@ -1067,13 +1096,16 @@ def test_cu10_zero_confident_wrong(clean, sabotaged, earliness_forcing):
         # Session 4A.2b specimens
         ("why ir ord-o5 late", clean, None, lambda a: "held by" in a.lower()),
         ("why is ORD-5 late", clean, None, lambda a: "held by" in a.lower()),
-        ("but why?", clean, {"history": [{"order": "ORD-05", "route": "late-order"}]},
+        # CU1(b) re-audit (Session 4A.3c): realistic context — the subject rides on
+        # last_answered_subject (a TYPED prior question), not an order in history.
+        ("but why?", clean,
+         {"history": [{"route": "late-order"}], "last_answered_subject": {"order": "ORD-05"}},
          lambda a: "held by" in a.lower()),
         ("and 10 of those have issues?", clean,
-         {"history": [{"order": "ORD-05", "route": "late-order"}]},
+         {"history": [{"route": "late-order"}], "last_answered_subject": {"order": "ORD-05"}},
          lambda a: "10 of ORD-05" not in a),
         ("you said i have 10 orders with issues is that correct", clean,
-         {"history": [{"order": "ORD-05", "route": "late-order"}]},
+         {"history": [{"route": "late-order"}], "last_answered_subject": {"order": "ORD-05"}},
          lambda a: "Schedule for ORD-05" not in a),
         ("what should I fix first?", clean, None,
          lambda a: "nothing to prioritize" not in a.lower()),

@@ -140,6 +140,11 @@ _HEADER_ONLY_SUBJECTS = frozenset({
     # Session 4A.3 — the swap/move bridge + the absence pair compose their whole
     # answer in the header (the R-AI3 ladder in planner language).
     "swap_move", "gap_between", "machine_idle",
+    # Session 4A.3c CU2 — a schedule listing renders its table in the header; it now
+    # carries ordered_records (real assignment Decisions) to LIGHT the narrated bars
+    # (cited_refs), but header-only keeps the prose the clean table it was — no
+    # redundant raw evidence-chain dump under a table that already shows the rows.
+    "schedule",
 })
 
 # The citation-breadth cap (CU6): a schedule-wide answer shows at most this many
@@ -1330,6 +1335,21 @@ class LLMRenderer:
         # Session 4A.3: the swap/move bridge + the absence pair are authored — the
         # take + gesture bridge are composed on the evidence, never LLM-improvised.
         "swap_move", "gap_between", "machine_idle",
+        # Session 4A.3c CU2: a schedule listing (order/machine/customer) and the
+        # start-reason answer are composed authored copy — a table of placements,
+        # the R-SC3 polarity floor. They now carry ordered_records to LIGHT the
+        # narrated bars (cited_refs), but the prose must stay deterministic: handing
+        # a multi-row table to the "answer in 2-3 sentences" LLM would drop rows.
+        # Verbatim render + a lit-bars channel, never an LLM rewrite of the table.
+        "schedule", "start_reason",
+        # Session 4A.3c CU3: the findings / certificate-testimony answer is
+        # compose_findings() — authored composed sentences (subject, offending
+        # value, plain cause, catalog fix), already planner-voiced. The LLM reword
+        # kept footnoting the list ORDINAL as a record ("[record: 1]"), failing the
+        # citation floor ~11% of live renders and falling back anyway. Render the
+        # composed findings verbatim: the same treatment every other composed
+        # authored register gets, and a deterministic ~zero validator-fallback rate.
+        "findings",
     })
 
     def render(self, bundle: ExplanationBundle) -> str:

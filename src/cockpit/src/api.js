@@ -176,6 +176,10 @@ export function ask(id, question, useLlm = false, ctx = {}) {
       question, llm: !!useLlm,
       history: ctx.history || [],
       selection: ctx.selection || {},
+      // Session 4A.3c CU1: the resolved subject of the prior answer, so a
+      // follow-up after a TYPED entity question ("why is ORD-05 late" → "but
+      // why?") resolves even with nothing selected on the board.
+      last_answered_subject: ctx.lastAnswered || {},
       session_id: ctx.sessionId || null,
     }),
   });

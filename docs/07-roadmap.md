@@ -1,6 +1,31 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.41 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.42 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.42:** **AI-track Session 4A.3c — sweep repairs: the first triaged errand list**
+2026-07-24 (docs/04 amendment). Executes the errand list the first exam sweep produced
+(210 probes, live LLM, pinned glass_box); discovery already happened, this is repair.
+Backend + a cockpit panel field + tests + docs; **no solver/model/contract/frontend
+change; no golden moved.** **CU1 — the "but why?" defect:** a follow-up after a TYPED
+entity question CLARIFIED because history is built from the SELECTION channel (no order
+to bind); the panel now sends the prior answer's resolved subject as
+`last_answered_subject`, and the interpreter resolves at priority **selection > last
+answered > history > clarify** (the runner carries it identically — the harness inherits
+the fix). Five enriched-context `test_ai_voice` fixtures refactored to realistic context
+(a named standing discipline: context tests feed only what the shipped surface sends).
+**CU2 — dark evidence (29 findings):** order-schedule / start-reason / machine-schedule
+now light the bars of the placements they narrate (real assignment Decisions through the
+existing `cited_refs` channel; prose unchanged — the routes stay authored/header-only).
+**CU3 — the findings validator rate (11 fallbacks):** the LLM footnoted the finding-list
+ordinal as a record; `findings` joins the authored-copy render path (verbatim), a
+deterministic ~zero fallback rate — the remediation number-validator floor left intact.
+**CU4 — the "order N" resolver:** "swap order 5 and order 4" / "order 15" resolve by
+numeric inference against the pinned world's real ids (4A.3b KNOWN GAP flipped); guarded
+so "show 5 late orders" stays a count. **CU5 — the loop closes:** the full bank re-ran
+live to `tests/ai_exam/sweeps/2026-07-24-post-repair/`; the founder-precedent log seeded
+with three OPEN judgment calls (lit-bars feel, invitation frequency, take frequency).
+Full non-slow Python green; slow `test_ai_voice` + `ai_exam` green; cockpit JS green. See
+the docs/04 2026-07-24 Session 4A.3c amendment.
 
 **v2.41:** **AI-track Session 4A.3b — the exam harness: evaluation at machine speed,
 judgment where it belongs** 2026-07-24 (R-AI4 + docs/04 amendment). The AI layer was the

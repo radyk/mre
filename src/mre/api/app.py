@@ -156,6 +156,12 @@ class AskRequest(BaseModel):
     # {order, machine}. Omitted → a fresh, self-contained question.
     history: list[dict[str, Any]] = []
     selection: dict[str, Any] = {}
+    # Session 4A.3c CU1: the resolved subject of the PRIOR answer ({order|machine}),
+    # sent back by the panel. It resolves a follow-up after a TYPED entity question
+    # ("why is ORD-05 late" → "but why?") that carries no selection — the honest
+    # carry a history built from the selection channel alone cannot provide. Sits
+    # between the live selection and history in the interpreter's resolution priority.
+    last_answered_subject: dict[str, Any] = {}
     session_id: Optional[str] = None    # links a refusal to its later rephrase
 
 
@@ -650,7 +656,8 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
             Path(run["out_dir"]), row["snapshot_id"], req.question,
             use_llm=req.llm and bool(os.environ.get("ANTHROPIC_API_KEY")),
             runs_subdir="scenario_runs" if row["is_scenario"] else "runs",
-            context={"history": req.history, "selection": req.selection},
+            context={"history": req.history, "selection": req.selection,
+                     "last_answered_subject": req.last_answered_subject},
             ledger_path=_ledger_path(registry),
             schedule_id=schedule_id,
             session_id=req.session_id,

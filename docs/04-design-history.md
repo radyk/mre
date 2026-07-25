@@ -7979,3 +7979,128 @@ fabrication, dark bars, dead doors) catch what is checkable without judgment, an
 reserve human judgment for the felt bar — evidence first, judgment labeled, the founder
 the final arbiter. And an instrument that can silently score a wiped run as "answered"
 is worse than none: make the dead target fire loud, like everything else here.
+
+
+### 2026-07-24 — Session 4A.3c: sweep repairs (the first triaged errand list)
+
+Executes the errand list the first exam sweep produced (210 probes, live LLM, pinned
+glass_box world), triaged in the working thread per R-AI4(2). Discovery already
+happened; this is repair. Backend + a cockpit panel field + tests + docs; **no
+solver / model / contract / frontend-substrate change; no golden moved.** Each CU has
+committed transcript evidence behind it (`tests/ai_exam/sweeps/2026-07-24/`).
+
+**CU1 — the "but why?" defect: resolved-subject context + a test-realism re-audit.**
+The sweep proved "but why?" after "why is ORD-05 late" CLARIFIES when no board
+selection carried the prior subject — conversational history is built from the
+SELECTION channel (the honest fidelity the runner named), so a TYPED entity question
+leaves no order in history for the follow-up to bind. And a 4A.2b unit test PASSED by
+feeding enriched history the cockpit never sends — a test vouching for behavior
+reality lacked. **The honest fix (product, not harness):** the ask response already
+knows its resolved subject; the panel now sends it back as `last_answered_subject`
+({order|machine}) on the next question (`AskRequest.last_answered_subject`,
+`askpanel.js` `resolvedSubject` from the prior bundle's `subject_type` +
+`subject_external_name`), and the interpreter's resolution consults it at a fixed
+priority — **live selection > last answered subject > conversation history > clarify**
+(`_last_subject` / `_typed_subject_with_source` / `_last_typed_subject` all take the
+new argument). The harness inherits the fix by construction: the runner carries the
+resolved subject exactly as the panel does (`runner.resolved_subject`, kept in lockstep
+with `askpanel.js` ORDER_SUBJECTS / MACHINE_SUBJECTS — ambiguous types like a bare
+"schedule" label carry nothing, never a guess). **The re-audit (a named standing
+discipline):** context / follow-up tests feed ONLY what the shipped surface sends. Five
+`test_ai_voice` fixtures that placed a TYPED subject in history were refactored to
+realistic context (subject on `last_answered_subject`, not history) — the bare-"but
+why?" cause-chain, the start-earlier-via-context specimen, the set-reference and
+verification clarifies, and their three parametrized twins. None became a KNOWN GAP —
+the product fix makes them pass for the right reason. A slow runner specimen pins the
+founder-register chain end to end ("why is ORD-05 late" -> "but why?" DEEPENS, never
+clarifies) via the runner's real carry.
+
+**CU2 — dark evidence: answers about placements light their bars (29 sweep findings).**
+An answer that narrates specific placements lights them. `order-schedule`,
+`start-reason`, and `machine-schedule` now populate `ordered_records` from the
+assignment Decisions of the placements they narrate (`_assignment_records` for a single
+order; a new `_assignment_records_for_ops` for a machine / schedule listing — walk each
+demand's lineage, keep the assignment decisions whose operation subject is a shown row,
+so the lit set is exactly the rows the answer lists, capped when the listing truncates,
+never a lane's whole history). Real Decision records (real record_ids), so the existing
+`cited_refs` lit-bars channel (3.1 CU4) and the testimony validator both stay honest —
+no new board machinery. **The prose stays deterministic and unchanged:** `schedule` and
+`start_reason` are header-only (the table / the R-SC3 polarity floor IS the answer), and
+both are locked to the authored-copy render path — the records feed lit-bars, they never
+trigger an LLM rewrite of a table nor a redundant evidence-chain dump under a table that
+already lists the rows. The sidecar's dark-evidence check goes to zero for these routes
+on real placements.
+
+**CU3 — the findings-register validator rate (11 fallbacks, ~11% of live renders).**
+The disease's third appearance, diagnosed exactly from the transcript: the LLM
+footnoted the finding-list ORDINAL as a record ("[record: 1]"), failing the citation
+floor and falling back to the template anyway — so findings NEVER delivered LLM fluency
+live, they only paid for a rejected call and an ugly "[LLM validation failed]" line.
+The composed findings body (`compose_findings`) is authored planner-voiced sentences
+(subject, offending value, plain cause, catalog fix) — the same KIND of composed
+authored copy every other register in this codebase (remediation, triage, coaching,
+contested, swap, gap) already short-circuits verbatim. So `findings` joins
+`_AUTHORED_COPY_SUBJECTS`: rendered verbatim, a deterministic ~zero validator-fallback
+rate. This is the "register's equivalent" cure the errand permitted; enriching
+pre-computed facts would not reliably stop a model from footnoting a list ordinal, and
+the fix must never widen the validator's tolerance — the floor's strictness is the
+floor, never the variable. The one remaining validator specimen (the remediation
+route's `_render_register` number-validator) is left INTACT — it is the fail-closed
+floor working as designed, not a defect to repair by weakening it.
+
+**CU4 — the "order N" resolver (the founder's live register, a 4A.3b KNOWN GAP).**
+"swap order 5 and order 4" / "order 15" / "ord 23" now resolve to their canonical ids
+by numeric inference against the PINNED world's actual ids (`_build_order_number_index`
+maps each order's trailing number to its ref, keeping only numbers a single ref claims;
+`rewrite_fuzzy_orders` gains an `_ORDER_N_RE` pass surfacing the same visible
+"assuming ORD-05" assumption the fuzzy layer uses). Resolution is against the world's
+real ids, never string synthesis; zero-padding is inferred from the ref; an ambiguous
+number is dropped from the index (clarifies, never guesses); an absent number is left
+untouched (the honest unresolved path). **Guard:** the noun must PRECEDE the digit
+("order 5"), so "show 5 late orders" is a count, never ORD-05 (a negative test pins it).
+The 4A.3b KNOWN GAP pin flipped to a passing specimen; the founder's solve-#5 phrasings
+join the passing set. (Side effect, named: "order 2001" now resolves deterministically,
+so one `test_interpreter` LLM-miss fixture was re-pointed to "job 2001" — a genuine
+miss — to keep exercising the paraphrase path.)
+
+**CU5 — the loop closes: the post-repair re-sweep + the precedent log.** The full
+4A.3b bank (210 probes, live LLM, same pinned glass_box world) re-ran to
+`tests/ai_exam/sweeps/2026-07-24-post-repair/`. Mechanical deltas from the first sweep
+are stated in the close-out (dark-evidence on the repaired routes -> ~0; validator
+fallbacks -> the findings register cleared, the remediation floor honestly remaining;
+absent-entity unchanged honest refusals; any NEW findings the repairs surfaced named,
+not chased past scope). `RUBRIC.md`'s founder-precedent log is seeded with the three
+working-thread judgment calls as OPEN entries awaiting round-four verdicts: lit-bars
+feel at volume, invitation frequency across broadened coverage, take frequency (28/42
+renders).
+
+**A named standing discipline (the CU1 test-realism class).** Context / follow-up tests
+feed ONLY what the shipped surface transmits. The cockpit sends a history turn's
+order / machine from the ACTIVE board selection, never from the answer's resolved
+subject; a follow-up after a TYPED entity question carries its subject on
+`last_answered_subject`, not in history. A test that enriches history beyond the
+selection channel passes for behavior the product may lack — exactly the seam the first
+sweep exposed. New context tests are written to the panel's real payload; an old one is
+refactored to it (and, if the behavior then fails, converted to a pinned KNOWN GAP,
+never vouched).
+
+**OUT OF SCOPE (named, not built):** anything the post-repair re-sweep newly discovers
+(the next errand list); invitation / take frequency tuning (founder judgment, round
+four); the docs/05 structured-constraint surface; harness features beyond CU1's state
+carry.
+
+**Verification.** Full non-slow Python suite green; slow `test_ai_voice` green including
+the flipped CU4 specimen and the refactored CU1 fixtures; slow `ai_exam` runner green
+including the CU1 chain + CU2 lit-bars end-to-end specimens; cockpit JS green including
+the panel's `last_answered_subject` payload assertion. No golden moved; no solver /
+model / contract / frontend-substrate change. The post-repair sweep is committed with
+its deltas stated. Same-commit: this amendment (docs/04), docs/07 same-day, CLAUDE.md.
+
+Lesson: a test that feeds context the shipped surface never sends vouches for behavior
+reality lacks — the "but why?" specimen passed on enriched history while the real
+product clarified, and only the sweep, firing the honest carry, caught it. The cure is
+two-sided: fix the PRODUCT (carry the resolved subject the way the panel now does) and
+re-audit the TESTS to the real payload, so green means the founder would hear the same.
+And the recurring disease has one recurring cure — when an answer is composed authored
+copy, render it verbatim; the LLM's fluency is not worth a fabricated citation, and the
+validator that catches the fabrication is the floor, never the thing you loosen.

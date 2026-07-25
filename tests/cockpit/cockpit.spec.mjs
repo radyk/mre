@@ -167,6 +167,21 @@ test("resolved question — an elliptical follow-up shows what it answered (CU2)
   await expect(note.locator("pre")).toHaveText("why is ORD-000012 late?");
 });
 
+test("last_answered_subject — the panel carries the prior answer's resolved subject (4A.3c CU1)", async ({ page }) => {
+  await boot(page);
+  // First answer's bundle is subject_type=demand, subject_external_name=ORD-000012,
+  // so the panel must send last_answered_subject={order:"ORD-000012"} on the NEXT
+  // /ask — the honest carry a selection-only history cannot supply (a TYPED entity
+  // question leaves nothing in the selection channel).
+  await page.evaluate((q) => window.__cockpit.ask(q), ACCEPTANCE_Q);
+  await expect(page.locator(".msg.answer")).toBeVisible();
+  const nextReq = page.waitForRequest(
+    (r) => r.url().includes("/ask") && r.method() === "POST");
+  await page.evaluate(() => window.__cockpit.ask("and what about it?"));
+  const body = (await nextReq).postDataJSON();
+  expect(body.last_answered_subject).toEqual({ order: "ORD-000012" });
+});
+
 test("C1 drift — standing regression across zoom (label-vs-bar 0.0px)", async ({ page }) => {
   await boot(page);
   await page.evaluate((q) => window.__cockpit.ask(q), ACCEPTANCE_Q);

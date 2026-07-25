@@ -142,7 +142,35 @@ floor. Conversation quality is still Claude's read and the founder's call.
 FOUNDER PRECEDENT LOG (judgment-call verdicts, newest last)
 ------------------------------------------------------------------------------
 
-(empty -- the first sweep's judgment calls will be recorded here after the
-founder's listening session. Each entry: the route, the question, the answer's
-disputed property, and the founder's verdict, so a future sweep grades the same
-way.)
+Each entry: the route, the question, the answer's disputed property, and the
+founder's verdict (OPEN until the listening session rules), so a future sweep
+grades the same way.
+
+OPEN (Session 4A.3c, awaiting round-four verdicts -- the three working-thread
+judgment calls the repairs surfaced):
+
+  1. LIT-BARS FEEL AT VOLUME (C-cross, all narrating routes).
+     Route: order-schedule / start-reason / machine-schedule.
+     Question (e.g.): "whats running on CUT-01".
+     Disputed property: CU2 now lights EVERY narrated placement's bar. On a busy
+     machine that is many bars at once. Is the simultaneous highlight informative
+     or noisy? Should a long listing cap the lit set (e.g. only the late rows), or
+     is lighting exactly what the answer lists the right contract?
+     Verdict: OPEN.
+
+  2. INVITATION FREQUENCY ACROSS BROADENED COVERAGE (C2).
+     Route: coaching / gap-between / late-orders / why-late / data-problems.
+     Disputed property: 4A.3b CU4 widened invitations to more route families.
+     Across a whole conversation, does the "Want ...? Ask ..." offer land as
+     helpful fluency or as a tic? Is one-per-answer still too many when several
+     answers in a row each carry one?
+     Verdict: OPEN.
+
+  3. TAKE FREQUENCY (C2).
+     Route: late-order / swap-move / advice (the "My take:" carriers).
+     Disputed property: the first sweep rendered 28 "My take:" lines across 42 LLM
+     renders. Is a take on ~two-thirds of causal/diagnostic answers the right
+     density, or does it dilute the ones that matter? Which answers earn silence?
+     Verdict: OPEN.
+
+(Resolved entries accrete below as the founder rules; newest last.)

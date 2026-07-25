@@ -1,0 +1,2353 @@
+AI EXAM TRANSCRIPT
+target      : out-dir:gb_pinned
+snapshot    : snap-exam
+started     : 2026-07-25T06:47:29Z
+llm mode    : live
+questions   : 210
+llm calls   : 72
+sidecar     : absent-entity=3
+------------------------------------------------------------------------
+# AI EXAM BANK — founder regression scripts
+# generated: 2026-07-24  (Session 4A.3b, CU2a)
+# taxonomy : Session 4A.3 route set (docs/07 v2.40)
+# world    : glass_box (orders ORD-01..15; machines CUT-01, PRESS-FAST,
+# PRESS-SLOW, PAINT-01, HEAT-01; ORD-05 late +890 held by ORD-04 on
+# CUT-01; ORD-13 the early control; ORD-03 splittable; ORD-09 RED /
+# ORD-12 BLUE on PAINT-01)
+# 
+# Every founder-exam finding from rounds one through three, VERBATIM including
+# typos. The SEQUENCE is the test — these are conversation scripts, RESET between
+# conversations. Pilot ids the glass_box world lacks (ord-000038, order 23, ...)
+# are adapted to real ids; PHRASING is preserved exactly. A finding that reopens
+# here is a regression.
+# --- Round 3: the gap/adjacency question (verbatim typo; pilot ids adapted) -----
+Q[16]: why os ORD-09 not running right after ORD-12 instead of a gap between
+  route=gap-between  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    The gap on PAINT-01 between ORD-09 (2026-01-05 10:20) and ORD-12 (2026-01-05 14:41) isn't idle — ORD-02 runs there (2026-01-05 11:01 → 2026-01-05 14:41).
+
+    Want the rest of PAINT-01's schedule? Ask "what's running on PAINT-01?"
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 3: list-expansion off a count -----------------------------------------
+Q[20]: how many orders are late
+  route=inventory  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    15 order(s) are in the plan, scheduled across 17 operation(s).
+    1 operation(s) can split across a pause (e.g. an overnight closure).
+    1 order(s) finish late.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[21]: can you list the numbers
+  interpreted as: how many orders are in the plan?  (listing the previous answer)
+  route=inventory  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    15 order(s) are in the plan, scheduled across 17 operation(s).
+    1 operation(s) can split across a pause (e.g. an overnight closure).
+    1 order(s) finish late.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 3: correction on a cross-type referent (verbatim "not the jo") ---------
+Q[25]: why is ORD-05 on CUT-01
+  route=why-on-machine  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=1  refs=1/1/1
+  A:
+    ORD-05 is assigned to CUT-01 because the machine was busy with other work [record: a692e8e0...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[26]: i was asking about the machine not the jo
+  route=CLARIFY  source=none  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I need one more detail to answer "i was asking about the machine not the jo".
+    Which order, machine, or customer do you mean? Ask it again naming one, e.g. "why is that order late?" becomes "why is <order> late?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 3: the coaching-menu follow-up (verbatim) -----------------------------
+Q[30]: i want to change something about how the plant runs, how
+  route=coaching  source=llm  conf=0.85  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    That's a configuration question, and I can point you to the submission setting for it — but I don't recognize which capability you mean.
+
+    Capabilities I can coach today (each names the submission field and its spec section):
+      - splittable, earliness_value, setup_family, alternates, customers, locks, wip, overtime
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[31]: what about wip. what do you mean
+  route=CLARIFY  source=none  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I need one more detail to answer "what about wip. what do you mean".
+    Which order, machine, or customer do you mean? Ask it again naming one, e.g. "why is that order late?" becomes "why is <order> late?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 3: selection deixis (verbatim question + a live board selection) -------
+# [SELECT order=ORD-05 machine=CUT-01]
+Q[36]: whats the end time of this order
+  selection: order=ORD-05, machine=CUT-01
+  interpreted as: whats the end time of ORD-05  (resolved against ORD-05 (from board selection))
+  route=order-schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-05: 1 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 3: the swap phrasings, three ways + the solve-#5 variants (adapted) ----
+Q[40]: why not just swap ORD-04 and ORD-05
+  route=swap-move  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=3  records=2  refs=2/1/0
+  A:
+      ORD-04: 0.2 day(s) early on CUT-01 (starts 2026-01-05 11:00).
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+
+    My take: ORD-04 has ~0.2 day(s) of slack to spend; ORD-05 is the one hurting (890 min late) — giving it ORD-04's earlier slot is the move worth pricing.
+
+    Drag ORD-05's first operation onto ORD-04's slot on CUT-01 and the board will run a sandbox and price the swap exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[41]: can we swap order 4 and order 5
+  interpreted as: can we swap ORD-04 and ORD-05  (assuming ORD-04, ORD-05)
+  route=swap-move  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=3  records=2  refs=2/1/0
+  A:
+      ORD-04: 0.2 day(s) early on CUT-01 (starts 2026-01-05 11:00).
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+
+    My take: ORD-04 has ~0.2 day(s) of slack to spend; ORD-05 is the one hurting (890 min late) — giving it ORD-04's earlier slot is the move worth pricing.
+
+    Drag ORD-05's first operation onto ORD-04's slot on CUT-01 and the board will run a sandbox and price the swap exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[42]: what if we swapped ORD-05 with ORD-04
+  route=swap-move  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=3  records=2  refs=2/1/0
+  A:
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+      ORD-04: 0.2 day(s) early on CUT-01 (starts 2026-01-05 11:00).
+
+    My take: ORD-04 has ~0.2 day(s) of slack to spend; ORD-05 is the one hurting (890 min late) — giving it ORD-04's earlier slot is the move worth pricing.
+
+    Drag ORD-05's first operation onto ORD-04's slot on CUT-01 and the board will run a sandbox and price the swap exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[43]: why not just swap order 5 and order 4
+  interpreted as: why not just swap ORD-05 and ORD-04  (assuming ORD-05, ORD-04)
+  route=swap-move  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=3  records=2  refs=2/1/0
+  A:
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+      ORD-04: 0.2 day(s) early on CUT-01 (starts 2026-01-05 11:00).
+
+    My take: ORD-04 has ~0.2 day(s) of slack to spend; ORD-05 is the one hurting (890 min late) — giving it ORD-04's earlier slot is the move worth pricing.
+
+    Drag ORD-05's first operation onto ORD-04's slot on CUT-01 and the board will run a sandbox and price the swap exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 2b: the "but why?" rewrite-confidence guard ---------------------------
+Q[47]: why is ORD-05 late
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 46a60da9...]. It could not start until 2026-01-06 07:00 because CUT-01 was occupied by ORD-04, high priority, until 2026-01-05 18:50 [record: a692e8e0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[48]: but why?
+  interpreted as: why is ORD-05 late?  (resolved against ORD-05)
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 46a60da9...]. It was assigned to CUT-01, which was busy with other work [record: a692e8e0...], and could not start until 2026-01-06 07:00 because CUT-01 was held by ORD-04, high priority until 2026-01-05 18:50 [EVIDENCE CHAIN].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 2b: contested fact, the sycophancy guard (both directions) ------------
+Q[52]: isn't ORD-05 on time?
+  route=contested-fact  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can see why you'd hope so, but the record has ORD-05 finishing 890 minutes past its due date (due 2026-01-05) — I'm not going to call it on time when the evidence says otherwise.
+    Happy to walk the chain with you though: ask "why is ORD-05 late?" and I'll show exactly what held it up.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+Q[54]: is ORD-13 actually late?
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-13 is not late. ORD-13 finished on 2026-01-05 07:20 UTC with a lateness of -16839 min (-280.6h), completing 11.7 days early against its due date of 2026-01-16T23:59:59Z [record: 1250b05e...]. ORD-13 was assigned to CUT-01 [record: 0785275e...], and its due date was driving the schedule [record: 4cbdd7f7...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 2b / R-AI3: start-reason polarity (the why-early / why-not-sooner pair) -
+Q[58]: why is ORD-13 starting so early? it's not due until next week
+  route=start-reason  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-13 starts Monday (2026-01-05 07:00) because finishing early costs nothing here: among equally-cheap options the schedule starts work as soon as it can, banking slack — it finishes about 11.7 day(s) ahead of its due date (2026-01-16).
+    The earliest it could begin is its release date, Monday 2026-01-05.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+Q[60]: why can't ORD-05 start sooner
+  route=start-reason  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-05 starts Tuesday (2026-01-06 07:00) because CUT-01 was busy: it was held by ORD-04, high priority until 2026-01-05 18:50, so ORD-05 took the next opening.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 2b / R-AI3: the hypothesis-content guard (verbatim) --------------------
+Q[64]: maybe if splitting is allowed less orders would be late
+  route=coaching  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    Yes — an operation to pause at a shift end or closure and resume the next working period, so a long job can span downtime instead of waiting for a gap big enough to hold it whole.
+
+    To enable it: set splittable=true and a min_chunk_minutes on that operation's routing line in routing_lines.csv (the run phase becomes resumable; chunk boundaries fall on calendar boundaries, and nothing is billed to the pause). See the incoming-data spec §5.3.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+Q[66]: overtime would probably help with the late ones
+  route=coaching  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    Yes — extra working hours beyond the regular shift — an overtime window a job can run in when the regular calendar is closed, priced at a premium so the schedule only buys those hours when they pay for themselves (e.g. a Saturday shift that rescues a tight order).
+
+    To enable it: add an added exception row with reason overtime on that resource's calendar in calendars.csv (the window it opens), and set an overtime_premium_multiplier in cost_model.json (the premium its hours bill at). See the incoming-data spec §5.6.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 2: the blocked-by chain names the culprit -----------------------------
+Q[70]: why is ORD-05 late
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 46a60da9...]. It could not start until 2026-01-06 07:00 because CUT-01 was occupied by ORD-04, high priority, until 2026-01-05 18:50 [record: a692e8e0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 3: machine-idle ------------------------------------------------------
+Q[74]: why is HEAT-01 idle
+  route=machine-idle  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    HEAT-01 isn't idle — it carries 4 operation(s), running from 2026-01-05 07:00 to 2026-01-10 17:00. Ask "what's running on HEAT-01?" for the list.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 1: the filing-cabinet close (register coherence + fix-first) ----------
+Q[78]: what's wrong with the submission
+  route=certificate-testimony  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[79]: what should i fix first
+  route=triage  source=deterministic  conf=-  register=judgment  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    Grade-Distance Triage
+
+    1 advisory finding — no action required. The plan proceeded using default inputs, though this bears noting:
+
+    - Customer priority weight weakly known for 13 orders [WARNING] — Tardiness priority ranking cannot be relied upon. Fix: Specify each order's customer priority weight at submission to prevent tardiness ranking from defaulting.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: judgment]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 2b: fuzzy entity tolerance (near-miss id spellings) --------------------
+Q[83]: why is ord-o5 late
+  interpreted as: why is ORD-05 late  (assuming ORD-05)
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 46a60da9...]. It couldn't start until 2026-01-06 07:00 because CUT-01 was held by ORD-04, high priority until 2026-01-05 18:50 [record: a692e8e0...]. Its due date was driving the schedule [record: 4834dbcc...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[84]: why is ORD-5 late
+  interpreted as: why is ORD-05 late  (assuming ORD-05)
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 46a60da9...]. It could not start until 2026-01-06 07:00 because CUT-01 was occupied by ORD-04, high priority, until 2026-01-05 18:50 [record: a692e8e0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 2b: verification of a prior claim (must clarify, never confirm) --------
+Q[88]: which orders are late
+  route=late-orders  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  A:
+    Yes, there is 1 late order(s): ORD-05 with lateness of 890 min (14.8h) [record: 46a60da9...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[89]: is that correct
+  route=CLARIFY  source=none  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I need one more detail to answer "is that correct".
+    I can't confirm a previous statement as "correct" — I answer from the evidence, not my own claims. Re-ask what you want checked, e.g. "how many orders have data problems?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# AI EXAM BANK — route paraphrase fans
+# generated: 2026-07-24  (Session 4A.3b, CU2b)
+# taxonomy : Session 4A.3 route set (docs/07 v2.40)
+# world    : glass_box
+# 
+# 6-10 phrasings per route family, planner language, mixing clean and sloppy /
+# typo'd register. Each group probes ONE route; RESET between groups so a fan does
+# not accumulate cross-route state. Regenerating this bank is a reviewed change.
+# --- late-order ------------------------------------------------------------------
+Q[100]: why is ORD-05 late
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 46a60da9...]. It could not start until 2026-01-06 07:00 because CUT-01 was occupied by ORD-04, high priority, until 2026-01-05 18:50 [record: a692e8e0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[101]: what's making ORD-05 late
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 46a60da9...]. It could not start until 2026-01-06 07:00 because CUT-01 was held by ORD-04, high priority, until 2026-01-05 18:50 [record: a692e8e0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[102]: how come ORD-05 missed its due date
+  route=order-schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-05 completes 2026-01-06 14:50 — 0.6 day(s) late (due 2026-01-05).
+    It starts 2026-01-06 07:00.
+
+    Its schedule:
+
+      [CUT-01]
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[103]: ORD-05 is late, why
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 46a60da9...]. It could not start until 2026-01-06 07:00 because CUT-01 was occupied by ORD-04, high priority, until 2026-01-05 18:50 [record: a692e8e0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[104]: whats holding up ORD-05
+  route=order-schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-05: 1 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[105]: why did ORD-05 finish late
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 46a60da9...]. It could not start until 2026-01-06 07:00 because CUT-01 was occupied by ORD-04, high priority until 2026-01-05 18:50 [evidence chain]. ORD-05 was assigned to CUT-01, which was busy with other work [record: a692e8e0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[106]: reason ORD-05 is behind
+  route=order-schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-05: 1 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[107]: whyy is ord-05 so late
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 46a60da9...]. It was assigned to CUT-01, which was held by ORD-04 (high priority) until 2026-01-05 18:50, preventing ORD-05 from starting until 2026-01-06 07:00 [record: a692e8e0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- late-orders -----------------------------------------------------------------
+Q[111]: which orders are late
+  route=late-orders  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  A:
+    Yes, there is 1 late order(s): ORD-05 with a lateness of 890 min (14.8h) [record: 46a60da9...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[112]: are there any late orders
+  route=late-orders  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  A:
+    Yes, there is 1 late order(s): ORD-05 with a lateness of 890 min (14.8h) [record: 46a60da9...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[113]: show me everything that's late
+  route=late-orders  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  A:
+    Yes, there is 1 late order(s): ORD-05 with a lateness of 890 min (14.8h) [record: 46a60da9...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[114]: what's running late
+  route=late-orders  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  A:
+    Yes, there is 1 late order(s): ORD-05 with a lateness of 890 min (14.8h) [record: 46a60da9...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[115]: any orders behind schedule
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I don't see any scheduled operations matching that.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[116]: list the late ones
+  route=late-orders  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  A:
+    Yes, there is 1 late order(s): ORD-05 with a lateness of 890 min (14.8h) [record: 46a60da9...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- why-on-machine --------------------------------------------------------------
+Q[120]: why is ORD-05 on CUT-01
+  route=why-on-machine  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=1  refs=1/1/1
+  A:
+    ORD-05 is assigned to CUT-01 because the machine was busy with other work [record: a692e8e0...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[121]: how come ORD-05 landed on CUT-01
+  route=why-on-machine  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=1  refs=1/1/1
+  A:
+    ORD-05 is on CUT-01 because the machine was busy with other work [record: a692e8e0...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[122]: why did you put ORD-05 on CUT-01
+  route=swap-move  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+
+    My take: ORD-05 is 890 min late — the move worth pricing is the one that gives it an earlier opening.
+
+    Drag ORD-05's first operation to the earlier slot you have in mind and the board will run a sandbox and price the move exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[123]: what made ORD-05 run on CUT-01
+  route=why-on-machine  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=1  refs=1/1/1
+  A:
+    ORD-05 is assigned to CUT-01 because the machine was busy with other work [record: a692e8e0...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[124]: why ORD-04 on CUT-01
+  route=why-on-machine  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=1  refs=1/1/1
+  A:
+    ORD-04 is on CUT-01 because the machine was busy with other work [record: a6823ebe...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- machine-schedule ------------------------------------------------------------
+Q[128]: what's running on CUT-01
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=7  records=6  refs=6/1/0
+  A:
+    CUT-01: 6 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+        seq= 10  2026-01-05 07:20 -> 2026-01-05 11:00  ORD-02  -14958min early
+        seq= 10  2026-01-05 11:00 -> 2026-01-05 18:50  ORD-04  -309min early
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+        seq= 10  2026-01-06 14:50 -> 2026-01-06 18:30  ORD-01  -12319min early
+        seq= 10  2026-01-07 07:00 -> 2026-01-07 19:00  ORD-03  -12358min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[129]: show CUT-01's schedule
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=7  records=6  refs=6/1/0
+  A:
+    CUT-01: 6 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+        seq= 10  2026-01-05 07:20 -> 2026-01-05 11:00  ORD-02  -14958min early
+        seq= 10  2026-01-05 11:00 -> 2026-01-05 18:50  ORD-04  -309min early
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+        seq= 10  2026-01-06 14:50 -> 2026-01-06 18:30  ORD-01  -12319min early
+        seq= 10  2026-01-07 07:00 -> 2026-01-07 19:00  ORD-03  -12358min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[130]: what does PAINT-01 have queued
+  route=machine-schedule  source=llm  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=5  records=4  refs=4/1/0
+  A:
+    PAINT-01: 4 operation(s):
+
+      [PAINT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 10:20  ORD-09  -13779min early
+        seq= 20  2026-01-05 11:01 -> 2026-01-05 14:41  ORD-02  -14958min early
+        seq= 10  2026-01-05 14:41 -> 2026-01-05 18:01  ORD-12  -13318min early
+        seq= 20  2026-01-07 07:00 -> 2026-01-07 10:40  ORD-01  -12319min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[131]: whats on HEAT-01
+  route=machine-schedule  source=llm  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=5  records=4  refs=4/1/0
+  A:
+    HEAT-01: 4 operation(s):
+
+      [HEAT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 08:50  ORD-14  -16749min early
+        seq= 10  2026-01-05 08:50 -> 2026-01-05 10:40  ORD-15  -16639min early
+        seq= 10  2026-01-09 07:00 -> 2026-01-09 17:00  ORD-10  -419min early
+        seq= 10  2026-01-10 07:00 -> 2026-01-10 17:00  ORD-11  -419min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[132]: list the jobs on PRESS-FAST
+  route=machine-schedule  source=llm  conf=0.98  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=4  records=2  refs=2/2/0
+  A:
+    PRESS-FAST: 2 operation(s):
+
+      [PRESS-FAST]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 11:25  ORD-06  -754min early
+        seq= 10  2026-01-05 11:25 -> 2026-01-05 15:50  ORD-07  -489min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[133]: what's next on CUT-01
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=6  records=5  refs=5/1/0
+  A:
+    CUT-01: 5 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+        seq= 10  2026-01-05 07:20 -> 2026-01-05 11:00  ORD-02  -14958min early
+        seq= 10  2026-01-05 11:00 -> 2026-01-05 18:50  ORD-04  -309min early
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+        seq= 10  2026-01-06 14:50 -> 2026-01-06 18:30  ORD-01  -12319min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- order-schedule --------------------------------------------------------------
+Q[137]: when does ORD-13 start and finish
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-13 completes 2026-01-05 07:20 — 11.7 day(s) early (due 2026-01-16).
+    It starts 2026-01-05 07:00.
+
+    Its schedule:
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[138]: what's the timeline for ORD-03
+  route=order-schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-03: 1 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-07 07:00 -> 2026-01-07 19:00  ORD-03  -12358min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[139]: when will ORD-05 be done
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-05 completes 2026-01-06 14:50 — 0.6 day(s) late (due 2026-01-05).
+    It starts 2026-01-06 07:00.
+
+    Its schedule:
+
+      [CUT-01]
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[140]: show ORD-09's schedule
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-09: 1 operation(s):
+
+      [PAINT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 10:20  ORD-09  -13779min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[141]: what time does ORD-11 finish
+  route=order-schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-11 completes 2026-01-10 17:00 — 0.3 day(s) early (due 2026-01-10).
+    It starts 2026-01-10 07:00.
+
+    Its schedule:
+
+      [HEAT-01]
+        seq= 10  2026-01-10 07:00 -> 2026-01-10 17:00  ORD-11  -419min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[142]: whens ord-13 done
+  route=order-schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-13 completes 2026-01-05 07:20 — 11.7 day(s) early (due 2026-01-16).
+    It starts 2026-01-05 07:00.
+
+    Its schedule:
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- downtime --------------------------------------------------------------------
+Q[146]: how much downtime does PAINT-01 have
+  route=downtime  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    No downtime is declared for any resource.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[147]: what closures are on CUT-01
+  route=downtime  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    No downtime is declared for any resource.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[148]: show HEAT-01's downtime
+  route=downtime  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    No downtime is declared for any resource.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[149]: when is PRESS-FAST closed
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=4  records=2  refs=2/2/0
+  A:
+    PRESS-FAST: 2 operation(s):
+
+      [PRESS-FAST]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 11:25  ORD-06  -754min early
+        seq= 10  2026-01-05 11:25 -> 2026-01-05 15:50  ORD-07  -489min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[150]: any downtime on CUT-01
+  route=downtime  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    No downtime is declared for any resource.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- data-problems ---------------------------------------------------------------
+Q[154]: what data problems exist
+  route=data-problems  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[155]: are there any data quality issues
+  route=data-problems  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[156]: what's wrong with the input data
+  route=certificate-testimony  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[157]: show me the data findings
+  route=data-problems  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[158]: any problems with the submission data
+  route=data-problems  source=llm  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[159]: whats wrong with the data
+  route=certificate-testimony  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- triage ----------------------------------------------------------------------
+Q[163]: what should I fix first
+  route=triage  source=deterministic  conf=-  register=judgment  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    1 advisory finding — no action required
+
+    The plan proceeded using default inputs, but you should be aware:
+
+    - Customer priority weight is weakly known for 13 orders, making tardiness priority unreliable [WARNING]  
+      Fix: Specify each order's customer priority weight in your submission to prevent tardiness ranking from defaulting.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: judgment]
+------------------------------------------------------------------------
+Q[164]: where do I start fixing
+  route=triage  source=llm  conf=0.95  register=judgment  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    Grade-Distance Triage
+
+    1 advisory finding(s), no action required — the plan proceeded on defaulted inputs, but worth knowing:
+
+    - The customer priority weight is only weakly known for 13 order(s), making tardiness priority unreliable [WARNING] — Fix: Declare each order's customer priority weight in the submission to prevent tardiness ranking from defaulting.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: judgment]
+------------------------------------------------------------------------
+Q[165]: what's the most important thing to fix
+  route=triage  source=deterministic  conf=-  register=judgment  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    Grade-Distance Triage
+
+    1 advisory finding — no action required. The plan proceeded using defaulted inputs, but this warrants awareness:
+
+    - 13 order(s) lack reliable customer priority weight data, making tardiness priority unreliable [WARNING]  
+      Fix: Declare customer priority weight for each order at submission to prevent tardiness ranking from defaulting.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: judgment]
+------------------------------------------------------------------------
+Q[166]: prioritize the fixes for me
+  route=triage  source=deterministic  conf=-  register=judgment  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    1 advisory finding — no action required
+
+    The plan proceeded using default inputs, but this warrants awareness:
+
+    - Customer priority weight is weakly known for 13 order(s), making tardiness priority unreliable [WARNING]  
+      Fix: Specify each order's customer priority weight in the submission to prevent tardiness ranking from defaulting.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: judgment]
+------------------------------------------------------------------------
+Q[167]: whats first on the fix list
+  route=triage  source=llm  conf=0.95  register=judgment  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    Grade-Distance Triage
+
+    1 advisory finding — no action required. The plan proceeded using default inputs, but this is worth noting:
+
+    - Customer priority weight is weakly known for 13 orders, making tardiness priority unreliable [WARNING].  
+      *Fix:* Specify each order's customer priority weight in the submission to prevent tardiness ranking from reverting to defaults.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: judgment]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- remediation -----------------------------------------------------------------
+Q[171]: how do I fix the submission's problems
+  route=remediation  source=deterministic  conf=-  register=remediation  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    Remediation Guidance
+
+    1 advisory finding(s), no action required — the plan proceeded using default settings, though you may want to review:
+
+    - [WARNING] Tardiness priority ranking is unreliable because customer priority weight is only weakly known for 13 order(s). — Fix: Explicitly specify each order's customer priority weight during submission to ensure tardiness ranking uses actual values instead of defaults.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: remediation]
+------------------------------------------------------------------------
+Q[172]: how do I resolve the data issues
+  route=remediation  source=deterministic  conf=-  register=remediation  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    Remediation Guidance
+
+    1 advisory finding(s), no action required — the plan proceeded using default settings, though this warrants awareness:
+
+    - Customer priority weight is weakly established for 13 order(s), making tardiness priority unreliable [WARNING] — *Fix:* Specify the customer priority weight for each order at submission to ensure tardiness ranking is not determined by defaults.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: remediation]
+------------------------------------------------------------------------
+Q[173]: what's the fix for these findings
+  route=data-problems  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[174]: how do I clean up the submission
+  route=remediation  source=llm  conf=0.95  register=remediation  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    1 advisory finding — no action required. The plan moved forward using default values, though you should be aware of the following:
+
+    - Customer priority weight is uncertain for 13 order(s), making tardiness priority unreliable [WARNING] — Fix: Specify the customer priority weight for each order at submission to ensure tardiness ranking is not defaulted.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: remediation]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- certificate-testimony -------------------------------------------------------
+Q[178]: what's wrong with the submission
+  route=certificate-testimony  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[179]: is the submission ok
+  route=NEAR_MISS  source=llm  conf=0.85  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can't answer that one exactly — "is the submission ok".
+
+    Here's what I can do that's closest:
+      - integrity-check
+      - explain what's wrong with the submission
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[180]: what did the gate find
+  route=REFUSED  source=none  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can't answer this question yet: "what did the gate find"
+
+    Supported question types:
+      - why is ORD-01 late — the lateness cause chain
+      - when does ORD-01 finish — one order's schedule
+      - what's running on CUT-01 — that machine's schedule
+      - why is an order late — the lateness cause chain
+      - are there any late orders — every late order at a glance
+      - why is an order on a machine — the assignment reason
+      - what's running on a machine — that machine's schedule
+      - what's next on a machine — its upcoming jobs
+      - when does an order start or finish — one order's schedule
+      - schedule for a customer — every job for that customer
+      - how much downtime a machine has — its calendar closures
+      - what data problems exist — data-quality findings
+      - what changed between two schedule versions — a version diff
+      - show the full schedule — everything, machine by machine
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[181]: tell me about the certificate
+  route=certificate-testimony  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- excluded-orders -------------------------------------------------------------
+Q[185]: which orders were excluded from the plan
+  route=excluded-orders  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    No data-quality problems — the submission is clean.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[186]: did any orders get dropped
+  route=excluded-orders  source=llm  conf=0.85  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    No data-quality problems — the submission is clean.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[187]: what got left out of the schedule
+  route=excluded-orders  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    No data-quality problems — the submission is clean.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[188]: were any orders excluded
+  route=excluded-orders  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    No data-quality problems — the submission is clean.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- order-attributes ------------------------------------------------------------
+Q[192]: what product is ORD-01
+  route=order-attributes  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    ORD-01:
+      Product   : P-WIDGET
+      Quantity  : 50 EA
+      Customer  : not specified — declare customers in the submission's customers file to see one here
+      Due       : 2026-01-15
+      Released  : 2026-01-05
+      Priority  : standard priority
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[193]: what are the details of ORD-05
+  route=order-attributes  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    ORD-05:
+      Product   : P-RUSH
+      Quantity  : 150 EA
+      Customer  : not specified — declare customers in the submission's customers file to see one here
+      Due       : 2026-01-05
+      Released  : 2026-01-05
+      Priority  : standard priority
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[194]: who is the customer for ORD-13
+  route=order-attributes  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    ORD-13:
+      Product   : P-SHIM
+      Quantity  : 10 EA
+      Customer  : not specified — declare customers in the submission's customers file to see one here
+      Due       : 2026-01-16
+      Released  : 2026-01-05
+      Priority  : standard priority
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[195]: how many units is ORD-03
+  route=order-attributes  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    ORD-03:
+      Product   : P-SPACER
+      Quantity  : 1 EA
+      Customer  : not specified — declare customers in the submission's customers file to see one here
+      Due       : 2026-01-16
+      Released  : 2026-01-05
+      Priority  : standard priority
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[196]: when is ORD-11 due
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-11 completes 2026-01-10 17:00 — 0.3 day(s) early (due 2026-01-10).
+    It starts 2026-01-10 07:00.
+
+    Its schedule:
+
+      [HEAT-01]
+        seq= 10  2026-01-10 07:00 -> 2026-01-10 17:00  ORD-11  -419min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[197]: what's the priority of ORD-04
+  route=order-schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-04: 1 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-05 11:00 -> 2026-01-05 18:50  ORD-04  -309min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- inventory -------------------------------------------------------------------
+Q[201]: how many orders are in the plan
+  route=inventory  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    15 order(s) are in the plan, scheduled across 17 operation(s).
+    1 operation(s) can split across a pause (e.g. an overnight closure).
+    1 order(s) finish late.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[202]: how many operations are scheduled
+  route=inventory  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    15 order(s) are in the plan, scheduled across 17 operation(s).
+    1 operation(s) can split across a pause (e.g. an overnight closure).
+    1 order(s) finish late.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[203]: how many jobs total
+  route=inventory  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    15 order(s) are in the plan, scheduled across 17 operation(s).
+    1 operation(s) can split across a pause (e.g. an overnight closure).
+    1 order(s) finish late.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[204]: what's the size of this schedule
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I don't see any scheduled operations matching that.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[205]: count the orders
+  route=REFUSED  source=none  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can't answer this question yet: "count the orders"
+
+    Supported question types:
+      - why is ORD-01 late — the lateness cause chain
+      - when does ORD-01 finish — one order's schedule
+      - what's running on CUT-01 — that machine's schedule
+      - why is an order late — the lateness cause chain
+      - are there any late orders — every late order at a glance
+      - why is an order on a machine — the assignment reason
+      - what's running on a machine — that machine's schedule
+      - what's next on a machine — its upcoming jobs
+      - when does an order start or finish — one order's schedule
+      - schedule for a customer — every job for that customer
+      - how much downtime a machine has — its calendar closures
+      - what data problems exist — data-quality findings
+      - what changed between two schedule versions — a version diff
+      - show the full schedule — everything, machine by machine
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- integrity-check -------------------------------------------------------------
+Q[209]: is anything double-booked
+  route=integrity-check  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    No double-booking on any machine: no two operations are scheduled on the same machine at the same time (17 operation(s) checked). The schedule is conflict-free by construction — the solver enforces one job per machine at a time.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[210]: are there any conflicts
+  route=integrity-check  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    No double-booking on any machine: no two operations are scheduled on the same machine at the same time (17 operation(s) checked). The schedule is conflict-free by construction — the solver enforces one job per machine at a time.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[211]: is CUT-01 overbooked
+  route=machine-schedule  source=llm  conf=0.75  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=7  records=6  refs=6/1/0
+  A:
+    CUT-01: 6 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+        seq= 10  2026-01-05 07:20 -> 2026-01-05 11:00  ORD-02  -14958min early
+        seq= 10  2026-01-05 11:00 -> 2026-01-05 18:50  ORD-04  -309min early
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+        seq= 10  2026-01-06 14:50 -> 2026-01-06 18:30  ORD-01  -12319min early
+        seq= 10  2026-01-07 07:00 -> 2026-01-07 19:00  ORD-03  -12358min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[212]: did any machine get two jobs at once
+  route=NEAR_MISS  source=llm  conf=0.85  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can't answer that one exactly — "did any machine get two jobs at once".
+
+    Here's what I can do that's closest:
+      - integrity-check
+      - list the data-quality problems
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- start-reason ----------------------------------------------------------------
+Q[216]: why does ORD-13 start when it does
+  route=start-reason  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-13 starts Monday (2026-01-05 07:00) because it isn't released for production until Monday 2026-01-05 — nothing can begin before its release date.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[217]: why does ORD-05 begin at that time
+  route=start-reason  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-05 starts Tuesday (2026-01-06 07:00) because CUT-01 was busy: it was held by ORD-04, high priority until 2026-01-05 18:50, so ORD-05 took the next opening.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[218]: what determines when ORD-03 starts
+  route=order-schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-03 completes 2026-01-07 19:00 — 9.2 day(s) early (due 2026-01-16).
+    It starts 2026-01-07 07:00.
+
+    Its schedule:
+
+      [CUT-01]
+        seq= 10  2026-01-07 07:00 -> 2026-01-07 19:00  ORD-03  -12358min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[219]: why is ORD-13 starting so early
+  route=start-reason  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-13 starts Monday (2026-01-05 07:00) because finishing early costs nothing here: among equally-cheap options the schedule starts work as soon as it can, banking slack — it finishes about 11.7 day(s) ahead of its due date (2026-01-16).
+    The earliest it could begin is its release date, Monday 2026-01-05.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[220]: why can't ORD-05 start earlier
+  route=start-reason  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-05 starts Tuesday (2026-01-06 07:00) because CUT-01 was busy: it was held by ORD-04, high priority until 2026-01-05 18:50, so ORD-05 took the next opening.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- briefing --------------------------------------------------------------------
+Q[224]: what should I worry about today
+  route=briefing  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    1 order(s) need attention today, worst first:
+
+      • ORD-05 — 890 min late (held behind ORD-04 on CUT-01)
+
+    Data to watch: the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable.
+      Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[225]: give me the morning briefing
+  route=briefing  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    1 order(s) need attention today, worst first:
+
+      • ORD-05 — 890 min late (held behind ORD-04 on CUT-01)
+
+    Data to watch: the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable.
+      Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[226]: what needs my attention
+  route=briefing  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    1 order(s) need attention today, worst first:
+
+      • ORD-05 — 890 min late (held behind ORD-04 on CUT-01)
+
+    Data to watch: the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable.
+      Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[227]: anything I should be concerned about
+  route=NEAR_MISS  source=llm  conf=0.72  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can't answer that one exactly — "anything I should be concerned about".
+
+    Here's what I can do that's closest:
+      - briefing
+      - explain why each order is late and price a what-if move
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[228]: whats the status today
+  route=briefing  source=llm  conf=0.75  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    1 order(s) need attention today, worst first:
+
+      • ORD-05 — 890 min late (held behind ORD-04 on CUT-01)
+
+    Data to watch: the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable.
+      Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- swap-move -------------------------------------------------------------------
+Q[232]: why not just swap ORD-04 and ORD-05
+  route=swap-move  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=3  records=2  refs=2/1/0
+  A:
+      ORD-04: 0.2 day(s) early on CUT-01 (starts 2026-01-05 11:00).
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+
+    My take: ORD-04 has ~0.2 day(s) of slack to spend; ORD-05 is the one hurting (890 min late) — giving it ORD-04's earlier slot is the move worth pricing.
+
+    Drag ORD-05's first operation onto ORD-04's slot on CUT-01 and the board will run a sandbox and price the swap exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[233]: can we swap ORD-05 and ORD-04
+  route=swap-move  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=3  records=2  refs=2/1/0
+  A:
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+      ORD-04: 0.2 day(s) early on CUT-01 (starts 2026-01-05 11:00).
+
+    My take: ORD-04 has ~0.2 day(s) of slack to spend; ORD-05 is the one hurting (890 min late) — giving it ORD-04's earlier slot is the move worth pricing.
+
+    Drag ORD-05's first operation onto ORD-04's slot on CUT-01 and the board will run a sandbox and price the swap exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[234]: what if we move ORD-05 earlier
+  route=swap-move  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+
+    My take: ORD-05 is 890 min late — the move worth pricing is the one that gives it an earlier opening.
+
+    Drag ORD-05's first operation to the earlier slot you have in mind and the board will run a sandbox and price the move exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[235]: move ORD-05 ahead of ORD-04
+  route=swap-move  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=3  records=2  refs=2/1/0
+  A:
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+      ORD-04: 0.2 day(s) early on CUT-01 (starts 2026-01-05 11:00).
+
+    My take: ORD-04 has ~0.2 day(s) of slack to spend; ORD-05 is the one hurting (890 min late) — giving it ORD-04's earlier slot is the move worth pricing.
+
+    Drag ORD-05's first operation onto ORD-04's slot on CUT-01 and the board will run a sandbox and price the swap exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[236]: why not put ORD-05 first
+  route=swap-move  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+
+    My take: ORD-05 is 890 min late — the move worth pricing is the one that gives it an earlier opening.
+
+    Drag ORD-05's first operation to the earlier slot you have in mind and the board will run a sandbox and price the move exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- gap-between -----------------------------------------------------------------
+Q[240]: why is there a gap between ORD-09 and ORD-12
+  route=gap-between  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    The gap on PAINT-01 between ORD-09 (2026-01-05 10:20) and ORD-12 (2026-01-05 14:41) isn't idle — ORD-02 runs there (2026-01-05 11:01 → 2026-01-05 14:41).
+
+    Want the rest of PAINT-01's schedule? Ask "what's running on PAINT-01?"
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[241]: what's the gap between ORD-09 and ORD-12 about
+  route=gap-between  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    The gap on PAINT-01 between ORD-09 (2026-01-05 10:20) and ORD-12 (2026-01-05 14:41) isn't idle — ORD-02 runs there (2026-01-05 11:01 → 2026-01-05 14:41).
+
+    Want the rest of PAINT-01's schedule? Ask "what's running on PAINT-01?"
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[242]: why the space between ORD-09 and ORD-12 on PAINT-01
+  route=gap-between  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    The gap on PAINT-01 between ORD-09 (2026-01-05 10:20) and ORD-12 (2026-01-05 14:41) isn't idle — ORD-02 runs there (2026-01-05 11:01 → 2026-01-05 14:41).
+
+    Want the rest of PAINT-01's schedule? Ask "what's running on PAINT-01?"
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[243]: whats between ORD-09 and ORD-12
+  route=order-schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-09: 1 operation(s):
+
+      [PAINT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 10:20  ORD-09  -13779min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- machine-idle ----------------------------------------------------------------
+Q[247]: why is HEAT-01 idle
+  route=machine-idle  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    HEAT-01 isn't idle — it carries 4 operation(s), running from 2026-01-05 07:00 to 2026-01-10 17:00. Ask "what's running on HEAT-01?" for the list.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[248]: why does HEAT-01 have no work
+  route=machine-idle  source=llm  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    HEAT-01 isn't idle — it carries 4 operation(s), running from 2026-01-05 07:00 to 2026-01-10 17:00. Ask "what's running on HEAT-01?" for the list.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[249]: why is CUT-01 sitting empty
+  route=machine-idle  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    CUT-01 isn't idle — it carries 6 operation(s), running from 2026-01-05 07:00 to 2026-01-07 19:00. Ask "what's running on CUT-01?" for the list.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[250]: how come PAINT-01 isn't busy
+  route=machine-idle  source=llm  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    PAINT-01 isn't idle — it carries 4 operation(s), running from 2026-01-05 07:00 to 2026-01-07 10:40. Ask "what's running on PAINT-01?" for the list.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- advice ----------------------------------------------------------------------
+Q[254]: what should I do about the late orders
+  route=advice  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    1 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    My take: ORD-05's 890-minute slip traces to ORD-04 holding CUT-01 until 2026-01-05 18:50 — pulling that earlier is the single biggest lever the board gives you today.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[255]: how do I make fewer orders late
+  route=late-orders  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  A:
+    Yes, there is 1 late order(s): ORD-05 with lateness of 890 min (14.8h) [record: 46a60da9...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[256]: what can I do to improve the schedule
+  route=advice  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    1 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    My take: ORD-05's 890-minute slip traces to ORD-04 holding CUT-01 until 2026-01-05 18:50 — pulling that earlier is the single biggest lever the board gives you today.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[257]: help me reduce lateness
+  route=advice  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    1 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    My take: ORD-05's 890-minute slip traces to ORD-04 holding CUT-01 until 2026-01-05 18:50 — pulling that earlier is the single biggest lever the board gives you today.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- coaching --------------------------------------------------------------------
+Q[261]: i want orders to span downtime, how
+  route=coaching  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    Yes — an operation to pause at a shift end or closure and resume the next working period, so a long job can span downtime instead of waiting for a gap big enough to hold it whole.
+
+    To enable it: set splittable=true and a min_chunk_minutes on that operation's routing line in routing_lines.csv (the run phase becomes resumable; chunk boundaries fall on calendar boundaries, and nothing is billed to the pause). See the incoming-data spec §5.3.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[262]: does MRE support alternate machines
+  interpreted as: how do i enable alternates?  (coaching on alternates)
+  route=coaching  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    Yes — one operation to be eligible on more than one machine, so the solver can route it to whichever is cheapest or free — with an honest per-machine rate for each.
+
+    To enable it: add one routing_lines.csv row per eligible machine sharing the same (route_id, sequence); give each its own run_minutes_per_unit / setup_minutes where the rates differ. See the incoming-data spec §5.3.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[263]: how do I enable overtime
+  interpreted as: how do i enable overtime?  (coaching on overtime)
+  route=coaching  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    Yes — extra working hours beyond the regular shift — an overtime window a job can run in when the regular calendar is closed, priced at a premium so the schedule only buys those hours when they pay for themselves (e.g. a Saturday shift that rescues a tight order).
+
+    To enable it: add an added exception row with reason overtime on that resource's calendar in calendars.csv (the window it opens), and set an overtime_premium_multiplier in cost_model.json (the premium its hours bill at). See the incoming-data spec §5.6.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[264]: can I set setup families
+  interpreted as: how do i enable setup_family?  (coaching on setup_family)
+  route=coaching  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    Yes — sequence-dependent changeovers between job families (e.g. a colour change on a paint line) to be modeled and their time amortized by grouping like work.
+
+    To enable it: tag each operation with a setup_family on its routing line (routing_lines.csv, §5.3) and declare the changeover times between families in setup_transitions.csv. See the incoming-data spec §5.11.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[265]: i want to use customer priorities, how
+  route=triage  source=deterministic  conf=-  register=judgment  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    Grade-Distance Triage
+
+    1 advisory finding(s), no action required — the plan proceeded on defaulted inputs, but worth knowing:
+
+    - Customer priority weight is weakly known for 13 order(s), making tardiness priority unreliable [WARNING] — Fix: Specify each order's customer priority weight in the submission to prevent tardiness ranking from defaulting.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: judgment]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- solve-time ------------------------------------------------------------------
+Q[269]: how long did the solve take
+  route=solve-time  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I don't have the solve's timing recorded for this schedule, so I can't give you a number.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[270]: how much time did this take to solve
+  route=solve-time  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I don't have the solve's timing recorded for this schedule, so I can't give you a number.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[271]: solve duration
+  route=solve-time  source=llm  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I don't have the solve's timing recorded for this schedule, so I can't give you a number.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- machine-count ---------------------------------------------------------------
+Q[275]: how many machines are there
+  route=machine-count  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    5 machine(s) carry work in this plan.
+
+      - CUT-01
+      - HEAT-01
+      - PAINT-01
+      - PRESS-FAST
+      - PRESS-SLOW
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[276]: how many resources in the plan
+  route=machine-count  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    5 machine(s) carry work in this plan.
+
+      - CUT-01
+      - HEAT-01
+      - PAINT-01
+      - PRESS-FAST
+      - PRESS-SLOW
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[277]: count the machines
+  route=machine-count  source=llm  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    5 machine(s) carry work in this plan.
+
+      - CUT-01
+      - HEAT-01
+      - PAINT-01
+      - PRESS-FAST
+      - PRESS-SLOW
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- maintenance -----------------------------------------------------------------
+Q[281]: is any maintenance scheduled
+  route=maintenance  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can't yet answer maintenance, shift, or calendar questions across the whole plan — that's on the roadmap, not built yet.
+    What I can show is one machine's downtime and closures — ask "how much downtime does CUT-01 have?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[282]: are there any planned maintenance windows
+  route=maintenance  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can't yet answer maintenance, shift, or calendar questions across the whole plan — that's on the roadmap, not built yet.
+    What I can show is one machine's downtime and closures — ask "how much downtime does CUT-01 have?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[283]: when is maintenance
+  route=maintenance  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can't yet answer maintenance, shift, or calendar questions across the whole plan — that's on the roadmap, not built yet.
+    What I can show is one machine's downtime and closures — ask "how much downtime does CUT-01 have?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- customer-schedule -----------------------------------------------------------
+Q[287]: show the schedule for customer Acme
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    Nothing scheduled for customer acme.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[288]: what's scheduled for customer Beta
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    Nothing scheduled for customer beta.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- contested-fact --------------------------------------------------------------
+Q[292]: isn't ORD-05 on time
+  route=contested-fact  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can see why you'd hope so, but the record has ORD-05 finishing 890 minutes past its due date (due 2026-01-05) — I'm not going to call it on time when the evidence says otherwise.
+    Happy to walk the chain with you though: ask "why is ORD-05 late?" and I'll show exactly what held it up.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[293]: ORD-05 isn't actually late, right
+  route=contested-fact  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    Yes — the record agrees: ORD-05 finishes 890 minutes late (due 2026-01-05).
+    Ask "why is ORD-05 late?" for the cause chain.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[294]: I thought ORD-05 was fine
+  route=contested-fact  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can see why you'd hope so, but the record has ORD-05 finishing 890 minutes past its due date (due 2026-01-05) — I'm not going to call it on time when the evidence says otherwise.
+    Happy to walk the chain with you though: ask "why is ORD-05 late?" and I'll show exactly what held it up.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# AI EXAM BANK — traps
+# generated: 2026-07-24  (Session 4A.3b, CU2b)
+# taxonomy : Session 4A.3 route set (docs/07 v2.40)
+# world    : glass_box
+# 
+# The failure shapes the founder exams found the hard way, generalized: polarity
+# traps, hypothesis-statements, wrong-entity / cross-type probes, ordinal + named
+# menu follow-ups, elliptical chains, contested-fact both directions, selection-vs-
+# history conflicts, and probes that would catch a dark lit-bars channel. RESET
+# separates independent conversations; within a conversation the sequence matters.
+# --- polarity traps: why-early vs why-not-sooner must never collide --------------
+Q[307]: why is ORD-13 starting so early
+  route=start-reason  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-13 starts Monday (2026-01-05 07:00) because finishing early costs nothing here: among equally-cheap options the schedule starts work as soon as it can, banking slack — it finishes about 11.7 day(s) ahead of its due date (2026-01-16).
+    The earliest it could begin is its release date, Monday 2026-01-05.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[308]: why has ORD-13 already started, it's not due for a week
+  route=start-reason  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-13 starts Monday (2026-01-05 07:00) because finishing early costs nothing here: among equally-cheap options the schedule starts work as soon as it can, banking slack — it finishes about 11.7 day(s) ahead of its due date (2026-01-16).
+    The earliest it could begin is its release date, Monday 2026-01-05.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[309]: why can't ORD-05 start sooner
+  route=start-reason  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-05 starts Tuesday (2026-01-06 07:00) because CUT-01 was busy: it was held by ORD-04, high priority until 2026-01-05 18:50, so ORD-05 took the next opening.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[310]: why can't ORD-05 start earlier
+  route=start-reason  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-05 starts Tuesday (2026-01-06 07:00) because CUT-01 was busy: it was held by ORD-04, high priority until 2026-01-05 18:50, so ORD-05 took the next opening.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[311]: why is ORD-05 so late but ORD-13 so early
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 46a60da9...]. It could not start until 2026-01-06 07:00 because CUT-01 was occupied by ORD-04, high priority, until 2026-01-05 18:50 [EVIDENCE CHAIN]. The due date was driving the schedule [record: 4834dbcc...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- hypothesis-statements (coach/advise by content shape, never a status recital) -
+Q[315]: maybe if splitting were allowed fewer orders would be late
+  route=coaching  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    Yes — an operation to pause at a shift end or closure and resume the next working period, so a long job can span downtime instead of waiting for a gap big enough to hold it whole.
+
+    To enable it: set splittable=true and a min_chunk_minutes on that operation's routing line in routing_lines.csv (the run phase becomes resumable; chunk boundaries fall on calendar boundaries, and nothing is billed to the pause). See the incoming-data spec §5.3.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[316]: overtime would probably help
+  interpreted as: how do i enable overtime?  (coaching on overtime)
+  route=coaching  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    Yes — extra working hours beyond the regular shift — an overtime window a job can run in when the regular calendar is closed, priced at a premium so the schedule only buys those hours when they pay for themselves (e.g. a Saturday shift that rescues a tight order).
+
+    To enable it: add an added exception row with reason overtime on that resource's calendar in calendars.csv (the window it opens), and set an overtime_premium_multiplier in cost_model.json (the premium its hours bill at). See the incoming-data spec §5.6.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[317]: i bet more machines would fix this
+  route=advice  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    1 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    My take: ORD-05's 890-minute slip traces to ORD-04 holding CUT-01 until 2026-01-05 18:50 — pulling that earlier is the single biggest lever the board gives you today.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[318]: what if we just worked weekends
+  route=coaching  source=llm  conf=0.85  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    That's a configuration question, and I can point you to the submission setting for it — but I don't recognize which capability you mean.
+
+    Capabilities I can coach today (each names the submission field and its spec section):
+      - splittable, earliness_value, setup_family, alternates, customers, locks, wip, overtime
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[319]: splitting might reduce the lateness
+  interpreted as: how do i enable splittable?  (coaching on splittable)
+  route=coaching  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    Yes — an operation to pause at a shift end or closure and resume the next working period, so a long job can span downtime instead of waiting for a gap big enough to hold it whole.
+
+    To enable it: set splittable=true and a min_chunk_minutes on that operation's routing line in routing_lines.csv (the run phase becomes resumable; chunk boundaries fall on calendar boundaries, and nothing is billed to the pause). See the incoming-data spec §5.3.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- ellipsis follow-up that is NOT a hypothesis (must not misfire) ---------------
+Q[323]: why is ORD-05 late
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 46a60da9...]. It could not start until 2026-01-06 07:00 because CUT-01 was occupied by ORD-04, high priority, until 2026-01-05 18:50 [record: a692e8e0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[324]: and what would fix it
+  interpreted as: and what would fix ORD-05  (resolved against ORD-05)
+  route=order-schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-05: 1 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- wrong-entity / absent ids (must refuse honestly, never answer globally) ------
+Q[328]: why is ORD-99 late
+  route=unknown-entity  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    ORD-99 isn't in this schedule — I don't see it among the planned orders.
+    Orders I do have include: ORD-01, ORD-02, ORD-03, ORD-04, ORD-05, ORD-06.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+  >> sidecar[absent-entity]: interpreted-as names 'ORD-99', absent from the pinned document
+------------------------------------------------------------------------
+Q[329]: when does ORD-88 finish
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I don't see any scheduled operations matching that.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+  >> sidecar[absent-entity]: interpreted-as names 'ORD-88', absent from the pinned document
+------------------------------------------------------------------------
+Q[330]: what's running on GRINDER-01
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I don't see any scheduled operations matching that.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[331]: why is ORD-000038 late
+  route=unknown-entity  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    ORD-000038 isn't in this schedule — I don't see it among the planned orders.
+    Orders I do have include: ORD-01, ORD-02, ORD-03, ORD-04, ORD-05, ORD-06.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+  >> sidecar[absent-entity]: interpreted-as names 'ORD-000038', absent from the pinned document
+------------------------------------------------------------------------
+Q[332]: is ZZZ-1 in this schedule
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I don't see any scheduled operations matching that.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- cross-type probes (an order name where a machine is asked, and vice versa) ---
+Q[336]: what's running on ORD-05
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-05: 1 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[337]: why is CUT-01 late
+  route=late-orders  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  A:
+    Yes, there is 1 late order: ORD-05 with a lateness of 890 min (14.8h) [record: 46a60da9...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[338]: when does CUT-01 finish
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=7  records=6  refs=6/1/0
+  A:
+    CUT-01: 6 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+        seq= 10  2026-01-05 07:20 -> 2026-01-05 11:00  ORD-02  -14958min early
+        seq= 10  2026-01-05 11:00 -> 2026-01-05 18:50  ORD-04  -309min early
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+        seq= 10  2026-01-06 14:50 -> 2026-01-06 18:30  ORD-01  -12319min early
+        seq= 10  2026-01-07 07:00 -> 2026-01-07 19:00  ORD-03  -12358min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[339]: why is ORD-13 idle
+  route=order-schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-13: 1 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- coaching menu: named follow-up resolves, ordinal clarifies -------------------
+Q[343]: how do I configure the plant
+  route=coaching  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    That's a configuration question, and I can point you to the submission setting for it — but I don't recognize which capability you mean.
+
+    Capabilities I can coach today (each names the submission field and its spec section):
+      - splittable, earliness_value, setup_family, alternates, customers, locks, wip, overtime
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[344]: what about wip
+  interpreted as: how do i enable wip?  (coaching on wip)
+  route=coaching  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    Yes — the plant to reschedule from its actual shop-floor position — work already complete or in progress — instead of planning from a blank slate.
+
+    To enable it: declare observed status in wip_status.csv (complete / in_progress / not_started, with progress for in-flight work). See the incoming-data spec §5.13.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+Q[346]: how do I configure the plant
+  route=coaching  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    That's a configuration question, and I can point you to the submission setting for it — but I don't recognize which capability you mean.
+
+    Capabilities I can coach today (each names the submission field and its spec section):
+      - splittable, earliness_value, setup_family, alternates, customers, locks, wip, overtime
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[347]: the second one
+  route=CLARIFY  source=none  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I need one more detail to answer "the second one".
+    Which capability do you mean? Name it — e.g. "how do I enable splittable?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+Q[349]: tell me what I can coach
+  route=coaching  source=llm  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    That's a configuration question, and I can point you to the submission setting for it — but I don't recognize which capability you mean.
+
+    Capabilities I can coach today (each names the submission field and its spec section):
+      - splittable, earliness_value, setup_family, alternates, customers, locks, wip, overtime
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[350]: overtime
+  interpreted as: how do i enable overtime?  (coaching on overtime)
+  route=coaching  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    Yes — extra working hours beyond the regular shift — an overtime window a job can run in when the regular calendar is closed, priced at a premium so the schedule only buys those hours when they pay for themselves (e.g. a Saturday shift that rescues a tight order).
+
+    To enable it: add an added exception row with reason overtime on that resource's calendar in calendars.csv (the window it opens), and set an overtime_premium_multiplier in cost_model.json (the premium its hours bill at). See the incoming-data spec §5.6.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- elliptical chains carried by a live selection --------------------------------
+# [SELECT order=ORD-05 machine=CUT-01]
+Q[355]: why is this order late
+  selection: order=ORD-05, machine=CUT-01
+  interpreted as: why is ORD-05 late  (resolved against ORD-05 (from board selection))
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 46a60da9...]. It could not start until 2026-01-06 07:00 because CUT-01 was held by ORD-04, high priority until 2026-01-05 18:50 [record: a692e8e0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[356]: what's the end time of this order
+  selection: order=ORD-05, machine=CUT-01
+  interpreted as: what's the end time of ORD-05  (resolved against ORD-05 (from board selection))
+  route=order-schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-05: 1 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[357]: why is it on that machine
+  selection: order=ORD-05, machine=CUT-01
+  interpreted as: why is it on CUT-01  (resolved against CUT-01 (from board selection))
+  route=NEAR_MISS  source=llm  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can't answer that one exactly — "why is it on CUT-01".
+
+    Here's what I can do that's closest:
+      - explain why an order is on CUT-01
+      - show what's running on CUT-01
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- selection-vs-history conflict (the live selection must win) ------------------
+Q[361]: why is ORD-13 late
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-13 is not late. The projected_completion is 2026-01-05 07:20 UTC with a lateness of -16839 min (-280.6h), meaning it finished 11.7 days early relative to the due_date of 2026-01-16T23:59:59Z [record: 1250b05e...]. ORD-13 was assigned to CUT-01 during scheduling [record: 0785275e...], and its due date was driving the schedule [record: 4cbdd7f7...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [SELECT order=ORD-05 machine=CUT-01]
+Q[363]: why is this order late
+  selection: order=ORD-05, machine=CUT-01
+  interpreted as: why is ORD-05 late  (resolved against ORD-05 (from board selection))
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 46a60da9...]. It could not start until 2026-01-06 07:00 because CUT-01 was held by ORD-04, high priority until 2026-01-05 18:50 [evidence chain]. ORD-05 was assigned to CUT-01, which was busy with other work [record: a692e8e0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- deixis with NO selection (must clarify, never guess) -------------------------
+Q[367]: why is this order late
+  route=CLARIFY  source=none  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I need one more detail to answer "why is this order late".
+    Which order, machine, or customer do you mean? Ask it again naming one, e.g. "why is that order late?" becomes "why is <order> late?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[368]: what's the end time of this order
+  route=CLARIFY  source=none  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I need one more detail to answer "what's the end time of this order".
+    Which order, machine, or customer do you mean? Ask it again naming one, e.g. "why is that order late?" becomes "why is <order> late?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- corrections re-answer the prior question with the corrected referent ---------
+Q[372]: why is ORD-04 late
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-04 is not late. It finished at 2026-01-05 18:50 UTC with a lateness of -309 min (-5.2h), completing 5.2h early against its due date of 2026-01-05T23:59:59Z [record: 93690768...]. The order was assigned to CUT-01 [record: a6823ebe...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[373]: no I meant ORD-05
+  interpreted as: why is ORD-05 late?  (corrected to ORD-05)
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 46a60da9...]. It could not start until 2026-01-06 07:00 because CUT-01 was occupied by ORD-04, high priority, until 2026-01-05 18:50 [evidence chain]. ORD-05 was assigned to CUT-01, which was busy with other work [record: a692e8e0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+Q[375]: what's running on CUT-01
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=7  records=6  refs=6/1/0
+  A:
+    CUT-01: 6 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+        seq= 10  2026-01-05 07:20 -> 2026-01-05 11:00  ORD-02  -14958min early
+        seq= 10  2026-01-05 11:00 -> 2026-01-05 18:50  ORD-04  -309min early
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+        seq= 10  2026-01-06 14:50 -> 2026-01-06 18:30  ORD-01  -12319min early
+        seq= 10  2026-01-07 07:00 -> 2026-01-07 19:00  ORD-03  -12358min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[376]: i was asking about PAINT-01 not CUT-01
+  route=CLARIFY  source=none  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I need one more detail to answer "i was asking about PAINT-01 not CUT-01".
+    Which order, machine, or customer do you mean? Ask it again naming one, e.g. "why is that order late?" becomes "why is <order> late?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- contested fact both directions (hold warmly when wrong; yield when right) ----
+Q[380]: isn't ORD-05 on time
+  route=contested-fact  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can see why you'd hope so, but the record has ORD-05 finishing 890 minutes past its due date (due 2026-01-05) — I'm not going to call it on time when the evidence says otherwise.
+    Happy to walk the chain with you though: ask "why is ORD-05 late?" and I'll show exactly what held it up.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[381]: ORD-05 is fine, right
+  route=order-schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-05: 1 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[382]: isn't ORD-13 late
+  route=contested-fact  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    Good news — the record actually has ORD-13 finishing on time, 11.7 day(s) early (due 2026-01-16), not late.
+    Want the detail? Ask "when does ORD-13 finish?" and I'll show the timeline.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[383]: ORD-13 missed its date, didn't it
+  route=order-schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-13: 1 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- list-expansion / set-reference chains ---------------------------------------
+Q[387]: how many orders are late
+  route=inventory  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    15 order(s) are in the plan, scheduled across 17 operation(s).
+    1 operation(s) can split across a pause (e.g. an overnight closure).
+    1 order(s) finish late.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[388]: list them
+  interpreted as: how many orders are in the plan?  (listing the previous answer)
+  route=inventory  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    15 order(s) are in the plan, scheduled across 17 operation(s).
+    1 operation(s) can split across a pause (e.g. an overnight closure).
+    1 order(s) finish late.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[389]: the numbers please
+  interpreted as: how many orders are in the plan?  (listing the previous answer)
+  route=inventory  source=deterministic  conf=-  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    15 order(s) are in the plan, scheduled across 17 operation(s).
+    1 operation(s) can split across a pause (e.g. an overnight closure).
+    1 order(s) finish late.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+Q[391]: which orders have data problems
+  route=data-problems  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[392]: how many of those are critical
+  route=CLARIFY  source=none  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I need one more detail to answer "how many of those are critical".
+    "those" looks like it refers to a group, not one order — I won't guess which. Did you mean the flagged orders? Ask e.g. "which orders have issues?" or name a specific order.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- dark lit-bars probes: evidence-shaped routes that MUST light bars -------------
+Q[396]: why is ORD-05 late
+  route=late-order  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 46a60da9...]. It could not start until 2026-01-06 07:00 because CUT-01 was occupied by ORD-04, high priority, until 2026-01-05 18:50 [record: a692e8e0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[397]: why is ORD-05 on CUT-01
+  route=why-on-machine  source=deterministic  conf=-  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=1  refs=1/1/1
+  A:
+    ORD-05 is assigned to CUT-01 because the machine was busy with other work [record: a692e8e0...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[398]: when does ORD-05 start and finish
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-05 completes 2026-01-06 14:50 — 0.6 day(s) late (due 2026-01-05).
+    It starts 2026-01-06 07:00.
+
+    Its schedule:
+
+      [CUT-01]
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[399]: what's running on CUT-01
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=7  records=6  refs=6/1/0
+  A:
+    CUT-01: 6 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+        seq= 10  2026-01-05 07:20 -> 2026-01-05 11:00  ORD-02  -14958min early
+        seq= 10  2026-01-05 11:00 -> 2026-01-05 18:50  ORD-04  -309min early
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+        seq= 10  2026-01-06 14:50 -> 2026-01-06 18:30  ORD-01  -12319min early
+        seq= 10  2026-01-07 07:00 -> 2026-01-07 19:00  ORD-03  -12358min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[400]: why does ORD-13 start when it does
+  route=start-reason  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-13 starts Monday (2026-01-05 07:00) because it isn't released for production until Monday 2026-01-05 — nothing can begin before its release date.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- optimality / unsupported (must refuse, never a schedule dump) ----------------
+Q[404]: is there a better schedule
+  route=advice  source=llm  conf=0.85  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    1 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    My take: ORD-05's 890-minute slip traces to ORD-04 holding CUT-01 until 2026-01-05 18:50 — pulling that earlier is the single biggest lever the board gives you today.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[405]: can you make it cheaper
+  route=CLARIFY  source=none  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I need one more detail to answer "can you make it cheaper".
+    Which order, machine, or customer do you mean? Ask it again naming one, e.g. "why is that order late?" becomes "why is <order> late?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[406]: what's the optimal plan
+  route=NEAR_MISS  source=llm  conf=0.60  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can't answer that one exactly — "what's the optimal plan".
+
+    Here's what I can do that's closest:
+      - explain why each order is late and price a what-if move
+      - show how to enable that capability in the submission
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[407]: find me a faster schedule
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I don't see any scheduled operations matching that.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- frustration / meta-commentary (never echo the complaint back) ----------------
+Q[411]: this is not helpful
+  route=CLARIFY  source=none  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I need one more detail to answer that.
+    Which order, machine, or customer do you mean? Ask it again naming one, e.g. "why is that order late?" becomes "why is <order> late?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[412]: that's wrong, try again
+  route=REFUSED  source=none  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can't answer that question yet.
+
+    Supported question types:
+      - why is ORD-01 late — the lateness cause chain
+      - when does ORD-01 finish — one order's schedule
+      - what's running on CUT-01 — that machine's schedule
+      - why is an order late — the lateness cause chain
+      - are there any late orders — every late order at a glance
+      - why is an order on a machine — the assignment reason
+      - what's running on a machine — that machine's schedule
+      - what's next on a machine — its upcoming jobs
+      - when does an order start or finish — one order's schedule
+      - schedule for a customer — every job for that customer
+      - how much downtime a machine has — its calendar closures
+      - what data problems exist — data-quality findings
+      - what changed between two schedule versions — a version diff
+      - show the full schedule — everything, machine by machine
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[413]: come on, just tell me
+  route=REFUSED  source=none  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can't answer that question yet.
+
+    Supported question types:
+      - why is ORD-01 late — the lateness cause chain
+      - when does ORD-01 finish — one order's schedule
+      - what's running on CUT-01 — that machine's schedule
+      - why is an order late — the lateness cause chain
+      - are there any late orders — every late order at a glance
+      - why is an order on a machine — the assignment reason
+      - what's running on a machine — that machine's schedule
+      - what's next on a machine — its upcoming jobs
+      - when does an order start or finish — one order's schedule
+      - schedule for a customer — every job for that customer
+      - how much downtime a machine has — its calendar closures
+      - what data problems exist — data-quality findings
+      - what changed between two schedule versions — a version diff
+      - show the full schedule — everything, machine by machine
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- rolling-shape probes on a monolithic run (must degrade honestly) -------------
+Q[417]: what's beyond the horizon
+  route=NEAR_MISS  source=llm  conf=1.00  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can't answer that one exactly — "what's beyond the horizon".
+
+    Here's what I can do that's closest:
+      - beyond-horizon
+      - show every late order at a glance
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[418]: why isn't ORD-05 scheduled yet
+  route=schedule  source=deterministic  conf=-  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  A:
+    ORD-05: 1 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[419]: what's frozen
+  route=NEAR_MISS  source=llm  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  A:
+    I can't answer that one exactly — "what's frozen".
+
+    Here's what I can do that's closest:
+      - frozen
+      - briefing
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------

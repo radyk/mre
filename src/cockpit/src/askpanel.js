@@ -31,6 +31,26 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
   // later rephrase (R-AI1(d)). The server is stateless — the client carries this.
   const sessionId = `sess-${Math.random().toString(36).slice(2, 10)}`;
   const askHistory = [];   // [{question, resolved_question, route, order, machine}]
+  // Session 4A.3c CU1: the resolved subject of the PRIOR answer ({order|machine}),
+  // sent back on the next /ask so a follow-up after a TYPED entity question ("why
+  // is ORD-05 late" → "but why?") carries a subject even with nothing selected. A
+  // history built from the selection channel alone cannot supply this. Kept in
+  // lockstep with runner.py resolved_subject — the harness carries EXACTLY this.
+  let lastAnswered = {};
+
+  // Subject types whose subject_external_name is unambiguously an ORDER ref vs a
+  // MACHINE ref. Ambiguous types (a bare "schedule" label may be either) carry
+  // nothing — we never guess order-vs-machine.
+  const ORDER_SUBJECTS = new Set(["demand", "start_reason", "contested_fact", "order_attributes"]);
+  const MACHINE_SUBJECTS = new Set(["machine_idle"]);
+  function resolvedSubject(meta) {
+    const name = ((meta && meta.subject_external_name) || "").trim();
+    if (!name || name === "?" || name === "all") return {};
+    const st = meta && meta.subject_type;
+    if (ORDER_SUBJECTS.has(st)) return { order: name };
+    if (MACHINE_SUBJECTS.has(st)) return { machine: name };
+    return {};
+  }
   // Session 4.4 CU2: a question in flight is uncommitted user state — freshness
   // must never yank the board out from under an ask that is mid-round-trip.
   let asking = false;
@@ -149,6 +169,7 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
       const res = await ask(scheduleId, question, useLlm, {
         history: askHistory.slice(-4),
         selection: currentSelectionRefs(),
+        lastAnswered,
         sessionId,
       });
       // CU2: an elliptical follow-up the server resolved shows the question it
@@ -164,6 +185,8 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
         route: (res.bundle && res.bundle.route) || null,
         order: refs.order, machine: refs.machine,
       });
+      // Carry this answer's resolved subject into the next question (CU1).
+      lastAnswered = resolvedSubject(res.bundle);
       // CU3: a voice-originated question gets a SPOKEN response — the register
       // aloud + a one-sentence summary; record IDs stay on screen, never voiced.
       if (spoken) speak(spokenSummary(res.answer, res.bundle?.register));
