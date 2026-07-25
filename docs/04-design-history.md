@@ -8104,3 +8104,153 @@ re-audit the TESTS to the real payload, so green means the founder would hear th
 And the recurring disease has one recurring cure — when an answer is composed authored
 copy, render it verbatim; the LLM's fluency is not worth a fabricated citation, and the
 validator that catches the fabrication is the floor, never the thing you loosen.
+
+### 2026-07-25 — Facts carried only in CLAUDE.md, recorded here before extraction
+
+Session CE1 extracted the `## Current status` session changelog out of `CLAUDE.md` (the
+measurement, the disposition and the standing rule are in the entry that follows this
+one). Before any cut, every discrete fact in that section was inventoried and its home
+located in this document or in docs/07. Eight facts were carried ONLY in CLAUDE.md.
+They are recorded here, verbatim, so the extraction loses nothing.
+
+**Method (reproducible, stated so the claim can be re-run).** Four passes over the
+2,337-line `## Current status` section, searching the concatenation of
+docs/04-design-history.md and docs/07-roadmap.md verbatim:
+
+1. **Token level** — 757 distinct facts across thirteen regex classes (session id,
+   ruling id, docs/07 version tag, commit hash, ISO date, suite count, dollar figure,
+   percentage, contract version, gate rule number, commit-unit label, exit-audit clause
+   label, and any symbol/path carrying `_`, `.`, `/` or CamelCase). 749 found verbatim
+   in docs/04 or docs/07; the residue resolved on inspection to slash-joined prose
+   fragments whose every component is homed (`CU4/CU6b` — docs/04 records the 4A.3b CU6
+   rider (b); `altKey/no-snap` — docs/04 records "Alt disables"; `injected/prebuilt` —
+   docs/04 records the "already-built/injected `self._client`"; `late-tight` — docs/04's
+   4.2 CU3 job-card field list reads "late/tight status") and to path tails the
+   token matcher had truncated, plus the eight genuine orphans below.
+2. **Exhaustive numeric sweep** — every numeric literal of two or more digits: 249
+   distinct, 8 absent verbatim, of which two were comma-suffixed forms present bare
+   (`120` = the `sweep_routes.txt` probe count, docs/04; `160` = the 4.0d padded-prefix
+   length, docs/04) and six are the orphans below.
+3. **Session level** — all 46 session ids named in the section appear in BOTH docs/04
+   and docs/07 (`3.3b`, `2.3`, `2.4` are referenced in docs/07 without the word
+   "Session" and were confirmed by hand).
+4. **Prose net** — the section splits into 774 sentence-level segments; 82 carry no
+   distinctive token at all; of those, 6 had no matching five-word normalised shingle in
+   either doc, and all six were hand-verified homed (docs/04 lines 5639 "sabotage menu
+   every item of which is mechanically proven right about itself", 2609 registry
+   completeness test, 5391 job card, 7901 `sweep_routes.txt`, 5058 `~160` prefix, and
+   the 4A.3b OUT-OF-SCOPE list).
+
+**Orphan 1 of 2 — the Phase-2-era session commit hashes.** CLAUDE.md was the only
+document naming these four commits:
+
+> Session 2.3 (WIP) `5600de2`; 2.2 `86e0115`; 2.1 `517b1fe`; Phase-1 exit audit
+> `9a70e5c`.
+
+All four verified present in `git log` at extraction time: `5600de2` "Session 2.3 close:
+docs/07 WIP item + standing-risk row marked done; CLAUDE.md status to 2.3 (790 tests
+green)"; `86e0115` "Run solver-gap probe #1 (verdict RED): decomposition doesn't rescue
+the full solve; docs/07 + CLAUDE.md status"; `517b1fe` "Add the API layer: schedule JSON
+contract, assembler, endpoints, registry (docs/07 Phase 2, session 2.1)"; `9a70e5c` "Fix
+seven seams found by the Phase-1 exit audit". (`acb75b8` — the Clause 6 addenda — and
+`847fe89` — the `merge_by_family_v2` origin — were already recorded in docs/04/07 and
+are not orphans.)
+
+**Orphan 2 of 2 — four suite counts stated nowhere else.** docs/07 carries most session
+counts (1239, 1219, 1209, 1255, 1249, 1243, 1202, 1200, 1190, 1160, 1126, 1103, 1092,
+1086, 1036, 1033, 999 …) and docs/04 several; these four appear in neither. Original
+wording, per session:
+
+> **Session 4A.3b** — **Non-slow Python 1278 passed, 0 failed** (+23 fast: 14 runner +
+> 9 real-doors); `test_ai_voice` slow green with the new specimens.
+>
+> **Session 4A.3c** — **Non-slow Python 1278 passed, 0 failed**; slow
+> `test_ai_voice`/`test_explainer`/`ai_exam` (262) +
+> `test_glass_box`/`test_ask_chain_api` (34) green; cockpit JS green incl. the
+> `last_answered_subject` payload.
+>
+> **Session 4B.2c** — **Full non-slow Python suite green: 1211 passed, 20 skipped, 0
+> failed** (+1 fast determinism smoke this session; the slow ladder — determinism
+> golden, earliness bound + its xfail, frozen-front split, absolute origin,
+> roll-converges, gravity counterfactual — green separately).
+>
+> **Session 3.1 (CU1/CU2)** — 995 tests green (non-slow) + the 5 slow `multi_route`
+> pool/counterfactual tests.
+>
+> **Session 2.4** — **795 tests green** (+5).
+
+Note on the two 1278s: 4A.3b and 4A.3c both closed at 1278 non-slow, 4A.3b having added
+23 fast tests to reach it and 4A.3c holding it. Both readings are preserved above; the
+number is one fact carried twice, counted once.
+
+Everything else cut from `## Current status` was proven present in this document or in
+docs/07 by the four passes above. The orphan set is exactly these eight facts — stated
+with the method, not asserted.
+
+### 2026-07-25 — Session CE1: CLAUDE.md extraction (context-budget repair) + the standing rule
+
+**The warning.** Claude Code reported `CLAUDE.md` over its delivery limit: **191,692
+bytes against a 150,000-char limit**. A file over the limit is not delivered whole, so
+the governing content is not reliably present in the session that is supposed to be
+governed by it.
+
+**The measurement (per `## ` section, bytes, CRLF as stored).**
+
+- `<preamble>` 48
+- `## What this repository is` 326
+- `## Authoritative documents (read these first)` 1,937
+- `## Hard rules (do not violate, do not "improve away")` 2,059
+- `## Repository layout` 1,255
+- **`## Current status` 184,862 — 94.2% of the file**
+- `## Working style` 1,193
+
+The behaviour-governing sections total **5,577 bytes, 2.9%** of the file, and
+`## Working style` sat **last** — behind a 184,862-byte changelog. The sections most
+likely to be lost to truncation were the ones defining how a session is run. The
+changelog had also become exactly what line ~1269 of the same file forbade: *"Do not
+hand-maintain a duplicate task list here — docs/07 is authoritative."*
+
+**What was done.** One section changed. `## Current status` was replaced by a stub
+carrying **position, carried qualifications, and small carry-forwards only**, plus a
+pointer to the two authoritative documents and the maintenance rule below. `## What this
+repository is`, `## Authoritative documents`, `## Hard rules`, `## Repository layout` and
+`## Working style` were left untouched — verified byte-identical by per-section sha256
+before and after (`## Hard rules` dd867ee9b836ce53; `## Working style` c4cc7fb70ecea701).
+Result: **191,692 → 10,703 bytes.** No product, spec, contract, code or test change.
+
+Deliberately NOT done, though the file was open: the product name (under review in the
+GTM thread — "MRE" is the working repository name, not a confirmed brand), the repository
+layout's pending gatehouse/website entries, and any rewording of a hard rule. Each is
+blocked on a decision that was not this session's to make.
+
+**The other half of the proof.** That the file shrank is half a proof; that nothing was
+lost is the other half. The preceding amendment records the inventory method in full —
+four passes (token level across thirteen classes; an exhaustive numeric-literal sweep;
+a session-id level check; a sentence-level prose net) — and the **eight facts carried
+only in CLAUDE.md**, appended verbatim BEFORE the cut: four Phase-2-era session commit
+hashes (`5600de2`, `86e0115`, `517b1fe`, `9a70e5c`) and four suite counts stated in
+neither doc (1278 at 4A.3b/4A.3c, 1211 at 4B.2c, 995 at 3.1, 795 at 2.4). Everything
+else was proven present in this document or docs/07 first.
+
+**Verification.** `git diff --stat` at the cut: exactly `CLAUDE.md` (−2,334/+147) and
+`docs/04-design-history.md` (+82, pure append — the pre-append bytes are a verbatim
+prefix of the post-append file, 8,106 → 8,188 lines, nothing edited, reflowed or
+renumbered). docs/07 was then updated per this session's own recording clause (W2 rule +
+risk row + v2.43). Full non-slow Python suite green. CRLF preserved throughout; no bare
+LF introduced into any of the three files.
+
+**Standing rule (recorded here, in docs/07 §5 W2, and in the CLAUDE.md stub itself).**
+Session close-outs are written to docs/04 and docs/07. `CLAUDE.md` carries only
+**position, qualifications, and carry-forwards** — never what a session built, how many
+tests it added, or which commit carried it — and is **checked against a 40k-char ceiling
+at every phase exit**. If it is over, the status section is the first thing to shrink.
+
+Lesson: a context file that narrates every session eventually crowds out the rules it
+exists to deliver, and it fails silently — the changelog was 94% of the budget while the
+hard rules and the working style were 3%, and the truncation would have taken the 3%
+last, which is to say it would have taken it. The cure is the discipline the file already
+carried: history belongs in the append-only log and the roadmap, the loaded file carries
+position and open debts, and the ceiling is checked at a scheduled gate rather than
+discovered by a warning. And an extraction is only trustworthy in both directions —
+record what is carried nowhere else BEFORE the cut, and prove the untouched sections
+byte-identical afterwards.

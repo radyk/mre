@@ -1,6 +1,22 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.42 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.43 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.43:** **Session CE1 — CLAUDE.md extraction (context-budget repair)** 2026-07-25
+(docs/04 amendment). Claude Code reported `CLAUDE.md` over its 150k-char delivery limit
+at **191,692 bytes**, of which the `## Current status` session changelog was **184,862
+bytes (94%)** — a hand-maintained duplicate of docs/04 that pushed `## Working style`
+to the far end of a file no longer delivered whole, so the sections that GOVERN how
+sessions run were the ones most likely to be lost. The changelog was extracted; the
+status section is now position + carried qualifications + carry-forwards only, **10,703
+bytes** total. Nothing was cut unproven: 757 distinct facts across thirteen classes,
+every numeric literal, all 46 session ids, and a sentence-level prose net were checked
+against docs/04 + docs/07, and the **eight facts carried only in CLAUDE.md** (four
+Phase-2-era commit hashes; four suite counts — 1278, 1211, 995, 795) were appended to
+docs/04 verbatim BEFORE the cut. `## Hard rules` and `## Working style` byte-identical
+(sha256 verified per section); no product/spec change. **Standing rule (W2):** session
+close-outs go to docs/04 and docs/07, never into CLAUDE.md; CLAUDE.md is checked against
+a **40k-char ceiling at every phase exit**. See the docs/04 2026-07-25 amendments.
 
 **v2.42:** **AI-track Session 4A.3c — sweep repairs: the first triaged errand list**
 2026-07-24 (docs/04 amendment). Executes the errand list the first exam sweep produced
@@ -966,7 +982,7 @@ The ticketing client. Entry conditions (the no-half-baked rule): Phase 1 exit pa
 
 **W1 — Scenario & Anomaly Catalog (the gym, permanently open).** No capability is done without its generator scenario and truth assertions (docs/06 §8). Stage exits run on generated scenarios; reality is reserved for pilots.
 
-**W2 — Documentation & Rulings.** docs/05; the remaining open rulings (queue §6 — drop-pin RESOLVED 2026-07-11 → R-DP1–R-DP7, docs/04 amendment); docs/04 amendments same-commit; CLAUDE.md status current at every session end.
+**W2 — Documentation & Rulings.** docs/05; the remaining open rulings (queue §6 — drop-pin RESOLVED 2026-07-11 → R-DP1–R-DP7, docs/04 amendment); docs/04 amendments same-commit; CLAUDE.md status current at every session end. **CLAUDE.md carries position, qualifications and carry-forwards ONLY** (2026-07-25, session CE1): session close-outs are written to docs/04 and docs/07, never narrated in CLAUDE.md, and CLAUDE.md is checked against a **40k-char ceiling at every phase exit** — it reached 191,692 bytes against Claude Code's 150k delivery limit before extraction, 94% of it a changelog duplicating docs/04.
 
 **W3 — Go-to-Market surface (real in Phase 3).** The website, the demo script as repeatable asset, the certificate-as-sales-artifact motion, capability matrix = docs/05 with test-status.
 
@@ -993,3 +1009,4 @@ The ticketing client. Entry conditions (the no-half-baked rule): Phase 1 exit pa
 | Remediation advice drifts into ERP-specific instruction | Jurisdiction rule enforced in the remediation register prompt; catalog notes cite IDS sections only; review per code addition |
 | WIP invariant amendment regresses the ghost-job fix | ✅ Resolved 2026-07-14: both clamp sites amended together; Validator TEMPORAL_IMPOSSIBILITY exempts in-flight/complete demands while still excluding past-due unstarted ghosts (`test_wip_solver.py` proves both in one run); mid_replan honors an in-flight op with a pre-reference start |
 | Session drift | W2: monthly checkpoint + CLAUDE.md same-day |
+| CLAUDE.md outgrows its delivery limit (governing rules lost to truncation) | ✅ Addressed 2026-07-25 (CE1): the changelog extracted to docs/04; CLAUDE.md carries position/qualifications/carry-forwards only, checked against a 40k-char ceiling at every phase exit |
