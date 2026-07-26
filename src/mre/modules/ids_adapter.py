@@ -384,7 +384,14 @@ class IDSAdapter:
         # resolves wip_status.csv sequences through this (only specs that
         # actually exist can carry an observation).
         spec_written: dict[tuple[str, str, int], str] = {}
-        for route_id, ext_pid in pairs_needed:
+        # SORTED, not raw set order (Errand session, CU2b). ``pairs_needed`` is a
+        # set of string tuples, so iterating it raw writes Process /
+        # OperationSpec / PrecedenceEdge entities in PYTHONHASHSEED order. Nothing
+        # downstream re-sorts the edges, so the precedence list a solve model is
+        # built from moved between processes — a deterministic-mode claim that
+        # quietly depended on an env var. (Line 350 above already sorted for the
+        # same reason.) Entity CONTENT is unaffected; only write order.
+        for route_id, ext_pid in sorted(pairs_needed):
             process_id = process_id_for_pair[(route_id, ext_pid)]
             prow = product_map[ext_pid]
             lot_size = _num(prow.get("costing_lot_size"))

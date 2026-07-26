@@ -92,6 +92,37 @@ tests/                Tests derived from the specs — write them from the spec 
                       tests/cockpit/ = the Playwright screenshot harness (CU5).
 ```
 
+## Dev API quick reference
+
+Start it: `.\src\cockpit\dev_api.ps1` (repo root; serves `http://localhost:8000`,
+`MRE_DATA_ROOT=./_data`, `MRE_DEV=1`). Every response is `{"api_version","data"}`.
+Submitting is always TWO steps — gate first, solve second (field names live in
+`SolveRequest`, `src/mre/api/app.py`; a REJECTED submission never solves):
+
+```
+POST /submissions                {"path": "C:/abs/path/to/submission_dir"}
+    -> data.submission_id, data.grade (ACCEPTED|CONDITIONAL|REJECTED), data.deficiencies
+POST /submissions/{id}/solve     {"policy":"identity_v1","deterministic":true,
+                                  "sliced":true,"window_days":14,"frozen_days":3,
+                                  "time_limit":900}
+    -> data.run_id (202, async unless "sync":true)
+GET  /runs/{run_id}              -> data.status, data.result.schedule_id
+GET  /schedules                  -> every registered schedule (the cockpit's list)
+```
+
+A submission dir is IDS files (`manifest.json` + the seven required tables), NOT a
+generator scenario name or a profile dir; generate one with
+`python tools/generate_erp_dataset.py --scenario <name> --out <dir>`. `time_limit`
+is the solver's WALL CEILING, not its budget — under `deterministic:true` the
+deterministic budget is what must bind, so keep it generous.
+
+One command for a rolling run in the cockpit (builds the pinned world, verifies
+its determinism, submits, solves, prints the schedule id to select):
+
+```
+python tools/build_rolling_exam_run.py --register
+```
+
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:

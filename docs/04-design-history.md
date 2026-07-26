@@ -9141,3 +9141,59 @@ label. 4A.5c made the residue legible, gave the system a way to propose its own
 routes and an automatic way to take them back, and killed the last keyword matcher in
 the ask path. R-AI5's eight clauses are implemented. The working thread returns to
 the 4B mission.
+
+---
+
+### 2026-07-26 — Errand: the rolling exam run becomes one command (CU1-CU4)
+
+`tools/build_rolling_exam_run.py --register` now builds (or reuses) the pinned
+rolling world, verifies its determinism, submits it through the LIVE dev API
+(`POST /submissions` -> `POST /submissions/{id}/solve` with `sliced:true`), waits
+for the async solve and prints the certificate grade, the schedule id, and
+"select <id> in the cockpit"; an unreachable API costs nothing but the message
+(`/health` is probed before anything is built) and exits nonzero. Default with no
+flag is unchanged (harness fixture only).
+
+**CU2b is the finding.** The builder's committed/active split moved between two
+same-seed, `deterministic=True` invocations because THREE things were wrong at
+once, none of them the solver seed. (1) `ids_adapter` iterated `pairs_needed` — a
+SET of `(route_id, product_id)` string tuples — to write Process / OperationSpec /
+**PrecedenceEdge** entities, so the precedence list a model was built from arrived
+in `PYTHONHASHSEED` order; nothing downstream re-sorted it. (2)
+`rolling_horizon.build_rolling_view` / `run_rolling_horizon` iterated the
+`admitted` demand-id SET straight into the model build, so CP-SAT's variable
+creation order moved too. Measured on the pinned world, identical submission
+(same sha), seed 42: committed/active split 43/13, 38/18, 46/10 under hash seeds
+1, 2, 3. (3) Worse, `max_time_in_seconds` is ALWAYS set alongside
+`max_deterministic_time`, and at the builder's 10.0s ceiling the WALL CLOCK is
+what stopped the solve every single time (measured wall=10.01s against a
+deterministic budget of 2.0 that was never reached) — "deterministic mode"
+returning whatever the machine reached in ten seconds. Both set iterations are now
+sorted at the source, `SolveResult.wall_truncated` reports a deterministic-budget
+solve the wall clock actually stopped (surfaced on `RollingView.wall_truncated`),
+and the builder's ceiling is 900s so its 2.0s deterministic budget binds (~11-12s
+wall). The builder now re-runs the entire spine + window-0 solve on every build and
+fails nonzero unless the split and every placement are identical;
+`test_rolling_determinism_is_not_hashseed_dependent` pins the same claim under two
+different hash seeds. **Determinism is no longer one forgotten env var away.**
+
+The rolling golden (`tests/fixtures/baselines/rolling_pilot_golden.json`) was
+regenerated: changing the model's variable order changes which tie CP-SAT breaks.
+The drift is placement-only and benign — every priced quantity is byte-identical
+across the change (production 12744.05, setup 2160.00, tardiness 0.00, total
+14904.05, 54 committed, 24 on-time, 0 late); only `schedule_digest` moved.
+
+CU2a was not a defect: `datasets/pilot_scale` holds the calibration profile the
+pilot_scale GENERATOR SCENARIO is sized against, not a submission — the gate needs
+a directory of IDS files (`manifest.json` + the seven required tables), which
+`generate_erp_dataset.py --scenario pilot_scale --out <dir>` produces. The one
+committed submission dataset, `datasets/glass_box`, grades ACCEPTED/C2 against the
+current gate, and `tests/test_committed_datasets_conform.py` (CU4) is the standing
+guard that it stays that way — pinning `grade != REJECTED`, not which grade, so
+quality rules may land without a test edit. CU2c: the gate answers "path not found
+/ not a directory / empty directory" as ONE deficiency with an `intake_error` on
+the certificate, ahead of the rule cascade, instead of rendering a page-long
+REJECTED certificate about every missing file; deliberately narrow (a directory
+with files in it still gets the full cascade — the bigger surface is the
+Gatehouse thread's). CU3: CLAUDE.md gains a dev API quick reference so no session
+reconstructs the two-step from memory again.

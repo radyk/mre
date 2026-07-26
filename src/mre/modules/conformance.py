@@ -156,8 +156,81 @@ _OUTCOME_RANK = {RuleOutcome.SATISFIED: 0, RuleOutcome.FLAGGED: 1,
 class ConformanceGate:
     """Grades an IDS submission directory against docs/06 §4 (the Rule Registry)."""
 
+    # ------------------------------------------------------------------
+    # INTAKE (Errand session, CU2c) — the answer before the cascade.
+    #
+    # A path that does not exist, or is not a directory, or is an empty one, is
+    # not a malformed submission: it is not a submission at all. Running the full
+    # rule registry over it produced a page-long REJECTED certificate listing
+    # every missing file, zero orders, zero resources, zero routings — technically
+    # true, and useless: it reads as "your data is broken" when the real answer is
+    # "I was pointed at nothing". This returns that answer directly, with ONE
+    # deficiency and an ``intake_error`` on the certificate.
+    #
+    # Deliberately narrow. A directory that HAS files still gets the full
+    # cascade, however un-IDS those files are — deciding what counts as a
+    # plausible-but-wrong submission is the Gatehouse thread's surface, not this
+    # one. Grade stays REJECTED (go=False): nothing here is schedulable.
+    # ------------------------------------------------------------------
+
+    _INTAKE_MESSAGES = {
+        "path_not_found": "submission path does not exist",
+        "not_a_directory": "submission path is not a directory",
+        "empty_directory": "submission directory is empty",
+    }
+
+    def _intake_check(self, submission_dir: Path,
+                      reporter: Reporter) -> Optional[GateResult]:
+        """Return a GateResult when the path is unusable as a submission at all,
+        else None (run the normal rule cascade)."""
+        if not submission_dir.exists():
+            kind = "path_not_found"
+        elif not submission_dir.is_dir():
+            kind = "not_a_directory"
+        elif not any(submission_dir.iterdir()):
+            kind = "empty_directory"
+        else:
+            return None
+
+        message = f"{self._INTAKE_MESSAGES[kind]}: {submission_dir}"
+        spec = RULE_REGISTRY[RuleId.SUBMISSION_FILES_PRESENT]
+        ev = GateFindingEvidence(
+            rule_id=RuleId.SUBMISSION_FILES_PRESENT, outcome=RuleOutcome.VIOLATED,
+            measured=None, thresholds_ref=spec.thresholds_ref, check=None,
+            detail={"intake_error": kind, "path": str(submission_dir)},
+        )
+        rec = reporter.record_finding(
+            code=spec.finding_code,
+            severity=finding_severity(spec.category, FindingDisposition.BLOCKED),
+            subjects=[EntityRef(entity_id=submission_dir.name or "submission",
+                                entity_type="submission", system="IDS")],
+            evidence=ev.as_evidence(), disposition=FindingDisposition.BLOCKED,
+            message=message, tier=RecordTier.HEADLINE,
+        )
+        certificate = {
+            "submission_dir": str(submission_dir),
+            "run_id": reporter.run_id,
+            "generated_at": datetime.now(UTC).isoformat(),
+            "grade": "REJECTED",
+            "costing_completeness_grade": "C0",
+            "intake_error": kind,
+            "manifest": None,
+            "deficiencies": [message],
+            "normalizations": [],
+            "findings": [json.loads(rec.model_dump_json())],
+            "rule_outcomes": {RuleId.SUBMISSION_FILES_PRESENT.value:
+                              RuleOutcome.VIOLATED.value},
+            "flags_disclosed": [],
+            "counts": {},
+        }
+        return GateResult(grade="REJECTED", costing_grade="C0",
+                          certificate=certificate, go=False)
+
     def run(self, submission_dir: Path, reporter: Reporter) -> GateResult:
         submission_dir = Path(submission_dir)
+        intake = self._intake_check(submission_dir, reporter)
+        if intake is not None:
+            return intake
         deficiencies: list[str] = []
         normalizations: list[str] = []
         findings: list[dict] = []

@@ -437,3 +437,60 @@ class TestWipDoorway:
         assert any(f["code"] == "VALUE_OUT_OF_RANGE"
                    and f["evidence"]["check"] == "wip_start_after_reference"
                    for f in wf)
+
+
+# ---------------------------------------------------------------------------
+# INTAKE (Errand session, CU2c) — the honest answer before the cascade.
+#
+# Pointed at nothing, the gate used to render a full REJECTED certificate: every
+# required file missing, zero valid orders, zero resources, zero routings. All
+# true; all noise. The real answer is "there is nothing here", and it must arrive
+# as ONE deficiency with an ``intake_error`` on the certificate, ahead of the
+# rule cascade. Deliberately narrow — a directory with files in it still gets the
+# full cascade however un-IDS those files are.
+# ---------------------------------------------------------------------------
+
+class TestIntake:
+    def test_missing_path_is_one_honest_deficiency(self, tmp_path):
+        result = _run_gate(tmp_path, tmp_path / "no_such_submission")
+        assert result.grade == "REJECTED"
+        assert result.go is False
+        assert result.certificate["intake_error"] == "path_not_found"
+        assert len(result.certificate["deficiencies"]) == 1
+        assert "does not exist" in result.certificate["deficiencies"][0]
+
+    def test_empty_directory_is_one_honest_deficiency(self, tmp_path):
+        empty = tmp_path / "empty_submission"
+        empty.mkdir()
+        result = _run_gate(tmp_path, empty)
+        assert result.grade == "REJECTED"
+        assert result.certificate["intake_error"] == "empty_directory"
+        assert len(result.certificate["deficiencies"]) == 1
+        assert "is empty" in result.certificate["deficiencies"][0]
+
+    def test_intake_failure_still_emits_a_vocabulary_finding(self, tmp_path):
+        """An intake refusal is still a first-class evidence run: one HEADLINE
+        finding carrying the standard rule id, not a bare error string."""
+        result = _run_gate(tmp_path, tmp_path / "nope")
+        findings = result.certificate["findings"]
+        assert len(findings) == 1
+        assert findings[0]["evidence"]["rule_id"] == "ids.submission_files_present"
+        assert findings[0]["evidence"]["intake_error"] == "path_not_found"
+
+    def test_a_non_empty_directory_still_gets_the_full_cascade(self, tmp_path):
+        """The narrowness is the point: files present but not a submission is a
+        DEFICIENT submission, and the gate must still say exactly how."""
+        junk = tmp_path / "not_a_submission"
+        junk.mkdir()
+        (junk / "notes.md").write_text("not IDS", encoding="utf-8")
+        result = _run_gate(tmp_path, junk)
+        assert result.grade == "REJECTED"
+        assert "intake_error" not in result.certificate
+        assert len(result.certificate["deficiencies"]) > 1
+
+    def test_a_clean_submission_is_untouched_by_intake(self, tmp_path):
+        out = tmp_path / "sub"
+        generate(out, scenario="clean_small", seed=1)
+        result = _run_gate(tmp_path, out)
+        assert result.grade == "ACCEPTED"
+        assert "intake_error" not in result.certificate

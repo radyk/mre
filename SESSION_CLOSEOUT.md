@@ -1,369 +1,254 @@
-SESSION 4A.5c CLOSE-OUT
-R-AI5 part 3: telemetry, the Pareto, the promotion pipeline -- the arc closes
+ERRAND SESSION CLOSE-OUT
+The rolling exam run becomes one command
 2026-07-26
 
-Deterministic settings for all solver work: PYTHONHASHSEED=0, --solver-workers 1,
---solver-seed 0 (the glass_box pinned world the sweep asks against); seed 42 for the
-pinned ROLLING run.
-
-Scope: backend + contracts + two governed-prompt bumps + banks + tests + cockpit +
-docs. NO solver / model / schedule-contract change. NO golden moved -- the pinned
-rolling run is a NEW fixture, built by a committed script into gitignored scratch,
-exactly as the monolithic exam world is.
+Repo: C:\dev\mre, branch master. Scope: one tool + three diagnosed failures +
+docs + tests. Solver behavior UNCHANGED in cost; one golden regenerated (a tie,
+not a price -- see CU2b).
 
 ======================================================================
 SUMMARY
 ======================================================================
-Parts 1 and 2 both WROTE per-claim provenance to the question ledger and neither
-READ it back. R-AI5(5) makes that provenance the standing prioritization for
-promoting recurring shapes; R-AI5(7) makes the promotion loop autonomous up to a
-human gate and the demotion automatic past it. Three things were open: the
-telemetry, the loop, and one keyword matcher. All three are closed.
+The founder can now type one command and end with a rolling run selectable in
+the cockpit, its schedule id printed. Getting there turned up a real defect that
+had nothing to do with the errand: the rolling world's "deterministic" solve was
+not deterministic, in three separate ways at once. All three are fixed at the
+source, and the builder now re-proves it on every build.
 
-  the ledger  -> now carries what the PARSE named, because every second-tier answer
-                 takes the same route and the route alone cannot tell two shapes
-                 apart
-  the report  -> emitted automatically at the end of every sweep: residue clustered
-                 into recurring shapes, ranked by a frequency-weighted Pareto, with
-                 R-AI5(6)'s protection printed in its own header
-  the loop    -> dossier (autonomous) -> review (human) -> probation shadow ->
-                 demotion (automatic). Walked end to end once, for real.
-  the matcher -> classify_rolling is DELETED. No deterministic classifier remains
-                 anywhere in the ask path.
-
-The one promotion this session performed was not chosen by a designer. The telemetry
-ranked it first, a machine drafted its dossier, and the working thread signed it.
-
-AND THEN THE SWEEP FOUND WHAT THE DOSSIER COULD NOT. With `lateness-cause` nameable,
-"but why" -- a DEEPEN follow-up on one selected order, one turn after that order's
-cause chain -- parsed as `lateness-cause` and answered about the whole plan. The
-dossier was clean, the harness validation was clean, the shadow diff was clean, and
-the promotion still broke a question that was NOT the promoted shape. That is the
-entire argument for R-AI5(7)'s asymmetry, and this session produced it by accident on
-the first cycle.
+  CU1  --register  -> health probe, build/reuse, verify, submit, solve, print
+  CU2a pilot_scale -> not a defect: it is a profile dir, not a submission
+  CU2b determinism -> two hash-order leaks + the wall clock acting as the budget
+  CU2c intake      -> "there is nothing here" arrives before the cascade
+  CU3  CLAUDE.md   -> a dev API quick reference, so nobody reconstructs it again
+  CU4  guard       -> every committed dataset must still pass its own gate
 
 ======================================================================
-PART 1 -- PER-CU: CLAIMED vs PROVEN
+CU1 -- --register: one command, end to end
 ======================================================================
+tools/build_rolling_exam_run.py gained --register (plus --api-base, --fresh,
+--poll-timeout). Default with no flag is unchanged: harness fixture only.
 
-CU1 -- provenance telemetry + the Pareto (R-AI5(5)/(6))
--------------------------------------------------------
-CLAIMED: a standing report, runnable against any ledger AND emitted automatically at
-         the end of every ai_exam sweep beside the sidecar; questions by tier;
-         synthesis residue clustered into RECURRING SHAPES with the clustering
-         method stated honestly; per-cluster frequency, verified/interpretive ratio
-         and exemplars; the frequency-weighted Pareto ordering; R-AI5(6) IN THE
-         REPORT ITSELF, marking takes/aggregate reads NOT-PROMOTABLE-BY-DESIGN and
-         never counting them as backlog; a test proving a hand-built ledger yields
-         the expected clusters and ordering.
-PROVEN:  src/mre/contracts/question_ledger.py -- ParseProvenance (intent, nearest,
-         subject_kinds, polarity, followup_of, confidence, prompt_version,
-         dropped_qualifier). SynthesisProvenance claims gain `kind`, so the report
-         can tell an interpretive FACT from an interpretive CONCLUSION.
-         src/mre/modules/provenance_report.py -- LedgerRow, ShapeCluster, cluster(),
-         pareto(), tier_counts(), render_report(), report_payload(), write_report();
-         plus rows_from_sweep(), which reconstructs rows from a committed sweep's
-         transcripts and FLAGS every one of them `adjacency-unknown` rather than
-         presenting a weaker method as the same one.
-         tools/provenance_report.py -- the CLI. tools/run_ai_exam_sweep.py writes
-         ledger.jsonl and emits PROVENANCE.txt + PROVENANCE.json; when there are no
-         ledger rows it prints SKIPPED, never clean.
-         The method, printed in the report: adjacency + subject kinds + DOMINANT
-         TOOL, with the reason the whole call SET is not the key (it split "why so
-         many late orders" from "cant you just make it cheaper" into two clusters of
-         one), and the statement that the method is not semantic, splits shapes and
-         therefore UNDER-states frequency.
-         Weight = frequency x verified share, with the reason stated.
-         R-AI5(6): three protection reasons, each a statement about the EVIDENCE;
-         protected clusters excluded from the Pareto; the ruling quoted in the
-         header; the dossier generator REFUSES to draft a protected cluster.
-         tests/test_provenance_report.py -- 13 tests over hand-built ledgers: the
-         three cluster keys, the dominant-tool rule, synthesis-only clustering, each
-         protection reason, the header text, frequency-weighted-not-frequency
-         ordering, cumulative-over-promotable-only, deterministic tie-breaking, the
-         JSON twin, and reconstruction flagging.
+With --register it probes /health FIRST -- an unreachable API costs nothing but
+the message and exits 2, so there is never a half-registered state -- then builds
+(or reuses) the pinned world's submission, verifies its determinism, submits it
+through the LIVE dev API, waits for the async solve, and prints the certificate
+grade, the schedule id, and the select line.
 
-CU2 -- the promotion pipeline (R-AI5(7))
-----------------------------------------
-CLAIMED: (a) autonomous dossier generation -- frequency, exemplars, the
-         evidence-assembly pattern from verified tool-call transcripts, a DRAFT
-         route on a clearly marked path, harness validation replaying the cluster's
-         historical questions under the draft vs their synthesis answers, diffed for
-         fact agreement and provenance strengthening; a committed artifact NEVER
-         wired into dispatch. (b) the gate as documented process, and ONE FULL CYCLE
-         PERFORMED as the proof, with the dossier cited as authority. (c) probation
-         metadata, both paths run and diffed during probation, a loud sidecar signal
-         on divergence, demotion as a mechanical flag flip -- automatic on
-         divergence, never automatic in the other direction, both tested.
-PROVEN:  (a) tools/promotion_dossier.py -- writes
-         docs/promotions/aggregate-lateness-2026-07-26.md and
-         docs/promotions/drafts/aggregate-lateness_route_draft.py (a path nothing
-         imports). Validation: `--validate-with lateness-cause` replayed both
-         historical questions against the pinned world -- 0 raised, 0 contradicted,
-         2 of 2 strengthened provenance, CLEAN.
-         (b) THE CYCLE, in order: 4A.5b banks replayed with the candidate intent
-         DEMOTED (the session's own flag, reproducing the pre-promotion vocabulary);
-         the report ranked `late-orders|no-subject|lateness_set` first by frequency
-         AND weight; the dossier was drafted and validated; the working thread
-         reviewed it; `lateness-cause` joined Intent + INTENT_MEANINGS +
-         ROUTE_TAXONOMY + ROUTE_OFFERS + the assembler
-         (Explainer._explain_lateness_cause) + AUTHORED copy + parse prompt v7 + a
-         PROMOTIONS entry citing the dossier, status `probation`. The gate is
-         documented as process in the docs/04 amendment.
-         (c) src/mre/contracts/promotion.py -- ProbationStatus, Promotion,
-         PROMOTIONS, demoted_intents(), shadowed_intents(), ShadowDiff,
-         PROBATION_SWEEPS. src/mre/modules/shadow.py -- diff_claims() (THE ONE DIFF,
-         used by both the probation and the dossier's validation), shadow_diff(),
-         run_shadow(). Demotion: Promotion.demote() -> the intent leaves
-         model_selectable_intents() -> the prompt stops offering it -> the parse
-         cannot name it -> the shape returns to synthesis; a demoted id emitted from
-         memory coerces to `unmatched`.
-         tests/test_promotion.py -- 32 tests: the gate's paperwork (every promotion
-         cites a dossier that EXISTS on disk; a promoted intent is a real route in
-         all four tables; exactly one promotion this session; the generator writes
-         only under docs/promotions/ and changes no vocabulary on import), demotion
-         in four aspects, the absence of any promote() transition, and the diff --
-         agreement, contradiction, only-one-side, interpretive-never-diverges,
-         cut-never-diverges, agreement-wins, the unit gate, the timestamp strip, the
-         entity-ref strip, money with and without a symbol, rounding, thousands
-         separators, list-facts excluded, provenance strengthening, and
-         UNCHECKED-never-clean.
+The pinned world's IDS submission is now persisted at
+_ai_exam_scratch/rolling_pinned/submission/ and REUSED across invocations (the
+generator stamps a fresh extract_timestamp into every manifest, so regenerating
+gives a byte-different submission for the same world). --fresh forces a rebuild.
 
-CU3 -- felt-bar residue
------------------------
-CLAIMED: (a) the tier announces itself immediately -- an authored "reading the
-         evidence" state the moment synthesis begins, replaced by the answer, an
-         honest non-answer beat first and never a fake answer; ship the two-phase
-         version and name the residue if streaming is disproportionate. (b) the
-         synthesis couldn't-answer keeps the nearest-capabilities offers, authored,
-         absence-tested. (c) a stated-qualifier-dropped signal in the parse contract
-         (prompt v7) diverting a near-miss match to synthesis, with the rendered-by
-         naming why; tested on the two founder shapes plus negatives; the two unmet
-         expectations flip to met.
-PROVEN:  (a) POST /schedules/{id}/ask/preflight (api/app.py::_preflight) returns
-         {tier, waiting, intent} -- parse only, no assembly, no answer.
-         interpreter.tier_of() computes the tier from the SAME dispatch rules the
-         answer follows. interpreter.ParseMemory + PARSE_MEMORY make it cost NO
-         EXTRA MODEL CALL. ask_fallback_copy.WAITING_SYNTHESIS /
-         WAITING_SYNTHESIS_DIVERTED / WAITING_ROUTE. Cockpit: api.js askPreflight()
-         (resolves to the route tier on any failure), askpanel.js appendWaiting() +
-         removal on both success and error, cockpit.css .waiting with a
-         reduced-motion branch. Fixture server serves the endpoint. RESIDUE NAMED:
-         the beat states the tool BUDGET, not a live count.
-         (b) ask_fallback_copy.SYNTHESIS_FLOOR_DOORS; offers carried on every
-         synthesis bundle and rendered ONLY on the couldn't-answer; chosen by what
-         the planner named; absence-tested.
-         (c) ParsedQuestion.dropped_qualifier; parse_prompt.md v7 rule 9 (three
-         admitted families, four explicit non-qualifiers, "you report; you do not
-         decide"); dispatch step 4b; _rendered_by names the qualifier.
-         tests/test_felt_bar.py -- 30 tests. BOTH FOUNDER SHAPES ARE MET IN THE
-         LIVE SWEEP.
+Request field names were READ from SolveRequest in src/mre/api/app.py, not
+guessed: the sliced solve is {"policy","deterministic","sliced","window_days",
+"frozen_days","time_limit"}.
 
-CU4 -- the rolling pre-route retires
-------------------------------------
-CLAIMED: the prerequisite first -- subject resolution gains the ROLLING document's
-         vocabulary (window-0 + tray + committed) so a tray order resolves as a real
-         subject with a BEYOND-HORIZON disposition instead of absent; then
-         classify_rolling dies, the rolling intents join the parse vocabulary with
-         authored meanings, dispatch reaches the existing answerers, and the
-         deterministic matcher is DELETED, not bypassed; a pinned rolling run;
-         tray-order questions parse and answer; the founder's sliced-board
-         phrasings; the absent-vs-beyond-horizon distinction pinned.
-PROVEN:  rolling_questions.RollingVocabulary (three regions, unique-substring
-         resolution, falsy on a monolithic document);
-         contracts.parse.SubjectDisposition + SubjectRef.disposition/beyond_horizon;
-         question_parser.bind_subjects(rolling=...); interpreter dispatch step 0 (the
-         tray check, ahead of every honest-failure branch) and step 4c (the three
-         rolling intents); Explainer._rolling_bundle; the `rolling` subject type on
-         the authored-copy and header-only render paths.
-         classify_rolling and its three trigger tuples are DELETED, and
-         tests/test_rolling_questions.py asserts the SYMBOL'S ABSENCE.
-         tools/build_rolling_exam_run.py builds the pinned run (pilot_scale, 40
-         orders, window 14d / frozen 3d, deterministic seed 42, window 0 persisted;
-         56 bars -- 38 committed, 18 active, 14 in the tray).
-         tests/ai_exam/banks/sweep_rolling.txt -- 17 questions, 17 graded.
-         tests/test_rolling_dispatch.py -- 16 tests including the pin from both
-         sides.
+THE PROOF (live stack, this machine, verbatim)
 
-CU5 -- the arc-closing sweep
-----------------------------
-CLAIMED: the ENTIRE bank set + a rolling bank (12+ questions) + probation shadow
-         checks, live; every mechanical signal strictly-no-worse than
-         2026-07-26-synthesis; the two adjacent-match expectations MET; the promoted
-         route's shadow diff clean; the provenance report emitted and committed;
-         latency, parse quality, tier counts and the first REAL Pareto stated.
-PROVEN:  tests/ai_exam/sweeps/2026-07-26-arc-close/ -- 7 banks, 321 questions, live.
-         109/110 graded expectations met; 92/93 on the SHARED expectations, up from
-         the baseline's 90/93; 17/17 on the new rolling bank. Both adjacent-match
-         expectations MET. Shadow: 3 shadowed, 3 clean, 0 diverged, 0 unchecked.
-         PROVENANCE.txt + .json committed.
-UNDERDELIVERED, EXPLICITLY: "every mechanical signal strictly-no-worse" is NOT
-         achieved. ungrounded-load-bearing went 0 -> 3. See PART 3.
+Your dev API on port 8000 was running modules loaded before this session's edits,
+so its sliced solve failed on the new SolveResult.wall_truncated field. Stopping
+and starting a server was blocked by the permission classifier; you approved the
+restart, it was restarted via .\src\cockpit\dev_api.ps1, and the command was then
+run against it:
 
-CU6 -- docs + the arc close
----------------------------
-PROVEN:  docs/04 amendment (append-only, 416 insertions, 0 deletions); docs/07 v2.46
-         same-day; CLAUDE.md's ask-path paragraph in final form + the
-         promotion/demotion process + position; RUBRIC.md gains GRADING A PROMOTED
-         ROUTE, the two new sidecar signals, precedent 6 RESOLVED, and three new
-         OPEN entries stating the CU3 items' expected behaviours for round five.
+  $ python tools/build_rolling_exam_run.py --register
+  rolling-exam: API at http://localhost:8000 is ok
+  rolling-exam: reusing submission at C:\dev\mre\_ai_exam_scratch\rolling_pinned\submission
+  rolling-exam: solving window 0 (window=14d frozen=3d, deterministic, seed=42, det budget=2.0s) ...
+  rolling-exam: 56 bars, 42 committed, 14 active, 14 in the tray
+  rolling-exam: snapshot snap-rolling
+  rolling-exam: -> C:\dev\mre\_ai_exam_scratch\rolling_pinned
+  rolling-exam: verifying determinism (a second spine + window-0 solve)...
+  rolling-exam: determinism verified (identical split and placements)
+  rolling-exam: submitting C:\dev\mre\_ai_exam_scratch\rolling_pinned\submission ...
+  rolling-exam: certificate grade ACCEPTED (costing C2), submission 2f47ec9c-9156-427e-8bfe-b1d0c77b92a0
+  rolling-exam: solving sliced (window=14d frozen=3d, deterministic) ...
+  rolling-exam: run 279dec02-4119-411d-bec9-4e8cb08c090a succeeded in 87s (44 committed, 14 in the tray)
+
+    certificate grade : ACCEPTED
+    schedule id       : rolling-279dec02-411
+    select rolling-279dec02-411 in the cockpit
+
+Confirmed selectable, against the same live API:
+
+  GET /schedules  -> LISTED: rolling-279dec02-411 proposed contract 1.8
+  GET /schedules/rolling-279dec02-411
+                  -> bars 56 | committed 44 | active 12 | tray 14
+
+The registered run is the API's OWN solve of the same world, window and seed: it
+uses the API's deterministic budget of 4.0s where the harness fixture uses 2.0s,
+so the two are the same world but not a bit-identical solve. That is deliberate,
+stated in the tool, and is why the harness reports 42/14 and the registered run
+44/12.
 
 ======================================================================
-PART 2 -- THE CU5 TABLES
+CU2a -- datasets/pilot_scale REJECTED: a wrong path, not a defect
 ======================================================================
+datasets/pilot_scale is NOT a submission. It holds the calibration profile the
+pilot_scale GENERATOR SCENARIO is sized against -- pilot_profile.json,
+PREDICTIONS.md, PROFILE_PROVENANCE.md. There are no IDS files in it at all, which
+is exactly what the gate said:
 
-PER BANK
-  bank                    q   graded   route med   synth med   findings
-  regression_founder     28      --      1580 ms     8212 ms   clean
-  regression_founder_r4  15    15/15     1389 ms        --     clean
-  sweep_rolling          17    17/17     1233 ms        --     absent-entity 1 *
-  sweep_routes          120      --      1310 ms        --     clean
-  sweep_scenarios        49    47/48     1607 ms     6571 ms   expect-miss 1
-  sweep_synthesis        30    30/30     1084 ms    11736 ms   u-l-b 1
-  sweep_traps            62      --      1625 ms     8518 ms   absent-entity 3,
-                                                               u-l-b 2
-  TOTAL                 321   109/110
-  * the rolling bank's OWN deliberate control ("why is ORD-999999 late"), graded MET
-    as unknown-entity -- the other side of the tray pin.
+  REJECTED  required files missing: ['manifest.json', 'orders.csv',
+            'routings.csv', 'routing_lines.csv', 'products.csv',
+            'resources.csv', 'calendars.csv', 'cost_model.json'] ;
+            zero valid orders ; zero resources ; ...
 
-MECHANICAL SIGNALS (vs the 2026-07-26-synthesis baseline)
-  exception                 0   (baseline 0)
-  empty                     0   (baseline 0)
-  validator                 0   (baseline 0)
-  dark-evidence             0   (baseline 0)
-  dead-door                 0   (baseline 0)
-  target-unloadable         0   (baseline 0)
-  failed-claim-rendered     0   (baseline 0)
-  shadow-divergence         0   (new signal)
-  shadow-unchecked          0   (new signal)
-  absent-entity             3 on the SHARED banks -- IDENTICAL to the baseline's 3
-                            (+1 in the new rolling bank, its own control)
-  expect-miss               1   (baseline 3)
-  ungrounded-load-bearing   3   (baseline 0)  <-- WORSE. Named in PART 3.
+WHAT THE GATE NEEDS is a directory of IDS files: manifest.json plus the seven
+required tables (orders.csv, routings.csv, routing_lines.csv, products.csv,
+resources.csv, calendars.csv, cost_model.json), optionally the four doorway
+files (customers, setup_transitions, locks, wip_status). Two ways to get one:
 
-LATENCY, BY TIER (the probation shadow EXCLUDED -- a planner never pays it)
-  parse + contracted route    n=287   median  1377 ms   p90  2791 ms
-  parse + synthesis           n= 34   median  9297 ms   p90 18299 ms
-  baseline: route n=272 median 1275 / p90 2502; synthesis n=32 median 9659 / p90
-  16030. Essentially unchanged -- which matters, because that gap is what the CU3(a)
-  first beat exists for.
+  - committed and hand-authored: datasets/glass_box -- grades ACCEPTED / C2
+    against the current gate, verified this session;
+  - generated from a scenario:
+      python tools/generate_erp_dataset.py --scenario pilot_scale --out <dir>
+    which is what --register now materializes at
+    _ai_exam_scratch/rolling_pinned/submission/.
 
-PARSE QUALITY
-  parses 334, calls 335, retries 1, malformed 2, clarifies 10, unavailable 0,
-  median 1159 ms.
-  baseline: 317 / 317 / 0 / 0 / 6 / 1050 ms. Slightly worse on retries, malformed
-  and median, on a prompt that grew by a new intent and a new rule. Single-digit
-  counts on a live model; stated, not excused.
-
-TIER COUNTS
-  contracted routes 276 | synthesis 34 (10 honest couldn't-answers) | honest floor 11
-  claims 99 -- VERIFIED 36, INTERPRETIVE 58, FAILED-and-cut 5 (3 load-bearing, each
-  said out loud). 91 tool calls, 0 budget exhaustions, 0 timeouts.
-  Verified share 38% (baseline 43%).
-  tool histogram: machine_occupancy 22, placements_for_machine 15,
-  entity_vocabulary 14, cost_ledger 13, lateness_set 13, placements_for_order 7,
-  placements_in_window 4, fetch_record 2, calendars 1.
-
-PROBATION (R-AI5(7))
-  lateness-cause: shadowed 3, clean 3, DIVERGED 0, unchecked 0, provenance
-  strengthened 1. PROBATION_SWEEPS = 2, so this sweep and one more serve the window.
-
-THE FIRST REAL PARETO (PROVENANCE.txt, committed)
-  34 synthesis answers -> 30 shapes: 13 promotable, 17 NOT-PROMOTABLE-BY-DESIGN
-  (10 predominantly interpretive, 5 conversational, 2 takes). More than half of what
-  the second tier answers is residue R-AI5(6) protects -- a report ranking by
-  frequency alone would have listed all 17 as backlog.
-
-  rank  weight  cum%   frequency  cluster
-  1     1.33    15%    2          unanchored|no-subject|cost_ledger
-  2     1.00    26%    2          unanchored|no-subject|lateness_set
-  3     0.86    35%    2          lateness-cause+schedule|no-subject|cost_ledger
-
-  Next candidate: a MONEY-shaped read ("how does the setup cost compare to the
-  tardiness cost"), asked 2x, 67% grounded. NOT promoted -- one proof cycle was
-  pre-authorized. Note also that `lateness-cause` now appears in five clusters'
-  adjacency: the promoted intent immediately became a near neighbour for much of the
-  remaining residue, which is worth reading twice before promoting the next one.
+No dataset and no manifest needed fixing. Nothing predates a rule it now fails.
 
 ======================================================================
-PART 3 -- VERIFICATION
+CU2b -- the determinism finding (the real one)
 ======================================================================
-Full non-slow Python suite     see below
-Slow AI + rolling ladders      --runslow on the AI-track + rolling modules
-Cockpit JS (Playwright)        178 passed, light + dark
-New tests                      tests/test_provenance_report.py 13,
-                               tests/test_promotion.py 32,
-                               tests/test_felt_bar.py 30,
-                               tests/test_rolling_dispatch.py 16 -- 91 new
-Sweep                          committed under
-                               tests/ai_exam/sweeps/2026-07-26-arc-close/, with
-                               ledger.jsonl + PROVENANCE.txt + PROVENANCE.json
-Goldens                        none moved -- no golden file appears in the diff. The
-                               pinned rolling run is a NEW fixture in gitignored
-                               scratch, produced by a committed builder.
-Payload                        the cockpit ask payload is unchanged; the ask
-                               RESPONSE gains a read-only `shadow` block (probation
-                               only); a NEW endpoint POST .../ask/preflight is
-                               additive and optional -- calling /ask directly is
-                               unchanged and still correct.
+The builder printed different committed/active splits across same-seed
+invocations because THREE things were wrong at once, none of them the seed.
+
+LEAK 1 -- the M1 adapter's entity write order. ids_adapter iterated
+pairs_needed, a SET of (route_id, product_id) string tuples, to write Process /
+OperationSpec / PrecedenceEdge entities. Nothing downstream re-sorts the edges,
+so the precedence list a solve model is built from arrived in PYTHONHASHSEED
+order. The line immediately above it already sorted the same set, for the same
+reason.
+
+LEAK 2 -- the admitted-demand set. rolling_horizon.build_rolling_view and
+run_rolling_horizon iterated the `admitted` demand-id SET straight into
+_build_window, so CP-SAT's variable creation order moved with the hash seed too.
+
+Measured, identical submission (same sha256 over its CSVs), seed 42,
+deterministic=True:
+
+  PYTHONHASHSEED=1   committed=43 active=13 beyond=14
+  PYTHONHASHSEED=2   committed=38 active=18 beyond=14
+  PYTHONHASHSEED=3   committed=46 active=10 beyond=14
+
+LEAK 3, and the worst -- the wall clock WAS the budget. SolveRunner always sets
+max_time_in_seconds, whether or not max_deterministic_time is also set. At the
+builder's 10.0s ceiling the WALL CLOCK stopped the solve every single time --
+measured wall=10.01s limit=10.0 det=2.0, i.e. the deterministic budget of 2.0 was
+never reached. "Deterministic mode" was returning whatever CP-SAT happened to
+reach in ten seconds of real time on this machine. Two runs at the SAME hash seed
+differing is what exposed it.
+
+FIXES
+
+  - ids_adapter.py: for route_id, ext_pid in sorted(pairs_needed)
+  - rolling_horizon.py: for did in sorted(admitted), at both call sites
+  - solve_runner.py: SolveResult.wall_truncated (additive, defaults False) --
+    True when a deterministic-budget solve was actually stopped by the wall
+    clock. Propagated through solver_builder.solve_two_stage and rolling's
+    private _two_stage_solve; surfaced as RollingView.wall_truncated.
+  - build_rolling_exam_run.py: WALL_CEILING_S = 900.0. The wall limit is a SAFETY
+    CEILING, never the budget; the 2.0s deterministic budget now binds, at ~11-12s
+    of wall.
+
+After the fixes the same submission under hash seeds 1/2/3/random gives one
+answer.
+
+THE DETERMINISM ASSERTION (CU2b, as asked)
+
+Every build re-runs the ENTIRE pinned path -- a second prepare_plant plus a
+second window-0 solve from the same submission -- and fails nonzero unless the
+committed set, the active set, the beyond-horizon tray and EVERY placement
+(resource, start, end) are identical. It also fails if either solve reports
+wall_truncated. A second pass through prepare_plant, not a second solve of the
+same plant, deliberately: leak 1 lived in the adapter, and a plant-reusing check
+would have sailed straight past it.
+
+Also pinned as a test: test_rolling_determinism_is_not_hashseed_dependent (slow)
+runs the golden driver under PYTHONHASHSEED=1 and =2 and requires identical
+output. The pre-existing golden test pinned PYTHONHASHSEED=0 on BOTH sides, which
+is precisely why it could not see any of this.
+
+GOLDEN REGENERATED. tests/fixtures/baselines/rolling_pilot_golden.json --
+changing the model's variable order changes which tie CP-SAT breaks. The drift is
+placement-only and benign: every priced quantity is byte-identical across the
+change (production 12744.05, setup 2160.00, tardiness 0.00, total 14904.05, 54
+committed, 24 on-time, 0 late). Only schedule_digest moved.
 
 ======================================================================
-PART 4 -- UNDERDELIVERED, RESIDUE, OUT OF SCOPE
+CU2c -- the gate's intake answer
 ======================================================================
-UNDERDELIVERED (explicitly):
-  - "Every mechanical signal strictly-no-worse than 2026-07-26-synthesis" is NOT
-    met. ungrounded-load-bearing went 0 -> 3: "what's the optimal plan", "find me a
-    faster schedule", "whats the busiest day in this schedule". In each the tier
-    drafted a conclusion, the verifier cut it, and the answer SAID so -- the
-    mechanism working on three questions that deserve it. But the RUBRIC reads a
-    rising count as the tier reaching past its evidence, and two of the three are
-    optimality questions, which is exactly where reaching is tempting. It is a
-    live-model property, not a code regression (the same questions grounded on the
-    4A.5b run). Every TRUTH-FLOOR tripwire is no-worse; this one is not, and the bar
-    was not relaxed to say otherwise.
-  - Parse counts are slightly worse: retries 0 -> 1, malformed 0 -> 2, median 1050
-    -> 1159 ms, clarifies 6 -> 10.
-  - One graded expectation remains unmet and was NOT relaxed: "are you sure about
-    that" reaches `prove-it` rather than the `verification` clarify. Both are honest
-    and neither capitulates; RUBRIC precedent entry 4, still OPEN for the founder.
-  - Two bank expectations WERE changed, and the reason is stated in the bank itself:
-    the two flagship aggregate-lateness questions moved from `route=synthesis` to
-    `intent=lateness-cause route=lateness-cause`. That is not a bank edited to match
-    behaviour -- the thing that changed is the product, by a reviewed vocabulary
-    change with a cited authority. A bank still expecting `synthesis` there would be
-    asserting the promotion did not happen.
-  - The sidecar still flags the rolling bank's DELIBERATE absent-order control. It
-    could suppress an absent-entity finding on a turn whose EXPECT line asks for
-    `unknown-entity` -- the behaviour is graded there -- and it does not yet.
-  - test_scenario_untouched_moves_bounded failed once under concurrent load and
-    passes in isolation: a new member of the standing contention-sensitive class
-    alongside test_n3000.
+ConformanceGate.run now answers path-not-found / not-a-directory /
+empty-directory as ONE deficiency with intake_error on the certificate, ahead of
+the deficiency cascade, instead of rendering a page-long REJECTED certificate
+about every missing file and zero orders and zero resources and zero routings.
+It is still a first-class evidence run: one HEADLINE finding carrying the
+standard ids.submission_files_present rule id, grade REJECTED, go=False.
 
-RESIDUE / NAMED LIMITS:
-  - Clustering UNDER-states frequency by design; merging split shapes is a human's,
-    in a dossier.
-  - The shadow diff compares only quantities BOTH sides state about the same
-    labelled thing; on the promoted shape that is ONE shared quantity across three
-    probation questions. The teeth are real but narrow.
-  - The two-phase first beat names the tool BUDGET, not a live count. A ticking
-    "(N tools consulted)" needs streaming or background execution of the ask.
-  - The promoted route is measured against ONE world's late set (a single late
-    order): its premise check is well-exercised, its cause MIX is not.
-  - A dossier's harness validation cannot see collateral damage to neighbouring
-    intents. That is what the review gate is for, and this session proved it.
-
-OUT OF SCOPE (named, not built):
-  - Any promotion beyond the one pre-authorized proof cycle. The Pareto's current
-    head is left for the next session.
-  - Per-claim cockpit badge ELEMENTS (tokens shipped in 4A.5b).
-  - Rendering-model changes. Anything on the 4B queue.
+Deliberately narrow -- a directory that HAS files still gets the full cascade,
+however un-IDS those files are. Deciding what counts as a plausible-but-wrong
+submission is the Gatehouse thread's surface, not this errand's. Five tests in
+tests/test_conformance.py::TestIntake pin both the new answer and the narrowness.
 
 ======================================================================
-THE ARC
+CU3 -- CLAUDE.md dev API quick reference
 ======================================================================
-4A.5a retired the classifier and made every question parse first. 4A.5b gave the
-unmatched question a tier and made every one of its sentences earn its label. 4A.5c
-made the residue legible, gave the system a way to propose its own routes and an
-automatic way to take them back, and killed the last keyword matcher in the ask
-path. R-AI5's eight clauses are implemented. The working thread returns to the 4B
-mission.
+New block after "## Repository layout": how to start the dev API, the two-step
+submit+solve with a working sliced body (field names from SolveRequest), where
+schedule ids appear (GET /runs/{id} -> data.result.schedule_id), what a
+submission directory actually is, the note that time_limit is a wall ceiling and
+not the budget, and the one-command rolling exam line.
+
+======================================================================
+CU4 -- the standing dataset guard
+======================================================================
+tests/test_committed_datasets_conform.py. Every directory under datasets/ holding
+a manifest.json runs the CURRENT gate and must grade != REJECTED (slow). It pins
+the FLOOR, not the grade, so a dataset may move ACCEPTED <-> CONDITIONAL as
+quality rules land without a test edit.
+
+Two guards keep it from going vacuous: one test asserts at least one committed
+submission dataset exists, and one asserts that any manifest-less directory under
+datasets/ also has no IDS CSVs -- so a genuinely broken submission cannot be
+skipped for the very reason it is broken.
+
+======================================================================
+SUITE
+======================================================================
+  fast          1487 passed, 202 skipped   (python -m pytest -q)
+  slow ladder   1664 passed,  21 skipped   (python -m pytest -q --runslow)
+                with ANTHROPIC_API_KEY set
+
+Without the key, four ask-path tests fail:
+  test_edit_question_domain.py::TestEditDomainEndToEnd (x3)
+  test_api_endpoints.py::TestRollingTwoBeatAPI::test_rolling_questions_answer_through_ask
+They exercise the LLM-first parse layer through the real /ask with no parse
+double, so with no key the honest floor answers "I can't answer this question
+yet". Environmental, not a regression -- verified by re-running those four with
+the key loaded from .env.local: 9 passed.
+
+======================================================================
+UNDERDELIVERED / NAMED
+======================================================================
+Nothing in CU1-CU4 was cut. What did not go to plan, and what is left open:
+
+  - The live-stack proof needed your dev API restarted (it held pre-edit
+    modules), and process control was blocked by the permission classifier until
+    you approved it. The proof above is from the restarted server.
+
+  - The registered run and the harness fixture are the same world but not the
+    same solve (API deterministic budget 4.0s vs the harness's 2.0s --
+    SolveRequest has no det_time field and this errand did not add one). Named in
+    the tool. Adding the field is a small, separate API change if the two splits
+    ever need to match exactly.
+
+  - SolveResult.wall_truncated is REPORTED but nothing except the builder ACTS on
+    it. The API's rolling worker can still run deterministic=True under a
+    wall-bound time_limit and produce a non-reproducible schedule without
+    complaint. Surfacing it was in scope; deciding what the API should do about
+    it is a ruling, not an errand.
+
+  - The intake answer covers only missing / not-a-directory / empty. A directory
+    of plausible-but-wrong files still produces the full cascade -- by design,
+    per the Gatehouse boundary.

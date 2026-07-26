@@ -233,9 +233,9 @@ def test_rolling_determinism_smoke():
     assert a["n_committed"] == b["n_committed"]
 
 
-def _run_golden_driver() -> dict:
+def _run_golden_driver(hash_seed: str = "0") -> dict:
     env = dict(os.environ)
-    env["PYTHONHASHSEED"] = "0"
+    env["PYTHONHASHSEED"] = hash_seed
     proc = subprocess.run(
         [sys.executable, str(REPO / "tools" / "rolling_golden.py"),
          "--orders", "24", "--window", "7", "--frozen", "3",
@@ -260,6 +260,28 @@ def test_rolling_determinism_golden():
             f"rolling golden DRIFT on {k}: got {run1[k]!r}, golden {golden[k]!r}. "
             f"If intentional (ortools/solver change), regenerate via "
             f"tools/rolling_golden.py and re-commit the fixture.")
+
+
+@pytest.mark.slow
+def test_rolling_determinism_is_not_hashseed_dependent():
+    """Errand session, CU2b: determinism must not be an env var away.
+
+    The golden above pins PYTHONHASHSEED=0, so it could not see that the roll's
+    result MOVED with the hash seed. Two leaks did it: the M1 adapter wrote
+    Process / OperationSpec / PrecedenceEdge entities in ``sorted()``-less set
+    order, and rolling_horizon iterated the ``admitted`` demand-id SET straight
+    into the model build. Both changed CP-SAT's variable/constraint order, so a
+    tied-optimal model returned a different tie. Measured on the pinned rolling
+    world before the fix: an identical submission at seed 42 with
+    deterministic=True split committed/active 43/13, 38/18 and 46/10 under hash
+    seeds 1, 2 and 3.
+
+    Both leaks are fixed at the source, so the SAME roll under two different
+    hash seeds must now agree exactly."""
+    a = _run_golden_driver(hash_seed="1")
+    b = _run_golden_driver(hash_seed="2")
+    assert a == b, ("the rolling roll is PYTHONHASHSEED-dependent again — a set "
+                    "is being iterated into the model build somewhere")
 
 
 # ---------------------------------------------------------------------------

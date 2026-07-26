@@ -164,6 +164,10 @@ def _two_stage_solve(model, var_map, free_start_vars, earliness_coeff_scaled, *,
     _hint_from_solve(model, var_map, s1.solve_values)
     s2 = _runner(stage2_det_time).solve(model, var_map, None)
     if s2.status in ("OPTIMAL", "FEASIBLE"):
+        # Stage 1's truncation is carried forward: if the WALL clock (not the
+        # deterministic budget) stopped stage 1, the whole two-stage result is a
+        # wall-clock lottery, whatever stage 2 then did (Errand session, CU2b).
+        s2.wall_truncated = s2.wall_truncated or s1.wall_truncated
         return s2, True
     return s1, False   # stage-2 budget exhausted → keep the stage-1 incumbent
 
@@ -396,6 +400,13 @@ class RollingView:
     win_horizon_start: Optional[datetime] = None
     win_horizon_end: Optional[datetime] = None
     persisted: bool = False
+    # True when the window-0 solve ran under a deterministic budget but was
+    # actually stopped by the WALL CLOCK (Errand session, CU2b) — i.e. this view
+    # is NOT reproducible, whatever ``deterministic`` was passed. Callers that
+    # make a reproducibility claim (tools/build_rolling_exam_run.py) must check
+    # it; raising the caller's ``member_time_limit_s`` until the deterministic
+    # budget binds is the fix.
+    wall_truncated: bool = False
 
     @property
     def placed(self) -> dict:
@@ -467,7 +478,15 @@ def build_rolling_view(
             dem_of_wp.setdefault(wp, []).append(d["id"])
 
     admitted, _reasons = _admit(plant, sched, t0, window_end, gravity, crit_threshold)
-    free_ops = [op for did in admitted for op in _ops_of(did)]
+    # SORTED, not raw set order (Errand session, CU2b). ``admitted`` is a set of
+    # demand-id STRINGS; iterating it raw hands the ops to _build_window in
+    # hash order, so CP-SAT's variable-creation order — and therefore which
+    # tied-optimal placement it returns — moves with PYTHONHASHSEED. Measured on
+    # the pinned rolling world: an identical submission at seed 42 with
+    # deterministic=True split committed/active 43/13, 38/18, 46/10 under hash
+    # seeds 1/2/3. Determinism must not depend on an env var the caller might
+    # forget; sorting removes the dependency at the source.
+    free_ops = [op for did in sorted(admitted) for op in _ops_of(did)]
 
     workers = 1 if deterministic else None
     committed: dict = {}
@@ -477,6 +496,7 @@ def build_rolling_view(
     svc: list = []
     status = "NO_ADMISSION"
     placed_demand_ids: set = set()
+    wall_truncated = False
 
     # CU1 persistence wiring — reporters + snapshot writer are opened only when
     # ``persist`` is set (the API rolling worker). runs_dir mirrors the spine's
@@ -509,6 +529,7 @@ def build_rolling_view(
             workers=workers, seed=seed, deterministic=deterministic,
             member_time_limit_s=member_time_limit_s, stage1_det_time=det_time)
         status = solve.status
+        wall_truncated = bool(solve.wall_truncated)
         if solve.status in ("OPTIMAL", "FEASIBLE"):
             sv = solve.solve_values
             for op in free_ops:
@@ -581,7 +602,7 @@ def build_rolling_view(
         committed=committed, active=active, beyond_demand_ids=beyond,
         cost_ledger=ledger, service_outcomes=svc, op_drivers=op_drivers,
         win_horizon_start=win_horizon_start, win_horizon_end=win_horizon_end,
-        persisted=persist,
+        persisted=persist, wall_truncated=wall_truncated,
         earliness_value=ev_used, status=status)
 
 
@@ -843,7 +864,9 @@ def run_rolling_horizon(
         if not admitted:
             continue
 
-        free_ops = [op for did in admitted for op in _ops_of(did)
+        # sorted() — see build_rolling_view: raw set order makes the window
+        # solve PYTHONHASHSEED-dependent (Errand session, CU2b).
+        free_ops = [op for did in sorted(admitted) for op in _ops_of(did)
                     if op["id"] not in committed]
         # committed operations still overlapping this window (end > t0) are pinned;
         # those fully in the past cannot conflict with free work floored at t0.

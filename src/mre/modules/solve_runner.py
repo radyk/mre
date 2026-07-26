@@ -25,6 +25,14 @@ class SolveResult:
     wall_time: float
     solutions_found: int
     solve_values: SolveValues
+    # True when a DETERMINISTIC-budget solve was actually stopped by the
+    # wall clock (Errand session, CU2b). ``max_deterministic_time`` is what makes
+    # a truncated solve reproducible; ``max_time_in_seconds`` is always set as
+    # well, so if the wall limit trips FIRST the result is whatever CP-SAT
+    # happened to reach in N seconds of real time on this machine — a lottery
+    # wearing a determinism label. Defaults False (no deterministic budget in
+    # force ⇒ nothing was claimed).
+    wall_truncated: bool = False
 
 
 class _SolutionCallback:
@@ -221,4 +229,6 @@ class SolveRunner:
             wall_time=wall_time,
             solutions_found=int(solutions_found),
             solve_values=sv,
+            wall_truncated=(self._deterministic_time is not None
+                            and wall_time >= self._time_limit - 0.05),
         )

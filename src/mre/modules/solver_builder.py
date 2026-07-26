@@ -414,6 +414,7 @@ def solve_two_stage(
         status=s2.status, objective=s1.objective, best_bound=s1.best_bound,
         gap=s1.gap, wall_time=s1.wall_time + s2.wall_time,
         solutions_found=s2.solutions_found, solve_values=s2.solve_values,
+        wall_truncated=(s1.wall_truncated or s2.wall_truncated),
     ), True
 
 
