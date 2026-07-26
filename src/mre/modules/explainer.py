@@ -5,15 +5,18 @@ It assembles ExplanationBundles from the evidence index and snapshot store,
 then renders them via TemplateRenderer (all tests) or LLMRenderer (--llm flag).
 
 Entry points:
-  explainer.answer("Why is WO-2001 late?")         -> ExplanationBundle
-  explainer.summarize_run()                          -> ExplanationBundle
+  explainer.route("late-order", {"order": "WO-2001", "question": ...})
+                                                    -> ExplanationBundle
+  explainer.summarize_run()                         -> ExplanationBundle
   explainer.snapshot_diff("snap-v1", "snap-v2")     -> dict
 
-Keyword routing (no NLU, no embeddings):
-  "late"           + WO ref  -> _explain_why_late
-  "on" / "assign"  + WO+M    -> _explain_why_on_machine
-  "data problem" / "finding" -> _explain_data_problems
-  "changed" / "diff"         -> _explain_what_changed (snapshot diff)
+Routing (R-AI5, Session 4A.5a): there is NONE here. The keyword router that used
+to turn a question into a route id is retired -- intent arrives on the parse
+contract (mre.contracts.parse) and route() is the only way in. What this module
+owns is the ASSEMBLY: given a route id and resolved external refs, build the
+evidence bundle. Assemblers still read the question text for their own
+route-internal details (a date filter, a customer name, a swap-vs-move framing);
+none of them decides WHAT was asked.
 """
 from __future__ import annotations
 
@@ -50,264 +53,48 @@ _SUPPORTED_ROUTES = [
     'show the full schedule — everything, machine by machine',
 ]
 
-_SCHEDULE_TRIGGERS = frozenset({
-    "schedule", "scheduled", "running on", "next on",
-    "when does", "when will", "when is",
-    "when start", "when finish", "when complete",
-    "start on", "finish on",
-})
-
-# Optimality / quality phrasings (4A.1c). "is there a BETTER schedule" contains the
-# bare word "schedule" and would otherwise route to the schedule LISTING and answer
-# with prose — but it asks whether a cheaper/better plan EXISTS, a re-optimization
-# question the deterministic surface cannot answer. When present, the schedule
-# listing route is suppressed so the question falls through to the interpreter /
-# honest refusal-bridge, never a listing masquerading as an answer.
-_OPTIMALITY_TRIGGERS = frozenset({
-    "better", "best", "optimal", "improve", "improvement", "cheaper", "cheapest",
-    "worse", "suboptimal", "more efficient",
-})
-
 # External-ref types that name an order / a machine across the three adapter
-# vocabularies (sample ERP, raw_data, IDS). The explainer routes questions in
-# the CUSTOMER'S vocabulary by matching against the identity map — never by
-# assuming an id shape.
+# vocabularies (sample ERP, raw_data, IDS). Subjects are resolved against the
+# identity map — never by assuming an id shape.
 _ORDER_REF_TYPES = frozenset({"work_order", "order_id"})
 _MACHINE_REF_TYPES = frozenset({"machine_id", "resource_id", "workcenter", "workcenter_id"})
 
-# Certificate question domain (handoff §4). Three registers:
-#   testimony  — "why rejected?" / "what's wrong?"  (findings, evidence)
-#   remediation — "how do I fix it?"                 (authored catalog guidance)
-#   judgment   — "what should I fix first?" / "does this matter?" (grade triage)
-_CERT_TESTIMONY_TRIGGERS = (
-    "what's wrong", "whats wrong", "what is wrong", "went wrong",
-    "why reject", "why was it reject", "why was this reject", "why rejected",
-    "certificate", "why conditional", "why was it conditional",
-)
-_TRIAGE_TRIGGERS = (
-    "fix first", "what to fix first", "prioriti", "does this matter",
-    "does it matter", "what matters", "worth fixing", "most important",
-    "which first", "biggest problem",
-)
-_REMEDIATION_TRIGGERS = ("how do i fix", "how to fix", "how do we fix",
-                         "how can i fix", "remediat", "how do i resolve",
-                         "how to resolve")
-# The excluded-orders story (Session 4.5 CU4): which orders were dropped from
-# the plan and why — enumerated from ALL layers (gate, adapter, validator), so
-# the certificate conversation is never blinder than dq_report.md.
-_EXCLUDED_ORDERS_TRIGGERS = ("exclud", "left out", "dropped from the plan",
-                             "which orders were left", "left off the plan",
-                             "what was left out", "orders were dropped")
+# Session 4A.5a (R-AI5) — THE KEYWORD/PRECEDENCE ROUTER IS RETIRED. Every trigger
+# table that used to live here (schedule / optimality / certificate / triage /
+# remediation / excluded / edit / ledger / briefing / inventory / integrity /
+# attribute / drill-down / start-reason / advice / solve-time / machine-list /
+# maintenance / contest / hypothesis / gap / idle markers) was the deterministic
+# classifier's precedence cascade, and four founder exam rounds proved the class it
+# belonged to: understanding INTENT is a natural-language problem, and string
+# matching kept answering the wrong question with perfect citations. Intent now
+# arrives on the parse contract (mre.contracts.parse) and `route()` below is the
+# only dispatch. The two marker sets that survive are ROUTE-INTERNAL parameter
+# reads inside one assembler, never intent selection.
 
-# The sandbox/edit question domain (Phase 3 CU2) — over the planner_edit
-# Decisions an accepted edit records (docs/02 planner_edit, basis=observed).
-# "summarize what I changed and what it cost" is the demo's closing beat; the
-# cost question decomposes one edit's delta (production/setup/tardiness Δ). These
-# are checked BEFORE the snapshot-diff "changed" route so edit phrasing routes
-# here, not into a version diff.
-_EDIT_SUMMARY_TRIGGERS = (
-    "my changes", "my edits", "did i change", "did i do", "i changed",
-    "i've changed", "changes i made", "edits i made", "what i changed",
-    "this session", "summarize my", "summarise my",
-)
-_EDIT_COST_TRIGGERS = (
-    "this move cost", "this edit cost", "that cost", "cost of this",
-    "cost of my", "cost of the edit", "cost of the move", "why does this cost",
-    "why does this move cost", "what did this cost", "what did that cost",
-    "what did this move cost", "why does that cost", "why so expensive",
-)
-
-# The meta-route (Session 4A.1 CU3 / R-AI1(d)): the ledger answering questions
-# ABOUT itself — "what questions couldn't you answer recently?". Checked first in
-# classify() so this exact phrasing never falls into the schedule/diff handlers.
-_LEDGER_TRIGGERS = (
-    "couldn't you answer", "couldn't answer", "could not answer",
-    "questions you can't answer", "questions you cannot answer",
-    "what couldn't you", "unanswered questions", "what have you refused",
-    "what did you refuse", "recent refusals",
-)
-
-# Session 4A.2 route families (CU5) + the morning briefing (CU7) + drill-down
-# (CU3). Checked in classify() BEFORE the broad late/schedule handlers so a
-# differently-SHAPED question about a resolved order (the audit's answer-the-noun
-# defect) reaches its own route, not late-order.
-_BRIEFING_TRIGGERS = (
-    "worry about", "worry about today", "what should i worry", "morning briefing",
-    "briefing", "what needs my attention", "what's on fire", "whats on fire",
-    "what should i look at", "start my day",
-)
-_INVENTORY_TRIGGERS = (
-    "how many order", "how many job", "how many operation", "how many op",
-    "number of order", "number of job", "count of", "how many are there",
-    "any split", "split job", "any splits", "are there splits", "which orders split",
-    "how many total", "total number", "jobs in total", "orders in total",
-)
-_INTEGRITY_TRIGGERS = (
-    "double book", "double-book", "doublebook", "same machine at the same time",
-    "same time on the same machine", "overlap", "conflict", "two orders at once",
-    "running at the same time", "at the same time",
-)
-# Attribute lookups (the hover card, askable): product / quantity / customer /
-# due. NB these are checked only WITH a resolved order — a bare "what's the due
-# date" with no order falls through.
-_ATTRIBUTE_TRIGGERS = (
-    "what product", "which product", "what part", "which part", "what item",
-    "what customer", "which customer", "who is the customer", "whose order",
-    "what quantity", "what qty", "how many units", "how many pieces", "how much of",
-    "what's the due", "whats the due", "what is the due", "due date for",
-    "when is it due", "when's it due", "release date", "what are the details",
-    "tell me about", "details of", "details for", "info on", "attributes",
-)
-# Drill-down (CU3): open the full finding / record behind a citation.
-_DRILLDOWN_TRIGGERS = (
-    "tell me more", "more about", "more detail", "expand on", "expand that",
-    "the full finding", "full record", "show the record", "what's the record",
-    "elaborate", "go deeper", "dig into", "unpack",
-)
-# Start-reason (CU5 release/due reasoning + CU4 blocked-by): why an order starts
-# when it does / why it can't start earlier.
-_START_REASON_TRIGGERS = (
-    "why does", "why is", "start earlier", "start sooner", "begin earlier",
-    "why start", "why does it start", "start on", "why so late to start",
-    "cant we start", "can't we start", "cannot start", "cant start", "can't start",
-)
-
-# CU2 (Session 4B.4) — RECOMMENDATION / ADVICE shape. The founder asked four ways
-# "what should I do about lateness" ("would you recommend overtime …", "what
-# should i do so those orders are not late", "if i open up hours what machines
-# should i run", "how i can avoid late orders") and each got the are-there-late-
-# orders STATUS RECITAL — confident, cited, wrong-question, three times. Advice-
-# seeking phrasings route to an HONEST SCOPING answer (what the product CAN do
-# today + that intervention recommendation is not a supported question yet), never
-# a status recital. Checked BEFORE the late/schedule branches (the phrasings
-# contain "late" / "machines" / "run"), AFTER triage/remediation/briefing (so
-# "what should I fix first" / "what should I worry about" keep their own routes).
-_ADVICE_TRIGGERS = (
-    "recommend", "would you recommend", "do you recommend", "suggest",
-    "what should i do", "what do i do", "what can i do",
-    "how can i avoid", "how do i avoid", "how i can avoid", "how i avoid",
-    "how can i prevent", "how do i prevent", "how to avoid", "avoid late",
-    "prevent late", "reduce late", "less late", "fewer late", "not be late",
-    "keep them on time", "make them on time", "get them on time",
-    "if i open", "if i add", "if i run", "if i change", "if i turn on",
-    "open up hours", "add hours", "add overtime", "run overtime",
-    "what machines should i", "which machines should i", "what should i run",
-    "how can i improve", "how do i improve", "what would you do",
-)
-
-# CU3 (Session 4B.4) — cheap META routes that are pure document/evidence reads,
-# plus maintenance/calendar shape-recognition. Checked BEFORE the bare-"schedule"
-# listing branch, because "how long did this SCHEDULE take to solve" and "is there
-# any maintenance SCHEDULED" both contain a schedule trigger and were misrouting to
-# the listing (the category-error insult "I don't see any scheduled operations").
-_SOLVE_TIME_TRIGGERS = (
-    "how long did", "how long to solve", "solve time", "time to solve",
-    "how long did it take", "how long did this take", "how long did the solve",
-    "take to solve", "took to solve", "solving take", "how fast did",
-    "how long to build", "wall time", "how long did the run",
-)
-_MACHINE_LIST_TRIGGERS = (
-    "how many machines", "how many resources", "how many work center",
-    "how many workcenter", "list the machines", "list machines",
-    "what machines are there", "which machines are there", "number of machines",
-    "how many machine", "list the resources", "what resources", "name the machines",
-    "does this schedule use workcenter", "use workcenters", "using workcenters",
-    "what work centers", "which work centers",
-)
-_MAINTENANCE_TRIGGERS = (
-    "maintenance", "any maintenance", "is there maintenance", "planned maintenance",
-    "shift pattern", "shifts", "off-shift", "off shift", "shift schedule",
-    "which shifts", "what shifts", "calendar", "working hours", "operating hours",
-)
-
-# CU6 (Session 4A.3-pre / R-AI3(4)) — the sycophancy guard. A CONTEST marker
-# signals the user is pushing back on a cited fact; a STATUS word says the fact
-# under dispute is on-time/late/early. Together (with an order ref) they route to
-# the warm-evidence restatement, which never folds and never hardens.
-_CONTEST_MARKERS = (
-    "isn't", "isnt", "aren't", "arent", "wasn't", "wasnt", "weren't", "werent",
-    "are you sure", "you sure", "you're wrong", "youre wrong", "that's wrong",
-    "thats wrong", "you are wrong", "i thought", "thought it was", "thought it wa",
-    "supposed to be", "no way", "can't be", "cant be", "cannot be", "surely",
-    "shouldn't it be", "shouldnt it be", "but it's", "but its",
-)
-_STATUS_WORDS = ("on time", "on-time", "late", "early", "not late", "fine",
-                 "on schedule", "ahead")
-
-
-# CU5 (Session 4A.3-pre) — the hypothesis-content guard. An intervention
-# STATEMENT — a conditional/hypothetical about changing the plant or the
-# submission ("maybe if splitting were allowed fewer orders would be late",
-# "overtime would probably help") — is advice CONTENT, not a status question. The
-# 4B.4 advice guard covered advice PHRASINGS (interrogatives); this covers advice
-# CONTENT (a hypothesis wearing a declarative shape) so it never keyword-matches
-# "late" into the status recital. A hypothesis = a conditional/speculative marker
-# AND a plant/outcome word (so a plain "the order is late" is not swept in).
-# Deliberately NOT bare "would fix/help/reduce/make" — "and what would fix it?" is
-# an ellipsis follow-up, not an intervention hypothesis. A hypothesis is a
-# CONDITIONAL about changing the plant ("maybe if …", "if we added …") or a hedged
-# suggestion ("… would probably help").
-_HYPOTHESIS_MARKERS = (
-    "maybe if", "what if", "if i ", "if we ", "if you ", "if splitting",
-    "if overtime", "if i open", "if we open", "if i add", "if we add",
-    "would probably", "probably help", "probably reduce", "probably fix",
-    "i bet", "i think it would", "i think that would", "might help",
-    "might reduce", "might fix", "if i allow", "if we allow", "if allowed",
-    "were allowed", "was allowed",
-)
-_HYPOTHESIS_OUTCOMES = (
-    "late", "on time", "fewer", "less", "reduce", "help", "better", "faster",
-    "improve", "avoid", "prevent", "fix", "catch up", "make the due",
-)
-
-
-def _is_hypothesis(q: str) -> bool:
-    """True when the question is an intervention HYPOTHESIS (a conditional/
-    speculative statement about changing the plant or submission), not a status
-    question — so it routes to advice/coaching, never a status recital (CU5)."""
-    if not any(m in q for m in _HYPOTHESIS_MARKERS):
-        return False
-    return any(o in q for o in _HYPOTHESIS_OUTCOMES)
-
-
-# CU1 (Session 4A.3) — SWAP / MOVE intent (the flagship). "why not just swap X and
-# Y", "switch X and Y", "move X earlier / to M". The answer bridges to the board
-# gesture — the two-beat sandbox prices the drag — never a status recital.
+# Swap vs move — a PARAMETER of the swap/move bridge, read inside its own assembler
+# (the intent that gets there is `swap-move` either way).
 _SWAP_MARKERS = ("swap", "switch", "trade place", "trade the", "exchange",
                  "flip the order", "put them in the other")
 _MOVE_MARKERS = ("move ", "put ", "shift ", "relocate", "reassign", "reschedule ",
                  "give it an earlier", "give it the earlier")
 
 
-def _swap_move_kind(q: str) -> Optional[str]:
+def _swap_move_kind(q: str) -> str:
     """'swap' when the question proposes exchanging two jobs' slots, 'move' when it
-    proposes relocating one, else None. The caller enforces the order count (swap
-    needs two, move one)."""
-    if any(m in q for m in _SWAP_MARKERS):
-        return "swap"
-    if any(m in q for m in _MOVE_MARKERS):
+    proposes relocating one. A route-internal parameter read: by the time this runs
+    the intent is already `swap-move`; this only picks which framing the bridge
+    uses. Defaults to 'swap' when the wording names neither."""
+    ql = (q or "").lower()
+    if any(m in ql for m in _MOVE_MARKERS) and not any(m in ql for m in _SWAP_MARKERS):
         return "move"
-    return None
+    return "swap"
 
 
-# CU2 (Session 4A.3) — the absence-explaining pair, promoted from named debt.
-#   gap-between  — "why is there a gap / slack between X and Y", "why not run X
-#                  right after Y": resolve the gap on the shared machine, name its
-#                  CAUSE (occupancy / closure / upstream gate), or report honestly.
-#   machine-idle — "why is M unused / idle": eligibility + where the work went.
-_GAP_MARKERS = (
-    "gap between", "slack between", "space between", "time between", "why not run",
-    "right after", "straight after", "just after", "back to back", "back-to-back",
-    "immediately after", "why the gap", "why is there a gap", "why is there slack",
-    "why the space", "why isn't it right after", "why not right after",
-    "why is there space", "gap before", "why is there a delay between",
-)
-_IDLE_MARKERS = (
-    "unused", "not used", "not being used", "sitting idle", "idle",
-    "doing nothing", "no jobs on", "nothing on", "no work on", "empty",
-    "not doing anything", "why is nothing running on", "carrying no work",
-    "why isn't anything on", "why are there no jobs on", "no jobs running on",
-)
+# The remediation route's "just the worst one" qualifier — a route-internal
+# parameter read (the intent is `remediation` either way).
+def _remediation_limit(q: str) -> "Optional[int]":
+    ql = (q or "").lower()
+    return 1 if ("worst" in ql or "top " in ql or "the one" in ql) else None
 
 
 # The route taxonomy — the closed set of route ids classify()/route() dispatch
@@ -324,6 +111,9 @@ ROUTE_TAXONOMY: dict[str, dict] = {
                               "canonical": "why is {order} on {machine}?"},
     "machine-schedule":      {"params": ["machine"], "canonical": "what is running on {machine}?"},
     "order-schedule":        {"params": ["order"],   "canonical": "when does {order} start and finish?"},
+    # Session 4A.5a: the whole-plan listing was a route() destination the taxonomy
+    # never named, so no parse could reach it. Named now (add, never repurpose).
+    "schedule":              {"params": [],          "canonical": "show the full schedule"},
     "customer-schedule":     {"params": ["customer"],
                               "canonical": "show the schedule for customer {customer}"},
     "downtime":              {"params": ["machine"], "canonical": "how much downtime does {machine} have?"},
@@ -373,6 +163,14 @@ ROUTE_TAXONOMY: dict[str, dict] = {
     # which answers from the document's RollingBlock — the connector-era snapshot a
     # rolling run now persists is what unblocks this). A closed set (ROLLING_ROUTES),
     # not an ad-hoc bolt: registered here so the ledger + interpreter recognize them.
+    # Session 4A.5a (R-AI5 part 1) — the confirmation-of-take bridge. The planner
+    # repeats OUR OWN prior suggestion back as a question ("so move the first
+    # operation to an earlier start time?"). That is a confirmation, not a new
+    # instruction and not a near-miss: name the gesture, name the sandbox that
+    # prices it, and hand the board back. Reached via the parse contract's
+    # followup_of=confirm-take.
+    "confirm-take":          {"params": [],
+                              "canonical": "should I make that move on the board?"},
     "beyond-horizon":        {"params": [],          "canonical": "what's beyond the horizon?"},
     "why-not-scheduled-yet": {"params": ["order"],   "canonical": "why isn't {order} scheduled yet?"},
     "frozen":                {"params": [],          "canonical": "what's frozen?"},
@@ -658,207 +456,34 @@ class Explainer:
         return m.group().upper() if m else None
 
     # ------------------------------------------------------------------
-    # Public API
+    # Public API — ONE dispatch (R-AI5(2), Session 4A.5a)
     # ------------------------------------------------------------------
-
-    def answer(self, question: str) -> ExplanationBundle:
-        """Route a natural-language question to the right assembler.
-
-        The deterministic router IS the taxonomy (docs/07 Phase 4): classify()
-        maps working phrasings onto a route id + params, route() dispatches. This
-        split (Session 4A.1) makes the taxonomy callable by the interpreter (CU1)
-        without changing any routing — answer() is exactly classify()+route()."""
-        route_id, params = self.classify(question)
-        return self.route(route_id, params)
-
-    def classify(self, question: str) -> tuple[str, dict]:
-        """Deterministic phrasing → (route id, params). No LLM, no cost. Returns
-        ("unsupported", …) when nothing matches — the signal the orchestration
-        uses to fall through to the interpreter (CU1). Branch order is preserved
-        byte-for-byte from the pre-4A.1 router (zero regression)."""
-        q = question.lower()
-        wo_ref = self._find_order_ref(question)
-        machine_ref = self._find_machine_ref(question)
-        # The relevance guard's signal (CU1): did the planner NAME an order that
-        # does not resolve here? If so, a global answer would be answering the
-        # wrong thing — route to unknown-entity instead of the schedule-wide list.
-        mention = None if wo_ref else self._order_mention(question)
-        base = {"question": question, "order": wo_ref, "machine": machine_ref}
-
-        # The meta-route first — "what couldn't you answer?" must not fall into
-        # the schedule/diff handlers (R-AI1(d)).
-        if any(t in q for t in _LEDGER_TRIGGERS):
-            return "ledger-refusals", base
-
-        # The morning briefing (CU7) — "what should I worry about today?". Before
-        # triage so it isn't caught by a bare "what matters".
-        if any(t in q for t in _BRIEFING_TRIGGERS):
-            return "briefing", base
-
-        # Certificate question domain (handoff §4) — before the schedule routes so
-        # "how do I fix …" / "what should I fix first" never fall into schedule/
-        # late handling. Judgment (triage) before remediation so "what should I
-        # fix first" is not swallowed by the bare "fix" in the remediation
-        # triggers.
-        if any(t in q for t in _TRIAGE_TRIGGERS):
-            return "triage", base
-        if any(t in q for t in _REMEDIATION_TRIGGERS):
-            limit = 1 if ("worst" in q or "top " in q or "the one" in q) else None
-            return "remediation", {**base, "limit": limit}
-        if any(t in q for t in _EXCLUDED_ORDERS_TRIGGERS):
-            return "excluded-orders", base
-        if any(t in q for t in _CERT_TESTIMONY_TRIGGERS):
-            return "certificate-testimony", base
-
-        # CU4 (Session 4A.3-pre) — coaching/capability retrieval. "how do I enable
-        # X", "does MRE support W", "i want orders to span downtime, how" — a
-        # capability question, answered from the authored registry with a § cite.
-        # Checked BEFORE advice/downtime because the anchor ("span downtime") both
-        # reads as advice-adjacent and contains "downtime" (which would otherwise
-        # fall to the calendar route → the "No calendar closures for all" nonsense).
-        # An intervention HYPOTHESIS that NAMES a config concept (CU5) — "maybe if
-        # splitting were allowed fewer orders would be late" — routes here too: the
-        # honest answer is how to enable that knob, not a lateness recital.
-        _concept = coaching_concept(q)
-        if (is_capability_question(q) or coaching_intent(q, _concept)
-                or (_concept and _is_hypothesis(q))):
-            return "coaching", {**base, "concept": _concept}
-
-        # CU2 (Session 4B.4) — advice/recommendation SCOPING. Before the edit/late/
-        # schedule branches so an advice-seeking phrasing ("would you recommend
-        # overtime …", "what should i do so those orders are not late") never lands
-        # on the late-orders status recital. After triage/remediation/briefing so
-        # "what should I fix first"/"what should I worry about" keep their routes.
-        # CU5 (Session 4A.3-pre) — an intervention HYPOTHESIS with no named config
-        # concept ("overtime would probably help") is advice CONTENT, not a status
-        # question: route it here by SHAPE, never keyword-match "late" into a recital.
-        if any(t in q for t in _ADVICE_TRIGGERS) or _is_hypothesis(q):
-            return "advice", base
-
-        # The sandbox/edit question domain (3.4 CU2) — before schedule/diff.
-        if any(t in q for t in _EDIT_COST_TRIGGERS):
-            return "edit-cost", base
-        if any(t in q for t in _EDIT_SUMMARY_TRIGGERS):
-            return "edit-summary", base
-
-        # Drill-down (CU3) — "tell me more about that/finding N/record X". Before
-        # attributes so "tell me more" is not read as a "tell me about" lookup.
-        if any(t in q for t in _DRILLDOWN_TRIGGERS):
-            return "drill-down", {**base, "target": question}
-
-        # Integrity check (CU5) — "double-booked?", "same machine at the same
-        # time?". Before schedule so "running at the same time" is not a listing.
-        if any(t in q for t in _INTEGRITY_TRIGGERS) or (
-                "same machine" in q and "same time" in q):
-            return "integrity-check", base
-
-        # Inventory (CU5) — counts and splits. No order needed.
-        if any(t in q for t in _INVENTORY_TRIGGERS):
-            return "inventory", base
-
-        # Attribute lookup (CU5, the hover card askable): the audit's
-        # answer-the-noun defect — "what product is ORD-01" must reach product,
-        # not late-order. Only fires with a RESOLVED order (a differently-shaped
-        # question about a real order); a named-but-unresolvable order falls to
-        # the relevance guard below.
-        if wo_ref and any(t in q for t in _ATTRIBUTE_TRIGGERS):
-            return "order-attributes", base
-        if mention and any(t in q for t in _ATTRIBUTE_TRIGGERS):
-            return "unknown-entity", {**base, "mention": mention}
-
-        # Start-reason (CU5 release/due + CU4 blocked-by) — "why does X start on
-        # Friday", "why can't X start earlier". Requires a start/earlier signal so
-        # it never swallows "why is X on M" (that stays why-on-machine).
-        _start_sig = any(w in q for w in
-                         ("start", "begin", "earlier", "sooner", "kick off"))
-        if wo_ref and _start_sig and ("why" in q or "cant" in q or "can't" in q
-                                      or "cannot" in q):
-            return "start-reason", base
-        if mention and _start_sig and "why" in q:
-            return "unknown-entity", {**base, "mention": mention}
-
-        # CU6 (Session 4A.3-pre / R-AI3(4)) — the sycophancy guard. A user CONTESTS
-        # a cited fact ("isn't ORD-05 on time?", "surely ORD-05 isn't late"). Meet
-        # it with warm EVIDENCE, never capitulation and never a curt re-assertion.
-        # Checked before the late/order-schedule branches so the contradiction is
-        # answered as a contest, not a bare schedule listing. Requires an order ref,
-        # a contest marker, and a status claim (on-time / late / early).
-        if (wo_ref and any(m in q for m in _CONTEST_MARKERS)
-                and any(s in q for s in _STATUS_WORDS)):
-            return "contested-fact", base
-
-        # CU1 (Session 4A.3) — the swap/move bridge. Before the late/why-on-machine/
-        # schedule branches so "why not swap X and Y" / "move X earlier" never fall
-        # into a status recital. A swap needs two resolved orders; a move needs one.
-        order_refs = self._find_order_refs(question)
-        sm_kind = _swap_move_kind(q)
-        if sm_kind == "swap" and len(order_refs) >= 2:
-            return "swap-move", {**base, "order_a": order_refs[0],
-                                 "order_b": order_refs[1], "kind": "swap"}
-        if sm_kind == "move" and order_refs:
-            return "swap-move", {**base, "order_a": order_refs[0],
-                                 "order_b": order_refs[1] if len(order_refs) >= 2 else None,
-                                 "kind": "move"}
-        # CU2 (Session 4A.3) — the absence pair. gap-between needs an order (or a
-        # machine) + a gap marker; machine-idle needs a machine + an idle marker.
-        if any(g in q for g in _GAP_MARKERS) and (order_refs or machine_ref):
-            return "gap-between", {**base,
-                                   "order_a": order_refs[0] if order_refs else None,
-                                   "order_b": order_refs[1] if len(order_refs) >= 2 else None}
-        if any(w in q for w in _IDLE_MARKERS) and machine_ref:
-            return "machine-idle", base
-
-        if ("late" in q or "delay" in q or "tardy" in q) and wo_ref:
-            return "late-order", base
-        if ("late" in q or "delay" in q or "tardy" in q) and mention:
-            return "unknown-entity", {**base, "mention": mention}
-        if ("late" in q or "delay" in q or "tardy" in q) and not wo_ref:
-            return "late-orders", base
-        if ("on" in q or "assign" in q or "why" in q) and wo_ref and machine_ref:
-            return "why-on-machine", base
-        if "data problem" in q or "finding" in q or "quality" in q:
-            return "data-problems", base
-        # Word-boundary match (CU6): the pre-4A.2 substring test fired
-        # `"diff" in "different"`, sending "move it to a DIFFerent machine" to a
-        # nonsense self-diff. Match whole words only.
-        if re.search(r"\b(diff|difference|changed|since|updated?)\b", q) or (
-                "what changed" in q or "version" in q):
-            return "version-diff", base
-        if "downtime" in q or "closure" in q or "offline" in q:
-            return "downtime", base
-        # CU3 (Session 4B.4) — cheap meta reads + maintenance shape, BEFORE the
-        # bare-"schedule" listing branch (these phrasings contain "schedule"/
-        # "scheduled"/"machines" and were misrouting to the listing → the
-        # category-error "I don't see any scheduled operations" insult).
-        if any(t in q for t in _SOLVE_TIME_TRIGGERS):
-            return "solve-time", base
-        if any(t in q for t in _MACHINE_LIST_TRIGGERS):
-            return "machine-count", base
-        if any(t in q for t in _MAINTENANCE_TRIGGERS):
-            return "maintenance", base
-        if any(kw in q for kw in _SCHEDULE_TRIGGERS) and not any(
-                kw in q for kw in _OPTIMALITY_TRIGGERS):
-            return "schedule", base
-        # A bare order with no other shape → its own schedule (start/finish),
-        # never a lateness verdict it did not ask for (CU1 answer-the-noun).
-        if wo_ref:
-            return "order-schedule", base
-        # A named-but-unresolvable order with no other shape → the honest
-        # unknown/excluded answer, never a schedule-wide fallback (CU1).
-        if mention:
-            return "unknown-entity", {**base, "mention": mention}
-        return "unsupported", base
+    #
+    # `classify()` and `answer()` are GONE. They were the deterministic
+    # keyword/precedence router: a question in, a route id out, decided by a
+    # cascade of trigger tables whose order encoded every patch four founder exam
+    # rounds produced. R-AI5 retires that layer whole — intent now arrives on the
+    # parse contract and `route()` is the only way in. There is deliberately no
+    # question-to-route shim here: a fallback classifier is exactly what R-AI5(2)
+    # forbids, and a private one would be the same router wearing a different name.
 
     def route(self, route_id: str, params: dict) -> ExplanationBundle:
-        """Dispatch a route id + params to its assembler. The single dispatch
-        both the deterministic router and the interpreter (CU1) go through."""
+        """Dispatch a route id + params to its assembler — the ONE way in.
+
+        Params carry resolved external refs (order / machine / customer / concept)
+        and the question text the assemblers still read for their own route-internal
+        details (a date filter, a swap-vs-move framing, a "just the worst one"
+        qualifier). Nothing here decides WHAT was asked; that arrived on the parse
+        contract (R-AI5(1))."""
         q = params.get("question", "")
         if route_id == "ledger-refusals":
             return self._explain_recent_refusals(params.get("refusals", []))
         if route_id == "triage":
             return self._explain_fix_first(q)
         if route_id == "remediation":
-            return self._explain_how_to_fix(q, params.get("limit"))
+            limit = params.get("limit")
+            return self._explain_how_to_fix(
+                q, limit if limit is not None else _remediation_limit(q))
         if route_id == "certificate-testimony":
             return self._explain_data_problems(entity_ref=params.get("order"))
         if route_id == "excluded-orders":
@@ -866,9 +491,13 @@ class Explainer:
         if route_id == "briefing":
             return self._explain_briefing(q)
         if route_id == "advice":
-            return self._explain_advice(q)
+            return self._explain_advice(q, params.get("order"))
+        if route_id == "confirm-take":
+            return self._explain_confirm_take(q, params.get("order"),
+                                              params.get("machine"))
         if route_id == "coaching":
-            return self._explain_coaching(q, params.get("concept"))
+            concept = params.get("concept") or coaching_concept(q.lower())
+            return self._explain_coaching(q, concept)
         if route_id == "solve-time":
             return self._explain_solve_time(q)
         if route_id == "machine-count":
@@ -882,13 +511,14 @@ class Explainer:
         if route_id == "order-attributes":
             return self._explain_order_attributes(params.get("order"))
         if route_id == "start-reason":
-            return self._explain_start_reason(params.get("order"), q)
+            return self._explain_start_reason(params.get("order"), q,
+                                              polarity=params.get("polarity"))
         if route_id == "contested-fact":
             return self._explain_contested(params.get("order"), q)
         if route_id == "swap-move":
             return self._explain_swap_move(params.get("order_a") or params.get("order"),
                                            params.get("order_b"),
-                                           params.get("kind", "swap"), q)
+                                           params.get("kind") or _swap_move_kind(q), q)
         if route_id == "gap-between":
             return self._explain_gap(params.get("order_a") or params.get("order"),
                                      params.get("order_b"), params.get("machine"), q)
@@ -1568,7 +1198,8 @@ class Explainer:
         )
 
     def _explain_start_reason(self, order_ref: Optional[str],
-                              question: str = "") -> ExplanationBundle:
+                              question: str = "",
+                              polarity: Optional[str] = None) -> ExplanationBundle:
         """Why an order starts when it does (CU5 + CU4 + CU3 polarity).
 
         POLARITY matters (Session 4A.3-pre CU3). "why can't X start EARLIER / why
@@ -1597,9 +1228,18 @@ class Explainer:
                     or abs((_parse_ts(start) - _parse_ts(release)).total_seconds()) < 86400
             except Exception:
                 release_binds = False
-        # CU3 — is this a why-EARLY question? ("early" as an adjective, never the
-        # comparative "earlier"/"sooner" which asks the lower-bound question).
-        early = _is_why_early(question)
+        # CU3 — is this a why-EARLY question ("why is it running so early") or the
+        # comparative lower-bound one ("why can't it start earlier")? Session 4A.5a:
+        # the PARSE decides — polarity=positive is the placement as it stands (the
+        # why-early floor), polarity=negative is the lower bound. The regex survives
+        # only as the fallback for a call that carries no parsed polarity (the CLI,
+        # a direct route() in a test), never as a second opinion over the parse.
+        # a NEGATIVE parse ("why can't it start sooner") is the lower-bound question
+        # by construction, so the early framing is ruled out whatever the wording
+        # looks like. A positive parse still asks the assembler's own read whether
+        # the planner said "early" or just "when it does" — the two are both
+        # positive, and that distinction is route-internal (named residue).
+        early = False if polarity == "negative" else _is_why_early(question)
         # is the placement genuinely ahead of its due date? (grounds the floor).
         due = demand.get("due")
         early_by_days = None
@@ -2524,7 +2164,49 @@ class Explainer:
             return 0
         return n
 
-    def _explain_advice(self, question: str) -> ExplanationBundle:
+    def _explain_confirm_take(self, question: str, order: Optional[str],
+                              machine: Optional[str]) -> ExplanationBundle:
+        """Session 4A.5a CU2 — the confirmation-of-take bridge.
+
+        The planner has repeated OUR OWN prior suggestion back as a question ("so
+        move the first operation to an earlier start time?"). The old router had
+        nowhere for that: it read a move phrasing with no second order and fell to a
+        near-miss, which reads as the assistant forgetting what it just said. The
+        honest answer names the gesture, says plainly that the move is the planner's
+        to make (M10 has no write path), and points at the sandbox that prices it
+        before acceptance. Authored copy — carried, never composed here."""
+        facts = self._order_slack_facts(order) if order else None
+        placement = (facts or {}).get("placement") or {}
+        return self._authored_bundle("confirm_take", question, {
+            "order": order,
+            "machine": machine or placement.get("machine"),
+            "placement": placement or None,
+        })
+
+    def _expedite_early_facts(self, order: Optional[str]) -> Optional[dict]:
+        """For an EXPEDITE question about an order that is already early: how early
+        it finishes and the release date that is its only earlier bound.
+
+        The founder's round-four thread is the specimen — asked four ways how to get
+        an order done faster, on an order finishing 11.3 days ahead of its due date.
+        A status recital ("N orders are late") answers a question nobody asked; the
+        truthful answer is that there is nothing to expedite, and why. None when the
+        order does not resolve or is not early."""
+        if not order:
+            return None
+        facts = self._order_slack_facts(order)
+        if not facts or facts.get("late"):
+            return None
+        slack = facts.get("slack_days")
+        if slack is None or slack <= 0:
+            return None
+        dem = self._demand_by_order(order) or {}
+        return {"order": order, "days_early": slack,
+                "release": _fmt_date(dem.get("earliest_start")),
+                "placement": facts.get("placement")}
+
+    def _explain_advice(self, question: str,
+                        order: Optional[str] = None) -> ExplanationBundle:
         """CU2 — the HONEST SCOPING answer for a recommendation/advice question.
 
         NEVER a status recital and NEVER an invented intervention. States what the
@@ -2537,11 +2219,18 @@ class Explainer:
         evidence supports one (the disclaimer covers the action BRIDGE only, not
         the judgment register): the worst late order's slip traced to the concrete
         commitment holding its machine, named as the single biggest lever. Absent
-        on a clean plan (nothing to ground a take on)."""
+        on a clean plan (nothing to ground a take on).
+
+        Session 4A.5a CU2 — the EXPEDITE-AN-EARLY-ORDER branch. When the advice is
+        sought for one named order that already finishes ahead of its due date, the
+        answer leads with that fact and with the release date that is its only
+        earlier bound, instead of a plan-wide lateness scope that answers a question
+        the planner did not ask."""
         late = self._late_order_count()
         return self._authored_bundle(
             "advice", question,
-            {"late_count": late, "take": self._advice_take()})
+            {"late_count": late, "take": self._advice_take(),
+             "order": order, "expedite_early": self._expedite_early_facts(order)})
 
     def _advice_take(self) -> Optional[str]:
         """A grounded lever for the advice route (R-AI3(2)): the worst late order,

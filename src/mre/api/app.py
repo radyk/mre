@@ -1322,13 +1322,19 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
                      ledger_path: Optional[Path] = None,
                      schedule_id: Optional[str] = None,
                      session_id: Optional[str] = None,
-                     document: Optional[dict] = None) -> tuple[str, dict]:
+                     document: Optional[dict] = None,
+                     parser: Optional[Any] = None) -> tuple[str, dict]:
     """Route a question through the M10 explainer for a persisted run.
 
-    Session 4A.1: the deterministic router is now wrapped by the interpreter +
-    conversational context + question ledger (``run_ask``). Deterministic
-    phrasings route exactly as before (zero regression / zero LLM); only a
-    miss falls through to the interpreter, and every ask is logged.
+    Session 4A.5a (R-AI5 part 1): the ask path is LLM-FIRST. Every question is
+    parsed by ``QuestionParser`` against the closed intent vocabulary — with the
+    conversation history, the live board selection and the last-answered subject as
+    context — and the parse contract is dispatched into the unchanged route
+    assembly (``run_ask``). There is no deterministic-classifier fallback
+    (R-AI5(2)); without a key the parser is unavailable and the ask path says so
+    honestly. ``parser`` may be injected (the exam harness shares one parser across
+    a sweep so it can report parse-specific counts); otherwise one is built per
+    question when a key is present. Every ask is logged.
 
     Session 4B.3c CU4: on a ROLLING document, the three sliced-world shapes
     (beyond-horizon / why-not-scheduled-yet / frozen) are answered FIRST, from the
@@ -1339,7 +1345,8 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
     real grounded answer now."""
     from mre.modules.evidence_index import EvidenceIndex
     from mre.modules.explainer import Explainer
-    from mre.modules.interpreter import Interpreter, run_ask
+    from mre.modules.interpreter import run_ask
+    from mre.modules.question_parser import QuestionParser
     from mre.modules.question_ledger import QuestionLedger
     from mre.modules.snapshot_store import SnapshotStore
 
@@ -1362,38 +1369,40 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
     _log = logging.getLogger("mre.api")
     ledger = QuestionLedger(ledger_path) if ledger_path is not None else None
 
-    # --- routing (deterministic; the LLM interpreter only on a miss) ----------
-    # The interpreter is available only when a key is set; without one it is
-    # simply off (deterministic-only, zero regression). It never authors an
-    # answer — it maps phrasing onto the closed route taxonomy, and it is
-    # fail-closed at the source (construction + interpret cannot raise). This
-    # guard is the belt to that suspenders: should anything in the routing
-    # surface still throw, the question re-routes DETERMINISTICALLY (interpreter
-    # off, ledger already handled) so the answer is never lost to a 5xx.
+    # --- parse -> dispatch (R-AI5(1)/(2)) ------------------------------------
+    # The parser is available only when a key is set (or one is injected); without
+    # one the ask path answers honestly that it could not interpret the question —
+    # there is no keyword fallback to reach for. The parser is fail-closed at the
+    # source (construction and parse cannot raise), and this guard is the belt to
+    # that suspenders: should anything in the ask surface still throw, the question
+    # is re-run with NO parser (ledger already handled) so the answer degrades to
+    # the honest unsupported one rather than a 5xx.
     if question.strip().lower() == "summarize":
         bundle = explainer.summarize_run()
         ask_meta = {"resolved_question": question, "route": "summarize",
                     "source": "deterministic", "confidence": None}
     else:
+        if parser is None and os.environ.get("ANTHROPIC_API_KEY"):
+            parser = QuestionParser()
         try:
-            interpreter = Interpreter() if os.environ.get("ANTHROPIC_API_KEY") else None
             result = run_ask(explainer, question, context=context,
-                             interpreter=interpreter, ledger=ledger,
+                             parser=parser, ledger=ledger,
                              schedule_id=schedule_id, session_id=session_id)
         except Exception as exc:  # noqa: BLE001 — the ask surface must never 5xx
             _log.warning(
-                "EVENT ask.llm_degraded: routing surface raised %s: %s — "
-                "re-routed deterministically (interpreter off)",
+                "EVENT ask.llm_degraded: ask surface raised %s: %s — "
+                "answered without the parse layer",
                 type(exc).__name__, exc,
             )
             result = run_ask(explainer, question, context=context,
-                             interpreter=None, ledger=None,
+                             parser=None, ledger=None,
                              schedule_id=schedule_id, session_id=session_id)
         bundle = result.bundle
         ask_meta = {"resolved_question": result.resolved_question,
                     "route": result.route, "source": result.source,
                     "confidence": result.confidence,
-                    "resolution_note": result.resolution_note}
+                    "resolution_note": result.resolution_note,
+                    "parse": _parse_meta(result.parsed)}
 
     # --- render (the LLM renderer is the real hazard; it is internally sealed
     #     and this boundary is the outer belt: ANY failure — construction,
@@ -1412,6 +1421,26 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
         # the text. Reads only bundle.ordered_records; adds no answer path.
         "cited_refs": _cited_refs_from_bundle(bundle),
         **ask_meta,
+    }
+
+
+def _parse_meta(parsed: Any) -> Optional[dict]:
+    """The parse contract's instrumentation, surfaced on the ask response (Session
+    4A.5a). Read-only metadata — the sweep reports clarify / retry / latency rates
+    from it; no answer path consumes it."""
+    if parsed is None:
+        return None
+    return {
+        "intent": parsed.intent.value,
+        "confidence": parsed.confidence,
+        "followup_of": parsed.followup_of.value,
+        "polarity": parsed.polarity.value if parsed.polarity else None,
+        "subjects": [{"kind": s.kind.value, "raw": s.raw, "ref": s.ref,
+                      "source": s.source.value} for s in parsed.subjects],
+        "clarify": parsed.clarify.reason.value if parsed.clarify else None,
+        "retries": parsed.retries,
+        "latency_ms": parsed.latency_ms,
+        "prompt_version": parsed.prompt_version,
     }
 
 

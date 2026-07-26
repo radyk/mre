@@ -80,6 +80,19 @@ def vocab():
     return Vocab(ex)
 
 
+@pytest.fixture()
+def vocab_with_parser(vocab):
+    """The same world with a PARSE layer attached, so the real-doors door check is
+    live. The parser's client is a fake returning the emissions a live model would
+    for these two probes — everything downstream (prompt, JSON, contract) is real."""
+    from tests.parse_doubles import FakeClient, emission
+    from mre.modules.question_parser import QuestionParser
+    responses = [emission("unmatched", confidence=0.1),          # the nonsense probe
+                 emission("late-order", [{"kind": "order", "raw": "ORD-05"}])]
+    parser = QuestionParser(_client=FakeClient(responses))
+    return Vocab(vocab._ex, parser=parser)
+
+
 def _turn(**kw) -> TurnRecord:
     base = dict(lineno=1, question="q", selection={}, resolved_question="q",
                 route="late-order", answer="body\n[rendered by: template | register: testimony]",
@@ -122,15 +135,34 @@ class TestSidecar:
                        for x in check_turn(_turn(route="briefing", record_count=0,
                                                  lit_bars=0), vocab))
 
-    def test_dead_door_finding(self, vocab):
+    def test_dead_door_finding(self, vocab_with_parser):
+        # Session 4A.5a: the door check runs the REAL parse layer over each offered
+        # follow-up (the classifier it used to run is retired). Here the parse layer
+        # is a fake client returning the emissions a live model would.
         a = ('body\nWant nonsense? Ask "flibbertigibbet the widget"\n'
              "[rendered by: template | register: testimony]")
-        f = check_turn(_turn(answer=a), vocab)
+        f = check_turn(_turn(answer=a), vocab_with_parser)
         assert any(x.kind == "dead-door" for x in f)
         # a real door does not fire it
         good = ('body\nAsk "why is ORD-05 late?"\n'
                 "[rendered by: template | register: testimony]")
-        assert not any(x.kind == "dead-door" for x in check_turn(_turn(answer=good), vocab))
+        assert not any(x.kind == "dead-door"
+                       for x in check_turn(_turn(answer=good), vocab_with_parser))
+
+    def test_the_door_check_is_skipped_not_passed_without_a_parser(self, vocab):
+        """No parser -> the honest state is "unchecked", never "clean"."""
+        assert vocab.door_check_available is False
+        a = ('body\nAsk "flibbertigibbet the widget"\n'
+             "[rendered by: template | register: testimony]")
+        assert not any(x.kind == "dead-door" for x in check_turn(_turn(answer=a), vocab))
+
+    def test_the_door_check_is_memoized_across_a_sweep(self, vocab_with_parser):
+        a = ('body\nAsk "why is ORD-05 late?"\n'
+             "[rendered by: template | register: testimony]")
+        check_turn(_turn(answer=a), vocab_with_parser)
+        before = vocab_with_parser._parser.stats.calls
+        check_turn(_turn(answer=a), vocab_with_parser)
+        assert vocab_with_parser._parser.stats.calls == before
 
     def test_offered_questions_extraction(self):
         a = 'x Ask "why is ORD-05 late?" y Ask "what should I fix first?"'
@@ -152,10 +184,42 @@ def gb_run(tmp_path_factory):
     return out
 
 
+# The parse each end-to-end turn assumes (Session 4A.5a). The runner drives the
+# REAL ask path, which is LLM-first with no keyword fallback — so an offline
+# end-to-end test supplies the parse layer the same way it supplies the solve.
+# Whether a live model produces these parses is the sweep's measurement.
+def _exam_parser():
+    from mre.contracts.parse import FollowupKind, Intent, SubjectKind
+    from tests.parse_doubles import ScriptedParser, parsed
+    return ScriptedParser({
+        "how many orders are late": parsed("", Intent.LATE_ORDERS),
+        "can you list the numbers": parsed("", Intent.LATE_ORDERS,
+                                           followup_of=FollowupKind.LIST_EXPAND),
+        "whats the end time of this order": parsed(
+            "", Intent.ORDER_SCHEDULE,
+            pointed_words=((SubjectKind.ORDER, "this order"),)),
+        "why not just swap ORD-04 and ORD-05": parsed("", Intent.SWAP_MOVE,
+                                                      orders=("ORD-04", "ORD-05")),
+        "why is ORD-05 late": parsed("", Intent.LATE_ORDER, orders=("ORD-05",)),
+        "but why?": parsed("", Intent.LATE_ORDER, pointed=(SubjectKind.ORDER,),
+                           followup_of=FollowupKind.DEEPEN),
+        "whats the end time of ORD-05": parsed("", Intent.ORDER_SCHEDULE,
+                                               orders=("ORD-05",)),
+        "why does ORD-13 start when it does": parsed("", Intent.START_REASON,
+                                                     orders=("ORD-13",)),
+        "whats running on CUT-01": parsed("", Intent.MACHINE_SCHEDULE,
+                                          machines=("CUT-01",)),
+        "what should i worry about today": parsed("", Intent.BRIEFING),
+    })
+
+
 @pytest.mark.slow
 class TestEndToEnd:
     def _target(self, out) -> RunTarget:
         return RunTarget.from_out_dir(out, "snap-exam", label="gb")
+
+    def _runner(self, out) -> ExamRunner:
+        return ExamRunner(self._target(out), use_llm=False, parser=_exam_parser())
 
     def test_target_loads_healthy(self, gb_run):
         assert self._target(gb_run).build_vocab().healthy
@@ -168,7 +232,7 @@ class TestEndToEnd:
             "whats the end time of this order\n"  # deixis resolved from selection
             "RESET\n"
             "why not just swap ORD-04 and ORD-05\n")
-        res = ExamRunner(self._target(gb_run), use_llm=False).run(script)
+        res = self._runner(gb_run).run(script)
         routes = [t.route for t in res.turns]
         # the deictic turn resolved against the SELECTED order (state carried)
         deictic = res.turns[2]
@@ -182,7 +246,7 @@ class TestEndToEnd:
 
     def test_swap_lights_bars(self, gb_run):
         # the swap/move bridge cites both orders' assignment decisions -> lit bars.
-        res = ExamRunner(self._target(gb_run), use_llm=False).run(
+        res = self._runner(gb_run).run(
             parse_script("why not just swap ORD-04 and ORD-05"))
         assert res.turns[0].lit_bars > 0
 
@@ -191,7 +255,7 @@ class TestEndToEnd:
         # late" (no board selection) then "but why?" must DEEPEN the cause chain,
         # not CLARIFY. The runner carries the prior answer's resolved subject the
         # way the panel does; the first sweep's failing sequence is the regression.
-        res = ExamRunner(self._target(gb_run), use_llm=False).run(
+        res = self._runner(gb_run).run(
             parse_script("why is ORD-05 late\nbut why?\n"))
         assert res.turns[0].route == "late-order"
         follow = res.turns[1]
@@ -203,7 +267,7 @@ class TestEndToEnd:
         # Session 4A.3c CU2 — order-schedule / start-reason / machine-schedule
         # narrate specific placements, so they light bars (no dark evidence). The
         # sidecar's dark-evidence check must not fire for these on real placements.
-        res = ExamRunner(self._target(gb_run), use_llm=False).run(parse_script(
+        res = self._runner(gb_run).run(parse_script(
             "whats the end time of ORD-05\n"       # order-schedule
             "why does ORD-13 start when it does\n"  # start-reason
             "whats running on CUT-01\n"))           # machine-schedule
@@ -212,7 +276,7 @@ class TestEndToEnd:
             assert not any(f.kind == "dark-evidence" for f in t.findings), t.question
 
     def test_transcript_and_sidecar_render(self, gb_run):
-        res = ExamRunner(self._target(gb_run), use_llm=False).run(
+        res = self._runner(gb_run).run(
             parse_script("why is ORD-05 late\nwhat should i worry about today"))
         tx = render_transcript(res)
         assert "AI EXAM TRANSCRIPT" in tx and "ORD-05" in tx

@@ -95,8 +95,18 @@ tests/                Tests derived from the specs — write them from the spec 
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**AI-track Session 4A.3c — sweep repairs: the first triaged errand list**, 2026-07-24
-(docs/07 v2.42; docs/04 amendment same date).
+**AI-track Session 4A.5a — R-AI5 part 1: the LLM-first parse layer**, 2026-07-25
+(docs/07 v2.44; R-AI5 ruling + docs/04 amendment same date).
+
+**The ask path (R-AI5).** Every question is parsed FIRST by a model against the
+closed intent vocabulary (`src/mre/contracts/parse.py`), with the conversation
+history, the live board selection and the last-answered subject as context; the
+parse contract is dispatched into the unchanged route assembly, render and
+validator. **There is no deterministic-classifier fallback** — `Explainer.classify`
+/ `answer` are deleted and must not come back; without a parser the ask path answers
+honestly that it could not interpret the question. The parse prompt
+(`src/mre/modules/parse_prompt.md`) is a governed artifact: changing it is a
+vocabulary-class change, reviewed, versioned, committed with its doc update.
 
 **Where history lives — do not duplicate it here:**
 
@@ -139,6 +149,11 @@ tests/                Tests derived from the specs — write them from the spec 
   structured-constraint surface (prose-locked, retrieval must never read prose);
   machine-idle eligibility naming no specific ops on the monolithic path; per-order
   PRODUCTION-dollar attribution (a ledger change).
+- R-AI5 residue (Session 4A.5a): the ROLLING pre-route
+  (`rolling_questions.classify_rolling`) is still a keyword matcher on rolling
+  documents; start-reason's early-vs-plain read is still the assembler's (only a
+  NEGATIVE polarity is authoritative from the parse); a CLARIFY turn carries no
+  subject forward; the capability registry has no "minimum piece size" trigger.
 - A splittable op with `rate_overrides` uses the scalar default duration; a heterogeneous
   op's `var_map.op_durations` scalar is the default representative (rate-varying pins
   unexercised).

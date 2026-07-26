@@ -4,8 +4,13 @@ One deterministic solve, then the ask surface exercised end to end: a natural
 (voice-shaped) question routes, the answer renders, and a question-ledger row is
 written to its own stream under the data root (never inside a run's evidence).
 A conversational chain resolves an ellipsis live; the DEV-gated refusal view is
-gated. Deterministic-only (no ANTHROPIC_API_KEY): the interpreter is off, so the
-chain proves the wrapper's zero-regression + logging + context path.
+gated.
+
+Session 4A.5a: the ask path is LLM-first (R-AI5(1)) with no keyword fallback, so
+these tests SCRIPT the parse layer (``_script_the_parse``) and keep asserting what
+they were always about — the endpoint, the ledger stream, the context channels, and
+the fail-closed render boundary. What a live model parses a phrasing to is the exam
+sweep's measurement, not this file's.
 """
 from __future__ import annotations
 
@@ -18,6 +23,17 @@ from fastapi.testclient import TestClient
 
 from mre.api.app import create_app
 from tools.generate_erp_dataset import generate
+
+
+def _script_the_parse(monkeypatch, table):
+    """Make the ask ENDPOINT use a scripted parse layer. Everything downstream —
+    dispatch, assembler, renderer, validator, ledger — stays real."""
+    from tests.parse_doubles import ScriptedParser
+    parser = ScriptedParser(table)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-never-used")
+    monkeypatch.setattr("mre.modules.question_parser.QuestionParser",
+                        lambda *a, **k: parser)
+    return parser
 
 
 def _data(resp, status=200):
@@ -47,16 +63,23 @@ def solved(tmp_path_factory):
 
 @pytest.mark.slow
 class TestAskChainLive:
-    def test_voice_shaped_question_routes_and_renders(self, solved):
+    def test_voice_shaped_question_routes_and_renders(self, solved, monkeypatch):
+        from tests.parse_doubles import Intent, parsed
+        _script_the_parse(monkeypatch, {
+            "are there any late orders?": parsed("", Intent.LATE_ORDERS)})
         res = _data(solved.client.post(f"/schedules/{solved.sid}/ask",
                                        json={"question": "are there any late orders?"}))
         assert res["answer"]
         b = res["bundle"]
         assert b["route"] == "late-orders"
-        assert b["source"] == "deterministic"
+        assert b["source"] == "parse"
         assert b["resolved_question"] == "are there any late orders?"
+        assert b["parse"]["intent"] == "late-orders"
 
-    def test_ask_writes_a_ledger_row_in_its_own_stream(self, solved):
+    def test_ask_writes_a_ledger_row_in_its_own_stream(self, solved, monkeypatch):
+        from tests.parse_doubles import Intent, parsed
+        _script_the_parse(monkeypatch, {
+            "what data problems exist?": parsed("", Intent.DATA_PROBLEMS)})
         _data(solved.client.post(f"/schedules/{solved.sid}/ask",
                                  json={"question": "what data problems exist?",
                                        "session_id": "live-1"}))
@@ -67,9 +90,19 @@ class TestAskChainLive:
         # the ledger is its OWN stream — not inside any run evidence dir
         assert "runs" not in str(ledger)
 
-    def test_conversational_followup_resolves_live(self, solved):
+    def test_conversational_followup_resolves_live(self, solved, monkeypatch):
+        from tests.parse_doubles import (
+            FollowupKind, Intent, SubjectKind, parsed,
+        )
         if not solved.wo:
             pytest.skip("no work_order external ref in this fixture")
+        _script_the_parse(monkeypatch, {
+            f"why is {solved.wo} late?": parsed("", Intent.LATE_ORDER,
+                                                orders=(solved.wo,)),
+            "and what about it?": parsed("", Intent.ORDER_SCHEDULE,
+                                         pointed=(SubjectKind.ORDER,),
+                                         followup_of=FollowupKind.DEEPEN),
+        })
         # turn 1 establishes the subject
         r1 = _data(solved.client.post(f"/schedules/{solved.sid}/ask",
                                       json={"question": f"why is {solved.wo} late?"}))
@@ -82,12 +115,23 @@ class TestAskChainLive:
         assert solved.wo in r2["bundle"]["resolved_question"]
         assert r2["bundle"]["resolved_question"] != "and what about it?"
 
-    def test_unresolvable_ellipsis_asks_to_clarify(self, solved):
+    def test_unresolvable_ellipsis_asks_to_clarify(self, solved, monkeypatch):
+        from tests.parse_doubles import Intent, SubjectKind, parsed
+        _script_the_parse(monkeypatch, {
+            "and what would fix it?": parsed("", Intent.LATE_ORDER,
+                                             pointed=(SubjectKind.ORDER,))})
         res = _data(solved.client.post(f"/schedules/{solved.sid}/ask",
                                        json={"question": "and what would fix it?"}))
         assert res["bundle"]["route"] == "CLARIFY"
 
-    def test_meta_route_reads_the_ledger(self, solved):
+    def test_meta_route_reads_the_ledger(self, solved, monkeypatch):
+        from tests.parse_doubles import Intent, SubjectKind, parsed
+        _script_the_parse(monkeypatch, {
+            "and what would fix it?": parsed("", Intent.LATE_ORDER,
+                                             pointed=(SubjectKind.ORDER,)),
+            "what questions couldn't you answer recently?":
+                parsed("", Intent.LEDGER_REFUSALS),
+        })
         # seed a refusal-shaped ask, then ask the ledger about itself
         _data(solved.client.post(f"/schedules/{solved.sid}/ask",
                                  json={"question": "and what would fix it?"}))
@@ -125,8 +169,20 @@ class TestAskFailClosedWithRealKey:
         return solved.client.post(f"/schedules/{solved.sid}/ask",
                                   json={"question": question, "llm": True})
 
+    @staticmethod
+    def _script(monkeypatch, table):
+        return _script_the_parse(monkeypatch, table)
+
+    @staticmethod
+    def _late_orders(monkeypatch):
+        from tests.parse_doubles import Intent, parsed
+        return _script_the_parse(monkeypatch, {
+            "are there any late orders?": parsed("", Intent.LATE_ORDERS),
+            "what data problems exist?": parsed("", Intent.DATA_PROBLEMS)})
+
     def test_injected_auth_failure_returns_200_template(self, solved, monkeypatch):
         pytest.importorskip("anthropic")
+        self._late_orders(monkeypatch)
         monkeypatch.setenv("ANTHROPIC_API_KEY", self._KEY)  # real construction
         from mre.modules.renderers import LLMRenderer
 
@@ -140,6 +196,7 @@ class TestAskFailClosedWithRealKey:
 
     def test_garbage_response_returns_200_template(self, solved, monkeypatch):
         pytest.importorskip("anthropic")
+        self._late_orders(monkeypatch)
         monkeypatch.setenv("ANTHROPIC_API_KEY", self._KEY)
         from mre.modules.renderers import LLMRenderer
 
@@ -154,6 +211,7 @@ class TestAskFailClosedWithRealKey:
 
     def test_raised_exception_returns_200_template(self, solved, monkeypatch):
         pytest.importorskip("anthropic")
+        self._late_orders(monkeypatch)
         monkeypatch.setenv("ANTHROPIC_API_KEY", self._KEY)
         from mre.modules.renderers import LLMRenderer
         monkeypatch.setattr(LLMRenderer, "_call_llm",
@@ -162,10 +220,16 @@ class TestAskFailClosedWithRealKey:
         assert res.status_code == 200, res.text
         assert "[rendered by: template" in res.json()["data"]["answer"]
 
-    def test_better_schedule_question_refuses_not_a_listing(self, solved):
+    def test_better_schedule_question_refuses_not_a_listing(self, solved,
+                                                            monkeypatch):
         """4A.1c issue 2: "is there a better schedule" produced prose (a schedule
         listing) instead of a refusal. It must reach the honest refusal — never a
-        listing masquerading as an answer, and never a fabricated citation."""
+        listing masquerading as an answer, and never a fabricated citation.
+        Session 4A.5a: an optimality question is `unmatched` by the parse."""
+        from tests.parse_doubles import Intent, parsed
+        self._script(monkeypatch, {
+            "is there a better schedule": parsed("", Intent.UNMATCHED,
+                                                 confidence=0.2)})
         res = self._ask_no_llm(solved, "is there a better schedule")
         assert res.status_code == 200, res.text
         data = res.json()["data"]
@@ -180,6 +244,10 @@ class TestAskFailClosedWithRealKey:
         if not solved.wo:
             pytest.skip("no work_order external ref in this fixture")
         pytest.importorskip("anthropic")
+        from tests.parse_doubles import Intent, parsed
+        self._script(monkeypatch, {
+            f"why is {solved.wo} late?": parsed("", Intent.LATE_ORDER,
+                                                orders=(solved.wo,))})
         monkeypatch.setenv("ANTHROPIC_API_KEY", self._KEY)
         from mre.modules.renderers import LLMRenderer
         monkeypatch.setattr(LLMRenderer, "_call_llm", lambda _s, _p: (
@@ -197,23 +265,27 @@ class TestAskFailClosedWithRealKey:
         return solved.client.post(f"/schedules/{solved.sid}/ask",
                                   json={"question": question})
 
-    def test_taxonomy_question_is_unbreakable_by_the_whole_ai_stack(self, solved, monkeypatch):
-        """CU3 — the ordering guarantee: a taxonomy-shaped question routes and
-        renders deterministically with the ENTIRE AI layer forcibly broken (both
-        the interpreter and the renderer monkeypatched to raise). The deterministic
-        route must be reached (classify fires before any LLM code can throw) and
-        the answer must render (template)."""
+    def test_a_broken_ai_stack_answers_honestly_never_a_5xx(self, solved,
+                                                             monkeypatch):
+        """The guarantee, restated for R-AI5. It used to be "a taxonomy-shaped
+        question routes DETERMINISTICALLY even with the whole AI layer broken",
+        because a keyword classifier ran first. R-AI5(2) removes that fallback on
+        purpose: interpretation is the model's job, and a broken model means the
+        product cannot know what was asked. What is unbreakable is the HONESTY —
+        with both the parse layer and the renderer forcibly raising, the endpoint
+        still returns 200 and a rendered answer, never a 5xx and never a guess."""
         pytest.importorskip("anthropic")
         monkeypatch.setenv("ANTHROPIC_API_KEY", self._KEY)
-        from mre.modules.interpreter import Interpreter
+        from mre.modules.question_parser import QuestionParser
         from mre.modules.renderers import LLMRenderer
         boom = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("AI stack down"))
-        monkeypatch.setattr(Interpreter, "interpret", boom)
+        monkeypatch.setattr(QuestionParser, "parse", boom)
         monkeypatch.setattr(LLMRenderer, "_call_llm", boom)
 
         res = self._ask(solved, "are there any late orders?")
         assert res.status_code == 200, res.text
         data = res.json()["data"]
-        assert data["bundle"]["route"] == "late-orders"          # deterministic route reached
-        assert data["bundle"]["source"] == "deterministic"        # interpreter never authored it
-        assert "[rendered by: template" in data["answer"]         # rendered despite broken LLM
+        assert data["bundle"]["route"] == "REFUSED"        # honest: it cannot know
+        assert data["bundle"]["source"] == "none"           # nothing authored it
+        assert "[rendered by: template" in data["answer"]   # rendered despite it all
+        assert "[record:" not in data["answer"]             # and it cites nothing

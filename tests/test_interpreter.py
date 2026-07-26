@@ -1,39 +1,41 @@
-"""Interpreter + conversational context + tiered fallback (Session 4A.1, R-AI1).
+"""Dispatch: the parse contract becomes an answer (R-AI5(2), Session 4A.5a CU2).
 
-The paraphrase table below is the growing asset R-AI1(d) describes — the question
-ledger's refusals feed new rows into it. Two disciplines it pins:
+This file used to hold the paraphrase table that proved the deterministic
+keyword/precedence router mapped working phrasings onto routes without an LLM, plus
+the ellipsis/correction/menu rewrite rules. R-AI5 retires that layer whole: intent
+arrives on the parse contract, and the behaviours those rules encoded are now FIELDS
+of the contract that this dispatch honours. So the tests are re-pointed — each one
+is now "a parse contract (+ live context) in, a route and its params out".
 
-  - Deterministic phrasings route WITHOUT ever calling the interpreter (a
-    call-counting mock asserts zero LLM calls) — zero regression, zero cost.
-  - Everything else routes via a MOCKED interpreter response (no network), so the
-    LLM→route→resolve→answer path is exercised deterministically.
-
-The LLM never authors an answer here: the mock only returns a route id from the
-closed taxonomy + params; run_ask does the routing and resolution.
+What a live model actually parses a given phrasing to is NOT asserted here; it is
+the exam sweep's job against the pinned world (R-AI4(2)). What is asserted here is
+that every field of the contract reaches the right destination, and that every
+honest destination stays honest: never a guess, never a global answer to a question
+about something absent, never a keyword fallback.
 """
 from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional
 
 import pytest
 
-from mre.modules.evidence_index import EvidenceIndex
-from mre.modules.explainer import Explainer
-from mre.modules.interpreter import (
-    Interpretation,
-    Interpreter,
-    parse_interpretation,
-    resolve_followup,
-    resolve_params,
-    run_ask,
+from mre.contracts.parse import (
+    ClarifyReason,
+    FollowupKind,
+    Intent,
+    Polarity,
+    SubjectKind,
 )
+from mre.modules.evidence_index import EvidenceIndex
+from mre.modules.explainer import Explainer, ROUTE_TAXONOMY
+from mre.modules.interpreter import dispatch, route_params, run_ask
+from tests.parse_doubles import ScriptedParser, parsed, resolve
 
 # ---------------------------------------------------------------------------
 # A compact fake snapshot + evidence fixture (self-contained; mirrors the
-# test_explainer fake). Registers WO-2001 / M-GEAR-01 / M-GEAR-02 so classify()
-# and param resolution have real external refs to match against.
+# test_explainer fake). Registers WO-2001 / M-GEAR-01 / M-GEAR-02 so subject
+# resolution has real external refs to match against.
 # ---------------------------------------------------------------------------
 
 DEMAND_ID = "85342968-6107-58db-95d3-256cd6765fec"
@@ -108,263 +110,277 @@ def explainer(tmp_path):
                      snapshot_id="snap-demo")
 
 
-# ---------------------------------------------------------------------------
-# A mock interpreter: a lookup table + a call counter (asserts no LLM on the
-# deterministic path).
-# ---------------------------------------------------------------------------
-
-class MockInterpreter(Interpreter):
-    def __init__(self, table: dict[str, Optional[Interpretation]]):
-        # Deliberately skip the base __init__: no key, no client, but AVAILABLE.
-        self._table = table
-        self.available = True
-        self.calls = 0
-
-    def interpret(self, question: str) -> Optional[Interpretation]:
-        self.calls += 1
-        return self._table.get(question)
+def _dispatch(explainer, p, context=None, ledger=None):
+    return dispatch(explainer, resolve(p, explainer, context), ledger=ledger)
 
 
-# ---------------------------------------------------------------------------
-# CU1 — the paraphrase table
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# A matched intent reaches its EXISTING assembler, unchanged in authority
+# ===========================================================================
 
-# (question, expected route id/subject signal). These route with NO interpreter.
-DETERMINISTIC = [
-    ("why is WO-2001 late?", "late-order"),
-    ("why is WO-2001 delayed?", "late-order"),
-    ("which orders are late?", "late-orders"),
-    ("are there any late orders?", "late-orders"),
-    ("why is WO-2001 on M-GEAR-01?", "why-on-machine"),
-    ("what's running on M-GEAR-01?", "schedule"),
-    ("what's next on M-GEAR-01?", "schedule"),
-    ("when does WO-2001 finish?", "schedule"),
-    ("what data problems exist?", "data-problems"),
-    ("how much downtime does M-GEAR-01 have?", "downtime"),
-    ("what changed since the last version?", "version-diff"),
-    ("how do I fix it?", "remediation"),
-    ("what should I fix first?", "triage"),
-    ("what's wrong with the submission?", "certificate-testimony"),
-    ("summarize my changes", "edit-summary"),
-    ("what did this move cost?", "edit-cost"),
-    ("what questions couldn't you answer recently?", "ledger-refusals"),
+# (intent, subject words, the assembler's subject_type) — one per route family the
+# founder exams exercise. The route table itself is untouched by R-AI5; what these
+# pin is that the contract's fields carry into it correctly.
+MATCHED = [
+    (Intent.LATE_ORDER, {"orders": ("WO-2001",)}, "demand"),
+    (Intent.LATE_ORDERS, {}, "late_orders"),
+    (Intent.WHY_ON_MACHINE, {"orders": ("WO-2001",), "machines": ("M-GEAR-01",)},
+     "demand"),
+    (Intent.MACHINE_SCHEDULE, {"machines": ("M-GEAR-01",)}, "schedule"),
+    (Intent.ORDER_SCHEDULE, {"orders": ("WO-2001",)}, "schedule"),
+    (Intent.CUSTOMER_SCHEDULE, {"customers": ("acme",)}, "schedule"),
+    (Intent.DATA_PROBLEMS, {}, "findings"),
+    (Intent.TRIAGE, {}, "triage"),
+    (Intent.REMEDIATION, {}, "remediation"),
+    (Intent.EDIT_SUMMARY, {}, "edits"),
+    (Intent.EDIT_COST, {}, "edit_cost"),
+    (Intent.ADVICE, {}, "advice"),
+    (Intent.COACHING, {"concepts": ("splitting",)}, "coaching"),
+    (Intent.INVENTORY, {}, "inventory"),
+    (Intent.BRIEFING, {}, "briefing"),
+    (Intent.SOLVE_TIME, {}, "solve_time"),
+    (Intent.MACHINE_COUNT, {}, "machine_count"),
+    (Intent.MAINTENANCE, {}, "maintenance"),
 ]
 
 
-@pytest.mark.parametrize("question,expected_route", DETERMINISTIC)
-def test_deterministic_routes_without_llm(explainer, question, expected_route):
-    route_id, _params = explainer.classify(question)
-    assert route_id == expected_route
+@pytest.mark.parametrize("intent,subjects,subject_type", MATCHED)
+def test_a_matched_intent_reaches_its_assembler(explainer, intent, subjects,
+                                                subject_type):
+    d = _dispatch(explainer, parsed("q", intent, **subjects))
+    assert d.route == intent.value
+    assert d.bundle.subject_type == subject_type
 
 
-def test_deterministic_path_never_calls_the_interpreter(explainer):
-    # A mock that would explode if any deterministic case reached it.
-    mock = MockInterpreter({})
-    for question, _ in DETERMINISTIC:
-        run_ask(explainer, question, interpreter=mock)
-    assert mock.calls == 0, "a deterministic phrasing reached the interpreter"
+def test_route_params_carry_typed_subjects(explainer):
+    p = resolve(parsed("q", Intent.WHY_ON_MACHINE, orders=("WO-2001",),
+                       machines=("M-GEAR-01",)), explainer)
+    params = route_params(p, "q")
+    assert params["order"] == "WO-2001" and params["machine"] == "M-GEAR-01"
 
 
-# Non-deterministic paraphrases → a mocked interpreter maps them onto the
-# taxonomy. Params use resolvable substrings ('2001' ⊂ 'WO-2001', 'GEAR-01' ⊂
-# 'M-GEAR-01') so the full resolve path runs.
-LLM_TABLE = {
-    "which orders are in trouble":
-        Interpretation("late-orders", {}, 0.92),
-    "is anything going to miss its deadline":
-        Interpretation("late-orders", {}, 0.88),
-    "what's cooking on the gear machine":
-        Interpretation("machine-schedule", {"machine": "GEAR-01"}, 0.85),
-    # Session 4A.3c CU4: "order 2001" now resolves DETERMINISTICALLY (the new
-    # "order N" number resolver), so it is no longer an LLM miss. Use "job 2001",
-    # which the deterministic router still misses, to exercise the paraphrase path.
-    "give me the finish time for job 2001":
-        Interpretation("order-schedule", {"order": "2001"}, 0.83),
-    "break down my last edit's price":
-        Interpretation("edit-cost", {}, 0.80),
-    "show everything for acme corp":
-        Interpretation("customer-schedule", {"customer": "acme"}, 0.78),
-}
-
-# (question, expected subject_type after routing)
-LLM_EXPECT = {
-    "which orders are in trouble": "late_orders",
-    "is anything going to miss its deadline": "late_orders",
-    "what's cooking on the gear machine": "schedule",
-    "give me the finish time for job 2001": "schedule",
-    "break down my last edit's price": "edit_cost",
-    "show everything for acme corp": "schedule",
-}
+def test_two_order_intents_get_both_orders_in_the_planners_order(explainer):
+    p = resolve(parsed("q", Intent.SWAP_MOVE, orders=("M-GEAR-01", "WO-2001")),
+                explainer)
+    # only WO-2001 is an order here; the machine-shaped word does not resolve as one
+    params = route_params(p, "q")
+    assert "order_a" in params and "order_b" in params
 
 
-@pytest.mark.parametrize("question", list(LLM_TABLE))
-def test_llm_paraphrases_route_via_mocked_interpreter(explainer, question):
-    mock = MockInterpreter(LLM_TABLE)
-    result = run_ask(explainer, question, interpreter=mock)
-    assert mock.calls == 1, "the interpreter was expected exactly once"
-    assert result.source == "llm"
-    assert result.route == LLM_TABLE[question].route
-    assert result.bundle.subject_type == LLM_EXPECT[question]
+def test_polarity_reaches_the_start_reason_assembler(explainer):
+    p = resolve(parsed("why cant it start sooner", Intent.START_REASON,
+                       orders=("WO-2001",), polarity=Polarity.NEGATIVE), explainer)
+    assert route_params(p, p.question)["polarity"] == "negative"
 
 
-# ---------------------------------------------------------------------------
-# Fail-closed
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# Honest destinations — never a guess
+# ===========================================================================
 
-def test_optimality_question_does_not_route_to_the_schedule_listing(explainer):
-    """4A.1c: "is there a better schedule" contains the bare word "schedule" and
-    used to route to the schedule LISTING (prose). It asks whether a better plan
-    EXISTS — the deterministic surface can't answer that, so it must fall through
-    to unsupported (→ the honest refusal / interpreter bridge), never a listing."""
-    route_id, _ = explainer.classify("is there a better schedule")
-    assert route_id == "unsupported"
-    # a normal schedule listing still routes
-    assert explainer.classify("what's the schedule for M-GEAR-01")[0] == "schedule"
+class TestHonestDestinations:
+    def test_a_clarify_payload_asks_and_carries_authored_copy(self, explainer):
+        d = _dispatch(explainer, parsed("but why?", Intent.LATE_ORDER,
+                                        clarify=ClarifyReason.NO_SUBJECT))
+        assert d.route == "CLARIFY"
+        assert d.bundle.subject_type == "clarify"
+        assert "order, machine, or customer" in d.bundle.key_facts["reason"]
 
+    @pytest.mark.parametrize("reason", list(ClarifyReason))
+    def test_every_clarify_reason_has_authored_words(self, explainer, reason):
+        d = _dispatch(explainer, parsed("q", Intent.LATE_ORDERS, clarify=reason,
+                                        clarify_detail="those"))
+        assert d.route == "CLARIFY"
+        assert d.bundle.key_facts["reason"].strip()
 
-def test_optimality_question_refuses_deterministically(explainer):
-    # With no interpreter (deterministic-only), the better-schedule question
-    # reaches the honest refusal — not a schedule listing rendered as an answer.
-    result = run_ask(explainer, "is there a better schedule", interpreter=None)
-    assert result.route == "REFUSED"
-    assert result.bundle.subject_type == "unsupported"
+    def test_unmatched_with_nearest_offers_the_nearest_capabilities(self, explainer):
+        d = _dispatch(explainer, parsed(
+            "is there a better schedule", Intent.UNMATCHED, confidence=0.2,
+            nearest=(Intent.LATE_ORDERS, Intent.ADVICE)))
+        assert d.route == "NEAR_MISS"
+        offers = d.bundle.key_facts["offers"]
+        assert 1 <= len(offers) <= 2
 
+    def test_unmatched_with_nothing_near_refuses_honestly(self, explainer):
+        d = _dispatch(explainer, parsed("flibbertigibbet", Intent.UNMATCHED,
+                                        confidence=0.1))
+        assert d.route == "REFUSED"
+        assert d.bundle.subject_type == "unsupported"
 
-def test_no_interpreter_refuses_honestly(explainer):
-    result = run_ask(explainer, "what's cooking on the gear machine", interpreter=None)
-    assert result.route == "REFUSED"
-    assert result.source == "none"
-    assert result.bundle.subject_type == "unsupported"
+    def test_a_low_confidence_match_is_not_answered_as_that_intent(self, explainer):
+        d = _dispatch(explainer, parsed("tell me about stuff", Intent.LATE_ORDERS,
+                                        confidence=0.2, nearest=(Intent.LATE_ORDERS,)))
+        assert d.route == "NEAR_MISS"
 
+    def test_a_named_but_absent_order_is_answered_as_absent(self, explainer):
+        d = _dispatch(explainer, parsed("why is WO-9999 late", Intent.LATE_ORDER,
+                                        orders=("WO-9999",)))
+        assert d.route == "unknown-entity"
+        assert d.bundle.subject_type == "unknown_entity"
 
-def test_interpreter_returning_none_refuses(explainer):
-    mock = MockInterpreter({"gobbledygook": None})
-    result = run_ask(explainer, "gobbledygook", interpreter=mock)
-    assert result.route == "REFUSED"
-    assert result.bundle.subject_type == "unsupported"
+    def test_a_pointed_subject_with_nothing_live_clarifies(self, explainer):
+        """The planner pointed and there was nothing to point at — ask."""
+        d = _dispatch(explainer, parsed("why is it late", Intent.LATE_ORDER,
+                                        pointed=(SubjectKind.ORDER,)), context={})
+        assert d.route == "CLARIFY"
 
+    def test_a_required_slot_nobody_mentioned_bridges(self, explainer):
+        """Nothing was pointed at and nothing was named — offer the nearest doors,
+        never a global answer to a question about one thing."""
+        d = _dispatch(explainer, parsed("why is it late", Intent.LATE_ORDER,
+                                        nearest=(Intent.LATE_ORDERS,)), context={})
+        assert d.route == "NEAR_MISS"
 
-def test_parse_interpretation_rejects_unknown_route():
-    assert parse_interpretation('{"route": "not-a-route", "confidence": 0.9}') is None
-
-
-def test_parse_interpretation_rejects_malformed():
-    assert parse_interpretation("not json at all") is None
-    assert parse_interpretation("") is None
-
-
-def test_parse_interpretation_tolerates_fenced_json():
-    interp = parse_interpretation('```json\n{"route":"late-orders","confidence":0.7}\n```')
-    assert interp is not None and interp.route == "late-orders"
-
-
-def test_parse_interpretation_clamps_confidence():
-    interp = parse_interpretation('{"route":"late-orders","confidence":5}')
-    assert interp is not None and interp.confidence == 1.0
-
-
-# ---------------------------------------------------------------------------
-# CU4 — tiered fallback (near-miss / refuse)
-# ---------------------------------------------------------------------------
-
-def test_moderate_confidence_is_a_near_miss(explainer):
-    mock = MockInterpreter({"tell me about stuff":
-                            Interpretation("late-orders", {}, 0.55)})
-    result = run_ask(explainer, "tell me about stuff", interpreter=mock)
-    assert result.route == "NEAR_MISS"
-    assert result.bundle.subject_type == "near_miss"
-    # offers are authored, concrete, and at most two
-    offers = result.bundle.key_facts["offers"]
-    assert 1 <= len(offers) <= 2
+    def test_the_taxonomy_is_closed_at_dispatch(self, explainer):
+        for intent in Intent:
+            if intent is Intent.UNMATCHED:
+                continue
+            assert intent.value in ROUTE_TAXONOMY
 
 
-def test_unresolvable_params_become_a_near_miss(explainer):
-    mock = MockInterpreter({"what's cooking on the mystery machine":
-                            Interpretation("machine-schedule",
-                                           {"machine": "does-not-exist"}, 0.95)})
-    result = run_ask(explainer, "what's cooking on the mystery machine", interpreter=mock)
-    assert result.route == "NEAR_MISS"
-    assert result.bundle.subject_type == "near_miss"
+# ===========================================================================
+# Follow-up linkage — the retired rewrite rules, now contract fields
+# ===========================================================================
+
+class TestFollowupLinkage:
+    def test_a_pointed_subject_binds_from_the_board_selection_and_says_so(
+            self, explainer):
+        d = _dispatch(explainer, parsed("whats the end time of this order",
+                                        Intent.ORDER_SCHEDULE,
+                                        pointed=(SubjectKind.ORDER,)),
+                      context={"selection": {"order": "WO-2001"}})
+        assert d.route == "order-schedule"
+        assert "board selection" in d.note        # the cockpit keys its badge on this
+        assert "WO-2001" in d.routed_question
+
+    def test_deepen_binds_the_previous_answers_subject(self, explainer):
+        d = _dispatch(explainer, parsed("but why?", Intent.LATE_ORDER,
+                                        pointed=(SubjectKind.ORDER,),
+                                        followup_of=FollowupKind.DEEPEN),
+                      context={"last_answered_subject": {"order": "WO-2001"}})
+        assert d.route == "late-order"
+        assert "WO-2001" in d.routed_question
+
+    def test_a_live_selection_outranks_stale_history(self, explainer):
+        d = _dispatch(explainer, parsed("why is this order late", Intent.LATE_ORDER,
+                                        pointed=(SubjectKind.ORDER,)),
+                      context={"selection": {"order": "WO-2001"},
+                               "history": [{"order": "WO-STALE"}]})
+        assert "WO-2001" in d.routed_question and "board selection" in d.note
+
+    def test_a_correction_re_answers_the_prior_question(self, explainer):
+        d = _dispatch(explainer, parsed("no I meant WO-2001", Intent.LATE_ORDER,
+                                        orders=("WO-2001",),
+                                        followup_of=FollowupKind.CORRECTION))
+        assert d.route == "late-order"
+        assert d.note.startswith("corrected to WO-2001")
+        assert d.routed_question == "why is WO-2001 late?"
+
+    def test_list_expansion_re_fires_the_prior_intent_canonically(self, explainer):
+        d = _dispatch(explainer, parsed("list them", Intent.LATE_ORDERS,
+                                        followup_of=FollowupKind.LIST_EXPAND))
+        assert d.route == "late-orders"
+        assert d.routed_question == "which orders are late?"
+        assert "listing the previous answer" in d.note
+
+    def test_a_menu_selection_is_a_concept_not_an_entity_bind(self, explainer):
+        """The founder's "what about wip" after a capability menu bound to an ORDER
+        and dumped its operations. A menu item is a concept — and a live selection
+        must not drag the answer back to an entity."""
+        d = _dispatch(explainer, parsed("what about wip", Intent.COACHING,
+                                        concepts=("wip",),
+                                        followup_of=FollowupKind.MENU_SELECT),
+                      context={"selection": {"order": "WO-2001"}})
+        assert d.route == "coaching"
+        assert d.bundle.key_facts.get("concept")
+        assert "coaching on" in d.note
+
+    def test_a_bound_subject_never_picks_the_intent(self, explainer):
+        """The round-four terminal bug: a selected order short-circuited intent
+        classification, so "is there any way I can get this done faster" op-dumped.
+        A subject parameterizes; it never picks."""
+        d = _dispatch(explainer, parsed("is there any way i can get this done faster",
+                                        Intent.ADVICE, pointed=(SubjectKind.ORDER,)),
+                      context={"selection": {"order": "WO-2001"}})
+        assert d.route == "advice"
+        assert d.bundle.subject_type == "advice"
+
+    def test_confirmation_of_a_take_gets_the_bridge_not_a_near_miss(self, explainer):
+        d = _dispatch(explainer, parsed(
+            "so move the first operation to an earlier start time?",
+            Intent.SWAP_MOVE, orders=("WO-2001",),
+            followup_of=FollowupKind.CONFIRM_TAKE))
+        assert d.route == "confirm-take"
+        assert d.bundle.subject_type == "confirm_take"
+
+    def test_the_confirm_take_answer_names_the_gesture_and_the_boundary(self,
+                                                                       explainer):
+        from mre.modules.renderers import TemplateRenderer
+        d = _dispatch(explainer, parsed("so move it earlier?", Intent.CONFIRM_TAKE,
+                                        orders=("WO-2001",),
+                                        followup_of=FollowupKind.CONFIRM_TAKE))
+        text = TemplateRenderer().render(d.bundle).lower()
+        assert "drag" in text
+        assert "accept" in text
+        assert "i can't make it for you" in text
 
 
-def test_low_confidence_refuses(explainer):
-    mock = MockInterpreter({"???": Interpretation("late-orders", {}, 0.20)})
-    result = run_ask(explainer, "???", interpreter=mock)
-    assert result.route == "REFUSED"
+# ===========================================================================
+# run_ask — the single entry point
+# ===========================================================================
 
+class TestRunAsk:
+    def test_every_question_is_parsed_exactly_once(self, explainer):
+        parser = ScriptedParser({"why is WO-2001 late":
+                                 parsed("", Intent.LATE_ORDER, orders=("WO-2001",))})
+        run_ask(explainer, "why is WO-2001 late", parser=parser)
+        assert parser.calls == 1
 
-# ---------------------------------------------------------------------------
-# param resolution (external refs in, canonical resolution inside)
-# ---------------------------------------------------------------------------
+    def test_without_a_parser_the_answer_is_honest_never_a_keyword_guess(self,
+                                                                        explainer):
+        """R-AI5(2): there is no deterministic-classifier fallback. A phrasing the
+        old router matched by keyword ("why is WO-2001 late?") does NOT route."""
+        result = run_ask(explainer, "why is WO-2001 late?", parser=None)
+        assert result.route == "REFUSED"
+        assert result.source == "none"
+        assert result.bundle.subject_type == "unsupported"
 
-def test_resolve_params_substring_matches_identity(explainer):
-    interp = Interpretation("machine-schedule", {"machine": "GEAR-01"}, 0.9)
-    resolved, ok = resolve_params(explainer, interp)
-    assert ok and resolved["machine"] == "M-GEAR-01"
+    def test_an_unavailable_parser_is_the_same_honest_answer(self, explainer,
+                                                             monkeypatch):
+        from mre.modules.question_parser import QuestionParser
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        result = run_ask(explainer, "why is WO-2001 late?",
+                         parser=QuestionParser())
+        assert result.route == "REFUSED"
 
+    def test_the_resolution_is_visible_on_the_bundle(self, explainer):
+        parser = ScriptedParser({"why is this order late":
+                                 parsed("", Intent.LATE_ORDER,
+                                        pointed=(SubjectKind.ORDER,))})
+        result = run_ask(explainer, "why is this order late", parser=parser,
+                         context={"selection": {"order": "WO-2001"}})
+        assert "WO-2001" in result.bundle.question
+        assert result.resolved_question == result.bundle.question
 
-def test_resolve_params_reports_partial(explainer):
-    interp = Interpretation("why-on-machine",
-                            {"order": "2001", "machine": "nope"}, 0.9)
-    resolved, ok = resolve_params(explainer, interp)
-    assert ok is False
-    assert resolved.get("order") == "WO-2001"
+    def test_the_ledger_records_the_parse_as_the_source(self, explainer, tmp_path):
+        from mre.modules.question_ledger import QuestionLedger
+        ledger = QuestionLedger(tmp_path / "ledger.jsonl")
+        parser = ScriptedParser({"which orders are late":
+                                 parsed("", Intent.LATE_ORDERS)})
+        run_ask(explainer, "which orders are late", parser=parser, ledger=ledger,
+                schedule_id="sched-1", session_id="sess-1")
+        entries = ledger.recent(limit=5)
+        assert entries and entries[0].route == "late-orders"
+        assert entries[0].source == "parse"
 
+    def test_the_parse_contract_rides_back_on_the_result(self, explainer):
+        parser = ScriptedParser({"q": parsed("", Intent.LATE_ORDERS)})
+        result = run_ask(explainer, "q", parser=parser)
+        assert result.parsed is not None
+        assert result.parsed.intent is Intent.LATE_ORDERS
+        assert result.confidence == result.parsed.confidence
 
-# ---------------------------------------------------------------------------
-# CU2 — conversational context (follow-ups)
-# ---------------------------------------------------------------------------
-
-def test_self_contained_question_is_not_resolved(explainer):
-    rq = resolve_followup("why is WO-2001 late?", {}, explainer)
-    assert rq.resolved is False and rq.text == "why is WO-2001 late?"
-
-
-def test_pronoun_followup_resolves_against_last_order(explainer):
-    ctx = {"history": [{"order": "WO-2001", "route": "late-order"}]}
-    rq = resolve_followup("and what would fix it?", ctx, explainer)
-    assert rq.resolved is True
-    assert "WO-2001" in rq.text
-
-
-def test_cost_followup_after_edit_resolves_to_edit_cost(explainer):
-    ctx = {"history": [{"route": "edit-summary"}]}
-    rq = resolve_followup("how much?", ctx, explainer)
-    assert rq.resolved is True
-    route_id, _ = explainer.classify(rq.text)
-    assert route_id == "edit-cost"
-
-
-def test_selection_supplies_the_referent(explainer):
-    ctx = {"selection": {"order": "WO-2001"}}
-    rq = resolve_followup("and what about it?", ctx, explainer)
-    assert rq.resolved is True and "WO-2001" in rq.text
-
-
-def test_unresolvable_ellipsis_asks_for_clarification(explainer):
-    result = run_ask(explainer, "and what would fix it?", context={})
-    assert result.route == "CLARIFY"
-    assert result.bundle.subject_type == "clarify"
-
-
-def test_three_turn_chain_through_run_ask(explainer):
-    # turn 1: a full question establishes the subject.
-    r1 = run_ask(explainer, "why is WO-2001 late?")
-    assert r1.route == "late-order"
-    history = [{"question": "why is WO-2001 late?", "order": "WO-2001",
-                "route": r1.route}]
-    # turn 2: an elliptical follow-up resolves against WO-2001 and routes.
-    r2 = run_ask(explainer, "and what about it?",
-                 context={"history": history})
-    assert r2.resolved_question != "and what about it?"
-    assert "WO-2001" in r2.resolved_question
-    assert r2.route != "unsupported" and r2.route != "CLARIFY"
-    # the answer is visible about what it answered
-    assert r2.bundle.question == r2.resolved_question
-
-
-def test_resolution_is_visible_on_the_bundle(explainer):
-    ctx = {"history": [{"order": "WO-2001", "route": "late-order"}]}
-    result = run_ask(explainer, "and what would fix it?", context=ctx)
-    assert result.bundle.question == result.resolved_question
-    assert "WO-2001" in result.bundle.question
+    def test_an_unscripted_question_is_unmatched_never_a_keyword_match(self,
+                                                                      explainer):
+        parser = ScriptedParser({})
+        result = run_ask(explainer, "why is WO-2001 late?", parser=parser)
+        assert result.route in ("REFUSED", "NEAR_MISS")

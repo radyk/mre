@@ -1,0 +1,68 @@
+{
+  "target": "out-dir:gb_pinned",
+  "snapshot": "snap-exam",
+  "banks": [
+    {
+      "bank": "regression_founder",
+      "questions": 28,
+      "graded": 0,
+      "met": 0,
+      "findings": {},
+      "llm_calls": 42
+    },
+    {
+      "bank": "regression_founder_r4",
+      "questions": 15,
+      "graded": 15,
+      "met": 15,
+      "findings": {},
+      "llm_calls": 19
+    },
+    {
+      "bank": "sweep_routes",
+      "questions": 120,
+      "graded": 0,
+      "met": 0,
+      "findings": {},
+      "llm_calls": 153
+    },
+    {
+      "bank": "sweep_scenarios",
+      "questions": 49,
+      "graded": 48,
+      "met": 46,
+      "findings": {
+        "expect-miss": 2
+      },
+      "llm_calls": 65
+    },
+    {
+      "bank": "sweep_traps",
+      "questions": 62,
+      "graded": 0,
+      "met": 0,
+      "findings": {
+        "absent-entity": 3
+      },
+      "llm_calls": 78
+    }
+  ],
+  "totals": {
+    "questions": 274,
+    "graded": 63,
+    "met": 61,
+    "findings": {
+      "expect-miss": 2,
+      "absent-entity": 3
+    }
+  },
+  "parser_stats": {
+    "calls": 288,
+    "parses": 286,
+    "retries": 2,
+    "malformed": 4,
+    "clarifies": 11,
+    "unavailable": 0,
+    "median_latency_ms": 1014.2728999999235
+  }
+}

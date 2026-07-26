@@ -1,192 +1,368 @@
-SESSION 4A.3c CLOSE-OUT
-Sweep repairs: the first triaged errand list
-2026-07-24
+SESSION 4A.5a CLOSE-OUT
+R-AI5 part 1: the LLM-first parse layer (the classifier retires)
+2026-07-25
 
 Deterministic settings for all solver work: PYTHONHASHSEED=0, --solver-workers 1,
---solver-seed 0 (the glass_box pinned world uses seed 0, matching test_ai_voice).
+--solver-seed 0 (the glass_box pinned world the sweep asks against).
+
+Scope: backend + contracts + banks + tests + docs. NO solver / model /
+schedule-contract / frontend-substrate change. NO golden moved. The cockpit ask
+payload is UNCHANGED -- the panel already sends selection + last_answered_subject,
+which is exactly what the parse reads.
 
 ======================================================================
 SUMMARY
 ======================================================================
-The first exam sweep (Session 4A.3b: 210 probes, live LLM, pinned glass_box world)
-was triaged in the working thread per R-AI4(2). This session executes the errand
-list. Discovery already happened; this is repair. After this session the sweep
-re-ran and the repairs show as landed.
+Four founder exam rounds proved a structural fact: every major conversational
+failure -- polarity inversion, hypothesis mis-routing, subject-binding outranking
+intent, a menu that could not match its own items -- was the deterministic
+keyword/precedence router failing to understand INTENT, which is a natural-language
+problem being solved with string matching. Patches fixed specimens; the class
+survived. R-AI5 was co-designed and ruled in the working thread. This session
+implements part 1: the parse layer. Parts 2 (synthesis + verification) and 3
+(telemetry + promotion) are Sessions 4A.5b and 4A.5c.
 
-Backend + one cockpit panel field + tests + docs. NO solver/model/contract/
-frontend-substrate change. NO golden moved. Every CU has committed transcript
-evidence behind it (tests/ai_exam/sweeps/2026-07-24/).
+The ask path is now exactly:
 
-======================================================================
-PER-CU: CLAIMED vs PROVEN
-======================================================================
+    parse (one LLM call, closed vocabulary)
+      -> dispatch(intent)
+      -> the EXISTING route assembly
+      -> the EXISTING render + validator
 
-CU1 -- the "but why?" defect: resolved-subject context + the test-realism re-audit.
-  CLAIMED: (a) the panel sends the prior answer's resolved subject back as
-           last_answered_subject; the interpreter resolves at priority
-           selection > last answered > history > clarify; the runner carries it
-           exactly as the panel does. (b) re-audit test_ai_voice's context/follow-up
-           fixtures, refactoring any that feed data the cockpit does not send. (c) a
-           slow chain specimen.
-  PROVEN : (a) AskRequest.last_answered_subject (api/app.py) threads to the context;
-           _last_subject / _typed_subject_with_source / _last_typed_subject in
-           interpreter.py take the new argument at the fixed priority; askpanel.js
-           computes lastAnswered via resolvedSubject(bundle) and sends it; runner.py
-           resolved_subject() mirrors askpanel.js ORDER_SUBJECTS/MACHINE_SUBJECTS
-           EXACTLY (ambiguous "schedule" labels carry nothing -- never a guess), and
-           the runner carries it across turns (reset by RESET). (b) FIVE fixtures
-           refactored to realistic context (subject on last_answered_subject, not an
-           order in history): test_cu4_start_earlier_via_context,
-           test_4b_cu5_bare_why_resolves_to_cause_chain,
-           test_4b_cu5_set_reference_clarifies, test_4b_cu5_verification_clarifies,
-           and their three parametrized twins in the zero-confident-wrong corpus.
-           NONE became a KNOWN GAP -- the product fix makes them pass for the right
-           reason (the enriched-history versions passed for behavior reality lacked).
-           (c) test_cu1_but_why_resolves_via_last_answered_subject (slow, in
-           tests/ai_exam/test_runner.py) drives "why is ORD-05 late" -> "but why?"
-           through the runner's real carry: the follow-up DEEPENS (route late-order,
-           resolved_question names ORD-05), never CLARIFIES.
-  EVIDENCE: first sweep transcript L48 "but why?" -> CLARIFY (the defect);
-           post-repair transcript Q[48] "but why?" -> "interpreted as: why is ORD-05
-           late? (resolved against ORD-05)", route late-order.
-
-CU2 -- dark evidence: answers about placements light their bars (29 sweep findings).
-  CLAIMED: order-schedule / start-reason / machine-schedule populate cited_refs from
-           the assignment Decisions they narrate, through the existing lit-bars
-           channel; machine-schedule caps at the ops it lists; dark-evidence -> 0 for
-           these routes.
-  PROVEN : _explain_start_reason carries _assignment_records(order); _schedule_query
-           carries _assignment_records_for_ops(narrated_ops, narrated_demands) -- real
-           assignment Decisions whose operation subject is a SHOWN row, so the lit set
-           is exactly the listed rows (capped when the listing truncates). Prose stays
-           deterministic and unchanged: schedule + start_reason are header-only and on
-           the authored-copy render path (records feed lit-bars, never an LLM rewrite
-           of a table nor a redundant evidence-chain dump under a table that already
-           lists the rows). test_cu2_narrating_routes_light_their_bars (slow) asserts
-           lit_bars > 0 and no dark-evidence for all three routes.
-  EVIDENCE: first sweep sidecar dark-evidence=29 (lines 36/58/60/105/107/133/134/135/
-           ...); post-repair sidecar dark-evidence=0. Post-repair transcript spot
-           check: machine-schedule lit-bars=5, start-reason lit-bars=2,
-           order-schedule lit-bars>0.
-
-CU3 -- the findings-register validator rate (11 fallbacks, ~11% of live renders).
-  CLAIMED: extend the register's payload so findings/certificate testimony stops
-           fabricating; target the findings-register validator-fallback rate to ~zero;
-           if a residual class survives, name and pin it rather than widen the
-           validator.
-  PROVEN : the transcript diagnosis was exact -- the LLM footnoted the finding-list
-           ORDINAL as a record ("fabricated record citation '1'"), failing the
-           citation floor and falling back to the template ANYWAY (so findings never
-           delivered LLM fluency live). The composed findings body is authored
-           planner-voiced sentences, the same KIND of composed authored copy every
-           other register in this codebase short-circuits verbatim; "findings" joins
-           LLMRenderer._AUTHORED_COPY_SUBJECTS -> rendered verbatim, a DETERMINISTIC
-           ~zero fallback rate. This is the "register's equivalent" cure the errand
-           permitted; enriching pre-computed facts would not reliably stop a model
-           from footnoting a list ordinal, and the fix never widens the validator's
-           tolerance (the floor's strictness is the floor).
-  RESIDUAL NAMED: the remediation route's own number-validator (_render_register) is
-           LEFT INTACT -- it is the fail-closed floor working as designed, not a
-           defect to repair by weakening it. On the first sweep it fired once
-           (L176 "what's the fix for these findings"); on the post-repair sweep it did
-           not fire (LLM run-to-run variance -- the floor is intact regardless).
-  EVIDENCE: first sweep sidecar validator=11 (findings/certificate testimony);
-           post-repair sidecar validator=0; post-repair transcript has zero
-           "LLM validation failed" lines.
-
-CU4 -- the "order N" resolver (the founder's live register, a 4A.3b KNOWN GAP).
-  CLAIMED: "swap order 5 and order 4" / "order 15" / "ord 23" resolve to canonical ids
-           by numeric inference against the pinned world; flip the KNOWN GAP; guard
-           against quantity forms ("show 5 late orders").
-  PROVEN : _build_order_number_index maps each order's trailing number to its ref
-           (unique numbers only -- ambiguous drops, never guessed); rewrite_fuzzy_orders
-           gains an _ORDER_N_RE pass that resolves "order N" / "ord N" against that
-           index and surfaces the same visible "assuming ORD-05" assumption. Resolution
-           is against the world's real ids, zero-padding inferred from the ref; an
-           absent number is left untouched (honest unresolved). The 4A.3b KNOWN GAP
-           test flipped to test_solve5_natural_language_order_numbers_resolve_and_swap;
-           test_bare_order_number_resolves_to_the_canonical_ref added; the negative
-           guard test_order_number_does_not_swallow_a_quantity pins "show 5 late
-           orders" (a count, never ORD-05). Side effect NAMED: "order 2001" now
-           resolves deterministically, so one test_interpreter LLM-miss fixture was
-           re-pointed to "job 2001" (a genuine miss) to keep exercising the paraphrase
-           path.
-  EVIDENCE: post-repair transcript Q[43] "why not just swap order 5 and order 4" ->
-           "interpreted as: why not just swap ORD-05 and ORD-04 (assuming ORD-05,
-           ORD-04)", route swap-move.
-
-CU5 -- the loop closes: re-sweep + the precedent log.
-  CLAIMED: re-run the full 210-probe bank live against the same pinned world; commit
-           under sweeps/<date>-post-repair; report the mechanical deltas; seed the
-           founder-precedent log with the three working-thread judgment calls.
-  PROVEN : re-ran LIVE (LLM on, real key from .env.local; 72 live calls -- fewer than
-           the first sweep's 96 because findings + schedule are now deterministic
-           authored copy) against the SAME pinned glass_box solve (out-dir gb_pinned,
-           snapshot snap-exam, workers 1 seed 0). Transcript + sidecar committed under
-           tests/ai_exam/sweeps/2026-07-24-post-repair/. RUBRIC.md founder-precedent
-           log seeded with three OPEN entries (lit-bars feel at volume; invitation
-           frequency across broadened coverage; take frequency 28/42 renders).
-  NEW FINDINGS THE REPAIRS SURFACED: none. The post-repair sweep surfaced no new
-           mechanical finding class -- absent-entity is the only remaining kind, and it
-           is unchanged (the deliberate wrong-entity traps, correctly refused).
-
-CU6 -- rider: docs.
-  PROVEN : docs/04 2026-07-24 Session 4A.3c amendment (append-only) covering the CU1
-           test-realism discipline (a named standing discipline), the CU2 lit-bars
-           ruling, the CU3 register-equivalent cure, the CU4 resolver forms; docs/07
-           v2.42 same-day; CLAUDE.md status block; this close-out.
+with no deterministic-classifier fallback and no silent path between the tiers.
 
 ======================================================================
-THE MECHANICAL DELTAS (sidecar, first sweep -> post-repair)
+PART 1 -- R-AI5 TRANSCRIBED
 ======================================================================
-target : glass_box clean solve, out-dir gb_pinned, snapshot snap-exam (workers 1,
-         seed 0)
-         (the pinned world is identical; only the code under test changed)
-
-                    first sweep    post-repair    verdict
-  dark-evidence         29             0          repaired (CU2)
-  validator             11             0          repaired (CU3)
-  absent-entity          3             3          unchanged (honest refusals -- the
-                                                  wrong-entity traps ORD-99 / ORD-88 /
-                                                  ORD-000038, correctly refused)
-  llm calls             96            72          fewer -- findings + schedule are now
-                                                  deterministic authored copy
-
-A clean-but-for-the-traps sidecar is NOT a passing grade -- these counts are seeds,
-not verdicts. Conversation quality across the broadened coverage is still Claude's
-read and the founder's call (the three OPEN precedent-log entries).
+CLAIMED: R-AI5 appended to docs/04 verbatim, FIRST, before this session's
+         amendment.
+PROVEN:  docs/04-design-history.md, "Amendment -- 2026-07-25: R-AI5 ruling --
+         LLM-FIRST INTERPRETATION OVER A VERIFIED EVIDENCE CORE"; all eight
+         clauses between the RULING TEXT BEGINS / ENDS markers; byte-appended
+         (the pre-append bytes are a verbatim prefix of the post-append file --
+         asserted in the append itself), CRLF preserved.
 
 ======================================================================
-VERIFICATION
+PART 2 -- PER-CU: CLAIMED vs PROVEN
 ======================================================================
-  Full non-slow Python suite: 1278 passed, 198 skipped, 0 failed (807s).
-  Slow test_ai_voice + test_explainer + ai_exam runner: 262 passed (incl. the flipped
-    CU4 specimen, the refactored CU1 fixtures, the CU1 chain + CU2 lit-bars
-    end-to-end specimens).
-  Slow test_glass_box + test_ask_chain_api: 34 passed.
-  Cockpit JS (build + Playwright, both themes): green, incl. the panel's
-    last_answered_subject payload assertion.
-  Post-repair sweep committed: tests/ai_exam/sweeps/2026-07-24-post-repair/.
-  No golden moved. No solver/model/contract/frontend-substrate change.
+
+CU1 -- the parse contract + the parser
+--------------------------------------
+CLAIMED: a typed ParsedQuestion contract in the contracts package; intent as an
+         enum generated from ROUTE_TAXONOMY; typed subjects resolved against the
+         run's vocabulary (the "order N"/fuzzy resolution moving INSIDE the
+         parse); polarity; follow-up linkage; confidence; a clarify payload; one
+         LLM call at temperature 0; a prompt built from the intent vocabulary WITH
+         each intent's one-line meaning, governed and versioned in the repo, plus
+         conversation context, selection and last_answered_subject; strict JSON;
+         one retry then the clarify path; never a guess, never a crash.
+
+PROVEN:  src/mre/contracts/parse.py -- ParsedQuestion (pydantic, extra=forbid)
+         with Intent / SubjectKind / SubjectSource / Polarity / FollowupKind /
+         ClarifyReason, SubjectRef(kind, raw, ref, source, pointed),
+         ClarifyPayload, INTENT_MEANINGS, MODEL_SELECTABLE_INTENTS.
+         src/mre/modules/parse_prompt.md -- header names R-AI5(1),
+         prompt_version: 1, and the review discipline; body carries {INTENTS},
+         {CONTEXT}, {QUESTION}; everything above the ## PROMPT marker is never
+         sent.
+         src/mre/modules/question_parser.py -- QuestionParser (one call,
+         temperature=0, retry-once-then-clarify), ParserStats, bind_subjects,
+         build_parsed, extract_json, render_intents, render_context.
+         Tests (tests/test_parse_contract.py): vocabulary parity Intent ==
+         ROUTE_TAXONOMY; every selectable intent has an authored meaning;
+         unknown-entity never offered to the model; the prompt header names the
+         ruling and the discipline; the rendered vocabulary carries every intent;
+         the context renders all three channels; confidence clamped; bad enum
+         members degrade without raising; clarify reasons closed; extra fields
+         forbidden; named / "order N" / machine resolution; binding priority
+         selection > last-answer > history; typed binding never cross-type; one
+         malformed emission retries then succeeds; two malformed emissions
+         clarify; an out-of-vocabulary intent counts as malformed; a raising
+         client never escapes; no key = unavailable.
+
+         DELIVERED BEYOND THE BRIEF (named; both sit inside CU1's remit, since
+         R-AI5(1) puts subject resolution inside the parse): the intent list
+         rendered into the prompt appends each intent's REQUIRED SUBJECT, derived
+         from ROUTE_TAXONOMY rather than re-authored; and a token-wise machine
+         fallback resolves "the paint line" to PAINT-01. Both were sweep findings.
+
+CU2 -- dispatch replaces classification
+---------------------------------------
+CLAIMED: parse -> dispatch(intent) -> the EXISTING route assembly -> the EXISTING
+         render + validator; classify's keyword/precedence machinery and
+         resolve_followup's deictic/correction/menu/list-expand rules DELETED, not
+         bypassed-and-kept; their behaviours become parse-contract fields the
+         dispatch honours; their tests re-pointed at the parse layer; an unmatched
+         intent gets the honest unsupported answer (NO synthesis this session); a
+         confirmation-of-take routes to an authored acknowledgment naming the
+         gesture and the sandbox; the expedite-an-early-order branch joins the
+         advice route's authored copy.
+
+PROVEN:  Explainer.classify() and Explainer.answer() are GONE (a comment stands
+         where they were, naming why there is no private question-to-route shim).
+         interpreter.resolve_followup() and every rule it used are GONE
+         (_typed_deictic, _demonstrative_deictic, _substitute_typed,
+         _substitute_pronoun, _last_subject, _last_route, _has_ellipsis,
+         _CORRECTION_RE, _BARE_WHY_RE, _VERIFY_RE, _SET_PRONOUN_RE, _LIST_EXPAND,
+         _COST_FOLLOWUP). The trigger tables are GONE (schedule, optimality,
+         certificate, triage, remediation, excluded, edit-summary, edit-cost,
+         ledger, briefing, inventory, integrity, attribute, drill-down,
+         start-reason, advice, solve-time, machine-list, maintenance, contest,
+         status, hypothesis, gap, idle), as is _is_hypothesis. Two marker sets
+         survive, named as ROUTE-INTERNAL parameter reads inside assemblers that
+         have already been reached: _swap_move_kind (swap-vs-move framing) and the
+         new _remediation_limit ("just the worst one"). No `.classify(` call and no
+         Explainer `.answer(` call remains anywhere in src/ or tests/.
+         New dispatch (interpreter.py): Dispatched(route, bundle, note,
+         routed_question); route_params(); routed_text() -- the planner's own
+         sentence with resolved refs substituted, canonical only when the turn
+         re-fires a previous question or a pointed subject has no words;
+         _subject_note() -- keeps the literal "board selection" phrase askpanel.js
+         keys its badge on; _required_slots() -- integrity-check and downtime
+         answer plant-wide, gap-between needs an order OR the machine;
+         _nearest_offers() -- defaults chosen by what the planner named.
+         Three honesty failures separated rather than blended: a POINTED subject
+         with nothing live CLARIFIES; a NAMED subject that is not here gets the
+         absent answer; a slot nobody mentioned gets the nearest-capabilities
+         bridge.
+         Authored branches: _explain_confirm_take + the confirm_take renderer
+         branch + CONFIRM_TAKE_* copy; _expedite_early_facts + the advice
+         renderer's early branch + ADVICE_EXPEDITE_* copy. Both joined
+         _AUTHORED_COPY_SUBJECTS, so neither can be LLM-reworded.
+         Vocabulary additions: confirm-take, and schedule (the whole-plan listing
+         was a route() destination the taxonomy never named, so no parse could
+         have reached it).
+         Tests: tests/test_interpreter.py rewritten as dispatch tests -- 18
+         matched intents reaching their assemblers, every clarify reason, unmatched
+         with and without nearest, low confidence, absent entity,
+         pointed-with-nothing-live vs required-slot-never-mentioned, all six
+         follow-up linkages, the bound-subject-never-picks-the-intent regression
+         (the round-four terminal bug), the confirm-take bridge and its copy, and
+         run_ask's guarantees (parsed exactly once; no parser = honest refusal, not
+         a keyword guess; the resolution visible on the bundle; the ledger records
+         source=parse; the parse contract rides back on the result).
+
+         RE-POINTED TEST INVENTORY (the full list):
+           tests/parse_doubles.py             NEW: FakeClient (canned emissions,
+                                              everything downstream real),
+                                              ScriptedParser (question ->
+                                              ParsedQuestion), assemble()
+           tests/test_parse_contract.py       NEW: the parse contract + parser
+           tests/test_interpreter.py          rewritten as dispatch tests
+           tests/test_ai_voice.py             CORPUS_PARSE table added; every
+                                              ANSWER assertion kept; the deictic
+                                              regex and hypothesis-detector units
+                                              replaced by binding-priority and
+                                              route-internal-parameter units;
+                                              TestSwapMoveClassify became
+                                              TestSwapMoveDispatch
+           tests/test_explainer.py            91 sites name their route via
+                                              assemble(); the REPL dialogue turn
+                                              scripts its parse
+           tests/test_certificate_conversation.py, tests/test_edit_question_domain.py,
+           tests/test_unguarded_edges.py      name their route explicitly
+           tests/test_api_endpoints.py        scripts the parse at the ENDPOINT
+           tests/test_ask_chain_api.py        scripts the parse at the ENDPOINT
+           tests/ai_exam/test_real_doors.py   the door proven from both sides
+           tests/ai_exam/test_runner.py       end-to-end turns supply their parse;
+                                              the door check gains its own tests
+
+         ONE GUARANTEE RESTATED RATHER THAN KEPT, and it matters: "a taxonomy-shaped
+         question routes deterministically with the whole AI layer broken" is GONE,
+         because the keyword fallback that made it true is gone on purpose. What is
+         unbreakable now is the HONESTY -- with both the parse layer and the
+         renderer forcibly raising, the endpoint still returns 200, a rendered
+         answer, and zero citations
+         (test_a_broken_ai_stack_answers_honestly_never_a_5xx).
+
+CU3 -- the founder's round-four regressions
+-------------------------------------------
+CLAIMED: tests/ai_exam/banks/regression_founder_r4.txt -- the round-four session as
+         a conversation script (SELECT where the board selection was active), with
+         graded expectations per turn.
+PROVEN:  15 questions, 15 EXPECT lines, parses clean. Threads: the expedite pursuit
+         on an already-early order (four turns, selection live -- ORD-000036
+         adapted to the world's early control ORD-13, phrasing preserved), the
+         capability question with a STALE selection, the confirmation-of-take turn,
+         "why is this order late" via selection, plus two controls (the same deixis
+         with NO selection must ask; the expedite question NAMING a late order must
+         not take the early branch).
+         The grading mechanism is new: an EXPECT script directive (script.py, with
+         a closed EXPECT_KEYS set -- an unknown key is a parse finding, never a
+         silently ignored expectation) attaches to the next question;
+         sidecar.check_expectation emits expect-miss. It grades ROUTING ONLY --
+         intent, typed subjects, follow-up linkage, route -- never prose (R-AI4(2)).
+         SWEEP RESULT: 15/15 expectations MET, sidecar clean. The terminal bug is
+         closed: "is there any way i can get this done faster" with ORD-13 selected
+         parses to intent=advice with ORD-13 as a PARAMETER.
+
+CU4 -- goal-pursuit scenario banks
+----------------------------------
+CLAIMED: multi-turn GOAL-PURSUIT scripts, not per-route probes; at least 8
+         scenarios, 5-10 turns each, against the pinned glass_box world; committed
+         as versioned banks with dated headers.
+PROVEN:  tests/ai_exam/banks/sweep_scenarios.txt -- 8 scenarios, 49 questions, 48
+         EXPECT lines, dated header (2026-07-25) naming the taxonomy and the world.
+         The eight: expedite-for-a-customer; investigate-a-capability;
+         chase-a-cause-to-its-root; challenge-a-take; a planner who never uses
+         canonical ids; a selection live throughout (the subject must parameterize
+         where relevant and be IGNORED where not); triage-the-submission; the
+         frustrated planner.
+         UNDERDELIVERED, named: the brief said "banks" plural; this is ONE bank
+         file holding all eight scenarios rather than eight files. Scenario count,
+         turn lengths, dated header and versioning are as specified; only the file
+         split is not.
+
+CU5 -- the acceptance bar: the full re-baseline sweep
+-----------------------------------------------------
+CLAIMED: the ENTIRE bank set -- 4A.3b regression + sweeps + the r4 regression + the
+         new scenario banks -- live, against the pinned glass_box world, committed
+         under tests/ai_exam/sweeps/<date>-llm-parse/.
+PROVEN:  tests/ai_exam/sweeps/2026-07-25-llm-parse/ -- five transcripts, five
+         sidecars, SWEEP.json. Target out-dir:gb_pinned, snapshot snap-exam, built
+         with PYTHONHASHSEED=0 --solver-workers 1 --solver-seed 0. Driver:
+         tools/run_ai_exam_sweep.py, one shared parser across the sweep so the
+         parse counts are the sweep's, not one bank's.
+
+PER-BANK, AGAINST GRADED EXPECTATIONS
+
+  bank                     questions   graded   met   sidecar
+  regression_founder              28        0     -   clean
+  regression_founder_r4           15       15    15   clean
+  sweep_routes                   120        0     -   clean
+  sweep_scenarios                 49       48    46   expect-miss=2
+  sweep_traps                     62        0     -   absent-entity=3
+  TOTAL                          274       63    61
+
+MECHANICAL SIDECAR COUNTS vs THE POST-REPAIR BASELINE
+(baseline tests/ai_exam/sweeps/2026-07-24-post-repair/, 210 questions;
+ new 274 questions -- the same three banks plus the two new ones)
+
+  signal              baseline   new    verdict
+  exception                  0     0    no regression
+  empty                      0     0    no regression
+  validator                  0     0    no regression
+  absent-entity              3     3    no regression -- the SAME three honest
+                                        refusals (ORD-99, ORD-88, ORD-000038)
+  dark-evidence              0     0    no regression
+  dead-door                  0     0    no regression, and stronger: the check now
+                                        runs the REAL parse over each distinct
+                                        offered follow-up instead of the retired
+                                        classifier, and reports itself SKIPPED --
+                                        never clean -- when no parser is available
+  target-unloadable          0     0    no regression
+  expect-miss                -     2    new signal, no baseline
+
+  The bar was strictly-no-worse mechanically. It is met on every baseline signal,
+  on a bank set 30% larger.
+
+PARSE-SPECIFIC COUNTS (whole sweep, one shared parser)
+  parses                286
+  model calls           288
+  retries                 2      0.7% of parses needed a second call
+  malformed emissions     4      1.4% of calls did not validate
+  clarify rate           11      3.8% of parses emitted a clarify payload
+  unavailable             0
+  median parse latency  1014 ms
+  live LLM calls (parse + render), 357 total:
+    regression_founder 42 | r4 19 | routes 153 | scenarios 65 | traps 78
+
+THE TWO SURVIVING expect-miss FINDINGS -- triaged, NOT fixed, NOT relaxed away
+  1. "is there a minimum piece size" (S2, after a splittable thread): the parse
+     named coaching but bound the concept "piece size", for which the capability
+     registry has no trigger, so the answer is the honest what-I-can-coach list.
+     The cure is a registry trigger -- authored vocabulary, outside the parse layer.
+  2. "whats holding CUT-01" (S3): parsed as start-reason -- an order-shaped intent
+     -- with only a machine named, so the honest result is the nearest-capabilities
+     bridge (which now offers machine routes, not the plan-wide defaults). A
+     residual parse miss after the required-subject annotation, recorded rather
+     than papered over.
+
+PARSE-LAYER DEFECTS THE SWEEP FOUND AND THIS SESSION FIXED
+(the instrument exception: parser/dispatch defects found by the sweep are in scope)
+  - an intent whose required subject the planner never named -> the rendered
+    vocabulary now states each intent's required subject, derived from the taxonomy
+  - drill-down over-attracting "tell me about X" -> its authored meaning sharpened
+  - drill-down, legitimately reached, footnoting its composed finding body's list
+    ordinal as a record (2 validator fallbacks) -> the recurring disease with the
+    recurring cure (4A.3c CU3): drill_down joins the authored-copy render path
+  - colloquial machine names ("the paint line") not resolving -> token-wise fallback
+  - a clarify emitted alongside unmatched (a dead end by construction) -> forbidden
+    in the prompt and dropped in the parser
+  - a nearest-capabilities bridge that ignored the subject just named -> defaults
+    chosen by what the planner named
+  Progression across the three sweep runs:
+    expect-miss  9 -> 3 -> 2
+    validator    3 -> 0 -> 0
+    graded    54/63 -> 60/63 -> 61/63
+
+ONE TRANSIENT, NAMED: the second run recorded one `exception` -- "when does it
+finish" timed out after 120s. It did not reproduce on the third run against the same
+bank and the same world, and the parse median is ~1s; it reads as an outbound-call
+stall, not a parse-layer defect. Recorded rather than silently dropped.
+
+CU6 -- riders
+-------------
+CLAIMED: docs/04 (R-AI5 verbatim FIRST, then the amendment naming the classifier
+         retirement, the parser prompt as a governed artifact, the re-pointed test
+         inventory); docs/07 same-day; CLAUDE.md (position + the ask-path
+         architecture line); the parse prompt file's header naming R-AI5(1) and its
+         review discipline.
+PROVEN:  docs/04 -- R-AI5 verbatim, then "2026-07-25 -- AI-track Session 4A.5a"
+         (pure append, prefix-verified, CRLF preserved).
+         docs/07 -- v2.44 entry inserted above v2.43, status line bumped.
+         CLAUDE.md -- position updated; a new "The ask path (R-AI5)" paragraph
+         states the pipeline, that there is no classifier fallback, and that the
+         prompt is a governed artifact; R-AI5 residue added to the carry-forwards.
+         11,811 chars, well under the 40k ceiling.
+         parse_prompt.md -- header carries R-AI5(1), prompt_version and the review
+         discipline.
+         RUBRIC.md -- dead-door redefined for the parse-based check; expect-miss
+         documented; the parse-specific counts named as instrumentation, not a
+         grade.
+         pyproject.toml -- mre.modules package-data so the governed prompt ships.
 
 ======================================================================
-OUT OF SCOPE (named, not built)
+PART 3 -- VERIFICATION
 ======================================================================
-  - Anything the post-repair re-sweep newly discovered: nothing new surfaced this
-    time, but any future discovery is the next errand list.
-  - Invitation / take frequency tuning: founder judgment, round four (the OPEN
-    precedent-log entries).
-  - The docs/05 structured-constraint surface (prose-locked).
-  - Harness features beyond CU1's state carry.
+Full non-slow Python suite     1329 passed, 20 skipped, 179 deselected (10:12)
+Slow AI-track suites            163 passed -- test_ai_voice, tests/ai_exam,
+                                test_ask_chain_api with --runslow
+Cockpit JS (Playwright)         178 passed (2.4m), light + dark
+Sweep                           committed under
+                                tests/ai_exam/sweeps/2026-07-25-llm-parse/
+Goldens                         none moved -- no golden file appears in the diff
+Payload                         the cockpit ask payload is unchanged
 
 ======================================================================
-LESSON
+PART 4 -- UNDERDELIVERED, RESIDUE, OUT OF SCOPE
 ======================================================================
-A test that feeds context the shipped surface never sends vouches for behavior reality
-lacks -- the "but why?" specimen passed on enriched history while the real product
-clarified, and only the sweep, firing the honest carry, caught it. The cure is
-two-sided: fix the PRODUCT (carry the resolved subject the way the panel now does) and
-re-audit the TESTS to the real payload, so green means the founder would hear the same.
-And the recurring disease has one recurring cure -- when an answer is composed authored
-copy, render it verbatim; the LLM's fluency is not worth a fabricated citation, and the
-validator that catches the fabrication is the floor, never the thing you loosen.
+
+UNDERDELIVERED (explicitly):
+  - CU4 asked for "banks" plural; delivered as ONE bank file containing all eight
+    scenarios. Content, count, turn lengths, dated header and versioning as
+    specified; the file split is not.
+  - Two graded expectations remain unmet (both named and triaged above). They are
+    recorded as sweep findings rather than relaxed away.
+
+NAMED RESIDUE (carried, not fixed -- also recorded in docs/04 and CLAUDE.md):
+  - The ROLLING pre-route (rolling_questions.classify_rolling) is still a
+    deterministic keyword matcher on rolling documents. R-AI5 residue for a later
+    session; the glass_box world is monolithic, so the sweep never exercises it.
+  - start-reason's early-vs-plain distinction is still the assembler's own wording
+    read; only a NEGATIVE polarity is authoritative from the parse.
+  - A CLARIFY turn carries no subject forward (it answered nothing); the parse
+    reading the referent back out of the recent turns is the mitigation, not a fix
+    to the carry channel.
+  - The capability registry has no "minimum piece size" trigger.
+  - The exam harness now costs one model call per QUESTION even where a run used to
+    be "deterministic": there is no keyword floor left to exercise offline, so every
+    offline test that drives the ask path supplies a scripted parser.
+
+OUT OF SCOPE (named, not built):
+  - Labeled open synthesis and claim-level verification (R-AI5(2)/(3)) -- 4A.5b.
+  - Provenance telemetry, the per-claim visual surface, the promotion loop
+    (R-AI5(4)-(7)) -- 4A.5c.
+  - "Prove it".
+  - Any new route content beyond CU2's two authored branches.
+  - Model choice for the RENDERING path.

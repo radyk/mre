@@ -8254,3 +8254,231 @@ position and open debts, and the ceiling is checked at a scheduled gate rather t
 discovered by a warning. And an extraction is only trustworthy in both directions —
 record what is carried nowhere else BEFORE the cut, and prove the untouched sections
 byte-identical afterwards.
+
+
+## Amendment — 2026-07-25: R-AI5 ruling — LLM-FIRST INTERPRETATION OVER A VERIFIED EVIDENCE CORE
+
+Co-designed and ruled in the working thread (2026-07-25) after four founder exam
+rounds proved a structural fact: every major conversational failure — polarity
+inversion, hypothesis mis-routing, subject-binding outranking intent, a menu that
+could not match its own items — was the deterministic keyword/precedence router
+failing to understand INTENT, which is a natural-language problem being solved with
+string matching. Patches fixed specimens; the class survived. Transcribed here
+verbatim (append-only; settled). Part 1 (the parse layer) is implemented Session
+4A.5a, below; parts 2 and 3 are named there as later sessions.
+
+--- RULING TEXT BEGINS ---
+R-AI5 — LLM-first interpretation over a verified evidence core.
+(1) Every question is parsed FIRST by a language model against a
+CLOSED intent vocabulary (the route taxonomy), with the
+conversation history, live board selection, and last-answered
+subject as context. The parse emits a closed contract — intent,
+subjects (typed), polarity, follow-up linkage, confirmation-of-
+prior-take, confidence — never an answer.
+(2) A matched intent dispatches to contracted deterministic
+evidence assembly — the routes, pre-computed facts, authored copy,
+and validator floor, unchanged in authority. An unmatched intent
+receives labeled open synthesis over read-only evidence access.
+There is no deterministic-classifier fallback and no silent path
+between the tiers.
+(3) Every synthesis answer is hardened before rendering by
+automatic claim-level verification against the evidence store;
+claims that ground are promoted to cited status, claims that do
+not remain visibly synthesis or are softened or cut.
+(4) Provenance is visible per claim in the answer surface. No
+tier is inherited across turns; every answer is grounded as
+strongly as its content allows. "Prove it" is always available
+and triggers the grounding pass conversationally.
+(5) Per-claim provenance is recorded in the question ledger. The
+frequency-weighted Pareto of synthesis residue is the standing
+prioritization for promoting recurring shapes to contracted
+intents.
+(6) The target is synthesis rare where a proof exists and honest
+where it does not — never zero. Interpretive residue (takes,
+aggregate reads) is first-class conversation, protected, not
+minimized.
+(7) The promotion loop runs autonomously through analysis,
+drafting from verified-synthesis exemplars, and harness
+validation; promotion into the contracted vocabulary is a
+reviewed change carrying a machine-produced dossier; promoted
+routes run shadowed for a probation window; demotion to synthesis
+on divergence is automatic. The system proposes its own healing;
+the proven register is entered only by review.
+(8) Provenance labels are assigned by verification against
+independently assembled evidence, never by the answering model's
+self-assessment. The model routes to facts and voices answers; it
+never grades its own claims.
+--- RULING TEXT ENDS ---
+
+
+### 2026-07-25 — AI-track Session 4A.5a: R-AI5 part 1 — the LLM-first parse layer (the classifier retires)
+
+Implements **R-AI5 part 1** (transcribed verbatim above). Backend + contracts + banks +
+tests + docs; **no solver / model / schedule-contract / frontend-substrate change; no
+golden moved; the cockpit ask payload is unchanged** (the panel already sends selection
++ `last_answered_subject`, which is exactly what the parse reads).
+
+**PART 1 — R-AI5 transcribed verbatim** (above, first). Its eight clauses, and where
+each lands: (1) parse-first against a closed vocabulary — this session; (2) contracted
+dispatch with no classifier fallback — this session; (3) claim-level verification of
+synthesis — **Session 4A.5b**; (4)–(5) per-claim provenance and its telemetry —
+**4A.5c**; (6) synthesis rare where a proof exists — the arc's target; (7) the promotion
+loop — **4A.5c**; (8) provenance by verification, never self-assessment — 4A.5b/c.
+
+**THE CLASSIFIER IS RETIRED, NAMED PLAINLY.** `Explainer.classify()` and
+`Explainer.answer()` are DELETED, together with the trigger tables their precedence
+cascade was built from (schedule / optimality / certificate / triage / remediation /
+excluded / edit / ledger / briefing / inventory / integrity / attribute / drill-down /
+start-reason / advice / solve-time / machine-list / maintenance / contest / hypothesis /
+gap / idle) and `interpreter.resolve_followup()`'s deictic, correction, menu-selection
+and list-expansion rewrite rules. Four founder exam rounds proved the class those tables
+belonged to: understanding INTENT is a natural-language problem, and string matching kept
+answering the wrong question with perfect citations. There is deliberately **no private
+question-to-route shim** anywhere in `src` — a fallback classifier is precisely what
+R-AI5(2) forbids, and a private one would be the same router wearing a different name.
+Two marker sets survive, named as what they are: `_swap_move_kind` (swap-vs-move framing)
+and `_remediation_limit` ("just the worst one") are ROUTE-INTERNAL parameter reads inside
+assemblers that have already been reached; they select no intent.
+
+**CU1 — the parse contract + the parser.** `src/mre/contracts/parse.py` (L1, nothing
+defines shapes outside contracts): `ParsedQuestion` = intent + typed `SubjectRef`s +
+polarity + `followup_of` + confidence + `nearest` + an optional `ClarifyPayload`, all
+pydantic-validated at construction. Its closed vocabularies — `Intent` (the route
+taxonomy itself, plus `unmatched` and the new `confirm-take`), `SubjectKind` (order /
+machine / customer / concept), `SubjectSource` (utterance / selection / last-answer /
+history), `Polarity`, `FollowupKind`, `ClarifyReason` — ride with `INTENT_MEANINGS`, the
+authored one-line definition of every model-selectable intent. A parity test asserts
+`Intent` and `ROUTE_TAXONOMY` name the SAME set, so the vocabulary cannot drift from the
+routes it dispatches into. `SubjectRef.pointed` distinguishes the two honesty failures
+that used to blur: a subject the planner POINTED at which binds to nothing CLARIFIES; one
+they NAMED which resolves to nothing is answered as ABSENT.
+**The parser** (`question_parser.py`): one call, temperature 0, strict JSON, a malformed
+emission retried ONCE and then the clarify path — never a guess, never a crash, never a
+5xx. Subject RESOLUTION stays deterministic and local: the model says which words name a
+subject and whether the planner pointed; this module resolves those words against THIS
+run's vocabulary (identity map, the near-miss forms, the "order N" number index, a
+token-wise machine fallback so "the paint line" reaches PAINT-01) and binds a pointed
+subject at the fixed priority **selection > last answered subject > history**, typed —
+"that machine" can never bind to an order. **The prompt is a GOVERNED ARTIFACT**
+(`src/mre/modules/parse_prompt.md`, header naming R-AI5(1), a `prompt_version`, and its
+review discipline): a change there is a vocabulary-class change, reviewed and committed
+with the doc update. The intent list it renders is BUILT from `INTENT_MEANINGS` plus the
+required subject DERIVED from the taxonomy, so neither can drift from the routes.
+
+**CU2 — dispatch replaces classification.** The ask path is now exactly `parse ->
+dispatch(intent) -> the EXISTING route assembly -> the EXISTING render + validator`.
+Every behaviour the deleted rules encoded is a FIELD the dispatch honours:
+`followup_of=deepen|correction|list-expand|menu-select|confirm-take`,
+`subjects[].source` (and the answer still says which context won — the literal phrase
+"board selection" is a contract with `askpanel.js`), `polarity` (a NEGATIVE parse rules
+out the why-early framing whatever the wording looks like). Honest destinations are
+separated rather than blended: CLARIFY for a pointed subject with nothing live,
+`unknown-entity` for a named subject that is not here, the nearest-capabilities bridge
+for a slot nobody mentioned — and that bridge now offers routes chosen by WHAT THE
+PLANNER NAMED (a machine question bridges to machine routes), because an offer that
+ignores the subject reads as not having listened. **Two authored branches** (the only
+new answer content): (a) **confirm-take** — the planner repeats OUR OWN take back as a
+question ("so move the first operation to an earlier start time?"); the old router read a
+move phrasing with no second order and fell to a near-miss, which reads as forgetting
+what you said one turn ago. The authored acknowledgment names the gesture, names whose
+move it is (M10 has no write path), and points at the sandbox that prices it. (b) the
+**expedite-an-early-order** branch of `advice` — asked how to speed up an order that
+already finishes ahead of its due date, the answer leads with that fact and the release
+date that is its only earlier bound, instead of a plan-wide lateness scope nobody asked
+for (the founder's round-four thread is the specimen). Both render as authored copy,
+never LLM-reworded. Vocabulary additions this session: `confirm-take` and `schedule` (the
+whole-plan listing was a `route()` destination the taxonomy never named, so no parse
+could reach it).
+
+**The re-pointed test inventory (named in full).** Every routing/follow-up/binding test
+now asserts the parse CONTRACT or the DISPATCH, and the phrasing->intent claim moves to
+the sweep, where a live model is actually measured (R-AI4(2)). `tests/parse_doubles.py`
+supplies two doubles: a `FakeClient` (canned emissions; the prompt, JSON, contract and
+subject resolution all real) and a `ScriptedParser` (a question->ParsedQuestion table for
+tests whose subject is the dispatch). New: `tests/test_parse_contract.py` (vocabulary
+parity, the governed artifact's header and placeholders, emission coercion, subject
+resolution and binding priority, the retry-then-clarify floor).
+`tests/test_interpreter.py` rewritten as dispatch tests. `test_ai_voice.py`'s audit
+corpus keeps every ANSWER assertion and gains `CORPUS_PARSE`, a table stating the parse
+each specimen assumes; its deictic-regex and hypothesis-detector units are replaced by
+binding-priority and route-internal-parameter units. `test_explainer.py` (91 sites),
+`test_certificate_conversation.py`, `test_edit_question_domain.py` and
+`test_unguarded_edges.py` name their route explicitly via an `assemble()` helper — those
+tests were always about what an assembler BUILDS, and naming the route makes that
+explicit. `test_api_endpoints.py` and `test_ask_chain_api.py` script the parse at the
+ENDPOINT so the HTTP surface, ledger stream and context channels stay real.
+`tests/ai_exam/test_real_doors.py` proves a door from both sides now: offline that the
+route an invitation DOCUMENTS is live and dispatches (its `expect_route` for the two
+schedule invitations was "schedule", a `route()`-level alias no intent could name — now
+`machine-schedule`), and in the sweep that the probe's live PARSE lands there.
+**One guarantee is restated rather than kept**, and it matters: "a taxonomy-shaped
+question routes deterministically with the whole AI layer broken" is GONE, because the
+keyword fallback that made it true is gone on purpose. What is unbreakable now is the
+HONESTY — with both the parse layer and the renderer forcibly raising, the endpoint still
+returns 200, a rendered answer, and zero citations.
+
+**CU3 — the founder's round-four regressions** (`banks/regression_founder_r4.txt`, 15
+questions, 15 graded). The round-four session as a conversation script with the SELECT
+directives where the board selection was live: the expedite pursuit on an already-early
+order (four turns), the capability question with a STALE selection, the
+confirmation-of-take turn, "why is this order late" via the selection, and two controls
+(the same deixis with no selection must ask; the expedite question naming a LATE order
+must not take the early branch). **A new script directive, `EXPECT`**, carries the graded
+expectation for the next question (intent / route / order / machine / concept / followup
+/ polarity / clarify; `a|b` for either, `-` for absent). It is the only machine-graded
+part of a bank and it grades ROUTING ONLY — conversation stays Claude's and the founder's
+(R-AI4(2)). A mismatch is an `expect-miss` sidecar finding.
+
+**CU4 — goal-pursuit scenario banks** (`banks/sweep_scenarios.txt`, 8 scenarios, 49
+questions, 48 graded). The round-four coverage lesson made structural: the first sweep
+fired per-route PROBES, every probe passed, and the founder's session still broke —
+because a planner does not fire probes, they pursue a GOAL across five or ten turns
+carrying subject, selection and frustration, and the failures live in the carry. The
+eight: expedite-for-a-customer; investigate-a-capability; chase-a-cause-to-its-root;
+challenge-a-take; a planner who never uses canonical ids; a selection live throughout
+(the subject must parameterize where relevant and be IGNORED where not);
+triage-the-submission; the frustrated planner.
+
+**CU5 — the re-baseline sweep** (`tests/ai_exam/sweeps/2026-07-25-llm-parse/`). The
+ENTIRE bank set — the 4A.3b regression + route fan + traps, plus the two new banks —
+fired LIVE against the pinned glass_box world, one shared parser so the parse counts are
+the sweep's. Per-bank results, the mechanical comparison against the post-repair
+baseline, the parse-specific counts and the median parse latency are stated in the
+close-out. The sidecar gained two things the parse layer needs: `expect-miss`, and a
+`dead-door` check that now runs the REAL parse over every offered follow-up (memoized
+per distinct question) instead of the retired classifier — and reports itself SKIPPED,
+never clean, when no parser is available. **The sweep found parse-layer defects and they
+were repaired in-session (the instrument exception):** an intent whose required subject
+the planner never named (the vocabulary now renders each intent's required subject,
+derived from the taxonomy); `drill-down` over-attracting "tell me about X" (its authored
+meaning sharpened) and, when legitimately reached, footnoting its composed finding body's
+list ordinal as a record — the recurring disease with the recurring cure (4A.3c CU3), so
+`drill_down` joins the authored-copy render path; colloquial machine names ("the paint
+line") not resolving; a `clarify` emitted alongside `unmatched`, which is a dead end by
+construction and is now forbidden in the prompt and dropped in the parser; and a
+nearest-capabilities bridge that ignored the subject the planner had just named.
+
+**OUT OF SCOPE (named, not built).** Labeled open SYNTHESIS and claim-level verification
+(R-AI5(2)/(3)) — Session 4A.5b. Provenance telemetry, the per-claim visual surface, and
+the promotion loop (R-AI5(4)–(7)) — 4A.5c. "Prove it". Any new route content beyond
+CU2's two authored branches. Model choice for the RENDERING path.
+
+**Named residue (carried, not fixed).** (a) The ROLLING pre-route
+(`rolling_questions.classify_rolling`) is still a deterministic keyword matcher on rolling
+documents — R-AI5 residue for a later session; the glass_box world is monolithic, so the
+sweep never exercises it. (b) The start-reason early-vs-plain distinction is still the
+assembler's own wording read; only a NEGATIVE polarity is authoritative from the parse.
+(c) A CLARIFY turn carries no subject forward (it answered nothing), so a follow-up after
+one must re-name its subject — the parse reading it back out of the recent turns is the
+mitigation, not a fix to the carry channel. (d) The capability registry has no trigger
+for "minimum piece size", so that follow-up reaches coaching with no concept and gets the
+honest what-I-can-coach list; a registry-vocabulary errand, out of this session's scope.
+
+Lesson: the layer with the most patches was the one solving a language problem with
+string matching, and every patch made the next failure more surprising rather than less.
+Retiring it whole is only safe because the thing underneath it was already contracted —
+the routes, the pre-computed facts, the authored copy and the validator floor are
+unchanged in authority, and the model was given a closed vocabulary and forbidden to
+author an answer. The test suite told the same story in miniature: the assertions worth
+keeping were always about what an assembler BUILDS, and the ones that quietly encoded a
+keyword table are exactly the ones a live sweep should have been grading all along.

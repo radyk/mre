@@ -16,6 +16,18 @@ test. The format is deliberately spartan (the founder pastes plain text):
                                      -> drop the board selection
   * ``RESET``                        -> clear ALL conversation state (history AND
                                         selection): many conversations per bank
+  * ``EXPECT intent=advice order=ORD-13 route=advice``
+                                     -> the GRADED EXPECTATION for the NEXT question
+                                        (Session 4A.5a CU3). Any subset of
+                                        ``intent`` / ``route`` / ``order`` /
+                                        ``machine`` / ``concept`` / ``followup`` /
+                                        ``polarity`` / ``clarify`` may be given;
+                                        each is compared to what the parse and the
+                                        dispatch actually produced, and a mismatch
+                                        is an ``expect-miss`` finding. This is the
+                                        only machine-graded part of a bank — it
+                                        grades ROUTING, never conversation
+                                        (R-AI4(2)).
   * anything else                    -> a question line
 
 Directives are case-insensitive on the keyword; entity ids are preserved verbatim
@@ -55,16 +67,30 @@ class Reset:
 
 
 @dataclass
+class Expect:
+    """The graded expectation for the NEXT question (Session 4A.5a CU3). Only the
+    keys present are checked; everything absent is unconstrained."""
+    fields: dict
+    lineno: int
+
+
+@dataclass
 class Comment:
     """A ``#`` line, echoed into the transcript so a bank reads as prose."""
     text: str
     lineno: int
 
 
-ScriptItem = Union[Question, Select, Reset, Comment]
+ScriptItem = Union[Question, Select, Reset, Comment, Expect]
 
 
 _SELECT_KV = re.compile(r"(order|machine|op)\s*=\s*(\S+)", re.IGNORECASE)
+
+# The graded-expectation keys (Session 4A.5a CU3). A closed set: an unknown key is
+# a parse finding, never a silently ignored expectation.
+EXPECT_KEYS = ("intent", "route", "order", "machine", "concept", "followup",
+               "polarity", "clarify")
+_EXPECT_KV = re.compile(r"([a-z_]+)\s*=\s*(\S+)", re.IGNORECASE)
 
 
 @dataclass
@@ -88,6 +114,22 @@ def parse_script(text: str) -> ParsedScript:
         head = stripped.split(None, 1)[0].upper()
         if head == "RESET":
             out.items.append(Reset(lineno=i))
+            continue
+        if head == "EXPECT":
+            rest = stripped[len("EXPECT"):].strip()
+            fields, bad = {}, []
+            for m in _EXPECT_KV.finditer(rest):
+                key, val = m.group(1).lower(), m.group(2)
+                if key in EXPECT_KEYS:
+                    fields[key] = val
+                else:
+                    bad.append(key)
+            if bad or not fields:
+                out.parse_errors.append(
+                    (i, raw, f"EXPECT with unknown key(s) {bad}" if bad
+                     else "EXPECT with no recognized key"))
+                continue
+            out.items.append(Expect(fields=fields, lineno=i))
             continue
         if head == "SELECT":
             rest = stripped[len("SELECT"):].strip()

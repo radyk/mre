@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 
 from mre.api.app import create_app
 from tools.generate_erp_dataset import generate
+from tests.parse_doubles import assemble
 
 
 def _data(resp, status=200):
@@ -41,24 +42,26 @@ class TestEditRouting:
             def all_findings(self): return []
         return Explainer(_Store(), _Index(), snapshot_id="snap-x")
 
-    def test_summarize_my_changes_routes_to_the_edits_domain(self):
+    def test_summarize_my_changes_reaches_the_edits_domain(self):
+        # Session 4A.5a: the phrasing -> route step is the parse layer's (and the
+        # sweep's) to prove; what this pins is the edit-summary ASSEMBLER.
         ex = self._explainer()
         for q in ("summarize what I changed", "what did I change today",
                   "summarize my edits this session"):
-            b = ex.answer(q)
+            b = assemble(ex, "edit-summary", q)
             assert b.subject_type == "edits", q
 
-    def test_cost_questions_route_to_edit_cost(self):
+    def test_cost_questions_reach_edit_cost(self):
         ex = self._explainer()
         for q in ("why does this move cost 261", "what did that cost",
                   "why is this edit so expensive"):
-            b = ex.answer(q)
+            b = assemble(ex, "edit-cost", q)
             # no edits recorded → an honest refusal (unsupported), never a guess
             assert b.subject_type in ("edit_cost", "unsupported"), q
 
     def test_edit_cost_refuses_honestly_with_no_edits(self):
         ex = self._explainer()
-        b = ex.answer("why does this move cost 261")
+        b = assemble(ex, "edit-cost", "why does this move cost 261")
         assert b.subject_type == "unsupported"   # the records can't support it
 
 

@@ -1,0 +1,80 @@
+# AI EXAM BANK — founder ROUND-FOUR regression
+# generated: 2026-07-25  (Session 4A.5a, CU3)
+# taxonomy : R-AI5 intent vocabulary (docs/04 2026-07-25)
+# world    : glass_box (orders ORD-01..15; machines CUT-01, PRESS-FAST,
+#            PRESS-SLOW, PAINT-01, HEAT-01; ORD-05 late +890 held by ORD-04 on
+#            CUT-01; ORD-13 the early control; ORD-03 splittable; ORD-09 RED /
+#            ORD-12 BLUE on PAINT-01)
+#
+# The founder's round-four session (schedule 1f82c1a9-7331-46c5-b252-204bbceb13d4)
+# as a conversation script, with the SELECT directives where the board selection was
+# active. Round four is the session that proved the STRUCTURAL fact behind R-AI5: a
+# bound subject short-circuited intent classification entirely, so "is there any way
+# i can get this done faster" — asked with an order selected — dumped that order's
+# operations instead of answering the question. Pilot ids the glass_box world lacks
+# (ORD-000036) are adapted to the world's early control ORD-13; the PHRASING is
+# preserved. A finding that reopens here is a regression.
+#
+# EXPECT lines are the graded expectations (CU3). They grade ROUTING only — which
+# intent the parse named, which typed subjects it bound, where it dispatched — never
+# conversation, which stays Claude's and the founder's (R-AI4(2)).
+
+# --- Round 4, thread one: the expedite pursuit on an ALREADY-EARLY order ---------
+# ORD-13 is comfortably early. Four turns of "can this go faster", the last three
+# with the bar selected. The terminal bug: the selection PICKED the intent.
+SELECT order=ORD-13 machine=HEAT-01
+EXPECT intent=advice order=ORD-13
+is there any way i can get this done faster
+EXPECT intent=advice order=ORD-13
+what would it take to pull this one in
+EXPECT intent=advice|start-reason order=ORD-13
+can we expedite it
+EXPECT intent=start-reason order=ORD-13 polarity=negative
+why cant it start earlier
+RESET
+
+# --- Round 4, thread two: a capability question with a STALE selection ------------
+# The selection is still live from the previous thread and is IRRELEVANT to the
+# question. A subject parameterizes an intent; it never picks one.
+SELECT order=ORD-13 machine=HEAT-01
+EXPECT intent=coaching concept=splittable
+can orders be split across a shutdown
+EXPECT intent=coaching concept=splittable
+how do i turn that on
+EXPECT intent=coaching
+what else can i configure
+RESET
+
+# --- Round 4, thread three: confirmation of OUR OWN take -------------------------
+# The assistant has just suggested pulling an operation earlier. The founder repeats
+# it back to confirm. That is a confirmation, not a new instruction — and not a
+# near-miss, which reads as forgetting what you said one turn ago.
+SELECT order=ORD-05 machine=CUT-01
+EXPECT intent=late-order order=ORD-05
+why is this order late
+EXPECT intent=swap-move|advice order=ORD-05
+what can i do about it
+EXPECT route=confirm-take
+so move the first operation to an earlier start time?
+RESET
+
+# --- Round 4, thread four: "why is this order late" via the selection -------------
+SELECT order=ORD-05 machine=CUT-01
+EXPECT intent=late-order order=ORD-05
+why is this order late
+EXPECT intent=late-order order=ORD-05 followup=deepen
+but why
+EXPECT intent=machine-schedule machine=CUT-01
+whats on that machine
+RESET
+
+# --- Round 4, control: the same deixis with NO selection must ask, never guess ----
+EXPECT clarify=no-subject route=CLARIFY
+why is this order late
+RESET
+
+# --- Round 4, control: the expedite question NAMING a late order is not the -------
+# early-order branch (the branch must be earned by the evidence, not the phrasing)
+EXPECT intent=advice order=ORD-05
+is there any way i can get ORD-05 done faster
+RESET

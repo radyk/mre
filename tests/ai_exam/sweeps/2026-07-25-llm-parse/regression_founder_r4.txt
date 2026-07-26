@@ -1,0 +1,293 @@
+AI EXAM TRANSCRIPT
+target      : out-dir:gb_pinned
+snapshot    : snap-exam
+started     : 2026-07-26T00:39:34Z
+llm mode    : live
+questions   : 15
+llm calls   : 19
+door check  : live
+parse       : parses=48 calls=48 retries=0 malformed=0 clarifies=4 unavailable=0 median=983ms
+graded      : 15/15 expectations met
+sidecar     : clean
+------------------------------------------------------------------------
+# AI EXAM BANK — founder ROUND-FOUR regression
+# generated: 2026-07-25  (Session 4A.5a, CU3)
+# taxonomy : R-AI5 intent vocabulary (docs/04 2026-07-25)
+# world    : glass_box (orders ORD-01..15; machines CUT-01, PRESS-FAST,
+# PRESS-SLOW, PAINT-01, HEAT-01; ORD-05 late +890 held by ORD-04 on
+# CUT-01; ORD-13 the early control; ORD-03 splittable; ORD-09 RED /
+# ORD-12 BLUE on PAINT-01)
+# 
+# The founder's round-four session (schedule 1f82c1a9-7331-46c5-b252-204bbceb13d4)
+# as a conversation script, with the SELECT directives where the board selection was
+# active. Round four is the session that proved the STRUCTURAL fact behind R-AI5: a
+# bound subject short-circuited intent classification entirely, so "is there any way
+# i can get this done faster" — asked with an order selected — dumped that order's
+# operations instead of answering the question. Pilot ids the glass_box world lacks
+# (ORD-000036) are adapted to the world's early control ORD-13; the PHRASING is
+# preserved. A finding that reopens here is a regression.
+# 
+# EXPECT lines are the graded expectations (CU3). They grade ROUTING only — which
+# intent the parse named, which typed subjects it bound, where it dispatched — never
+# conversation, which stays Claude's and the founder's (R-AI4(2)).
+# --- Round 4, thread one: the expedite pursuit on an ALREADY-EARLY order ---------
+# ORD-13 is comfortably early. Four turns of "can this go faster", the last three
+# with the bar selected. The terminal bug: the selection PICKED the intent.
+# [SELECT order=ORD-13 machine=HEAT-01]
+# [EXPECT intent=advice order=ORD-13]
+Q[27]: is there any way i can get this done faster
+  selection: order=ORD-13, machine=HEAT-01
+  interpreted as: is there any way i can get ORD-13 done faster  (resolved against ORD-13 (from board selection))
+  route=advice  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.92  order=ORD-13<-selection("this")  933ms
+  expect: intent=advice order=ORD-13  -> MET
+  A:
+    ORD-13 isn't waiting on anything I can shorten — it already finishes 11.7 day(s) ahead of its due date.
+    The only thing that would let it run earlier is its release date (2026-01-05) — material can't be worked before it's available.
+
+    If the goal is a different order, name it and I'll walk what its start is waiting on.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=advice order=ORD-13]
+Q[29]: what would it take to pull this one in
+  selection: order=ORD-13, machine=HEAT-01
+  interpreted as: what would it take to pull ORD-13 in  (resolved against ORD-13 (from board selection))
+  route=advice  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.92  followup=deepen  order=ORD-13<-selection("this one")  895ms
+  expect: intent=advice order=ORD-13  -> MET
+  A:
+    ORD-13 isn't waiting on anything I can shorten — it already finishes 11.7 day(s) ahead of its due date.
+    The only thing that would let it run earlier is its release date (2026-01-05) — material can't be worked before it's available.
+
+    If the goal is a different order, name it and I'll walk what its start is waiting on.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=advice|start-reason order=ORD-13]
+Q[31]: can we expedite it
+  selection: order=ORD-13, machine=HEAT-01
+  interpreted as: can we expedORD-13e it  (resolved against ORD-13 (from board selection))
+  route=advice  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.92  followup=deepen  order=ORD-13<-selection("it")  1009ms
+  expect: intent=advice|start-reason order=ORD-13  -> MET
+  A:
+    ORD-13 isn't waiting on anything I can shorten — it already finishes 11.7 day(s) ahead of its due date.
+    The only thing that would let it run earlier is its release date (2026-01-05) — material can't be worked before it's available.
+
+    If the goal is a different order, name it and I'll walk what its start is waiting on.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=start-reason order=ORD-13 polarity=negative]
+Q[33]: why cant it start earlier
+  selection: order=ORD-13, machine=HEAT-01
+  interpreted as: why cant ORD-13 start earlier  (resolved against ORD-13 (from board selection))
+  route=start-reason  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=start-reason  conf=0.92  followup=deepen  polarity=negative  order=ORD-13<-selection("it")  1141ms
+  expect: intent=start-reason order=ORD-13 polarity=negative  -> MET
+  A:
+    ORD-13 starts Monday (2026-01-05 07:00) because it isn't released for production until Monday 2026-01-05 — nothing can begin before its release date.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 4, thread two: a capability question with a STALE selection ------------
+# The selection is still live from the previous thread and is IRRELEVANT to the
+# question. A subject parameterizes an intent; it never picks one.
+# [SELECT order=ORD-13 machine=HEAT-01]
+# [EXPECT intent=coaching concept=splittable]
+Q[41]: can orders be split across a shutdown
+  selection: order=ORD-13, machine=HEAT-01
+  interpreted as: how do I enable that?  (assuming splittable)
+  route=coaching  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.92  concept=splittable<-utterance("splitting")  807ms
+  expect: intent=coaching concept=splittable  -> MET
+  A:
+    Yes — an operation to pause at a shift end or closure and resume the next working period, so a long job can span downtime instead of waiting for a gap big enough to hold it whole.
+
+    To enable it: set splittable=true and a min_chunk_minutes on that operation's routing line in routing_lines.csv (the run phase becomes resumable; chunk boundaries fall on calendar boundaries, and nothing is billed to the pause). See the incoming-data spec §5.3.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=coaching concept=splittable]
+Q[43]: how do i turn that on
+  selection: order=ORD-13, machine=HEAT-01
+  interpreted as: how do I enable that?  (assuming splittable)
+  route=coaching  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.92  followup=deepen  concept=splittable<-utterance("splitting across a shutdown")  1046ms
+  expect: intent=coaching concept=splittable  -> MET
+  A:
+    Yes — an operation to pause at a shift end or closure and resume the next working period, so a long job can span downtime instead of waiting for a gap big enough to hold it whole.
+
+    To enable it: set splittable=true and a min_chunk_minutes on that operation's routing line in routing_lines.csv (the run phase becomes resumable; chunk boundaries fall on calendar boundaries, and nothing is billed to the pause). See the incoming-data spec §5.3.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=coaching]
+Q[45]: what else can i configure
+  selection: order=ORD-13, machine=HEAT-01
+  interpreted as: how do I enable that?  (coaching on splittable)
+  route=coaching  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.92  followup=menu-select  concept=splittable<-utterance("splitting, overtime, alternates, customers, earliness, spanning downtime, WIP")  1502ms
+  expect: intent=coaching  -> MET
+  A:
+    Yes — an operation to pause at a shift end or closure and resume the next working period, so a long job can span downtime instead of waiting for a gap big enough to hold it whole.
+
+    To enable it: set splittable=true and a min_chunk_minutes on that operation's routing line in routing_lines.csv (the run phase becomes resumable; chunk boundaries fall on calendar boundaries, and nothing is billed to the pause). See the incoming-data spec §5.3.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 4, thread three: confirmation of OUR OWN take -------------------------
+# The assistant has just suggested pulling an operation earlier. The founder repeats
+# it back to confirm. That is a confirmation, not a new instruction — and not a
+# near-miss, which reads as forgetting what you said one turn ago.
+# [SELECT order=ORD-05 machine=CUT-01]
+# [EXPECT intent=late-order order=ORD-05]
+Q[54]: why is this order late
+  selection: order=ORD-05, machine=CUT-01
+  interpreted as: why is ORD-05 late  (resolved against ORD-05 (from board selection))
+  route=late-order  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.95  polarity=positive  order=ORD-05<-selection("this order")  889ms
+  expect: intent=late-order order=ORD-05  -> MET
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 82257d9a...]. It could not start until 2026-01-06 07:00 while CUT-01 was held by ORD-04, high priority until 2026-01-05 18:50 [record: 2c82d3c0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=swap-move|advice order=ORD-05]
+Q[56]: what can i do about it
+  selection: order=ORD-05, machine=CUT-01
+  interpreted as: what should I do about the late orders?  (resolved against ORD-05 (from board selection))
+  route=advice  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.92  followup=deepen  order=ORD-05<-selection("this order")  1367ms
+  expect: intent=swap-move|advice order=ORD-05  -> MET
+  A:
+    1 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    My take: ORD-05's 890-minute slip traces to ORD-04 holding CUT-01 until 2026-01-05 18:50 — pulling that earlier is the single biggest lever the board gives you today.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT route=confirm-take]
+Q[58]: so move the first operation to an earlier start time?
+  selection: order=ORD-05, machine=CUT-01
+  route=confirm-take  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=confirm-take  conf=0.92  order=ORD-05<-selection("this order")  4467ms
+  expect: route=confirm-take  -> MET
+  A:
+    Yes — that's the move I was pointing at: pulling ORD-05 earlier.
+
+    I can't make it for you: I read the plan and price changes, I don't change it. You make the move on the board and I'll cost it exactly before anything is accepted.
+
+    Drag ORD-05's first operation to the earlier slot on CUT-01 — the sandbox re-solves around it and shows the production, setup, and tardiness delta, and nothing is committed until you accept.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 4, thread four: "why is this order late" via the selection -------------
+# [SELECT order=ORD-05 machine=CUT-01]
+# [EXPECT intent=late-order order=ORD-05]
+Q[64]: why is this order late
+  selection: order=ORD-05, machine=CUT-01
+  interpreted as: why is ORD-05 late  (resolved against ORD-05 (from board selection))
+  route=late-order  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.95  polarity=positive  order=ORD-05<-selection("this order")  857ms
+  expect: intent=late-order order=ORD-05  -> MET
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 82257d9a]. It could not start until 2026-01-06 07:00 while CUT-01 was occupied by ORD-04, high priority, until 2026-01-05 18:50 [record: 2c82d3c0].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=late-order order=ORD-05 followup=deepen]
+Q[66]: but why
+  selection: order=ORD-05, machine=CUT-01
+  route=late-order  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.95  followup=deepen  polarity=positive  order=ORD-05<-selection("ORD-05")  980ms
+  expect: intent=late-order order=ORD-05 followup=deepen  -> MET
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 82257d9a...]. It couldn't start until 2026-01-06 07:00 while CUT-01 was held by ORD-04, high priority until 2026-01-05 18:50 [record: 2c82d3c0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=machine-schedule machine=CUT-01]
+Q[68]: whats on that machine
+  selection: order=ORD-05, machine=CUT-01
+  interpreted as: whats on CUT-01  (resolved against CUT-01 (from board selection))
+  route=machine-schedule  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=7  records=6  refs=6/1/0
+  parse: intent=machine-schedule  conf=0.95  followup=deepen  machine=CUT-01<-selection("that machine")  1397ms
+  expect: intent=machine-schedule machine=CUT-01  -> MET
+  A:
+    CUT-01: 6 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+        seq= 10  2026-01-05 07:20 -> 2026-01-05 11:00  ORD-02  -14958min early
+        seq= 10  2026-01-05 11:00 -> 2026-01-05 18:50  ORD-04  -309min early
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+        seq= 10  2026-01-06 14:50 -> 2026-01-06 18:30  ORD-01  -12319min early
+        seq= 10  2026-01-07 07:00 -> 2026-01-07 19:00  ORD-03  -12358min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 4, control: the same deixis with NO selection must ask, never guess ----
+# [EXPECT clarify=no-subject route=CLARIFY]
+Q[73]: why is this order late
+  route=CLARIFY  source=parse  conf=0.25  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=late-order  conf=0.25  polarity=positive  order=UNRESOLVED<-utterance("this order")  clarify=no-subject  1182ms
+  expect: clarify=no-subject route=CLARIFY  -> MET
+  A:
+    I need one more detail to answer "why is this order late".
+    Which order, machine, or customer do you mean? Ask it again naming one, e.g. "why is that order late?" becomes "why is <order> late?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 4, control: the expedite question NAMING a late order is not the -------
+# early-order branch (the branch must be earned by the evidence, not the phrasing)
+# [EXPECT intent=advice order=ORD-05]
+Q[79]: is there any way i can get ORD-05 done faster
+  route=advice  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.92  order=ORD-05<-utterance("ORD-05")  860ms
+  expect: intent=advice order=ORD-05  -> MET
+  A:
+    1 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    My take: ORD-05's 890-minute slip traces to ORD-04 holding CUT-01 until 2026-01-05 18:50 — pulling that earlier is the single biggest lever the board gives you today.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------

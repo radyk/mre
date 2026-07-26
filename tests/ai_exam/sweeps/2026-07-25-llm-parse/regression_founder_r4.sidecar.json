@@ -1,0 +1,24 @@
+{
+  "target": "out-dir:gb_pinned",
+  "snapshot": "snap-exam",
+  "started_at": "2026-07-26T00:39:34Z",
+  "llm_mode": "live",
+  "questions": 15,
+  "llm_calls": 19,
+  "parser_stats": {
+    "calls": 48,
+    "parses": 48,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 4,
+    "unavailable": 0,
+    "median_latency_ms": 983.3537499994236
+  },
+  "graded_expectations": {
+    "graded": 15,
+    "met": 15
+  },
+  "door_check": "live",
+  "finding_counts": {},
+  "findings": []
+}

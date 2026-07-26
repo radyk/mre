@@ -1,0 +1,160 @@
+# AI EXAM BANK — multi-turn GOAL-PURSUIT scenarios
+# generated: 2026-07-25  (Session 4A.5a, CU4)
+# taxonomy : R-AI5 intent vocabulary (docs/04 2026-07-25)
+# world    : glass_box (orders ORD-01..15; machines CUT-01, PRESS-FAST,
+#            PRESS-SLOW, PAINT-01, HEAT-01; ORD-05 late +890 held by ORD-04 on
+#            CUT-01; ORD-13 the early control; ORD-03 splittable; ORD-09 RED /
+#            ORD-12 BLUE on PAINT-01)
+#
+# THE ROUND-FOUR COVERAGE LESSON. The first sweep fired per-route PROBES: one
+# question per phrasing, each self-contained. Every probe passed and the founder's
+# session still broke, because a planner does not fire probes — they PURSUE A GOAL
+# across five or ten turns, carrying subject, selection and frustration with them,
+# and the failures live in the carry. These are goal-pursuit scripts: each is one
+# planner trying to get one thing done. RESET separates scenarios; within a
+# scenario the SEQUENCE is the test.
+#
+# Eight scenarios, 5-10 turns each. EXPECT lines grade ROUTING only (R-AI4(2)).
+
+# =================================================================================
+# S1 — EXPEDITE FOR A CUSTOMER: chase one customer's work, then try to pull it in
+# =================================================================================
+EXPECT intent=customer-schedule
+show me everything for acme
+EXPECT intent=late-orders
+any of those running late
+EXPECT intent=late-order|late-orders
+which one is worst
+EXPECT intent=late-order order=ORD-05
+why is ORD-05 late
+EXPECT intent=advice|swap-move order=ORD-05
+can we get it back on time
+EXPECT route=confirm-take
+so i should move it earlier on CUT-01?
+RESET
+
+# =================================================================================
+# S2 — INVESTIGATE A CAPABILITY: can the plant do a thing, and how do I turn it on
+# =================================================================================
+EXPECT intent=coaching
+can jobs run across a night shutdown
+EXPECT intent=coaching concept=splittable
+what do i have to set for that
+EXPECT intent=coaching concept=splittable
+is there a minimum piece size
+EXPECT intent=inventory
+is anything split today
+EXPECT intent=coaching
+what else can this thing be told to do
+EXPECT intent=coaching concept=overtime
+what about overtime
+RESET
+
+# =================================================================================
+# S3 — CHASE A CAUSE TO ITS ROOT: five turns of "but why", never losing the subject
+# =================================================================================
+EXPECT intent=late-orders
+how many orders are late
+EXPECT intent=late-orders followup=list-expand
+list them
+EXPECT intent=late-order order=ORD-05
+why is ORD-05 late
+EXPECT intent=late-order|start-reason order=ORD-05 followup=deepen
+but why
+EXPECT intent=machine-schedule|machine-idle|gap-between machine=CUT-01
+whats holding CUT-01
+EXPECT intent=start-reason order=ORD-05 polarity=negative
+why cant ORD-05 start before that
+EXPECT intent=gap-between
+is there a gap anywhere on CUT-01
+RESET
+
+# =================================================================================
+# S4 — CHALLENGE A TAKE: the planner disbelieves a stated fact, twice, then asks
+#      the assistant to confirm its own claim (which it must refuse to do)
+# =================================================================================
+EXPECT intent=late-order order=ORD-13
+why is ORD-13 late
+EXPECT intent=contested-fact order=ORD-13
+isnt ORD-13 fine though
+EXPECT intent=contested-fact|order-schedule order=ORD-13
+i thought that one was well ahead
+EXPECT clarify=verification route=CLARIFY
+are you sure about that
+EXPECT intent=order-schedule|start-reason|order-attributes order=ORD-13
+show me its dates then
+RESET
+
+# =================================================================================
+# S5 — A PLANNER WHO NEVER USES CANONICAL IDS: "order five", "the paint line"
+# =================================================================================
+EXPECT intent=late-order order=ORD-05
+why is order 5 late
+EXPECT intent=swap-move order=ORD-04
+could we swap order 4 and order 5
+EXPECT intent=machine-schedule machine=PAINT-01
+whats on the paint line
+EXPECT intent=downtime machine=PAINT-01
+how much downtime does the paint line get
+EXPECT intent=order-schedule order=ORD-13
+when does order 13 finish
+EXPECT intent=order-attributes order=ORD-09
+whos order 9 for
+RESET
+
+# =================================================================================
+# S6 — A SELECTION ACTIVE THROUGHOUT: the bar stays selected while the planner
+#      asks about the order, the machine, the plant, and a capability. The subject
+#      must parameterize where it is relevant and be IGNORED where it is not.
+# =================================================================================
+SELECT order=ORD-05 machine=CUT-01
+EXPECT intent=late-order order=ORD-05
+why is this late
+EXPECT intent=order-schedule order=ORD-05
+when does it finish
+EXPECT intent=why-on-machine order=ORD-05 machine=CUT-01
+why is it on that machine
+EXPECT intent=machine-count order=-
+how many machines are in this plant
+EXPECT intent=coaching order=-
+how do i declare a customer priority
+EXPECT intent=solve-time order=-
+how long did this take to solve
+EXPECT intent=briefing order=-
+what should i be worrying about today
+RESET
+
+# =================================================================================
+# S7 — TRIAGE THE SUBMISSION: from "is my data ok" to "what do I fix first"
+# =================================================================================
+EXPECT intent=data-problems
+are there problems with what i sent
+EXPECT intent=certificate-testimony|data-problems
+whats actually wrong with it
+EXPECT intent=triage
+what should i fix first
+EXPECT intent=remediation
+how do i fix that one
+EXPECT intent=excluded-orders
+did anything get dropped from the plan
+EXPECT intent=drill-down
+tell me more about that
+RESET
+
+# =================================================================================
+# S8 — THE FRUSTRATED PLANNER: an unsupported ask, a complaint, then a real
+#      question. The complaint must never be echoed back, and the real question
+#      must be answered as if the complaint had not happened.
+# =================================================================================
+EXPECT intent=unmatched
+just give me a better schedule
+EXPECT intent=unmatched
+cant you just make it cheaper
+this is not helpful
+EXPECT intent=late-orders
+ok. which orders are late
+EXPECT intent=late-order order=ORD-05
+and why is ORD-05 one of them
+EXPECT intent=advice
+what would you do about it
+RESET

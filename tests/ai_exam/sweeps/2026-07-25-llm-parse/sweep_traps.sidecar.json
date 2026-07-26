@@ -1,0 +1,45 @@
+{
+  "target": "out-dir:gb_pinned",
+  "snapshot": "snap-exam",
+  "started_at": "2026-07-26T00:44:10Z",
+  "llm_mode": "live",
+  "questions": 62,
+  "llm_calls": 78,
+  "parser_stats": {
+    "calls": 288,
+    "parses": 286,
+    "retries": 2,
+    "malformed": 4,
+    "clarifies": 11,
+    "unavailable": 0,
+    "median_latency_ms": 1014.2728999999235
+  },
+  "graded_expectations": {
+    "graded": 0,
+    "met": 0
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "absent-entity": 3
+  },
+  "findings": [
+    {
+      "kind": "absent-entity",
+      "lineno": 34,
+      "question": "why is ORD-99 late",
+      "detail": "interpreted-as names 'ORD-99', absent from the pinned document"
+    },
+    {
+      "kind": "absent-entity",
+      "lineno": 35,
+      "question": "when does ORD-88 finish",
+      "detail": "interpreted-as names 'ORD-88', absent from the pinned document"
+    },
+    {
+      "kind": "absent-entity",
+      "lineno": 37,
+      "question": "why is ORD-000038 late",
+      "detail": "interpreted-as names 'ORD-000038', absent from the pinned document"
+    }
+  ]
+}

@@ -93,6 +93,17 @@ def main(argv: list[str] | None = None) -> int:
     counts = result.finding_counts()
     print(f"ai-exam: {len(result.turns)} question(s), llm mode {result.llm_mode}, "
           f"{result.total_llm_calls} live call(s)")
+    if result.parser_stats:
+        ps = result.parser_stats
+        med = ps.get("median_latency_ms")
+        print(f"ai-exam: parse: {ps['parses']} parse(s), {ps['calls']} call(s), "
+              f"{ps['retries']} retry, {ps['malformed']} malformed, "
+              f"{ps['clarifies']} clarify, median "
+              f"{'-' if med is None else f'{med:.0f}ms'}")
+    graded, met = result.graded()
+    if graded:
+        print(f"ai-exam: graded expectations: {met}/{graded} met")
+    print(f"ai-exam: door check: {result.door_check}")
     print(f"ai-exam: sidecar findings: "
           f"{', '.join(f'{k}={v}' for k, v in sorted(counts.items())) or 'clean'}")
     print(f"ai-exam: transcript -> {transcript_path}")

@@ -12,13 +12,15 @@ Conversation-state fidelity (the instrument tests what the founder would hear):
     is the channel the panel actually sends. This is the honest choice: enriching
     history beyond what the cockpit transmits would let the harness PASS follow-ups
     the shipped product fails.
-  * ``selection`` is a ``{order, machine}`` dict, the only fields the interpreter
+  * ``selection`` is a ``{order, machine}`` dict, the only fields the parse layer
     reads from the selection channel.
 
-Nothing is mocked. When ``ANTHROPIC_API_KEY`` is set the interpreter and the LLM
-renderer are live (the founder's real path); without a key the deterministic floor
-is exercised (still the full router, validator, sidecar, and every structural
-property). The runner reports which mode it ran in and a live-call count at close.
+Nothing is mocked. Session 4A.5a: the ask path is LLM-FIRST (R-AI5), so a run needs
+a PARSER as much as it needs a solved world — one is built when ``ANTHROPIC_API_KEY``
+is set, or injected (offline tests inject a scripted one). ONE parser serves the
+whole run, so the parse-specific counts (retry / malformed / clarify rates, median
+latency) are the run's. The runner reports its LLM mode, a live-call count, those
+parse counts, and how many graded EXPECT lines were met at close.
 """
 from __future__ import annotations
 
@@ -29,7 +31,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
-from .script import Comment, ParsedScript, Question, Reset, Select, parse_script
+from .script import (
+    Comment, Expect, ParsedScript, Question, Reset, Select, parse_script,
+)
 from .sidecar import Finding, Vocab, check_turn
 
 
@@ -86,9 +90,11 @@ class RunTarget:
             document=document, label=label or str(out_dir),
         )
 
-    def build_vocab(self) -> Vocab:
+    def build_vocab(self, parser: Any = None) -> Vocab:
         """A throwaway Explainer over the same snapshot, for the sidecar's shape
-        checks (valid entity vocabulary + the real-doors classifier)."""
+        checks (valid entity vocabulary + the real-doors door check). The parser is
+        the run's own — an offered follow-up is checked by the same parse layer a
+        planner clicking it would hit (Session 4A.5a)."""
         from mre.modules.evidence_index import EvidenceIndex
         from mre.modules.explainer import Explainer
         from mre.modules.snapshot_store import SnapshotStore
@@ -96,7 +102,8 @@ class RunTarget:
         index = (EvidenceIndex.load(ip) if ip.exists()
                  else EvidenceIndex().build(self.out_dir / self.runs_subdir))
         store = SnapshotStore(self.out_dir / "snapshots")
-        return Vocab(Explainer(store, index, snapshot_id=self.snapshot_id))
+        return Vocab(Explainer(store, index, snapshot_id=self.snapshot_id),
+                     parser=parser)
 
 
 # ---------------------------------------------------------------------------
@@ -124,6 +131,11 @@ class TurnRecord:
     error: Optional[str] = None
     llm_calls: int = 0
     findings: list[Finding] = field(default_factory=list)
+    # The parse contract's instrumentation (Session 4A.5a): intent, follow-up
+    # linkage, polarity, bound subjects, clarify reason, retries, latency.
+    parse: dict = field(default_factory=dict)
+    # The graded expectation this turn carried (an EXPECT line), if any.
+    expect: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -135,6 +147,18 @@ class ExamResult:
     parse_errors: list[Finding] = field(default_factory=list)
     total_llm_calls: int = 0
     started_at: str = ""
+    # Parse-layer counts for the sweep close-out (Session 4A.5a CU5).
+    parser_stats: dict = field(default_factory=dict)
+    door_check: str = "skipped"          # "live" | "skipped"
+
+    def graded(self) -> tuple[int, int]:
+        """(graded turns, graded turns that MET their expectation) — the per-bank
+        pass/fail the close-out reports. Turns with no EXPECT line are not graded;
+        routing is the only machine-graded axis (R-AI4(2))."""
+        graded = [t for t in self.turns if t.expect]
+        met = [t for t in graded
+               if not any(f.kind == "expect-miss" for f in t.findings)]
+        return len(graded), len(met)
 
     @property
     def findings(self) -> list[Finding]:
@@ -227,7 +251,7 @@ class _CallCounter:
 class ExamRunner:
     def __init__(self, target: RunTarget, *, use_llm: Optional[bool] = None,
                  ledger_path: Optional[Path] = None, per_question_timeout: float = 90.0,
-                 session_id: str = "ai-exam") -> None:
+                 session_id: str = "ai-exam", parser: Any = None) -> None:
         self.target = target
         key = bool(os.environ.get("ANTHROPIC_API_KEY"))
         self.use_llm = key if use_llm is None else (use_llm and key)
@@ -235,6 +259,14 @@ class ExamRunner:
         self.per_question_timeout = per_question_timeout
         self.session_id = session_id
         self._vocab: Optional[Vocab] = None
+        # ONE parser for the whole run (Session 4A.5a): the ask path is LLM-first,
+        # so a sweep needs a shared parse layer to report clarify / retry /
+        # malformed rates and a median parse latency. An injected parser (a test
+        # double) is used verbatim; otherwise a live one is built when a key is set.
+        if parser is None and key:
+            from mre.modules.question_parser import QuestionParser
+            parser = QuestionParser()
+        self.parser = parser
 
     # -- one question -------------------------------------------------------
 
@@ -248,6 +280,7 @@ class ExamRunner:
                      "last_answered_subject": last_answered},
             ledger_path=self.ledger_path, schedule_id=self.target.label,
             session_id=self.session_id, document=self.target.document,
+            parser=self.parser,
         )
 
     def _ask_with_timeout(self, question: str, history: list[dict],
@@ -278,7 +311,8 @@ class ExamRunner:
             result.parse_errors.append(
                 Finding("parse-error", lineno, raw.strip(), reason))
 
-        self._vocab = self.target.build_vocab()
+        self._vocab = self.target.build_vocab(parser=self.parser)
+        result.door_check = "live" if self._vocab.door_check_available else "skipped"
         if not self._vocab.healthy:
             # The pinned run did not load (missing/wiped snapshot or evidence). Do
             # NOT fire questions — every entity answer would silently misroute. Fail
@@ -298,12 +332,19 @@ class ExamRunner:
         # Comments/selects between questions attach to the NEXT question in the
         # transcript for readability; we buffer them here.
         pending_comments: list[str] = []
+        pending_expect: dict = {}
         asked = 0
 
         with _CallCounter() as counter:
             for item in script.items:
                 if isinstance(item, Comment):
                     pending_comments.append(item.text)
+                    continue
+                if isinstance(item, Expect):
+                    pending_expect = dict(item.fields)
+                    pending_comments.append(
+                        "[EXPECT " + " ".join(
+                            f"{k}={v}" for k, v in pending_expect.items()) + "]")
                     continue
                 if isinstance(item, Reset):
                     history = []
@@ -339,6 +380,8 @@ class ExamRunner:
                 )
                 turn._comments = pending_comments  # type: ignore[attr-defined]
                 pending_comments = []
+                turn.expect = pending_expect
+                pending_expect = {}
                 if error is not None:
                     turn.error = error
                 else:
@@ -357,6 +400,7 @@ class ExamRunner:
                     turn.lit_bars = sum(
                         len(turn.cited_refs.get(k, []))
                         for k in ("operations", "resources", "demands"))
+                    turn.parse = meta.get("parse") or {}
                 turn.llm_calls = counter.count - before
                 turn.findings = check_turn(turn, self._vocab)
                 result.turns.append(turn)
@@ -377,4 +421,6 @@ class ExamRunner:
                     last_answered = resolved_subject(
                         turn.subject_type, turn.subject_external_name)
             result.total_llm_calls = counter.count
+        if self.parser is not None and hasattr(self.parser, "stats"):
+            result.parser_stats = self.parser.stats.as_dict()
         return result

@@ -35,6 +35,7 @@ ROUTE_OFFERS = {
     "machine-schedule": "show what's running on {machine}",
     "order-schedule": "show when {order} starts and finishes",
     "customer-schedule": "show the schedule for {customer}",
+    "schedule": "show the full schedule, machine by machine",
     "downtime": "show {machine}'s downtime (calendar closures)",
     "data-problems": "list the data-quality problems",
     "version-diff": "show what changed between two versions",
@@ -52,6 +53,18 @@ ROUTE_OFFERS = {
     "swap-move": "weigh swapping {order} with another order and how to price it",
     "gap-between": "explain the gap before {order} on its machine",
     "machine-idle": "explain why {machine} carries no work",
+    "order-attributes": "show {order}'s details (product, quantity, customer, due)",
+    "inventory": "count the orders and operations in the plan",
+    "integrity-check": "check whether anything is double-booked",
+    "start-reason": "explain why {order} starts when it does",
+    "excluded-orders": "list the orders excluded from the plan and why",
+    "drill-down": "open the full record behind that",
+    "briefing": "show what needs your attention today",
+    "contested-fact": "walk the evidence for {order}'s status",
+    "confirm-take": "name the board gesture that makes that move",
+    "beyond-horizon": "show what lies beyond the planning horizon",
+    "why-not-scheduled-yet": "explain why {order} isn't scheduled yet",
+    "frozen": "show what is frozen",
 }
 
 # Generic planner nouns when a param slot has nothing resolved to fill it.
@@ -81,6 +94,65 @@ CLARIFY_VERIFICATION = (
     "evidence, not my own claims. Re-ask what you want checked, e.g. \"how many "
     "orders have data problems?\"."
 )
+
+# Session 4A.5a (R-AI5(1)) — the remaining closed clarify reasons. The parse picks
+# a REASON from the closed set; the words are always ours.
+CLARIFY_AMBIGUOUS_SUBJECT = (
+    "More than one thing fits and I won't pick for you. Name it — an order, a "
+    "machine, or a capability — and I'll answer, e.g. \"why is <order> late?\"."
+)
+CLARIFY_AMBIGUOUS_INTENT = (
+    "I can read that two ways and the difference matters. Say which you want: "
+    "the facts as they stand, or what to do about them."
+)
+CLARIFY_PARSE_FAILED = (
+    "I couldn't make out what that one was asking. Try it again in a sentence — "
+    "naming an order, a machine, or a customer if it's about one."
+)
+
+# ---------------------------------------------------------------------------
+# Session 4A.5a (R-AI5 part 1) — the two authored branches the parse layer opens.
+# ---------------------------------------------------------------------------
+
+# CONFIRMATION OF A PRIOR TAKE. The planner repeats OUR OWN suggestion back as a
+# question ("so move the first operation to an earlier start time?"). That is a
+# confirmation, not a new instruction — the old router read a move phrasing with no
+# second order and fell to a near-miss, which reads as the assistant forgetting what
+# it just said one turn ago. Name the gesture, say plainly whose move it is (M10 has
+# no write path), and point at the sandbox that prices it before acceptance.
+CONFIRM_TAKE_LEAD = "Yes — that's the move I was pointing at."
+CONFIRM_TAKE_LEAD_ORDER = (
+    "Yes — that's the move I was pointing at: pulling {order} earlier.")
+CONFIRM_TAKE_BODY = (
+    "I can't make it for you: I read the plan and price changes, I don't change "
+    "it. You make the move on the board and I'll cost it exactly before anything "
+    "is accepted."
+)
+CONFIRM_TAKE_GESTURE = (
+    "Drag {order}'s first operation to the earlier slot on {machine} — the "
+    "sandbox re-solves around it and shows the production, setup, and tardiness "
+    "delta, and nothing is committed until you accept."
+)
+CONFIRM_TAKE_GESTURE_GENERIC = (
+    "Drag the operation to the slot you want on the board — the sandbox re-solves "
+    "around it and shows the production, setup, and tardiness delta, and nothing "
+    "is committed until you accept."
+)
+
+# EXPEDITE AN ALREADY-EARLY ORDER. The founder's round-four thread: four turns
+# asking how to get an order done faster, on an order finishing 11.3 days ahead of
+# its due date. A plan-wide lateness scope answers a question nobody asked; the
+# truthful answer is that there is nothing to expedite, and what the floor is.
+ADVICE_EXPEDITE_EARLY = (
+    "{order} isn't waiting on anything I can shorten — it already finishes "
+    "{days} day(s) ahead of its due date.")
+ADVICE_EXPEDITE_FLOOR_RELEASE = (
+    "The only thing that would let it run earlier is its release date "
+    "({release}) — material can't be worked before it's available.")
+ADVICE_EXPEDITE_FLOOR_GENERIC = (
+    "The only thing that would let it run earlier is its release date — material "
+    "can't be worked before it's available.")
+
 
 # The meta-route header (R-AI1(d) — the ledger answering about itself).
 REFUSAL_META_EMPTY = "No unanswered questions have been logged recently."
@@ -139,7 +211,7 @@ INVITATIONS: dict = {
         "why is {order} late?", ("order",), "late-order"),
     "why-late": Invitation(
         "why-late", INVITE_WHY_LATE,
-        "what's running on {machine}?", ("machine",), "schedule"),
+        "what's running on {machine}?", ("machine",), "machine-schedule"),
     "data-problems": Invitation(
         "data-problems", INVITE_DATA_PROBLEMS,
         "what should I fix first?", (), "triage"),
@@ -148,8 +220,13 @@ INVITATIONS: dict = {
         "what data problems exist?", (), "data-problems"),
     "gap-between": Invitation(
         "gap-between", INVITE_GAP,
-        "what's running on {machine}?", ("machine",), "schedule"),
+        "what's running on {machine}?", ("machine",), "machine-schedule"),
 }
+# Session 4A.5a: ``expect_route`` names a member of the closed intent vocabulary
+# (it used to name "schedule", the route()-level alias for the three schedule
+# listings, which no intent could ever be parsed as). The reverse-guard now asserts
+# taxonomy membership offline, and the live sweep asserts the PARSE of each probe
+# lands on the declared intent — a door proven from both sides.
 
 
 def invitation_line(key: str, **facts) -> "str | None":

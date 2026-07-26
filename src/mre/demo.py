@@ -261,7 +261,11 @@ def run_demo(
     _sep("Step 4: Why is WO-2001 late?")
 
     explainer = Explainer(store, index, snapshot_id=snap_id)
-    bundle = explainer.answer("Why is WO-2001 late?")
+    # Session 4A.5a: the demo names its route directly — the deterministic
+    # question-to-route classifier is retired (R-AI5(2)); a scripted demo has no
+    # interpretation to do.
+    bundle = explainer.route("late-order", {"question": "Why is WO-2001 late?",
+                                            "order": "WO-2001"})
 
     renderer = LLMRenderer() if use_llm else TemplateRenderer()
     answer_text = renderer.render(bundle)
@@ -272,7 +276,9 @@ def run_demo(
     # ------------------------------------------------------------------
     _sep("Step 5: What changed since snap-demo-v1?")
 
-    diff_bundle = explainer.answer(f"What changed since {snap_id} vs {snap_id_v2}?")
+    diff_bundle = explainer.route(
+        "version-diff",
+        {"question": f"What changed since {snap_id} vs {snap_id_v2}?"})
     diff_text = TemplateRenderer().render(diff_bundle)
     print(diff_text)
 

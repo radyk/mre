@@ -26,6 +26,7 @@ from mre.modules.triage import escape_distance, triage_findings
 from mre.reporter import Reporter
 from mre.catalog import load_catalog
 from tools.generate_erp_dataset import SCENARIOS, generate
+from tests.parse_doubles import assemble
 
 _OUTCOME_TIER = {"violated": 0, "degraded": 1, "flagged": 2}
 # Feel fixtures (docs/07 Phase 3, e.g. busy_board) are hands-on cockpit boards,
@@ -142,15 +143,15 @@ class TestThreeRegistersRoute:
         assert code == 0
         r = TemplateRenderer()
 
-        testimony = r.render(ex.answer("what's wrong?"))
+        testimony = r.render(assemble(ex, "certificate-testimony", "what's wrong?"))
         assert "register: testimony" in testimony
 
-        remediation = r.render(ex.answer("how do I fix the worst one?"))
+        remediation = r.render(assemble(ex, "remediation", "how do I fix the worst one?"))
         assert "register: remediation" in remediation
         assert "catalog note v1" in remediation
         assert "§" in remediation  # cites an IDS section
 
-        judgment = r.render(ex.answer("what should I fix first?"))
+        judgment = r.render(assemble(ex, "triage", "what should I fix first?"))
         assert "register: judgment" in judgment
         assert "Fix-first order" in judgment
         # names the arithmetic
@@ -174,8 +175,8 @@ class TestThreeRegistersRoute:
         assert ex._identity_map is None
         r = TemplateRenderer()
 
-        assert "register: remediation" in r.render(ex.answer("how do I fix this?"))
-        judgment = r.render(ex.answer("what should I fix first?"))
+        assert "register: remediation" in r.render(assemble(ex, "remediation", "how do I fix this?"))
+        judgment = r.render(assemble(ex, "triage", "what should I fix first?"))
         assert "register: judgment" in judgment
         assert "violated" in judgment
-        assert "register: testimony" in r.render(ex.answer("why was it rejected?"))
+        assert "register: testimony" in r.render(assemble(ex, "certificate-testimony", "why was it rejected?"))

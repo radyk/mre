@@ -198,6 +198,8 @@ class TemplateRenderer:
                 "downtime", "unsupported", "schedule", "scenario_diff",
                 "near_miss", "clarify", "refusals",
                 "advice", "solve_time", "machine_count", "maintenance", "coaching",
+                # Session 4A.5a CU2 — the confirmation-of-take bridge.
+                "confirm_take",
             ):
                 pass  # header already rendered all content
             elif "error" in bundle.key_facts:
@@ -630,10 +632,49 @@ class TemplateRenderer:
         elif bundle.subject_type == "contested_fact":
             self._render_contested(lines, bundle)
 
+        elif bundle.subject_type == "confirm_take":
+            # Session 4A.5a CU2 — the planner confirmed OUR OWN take back at us.
+            # Name the gesture, name whose move it is, name the sandbox. Authored
+            # copy carried verbatim; the renderer composes nothing of its own.
+            from mre.modules.ask_fallback_copy import (
+                CONFIRM_TAKE_BODY, CONFIRM_TAKE_GESTURE,
+                CONFIRM_TAKE_GESTURE_GENERIC, CONFIRM_TAKE_LEAD,
+                CONFIRM_TAKE_LEAD_ORDER,
+            )
+            kf = bundle.key_facts
+            order, machine = kf.get("order"), kf.get("machine")
+            lines.append(CONFIRM_TAKE_LEAD_ORDER.format(order=order) if order
+                         else CONFIRM_TAKE_LEAD)
+            lines.append("")
+            lines.append(CONFIRM_TAKE_BODY)
+            lines.append("")
+            lines.append(CONFIRM_TAKE_GESTURE.format(order=order, machine=machine)
+                         if order and machine else CONFIRM_TAKE_GESTURE_GENERIC)
+            lines.append("")
+
         elif bundle.subject_type == "advice":
             # CU2 (Session 4B.4) — the honest SCOPING answer. Conversational,
             # never a status recital, never an invented intervention.
             kf = bundle.key_facts
+            # Session 4A.5a CU2 — the EXPEDITE-AN-EARLY-ORDER branch. Asked how to
+            # get a specific order done faster when that order already finishes
+            # ahead of its due date, lead with THAT, not a plan-wide scope.
+            early = kf.get("expedite_early")
+            if early:
+                from mre.modules.ask_fallback_copy import (
+                    ADVICE_EXPEDITE_EARLY, ADVICE_EXPEDITE_FLOOR_GENERIC,
+                    ADVICE_EXPEDITE_FLOOR_RELEASE,
+                )
+                lines.append(ADVICE_EXPEDITE_EARLY.format(
+                    order=early.get("order"), days=early.get("days_early")))
+                lines.append(
+                    ADVICE_EXPEDITE_FLOOR_RELEASE.format(release=early["release"])
+                    if early.get("release") else ADVICE_EXPEDITE_FLOOR_GENERIC)
+                lines.append("")
+                lines.append("If the goal is a different order, name it and I'll "
+                             "walk what its start is waiting on.")
+                lines.append("")
+                return
             late = kf.get("late_count", 0)
             if late:
                 lines.append(
@@ -1329,6 +1370,17 @@ class LLMRenderer:
         "advice", "solve_time", "machine_count", "maintenance",
         # Session 4A.3-pre CU4: the coaching answer is retrieved authored copy.
         "coaching",
+        # Session 4A.5a CU2: the confirmation-of-take bridge is authored copy — it
+        # names a gesture and a boundary (M10 has no write path). An LLM reword is
+        # exactly where "I'll move it for you" would come from.
+        "confirm_take",
+        # Session 4A.5a CU5: drill_down renders a composed FINDING detail — the
+        # same authored, planner-voiced body `findings` renders — and the LLM kept
+        # footnoting its list ordinal as a record ("[record: EVIDENCE CHAIN]"),
+        # failing the citation floor and falling back anyway. The recurring disease
+        # has the recurring cure (4A.3c CU3): composed authored copy renders
+        # verbatim. The floor's strictness is never the variable.
+        "drill_down",
         # Session 4A.3-pre CU6: the contested-fact restatement is authored warmth
         # over a pinned fact — the LLM must never soften it into capitulation.
         "contested_fact",

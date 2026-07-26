@@ -1,0 +1,39 @@
+{
+  "target": "out-dir:gb_pinned",
+  "snapshot": "snap-exam",
+  "started_at": "2026-07-26T00:42:56Z",
+  "llm_mode": "live",
+  "questions": 49,
+  "llm_calls": 65,
+  "parser_stats": {
+    "calls": 222,
+    "parses": 222,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 6,
+    "unavailable": 0,
+    "median_latency_ms": 1002.2745000001123
+  },
+  "graded_expectations": {
+    "graded": 48,
+    "met": 46
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "expect-miss": 2
+  },
+  "findings": [
+    {
+      "kind": "expect-miss",
+      "lineno": 44,
+      "question": "is there a minimum piece size",
+      "detail": "concept: expected 'splittable', got None"
+    },
+    {
+      "kind": "expect-miss",
+      "lineno": 65,
+      "question": "whats holding CUT-01",
+      "detail": "intent: expected 'machine-schedule|machine-idle|gap-between', got 'start-reason'"
+    }
+  ]
+}

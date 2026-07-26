@@ -130,13 +130,27 @@ grades conversation. The six signals:
   dark-evidence    -- an evidence-shaped route (late-order, why-on-machine,
                       order-schedule, machine-schedule, start-reason) cited zero
                       records and lit zero bars
-  dead-door        -- an invitation offered a follow-up that classifies to no
-                      route (the reverse-guard applied to output)
+  dead-door        -- an invitation offered a follow-up that PARSES to no intent
+                      (the reverse-guard applied to output). Session 4A.5a: this
+                      now runs the REAL parse layer over each distinct offered
+                      question -- what a planner clicking it would hit -- and is
+                      reported SKIPPED, never clean, when no parser is available.
+  expect-miss      -- a bank's own EXPECT line did not match what the parse named
+                      or where the dispatch sent it (Session 4A.5a CU3). ROUTING
+                      only: intent, typed subjects, follow-up linkage, route. It
+                      never grades prose, and a miss is a finding to triage, not
+                      a verdict.
   target-unloadable-- the pinned run did not load; NO questions were fired
                       (the instrument refuses to emit garbage)
 
 A clean sidecar is NOT a passing grade -- it means nothing tripped the mechanical
 floor. Conversation quality is still Claude's read and the founder's call.
+
+Session 4A.5a also added PARSE-SPECIFIC COUNTS to every transcript and sidecar
+(parses, model calls, retries, malformed emissions, clarifies, median latency).
+They are instrumentation, not a grade: a rising clarify rate may mean the parse got
+more honest or that the prompt got worse, and only reading the transcript tells you
+which.
 
 ------------------------------------------------------------------------------
 FOUNDER PRECEDENT LOG (judgment-call verdicts, newest last)

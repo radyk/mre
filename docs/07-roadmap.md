@@ -1,6 +1,37 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.43 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.44 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.44:** **AI-track Session 4A.5a — R-AI5 part 1: the LLM-first parse layer (the
+classifier retires)** 2026-07-25 (R-AI5 verbatim + docs/04 amendment). Four founder exam
+rounds proved a structural fact: every major conversational failure — polarity inversion,
+hypothesis mis-routing, subject-binding outranking intent, a menu that could not match its
+own items — was the deterministic keyword/precedence router failing to understand INTENT,
+a natural-language problem solved with string matching. **R-AI5 ruled** (verbatim,
+docs/04): parse first with a model against a CLOSED intent vocabulary; a matched intent
+dispatches to contracted deterministic assembly, an unmatched one to labeled synthesis;
+no classifier fallback and no silent path between the tiers; synthesis hardened by
+claim-level verification; provenance visible per claim and assigned by verification, never
+self-assessment; the promotion loop proposes, review disposes. **This session is part 1 —
+the parse layer.** `Explainer.classify()` / `answer()` and `resolve_followup()`'s rewrite
+rules are DELETED with their trigger tables; the ask path is now `parse -> dispatch ->
+the unchanged route assembly -> the unchanged render + validator`. **CU1:** the
+`ParsedQuestion` contract in `contracts/parse.py` (intent + typed subjects + polarity +
+follow-up linkage + confidence + clarify), a parity test binding `Intent` to
+`ROUTE_TAXONOMY`, and a one-call temperature-0 parser whose PROMPT is a governed,
+versioned artifact; subject resolution stays deterministic and local (selection > last
+answered > history, typed). **CU2:** dispatch honours every retired rule as a contract
+field; two authored branches added (confirm-take, and advice's expedite-an-already-early
+order). **CU3/CU4:** the founder's round-four session and 8 goal-pursuit scenario banks,
+with a new `EXPECT` directive that machine-grades ROUTING only. **CU5:** the full
+re-baseline sweep (274 questions, 5 banks, live) at
+`tests/ai_exam/sweeps/2026-07-25-llm-parse/` — **61/63 graded expectations met; validator
+0, dark-evidence 0, dead-door 0 (now live-checked), exception 0; absent-entity 3,
+identical to the post-repair baseline**; parse retry rate 0.7%, clarify rate 3.8%, median
+parse latency 1.01s. Full non-slow Python green (1329); slow `test_ai_voice` + `ai_exam`
+green; cockpit JS green (178). **Parts 2 and 3 (synthesis + verification; telemetry +
+promotion) are Sessions 4A.5b / 4A.5c.** See the docs/04 2026-07-25 R-AI5 ruling and
+Session 4A.5a amendment.
 
 **v2.43:** **Session CE1 — CLAUDE.md extraction (context-budget repair)** 2026-07-25
 (docs/04 amendment). Claude Code reported `CLAUDE.md` over its 150k-char delivery limit

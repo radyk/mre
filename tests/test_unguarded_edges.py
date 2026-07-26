@@ -26,6 +26,7 @@ from mre.contracts.records import Finding
 from mre.contracts.vocabularies import (
     FindingCode, FindingDisposition, FindingSeverity, ModuleCode, RecordTier,
 )
+from tests.parse_doubles import assemble
 
 UTC = timezone.utc
 
@@ -135,7 +136,7 @@ class TestExcludedOrdersEnumerable:
         than dq_report.md)."""
         from mre.__main__ import main as mre_main
         from mre.modules.evidence_index import EvidenceIndex
-        from mre.modules.explainer import Explainer
+        from mre.modules.explainer import ROUTE_TAXONOMY, Explainer
         from mre.modules.snapshot_store import SnapshotStore
         from tools.generate_erp_dataset import generate
 
@@ -150,10 +151,12 @@ class TestExcludedOrdersEnumerable:
         store = SnapshotStore(out / "snapshots")
         ex = Explainer(store, idx, snapshot_id="snap-excl")
 
-        route, _ = ex.classify("which orders were excluded from the plan?")
-        assert route == "excluded-orders"
+        # Session 4A.5a: `excluded-orders` is a live member of the closed intent
+        # vocabulary a parse can name; what this test pins is its ASSEMBLER.
+        from mre.contracts.parse import Intent
+        assert Intent.EXCLUDED_ORDERS.value in ROUTE_TAXONOMY
 
-        bundle = ex.answer("which orders were excluded from the plan?")
+        bundle = assemble(ex, "excluded-orders", "which orders were excluded from the plan?")
         enumerated = bundle.key_facts["excluded_orders"]
         assert bundle.key_facts["excluded_count"] >= 1
         # a VALUE_OUT_OF_RANGE exclusion (the negative quantity) is enumerated

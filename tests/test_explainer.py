@@ -17,6 +17,7 @@ import pytest
 from mre.modules.evidence_index import EvidenceIndex
 from mre.modules.explainer import ExplanationBundle, Explainer
 from mre.modules.renderers import TemplateRenderer, _resolve_name
+from tests.parse_doubles import Intent, ScriptedParser, assemble, parsed
 
 
 # ---------------------------------------------------------------------------
@@ -206,19 +207,19 @@ def explainer_and_index(tmp_path):
 class TestExplainerAnswer:
     def test_why_late_returns_bundle(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         assert isinstance(bundle, ExplanationBundle)
         assert bundle.subject_type == "demand"
         assert bundle.subject_external_name == "WO-2001"
 
     def test_why_late_bundle_has_lateness_key_fact(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         assert bundle.key_facts.get("lateness_minutes") == 840.0
 
     def test_why_late_bundle_has_demand_merge(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         merge_recs = [
             r for r in bundle.ordered_records
             if r.get("decision_type") == "demand_merge"
@@ -227,7 +228,7 @@ class TestExplainerAnswer:
 
     def test_why_late_bundle_has_calendar_window(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         cw_recs = [
             r for r in bundle.ordered_records
             if r.get("driver") == "CALENDAR_WINDOW"
@@ -236,7 +237,7 @@ class TestExplainerAnswer:
 
     def test_why_late_bundle_has_lateness_metric(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         metrics = [
             r for r in bundle.ordered_records
             if r.get("record_type") == "metric" and r.get("name") == "lateness_minutes"
@@ -246,7 +247,7 @@ class TestExplainerAnswer:
 
     def test_why_late_ordered_m4_before_m7(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         modules = [r["module"] for r in bundle.ordered_records]
         # All M4 records come before M7 records
         last_m4 = max((i for i, m in enumerate(modules) if m == "M4"), default=-1)
@@ -255,18 +256,18 @@ class TestExplainerAnswer:
 
     def test_unknown_wo_returns_error_bundle(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-9999 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-9999 late?", order="WO-9999")
         assert "error" in bundle.key_facts
 
     def test_data_problems_returns_findings_bundle(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("What data problems exist?")
+        bundle = assemble(exp, "data-problems", "What data problems exist?")
         assert bundle.subject_type == "findings"
 
     def test_route_by_keyword_late(self, explainer_and_index):
         exp, _ = explainer_and_index
         # "delayed" should still route to _explain_why_late
-        bundle = exp.answer("Why is WO-2001 delayed?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 delayed?", order="WO-2001")
         assert bundle.subject_type == "demand"
 
 
@@ -300,27 +301,27 @@ class TestSummarizeRun:
 class TestTemplateRenderer:
     def test_render_uses_external_names(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         text = TemplateRenderer().render(bundle)
         assert "WO-2001" in text, "Renderer must use work_order external ref"
         assert DEMAND_ID not in text, "Renderer must not emit UUID"
 
     def test_render_assignment_uses_machine_name(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         text = TemplateRenderer().render(bundle)
         assert "M-GEAR-02" in text, "Renderer must use machine_id external ref"
         assert GEAR_MACHINE_ID not in text
 
     def test_render_alternative_names_calendar_blocked_machine(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         text = TemplateRenderer().render(bundle)
         assert "M-GEAR-01" in text, "Calendar-blocked alternative must be named"
 
     def test_render_reconstructed_note(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         text = TemplateRenderer().render(bundle)
         assert "reconstruction" in text.lower() or "reconstructed" in text.lower(), (
             "Reconstructed decision must be noted as such"
@@ -328,13 +329,13 @@ class TestTemplateRenderer:
 
     def test_render_footnotes_record_ids(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         text = TemplateRenderer().render(bundle)
         assert "record:" in text, "Each evidence record must be footnoted with its ID"
 
     def test_render_lateness_headline(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         text = TemplateRenderer().render(bundle)
         assert "840" in text, "Lateness value must appear in rendered text"
 
@@ -384,20 +385,20 @@ class TestTemplateRenderer:
 class TestRendererAttribution:
     def test_template_renderer_ends_with_attribution(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         text = TemplateRenderer().render(bundle)
         assert text.endswith("[rendered by: template | register: testimony]")
 
     def test_template_renderer_register_is_testimony(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         text = TemplateRenderer().render(bundle)
         assert "register: testimony" in text
 
     def test_llm_renderer_no_key_attribution(self, explainer_and_index):
         from mre.modules.renderers import LLMRenderer
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         renderer = LLMRenderer(api_key="")
         text = renderer.render(bundle)
         assert "[rendered by: template" in text
@@ -408,7 +409,7 @@ class TestRendererAttribution:
         """Fallback must not produce the same output as plain TemplateRenderer."""
         from mre.modules.renderers import LLMRenderer
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         template_text = TemplateRenderer().render(bundle)
         fallback_text = LLMRenderer(api_key="").render(bundle)
         assert template_text != fallback_text
@@ -418,20 +419,20 @@ class TestRendererAttribution:
         import sys
         from mre.modules.renderers import LLMRenderer
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         monkeypatch.setitem(sys.modules, "anthropic", None)
         renderer = LLMRenderer(api_key="sk-fake-key-for-test")
         text = renderer.render(bundle)
         assert "anthropic package not installed" in text
 
     def test_attribution_on_schedule_bundle(self, sched_exp):
-        bundle = sched_exp.answer("Show the schedule")
+        bundle = assemble(sched_exp, "schedule", "Show the schedule")
         text = TemplateRenderer().render(bundle)
         assert text.endswith("[rendered by: template | register: testimony]")
 
     def test_attribution_on_unsupported_bundle(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("How is the weather?")
+        bundle = assemble(exp, "unsupported", "How is the weather?")
         text = TemplateRenderer().render(bundle)
         assert text.endswith("[rendered by: template | register: testimony]")
 
@@ -498,33 +499,33 @@ def _make_index_no_late(tmp_path: Path) -> EvidenceIndex:
 class TestLateOrdersRoute:
     def test_routes_to_late_orders_without_wo(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Are there any late orders?")
+        bundle = assemble(exp, "late-orders", "Are there any late orders?")
         assert bundle.subject_type == "late_orders"
 
     def test_late_count_is_one(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Are there any late orders?")
+        bundle = assemble(exp, "late-orders", "Are there any late orders?")
         assert bundle.key_facts["late_count"] == 1
 
     def test_late_orders_list_contains_wo2001(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Are there any late orders?")
+        bundle = assemble(exp, "late-orders", "Are there any late orders?")
         assert any("WO-2001" in item for item in bundle.key_facts["late_orders"])
 
     def test_late_orders_list_contains_minutes(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Are there any late orders?")
+        bundle = assemble(exp, "late-orders", "Are there any late orders?")
         assert any("840" in item for item in bundle.key_facts["late_orders"])
 
     def test_renderer_shows_late_count(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Are there any late orders?")
+        bundle = assemble(exp, "late-orders", "Are there any late orders?")
         text = TemplateRenderer().render(bundle)
         assert "1 late order" in text
 
     def test_renderer_shows_wo_name(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Are there any late orders?")
+        bundle = assemble(exp, "late-orders", "Are there any late orders?")
         text = TemplateRenderer().render(bundle)
         assert "WO-2001" in text
 
@@ -532,27 +533,27 @@ class TestLateOrdersRoute:
         index = _make_index_no_late(tmp_path)
         store = FakeStore("snap-demo")
         exp = Explainer(snapshot_store=store, index=index, snapshot_id="snap-demo")
-        bundle = exp.answer("Are there any late orders?")
+        bundle = assemble(exp, "late-orders", "Are there any late orders?")
         assert bundle.key_facts["late_count"] == 0
 
     def test_renderer_no_late_orders_text(self, tmp_path):
         index = _make_index_no_late(tmp_path)
         store = FakeStore("snap-demo")
         exp = Explainer(snapshot_store=store, index=index, snapshot_id="snap-demo")
-        bundle = exp.answer("Are there any late orders?")
+        bundle = assemble(exp, "late-orders", "Are there any late orders?")
         text = TemplateRenderer().render(bundle)
         assert "No late orders" in text
 
     def test_delay_keyword_also_routes(self, explainer_and_index):
         """'delay' synonym should route the same way as 'late'."""
         exp, _ = explainer_and_index
-        bundle = exp.answer("Are there any delays?")
+        bundle = assemble(exp, "late-orders", "Are there any delays?")
         assert bundle.subject_type == "late_orders"
 
     def test_late_with_wo_still_routes_to_why_late(self, explainer_and_index):
         """'late' + specific WO must NOT fall into _list_late_orders."""
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         assert bundle.subject_type == "demand"
 
 
@@ -563,35 +564,35 @@ class TestLateOrdersRoute:
 class TestHonestFallback:
     def test_unroutable_returns_unsupported_type(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("How is the weather?")
+        bundle = assemble(exp, "unsupported", "How is the weather?")
         assert bundle.subject_type == "unsupported"
 
     def test_unroutable_not_findings_type(self, explainer_and_index):
         """Old silent reroute to data-problems must not happen."""
         exp, _ = explainer_and_index
-        bundle = exp.answer("What is the meaning of life?")
+        bundle = assemble(exp, "unsupported", "What is the meaning of life?")
         assert bundle.subject_type != "findings"
 
     def test_unsupported_renderer_shows_cant_answer(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("How is the weather?")
+        bundle = assemble(exp, "unsupported", "How is the weather?")
         text = TemplateRenderer().render(bundle)
         assert "can't answer" in text.lower() or "cannot answer" in text.lower()
 
     def test_unsupported_renderer_lists_supported_routes(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Random question nobody asked")
+        bundle = assemble(exp, "unsupported", "Random question nobody asked")
         text = TemplateRenderer().render(bundle)
         assert "Supported question types" in text or "Supported" in text
 
     def test_unsupported_bundle_carries_original_question(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Completely unrecognised input xyz")
+        bundle = assemble(exp, "unsupported", "Completely unrecognised input xyz")
         assert bundle.key_facts["parsed"] == "Completely unrecognised input xyz"
 
     def test_unsupported_supported_routes_nonempty(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Random question")
+        bundle = assemble(exp, "unsupported", "Random question")
         assert len(bundle.key_facts.get("supported_routes", [])) >= 1
 
 
@@ -674,56 +675,56 @@ def downtime_explainer(tmp_path):
 
 class TestDowntimeRoute:
     def test_routes_on_downtime_keyword(self, downtime_explainer):
-        bundle = downtime_explainer.answer("How much downtime does gear have?")
+        bundle = assemble(downtime_explainer, "downtime", "How much downtime does gear have?")
         assert bundle.subject_type == "downtime"
 
     def test_closure_keyword_also_routes(self, downtime_explainer):
-        bundle = downtime_explainer.answer("Show me closures for gear")
+        bundle = assemble(downtime_explainer, "downtime", "Show me closures for gear")
         assert bundle.subject_type == "downtime"
 
     def test_machine_name_lookup(self, downtime_explainer):
-        bundle = downtime_explainer.answer("How much downtime does M-GEAR-01 have?")
+        bundle = assemble(downtime_explainer, "downtime", "How much downtime does M-GEAR-01 have?")
         assert bundle.subject_type == "downtime"
         closures = bundle.key_facts["closures"]
         assert len(closures) == 1
         assert closures[0]["resource"] == "M-GEAR-01"
 
     def test_pool_name_lookup_finds_closure(self, downtime_explainer):
-        bundle = downtime_explainer.answer("How much downtime does gear have?")
+        bundle = assemble(downtime_explainer, "downtime", "How much downtime does gear have?")
         assert bundle.key_facts["total_hours"] > 0
 
     def test_closure_duration_approximately_24h(self, downtime_explainer):
-        bundle = downtime_explainer.answer("How much downtime does M-GEAR-01 have?")
+        bundle = assemble(downtime_explainer, "downtime", "How much downtime does M-GEAR-01 have?")
         closures = bundle.key_facts["closures"]
         assert abs(closures[0]["duration_hours"] - 24.0) < 0.1
 
     def test_closure_reason(self, downtime_explainer):
-        bundle = downtime_explainer.answer("How much downtime does M-GEAR-01 have?")
+        bundle = assemble(downtime_explainer, "downtime", "How much downtime does M-GEAR-01 have?")
         assert bundle.key_facts["closures"][0]["reason"] == "planned_maintenance"
 
     def test_closure_date(self, downtime_explainer):
-        bundle = downtime_explainer.answer("How much downtime does M-GEAR-01 have?")
+        bundle = assemble(downtime_explainer, "downtime", "How much downtime does M-GEAR-01 have?")
         assert bundle.key_facts["closures"][0]["date"] == "2026-07-13"
 
     def test_no_closures_for_casting(self, downtime_explainer):
-        bundle = downtime_explainer.answer("How much downtime does casting have?")
+        bundle = assemble(downtime_explainer, "downtime", "How much downtime does casting have?")
         assert bundle.key_facts["total_hours"] == 0.0
         assert bundle.key_facts["closures"] == []
 
     def test_renderer_shows_machine_name(self, downtime_explainer):
-        bundle = downtime_explainer.answer("How much downtime does M-GEAR-01 have?")
+        bundle = assemble(downtime_explainer, "downtime", "How much downtime does M-GEAR-01 have?")
         text = TemplateRenderer().render(bundle)
         assert "M-GEAR-01" in text
 
     def test_renderer_shows_duration(self, downtime_explainer):
-        bundle = downtime_explainer.answer("How much downtime does gear have?")
+        bundle = assemble(downtime_explainer, "downtime", "How much downtime does gear have?")
         text = TemplateRenderer().render(bundle)
         assert "24.0h" in text or "24h" in text
 
     def test_renderer_no_closures_text(self, downtime_explainer):
         # Session 4A.3-pre CU4 — corrected grammar: "No downtime is declared for
         # {subject}", never the ungrammatical "…closures found for all resources".
-        bundle = downtime_explainer.answer("How much downtime does casting have?")
+        bundle = assemble(downtime_explainer, "downtime", "How much downtime does casting have?")
         text = TemplateRenderer().render(bundle)
         assert "No downtime is declared" in text
         assert "for all resources" not in text
@@ -877,88 +878,88 @@ class TestScheduleQuery:
     # --- routing ---
 
     def test_routes_when_does_wo_start(self, sched_exp):
-        assert sched_exp.answer("When does WO-2001 start?").subject_type == "schedule"
+        assert assemble(sched_exp, "order-schedule", "When does WO-2001 start?", order="WO-2001").subject_type == "schedule"
 
     def test_routes_when_does_wo_finish(self, sched_exp):
-        assert sched_exp.answer("When does WO-2001 finish?").subject_type == "schedule"
+        assert assemble(sched_exp, "order-schedule", "When does WO-2001 finish?", order="WO-2001").subject_type == "schedule"
 
     def test_routes_running_on_machine(self, sched_exp):
-        assert sched_exp.answer("What is running on M-GEAR-02?").subject_type == "schedule"
+        assert assemble(sched_exp, "machine-schedule", "What is running on M-GEAR-02?", machine="M-GEAR-02").subject_type == "schedule"
 
     def test_routes_next_on_machine(self, sched_exp):
-        assert sched_exp.answer("What's next on M-CAST-01?").subject_type == "schedule"
+        assert assemble(sched_exp, "machine-schedule", "What's next on M-CAST-01?", machine="M-CAST-01").subject_type == "schedule"
 
     def test_routes_show_schedule(self, sched_exp):
-        assert sched_exp.answer("Show the schedule").subject_type == "schedule"
+        assert assemble(sched_exp, "schedule", "Show the schedule").subject_type == "schedule"
 
     def test_routes_full_schedule(self, sched_exp):
-        assert sched_exp.answer("Full schedule").subject_type == "schedule"
+        assert assemble(sched_exp, "schedule", "Full schedule").subject_type == "schedule"
 
     def test_routes_schedule_for_wo(self, sched_exp):
-        assert sched_exp.answer("Schedule for WO-3001").subject_type == "schedule"
+        assert assemble(sched_exp, "order-schedule", "Schedule for WO-3001", order="WO-3001").subject_type == "schedule"
 
     def test_routes_schedule_for_customer(self, sched_exp):
-        assert sched_exp.answer("Schedule for customer CUST-ACME").subject_type == "schedule"
+        assert assemble(sched_exp, "customer-schedule", "Schedule for customer CUST-ACME").subject_type == "schedule"
 
     # --- WO filter ---
 
     def test_wo_filter_returns_only_matching_ops(self, sched_exp):
-        bundle = sched_exp.answer("When does WO-2001 start?")
+        bundle = assemble(sched_exp, "order-schedule", "When does WO-2001 start?", order="WO-2001")
         rows = bundle.key_facts["rows"]
         assert all("WO-2001" in r["work_orders"] for r in rows)
 
     def test_wo_filter_excludes_other_machines(self, sched_exp):
-        bundle = sched_exp.answer("When does WO-3001 start?")
+        bundle = assemble(sched_exp, "order-schedule", "When does WO-3001 start?", order="WO-3001")
         rows = bundle.key_facts["rows"]
         assert all(r["machine"] == "M-CAST-01" for r in rows)
 
     # --- batched WP ---
 
     def test_batched_wp_shows_both_wo_names(self, sched_exp):
-        bundle = sched_exp.answer("When does WO-2001 start?")
+        bundle = assemble(sched_exp, "order-schedule", "When does WO-2001 start?", order="WO-2001")
         rows = bundle.key_facts["rows"]
         assert len(rows) == 1
         assert "WO-2001" in rows[0]["work_orders"]
         assert "WO-2002" in rows[0]["work_orders"]
 
     def test_batched_wp_contains_plus_separator(self, sched_exp):
-        bundle = sched_exp.answer("When does WO-2001 start?")
+        bundle = assemble(sched_exp, "order-schedule", "When does WO-2001 start?", order="WO-2001")
         assert "+" in bundle.key_facts["rows"][0]["work_orders"]
 
     # --- machine filter ---
 
     def test_machine_filter_returns_only_that_machine(self, sched_exp):
-        bundle = sched_exp.answer("What is running on M-CAST-01?")
+        bundle = assemble(sched_exp, "machine-schedule", "What is running on M-CAST-01?", machine="M-CAST-01")
         rows = bundle.key_facts["rows"]
         assert rows
         assert all(r["machine"] == "M-CAST-01" for r in rows)
 
     def test_machine_filter_count(self, sched_exp):
-        bundle = sched_exp.answer("What is running on M-GEAR-02?")
+        bundle = assemble(sched_exp, "machine-schedule", "What is running on M-GEAR-02?", machine="M-GEAR-02")
         assert bundle.key_facts["total_rows"] == 1
 
     # --- date filter ---
 
     def test_date_filter_within_window(self, sched_exp):
-        bundle = sched_exp.answer("What is running on M-CAST-01 on 2026-07-28?")
+        bundle = assemble(sched_exp, "machine-schedule", "What is running on M-CAST-01 on 2026-07-28?", machine="M-CAST-01")
         rows = bundle.key_facts["rows"]
         assert len(rows) == 1
         assert "WO-3001" in rows[0]["work_orders"]
 
     def test_date_filter_empty(self, sched_exp):
-        bundle = sched_exp.answer("What is running on M-CAST-01 on 2026-07-15?")
+        bundle = assemble(sched_exp, "machine-schedule", "What is running on M-CAST-01 on 2026-07-15?", machine="M-CAST-01")
         assert bundle.key_facts["total_rows"] == 0
 
     # --- limit (next N) ---
 
     def test_next_applies_limit(self, sched_exp):
-        bundle = sched_exp.answer("What's next on M-CAST-01?")
+        bundle = assemble(sched_exp, "machine-schedule", "What's next on M-CAST-01?", machine="M-CAST-01")
         assert bundle.key_facts["total_rows"] <= 5
 
     # --- customer filter ---
 
     def test_customer_filter_returns_only_customer_ops(self, sched_exp):
-        bundle = sched_exp.answer("Schedule for customer CUST-ACME")
+        bundle = assemble(sched_exp, "customer-schedule", "Schedule for customer CUST-ACME")
         rows = bundle.key_facts["rows"]
         assert len(rows) == 1
         assert "WO-CUST-01" in rows[0]["work_orders"]
@@ -966,67 +967,67 @@ class TestScheduleQuery:
     # --- lateness in rows ---
 
     def test_late_wo_has_positive_lateness(self, sched_exp):
-        bundle = sched_exp.answer("When does WO-2001 start?")
+        bundle = assemble(sched_exp, "order-schedule", "When does WO-2001 start?", order="WO-2001")
         rows = bundle.key_facts["rows"]
         assert rows[0]["lateness_minutes"] > 0
 
     def test_early_wo_has_negative_lateness(self, sched_exp):
-        bundle = sched_exp.answer("When does WO-3001 start?")
+        bundle = assemble(sched_exp, "order-schedule", "When does WO-3001 start?", order="WO-3001")
         rows = bundle.key_facts["rows"]
         assert rows[0]["lateness_minutes"] < 0
 
     # --- empty result ---
 
     def test_empty_result_not_error(self, sched_exp):
-        bundle = sched_exp.answer("What is running on M-CAST-01 on 2026-07-15?")
+        bundle = assemble(sched_exp, "machine-schedule", "What is running on M-CAST-01 on 2026-07-15?", machine="M-CAST-01")
         assert "error" not in bundle.key_facts
         assert bundle.key_facts["empty_message"]
 
     def test_empty_result_subject_type_is_schedule(self, sched_exp):
-        bundle = sched_exp.answer("What is running on M-CAST-01 on 2026-07-15?")
+        bundle = assemble(sched_exp, "machine-schedule", "What is running on M-CAST-01 on 2026-07-15?", machine="M-CAST-01")
         assert bundle.subject_type == "schedule"
 
     # --- full schedule ---
 
     def test_full_schedule_all_ops(self, sched_exp):
-        bundle = sched_exp.answer("Show the schedule")
+        bundle = assemble(sched_exp, "schedule", "Show the schedule")
         assert bundle.key_facts["total_rows"] == 3
 
     # --- renderer ---
 
     def test_renderer_groups_by_machine(self, sched_exp):
-        bundle = sched_exp.answer("Show the schedule")
+        bundle = assemble(sched_exp, "schedule", "Show the schedule")
         text = TemplateRenderer().render(bundle)
         assert "[M-CAST-01]" in text
         assert "[M-GEAR-02]" in text
 
     def test_renderer_shows_wo_name(self, sched_exp):
-        bundle = sched_exp.answer("When does WO-2001 start?")
+        bundle = assemble(sched_exp, "order-schedule", "When does WO-2001 start?", order="WO-2001")
         text = TemplateRenderer().render(bundle)
         assert "WO-2001" in text
 
     def test_renderer_shows_both_wo_names_for_merged_wp(self, sched_exp):
-        bundle = sched_exp.answer("When does WO-2001 start?")
+        bundle = assemble(sched_exp, "order-schedule", "When does WO-2001 start?", order="WO-2001")
         text = TemplateRenderer().render(bundle)
         assert "WO-2002" in text
 
     def test_renderer_shows_seq_number(self, sched_exp):
-        bundle = sched_exp.answer("When does WO-2001 start?")
+        bundle = assemble(sched_exp, "order-schedule", "When does WO-2001 start?", order="WO-2001")
         text = TemplateRenderer().render(bundle)
         assert "seq=" in text
 
     def test_renderer_shows_late_marker(self, sched_exp):
-        bundle = sched_exp.answer("When does WO-2001 start?")
+        bundle = assemble(sched_exp, "order-schedule", "When does WO-2001 start?", order="WO-2001")
         text = TemplateRenderer().render(bundle)
         assert "LATE" in text
 
     def test_renderer_empty_shows_nothing_scheduled(self, sched_exp):
-        bundle = sched_exp.answer("What is running on M-CAST-01 on 2026-07-15?")
+        bundle = assemble(sched_exp, "machine-schedule", "What is running on M-CAST-01 on 2026-07-15?", machine="M-CAST-01")
         text = TemplateRenderer().render(bundle)
         assert "Nothing scheduled" in text
 
     def test_renderer_no_uuids(self, sched_exp):
-        bundle = sched_exp.answer("Show the schedule")
+        bundle = assemble(sched_exp, "schedule", "Show the schedule")
         text = TemplateRenderer().render(bundle)
         assert _SQ_RES_GEAR not in text
         assert _SQ_DEM_2001 not in text
@@ -1128,7 +1129,13 @@ class TestDialogueMode:
         h = SessionHistory()
         # Add a prior judgment turn to history
         h.append(Turn(question="What do you think?", bundle=None, rendered="My take: x\n[rendered by: LLM | register: judgment]"))
-        rendered, bundle = _render_repl_turn(exp, "Why is WO-2001 late?", False, h)
+        # Session 4A.5a: the REPL routes through the parse layer like every other
+        # caller, so the turn supplies the parse it assumes (R-AI5(2) leaves no
+        # keyword fallback for an offline REPL to reach for).
+        parser = ScriptedParser({"why is wo-2001 late?":
+                                 parsed("", Intent.LATE_ORDER, orders=("WO-2001",))})
+        rendered, bundle = _render_repl_turn(exp, "Why is WO-2001 late?", False, h,
+                                             parser=parser)
         assert "register: testimony" in rendered
         assert bundle is not None
         assert bundle.subject_type == "demand"
@@ -1165,7 +1172,7 @@ class TestDialogueMode:
         fake = FakeLLMClient("My take: WO-2001 is late because the gear machine was blocked.")
         h = SessionHistory()
         # Seed history with one routed turn
-        prior_bundle = exp.answer("Why is WO-2001 late?")
+        prior_bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         h.append(Turn(
             question="Why is WO-2001 late?",
             bundle=prior_bundle,
@@ -1198,11 +1205,11 @@ class TestDialogueMode:
 
         fake = FakeLLMClient("My take: short answer.")
         renderer = LLMRenderer(_client=fake)
-        prior_bundle = exp.answer("Why is WO-2001 late?")
+        prior_bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         h = SessionHistory()
         h.append(Turn(question="Why is WO-2001 late?", bundle=prior_bundle, rendered="..."))
 
-        fallback_bundle = exp.answer("Some unknown question xyz")
+        fallback_bundle = assemble(exp, "unsupported", "Some unknown question xyz")
         text = renderer.render_judgment("Some unknown question xyz", h, fallback_bundle)
         assert "register: judgment" in text
         assert "register: testimony" not in text
@@ -1213,10 +1220,10 @@ class TestDialogueMode:
         from mre.ask import SessionHistory, Turn
         fake = FakeLLMClient("My take: the root cause is the maintenance closure on 2026-07-13.")
         renderer = LLMRenderer(_client=fake)
-        prior_bundle = exp.answer("Why is WO-2001 late?")
+        prior_bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         h = SessionHistory()
         h.append(Turn(question="q", bundle=prior_bundle, rendered="..."))
-        fallback_bundle = exp.answer("Something unrouted")
+        fallback_bundle = assemble(exp, "unsupported", "Something unrouted")
         text = renderer.render_judgment("Something unrouted", h, fallback_bundle)
         assert "maintenance closure" in text
 
@@ -1225,10 +1232,10 @@ class TestDialogueMode:
         from mre.ask import SessionHistory, Turn
         exp, _ = explainer_and_index
         renderer = LLMRenderer(api_key="")  # no key → unavailable
-        prior_bundle = exp.answer("Why is WO-2001 late?")
+        prior_bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         h = SessionHistory()
         h.append(Turn(question="q", bundle=prior_bundle, rendered="..."))
-        fallback_bundle = exp.answer("How is the weather?")
+        fallback_bundle = assemble(exp, "unsupported", "How is the weather?")
         text = renderer.render_judgment("How is the weather?", h, fallback_bundle)
         assert "register: testimony" in text
         assert "register: judgment" not in text
@@ -1240,10 +1247,10 @@ class TestDialogueMode:
         exp, _ = explainer_and_index
         fake = FakeLLMClient("My take: ok.")
         renderer = LLMRenderer(_client=fake)
-        prior_bundle = exp.answer("Why is WO-2001 late?")
+        prior_bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         h = SessionHistory()
         h.append(Turn(question="Why is WO-2001 late?", bundle=prior_bundle, rendered="..."))
-        fallback_bundle = exp.answer("Some unrouted question")
+        fallback_bundle = assemble(exp, "unsupported", "Some unrouted question")
         renderer.render_judgment("Some unrouted question", h, fallback_bundle)
         # The prompt sent to the LLM must include prior key facts
         assert fake.calls
@@ -1324,7 +1331,7 @@ class TestLLMTestimonyValidation:
 
     def test_explain_why_late_has_completion_iso(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         # FakeSnapshotReader has no epoch metric → None is acceptable
         # but if the real snapshot is used (integration fixture), it must be non-None.
         # Here we just assert the key is present.
@@ -1332,7 +1339,7 @@ class TestLLMTestimonyValidation:
 
     def test_explain_why_late_has_lateness_hours(self, explainer_and_index):
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         assert "lateness_hours" in bundle.key_facts
         lh = bundle.key_facts["lateness_hours"]
         if lh is not None:
@@ -1549,7 +1556,7 @@ class TestLLMTestimonyValidation:
         """Full render must pass validation when LLM uses legitimate timestamp variants."""
         from mre.modules.renderers import LLMRenderer
         exp, _ = explainer_and_index
-        bundle = exp.answer("Why is WO-2001 late?")
+        bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         # Response uses 'YYYY-MM-DDTHH:MM' (no seconds, no Z) for due date
         # and '840 min (14.0h)' for lateness — both legitimate forms
         good_response = (

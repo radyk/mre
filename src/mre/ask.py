@@ -118,8 +118,18 @@ def _load(out_dir: Path, snapshot_id: str):
     return explainer, store
 
 
-def _assemble_bundle(explainer: Any, question: str) -> Any:
-    """Route a question to the right bundle assembler."""
+def _assemble_bundle(explainer: Any, question: str, context: Any = None,
+                     parser: Any = None) -> Any:
+    """Assemble the bundle for a question through the R-AI5 ask path.
+
+    ``summarize`` and the ``diff <a> <b>`` REPL commands are literal COMMANDS, not
+    planner questions, and are dispatched directly. Everything else goes through
+    parse -> dispatch; with no ANTHROPIC_API_KEY the parser is unavailable and the
+    REPL says so honestly (R-AI5(2) leaves no keyword fallback)."""
+    import os
+    from mre.modules.interpreter import run_ask
+    from mre.modules.question_parser import QuestionParser
+
     q = question.strip()
     if q.lower() == "summarize":
         return explainer.summarize_run()
@@ -127,16 +137,21 @@ def _assemble_bundle(explainer: Any, question: str) -> Any:
         rest = q.split(None, 1)[1] if " " in q else ""
         parts = rest.split()
         if len(parts) >= 2:
-            return explainer.answer(f"What changed since {parts[0]} vs {parts[1]}?")
-        return explainer.answer(q)
-    return explainer.answer(q)
+            return explainer.route(
+                "version-diff",
+                {"question": f"What changed since {parts[0]} vs {parts[1]}?"})
+        return explainer.route("version-diff", {"question": q})
+    if parser is None and os.environ.get("ANTHROPIC_API_KEY"):
+        parser = QuestionParser()
+    return run_ask(explainer, q, context=context, parser=parser).bundle
 
 
-def _render(explainer: Any, question: str, use_llm: bool) -> str:
+def _render(explainer: Any, question: str, use_llm: bool,
+            parser: Optional[Any] = None) -> str:
     """One-shot render — no history, no judgment path."""
     from mre.modules.renderers import LLMRenderer, TemplateRenderer
 
-    bundle = _assemble_bundle(explainer, question)
+    bundle = _assemble_bundle(explainer, question, parser=parser)
     renderer = LLMRenderer() if use_llm else TemplateRenderer()
     return renderer.render(bundle)
 
@@ -198,6 +213,7 @@ def _render_repl_turn(
     use_llm: bool,
     history: SessionHistory,
     scenario_runner: Optional[Any] = None,
+    parser: Optional[Any] = None,
 ) -> tuple[str, Optional[Any]]:
     """REPL render — may invoke judgment or scenario path.
 
@@ -221,7 +237,7 @@ def _render_repl_turn(
                 error_text = f"[scenario error] {exc}"
                 return error_text, None
 
-    bundle = _assemble_bundle(explainer, question)
+    bundle = _assemble_bundle(explainer, question, parser=parser)
 
     if bundle.subject_type == "unsupported" and not history.is_empty() and use_llm:
         rendered = LLMRenderer().render_judgment(question, history, bundle)

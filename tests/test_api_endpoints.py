@@ -295,6 +295,21 @@ class TestScheduleInteraction:
 # Ask
 # ---------------------------------------------------------------------------
 
+def _script_the_parse(monkeypatch, table):
+    """Make the ask ENDPOINT use a scripted parse layer (Session 4A.5a).
+
+    The ask path is LLM-first (R-AI5(1)) and has no keyword fallback, so an
+    offline HTTP test must supply the parse the same way it supplies a fixture
+    schedule. Everything the test is actually about — the endpoint, the dispatch,
+    the assembler, the response shape — stays real."""
+    from tests.parse_doubles import ScriptedParser
+    parser = ScriptedParser(table)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-never-used")
+    monkeypatch.setattr("mre.modules.question_parser.QuestionParser",
+                        lambda *a, **k: parser)
+    return parser
+
+
 class TestAsk:
     def test_ask_routes_through_the_explainer(self, api):
         data = _data(api.client.post(
@@ -304,31 +319,38 @@ class TestAsk:
         assert data["answer"].strip()
         assert data["bundle"]["snapshot_id"]
 
-    def test_ask_why_late_names_a_work_order(self, api):
+    def test_ask_why_late_names_a_work_order(self, api, monkeypatch):
+        from tests.parse_doubles import Intent, parsed
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
         wo = doc["service_outcomes"][0]["work_order"]
+        q = f"Why is {wo} late?"
+        _script_the_parse(monkeypatch, {
+            q: parsed("", Intent.LATE_ORDER, orders=(wo,))})
         data = _data(api.client.post(
-            f"/schedules/{api.schedule_id}/ask",
-            json={"question": f"Why is {wo} late?"},
-        ))
+            f"/schedules/{api.schedule_id}/ask", json={"question": q}))
         assert data["answer"].strip()
+        assert data["bundle"]["route"] == "late-order"
+        assert data["bundle"]["source"] == "parse"
+        assert data["bundle"]["parse"]["intent"] == "late-order"
 
     def test_ask_unknown_schedule_404(self, api):
         _error(api.client.post("/schedules/nope/ask",
                                json={"question": "summarize"}), 404)
 
-    def test_ask_surfaces_register_and_cited_refs(self, api):
+    def test_ask_surfaces_register_and_cited_refs(self, api, monkeypatch):
         """The cockpit (CU4) needs, structurally: the register (to style the
         answer card — never blend) and the cited entity refs (to highlight the
         corresponding bars/lanes). Both are surfaced from the bundle the
         explainer already produced — no new answer path."""
+        from tests.parse_doubles import Intent, parsed
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
         a = doc["assignments"][0]
         wo, res = a["work_orders"][0], a["external_name"]
+        q = f"why is {wo} on {res}?"
+        _script_the_parse(monkeypatch, {
+            q: parsed("", Intent.WHY_ON_MACHINE, orders=(wo,), machines=(res,))})
         data = _data(api.client.post(
-            f"/schedules/{api.schedule_id}/ask",
-            json={"question": f"why is {wo} on {res}?"},
-        ))
+            f"/schedules/{api.schedule_id}/ask", json={"question": q}))
         bundle = data["bundle"]
         assert bundle["register"] in ("testimony", "judgment")
         refs = bundle["cited_refs"]

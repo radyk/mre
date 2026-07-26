@@ -33,6 +33,10 @@ from mre.modules.planner_language import (
 )
 from mre.modules.renderers import TemplateRenderer
 from mre.modules.snapshot_store import SnapshotStore
+from tests.parse_doubles import (
+    ClarifyReason, FollowupKind, Intent, Polarity, ScriptedParser, SubjectKind,
+    assemble, parsed,
+)
 
 DATASET = Path(__file__).resolve().parents[1] / "datasets" / "glass_box"
 
@@ -155,56 +159,82 @@ class TestCapabilitiesRegistry:
 
 
 class TestSelectionPriority:
-    """CU3 (Session 4A.3) — a live board selection wins over stale conversation."""
+    """CU3 (Session 4A.3) — a live board selection wins over stale conversation.
+
+    Re-pointed at the parse layer (Session 4A.5a): the deictic REGEXES that used to
+    decide "is this a demonstrative, and of what type" are retired — the parse says
+    which subjects the planner pointed at and of what type. What survives, and is
+    still deterministic and still ours, is the BINDING PRIORITY."""
+
+    def _bind(self, kind, context):
+        from mre.modules.question_parser import bind_subjects
+        subs = bind_subjects(None, [{"kind": kind, "raw": "that one",
+                                     "from_context": True}], context)
+        return subs[0].ref, subs[0].source.value
 
     def test_typed_subject_prefers_selection_over_history(self):
-        from mre.modules.interpreter import _typed_subject_with_source
-        history = [{"order": "ORD-99", "route": "late-order"}]     # stale
-        selection = {"order": "ORD-05"}                             # live
-        ref, src = _typed_subject_with_source(history, selection, "order")
+        ref, src = self._bind("order", {
+            "history": [{"order": "ORD-99", "route": "late-order"}],   # stale
+            "selection": {"order": "ORD-05"}})                          # live
         assert ref == "ORD-05" and src == "selection"
 
+    def test_typed_subject_prefers_the_last_answer_over_history(self):
+        ref, src = self._bind("order", {
+            "history": [{"order": "ORD-99"}],
+            "last_answered_subject": {"order": "ORD-05"}})
+        assert ref == "ORD-05" and src == "last-answer"
+
     def test_typed_subject_falls_back_to_history_without_selection(self):
-        from mre.modules.interpreter import _typed_subject_with_source
-        ref, src = _typed_subject_with_source(
-            [{"machine": "CUT-01"}], {}, "machine")
+        ref, src = self._bind("machine", {"history": [{"machine": "CUT-01"}]})
         assert ref == "CUT-01" and src == "history"
 
-    def test_demonstrative_deictic_excludes_the_definite_article(self):
-        from mre.modules.interpreter import _demonstrative_deictic
-        assert _demonstrative_deictic("whats the end time of this order") == "order"
-        assert _demonstrative_deictic("why is that machine idle") == "machine"
-        # "the order of operations" is not a deixis
-        assert _demonstrative_deictic("what is the order of operations") is None
+    def test_binding_is_typed_never_cross_type(self):
+        # "that machine" with only an ORDER live binds to nothing — the founder's
+        # confident-wrong bug, now impossible by construction.
+        ref, _src = self._bind("machine", {"selection": {"order": "ORD-05"}})
+        assert ref is None
 
 
 @pytest.mark.slow
-class TestSwapMoveClassify:
-    """CU1/CU2 (Session 4A.3) — swap/move + absence classification (against the
-    clean glass_box solve, so the order/machine refs resolve)."""
+class TestSwapMoveDispatch:
+    """CU1/CU2 (Session 4A.3) — the swap/move bridge + the absence pair, re-pointed
+    at the parse layer (Session 4A.5a). The marker tables that used to decide these
+    routes are retired; what is pinned here is that the parse's typed subjects reach
+    the right assembler with the right parameters, against the clean glass_box solve
+    (so the refs really resolve)."""
 
-    def test_swap_two_orders_routes_to_swap_move(self, clean):
-        rid, params = clean.classify("why not just swap ORD-04 and ORD-05")
-        assert rid == "swap-move" and params["kind"] == "swap"
-        assert {params["order_a"], params["order_b"]} == {"ORD-04", "ORD-05"}
+    def test_swap_two_orders_reaches_the_bridge_with_both(self, clean):
+        res, a = _ask(clean, "why not just swap ORD-04 and ORD-05")
+        assert res.route == "swap-move"
+        assert "ORD-04" in a and "ORD-05" in a
 
-    def test_move_one_order_routes_to_swap_move(self, clean):
-        rid, params = clean.classify("move ORD-05 earlier")
-        assert rid == "swap-move" and params["kind"] == "move"
+    def test_move_one_order_reaches_the_bridge_as_a_move(self, clean):
+        res, a = _ask(clean, "move ORD-05 earlier")
+        assert res.route == "swap-move"
+        assert res.bundle.key_facts.get("kind") == "move"
+
+    def test_swap_vs_move_is_a_route_internal_parameter_read(self):
+        # The one marker table that SURVIVES the classifier's retirement: by the
+        # time it runs, the intent is already swap-move; it only picks the framing.
+        from mre.modules.explainer import _swap_move_kind
+        assert _swap_move_kind("why not just swap ORD-04 and ORD-05") == "swap"
+        assert _swap_move_kind("move ORD-05 earlier") == "move"
+        assert _swap_move_kind("what about ORD-05 and ORD-04") == "swap"   # default
 
     def test_gap_between_two_orders_routes(self, clean):
-        rid, params = clean.classify("why is there a gap between ORD-09 and ORD-02")
-        assert rid == "gap-between"
+        res, _a = _ask(clean, "why is there a gap between ORD-09 and ORD-02")
+        assert res.route == "gap-between"
 
     def test_machine_idle_routes(self, clean):
-        rid, _ = clean.classify("why is CUT-01 idle")
-        assert rid == "machine-idle"
+        res, _a = _ask(clean, "why is CUT-01 not being used")
+        assert res.route == "machine-idle"
 
     def test_move_it_with_no_order_does_not_fire(self, clean):
-        # a bare "it" (no resolved order) must NOT become swap-move — it stays the
-        # honest non-self-diff refusal (the 4B.4 move-it specimen, un-regressed).
-        rid, _ = clean.classify("can we move it to a different machine")
-        assert rid != "swap-move"
+        # a bare "it" (nothing live to bind) must NOT become swap-move — the
+        # planner pointed at nothing, so the honest answer is to ask.
+        res, a = _ask(clean, "can we move it to a different machine")
+        assert res.route != "swap-move"
+        assert "no differences found" not in a.lower()   # never a nonsense self-diff
 
     def test_solve5_natural_language_order_numbers_resolve_and_swap(self, clean):
         # Session 4A.3c CU4 — the 4A.3b KNOWN GAP FLIPPED. The founder's live
@@ -236,14 +266,14 @@ class TestSwapMoveClassify:
 
 
 class TestHypothesisAndPolarity:
-    """CU5 (hypothesis content) + CU3 (start-reason polarity) — pure logic."""
+    """CU5 (hypothesis content) + CU3 (start-reason polarity).
 
-    def test_hypothesis_needs_a_marker_and_an_outcome(self):
-        from mre.modules.explainer import _is_hypothesis
-        assert _is_hypothesis("maybe if splitting is allowed less orders would be late")
-        assert _is_hypothesis("overtime would probably help with the late ones")
-        assert not _is_hypothesis("how many machines")
-        assert not _is_hypothesis("the order is late")   # a fact, not a hypothesis
+    The hypothesis DETECTOR is gone with the classifier (Session 4A.5a): "maybe if
+    splitting were allowed fewer orders would be late" is advice CONTENT wearing a
+    declarative shape, and recognizing that is the parse layer's job, not a marker
+    table's. The live specimens for it are in the corpus below and in the sweep.
+    What remains here is the start-reason polarity read, which is route-internal —
+    the fallback for a call that carries no parsed polarity."""
 
     def test_why_early_excludes_the_comparative(self):
         from mre.modules.explainer import _is_why_early
@@ -449,9 +479,144 @@ def earliness_forcing(tmp_path_factory):
     return _explainer_for(out, "snap-ef")
 
 
+# ===========================================================================
+# The corpus parse table (Session 4A.5a, R-AI5)
+# ===========================================================================
+#
+# The ask path is LLM-first: the deterministic classifier that used to turn each of
+# these phrasings into a route is retired (R-AI5(2)), and there is no fallback to
+# reach for. So the corpus supplies the PARSE each specimen assumes — question in,
+# intent + typed subjects + linkage out — and keeps asserting what it always
+# asserted: the ANSWER. That split is the honest one:
+#
+#   * whether the ANSWER is right for a given parse is pinned HERE, forever, on a
+#     real Glass Box solve — which is what this corpus has always been for;
+#   * whether a LIVE model produces this parse for this phrasing is measured by the
+#     exam sweep against the pinned world (R-AI4(2)) — the founder's exam register,
+#     not a unit test's.
+#
+# Each row states what a competent parse of that sentence looks like. A row that
+# turns out to be wrong about the live model is a sweep finding, not a silent pass.
+
+_P = SubjectKind
+
+CORPUS_PARSE: dict = {
+    # -- entity lookups ------------------------------------------------------
+    "what product is ord-01": parsed("", Intent.ORDER_ATTRIBUTES, orders=("ord-01",)),
+    "what customer is ord-04": parsed("", Intent.ORDER_ATTRIBUTES, orders=("ORD-04",)),
+    "what customer is ord-13": parsed("", Intent.ORDER_ATTRIBUTES, orders=("ORD-13",)),
+    "is ord-01 late": parsed("", Intent.LATE_ORDER, orders=("ord-01",)),
+    "when does ord-13 finish": parsed("", Intent.ORDER_SCHEDULE, orders=("ORD-13",)),
+    "when does ord-03 finish": parsed("", Intent.ORDER_SCHEDULE, orders=("ORD-03",)),
+    "order 5": parsed("", Intent.ORDER_SCHEDULE, orders=("order 5",)),
+    "show me the schedule": parsed("", Intent.SCHEDULE),
+    # -- lateness ------------------------------------------------------------
+    "why is ord-05 late": parsed("", Intent.LATE_ORDER, orders=("ORD-05",)),
+    "why is order 15 late": parsed("", Intent.LATE_ORDER, orders=("order 15",)),
+    "why is ord-99 late": parsed("", Intent.LATE_ORDER, orders=("ORD-99",)),
+    "why ir ord-o5 late": parsed("", Intent.LATE_ORDER, orders=("ord-o5",)),
+    "why is ord-5 late": parsed("", Intent.LATE_ORDER, orders=("ORD-5",)),
+    "why is ord 05 late": parsed("", Intent.LATE_ORDER, orders=("ord 05",)),
+    "are there any late orders": parsed("", Intent.LATE_ORDERS),
+    "but why?": parsed("", Intent.LATE_ORDER, pointed=(_P.ORDER,),
+                       followup_of=FollowupKind.DEEPEN),
+    "why is this order late": parsed("", Intent.LATE_ORDER,
+                                     pointed_words=((_P.ORDER, "this order"),)),
+    # -- placement / start reason -------------------------------------------
+    "why is ord-06 on press-slow": parsed("", Intent.WHY_ON_MACHINE,
+                                          orders=("ORD-06",), machines=("PRESS-SLOW",)),
+    "why is this on cut-01": parsed("", Intent.WHY_ON_MACHINE,
+                                    machines=("CUT-01",),
+                                    pointed_words=((_P.ORDER, "this"),)),
+    "why does ord-10 start on friday?": parsed("", Intent.START_REASON,
+                                               orders=("ORD-10",),
+                                               polarity=Polarity.POSITIVE),
+    "why is ord-13 starting so early? it's not due until next week": parsed(
+        "", Intent.START_REASON, orders=("ORD-13",), polarity=Polarity.POSITIVE),
+    "why can't ord-05 start sooner": parsed("", Intent.START_REASON,
+                                            orders=("ORD-05",),
+                                            polarity=Polarity.NEGATIVE),
+    "but why cant we start it earlier": parsed(
+        "", Intent.START_REASON, pointed=(_P.ORDER,), polarity=Polarity.NEGATIVE,
+        followup_of=FollowupKind.DEEPEN),
+    "whats the end time of this order": parsed(
+        "", Intent.ORDER_SCHEDULE, pointed_words=((_P.ORDER, "this order"),)),
+    # -- the board bridge ----------------------------------------------------
+    "why not just swap ord-04 and ord-05": parsed("", Intent.SWAP_MOVE,
+                                                  orders=("ORD-04", "ORD-05")),
+    "why not just swap order 5 and order 4": parsed("", Intent.SWAP_MOVE,
+                                                    orders=("order 5", "order 4")),
+    "move ord-05 earlier": parsed("", Intent.SWAP_MOVE, orders=("ORD-05",)),
+    "can we move it to a different machine": parsed(
+        "", Intent.SWAP_MOVE, pointed=(_P.ORDER,), nearest=(Intent.MACHINE_SCHEDULE,)),
+    "why is there a gap between ord-09 and ord-02": parsed(
+        "", Intent.GAP_BETWEEN, orders=("ORD-09", "ORD-02")),
+    "why is there a gap between ord-09 and ord-12": parsed(
+        "", Intent.GAP_BETWEEN, orders=("ORD-09", "ORD-12")),
+    "why is there slack between ord-04 and ord-05": parsed(
+        "", Intent.GAP_BETWEEN, orders=("ORD-04", "ORD-05")),
+    "why is cut-01 not being used": parsed("", Intent.MACHINE_IDLE,
+                                           machines=("CUT-01",),
+                                           polarity=Polarity.NEGATIVE),
+    "why are there no jobs on that machine": parsed(
+        "", Intent.MACHINE_IDLE, pointed_words=((_P.MACHINE, "that machine"),),
+        polarity=Polarity.NEGATIVE),
+    # -- counts, integrity, meta reads --------------------------------------
+    "how many jobs in total": parsed("", Intent.INVENTORY),
+    "are there any split jobs": parsed("", Intent.INVENTORY),
+    "it looks like ord-04 and ord-06 are running on the same machine at the same "
+    "time mon 5": parsed("", Intent.INTEGRITY_CHECK, orders=("ORD-04", "ORD-06")),
+    "how long did this schedule take to solve": parsed("", Intent.SOLVE_TIME),
+    "how many machines": parsed("", Intent.MACHINE_COUNT),
+    "does this schedule use workcenters": parsed("", Intent.MACHINE_COUNT),
+    "is there any maintenance scheduled": parsed("", Intent.MAINTENANCE),
+    "how much downtime does the plant have": parsed("", Intent.DOWNTIME),
+    "what should i worry about today": parsed("", Intent.BRIEFING),
+    "tell me more about finding 1": parsed("", Intent.DRILL_DOWN),
+    # -- the certificate register -------------------------------------------
+    "what data problems exist?": parsed("", Intent.DATA_PROBLEMS),
+    "what should i fix first?": parsed("", Intent.TRIAGE),
+    "how do i fix the problems": parsed("", Intent.REMEDIATION),
+    # -- advice / coaching / hypotheses -------------------------------------
+    "what should i do so those orders are not late": parsed("", Intent.ADVICE),
+    "would you recommend overtime so i have less late jobs": parsed("", Intent.ADVICE),
+    "but what should i do so those orders are not late": parsed("", Intent.ADVICE),
+    "if i open up hours what machines should i run": parsed("", Intent.ADVICE),
+    "please explain how i can avoid late orders": parsed("", Intent.ADVICE),
+    "i want orders to span downtime. how can this be done": parsed(
+        "", Intent.COACHING, concepts=("span downtime",)),
+    "how do i configure the thingamajig": parsed("", Intent.COACHING),
+    "maybe if splitting is allowed less orders would be late": parsed(
+        "", Intent.COACHING, concepts=("splitting",)),
+    "overtime would probably help with the late ones": parsed(
+        "", Intent.COACHING, concepts=("overtime",)),
+    "please explain wip": parsed("", Intent.COACHING, concepts=("wip",)),
+    "can i use overtime to help": parsed("", Intent.COACHING, concepts=("overtime",)),
+    "what about wip": parsed("", Intent.COACHING, concepts=("wip",),
+                             followup_of=FollowupKind.MENU_SELECT),
+    # -- contest, correction, expansion, clarify ----------------------------
+    "isn't ord-05 on time": parsed("", Intent.CONTESTED_FACT, orders=("ORD-05",)),
+    "no i meant ord-05": parsed("", Intent.LATE_ORDER, orders=("ORD-05",),
+                                followup_of=FollowupKind.CORRECTION),
+    "no i meant ord-04": parsed("", Intent.LATE_ORDER, orders=("ORD-04",),
+                                followup_of=FollowupKind.CORRECTION),
+    "can you list the numbers": parsed("", Intent.LATE_ORDERS,
+                                       followup_of=FollowupKind.LIST_EXPAND),
+    "and 10 of those have issues?": parsed("", Intent.DATA_PROBLEMS,
+                                           clarify=ClarifyReason.SET_REFERENCE,
+                                           clarify_detail="those"),
+    "you said i have 10 orders with issues is that correct": parsed(
+        "", Intent.DATA_PROBLEMS, clarify=ClarifyReason.VERIFICATION),
+    "no this is not helpful tell me about it": parsed(
+        "", Intent.DRILL_DOWN, clarify=ClarifyReason.NO_SUBJECT),
+}
+
+_CORPUS_PARSER = ScriptedParser(CORPUS_PARSE)
+
+
 def _answer(explainer: Explainer, q: str, ctx=None) -> str:
     from mre.modules.interpreter import run_ask
-    res = run_ask(explainer, q, context=ctx)
+    res = run_ask(explainer, q, context=ctx, parser=_CORPUS_PARSER)
     return TemplateRenderer().render(res.bundle)
 
 
@@ -459,7 +624,7 @@ def _ask(explainer: Explainer, q: str, ctx=None):
     """Return (AskResult, rendered_text) so a specimen can assert on route /
     resolved_question / resolution_note as well as the prose."""
     from mre.modules.interpreter import run_ask
-    res = run_ask(explainer, q, context=ctx)
+    res = run_ask(explainer, q, context=ctx, parser=_CORPUS_PARSER)
     return res, TemplateRenderer().render(res.bundle)
 
 
@@ -548,7 +713,7 @@ class TestAuditCorpusClean:
         # CU1 — the blocker is pinned as a fact the LLM must quote, so it can't be
         # compressed back down to the driver phrase live.
         from mre.modules.renderers import LLMRenderer
-        b = clean.answer("why is ORD-05 late")
+        b = assemble(clean, "late-order", "why is ORD-05 late", order="ORD-05")
         facts = LLMRenderer()._extract_precomputed_facts(b)
         assert facts.get("blocked_by_order")
         assert facts.get("blocking_machine") == "CUT-01"
@@ -675,7 +840,14 @@ class TestAuditCorpusSabotaged:
         # get the excluded answer, never a global answer wearing a "Yes".
         assert sabotaged._excluded_labels, "sabotage did not exclude any order"
         excluded = sorted(sabotaged._excluded_labels)[0]
-        a = _answer(sabotaged, f"is {excluded} late").lower()
+        # the excluded id is discovered at runtime, so this turn scripts its own
+        # parse: the planner NAMED an order, and it resolves to nothing here.
+        from mre.modules.interpreter import run_ask
+        q = f"is {excluded} late"
+        parser = ScriptedParser({q: parsed("", Intent.LATE_ORDER,
+                                           orders=(excluded,))})
+        res = run_ask(sabotaged, q, parser=parser)
+        a = TemplateRenderer().render(res.bundle).lower()
         assert "isn't in this schedule" in a or "excluded" in a
         assert "ord-05" not in a          # never the wrong-noun global answer
 
@@ -691,9 +863,7 @@ class TestAuditCorpusSabotaged:
         assert "exclud" in a
 
     def test_cu6_register_chip_equals_envelope_end_to_end(self, sabotaged):
-        from mre.modules.interpreter import run_ask
-        res = run_ask(sabotaged, "what data problems exist?")
-        rendered = TemplateRenderer().render(res.bundle)
+        res, rendered = _ask(sabotaged, "what data problems exist?")
         assert res.register == "testimony"                 # the chip
         assert "register: testimony" in rendered            # the envelope
 
@@ -737,9 +907,8 @@ class TestSession4B4:
     ]
 
     def test_cu2_advice_phrasings_scope_never_recite(self, clean):
-        from mre.modules.interpreter import run_ask
         for q in self._ADVICE_QS:
-            res = run_ask(clean, q)
+            res, _a = _ask(clean, q)
             assert res.route == "advice", f"{q!r} routed to {res.route}, not advice"
             a = TemplateRenderer().render(res.bundle).lower()
             assert "can't recommend an intervention" in a
@@ -834,7 +1003,7 @@ class TestSession4A3:
                 return type("R", (), {"content": [type("C", (), {"text": txt})()]})()
 
         client = type("Cl", (), {"messages": _Msgs()})()
-        bundle = clean.answer("why is ORD-05 late")
+        bundle = assemble(clean, "late-order", "why is ORD-05 late", order="ORD-05")
         assert bundle.key_facts.get("take"), "why-late must compute a take"
         out = LLMRenderer(_client=client).render(bundle)
         assert "rendered by: LLM" in out          # the LLM path really ran
@@ -1052,7 +1221,7 @@ class TestSession4A3Bridge:
 def _late_record_prefix(explainer) -> str:
     """The 8-char prefix of a real lateness record on the clean plan (so an
     injected LLM testimony can footnote a REAL id and pass the citation guard)."""
-    b = explainer.answer("why is ORD-05 late")
+    b = assemble(explainer, "late-order", "why is ORD-05 late", order="ORD-05")
     for rec in b.ordered_records:
         rid = rec.get("record_id")
         if rid:

@@ -11,7 +11,7 @@ The six mechanical signals (verbatim from the session brief):
   3. an LLM testimony that failed validation                (kind ``validator``)
   4. an interpreted-as entity absent from the document      (kind ``absent-entity``)
   5. a route citing zero records where its shape needs them (kind ``dark-evidence``)
-  6. an invitation proposing a route that does not exist    (kind ``dead-door``)
+  6. an invitation proposing a question that parses to no intent (``dead-door``)
 
 Signals 1-3 are truth-floor tripwires (R-AI4(1)); 4-6 are shape checks that a human
 still reads. None of them is a verdict.
@@ -45,13 +45,22 @@ EVIDENCE_ROUTES = frozenset({
 
 class Vocab:
     """A read-only view of the pinned world for the sidecar's shape checks — the
-    valid entity vocabulary + a classifier for the real-doors reverse-guard.
+    valid entity vocabulary + the door check for the real-doors reverse-guard.
 
     Built from a throwaway Explainer over the same snapshot the answers run
-    against, so 'present in the document' means exactly what the ask path means."""
+    against, so 'present in the document' means exactly what the ask path means.
 
-    def __init__(self, explainer: Any) -> None:
+    Session 4A.5a: the reverse-guard used to run the deterministic classifier over
+    each offered follow-up. That classifier is retired (R-AI5(2)), so the check now
+    runs the REAL parse layer over the probe — which is the honest test, since the
+    parse is what the planner's click would actually hit. It costs one model call
+    per DISTINCT offered question (memoized across the sweep). With no parser the
+    check is SKIPPED, and the runner reports it as skipped rather than as clean."""
+
+    def __init__(self, explainer: Any, parser: Any = None) -> None:
         self._ex = explainer
+        self._parser = parser
+        self._door_cache: dict[str, str] = {}
         self.order_refs = set((explainer._order_refs or {}).values())
         self.machine_refs = set((explainer._machine_refs or {}).values())
         self.excluded = set(getattr(explainer, "_excluded_labels", set()) or set())
@@ -63,12 +72,26 @@ class Vocab:
         # rather than emit a transcript full of garbage.
         self.healthy = bool(self.order_refs or self.machine_refs)
 
-    def classify_route(self, question: str) -> str:
+    @property
+    def door_check_available(self) -> bool:
+        return self._parser is not None and getattr(self._parser, "available", False)
+
+    def door_intent(self, question: str) -> Optional[str]:
+        """The intent an OFFERED follow-up parses to, or None when the door check
+        is unavailable (no parser). Memoized: an invitation pattern repeats across
+        a sweep, and a door is a property of the text, not of the turn."""
+        if not self.door_check_available:
+            return None
+        key = question.strip().lower()
+        if key in self._door_cache:
+            return self._door_cache[key]
         try:
-            rid, _ = self._ex.classify(question)
-            return rid
-        except Exception:  # noqa: BLE001 — a classifier raise is itself a finding
-            return "unsupported"
+            parsed = self._parser.parse(question, explainer=self._ex, context=None)
+            intent = "unmatched" if parsed is None else parsed.intent.value
+        except Exception:  # noqa: BLE001 — a parse raise is itself a finding
+            intent = "unmatched"
+        self._door_cache[key] = intent
+        return intent
 
     def absent_order_tokens(self, text: str) -> list[str]:
         """Order-SHAPED tokens in ``text`` that resolve to no scheduled demand and
@@ -106,6 +129,48 @@ def _answer_body(answer: str) -> str:
     return "\n".join(lines).strip()
 
 
+def _subject_ref(parse: dict, kind: str) -> Optional[str]:
+    for s in parse.get("subjects", []) or []:
+        if s.get("kind") == kind and s.get("ref"):
+            return str(s["ref"])
+    return None
+
+
+def check_expectation(turn: Any) -> list[Finding]:
+    """Compare a turn against the EXPECT line that preceded it, if any.
+
+    The ONLY machine-graded axis in a bank, and deliberately a narrow one: which
+    intent the parse named, which typed subjects it bound, how it read the follow-up
+    linkage, and where the dispatch sent it. Conversation quality stays Claude's and
+    the founder's (R-AI4(2))."""
+    expect = getattr(turn, "expect", None) or {}
+    if not expect:
+        return []
+    parse = getattr(turn, "parse", None) or {}
+    actual = {
+        "intent": parse.get("intent"),
+        "route": turn.route,
+        "order": _subject_ref(parse, "order"),
+        "machine": _subject_ref(parse, "machine"),
+        "concept": _subject_ref(parse, "concept"),
+        "followup": parse.get("followup_of"),
+        "polarity": parse.get("polarity"),
+        "clarify": parse.get("clarify"),
+    }
+    misses = []
+    for key, want in expect.items():
+        got = actual.get(key)
+        # "a|b" means either is acceptable; "-" means the field must be absent.
+        options = [w.strip() for w in str(want).split("|")]
+        ok = (got in (None, "", "none") if options == ["-"]
+              else (str(got) in options))
+        if not ok:
+            misses.append(f"{key}: expected {want!r}, got {got!r}")
+    if not misses:
+        return []
+    return [Finding("expect-miss", turn.lineno, turn.question, "; ".join(misses))]
+
+
 def check_turn(turn: Any, vocab: Vocab) -> list[Finding]:
     """All mechanical findings for one finished turn."""
     findings: list[Finding] = []
@@ -139,11 +204,18 @@ def check_turn(turn: Any, vocab: Vocab) -> list[Finding]:
             "dark-evidence", turn.lineno, q,
             f"route '{turn.route}' cited 0 records and lit 0 bars"))
 
-    # 6 — an invitation offering a door into a wall.
-    for offered in offered_questions(turn.answer):
-        if vocab.classify_route(offered) == "unsupported":
-            findings.append(Finding(
-                "dead-door", turn.lineno, q,
-                f'offered follow-up "{offered}" classifies to no route'))
+    # 7 — the bank's own graded expectation (Session 4A.5a CU3). ROUTING only: what
+    # intent the parse named, what subjects it bound, where it dispatched. It never
+    # grades prose (R-AI4(2)).
+    findings.extend(check_expectation(turn))
+
+    # 6 — an invitation offering a door into a wall. Skipped (not passed) when no
+    # parser is available: the honest state is "unchecked", never "clean".
+    if vocab.door_check_available:
+        for offered in offered_questions(turn.answer):
+            if vocab.door_intent(offered) in ("unmatched", None):
+                findings.append(Finding(
+                    "dead-door", turn.lineno, q,
+                    f'offered follow-up "{offered}" parses to no intent'))
 
     return findings

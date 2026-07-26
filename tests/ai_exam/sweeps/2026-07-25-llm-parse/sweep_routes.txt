@@ -1,0 +1,1401 @@
+AI EXAM TRANSCRIPT
+target      : out-dir:gb_pinned
+snapshot    : snap-exam
+started     : 2026-07-26T00:40:02Z
+llm mode    : live
+questions   : 120
+llm calls   : 153
+door check  : live
+parse       : parses=172 calls=172 retries=0 malformed=0 clarifies=5 unavailable=0 median=1002ms
+sidecar     : clean
+------------------------------------------------------------------------
+# AI EXAM BANK — route paraphrase fans
+# generated: 2026-07-24  (Session 4A.3b, CU2b)
+# taxonomy : Session 4A.3 route set (docs/07 v2.40)
+# world    : glass_box
+# 
+# 6-10 phrasings per route family, planner language, mixing clean and sloppy /
+# typo'd register. Each group probes ONE route; RESET between groups so a fan does
+# not accumulate cross-route state. Regenerating this bank is a reviewed change.
+# --- late-order ------------------------------------------------------------------
+Q[11]: why is ORD-05 late
+  route=late-order  source=parse  conf=0.99  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.99  polarity=positive  order=ORD-05<-utterance("ORD-05")  883ms
+  A:
+    ORD-05 was assigned to CUT-01, which was busy with other work [record: 2c82d3c0...]. ORD-05 could not start until 2026-01-06 07:00 while CUT-01 was held by ORD-04, high priority until 2026-01-05 18:50, resulting in a projected completion of 2026-01-06 14:50 UTC and lateness of 890 min (14.8h) against its due date of 2026-01-05T23:59:59Z [record: 82257d9a...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[12]: what's making ORD-05 late
+  route=late-order  source=parse  conf=0.98  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.98  followup=deepen  polarity=positive  order=ORD-05<-last-answer("ORD-05")  953ms
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 82257d9a...]. It couldn't start until 2026-01-06 07:00 with CUT-01 held by ORD-04 at high priority until 2026-01-05 18:50 [record: 2c82d3c0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[13]: how come ORD-05 missed its due date
+  route=late-order  source=parse  conf=0.98  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.98  followup=deepen  polarity=positive  order=ORD-05<-last-answer("ORD-05")  1147ms
+  A:
+    ORD-05 is late by 890 min (14.8h) because it could not start until 2026-01-06 07:00 while CUT-01 was held by ORD-04, high priority, until 2026-01-05 18:50 [record: 82257d9a...]. The projected completion of 2026-01-06 14:50 UTC exceeds the due date of 2026-01-05T23:59:59Z [record: 5bb0fd1c...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[14]: ORD-05 is late, why
+  route=late-order  source=parse  conf=0.98  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.98  followup=deepen  polarity=positive  order=ORD-05<-utterance("ORD-05")  1038ms
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 82257d9a...]. It could not start until 2026-01-06 07:00 when CUT-01 became available, as CUT-01 was held by ORD-04, high priority until 2026-01-05 18:50 [record: 2c82d3c0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[15]: whats holding up ORD-05
+  route=late-order  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.95  followup=deepen  polarity=positive  order=ORD-05<-last-answer("ORD-05")  958ms
+  A:
+    ORD-05 is late because its due date was driving the schedule [record: 34098450...] and it was assigned to CUT-01, which was busy with other work [record: 2c82d3c0...]. Specifically, CUT-01 was held by ORD-04, high priority until 2026-01-05 18:50, preventing ORD-05 from starting until 2026-01-06 07:00, resulting in a lateness of 890 min (14.8h) [record: 82257d9a...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[16]: why did ORD-05 finish late
+  route=late-order  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.95  followup=deepen  polarity=positive  order=ORD-05<-last-answer("ORD-05")  935ms
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 82257d9a...]. It could not start until 2026-01-06 07:00 while CUT-01 was held by ORD-04, high priority until 2026-01-05 18:50 [record: 2c82d3c0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[17]: reason ORD-05 is behind
+  route=late-order  source=parse  conf=0.98  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.98  followup=deepen  polarity=positive  order=ORD-05<-last-answer("ORD-05")  1209ms
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 82257d9a...]. It could not start until 2026-01-06 07:00 while CUT-01 was held by ORD-04, high priority until 2026-01-05 18:50 [record: 2c82d3c0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[18]: whyy is ord-05 so late
+  route=late-order  source=parse  conf=0.98  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.98  followup=deepen  polarity=positive  order=ORD-05<-utterance("ord-05")  1155ms
+  A:
+    ORD-05 is late by 890 min (14.8h) because CUT-01 was occupied by ORD-04 (high priority) until 2026-01-05 18:50, preventing ORD-05 from starting until 2026-01-06 07:00 [record: 2c82d3c0...]. The projected completion of 2026-01-06 14:50 UTC exceeds the due date of 2026-01-05T23:59:59Z [record: 82257d9a...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- late-orders -----------------------------------------------------------------
+Q[22]: which orders are late
+  route=late-orders  source=parse  conf=0.98  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=late-orders  conf=0.98  polarity=positive  1170ms
+  A:
+    Yes, there is 1 late order(s): ORD-05 with a lateness of 890 min (14.8h) [record: 82257d9a...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[23]: are there any late orders
+  route=late-orders  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=late-orders  conf=0.95  881ms
+  A:
+    Yes, there is 1 late order(s): ORD-05 with a lateness of 890 min (14.8h) [record: 82257d9a...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[24]: show me everything that's late
+  interpreted as: which orders are late?  (listing the previous answer)
+  route=late-orders  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=late-orders  conf=0.95  followup=list-expand  763ms
+  A:
+    1 late order(s) exists in the schedule:
+
+    - ORD-05 is late by 890 min (14.8h) [record: 82257d9a...]
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[25]: what's running late
+  route=late-orders  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=late-orders  conf=0.95  followup=deepen  967ms
+  A:
+    Yes, there is 1 late order(s): ORD-05 with a lateness of 890 min (14.8h) [record: 82257d9a...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[26]: any orders behind schedule
+  route=late-orders  source=parse  conf=0.98  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=late-orders  conf=0.98  703ms
+  A:
+    Yes, there is 1 late order(s) [record: 82257d9a...]. ORD-05 has a lateness of 890 min (14.8h) [record: 82257d9a...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[27]: list the late ones
+  interpreted as: which orders are late?  (listing the previous answer)
+  route=late-orders  source=parse  conf=0.98  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=late-orders  conf=0.98  followup=list-expand  2204ms
+  A:
+    ORD-05 is late with a lateness of 890 min (14.8h) [record: 82257d9a...]. There is 1 late order(s) in the schedule [record: 82257d9a...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- why-on-machine --------------------------------------------------------------
+Q[31]: why is ORD-05 on CUT-01
+  route=why-on-machine  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=1  refs=1/1/1
+  parse: intent=why-on-machine  conf=0.95  order=ORD-05<-utterance("ORD-05")  machine=CUT-01<-utterance("CUT-01")  1386ms
+  A:
+    ORD-05 is assigned to CUT-01; the machine was busy with other work [record: 2c82d3c0...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[32]: how come ORD-05 landed on CUT-01
+  route=why-on-machine  source=parse  conf=0.98  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=1  refs=1/1/1
+  parse: intent=why-on-machine  conf=0.98  order=ORD-05<-utterance("ORD-05")  machine=CUT-01<-utterance("CUT-01")  1135ms
+  A:
+    ORD-05 is assigned to CUT-01 because the machine was busy with other work [record: 2c82d3c0...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[33]: why did you put ORD-05 on CUT-01
+  route=why-on-machine  source=parse  conf=0.98  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=1  refs=1/1/1
+  parse: intent=why-on-machine  conf=0.98  order=ORD-05<-utterance("ORD-05")  machine=CUT-01<-utterance("CUT-01")  1305ms
+  A:
+    ORD-05 is assigned to CUT-01 because the machine was busy with other work [record: 2c82d3c0...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[34]: what made ORD-05 run on CUT-01
+  route=why-on-machine  source=parse  conf=0.98  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=1  refs=1/1/1
+  parse: intent=why-on-machine  conf=0.98  order=ORD-05<-utterance("ORD-05")  machine=CUT-01<-utterance("CUT-01")  1468ms
+  A:
+    ORD-05 is assigned to CUT-01 because the machine was busy with other work [record: 2c82d3c0...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[35]: why ORD-04 on CUT-01
+  interpreted as: why is ORD-04 on CUT-01?  (corrected to ORD-04, CUT-01)
+  route=why-on-machine  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=1  refs=1/1/1
+  parse: intent=why-on-machine  conf=0.95  followup=correction  order=ORD-04<-utterance("ORD-04")  machine=CUT-01<-utterance("CUT-01")  1299ms
+  A:
+    ORD-04 is on CUT-01 because the machine was busy with other work [record: 45c2e075...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- machine-schedule ------------------------------------------------------------
+Q[39]: what's running on CUT-01
+  route=machine-schedule  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=7  records=6  refs=6/1/0
+  parse: intent=machine-schedule  conf=0.99  machine=CUT-01<-utterance("CUT-01")  1227ms
+  A:
+    CUT-01: 6 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+        seq= 10  2026-01-05 07:20 -> 2026-01-05 11:00  ORD-02  -14958min early
+        seq= 10  2026-01-05 11:00 -> 2026-01-05 18:50  ORD-04  -309min early
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+        seq= 10  2026-01-06 14:50 -> 2026-01-06 18:30  ORD-01  -12319min early
+        seq= 10  2026-01-07 07:00 -> 2026-01-07 19:00  ORD-03  -12358min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[40]: show CUT-01's schedule
+  route=machine-schedule  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=7  records=6  refs=6/1/0
+  parse: intent=machine-schedule  conf=0.95  followup=deepen  machine=CUT-01<-utterance("CUT-01")  894ms
+  A:
+    CUT-01: 6 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+        seq= 10  2026-01-05 07:20 -> 2026-01-05 11:00  ORD-02  -14958min early
+        seq= 10  2026-01-05 11:00 -> 2026-01-05 18:50  ORD-04  -309min early
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+        seq= 10  2026-01-06 14:50 -> 2026-01-06 18:30  ORD-01  -12319min early
+        seq= 10  2026-01-07 07:00 -> 2026-01-07 19:00  ORD-03  -12358min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[41]: what does PAINT-01 have queued
+  route=machine-schedule  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=5  records=4  refs=4/1/0
+  parse: intent=machine-schedule  conf=0.95  machine=PAINT-01<-utterance("PAINT-01")  904ms
+  A:
+    PAINT-01: 4 operation(s):
+
+      [PAINT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 10:20  ORD-09  -13779min early
+        seq= 20  2026-01-05 11:01 -> 2026-01-05 14:41  ORD-02  -14958min early
+        seq= 10  2026-01-05 14:41 -> 2026-01-05 18:01  ORD-12  -13318min early
+        seq= 20  2026-01-07 07:00 -> 2026-01-07 10:40  ORD-01  -12319min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[42]: whats on HEAT-01
+  route=machine-schedule  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=5  records=4  refs=4/1/0
+  parse: intent=machine-schedule  conf=0.99  machine=HEAT-01<-utterance("HEAT-01")  1829ms
+  A:
+    HEAT-01: 4 operation(s):
+
+      [HEAT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 08:50  ORD-14  -16749min early
+        seq= 10  2026-01-05 08:50 -> 2026-01-05 10:40  ORD-15  -16639min early
+        seq= 10  2026-01-09 07:00 -> 2026-01-09 17:00  ORD-10  -419min early
+        seq= 10  2026-01-10 07:00 -> 2026-01-10 17:00  ORD-11  -419min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[43]: list the jobs on PRESS-FAST
+  route=machine-schedule  source=parse  conf=0.98  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=4  records=2  refs=2/2/0
+  parse: intent=machine-schedule  conf=0.98  machine=PRESS-FAST<-utterance("PRESS-FAST")  1210ms
+  A:
+    PRESS-FAST: 2 operation(s):
+
+      [PRESS-FAST]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 11:25  ORD-06  -754min early
+        seq= 10  2026-01-05 11:25 -> 2026-01-05 15:50  ORD-07  -489min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[44]: what's next on CUT-01
+  route=machine-schedule  source=parse  conf=0.98  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=6  records=5  refs=5/1/0
+  parse: intent=machine-schedule  conf=0.98  machine=CUT-01<-utterance("CUT-01")  930ms
+  A:
+    CUT-01: 5 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+        seq= 10  2026-01-05 07:20 -> 2026-01-05 11:00  ORD-02  -14958min early
+        seq= 10  2026-01-05 11:00 -> 2026-01-05 18:50  ORD-04  -309min early
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+        seq= 10  2026-01-06 14:50 -> 2026-01-06 18:30  ORD-01  -12319min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- order-schedule --------------------------------------------------------------
+Q[48]: when does ORD-13 start and finish
+  route=order-schedule  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=order-schedule  conf=0.99  order=ORD-13<-utterance("ORD-13")  976ms
+  A:
+    ORD-13 completes 2026-01-05 07:20 — 11.7 day(s) early (due 2026-01-16).
+    It starts 2026-01-05 07:00.
+
+    Its schedule:
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[49]: what's the timeline for ORD-03
+  route=order-schedule  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=order-schedule  conf=0.99  order=ORD-03<-utterance("ORD-03")  1006ms
+  A:
+    ORD-03: 1 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-07 07:00 -> 2026-01-07 19:00  ORD-03  -12358min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[50]: when will ORD-05 be done
+  route=order-schedule  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=order-schedule  conf=0.95  order=ORD-05<-utterance("ORD-05")  1015ms
+  A:
+    ORD-05 completes 2026-01-06 14:50 — 0.6 day(s) late (due 2026-01-05).
+    It starts 2026-01-06 07:00.
+
+    Its schedule:
+
+      [CUT-01]
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[51]: show ORD-09's schedule
+  route=order-schedule  source=parse  conf=0.98  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=order-schedule  conf=0.98  order=ORD-09<-utterance("ORD-09")  1002ms
+  A:
+    ORD-09: 1 operation(s):
+
+      [PAINT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 10:20  ORD-09  -13779min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[52]: what time does ORD-11 finish
+  route=order-schedule  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=order-schedule  conf=0.99  order=ORD-11<-utterance("ORD-11")  1000ms
+  A:
+    ORD-11 completes 2026-01-10 17:00 — 0.3 day(s) early (due 2026-01-10).
+    It starts 2026-01-10 07:00.
+
+    Its schedule:
+
+      [HEAT-01]
+        seq= 10  2026-01-10 07:00 -> 2026-01-10 17:00  ORD-11  -419min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[53]: whens ord-13 done
+  route=order-schedule  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=order-schedule  conf=0.95  order=ORD-13<-utterance("ord-13")  2746ms
+  A:
+    ORD-13 completes 2026-01-05 07:20 — 11.7 day(s) early (due 2026-01-16).
+    It starts 2026-01-05 07:00.
+
+    Its schedule:
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- downtime --------------------------------------------------------------------
+Q[57]: how much downtime does PAINT-01 have
+  route=downtime  source=parse  conf=0.99  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=downtime  conf=0.99  machine=PAINT-01<-utterance("PAINT-01")  1003ms
+  A:
+    No downtime is declared for any resource.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[58]: what closures are on CUT-01
+  route=downtime  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=downtime  conf=0.95  machine=CUT-01<-utterance("CUT-01")  903ms
+  A:
+    No downtime is declared for any resource.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[59]: show HEAT-01's downtime
+  route=downtime  source=parse  conf=0.99  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=downtime  conf=0.99  machine=HEAT-01<-utterance("HEAT-01")  1228ms
+  A:
+    No downtime is declared for any resource.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[60]: when is PRESS-FAST closed
+  route=downtime  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=downtime  conf=0.95  machine=PRESS-FAST<-utterance("PRESS-FAST")  1066ms
+  A:
+    No downtime is declared for any resource.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[61]: any downtime on CUT-01
+  route=downtime  source=parse  conf=0.99  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=downtime  conf=0.99  machine=CUT-01<-utterance("CUT-01")  1744ms
+  A:
+    No downtime is declared for any resource.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- data-problems ---------------------------------------------------------------
+Q[65]: what data problems exist
+  route=data-problems  source=parse  conf=0.98  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=data-problems  conf=0.98  708ms
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[66]: are there any data quality issues
+  interpreted as: what data problems exist?  (listing the previous answer)
+  route=data-problems  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=data-problems  conf=0.95  followup=list-expand  899ms
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[67]: what's wrong with the input data
+  route=data-problems  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=data-problems  conf=0.95  followup=deepen  1013ms
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[68]: show me the data findings
+  route=data-problems  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=data-problems  conf=0.95  followup=deepen  1168ms
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[69]: any problems with the submission data
+  interpreted as: what data problems exist?  (listing the previous answer)
+  route=data-problems  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=data-problems  conf=0.95  followup=list-expand  822ms
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[70]: whats wrong with the data
+  route=data-problems  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=data-problems  conf=0.95  followup=deepen  946ms
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- triage ----------------------------------------------------------------------
+Q[74]: what should I fix first
+  route=triage  source=parse  conf=0.95  register=judgment  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=triage  conf=0.95  763ms
+  A:
+    Grade-Distance Triage
+
+    1 advisory finding(s), no action required — the plan proceeded on defaulted inputs, but worth knowing:
+
+    - Customer priority weight is weakly known for 13 order(s), making tardiness priority unreliable [WARNING]  
+      Fix: Declare each order's customer priority weight in the submission to prevent tardiness ranking from defaulting.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: judgment]
+------------------------------------------------------------------------
+Q[75]: where do I start fixing
+  route=triage  source=parse  conf=0.95  register=judgment  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=triage  conf=0.95  followup=deepen  758ms
+  A:
+    1 advisory finding(s), no action required — the plan proceeded on default values, but merits awareness:
+
+    - Customer priority weight is insufficiently defined for 13 orders, rendering tardiness priority unreliable [WARNING] — Fix: Explicitly specify each order's customer priority weight at submission to prevent tardiness ranking from reverting to defaults.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: judgment]
+------------------------------------------------------------------------
+Q[76]: what's the most important thing to fix
+  route=triage  source=parse  conf=0.95  register=judgment  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=triage  conf=0.95  followup=deepen  1102ms
+  A:
+    1 advisory finding — no action required
+
+    The plan proceeded using defaulted inputs, but the following warrants attention:
+
+    - Customer priority weight is weakly known for 13 order(s), making tardiness priority unreliable [WARNING]  
+      *Fix:* Specify each order's customer priority weight at submission to prevent tardiness ranking from defaulting.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: judgment]
+------------------------------------------------------------------------
+Q[77]: prioritize the fixes for me
+  route=triage  source=parse  conf=0.95  register=judgment  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=triage  conf=0.95  followup=deepen  918ms
+  A:
+    1 advisory finding — no action required
+
+    The plan proceeded using default inputs, but this warrants attention:
+
+    - Customer priority weight is weakly known for 13 order(s), making tardiness priority unreliable [WARNING]  
+      Fix: Specify each order's customer priority weight in the submission to prevent tardiness ranking from reverting to defaults.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: judgment]
+------------------------------------------------------------------------
+Q[78]: whats first on the fix list
+  route=triage  source=parse  conf=0.95  register=judgment  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=triage  conf=0.95  followup=deepen  760ms
+  A:
+    1 advisory finding — no action required
+
+    The plan proceeded using defaulted inputs, though this warrants awareness:
+
+    - Customer priority weight is weakly known for 13 order(s), making tardiness priority unreliable [WARNING]  
+      *Fix:* Explicitly declare each order's customer priority weight at submission to prevent tardiness ranking from defaulting.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: judgment]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- remediation -----------------------------------------------------------------
+Q[82]: how do I fix the submission's problems
+  route=remediation  source=parse  conf=0.95  register=remediation  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=remediation  conf=0.95  743ms
+  A:
+    1 advisory finding(s), no action required — the plan proceeded using default settings, though this warrants awareness:
+
+      - Customer priority weight is uncertain for 13 order(s), making tardiness priority unreliable [WARNING] — Fix: Specify each order's customer priority weight at submission to prevent tardiness ranking from relying on defaults.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: remediation]
+------------------------------------------------------------------------
+Q[83]: how do I resolve the data issues
+  route=remediation  source=parse  conf=0.95  register=remediation  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=remediation  conf=0.95  followup=deepen  1431ms
+  A:
+    1 advisory finding(s), no action required — the plan proceeded using default settings, though you should be aware of the following:
+
+    - [WARNING] Thirteen order(s) have uncertain customer priority weights, which makes tardiness priority unreliable. Fix: Specify the customer priority weight for each order at submission to ensure tardiness ranking is based on actual values rather than defaults.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: remediation]
+------------------------------------------------------------------------
+Q[84]: what's the fix for these findings
+  route=remediation  source=parse  conf=0.92  register=remediation  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=remediation  conf=0.92  followup=deepen  784ms
+  A:
+    1 advisory finding(s), no action required — the plan proceeded using default values, though awareness is recommended:
+
+      - Customer priority weight is poorly defined for 13 order(s), making tardiness priority unreliable [WARNING] — Fix: Explicitly specify each order's customer priority weight during submission to ensure accurate tardiness ranking instead of relying on defaults.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: remediation]
+------------------------------------------------------------------------
+Q[85]: how do I clean up the submission
+  route=remediation  source=parse  conf=0.95  register=remediation  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=remediation  conf=0.95  followup=deepen  814ms
+  A:
+    1 advisory finding(s), no action required — the plan proceeded using default values, though this warrants awareness:
+
+      - Customer priority weight is uncertain for 13 order(s), making tardiness priority unreliable [WARNING] — Fix: Specify each order's customer priority weight at submission to ensure tardiness ranking is not defaulted.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: remediation]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- certificate-testimony -------------------------------------------------------
+Q[89]: what's wrong with the submission
+  route=certificate-testimony  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=certificate-testimony  conf=0.92  1018ms
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[90]: is the submission ok
+  route=certificate-testimony  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=certificate-testimony  conf=0.92  followup=deepen  844ms
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[91]: what did the gate find
+  route=certificate-testimony  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=certificate-testimony  conf=0.92  followup=deepen  1024ms
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[92]: tell me about the certificate
+  route=drill-down  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=drill-down  conf=0.92  followup=deepen  909ms
+  A:
+      the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- excluded-orders -------------------------------------------------------------
+Q[96]: which orders were excluded from the plan
+  route=excluded-orders  source=parse  conf=0.98  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=excluded-orders  conf=0.98  912ms
+  A:
+    No data-quality problems — the submission is clean.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[97]: did any orders get dropped
+  interpreted as: which orders were excluded from the plan?  (listing the previous answer)
+  route=excluded-orders  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=excluded-orders  conf=0.95  followup=list-expand  807ms
+  A:
+    No data-quality problems — the submission is clean.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[98]: what got left out of the schedule
+  interpreted as: which orders were excluded from the plan?  (listing the previous answer)
+  route=excluded-orders  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=excluded-orders  conf=0.95  followup=list-expand  1159ms
+  A:
+    No data-quality problems — the submission is clean.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[99]: were any orders excluded
+  interpreted as: which orders were excluded from the plan?  (listing the previous answer)
+  route=excluded-orders  source=parse  conf=0.98  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=excluded-orders  conf=0.98  followup=list-expand  1585ms
+  A:
+    No data-quality problems — the submission is clean.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- order-attributes ------------------------------------------------------------
+Q[103]: what product is ORD-01
+  route=order-attributes  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=order-attributes  conf=0.95  order=ORD-01<-utterance("ORD-01")  1012ms
+  A:
+    ORD-01:
+      Product   : P-WIDGET
+      Quantity  : 50 EA
+      Customer  : not specified — declare customers in the submission's customers file to see one here
+      Due       : 2026-01-15
+      Released  : 2026-01-05
+      Priority  : standard priority
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[104]: what are the details of ORD-05
+  route=order-attributes  source=parse  conf=0.99  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=order-attributes  conf=0.99  order=ORD-05<-utterance("ORD-05")  1219ms
+  A:
+    ORD-05:
+      Product   : P-RUSH
+      Quantity  : 150 EA
+      Customer  : not specified — declare customers in the submission's customers file to see one here
+      Due       : 2026-01-05
+      Released  : 2026-01-05
+      Priority  : standard priority
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[105]: who is the customer for ORD-13
+  route=order-attributes  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=order-attributes  conf=0.95  order=ORD-13<-utterance("ORD-13")  1094ms
+  A:
+    ORD-13:
+      Product   : P-SHIM
+      Quantity  : 10 EA
+      Customer  : not specified — declare customers in the submission's customers file to see one here
+      Due       : 2026-01-16
+      Released  : 2026-01-05
+      Priority  : standard priority
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[106]: how many units is ORD-03
+  route=order-attributes  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=order-attributes  conf=0.95  order=ORD-03<-utterance("ORD-03")  1005ms
+  A:
+    ORD-03:
+      Product   : P-SPACER
+      Quantity  : 1 EA
+      Customer  : not specified — declare customers in the submission's customers file to see one here
+      Due       : 2026-01-16
+      Released  : 2026-01-05
+      Priority  : standard priority
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[107]: when is ORD-11 due
+  route=order-attributes  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=order-attributes  conf=0.95  order=ORD-11<-utterance("ORD-11")  1313ms
+  A:
+    ORD-11:
+      Product   : P-HEAT
+      Quantity  : 1 EA
+      Customer  : not specified — declare customers in the submission's customers file to see one here
+      Due       : 2026-01-10
+      Released  : 2026-01-09
+      Priority  : standard priority
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[108]: what's the priority of ORD-04
+  route=order-attributes  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=order-attributes  conf=0.95  order=ORD-04<-utterance("ORD-04")  946ms
+  A:
+    ORD-04:
+      Product   : P-RUSH
+      Quantity  : 150 EA
+      Customer  : not specified — declare customers in the submission's customers file to see one here
+      Due       : 2026-01-05
+      Released  : 2026-01-05
+      Priority  : high priority
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- inventory -------------------------------------------------------------------
+Q[112]: how many orders are in the plan
+  route=inventory  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=inventory  conf=0.95  1503ms
+  A:
+    15 order(s) are in the plan, scheduled across 17 operation(s).
+    1 operation(s) can split across a pause (e.g. an overnight closure).
+    1 order(s) finish late.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[113]: how many operations are scheduled
+  interpreted as: how many orders are in the plan?  (listing the previous answer)
+  route=inventory  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=inventory  conf=0.95  followup=list-expand  958ms
+  A:
+    15 order(s) are in the plan, scheduled across 17 operation(s).
+    1 operation(s) can split across a pause (e.g. an overnight closure).
+    1 order(s) finish late.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[114]: how many jobs total
+  interpreted as: how many orders are in the plan?  (listing the previous answer)
+  route=inventory  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=inventory  conf=0.95  followup=list-expand  916ms
+  A:
+    15 order(s) are in the plan, scheduled across 17 operation(s).
+    1 operation(s) can split across a pause (e.g. an overnight closure).
+    1 order(s) finish late.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[115]: what's the size of this schedule
+  interpreted as: how many orders are in the plan?  (listing the previous answer)
+  route=inventory  source=parse  conf=0.92  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=inventory  conf=0.92  followup=list-expand  1165ms
+  A:
+    15 order(s) are in the plan, scheduled across 17 operation(s).
+    1 operation(s) can split across a pause (e.g. an overnight closure).
+    1 order(s) finish late.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[116]: count the orders
+  interpreted as: how many orders are in the plan?  (listing the previous answer)
+  route=inventory  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=inventory  conf=0.95  followup=list-expand  1092ms
+  A:
+    15 order(s) are in the plan, scheduled across 17 operation(s).
+    1 operation(s) can split across a pause (e.g. an overnight closure).
+    1 order(s) finish late.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- integrity-check -------------------------------------------------------------
+Q[120]: is anything double-booked
+  route=CLARIFY  source=parse  conf=0.35  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=integrity-check  conf=0.35  clarify=no-subject  1129ms
+  A:
+    I need one more detail to answer "is anything double-booked".
+    Which order, machine, or customer do you mean? Ask it again naming one, e.g. "why is that order late?" becomes "why is <order> late?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[121]: are there any conflicts
+  route=integrity-check  source=parse  conf=0.92  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=integrity-check  conf=0.92  followup=deepen  921ms
+  A:
+    No double-booking on any machine: no two operations are scheduled on the same machine at the same time (17 operation(s) checked). The schedule is conflict-free by construction — the solver enforces one job per machine at a time.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[122]: is CUT-01 overbooked
+  route=integrity-check  source=parse  conf=0.92  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=integrity-check  conf=0.92  followup=deepen  polarity=negative  machine=CUT-01<-utterance("CUT-01")  1199ms
+  A:
+    No double-booking on CUT-01: no two operations are scheduled on the same machine at the same time (6 operation(s) checked). The schedule is conflict-free by construction — the solver enforces one job per machine at a time.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[123]: did any machine get two jobs at once
+  interpreted as: is anything double-booked?  (listing the previous answer)
+  route=integrity-check  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=integrity-check  conf=0.95  followup=list-expand  polarity=negative  804ms
+  A:
+    No double-booking on any machine: no two operations are scheduled on the same machine at the same time (17 operation(s) checked). The schedule is conflict-free by construction — the solver enforces one job per machine at a time.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- start-reason ----------------------------------------------------------------
+Q[127]: why does ORD-13 start when it does
+  route=start-reason  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=start-reason  conf=0.95  polarity=positive  order=ORD-13<-utterance("ORD-13")  1343ms
+  A:
+    ORD-13 starts Monday (2026-01-05 07:00) because it isn't released for production until Monday 2026-01-05 — nothing can begin before its release date.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[128]: why does ORD-05 begin at that time
+  route=start-reason  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=start-reason  conf=0.95  polarity=positive  order=ORD-05<-utterance("ORD-05")  4259ms
+  A:
+    ORD-05 starts Tuesday (2026-01-06 07:00) because CUT-01 was busy: it was held by ORD-04, high priority until 2026-01-05 18:50, so ORD-05 took the next opening.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[129]: what determines when ORD-03 starts
+  route=start-reason  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=start-reason  conf=0.95  polarity=positive  order=ORD-03<-utterance("ORD-03")  1177ms
+  A:
+    ORD-03 starts Wednesday (2026-01-07 07:00) because CUT-01 was busy: it was held by ORD-01 until 2026-01-06 18:30, so ORD-03 took the next opening.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[130]: why is ORD-13 starting so early
+  route=start-reason  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=start-reason  conf=0.95  followup=deepen  polarity=negative  order=ORD-13<-utterance("ORD-13")  1011ms
+  A:
+    ORD-13 starts Monday (2026-01-05 07:00) because it isn't released for production until Monday 2026-01-05 — nothing can begin before its release date.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[131]: why can't ORD-05 start earlier
+  route=start-reason  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=start-reason  conf=0.95  followup=deepen  polarity=negative  order=ORD-05<-utterance("ORD-05")  937ms
+  A:
+    ORD-05 starts Tuesday (2026-01-06 07:00) because CUT-01 was busy: it was held by ORD-04, high priority until 2026-01-05 18:50, so ORD-05 took the next opening.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- briefing --------------------------------------------------------------------
+Q[135]: what should I worry about today
+  route=briefing  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=briefing  conf=0.95  1326ms
+  A:
+    1 order(s) need attention today, worst first:
+
+      • ORD-05 — 890 min late (held behind ORD-04 on CUT-01)
+
+    Data to watch: the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable.
+      Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[136]: give me the morning briefing
+  route=briefing  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=briefing  conf=0.95  followup=deepen  1188ms
+  A:
+    1 order(s) need attention today, worst first:
+
+      • ORD-05 — 890 min late (held behind ORD-04 on CUT-01)
+
+    Data to watch: the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable.
+      Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[137]: what needs my attention
+  route=briefing  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=briefing  conf=0.95  followup=deepen  751ms
+  A:
+    1 order(s) need attention today, worst first:
+
+      • ORD-05 — 890 min late (held behind ORD-04 on CUT-01)
+
+    Data to watch: the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable.
+      Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[138]: anything I should be concerned about
+  route=briefing  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=briefing  conf=0.95  765ms
+  A:
+    1 order(s) need attention today, worst first:
+
+      • ORD-05 — 890 min late (held behind ORD-04 on CUT-01)
+
+    Data to watch: the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable.
+      Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[139]: whats the status today
+  route=briefing  source=parse  conf=0.92  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=briefing  conf=0.92  followup=deepen  746ms
+  A:
+    1 order(s) need attention today, worst first:
+
+      • ORD-05 — 890 min late (held behind ORD-04 on CUT-01)
+
+    Data to watch: the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable.
+      Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- swap-move -------------------------------------------------------------------
+Q[143]: why not just swap ORD-04 and ORD-05
+  route=swap-move  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=3  records=2  refs=2/1/0
+  parse: intent=swap-move  conf=0.92  order=ORD-04<-utterance("ORD-04")  order=ORD-05<-utterance("ORD-05")  1152ms
+  A:
+      ORD-04: 0.2 day(s) early on CUT-01 (starts 2026-01-05 11:00).
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+
+    My take: ORD-04 has ~0.2 day(s) of slack to spend; ORD-05 is the one hurting (890 min late) — giving it ORD-04's earlier slot is the move worth pricing.
+
+    Drag ORD-05's first operation onto ORD-04's slot on CUT-01 and the board will run a sandbox and price the swap exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[144]: can we swap ORD-05 and ORD-04
+  route=swap-move  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=3  records=2  refs=2/1/0
+  parse: intent=swap-move  conf=0.95  order=ORD-05<-utterance("ORD-05")  order=ORD-04<-utterance("ORD-04")  1170ms
+  A:
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+      ORD-04: 0.2 day(s) early on CUT-01 (starts 2026-01-05 11:00).
+
+    My take: ORD-04 has ~0.2 day(s) of slack to spend; ORD-05 is the one hurting (890 min late) — giving it ORD-04's earlier slot is the move worth pricing.
+
+    Drag ORD-05's first operation onto ORD-04's slot on CUT-01 and the board will run a sandbox and price the swap exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[145]: what if we move ORD-05 earlier
+  route=swap-move  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=swap-move  conf=0.92  followup=deepen  order=ORD-05<-utterance("ORD-05")  996ms
+  A:
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+
+    My take: ORD-05 is 890 min late — the move worth pricing is the one that gives it an earlier opening.
+
+    Drag ORD-05's first operation to the earlier slot you have in mind and the board will run a sandbox and price the move exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[146]: move ORD-05 ahead of ORD-04
+  route=swap-move  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=3  records=2  refs=2/1/0
+  parse: intent=swap-move  conf=0.95  followup=deepen  order=ORD-05<-utterance("ORD-05")  order=ORD-04<-utterance("ORD-04")  1280ms
+  A:
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+      ORD-04: 0.2 day(s) early on CUT-01 (starts 2026-01-05 11:00).
+
+    My take: ORD-04 has ~0.2 day(s) of slack to spend; ORD-05 is the one hurting (890 min late) — giving it ORD-04's earlier slot is the move worth pricing.
+
+    Drag ORD-05's first operation onto ORD-04's slot on CUT-01 and the board will run a sandbox and price the swap exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[147]: why not put ORD-05 first
+  route=swap-move  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=swap-move  conf=0.92  followup=deepen  order=ORD-05<-utterance("ORD-05")  982ms
+  A:
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+
+    My take: ORD-05 is 890 min late — the move worth pricing is the one that gives it an earlier opening.
+
+    Drag ORD-05's first operation to the earlier slot you have in mind and the board will run a sandbox and price the move exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- gap-between -----------------------------------------------------------------
+Q[151]: why is there a gap between ORD-09 and ORD-12
+  route=gap-between  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=gap-between  conf=0.95  polarity=positive  order=ORD-09<-utterance("ORD-09")  order=ORD-12<-utterance("ORD-12")  1175ms
+  A:
+    The gap on PAINT-01 between ORD-09 (2026-01-05 10:20) and ORD-12 (2026-01-05 14:41) isn't idle — ORD-02 runs there (2026-01-05 11:01 → 2026-01-05 14:41).
+
+    Want the rest of PAINT-01's schedule? Ask "what's running on PAINT-01?"
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[152]: what's the gap between ORD-09 and ORD-12 about
+  route=gap-between  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=gap-between  conf=0.95  followup=deepen  order=ORD-09<-utterance("ORD-09")  order=ORD-12<-utterance("ORD-12")  1126ms
+  A:
+    The gap on PAINT-01 between ORD-09 (2026-01-05 10:20) and ORD-12 (2026-01-05 14:41) isn't idle — ORD-02 runs there (2026-01-05 11:01 → 2026-01-05 14:41).
+
+    Want the rest of PAINT-01's schedule? Ask "what's running on PAINT-01?"
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[153]: why the space between ORD-09 and ORD-12 on PAINT-01
+  route=gap-between  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=gap-between  conf=0.95  followup=deepen  polarity=positive  order=ORD-09<-utterance("ORD-09")  order=ORD-12<-utterance("ORD-12")  machine=PAINT-01<-utterance("PAINT-01")  1301ms
+  A:
+    The gap on PAINT-01 between ORD-09 (2026-01-05 10:20) and ORD-12 (2026-01-05 14:41) isn't idle — ORD-02 runs there (2026-01-05 11:01 → 2026-01-05 14:41).
+
+    Want the rest of PAINT-01's schedule? Ask "what's running on PAINT-01?"
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[154]: whats between ORD-09 and ORD-12
+  route=gap-between  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=gap-between  conf=0.95  followup=deepen  order=ORD-09<-utterance("ORD-09")  order=ORD-12<-utterance("ORD-12")  1016ms
+  A:
+    The gap on PAINT-01 between ORD-09 (2026-01-05 10:20) and ORD-12 (2026-01-05 14:41) isn't idle — ORD-02 runs there (2026-01-05 11:01 → 2026-01-05 14:41).
+
+    Want the rest of PAINT-01's schedule? Ask "what's running on PAINT-01?"
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- machine-idle ----------------------------------------------------------------
+Q[158]: why is HEAT-01 idle
+  route=machine-idle  source=parse  conf=0.98  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=machine-idle  conf=0.98  polarity=positive  machine=HEAT-01<-utterance("HEAT-01")  1191ms
+  A:
+    HEAT-01 isn't idle — it carries 4 operation(s), running from 2026-01-05 07:00 to 2026-01-10 17:00. Ask "what's running on HEAT-01?" for the list.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[159]: why does HEAT-01 have no work
+  route=machine-idle  source=parse  conf=0.98  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=machine-idle  conf=0.98  followup=deepen  polarity=negative  machine=HEAT-01<-utterance("HEAT-01")  1564ms
+  A:
+    HEAT-01 isn't idle — it carries 4 operation(s), running from 2026-01-05 07:00 to 2026-01-10 17:00. Ask "what's running on HEAT-01?" for the list.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[160]: why is CUT-01 sitting empty
+  route=machine-idle  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=machine-idle  conf=0.95  polarity=negative  machine=CUT-01<-utterance("CUT-01")  988ms
+  A:
+    CUT-01 isn't idle — it carries 6 operation(s), running from 2026-01-05 07:00 to 2026-01-07 19:00. Ask "what's running on CUT-01?" for the list.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[161]: how come PAINT-01 isn't busy
+  route=machine-idle  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=machine-idle  conf=0.95  polarity=negative  machine=PAINT-01<-utterance("PAINT-01")  1030ms
+  A:
+    PAINT-01 isn't idle — it carries 4 operation(s), running from 2026-01-05 07:00 to 2026-01-07 10:40. Ask "what's running on PAINT-01?" for the list.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- advice ----------------------------------------------------------------------
+Q[165]: what should I do about the late orders
+  route=advice  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.92  731ms
+  A:
+    1 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    My take: ORD-05's 890-minute slip traces to ORD-04 holding CUT-01 until 2026-01-05 18:50 — pulling that earlier is the single biggest lever the board gives you today.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[166]: how do I make fewer orders late
+  route=advice  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.95  followup=deepen  752ms
+  A:
+    1 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    My take: ORD-05's 890-minute slip traces to ORD-04 holding CUT-01 until 2026-01-05 18:50 — pulling that earlier is the single biggest lever the board gives you today.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[167]: what can I do to improve the schedule
+  route=advice  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.92  followup=deepen  756ms
+  A:
+    1 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    My take: ORD-05's 890-minute slip traces to ORD-04 holding CUT-01 until 2026-01-05 18:50 — pulling that earlier is the single biggest lever the board gives you today.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[168]: help me reduce lateness
+  route=advice  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.92  followup=deepen  1126ms
+  A:
+    1 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    My take: ORD-05's 890-minute slip traces to ORD-04 holding CUT-01 until 2026-01-05 18:50 — pulling that earlier is the single biggest lever the board gives you today.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- coaching --------------------------------------------------------------------
+Q[172]: i want orders to span downtime, how
+  interpreted as: how do I enable that?  (assuming splittable)
+  route=coaching  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.92  concept=splittable<-utterance("spanning downtime")  917ms
+  A:
+    Yes — an operation to pause at a shift end or closure and resume the next working period, so a long job can span downtime instead of waiting for a gap big enough to hold it whole.
+
+    To enable it: set splittable=true and a min_chunk_minutes on that operation's routing line in routing_lines.csv (the run phase becomes resumable; chunk boundaries fall on calendar boundaries, and nothing is billed to the pause). See the incoming-data spec §5.3.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[173]: does MRE support alternate machines
+  interpreted as: does MRE support alternates  (assuming alternates)
+  route=coaching  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.92  concept=alternates<-utterance("alternate machines")  922ms
+  A:
+    Yes — one operation to be eligible on more than one machine, so the solver can route it to whichever is cheapest or free — with an honest per-machine rate for each.
+
+    To enable it: add one routing_lines.csv row per eligible machine sharing the same (route_id, sequence); give each its own run_minutes_per_unit / setup_minutes where the rates differ. See the incoming-data spec §5.3.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[174]: how do I enable overtime
+  route=coaching  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.95  followup=menu-select  concept=overtime<-utterance("overtime")  890ms
+  A:
+    Yes — extra working hours beyond the regular shift — an overtime window a job can run in when the regular calendar is closed, priced at a premium so the schedule only buys those hours when they pay for themselves (e.g. a Saturday shift that rescues a tight order).
+
+    To enable it: add an added exception row with reason overtime on that resource's calendar in calendars.csv (the window it opens), and set an overtime_premium_multiplier in cost_model.json (the premium its hours bill at). See the incoming-data spec §5.6.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[175]: can I set setup families
+  interpreted as: can I set setup_family  (assuming setup_family)
+  route=coaching  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.92  concept=setup_family<-utterance("setup families")  2820ms
+  A:
+    Yes — sequence-dependent changeovers between job families (e.g. a colour change on a paint line) to be modeled and their time amortized by grouping like work.
+
+    To enable it: tag each operation with a setup_family on its routing line (routing_lines.csv, §5.3) and declare the changeover times between families in setup_transitions.csv. See the incoming-data spec §5.11.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[176]: i want to use customer priorities, how
+  route=coaching  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.95  concept=UNRESOLVED<-utterance("customer priorities")  1249ms
+  A:
+    That's a configuration question, and I can point you to the submission setting for it — but I don't recognize which capability you mean.
+
+    Capabilities I can coach today (each names the submission field and its spec section):
+      - splittable, earliness_value, setup_family, alternates, customers, locks, wip, overtime
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- solve-time ------------------------------------------------------------------
+Q[180]: how long did the solve take
+  route=solve-time  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=solve-time  conf=0.99  807ms
+  A:
+    I don't have the solve's timing recorded for this schedule, so I can't give you a number.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[181]: how much time did this take to solve
+  route=solve-time  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=solve-time  conf=0.95  followup=deepen  791ms
+  A:
+    I don't have the solve's timing recorded for this schedule, so I can't give you a number.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[182]: solve duration
+  route=solve-time  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=solve-time  conf=0.95  952ms
+  A:
+    I don't have the solve's timing recorded for this schedule, so I can't give you a number.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- machine-count ---------------------------------------------------------------
+Q[186]: how many machines are there
+  route=machine-count  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=machine-count  conf=0.99  870ms
+  A:
+    5 machine(s) carry work in this plan.
+
+      - CUT-01
+      - HEAT-01
+      - PAINT-01
+      - PRESS-FAST
+      - PRESS-SLOW
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[187]: how many resources in the plan
+  route=inventory  source=parse  conf=0.92  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=inventory  conf=0.92  followup=deepen  1255ms
+  A:
+    15 order(s) are in the plan, scheduled across 17 operation(s).
+    1 operation(s) can split across a pause (e.g. an overnight closure).
+    1 order(s) finish late.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[188]: count the machines
+  interpreted as: how many machines are there?  (listing the previous answer)
+  route=machine-count  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=machine-count  conf=0.95  followup=list-expand  1706ms
+  A:
+    5 machine(s) carry work in this plan.
+
+      - CUT-01
+      - HEAT-01
+      - PAINT-01
+      - PRESS-FAST
+      - PRESS-SLOW
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- maintenance -----------------------------------------------------------------
+Q[192]: is any maintenance scheduled
+  route=maintenance  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=maintenance  conf=0.95  1463ms
+  A:
+    I can't yet answer maintenance, shift, or calendar questions across the whole plan — that's on the roadmap, not built yet.
+    What I can show is one machine's downtime and closures — ask "how much downtime does CUT-01 have?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[193]: are there any planned maintenance windows
+  route=maintenance  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=maintenance  conf=0.95  followup=deepen  797ms
+  A:
+    I can't yet answer maintenance, shift, or calendar questions across the whole plan — that's on the roadmap, not built yet.
+    What I can show is one machine's downtime and closures — ask "how much downtime does CUT-01 have?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[194]: when is maintenance
+  route=maintenance  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=maintenance  conf=0.95  followup=deepen  801ms
+  A:
+    I can't yet answer maintenance, shift, or calendar questions across the whole plan — that's on the roadmap, not built yet.
+    What I can show is one machine's downtime and closures — ask "how much downtime does CUT-01 have?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- customer-schedule -----------------------------------------------------------
+Q[198]: show the schedule for customer Acme
+  route=customer-schedule  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=customer-schedule  conf=0.99  customer=Acme<-utterance("Acme")  972ms
+  A:
+    Nothing scheduled for customer acme.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[199]: what's scheduled for customer Beta
+  route=customer-schedule  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=customer-schedule  conf=0.95  customer=Beta<-utterance("Beta")  1148ms
+  A:
+    Nothing scheduled for customer beta.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- contested-fact --------------------------------------------------------------
+Q[203]: isn't ORD-05 on time
+  route=contested-fact  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=contested-fact  conf=0.95  polarity=negative  order=ORD-05<-utterance("ORD-05")  882ms
+  A:
+    I can see why you'd hope so, but the record has ORD-05 finishing 890 minutes past its due date (due 2026-01-05) — I'm not going to call it on time when the evidence says otherwise.
+    Happy to walk the chain with you though: ask "why is ORD-05 late?" and I'll show exactly what held it up.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[204]: ORD-05 isn't actually late, right
+  interpreted as: is ORD-05 really on time?  (corrected to ORD-05)
+  route=contested-fact  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=contested-fact  conf=0.95  followup=correction  polarity=negative  order=ORD-05<-last-answer("ORD-05")  911ms
+  A:
+    I can see why you'd hope so, but the record has ORD-05 finishing 890 minutes past its due date (due 2026-01-05) — I'm not going to call it on time when the evidence says otherwise.
+    Happy to walk the chain with you though: ask "why is ORD-05 late?" and I'll show exactly what held it up.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[205]: I thought ORD-05 was fine
+  route=contested-fact  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=contested-fact  conf=0.92  followup=deepen  polarity=negative  order=ORD-05<-last-answer("ORD-05")  980ms
+  A:
+    I can see why you'd hope so, but the record has ORD-05 finishing 890 minutes past its due date (due 2026-01-05) — I'm not going to call it on time when the evidence says otherwise.
+    Happy to walk the chain with you though: ask "why is ORD-05 late?" and I'll show exactly what held it up.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
