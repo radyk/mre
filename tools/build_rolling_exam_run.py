@@ -1,5 +1,7 @@
-"""Build the PINNED ROLLING RUN the ai_exam rolling bank asks against — and,
-with ``--register``, put that same world in front of the founder in the cockpit.
+"""Build the pinned rolling run, and with --register put it in the cockpit.
+
+The world the ai_exam rolling bank asks against -- and, with ``--register``, the
+same world in front of the founder, selectable, in one command.
 
 Session 4A.5c CU4/CU5. The exam's monolithic world (``_ai_exam_scratch/gb_pinned``)
 has no sliced state, so every rolling question there is answered "this isn't a
