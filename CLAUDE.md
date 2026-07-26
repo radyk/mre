@@ -123,6 +123,15 @@ its determinism, submits, solves, prints the schedule id to select):
 python tools/build_rolling_exam_run.py --register
 ```
 
+**`?schedule=<id>` is authoritative** (2026-07-26 hotfix). The cockpit loads that id,
+never rewrites the param, and never auto-follows a newer schedule off it — an unknown
+id is a named error over the schedule list, never a substitution. Only a boot WITHOUT
+the param resolves from the listing and auto-follows a resubmit (Session 4.4 CU2).
+To switch boards, click the strip's identity chip (`solve #N`): the **schedule
+picker** lists the registry newest first, tagged rolling vs monolithic. NB
+`dev_cockpit.ps1` mints a fresh busy_board solve on every boot unless `-Resume`, so
+the data root's newest row is usually the last dev restart, not your work.
+
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:

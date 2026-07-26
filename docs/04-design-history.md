@@ -9197,3 +9197,41 @@ REJECTED certificate about every missing file; deliberately narrow (a directory
 with files in it still gets the full cascade — the bigger surface is the
 Gatehouse thread's). CU3: CLAUDE.md gains a dev API quick reference so no session
 reconstructs the two-step from memory again.
+
+### 2026-07-26 — Hotfix: the cockpit honors ?schedule= (and gains a picker)
+
+A deep link to `?schedule=rolling-279dec02-411` loaded a different board. Cause: the
+Session 4.4 CU2 freshness watch runs its first check AT BOOT, and with no uncommitted
+state (always true on a fresh load) it AUTO-FOLLOWS the newest live schedule in the
+data root — so an explicit param lost to the app's own resolution before the board
+settled. In the dev loop the newer row is minted every boot: `dev_cockpit.ps1`
+(terminal 2, not `dev_api.ps1`) submits + solves busy_board on each run unless
+`-Resume`, caching the id in `_data/.last_schedule` — which is exactly where
+`87c705b9-…` came from (registered 19:57, after the rolling run's 19:13; it WAS in
+the registry, just newer). No stale-id leak: the no-param default
+(`resolveScheduleId` → `schedules[0]`) never applied, because the param was present.
+
+CU1 — an explicit `?schedule=` is now AUTHORITATIVE. A pinned boot is never
+auto-followed; the newer schedule is offered in the existing dismissible banner and
+the URL is left exactly as it was. The one param the app writes itself — the landing
+of an auto-follow — is explicitly NOT pinned (read from the same `sessionStorage`
+handoff the 4.4 toast uses), so a tab that followed once keeps following and the 4.4
+resubmit story is intact; `cockpit.spec.mjs`'s three auto-follow tests now boot
+UNPINNED, which is what they were always about. An id the data root has no schedule
+for renders an honest floor that NAMES the id, states nothing was loaded in its
+place, and offers the registered schedules as the recovery — never a substitution.
+
+CU2 — the top strip's identity chip is now the schedule switcher: the listing,
+newest first, each row tagged rolling vs monolithic. The tag is read from the
+STRUCTURAL namings the sliced path mints (`app.py`'s `rolling-<run_id[:12]>`,
+`rolling_horizon`'s `snap-rolling`) because the registry carries no sliced column —
+a `sliced` column would be the durable fix and is NOT taken here. The list renderer
+is shared with CU1's recovery, so the not-found floor IS the picker surface.
+
+Named limits: the no-param default still resolves to the listing's FIRST (oldest)
+row and is corrected only by the auto-follow reload — left alone deliberately, out
+of hotfix scope. The fixture server previously served the base fixture for ANY id;
+it now 404s unknown ids on the document routes, which is what made the CU1 floor
+testable at all. Verified live against the founder's own `_data` root (real API,
+built cockpit): the pinned rolling deep link holds, the picker lists all ten rows
+with the rolling one tagged, and a fake id names itself over a ten-row recovery.

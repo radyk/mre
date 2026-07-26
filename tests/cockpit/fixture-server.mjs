@@ -36,11 +36,17 @@ const DIRS = {
 // rebind serves a coherent document (the harness asserts the state transitions,
 // not a distinct moved-bar fixture). Strip EVERY trailing ``-edit`` so chained
 // versions (``<base>-edit-edit``) still resolve to the base dir (session 3.8).
-const dirFor = (id) => {
+// The fixture dir a schedule id resolves to, or null when this server knows no
+// such schedule. Kept distinct from dirFor (which falls back to the base set for
+// the ancillary routes) so the DOCUMENT routes can answer 404 for an unknown id
+// exactly as the real API does — the hotfix CU1 not-found path is otherwise
+// untestable, because every id used to serve the base fixture.
+const knownDir = (id) => {
   const ex = _EXTRA.find((e) => e.id === id);       // an injected newer schedule
   if (ex) return DIRS[ex.base] || FIX;
-  return DIRS[id] || DIRS[id.replace(/(-edit)+$/, "")] || FIX;
+  return DIRS[id] || DIRS[id.replace(/(-edit)+$/, "")] || null;
 };
+const dirFor = (id) => knownDir(id) || FIX;
 // On-demand pricing state (session 3.3 CU1): ops POSTed for pricing this
 // session, keyed "<scheduleId>|<opId>". A GET /alternatives merges their ghosts.
 const _PRIMED = new Set();
@@ -205,7 +211,12 @@ const server = createServer(async (req, res) => {
     const mSched = p.match(/^\/schedules\/([^/]+)$/);
     if (mSched && req.method === "GET") {
       const sid = mSched[1];
-      const doc = await load("schedule.json", dirFor(sid));
+      const dir = knownDir(sid);
+      if (!dir) {                                   // unknown id → 404 (CU1)
+        res.writeHead(404, { "content-type": "application/json" });
+        return res.end(errEnv(404, `unknown schedule ${sid}`));
+      }
+      const doc = await load("schedule.json", dir);
       // An accepted -edit version reflects its pin: relocate the pinned op's
       // assignment to the pin placement so a rebind actually REFLOWS it (R-M1
       // motion end-states need a real move to assert against). A CHAINED edit
@@ -236,7 +247,12 @@ const server = createServer(async (req, res) => {
     const mMeta = p.match(/^\/schedules\/([^/]+)\/meta$/);
     if (mMeta && req.method === "GET") {
       const sid = mMeta[1];
-      const meta = { ...(await load("meta.json", dirFor(sid))), id: sid };
+      const metaDir = knownDir(sid);
+      if (!metaDir) {                               // unknown id → 404 (CU1)
+        res.writeHead(404, { "content-type": "application/json" });
+        return res.end(errEnv(404, `unknown schedule ${sid}`));
+      }
+      const meta = { ...(await load("meta.json", metaDir)), id: sid };
       const ex = extraFor(sid);
       if (ex) {
         meta.created_at = ex.created_at; meta.status = ex.status;

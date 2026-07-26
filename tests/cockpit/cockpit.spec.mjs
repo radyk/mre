@@ -47,6 +47,24 @@ async function boot(page, extra = "") {
     { timeout: 10000 });
 }
 
+// A boot with NO ?schedule= — the ordinary "open the cockpit" tab, which resolves
+// its schedule from the listing. This is the tab the 4.4 CU2 auto-follow is FOR.
+// A boot WITH the param is a deep link, and since the hotfix session that is
+// authoritative: a pinned tab is offered the newer schedule in the banner and is
+// never yanked off the id it was sent to (see deeplink.spec.mjs CU1). The listing
+// is ordered oldest→newest and every fixture ties on created_at, so an unpinned
+// boot lands on SCHEDULE exactly as the pinned one does.
+async function bootUnpinned(page) {
+  await page.request.post("/__test__/reset").catch(() => {});
+  await page.goto(`/?theme=${theme()}`);
+  await page.waitForFunction(() => window.__cockpit && window.__cockpit.ready === true, { timeout: 20000 });
+  expect(await page.evaluate(() => window.__cockpit.scheduleId),
+         "an unpinned boot resolves to the fixture listing's first row").toBe(SCHEDULE);
+  await page.waitForFunction(
+    () => document.querySelectorAll(".vis-item.bar").length > 0,
+    { timeout: 10000 });
+}
+
 test("load — board renders lanes, bars, and the certificate grade", async ({ page }) => {
   await boot(page);
   // 6 resource lanes rendered as vis groups
@@ -364,9 +382,11 @@ const injectNewer = (page, id, created_at = "2026-01-05T12:00:00Z") =>
 
 // CU2 — the real fix: with NO uncommitted state, a newer schedule appearing while
 // viewing auto-follows (reloads onto the new version) and confirms with a toast
-// that offers a one-click way back.
+// that offers a one-click way back. Boots UNPINNED — the hotfix session made an
+// explicit ?schedule= authoritative, so auto-follow is the behaviour of a tab
+// that resolved its own schedule, not of a deep link.
 test("CU2 — resubmit while viewing auto-follows to the newer schedule", async ({ page }) => {
-  await boot(page);
+  await bootUnpinned(page);
   const NEWER = "sched-newer-autofollow";
   await injectNewer(page, NEWER);
   await page.evaluate(() => { window.__cockpit.checkFreshness(); return true; });
@@ -383,8 +403,11 @@ test("CU2 — resubmit while viewing auto-follows to the newer schedule", async 
 
 // CU2 — uncommitted user state (here: a live bar selection = a pinned deictic
 // scope) outranks freshness: the banner is offered, the board is NEVER yanked.
+// Boots UNPINNED so the uncommitted state is the ONLY thing holding the follow
+// back — on a pinned boot the deep link would hold it back anyway (CU1), and the
+// test would prove nothing about this rule.
 test("CU2 — uncommitted state shows the banner, never auto-switches", async ({ page }) => {
-  await boot(page);
+  await bootUnpinned(page);
   await page.evaluate(() => {
     const op = window.__cockpit.doc.assignments[0].operation_ref;
     window.__cockpit.select(op);
@@ -401,9 +424,9 @@ test("CU2 — uncommitted state shows the banner, never auto-switches", async ({
 });
 
 // CU2 — a window focus rechecks freshness: the exact moment a planner returns
-// from Excel after a data fix.
+// from Excel after a data fix. Unpinned, per the note above.
 test("CU2 — a window focus rechecks freshness and follows", async ({ page }) => {
-  await boot(page);
+  await bootUnpinned(page);
   const NEWER = "sched-newer-onfocus";
   await injectNewer(page, NEWER);
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));

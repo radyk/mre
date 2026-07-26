@@ -4,7 +4,11 @@
 // {api_version, data} | {api_version, error}; this unwraps it.
 //
 // Config comes from the URL query string:
-//   ?schedule=<id>   the schedule to render (else the first base schedule)
+//   ?schedule=<id>   the schedule to render. AUTHORITATIVE (hotfix CU1): the app
+//                    loads exactly this id, never rewrites the param to another,
+//                    and never auto-follows a newer schedule off it — an unknown
+//                    id is an honest named error, never a silent substitution.
+//                    Omitted → resolved from the listing (and stamped into the URL).
 //   ?api=<baseUrl>   optional absolute API base (default: same origin / proxy)
 //   ?ask=<question>  optional: auto-run one question after load (demo/harness)
 //   ?theme=<name>    optional: light (default) | dark — the shipped default is

@@ -3,9 +3,10 @@
 // the ask panel, and paints the top strip (version + grade). Read-only.
 import "./cockpit.css";
 import {
-  CONFIG, resolveScheduleId, getSchedule, getScheduleMeta, resolveSuccessor,
-  listSchedules,
+  CONFIG, ApiError, resolveScheduleId, getSchedule, getScheduleMeta,
+  resolveSuccessor, listSchedules,
 } from "./api.js";
+import { mountSchedulePicker, renderScheduleList } from "./schedulepicker.js";
 import { createBoard } from "./board.js";
 import { createAskPanel } from "./askpanel.js";
 import { wireInteraction } from "./interaction.js";
@@ -94,7 +95,7 @@ function paintTopStrip(el, doc, meta) {
   const ident = scheduleIdentity(doc, meta);
   el.innerHTML = `
     <span class="brand">Reasoning Cockpit</span>
-    <span class="ver" title="${ident.title}">contract ${doc.contract_version} · <span class="sched-ident">${ident.label}</span></span>
+    <span class="ver" title="${ident.title}">contract ${doc.contract_version} · <button type="button" class="sched-ident" id="sched-ident">${ident.label}</button></span>
     <span class="status">${doc.status}</span>
     <span class="grade ${gcls}"><span class="lbl">certificate</span> ${grade}${costing}</span>
     <button class="theme-toggle" id="theme-toggle"></button>`;
@@ -102,6 +103,65 @@ function paintTopStrip(el, doc, meta) {
   const btn = el.querySelector("#theme-toggle");
   paintThemeToggle(btn, currentTheme());
   btn.addEventListener("click", toggleTheme);
+  // Hotfix CU2: the identity chip is the schedule switcher. Recreated on every
+  // repaint like the toggle, so it is (re)mounted here. The bound id is resolved
+  // AT OPEN TIME (a live accept rebinds without a reload), and a pick is a full
+  // navigation — the URL becomes the chosen id.
+  const identBtn = el.querySelector("#sched-ident");
+  identBtn.title = "switch schedule";
+  const picker = mountSchedulePicker(identBtn, {
+    currentId: () => (window.__cockpit && window.__cockpit.scheduleId) || doc.schedule_id,
+    load: listSchedules,
+    onPick: (id) => {
+      const bound = (window.__cockpit && window.__cockpit.scheduleId) || doc.schedule_id;
+      if (id && id !== bound) jumpToVersion(id);
+    },
+  });
+  if (window.__cockpit) window.__cockpit.picker = picker;
+  return picker;
+}
+
+// CU1 — the honest floor for an explicit ?schedule= naming an id this data root
+// does not have. It NAMES the id (a silent substitution is what sent the founder
+// to a different board), states that nothing was loaded in its place, and offers
+// the registered schedules as the recovery — the same list the header picker
+// serves. The listing may itself be down; that renders its own honest line.
+async function scheduleNotFound(app, strip, id) {
+  app.querySelector(".split")?.remove();
+  // the strip's boot placeholder says "loading…" — leaving it there would claim
+  // work is still in flight when it has already failed.
+  strip.innerHTML = `<span class="brand">Reasoning Cockpit</span>`
+    + `<span class="status">no schedule</span>`;
+  const el = document.createElement("div");
+  el.className = "err notfound";
+  el.id = "schedule-not-found";
+  const head = document.createElement("div");
+  head.className = "nf-head";
+  head.append("no schedule ");
+  const code = document.createElement("code");
+  code.className = "nf-id";
+  code.textContent = id;                 // straight from the URL — never innerHTML
+  head.append(code, " in this data root");
+  const sub = document.createElement("div");
+  sub.className = "nf-sub";
+  sub.textContent = "Nothing was loaded in its place. Pick a registered schedule:";
+  el.append(head, sub);
+  app.appendChild(el);
+
+  let schedules = [];
+  try { ({ schedules } = await listSchedules()); } catch { schedules = []; }
+  el.appendChild(renderScheduleList(schedules, {
+    currentId: null,
+    onPick: jumpToVersion,
+    emptyText: "no schedules registered — solve one first (POST /submissions/{id}/solve)",
+  }));
+  window.__cockpit = {
+    ready: true,
+    error: `unknown schedule ${id}`,
+    notFound: id,
+    scheduleId: null,
+    schedules: schedules || [],
+  };
 }
 
 // A read-only banner shown when the loaded schedule has been superseded
@@ -241,7 +301,15 @@ function followedToast(hostEl, prevId) {
 // moment a planner returns from Excel after a data fix — either FOLLOWS it (no
 // uncommitted state) or offers the banner (uncommitted state present). Idempotent
 // per newer id so a banner is never stacked; the auto-follow reload resets state.
-function installFreshnessWatch({ app, boundId, hasUncommittedState }) {
+// `pinned` (hotfix CU1) — the boot carried an explicit ?schedule=. That is an
+// authoritative act: the tab was sent to THAT board on purpose (a deep link
+// pasted from build_rolling_exam_run.py, a bookmark, a shared URL). A pinned tab
+// is therefore NEVER auto-followed; it is OFFERED the newer schedule in the
+// dismissible banner and the planner decides. This is the defect the founder hit:
+// every `dev_cockpit.ps1` boot mints a busy_board solve into the shared _data
+// root, so the boot-time check found a strictly-newer row and yanked the deep
+// link to it before the board had settled (see CU3 in the closeout).
+function installFreshnessWatch({ app, boundId, hasUncommittedState, pinned }) {
   let offeredId = null;      // the newer id we've already surfaced a banner for
   let inFlight = false;
   const currentBound = () => (window.__cockpit && window.__cockpit.scheduleId) || boundId;
@@ -253,8 +321,9 @@ function installFreshnessWatch({ app, boundId, hasUncommittedState }) {
       const id = currentBound();
       const newerId = findNewerSchedule(id, schedules || []);
       if (!newerId || newerId === id) return;
-      if (hasUncommittedState()) {
-        // uncommitted state → never auto-switch; offer the banner (once per id).
+      if (pinned || hasUncommittedState()) {
+        // an explicit ?schedule= or uncommitted state → never auto-switch; offer
+        // the banner (once per id) and leave the URL exactly as it was.
         if (offeredId === newerId && document.getElementById("newer-banner")) return;
         document.getElementById("newer-banner")?.remove();
         newerBanner(app, newerId);
@@ -286,13 +355,42 @@ async function boot() {
     // The URL param is authoritative over the head-script's early stamp, and
     // syncs it back to localStorage + the URL (Session 4.1).
     applyTheme(CONFIG.theme || currentTheme());
+    // The auto-follow handoff (Session 4.4 CU2) is read FIRST, because it also
+    // answers "was this ?schedule= put here by a human?" — see `pinned`.
+    let followedFrom = null;
+    try {
+      followedFrom = sessionStorage.getItem(FOLLOW_KEY);
+      if (followedFrom) sessionStorage.removeItem(FOLLOW_KEY);
+    } catch { /* private mode */ }
+
+    // Hotfix CU1: an explicit ?schedule= is AUTHORITATIVE. It picks the board
+    // (resolveScheduleId already honors it), it is never rewritten to another id
+    // by the app's own freshness resolution (see `pinned` below), and when the id
+    // does not exist the cockpit says so by name instead of substituting.
+    //
+    // The ONE param the app writes itself is the landing of an auto-follow: 4.4
+    // CU2 reloads onto the newer id, so that page's URL carries a param no human
+    // typed. Treating it as pinned would end the follow chain after a single hop
+    // — a tab that followed once would then only ever offer the banner. So an
+    // auto-follow landing is explicitly NOT pinned, and the 4.4 story is intact.
+    const pinned = !!CONFIG.scheduleId && !followedFrom;
     const id = await resolveScheduleId();
-    const [doc, meta] = await Promise.all([getSchedule(id), getScheduleMeta(id)]);
+    let doc, meta;
+    try {
+      [doc, meta] = await Promise.all([getSchedule(id), getScheduleMeta(id)]);
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) {
+        await scheduleNotFound(app, strip, id);
+        return;
+      }
+      throw e;
+    }
     // The URL must always name the version the board IS — even a deep link that
     // resolved via the listing (no ?schedule=) gets its id stamped in, so a
-    // later live rebind + reload stay coherent (session 3.8 CU1).
+    // later live rebind + reload stay coherent (session 3.8 CU1). On a pinned
+    // boot this is a no-op by construction: the id IS the param.
     setUrlSchedule(id);
-    paintTopStrip(strip, doc, meta);
+    const picker = paintTopStrip(strip, doc, meta);
     // Session 4B.3a CU2: a rolling document docks a beyond-horizon tray below the
     // board — mark the host BEFORE createBoard so vis sizes the timeline to the
     // reduced height (board flex:1 + tray fixed) from the first frame.
@@ -343,6 +441,8 @@ async function boot() {
     window.__cockpit = {
       ready: true,
       scheduleId: id,
+      pinned,                     // the boot carried an explicit ?schedule= (CU1)
+      picker,                     // the header schedule switcher (CU2)
       superseded: !!superseded,
       theme: currentTheme(),
       getTheme: currentTheme,
@@ -367,15 +467,11 @@ async function boot() {
 
     // If this boot is the landing after an auto-follow (Session 4.4 CU2),
     // confirm the switch with a toast that offers a one-click way back. The
-    // previous id was stashed in sessionStorage before the reload.
-    let followedFrom = null;
-    try { followedFrom = sessionStorage.getItem(FOLLOW_KEY); } catch { /* ignore */ }
-    if (followedFrom) {
-      try { sessionStorage.removeItem(FOLLOW_KEY); } catch { /* ignore */ }
-      if (followedFrom !== id) {
-        followedToast(app, followedFrom);
-        window.__cockpit.followedFrom = followedFrom;
-      }
+    // previous id was stashed in sessionStorage before the reload and read (+
+    // cleared) at the top of boot, where it also decides `pinned`.
+    if (followedFrom && followedFrom !== id) {
+      followedToast(app, followedFrom);
+      window.__cockpit.followedFrom = followedFrom;
     }
 
     if (superseded) {
@@ -395,7 +491,7 @@ async function boot() {
         const panelBusy = !!(panel && panel.hasUserState && panel.hasUserState());
         return dragBusy || panelBusy;
       };
-      const watch = installFreshnessWatch({ app, boundId: id, hasUncommittedState });
+      const watch = installFreshnessWatch({ app, boundId: id, hasUncommittedState, pinned });
       watch.check();   // notice a newer solve at boot too (the return-from-Excel tab)
       // Fetch the Tier-0 interaction payload in the BACKGROUND, after first
       // paint (R-T1d) — the board is already interactive read-only; the 3.2b
