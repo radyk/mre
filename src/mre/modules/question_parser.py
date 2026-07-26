@@ -92,6 +92,25 @@ def render_intents() -> str:
     return "\n".join(lines)
 
 
+def describe_card(card: Optional[dict]) -> str:
+    """The OPEN DELTA CARD, in one line, for the parse's context block.
+
+    Session 4B.5 CU2. What the model needs is WHETHER a priced move is on screen
+    and WHAT it is about — never the figures. Handing it the numbers would invite
+    it to answer from them, and the parse never answers (R-AI5(1)); the route
+    reads the card itself. So: presence, the order, the machine, and nothing
+    else."""
+    if not card or not card.get("open"):
+        return "none — no priced move is showing."
+    order = (card.get("order") or "").strip()
+    machine = (card.get("machine") or "").strip()
+    where = f" onto {machine}" if machine else ""
+    what = f" of {order}" if order else ""
+    return (f"a priced move{what}{where} is showing on the board right now "
+            f"(the planner can see its cost, the orders it affects, and what "
+            f"else moved).")
+
+
 def render_context(context: Optional[dict]) -> str:
     """The conversation context the parse reads (R-AI5(1)): the live board
     selection, the last answered subject, and the recent turns — exactly the three
@@ -105,7 +124,8 @@ def render_context(context: Optional[dict]) -> str:
         bits = [f"{k}={v}" for k in ("order", "machine") if (v := d.get(k))]
         return " ".join(bits) if bits else "none"
 
-    lines = [f"  BOARD SELECTION (what is highlighted right now): {_pair(selection)}",
+    lines = [f"  OPEN DELTA CARD: {describe_card(context.get('card'))}",
+             f"  BOARD SELECTION (what is highlighted right now): {_pair(selection)}",
              f"  SUBJECT OF THE PREVIOUS ANSWER: {_pair(last)}"]
     # Session 4A.5c CU3(c) rider — the SCOPE NOTE, present only on a question the
     # ADJACENT-MATCH GUARD diverted. It never appears in a parse's context (the
@@ -198,12 +218,23 @@ def _resolve_concept(raw: str) -> Optional[str]:
 def _bind_from_context(kind: SubjectKind, context: dict
                        ) -> tuple[Optional[str], SubjectSource]:
     """A POINTED subject ("this order", "it") bound at the fixed priority the
-    cockpit's channels imply: live board selection > the subject of the previous
-    answer > conversation history. Typed — "that machine" never binds to an order
-    (the founder's confident-wrong bug). None when nothing of that type is live."""
+    cockpit's channels imply: the OPEN DELTA CARD > live board selection > the
+    subject of the previous answer > conversation history. Typed — "that machine"
+    never binds to an order (the founder's confident-wrong bug). None when nothing
+    of that type is live.
+
+    Session 4B.5 CU2 puts the CARD at the top of the ladder, and the reason is
+    that the card is the narrowest channel there is. A selection persists after
+    the planner has stopped thinking about it; a card is open because a move is
+    being weighed right now, and it closes the moment that stops being true. When
+    both are live they usually agree — but where they differ, "this" means the
+    thing that is being decided."""
     key = kind.value
     if key not in ("order", "machine"):
         return None, SubjectSource.UTTERANCE
+    card = context.get("card") or {}
+    if card.get("open") and card.get(key):
+        return card[key], SubjectSource.CARD
     selection = context.get("selection") or {}
     if selection.get(key):
         return selection[key], SubjectSource.SELECTION

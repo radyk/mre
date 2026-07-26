@@ -17,6 +17,37 @@
 // verdict → accepted → published, each step honest about what happened. Discard
 // restores everything at any pre-publish step (the controller animates it).
 
+// The authored line the card shows when the total could NOT be split — the exact
+// wording `mre.modules.sandbox.UNSPLIT_NOTE` carries (one sentence, two
+// languages; a `test_delta_attribution` counterpart pins the Python side).
+export const UNSPLIT_NOTE = "includes window re-optimization";
+
+// "+$1,234.56" / "−$375.83" / "$0" — ONE money formatter, so the split block, the
+// decomposition and the headline can never disagree about how a signed dollar
+// figure reads. Below half a cent is "$0": a sign on a rounding residue is noise
+// dressed as information.
+export function signedMoney(v) {
+  if (v == null) return "";
+  if (Math.abs(v) < 0.005) return "$0";
+  const abs = Math.abs(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  return `${v > 0 ? "+" : "−"}$${abs}`;
+}
+
+// The card's ATTRIBUTION rows (CU1, Session 4B.5) — a PURE read of the beat-two
+// payload, unit-tested framework-free in the `logic` harness project.
+//
+// Returns the two split rows when the baseline was proven, and null when it was
+// not (the caller then renders the unsplit note). Never a partial split: an
+// attribution with one part missing is not an attribution.
+export function attributionRows(result) {
+  if (!result || result.attribution !== "split") return null;
+  if (result.reopt_delta_abs == null || result.move_delta_abs == null) return null;
+  return [
+    { key: "window re-optimization", value: result.reopt_delta_abs, own: false },
+    { key: "your move", value: result.move_delta_abs, own: true },
+  ];
+}
+
 export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPublish, onAskWhy }) {
   const card = document.createElement("div");
   card.className = "delta-card hidden";
@@ -115,6 +146,7 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
 
     // --- always-visible extras (CU2) ------------------------------------
     const alwaysVisible = returnHome ? "" : [
+      _attributionHtml(result),
       _placementLine(result, { nameOf, woOf }),
       _latenessLine(result),
       _affectedOrdersHtml(result),
@@ -161,6 +193,43 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     return card;
   }
 
+  // THE ATTRIBUTION (CU1, Session 4B.5) — the first thing under the headline,
+  // because it is what makes the headline readable.
+  //
+  // The headline is the delta of the RE-SOLVE. Two different gestures on the same
+  // incumbent produced identical headlines (−$11,975.83 to the cent, twice), and
+  // both were true: almost all of it was the window re-optimizing under a fresh
+  // budget the incumbent had never been given. The card now says which part of
+  // that number is the planner's — measured against a BASELINE solve of the same
+  // window with no pin at all, never against the stale incumbent.
+  //
+  // When the baseline could not be proven inside the budget there is no split to
+  // show, and the card says THAT rather than presenting a fused number as though
+  // it were attributable. There is no third state: the split is either drawn or
+  // its absence is stated.
+  function _attributionHtml(result) {
+    const rows = attributionRows(result);
+    if (rows) {
+      return `<div class="dc-split">` + rows.map((r) =>
+        `<div class="dc-split-row${r.own ? " your-move" : ""}">
+          <span class="dc-split-k">${r.key}</span>
+          <span class="dc-split-v">${signedMoney(r.value)}</span>
+        </div>`).join("") + `</div>`;
+    }
+    if (result.cost_delta_abs == null) return "";   // no dollars to attribute
+    const why = (result.attribution_note || "").trim();
+    const el = document.createElement("div");
+    el.className = "dc-split unsplit";
+    el.innerHTML = `<div class="dc-split-note">${UNSPLIT_NOTE}</div>`;
+    if (why && why !== UNSPLIT_NOTE) {
+      const d = document.createElement("div");
+      d.className = "dc-split-why";
+      d.textContent = why;                  // a server string — never innerHTML
+      el.appendChild(d);
+    }
+    return el.outerHTML;
+  }
+
   // The moved op's FINAL placement (always-visible): where the dropped bar landed.
   function _placementLine(result, { nameOf, woOf }) {
     const pin = (result.moves || []).find((m) => m.pinned) || null;
@@ -193,8 +262,7 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     const rows = orders.map((o) => {
       const wo = o.work_order || (o.demand_ref || "").slice(0, 8);
       const t = o.tardiness_delta;
-      const tstr = (t != null && Math.abs(t) >= 0.005)
-        ? `${t > 0 ? "+" : "−"}$${Math.abs(t).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "";
+      const tstr = (t != null && Math.abs(t) >= 0.005) ? signedMoney(t) : "";
       const l = o.lateness_delta_min;
       const lstr = (l != null && l !== 0)
         ? `${l > 0 ? "+" : "−"}${Math.abs(l)}min` : "";
@@ -217,12 +285,9 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
   // (summing to the verdict) + the operational consequences (the moved-set).
   function _detailLayer(result, lineHtml, equivalent, pending, { open }) {
     const lines = result.cost_lines || [];
-    const decompHtml = lines.length ? lines.map((l) => {
-      const v = l.delta;
-      const vstr = Math.abs(v) < 0.005 ? "$0"
-        : `${v > 0 ? "+" : "−"}$${Math.abs(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-      return `<div class="dc-costline"><span>${l.line}</span><span>${vstr}</span></div>`;
-    }).join("") : "";
+    const decompHtml = lines.length ? lines.map((l) =>
+      `<div class="dc-costline"><span>${l.line}</span><span>${signedMoney(l.delta)}</span></div>`
+    ).join("") : "";
     const decomp = decompHtml
       ? `<div class="dc-decomp"><div class="dc-decomp-h">cost by line</div>${decompHtml}</div>` : "";
     const consequences = lineHtml
@@ -243,9 +308,7 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     // decomposed cost delta; decision.delta_abs is the SCALED objective and is
     // never shown as dollars.
     const td = decision && decision.cost_delta && decision.cost_delta.total_delta;
-    const delta = td != null
-      ? ` · ${td >= 0 ? "+" : "−"}$${Math.abs(td).toLocaleString(undefined, { maximumFractionDigits: 2 })}`
-      : "";
+    const delta = td != null ? ` · ${signedMoney(td)}` : "";
     const shortId = (newScheduleId || "").slice(0, 8);
     card.innerHTML = `
       <div class="dc-head">
@@ -340,7 +403,7 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     if (cAbs != null) {
       if (Math.abs(cAbs) < 0.005) return "Same cost";
       const pct = cPct != null ? `${cPct > 0 ? "+" : "−"}${Math.abs(cPct).toFixed(2)}% cost · ` : "";
-      return `${pct}${cAbs > 0 ? "+" : "−"}$${Math.abs(cAbs).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+      return `${pct}${signedMoney(cAbs)}`;
     }
     // no ledger dollars → relative objective change only, labelled honestly
     const d = result.delta_pct;

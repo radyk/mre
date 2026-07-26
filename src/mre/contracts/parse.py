@@ -75,6 +75,16 @@ class Intent(str, Enum):
     # `late-orders`) and not one order's chain (that is `late-order`). It is on
     # PROBATION (contracts.promotion.PROMOTIONS) and demotable by a flag flip.
     LATENESS_CAUSE = "lateness-cause"
+    # Session 4B.5 CU2 — the OPEN DELTA CARD. A priced move is showing on the
+    # board and the planner asks about IT ("what orders are affected in this
+    # move", "these orders", "the delta"). Before this the question had nowhere
+    # to go: the founder's own exchange parsed as `swap-move`, which reasons about
+    # two orders' slack and knows nothing about the card on screen — a guess where
+    # the answer was already computed and sitting in front of them. The card is a
+    # CONTEXT CHANNEL (highest priority in the resolution ladder) and this is the
+    # route that voices it. Reachable ONLY when a card is open; the dispatch
+    # enforces that, because the model reports and never decides (R-AI5(8)).
+    OPEN_CARD = "open-card"
     VERSION_DIFF = "version-diff"
     EDIT_SUMMARY = "edit-summary"
     EDIT_COST = "edit-cost"
@@ -118,10 +128,20 @@ class SubjectKind(str, Enum):
 
 class SubjectSource(str, Enum):
     """Where a subject's referent came from. The answer surface says which context
-    won (RUBRIC C3) — a live board selection outranks the last answered subject,
-    which outranks conversation history."""
+    won (RUBRIC C3).
+
+    The ladder, highest priority first (Session 4B.5 CU2 puts CARD at the top):
+
+      CARD        — an OPEN DELTA CARD is showing a priced move. Nothing outranks
+                    it: the planner is looking at one thing, they asked about one
+                    thing, and every other channel is a weaker guess about what.
+      SELECTION   — a live board selection.
+      LAST_ANSWER — the subject of the previous answer.
+      HISTORY     — earlier in the conversation.
+    """
 
     UTTERANCE = "utterance"
+    CARD = "card"
     SELECTION = "selection"
     LAST_ANSWER = "last-answer"
     HISTORY = "history"
@@ -328,6 +348,15 @@ INTENT_MEANINGS: dict[Intent, str] = {
         "named order, a selected order, or the order the previous answer was "
         "about — including a bare \"but why\" — it is `late-order`. It is also "
         "not the list or the count (`late-orders`)",
+    # Session 4B.5 CU2 — reachable ONLY when the context block shows an OPEN
+    # DELTA CARD. The meaning says so, and the dispatch enforces it: an
+    # `open-card` parse with no card in context is not answered as one.
+    Intent.OPEN_CARD:
+        "a question about the PRICED MOVE the delta card is showing right now — "
+        "\"what orders are affected in this move\", \"what does this move cost\", "
+        "\"the delta\", \"these orders\", \"what else moved\", \"is this worth "
+        "it\". Only when the context block says a delta card is OPEN; with no "
+        "card open the same words are about the plan, not about a card",
     Intent.WHY_ON_MACHINE:
         "why an order was assigned to a particular machine",
     Intent.MACHINE_SCHEDULE:
@@ -387,7 +416,11 @@ INTENT_MEANINGS: dict[Intent, str] = {
     Intent.ADVICE:
         "what should I DO about lateness or capacity — a recommendation, an "
         "intervention, or a hypothesis about changing the plant (\"if we ran "
-        "overtime...\", \"can I get this done faster\")",
+        "overtime...\", \"can I get this done faster\"). If the question NAMES a "
+        "capability the submission can declare (overtime, splitting, alternates, "
+        "customers, earliness, spanning downtime, WIP), carry it as a concept "
+        "subject — including in a push-back like \"so you can't tell me if "
+        "overtime will help\", where the capability is what they actually want",
     Intent.COACHING:
         "how do I enable / configure a capability in the submission (splitting, "
         "overtime, alternates, customers, earliness, spanning downtime, WIP)",

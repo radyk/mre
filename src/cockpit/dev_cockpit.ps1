@@ -10,7 +10,18 @@ param(
     # and skip the submit → solve → alternatives steps — a fast restart of just
     # the Vite dev server against an already-solved board. Falls back to a full
     # run if no cached schedule exists or it is no longer reachable.
-    [switch]$Resume
+    #
+    # Session 4B.5 CU4(e): this is now the DEFAULT whenever the data root already
+    # holds a cached schedule, and the switch is kept only so an explicit
+    # -Resume still reads as intent. Minting a fresh solve on every dev restart
+    # is what made the data root's newest row "the last dev restart" rather than
+    # "your work" — and the freshness watch, correctly, offered to follow it. The
+    # dev loop should not manufacture the very noise the product then has to
+    # handle.
+    [switch]$Resume,
+    # Force the full submit → solve → alternatives cycle even when a cached
+    # schedule is reachable. The way to deliberately mint a new board.
+    [switch]$Fresh
 )
 $ErrorActionPreference = 'Stop'
 
@@ -29,17 +40,20 @@ try {
     throw "API not reachable at $api - start dev_api.ps1 in another terminal first."
 }
 
-# -Resume: reuse the last solved schedule (cached below) and skip the slow
+# Reuse the last solved schedule (cached below) and skip the slow
 # submit → solve → alternatives steps, as long as it is still reachable.
+# Session 4B.5 CU4(e): resuming is the DEFAULT; -Fresh opts out of it.
 $sch = $null
-if ($Resume -and (Test-Path $lastFile)) {
+$reuse = (-not $Fresh) -and (Test-Path $lastFile)
+if ($Fresh) { Write-Host "[dev_cockpit] -Fresh: minting a new solve (not reusing the cached board)" }
+if ($reuse) {
     $cached = (Get-Content $lastFile -Raw).Trim()
     try {
         Invoke-RestMethod -Uri "$api/schedules/$cached/meta" -TimeoutSec 5 | Out-Null
         $sch = $cached
-        Write-Host "[dev_cockpit] -Resume: reusing schedule_id=$sch (skipping submit/solve/alternatives)"
+        Write-Host "[dev_cockpit] reusing schedule_id=$sch (skipping submit/solve/alternatives; -Fresh to mint a new one)"
     } catch {
-        Write-Host "[dev_cockpit] -Resume: cached schedule $cached not reachable - running a full solve"
+        Write-Host "[dev_cockpit] cached schedule $cached not reachable - running a full solve"
     }
 }
 

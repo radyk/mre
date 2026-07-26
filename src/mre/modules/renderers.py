@@ -176,11 +176,235 @@ _HEADER_ONLY_SUBJECTS = frozenset({
     # CLAIM BLOCKS with per-claim provenance; the raw chain under it would repeat
     # the same records the claims already cite, unlabeled.
     "synthesis", "prove_it",
+    # Session 4B.5 CU2 — the open delta card is VOICED, not re-derived: its whole
+    # answer is the card's own figures in sentences, and it carries no evidence
+    # chain by construction (the card arrived on the context channel).
+    "open_card",
 })
 
 # The citation-breadth cap (CU6): a schedule-wide answer shows at most this many
 # raw records before summarizing "… and N more".
 CITATION_CAP = 8
+
+
+# ---------------------------------------------------------------------------
+# THE VACUOUS-CAUSAL TRIPWIRE (Session 4B.5 CU3b).
+#
+# The founder's specimen: "why is ORD-000008 on PAINT-02?" -> "because the
+# machine was busy with other work [record: bafa03f1…]". Every existing check
+# passed it, and they were right to: the record is real, the citation is real,
+# there is no fabricated timestamp, number or machine name. The testimony
+# validator asks "is anything here made up"; nothing was. What nobody asked is
+# whether the sentence SAYS anything — and an unfalsifiable sentence fabricates
+# nothing by construction, so it sails through a fabrication check every time.
+#
+# So the causal routes get a check of the other kind. It is deliberately a FLOOR,
+# not a judgment of quality: three ways to say something, any one of which is
+# enough, and an answer with none of them is not an answer.
+# ---------------------------------------------------------------------------
+
+#: The subject types whose answers CLAIM A CAUSE — why-on-machine and why-late
+#: (both "demand"), start-reason, and the gap explainer. These are the answers a
+#: planner acts on, and the ones where saying nothing convincingly is possible.
+CAUSAL_SUBJECT_TYPES = frozenset({"demand", "start_reason", "gap_between"})
+
+# Quantity: any digit. A date, a duration, a count and a dollar figure are all
+# concrete and all checkable, and a causal answer carrying one of them is not the
+# thing this tripwire is for.
+_QUANTITY_RE = re.compile(r"\d")
+
+
+def causal_vacuity(text: str, *, subjects=(), entities=(),
+                   driver_phrases=None) -> Optional[str]:
+    """Is this causal answer VACUOUS? None when it says something; a stated reason
+    when it does not — the caller then fails closed (Session 4B.5 CU3b).
+
+    An answer is NOT vacuous if it does any one of these:
+
+      * names a DRIVER PHRASE from the authored vocabulary — the plant's own
+        causal language, which is at least a claim about a mechanism;
+      * names a CONCRETE ENTITY BEYOND the question's own subjects — another
+        order, another machine. Repeating back the two nouns the planner just
+        said is not an answer to why;
+      * states a QUANTITY — a time, a duration, a count, a cost.
+
+    Record citations and the rendered-by footer are stripped first: a footnote is
+    provenance for a claim, never the claim, and an answer that is nothing but
+    citations is the exact shape this catches.
+
+    NAMED LIMIT (quantities). A quantity is a DIGIT. "Two other jobs were ahead
+    of it" states a real one and is not detected, so it fails closed to the
+    template — the safe direction for a floor, and cheaper than teaching a
+    tripwire to read numerals in words.
+
+    NAMED LIMIT, stated rather than implied. The founder's own specimen PASSES
+    this check — "the machine was busy with other work" IS a driver phrase — and
+    it is fixed at its assembler (CU3a), not here. That is the honest division:
+    this tripwire is a floor under the whole causal class, and a floor cannot
+    also be the ceiling. A vacuous answer that reaches for the driver vocabulary
+    is a vocabulary problem, and the place to fix a vocabulary problem is the
+    vocabulary."""
+    if driver_phrases is None:
+        from mre.modules.planner_language import DRIVER_PHRASING
+        driver_phrases = set(DRIVER_PHRASING.values())
+    body = re.sub(r"\n\[rendered by:.*", "", text or "", flags=re.DOTALL)
+    body = re.sub(r"\[record:[^\]]*\]", " ", body)
+    stripped = body.strip()
+    if not stripped:
+        return "empty answer"
+    low = stripped.lower()
+    for phrase in driver_phrases:
+        if phrase and phrase.lower() in low:
+            return None
+    own = {str(s).upper() for s in subjects if s}
+    for name in entities:
+        if not name or str(name).upper() in own:
+            continue
+        if str(name).lower() in low:
+            return None
+    # The subjects come OUT before the quantity scan. Entity refs carry digits
+    # ("ORD-000008", "PAINT-02"), so scanning the raw text would let every answer
+    # that merely repeats the question's own nouns count as stating a quantity —
+    # which is precisely the shape this exists to catch.
+    quantities = stripped
+    for name in sorted(own, key=len, reverse=True):
+        quantities = re.sub(re.escape(name), " ", quantities, flags=re.IGNORECASE)
+    if _QUANTITY_RE.search(quantities):
+        return None
+    return ("names no driver, no entity beyond the question's own subjects, "
+            "and no quantity")
+
+
+# ---------------------------------------------------------------------------
+# THE REPEAT RIDERS (Session 4B.5 CU5b/c).
+#
+# The dispatch counts how many of the last two turns this same route already
+# answered and puts the number on the bundle. The renderer does the rest, because
+# how an answer READS is the renderer's job — and because doing it here means
+# every route gets it, rather than each route learning the rule separately.
+#
+# The FACTS never vary. Only the lead does, and only when the planner has just
+# been given them.
+# ---------------------------------------------------------------------------
+
+#: Subject types whose headline IS a count, and the key_facts slot it lives in.
+#: On a re-ask these answer with the number and an offer, not the full recitation
+#: (CU5c). Add, never repurpose — a new count-shaped route gets an entry here.
+COUNT_SUBJECTS: dict[str, str] = {
+    "late_orders": "late_count",
+    "inventory": "order_count",
+    "machine_count": "machine_count",
+}
+
+
+def terse_count_answer(bundle) -> Optional[str]:
+    """The TERSE re-ask answer for a count-shaped route, or None when this is not
+    one (Session 4B.5 CU5c).
+
+    "How many orders are late" answered "13", then asked again, used to recite
+    all thirteen a second time. The planner already has the list; what a re-ask
+    wants is the number — and a door back to the detail, so terseness never costs
+    them anything."""
+    from mre.modules.ask_fallback_copy import (
+        REPEAT_COUNT_BARE, REPEAT_COUNT_WITH_LIST,
+    )
+    kf = bundle.key_facts or {}
+    if not kf.get("repeat"):
+        return None
+    slot = COUNT_SUBJECTS.get(bundle.subject_type or "")
+    if slot is None:
+        return None
+    count = kf.get(slot)
+    if not isinstance(count, int):
+        return None
+    # the offer is only honest when there IS a list behind the number
+    listed = any(isinstance(v, list) and v for k, v in kf.items()
+                 if k != "excluded_summary")
+    return (REPEAT_COUNT_WITH_LIST if listed else REPEAT_COUNT_BARE).format(
+        count=count)
+
+
+def repeat_lead(bundle) -> str:
+    """The authored variant lead for a re-fired route, or "" (Session 4B.5 CU5b).
+
+    Indexed by repeat depth, so a third ask does not get the second ask's line
+    either. It prefixes the answer; it never replaces a word of it."""
+    from mre.modules.ask_fallback_copy import REPEAT_LEADS
+    depth = (bundle.key_facts or {}).get("repeat") or 0
+    if not isinstance(depth, int) or depth < 1:
+        return ""
+    return REPEAT_LEADS[min(depth, len(REPEAT_LEADS)) - 1]
+
+
+def apply_repeat_riders(bundle, text: str) -> str:
+    """The single delivery seam for both repeat riders — called from BOTH
+    renderers' ``render``, so the template and the LLM path can never disagree
+    about whether the planner just asked this."""
+    terse = terse_count_answer(bundle)
+    if terse is not None:
+        footer = ""
+        marker = "\n[rendered by:"
+        if marker in text:
+            footer = text[text.index(marker):]
+        return terse + footer
+    lead = repeat_lead(bundle)
+    if not lead:
+        return text
+    return f"{lead}\n{text}" if text else lead
+
+
+def causal_material(bundle) -> tuple[set, set]:
+    """``(subjects, entities)`` for :func:`causal_vacuity`, read off a bundle.
+
+    ``subjects`` are the nouns the QUESTION already carried — naming them back is
+    not an answer. ``entities`` are the external names the bundle's own evidence
+    records could legitimately let an answer name."""
+    kf = bundle.key_facts or {}
+    subjects = {bundle.subject_external_name}
+    for slot in ("machine_ref", "machine", "order", "order_a", "order_b"):
+        if kf.get(slot):
+            subjects.add(kf[slot])
+    entities: set = set()
+    for rec in bundle.ordered_records or []:
+        for s in rec.get("subjects", []) or []:
+            name = _resolve_name(s.get("entity_id", ""), s.get("entity_type", ""),
+                                 bundle.identity_map)
+            if name and name != s.get("entity_id"):
+                entities.add(name)
+    return {s for s in subjects if s}, entities
+
+
+def _signed_money(v) -> str:
+    """"+$1,234.56" / "−$375.83" / "$0" — the delta card's own money format, in
+    Python (Session 4B.5 CU2). The card answer and the card must read the same;
+    the JS side is ``sandboxui.signedMoney`` and the two are pinned to each other
+    by ``test_open_card``. Below half a cent is "$0": a sign on a rounding
+    residue is noise dressed as information."""
+    if v is None:
+        return ""
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        return ""
+    if abs(v) < 0.005:
+        return "$0"
+    return f"{'+' if v > 0 else '−'}${abs(v):,.2f}"
+
+
+def _affected_effect(a: dict) -> str:
+    """One affected order's effect, in the card's own vocabulary: its per-Demand
+    tardiness dollars and/or its lateness minutes. Never a PRODUCTION figure —
+    the ledger does not roll production dollars per order (a named debt), and the
+    card's own column header says the same thing."""
+    bits = []
+    t = a.get("tardiness_delta")
+    if t is not None and abs(float(t)) >= 0.005:
+        bits.append(f"{_signed_money(t)} tardiness")
+    lm = a.get("lateness_delta_min")
+    if lm:
+        lm = int(lm)
+        bits.append(f"{'+' if lm > 0 else '−'}{abs(lm)} min")
+    return " · ".join(bits) if bits else "no lateness change"
 
 
 class TemplateRenderer:
@@ -189,8 +413,8 @@ class TemplateRenderer:
     def render(self, bundle: ExplanationBundle) -> str:
         # CU3 — the single delivery seam: strip markdown/backticks from every
         # register's output here, so no register can leak formatting.
-        return strip_formatting(
-            self._render_body(bundle) + "\n" + _rendered_by(bundle, "template"))
+        return apply_repeat_riders(bundle, strip_formatting(
+            self._render_body(bundle) + "\n" + _rendered_by(bundle, "template")))
 
     def _render_body(self, bundle: ExplanationBundle) -> str:
         # R-AI2(d) (Session 4A.2d) — the transcript convention dies: no "=== q ==="
@@ -267,6 +491,30 @@ class TemplateRenderer:
             if kf.get("machine_ref"):
                 name = bundle.subject_external_name
                 cause = kf.get("cause")
+                # Session 4B.5 CU3(a) — a CAPACITY_BLOCKED placement gets its
+                # CONCRETE story or an explicit admission that the occupancy does
+                # not carry one. "the machine was busy with other work" alone is
+                # unfalsifiable, and on a why-on-MACHINE question it points at a
+                # machine the order is not even on.
+                alts = kf.get("blocked_alternatives")
+                if kf.get("driver_code") == "CAPACITY_BLOCKED" and alts is not None:
+                    from mre.modules.ask_fallback_copy import (
+                        WHY_MACHINE_CAPACITY_LEAD, WHY_MACHINE_CAPACITY_ONLY_OPTION,
+                        WHY_MACHINE_CAPACITY_ROW, WHY_MACHINE_CAPACITY_UNATTRIBUTED,
+                    )
+                    lines.append(WHY_MACHINE_CAPACITY_LEAD.format(
+                        order=name, machine=kf["machine_ref"]))
+                    if alts:
+                        for a in alts:
+                            lines.append(WHY_MACHINE_CAPACITY_ROW.format(
+                                machine=a["machine"], blocker=a["blocker_order"],
+                                until=a["until"]))
+                    else:
+                        lines.append(WHY_MACHINE_CAPACITY_ONLY_OPTION
+                                     if kf.get("only_option")
+                                     else WHY_MACHINE_CAPACITY_UNATTRIBUTED)
+                    lines.append("")
+                    return
                 because = f" because {cause}" if cause else ""
                 lines.append(f"{name} is on {kf['machine_ref']}{because}.")
                 lines.append("")
@@ -688,6 +936,9 @@ class TemplateRenderer:
                          if order and machine else CONFIRM_TAKE_GESTURE_GENERIC)
             lines.append("")
 
+        elif bundle.subject_type == "open_card":
+            self._render_open_card(lines, bundle.key_facts.get("card") or {})
+
         elif bundle.subject_type == "advice":
             # CU2 (Session 4B.4) — the honest SCOPING answer. Conversational,
             # never a status recital, never an invented intervention.
@@ -896,7 +1147,7 @@ class TemplateRenderer:
         B, here's each"."""
         from mre.modules.ask_fallback_copy import (
             PROVE_IT_INTERPRETIVE, PROVE_IT_INTERPRETIVE_BARE, PROVE_IT_NO_TARGET,
-            PROVE_IT_RECORD_LINE, PROVE_IT_VERIFIED,
+            PROVE_IT_READ_FROM, PROVE_IT_RECORD_LINE, PROVE_IT_VERIFIED,
         )
         kf = bundle.key_facts or {}
         claim = kf.get("claim")
@@ -919,6 +1170,14 @@ class TemplateRenderer:
             for row in rows:
                 lines.append(PROVE_IT_RECORD_LINE.format(
                     summary=row.get("summary", "?"), rid=row.get("rid", "?")))
+        # Session 4B.5 CU5(d): the READINGS this one sentence came out of. Per
+        # claim by construction — the verifier derives it from which tool calls
+        # surfaced the records the claim was checked against, so two claims in one
+        # answer can and do carry different lines.
+        read_from = [t for t in (claim.get("read_from") or []) if t]
+        if read_from:
+            lines.append("")
+            lines.append(PROVE_IT_READ_FROM.format(tools=", ".join(read_from)))
         lines.append("")
 
     # ------------------------------------------------------------------
@@ -1309,6 +1568,107 @@ class TemplateRenderer:
         self._render_excluded_note(lines, bundle)
         lines.append("")
 
+    def _render_open_card(self, lines: list[str], card: dict) -> None:
+        """Session 4B.5 CU2 — the OPEN DELTA CARD, read back.
+
+        Every number here came off the sandbox result the card is already showing.
+        Nothing is recomputed, nothing is looked up, and the composition order is
+        the card's own — so the answer and the surface can never drift apart. If
+        they ever do, one of them is wrong, and this renderer is the reason it
+        cannot be this one.
+
+        Which PART of the card the planner asked about is deliberately not
+        classified: "the delta", "these orders" and "this move" would need a
+        keyword table to separate, and the card is small enough to say whole."""
+        from mre.modules.ask_fallback_copy import (
+            OPEN_CARD_AFFECTED_LEAD, OPEN_CARD_AFFECTED_NONE,
+            OPEN_CARD_AFFECTED_ROW, OPEN_CARD_BOUNDARY,
+            OPEN_CARD_CLOSED, OPEN_CARD_COMMITTED_SAFE,
+            OPEN_CARD_CONSEQUENCES, OPEN_CARD_CONSEQUENCES_NONE,
+            OPEN_CARD_DRIVER, OPEN_CARD_INFEASIBLE, OPEN_CARD_LATENESS_BETTER,
+            OPEN_CARD_LATENESS_NONE, OPEN_CARD_LATENESS_WORSE, OPEN_CARD_LEAD,
+            OPEN_CARD_NO_PRICE, OPEN_CARD_PLACEMENT, OPEN_CARD_PLACEMENT_BARE,
+            OPEN_CARD_SPLIT, OPEN_CARD_UNSPLIT,
+        )
+        if not card or not card.get("open"):
+            lines.append(OPEN_CARD_CLOSED)
+            lines.append("")
+            return
+
+        # A refused placement has no price and no consequences to read back — the
+        # card's whole content is the refusal and the fact that nothing changed.
+        if card.get("feasible") is False or card.get("outcome") == "no_verdict":
+            msg = (card.get("message") or "").strip()
+            lines.append(OPEN_CARD_INFEASIBLE.format(
+                message=(msg + "." if msg and not msg.endswith(".") else msg)
+                        or "the sandbox could not place it there."))
+            lines.append("")
+            return
+
+        lines.append(OPEN_CARD_LEAD)
+        machine = card.get("machine")
+        when = f" at {card['when']}" if card.get("when") else ""
+        if machine:
+            order = card.get("order")
+            lines.append(OPEN_CARD_PLACEMENT.format(
+                order=order, machine=machine, when=when) if order
+                else OPEN_CARD_PLACEMENT_BARE.format(machine=machine, when=when))
+
+        total = card.get("cost_delta_abs")
+        if total is None:
+            lines.append(OPEN_CARD_NO_PRICE)
+        elif (card.get("attribution") == "split"
+              and card.get("reopt_delta_abs") is not None
+              and card.get("move_delta_abs") is not None):
+            lines.append(OPEN_CARD_SPLIT.format(
+                total=_signed_money(total),
+                reopt=_signed_money(card["reopt_delta_abs"]),
+                move=_signed_money(card["move_delta_abs"])))
+        else:
+            lines.append(OPEN_CARD_UNSPLIT.format(total=_signed_money(total)))
+
+        lines.append("")
+        affected = [a for a in (card.get("affected_orders") or []) if a]
+        if affected:
+            lines.append(OPEN_CARD_AFFECTED_LEAD.format(n=len(affected)))
+            for a in affected:
+                lines.append(OPEN_CARD_AFFECTED_ROW.format(
+                    order=a.get("work_order") or "an order",
+                    effect=_affected_effect(a)))
+        else:
+            lines.append(OPEN_CARD_AFFECTED_NONE)
+
+        lateness = card.get("lateness_delta_min")
+        if lateness:
+            hours = round(abs(int(lateness)) / 60.0, 1)
+            lines.append(OPEN_CARD_LATENESS_WORSE.format(hours=hours)
+                         if lateness > 0
+                         else OPEN_CARD_LATENESS_BETTER.format(hours=hours))
+        else:
+            lines.append(OPEN_CARD_LATENESS_NONE)
+
+        moves = card.get("moves")
+        if isinstance(moves, int):
+            # the card counts the PINNED op among its moved-set; the planner's
+            # "what else moved" is the rest of it.
+            others = max(0, moves - 1)
+            lines.append(OPEN_CARD_CONSEQUENCES.format(n=others) if others
+                         else OPEN_CARD_CONSEQUENCES_NONE)
+        if card.get("no_committed_work_changes"):
+            lines.append(OPEN_CARD_COMMITTED_SAFE)
+
+        driver = card.get("dominant_driver") or {}
+        if driver.get("phrase"):
+            phrase = driver["phrase"]
+            hedge = (driver.get("hedge") or "").strip()
+            lines.append("")
+            lines.append(OPEN_CARD_DRIVER.format(
+                phrase=phrase + (f" {hedge}" if hedge else "")))
+
+        lines.append("")
+        lines.append(OPEN_CARD_BOUNDARY)
+        lines.append("")
+
     def _render_contested(self, lines: list[str], bundle: ExplanationBundle) -> None:
         """CU6 / R-AI3(4) — warm evidence, never capitulation, never hardening.
         Restate what the record shows and offer to walk the chain."""
@@ -1613,6 +1973,11 @@ class LLMRenderer:
         # names a gesture and a boundary (M10 has no write path). An LLM reword is
         # exactly where "I'll move it for you" would come from.
         "confirm_take",
+        # Session 4B.5 CU2: the open delta card is read BACK, verbatim from the
+        # card's own figures. An LLM reword is where the answer would start
+        # disagreeing with the surface the planner is looking at — the one failure
+        # this route exists to make impossible.
+        "open_card",
         # Session 4A.5a CU5: drill_down renders a composed FINDING detail — the
         # same authored, planner-voiced body `findings` renders — and the LLM kept
         # footnoting its list ordinal as a record ("[record: EVIDENCE CHAIN]"),
@@ -1664,7 +2029,8 @@ class LLMRenderer:
         # CU3 — the single delivery seam (mirrors TemplateRenderer.render): every
         # register — testimony, remediation, judgment, the authored fallbacks —
         # returns through _render_inner and is stripped of markdown/backticks here.
-        return strip_formatting(self._render_inner(bundle))
+        return apply_repeat_riders(bundle, strip_formatting(
+            self._render_inner(bundle)))
 
     def _render_inner(self, bundle: ExplanationBundle) -> str:
         if bundle.subject_type in ("remediation", "triage"):
@@ -1706,19 +2072,38 @@ class LLMRenderer:
                 issues2 = self._validate_testimony(
                     text, known_ts, known_time, known_machines, known_records)
                 if issues2:
-                    body = TemplateRenderer()._render_body(bundle)
-                    warn = "[LLM validation failed: {}; fell back to template]".format(
-                        "; ".join(issues2[:2])
-                    )
-                    return (
-                        body + "\n" + warn
-                        + "\n[rendered by: template (LLM validated) | register: testimony]"
-                    )
+                    return self._validated_template_fallback(bundle, issues2)
+            # Session 4B.5 CU3(b) — THE VACUOUS-CAUSAL TRIPWIRE. Everything above
+            # asks whether anything here is MADE UP. On a causal route there is a
+            # second way to be wrong: to say nothing at all, convincingly. An
+            # answer that names no driver, no entity beyond the question's own
+            # subjects and no quantity is unfalsifiable — which is why every
+            # fabrication check passes it — and it FAILS CLOSED to the template,
+            # whose causal clause is composed from the evidence rather than
+            # written.
+            if bundle.subject_type in CAUSAL_SUBJECT_TYPES:
+                subjects, entities = causal_material(bundle)
+                why = causal_vacuity(text, subjects=subjects, entities=entities)
+                if why:
+                    return self._validated_template_fallback(
+                        bundle, [f"vacuous causal answer: {why}"])
             return (_append_take(text, bundle)
                     + f"\n[rendered by: LLM ({self._model}) | register: testimony]")
         except Exception as exc:  # noqa: BLE001 — render must never raise
             return self._template_fallback(
                 bundle, f"LLM error: {type(exc).__name__}", "testimony")
+
+    def _validated_template_fallback(self, bundle: ExplanationBundle,
+                                     issues: list[str]) -> str:
+        """The validated-render fail-closed exit: the deterministic template body,
+        the reason it was used, and the rendered-by line that names the path.
+        One implementation, so a new check can never fall back differently from an
+        old one (Session 4B.5 CU3b factored this out of ``render``)."""
+        body = TemplateRenderer()._render_body(bundle)
+        warn = "[LLM validation failed: {}; fell back to template]".format(
+            "; ".join(issues[:2]))
+        return (body + "\n" + warn
+                + "\n[rendered by: template (LLM validated) | register: testimony]")
 
     def _render_register(self, bundle: ExplanationBundle) -> str:
         """Remediation / judgment-triage register (handoff §3): the deterministic

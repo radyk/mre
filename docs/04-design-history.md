@@ -9235,3 +9235,257 @@ it now 404s unknown ids on the document routes, which is what made the CU1 floor
 testable at all. Verified live against the founder's own `_data` root (real API,
 built cockpit): the pinned rolling deep link holds, the picker lists all ten rows
 with the rolling one tagged, and a fake id names itself over a ten-row recovery.
+
+### 2026-07-26 — Session 4B.5: round-five harvest — the card tells the truth about itself, and the R-F rulings land
+
+**CU1 — DELTA ATTRIBUTION. The card measured the re-solve and read as measuring
+the move.**
+
+The founder's evidence, on schedule `rolling-279dec02-411`: TWO different gestures
+(ORD-38 → MILL-01 at Jan-8 08:30, then the same order at 07:00) produced IDENTICAL
+delta cards — −$11,975.83, the same four affected orders to the cent. Both numbers
+were true. Neither was about the gesture. `cost_delta_abs` is the difference
+between a freshly-budgeted re-solve and a STALE INCUMBENT, and almost all of it is
+the window re-optimizing under a budget the incumbent had never been given.
+
+Beat two now also solves the same window, under the same budget, holding the same
+standing commitments, WITHOUT the gesture's pin — the BASELINE — and the verdict
+SPLITS, always:
+
+      window re-optimization   baseline − incumbent   (nothing the planner did)
+      your move                pinned   − baseline    (what the planner did)
+
+The planner's move is judged against the baseline, never against the incumbent.
+The two parts sum EXACTLY to the total (the re-optimization part is measured, the
+move part is the REMAINDER, so a card that does not add up is impossible — the
+same rollup discipline `cost_lines` already obeys). The baseline is cached per
+INCUMBENT (`baseline_cache_key`: run dir, snapshot, window restriction, standing
+pins, budget, determinism — the gesture is not in the key, which is what makes the
+caching correct), so the first gesture on a board pays for it and every later one
+reads it. A cache hit reports `baseline_wall_time_s = 0.0`: what the field means
+is what THIS gesture paid, not what the solve cost.
+
+When the baseline cannot be proven inside the budget, `attribution` is
+`unavailable`, the card shows the unsplit total with the authored line "includes
+window re-optimization", and the parts are absent — never a silent fused number,
+and never a HALF split (a "your move −$375.83" with no reference to measure it
+against reads as more certain than the fused total; `attributionRows` returns null
+if either part is missing, pinned by test).
+
+The specimen is automated (`tests/test_delta_attribution.py`, 22 tests): two pins
+on the same incumbent show an IDENTICAL re-optimization part and carry the whole
+difference between their two cards in the MOVE part; a cross-machine pin on the
+distinct fixture shows a nonzero move part different from the trivial pin's; a
+trivial pin's move part is at-or-near zero; the baseline-suppressed path states
+the unsplit total explicitly. The card renders the split directly under the
+headline, `signedMoney` is one formatter shared by every dollar figure the card
+shows, and the Python `_signed_money` is its pinned counterpart so the ask panel
+and the card cannot disagree about how money reads.
+
+**CU2 — THE OPEN DELTA CARD JOINS THE RESOLUTION LADDER.**
+
+The founder's failing exchange: "what orders are affected in this move", asked
+with a priced card on screen showing exactly that, parsed as `swap-move` — a route
+that weighs two orders' slack against each other and has never heard of the card.
+The answer was already computed and in front of them, and the system went looking
+for a different one.
+
+The ladder is now **OPEN DELTA CARD > board selection > last-answered subject >
+history > clarify** (`SubjectSource.CARD`). The card is the narrowest channel
+there is: a selection persists after the planner has stopped thinking about it,
+but a card is open because a move is being weighed right now and closes the moment
+that stops being true. `open-card` joins the closed vocabulary as the route that
+READS IT BACK — parse prompt **v8**, a vocabulary-class change (`Intent`,
+`INTENT_MEANINGS`, `SubjectSource`, `ROUTE_TAXONOMY`, `ROUTE_OFFERS`, the
+assembler, its authored copy) committed together.
+
+It re-derives NOTHING. Every figure came off the sandbox result the card is
+already showing, so the two surfaces cannot state different numbers. Which PART of
+the card was asked about is deliberately NOT classified — separating "the delta"
+from "these orders" from "this move" would be a keyword router wearing a new name,
+and the card is small enough to say whole. It runs ahead of the clarify branch for
+the same reason the tray check does: asking "which orders do you mean" about the
+card in front of the planner is the dead end `_clarify_leads_nowhere` exists to
+prevent, and a card is not a resolved SUBJECT, so that guard cannot see it.
+
+The parse REPORTS what the context block showed it; the DISPATCH decides (R-AI5(8)
+again). An `open-card` parse with no card open is answered "there's no priced move
+open on the board right now" plus how to get one back — never a guess at which
+move they meant, never a re-derivation from a remembered one. The card is a
+CHANNEL, not a mode: a question naming a different intent is still answered as
+that intent while a card is showing.
+
+Client side: `askpanel` holds the card and sends it on `/ask` and the preflight;
+the drag controller PUBLISHES the card's own content when one lands and CLEARS it
+on discard, accept, return-home and a fresh grab. The clearing half is the
+load-bearing half. The parse's context block names presence + subject and never
+the figures — handing the model the numbers would invite it to answer from them,
+and the parse never answers.
+
+**CU3 — THE VACUOUS-CAUSAL TRIPWIRE, AND WHAT THE AUDIT ACTUALLY FOUND.**
+
+Specimen: "why is ORD-000008 on PAINT-02?" → "because the machine was busy with
+other work [record: bafa03f1…]".
+
+**(a) THE AUDIT, stated before the fix, because which path is at fault decides
+what to change.** Record `bafa03f1-1213-4e9b-9989-cb2ab529bec8` is a REAL
+`assignment` Decision (M7, `driver: CAPACITY_BLOCKED`, `basis: reconstructed`),
+and the clause is `DRIVER_PHRASING["CAPACITY_BLOCKED"]` **verbatim**. So the
+verbatim-render path is INTACT — this was NOT an LLM rewording authored copy (the
+4A.5b CU4 breach class). The defect is in the ASSEMBLER: it used the driver phrase
+as the whole causal clause, and that phrase names no machine, no alternative and
+no quantity. On a why-on-MACHINE question it is worse than thin — the machine that
+was busy is one the order did NOT get. **The testimony validator passed it and was
+right to: every check it makes is about FABRICATION, and an unfalsifiable sentence
+fabricates nothing.**
+
+The fix at that path: a CAPACITY_BLOCKED placement reads its concrete story out of
+the solved occupancy — which machines were ELIGIBLE (`capability_eligible` over the
+op's own resource requirements) and what was running on each while the step ran.
+THREE facts, stated differently and never collapsed: alternatives occupied (name
+them and what held them); no eligible alternative at all (a CAPABILITY fact — no
+rearrangement of the plan would have changed it); alternatives but none shown
+blocked (say the occupancy does not attribute it, and refuse to name one). The
+third is the RUBRIC's own named-unattributed rule, carried over from the promoted
+`lateness-cause` route.
+
+**(b) THE STRUCTURAL GUARD.** Causal routes (`why-on-machine`, `late-order`,
+`start-reason`, `gap-between` — subject types `demand` / `start_reason` /
+`gap_between`) gain a vacuity check. Three ways to say something, any one of which
+is enough: a DRIVER PHRASE from the authored vocabulary, a CONCRETE ENTITY beyond
+the question's own subjects, or a QUANTITY. An answer with none of them FAILS
+CLOSED to the template. Record citations and the rendered-by footer are stripped
+first — a footnote is provenance for a claim, never the claim. The subtlest bug in
+the guard, found by its own tests: entity refs carry digits, so scanning the raw
+text let "ORD-000008 is on PAINT-02" count as stating a quantity, which is exactly
+the shape it exists to catch; the question's own subjects come OUT before the
+quantity scan.
+
+**TWO NAMED LIMITS, asserted so they cannot be quietly assumed away.** (i) The
+founder's own sentence PASSES the tripwire, because it reaches for the driver
+vocabulary — it is fixed at (a), not here. A floor cannot also be a ceiling, and a
+vocabulary that says too little is fixed in the vocabulary. (ii) A quantity is a
+DIGIT: "two other jobs were ahead of it" states a real one and still fails closed.
+That is the safe direction for a floor, and cheaper than teaching a tripwire to
+read numerals in words.
+
+**(c)** The exchange joins the corpus, graded, in `regression_founder_r5`.
+
+**CU4 — BANNER + PICKER REPAIRS (hotfix follow-through).**
+
+(a) DISMISSAL IS STICKY, per offered id, per tab (`sessionStorage`). The 4.4
+dismiss handler removed the element and remembered nothing, and the watch's
+idempotence guard asked whether the banner was IN THE DOM — so a dismissed banner
+failed that guard on the very next check and was rebuilt, every thirty seconds and
+on every focus. `sessionStorage` rather than `localStorage`: a new tab is a new
+decision. (c) The guard is now what the tab has OFFERED, not what is in the DOM:
+ONE offer per newer id, then silence; a genuinely newer id is a new fact and is
+offered once in its turn. (d) The picker chip gains a caret (▾) at rest — a dotted
+underline says "there is more here" only to someone already looking for it — and
+it rotates when the picker is open, so the chip reports its own state. (e)
+`dev_cockpit.ps1` RESUMES BY DEFAULT when the data root holds a cached schedule;
+`-Fresh` is how you deliberately mint a new board. The dev loop should not
+manufacture the very "newer schedule" noise the product then has to handle.
+
+**(b) WHAT THE VIEWPORT RESET ACTUALLY WAS, named rather than papered over.** On a
+tab with no uncommitted state the freshness check AUTO-FOLLOWS, which is a full
+page reload, which resets everything — 4.4 CU2 working as designed, firing
+constantly because every dev restart minted something newer to follow. (e) removes
+the supply; (a)/(c) remove the second source (the thirty-second banner rebuild,
+which reflowed the board each time). What ships as (b) itself is DEFENCE: any DOM
+the watch inserts is wrapped, the board window read before and restored if the
+reflow moved it. **On the harness fixture the prepend does not move the window, so
+the Playwright test for it is a standing invariant and NOT a reproduction of the
+founder's symptom** — said out loud, because a green test that never could have
+failed is worth exactly what it cost.
+
+**CU5 — THE CONVERSATIONAL RIDERS.** Four founder-caught shapes, one theme:
+answering the sentence rather than the turn.
+
+(a) An ADVICE turn that NAMES a capability is a coaching question. "So you can't
+tell me if overtime will help", asked after the advice scoping answer, re-fired
+that same answer verbatim — the assistant reading its own last answer back to
+someone who had just said it was insufficient. The sentence names a CONCEPT the
+submission can declare, and there is a contracted answer for that. The concept is
+the PARSE's (the `advice` meaning now says to carry it); the dispatch only reads
+whether one resolved.
+
+(b)/(c) share one signal: `_repeat_depth` counts how many of the last TWO turns
+this same route already answered, read off the history the panel already sends, so
+no new channel and no server state. A re-fired route varies its LEAD from an
+authored tuple indexed by depth (a third ask does not get the second ask's line);
+the FACTS never vary and the body beneath is byte-identical, pinned by test. A
+COUNT re-asked answers "13 — want the list?" instead of reciting the list again —
+and the offer is the point: the answer gets shorter, the plan does not get less
+available. Both ride on the single delivery seam of BOTH renderers, so the
+template and the LLM path cannot disagree about whether the planner just asked
+this. Two turns is the window: long enough for "sorry, again?", short enough that
+returning after a genuine detour reads as a fresh ask rather than a nag.
+
+**(d) A REAL DEFECT, found by the verification the CU asked for.**
+`VerifiedClaim.consulted_record_ids` was `toolbox.consulted` — the ANSWER-LEVEL
+set, identical on every claim — and the surface printed its first three beside
+every interpretive sentence as that sentence's provenance. Answer-level provenance
+wearing per-claim clothes is worse than none: it looks like an attribution and
+cannot be wrong, so nobody checks it. It is now the claim's OWN scope (its
+citations when it made any; the whole consulted set when it made none, which is
+the accurate label — an uncited claim really is checked against everything), and a
+new per-claim `read_from` names WHICH TOOL CALLS surfaced those records, derived
+from the toolbox's own per-call record sets. Two claims in one answer now carry
+different provenance, which is the entire point. It rides on the question-ledger
+entry (`consulted`, `read_from` per claim) and renders on the prove-it turn: "Read
+from: cost_ledger, lateness_set."
+
+**CU6 — THE WORKING-THREAD RULINGS, TRANSCRIBED VERBATIM.**
+
+**R-F1 — THE PLANNER-MOVABLE FROZEN BOUNDARY.** The frozen boundary is
+planner-movable. Thawing converts committed work to STANDING PINS, never to free
+work. Every boundary move and every thawed edit is EVIDENCE. The solver never
+touches frozen work. Re-freezing commits the amended state.
+
+**R-F2 — RUSH INTAKE.** An urgent demand enters as a Demand with a deadline
+due-date and a declared priority weight — never as a hand-placement. The SOLVER
+places it; the diff shows who paid. Boundary thaw is the escalation when the rush
+is infeasible against frozen work.
+
+**R-F3 — THE CONSTRAINT LADDER.** Three rungs: OUTCOME → WINDOW → PIN. Every rung
+carries an OPTIONAL REASON — authored categories plus free text — nudged at
+placement and escalated when the constraint costs money. Intent is expressed at
+its TRUE TIGHTNESS. A constraint rendered infeasible by a changed world fires
+LOUD, naming its reason.
+
+**NAMED-QUEUED (design summarized, deliberately NOT built this session):**
+
+* **THE PIN REGISTER** — a docked panel listing every standing pin with
+  op / order / placement / reason / age / current cost, sorted by COST (what a pin
+  is costing now is the only ordering that makes a register actionable), an
+  explicit unpin ceremony, and AI routes into it ("what are my pins costing me",
+  "which pin is the most expensive"). The register is what makes R-F3's reasons
+  worth collecting: a reason nobody ever reads back is a form field.
+* **AMEND-SUBMISSION** — an incremental gate over a DELTA submission: the
+  phone-call flow ("that order moved to Friday"), where a planner amends a few
+  rows rather than resubmitting a book. Flagged PILOT-RELEVANT — it is the shape
+  a real plant's day actually has, and the `raw_data` gate-free entry point is the
+  debt it sits beside.
+* **THE BOUNDARY-DRAG FEATURE** — R-F1's gesture: drag the frozen boundary, see
+  what thaws, see what it costs, commit or return home. The two-beat pattern
+  already carries the interaction grammar for it.
+* **THE WINDOW CONSTRAINT** — R-F3's middle rung, which nothing today expresses:
+  "this order must run in this shift / before Thursday", tighter than an outcome
+  and looser than a pin. Today a planner with a window has to spend a pin, which
+  over-constrains every future solve and is exactly what the ladder exists to
+  stop.
+
+**OUT OF SCOPE, named:** any R-F feature (the rulings are recorded, not built);
+the two-solve baseline extended to FORCED-ALTERNATIVES pricing — the same
+economics, a separate audit, **carried as debt**; rendering-model changes.
+
+**CARRIED FINDING (new, from CU1's fixture work):** the committed rolling cockpit
+fixture (`tests/cockpit/fixtures/rolling/`) PREDATES the 2026-07-26 errand's
+determinism fixes and no longer reproduces — regenerating it moves the whole
+document (different placements, a different cost summary), which is a goldens move
+this session was not authorized to make. The canned `sandbox.json` was patched
+ADDITIVELY with an attribution split so the harness can render CU1; the split's
+figures there are SYNTHESIZED, on the same precedent the builder already uses for
+its FLAGGED and NO_VERDICT cards, and a regeneration replaces them with real ones.
+Regenerating the rolling fixture is a named follow-up.

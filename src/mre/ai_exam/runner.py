@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from .script import (
-    Comment, Expect, ParsedScript, Question, Reset, Select, parse_script,
+    Card, Comment, Expect, ParsedScript, Question, Reset, Select, parse_script,
 )
 from .sidecar import Finding, Vocab, check_turn
 
@@ -301,6 +301,33 @@ def resolved_subject(subject_type: str, subject_external_name: str) -> dict:
     return {}
 
 
+def _exam_card(order: Optional[str], machine: Optional[str]) -> dict:
+    """The card payload a ``CARD`` directive stands up (Session 4B.5 CU2).
+
+    A bank states WHICH move is showing; the figures around it are synthesized
+    here, deliberately and visibly. What a card bank grades is ROUTING — does a
+    question asked with a card open reach `open-card` rather than the nearest
+    plan-wide route — and the figures are the sandbox's own in the product, where
+    the answer reads them straight off the result. Synthesizing them here keeps
+    the bank about the thing it can grade.
+
+    The shape mirrors what ``askpanel.js`` sends, field for field, so a bank
+    exercises the same contract the cockpit does."""
+    return {
+        "open": True,
+        "operation_ref": f"exam-op-{(order or 'x').lower()}",
+        "order": order, "machine": machine,
+        "when": "Jan 8, 08:30",
+        "outcome": "verdict", "feasible": True,
+        "cost_delta_abs": -11975.83,
+        "attribution": "split",
+        "reopt_delta_abs": -11600.0, "move_delta_abs": -375.83,
+        "attribution_note": "",
+        "affected_orders": [], "lateness_delta_min": 0, "moves": 3,
+        "no_committed_work_changes": True, "dominant_driver": None,
+    }
+
+
 def _parse_renderer_tag(answer: str) -> str:
     import re
     global _RENDER_TAG
@@ -375,13 +402,14 @@ class ExamRunner:
     # -- one question -------------------------------------------------------
 
     def _ask(self, question: str, history: list[dict], selection: dict,
-             last_answered: dict) -> tuple[str, dict]:
+             last_answered: dict, card: Optional[dict] = None) -> tuple[str, dict]:
         from mre.api.app import _answer_question
         return _answer_question(
             self.target.out_dir, self.target.snapshot_id, question,
             use_llm=self.use_llm, runs_subdir=self.target.runs_subdir,
             context={"history": history, "selection": selection,
-                     "last_answered_subject": last_answered},
+                     "last_answered_subject": last_answered,
+                     "card": card or {}},
             ledger_path=self.ledger_path, schedule_id=self.target.label,
             session_id=self.session_id, document=self.target.document,
             parser=self.parser, synthesizer=self.synthesizer,
@@ -389,12 +417,14 @@ class ExamRunner:
         )
 
     def _ask_with_timeout(self, question: str, history: list[dict],
-                          selection: dict, last_answered: dict
+                          selection: dict, last_answered: dict,
+                          card: Optional[dict] = None
                           ) -> tuple[Optional[str], Optional[dict], Optional[str]]:
         """Returns (answer, meta, error). A per-question timeout / exception is
         captured as an error string, never a crash of the run."""
         with ThreadPoolExecutor(max_workers=1) as ex:
-            fut = ex.submit(self._ask, question, history, selection, last_answered)
+            fut = ex.submit(self._ask, question, history, selection,
+                            last_answered, card)
             try:
                 answer, meta = fut.result(timeout=self.per_question_timeout)
                 return answer, meta, None
@@ -454,6 +484,9 @@ class ExamRunner:
             return result
         history: list[dict] = []
         selection: dict = {}
+        # Session 4B.5 CU2 — the OPEN DELTA CARD channel, empty unless a bank
+        # opens one (and empty again the moment it closes one).
+        card: dict = {}
         # The resolved subject of the PRIOR answer, carried into the next question
         # exactly as the panel does (Session 4A.3c CU1). Reset by RESET.
         last_answered: dict = {}
@@ -478,7 +511,25 @@ class ExamRunner:
                     history = []
                     selection = {}
                     last_answered = {}
+                    card = {}
                     pending_comments.append("[RESET — conversation cleared]")
+                    continue
+                if isinstance(item, Card):
+                    # Session 4B.5 CU2 — the open delta card channel. The bank
+                    # states WHICH move is showing; the payload around it is
+                    # synthesized here, because a card bank grades ROUTING (does
+                    # the question reach `open-card`) and the figures are the
+                    # card's own in the product.
+                    if item.clear:
+                        card = {}
+                        pending_comments.append("[CARD closed]")
+                    else:
+                        card = _exam_card(item.order, item.machine)
+                        pending_comments.append(
+                            "[CARD open — " + " ".join(
+                                f"{k}={v}" for k, v in
+                                (("order", item.order), ("machine", item.machine))
+                                if v) + "]")
                     continue
                 if isinstance(item, Select):
                     if item.clear:
@@ -502,7 +553,7 @@ class ExamRunner:
                 before = counter.count
                 started = time.perf_counter()
                 answer, meta, error = self._ask_with_timeout(
-                    item.text, history[-4:], selection, last_answered)
+                    item.text, history[-4:], selection, last_answered, card)
                 turn = TurnRecord(
                     lineno=item.lineno, question=item.text,
                     selection=dict(selection),

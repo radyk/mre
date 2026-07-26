@@ -1,0 +1,171 @@
+# AI EXAM BANK — founder ROUND-FIVE regression (Session 4B.5)
+# generated: 2026-07-26
+# taxonomy : R-AI5 intent vocabulary + `open-card` (parse prompt v8)
+# target   : THE PINNED ROLLING RUN (tools/build_rolling_exam_run.py) — the same
+#            world sweep_rolling asks. The founder's round-five session ran on a
+#            rolling board (schedule rolling-279dec02-411), and three of the five
+#            specimens are only askable there: a delta card exists because a
+#            gesture was priced against a sliced window.
+#
+# WORLD VOCABULARY, for reading the expectations (see sweep_rolling's header):
+#   tray (beyond horizon) : ORD-000018, ORD-000010, ORD-000017, ORD-000032,
+#                           ORD-000007, ORD-000020, ... (14 total)
+#   committed / active    : ORD-000023, ORD-000009, ORD-000030, ORD-000039,
+#                           ORD-000012, ORD-000025, ORD-000016, ORD-000024, ...
+#   machines              : CUT-01, MILL-01, MILL-02, ASM-01, HEAT-01, PAINT-01,
+#                           FINISH-01, FINISH-02
+#
+# ADAPTATION, stated: the founder's own ids (ORD-38, ORD-000008, PAINT-02, MILL-01
+# on their live data root) are mapped onto this world's vocabulary, exactly as the
+# round-four bank mapped pilot ids onto glass_box. The PHRASING is preserved
+# verbatim — that is what a regression bank is for.
+#
+# EXPECT lines grade ROUTING only (R-AI4(2)): which intent the parse named, which
+# typed subjects it bound, where the dispatch sent it. Whether the ANSWER is good
+# is Claude's and the founder's, and the substantive expectation is written into
+# the comment above each turn so a reader grades the same thing twice running.
+
+# =================================================================================
+# A — THE OPEN DELTA CARD (CU2). The founder's exact failing exchange.
+#
+# A priced card is on the board showing the placement, the cost split, and the
+# orders the move affects. Asked what orders are affected, the system parsed
+# `swap-move` — a route that weighs two orders' slack against each other and has
+# never heard of the card — and answered a question nobody asked, while the
+# answer sat on screen.
+#
+# SUBSTANTIVE EXPECTATION: the affected orders BY NAME, with what happens to each,
+# read back from the card. No reasoning about a move that has not been made.
+# =================================================================================
+CARD order=ORD-000023 machine=MILL-01
+EXPECT intent=open-card route=open-card
+what orders are affected in this move
+RESET
+
+# The same channel, the other three phrasings the founder used for it.
+CARD order=ORD-000023 machine=MILL-01
+EXPECT intent=open-card route=open-card
+what does this move cost
+EXPECT intent=open-card route=open-card
+these orders — which ones are they
+EXPECT intent=open-card route=open-card
+whats the delta
+RESET
+
+# THE OTHER SIDE OF THE PIN. With no card open the same words are about the PLAN,
+# and must reach a plan route (or the reasoning tier) — never `open-card`, which
+# would answer about a move that is not on screen.
+# SUBSTANTIVE EXPECTATION: no card is invented, and no stale card is remembered.
+CARD clear
+EXPECT route=open-card
+whats the delta
+RESET
+
+# A card open does not turn every question into a card question. The card is a
+# channel, not a mode.
+CARD order=ORD-000023 machine=MILL-01
+EXPECT intent=late-orders
+which orders are late
+EXPECT intent=machine-schedule machine=CUT-01
+whats running on CUT-01
+RESET
+
+# THE RESOLUTION LADDER (CU2). A card outranks a live board selection: the
+# selection persists after the planner has stopped thinking about it; a card is
+# open because a move is being weighed right now.
+# SUBSTANTIVE EXPECTATION: the answer resolves against the CARD's order and says
+# so ("from the move you have open"), not against the stale selection.
+SELECT order=ORD-000009 machine=CUT-01
+CARD order=ORD-000023 machine=MILL-01
+EXPECT order=ORD-000023
+why is this one late
+RESET
+CARD clear
+SELECT clear
+
+# =================================================================================
+# B — THE VACUOUS CAUSAL ANSWER (CU3). The founder's second specimen.
+#
+# "why is ORD-000008 on PAINT-02?" -> "because the machine was busy with other
+# work [record: bafa03f1…]". The record was real and the clause was the authored
+# CAPACITY_BLOCKED driver phrase, carried verbatim — so nothing was fabricated and
+# every fabrication check passed it. It named no machine, no alternative and no
+# quantity, and the machine it referred to is one the order is not even on.
+#
+# SUBSTANTIVE EXPECTATION: the answer names the eligible machines that were
+# occupied and WHAT held them — or says plainly that the occupancy does not
+# attribute it. Never the bare driver phrase as the whole causal clause.
+# =================================================================================
+EXPECT intent=why-on-machine route=why-on-machine order=ORD-000023 machine=MILL-01
+why is ORD-000023 on MILL-01
+RESET
+
+EXPECT intent=why-on-machine order=ORD-000009 machine=CUT-01
+why did ORD-000009 end up on CUT-01
+RESET
+
+# The deepen after it: having been told which alternatives were blocked, "but why"
+# is about THAT chain, not about the plan's aggregate lateness.
+EXPECT intent=why-on-machine order=ORD-000012 machine=PAINT-01
+why is ORD-000012 on PAINT-01
+EXPECT order=ORD-000012 followup=deepen
+but why
+RESET
+
+# =================================================================================
+# C — THE CONVERSATIONAL RIDERS (CU5). Each founder-caught, each small.
+# =================================================================================
+
+# (a) An advice push-back that NAMES a capability is a coaching question. Answering
+# it with the advice template that prompted the push-back is the assistant reading
+# its own last answer back to someone who has just said it was insufficient.
+# SUBSTANTIVE EXPECTATION: how to declare overtime, and what it would let the
+# solver do — not the scoping answer again.
+EXPECT intent=advice
+what should i do about the late orders
+EXPECT concept=overtime route=coaching
+so you cant tell me if overtime will help
+RESET
+
+EXPECT intent=advice
+can i get these done faster
+EXPECT concept=splittable route=coaching
+would splitting the jobs help
+RESET
+
+# (b) A route re-fired within two turns varies its LEAD. The facts are the same
+# facts and must stay so; what changes is the first line.
+# SUBSTANTIVE EXPECTATION: the second answer is not the first answer verbatim.
+EXPECT intent=advice
+what should i do
+EXPECT intent=advice
+what should i do
+RESET
+
+# (c) A COUNT answered in the previous turn answers TERSELY on re-ask. The planner
+# already has the list.
+# SUBSTANTIVE EXPECTATION: the number and an offer ("13 — want the list?"), not
+# the full recitation a second time.
+EXPECT intent=late-orders
+how many orders are late
+EXPECT intent=late-orders
+how many are late again
+RESET
+
+EXPECT intent=machine-count
+how many machines are there
+EXPECT intent=machine-count
+how many machines
+RESET
+
+# The seal: a genuine return to a question after a detour is a FRESH ask, not a
+# nag. Three unrelated turns is outside the two-turn repeat window.
+EXPECT intent=late-orders
+which orders are late
+EXPECT intent=advice
+what should i do about it
+EXPECT intent=machine-count
+how many machines are there
+EXPECT intent=late-orders
+which orders are late
+RESET

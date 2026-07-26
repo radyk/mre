@@ -45,6 +45,7 @@ ROUTE_OFFERS = {
     "certificate-testimony": "explain what's wrong with the submission",
     "edit-summary": "summarize the edits you made and what they cost",
     "edit-cost": "break down what your last move cost",
+    "open-card": "read back the move you have priced on the board",
     "ledger-refusals": "list the questions I couldn't answer recently",
     "advice": "explain why each order is late and price a what-if move",
     "coaching": "show how to enable that capability in the submission",
@@ -139,6 +140,108 @@ CONFIRM_TAKE_GESTURE_GENERIC = (
     "Drag the operation to the slot you want on the board — the sandbox re-solves "
     "around it and shows the production, setup, and tardiness delta, and nothing "
     "is committed until you accept."
+)
+
+# ---------------------------------------------------------------------------
+# THE REPEAT RIDERS (Session 4B.5 CU5b/c). An answer delivered word-for-word
+# twice in a row reads as not having heard the second question. These vary the
+# LEAD — never the facts, which are the same facts and must stay so.
+#
+# Authored variants, indexed by how many of the last two turns this route already
+# answered, so a third ask does not get the second ask's line either.
+# ---------------------------------------------------------------------------
+
+REPEAT_LEADS = (
+    "Same answer as a moment ago —",
+    "Still the same; nothing has changed since you asked —",
+)
+
+# CU5(c): a COUNT answered in the previous turn does not want its recitation
+# again. It wants the number, and an offer.
+REPEAT_COUNT_WITH_LIST = "{count} — want the list?"
+REPEAT_COUNT_BARE = "{count}, same as before."
+
+# ---------------------------------------------------------------------------
+# WHY-ON-MACHINE, CAPACITY-FORCED (Session 4B.5 CU3a). The founder's specimen:
+# "why is ORD-000008 on PAINT-02?" -> "because the machine was busy with other
+# work". That clause is `DRIVER_PHRASING["CAPACITY_BLOCKED"]` verbatim — authored
+# copy, correctly carried, and useless here: it names no machine, no alternative
+# and no quantity, and the machine it refers to is one the order is NOT on. A
+# capacity-forced placement has a concrete story in the solved occupancy; these
+# lines tell it, or say plainly that the occupancy does not carry one.
+# ---------------------------------------------------------------------------
+
+WHY_MACHINE_CAPACITY_LEAD = (
+    "{order} is on {machine} because the machines that could have run it "
+    "instead were occupied when it needed to run."
+)
+WHY_MACHINE_CAPACITY_ROW = "  {machine} was running {blocker} until {until}."
+# Eligible alternatives exist, but the occupancy does not show any of them
+# blocked over this step's window. An unattributable cause is NAMED as
+# unattributable — never given an invented mechanism (the RUBRIC's own rule).
+WHY_MACHINE_CAPACITY_UNATTRIBUTED = (
+    "  I can see the placement was capacity-forced, but the solved occupancy "
+    "doesn't show which alternative was blocked — so I won't name one."
+)
+# No eligible alternative at all: a CAPABILITY fact, not a capacity one, and
+# worth saying because no rearrangement of the plan would have changed it.
+WHY_MACHINE_CAPACITY_ONLY_OPTION = (
+    "  In fact it is the only machine that can run this step, so nothing about "
+    "the rest of the plan would have changed where it went."
+)
+
+# ---------------------------------------------------------------------------
+# THE OPEN DELTA CARD (Session 4B.5 CU2). The planner has a priced move on
+# screen and asks about IT. Every figure below comes off the sandbox result the
+# card is already showing — this route re-derives nothing, so the answer can
+# never disagree with the card the planner is looking at. That is the whole
+# point: two surfaces, one set of numbers.
+# ---------------------------------------------------------------------------
+
+OPEN_CARD_LEAD = "The move you have open:"
+OPEN_CARD_PLACEMENT = "{order} lands on {machine}{when}."
+OPEN_CARD_PLACEMENT_BARE = "The dropped operation lands on {machine}{when}."
+# The CU1 split, voiced. The card shows two rows; the sentence says which is
+# which, because "your move" is the only part the planner can act on.
+OPEN_CARD_SPLIT = (
+    "It prices at {total} in total, and that total is two different things: "
+    "{reopt} is the window re-optimizing under a fresh budget — the solver would "
+    "have found that with or without you — and {move} is what your move itself "
+    "adds."
+)
+OPEN_CARD_UNSPLIT = (
+    "It prices at {total} in total. I couldn't separate out what your move "
+    "itself added, so that figure still includes window re-optimization the "
+    "solver would have found anyway."
+)
+OPEN_CARD_NO_PRICE = (
+    "I don't have a dollar figure for it — the card shows the placement and its "
+    "consequences, not a priced delta."
+)
+OPEN_CARD_AFFECTED_LEAD = "Orders it touches ({n}):"
+OPEN_CARD_AFFECTED_ROW = "  {order} — {effect}"
+OPEN_CARD_AFFECTED_NONE = "No order's lateness or tardiness changes because of it."
+OPEN_CARD_LATENESS_WORSE = "Across the plan it introduces {hours}h of lateness."
+OPEN_CARD_LATENESS_BETTER = "Across the plan it recovers {hours}h of lateness."
+OPEN_CARD_LATENESS_NONE = "Nothing's lateness changes across the plan."
+OPEN_CARD_CONSEQUENCES = "{n} other operation(s) shift to make room."
+OPEN_CARD_CONSEQUENCES_NONE = "Nothing else has to move."
+OPEN_CARD_COMMITTED_SAFE = "No committed work changes."
+OPEN_CARD_DRIVER = "Why it lands there: {phrase}"
+OPEN_CARD_INFEASIBLE = (
+    "That placement was refused — {message} Nothing was changed."
+)
+# The floor: the parse named the card, the card is gone. Never a re-derivation
+# from a stale copy, and never a guess at which move they meant.
+OPEN_CARD_CLOSED = (
+    "There's no priced move open on the board right now, so I have nothing to "
+    "read back. Make the move again and I'll answer from the card it prices."
+)
+# The standing boundary, carried on every card answer: what is on screen is a
+# proposal, not the plan (M10 has no write path; the sandbox mints nothing).
+OPEN_CARD_BOUNDARY = (
+    "Nothing here is committed — this is the sandbox's price for the move, and "
+    "the plan of record is unchanged until you accept it."
 )
 
 # EXPEDITE AN ALREADY-EARLY ORDER. The founder's round-four thread: four turns
@@ -279,6 +382,11 @@ PROVE_IT_INTERPRETIVE_BARE = (
     "That part is my reading of the plan, and no single record states it. I have "
     "nothing further to show behind it.")
 PROVE_IT_RECORD_LINE = "  - {summary}  [record: {rid}...]"
+# Session 4B.5 CU5(d): WHICH READINGS this one sentence came out of — per claim,
+# derived from the toolbox's own per-call record sets, never a copy of the
+# answer's whole tool list. "Read from" in the sense a planner means it: not which
+# record ids, but which readings of the plan.
+PROVE_IT_READ_FROM = "Read from: {tools}."
 
 
 # ---------------------------------------------------------------------------

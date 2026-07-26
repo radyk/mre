@@ -1,6 +1,6 @@
 # Question-parse prompt — a GOVERNED ARTIFACT (R-AI5(1))
 
-    prompt_version: 7
+    prompt_version: 8
     ruling:         R-AI5(1) — every question is parsed FIRST by a language model
                     against a CLOSED intent vocabulary, with the conversation
                     history, live board selection, and last-answered subject as
@@ -68,6 +68,22 @@
                     "why are so many late" example moves from an `unmatched`
                     illustration to a named intent, and `late-orders`' meaning is
                     sharpened against it.
+    v8:             Session 4B.5 (2026-07-26) — THE OPEN DELTA CARD joins the
+                    resolution ladder (CU2). The founder asked "what orders are
+                    affected in this move" with a priced card on screen showing
+                    exactly that, and it parsed as `swap-move` — a route that
+                    reasons about two orders' slack and has never heard of the
+                    card. The answer was already computed and in front of them.
+                    The context block now names the OPEN DELTA CARD first, at the
+                    top of the resolution ladder (card > selection > previous
+                    answer > history), and `open-card` joins the vocabulary as
+                    the route that reads it back. Reachable only while a card is
+                    open, which the context block states and the DISPATCH
+                    enforces — the model reports what it sees, it never decides
+                    whether the card is really there. A vocabulary-class change:
+                    `Intent`, `INTENT_MEANINGS`, `SubjectSource`,
+                    `ROUTE_TAXONOMY`, `ROUTE_OFFERS`, the assembler and its
+                    authored copy in the same commit as this bump.
 
 ## Review discipline
 
@@ -132,6 +148,11 @@ RULES
      - A CONCEPT subject is a capability the submission can declare (splitting,
        overtime, alternates, customers, earliness, spanning downtime, WIP). It is
        never bound from the board — a capability is not something you can select.
+     - THE RESOLUTION LADDER, highest first: the OPEN DELTA CARD, then the board
+       selection, then the subject of the previous answer, then the history. You
+       do not apply it — you only mark a subject `from_context` and the system
+       binds it in that order. Knowing the order matters for one thing: when a
+       delta card is open, "this" and "it" are about that move.
      - THE RECENT TURNS ARE YOURS TO READ. When the planner refers back to
        something a turn or two ago ("is there a minimum piece size" after talking
        about splitting; "show me its dates" after asking about ORD-13), NAME it
@@ -242,6 +263,17 @@ RULES
 
 8. CONFIDENCE is your own read of the intent match, 0.0 to 1.0. Be honest: below
    about 0.45 the system will treat the parse as unmatched rather than answer.
+
+8b. A DELTA CARD ON SCREEN IS PART OF THE QUESTION. When the context block says a
+   priced move is showing, a question about "this move", "these orders", "the
+   delta", "what else moved", "what does this cost" or "is it worth it" is
+   `open-card` — the system reads the card back to them. It is NOT `swap-move`
+   (that weighs a move the planner has not made yet), NOT `edit-cost` (that is
+   about an edit already accepted), and NOT a plan-wide question.
+
+   The card must be OPEN. When the context block says "none", the same words are
+   about the plan and you pick the intent that fits them; naming `open-card` with
+   no card open buys the planner nothing but a sentence saying so.
 
 9. REPORT A QUALIFIER THE INTENT DROPS. Sometimes the nearest intent really is the
    nearest one, and it still cannot honour something the planner SAID. Put those

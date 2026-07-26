@@ -388,6 +388,26 @@ def _check_against(assertion: Assertion, scope: _Scope) -> str:
 # The pass
 # ---------------------------------------------------------------------------
 
+def _read_from(toolbox: Any, scope_ids: list[str]) -> list[str]:
+    """Which TOOL CALLS surfaced the records this claim rests on (Session 4B.5
+    CU5(d)) — per claim, in call order, de-duplicated.
+
+    This is the "read from" a planner actually means: not a list of record ids,
+    but which readings of the plan the sentence came out of. Derived from the
+    toolbox's own per-call record sets, so it is a fact about what happened, not a
+    label the model chose. Empty when nothing intersects — an honest blank rather
+    than the whole call list."""
+    wanted = set(scope_ids or ())
+    if not wanted:
+        return []
+    out: list[str] = []
+    for entry in getattr(toolbox, "call_tallies", []) or []:
+        tool, call_ids = entry[0], entry[1]
+        if (wanted & call_ids) and tool not in out:
+            out.append(tool)
+    return out
+
+
 def verify_claim(claim: DraftClaim, *, toolbox: Any,
                  wide: Optional[_Scope] = None) -> VerifiedClaim:
     """One drafted claim → its verdict. The model's citations are INPUT here; the
@@ -400,8 +420,21 @@ def verify_claim(claim: DraftClaim, *, toolbox: Any,
     scope_ids = cited or consulted
     scope = _Scope(toolbox, scope_ids)
 
+    # Session 4B.5 CU5(d) — PER-CLAIM provenance, not an answer-level copy.
+    #
+    # This was ``consulted[:12]`` — the whole answer's consulted set, identical on
+    # every claim — and the surface printed the first three of it beside each
+    # interpretive sentence as that sentence's "read from". Answer-level
+    # provenance wearing per-claim clothes is worse than none: it looks like an
+    # attribution and cannot be wrong, so nobody checks it.
+    #
+    # What each claim was ACTUALLY checked against is ``scope_ids``: its own
+    # citations when it made any, the whole consulted set when it made none. The
+    # second case is not a fudge — an uncited claim really is checked against
+    # everything the loop read, and saying so is the honest label.
     base = dict(text=claim.text, kind=claim.kind, cited_record_ids=cited,
-                consulted_record_ids=consulted[:12])
+                consulted_record_ids=list(scope_ids)[:12],
+                read_from=_read_from(toolbox, scope_ids))
 
     # 1 — a citation that names nothing real. The ordinal disease: a list position,
     # a made-up id, a record from another run. Never softened; always cut.

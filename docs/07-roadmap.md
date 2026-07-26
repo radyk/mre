@@ -1,6 +1,38 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.46 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.47 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.47:** **Session 4B.5 — round-five harvest: the card tells the truth about itself,
+and the R-F rulings land** 2026-07-26 (docs/04 amendment). **CU1 — DELTA ATTRIBUTION (the
+trust item).** The founder's evidence: two different gestures on the same incumbent produced
+IDENTICAL delta cards (-$11,975.83, same four affected orders, to the cent). The card
+measured the RE-SOLVE and read as measuring the MOVE. Beat two now also solves the same
+window under the same budget WITHOUT the pin — the BASELINE, cached per incumbent — and the
+verdict SPLITS, always: *window re-optimization* (baseline vs incumbent) and *your move*
+(pinned vs baseline), summing EXACTLY to the total. The planner's move is judged against the
+baseline, never the stale incumbent; an unprovable baseline shows the unsplit total with an
+explicit "includes window re-optimization" line, never a silent fused number. **CU2 — THE
+OPEN DELTA CARD JOINS THE RESOLUTION LADDER** (card > board selection > last-answered subject
+> history > clarify). `open-card` joins the closed vocabulary (parse prompt **v8**) and READS
+THE CARD BACK — it re-derives nothing, so the two surfaces cannot state different numbers.
+The founder's "what orders are affected in this move" used to reach `swap-move`. **CU3 — THE
+VACUOUS-CAUSAL TRIPWIRE + the why-on-machine audit.** "Because the machine was busy with
+other work" was the authored driver phrase carried VERBATIM over a real record — the verbatim
+path was intact and the defect was the vocabulary used as a whole causal clause. A
+capacity-forced placement now names the eligible machines that were occupied and what held
+them (or says the occupancy does not attribute it); every causal route gains a vacuity check
+that fails closed to the template. **CU4 — banner + picker repairs:** sticky per-id dismissal,
+one offer per newer id, a caret affordance on the picker chip, and `dev_cockpit.ps1` RESUMES
+BY DEFAULT (`-Fresh` to mint) so the dev loop stops manufacturing the "newer schedule" noise
+the product then has to handle. **CU5 — conversational riders:** an advice push-back naming a
+capability routes to that capability's coaching; a route re-fired within two turns varies its
+lead; a re-asked count answers tersely with an offer; and per-claim synthesis provenance was
+found to be an ANSWER-LEVEL copy and made genuinely per-claim (`read_from` names which tool
+calls a sentence came out of). **CU6 — R-F1/R-F2/R-F3 recorded verbatim** (planner-movable
+frozen boundary; rush intake as a Demand the solver places; the outcome -> window -> pin
+constraint ladder with reasons), plus four NAMED-QUEUED features designed and not built: the
+pin register, amend-submission (pilot-relevant), the boundary-drag gesture, and the window
+constraint.
 
 **v2.46:** **AI-track Session 4A.5c — R-AI5 part 3: telemetry, the Pareto, the promotion
 pipeline. THE R-AI5 ARC IS CLOSED** 2026-07-26 (docs/04 amendment). Implements clauses (5),
@@ -1091,6 +1123,7 @@ The ticketing client. Entry conditions (the no-half-baked rule): Phase 1 exit pa
 3. ChangeoverRule: attribute-keyed (docs/05)
 4. Min/max lags: OperationSpec vs precedence edge (docs/05; lean = edge)
 5. Drop-pin default: machine / start / both — **RESOLVED 2026-07-11 → R-DP1–R-DP7** (both-as-displayed; commit-or-return; semantic snap; gesture=command/language=wish; HOLD/DEFER; legality epistemics; change legibility), extended **2026-07-17 → R-DP8** (an accepted placement is a STANDING commitment, compiled into every subsequent solve of its lineage until an explicit `unpin`). See docs/04 2026-07-11 + 2026-07-17 amendments. **Carry-forward:** the `unpin` release verb (named, not built).
+6. The frozen boundary, rush intake, and how a planner expresses intent — **RESOLVED 2026-07-26 → R-F1/R-F2/R-F3** (Session 4B.5 CU6; transcribed verbatim in the docs/04 amendment). **R-F1:** the frozen boundary is PLANNER-MOVABLE; a thaw converts committed work to STANDING PINS, never to free work; every boundary move and thawed edit is evidence; the solver never touches frozen work; re-freezing commits the amended state. **R-F2:** an urgent demand enters as a DEMAND with a deadline due-date and a declared priority weight, never as a hand-placement — the solver places it and the diff shows who paid; boundary thaw is the escalation when it is infeasible against frozen work. **R-F3:** the constraint ladder is OUTCOME -> WINDOW -> PIN, every rung carrying an optional REASON (authored categories + free text, nudged at placement, escalated when the constraint costs money); intent is expressed at its TRUE TIGHTNESS; a constraint rendered infeasible by a changed world fires LOUD, naming its reason. **NAMED-QUEUED, designed not built:** the pin register (docked panel, cost-sorted, unpin ceremony, AI routes); amend-submission (an incremental gate over a delta submission — the phone-call flow, PILOT-RELEVANT); the boundary-drag feature; the window constraint.
 
 ## 7. Standing risks
 

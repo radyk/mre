@@ -410,3 +410,72 @@ stated so round five grades them rather than re-discovering them):
      Verdict: OPEN.
 
 (Resolved entries accrete below as the founder rules; newest last.)
+
+ 10. THE OPEN DELTA CARD (C1/C3). Session 4B.5 CU2.
+     Route: open-card.
+     Questions: "what orders are affected in this move"; "whats the delta";
+     "these orders -- which ones are they".
+     Disputed property: a priced card is on the board showing the placement, the
+     cost split and the affected set, and the founder's question about it reached
+     `swap-move` -- a route that weighs two orders' slack and has never heard of
+     the card. The answer was already computed and on screen. The card is now the
+     TOP of the resolution ladder and `open-card` reads it back.
+     EXPECTED BEHAVIOUR round six grades: (a) the answer VOICES the card -- every
+     figure in it is the card's own, so the two surfaces can never state
+     different numbers; (b) it splits the cost the way the card does (window
+     re-optimization vs your move) rather than quoting the fused total; (c) with
+     NO card open the same words are not answered as a card question and no stale
+     card is remembered; (d) a card open does not capture questions that name a
+     different intent -- it is a channel, not a mode.
+     The founder question: is reading the card back the right answer, or does a
+     planner asking about a card in front of them want something the card does
+     NOT already show (the alternatives, the next move)? If the latter, this
+     route is a bridge and not a destination.
+     Verdict: OPEN.
+
+ 11. THE VACUOUS CAUSAL ANSWER (T3/C1). Session 4B.5 CU3.
+     Routes: why-on-machine, late-order, start-reason, gap-between.
+     Question: "why is ORD-000008 on PAINT-02?"
+     Disputed property: answered "because the machine was busy with other work
+     [record: bafa03f1...]". The record was real and the clause was the authored
+     CAPACITY_BLOCKED driver phrase carried verbatim, so nothing was fabricated
+     and every fabrication check passed it. It named no machine, no alternative
+     and no quantity -- and the machine it refers to is one the order is not on.
+     TWO FIXES, and they are not substitutes: the assembler now reads the
+     capacity story out of the solved occupancy, and a vacuity tripwire fails a
+     causal answer closed to the template when it names no driver, no entity
+     beyond the question's own subjects and no quantity.
+     EXPECTED BEHAVIOUR round six grades: (a) a capacity-forced placement NAMES
+     the eligible machines that were occupied and what held them; (b) where the
+     occupancy does not attribute it, the answer says so and does not invent a
+     mechanism; (c) where the machine is the ONLY eligible one, that is stated as
+     a capability fact -- no rearrangement of the plan would have changed it;
+     (d) no causal answer anywhere in the sweep consists of a driver phrase and
+     nothing else.
+     NAMED LIMIT: the tripwire alone would NOT have caught the founder's
+     sentence, because a driver phrase counts as saying something. A floor cannot
+     also be a ceiling; the vocabulary fix is what catches it.
+     The founder question: is naming the blocked alternatives the answer they
+     wanted, or does "why is it here" really mean "could it have been anywhere
+     else, and what would that have cost"? The second is a priced question and a
+     different route.
+     Verdict: OPEN.
+
+ 12. THE REPEAT RIDERS (C2/C5). Session 4B.5 CU5.
+     Routes: any re-fired within two turns; advice -> coaching.
+     Disputed property: three founder-caught shapes, one theme -- answering the
+     sentence rather than the turn. (a) "so you can't tell me if overtime will
+     help", asked after the advice scoping answer, re-fired that same answer
+     verbatim; it names a capability and is now coaching. (b) a route asked twice
+     running delivered itself word for word. (c) a count re-asked recited its
+     whole list again.
+     EXPECTED BEHAVIOUR round six grades: (a) the push-back reaches the named
+     capability's coaching and reads as having heard the objection, not as a
+     topic change; (b) the varied lead reads as acknowledgement, never as
+     impatience or as a new fact -- the body beneath it is byte-identical; (c)
+     "13 -- want the list?" reads as attentive rather than curt, and the offer
+     is real (terseness must never cost the planner the detail).
+     The founder question: does the varied lead help, or is silence about the
+     repetition better than commenting on it? A system that notes it is being
+     asked twice can read as impatient.
+     Verdict: OPEN.

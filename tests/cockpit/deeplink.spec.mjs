@@ -72,6 +72,125 @@ test("CU1 — an explicit ?schedule= loads THAT schedule and the URL is unchange
   await shot(page, "dl1_pinned_wins");
 });
 
+// --- Session 4B.5 CU4: the banner + picker repairs ------------------------
+
+test("CU4a — a dismissed banner is STICKY: that id never re-offers in this tab", async ({ page }) => {
+  // The 4.4 dismiss handler removed the element and remembered nothing, and the
+  // watch's idempotence guard asked whether the banner was IN THE DOM. So a
+  // dismissed banner failed that guard on the very next check and was rebuilt —
+  // every thirty seconds, and on every focus. Dismissing has to mean something.
+  await reset(page);
+  await injectNewer(page, NEWER, "2026-01-05T11:00:00Z");
+  await page.goto(`/?schedule=${BASE}&theme=${theme()}`);
+  await booted(page);
+  await expect(page.locator("#newer-banner")).toBeVisible();
+
+  await page.locator("#newer-dismiss").click();
+  await expect(page.locator("#newer-banner")).toHaveCount(0);
+
+  // every re-check signal the watch listens to, fired in turn
+  await page.evaluate(() => window.__cockpit.checkFreshness());
+  await page.waitForTimeout(300);
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await page.waitForTimeout(300);
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await page.waitForTimeout(300);
+  expect(await page.locator("#newer-banner").count(),
+         "a dismissed banner never comes back").toBe(0);
+  // and the tab is still where the planner left it
+  expect(urlParam(page, "schedule")).toBe(BASE);
+});
+
+test("CU4c — a pinned tab is offered ONCE per newer id, then silence", async ({ page }) => {
+  // Not dismissed — just left alone. The guard is what this tab has OFFERED, not
+  // what is in the DOM, so a re-check never rebuilds a banner that is already up
+  // (which is what made the board reflow on an interval).
+  await reset(page);
+  await injectNewer(page, NEWER, "2026-01-05T11:00:00Z");
+  await page.goto(`/?schedule=${BASE}&theme=${theme()}`);
+  await booted(page);
+  const banner = page.locator("#newer-banner");
+  await expect(banner).toBeVisible();
+  const first = await banner.evaluate((el) => el.dataset.probe = "original");
+
+  for (let i = 0; i < 3; i++) {
+    await page.evaluate(() => window.__cockpit.checkFreshness());
+    await page.waitForTimeout(200);
+  }
+  await expect(banner).toHaveCount(1);
+  expect(await banner.evaluate((el) => el.dataset.probe),
+         "the SAME element — never torn down and rebuilt").toBe(first);
+
+  // a genuinely NEWER id is a new fact and is offered once in its turn
+  await injectNewer(page, NEWEST, "2026-01-05T13:00:00Z");
+  await page.evaluate(() => window.__cockpit.checkFreshness());
+  await expect(page.locator("#newer-banner")).toContainText(NEWEST.slice(0, 8));
+});
+
+test("CU4b — a freshness re-check never disturbs the viewport", async ({ page }) => {
+  // A STANDING INVARIANT, and honestly labelled as one: on this fixture the
+  // banner prepend does not move the vis window, so this test passes with the
+  // guard removed. It is kept because the property is the contract — a
+  // background poll has no business moving what the planner is looking at — and
+  // because the real reset the founder saw (an auto-follow reload, supplied by a
+  // dev loop that minted a newer solve every restart) is fixed at CU4(e)/(a)/(c),
+  // not here.
+  await reset(page);
+  await page.goto(`/?schedule=${BASE}&theme=${theme()}`);
+  await booted(page);
+  await page.waitForFunction(() => document.querySelectorAll(".vis-item.bar").length > 0,
+                             { timeout: 10000 });
+
+  // put the planner somewhere specific: a zoomed window and a selected bar
+  await page.evaluate(() => {
+    window.__cockpit.setWindow("2026-01-05T08:00:00Z", "2026-01-05T14:00:00Z");
+    window.__cockpit.select(window.__cockpit.doc.assignments[0].operation_ref);
+  });
+  await page.waitForTimeout(200);
+  const before = await page.evaluate(() => {
+    const w = window.__cockpit.getWindow();
+    return { start: String(w.start), end: String(w.end),
+             selected: window.__cockpit.panel.hasUserState() };
+  });
+
+  // a newer schedule lands and the watch runs — with a selection live, the
+  // banner is offered rather than followed (4.4 CU2), so the DOM does change.
+  await injectNewer(page, NEWER, "2026-01-05T11:00:00Z");
+  await page.evaluate(() => window.__cockpit.checkFreshness());
+  await expect(page.locator("#newer-banner")).toBeVisible();
+  await page.waitForTimeout(400);
+
+  const after = await page.evaluate(() => {
+    const w = window.__cockpit.getWindow();
+    return { start: String(w.start), end: String(w.end),
+             selected: window.__cockpit.panel.hasUserState() };
+  });
+  expect(after.start, "the window start is where the planner put it").toBe(before.start);
+  expect(after.end, "the window end is where the planner put it").toBe(before.end);
+  expect(after.selected, "the selection survives").toBe(before.selected);
+});
+
+test("CU4d — the picker chip carries an unmistakable affordance", async ({ page }) => {
+  // A dotted underline says "there is more here" only to someone already looking
+  // for it. The caret is present at rest — a control you have to find by
+  // hovering has not been found — and it reports the picker's own state.
+  await reset(page);
+  await page.goto(`/?schedule=${BASE}&theme=${theme()}`);
+  await booted(page);
+
+  const caret = page.locator("#sched-ident .sched-caret");
+  await expect(caret, "the caret is visible at rest").toBeVisible();
+  await expect(caret).toHaveText("▾");
+  expect(await caret.evaluate((el) => el.getAttribute("aria-hidden")),
+         "decorative — the button already announces itself").toBe("true");
+
+  await page.locator("#sched-ident").click();
+  await expect(page.locator("#sched-picker")).toBeVisible();
+  const rotated = await caret.evaluate((el) => getComputedStyle(el).transform);
+  expect(rotated, "the caret reports the open state").not.toBe("none");
+  await shot(page, "dl5_picker_caret");
+});
+
 test("CU1 — a pinned deep link to an id this data root has no schedule for is an honest named error", async ({ page }) => {
   await reset(page);
   const fake = "rolling-deadbeef-000";

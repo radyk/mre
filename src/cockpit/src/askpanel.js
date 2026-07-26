@@ -38,6 +38,19 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
   // lockstep with runner.py resolved_subject — the harness carries EXACTLY this.
   let lastAnswered = {};
 
+  // Session 4B.5 CU2 — THE OPEN DELTA CARD, the top of the resolution ladder.
+  // The drag controller pushes the priced sandbox result here when a card lands
+  // and clears it when the card is dismissed, accepted or superseded. While it is
+  // set, "this move" / "these orders" / "the delta" bind to it and are answered
+  // FROM it — the founder's "what orders are affected in this move" used to reach
+  // `swap-move`, which guesses about two orders' slack while the affected set sat
+  // on screen. The panel does not read the board for this: it holds exactly what
+  // the card is showing, so the two surfaces state one set of numbers.
+  let openCard = null;
+  function cardContext() {
+    return openCard && openCard.open ? openCard : {};
+  }
+
   // Subject types whose subject_external_name is unambiguously an ORDER ref vs a
   // MACHINE ref. Ambiguous types (a bare "schedule" label may be either) carry
   // nothing — we never guess order-vs-machine.
@@ -188,6 +201,7 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
     try {
       const ctx = {
         history: askHistory.slice(-4),
+        card: cardContext(),
         selection: currentSelectionRefs(),
         lastAnswered,
         sessionId,
@@ -317,6 +331,12 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
     // stale): drop the deictic scope so the next "why is this here?" is composed
     // from a fresh click on the rebound board (session 3.8 CU1).
     clearSelection() { selection = null; renderScope(); },
+    // Session 4B.5 CU2 — the open delta card channel. `setOpenCard(payload)` when
+    // a priced card lands; `setOpenCard(null)` when it is dismissed, accepted or
+    // superseded. Clearing is not optional: a stale card would answer about a
+    // move that is no longer on screen, which is worse than not answering.
+    setOpenCard(card) { openCard = card && card.open ? card : null; },
+    openCard: () => openCard,
     // Session 4.4 CU2: is the planner mid-investigation on THIS board? A live bar
     // selection (a pinned deictic scope), a conversation already built up, or an
     // ask in flight all count — auto-follow must yield the banner to any of them

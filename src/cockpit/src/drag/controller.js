@@ -137,6 +137,7 @@ export function createGestureController(board, geometry, opts) {
     dropToVerdictMs: null,
     // R-T2 two-beat (Session 4B.3b)
     ghost: null,            // beat-one FeasibilityGhost
+    cardContext: null,      // CU2: the open card as ask-panel context (or null)
     correlationId: null,    // links beat one → beat two
     dropToGhostMs: null,    // grab→drop→feasibility ghost latency
     contradiction: null,    // {infeasible, moved} if beat two contradicted beat one
@@ -151,6 +152,74 @@ export function createGestureController(board, geometry, opts) {
     onPublish: publish,
     onAskWhy: (result) => askWhy(result),
   });
+
+  // ---------------------------------------------------------------------
+  // Session 4B.5 CU2 — THE OPEN DELTA CARD as conversational context.
+  //
+  // A priced card on screen is the top of the ask panel's resolution ladder: while
+  // it is open, "this move" / "these orders" / "the delta" are about IT, and the
+  // `open-card` route reads back exactly this payload rather than re-deriving
+  // anything. So the payload is the CARD'S OWN CONTENT, assembled here where the
+  // card is rendered — one place, one set of numbers, no second derivation to
+  // drift.
+  //
+  // It is published on exactly the transitions that change what is on screen, and
+  // CLEARED on every one that takes the card away (discard, accept, publish,
+  // return-home, a fresh grab). A stale card would answer confidently about a
+  // move the planner can no longer see, which is the failure class this whole
+  // session is about.
+  // ---------------------------------------------------------------------
+  function cardContextFrom(result) {
+    if (!result) return null;
+    const pin = (result.moves || []).find((m) => m.pinned) || null;
+    const rid = pin ? pin.to_resource : (result.pin && result.pin.resource_id);
+    const opRef = (pin && pin.operation_ref)
+      || (result.pin && result.pin.operation_ref) || S.op;
+    const startIso = pin ? pin.to_start : (result.pin && result.pin.start);
+    return {
+      open: true,
+      operation_ref: opRef || null,
+      order: (opRef && woOf(opRef)) || null,
+      machine: (rid && nameOf(rid)) || null,
+      when: startIso ? _cardWhen(startIso) : null,
+      outcome: result.outcome || null,
+      feasible: result.feasible !== false,
+      message: result.message || "",
+      correlation_id: result.correlation_id || S.correlationId || null,
+      cost_delta_abs: result.cost_delta_abs ?? null,
+      attribution: result.attribution || "unavailable",
+      reopt_delta_abs: result.reopt_delta_abs ?? null,
+      move_delta_abs: result.move_delta_abs ?? null,
+      attribution_note: result.attribution_note || "",
+      cost_lines: result.cost_lines || null,
+      affected_orders: result.affected_orders || [],
+      lateness_delta_min: result.lateness_delta_min ?? 0,
+      // the moved-set COUNT includes the pinned op, exactly as the card's own
+      // line items do — the answer subtracts it to say "what else moved".
+      moves: (result.moves || []).length,
+      no_committed_work_changes: result.no_committed_work_changes !== false,
+      dominant_driver: result.dominant_driver || null,
+    };
+  }
+
+  function _cardWhen(iso) {
+    const t = Date.parse(iso);
+    if (Number.isNaN(t)) return null;
+    return new Date(t).toLocaleString(undefined,
+      { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  }
+
+  function publishCard(result) {
+    const ctxCard = cardContextFrom(result);
+    S.cardContext = ctxCard;
+    if (opts.onCardChange) opts.onCardChange(ctxCard);
+  }
+
+  function clearCard() {
+    if (S.cardContext === null) return;
+    S.cardContext = null;
+    if (opts.onCardChange) opts.onCardChange(null);
+  }
 
   // ---------------------------------------------------------------------
   // Rendering — one redraw() called on every pan/zoom so the whole surface
@@ -214,6 +283,7 @@ export function createGestureController(board, geometry, opts) {
   function grab(opRef) {
     if (!ctx.opFacts.get(opRef)) return false;   // no Tier-0 facts → not grabbable
     cancelSilently();
+    clearCard();                 // CU2: a fresh gesture retires the previous card
     S.lastDropWasNoop = false;   // R-DP9: reset the no-op flag each fresh grab
     const t0 = performance.now();
     S.phase = "grabbed";
@@ -478,6 +548,7 @@ export function createGestureController(board, geometry, opts) {
       S.result = { ...S.result, moves, consequences_pending: false };
       S.traces = renderTraces(layers.traces, svg, moves, durationMinOf, geometry, board.getWindow());
       card.showResult(S.result, { nameOf, woOf });
+      publishCard(S.result);              // CU2: the consequences landed — resend
     });
   }
 
@@ -517,12 +588,14 @@ export function createGestureController(board, geometry, opts) {
     const returnHome_ = result.outcome === "no_verdict" || !result.feasible;
     if (returnHome_) {
       card.showResult(result, { nameOf, woOf });
+      publishCard(result);                // CU2: a refusal is card content too
       return returnHome(result.message, /*keepCard*/ true);
     }
     S.phase = "verdict";
     renderCarry();                        // tentative bar stays put (R-DP1)
     S.traces = renderTraces(layers.traces, svg, result.moves || [], durationMinOf, geometry, board.getWindow());
     card.showResult(result, { nameOf, woOf });
+    publishCard(result);
   }
 
   // BEAT TWO applied over BEAT ONE (R-T2). The priced result SUPERSEDES the
@@ -541,6 +614,7 @@ export function createGestureController(board, geometry, opts) {
       // CONTRADICTION (infeasible): beat one said possible, beat two proved not —
       // SHOW it as an R-M1 rejection with the reason (R-T2(4)).
       card.showResult(result, { nameOf, woOf });
+      publishCard(result);                // CU2: a refusal is card content too
       return returnHome(result.message, /*keepCard*/ true);
     }
 
@@ -554,6 +628,7 @@ export function createGestureController(board, geometry, opts) {
       // R-T2(3): the priced card SUPERSEDES the ghost — a perceivable transition.
       card.showResult(result, { nameOf, woOf },
                       { detailOpen: feel.sandbox.detail_open, superseded: true });
+      publishCard(result);
     };
     if (relocate && !reduceMotion()) {
       const bar = layers.tentative.querySelector(".carry-bar");
@@ -650,7 +725,7 @@ export function createGestureController(board, geometry, opts) {
     }
     setTimeout(() => {
       root.classList.remove("returning", "refusing", "active");
-      if (!keepCard) card.hide();
+      if (!keepCard) { card.hide(); clearCard(); }
       clearOverlays();
       S.phase = "idle"; S.op = null; S.tier0 = null; S.target = null;
     }, snapMs + shakeMs + 30);
@@ -696,6 +771,7 @@ export function createGestureController(board, geometry, opts) {
           S.phase = "accepted";
           S.acceptedId = res.schedule_id;
           card.showAccepted({ newScheduleId: res.schedule_id, decision: res.decision });
+          clearCard();           // CU2: accepted — the priced proposal is gone
           if (opts.onVersionChange) opts.onVersionChange(res.schedule_id, "proposed");
           return res;
         });
@@ -755,6 +831,7 @@ export function createGestureController(board, geometry, opts) {
   function discard() {
     root.classList.remove("active", "refusing", "returning");
     card.hide();
+    clearCard();                 // CU2: dismissed — nothing to read back
     clearOverlays();
     if (board.clearMotionClasses) board.clearMotionClasses();  // clear a prior pin-lock (R-M1c)
     S.phase = "idle"; S.op = null; S.tier0 = null; S.target = null;
@@ -953,7 +1030,17 @@ export function createGestureController(board, geometry, opts) {
       priceToGhostsMs: (S.priceToGhostsMs || {})[S.op] || null,
       target: S.target && { ...S.target },
       ghosts: S.drawnGhosts.map((g) => ({ source: g.source, resource_id: g.resource_id, label: g.label || null, delta_pct: g.delta_pct })),
-      result: S.result && { outcome: S.result.outcome, delta_pct: S.result.delta_pct, moves: (S.result.moves || []).length },
+      result: S.result && {
+        outcome: S.result.outcome, delta_pct: S.result.delta_pct,
+        moves: (S.result.moves || []).length,
+        // CU1 (Session 4B.5): the priced total and its attribution, so the
+        // harness can assert that the two DRAWN parts sum to the headline
+        // (decomposition-sums, read off the rendered card).
+        cost_delta_abs: S.result.cost_delta_abs ?? null,
+        attribution: S.result.attribution || "unavailable",
+        reopt_delta_abs: S.result.reopt_delta_abs ?? null,
+        move_delta_abs: S.result.move_delta_abs ?? null,
+      },
       traces: S.traces.length,
       // R-T2 two-beat (Session 4B.3b): the beat-one ghost + correlation + any
       // beat-two contradiction, for the harness to assert the two beats.

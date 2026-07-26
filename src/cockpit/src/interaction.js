@@ -46,7 +46,8 @@ export function loadInteraction(id, onReady) {
 // The dev build additionally mounts the feel tuning panel (CU6). Read-only
 // until this resolves; drag affordances enable on arrival.
 export function wireInteraction(id, board, hook, opts = {}) {
-  const { doc, devMode = false, onVersionChange, onSuperseded, onAskWhy } = opts;
+  const { doc, devMode = false, onVersionChange, onSuperseded, onAskWhy,
+          onCardChange } = opts;
   hook.interactionReady = false;
   hook.dragEnabled = false;
   hook.interaction = null;
@@ -94,6 +95,12 @@ export function wireInteraction(id, board, hook, opts = {}) {
         // "Ask why" from the beat-two card bridges to the conversational layer
         // (Session 4B.3c CU4 — the R-AI1 rolling-explainer connector, now wired).
         onAskWhy,
+        // Session 4B.5 CU2: the open delta card, published to the ask panel as
+        // the top of its resolution ladder (and cleared when the card closes).
+        onCardChange: (card) => {
+          hook.openCard = card;              // harness seam + a race-free read
+          if (onCardChange) onCardChange(card);
+        },
       });
       hook.drag = controller;
       hook.dragEnabled = true;

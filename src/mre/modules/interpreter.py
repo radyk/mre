@@ -177,6 +177,7 @@ class ParseMemory:
         import hashlib
         import json as _json
         context = context or {}
+        card = context.get("card") or {}
         payload = _json.dumps({
             "q": (question or "").strip().lower(),
             "sel": context.get("selection") or {},
@@ -184,6 +185,11 @@ class ParseMemory:
             "hist": [t.get("question") for t in (context.get("history") or [])][-4:],
             "sid": session_id or "",
             "sched": schedule_id or "",
+            # Session 4B.5 CU2: the card is part of what produced the parse — the
+            # same words asked with a card open and with it dismissed are two
+            # different questions, so they must be two different keys.
+            "card": [bool(card.get("open")), card.get("order"),
+                     card.get("machine"), card.get("correlation_id")],
         }, sort_keys=True, default=str)
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
@@ -218,6 +224,10 @@ def tier_of(parsed: Any, explainer: Any = None) -> str:
     only means a waiting state is not shown for a turn that turns out to reason."""
     if parsed is None:
         return "floor"
+    # Session 4B.5 CU2: the open-card route answers from the card, always and
+    # instantly — ahead of the clarify test, exactly as the dispatch does it.
+    if parsed.intent is Intent.OPEN_CARD:
+        return "route"
     if parsed.clarify is not None and not _clarify_leads_nowhere(
             explainer, parsed, route_params(parsed, parsed.question)):
         return "floor"
@@ -276,7 +286,13 @@ def _subject_note(parsed: ParsedQuestion) -> str:
     for s in parsed.subjects:
         if not s.resolved:
             continue
-        if s.source is SubjectSource.SELECTION:
+        # Session 4B.5 CU2 — the top of the ladder. Named explicitly rather than
+        # folded into the selection wording: "from the move you have open" is a
+        # different claim about why we chose this subject, and the planner should
+        # be able to disagree with it.
+        if s.source is SubjectSource.CARD:
+            bits.append(f"resolved against {s.ref} (from the move you have open)")
+        elif s.source is SubjectSource.SELECTION:
             bits.append(f"resolved against {s.ref} (from board selection)")
         elif s.source is SubjectSource.LAST_ANSWER:
             bits.append(f"resolved against {s.ref}")
@@ -464,6 +480,23 @@ def _clarify_bundle(explainer: Any, parsed: ParsedQuestion):
     return explainer.route("clarify", {"question": parsed.question, "reason": body})
 
 
+#: How far back a re-fire counts as a repeat (Session 4B.5 CU5b/c). Two turns:
+#: long enough to catch "…" / "sorry, again?" and short enough that returning to a
+#: question after a genuine detour reads as a fresh ask, not a nag.
+REPEAT_WINDOW = 2
+
+
+def _repeat_depth(context: Optional[dict], route: str) -> int:
+    """How many of the last :data:`REPEAT_WINDOW` turns this same route answered.
+
+    Read off the history the panel already sends — each turn carries the route
+    that answered it — so this needs no server state and no new channel. 0 means
+    the question is fresh."""
+    history = (context or {}).get("history") or []
+    return sum(1 for turn in history[-REPEAT_WINDOW:]
+               if (turn.get("route") or "") == route)
+
+
 @dataclass
 class Dispatched:
     """One dispatched parse: where it went, what it assembled, and the two visible
@@ -592,6 +625,37 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
             Intent.WHY_NOT_SCHEDULED_YET.value,
             explainer.route(Intent.WHY_NOT_SCHEDULED_YET.value, params),
             note, parsed.question)
+
+    # 0b — THE OPEN DELTA CARD (Session 4B.5 CU2), ahead of the clarify branch.
+    #
+    # A priced move is showing and the planner asked about IT. The answer is
+    # already computed and on screen; what was missing was a way to read it back.
+    # The founder's exchange is the specimen: "what orders are affected in this
+    # move", asked with the affected set visible on the card, parsed as
+    # `swap-move` — a route about two orders' slack that has never heard of the
+    # card — and answered a question nobody asked.
+    #
+    # It runs ahead of the clarify branch for the same reason the tray check does:
+    # a clarify decides before anything below it, and asking "which orders do you
+    # mean" about the card in front of them is the dead end `_clarify_leads_
+    # nowhere` exists to prevent — but the card is not a resolved SUBJECT, so that
+    # test cannot see it.
+    #
+    # The dispatch DECIDES; the parse only reported (R-AI5(8)). An `open-card`
+    # parse with no card in context is not answered as one — it falls through to
+    # the honest floor below, which says there is nothing open to read back rather
+    # than inventing which move they meant.
+    card = (context or {}).get("card") or {}
+    if parsed.intent is Intent.OPEN_CARD:
+        if card.get("open"):
+            params = route_params(parsed, parsed.question)
+            params["card"] = card
+            return Dispatched("open-card", explainer.route("open-card", params),
+                              note, parsed.question)
+        return Dispatched("open-card",
+                          explainer.route("open-card", {"question": parsed.question,
+                                                        "card": {}}),
+                          note, parsed.question)
 
     # 1 — the parse could not commit. Ask; never guess — UNLESS asking leads
     # nowhere (see _clarify_leads_nowhere), in which case the honest destination is
@@ -735,7 +799,33 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
         params["refusals"] = [r.model_dump(mode="json")
                               for r in ledger.recent_refusals()]
 
+    # 5a — CU5(a), Session 4B.5: AN ADVICE TURN THAT NAMES A CAPABILITY IS A
+    # COACHING QUESTION.
+    #
+    # The founder's rider: "so you can't tell me if overtime will help", asked
+    # after the advice route's scoping answer. It parsed as `advice` again and
+    # re-fired the same template verbatim — the assistant reading its own last
+    # answer back to someone who had just told it that answer was insufficient.
+    # But the sentence names a CONCEPT the submission can declare, and there IS a
+    # contracted answer for that: how to turn overtime on, and what it would let
+    # the solver do. The concept is the parse's, not a keyword's; the dispatch
+    # only reads whether one resolved.
+    if parsed.intent is Intent.ADVICE and params.get("concept"):
+        return Dispatched("coaching", explainer.route("coaching", params),
+                          note, routed_question)
+
     bundle = explainer.route(parsed.intent.value, params)
+
+    # 5b — CU5(b)/(c): A ROUTE RE-FIRED WITHIN TWO TURNS DOES NOT REPEAT ITSELF.
+    #
+    # Two riders, one signal. An answer delivered word-for-word twice in a row
+    # reads as not having heard the second question, and a COUNT re-asked does not
+    # want its whole recitation again — it wants the number. The depth is read off
+    # the history the panel already sends (each turn carries the route that
+    # answered it); the WORDS are authored and the renderer picks them.
+    repeat = _repeat_depth(context, parsed.intent.value)
+    if repeat and isinstance(bundle.key_facts, dict):
+        bundle.key_facts["repeat"] = repeat
     # Make the resolution visible (RUBRIC C3): the answer shows the question it
     # actually answered, whenever the parse rewrote it.
     if rewritten:

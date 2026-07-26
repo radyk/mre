@@ -23,6 +23,8 @@ budget — so a heavy fixture fails a test before it fails a demo.
 from __future__ import annotations
 
 import hashlib
+import json
+import threading
 import time
 from dataclasses import asdict, dataclass, field, fields
 from datetime import datetime, timedelta, timezone
@@ -130,6 +132,35 @@ class SandboxResult:
     # An explicit "other" remainder line carries any delta the named lines do not
     # factor (0 when the ledger fully decomposes). None when no ledger (degrade).
     cost_lines: Optional[list[dict]] = None
+    # --- CU1 (Session 4B.5): DELTA ATTRIBUTION ------------------------------
+    # ``cost_delta_abs`` measures the RE-SOLVE, not the MOVE — and the card read
+    # as though it measured the move. The founder's specimen: two different
+    # gestures on schedule rolling-279dec02-411 (ORD-38 → MILL-01 at Jan-8 08:30,
+    # then at 07:00) produced IDENTICAL cards, −$11,975.83 to the cent, same four
+    # affected orders. Both numbers were true and neither was about the gesture:
+    # almost all of it was the window re-optimizing under a fresh budget, which
+    # the incumbent had never been given.
+    #
+    # So the verdict SPLITS, always:
+    #     window re-optimization  = baseline_total − incumbent_total
+    #     your move               = pinned_total   − baseline_total
+    # where the BASELINE is the same window, same budget, same standing
+    # commitments, WITHOUT the gesture's pin. The planner's move is judged
+    # against the baseline, never against the stale incumbent.
+    #
+    # ``attribution`` is "split" when a baseline was proven, "unavailable" when it
+    # was not — in which case the card shows the UNSPLIT total with an explicit
+    # "includes window re-optimization" line, and NEVER a silent fused number.
+    # The two parts sum EXACTLY to ``cost_delta_abs`` (decomposition-sums
+    # discipline, the same rule ``cost_lines`` follows).
+    attribution: str = "unavailable"          # "split" | "unavailable"
+    reopt_delta_abs: Optional[float] = None   # dollars: baseline − incumbent
+    move_delta_abs: Optional[float] = None    # dollars: pinned − baseline
+    baseline_total_cost: Optional[float] = None
+    attribution_note: str = ""                # why unsplit, when unavailable
+    # What the attribution cost in wall time (0.0 on a cache hit) — the honest
+    # answer to "what did the split add to my wait", inspectable from the payload.
+    baseline_wall_time_s: float = 0.0
 
     def summary(self) -> dict:
         return asdict(self)
@@ -227,6 +258,274 @@ def _restrict_window(ops, wps, fuls, demands, restrict_op_ids):
     dem_ids = {f.get("demand_ref", "") for f in fuls}
     demands = [d for d in demands if d["id"] in dem_ids]
     return ops, wps, fuls, demands
+
+
+# ---------------------------------------------------------------------------
+# CU1 (Session 4B.5) — THE BASELINE: what the window costs with NO gesture at all.
+# ---------------------------------------------------------------------------
+
+@dataclass
+class BaselineSolve:
+    """The same window, same budget, same standing commitments — and NO pin.
+
+    This is the reference the planner's move is judged against. Without it the
+    delta card compares a freshly-budgeted re-solve to a STALE INCUMBENT, and the
+    difference between those two is dominated by re-optimization the planner did
+    not ask for and cannot influence — which is exactly why two different pins
+    produced the same card to the cent.
+
+    ``available`` is False when the baseline could not be PROVEN inside the
+    budget. That is a first-class outcome, not an error: the card then shows the
+    unsplit total and says out loud that it includes window re-optimization."""
+
+    available: bool
+    total_cost: Optional[float] = None
+    status: str = ""
+    outcome: str = ""
+    wall_time_s: float = 0.0
+    message: str = ""
+    cached: bool = False
+
+    def summary(self) -> dict:
+        return asdict(self)
+
+
+# One baseline serves every card in a session until the INCUMBENT changes. The
+# key is everything that defines the baseline solve — the run dir, the snapshot,
+# the window restriction, the standing commitments, the budget and the
+# determinism flag — so an accepted edit (new snapshot + new pin set) misses by
+# construction and a second gesture on the same board hits.
+_BASELINE_CACHE: "dict[str, BaselineSolve]" = {}
+_BASELINE_CACHE_LIMIT = 8
+_BASELINE_LOCK = threading.Lock()
+
+
+def baseline_cache_key(out_dir: Path | str, snapshot_id: str, budget_s: float,
+                       deterministic: bool,
+                       standing_pins: Optional[list[dict]],
+                       restrict_op_ids: Optional[set]) -> str:
+    pins = sorted(
+        (str(p.get("operation_ref", "")), str(p.get("resource_id", "")),
+         str(p.get("start", "")))
+        for p in (standing_pins or []))
+    payload = json.dumps({
+        "out": str(out_dir), "snap": snapshot_id, "budget": round(budget_s, 3),
+        "det": bool(deterministic), "pins": pins,
+        "window": sorted(restrict_op_ids) if restrict_op_ids is not None else None,
+    }, sort_keys=True, default=str)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:32]
+
+
+def clear_baseline_cache() -> None:
+    """Drop every cached baseline. Tests use it; nothing in the product needs to
+    (the key changes whenever the incumbent does)."""
+    with _BASELINE_LOCK:
+        _BASELINE_CACHE.clear()
+
+
+def baseline_window_solve(
+    out_dir: Path | str,
+    snapshot_id: str,
+    *,
+    budget_s: float = SANDBOX_BUDGET_S,
+    runs_subdir: str = "runs",
+    deterministic: bool = True,
+    standing_pins: Optional[list[dict]] = None,
+    restrict_op_ids: Optional[set] = None,
+    use_cache: bool = True,
+) -> BaselineSolve:
+    """Re-solve the window with NO gesture pin, and return its ledger total.
+
+    Everything else is held identical to the priced beat two: the same entity
+    restriction, the same warm start from the incumbent, the same standing
+    commitments (held in FULL here — there is no dragged op to exempt), the same
+    budget and the same determinism. Only the pin is absent, so the difference
+    between this and the pinned solve is attributable to the pin and to nothing
+    else.
+
+    Cached per incumbent (:func:`baseline_cache_key`). Fully guarded: any failure
+    returns ``available=False`` with a stated reason — a baseline that could not
+    be proven must degrade the card honestly, never take it down."""
+    key = baseline_cache_key(out_dir, snapshot_id, budget_s, deterministic,
+                             standing_pins, restrict_op_ids)
+    if use_cache:
+        with _BASELINE_LOCK:
+            hit = _BASELINE_CACHE.get(key)
+        if hit is not None:
+            return BaselineSolve(**{**asdict(hit), "cached": True})
+
+    result = _baseline_window_solve_uncached(
+        out_dir, snapshot_id, budget_s=budget_s, runs_subdir=runs_subdir,
+        deterministic=deterministic, standing_pins=standing_pins,
+        restrict_op_ids=restrict_op_ids)
+    if use_cache:
+        with _BASELINE_LOCK:
+            _BASELINE_CACHE.pop(key, None)
+            _BASELINE_CACHE[key] = result
+            while len(_BASELINE_CACHE) > _BASELINE_CACHE_LIMIT:
+                _BASELINE_CACHE.pop(next(iter(_BASELINE_CACHE)))
+    return result
+
+
+def _baseline_window_solve_uncached(
+    out_dir: Path | str,
+    snapshot_id: str,
+    *,
+    budget_s: float,
+    runs_subdir: str,
+    deterministic: bool,
+    standing_pins: Optional[list[dict]],
+    restrict_op_ids: Optional[set],
+) -> BaselineSolve:
+    from mre.contracts.vocabularies import ModuleCode, RunStatus
+    from mre.modules.calendar_utils import flatten_all_calendars
+    from mre.modules.extractor import Extractor
+    from mre.modules.scenario import derive_base_context
+    from mre.modules.snapshot_store import SnapshotStore
+    from mre.modules.solve_runner import SolveRunner
+    from mre.modules.solver_builder import SolverBuilder, apply_solution_hints
+    from mre.modules.solution_pool import _m5_horizon, _read_evidence
+    from mre.modules import standing_pins as sp
+    from mre.reporter import Reporter
+
+    out_dir = Path(out_dir)
+    sandbox_dir = out_dir / "sandbox"
+    sandbox_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        reader = SnapshotStore(out_dir / "snapshots").load_snapshot(snapshot_id)
+        demands = list(reader.iter_entities("demand"))
+        fuls = list(reader.iter_entities("fulfillment"))
+        wps = list(reader.iter_entities("workpackage"))
+        ops = list(reader.iter_entities("operation"))
+        edges = list(reader.iter_entities("precedenceedge"))
+        resources = list(reader.iter_entities("resource"))
+        pools = list(reader.iter_entities("resourcepool"))
+        calendars = list(reader.iter_entities("calendar"))
+        constraints = list(reader.iter_entities("constraint"))
+        costmodels = list(reader.iter_entities("costmodel"))
+        incumbent_assignments = list(reader.iter_entities("assignment"))
+        cost_model = costmodels[0] if costmodels else {}
+
+        ops, wps, fuls, demands = _restrict_window(
+            ops, wps, fuls, demands, restrict_op_ids)
+
+        evidence = _read_evidence(out_dir / runs_subdir)
+        ctx = derive_base_context(out_dir / runs_subdir)
+        reference_date = _parse_ref_date(ctx.get("reference_date"))
+        horizon_start, horizon_end = _m5_horizon(evidence)
+        flattened_cals = flatten_all_calendars(calendars, horizon_start, horizon_end)
+
+        workers = 1 if deterministic else ctx.get("solver_workers")
+        b_rep = Reporter.begin(
+            module=ModuleCode.M5, purpose="sandbox baseline model build",
+            config={"baseline": True, "pin": None},
+            trigger="sandbox_baseline", snapshot_id=snapshot_id,
+            sink_dir=sandbox_dir / "runs",
+        )
+        model, var_map = SolverBuilder(reference_date=reference_date).build(
+            wps + ops + edges, resources + pools, flattened_cals,
+            fuls + demands, constraints, cost_model,
+        )
+        b_rep.end(RunStatus.SUCCESS)
+
+        apply_solution_hints(model, var_map, incumbent_assignments)
+        # Every standing commitment is held, in full — there is no dragged op to
+        # exempt, which is the entire point: this is the plan WITHOUT the gesture.
+        try:
+            sp.apply_standing_pins(model, var_map, standing_pins, horizon_start)
+        except sp.PinUnsatisfiable as exc:
+            return BaselineSolve(
+                available=False, status="INFEASIBLE",
+                outcome=SANDBOX_VERDICT,
+                message=f"a standing commitment could not be held: {exc.reason}")
+
+        r_rep = Reporter.begin(
+            module=ModuleCode.M6, purpose="sandbox baseline solve",
+            config={"time_limit": budget_s, "num_search_workers": workers,
+                    "baseline": True},
+            trigger="sandbox_baseline", snapshot_id=snapshot_id,
+            sink_dir=sandbox_dir / "runs",
+        )
+        t0 = time.monotonic()
+        solve_result = SolveRunner(
+            time_limit_seconds=budget_s, num_search_workers=workers,
+            random_seed=0 if deterministic else None,
+        ).solve(model, var_map, r_rep)
+        wall = round(time.monotonic() - t0, 3)
+        feasible = solve_result.status in ("OPTIMAL", "FEASIBLE")
+        r_rep.end(RunStatus.SUCCESS if feasible else RunStatus.PARTIAL)
+        outcome = classify_sandbox_outcome(solve_result.status, wall, budget_s)
+        if not feasible:
+            return BaselineSolve(
+                available=False, status=solve_result.status, outcome=outcome,
+                wall_time_s=wall,
+                message="the window could not be re-solved without your move "
+                        "inside the budget")
+
+        er = Extractor().extract(
+            solve_values=solve_result.solve_values, snapshot_id="sandbox-baseline",
+            operations=ops, workpackages=wps, resources=resources,
+            fulfillments=fuls, demands=demands, cost_model=cost_model,
+            reporter=None, cal_windows=var_map.cal_windows,
+            op_eligible=var_map.op_eligible, snapshot_writer=None,
+            is_scenario=True, overtime_windows=var_map.overtime_windows,
+        )
+        ledger = er.cost_ledger or {}
+        total = ledger.get("total_cost")
+        if total is None:
+            return BaselineSolve(
+                available=False, status=solve_result.status, outcome=outcome,
+                wall_time_s=wall,
+                message="the baseline re-solve produced no cost ledger")
+        return BaselineSolve(
+            available=True, total_cost=round(float(total), 2),
+            status=solve_result.status, outcome=outcome, wall_time_s=wall,
+            message="baseline proven" if outcome == SANDBOX_VERDICT
+                    else "baseline found, bound not proven")
+    except Exception as exc:  # noqa: BLE001 — a baseline never takes the card down
+        return BaselineSolve(available=False, status="ERROR",
+                             message=f"the baseline re-solve failed: {exc}")
+
+
+# The authored line the card shows when the total could NOT be split. It is not
+# an apology — it is the one fact the planner needs to read the number correctly.
+UNSPLIT_NOTE = "includes window re-optimization"
+
+
+def attribute_delta(cost_delta_abs: Optional[float],
+                    incumbent_total: Optional[float],
+                    baseline: Optional[BaselineSolve]) -> dict:
+    """Split a total delta into (window re-optimization, your move) — pure.
+
+    The two parts sum EXACTLY to ``cost_delta_abs``: the re-optimization part is
+    measured (baseline − incumbent) and the move part is the REMAINDER, so the
+    card can never claim arithmetic that does not close. Any missing input yields
+    the honest unsplit shape, never a half-attributed number."""
+    # What THIS gesture paid for its attribution: zero on a cache hit, because the
+    # baseline was already solved for this incumbent. (The solve's own wall time
+    # stays on the BaselineSolve; what the card reports is what the planner waited.)
+    wall = 0.0
+    if baseline is not None and not baseline.cached:
+        wall = round(float(baseline.wall_time_s), 3)
+    if cost_delta_abs is None:
+        return {"attribution": "unavailable", "reopt_delta_abs": None,
+                "move_delta_abs": None, "baseline_total_cost": None,
+                "attribution_note": UNSPLIT_NOTE, "baseline_wall_time_s": wall}
+    if (baseline is None or not baseline.available
+            or baseline.total_cost is None or incumbent_total is None):
+        note = (baseline.message if baseline is not None and baseline.message
+                else UNSPLIT_NOTE)
+        return {"attribution": "unavailable", "reopt_delta_abs": None,
+                "move_delta_abs": None,
+                "baseline_total_cost": (baseline.total_cost
+                                        if baseline is not None else None),
+                "attribution_note": note, "baseline_wall_time_s": wall}
+    reopt = round(float(baseline.total_cost) - float(incumbent_total), 2)
+    move = round(float(cost_delta_abs) - reopt, 2)
+    return {"attribution": "split", "reopt_delta_abs": reopt,
+            "move_delta_abs": move,
+            "baseline_total_cost": round(float(baseline.total_cost), 2),
+            "attribution_note": "", "baseline_wall_time_s": wall}
 
 
 def feasibility_ghost(
@@ -421,6 +720,7 @@ def sandbox_pin_resolve(
     deterministic: bool = True,
     standing_pins: Optional[list[dict]] = None,
     restrict_op_ids: Optional[set] = None,
+    baseline: bool = True,
 ) -> SandboxResult:
     """Re-solve with one op pinned to (machine + time), the rest free, under a
     hard `budget_s`. Returns a classified :class:`SandboxResult`.
@@ -435,6 +735,14 @@ def sandbox_pin_resolve(
     never silently relocate a placement the planner already committed. A drop that
     is infeasible against a standing pin returns an honest INFEASIBLE verdict that
     NAMES the blocking commitment — never a quiet sacrifice of the older pin.
+
+    ``baseline`` (CU1, Session 4B.5) buys the card's ATTRIBUTION: the same window
+    is also re-solved WITHOUT this pin, and the verdict splits into the window
+    re-optimization the planner did not cause and the cost their move actually
+    added. The baseline is cached per incumbent, so only the first gesture on a
+    board pays for it. Set it False to price a move without attributing it (the
+    latency-floor regression, the accept path, a caller that has no use for the
+    split) — the result then carries ``attribution="unavailable"``.
     """
     from mre.contracts.vocabularies import ModuleCode, RunStatus
     from mre.modules.calendar_utils import flatten_all_calendars
@@ -611,6 +919,7 @@ def sandbox_pin_resolve(
     affected_orders: list[dict] = []
     lateness_delta_min = 0
     dominant_driver: dict = {}
+    incumbent_total = None
     if feasible:
         card = _priced_card_data(
             reader, solve_result.solve_values, ops, wps, resources, fuls,
@@ -621,6 +930,18 @@ def sandbox_pin_resolve(
         affected_orders = card["affected_orders"]
         lateness_delta_min = card["lateness_delta_min"]
         dominant_driver = card["dominant_driver"]
+        incumbent_total = card["incumbent_total"]
+
+    # CU1 — ATTRIBUTION. Price the same window with NO pin (cached per incumbent)
+    # and split the verdict. Only a feasible, priced result can be attributed;
+    # everything else keeps the honest unsplit shape.
+    attribution = attribute_delta(None, None, None)
+    if feasible and baseline and cost_delta_abs is not None:
+        base = baseline_window_solve(
+            out_dir, snapshot_id, budget_s=budget_s, runs_subdir=runs_subdir,
+            deterministic=deterministic, standing_pins=standing_pins,
+            restrict_op_ids=restrict_op_ids)
+        attribution = attribute_delta(cost_delta_abs, incumbent_total, base)
     # R-T2/R-DP8 standing invariant: a committed/standing-pinned op is structurally
     # excluded from the moved-set (``exclude_ops``), so this is True by
     # construction — but ASSERT it against the actual moves (test pins it).
@@ -646,6 +967,7 @@ def sandbox_pin_resolve(
         correlation_id=corr, dominant_driver=dominant_driver,
         affected_orders=affected_orders, lateness_delta_min=lateness_delta_min,
         no_committed_work_changes=no_committed_changes, cost_lines=cost_lines,
+        **attribution,
     )
 
 
@@ -728,7 +1050,8 @@ def _priced_card_data(reader, solve_values, ops, wps, resources, fuls,
     relative-% headline, never a false figure."""
     from mre.modules.planner_language import driver_phrase, driver_hedge
     empty = {"cost_delta_abs": None, "cost_delta_pct": None, "cost_lines": None,
-             "affected_orders": [], "lateness_delta_min": 0, "dominant_driver": {}}
+             "affected_orders": [], "lateness_delta_min": 0, "dominant_driver": {},
+             "incumbent_total": None}
     try:
         from mre.modules.extractor import Extractor
         schedules = list(reader.iter_entities("schedule"))
@@ -800,7 +1123,10 @@ def _priced_card_data(reader, solve_values, ops, wps, resources, fuls,
                         "hedge": driver_hedge(code)}
         return {"cost_delta_abs": cost_delta_abs, "cost_delta_pct": cost_delta_pct,
                 "cost_lines": cost_lines, "affected_orders": affected,
-                "lateness_delta_min": lateness_delta, "dominant_driver": dominant}
+                "lateness_delta_min": lateness_delta, "dominant_driver": dominant,
+                # CU1: the incumbent's own total, so the caller can attribute the
+                # delta against a baseline without re-reading the schedule.
+                "incumbent_total": round(base_total, 2)}
     except Exception:
         return empty
 

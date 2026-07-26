@@ -63,6 +63,16 @@ from mre.ai_exam.script import parse_script  # noqa: E402
 
 BANKS_DIR = Path(__file__).resolve().parents[1] / "tests" / "ai_exam" / "banks"
 
+#: Banks that must run against the PINNED ROLLING RUN rather than the monolithic
+#: glass_box world. A rolling question asked of a monolithic world is answered
+#: "this isn't a rolling schedule" — honest, and a test of nothing — so these are
+#: SKIPPED LOUDLY when the rolling target is absent, never run vacuously.
+#:
+#: `regression_founder_r5` joins in Session 4B.5: the founder's round-five session
+#: ran on a rolling board, and three of its specimens are only askable there (a
+#: delta card exists because a gesture was priced against a sliced window).
+ROLLING_BANKS = frozenset({"sweep_rolling", "regression_founder_r5"})
+
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
@@ -126,7 +136,7 @@ def main(argv=None) -> int:
     skipped: list = []
     for bank in banks:
         bank_target = target
-        if bank.stem == "sweep_rolling":
+        if bank.stem in ROLLING_BANKS:
             if rolling_target is None:
                 print(f"sweep: {bank.stem}: SKIPPED — no pinned rolling run at "
                       f"{args.rolling_target}. Build it with "

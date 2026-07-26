@@ -14,6 +14,20 @@ test. The format is deliberately spartan (the founder pastes plain text):
                                         resource_name from one bar).
   * ``SELECT clear`` / ``SELECT none``
                                      -> drop the board selection
+  * ``CARD order=ORD-38 machine=MILL-01``
+                                     -> a PRICED DELTA CARD is open on the board
+                                        (Session 4B.5 CU2) — the top of the
+                                        resolution ladder. The bank states the
+                                        move; the runner synthesizes a plausible
+                                        priced payload around it, because what a
+                                        card bank grades is ROUTING (does the
+                                        question reach `open-card`), never the
+                                        figures, which the card itself supplies in
+                                        the product.
+  * ``CARD clear`` / ``CARD none``   -> the card was dismissed/accepted; the
+                                        channel is empty again. A bank that opens
+                                        a card and never closes it is testing the
+                                        easy half.
   * ``RESET``                        -> clear ALL conversation state (history AND
                                         selection): many conversations per bank
   * ``EXPECT intent=advice order=ORD-13 route=advice``
@@ -61,6 +75,17 @@ class Select:
 
 
 @dataclass
+class Card:
+    """A PRICED DELTA CARD open on the board (Session 4B.5 CU2) — the top of the
+    resolution ladder. ``clear`` closes it (dismissed / accepted / returned home);
+    a bank that never closes one is testing the easy half."""
+    order: Optional[str]
+    machine: Optional[str]
+    clear: bool
+    lineno: int
+
+
+@dataclass
 class Reset:
     """Clear all conversation state — a fresh conversation starts on the next line."""
     lineno: int
@@ -81,7 +106,7 @@ class Comment:
     lineno: int
 
 
-ScriptItem = Union[Question, Select, Reset, Comment, Expect]
+ScriptItem = Union[Question, Select, Card, Reset, Comment, Expect]
 
 
 _SELECT_KV = re.compile(r"(order|machine|op)\s*=\s*(\S+)", re.IGNORECASE)
@@ -130,6 +155,26 @@ def parse_script(text: str) -> ParsedScript:
                      else "EXPECT with no recognized key"))
                 continue
             out.items.append(Expect(fields=fields, lineno=i))
+            continue
+        if head == "CARD":
+            rest = stripped[len("CARD"):].strip()
+            if rest.lower() in ("clear", "none", "off", "dismissed", "accepted"):
+                out.items.append(Card(order=None, machine=None, clear=True, lineno=i))
+                continue
+            order = machine = None
+            found = False
+            for m in _SELECT_KV.finditer(rest):
+                found = True
+                key, val = m.group(1).lower(), m.group(2)
+                if key == "order":
+                    order = val
+                elif key == "machine":
+                    machine = val
+            if not found:
+                out.parse_errors.append(
+                    (i, raw, "CARD with no order=/machine= key"))
+                continue
+            out.items.append(Card(order=order, machine=machine, clear=False, lineno=i))
             continue
         if head == "SELECT":
             rest = stripped[len("SELECT"):].strip()

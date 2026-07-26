@@ -184,6 +184,11 @@ export function ask(id, question, useLlm = false, ctx = {}) {
       // follow-up after a TYPED entity question ("why is ORD-05 late" → "but
       // why?") resolves even with nothing selected on the board.
       last_answered_subject: ctx.lastAnswered || {},
+      // Session 4B.5 CU2: the OPEN DELTA CARD — the top of the resolution
+      // ladder. A priced move on screen is part of the question; the `open-card`
+      // route reads THIS payload back rather than re-deriving it, which is what
+      // makes the answer and the card incapable of disagreeing.
+      card: ctx.card || {},
       session_id: ctx.sessionId || null,
     }),
   });
@@ -207,6 +212,7 @@ export function askPreflight(id, question, ctx = {}) {
       history: ctx.history || [],
       selection: ctx.selection || {},
       last_answered_subject: ctx.lastAnswered || {},
+      card: ctx.card || {},
       session_id: ctx.sessionId || null,
     }),
   }).catch(() => ({ tier: "route", waiting: "", intent: null }));

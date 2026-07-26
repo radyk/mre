@@ -129,20 +129,41 @@ id is a named error over the schedule list, never a substitution. Only a boot WI
 the param resolves from the listing and auto-follows a resubmit (Session 4.4 CU2).
 To switch boards, click the strip's identity chip (`solve #N`): the **schedule
 picker** lists the registry newest first, tagged rolling vs monolithic. NB
-`dev_cockpit.ps1` mints a fresh busy_board solve on every boot unless `-Resume`, so
-the data root's newest row is usually the last dev restart, not your work.
+`dev_cockpit.ps1` RESUMES the cached board by default (4B.5 CU4e); `-Fresh` mints a
+new solve. Before that it minted one every boot, so the data root's newest row was
+the last dev restart rather than your work — and the freshness watch, correctly,
+kept offering to follow it.
 
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**AI-track Session 4A.5c — R-AI5 part 3: telemetry, the Pareto, the promotion
-pipeline (the R-AI5 arc CLOSED)**, 2026-07-26 (docs/07 v2.46; docs/04 amendment same
-date). The working thread returns to the 4B mission.
+**Session 4B.5 — round-five harvest: the card tells the truth about itself, and the
+R-F rulings land**, 2026-07-26 (docs/07 v2.47; docs/04 amendment same date).
+
+**THE DELTA CARD SPLITS ITS VERDICT (4B.5 CU1).** `cost_delta_abs` measures the
+RE-SOLVE, not the move — two different gestures on one incumbent produced identical
+cards to the cent. Beat two also solves the window WITHOUT the pin (the BASELINE,
+cached per incumbent) and the card always shows *window re-optimization* (baseline
+vs incumbent) beside *your move* (pinned vs baseline), summing exactly to the total.
+**A planner's move is judged against the baseline, never the stale incumbent.** An
+unprovable baseline shows the unsplit total with an explicit "includes window
+re-optimization" line — never a silent fused number, never a half split.
+
+**R-F1/R-F2/R-F3 are RULED and RECORDED, not built** (4B.5 CU6; verbatim in docs/04,
+summarized in docs/07 §6). The planner-movable frozen boundary (a thaw makes standing
+pins, never free work); rush intake as a Demand the SOLVER places; the OUTCOME ->
+WINDOW -> PIN constraint ladder with optional reasons. NAMED-QUEUED behind them: the
+pin register, amend-submission (pilot-relevant), the boundary-drag gesture, the window
+constraint.
 
 **The ask path (R-AI5) — two tiers, sealed from each other, and a loop between
 them.** Every question is parsed FIRST by a model against the closed intent
 vocabulary (`src/mre/contracts/parse.py`), with the conversation history, the live
-board selection and the last-answered subject as context. **No deterministic
+board selection, the last-answered subject and — since 4B.5 CU2 — the OPEN DELTA CARD
+as context. The resolution ladder is **card > selection > last answer > history >
+clarify**; while a priced card is showing, `open-card` READS IT BACK rather than
+re-deriving it, so the two surfaces cannot state different numbers, and with no card
+open the same words are never answered as a card question. **No deterministic
 classifier survives anywhere** — `Explainer.classify` / `answer` went in 4A.5a and
 `rolling_questions.classify_rolling` (the last one) in 4A.5c. They must not come back.
 
@@ -236,6 +257,13 @@ committed with its doc update.
   retrieval must never read prose); machine-idle eligibility naming no specific ops
   on the monolithic path; per-order PRODUCTION-dollar attribution (a ledger change).
   (Aggregate-cause coaching is RETIRED — promoted to `lateness-cause`, 4A.5c.)
+- 4B.5 debts: the two-solve BASELINE is not extended to FORCED-ALTERNATIVES pricing
+  (same economics, separate audit); the committed rolling cockpit fixture predates the
+  2026-07-26 determinism fix and no longer reproduces, so its canned attribution split
+  is SYNTHESIZED until it is regenerated; the causal vacuity tripwire counts a quantity
+  as a DIGIT only, and a driver phrase alone clears it (the founder's own specimen is
+  fixed at the assembler, not by the tripwire); CU4(b)'s viewport guard is a standing
+  invariant the harness cannot make fail.
 - R-AI5 residue, carried: start-reason's early-vs-plain read is still the
   assembler's (only a NEGATIVE polarity is authoritative from the parse); a CLARIFY
   turn carries no subject forward.

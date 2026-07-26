@@ -277,7 +277,20 @@ class VerifiedClaim(BaseModel):
     status: ClaimStatus
     kind: ClaimKind = ClaimKind.FACT
     cited_record_ids: list[str] = Field(default_factory=list)
+    #: The records THIS CLAIM was checked against — its own citations when it made
+    #: any, the whole consulted set when it made none (which is the honest answer:
+    #: an uncited claim really is checked against everything the loop read).
+    #:
+    #: Session 4B.5 CU5(d) FIXED A DEFECT HERE. This used to be the answer-level
+    #: consulted list on EVERY claim, so the surface's "read from" line showed the
+    #: same three record ids beside every interpretive sentence regardless of what
+    #: each rested on — answer-level provenance wearing per-claim clothes.
     consulted_record_ids: list[str] = Field(default_factory=list)
+    #: The TOOL CALLS whose results this claim's scope came from (Session 4B.5
+    #: CU5(d)) — per claim, derived from which calls surfaced the records in
+    #: ``consulted_record_ids``. This is the "read from" a planner actually means:
+    #: not which record ids, but which readings of the plan.
+    read_from: list[str] = Field(default_factory=list)
     assertions: list[Assertion] = Field(default_factory=list)
     reason: str = ""
     #: Set on an INTERPRETIVE claim whose quantifier could not be enumerated: the
@@ -354,6 +367,14 @@ class SynthesisProvenance(BaseModel):
             claims=[{"text": c.text, "status": c.status.value,
                      "kind": c.kind.value,
                      "record_ids": c.cited_record_ids,
+                     # Session 4B.5 CU5(d): the ledger carries PER-CLAIM
+                     # provenance — which records this sentence was checked
+                     # against and which tool calls surfaced them. Before this it
+                     # carried the claim's own citations beside an answer-level
+                     # consulted set, so the durable record could not tell what
+                     # any one sentence rested on.
+                     "consulted": c.consulted_record_ids,
+                     "read_from": c.read_from,
                      "load_bearing": c.load_bearing}
                     for c in (list(answer.claims) + list(answer.cut))],
             tool_calls=list(answer.tool_calls),

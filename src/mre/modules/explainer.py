@@ -136,6 +136,11 @@ ROUTE_TAXONOMY: dict[str, dict] = {
     "excluded-orders":       {"params": [],          "canonical": "which orders were excluded from the plan?"},
     "edit-summary":          {"params": [],          "canonical": "summarize my changes and what they cost"},
     "edit-cost":             {"params": [],          "canonical": "what did this move cost?"},
+    # Session 4B.5 CU2 — the OPEN DELTA CARD route. It takes no subject slot: the
+    # card IS the subject, and it arrives on the context channel, not as a param
+    # the parse resolves. Reachable only when a card is open (dispatch-enforced).
+    "open-card":             {"params": [],
+                              "canonical": "what does this move do?"},
     "ledger-refusals":       {"params": [],          "canonical": "what questions couldn't you answer recently?"},
     # Session 4A.2 — the missing route families (CU5), the relevance guard's
     # honest destinations (CU1), drill-down (CU3), and the morning briefing (CU7).
@@ -555,6 +560,8 @@ class Explainer:
         if route_id == "unknown-entity":
             return self._explain_unknown_entity(
                 params.get("mention") or params.get("order") or q)
+        if route_id == "open-card":
+            return self._explain_open_card(q, params.get("card") or {})
         if route_id == "edit-cost":
             return self._explain_edit_cost(q)
         if route_id == "edit-summary":
@@ -1011,13 +1018,45 @@ class Explainer:
         # earliness from capacity forcing; a confident single-cause answer would
         # grade wrong on the zero-confident-wrong axis.
         cause = None
+        driver_code = None
         for r in assignment_records:
             cause = driver_phrase(r.get("driver"))
             if cause:
+                driver_code = r.get("driver")
                 hedge = driver_hedge(r.get("driver"))
                 if hedge:
                     cause = f"{cause} {hedge}"
                 break
+
+        # Session 4B.5 CU3(a) — THE VACUOUS-CAUSAL SPECIMEN, fixed at its path.
+        #
+        # The founder asked "why is ORD-000008 on PAINT-02?" and got "because the
+        # machine was busy with other work [record: bafa03f1…]". The audit: the
+        # record is a REAL assignment Decision (driver CAPACITY_BLOCKED, basis
+        # reconstructed) and the clause is `DRIVER_PHRASING["CAPACITY_BLOCKED"]`
+        # VERBATIM. So the verbatim path is intact — this was NOT an LLM reword of
+        # authored copy (the 4A.5b CU4 breach class). The defect is here: the
+        # driver phrase was used as the WHOLE causal clause, and for
+        # CAPACITY_BLOCKED that phrase says nothing a planner can check. It names
+        # no machine, no alternative, no quantity — and on a why-on-MACHINE
+        # question it is not merely thin, it is pointing at a DIFFERENT machine
+        # (the busy one is the one the order did NOT get). The testimony validator
+        # passed it because every check it makes is about FABRICATION, and an
+        # unfalsifiable sentence fabricates nothing.
+        #
+        # A capacity-forced placement has a concrete story in the solved
+        # occupancy: which eligible alternatives existed, and what was running on
+        # them at the time. Read it. When it cannot be read, the answer says the
+        # placement was capacity-forced AND that the occupancy does not show which
+        # alternative was blocked — an unattributable cause named as
+        # unattributable, never given an invented mechanism (the RUBRIC's own
+        # rule, carried over from the promoted lateness-cause route).
+        blocked_alternatives = only_option = None
+        if driver_code == "CAPACITY_BLOCKED":
+            forced = self._capacity_forced_alternatives(wo_ref, machine_ref)
+            if forced is not None:
+                blocked_alternatives = forced["alternatives"]
+                only_option = forced["only_option"]
 
         return ExplanationBundle(
             question=f"Why is {wo_ref} on {machine_ref}?",
@@ -1026,10 +1065,118 @@ class Explainer:
             subject_external_name=wo_ref,
             ordered_records=assignment_records or records,
             key_facts={"machine_ref": machine_ref, "cause": cause,
-                       "order": wo_ref},
+                       "order": wo_ref, "driver_code": driver_code,
+                       "blocked_alternatives": blocked_alternatives,
+                       "only_option": only_option},
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )
+
+    def _capacity_forced_alternatives(self, order_ref: str,
+                                      machine_ref: str) -> Optional[dict]:
+        """Session 4B.5 CU3(a) — what a CAPACITY_BLOCKED placement actually means,
+        read from the solved occupancy: the ELIGIBLE machines this order's step
+        could have run on instead, and what was occupying each of them while it
+        ran. Real evidence, never fabricated.
+
+        Returns ``{"alternatives": [...], "only_option": bool}`` — each entry
+        ``{machine, blocker_order, from, until}`` — or None when the eligibility or
+        the placement cannot be read at all. THREE different facts, which the
+        answer states differently and never collapses:
+
+          * alternatives, occupied   -> name them and what held them;
+          * no alternatives at all   -> this machine was the only one that can
+                                        run the step (a capability fact, not a
+                                        capacity one);
+          * alternatives, none shown -> say the occupancy does not attribute it,
+            occupied                    rather than invent a mechanism.
+
+        Collapsing those three into one sentence is exactly how "the machine was
+        busy with other work" came to be the answer to "why is it on PAINT-02"."""
+        try:
+            rows = self._order_rows(order_ref)
+        except Exception:  # noqa: BLE001
+            return None
+        chosen = next((r for r in rows
+                       if r["machine"].upper() == (machine_ref or "").upper()),
+                      rows[0] if rows else None)
+        if not chosen or not chosen.get("start") or not chosen.get("end"):
+            return None
+        try:
+            my_start, my_end = _parse_ts(chosen["start"]), _parse_ts(chosen["end"])
+        except Exception:  # noqa: BLE001
+            return None
+
+        eligible = self._eligible_machine_names(chosen.get("operation_ref"))
+        if eligible is None:
+            return None
+        others = [m for m in eligible
+                  if m.upper() != chosen["machine"].upper()]
+        if not others:
+            # a CAPABILITY fact, not a capacity one — and worth saying, because it
+            # means no rearrangement of the plan would have changed this placement.
+            return {"alternatives": [], "only_option": True}
+
+        out: list[dict] = []
+        for row in self._load_enriched_assignments():
+            if row["machine"] not in others or not row.get("start") \
+                    or not row.get("end"):
+                continue
+            if order_ref.upper() in [w.upper() for w in row["work_orders"]]:
+                continue
+            try:
+                r_start, r_end = _parse_ts(row["start"]), _parse_ts(row["end"])
+            except Exception:  # noqa: BLE001
+                continue
+            if r_end <= my_start or r_start >= my_end:
+                continue                   # not occupied while our step ran
+            out.append({
+                "machine": row["machine"],
+                "blocker_order": "+".join(sorted(row["work_orders"])) or "?",
+                "from": _fmt_ts(row["start"]),
+                "until": _fmt_ts(row["end"]),
+            })
+        # one entry per alternative machine, the earliest overlap kept
+        seen: dict[str, dict] = {}
+        for entry in out:
+            seen.setdefault(entry["machine"], entry)
+        return {"alternatives": sorted(seen.values(), key=lambda e: e["machine"]),
+                "only_option": False}
+
+    def _machine_name(self, res_id: str) -> Optional[str]:
+        """A resource id → the planner's own name for it, via the identity map —
+        the same bridge ``_load_enriched_assignments`` uses, so the two agree. None
+        when the map carries no external ref (never a raw uuid in an answer)."""
+        if not res_id or not self._identity_map:
+            return None
+        try:
+            refs = self._identity_map.external_refs(res_id)
+        except Exception:  # noqa: BLE001
+            return None
+        mref = next((r for r in refs if r.type in _MACHINE_REF_TYPES), None)
+        if mref is None and refs:
+            mref = refs[0]
+        return mref.value if mref else None
+
+    def _eligible_machine_names(self, op_id: Optional[str]) -> Optional[list[str]]:
+        """The machines an operation may run on by CAPABILITY, in planner
+        vocabulary. None when the operation or its requirements cannot be read —
+        the honest "I don't know what the alternatives were", which the answer
+        states rather than papering over."""
+        if not op_id:
+            return None
+        try:
+            from mre.modules.eligibility import capability_eligible
+            op = next((o for o in self._reader.iter_entities("operation")
+                       if o["id"] == op_id), None)
+            if op is None:
+                return None
+            resources = {r["id"]: r for r in self._reader.iter_entities("resource")}
+            ids = capability_eligible(op.get("resource_requirements"), resources)
+            names = [nm for nm in (self._machine_name(rid) for rid in ids) if nm]
+            return names or None
+        except Exception:  # noqa: BLE001 — an unreadable eligibility is "unknown"
+            return None
 
     def _explain_data_problems(self, entity_ref: Optional[str] = None) -> ExplanationBundle:
         findings = self._index.all_findings()
@@ -2494,6 +2641,31 @@ class Explainer:
             "machine": machine or placement.get("machine"),
             "placement": placement or None,
         })
+
+    def _explain_open_card(self, question: str, card: dict) -> ExplanationBundle:
+        """Session 4B.5 CU2 — VOICE the delta card that is open on the board.
+
+        The founder's failing exchange was "what orders are affected in this
+        move", asked with a priced card on screen showing exactly that. It parsed
+        as `swap-move` — a route that reasons about two orders' slack and has
+        never heard of the card — and answered a question nobody asked. The
+        affected set, the decomposition and the placements were already computed;
+        what was missing was a way to READ THEM BACK.
+
+        So this route re-derives NOTHING. Every figure it states came off the
+        sandbox result the card is already showing, and the answer is that card in
+        sentences. Which part of the card the planner asked about is deliberately
+        NOT classified — sub-classifying "the delta" vs "these orders" vs "this
+        move" would be a keyword router wearing a new name (R-AI5), and the card
+        is small enough to say whole. The composition order is the card's own:
+        where it landed, what it costs split into re-optimization and the move,
+        who it touches, and what else shifted.
+
+        The card payload rides on the CONTEXT channel (like the board selection),
+        so nothing here reads the canonical model — this bundle carries no
+        evidence chain by construction, and the register is testimony about our
+        own sandbox result, hedged exactly as the card hedges."""
+        return self._authored_bundle("open_card", question, {"card": card or {}})
 
     def _expedite_early_facts(self, order: Optional[str]) -> Optional[dict]:
         """For an EXPEDITE question about an order that is already early: how early

@@ -202,7 +202,13 @@
           "line": "other placement changes",
           "delta": 0.0
         }
-      ]
+      ],
+      "attribution": "split",
+      "reopt_delta_abs": -9500.0,
+      "move_delta_abs": -294.53,
+      "baseline_total_cost": 17007.78,
+      "attribution_note": "",
+      "baseline_wall_time_s": 0.41
     },
     "9699d0fb-82ec-55dc-8f59-c89b191396c5": {
       "outcome": "verdict",
@@ -231,7 +237,13 @@
       "affected_orders": [],
       "lateness_delta_min": 0,
       "no_committed_work_changes": true,
-      "cost_lines": null
+      "cost_lines": null,
+      "attribution": "unavailable",
+      "reopt_delta_abs": null,
+      "move_delta_abs": null,
+      "baseline_total_cost": null,
+      "attribution_note": "",
+      "baseline_wall_time_s": 0.0
     }
   },
   "default": {
@@ -436,6 +448,12 @@
         "line": "other placement changes",
         "delta": 0.0
       }
-    ]
+    ],
+    "attribution": "split",
+    "reopt_delta_abs": -9500.0,
+    "move_delta_abs": -294.53,
+    "baseline_total_cost": 17007.78,
+    "attribution_note": "",
+    "baseline_wall_time_s": 0.41
   }
 }

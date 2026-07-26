@@ -162,6 +162,14 @@ class AskRequest(BaseModel):
     # carry a history built from the selection channel alone cannot provide. Sits
     # between the live selection and history in the interpreter's resolution priority.
     last_answered_subject: dict[str, Any] = {}
+    # Session 4B.5 CU2: the OPEN DELTA CARD, when one is showing — the TOP of the
+    # resolution ladder. The client sends the sandbox result it has already
+    # rendered ({open, order, machine, when, cost_delta_abs, attribution,
+    # reopt_delta_abs, move_delta_abs, affected_orders, lateness_delta_min,
+    # moves, dominant_driver, ...}); the `open-card` route reads it back rather
+    # than re-deriving it, so the answer and the card can never disagree. Absent
+    # or {"open": false} → no card, and the same words are about the plan.
+    card: dict[str, Any] = {}
     session_id: Optional[str] = None    # links a refusal to its later rephrase
 
 
@@ -657,7 +665,8 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
             use_llm=req.llm and bool(os.environ.get("ANTHROPIC_API_KEY")),
             runs_subdir="scenario_runs" if row["is_scenario"] else "runs",
             context={"history": req.history, "selection": req.selection,
-                     "last_answered_subject": req.last_answered_subject},
+                     "last_answered_subject": req.last_answered_subject,
+                     "card": req.card},
             ledger_path=_ledger_path(registry),
             schedule_id=schedule_id,
             session_id=req.session_id,
@@ -691,7 +700,8 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
             Path(run["out_dir"]), row["snapshot_id"], req.question,
             runs_subdir="scenario_runs" if row["is_scenario"] else "runs",
             context={"history": req.history, "selection": req.selection,
-                     "last_answered_subject": req.last_answered_subject},
+                     "last_answered_subject": req.last_answered_subject,
+                     "card": req.card},
             schedule_id=schedule_id, session_id=req.session_id,
             document=document))
 

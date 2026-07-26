@@ -482,6 +482,26 @@ html, body {
 }
 .topstrip .sched-ident:hover { color: var(--ink); }
 .topstrip .sched-ident[aria-expanded="true"] { color: var(--ink); }
+/* Session 4B.5 CU4(d): an UNMISTAKABLE affordance. A dotted underline says
+   "there is more here" only to someone already looking for it; a caret says
+   "this opens". Present at rest, not on hover — a control you have to find by
+   hovering has not been found. It rotates when the picker is open, so the chip
+   also reports its own state. */
+.topstrip .sched-caret {
+  display: inline-block;
+  margin-left: var(--sp-1);
+  font-size: var(--fs-2xs);
+  line-height: 1;
+  color: var(--muted-2);
+  transition: transform var(--dur-fast, 120ms) ease, color var(--dur-fast, 120ms) ease;
+}
+.topstrip .sched-ident:hover .sched-caret { color: var(--ink); }
+.topstrip .sched-ident[aria-expanded="true"] .sched-caret {
+  transform: rotate(180deg); color: var(--ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  .topstrip .sched-caret { transition: none; }
+}
 
 /* The picker dropdown (hotfix CU2): hangs off the version chip, newest first. */
 .sched-picker {

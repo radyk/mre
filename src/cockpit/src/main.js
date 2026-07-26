@@ -95,7 +95,7 @@ function paintTopStrip(el, doc, meta) {
   const ident = scheduleIdentity(doc, meta);
   el.innerHTML = `
     <span class="brand">Reasoning Cockpit</span>
-    <span class="ver" title="${ident.title}">contract ${doc.contract_version} · <button type="button" class="sched-ident" id="sched-ident">${ident.label}</button></span>
+    <span class="ver" title="${ident.title}">contract ${doc.contract_version} · <button type="button" class="sched-ident" id="sched-ident">${ident.label}<span class="sched-caret" aria-hidden="true">▾</span></button></span>
     <span class="status">${doc.status}</span>
     <span class="grade ${gcls}"><span class="lbl">certificate</span> ${grade}${costing}</span>
     <button class="theme-toggle" id="theme-toggle"></button>`;
@@ -250,6 +250,32 @@ function mountBoardChrome(boardHost, board) {
 // has uncommitted state (Session 4.4 CU2) — an edit-in-flight, an open card, or a
 // pinned conversation outranks freshness, so we let the user decide rather than
 // auto-switch. With no such state the cockpit auto-follows instead (see below).
+// Session 4B.5 CU4(a) — DISMISSAL IS STICKY, per offered id, per tab.
+//
+// The 4.4 dismiss handler removed the element and nothing else, and the watch's
+// idempotence guard asked whether the banner was IN THE DOM. A dismissed banner
+// therefore failed that guard on the very next check and was rebuilt — every 30
+// seconds, and on every focus. Dismissing a notice has to mean something, and
+// "this id, not again in this tab" is exactly what the planner said.
+//
+// sessionStorage, not localStorage: a NEW tab is a new decision. Private mode /
+// storage-disabled degrades to the in-memory guard below, which still holds for
+// the life of the page.
+const DISMISSED_KEY = "mre-newer-dismissed";
+function dismissedIds() {
+  try {
+    return new Set(JSON.parse(sessionStorage.getItem(DISMISSED_KEY) || "[]"));
+  } catch { return new Set(); }
+}
+function rememberDismissed(id) {
+  if (!id) return;
+  try {
+    const ids = dismissedIds();
+    ids.add(id);
+    sessionStorage.setItem(DISMISSED_KEY, JSON.stringify([...ids]));
+  } catch { /* private mode — the in-memory guard still holds */ }
+}
+
 function newerBanner(hostEl, newId) {
   const el = document.createElement("div");
   el.className = "superseded-banner newer";
@@ -261,7 +287,10 @@ function newerBanner(hostEl, newId) {
     <button class="sb-dismiss" id="newer-dismiss" title="stay on this version">✕</button>`;
   hostEl.prepend(el);
   el.querySelector("#newer-jump").addEventListener("click", () => jumpToVersion(newId));
-  el.querySelector("#newer-dismiss").addEventListener("click", () => el.remove());
+  el.querySelector("#newer-dismiss").addEventListener("click", () => {
+    rememberDismissed(newId);        // CU4(a): dismissed means dismissed
+    el.remove();
+  });
   return el;
 }
 
@@ -309,10 +338,48 @@ function followedToast(hostEl, prevId) {
 // every `dev_cockpit.ps1` boot mints a busy_board solve into the shared _data
 // root, so the boot-time check found a strictly-newer row and yanked the deep
 // link to it before the board had settled (see CU3 in the closeout).
-function installFreshnessWatch({ app, boundId, hasUncommittedState, pinned }) {
-  let offeredId = null;      // the newer id we've already surfaced a banner for
+function installFreshnessWatch({ app, boundId, hasUncommittedState, pinned,
+                                board }) {
+  const offered = new Set();   // newer ids this tab has already surfaced, ever
   let inFlight = false;
   const currentBound = () => (window.__cockpit && window.__cockpit.scheduleId) || boundId;
+
+  // CU4(b) — THE CHECK NEVER DISTURBS VIEWPORT STATE.
+  //
+  // WHAT WAS ACTUALLY FOUND, stated before the fix. The founder watched the
+  // board's view reset on a re-check, and the mechanism is not subtle: on a tab
+  // with no uncommitted state the check AUTO-FOLLOWS, which is a full page
+  // reload, which resets everything. That is 4.4 CU2 working as designed — and it
+  // fired constantly because `dev_cockpit.ps1` minted a fresh solve on every dev
+  // restart, so there was always something newer to follow. CU4(e) removes the
+  // supply (resuming is now the default); CU4(a)/(c) remove the second source,
+  // where a dismissed banner failed the idempotence guard and was rebuilt every
+  // thirty seconds, reflowing the board each time.
+  //
+  // What remains is this guard, and it is DEFENCE rather than the cure: the
+  // banner is PREPENDED into #app, which shortens the board host, and a
+  // background poll has no business moving what the planner is looking at. Any
+  // DOM the watch inserts is wrapped — read the window before, put it back if the
+  // reflow moved it. Selection and zoom ride on the same window, and nothing else
+  // in this function touches the board.
+  //
+  // NAMED LIMIT: on the harness fixture the prepend does NOT move the window, so
+  // the Playwright test for this is a standing invariant rather than a
+  // reproduction of the founder's symptom. Said out loud because a green test
+  // that never could have failed is worth exactly what it cost.
+  function preserveViewport(mutate) {
+    const before = board && board.getWindow ? board.getWindow() : null;
+    mutate();
+    if (!before || !board || !board.setWindow) return;
+    requestAnimationFrame(() => {
+      const after = board.getWindow();
+      if (!after) return;
+      const moved = String(after.start) !== String(before.start)
+                 || String(after.end) !== String(before.end);
+      if (moved) board.setWindow(before.start, before.end);
+    });
+  }
+
   async function check() {
     if (inFlight) return;
     inFlight = true;
@@ -323,11 +390,18 @@ function installFreshnessWatch({ app, boundId, hasUncommittedState, pinned }) {
       if (!newerId || newerId === id) return;
       if (pinned || hasUncommittedState()) {
         // an explicit ?schedule= or uncommitted state → never auto-switch; offer
-        // the banner (once per id) and leave the URL exactly as it was.
-        if (offeredId === newerId && document.getElementById("newer-banner")) return;
-        document.getElementById("newer-banner")?.remove();
-        newerBanner(app, newerId);
-        offeredId = newerId;
+        // the banner and leave the URL exactly as it was.
+        //
+        // CU4(c): ONE offer per newer id, then silence — the guard is what this
+        // tab has OFFERED, not what is currently in the DOM. A tab that has
+        // already been told is not told again on an interval, and (CU4(a)) a
+        // dismissal survives the reload-free life of the tab.
+        if (offered.has(newerId) || dismissedIds().has(newerId)) return;
+        offered.add(newerId);
+        preserveViewport(() => {
+          document.getElementById("newer-banner")?.remove();
+          newerBanner(app, newerId);
+        });
         if (window.__cockpit) window.__cockpit.newerId = newerId;
       } else {
         autoFollow(id, newerId);   // clean slate → follow the newest, reload
@@ -491,7 +565,12 @@ async function boot() {
         const panelBusy = !!(panel && panel.hasUserState && panel.hasUserState());
         return dragBusy || panelBusy;
       };
-      const watch = installFreshnessWatch({ app, boundId: id, hasUncommittedState, pinned });
+      const watch = installFreshnessWatch({
+        app, boundId: id, hasUncommittedState, pinned,
+        // CU4(b): the watch reads the board's window so it can put it back if
+        // its own DOM insertion moved it. It never otherwise touches the board.
+        board,
+      });
       watch.check();   // notice a newer solve at boot too (the return-from-Excel tab)
       // Fetch the Tier-0 interaction payload in the BACKGROUND, after first
       // paint (R-T1d) — the board is already interactive read-only; the 3.2b
@@ -501,6 +580,12 @@ async function boot() {
       // production `vite build` the harness serves — so tuning never ships.
       wireInteraction(id, board, window.__cockpit, {
         doc, devMode: !!import.meta.env?.DEV, onSuperseded,
+        // Session 4B.5 CU2: a priced delta card is the TOP of the ask panel's
+        // resolution ladder. The controller publishes the card's own content
+        // when one lands and null when it is dismissed / accepted / returned
+        // home, so "what orders are affected in this move" is answered FROM the
+        // card rather than guessed at by the nearest route.
+        onCardChange: (card) => panel.setOpenCard(card),
         // Session 4B.3c CU4: "ask why" from a beat-two card bridges to the ask
         // panel with a real, grounded question. The rolling-explainer connector is
         // wired (the R-AI1 debt is retired), so this is a live answer, not a tip.

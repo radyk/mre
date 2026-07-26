@@ -348,15 +348,19 @@ test("CU5 — zoom controls change the window; the first-load hint is present", 
     const w = window.__cockpit.getWindow();
     return Date.parse(w.end) - Date.parse(w.start);
   });
+  // Session 4B.5: these used to be fixed 150ms sleeps against vis's ~500ms zoom
+  // ANIMATION, so the assertions raced it — green in isolation, red once the file
+  // had warmed the machine up. The property is what matters ("zoom out widens
+  // it"), not that it lands inside an arbitrary window, so poll for the property.
   const s0 = await span();
   await page.locator(".board-zoom .bz-in").click();
-  await page.waitForTimeout(150);
+  await expect.poll(span, { message: "zoom in narrows the window", timeout: 4000 })
+    .toBeLessThan(s0);
   const s1 = await span();
-  expect(s1, "zoom in narrows the window").toBeLessThan(s0);
   await page.locator(".board-zoom .bz-out").click();
   await page.locator(".board-zoom .bz-out").click();
-  await page.waitForTimeout(150);
-  expect(await span(), "zoom out widens it again").toBeGreaterThan(s1);
+  await expect.poll(span, { message: "zoom out widens it again", timeout: 4000 })
+    .toBeGreaterThan(s1);
 });
 
 // CU6: on a current version no "newer schedule" banner appears (the positive

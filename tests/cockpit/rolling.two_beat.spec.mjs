@@ -89,6 +89,80 @@ test("R-T2 rolling: drag an active op cross-machine → feasibility ghost → pr
   await shot(page, "rolling_2beat_card");
 });
 
+test("CU1: the priced card SPLITS its verdict — window re-optimization vs your move", async ({ page }) => {
+  // The founder's trust item, rendered. `cost_delta_abs` measures the RE-SOLVE;
+  // the card used to present it where a planner reads "what my move cost", which
+  // is how two different gestures produced the same number to the cent. The
+  // split block sits directly under the headline and names both parts.
+  await boot(page);
+  const mv = (await legalMoveTo(page, gesture.op, gesture.resource))
+    || { resource_id: gesture.resource, start: gesture.start };
+  await page.evaluate(([op, rid, start]) =>
+    window.__cockpit.drag.dropAt(op, rid, start, /*altKey*/ true).then(() => {}),
+    [gesture.op, mv.resource_id, mv.start]);
+  await expect(page.locator(".delta-card.verdict")).toBeVisible();
+
+  const rows = page.locator(".delta-card .dc-split .dc-split-row");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(0)).toContainText("window re-optimization");
+  await expect(rows.nth(1)).toContainText("your move");
+  // exactly one row is the planner's own, and it is the emphasized one
+  await expect(page.locator(".delta-card .dc-split-row.your-move")).toHaveCount(1);
+
+  // the two drawn figures sum to the headline the card is showing (the same
+  // decomposition-sums discipline the cost-by-line block already obeys)
+  const money = async (loc) => {
+    const t = (await loc.locator(".dc-split-v").innerText()).trim();
+    return Number(t.replace(/[$,\s]/g, "").replace("−", "-").replace("+", ""));
+  };
+  const reopt = await money(rows.nth(0));
+  const move = await money(rows.nth(1));
+  const total = await page.evaluate(
+    () => window.__cockpit.drag.state().result.cost_delta_abs);
+  expect(Number((reopt + move).toFixed(2))).toBe(total);
+
+  // and the unsplit fallback line is ABSENT when a real split is drawn
+  await expect(page.locator(".delta-card .dc-split-note")).toHaveCount(0);
+  await shot(page, "rolling_2beat_card_split");
+});
+
+test("CU2: the open card becomes ask context, and is CLEARED when it closes", async ({ page }) => {
+  // The card is the top of the ask panel's resolution ladder while it is open —
+  // and nothing at all once it is not. A stale card would answer confidently
+  // about a move the planner can no longer see, which is worse than not
+  // answering, so the clearing half is the load-bearing half of this test.
+  await boot(page);
+  const mv = (await legalMoveTo(page, gesture.op, gesture.resource))
+    || { resource_id: gesture.resource, start: gesture.start };
+  await page.evaluate(([op, rid, start]) =>
+    window.__cockpit.drag.dropAt(op, rid, start, /*altKey*/ true).then(() => {}),
+    [gesture.op, mv.resource_id, mv.start]);
+  await expect(page.locator(".delta-card.verdict")).toBeVisible();
+
+  const card = await page.evaluate(() => window.__cockpit.openCard);
+  expect(card).toBeTruthy();
+  expect(card.open).toBe(true);
+  expect(card.operation_ref).toBe(gesture.op);
+  // the payload is the CARD'S OWN CONTENT — the same numbers, not a second
+  // derivation that could drift from the surface the planner is reading
+  const shown = await page.evaluate(() => window.__cockpit.drag.state().result);
+  expect(card.cost_delta_abs).toBe(shown.cost_delta_abs);
+  expect(card.attribution).toBe(shown.attribution);
+  expect(card.reopt_delta_abs).toBe(shown.reopt_delta_abs);
+  expect(card.move_delta_abs).toBe(shown.move_delta_abs);
+  // planner vocabulary, not canonical ids — the answer speaks the board's words
+  expect(card.machine).toBeTruthy();
+  expect(card.affected_orders).toBeTruthy();
+  // and the panel is holding exactly it
+  expect(await page.evaluate(() => window.__cockpit.panel.openCard().open)).toBe(true);
+
+  // dismissed → the context is gone, in both places
+  await page.locator(".delta-card .dc-discard").click();
+  await expect(page.locator(".delta-card.hidden")).toHaveCount(1);
+  expect(await page.evaluate(() => window.__cockpit.openCard)).toBeNull();
+  expect(await page.evaluate(() => window.__cockpit.panel.openCard())).toBeNull();
+});
+
 test("R-T2 rolling: dropping an active op onto a COMMITTED slot is refused (contradiction)", async ({ page }) => {
   test.skip(!gesture.contra, "no forced contradiction captured for this fixture");
   await boot(page);
