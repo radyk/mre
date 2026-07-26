@@ -1,0 +1,572 @@
+"""M10 — claim-level verification (R-AI5(3)/(8), Session 4A.5b CU3).
+
+The hardening pass every synthesis draft goes through before it can render.
+
+DETERMINISTIC CODE, NEVER A MODEL. For each drafted claim this module independently
+re-fetches the records the claim cites — from the evidence index and the snapshot,
+through ``EvidenceToolbox.fetch_source``, not from the loop's transcript — and checks
+the claim's specific assertions against them with the same discipline the render
+validator applies to LLM testimony (``renderers._validate_testimony``): timestamps
+compared as minute tuples, durations normalized across minutes / hours / days, entity
+names resolved through the identity map, citations required to name a REAL record.
+
+THE OUTCOME TAXONOMY (``ClaimStatus``), and exactly what earns each:
+
+  VERIFIED      EVERY checkable assertion grounds in the cited records; at least
+                one of them is a FIGURE or a TIME rather than a name (a sentence
+                proven only by mentioning a real machine is not proven); any
+                quantifier it makes was enumerable from a single tool call; and it
+                is not the draft's own conclusion. Renders as cited, in the proven
+                register.
+  INTERPRETIVE  the claim carries no checkable assertion (an aggregate read, an
+                inference, a mechanism), or part of it is not spoken to by the
+                cited records, or it grounds but cites nothing, or it quantifies
+                over a set nobody enumerated (the sample is then named), or it is
+                the conclusion. Renders labeled, with its consulted records listed.
+                First-class conversation (R-AI5(6)), not a failure.
+  FAILED        a checkable assertion CONTRADICTS the cited evidence — and nothing
+                else the loop read carries it either — or the claim cites a record
+                that does not exist, or it names an entity this run does not have.
+                The claim is CUT.
+
+The three-way distinction matters and is deliberate. An assertion the records simply
+do not speak to is NOT a contradiction — it is unproven, and unproven means labeled,
+not deleted (R-AI5(3): "remain visibly synthesis or are softened or cut"). A
+contradiction is narrower: the cited records DO carry that kind of quantity and it
+does not match. That is the fabricated-adjacency class the round-three exam found,
+and it is cut.
+"""
+from __future__ import annotations
+
+import re
+from typing import Any, Optional
+
+from mre.contracts.synthesis import (
+    Assertion,
+    ClaimKind,
+    ClaimStatus,
+    DraftClaim,
+    SynthesisAnswer,
+    VerifiedClaim,
+)
+from mre.modules.renderers import (
+    _TS_FULL_RE, _to_minute_tuple, _ts_matches,
+)
+
+# Outcomes of checking ONE assertion against a scope of fetched evidence.
+_GROUNDED = "grounded"
+_CONTRADICTED = "contradicted"
+_UNCHECKED = "unchecked"
+
+# A duration with its unit, as a planner writes it. Wider than the render
+# validator's minutes/hours pair in three ways a synthesis answer needs: days,
+# thousands separators ("2,120 minutes"), and ONE intervening qualifier, because
+# aggregates are written "2,120 busy minutes", not "2120 minutes".
+_QUALIFIER = r"(?:busy|working|idle|running|scheduled|total|elapsed|late|early)"
+_DURATION_RE = re.compile(
+    rf"\b(\d[\d,]*(?:\.\d+)?)\s*(?:{_QUALIFIER}\s+)?"
+    r"(minutes?|mins?|hours?|hrs?|h|days?|d)\b", re.IGNORECASE)
+
+# A currency figure. Unambiguous where a bare number is not, so it is extracted
+# always (a bare number is only read as a count when the claim quantifies).
+_MONEY_RE = re.compile(r"[$£€]\s?(\d[\d,]*(?:\.\d+)?)")
+
+# How close a tally or a money figure must be to count as the same figure. A
+# synthesis answer rounds ("$371" for 370.83); the check survives that without
+# waving through a different number.
+_FIGURE_ABS_TOL = 0.5
+_FIGURE_REL_TOL = 0.005
+
+# Set-quantifying language. A claim carrying one of these is only VERIFIED when a
+# single tool call enumerated the set it quantifies over (completeness honesty).
+_QUANTIFIER_RE = re.compile(
+    r"\b(all|every|each|both|most|none|majority|no other|only one|"
+    r"\d+\s+of\s+(?:the\s+)?\d+|\d+\s+(?:orders?|jobs?|machines?|operations?))\b",
+    re.IGNORECASE)
+
+# Keys whose numeric leaves are durations — the "same kind of quantity" test for a
+# duration assertion (see the module docstring's three-way rule).
+_DURATION_KEYS = ("minute", "duration", "lateness", "second", "hour", "elapsed")
+
+# Record METADATA — the audit trail's own fields, never a fact about the schedule.
+# A Metric's `timestamp` is when the run wrote it, not when anything ran; comparing
+# a claim's schedule timestamp against it produced a false contradiction in the
+# first live run ("ORD-05 was due 2026-01-05 23:59" cut against the run's clock).
+# Excluded from every profile: they are not what a claim is ever about.
+_METADATA_KEYS = frozenset({
+    "timestamp", "ended_at", "started_at", "seq", "run_id", "record_id",
+    "snapshot_id", "module", "tier", "version", "schema_version",
+})
+
+# Comparative qualifiers in front of a figure. "over 9 days" is an INEQUALITY, and
+# checking it as an equality is simply the wrong test — it must be satisfied by
+# SOME value in scope, and it is contradicted only when no value in a scope full of
+# durations satisfies it (which is how an overstated superlative gets caught).
+_MORE = ("over", "more than", "at least", "longer than", "greater than", "above",
+         "upwards of", "north of", "beyond")
+_LESS = ("under", "less than", "at most", "shorter than", "below", "within",
+         "no more than", "up to")
+
+_UNIT_TO_MINUTES = {"m": 1.0, "min": 1.0, "mins": 1.0, "minute": 1.0, "minutes": 1.0,
+                    "h": 60.0, "hr": 60.0, "hrs": 60.0, "hour": 60.0, "hours": 60.0,
+                    "d": 1440.0, "day": 1440.0, "days": 1440.0}
+
+# How close two durations must be to count as the same figure. A synthesis answer
+# rounds ("14.8 hours" for 890 minutes); the check must survive rounding without
+# waving through a different number. The tolerance is taken from the CLAIM's own
+# value, never the record's: a record full of epoch seconds would otherwise carry a
+# tolerance of weeks and wave everything through (caught in the first bench run).
+_DURATION_TOL_MIN = 1.0
+_DURATION_REL_TOL = 0.02
+_DURATION_TOL_CAP = 60.0
+
+
+class _Scope:
+    """The independently re-fetched evidence one claim is checked against."""
+
+    def __init__(self, toolbox: Any, ids: list[str]) -> None:
+        self.toolbox = toolbox
+        self.ids = list(ids)
+        self.counts: set[float] = set(getattr(toolbox, "count_profile", set()) or set())
+        # The figures the TOOLBOX computed over the very rows this claim cites: a
+        # machine's busy minutes, a cost total, a row count. They live in a result's
+        # summary rather than in any single record, and they are our own arithmetic
+        # over the pinned run — so a claim citing those rows may rest on them. The
+        # named limit is the same one _covering_call carries: this checks that a
+        # figure IS one we computed there, not that it is the right one for the
+        # words around it.
+        self.tallies: set[float] = set()
+        self.missing: list[str] = []
+        self.numbers: set[float] = set()
+        self.duration_minutes: set[float] = set()
+        self.timestamps: set[tuple] = set()
+        self.labels: set[str] = set()
+        self.has_durations = False
+        self.has_timestamps = False
+        # The summaries of the calls this claim's citations came from, absorbed the
+        # same way a record is: their timestamps and figures are ours, computed over
+        # the pinned run, and a claim resting on the rows may rest on them too.
+        wanted = set(ids)
+        for entry in getattr(toolbox, "call_tallies", []) or []:
+            tool, call_ids, call_tallies = entry[0], entry[1], entry[2]
+            if not (wanted & call_ids):
+                continue
+            self.tallies |= call_tallies
+            if len(entry) > 3 and isinstance(entry[3], dict):
+                self._absorb(entry[3], "summary")
+        for rid in self.ids:
+            src = toolbox.fetch_source(rid)
+            if src is None:
+                self.missing.append(rid)
+                continue
+            _, payload = src
+            self._absorb(payload)
+            self.labels |= {str(v).upper() for v in toolbox.labels_for(payload)}
+
+    def _absorb(self, payload: Any, key: str = "", depth: int = 0) -> None:
+        if depth > 7:
+            return
+        if isinstance(payload, dict):
+            # A Metric names its own quantity: {"name": "lateness_minutes",
+            # "unit": "minutes", "value": 890.0}. Read the NAME, not just the key —
+            # otherwise the duration lands under the key "value", the record looks
+            # like it carries no duration at all, and a wrong figure quoted against
+            # it reads as merely unproven instead of contradicted.
+            unit_words = f"{payload.get('name', '')} {payload.get('unit', '')}".lower()
+            val = payload.get("value")
+            if isinstance(val, (int, float)) and not isinstance(val, bool) \
+                    and any(k in unit_words for k in _DURATION_KEYS):
+                self.has_durations = True
+                minutes = float(val)
+                if "hour" in unit_words:
+                    minutes *= 60.0
+                elif "second" in unit_words:
+                    minutes /= 60.0
+                self.duration_minutes.add(abs(minutes))
+            for k, v in payload.items():
+                if str(k) in _METADATA_KEYS:
+                    continue                 # the audit trail's own fields
+                self._absorb(v, str(k), depth + 1)
+            return
+        if isinstance(payload, (list, tuple)):
+            for v in payload:
+                self._absorb(v, key, depth + 1)
+            return
+        if isinstance(payload, bool):
+            return
+        if isinstance(payload, (int, float)):
+            val = float(payload)
+            self.numbers.add(val)
+            if any(k in key.lower() for k in _DURATION_KEYS):
+                self.has_durations = True
+                minutes = val / 60.0 if "second" in key.lower() else val
+                if "hour" in key.lower():
+                    minutes = val * 60.0
+                self.duration_minutes.add(abs(minutes))
+            return
+        if isinstance(payload, str):
+            for ts in _TS_FULL_RE.findall(payload):
+                tup = _to_minute_tuple(ts)
+                if tup is not None:
+                    self.timestamps.add(tup)
+                    self.has_timestamps = True
+            iso = _iso_duration_minutes(payload)
+            if iso is not None:
+                self.has_durations = True
+                self.duration_minutes.add(abs(iso))
+            if _NUM_STR_RE.fullmatch(payload.strip()):
+                try:
+                    self.numbers.add(float(payload.strip()))
+                except ValueError:
+                    pass
+
+
+_NUM_STR_RE = re.compile(r"-?\d+(?:\.\d+)?")
+_ISO_DUR_RE = re.compile(
+    r"^-?P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:([\d.]+)S)?)?$")
+
+
+def _iso_duration_minutes(s: str) -> Optional[float]:
+    m = _ISO_DUR_RE.match((s or "").strip())
+    if not m or not any(m.groups()):
+        return None
+    d, h, mi, sec = (float(g or 0) for g in m.groups())
+    return d * 1440.0 + h * 60.0 + mi + sec / 60.0
+
+
+# ---------------------------------------------------------------------------
+# Assertion extraction
+# ---------------------------------------------------------------------------
+
+def extract_assertions(text: str, *, order_refs: dict, machine_refs: dict,
+                       order_shapes: list) -> list[Assertion]:
+    """The checkable things one claim asserts.
+
+    Four kinds, and the ORDER matters: entity tokens are consumed first so that the
+    digits inside ``ORD-05`` / ``CUT-01`` are never read as a number."""
+    out: list[Assertion] = []
+    upper = (text or "").upper()
+    consumed = text or ""
+
+    known = {}
+    known.update({k: "order" for k in order_refs})
+    known.update({k: "machine" for k in machine_refs})
+    for name in sorted(known, key=len, reverse=True):
+        if re.search(rf"(?<![A-Z0-9]){re.escape(name)}(?![A-Z0-9])", upper):
+            out.append(Assertion(kind="entity", text=name, detail=known[name]))
+            consumed = re.sub(re.escape(name), " ", consumed, flags=re.IGNORECASE)
+
+    # An entity-SHAPED token that this run does not have is a fabrication, not an
+    # unknown: the same shape check the exam sidecar applies to a resolved question.
+    for tok in re.findall(r"[A-Za-z][\w./-]*\d[\w./-]*", consumed):
+        u = tok.upper().strip(".,?!")
+        if u in order_refs or u in machine_refs:
+            continue
+        if any(p.match(u) for p in order_shapes or []):
+            out.append(Assertion(kind="entity", text=u, detail="absent"))
+            consumed = consumed.replace(tok, " ")
+
+    for m in _TS_FULL_RE.finditer(consumed):
+        out.append(Assertion(kind="timestamp", text=m.group(0)))
+    consumed_no_ts = _TS_FULL_RE.sub(" ", consumed)
+
+    for m in _DURATION_RE.finditer(consumed_no_ts):
+        lead = consumed_no_ts[max(0, m.start() - 18):m.start()].lower()
+        rel = ("gt" if any(w in lead for w in _MORE)
+               else "lt" if any(w in lead for w in _LESS) else "eq")
+        out.append(Assertion(kind="duration", text=m.group(0).strip(), detail=rel))
+    left = _DURATION_RE.sub(" ", consumed_no_ts)
+
+    for m in _MONEY_RE.finditer(left):
+        out.append(Assertion(kind="money", text=m.group(1)))
+    left = _MONEY_RE.sub(" ", left)
+
+    # A BARE number is only read as a count when the claim actually quantifies.
+    # Extracting every loose figure looked stricter and was in fact noisier: the
+    # "5" in "5 January" and the "85" in "85%" are not tallies anybody computed,
+    # and demoting true claims over them taught nothing. The fabrication guards
+    # that matter — durations, timestamps, entity names, citations — are unchanged.
+    quant = _QUANTIFIER_RE.search(text or "")
+    if quant:
+        for m in re.finditer(r"(?<![\w.$-])(\d[\d,]*(?:\.\d+)?)(?![\w.-])", left):
+            out.append(Assertion(kind="count", text=m.group(1)))
+        out.append(Assertion(kind="quantifier", text=quant.group(0)))
+    return out
+
+
+def _figure(text: str) -> Optional[float]:
+    try:
+        return float(str(text).replace(",", ""))
+    except (TypeError, ValueError):
+        return None
+
+
+def _near(value: float, known: set) -> bool:
+    tol = max(_FIGURE_ABS_TOL, abs(value) * _FIGURE_REL_TOL)
+    return any(abs(value - k) <= tol for k in known)
+
+
+def _duration_minutes(text: str) -> Optional[float]:
+    m = _DURATION_RE.search(text)
+    if not m:
+        return None
+    value = _figure(m.group(1))
+    if value is None:
+        return None
+    unit = m.group(2).lower().rstrip(".")
+    return value * _UNIT_TO_MINUTES.get(unit, _UNIT_TO_MINUTES.get(
+        unit.rstrip("s"), 1.0))
+
+
+def _check(assertion: Assertion, scope: _Scope,
+           wide: Optional[_Scope] = None) -> str:
+    """One assertion against the cited scope, with the WIDE scope as the appeal.
+
+    A figure or a time the CITED records do not carry is only a contradiction if
+    nothing the loop read carries it either. If a sibling row of the same call
+    carries it, the claim is under-cited, not wrong — and cutting a true sentence
+    for a citation habit teaches the model to say less rather than cite better
+    (the first live run cut three true claims exactly this way)."""
+    verdict = _check_against(assertion, scope)
+    if verdict != _CONTRADICTED or wide is None:
+        return verdict
+    return _UNCHECKED if _check_against(assertion, wide) == _GROUNDED else verdict
+
+
+def _check_against(assertion: Assertion, scope: _Scope) -> str:
+    if assertion.kind == "entity":
+        if assertion.detail == "absent":
+            return _CONTRADICTED          # names something this run does not have
+        if assertion.text.upper() in scope.labels:
+            return _GROUNDED
+        # A REAL entity of this run that the cited records do not name is not a
+        # contradiction — it is an under-citation. The claim stays visibly
+        # synthesis rather than being cut for mentioning a neighbour. Cutting here
+        # (the first live run did) throws away true sentences for a citation
+        # habit, which teaches the model to say less rather than cite better.
+        return _UNCHECKED
+    if assertion.kind == "timestamp":
+        tup = _to_minute_tuple(assertion.text)
+        if tup is None:
+            return _UNCHECKED
+        if _ts_matches(tup, scope.timestamps):
+            return _GROUNDED
+        return _CONTRADICTED if scope.has_timestamps else _UNCHECKED
+    if assertion.kind == "duration":
+        minutes = _duration_minutes(assertion.text)
+        if minutes is None:
+            return _UNCHECKED
+        tol = min(_DURATION_TOL_CAP,
+                  max(_DURATION_TOL_MIN, abs(minutes) * _DURATION_REL_TOL))
+        known_all = (scope.duration_minutes | {abs(n) for n in scope.numbers}
+                     | {abs(n) for n in scope.tallies})
+        rel = assertion.detail if assertion.detail in ("gt", "lt") else "eq"
+        for known in known_all:
+            k, v = abs(known), abs(minutes)
+            if (k >= v - tol if rel == "gt"
+                    else k <= v + tol if rel == "lt"
+                    else abs(k - v) <= tol):
+                return _GROUNDED
+        return _CONTRADICTED if scope.has_durations else _UNCHECKED
+    if assertion.kind in ("count", "money"):
+        # A tally or a money figure is checked against what the TOOLBOX computed
+        # (row counts, result summaries) and what the cited records carry — the
+        # arithmetic is ours, deterministic, over the pinned run. A figure we did
+        # not compute is UNCHECKED, never contradicted: we cannot tell a wrong
+        # tally from one over a set we never tallied, and cutting on that guess
+        # would be dishonest.
+        value = _figure(assertion.text)
+        if value is None:
+            return _UNCHECKED
+        known = scope.tallies | (scope.counts if assertion.kind == "count"
+                                 else set(scope.numbers))
+        return _GROUNDED if _near(value, known) else _UNCHECKED
+    return _UNCHECKED                      # a quantifier is judged by enumerability
+
+
+# ---------------------------------------------------------------------------
+# The pass
+# ---------------------------------------------------------------------------
+
+def verify_claim(claim: DraftClaim, *, toolbox: Any,
+                 wide: Optional[_Scope] = None) -> VerifiedClaim:
+    """One drafted claim → its verdict. The model's citations are INPUT here; the
+    STATUS is this function's, always (R-AI5(8))."""
+    ex = toolbox._ex
+    if wide is None:
+        wide = _Scope(toolbox, list(getattr(toolbox, "consulted", []) or []))
+    cited = [r for r in claim.record_ids if r]
+    consulted = list(getattr(toolbox, "consulted", []) or [])
+    scope_ids = cited or consulted
+    scope = _Scope(toolbox, scope_ids)
+
+    base = dict(text=claim.text, kind=claim.kind, cited_record_ids=cited,
+                consulted_record_ids=consulted[:12])
+
+    # 1 — a citation that names nothing real. The ordinal disease: a list position,
+    # a made-up id, a record from another run. Never softened; always cut.
+    if cited and scope.missing:
+        return VerifiedClaim(
+            status=ClaimStatus.FAILED,
+            reason=("cites record id(s) that do not exist in this run: "
+                    + ", ".join(scope.missing[:3])),
+            **base)
+
+    assertions = extract_assertions(
+        claim.text,
+        order_refs=getattr(ex, "_order_refs", {}) or {},
+        machine_refs=getattr(ex, "_machine_refs", {}) or {},
+        order_shapes=getattr(ex, "_order_shape_patterns", []) or [])
+
+    # A QUANTIFYING claim's figures are checked against the tallies of the single
+    # call that enumerated the set — not against every tally the session happens to
+    # have produced. "3 of 15 orders are late" must not pass because some unrelated
+    # read returned three rows.
+    quant = next((a for a in assertions if a.kind == "quantifier"), None)
+    cover = _covering_call(toolbox, cited)
+    if quant is not None:
+        # Tighten: a quantifying claim's figures must be the ENUMERATING call's own
+        # tallies, not any tally the session happens to have produced.
+        scope.counts = set(cover[2]) if cover else set()
+        scope.tallies = set(cover[2]) if cover else set()
+
+    checkable = [a for a in assertions if a.kind != "quantifier"]
+    results = []
+    for a in checkable:
+        verdict = _check(a, scope, wide)
+        a.grounded = verdict == _GROUNDED
+        a.detail = a.detail or verdict
+        results.append(verdict)
+
+    # 2 — a checkable assertion that contradicts the evidence. Cut.
+    if _CONTRADICTED in results:
+        bad = [a.text for a, v in zip(checkable, results) if v == _CONTRADICTED]
+        return VerifiedClaim(
+            status=ClaimStatus.FAILED, assertions=assertions,
+            reason="contradicted by the cited evidence: " + ", ".join(bad[:3]),
+            **base)
+
+    # 3 — nothing checkable at all: an aggregate read, a mechanism, an inference.
+    if not checkable or _GROUNDED not in results:
+        return VerifiedClaim(
+            status=ClaimStatus.INTERPRETIVE, assertions=assertions,
+            reason=("no assertion this run's records can check"
+                    if not checkable else
+                    "its specifics are not spoken to by the cited records"),
+            sample_note=_sample_note(toolbox) if quant is not None else "",
+            **base)
+
+    # 4 — completeness honesty: a claim quantifying over a set is proven only when
+    # ONE tool call enumerated that set AND the figures are that call's own tallies.
+    # Otherwise it is a reading of a SAMPLE, and the sample is named.
+    if quant is not None and cover is None:
+        return VerifiedClaim(
+            status=ClaimStatus.INTERPRETIVE, assertions=assertions,
+            reason=f"quantifies ({quant.text}) over a set no single read enumerated",
+            sample_note=_sample_note(toolbox), **base)
+
+    # 5 — VERIFIED means EVERY checkable assertion grounds. One the records simply
+    # do not speak to is not a contradiction, but it is not proof either: the claim
+    # stays visibly synthesis rather than being promoted on its neighbours' backs.
+    if _UNCHECKED in results:
+        loose = [a.text for a, v in zip(checkable, results) if v == _UNCHECKED]
+        return VerifiedClaim(
+            status=ClaimStatus.INTERPRETIVE, assertions=assertions,
+            reason=("part of it is not spoken to by the cited records: "
+                    + ", ".join(loose[:3])),
+            sample_note=_sample_note(toolbox) if quant is not None else "",
+            **base)
+
+    # 6 — a sentence whose ONLY grounded assertion is a name is not proven. "ORD-01
+    # sits behind the queue on the cutting line" mentions a real order and asserts a
+    # mechanism no record states; promoting it because the name resolves would put
+    # the proven register behind an unchecked claim. A citation promises the FIGURE
+    # or the TIME grounds, not that the sentence names something that exists.
+    if not any(a.grounded for a in assertions if a.kind != "entity"):
+        return VerifiedClaim(
+            status=ClaimStatus.INTERPRETIVE, assertions=assertions,
+            reason="its only checkable content is a name; the substance is my "
+                   "reading", **base)
+
+    # 7 — the model called this its CONCLUSION. A structural annotation, not a
+    # provenance one (R-AI5(8) forbids the model GRADING its claims; saying which
+    # sentence is the conclusion is a statement about the answer's shape, and it can
+    # only ever demote). A conclusion is a reading by construction — it renders in
+    # the synthesis register with the records it was read from.
+    if claim.kind is ClaimKind.CONCLUSION:
+        return VerifiedClaim(
+            status=ClaimStatus.INTERPRETIVE, assertions=assertions,
+            reason="this is the answer's conclusion — a reading of the records, "
+                   "not something one of them states", **base)
+
+    # 8 — grounded, but the model cited nothing: correct is not the same as proven.
+    # Never silently promoted (CU3's named test).
+    if not cited:
+        return VerifiedClaim(
+            status=ClaimStatus.INTERPRETIVE, assertions=assertions,
+            reason="grounded in what I consulted, but the claim cites no record",
+            **base)
+
+    return VerifiedClaim(status=ClaimStatus.VERIFIED, assertions=assertions,
+                         reason="every checkable assertion grounds in the cited "
+                                "records", **base)
+
+
+def _covering_call(toolbox: Any, cited: list[str]) -> Optional[tuple]:
+    """The enumerating tool call a quantifying claim rests on, or None.
+
+    "Can the verifier enumerate the set from a single tool call" (CU3's
+    completeness-honesty rule), made operational: EVERY citation must come from a
+    call that enumerated its whole set — one filtered read among them and the claim
+    is a sample — and the covering call is the enumerating one it cites most of.
+    Its own tallies are then what the claim's figures are checked against.
+
+    A NAMED LIMIT: this checks that a figure is one the toolbox itself computed
+    over an enumerated set, not that it is the RIGHT tally for the words around it.
+    A count semantically attached to the wrong tally of the same call can still
+    pass. Typing a count to its predicate is a semantic problem this pass does not
+    solve, and it is stated here rather than implied away."""
+    entries = list(getattr(toolbox, "enumerated", []) or [])
+    if not cited or not entries:
+        return None
+    enumerated_ids: set = set()
+    for entry in entries:
+        enumerated_ids |= entry[1]
+    if not all(c in enumerated_ids for c in cited):
+        return None                    # something came from a filtered read
+    best, best_overlap = None, 0
+    for entry in entries:
+        overlap = sum(1 for c in cited if c in entry[1])
+        if overlap > best_overlap:
+            best, best_overlap = entry, overlap
+    return best
+
+
+def _sample_note(toolbox: Any) -> str:
+    """The authored note naming what the claim actually rests on."""
+    from mre.modules.ask_fallback_copy import SYNTHESIS_SAMPLE_NOTE
+    best = None
+    for call in getattr(toolbox, "calls", []) or []:
+        if call.ok and call.rows and (best is None or call.rows > best.rows):
+            best = call
+    if best is None:
+        return ""
+    return SYNTHESIS_SAMPLE_NOTE.format(n=best.rows, tool=best.tool)
+
+
+def verify_draft(question: str, claims: list[DraftClaim], *,
+                 toolbox: Any) -> SynthesisAnswer:
+    """The whole hardening pass: verify every claim, cut what failed, and decide
+    whether what was cut was LOAD-BEARING (the honest "I couldn't ground part of my
+    reasoning" trigger — computed here, never asserted by the model)."""
+    # Assembled ONCE for the whole draft: everything the loop read, independently
+    # re-fetched. It is the appeal an under-cited claim gets (see ``_check``).
+    wide = _Scope(toolbox, list(getattr(toolbox, "consulted", []) or []))
+    verdicts = [verify_claim(c, toolbox=toolbox, wide=wide) for c in claims]
+    kept = [v for v in verdicts if v.status is not ClaimStatus.FAILED]
+    cut = [v for v in verdicts if v.status is ClaimStatus.FAILED]
+    any_verified = any(v.status is ClaimStatus.VERIFIED for v in kept)
+    for v in cut:
+        v.load_bearing = (v.kind is ClaimKind.CONCLUSION) or not any_verified
+    return SynthesisAnswer(question=question, claims=kept, cut=cut,
+                           unanswerable=not kept)

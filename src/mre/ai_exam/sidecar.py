@@ -171,6 +171,34 @@ def check_expectation(turn: Any) -> list[Finding]:
     return [Finding("expect-miss", turn.lineno, turn.question, "; ".join(misses))]
 
 
+def check_synthesis(turn: Any) -> list[Finding]:
+    """The second tier's mechanical tripwires (Session 4A.5b).
+
+    ``failed-claim-rendered`` — a claim the verifier CUT appearing in the answer
+    surface. By construction it cannot; this is the guard on that construction, and
+    it is a truth-floor tripwire, not a quality read.
+    ``ungrounded-load-bearing`` — the answer's own reasoning rested on something
+    that could not be grounded. The answer is required to SAY so; the count is what
+    a human reads, because a rising one means the tier is reaching past its
+    evidence."""
+    s = getattr(turn, "synthesis", None) or {}
+    if not s:
+        return []
+    out: list[Finding] = []
+    rendered = [c for c in (s.get("claims_detail") or [])
+                if c.get("status") == "failed"]
+    if rendered:
+        out.append(Finding("failed-claim-rendered", turn.lineno, turn.question,
+                           f"{len(rendered)} verifier-FAILED claim(s) reached the "
+                           "answer surface"))
+    n = int(s.get("ungrounded_load_bearing") or 0)
+    if n:
+        out.append(Finding("ungrounded-load-bearing", turn.lineno, turn.question,
+                           f"{n} load-bearing claim(s) could not be grounded and "
+                           "were cut"))
+    return out
+
+
 def check_turn(turn: Any, vocab: Vocab) -> list[Finding]:
     """All mechanical findings for one finished turn."""
     findings: list[Finding] = []
@@ -208,6 +236,12 @@ def check_turn(turn: Any, vocab: Vocab) -> list[Finding]:
     # intent the parse named, what subjects it bound, where it dispatched. It never
     # grades prose (R-AI4(2)).
     findings.extend(check_expectation(turn))
+
+    # 8 — the synthesis tier's own tripwires (Session 4A.5b CU5). Both are
+    # truth-floor checks, not quality reads: a FAILED claim must never reach the
+    # planner, and a cut claim that the answer's reasoning RESTED on must be said
+    # out loud rather than papered over.
+    findings.extend(check_synthesis(turn))
 
     # 6 — an invitation offering a door into a wall. Skipped (not passed) when no
     # parser is available: the honest state is "unchecked", never "clean".

@@ -1,0 +1,365 @@
+AI EXAM TRANSCRIPT
+target      : out-dir:gb_pinned
+snapshot    : snap-exam
+started     : 2026-07-26T12:02:18Z
+llm mode    : live
+questions   : 28
+llm calls   : 46
+door check  : live
+parse       : parses=32 calls=32 retries=0 malformed=0 clarifies=1 unavailable=0 median=1091ms
+synthesis   : answers=1 calls=4 tools=3 malformed=0 budget-out=0 unanswerable=0 median=9361ms p90=9361ms
+claims      : 5 total  verified=3 interpretive=2 failed-and-cut=0  ungrounded-load-bearing=0
+latency     : route n=27 median=1589ms p90=2441ms | synthesis n=1 median=10545ms p90=10545ms
+sidecar     : clean
+------------------------------------------------------------------------
+# AI EXAM BANK — founder regression scripts
+# generated: 2026-07-24  (Session 4A.3b, CU2a)
+# taxonomy : Session 4A.3 route set (docs/07 v2.40)
+# world    : glass_box (orders ORD-01..15; machines CUT-01, PRESS-FAST,
+# PRESS-SLOW, PAINT-01, HEAT-01; ORD-05 late +890 held by ORD-04 on
+# CUT-01; ORD-13 the early control; ORD-03 splittable; ORD-09 RED /
+# ORD-12 BLUE on PAINT-01)
+# 
+# Every founder-exam finding from rounds one through three, VERBATIM including
+# typos. The SEQUENCE is the test — these are conversation scripts, RESET between
+# conversations. Pilot ids the glass_box world lacks (ord-000038, order 23, ...)
+# are adapted to real ids; PHRASING is preserved exactly. A finding that reopens
+# here is a regression.
+# --- Round 3: the gap/adjacency question (verbatim typo; pilot ids adapted) -----
+Q[16]: why os ORD-09 not running right after ORD-12 instead of a gap between
+  route=gap-between  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=gap-between  conf=0.95  polarity=negative  order=ORD-09<-utterance("ORD-09")  order=ORD-12<-utterance("ORD-12")  1487ms
+  A:
+    The gap on PAINT-01 between ORD-09 (2026-01-05 10:20) and ORD-12 (2026-01-05 14:41) isn't idle — ORD-02 runs there (2026-01-05 11:01 → 2026-01-05 14:41).
+
+    Want the rest of PAINT-01's schedule? Ask "what's running on PAINT-01?"
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 3: list-expansion off a count -----------------------------------------
+Q[20]: how many orders are late
+  route=late-orders  source=parse  conf=0.99  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=late-orders  conf=0.99  859ms
+  A:
+    Yes, there is 1 late order(s). ORD-05 has a lateness of 890 min (14.8h) [record: 82257d9a...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[21]: can you list the numbers
+  interpreted as: which orders are late?  (listing the previous answer)
+  route=late-orders  source=parse  conf=0.92  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=late-orders  conf=0.92  followup=list-expand  861ms
+  A:
+    ORD-05 is late with a lateness of 890 min (14.8h) [record: 82257d9a...]. There is 1 late order(s) in the solved schedule.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 3: correction on a cross-type referent (verbatim "not the jo") ---------
+Q[25]: why is ORD-05 on CUT-01
+  route=why-on-machine  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=1  refs=1/1/1
+  parse: intent=why-on-machine  conf=0.95  order=ORD-05<-utterance("ORD-05")  machine=CUT-01<-utterance("CUT-01")  1206ms
+  A:
+    ORD-05 is assigned to CUT-01 because the machine was busy with other work [record: 2c82d3c0...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[26]: i was asking about the machine not the jo
+  route=CLARIFY  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=why-on-machine  conf=0.92  followup=correction  machine=UNRESOLVED<-utterance("the machine")  1030ms
+  A:
+    I need one more detail to answer "i was asking about the machine not the jo".
+    Which order, machine, or customer do you mean? Ask it again naming one, e.g. "why is that order late?" becomes "why is <order> late?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 3: the coaching-menu follow-up (verbatim) -----------------------------
+Q[30]: i want to change something about how the plant runs, how
+  route=CLARIFY  source=parse  conf=0.72  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.72  concept=UNRESOLVED<-utterance("how the plant runs")  clarify=ambiguous-intent  1440ms
+  A:
+    I need one more detail to answer "i want to change something about how the plant runs, how".
+    I can read that two ways and the difference matters. Say which you want: the facts as they stand, or what to do about them.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[31]: what about wip. what do you mean
+  route=coaching  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.92  followup=menu-select  concept=wip<-utterance("wip")  986ms
+  A:
+    Yes — the plant to reschedule from its actual shop-floor position — work already complete or in progress — instead of planning from a blank slate.
+
+    To enable it: declare observed status in wip_status.csv (complete / in_progress / not_started, with progress for in-flight work). See the incoming-data spec §5.13.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 3: selection deixis (verbatim question + a live board selection) -------
+# [SELECT order=ORD-05 machine=CUT-01]
+Q[36]: whats the end time of this order
+  selection: order=ORD-05, machine=CUT-01
+  interpreted as: whats the end time of ORD-05  (resolved against ORD-05 (from board selection))
+  route=order-schedule  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=order-schedule  conf=0.95  order=ORD-05<-selection("this order")  1778ms
+  A:
+    ORD-05: 1 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 3: the swap phrasings, three ways + the solve-#5 variants (adapted) ----
+Q[40]: why not just swap ORD-04 and ORD-05
+  route=swap-move  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=3  records=2  refs=2/1/0
+  parse: intent=swap-move  conf=0.95  order=ORD-04<-utterance("ORD-04")  order=ORD-05<-utterance("ORD-05")  1382ms
+  A:
+      ORD-04: 0.2 day(s) early on CUT-01 (starts 2026-01-05 11:00).
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+
+    My take: ORD-04 has ~0.2 day(s) of slack to spend; ORD-05 is the one hurting (890 min late) — giving it ORD-04's earlier slot is the move worth pricing.
+
+    Drag ORD-05's first operation onto ORD-04's slot on CUT-01 and the board will run a sandbox and price the swap exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[41]: can we swap order 4 and order 5
+  interpreted as: can we swap ORD-04 and ORD-05  (assuming ORD-04; assuming ORD-05)
+  route=swap-move  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=3  records=2  refs=2/1/0
+  parse: intent=swap-move  conf=0.95  order=ORD-04<-utterance("order 4")  order=ORD-05<-utterance("order 5")  1145ms
+  A:
+      ORD-04: 0.2 day(s) early on CUT-01 (starts 2026-01-05 11:00).
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+
+    My take: ORD-04 has ~0.2 day(s) of slack to spend; ORD-05 is the one hurting (890 min late) — giving it ORD-04's earlier slot is the move worth pricing.
+
+    Drag ORD-05's first operation onto ORD-04's slot on CUT-01 and the board will run a sandbox and price the swap exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[42]: what if we swapped ORD-05 with ORD-04
+  route=swap-move  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=3  records=2  refs=2/1/0
+  parse: intent=swap-move  conf=0.95  order=ORD-05<-utterance("ORD-05")  order=ORD-04<-utterance("ORD-04")  1452ms
+  A:
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+      ORD-04: 0.2 day(s) early on CUT-01 (starts 2026-01-05 11:00).
+
+    My take: ORD-04 has ~0.2 day(s) of slack to spend; ORD-05 is the one hurting (890 min late) — giving it ORD-04's earlier slot is the move worth pricing.
+
+    Drag ORD-05's first operation onto ORD-04's slot on CUT-01 and the board will run a sandbox and price the swap exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[43]: why not just swap order 5 and order 4
+  interpreted as: why not just swap ORD-05 and ORD-04  (assuming ORD-05; assuming ORD-04)
+  route=swap-move  source=parse  conf=0.98  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=3  records=2  refs=2/1/0
+  parse: intent=swap-move  conf=0.98  order=ORD-05<-utterance("order 5")  order=ORD-04<-utterance("order 4")  3045ms
+  A:
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+      ORD-04: 0.2 day(s) early on CUT-01 (starts 2026-01-05 11:00).
+
+    My take: ORD-04 has ~0.2 day(s) of slack to spend; ORD-05 is the one hurting (890 min late) — giving it ORD-04's earlier slot is the move worth pricing.
+
+    Drag ORD-05's first operation onto ORD-04's slot on CUT-01 and the board will run a sandbox and price the swap exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 2b: the "but why?" rewrite-confidence guard ---------------------------
+Q[47]: why is ORD-05 late
+  route=late-order  source=parse  conf=0.99  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.99  polarity=positive  order=ORD-05<-utterance("ORD-05")  919ms
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 82257d9a...]. It could not start until 2026-01-06 07:00 while CUT-01 was held by ORD-04, high priority until 2026-01-05 18:50 [record: 2c82d3c0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[48]: but why?
+  route=late-order  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.95  followup=deepen  polarity=positive  order=ORD-05<-last-answer("ORD-05")  978ms
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 82257d9a]. It could not start until 2026-01-06 07:00 while CUT-01 was held by ORD-04, high priority, until 2026-01-05 18:50 [record: 2c82d3c0]. The projected completion is 2026-01-06 14:50 UTC [record: 5bb0fd1c].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 2b: contested fact, the sycophancy guard (both directions) ------------
+Q[52]: isn't ORD-05 on time?
+  route=contested-fact  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=contested-fact  conf=0.95  polarity=negative  order=ORD-05<-utterance("ORD-05")  1082ms
+  A:
+    I can see why you'd hope so, but the record has ORD-05 finishing 890 minutes past its due date (due 2026-01-05) — I'm not going to call it on time when the evidence says otherwise.
+    Happy to walk the chain with you though: ask "why is ORD-05 late?" and I'll show exactly what held it up.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+Q[54]: is ORD-13 actually late?
+  route=contested-fact  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=contested-fact  conf=0.95  polarity=negative  order=ORD-13<-utterance("ORD-13")  1038ms
+  A:
+    Good news — the record actually has ORD-13 finishing on time, 11.7 day(s) early (due 2026-01-16), not late.
+    Want the detail? Ask "when does ORD-13 finish?" and I'll show the timeline.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 2b / R-AI3: start-reason polarity (the why-early / why-not-sooner pair) -
+Q[58]: why is ORD-13 starting so early? it's not due until next week
+  route=start-reason  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=start-reason  conf=0.95  polarity=positive  order=ORD-13<-utterance("ORD-13")  1100ms
+  A:
+    ORD-13 starts Monday (2026-01-05 07:00) because finishing early costs nothing here: among equally-cheap options the schedule starts work as soon as it can, banking slack — it finishes about 11.7 day(s) ahead of its due date (2026-01-16).
+    The earliest it could begin is its release date, Monday 2026-01-05.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+Q[60]: why can't ORD-05 start sooner
+  route=start-reason  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=start-reason  conf=0.95  polarity=negative  order=ORD-05<-utterance("ORD-05")  1036ms
+  A:
+    ORD-05 starts Tuesday (2026-01-06 07:00) because CUT-01 was busy: it was held by ORD-04, high priority until 2026-01-05 18:50, so ORD-05 took the next opening.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 2b / R-AI3: the hypothesis-content guard (verbatim) --------------------
+Q[64]: maybe if splitting is allowed less orders would be late
+  route=synthesis  source=parse  conf=0.72  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 3 tool call(s)
+  lit-bars=3  records=3  refs=1/1/1
+  parse: intent=unmatched  conf=0.72  concept=splittable<-utterance("splitting")  1170ms
+  synthesis: claims=5  verified=3  interpretive=2  cut=0  tools=3(lateness_set,placements_for_order,cost_ledger)  9361ms
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    Currently, one order is late: ORD-05, which is 890 minutes (nearly 15 hours) past its due date of 2026-01-05T23:59:59Z.  [record: 82257d9a...]
+    ORD-05 consists of a single operation on CUT-01 running 470 minutes, scheduled 2026-01-06 07:00–14:50, which finishes after its due date.  [record: 2c82d3c0...]
+    The tardiness cost for ORD-05 alone is $370.83 of the schedule's total $6,956.83 cost.  [record: 34a0fc14...]
+    Splitting ORD-05 could reduce lateness only if a split piece could start and finish before the due date—but the operation is monolithic (one step on one machine), so splitting would not change when work begins or the total duration, only distribute it across time windows.  [synthesis — read from: 82257d9a, 5bb0fd1c, 1968510e]
+    Whether splitting reduces lateness depends on whether it creates gaps that allow an earlier piece to complete before the due date, or whether it allows the work to fit into earlier idle time on CUT-01—neither of which is evident from the current schedule without examining CUT-01's occupancy and gaps.  [synthesis — read from: 82257d9a, 5bb0fd1c, 1968510e]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 3 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+Q[66]: overtime would probably help with the late ones
+  route=advice  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.92  concept=overtime<-utterance("overtime")  1262ms
+  A:
+    1 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    My take: ORD-05's 890-minute slip traces to ORD-04 holding CUT-01 until 2026-01-05 18:50 — pulling that earlier is the single biggest lever the board gives you today.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 2: the blocked-by chain names the culprit -----------------------------
+Q[70]: why is ORD-05 late
+  route=late-order  source=parse  conf=0.99  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.99  polarity=positive  order=ORD-05<-utterance("ORD-05")  1788ms
+  A:
+    ORD-05 is late because its due date was driving the schedule [record: 34098450...], and it was assigned to CUT-01, which was busy with other work [record: 2c82d3c0...]. Specifically, CUT-01 was held by ORD-04 (high priority) until 2026-01-05 18:50, preventing ORD-05 from starting until 2026-01-06 07:00, resulting in a lateness of 890 min (14.8h) [record: 82257d9a...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 3: machine-idle ------------------------------------------------------
+Q[74]: why is HEAT-01 idle
+  route=machine-idle  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=machine-idle  conf=0.99  polarity=positive  machine=HEAT-01<-utterance("HEAT-01")  1106ms
+  A:
+    HEAT-01 isn't idle — it carries 4 operation(s), running from 2026-01-05 07:00 to 2026-01-10 17:00. Ask "what's running on HEAT-01?" for the list.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 1: the filing-cabinet close (register coherence + fix-first) ----------
+Q[78]: what's wrong with the submission
+  route=certificate-testimony  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=certificate-testimony  conf=0.92  844ms
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[79]: what should i fix first
+  route=triage  source=parse  conf=0.95  register=judgment  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=triage  conf=0.95  followup=deepen  931ms
+  A:
+    1 advisory finding(s), no action required — the plan proceeded on default settings, but this warrants attention:
+
+    - Customer priority weight is weakly known for 13 order(s), making tardiness priority unreliable [WARNING] — Fix: Specify each order's customer priority weight at submission to prevent tardiness ranking from defaulting.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: judgment]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 2b: fuzzy entity tolerance (near-miss id spellings) --------------------
+Q[83]: why is ord-o5 late
+  interpreted as: why is ORD-05 late  (assuming ORD-05)
+  route=late-order  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.95  polarity=positive  order=ORD-05<-utterance("ord-o5")  1099ms
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 82257d9a...]. It could not start until 2026-01-06 07:00 while CUT-01 was held by ORD-04, high priority, until 2026-01-05 18:50 [record: 2c82d3c0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[84]: why is ORD-5 late
+  interpreted as: why is ORD-05 late?  (corrected to ORD-05)
+  route=late-order  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.95  followup=correction  polarity=positive  order=ORD-05<-utterance("ORD-5")  886ms
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 82257d9a...]. It could not start until 2026-01-06 07:00 while CUT-01 was occupied by ORD-04, high priority, which held the machine until 2026-01-05 18:50 [evidence chain]. ORD-05 was assigned to CUT-01, which was busy with other work [record: 2c82d3c0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# --- Round 2b: verification of a prior claim (must clarify, never confirm) --------
+Q[88]: which orders are late
+  route=late-orders  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=late-orders  conf=0.95  805ms
+  A:
+    Yes, there is 1 late order(s) [record: 82257d9a...]. ORD-05 has a lateness of 890 min (14.8h) [record: 82257d9a...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+Q[89]: is that correct
+  route=CLARIFY  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=contested-fact  conf=0.92  followup=deepen  order=UNRESOLVED<-utterance("that")  1577ms
+  A:
+    I need one more detail to answer "is that correct".
+    Which order, machine, or customer do you mean? Ask it again naming one, e.g. "why is that order late?" becomes "why is <order> late?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------

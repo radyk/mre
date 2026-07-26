@@ -52,10 +52,14 @@ class QuestionLedger:
         answer_register: Optional[str] = None,
         schedule_id: Optional[str] = None,
         session_id: Optional[str] = None,
+        synthesis: Optional[object] = None,
     ) -> QuestionLedgerEntry:
         """Append one entry. When ``route`` is a real taxonomy route (not a
         refusal sentinel) and the same session refused a question inside the
-        rephrase window, link this entry to that refusal (free labeled data)."""
+        rephrase window, link this entry to that refusal (free labeled data).
+
+        ``synthesis`` carries the second tier's per-claim provenance and its tool
+        calls (R-AI5(5), Session 4A.5b) — present only on a synthesis answer."""
         entry = QuestionLedgerEntry(
             entry_id=str(uuid.uuid4()),
             verbatim_question=verbatim_question,
@@ -66,6 +70,7 @@ class QuestionLedger:
             answer_register=answer_register,
             schedule_id=schedule_id,
             session_id=session_id,
+            synthesis=synthesis,
         )
         if not entry.refused and session_id:
             entry.rephrase_of = self._recent_refusal_id(session_id, entry.ts)

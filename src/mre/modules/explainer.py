@@ -171,6 +171,12 @@ ROUTE_TAXONOMY: dict[str, dict] = {
     # followup_of=confirm-take.
     "confirm-take":          {"params": [],
                               "canonical": "should I make that move on the board?"},
+    # Session 4A.5b (R-AI5(4)) — "prove it": the grounding pass re-run on ONE claim
+    # the assistant just made. A route id because it is a destination the dispatch
+    # names and the ledger records; reached via followup_of=prove-it OR the intent
+    # of the same name (the pair `confirm-take` already set the precedent for).
+    "prove-it":              {"params": [],
+                              "canonical": "how do you know that?"},
     "beyond-horizon":        {"params": [],          "canonical": "what's beyond the horizon?"},
     "why-not-scheduled-yet": {"params": ["order"],   "canonical": "why isn't {order} scheduled yet?"},
     "frozen":                {"params": [],          "canonical": "what's frozen?"},
@@ -189,6 +195,14 @@ ROUTE_TAXONOMY: dict[str, dict] = {
 REGISTER_BY_SUBJECT: dict[str, str] = {
     "remediation": "remediation",
     "triage": "judgment",
+    # Session 4A.5b (R-AI5(4)) — the SYNTHESIS register. The second tier's answers
+    # are neither testimony (they are not assembled by a contracted route) nor
+    # judgment (they are not authored advice): they are labeled open synthesis over
+    # read-only evidence, hardened claim by claim. A distinct tag is the whole
+    # point — a planner must be able to see which tier answered them, and the
+    # per-claim markers inside the body say which SENTENCES are proven.
+    "synthesis": "synthesis",
+    "prove_it": "synthesis",
 }
 
 
@@ -550,6 +564,11 @@ class Explainer:
                         "customer-schedule"):
             return self._schedule_query(q, q.lower(), params.get("order"),
                                         params.get("machine"))
+        if route_id == "synthesis":
+            return self._synthesis_bundle(q, params["answer"])
+        if route_id == "prove-it":
+            return self._prove_it_bundle(q, params.get("claim"),
+                                         params.get("answer"))
         if route_id == "near-miss":
             return self._near_miss(q, params.get("offers", []),
                                    params.get("routes", []))
@@ -2061,6 +2080,118 @@ class Explainer:
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )
+
+    # ------------------------------------------------------------------
+    # Session 4A.5b (R-AI5(2)/(4)) — the labeled-synthesis surface.
+    #
+    # The claims arrive ALREADY HARDENED (claim_verifier ran; every status is the
+    # verifier's). These two assemblers only carry them into a bundle, resolve the
+    # cited ids to real evidence records so the lit-bars channel and the citation
+    # floor stay honest, and hand the whole thing to the renderer. No assembler
+    # here decides what is proven — that decision was made before it got here.
+    # ------------------------------------------------------------------
+
+    def _records_by_id(self, ids: list[str]) -> list[dict]:
+        """The real evidence records for a list of cited ids, in the order cited.
+        Entity ids (an assignment, a service outcome) resolve to no RECORD and are
+        skipped here — they are still verifiable, they just do not light a bar."""
+        wanted = [i for i in ids if i]
+        if not wanted:
+            return []
+        by_id = {str(r.get("record_id") or ""): r
+                 for r in getattr(self._index, "_all_evidence", []) or []}
+        out: list[dict] = []
+        seen: set[str] = set()
+        for i in wanted:
+            rec = by_id.get(i)
+            if rec is not None and i not in seen:
+                seen.add(i)
+                out.append(rec)
+        return out
+
+    def _synthesis_bundle(self, question: str, answer: Any) -> ExplanationBundle:
+        """A verified ``SynthesisAnswer`` → the bundle the surface renders (CU4)."""
+        cited: list[str] = []
+        for c in answer.claims:
+            for rid in c.cited_record_ids:
+                if rid not in cited:
+                    cited.append(rid)
+        return ExplanationBundle(
+            question=question,
+            subject_id="synthesis",
+            subject_type="synthesis",
+            subject_external_name="?",
+            ordered_records=self._records_by_id(cited),
+            key_facts={
+                "claims": [c.model_dump(mode="json") for c in answer.claims],
+                "cut": [c.model_dump(mode="json") for c in answer.cut],
+                "tool_calls": [t.model_dump(mode="json") for t in answer.tool_calls],
+                "tool_call_count": len(answer.tool_calls),
+                "consulted_tools": sorted({t.tool for t in answer.tool_calls}),
+                "budget_exhausted": answer.budget_exhausted,
+                "timed_out": answer.timed_out,
+                "unanswerable": answer.unanswerable,
+                "counts": answer.counts(),
+                "model": answer.model,
+            },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _prove_it_bundle(self, question: str, claim: Any,
+                         answer: Any = None) -> ExplanationBundle:
+        """"Prove it" (R-AI5(4)): the grounding pass re-run on ONE claim,
+        conversationally. Either the record, or the honest "that part is my
+        inference from A and B — here's each"."""
+        claim_dict = claim if isinstance(claim, dict) else (
+            claim.model_dump(mode="json") if claim is not None else None)
+        rids = list((claim_dict or {}).get("cited_record_ids") or [])
+        if not rids:
+            rids = list((claim_dict or {}).get("consulted_record_ids") or [])
+        records = self._records_by_id(rids)
+        lines = []
+        for rec in records:
+            lines.append({"rid": str(rec.get("record_id") or "")[:8],
+                          "summary": self._record_summary(rec)})
+        return ExplanationBundle(
+            question=question,
+            subject_id="prove-it",
+            subject_type="prove_it",
+            subject_external_name="?",
+            ordered_records=records,
+            key_facts={"claim": claim_dict, "lines": lines,
+                       "have_claim": claim_dict is not None},
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _record_summary(self, rec: dict) -> str:
+        """One planner-readable line for a record, for the prove-it listing. Reads
+        only what the record carries; resolves subjects through the identity map so
+        no uuid reaches the planner."""
+        rt = (rec.get("record_type") or "?").lower()
+        names = []
+        for s in rec.get("subjects", []) or []:
+            eid = s.get("entity_id")
+            if not eid or self._identity_map is None:
+                continue
+            refs = self._identity_map.external_refs(eid)
+            if refs and refs[0].value not in names:
+                names.append(refs[0].value)
+        who = ", ".join(names[:3])
+        if rt == "metric":
+            val = rec.get("value")
+            unit = " min" if "minutes" in (rec.get("name") or "") else ""
+            return f"{rec.get('name')} = {val}{unit}" + (f" for {who}" if who else "")
+        if rt == "decision":
+            dt = (rec.get("decision_type") or "?").replace("_", " ")
+            drv = rec.get("driver") or ""
+            phrase = driver_phrase(drv) or drv.lower().replace("_", " ")
+            return (f"the {dt} decision" + (f" for {who}" if who else "")
+                    + (f" — {phrase}" if phrase else ""))
+        if rt == "finding":
+            return f"finding {rec.get('code')}" + (f" on {who}" if who else "")
+        return f"{rt} record" + (f" for {who}" if who else "")
 
     def _near_miss(self, question: str, offers: list[str],
                    routes: list[str]) -> ExplanationBundle:

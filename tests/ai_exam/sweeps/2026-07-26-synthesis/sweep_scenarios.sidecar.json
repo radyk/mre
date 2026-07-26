@@ -1,0 +1,78 @@
+{
+  "target": "out-dir:gb_pinned",
+  "snapshot": "snap-exam",
+  "started_at": "2026-07-26T12:06:51Z",
+  "llm_mode": "live",
+  "questions": 49,
+  "llm_calls": 73,
+  "parser_stats": {
+    "calls": 222,
+    "parses": 222,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 3,
+    "unavailable": 0,
+    "median_latency_ms": 1051.4307000012195,
+    "malformed_samples": []
+  },
+  "synth_stats": {
+    "syntheses": 5,
+    "calls": 12,
+    "tool_calls": 7,
+    "malformed": 0,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 2,
+    "median_latency_ms": 5755.059000002802,
+    "p90_latency_ms": 9361.27519999718
+  },
+  "synthesis": {
+    "answers": 4,
+    "claims": 9,
+    "verified": 3,
+    "interpretive": 6,
+    "failed_and_cut": 0,
+    "ungrounded_load_bearing": 0,
+    "unanswerable": 2,
+    "budget_exhausted": 0,
+    "tool_calls": 4,
+    "tool_histogram": {
+      "cost_ledger": 1,
+      "entity_vocabulary": 1,
+      "lateness_set": 1,
+      "placements_for_machine": 1
+    },
+    "calls_per_answer": {
+      "0": 2,
+      "2": 2
+    }
+  },
+  "latency": {
+    "route": {
+      "n": 45,
+      "median_ms": 1457.5,
+      "p90_ms": 2699.4
+    },
+    "synthesis": {
+      "n": 4,
+      "median_ms": 5601.2,
+      "p90_ms": 8736.7
+    }
+  },
+  "graded_expectations": {
+    "graded": 48,
+    "met": 47
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "expect-miss": 1
+  },
+  "findings": [
+    {
+      "kind": "expect-miss",
+      "lineno": 89,
+      "question": "are you sure about that",
+      "detail": "clarify: expected 'verification', got None; route: expected 'CLARIFY', got 'prove-it'"
+    }
+  ]
+}

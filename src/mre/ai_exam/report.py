@@ -19,6 +19,10 @@ def _conf(c: Any) -> str:
     return f"{c:.2f}" if isinstance(c, (int, float)) else "-"
 
 
+def _ms(v: Any) -> str:
+    return "-" if v is None else f"{v:.0f}ms"
+
+
 def render_transcript(result: ExamResult) -> str:
     lines: list[str] = []
     lines.append("AI EXAM TRANSCRIPT")
@@ -37,6 +41,31 @@ def render_transcript(result: ExamResult) -> str:
             "malformed={malformed} clarifies={clarifies} unavailable={unavailable} "
             "median={med}".format(
                 med="-" if med is None else f"{med:.0f}ms", **ps))
+    if result.synth_stats:
+        ss = result.synth_stats
+        med, p90 = ss.get("median_latency_ms"), ss.get("p90_latency_ms")
+        lines.append(
+            "synthesis   : answers={syntheses} calls={calls} tools={tool_calls} "
+            "malformed={malformed} budget-out={budget_exhausted} "
+            "unanswerable={unanswerable} median={med} p90={p90}".format(
+                med="-" if med is None else f"{med:.0f}ms",
+                p90="-" if p90 is None else f"{p90:.0f}ms",
+                **{k: ss.get(k) for k in
+                   ("syntheses", "calls", "tool_calls", "malformed",
+                    "budget_exhausted", "unanswerable")}))
+        tot = result.synthesis_totals()
+        lines.append(
+            "claims      : {claims} total  verified={verified} "
+            "interpretive={interpretive} failed-and-cut={failed_and_cut}  "
+            "ungrounded-load-bearing={ungrounded_load_bearing}".format(**tot))
+    lat = result.latency()
+    lines.append(
+        "latency     : route n={r[n]} median={rm} p90={rp} | "
+        "synthesis n={s[n]} median={sm} p90={sp}".format(
+            r=lat["route"], s=lat["synthesis"],
+            rm=_ms(lat["route"]["median_ms"]), rp=_ms(lat["route"]["p90_ms"]),
+            sm=_ms(lat["synthesis"]["median_ms"]),
+            sp=_ms(lat["synthesis"]["p90_ms"])))
     graded, met = result.graded()
     if graded:
         lines.append(f"graded      : {met}/{graded} expectations met")
@@ -68,6 +97,8 @@ def render_transcript(result: ExamResult) -> str:
             f"refs={_refs_str(t.cited_refs)}")
         if t.parse:
             lines.append("  parse: " + _parse_str(t.parse))
+        if t.synthesis:
+            lines.append("  synthesis: " + _synth_str(t.synthesis))
         if t.expect:
             ok = not any(f.kind == "expect-miss" for f in t.findings)
             lines.append("  expect: " + " ".join(
@@ -104,6 +135,26 @@ def _parse_str(p: dict) -> str:
     return "  ".join(bits)
 
 
+def _synth_str(s: dict) -> str:
+    """The second tier's per-claim provenance on one line (Session 4A.5b): what it
+    proved, what stayed interpretive, what it cut, and what it read to get there."""
+    bits = [f"claims={s.get('claims', 0)}",
+            f"verified={s.get('verified', 0)}",
+            f"interpretive={s.get('interpretive', 0)}",
+            f"cut={s.get('failed_and_cut', 0)}"]
+    if s.get("ungrounded_load_bearing"):
+        bits.append(f"ungrounded-load-bearing={s['ungrounded_load_bearing']}")
+    tools = s.get("tools") or []
+    bits.append(f"tools={len(tools)}" + (f"({','.join(tools)})" if tools else ""))
+    if s.get("budget_exhausted"):
+        bits.append("budget-exhausted")
+    if s.get("unanswerable"):
+        bits.append("unanswerable")
+    if s.get("latency_ms") is not None:
+        bits.append(f"{s['latency_ms']:.0f}ms")
+    return "  ".join(bits)
+
+
 def _refs_str(refs: dict) -> str:
     if not refs:
         return "0/0/0"
@@ -123,6 +174,9 @@ def render_sidecar(result: ExamResult) -> str:
         "questions": len(result.turns),
         "llm_calls": result.total_llm_calls,
         "parser_stats": result.parser_stats,
+        "synth_stats": result.synth_stats,
+        "synthesis": result.synthesis_totals(),
+        "latency": result.latency(),
         "graded_expectations": {"graded": result.graded()[0],
                                 "met": result.graded()[1]},
         "door_check": result.door_check,

@@ -95,18 +95,31 @@ tests/                Tests derived from the specs — write them from the spec 
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**AI-track Session 4A.5a — R-AI5 part 1: the LLM-first parse layer**, 2026-07-25
-(docs/07 v2.44; R-AI5 ruling + docs/04 amendment same date).
+**AI-track Session 4A.5b — R-AI5 part 2: labeled synthesis + claim verification**,
+2026-07-26 (docs/07 v2.45; docs/04 amendment same date).
 
-**The ask path (R-AI5).** Every question is parsed FIRST by a model against the
-closed intent vocabulary (`src/mre/contracts/parse.py`), with the conversation
-history, the live board selection and the last-answered subject as context; the
-parse contract is dispatched into the unchanged route assembly, render and
-validator. **There is no deterministic-classifier fallback** — `Explainer.classify`
-/ `answer` are deleted and must not come back; without a parser the ask path answers
-honestly that it could not interpret the question. The parse prompt
-(`src/mre/modules/parse_prompt.md`) is a governed artifact: changing it is a
-vocabulary-class change, reviewed, versioned, committed with its doc update.
+**The ask path (R-AI5) — two tiers, sealed from each other.** Every question is
+parsed FIRST by a model against the closed intent vocabulary
+(`src/mre/contracts/parse.py`), with the conversation history, the live board
+selection and the last-answered subject as context.
+
+- A **matched** intent dispatches into the unchanged route assembly, render and
+  validator. **There is no deterministic-classifier fallback** — `Explainer.classify`
+  / `answer` are deleted and must not come back.
+- An **unmatched** intent goes to **labeled open synthesis** (R-AI5(2)): a model
+  reasons over the closed read-only tool surface (`src/mre/modules/evidence_tools.py`)
+  under a stated budget and drafts structured CLAIMS, which are then hardened
+  claim-by-claim by `claim_verifier` — **deterministic code, never a model** — into
+  VERIFIED / INTERPRETIVE / FAILED-and-cut. Provenance is visible per claim, the
+  register is `synthesis`, and "prove it" re-runs the grounding pass on one claim.
+- A matched intent can NEVER fall to synthesis; an unmatched one NEVER guesses a
+  route (pinned by dispatch tests). Without a parser or a synthesizer the honest
+  floor answers that it could not interpret / could not ground — never a guess.
+
+**R-AI5(8) is the hard rule of the tier:** the answering model's beliefs about its
+own citations are INPUT to verification, never the label. Both prompts
+(`parse_prompt.md`, `synthesis_prompt.md`) are governed artifacts: changing either is
+a vocabulary-class change, reviewed, versioned, committed with its doc update.
 
 **Where history lives — do not duplicate it here:**
 
@@ -149,11 +162,18 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   structured-constraint surface (prose-locked, retrieval must never read prose);
   machine-idle eligibility naming no specific ops on the monolithic path; per-order
   PRODUCTION-dollar attribution (a ledger change).
-- R-AI5 residue (Session 4A.5a): the ROLLING pre-route
-  (`rolling_questions.classify_rolling`) is still a keyword matcher on rolling
-  documents; start-reason's early-vs-plain read is still the assembler's (only a
+- R-AI5 residue: the ROLLING pre-route (`rolling_questions.classify_rolling`) is
+  still a keyword matcher — **ruled 4A.5c scope** (4A.5b rider d): the parse binds
+  subjects against the Explainer's snapshot, which on a rolling run is window 0
+  only, so a beyond-horizon order would resolve to nothing and be answered as
+  absent. It needs the rolling document's vocabulary in subject resolution first.
+  Also carried: start-reason's early-vs-plain read is still the assembler's (only a
   NEGATIVE polarity is authoritative from the parse); a CLARIFY turn carries no
-  subject forward; the capability registry has no "minimum piece size" trigger.
+  subject forward.
+- Synthesis-tier named limits (4A.5b): a claim's COUNT is checked against the
+  toolbox's own tallies for the enumerating call, not typed to the predicate it
+  sits beside; percentages and ratios the model computes are never verifiable and
+  land interpretive by construction.
 - A splittable op with `rate_overrides` uses the scalar default duration; a heterogeneous
   op's `var_map.op_durations` scalar is the default representative (rate-varying pins
   unexercised).

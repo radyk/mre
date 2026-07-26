@@ -74,6 +74,20 @@ class TestVocabulary:
         assert build_parsed("q", {"intent": "not-an-intent"}, None, None) is None
         assert build_parsed("q", {"intent": "unknown-entity"}, None, None) is None
 
+    def test_a_followup_kind_in_the_intent_field_is_a_misfiling_not_garbage(self):
+        """Session 4A.5b, from the sweep's malformed-emission samples: the model
+        named the GESTURE correctly and put it in the wrong field. Discarding a
+        correct reading over a misfiled field is waste, not strictness — the intent
+        becomes `unmatched` (which now answers) and the linkage is kept."""
+        out = build_parsed("q", {"intent": "list-expand",
+                                 "followup_of": "list-expand"}, None, None)
+        assert out is not None
+        assert out.intent is Intent.UNMATCHED
+        assert out.followup_of.value == "list-expand"
+        # and a genuinely out-of-vocabulary id is still malformed
+        assert build_parsed("q", {"intent": "solve-the-halting-problem"},
+                            None, None) is None
+
 
 # ===========================================================================
 # The governed prompt artifact

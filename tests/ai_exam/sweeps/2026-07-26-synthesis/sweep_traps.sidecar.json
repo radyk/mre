@@ -1,0 +1,115 @@
+{
+  "target": "out-dir:gb_pinned",
+  "snapshot": "snap-exam",
+  "started_at": "2026-07-26T12:11:56Z",
+  "llm_mode": "live",
+  "questions": 62,
+  "llm_calls": 120,
+  "parser_stats": {
+    "calls": 317,
+    "parses": 317,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 6,
+    "unavailable": 0,
+    "median_latency_ms": 1049.7361000016099,
+    "malformed_samples": []
+  },
+  "synth_stats": {
+    "syntheses": 32,
+    "calls": 131,
+    "tool_calls": 96,
+    "malformed": 3,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 8,
+    "median_latency_ms": 8235.094849998859,
+    "p90_latency_ms": 14662.745599998743
+  },
+  "synthesis": {
+    "answers": 12,
+    "claims": 22,
+    "verified": 5,
+    "interpretive": 14,
+    "failed_and_cut": 3,
+    "ungrounded_load_bearing": 3,
+    "unanswerable": 6,
+    "budget_exhausted": 0,
+    "tool_calls": 29,
+    "tool_histogram": {
+      "cost_ledger": 4,
+      "entity_vocabulary": 4,
+      "lateness_set": 6,
+      "machine_occupancy": 3,
+      "placements_for_machine": 4,
+      "placements_for_order": 7,
+      "placements_in_window": 1
+    },
+    "calls_per_answer": {
+      "0": 3,
+      "1": 1,
+      "2": 3,
+      "4": 3,
+      "5": 2
+    }
+  },
+  "latency": {
+    "route": {
+      "n": 50,
+      "median_ms": 1152.4,
+      "p90_ms": 2434.4
+    },
+    "synthesis": {
+      "n": 12,
+      "median_ms": 7271.4,
+      "p90_ms": 10965.0
+    }
+  },
+  "graded_expectations": {
+    "graded": 0,
+    "met": 0
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "ungrounded-load-bearing": 3,
+    "absent-entity": 3
+  },
+  "findings": [
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 17,
+      "question": "why is ORD-05 so late but ORD-13 so early",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "absent-entity",
+      "lineno": 34,
+      "question": "why is ORD-99 late",
+      "detail": "interpreted-as names 'ORD-99', absent from the pinned document"
+    },
+    {
+      "kind": "absent-entity",
+      "lineno": 35,
+      "question": "when does ORD-88 finish",
+      "detail": "interpreted-as names 'ORD-88', absent from the pinned document"
+    },
+    {
+      "kind": "absent-entity",
+      "lineno": 37,
+      "question": "why is ORD-000038 late",
+      "detail": "interpreted-as names 'ORD-000038', absent from the pinned document"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 110,
+      "question": "is there a better schedule",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 112,
+      "question": "what's the optimal plan",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    }
+  ]
+}

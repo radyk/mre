@@ -1,6 +1,41 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.44 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.45 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.45:** **AI-track Session 4A.5b — R-AI5 part 2: labeled synthesis, claim-level
+verification, and the provenance surface** 2026-07-26 (docs/04 amendment). Part 1 left an
+unmatched intent at an honest dead end; R-AI5(2) always meant it to be a TIER. **CU1 — the
+read-only tool surface:** a CLOSED 11-tool evidence-query set (`contracts/synthesis.py` +
+`modules/evidence_tools.py`) built as thin wrappers over the same readers the contracted
+routes use, with typed results whose ROWS CARRY THEIR RECORD IDS, a stated budget (12 calls
+/ 90s / 60 rows) whose exhaustion yields an honest partial, every call logged with its
+arguments, and a second GOVERNED prompt artifact (`synthesis_prompt.md`) bound to the
+contract by a parity test. **CU2 — the loop:** on an unmatched intent and ONLY then, the
+model reasons agentically and drafts STRUCTURED CLAIMS (a sentence plus the record ids it
+believes support it); the draft never renders. **CU3 — claim-level verification:**
+deterministic code, not a model, independently re-fetches each cited record and checks the
+claim's assertions with the render validator's discipline → VERIFIED / INTERPRETIVE /
+FAILED-and-cut. An assertion the records do not SPEAK to is unproven (labeled); one they
+CONTRADICT is cut; a fabricated citation fails the claim; a correct-but-uncited claim is
+never silently promoted; a quantifier is proven only when one call enumerated its set.
+**CU4 — the surface:** claim blocks with per-claim provenance, the new `synthesis` register
+(+ cockpit tokens in both themes), a rendered-by line naming the tier and the tool-call
+count, and "prove it" as a new member of both parse vocabularies. **CU5 — the sweep**
+(`tests/ai_exam/sweeps/2026-07-26-synthesis/`, 6 banks, **304 questions**, live): **90/93
+graded expectations met**; validator 0, dark-evidence 0, dead-door 0, exception 0,
+absent-entity 3 — identical to the baseline; **zero FAILED claims rendered**; parse 0
+retries / 0 malformed (baseline 2 / 4). The tier itself: 32 answers, 100 claims — **42
+verified, 55 interpretive, 3 failed-and-cut**, 8 honest couldn't-answers, 0 budget
+exhaustions. **The seal, measured: 6 route moves across 212 shared questions, and the
+120-question route fan moved nothing.** Both 4A.5a expect-misses resolved. **Riders:** (b)
+the capability registry gains `min_chunk` (§5.3); (c) TOTAL conversational latency — parse
++ route median 1275ms / p90 2502ms, parse + synthesis median 9659ms / p90 16030ms; (d) the
+rolling pre-route is RULED 4A.5c scope — the parse resolves subjects against the
+Explainer's snapshot, window 0 only on a rolling run, so a beyond-horizon order would be
+answered as ABSENT; it needs the rolling document's vocabulary in subject resolution first.
+Full non-slow Python green (1386); slow AI ladders green (163); cockpit JS green (178).
+**Telemetry aggregation, the Pareto and the promotion loop (R-AI5(5)/(7)) remain Session
+4A.5c.** See the docs/04 2026-07-26 amendment.
 
 **v2.44:** **AI-track Session 4A.5a — R-AI5 part 1: the LLM-first parse layer (the
 classifier retires)** 2026-07-25 (R-AI5 verbatim + docs/04 amendment). Four founder exam

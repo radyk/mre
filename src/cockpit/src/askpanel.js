@@ -138,10 +138,14 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
 
   function appendAnswer(text, meta) {
     clearEmpty();
-    const register = meta?.register === "judgment" ? "judgment" : "testimony";
+    // Session 4A.5b (R-AI5(4)): `synthesis` joins the register vocabulary — an
+    // answer the assistant reasoned to from the evidence because no contracted
+    // route covered the question. Anything unrecognized still reads as testimony.
+    const REGISTERS = { judgment: 1, synthesis: 1, testimony: 1 };
+    const register = REGISTERS[meta?.register] ? meta.register : "testimony";
     const el = document.createElement("div");
     el.className = `msg answer ${register}`;
-    const who = register === "judgment" ? "judgment" : "testimony";
+    const who = register;
     el.innerHTML = `<div class="who">${who}<span class="reg-chip">${register}</span></div><pre></pre><div class="cites"></div>`;
     el.querySelector("pre").textContent = text;
     // cited-bar highlight, in sync with the answer

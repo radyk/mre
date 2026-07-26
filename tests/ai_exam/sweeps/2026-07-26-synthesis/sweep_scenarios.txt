@@ -1,0 +1,738 @@
+AI EXAM TRANSCRIPT
+target      : out-dir:gb_pinned
+snapshot    : snap-exam
+started     : 2026-07-26T12:06:51Z
+llm mode    : live
+questions   : 49
+llm calls   : 73
+door check  : live
+parse       : parses=222 calls=222 retries=0 malformed=0 clarifies=3 unavailable=0 median=1051ms
+synthesis   : answers=5 calls=12 tools=7 malformed=0 budget-out=0 unanswerable=2 median=5755ms p90=9361ms
+claims      : 9 total  verified=3 interpretive=6 failed-and-cut=0  ungrounded-load-bearing=0
+latency     : route n=45 median=1458ms p90=2699ms | synthesis n=4 median=5601ms p90=8737ms
+graded      : 47/48 expectations met
+sidecar     : expect-miss=1
+------------------------------------------------------------------------
+# AI EXAM BANK — multi-turn GOAL-PURSUIT scenarios
+# generated: 2026-07-25  (Session 4A.5a, CU4)
+# taxonomy : R-AI5 intent vocabulary (docs/04 2026-07-25)
+# world    : glass_box (orders ORD-01..15; machines CUT-01, PRESS-FAST,
+# PRESS-SLOW, PAINT-01, HEAT-01; ORD-05 late +890 held by ORD-04 on
+# CUT-01; ORD-13 the early control; ORD-03 splittable; ORD-09 RED /
+# ORD-12 BLUE on PAINT-01)
+# 
+# THE ROUND-FOUR COVERAGE LESSON. The first sweep fired per-route PROBES: one
+# question per phrasing, each self-contained. Every probe passed and the founder's
+# session still broke, because a planner does not fire probes — they PURSUE A GOAL
+# across five or ten turns, carrying subject, selection and frustration with them,
+# and the failures live in the carry. These are goal-pursuit scripts: each is one
+# planner trying to get one thing done. RESET separates scenarios; within a
+# scenario the SEQUENCE is the test.
+# 
+# Eight scenarios, 5-10 turns each. EXPECT lines grade ROUTING only (R-AI4(2)).
+# =================================================================================
+# S1 — EXPEDITE FOR A CUSTOMER: chase one customer's work, then try to pull it in
+# =================================================================================
+# [EXPECT intent=customer-schedule]
+Q[23]: show me everything for acme
+  route=customer-schedule  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=customer-schedule  conf=0.92  customer=acme<-utterance("acme")  1564ms
+  expect: intent=customer-schedule  -> MET
+  A:
+    I don't see any scheduled operations matching that.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=late-orders]
+Q[25]: any of those running late
+  interpreted as: which orders are late?  (listing the previous answer)
+  route=late-orders  source=parse  conf=0.92  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=late-orders  conf=0.92  followup=list-expand  834ms
+  expect: intent=late-orders  -> MET
+  A:
+    ORD-05 is late [record: 82257d9a...]. The lateness is 890 min (14.8h) [record: 82257d9a...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=late-order|late-orders]
+Q[27]: which one is worst
+  interpreted as: which orders are late?  (listing the previous answer)
+  route=late-orders  source=parse  conf=0.92  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=late-orders  conf=0.92  followup=list-expand  742ms
+  expect: intent=late-order|late-orders  -> MET
+  A:
+    ORD-05 is late by 890 min [record: 82257d9a...]. This is the only late order in the current schedule.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=late-order order=ORD-05]
+Q[29]: why is ORD-05 late
+  route=late-order  source=parse  conf=0.98  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.98  followup=deepen  polarity=positive  order=ORD-05<-utterance("ORD-05")  1047ms
+  expect: intent=late-order order=ORD-05  -> MET
+  A:
+    ORD-05 is late because it was assigned to CUT-01, which was busy with other work [record: 2c82d3c0...]. Specifically, CUT-01 was held by ORD-04 (high priority) until 2026-01-05 18:50, preventing ORD-05 from starting until 2026-01-06 07:00, which resulted in a lateness of 890 min (14.8h) past its due date of 2026-01-05T23:59:59Z [record: 82257d9a...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=advice|swap-move order=ORD-05]
+Q[31]: can we get it back on time
+  interpreted as: can we get ORD-05 back on time  (resolved against ORD-05)
+  route=advice  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.92  followup=deepen  order=ORD-05<-last-answer("it")  996ms
+  expect: intent=advice|swap-move order=ORD-05  -> MET
+  A:
+    1 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    My take: ORD-05's 890-minute slip traces to ORD-04 holding CUT-01 until 2026-01-05 18:50 — pulling that earlier is the single biggest lever the board gives you today.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT route=confirm-take]
+Q[33]: so i should move it earlier on CUT-01?
+  route=confirm-take  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=confirm-take  conf=0.92  followup=confirm-take  order=UNRESOLVED<-utterance("it")  machine=CUT-01<-utterance("CUT-01")  1209ms
+  expect: route=confirm-take  -> MET
+  A:
+    Yes — that's the move I was pointing at.
+
+    I can't make it for you: I read the plan and price changes, I don't change it. You make the move on the board and I'll cost it exactly before anything is accepted.
+
+    Drag the operation to the slot you want on the board — the sandbox re-solves around it and shows the production, setup, and tardiness delta, and nothing is committed until you accept.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# S2 — INVESTIGATE A CAPABILITY: can the plant do a thing, and how do I turn it on
+# =================================================================================
+# [EXPECT intent=coaching]
+Q[40]: can jobs run across a night shutdown
+  interpreted as: how do I enable that?  (assuming splittable)
+  route=coaching  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.92  concept=splittable<-utterance("spanning downtime")  1073ms
+  expect: intent=coaching  -> MET
+  A:
+    Yes — an operation to pause at a shift end or closure and resume the next working period, so a long job can span downtime instead of waiting for a gap big enough to hold it whole.
+
+    To enable it: set splittable=true and a min_chunk_minutes on that operation's routing line in routing_lines.csv (the run phase becomes resumable; chunk boundaries fall on calendar boundaries, and nothing is billed to the pause). See the incoming-data spec §5.3.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=coaching concept=splittable]
+Q[42]: what do i have to set for that
+  interpreted as: how do I enable that?  (coaching on splittable)
+  route=coaching  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.92  followup=menu-select  concept=splittable<-utterance("spanning downtime")  1041ms
+  expect: intent=coaching concept=splittable  -> MET
+  A:
+    Yes — an operation to pause at a shift end or closure and resume the next working period, so a long job can span downtime instead of waiting for a gap big enough to hold it whole.
+
+    To enable it: set splittable=true and a min_chunk_minutes on that operation's routing line in routing_lines.csv (the run phase becomes resumable; chunk boundaries fall on calendar boundaries, and nothing is billed to the pause). See the incoming-data spec §5.3.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# Session 4A.5b rider (b): the registry now names min_chunk (§5.3). Before this
+# session the follow-up bound no concept at all — a 4A.5a expect-miss.
+# [EXPECT intent=coaching concept=min_chunk]
+Q[46]: is there a minimum piece size
+  interpreted as: is there a minimum min_chunk  (coaching on min_chunk)
+  route=coaching  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.92  followup=menu-select  concept=min_chunk<-utterance("piece size")  950ms
+  expect: intent=coaching concept=min_chunk  -> MET
+  A:
+    Yes — a floor on how small a piece of a splittable operation may be, so a job that pauses at a shift end resumes in usable stretches instead of being shattered into slivers around every closure.
+
+    To enable it: set min_chunk_minutes alongside splittable=true on that operation's routing line in routing_lines.csv (no run piece may be shorter than it; the solver will leave the operation whole rather than break it below that floor). See the incoming-data spec §5.3.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=inventory]
+Q[48]: is anything split today
+  interpreted as: how many orders are in the plan?  (coaching on splittable)
+  route=inventory  source=parse  conf=0.92  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=inventory  conf=0.92  followup=menu-select  concept=splittable<-utterance("splitting")  978ms
+  expect: intent=inventory  -> MET
+  A:
+    15 order(s) are in the plan, scheduled across 17 operation(s).
+    1 operation(s) can split across a pause (e.g. an overnight closure).
+    1 order(s) finish late.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=coaching]
+Q[50]: what else can this thing be told to do
+  route=coaching  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.92  followup=deepen  1455ms
+  expect: intent=coaching  -> MET
+  A:
+    That's a configuration question, and I can point you to the submission setting for it — but I don't recognize which capability you mean.
+
+    Capabilities I can coach today (each names the submission field and its spec section):
+      - min_chunk, splittable, earliness_value, setup_family, alternates, customers, locks, wip, overtime
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=coaching concept=overtime]
+Q[52]: what about overtime
+  route=coaching  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.92  followup=menu-select  concept=overtime<-utterance("overtime")  1023ms
+  expect: intent=coaching concept=overtime  -> MET
+  A:
+    Yes — extra working hours beyond the regular shift — an overtime window a job can run in when the regular calendar is closed, priced at a premium so the schedule only buys those hours when they pay for themselves (e.g. a Saturday shift that rescues a tight order).
+
+    To enable it: add an added exception row with reason overtime on that resource's calendar in calendars.csv (the window it opens), and set an overtime_premium_multiplier in cost_model.json (the premium its hours bill at). See the incoming-data spec §5.6.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# S3 — CHASE A CAUSE TO ITS ROOT: five turns of "but why", never losing the subject
+# =================================================================================
+# [EXPECT intent=late-orders]
+Q[59]: how many orders are late
+  route=late-orders  source=parse  conf=0.99  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=late-orders  conf=0.99  1702ms
+  expect: intent=late-orders  -> MET
+  A:
+    Yes, there is 1 late order(s): ORD-05 with a lateness of 890 min (14.8h) [record: 82257d9a...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=late-orders followup=list-expand]
+Q[61]: list them
+  interpreted as: which orders are late?  (listing the previous answer)
+  route=late-orders  source=parse  conf=0.98  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=late-orders  conf=0.98  followup=list-expand  785ms
+  expect: intent=late-orders followup=list-expand  -> MET
+  A:
+    ORD-05 is late with a lateness of 890 min (14.8h) [record: 82257d9a...]. There is 1 late order(s) in the schedule [record: 82257d9a...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=late-order order=ORD-05]
+Q[63]: why is ORD-05 late
+  route=late-order  source=parse  conf=0.98  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.98  followup=deepen  polarity=positive  order=ORD-05<-utterance("ORD-05")  891ms
+  expect: intent=late-order order=ORD-05  -> MET
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 82257d9a...]. ORD-05 could not start until 2026-01-06 07:00 while CUT-01 was held by ORD-04, high priority, until 2026-01-05 18:50 [record: 2c82d3c0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=late-order|start-reason order=ORD-05 followup=deepen]
+Q[65]: but why
+  route=late-order  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.95  followup=deepen  polarity=positive  order=ORD-05<-last-answer("ORD-05")  966ms
+  expect: intent=late-order|start-reason order=ORD-05 followup=deepen  -> MET
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date of 2026-01-05T23:59:59Z [record: 82257d9a...]. ORD-05 could not start until 2026-01-06 07:00 on CUT-01 while ORD-04 (high priority) held the machine until 2026-01-05 18:50 [record: 2c82d3c0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# Session 4A.5b: graded on the ROUTE now, and synthesis is an honest destination
+# for it. In 4A.5a this parsed as `start-reason` — an order intent, with an order
+# still bound from two turns earlier — and answered a question nobody asked. What
+# must never come back is a wrong contracted route.
+# [EXPECT route=machine-schedule|machine-idle|gap-between|synthesis]
+Q[71]: whats holding CUT-01
+  route=synthesis  source=parse  conf=0.92  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 2 tool call(s)
+  lit-bars=7  records=6  refs=6/1/0
+  parse: intent=start-reason  conf=0.92  polarity=negative  order=UNRESOLVED<-utterance("CUT-01")  986ms
+  synthesis: claims=4  verified=0  interpretive=4  cut=0  tools=2(entity_vocabulary,placements_for_machine)  5755ms
+  expect: route=machine-schedule|machine-idle|gap-between|synthesis  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    CUT-01 is holding ORD-13, ORD-02, ORD-04, ORD-05, ORD-01, and ORD-03 in its queue.  [synthesis — read from: 33eeadd1, e050cf47, 45c2e075]
+    ORD-13 is scheduled first, running 07:00–07:20 on 2026-01-05.  [synthesis — read from: 33eeadd1]
+    ORD-02 follows immediately, 07:20–11:00 the same day.  [synthesis — read from: e050cf47]
+    ORD-04 runs 11:00–18:50 on 2026-01-05, then ORD-05 takes the machine 07:00–14:50 on 2026-01-06, followed by ORD-01 and ORD-03.  [synthesis — read from: 45c2e075, 2c82d3c0, 11f608c8]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 2 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [EXPECT intent=start-reason order=ORD-05 polarity=negative]
+Q[73]: why cant ORD-05 start before that
+  route=start-reason  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=start-reason  conf=0.92  followup=deepen  polarity=negative  order=ORD-05<-utterance("ORD-05")  1310ms
+  expect: intent=start-reason order=ORD-05 polarity=negative  -> MET
+  A:
+    ORD-05 starts Tuesday (2026-01-06 07:00) because CUT-01 was busy: it was held by ORD-04, high priority until 2026-01-05 18:50, so ORD-05 took the next opening.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=gap-between]
+Q[75]: is there a gap anywhere on CUT-01
+  route=gap-between  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=gap-between  conf=0.92  polarity=positive  machine=CUT-01<-utterance("CUT-01")  1013ms
+  expect: intent=gap-between  -> MET
+  A:
+    Tell me which two orders and I'll read the gap between them on their shared machine — e.g. "why is there a gap between ORD-04 and ORD-05?".
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# S4 — CHALLENGE A TAKE: the planner disbelieves a stated fact, twice, then asks
+# the assistant to confirm its own claim (which it must refuse to do)
+# =================================================================================
+# [EXPECT intent=late-order order=ORD-13]
+Q[83]: why is ORD-13 late
+  route=late-order  source=parse  conf=0.99  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.99  polarity=positive  order=ORD-13<-utterance("ORD-13")  1278ms
+  expect: intent=late-order order=ORD-13  -> MET
+  A:
+    ORD-13 is not late. The order finished with a lateness of -16839 min (-280.6h), meaning it completed on 2026-01-05 07:20 UTC, which is 11.7 days early relative to its due date of 2026-01-16T23:59:59Z [record: fe664e75...]. The due date was driving the schedule [record: a455ff09...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=contested-fact order=ORD-13]
+Q[85]: isnt ORD-13 fine though
+  interpreted as: is ORD-13 really on time?  (corrected to ORD-13)
+  route=contested-fact  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=contested-fact  conf=0.92  followup=correction  polarity=negative  order=ORD-13<-last-answer("ORD-13")  1101ms
+  expect: intent=contested-fact order=ORD-13  -> MET
+  A:
+    Yes — the record agrees: ORD-13 finishes on time (due 2026-01-16).
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=contested-fact|order-schedule order=ORD-13]
+Q[87]: i thought that one was well ahead
+  interpreted as: is ORD-13 really on time?  (corrected to ORD-13)
+  route=contested-fact  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=contested-fact  conf=0.92  followup=correction  polarity=negative  order=ORD-13<-last-answer("that one")  1043ms
+  expect: intent=contested-fact|order-schedule order=ORD-13  -> MET
+  A:
+    Yes — the record agrees: ORD-13 finishes on time (due 2026-01-16).
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT clarify=verification route=CLARIFY]
+Q[89]: are you sure about that
+  route=prove-it  source=parse  conf=0.92  register=synthesis  renderer=synthesis (grounding pass)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=prove-it  conf=0.92  followup=prove-it  order=ORD-13<-last-answer("ORD-13")  1080ms
+  expect: clarify=verification route=CLARIFY  -> MISSED
+  A:
+    I don't have a claim of my own open to ground. If it's my last answer you're asking about, the records behind it are cited on it — name the part you want walked and I'll open that one.
+    [rendered by: synthesis (grounding pass) | register: synthesis]
+  >> sidecar[expect-miss]: clarify: expected 'verification', got None; route: expected 'CLARIFY', got 'prove-it'
+------------------------------------------------------------------------
+# [EXPECT intent=order-schedule|start-reason|order-attributes order=ORD-13]
+Q[91]: show me its dates then
+  route=order-attributes  source=parse  conf=0.92  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=order-attributes  conf=0.92  followup=deepen  order=ORD-13<-utterance("ORD-13")  1351ms
+  expect: intent=order-schedule|start-reason|order-attributes order=ORD-13  -> MET
+  A:
+    ORD-13:
+      Product   : P-SHIM
+      Quantity  : 10 EA
+      Customer  : not specified — declare customers in the submission's customers file to see one here
+      Due       : 2026-01-16
+      Released  : 2026-01-05
+      Priority  : standard priority
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# S5 — A PLANNER WHO NEVER USES CANONICAL IDS: "order five", "the paint line"
+# =================================================================================
+# [EXPECT intent=late-order order=ORD-05]
+Q[98]: why is order 5 late
+  interpreted as: why is ORD-05 late  (assuming ORD-05)
+  route=late-order  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.95  polarity=positive  order=ORD-05<-utterance("order 5")  936ms
+  expect: intent=late-order order=ORD-05  -> MET
+  A:
+    ORD-05 is late because its due date was driving the schedule [record: 34098450...], and it was assigned to CUT-01, which was busy with other work [record: 2c82d3c0...]. Specifically, ORD-05 couldn't start until 2026-01-06 07:00 because CUT-01 was held by ORD-04 (high priority) until 2026-01-05 18:50, resulting in a lateness of 890 min (14.8h) past its due date of 2026-01-05T23:59:59Z.
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=swap-move order=ORD-04]
+Q[100]: could we swap order 4 and order 5
+  interpreted as: could we swap ORD-04 and ORD-05  (assuming ORD-04; assuming ORD-05)
+  route=swap-move  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=3  records=2  refs=2/1/0
+  parse: intent=swap-move  conf=0.95  order=ORD-04<-utterance("order 4")  order=ORD-05<-utterance("order 5")  1540ms
+  expect: intent=swap-move order=ORD-04  -> MET
+  A:
+      ORD-04: 0.2 day(s) early on CUT-01 (starts 2026-01-05 11:00).
+      ORD-05: 890 min late on CUT-01 (starts 2026-01-06 07:00).
+
+    My take: ORD-04 has ~0.2 day(s) of slack to spend; ORD-05 is the one hurting (890 min late) — giving it ORD-04's earlier slot is the move worth pricing.
+
+    Drag ORD-05's first operation onto ORD-04's slot on CUT-01 and the board will run a sandbox and price the swap exactly.
+    I can't drag bars or change the plan myself — you make the gesture and I'll read what the sandbox says.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=machine-schedule machine=PAINT-01]
+Q[102]: whats on the paint line
+  interpreted as: whats on PAINT-01  (assuming PAINT-01)
+  route=machine-schedule  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=5  records=4  refs=4/1/0
+  parse: intent=machine-schedule  conf=0.95  machine=PAINT-01<-utterance("the paint line")  1770ms
+  expect: intent=machine-schedule machine=PAINT-01  -> MET
+  A:
+    PAINT-01: 4 operation(s):
+
+      [PAINT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 10:20  ORD-09  -13779min early
+        seq= 20  2026-01-05 11:01 -> 2026-01-05 14:41  ORD-02  -14958min early
+        seq= 10  2026-01-05 14:41 -> 2026-01-05 18:01  ORD-12  -13318min early
+        seq= 20  2026-01-07 07:00 -> 2026-01-07 10:40  ORD-01  -12319min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=downtime machine=PAINT-01]
+Q[104]: how much downtime does the paint line get
+  interpreted as: how much downtime does PAINT-01 get  (assuming PAINT-01)
+  route=downtime  source=parse  conf=0.98  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=downtime  conf=0.98  machine=PAINT-01<-utterance("the paint line")  1407ms
+  expect: intent=downtime machine=PAINT-01  -> MET
+  A:
+    No downtime is declared for any resource.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=order-schedule order=ORD-13]
+Q[106]: when does order 13 finish
+  interpreted as: when does ORD-13 finish  (assuming ORD-13)
+  route=order-schedule  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=order-schedule  conf=0.95  order=ORD-13<-utterance("order 13")  1036ms
+  expect: intent=order-schedule order=ORD-13  -> MET
+  A:
+    ORD-13 completes 2026-01-05 07:20 — 11.7 day(s) early (due 2026-01-16).
+    It starts 2026-01-05 07:00.
+
+    Its schedule:
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=order-attributes order=ORD-09]
+Q[108]: whos order 9 for
+  interpreted as: whos ORD-09 for  (assuming ORD-09)
+  route=order-attributes  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=order-attributes  conf=0.95  order=ORD-09<-utterance("order 9")  1338ms
+  expect: intent=order-attributes order=ORD-09  -> MET
+  A:
+    ORD-09:
+      Product   : P-PANEL-RED
+      Quantity  : 60 EA
+      Customer  : not specified — declare customers in the submission's customers file to see one here
+      Due       : 2026-01-14
+      Released  : 2026-01-05
+      Priority  : standard priority
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# S6 — A SELECTION ACTIVE THROUGHOUT: the bar stays selected while the planner
+# asks about the order, the machine, the plant, and a capability. The subject
+# must parameterize where it is relevant and be IGNORED where it is not.
+# =================================================================================
+# [SELECT order=ORD-05 machine=CUT-01]
+# [EXPECT intent=late-order order=ORD-05]
+Q[118]: why is this late
+  selection: order=ORD-05, machine=CUT-01
+  interpreted as: why is ORD-05 late  (resolved against ORD-05 (from board selection))
+  route=late-order  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.95  polarity=positive  order=ORD-05<-selection("this")  1691ms
+  expect: intent=late-order order=ORD-05  -> MET
+  A:
+    ORD-05 is late by 890 min (14.8h) past its due date of 2026-01-05T23:59:59Z [record: 82257d9a...]. ORD-05 could not start until 2026-01-06 07:00 while CUT-01 was occupied by ORD-04, high priority, until 2026-01-05 18:50 [record: 2c82d3c0...]. The projected completion is 2026-01-06 14:50 UTC [record: 5bb0fd1c...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=order-schedule order=ORD-05]
+Q[120]: when does it finish
+  selection: order=ORD-05, machine=CUT-01
+  interpreted as: when does ORD-05 finish  (resolved against ORD-05 (from board selection))
+  route=order-schedule  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=order-schedule  conf=0.95  followup=deepen  order=ORD-05<-selection("it")  1302ms
+  expect: intent=order-schedule order=ORD-05  -> MET
+  A:
+    ORD-05 completes 2026-01-06 14:50 — 0.6 day(s) late (due 2026-01-05).
+    It starts 2026-01-06 07:00.
+
+    Its schedule:
+
+      [CUT-01]
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=why-on-machine order=ORD-05 machine=CUT-01]
+Q[122]: why is it on that machine
+  selection: order=ORD-05, machine=CUT-01
+  interpreted as: why is ORD-05 on CUT-01  (resolved against ORD-05 (from board selection); resolved against CUT-01 (from board selection))
+  route=why-on-machine  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=1  refs=1/1/1
+  parse: intent=why-on-machine  conf=0.95  followup=deepen  order=ORD-05<-selection("it")  machine=CUT-01<-selection("that machine")  1145ms
+  expect: intent=why-on-machine order=ORD-05 machine=CUT-01  -> MET
+  A:
+    ORD-05 is assigned to CUT-01 because the machine was busy with other work [record: 2c82d3c0...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=machine-count order=-]
+Q[124]: how many machines are in this plant
+  selection: order=ORD-05, machine=CUT-01
+  route=machine-count  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=machine-count  conf=0.95  1062ms
+  expect: intent=machine-count order=-  -> MET
+  A:
+    5 machine(s) carry work in this plan.
+
+      - CUT-01
+      - HEAT-01
+      - PAINT-01
+      - PRESS-FAST
+      - PRESS-SLOW
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=coaching order=-]
+Q[126]: how do i declare a customer priority
+  selection: order=ORD-05, machine=CUT-01
+  interpreted as: how do i declare a customers  (assuming customers)
+  route=coaching  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.92  concept=customers<-utterance("customer priority")  1455ms
+  expect: intent=coaching order=-  -> MET
+  A:
+    Yes — customer-weighted priority, so tardiness on a high-priority customer's orders is ranked ahead of the rest.
+
+    To enable it: declare each order's customer and priority in customers.csv (customer_id, name, priority_class → a priority multiplier). See the incoming-data spec §5.10.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=solve-time order=-]
+Q[128]: how long did this take to solve
+  selection: order=ORD-05, machine=CUT-01
+  route=solve-time  source=parse  conf=0.98  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=solve-time  conf=0.98  761ms
+  expect: intent=solve-time order=-  -> MET
+  A:
+    I don't have the solve's timing recorded for this schedule, so I can't give you a number.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=briefing order=-]
+Q[130]: what should i be worrying about today
+  selection: order=ORD-05, machine=CUT-01
+  route=briefing  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=briefing  conf=0.95  741ms
+  expect: intent=briefing order=-  -> MET
+  A:
+    1 order(s) need attention today, worst first:
+
+      • ORD-05 — 890 min late (held behind ORD-04 on CUT-01)
+
+    Data to watch: the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable.
+      Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# S7 — TRIAGE THE SUBMISSION: from "is my data ok" to "what do I fix first"
+# =================================================================================
+# [EXPECT intent=data-problems]
+Q[137]: are there problems with what i sent
+  route=data-problems  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=data-problems  conf=0.95  990ms
+  expect: intent=data-problems  -> MET
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=certificate-testimony|data-problems]
+Q[139]: whats actually wrong with it
+  route=certificate-testimony  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=certificate-testimony  conf=0.92  followup=deepen  1037ms
+  expect: intent=certificate-testimony|data-problems  -> MET
+  A:
+    1 data-quality problem(s):
+
+      1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=triage]
+Q[141]: what should i fix first
+  route=triage  source=parse  conf=0.95  register=judgment  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=triage  conf=0.95  followup=deepen  803ms
+  expect: intent=triage  -> MET
+  A:
+    Grade-Distance Triage
+
+    1 advisory finding — no action required. The plan proceeded on defaulted inputs, but this warrants awareness:
+
+    - [WARNING] Tardiness priority is unreliable for 13 order(s) because the customer priority weight is only weakly known. Fix: Declare each order's customer priority weight in the submission to prevent tardiness ranking from defaulting.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: judgment]
+------------------------------------------------------------------------
+# [EXPECT intent=remediation]
+Q[143]: how do i fix that one
+  route=remediation  source=parse  conf=0.92  register=remediation  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=remediation  conf=0.92  followup=deepen  1808ms
+  expect: intent=remediation  -> MET
+  A:
+    1 advisory finding(s), no action required — the plan advanced using default settings, though awareness is recommended:
+
+      - customer priority weight remains uncertain for 13 order(s), which compromises the reliability of tardiness priority [WARNING] — Fix: Specify the customer priority weight for each order at submission to prevent tardiness ranking from reverting to defaults.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: remediation]
+------------------------------------------------------------------------
+# [EXPECT intent=excluded-orders]
+Q[145]: did anything get dropped from the plan
+  route=excluded-orders  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=excluded-orders  conf=0.95  followup=deepen  890ms
+  expect: intent=excluded-orders  -> MET
+  A:
+    No data-quality problems — the submission is clean.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=drill-down]
+Q[147]: tell me more about that
+  route=drill-down  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=10  records=1  refs=0/0/10
+  parse: intent=drill-down  conf=0.92  followup=deepen  805ms
+  expect: intent=drill-down  -> MET
+  A:
+      the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]
+           Affected: ORD-01, ORD-02, ORD-03 … 13 in all
+           Fix: Declare each order's customer priority (its weight) in the submission so tardiness ranking isn't defaulted.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# S8 — THE FRUSTRATED PLANNER: an unsupported ask, a complaint, then a real
+# question. The complaint must never be echoed back, and the real question
+# must be answered as if the complaint had not happened.
+# =================================================================================
+# [EXPECT intent=unmatched]
+Q[156]: just give me a better schedule
+  route=synthesis  source=parse  conf=0.92  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 0 tool call(s)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=unmatched  conf=0.92  864ms
+  synthesis: claims=0  verified=0  interpretive=0  cut=0  tools=0  unanswerable  1789ms
+  expect: intent=unmatched  -> MET
+  A:
+    I couldn't answer that one from the evidence. I read what I could and none of it grounds an answer I'd stand behind, so I'd rather say so than guess.
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 0 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [EXPECT intent=unmatched]
+Q[158]: cant you just make it cheaper
+  route=synthesis  source=parse  conf=0.92  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 2 tool call(s)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=unmatched  conf=0.92  followup=deepen  898ms
+  synthesis: claims=5  verified=3  interpretive=2  cut=0  tools=2(cost_ledger,lateness_set)  7788ms
+  expect: intent=unmatched  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    The schedule's total cost is $6,956.83, split across production ($5,906), setup ($680), and tardiness ($370.83).  [record: cad82727...]
+    Only one order is late: ORD-05, which is 890 minutes (nearly 15 hours) overdue and accounts for all $370.83 in tardiness cost.  [record: 34a0fc14...]
+    The other 14 orders are on time or early, with some finishing days ahead of their due dates.  [record: 82257d9a...]
+    Cost reduction would require either moving ORD-05 earlier (which conflicts with the current machine and setup sequencing), reducing overtime ($900), or cutting setup operations ($680)—each trades off against service or feasibility. (based on the 15 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: cad82727, 34a0fc14, 82257d9a]
+    The planner should specify which cost lever matters most: on-time delivery, machine utilization, or setup frequency. (based on the 15 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: cad82727, 34a0fc14, 82257d9a]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 2 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+Q[159]: this is not helpful
+  route=synthesis  source=parse  conf=0.72  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 0 tool call(s)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=unmatched  conf=0.72  followup=deepen  2739ms
+  synthesis: claims=0  verified=0  interpretive=0  cut=0  tools=0  unanswerable  1643ms
+  A:
+    I couldn't answer that one from the evidence. I read what I could and none of it grounds an answer I'd stand behind, so I'd rather say so than guess.
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 0 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [EXPECT intent=late-orders]
+Q[161]: ok. which orders are late
+  route=late-orders  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=late-orders  conf=0.95  849ms
+  expect: intent=late-orders  -> MET
+  A:
+    Yes, there is 1 late order: ORD-05 with a lateness of 890 min (14.8h) [record: 82257d9a...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=late-order order=ORD-05]
+Q[163]: and why is ORD-05 one of them
+  interpreted as: why is ORD-05 late?  (listing the previous answer)
+  route=late-order  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.95  followup=list-expand  polarity=positive  order=ORD-05<-utterance("ORD-05")  1464ms
+  expect: intent=late-order order=ORD-05  -> MET
+  A:
+    ORD-05 finished 890 minutes (14.8h) past its due date (2026-01-05T23:59:59Z) [record: 82257d9a...]. It was assigned to CUT-01, which was held by ORD-04 (high priority) until 2026-01-05 18:50, preventing ORD-05 from starting until 2026-01-06 07:00 [record: 2c82d3c0...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=advice]
+Q[165]: what would you do about it
+  interpreted as: what would you do about ORD-05  (resolved against ORD-05)
+  route=advice  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.92  followup=deepen  order=ORD-05<-last-answer("it")  1399ms
+  expect: intent=advice  -> MET
+  A:
+    1 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    My take: ORD-05's 890-minute slip traces to ORD-04 holding CUT-01 until 2026-01-05 18:50 — pulling that earlier is the single biggest lever the board gives you today.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------

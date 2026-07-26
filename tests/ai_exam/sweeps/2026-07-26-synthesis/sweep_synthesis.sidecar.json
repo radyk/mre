@@ -1,0 +1,94 @@
+{
+  "target": "out-dir:gb_pinned",
+  "snapshot": "snap-exam",
+  "started_at": "2026-07-26T12:08:28Z",
+  "llm_mode": "live",
+  "questions": 30,
+  "llm_calls": 110,
+  "parser_stats": {
+    "calls": 253,
+    "parses": 253,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 3,
+    "unavailable": 0,
+    "median_latency_ms": 1046.8923000007635,
+    "malformed_samples": []
+  },
+  "synth_stats": {
+    "syntheses": 20,
+    "calls": 88,
+    "tool_calls": 67,
+    "malformed": 1,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 2,
+    "median_latency_ms": 8928.873099997872,
+    "p90_latency_ms": 16324.594099998649
+  },
+  "synthesis": {
+    "answers": 15,
+    "claims": 64,
+    "verified": 31,
+    "interpretive": 33,
+    "failed_and_cut": 0,
+    "ungrounded_load_bearing": 0,
+    "unanswerable": 0,
+    "budget_exhausted": 0,
+    "tool_calls": 60,
+    "tool_histogram": {
+      "calendars": 2,
+      "cost_ledger": 9,
+      "entity_vocabulary": 7,
+      "fetch_record": 2,
+      "lateness_set": 6,
+      "machine_occupancy": 18,
+      "placements_for_machine": 10,
+      "placements_for_order": 4,
+      "placements_in_window": 2
+    },
+    "calls_per_answer": {
+      "1": 2,
+      "2": 3,
+      "3": 1,
+      "4": 2,
+      "5": 3,
+      "6": 3,
+      "8": 1
+    }
+  },
+  "latency": {
+    "route": {
+      "n": 15,
+      "median_ms": 1207.5,
+      "p90_ms": 2258.8
+    },
+    "synthesis": {
+      "n": 15,
+      "median_ms": 11940.8,
+      "p90_ms": 19379.9
+    }
+  },
+  "graded_expectations": {
+    "graded": 30,
+    "met": 28
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "expect-miss": 2
+  },
+  "findings": [
+    {
+      "kind": "expect-miss",
+      "lineno": 80,
+      "question": "how much of CUT-01s week is actually working time",
+      "detail": "route: expected 'synthesis', got 'downtime'"
+    },
+    {
+      "kind": "expect-miss",
+      "lineno": 114,
+      "question": "how many orders will be late next month",
+      "detail": "route: expected 'synthesis', got 'late-orders'"
+    }
+  ]
+}

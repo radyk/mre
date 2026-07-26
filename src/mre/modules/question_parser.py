@@ -258,6 +258,25 @@ def _coerce_intent(value: Any) -> Optional[Intent]:
     return None if intent is Intent.UNKNOWN_ENTITY else intent
 
 
+def _names_a_followup(value: Any) -> bool:
+    """True when the emission put a FOLLOW-UP KIND in the intent field.
+
+    Session 4A.5b, from the sweep's malformed-emission samples: the model twice
+    named the GESTURE correctly and put it in the wrong field —
+    ``{"intent": "prove-it", "followup_of": "prove-it"}`` and
+    ``{"intent": "list-expand", "followup_of": "list-expand"}`` — and the whole
+    parse was discarded as malformed, retried, discarded again, and answered with
+    "I couldn't make out what that one was asking". Throwing away a correct reading
+    over a misfiled field is not strictness, it is waste: the intent becomes
+    ``unmatched`` (the honest destination, which now answers) and the follow-up
+    linkage — which the model got right — is kept."""
+    try:
+        FollowupKind(str(value))
+    except ValueError:
+        return False
+    return True
+
+
 def build_parsed(question: str, emission: dict, explainer: Any,
                  context: Optional[dict], *, prompt_version: str = "",
                  retries: int = 0, latency_ms: Optional[float] = None
@@ -267,7 +286,9 @@ def build_parsed(question: str, emission: dict, explainer: Any,
     """
     intent = _coerce_intent(emission.get("intent"))
     if intent is None:
-        return None
+        if not _names_a_followup(emission.get("intent")):
+            return None
+        intent = Intent.UNMATCHED
     subjects = bind_subjects(explainer, emission.get("subjects") or [], context)
 
     polarity = None
@@ -357,6 +378,12 @@ class ParserStats:
     clarifies: int = 0             # parses that emitted a clarify payload
     unavailable: int = 0           # parses attempted with no parser available
     latencies_ms: list[float] = field(default_factory=list)
+    #: The first few malformed emissions, verbatim and truncated (Session 4A.5b).
+    #: A `parse-failed` clarify says only THAT the parse could not commit; the
+    #: sweep needs to see WHAT the model emitted before anyone can fix it. The 4A.5b
+    #: sweep produced one such miss and could not diagnose it — instrument first,
+    #: change the coercion rule only on evidence.
+    malformed_samples: list[str] = field(default_factory=list)
 
     def median_latency_ms(self) -> Optional[float]:
         if not self.latencies_ms:
@@ -365,11 +392,17 @@ class ParserStats:
         mid = len(xs) // 2
         return xs[mid] if len(xs) % 2 else (xs[mid - 1] + xs[mid]) / 2
 
+    def note_malformed(self, text: str, limit: int = 8) -> None:
+        self.malformed += 1
+        if len(self.malformed_samples) < limit:
+            self.malformed_samples.append((text or "(empty)")[:400])
+
     def as_dict(self) -> dict:
         return {"calls": self.calls, "parses": self.parses, "retries": self.retries,
                 "malformed": self.malformed, "clarifies": self.clarifies,
                 "unavailable": self.unavailable,
-                "median_latency_ms": self.median_latency_ms()}
+                "median_latency_ms": self.median_latency_ms(),
+                "malformed_samples": list(self.malformed_samples)}
 
 
 class QuestionParser:
@@ -445,7 +478,7 @@ class QuestionParser:
                     prompt_version=self.prompt_version, retries=attempt)
                 if parsed is not None:
                     break
-            self.stats.malformed += 1
+            self.stats.note_malformed(text or "")
         latency_ms = (time.perf_counter() - started) * 1000.0
         self.stats.parses += 1
         self.stats.latencies_ms.append(latency_ms)

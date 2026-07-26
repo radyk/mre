@@ -1,0 +1,552 @@
+AI EXAM TRANSCRIPT
+target      : out-dir:gb_pinned
+snapshot    : snap-exam
+started     : 2026-07-26T12:08:28Z
+llm mode    : live
+questions   : 30
+llm calls   : 110
+door check  : live
+parse       : parses=253 calls=253 retries=0 malformed=0 clarifies=3 unavailable=0 median=1047ms
+synthesis   : answers=20 calls=88 tools=67 malformed=1 budget-out=0 unanswerable=2 median=8929ms p90=16325ms
+claims      : 64 total  verified=31 interpretive=33 failed-and-cut=0  ungrounded-load-bearing=0
+latency     : route n=15 median=1208ms p90=2259ms | synthesis n=15 median=11941ms p90=19380ms
+graded      : 28/30 expectations met
+sidecar     : expect-miss=2
+------------------------------------------------------------------------
+# AI EXAM BANK — synthesis (Session 4A.5b, CU5a)
+# generated: 2026-07-26
+# ruling  : R-AI5(2)/(3)/(4) — labeled open synthesis over read-only evidence,
+# hardened by claim-level verification, provenance visible per claim.
+# world   : glass_box (15 orders, 5 machines, ONE late order: ORD-05 by 890 min)
+# 
+# Every question here is UNCONTRACTED on purpose: no route in the taxonomy serves
+# it, so the parse must land on `unmatched` and the dispatch must reach the second
+# tier. `EXPECT route=synthesis` is therefore doing double duty — it grades the
+# routing AND it is the seal: a bank of questions that quietly found routes would
+# mean the parse is stretching, and a contracted question that landed here would
+# mean the tiers had leaked into each other.
+# 
+# The world matters for reading these. Only ONE order is late. "why so many late
+# orders" is a presupposition the evidence does not support, and the right answer
+# corrects it from the records rather than playing along — the flagship specimen.
+# 
+# PROVE-IT turns follow several answers. They are graded on the ROUTE alone: the
+# grounding pass re-runs on OUR OWN claim, and it precedes intent (what is being
+# questioned is our sentence, not a status of the plan). The parse may express the
+# gesture as the intent, as the follow-up linkage, or both — `prove-it` is a member
+# of each vocabulary, exactly as `confirm-take` is — and all three reach the same
+# destination, which is the thing worth grading.
+# =================================================================================
+# A — THE FLAGSHIP: the aggregate-cause question, the oldest debt in the AI ledger
+# =================================================================================
+# [EXPECT route=synthesis]
+Q[29]: why so many late orders
+  route=synthesis  source=parse  conf=0.85  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 3 tool call(s)
+  lit-bars=3  records=3  refs=1/1/1
+  parse: intent=unmatched  conf=0.85  polarity=positive  855ms
+  synthesis: claims=5  verified=4  interpretive=1  cut=0  tools=3(lateness_set,placements_for_order,cost_ledger)  8496ms
+  expect: route=synthesis  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    Only one order is late: ORD-05, by 890 minutes (nearly 15 hours).  [record: 82257d9a...]
+    ORD-05 is scheduled to finish on 2026-01-06 at 14:50, but its due date is 2026-01-05 at 23:59.  [record: 2c82d3c0...]
+    The schedule has 15 orders total, of which 14 are on time or early.  [record: 82257d9a...]
+    ORD-05's lateness incurs a tardiness cost of $370.83, the only tardiness charge in the plan.  [record: 34a0fc14...]
+    The premise of 'so many late orders' does not match the data: the schedule has one late order out of fifteen, and the rest finish early or on time.  [synthesis — read from: 82257d9a, 5bb0fd1c, 1968510e]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 3 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [EXPECT route=prove-it]
+Q[31]: how do you know that
+  route=prove-it  source=parse  conf=0.95  register=synthesis  renderer=synthesis (grounding pass)
+  lit-bars=4  records=8  refs=0/0/4
+  parse: intent=prove-it  conf=0.95  followup=prove-it  874ms
+  expect: route=prove-it  -> MET
+  A:
+    That part is my inference, not a record — here is each thing I read to get there:
+
+    The claim: "The premise of 'so many late orders' does not match the data: the schedule has one late order out of fifteen, and the rest finish early or on time."
+
+      - lateness_minutes = 890.0 min for ORD-05  [record: 82257d9a...]
+      - projected_completion_epoch = 1767711000.0 for ORD-05  [record: 5bb0fd1c...]
+      - lateness_minutes = -309.0 min for ORD-04  [record: 73076309...]
+      - projected_completion_epoch = 1767639000.0 for ORD-04  [record: 6a86484e...]
+      - lateness_minutes = -419.0 min for ORD-10  [record: 1d9a5111...]
+      - projected_completion_epoch = 1767978000.0 for ORD-10  [record: 2bb1048a...]
+      - lateness_minutes = -419.0 min for ORD-11  [record: 6433cd19...]
+      - projected_completion_epoch = 1768064400.0 for ORD-11  [record: 7e425063...]
+    [rendered by: synthesis (grounding pass) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT route=synthesis]
+Q[35]: whats actually driving the lateness in this plan
+  route=synthesis  source=parse  conf=0.92  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 5 tool call(s)
+  lit-bars=6  records=6  refs=4/1/1
+  parse: intent=unmatched  conf=0.92  polarity=positive  736ms
+  synthesis: claims=5  verified=3  interpretive=2  cut=0  tools=5(lateness_set,placements_for_order,placements_for_machine,calendars,cost_ledger)  16325ms
+  expect: route=synthesis  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    ORD-05 is the only late order, 890 minutes past its due date of 2026-01-05T23:59:59Z.  [record: 82257d9a...]
+    ORD-05 is scheduled on CUT-01 from 2026-01-06 07:00 to 14:50, which is the day after its due date.  [record: 2c82d3c0...]
+    CUT-01 is fully booked on 2026-01-05 from 07:00 to 18:50 with ORD-13, ORD-02, and ORD-04 scheduled back-to-back.  [record: 33eeadd1...]
+    ORD-05 cannot fit on CUT-01 before its due date because the machine is fully occupied on 2026-01-05 and does not work on 2026-01-06 until 07:00, which is already past the due date.  [synthesis — read from: 9588a512]
+    The lateness is driven by insufficient capacity on CUT-01 on the due date: three other orders consume the entire working day, forcing ORD-05 to the next day.  [synthesis — read from: 82257d9a, 5bb0fd1c, 1968510e]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 5 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [EXPECT route=prove-it]
+Q[37]: prove it
+  route=prove-it  source=parse  conf=0.95  register=synthesis  renderer=synthesis (grounding pass)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=prove-it  conf=0.95  followup=prove-it  1321ms
+  expect: route=prove-it  -> MET
+  A:
+    That part is my reading of the plan, and no single record states it. I have nothing further to show behind it.
+
+    The claim: "ORD-05 cannot fit on CUT-01 before its due date because the machine is fully occupied on 2026-01-05 and does not work on 2026-01-06 until 07:00, which is already past the due date."
+    [rendered by: synthesis (grounding pass) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# B — THE 4A.5a RESIDUE: the parse miss that had no honest destination
+# =================================================================================
+# [EXPECT route=machine-schedule|machine-idle|gap-between|synthesis]
+Q[44]: whats holding CUT-01
+  route=synthesis  source=parse  conf=0.92  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 2 tool call(s)
+  lit-bars=5  records=4  refs=4/1/0
+  parse: intent=start-reason  conf=0.92  polarity=negative  order=UNRESOLVED<-utterance("CUT-01")  1297ms
+  synthesis: claims=3  verified=1  interpretive=2  cut=0  tools=2(entity_vocabulary,placements_for_machine)  6955ms
+  expect: route=machine-schedule|machine-idle|gap-between|synthesis  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    CUT-01 is currently running ORD-13, which occupies the machine from 07:00 to 07:20 on 2026-01-05.  [record: 33eeadd1...]
+    After ORD-13 completes, CUT-01 is scheduled to run ORD-02 (07:20–11:00), then ORD-04 (11:00–18:50), then ORD-05 (starting 2026-01-06 at 07:00), then ORD-01, then ORD-03.  [synthesis — read from: e050cf47, ec6b9f91, 1a222796]
+    CUT-01 is held up by the queue of orders ahead of it: ORD-02, ORD-04, ORD-05, ORD-01, and ORD-03 are all scheduled before any new work can start. (based on the 6 row(s) placements_for_machine returned, not the whole plan)  [synthesis — read from: 33eeadd1, 1f59860a, 42e73fdf]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 2 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [EXPECT route=prove-it]
+Q[46]: where does that come from
+  route=prove-it  source=parse  conf=0.95  register=synthesis  renderer=synthesis (grounding pass)
+  lit-bars=5  records=4  refs=4/1/0
+  parse: intent=prove-it  conf=0.95  followup=prove-it  1152ms
+  expect: route=prove-it  -> MET
+  A:
+    That part is my inference, not a record — here is each thing I read to get there:
+
+    The claim: "CUT-01 is held up by the queue of orders ahead of it: ORD-02, ORD-04, ORD-05, ORD-01, and ORD-03 are all scheduled before any new work can start."
+
+      - the assignment decision — the machine was busy with other work  [record: 33eeadd1...]
+      - the assignment decision — the machine was busy with other work  [record: e050cf47...]
+      - the assignment decision — the machine was busy with other work  [record: 45c2e075...]
+      - the assignment decision — the machine was busy with other work  [record: 2c82d3c0...]
+    [rendered by: synthesis (grounding pass) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# C — AGGREGATES AND SHAPE READS: questions about the plan as a whole
+# =================================================================================
+# [EXPECT route=synthesis]
+Q[53]: which machine is the bottleneck
+  route=synthesis  source=parse  conf=0.92  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 6 tool call(s)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=unmatched  conf=0.92  1113ms
+  synthesis: claims=4  verified=3  interpretive=1  cut=0  tools=6(entity_vocabulary,machine_occupancy,machine_occupancy,machine_occupancy,machine_occupancy,machine_occupancy)  11984ms
+  expect: route=synthesis  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    CUT-01 is scheduled for 2,120 busy minutes across the plan window, from 2026-01-05 07:00 to 2026-01-07 19:00.  [record: 440fbc69...]
+    HEAT-01 is scheduled for 1,420 busy minutes, spanning 2026-01-05 07:00 to 2026-01-10 17:00 with large gaps between jobs.  [record: 3793479c...]
+    PAINT-01 is scheduled for 840 busy minutes, PRESS-FAST for 530 busy minutes, and PRESS-SLOW for 515 busy minutes.  [record: 7c78eed8...]
+    CUT-01 is the bottleneck: it carries the highest utilization load by a significant margin, with nearly 50% more scheduled work than the next-busiest machine (HEAT-01), and it runs continuously with minimal gaps between orders.  [synthesis — read from: 33eeadd1, 1f59860a, 42e73fdf]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 6 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT route=synthesis]
+Q[56]: is the work spread evenly across the machines
+  route=synthesis  source=parse  conf=0.92  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 6 tool call(s)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=unmatched  conf=0.92  889ms
+  synthesis: claims=4  verified=0  interpretive=4  cut=0  tools=6(entity_vocabulary,machine_occupancy,machine_occupancy,machine_occupancy,machine_occupancy,machine_occupancy)  9851ms
+  expect: route=synthesis  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    CUT-01 is scheduled for 2,120 busy minutes across 6 operations, while HEAT-01 has 1,420 busy minutes across 4 operations, PAINT-01 has 840 busy minutes across 4 operations, PRESS-FAST has 530 busy minutes across 2 operations, and PRESS-SLOW has 515 busy minutes across 1 operation. (based on the 6 row(s) machine_occupancy returned, not the whole plan)  [synthesis — read from: 440fbc69, 3793479c, 7c78eed8]
+    CUT-01 carries 4.1 times the load of PRESS-SLOW and 2.5 times the load of HEAT-01, the second-busiest machine.  [synthesis — read from: 33eeadd1, 1f59860a, 42e73fdf]
+    HEAT-01 has a 5,540-minute gap between its second and third operations (from 2026-01-05 10:40 to 2026-01-09 07:00), while PAINT-01 has a 2,219-minute gap between its third and fourth operations.  [synthesis — read from: 3793479c, 7c78eed8]
+    The work is not spread evenly: CUT-01 is heavily loaded while PRESS-FAST and PRESS-SLOW are lightly loaded, and several machines have extended idle periods.  [synthesis — read from: 33eeadd1, 1f59860a, 42e73fdf]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 6 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT route=synthesis]
+Q[59]: is this plan front loaded or spread out
+  route=synthesis  source=parse  conf=0.92  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 4 tool call(s)
+  lit-bars=5  records=7  refs=1/1/3
+  parse: intent=unmatched  conf=0.92  1060ms
+  synthesis: claims=4  verified=2  interpretive=2  cut=0  tools=4(cost_ledger,lateness_set,placements_for_order,placements_in_window)  18276ms
+  expect: route=synthesis  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    The plan is front-loaded: 14 of 15 orders complete their work by January 9, with operations concentrated in the first five calendar days starting January 5. (based on the 16 row(s) placements_in_window returned, not the whole plan)  [synthesis — read from: 82257d9a, 5bb0fd1c, 1968510e]
+    Only ORD-05 runs late, scheduled for January 6 and due January 5, arriving 890 minutes (nearly 15 hours) after its deadline.  [record: 82257d9a...]
+    The remaining 14 orders finish early, with completion times ranging from 309 minutes to over 16,000 minutes (more than 11 days) ahead of their due dates.  [record: 73076309...]
+    The schedule prioritizes early completion over even distribution: most work is packed into the opening week, leaving later dates sparse, which creates the single late order and incurs $370.83 in tardiness cost.  [synthesis — read from: cad82727, 34a0fc14]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 4 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT route=synthesis]
+Q[62]: whats the busiest day in this schedule
+  route=synthesis  source=parse  conf=0.92  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 2 tool call(s)
+  lit-bars=10  records=5  refs=5/5/0
+  parse: intent=unmatched  conf=0.92  795ms
+  synthesis: claims=2  verified=0  interpretive=2  cut=0  tools=2(entity_vocabulary,placements_in_window)  7974ms
+  expect: route=synthesis  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    January 5, 2026 is the busiest day in the schedule, with operations running across all five machines: CUT-01, HEAT-01, PAINT-01, PRESS-FAST, and PRESS-SLOW. (based on the 17 row(s) placements_in_window returned, not the whole plan)  [synthesis — read from: 33eeadd1, 5cacc8eb, dd0a6afd]
+    That day has 9 operations scheduled across the plant, more than any other single day in the visible schedule. (based on the 17 row(s) placements_in_window returned, not the whole plan)  [synthesis — read from: 33eeadd1, 1f59860a, 42e73fdf]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 2 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT route=synthesis]
+Q[65]: is there anything unusual about this schedule
+  route=synthesis  source=parse  conf=0.92  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 5 tool call(s)
+  lit-bars=4  records=4  refs=2/1/1
+  parse: intent=unmatched  conf=0.92  913ms
+  synthesis: claims=5  verified=4  interpretive=1  cut=0  tools=5(cost_ledger,lateness_set,placements_for_order,placements_for_machine,machine_occupancy)  11484ms
+  expect: route=synthesis  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    ORD-05 is 890 minutes late, the only late order in the schedule of 15 orders.  [record: 82257d9a...]
+    ORD-05 is scheduled on CUT-01 from 2026-01-06 07:00 to 14:50, with a due date of 2026-01-05 23:59:59.  [record: 2c82d3c0...]
+    CUT-01 has a 730-minute gap between ORD-04's end on 2026-01-05 18:50 and ORD-05's start on 2026-01-06 07:00, while ORD-05 was already due the previous day.  [record: 45c2e075...]
+    The schedule incurs $370.83 in tardiness cost, all from ORD-05's lateness.  [record: cad82727...]
+    ORD-05 was delayed because it was scheduled after a gap on CUT-01 that could have been used to meet its earlier due date, suggesting a sequencing issue rather than a capacity constraint.  [synthesis — read from: cad82727, 34a0fc14, 82257d9a]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 5 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# D — CROSS-ENTITY READS: two things held against each other
+# =================================================================================
+# [EXPECT route=synthesis]
+Q[72]: compare CUT-01 and PRESS-SLOW for me
+  route=synthesis  source=parse  conf=0.92  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 5 tool call(s)
+  lit-bars=10  records=7  refs=7/3/0
+  parse: intent=unmatched  conf=0.92  machine=CUT-01<-utterance("CUT-01")  machine=PRESS-SLOW<-utterance("PRESS-SLOW")  1263ms
+  synthesis: claims=4  verified=0  interpretive=4  cut=0  tools=5(entity_vocabulary,placements_for_machine,placements_for_machine,machine_occupancy,machine_occupancy)  10641ms
+  expect: route=synthesis  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    CUT-01 has 6 scheduled operations totaling 2,120 minutes of work across three days (January 5–7), running ORD-13, ORD-02, ORD-04, ORD-05, ORD-01, and ORD-03.  [synthesis — read from: 33eeadd1, e050cf47, 45c2e075]
+    PRESS-SLOW has 1 scheduled operation: ORD-08, running 515 minutes on January 5 only.  [synthesis — read from: 1b30506a]
+    CUT-01 is heavily loaded with back-to-back work and two overnight gaps, while PRESS-SLOW is lightly loaded with a single long job and then idle.  [synthesis — read from: 440fbc69, edd97059]
+    CUT-01 is a bottleneck in the current schedule; PRESS-SLOW has substantial spare capacity.  [synthesis — read from: 33eeadd1, 1f59860a, 42e73fdf]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 5 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [EXPECT route=prove-it]
+Q[74]: how do you know
+  route=prove-it  source=parse  conf=0.95  register=synthesis  renderer=synthesis (grounding pass)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=prove-it  conf=0.95  followup=prove-it  1662ms
+  expect: route=prove-it  -> MET
+  A:
+    That part is my reading of the plan, and no single record states it. I have nothing further to show behind it.
+
+    The claim: "CUT-01 is heavily loaded with back-to-back work and two overnight gaps, while PRESS-SLOW is lightly loaded with a single long job and then idle."
+    [rendered by: synthesis (grounding pass) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT route=synthesis]
+Q[77]: which orders are competing for the same machine
+  route=synthesis  source=parse  conf=0.72  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 6 tool call(s)
+  lit-bars=18  records=13  refs=13/5/0
+  parse: intent=unmatched  conf=0.72  1347ms
+  synthesis: claims=6  verified=0  interpretive=6  cut=0  tools=6(entity_vocabulary,placements_for_machine,placements_for_machine,placements_for_machine,placements_for_machine,placements_for_machine)  14663ms
+  expect: route=synthesis  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    ORD-13, ORD-02, and ORD-04 compete for CUT-01 on 2026-01-05, with ORD-13 running 07:00–07:20, ORD-02 running 07:20–11:00, and ORD-04 running 11:00–18:50.  [synthesis — read from: 33eeadd1, e050cf47, 45c2e075]
+    ORD-05 and ORD-01 compete for CUT-01 on 2026-01-06, with ORD-05 running 07:00–14:50 and ORD-01 running 14:50–18:30.  [synthesis — read from: 2c82d3c0, 11f608c8]
+    ORD-14 and ORD-15 compete for HEAT-01 on 2026-01-05, with ORD-14 running 07:00–08:50 and ORD-15 running 08:50–10:40.  [synthesis — read from: 5cacc8eb, 552b1c6e]
+    ORD-09, ORD-02, and ORD-12 compete for PAINT-01 on 2026-01-05, with ORD-09 running 07:00–10:20, ORD-02 running 11:01–14:41, and ORD-12 running 14:41–18:01.  [synthesis — read from: dd0a6afd, 8dc3adda, caa8e82a]
+    ORD-06 and ORD-07 compete for PRESS-FAST on 2026-01-05, with ORD-06 running 07:00–11:25 and ORD-07 running 11:25–15:50.  [synthesis — read from: 9f6194ad, ae55f568]
+    No orders compete for PRESS-SLOW; only ORD-08 is scheduled on it.  [synthesis — read from: 1b30506a]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 6 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT route=synthesis]
+Q[80]: how much of CUT-01s week is actually working time
+  route=downtime  source=parse  conf=0.92  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=downtime  conf=0.92  machine=CUT-01<-utterance("CUT-01")  1043ms
+  expect: route=synthesis  -> MISSED
+  A:
+    No downtime is declared for any resource.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+  >> sidecar[expect-miss]: route: expected 'synthesis', got 'downtime'
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# E — THE MONEY: cost questions no contracted route serves
+# =================================================================================
+# [EXPECT route=synthesis]
+Q[87]: where is most of the money going in this plan
+  route=synthesis  source=parse  conf=0.92  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 1 tool call(s)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=unmatched  conf=0.92  6260ms
+  synthesis: claims=5  verified=4  interpretive=1  cut=0  tools=1(cost_ledger)  4827ms
+  expect: route=synthesis  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    Production cost is the largest component at $5,906, representing 85% of the total $6,957 plan cost.  [record: cad82727...]
+    Within production, regular-time work ($5,006) dominates; overtime adds $900.  [record: cad82727...]
+    Setup cost is the second-largest category at $680 (10% of total).  [record: cad82727...]
+    Tardiness penalties total $371, driven entirely by ORD-05's late completion on 2026-01-06.  [record: cad82727...]
+    The plan's money is going primarily to machine runtime, with a secondary cost driver in setup operations and a smaller but avoidable cost in one order's tardiness.  [synthesis — read from: cad82727, 34a0fc14]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 1 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [EXPECT route=prove-it]
+Q[89]: which record says that
+  route=prove-it  source=parse  conf=0.95  register=synthesis  renderer=synthesis (grounding pass)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=prove-it  conf=0.95  followup=prove-it  803ms
+  expect: route=prove-it  -> MET
+  A:
+    That part is my reading of the plan, and no single record states it. I have nothing further to show behind it.
+
+    The claim: "The plan's money is going primarily to machine runtime, with a secondary cost driver in setup operations and a smaller but avoidable cost in one order's tardiness."
+    [rendered by: synthesis (grounding pass) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT route=synthesis]
+Q[92]: how does the setup cost compare to the tardiness cost
+  route=synthesis  source=parse  conf=0.85  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 1 tool call(s)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=unmatched  conf=0.85  883ms
+  synthesis: claims=3  verified=2  interpretive=1  cut=0  tools=1(cost_ledger)  3283ms
+  expect: route=synthesis  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    Setup cost is $680.00 in this schedule.  [record: cad82727...]
+    Tardiness cost is $370.83, all of it from order ORD-05.  [record: cad82727...]
+    Setup cost is 1.83 times the tardiness cost — the schedule is spending nearly twice as much on machine changeovers as it is paying in lateness penalties.  [synthesis — read from: cad82727, 34a0fc14]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 1 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT route=synthesis]
+Q[95]: is the overtime worth what it bought us
+  route=synthesis  source=parse  conf=0.72  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 2 tool call(s)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=unmatched  conf=0.72  concept=overtime<-utterance("overtime")  991ms
+  synthesis: claims=5  verified=3  interpretive=2  cut=0  tools=2(cost_ledger,lateness_set)  7918ms
+  expect: route=synthesis  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    Overtime cost the schedule $900.00 against a production base of $5,006.00 in regular time.  [record: cad82727...]
+    Only one order, ORD-05, is late—by 890 minutes—and incurs $370.83 in tardiness cost.  [record: 34a0fc14...]
+    The other 14 orders are on time or early, with no tardiness charges.  [record: 82257d9a...]
+    The overtime spending of $900 did not prevent ORD-05's lateness; the $370.83 tardiness cost still occurred, so the overtime did not buy on-time delivery for the one order that needed it.  [synthesis — read from: cad82727, 34a0fc14, 82257d9a]
+    The overtime appears to have secured early or on-time completion for the 14 other orders, but at a net cost of $529.17 beyond what tardiness alone would have charged ($900 overtime minus $370.83 tardiness averted on those orders).  [synthesis — read from: cad82727, 34a0fc14, 82257d9a]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 2 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# F — HONESTY UNDER PRESSURE: questions the evidence cannot answer, and one whose
+# premise is false. A confident answer to any of these is a defect.
+# =================================================================================
+# [EXPECT route=synthesis]
+Q[103]: which customer is hurt most by the lateness
+  route=synthesis  source=parse  conf=0.85  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 4 tool call(s)
+  lit-bars=1  records=2  refs=0/0/1
+  parse: intent=unmatched  conf=0.85  900ms
+  synthesis: claims=3  verified=2  interpretive=1  cut=0  tools=4(lateness_set,fetch_record,fetch_record,cost_ledger)  13017ms
+  expect: route=synthesis  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    ORD-05 is the only late order in the schedule, 890 minutes behind its due date of 2026-01-05T23:59:59Z.  [record: 82257d9a...]
+    ORD-05 incurs the entire tardiness cost of 370.83, projected to complete 2026-01-06T14:50:00Z.  [record: 34a0fc14...]
+    The customer for ORD-05 is hurt most by lateness because it is the sole order exceeding its commitment and bearing all tardiness penalties in this schedule. (based on the 15 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: 82257d9a, 5bb0fd1c, 1968510e]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 4 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# `advice` is a legitimate read here: its AUTHORED meaning explicitly covers "a
+# hypothesis about changing the plant". Either destination is honest.
+# [EXPECT route=synthesis|advice]
+Q[108]: what would happen to this plan if CUT-01 went down tomorrow
+  route=advice  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.92  machine=CUT-01<-utterance("CUT-01")  1257ms
+  expect: route=synthesis|advice  -> MET
+  A:
+    1 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    My take: ORD-05's 890-minute slip traces to ORD-04 holding CUT-01 until 2026-01-05 18:50 — pulling that earlier is the single biggest lever the board gives you today.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT route=synthesis]
+Q[111]: why are all five machines overloaded
+  route=synthesis  source=parse  conf=0.92  register=synthesis  renderer=synthesis (claude-haiku-4-5-20251001) — 8 tool call(s)
+  lit-bars=22  records=17  refs=17/5/0
+  parse: intent=unmatched  conf=0.92  polarity=positive  757ms
+  synthesis: claims=6  verified=3  interpretive=3  cut=0  tools=8(entity_vocabulary,machine_occupancy,machine_occupancy,machine_occupancy,machine_occupancy,machine_occupancy,calendars,cost_ledger)  20089ms
+  expect: route=synthesis  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    CUT-01 is loaded with 2120 busy minutes across six operations from 5 January through 7 January, with minimal gaps between them.  [record: 33eeadd1...]
+    HEAT-01 is loaded with 1420 busy minutes across four operations spanning 5 January to 10 January, including a 5540-minute gap mid-schedule.  [record: 5cacc8eb...]
+    PAINT-01 is loaded with 840 busy minutes across four operations from 5 January to 7 January, with a 2219-minute gap between the third and fourth operations.  [record: dd0a6afd...]
+    PRESS-FAST and PRESS-SLOW are loaded with 530 and 515 busy minutes respectively, both completing by 15 January 5 with no further scheduled work. (based on the 6 row(s) machine_occupancy returned, not the whole plan)  [synthesis — read from: 9f6194ad, ae55f568, 1b30506a]
+    Not all five machines are uniformly overloaded: CUT-01 runs back-to-back with minimal idle time; HEAT-01 and PAINT-01 have substantial gaps; PRESS-FAST and PRESS-SLOW finish early and remain idle. (based on the 6 row(s) machine_occupancy returned, not the whole plan)  [synthesis — read from: 33eeadd1, 1f59860a, 42e73fdf]
+    The schedule shows uneven load distribution—CUT-01 is the bottleneck with continuous work, while the press machines finish in a single day and the heat and paint lines have significant idle periods, suggesting the constraint is not that all machines are overloaded but that CUT-01 is overloaded relative to the others. (based on the 6 row(s) machine_occupancy returned, not the whole plan)  [synthesis — read from: 33eeadd1, 1f59860a, 42e73fdf]
+    [rendered by: synthesis (claude-haiku-4-5-20251001) — 8 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT route=synthesis]
+Q[114]: how many orders will be late next month
+  route=late-orders  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=late-orders  conf=0.95  897ms
+  expect: route=synthesis  -> MISSED
+  A:
+    Yes, there is 1 late order(s): ORD-05 with a lateness of 890 min (14.8h) [record: 82257d9a...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+  >> sidecar[expect-miss]: route: expected 'synthesis', got 'late-orders'
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# G — RIDER (b): the capability the registry could not name until this session
+# =================================================================================
+# (no concept expected on the opener — the same question in sweep_scenarios grades
+# `intent=coaching` alone; the concept binds on the follow-up.)
+# [EXPECT intent=coaching]
+Q[123]: can jobs run across a night shutdown
+  interpreted as: how do I enable that?  (assuming splittable)
+  route=coaching  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.92  concept=splittable<-utterance("spanning downtime")  1113ms
+  expect: intent=coaching  -> MET
+  A:
+    Yes — an operation to pause at a shift end or closure and resume the next working period, so a long job can span downtime instead of waiting for a gap big enough to hold it whole.
+
+    To enable it: set splittable=true and a min_chunk_minutes on that operation's routing line in routing_lines.csv (the run phase becomes resumable; chunk boundaries fall on calendar boundaries, and nothing is billed to the pause). See the incoming-data spec §5.3.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=coaching concept=min_chunk]
+Q[125]: is there a minimum piece size
+  interpreted as: is there a minimum min_chunk  (coaching on min_chunk)
+  route=coaching  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.92  followup=menu-select  concept=min_chunk<-utterance("piece size")  909ms
+  expect: intent=coaching concept=min_chunk  -> MET
+  A:
+    Yes — a floor on how small a piece of a splittable operation may be, so a job that pauses at a shift end resumes in usable stretches instead of being shattered into slivers around every closure.
+
+    To enable it: set min_chunk_minutes alongside splittable=true on that operation's routing line in routing_lines.csv (no run piece may be shorter than it; the solver will leave the operation whole rather than break it below that floor). See the incoming-data spec §5.3.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=coaching concept=min_chunk]
+Q[127]: whats the smallest piece it will make
+  interpreted as: how do I enable that?  (coaching on min_chunk)
+  route=coaching  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.92  followup=menu-select  concept=min_chunk<-utterance("piece size")  1061ms
+  expect: intent=coaching concept=min_chunk  -> MET
+  A:
+    Yes — a floor on how small a piece of a splittable operation may be, so a job that pauses at a shift end resumes in usable stretches instead of being shattered into slivers around every closure.
+
+    To enable it: set min_chunk_minutes alongside splittable=true on that operation's routing line in routing_lines.csv (no run piece may be shorter than it; the solver will leave the operation whole rather than break it below that floor). See the incoming-data spec §5.3.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# H — THE SEAL, FROM THE OTHER SIDE: contracted questions in a synthesis bank.
+# These must NOT be answered by the second tier. If one of them ever comes
+# back route=synthesis, a proven answer has been replaced by a reasoned one.
+# =================================================================================
+# [EXPECT route=late-order]
+Q[136]: why is ORD-05 late
+  route=late-order  source=parse  conf=0.99  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.99  polarity=positive  order=ORD-05<-utterance("ORD-05")  930ms
+  expect: route=late-order  -> MET
+  A:
+    ORD-05 is late by 890 min (14.8h) against its due date of 2026-01-05T23:59:59Z [record: 82257d9a...]. The order was assigned to CUT-01 [record: 2c82d3c0...], which held ORD-04 (high priority) until 2026-01-05 18:50, preventing ORD-05 from starting until 2026-01-06 07:00 [record: 2c82d3c0...]. The projected completion is 2026-01-06 14:50 UTC [record: 5bb0fd1c...].
+
+    My take: pull ORD-04's start earlier on CUT-01, or accept the 890 minutes late — nothing else frees this slot.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT route=late-orders]
+Q[138]: which orders are late
+  interpreted as: which orders are late?  (listing the previous answer)
+  route=late-orders  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=late-orders  conf=0.95  followup=list-expand  824ms
+  expect: route=late-orders  -> MET
+  A:
+    ORD-05 is late with a lateness of 890 min (14.8h) [record: 82257d9a...]. There is 1 late order(s) in the current schedule [record: 82257d9a...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT route=machine-schedule]
+Q[140]: whats running on CUT-01
+  route=machine-schedule  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=7  records=6  refs=6/1/0
+  parse: intent=machine-schedule  conf=0.99  machine=CUT-01<-utterance("CUT-01")  1171ms
+  expect: route=machine-schedule  -> MET
+  A:
+    CUT-01: 6 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 07:20  ORD-13  -16839min early
+        seq= 10  2026-01-05 07:20 -> 2026-01-05 11:00  ORD-02  -14958min early
+        seq= 10  2026-01-05 11:00 -> 2026-01-05 18:50  ORD-04  -309min early
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:50  ORD-05  +890min LATE
+        seq= 10  2026-01-06 14:50 -> 2026-01-06 18:30  ORD-01  -12319min early
+        seq= 10  2026-01-07 07:00 -> 2026-01-07 19:00  ORD-03  -12358min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT route=order-schedule]
+Q[142]: when does ORD-03 finish
+  route=order-schedule  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=order-schedule  conf=0.99  order=ORD-03<-utterance("ORD-03")  941ms
+  expect: route=order-schedule  -> MET
+  A:
+    ORD-03 completes 2026-01-07 19:00 — 9.2 day(s) early (due 2026-01-16).
+    It starts 2026-01-07 07:00.
+
+    Its schedule:
+
+      [CUT-01]
+        seq= 10  2026-01-07 07:00 -> 2026-01-07 19:00  ORD-03  -12358min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------

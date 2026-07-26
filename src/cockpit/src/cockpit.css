@@ -317,9 +317,19 @@ html, body {
 .ask .msg.answer { border: 1px solid var(--grid); border-left-width: 3px; }
 .ask .msg.answer.testimony { border-left-color: var(--reg-testimony); background: var(--reg-testimony-fill); }
 .ask .msg.answer.judgment  { border-left-color: var(--reg-judgment);  background: var(--reg-judgment-fill); }
+/* Session 4A.5b — the synthesis register (R-AI5(4)): visibly not testimony. */
+.ask .msg.answer.synthesis { border-left-color: var(--reg-synthesis); background: var(--reg-synthesis-fill); }
 .ask .msg .who { font: var(--fw-bold) var(--fs-xs)/1 var(--font-mono); text-transform: uppercase; letter-spacing: var(--ls-caps-wide); margin-bottom: var(--sp-2); }
 .ask .msg.answer.testimony .who { color: var(--reg-testimony); }
 .ask .msg.answer.judgment  .who { color: var(--reg-judgment); }
+.ask .msg.answer.synthesis .who { color: var(--reg-synthesis); }
+/* The per-claim marker on an interpretive line. Shipped as a token-driven rule so
+ * the treatment is tunable; the panel renders the answer body as one <pre> today,
+ * so this lands when the claim blocks become their own elements. */
+.ask .msg.answer.synthesis .claim-mark {
+  color: var(--synthesis-mark-ink); background: var(--synthesis-mark-bg);
+  border-radius: var(--radius-xs); padding: 0 4px;
+}
 .ask .msg .reg-chip {
   float: right; font-size: var(--fs-2xs); font-weight: var(--fw-semibold);
   padding: 1px 5px; border-radius: var(--radius-xs);

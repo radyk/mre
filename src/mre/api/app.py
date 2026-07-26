@@ -1323,7 +1323,8 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
                      schedule_id: Optional[str] = None,
                      session_id: Optional[str] = None,
                      document: Optional[dict] = None,
-                     parser: Optional[Any] = None) -> tuple[str, dict]:
+                     parser: Optional[Any] = None,
+                     synthesizer: Optional[Any] = None) -> tuple[str, dict]:
     """Route a question through the M10 explainer for a persisted run.
 
     Session 4A.5a (R-AI5 part 1): the ask path is LLM-FIRST. Every question is
@@ -1384,10 +1385,14 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
     else:
         if parser is None and os.environ.get("ANTHROPIC_API_KEY"):
             parser = QuestionParser()
+        if synthesizer is None and os.environ.get("ANTHROPIC_API_KEY"):
+            from mre.modules.synthesizer import Synthesizer
+            synthesizer = Synthesizer()
         try:
             result = run_ask(explainer, question, context=context,
                              parser=parser, ledger=ledger,
-                             schedule_id=schedule_id, session_id=session_id)
+                             schedule_id=schedule_id, session_id=session_id,
+                             synthesizer=synthesizer)
         except Exception as exc:  # noqa: BLE001 — the ask surface must never 5xx
             _log.warning(
                 "EVENT ask.llm_degraded: ask surface raised %s: %s — "
@@ -1402,7 +1407,8 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
                     "route": result.route, "source": result.source,
                     "confidence": result.confidence,
                     "resolution_note": result.resolution_note,
-                    "parse": _parse_meta(result.parsed)}
+                    "parse": _parse_meta(result.parsed),
+                    "synthesis": _synthesis_meta(result.synthesis)}
 
     # --- render (the LLM renderer is the real hazard; it is internally sealed
     #     and this boundary is the outer belt: ANY failure — construction,
@@ -1441,6 +1447,26 @@ def _parse_meta(parsed: Any) -> Optional[dict]:
         "retries": parsed.retries,
         "latency_ms": parsed.latency_ms,
         "prompt_version": parsed.prompt_version,
+    }
+
+
+def _synthesis_meta(answer: Any) -> Optional[dict]:
+    """The second tier's per-claim provenance, surfaced on the ask response
+    (Session 4A.5b). Read-only metadata: the sweep's sidecar reports the claim
+    counts and the tool-call histogram from it; no answer path consumes it."""
+    if answer is None:
+        return None
+    return {
+        **answer.counts(),
+        "budget_exhausted": answer.budget_exhausted,
+        "timed_out": answer.timed_out,
+        "unanswerable": answer.unanswerable,
+        "tools": [t.tool for t in answer.tool_calls],
+        "claims_detail": [{"status": c.status.value, "kind": c.kind.value,
+                           "records": len(c.cited_record_ids)}
+                          for c in answer.claims],
+        "latency_ms": answer.latency_ms,
+        "model": answer.model,
     }
 
 

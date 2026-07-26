@@ -1,0 +1,143 @@
+# AI EXAM BANK — synthesis (Session 4A.5b, CU5a)
+# generated: 2026-07-26
+# ruling  : R-AI5(2)/(3)/(4) — labeled open synthesis over read-only evidence,
+#           hardened by claim-level verification, provenance visible per claim.
+# world   : glass_box (15 orders, 5 machines, ONE late order: ORD-05 by 890 min)
+#
+# Every question here is UNCONTRACTED on purpose: no route in the taxonomy serves
+# it, so the parse must land on `unmatched` and the dispatch must reach the second
+# tier. `EXPECT route=synthesis` is therefore doing double duty — it grades the
+# routing AND it is the seal: a bank of questions that quietly found routes would
+# mean the parse is stretching, and a contracted question that landed here would
+# mean the tiers had leaked into each other.
+#
+# The world matters for reading these. Only ONE order is late. "why so many late
+# orders" is a presupposition the evidence does not support, and the right answer
+# corrects it from the records rather than playing along — the flagship specimen.
+#
+# PROVE-IT turns follow several answers. They are graded on the ROUTE alone: the
+# grounding pass re-runs on OUR OWN claim, and it precedes intent (what is being
+# questioned is our sentence, not a status of the plan). The parse may express the
+# gesture as the intent, as the follow-up linkage, or both — `prove-it` is a member
+# of each vocabulary, exactly as `confirm-take` is — and all three reach the same
+# destination, which is the thing worth grading.
+
+# =================================================================================
+# A — THE FLAGSHIP: the aggregate-cause question, the oldest debt in the AI ledger
+# =================================================================================
+EXPECT route=synthesis
+why so many late orders
+EXPECT route=prove-it
+how do you know that
+RESET
+
+EXPECT route=synthesis
+whats actually driving the lateness in this plan
+EXPECT route=prove-it
+prove it
+RESET
+
+# =================================================================================
+# B — THE 4A.5a RESIDUE: the parse miss that had no honest destination
+# =================================================================================
+EXPECT route=machine-schedule|machine-idle|gap-between|synthesis
+whats holding CUT-01
+EXPECT route=prove-it
+where does that come from
+RESET
+
+# =================================================================================
+# C — AGGREGATES AND SHAPE READS: questions about the plan as a whole
+# =================================================================================
+EXPECT route=synthesis
+which machine is the bottleneck
+RESET
+EXPECT route=synthesis
+is the work spread evenly across the machines
+RESET
+EXPECT route=synthesis
+is this plan front loaded or spread out
+RESET
+EXPECT route=synthesis
+whats the busiest day in this schedule
+RESET
+EXPECT route=synthesis
+is there anything unusual about this schedule
+RESET
+
+# =================================================================================
+# D — CROSS-ENTITY READS: two things held against each other
+# =================================================================================
+EXPECT route=synthesis
+compare CUT-01 and PRESS-SLOW for me
+EXPECT route=prove-it
+how do you know
+RESET
+EXPECT route=synthesis
+which orders are competing for the same machine
+RESET
+EXPECT route=synthesis
+how much of CUT-01s week is actually working time
+RESET
+
+# =================================================================================
+# E — THE MONEY: cost questions no contracted route serves
+# =================================================================================
+EXPECT route=synthesis
+where is most of the money going in this plan
+EXPECT route=prove-it
+which record says that
+RESET
+EXPECT route=synthesis
+how does the setup cost compare to the tardiness cost
+RESET
+EXPECT route=synthesis
+is the overtime worth what it bought us
+RESET
+
+# =================================================================================
+# F — HONESTY UNDER PRESSURE: questions the evidence cannot answer, and one whose
+#     premise is false. A confident answer to any of these is a defect.
+# =================================================================================
+EXPECT route=synthesis
+which customer is hurt most by the lateness
+RESET
+# `advice` is a legitimate read here: its AUTHORED meaning explicitly covers "a
+# hypothesis about changing the plant". Either destination is honest.
+EXPECT route=synthesis|advice
+what would happen to this plan if CUT-01 went down tomorrow
+RESET
+EXPECT route=synthesis
+why are all five machines overloaded
+RESET
+EXPECT route=synthesis
+how many orders will be late next month
+RESET
+
+# =================================================================================
+# G — RIDER (b): the capability the registry could not name until this session
+# =================================================================================
+# (no concept expected on the opener — the same question in sweep_scenarios grades
+#  `intent=coaching` alone; the concept binds on the follow-up.)
+EXPECT intent=coaching
+can jobs run across a night shutdown
+EXPECT intent=coaching concept=min_chunk
+is there a minimum piece size
+EXPECT intent=coaching concept=min_chunk
+whats the smallest piece it will make
+RESET
+
+# =================================================================================
+# H — THE SEAL, FROM THE OTHER SIDE: contracted questions in a synthesis bank.
+#     These must NOT be answered by the second tier. If one of them ever comes
+#     back route=synthesis, a proven answer has been replaced by a reasoned one.
+# =================================================================================
+EXPECT route=late-order
+why is ORD-05 late
+EXPECT route=late-orders
+which orders are late
+EXPECT route=machine-schedule
+whats running on CUT-01
+EXPECT route=order-schedule
+when does ORD-03 finish
+RESET

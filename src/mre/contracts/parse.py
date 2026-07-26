@@ -84,6 +84,14 @@ class Intent(str, Enum):
     UNKNOWN_ENTITY = "unknown-entity"
     # -- R-AI5 additions -----------------------------------------------------
     CONFIRM_TAKE = "confirm-take"
+    # Session 4A.5b: `prove-it` is BOTH a follow-up kind and an intent, exactly as
+    # `confirm-take` is. The 4A.5b sweep showed why the pair is needed: asked "how
+    # do you know that", the model correctly recognized the gesture and emitted
+    # `"intent": "prove-it"` — an id the vocabulary did not carry — so the whole
+    # parse was discarded as malformed, twice, and the planner got "I couldn't make
+    # out what that one was asking" for the one question the system is best at
+    # answering. A gesture the model can name must be nameable.
+    PROVE_IT = "prove-it"
     UNMATCHED = "unmatched"
 
 
@@ -134,6 +142,11 @@ class FollowupKind(str, Enum):
                   wip").
     CONFIRM_TAKE— repeats the assistant's own prior take back as a question ("so
                   move the first operation to an earlier start time?").
+    PROVE_IT    — contests or probes a claim the assistant JUST made and asks for
+                  its grounds ("prove it", "how do you know that?", "says who?",
+                  "which record says that?"). Session 4A.5b (R-AI5(4)): "prove it"
+                  is always available and re-runs the grounding pass on that claim
+                  conversationally.
     """
 
     NONE = "none"
@@ -142,6 +155,7 @@ class FollowupKind(str, Enum):
     LIST_EXPAND = "list-expand"
     MENU_SELECT = "menu-select"
     CONFIRM_TAKE = "confirm-take"
+    PROVE_IT = "prove-it"
 
 
 class ClarifyReason(str, Enum):
@@ -318,6 +332,10 @@ INTENT_MEANINGS: dict[Intent, str] = {
     Intent.CONFIRM_TAKE:
         "the planner is repeating the assistant's OWN prior suggestion back as a "
         "question, to confirm it (\"so move the first operation earlier?\")",
+    Intent.PROVE_IT:
+        "the planner asks for the GROUNDS of something the assistant just said — "
+        "\"prove it\", \"how do you know that?\", \"where does that come from?\", "
+        "\"which record says that?\". Set `followup_of` to `prove-it` as well",
     Intent.UNMATCHED:
         "no intent above fits this question",
 }

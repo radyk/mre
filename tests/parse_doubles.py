@@ -152,6 +152,52 @@ class ScriptedParser:
                        explainer, context)
 
 
+# ---------------------------------------------------------------------------
+# Session 4A.5b — the SYNTHESIS doubles (R-AI5(2)).
+#
+# Same discipline as the parse doubles: the double supplies the model's EMISSIONS,
+# and everything downstream is real — the governed prompt is rendered, the tools
+# actually read the pinned run, and the verifier actually re-fetches. What a test
+# never gets to fake is the verdict.
+# ---------------------------------------------------------------------------
+
+def tool_call(tool: str, **args) -> str:
+    """One loop step that calls a tool."""
+    return json.dumps({"tool": tool, "args": args})
+
+
+def claims(*items: dict) -> str:
+    """One loop step that answers with claims. Each item is
+    ``{"text": ..., "record_ids": [...], "kind": "fact"|"conclusion"}``."""
+    return json.dumps({"claims": list(items)})
+
+
+def claim(text: str, record_ids: Optional[list] = None,
+          kind: str = "fact") -> dict:
+    return {"text": text, "record_ids": list(record_ids or []), "kind": kind}
+
+
+def cannot_answer(reason: str) -> str:
+    return json.dumps({"cannot_answer": reason})
+
+
+def synthesizer_with(responses: list[str], **kw) -> Any:
+    """A ``Synthesizer`` whose model emissions are canned; tools and verification
+    are the real ones."""
+    from mre.modules.synthesizer import Synthesizer
+    return Synthesizer(_client=FakeClient(responses), **kw)
+
+
+class DeadSynthesizer:
+    """A synthesizer that exists but is UNAVAILABLE — proves the honest floor under
+    the second tier (part 1's bridge), never a keyword guess."""
+
+    available = False
+
+    def synthesize(self, *a, **kw) -> None:  # pragma: no cover - never called
+        raise AssertionError("an unavailable synthesizer must never be called")
+
+
 def assemble(explainer: Any, route: str, question: str, **params) -> Any:
     """Assemble a bundle by NAMING its route — the assembler tests' entry point.
 
@@ -165,8 +211,8 @@ def assemble(explainer: Any, route: str, question: str, **params) -> Any:
 
 
 __all__ = [
-    "assemble",
-    "ClarifyReason", "FakeClient", "FollowupKind", "Intent", "ParsedQuestion",
-    "Polarity", "ScriptedParser", "SubjectKind", "SubjectSource", "emission",
-    "parsed", "parser_with", "resolve",
+    "assemble", "cannot_answer", "claim", "claims",
+    "ClarifyReason", "DeadSynthesizer", "FakeClient", "FollowupKind", "Intent",
+    "ParsedQuestion", "Polarity", "ScriptedParser", "SubjectKind", "SubjectSource",
+    "emission", "parsed", "parser_with", "resolve", "synthesizer_with", "tool_call",
 ]

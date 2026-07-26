@@ -1,0 +1,61 @@
+{
+  "target": "out-dir:gb_pinned",
+  "snapshot": "snap-exam",
+  "started_at": "2026-07-26T12:03:43Z",
+  "llm_mode": "live",
+  "questions": 120,
+  "llm_calls": 152,
+  "parser_stats": {
+    "calls": 172,
+    "parses": 172,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 3,
+    "unavailable": 0,
+    "median_latency_ms": 1053.8795499996922,
+    "malformed_samples": []
+  },
+  "synth_stats": {
+    "syntheses": 1,
+    "calls": 4,
+    "tool_calls": 3,
+    "malformed": 0,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 0,
+    "median_latency_ms": 9361.27519999718,
+    "p90_latency_ms": 9361.27519999718
+  },
+  "synthesis": {
+    "answers": 0,
+    "claims": 0,
+    "verified": 0,
+    "interpretive": 0,
+    "failed_and_cut": 0,
+    "ungrounded_load_bearing": 0,
+    "unanswerable": 0,
+    "budget_exhausted": 0,
+    "tool_calls": 0,
+    "tool_histogram": {},
+    "calls_per_answer": {}
+  },
+  "latency": {
+    "route": {
+      "n": 120,
+      "median_ms": 1231.0,
+      "p90_ms": 2425.1
+    },
+    "synthesis": {
+      "n": 0,
+      "median_ms": null,
+      "p90_ms": null
+    }
+  },
+  "graded_expectations": {
+    "graded": 0,
+    "met": 0
+  },
+  "door_check": "live",
+  "finding_counts": {},
+  "findings": []
+}

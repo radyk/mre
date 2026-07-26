@@ -33,8 +33,9 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "mre.catalog" = ["*.yaml"]
-# The R-AI5(1) question-parse prompt is a governed artifact loaded at runtime from
-# beside its module — it must ship with the package, like the remediation catalog.
+# The R-AI5(1) question-parse prompt and the R-AI5(2) synthesis prompt are governed
+# artifacts loaded at runtime from beside their module — they must ship with the
+# package, like the remediation catalog.
 "mre.modules" = ["*.md"]
 
 [tool.pytest.ini_options]

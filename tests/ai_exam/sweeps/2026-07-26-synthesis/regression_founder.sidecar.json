@@ -1,0 +1,67 @@
+{
+  "target": "out-dir:gb_pinned",
+  "snapshot": "snap-exam",
+  "started_at": "2026-07-26T12:02:18Z",
+  "llm_mode": "live",
+  "questions": 28,
+  "llm_calls": 46,
+  "parser_stats": {
+    "calls": 32,
+    "parses": 32,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 1,
+    "unavailable": 0,
+    "median_latency_ms": 1090.718649997143,
+    "malformed_samples": []
+  },
+  "synth_stats": {
+    "syntheses": 1,
+    "calls": 4,
+    "tool_calls": 3,
+    "malformed": 0,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 0,
+    "median_latency_ms": 9361.27519999718,
+    "p90_latency_ms": 9361.27519999718
+  },
+  "synthesis": {
+    "answers": 1,
+    "claims": 5,
+    "verified": 3,
+    "interpretive": 2,
+    "failed_and_cut": 0,
+    "ungrounded_load_bearing": 0,
+    "unanswerable": 0,
+    "budget_exhausted": 0,
+    "tool_calls": 3,
+    "tool_histogram": {
+      "cost_ledger": 1,
+      "lateness_set": 1,
+      "placements_for_order": 1
+    },
+    "calls_per_answer": {
+      "3": 1
+    }
+  },
+  "latency": {
+    "route": {
+      "n": 27,
+      "median_ms": 1588.6,
+      "p90_ms": 2440.6
+    },
+    "synthesis": {
+      "n": 1,
+      "median_ms": 10545.2,
+      "p90_ms": 10545.2
+    }
+  },
+  "graded_expectations": {
+    "graded": 0,
+    "met": 0
+  },
+  "door_check": "live",
+  "finding_counts": {},
+  "findings": []
+}

@@ -53,7 +53,12 @@ export function speechSynthesisAvailable() {
 //   * strip anything id-shaped (UUIDs, record ids, snap-… , dec-…) — record IDs
 //     are never voiced; the screen holds them.
 export function spokenSummary(answerText, register) {
-  const lead = register === "judgment" ? "My take." : "Testimony.";
+  // Session 4A.5b: a synthesis answer says so aloud too — the register is the
+  // honesty armor, and it must not be silently flattened into "Testimony."
+  const lead =
+    register === "judgment" ? "My take."
+      : register === "synthesis" ? "Reading the evidence."
+        : "Testimony.";
   const firstLine = (answerText || "")
     .split("\n")
     .map((l) => l.trim())

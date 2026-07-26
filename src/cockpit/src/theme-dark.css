@@ -56,6 +56,13 @@
   --reg-judgment: #e0a63c;      /* findings / triage */
   --reg-testimony-fill: rgba(53, 201, 194, 0.08);
   --reg-judgment-fill: rgba(224, 166, 60, 0.08);
+  /* Session 4A.5b (R-AI5(4)) — the SYNTHESIS register (see theme-light for the
+   * reasoning): neither proven-teal nor authored-amber. Tokens only; the
+   * per-claim marker treatment is the founder's to tune. */
+  --reg-synthesis: #8d88ff;     /* labeled open synthesis — indigo */
+  --reg-synthesis-fill: rgba(141, 136, 255, 0.09);
+  --synthesis-mark-ink: #8d88ff;
+  --synthesis-mark-bg: rgba(141, 136, 255, 0.14);
   --on-accent: #08131f;         /* dark ink on a teal action button */
 
   /* --- voice input (Session 3.7) -------------------------------------- */

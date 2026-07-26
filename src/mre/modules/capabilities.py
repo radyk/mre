@@ -48,6 +48,31 @@ class CapabilityNote:
 # question naming two concepts binds to the more specific (span-downtime before a
 # bare "split").
 CAPABILITIES: tuple[CapabilityNote, ...] = (
+    # Session 4A.5b rider (b) — the "minimum piece size" trigger. Named residue of
+    # 4A.5a: a planner who had just been coached on splitting asked "is there a
+    # minimum piece size" and the registry had no concept for it, so the follow-up
+    # reached coaching with nothing bound and got the honest what-I-can-coach list.
+    # The knob is real and specified (min_chunk_minutes, §5.3); it just had no
+    # entry. Ordered FIRST so it wins over the bare "chunk"/"split" triggers below.
+    CapabilityNote(
+        concept="min_chunk",
+        enables="a floor on how small a piece of a splittable operation may be, so "
+                "a job that pauses at a shift end resumes in usable stretches "
+                "instead of being shattered into slivers around every closure",
+        how="set min_chunk_minutes alongside splittable=true on that operation's "
+            "routing line in routing_lines.csv (no run piece may be shorter than "
+            "it; the solver will leave the operation whole rather than break it "
+            "below that floor)",
+        ids_ref="§5.3",
+        rationale="docs/05 R-C3 (interruptibility): a resumable op's chunk "
+                  "boundaries fall on calendar boundaries, and the minimum piece "
+                  "is the declared floor on that division",
+        triggers=("minimum piece size", "minimum piece", "smallest piece",
+                  "piece size", "min chunk", "minimum chunk", "smallest chunk",
+                  "chunk size", "min_chunk_minutes", "min chunk minutes",
+                  "minimum run length", "how small can the pieces",
+                  "how small can a piece"),
+    ),
     CapabilityNote(
         concept="splittable",
         enables="an operation to pause at a shift end or closure and resume the "

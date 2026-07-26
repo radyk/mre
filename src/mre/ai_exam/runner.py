@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -130,10 +131,19 @@ class TurnRecord:
     answer: str = ""
     error: Optional[str] = None
     llm_calls: int = 0
+    # TOTAL conversational latency for this turn — parse + dispatch + assembly +
+    # render, wall-clock, the number a planner actually waits (Session 4A.5b rider
+    # c). Reported split by tier in the sweep, because parse+route and
+    # parse+synthesis are different products to wait for.
+    latency_ms: Optional[float] = None
     findings: list[Finding] = field(default_factory=list)
     # The parse contract's instrumentation (Session 4A.5a): intent, follow-up
     # linkage, polarity, bound subjects, clarify reason, retries, latency.
     parse: dict = field(default_factory=dict)
+    # The SECOND TIER's per-claim provenance (Session 4A.5b): claim counts by
+    # verdict, the tools consulted, and whether anything load-bearing was cut.
+    # Empty on every contracted answer, which is most of them.
+    synthesis: dict = field(default_factory=dict)
     # The graded expectation this turn carried (an EXPECT line), if any.
     expect: dict = field(default_factory=dict)
 
@@ -149,7 +159,58 @@ class ExamResult:
     started_at: str = ""
     # Parse-layer counts for the sweep close-out (Session 4A.5a CU5).
     parser_stats: dict = field(default_factory=dict)
+    # Synthesis-tier counts for the sweep close-out (Session 4A.5b CU5).
+    synth_stats: dict = field(default_factory=dict)
     door_check: str = "skipped"          # "live" | "skipped"
+
+    def synthesis_totals(self) -> dict:
+        """The sweep sidecar's synthesis block: claims by verdict, the
+        ungrounded-load-bearing count, and the tool-call histogram."""
+        totals = {"answers": 0, "claims": 0, "verified": 0, "interpretive": 0,
+                  "failed_and_cut": 0, "ungrounded_load_bearing": 0,
+                  "unanswerable": 0, "budget_exhausted": 0, "tool_calls": 0}
+        histogram: dict[str, int] = {}
+        per_answer: dict[str, int] = {}
+        for t in self.turns:
+            s = t.synthesis or {}
+            if not s:
+                continue
+            totals["answers"] += 1
+            for key in ("claims", "verified", "interpretive", "failed_and_cut",
+                        "ungrounded_load_bearing", "tool_calls"):
+                totals[key] += int(s.get(key) or 0)
+            totals["unanswerable"] += 1 if s.get("unanswerable") else 0
+            totals["budget_exhausted"] += 1 if s.get("budget_exhausted") else 0
+            for tool in s.get("tools") or []:
+                histogram[tool] = histogram.get(tool, 0) + 1
+            n = str(int(s.get("tool_calls") or 0))
+            per_answer[n] = per_answer.get(n, 0) + 1
+        return {**totals, "tool_histogram": dict(sorted(histogram.items())),
+                "calls_per_answer": dict(sorted(per_answer.items()))}
+
+    def latency(self) -> dict:
+        """TOTAL conversational latency, split by tier (rider c). ``route`` is
+        parse + contracted assembly + render; ``synthesis`` is parse + the agentic
+        loop + verification + render. They are different products to wait for and
+        the close-out states both."""
+        buckets: dict[str, list[float]] = {"route": [], "synthesis": []}
+        for t in self.turns:
+            if t.error is not None or t.latency_ms is None:
+                continue
+            key = "synthesis" if t.synthesis else "route"
+            buckets[key].append(t.latency_ms)
+        out: dict = {}
+        for key, xs in buckets.items():
+            xs = sorted(xs)
+            if not xs:
+                out[key] = {"n": 0, "median_ms": None, "p90_ms": None}
+                continue
+            mid = len(xs) // 2
+            median = xs[mid] if len(xs) % 2 else (xs[mid - 1] + xs[mid]) / 2
+            p90 = xs[min(len(xs) - 1, int(round(0.9 * (len(xs) - 1))))]
+            out[key] = {"n": len(xs), "median_ms": round(median, 1),
+                        "p90_ms": round(p90, 1)}
+        return out
 
     def graded(self) -> tuple[int, int]:
         """(graded turns, graded turns that MET their expectation) — the per-bank
@@ -251,7 +312,8 @@ class _CallCounter:
 class ExamRunner:
     def __init__(self, target: RunTarget, *, use_llm: Optional[bool] = None,
                  ledger_path: Optional[Path] = None, per_question_timeout: float = 90.0,
-                 session_id: str = "ai-exam", parser: Any = None) -> None:
+                 session_id: str = "ai-exam", parser: Any = None,
+                 synthesizer: Any = None) -> None:
         self.target = target
         key = bool(os.environ.get("ANTHROPIC_API_KEY"))
         self.use_llm = key if use_llm is None else (use_llm and key)
@@ -267,6 +329,13 @@ class ExamRunner:
             from mre.modules.question_parser import QuestionParser
             parser = QuestionParser()
         self.parser = parser
+        # ONE synthesizer for the whole run too (Session 4A.5b): the second tier's
+        # counts — claims by verdict, tool-call histogram, median/p90 latency — are
+        # then the RUN's, the same way the parse counts are.
+        if synthesizer is None and key:
+            from mre.modules.synthesizer import Synthesizer
+            synthesizer = Synthesizer()
+        self.synthesizer = synthesizer
 
     # -- one question -------------------------------------------------------
 
@@ -280,7 +349,7 @@ class ExamRunner:
                      "last_answered_subject": last_answered},
             ledger_path=self.ledger_path, schedule_id=self.target.label,
             session_id=self.session_id, document=self.target.document,
-            parser=self.parser,
+            parser=self.parser, synthesizer=self.synthesizer,
         )
 
     def _ask_with_timeout(self, question: str, history: list[dict],
@@ -372,11 +441,13 @@ class ExamRunner:
                     break
                 asked += 1
                 before = counter.count
+                started = time.perf_counter()
                 answer, meta, error = self._ask_with_timeout(
                     item.text, history[-4:], selection, last_answered)
                 turn = TurnRecord(
                     lineno=item.lineno, question=item.text,
                     selection=dict(selection),
+                    latency_ms=(time.perf_counter() - started) * 1000.0,
                 )
                 turn._comments = pending_comments  # type: ignore[attr-defined]
                 pending_comments = []
@@ -401,6 +472,7 @@ class ExamRunner:
                         len(turn.cited_refs.get(k, []))
                         for k in ("operations", "resources", "demands"))
                     turn.parse = meta.get("parse") or {}
+                    turn.synthesis = meta.get("synthesis") or {}
                 turn.llm_calls = counter.count - before
                 turn.findings = check_turn(turn, self._vocab)
                 result.turns.append(turn)
@@ -423,4 +495,6 @@ class ExamRunner:
             result.total_llm_calls = counter.count
         if self.parser is not None and hasattr(self.parser, "stats"):
             result.parser_stats = self.parser.stats.as_dict()
+        if self.synthesizer is not None and hasattr(self.synthesizer, "stats"):
+            result.synth_stats = self.synthesizer.stats.as_dict()
         return result

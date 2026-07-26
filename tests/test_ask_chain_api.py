@@ -223,9 +223,14 @@ class TestAskFailClosedWithRealKey:
     def test_better_schedule_question_refuses_not_a_listing(self, solved,
                                                             monkeypatch):
         """4A.1c issue 2: "is there a better schedule" produced prose (a schedule
-        listing) instead of a refusal. It must reach the honest refusal — never a
-        listing masquerading as an answer, and never a fabricated citation.
-        Session 4A.5a: an optimality question is `unmatched` by the parse."""
+        listing) instead of a refusal. The invariant is the SCHEDULE ROUTE: an
+        optimality question must never be answered by listing the plan.
+        Session 4A.5a: an optimality question is `unmatched` by the parse.
+        Session 4A.5b: `unmatched` now has a second destination — the labeled
+        synthesis tier — so the honest set is four, not three. What has not moved
+        is the floor: never the schedule listing, and a REFUSAL still cites
+        nothing (a synthesis answer may cite, because every citation on one has
+        been verified against the record it names)."""
         from tests.parse_doubles import Intent, parsed
         self._script(monkeypatch, {
             "is there a better schedule": parsed("", Intent.UNMATCHED,
@@ -233,9 +238,12 @@ class TestAskFailClosedWithRealKey:
         res = self._ask_no_llm(solved, "is there a better schedule")
         assert res.status_code == 200, res.text
         data = res.json()["data"]
-        assert data["bundle"]["route"] in ("REFUSED", "NEAR_MISS", "CLARIFY")
-        assert data["bundle"]["subject_type"] in ("unsupported", "near_miss", "clarify")
-        assert "[record:" not in data["answer"], "a refusal must cite no records"
+        assert data["bundle"]["route"] in ("REFUSED", "NEAR_MISS", "CLARIFY",
+                                           "synthesis")
+        assert data["bundle"]["subject_type"] in ("unsupported", "near_miss",
+                                                  "clarify", "synthesis")
+        if data["bundle"]["route"] != "synthesis":
+            assert "[record:" not in data["answer"], "a refusal must cite no records"
 
     def test_fabricated_citation_falls_back_to_template(self, solved, monkeypatch):
         """4A.1c issue 1: an LLM answer that cites a non-existent record id must be

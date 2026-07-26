@@ -20,6 +20,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from mre.contracts.synthesis import SynthesisProvenance
+
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -53,6 +55,11 @@ class QuestionLedgerEntry(BaseModel):
       entry in the same session within the rephrase window: the entry_id of that
       refusal. This is the free labeled pair (failed phrasing → phrasing that
       worked) the improvement loop consumes.
+    - ``synthesis``          — present only on a SECOND-TIER answer (R-AI5(2)):
+      the per-claim provenance and every tool call with its arguments. R-AI5(5)
+      records per-claim provenance in this ledger; the frequency-weighted Pareto
+      that consumes it is 4A.5c. Still a fact ABOUT the AI layer, never schedule
+      evidence.
     """
 
     entry_id: str
@@ -66,6 +73,7 @@ class QuestionLedgerEntry(BaseModel):
     schedule_id: Optional[str] = None
     session_id: Optional[str] = None
     rephrase_of: Optional[str] = None
+    synthesis: Optional[SynthesisProvenance] = None
 
     @property
     def refused(self) -> bool:

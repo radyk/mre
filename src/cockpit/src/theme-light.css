@@ -68,6 +68,16 @@
   --reg-judgment: #965a0e;      /* findings / triage — deep amber */
   --reg-testimony-fill: rgba(12, 111, 102, 0.09);
   --reg-judgment-fill: rgba(150, 90, 14, 0.10);
+  /* Session 4A.5b (R-AI5(4)) — the SYNTHESIS register: an answer the assistant
+   * reasoned to from the evidence because no contracted route covered the
+   * question. A cool indigo, deliberately neither the teal of proven testimony
+   * nor the amber of authored judgment. `--synthesis-mark-*` is the per-claim
+   * marker inside such an answer (the interpretive lines); the STRUCTURE is the
+   * contract, this treatment is the founder's to tune. */
+  --reg-synthesis: #4b47b8;     /* labeled open synthesis — indigo */
+  --reg-synthesis-fill: rgba(75, 71, 184, 0.08);
+  --synthesis-mark-ink: #4b47b8;
+  --synthesis-mark-bg: rgba(75, 71, 184, 0.12);
   --on-accent: #ffffff;         /* white ink on the deep-teal action button */
 
   /* --- voice input (Session 3.7) -------------------------------------- */

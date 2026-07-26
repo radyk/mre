@@ -132,6 +132,22 @@ def _register_for(bundle: ExplanationBundle) -> str:
     return register_of(bundle)
 
 
+# Session 4A.5b (R-AI5(4)) — the rendered-by line NAMES THE TIER and the tool-call
+# count for a synthesis answer. A planner reading "[rendered by: synthesis …]" knows
+# immediately that no contracted route covered their question, and how much evidence
+# the answer actually cost to assemble.
+def _rendered_by(bundle: ExplanationBundle, default: str) -> str:
+    if bundle.subject_type == "synthesis":
+        kf = bundle.key_facts or {}
+        model = kf.get("model") or ""
+        tier = f"synthesis ({model})" if model else "synthesis"
+        n = kf.get("tool_call_count", 0)
+        return f"[rendered by: {tier} — {n} tool call(s) | register: synthesis]"
+    if bundle.subject_type == "prove_it":
+        return "[rendered by: synthesis (grounding pass) | register: synthesis]"
+    return f"[rendered by: {default} | register: {_register_for(bundle)}]"
+
+
 # Subject types whose whole answer is composed in the header in planner language
 # (Session 4A.2). They never dump the raw evidence chain.
 _HEADER_ONLY_SUBJECTS = frozenset({
@@ -145,6 +161,10 @@ _HEADER_ONLY_SUBJECTS = frozenset({
     # (cited_refs), but header-only keeps the prose the clean table it was — no
     # redundant raw evidence-chain dump under a table that already shows the rows.
     "schedule",
+    # Session 4A.5b — the labeled-synthesis surface composes its whole answer as
+    # CLAIM BLOCKS with per-claim provenance; the raw chain under it would repeat
+    # the same records the claims already cite, unlabeled.
+    "synthesis", "prove_it",
 })
 
 # The citation-breadth cap (CU6): a schedule-wide answer shows at most this many
@@ -159,8 +179,7 @@ class TemplateRenderer:
         # CU3 — the single delivery seam: strip markdown/backticks from every
         # register's output here, so no register can leak formatting.
         return strip_formatting(
-            self._render_body(bundle)
-            + f"\n[rendered by: template | register: {_register_for(bundle)}]")
+            self._render_body(bundle) + "\n" + _rendered_by(bundle, "template"))
 
     def _render_body(self, bundle: ExplanationBundle) -> str:
         # R-AI2(d) (Session 4A.2d) — the transcript convention dies: no "=== q ==="
@@ -428,6 +447,12 @@ class TemplateRenderer:
             if reason:
                 lines.append(reason)
             lines.append("")
+
+        elif bundle.subject_type == "synthesis":
+            self._render_synthesis(lines, bundle)
+
+        elif bundle.subject_type == "prove_it":
+            self._render_prove_it(lines, bundle)
 
         elif bundle.subject_type == "refusals":
             # The meta-route (R-AI1(d)): the ledger answering about itself.
@@ -777,6 +802,93 @@ class TemplateRenderer:
 
         elif bundle.subject_type == "machine_idle":
             self._render_machine_idle(lines, bundle)
+
+    # ------------------------------------------------------------------
+    # Session 4A.5b (R-AI5(4)) — the labeled-synthesis answer surface.
+    # ------------------------------------------------------------------
+
+    def _render_synthesis(self, lines: list[str], bundle: ExplanationBundle) -> None:
+        """CLAIM BLOCKS with per-claim provenance visible.
+
+        A VERIFIED claim carries a citation exactly like testimony. An INTERPRETIVE
+        claim carries the `synthesis` marker and the records it was read from. Mixed
+        answers are expected and correct — that is what an honest reading of the
+        evidence looks like when part of it is a reading. The STRUCTURE (which claims
+        are which) is the contract here; the colour/badge treatment ships as cockpit
+        tokens for the founder to tune."""
+        from mre.modules.ask_fallback_copy import (
+            SYNTHESIS_CITE, SYNTHESIS_LEAD, SYNTHESIS_MARK,
+            SYNTHESIS_MARK_NO_RECORDS, SYNTHESIS_PARTIAL, SYNTHESIS_UNANSWERABLE,
+            SYNTHESIS_UNANSWERABLE_CONSULTED, SYNTHESIS_UNGROUNDED,
+        )
+        kf = bundle.key_facts or {}
+        claims = kf.get("claims") or []
+        tools = ", ".join(kf.get("consulted_tools") or []) or "nothing"
+
+        if kf.get("unanswerable") or not claims:
+            lines.append(SYNTHESIS_UNANSWERABLE)
+            if kf.get("consulted_tools"):
+                lines.append(SYNTHESIS_UNANSWERABLE_CONSULTED.format(tools=tools))
+            lines.append("")
+            return
+
+        lines.append(SYNTHESIS_LEAD)
+        lines.append("")
+        for claim in claims:
+            text = (claim.get("text") or "").strip()
+            note = claim.get("sample_note") or ""
+            if note:
+                text = f"{text} ({note})"
+            if claim.get("status") == "verified":
+                rid = (claim.get("cited_record_ids") or ["?"])[0]
+                lines.append(f"{text}  {SYNTHESIS_CITE.format(rid=str(rid)[:8])}")
+            else:
+                seen = claim.get("cited_record_ids") or claim.get(
+                    "consulted_record_ids") or []
+                if seen:
+                    rids = ", ".join(str(r)[:8] for r in seen[:3])
+                    lines.append(f"{text}  {SYNTHESIS_MARK.format(rids=rids)}")
+                else:
+                    lines.append(f"{text}  {SYNTHESIS_MARK_NO_RECORDS}")
+
+        if any(c.get("load_bearing") for c in (kf.get("cut") or [])):
+            lines.append("")
+            lines.append(SYNTHESIS_UNGROUNDED)
+        if kf.get("budget_exhausted") or kf.get("timed_out"):
+            lines.append("")
+            lines.append(SYNTHESIS_PARTIAL.format(tools=tools))
+        lines.append("")
+
+    def _render_prove_it(self, lines: list[str], bundle: ExplanationBundle) -> None:
+        """"Prove it" (R-AI5(4)) — the grounding pass, conversationally: either the
+        record behind the claim, or the honest "that part is my inference from A and
+        B, here's each"."""
+        from mre.modules.ask_fallback_copy import (
+            PROVE_IT_INTERPRETIVE, PROVE_IT_INTERPRETIVE_BARE, PROVE_IT_NO_TARGET,
+            PROVE_IT_RECORD_LINE, PROVE_IT_VERIFIED,
+        )
+        kf = bundle.key_facts or {}
+        claim = kf.get("claim")
+        if not claim:
+            lines.append(PROVE_IT_NO_TARGET)
+            lines.append("")
+            return
+        rows = kf.get("lines") or []
+        verified = claim.get("status") == "verified"
+        if verified:
+            lines.append(PROVE_IT_VERIFIED)
+        elif rows:
+            lines.append(PROVE_IT_INTERPRETIVE)
+        else:
+            lines.append(PROVE_IT_INTERPRETIVE_BARE)
+        lines.append("")
+        lines.append(f'The claim: "{(claim.get("text") or "").strip()}"')
+        if rows:
+            lines.append("")
+            for row in rows:
+                lines.append(PROVE_IT_RECORD_LINE.format(
+                    summary=row.get("summary", "?"), rid=row.get("rid", "?")))
+        lines.append("")
 
     # ------------------------------------------------------------------
     # Session 4A.3 composed-answer helpers (the swap/move bridge + absence pair)
@@ -1353,6 +1465,11 @@ class LLMRenderer:
         and mark WHY the LLM path was not used. Every fail-closed exit routes
         here so an operator always sees an honest ``[rendered by: template …]``."""
         body = TemplateRenderer()._render_body(bundle)
+        if bundle.subject_type in ("synthesis", "prove_it"):
+            # The tier line wins: a synthesis answer must never claim to have been
+            # "rendered by template" when what a planner needs to know is which TIER
+            # answered them (R-AI5(4)).
+            return f"{body}\n{_rendered_by(bundle, 'template')}"
         reg = register or _register_for(bundle)
         return f"{body}\n[rendered by: template — {reason} | register: {reg}]"
 
@@ -1402,6 +1519,11 @@ class LLMRenderer:
         # composed findings verbatim: the same treatment every other composed
         # authored register gets, and a deterministic ~zero validator-fallback rate.
         "findings",
+        # Session 4A.5b: a SYNTHESIS answer's claims were verified SENTENCE BY
+        # SENTENCE before they got here (R-AI5(3)). Handing them to the rendering
+        # model to reword would dissolve the very thing that was verified — the
+        # words the provenance label is attached to. Rendered verbatim, always.
+        "synthesis", "prove_it",
     })
 
     def render(self, bundle: ExplanationBundle) -> str:

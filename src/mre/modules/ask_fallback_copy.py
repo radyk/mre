@@ -62,6 +62,7 @@ ROUTE_OFFERS = {
     "briefing": "show what needs your attention today",
     "contested-fact": "walk the evidence for {order}'s status",
     "confirm-take": "name the board gesture that makes that move",
+    "prove-it": "open the record behind what I just told you",
     "beyond-horizon": "show what lies beyond the planning horizon",
     "why-not-scheduled-yet": "explain why {order} isn't scheduled yet",
     "frozen": "show what is frozen",
@@ -152,6 +153,72 @@ ADVICE_EXPEDITE_FLOOR_RELEASE = (
 ADVICE_EXPEDITE_FLOOR_GENERIC = (
     "The only thing that would let it run earlier is its release date — material "
     "can't be worked before it's available.")
+
+
+# ---------------------------------------------------------------------------
+# Session 4A.5b (R-AI5(2)/(3)/(4)) — the LABELED SYNTHESIS surface.
+#
+# The second tier's copy. The CLAIMS themselves are the synthesis model's sentences
+# (verified claim by claim before they render); everything that FRAMES them —the
+# provenance markers, the honesty notes, the couldn't-answer floor — is authored
+# here, exactly like every other fallback string. A model never writes these.
+# ---------------------------------------------------------------------------
+
+# The per-claim provenance markers (R-AI5(4): provenance visible PER CLAIM). A
+# verified claim carries a citation exactly like testimony; an interpretive claim
+# carries the `synthesis` register tag and the records it was read from. The
+# STRUCTURE is the contract; the visual treatment is tokens the founder tunes.
+SYNTHESIS_CITE = "[record: {rid}...]"
+SYNTHESIS_MARK = "[synthesis — read from: {rids}]"
+SYNTHESIS_MARK_NO_RECORDS = "[synthesis — my reading, no record states this]"
+
+# Named when a quantifying claim rests on a sample rather than an enumerated set.
+SYNTHESIS_SAMPLE_NOTE = "based on the {n} row(s) {tool} returned, not the whole plan"
+
+# The lead line of a synthesis answer: name the tier plainly, once, before the
+# claims. The planner should never have to guess which tier answered them.
+SYNTHESIS_LEAD = (
+    "No contracted answer covers that one, so this is me reading the evidence "
+    "directly — each line below says what backs it.")
+
+# A load-bearing claim was cut because it could not be grounded. Say so; never
+# quietly ship the remainder as though the reasoning were whole.
+#
+# Deliberately CONTENTLESS about the cut claim. The first bench run repeated the
+# offending figure back inside the apology ("...contradicted: 250 minutes"), which
+# puts an unproven number in front of the planner in the very sentence explaining
+# that it could not be proven. What was cut is in the ledger, where a developer
+# reads it; the planner gets the honest fact that something was.
+SYNTHESIS_UNGROUNDED = (
+    "One step of my reasoning didn't hold up against the records, so I couldn't "
+    "ground part of it and I've left that step out rather than state it.")
+
+# The budget ran out before the read was complete (CU1: an honest partial, never a
+# stall). `{tools}` names what was consulted.
+SYNTHESIS_PARTIAL = (
+    "I stopped there — that is as far as this question's evidence budget goes. I "
+    "consulted: {tools}.")
+
+# The floor: nothing survived, or the model could not answer from the evidence.
+SYNTHESIS_UNANSWERABLE = (
+    "I couldn't answer that one from the evidence. I read what I could and none of "
+    "it grounds an answer I'd stand behind, so I'd rather say so than guess.")
+SYNTHESIS_UNANSWERABLE_CONSULTED = "I looked at: {tools}."
+
+# "PROVE IT" (R-AI5(4)) — the planner contests or probes one claim and the grounding
+# pass re-runs on it, conversationally.
+PROVE_IT_NO_TARGET = (
+    "I don't have a claim of my own open to ground. If it's my last answer you're "
+    "asking about, the records behind it are cited on it — name the part you want "
+    "walked and I'll open that one.")
+PROVE_IT_VERIFIED = "That one is on the record. Here is what it rests on:"
+PROVE_IT_INTERPRETIVE = (
+    "That part is my inference, not a record — here is each thing I read to get "
+    "there:")
+PROVE_IT_INTERPRETIVE_BARE = (
+    "That part is my reading of the plan, and no single record states it. I have "
+    "nothing further to show behind it.")
+PROVE_IT_RECORD_LINE = "  - {summary}  [record: {rid}...]"
 
 
 # The meta-route header (R-AI1(d) — the ledger answering about itself).

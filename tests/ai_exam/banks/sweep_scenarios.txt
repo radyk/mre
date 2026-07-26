@@ -40,7 +40,9 @@ EXPECT intent=coaching
 can jobs run across a night shutdown
 EXPECT intent=coaching concept=splittable
 what do i have to set for that
-EXPECT intent=coaching concept=splittable
+# Session 4A.5b rider (b): the registry now names min_chunk (§5.3). Before this
+# session the follow-up bound no concept at all — a 4A.5a expect-miss.
+EXPECT intent=coaching concept=min_chunk
 is there a minimum piece size
 EXPECT intent=inventory
 is anything split today
@@ -61,7 +63,11 @@ EXPECT intent=late-order order=ORD-05
 why is ORD-05 late
 EXPECT intent=late-order|start-reason order=ORD-05 followup=deepen
 but why
-EXPECT intent=machine-schedule|machine-idle|gap-between machine=CUT-01
+# Session 4A.5b: graded on the ROUTE now, and synthesis is an honest destination
+# for it. In 4A.5a this parsed as `start-reason` — an order intent, with an order
+# still bound from two turns earlier — and answered a question nobody asked. What
+# must never come back is a wrong contracted route.
+EXPECT route=machine-schedule|machine-idle|gap-between|synthesis
 whats holding CUT-01
 EXPECT intent=start-reason order=ORD-05 polarity=negative
 why cant ORD-05 start before that

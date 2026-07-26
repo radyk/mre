@@ -8482,3 +8482,246 @@ unchanged in authority, and the model was given a closed vocabulary and forbidde
 author an answer. The test suite told the same story in miniature: the assertions worth
 keeping were always about what an assembler BUILDS, and the ones that quietly encoded a
 keyword table are exactly the ones a live sweep should have been grading all along.
+
+### 2026-07-26 — AI-track Session 4A.5b: R-AI5 part 2 — labeled synthesis, claim-level verification, and the provenance surface
+
+Implements **R-AI5 clauses (2), (3) and (4)**, and the half of **(8)** that can be
+built (the label comes from verification; the telemetry that consumes it is 4A.5c).
+Backend + contracts + a second governed prompt + banks + tests + cockpit tokens; **no
+solver / model / schedule-contract / frontend-substrate change; no golden moved.**
+
+**WHAT PART 1 LEFT.** 4A.5a made every question parse first against the closed intent
+vocabulary and gave an unmatched intent an honest DEAD END: shape recognized, nearest
+capabilities offered, no answer. R-AI5(2) always meant that dead end to be a TIER —
+"an unmatched intent receives labeled open synthesis over read-only evidence access" —
+and R-AI5(3) always meant the tier to be hardened before it renders. The flagship
+specimen is the oldest debt in the AI ledger: **"why so many late orders"**, an
+aggregate-cause question no contracted route serves.
+
+**CU1 — THE READ-ONLY TOOL SURFACE.** `mre.contracts.synthesis` (L1) defines the
+CLOSED set: `ToolName` (11 members), `TOOL_MEANINGS` and `TOOL_ARGS` (authored meaning
++ typed argument list per tool), `ToolResult`, `DraftClaim`, `ClaimStatus`,
+`VerifiedClaim`, `SynthesisAnswer`, `SynthesisProvenance`, and the stated budget
+(`MAX_TOOL_CALLS = 12`, `SYNTHESIS_TIMEOUT_S = 90`, `MAX_ROWS = 60`).
+`modules/evidence_tools.py` implements them as THIN WRAPPERS over the same readers the
+contracted routes use — placements by order / by machine / by window, a machine's
+occupancy (spans, the gaps between them, totals), the whole lateness set, the cost
+ledger and its lines, gate findings, calendars and closures, the capability registry,
+this run's entity vocabulary, and record-fetch by id. Three properties, and the
+verification pass depends on all three: typed results; **rows that carry their record
+ids**; a budget whose exhaustion produces an honest partial naming what was consulted,
+never a stall. The surface is enumerated into `modules/synthesis_prompt.md` — a
+**governed artifact** on the `parse_prompt.md` discipline (versioned, reviewed,
+committed with its doc update) — and a parity test binds the enum, the meanings, the
+argument lists, the live implementations and the prompt to the same closed set. Every
+call is logged with its arguments; `EvidenceToolbox.fetch_source` is the verifier's own
+re-fetch and is deliberately NOT budgeted and NOT model-callable, because a
+verification that had to ask the loop's permission would not be independent. **The
+surface is read-only by construction**, and a vocabulary test asserts that no tool name
+can contain a mutation verb.
+
+**CU2 — THE SYNTHESIS LOOP.** `modules/synthesizer.py`: on an unmatched intent (and
+only then), the model receives the question, the same three context channels the parse
+reads, and the tool surface; it emits one strict JSON object per turn — a tool call, a
+set of CLAIMS, or an honest `cannot_answer` — until it answers or the budget closes it,
+at which point it is TOLD the budget is gone and asked for what it has. A malformed
+emission is nudged once. Each claim is a sentence plus the record ids the model
+BELIEVES support it. **The draft never renders.**
+
+**CU3 — CLAIM-LEVEL VERIFICATION (`modules/claim_verifier.py`), deterministic code,
+never a model.** For each claim it independently re-fetches the cited records from the
+evidence index and the snapshot — not from the loop's transcript — and checks the
+claim's assertions with the render validator's discipline: timestamps as minute tuples,
+durations normalized across minutes/hours/days (comparatives read as inequalities),
+entity names resolved through the identity map, figures against what the toolbox itself
+computed, citations required to name a REAL record. The outcome taxonomy:
+
+  * **VERIFIED** — every checkable assertion grounds in the cited records, at least one
+    of them a FIGURE or a TIME rather than a name, the claim is not the draft's own
+    conclusion, and any quantifier it makes was enumerable from a single tool call.
+    Renders as cited, in the proven register.
+  * **INTERPRETIVE** — nothing checkable (an aggregate read, a mechanism, an
+    inference), or part of it unspoken-to by the cited records, or it grounds but cites
+    nothing, or it quantifies over a set nobody enumerated (the sample is then named),
+    or it is the conclusion. Renders labeled, with its consulted records listed.
+    First-class conversation (R-AI5(6)), not a failure.
+  * **FAILED** — a checkable assertion CONTRADICTS the evidence and nothing else the
+    loop read carries it either, or the claim cites a record that does not exist, or it
+    names an entity this run does not have. CUT.
+
+**The three-way distinction is the design.** An assertion the records do not speak to
+is NOT a contradiction — it is unproven, and unproven means labeled, not deleted
+(R-AI5(3): "remain visibly synthesis or are softened or cut"). Both halves were learned
+from the first live run, which cut three TRUE claims: one for citing a value where an
+id belonged, one for quoting a due date the cited metric did not carry (a sibling
+record did), one for an "over 9 days" comparative checked as an equality.
+**Load-bearing** is computed here too, never asserted by the model: a cut claim is
+load-bearing if it was the draft's conclusion, or if cutting it leaves nothing
+verified — and the answer then says so, without repeating the cut figure.
+
+**CU4 — THE ANSWER SURFACE.** A synthesis answer renders as CLAIM BLOCKS with per-claim
+provenance visible: a verified claim carries `[record: …]` exactly like testimony, an
+interpretive claim carries `[synthesis — read from: …]`. The `synthesis` register joins
+the closed register vocabulary (add, never repurpose) in `REGISTER_BY_SUBJECT`, so the
+API chip and the rendered envelope still resolve through one source; the cockpit gains
+`--reg-synthesis` / `--synthesis-mark-*` tokens in both themes and the panel's register
+class, with the per-claim badge treatment left as tokens for the founder to tune. The
+rendered-by line NAMES THE TIER and the tool-call count. The synthesis body joins the
+authored-copy render path: its claims were verified sentence by sentence, and handing
+them to the rendering model to reword would dissolve exactly what was verified.
+**"Prove it"** is a new member of BOTH parse vocabularies (`FollowupKind.PROVE_IT` and
+`Intent.PROVE_IT`, the pair `confirm-take` already set), dispatched BEFORE intent — what
+is being questioned is our own sentence, not a status of the plan — and answered by
+re-running the grounding pass on one claim: the record behind it, or the honest "that
+part is my inference from A and B, here's each". The claims survive the turn boundary in
+a bounded per-session cache of the AI layer's own output, cleared the moment any other
+answer is given (M10 has no write path; the durable record is the question ledger, whose
+entry now carries per-claim provenance and every tool call with its arguments —
+R-AI5(5)'s seed).
+
+**CU5 — THE ACCEPTANCE SWEEP.** `tests/ai_exam/sweeps/2026-07-26-synthesis/` — SIX banks, **304 questions**, live
+against the pinned glass_box world, one shared parser and ONE shared synthesizer so both
+tiers' counts are the sweep's. The new bank (`banks/sweep_synthesis.txt`, 30 questions)
+is uncontracted BY CONSTRUCTION — the flagship aggregate-cause pair, the 4A.5a residue,
+aggregates and shape reads, cross-entity comparisons, the money questions, four
+honesty-under-pressure questions whose premises the evidence does not support, rider
+(b)'s coaching chain, and a SEAL-FROM-THE-OTHER-SIDE section of contracted questions
+that must NOT reach the second tier. `EXPECT route=synthesis` there does double duty: it
+grades routing AND it is the seal.
+
+**Result: 90 of 93 graded expectations met** (baseline 61/63 over 274 questions).
+Mechanical signals: exception 0, empty 0, validator 0, dark-evidence 0, dead-door 0 —
+all as the baseline — and **absent-entity 3, identical to the baseline's three**. On the
+SHARED banks expect-miss went 2 -> 1; the two that remain are in the new bank and are
+named below. **Zero FAILED claims rendered**, which is the floor the whole pass exists
+to hold. Parse counts improved on every axis: 317 parses, **0 retries, 0 malformed**
+(the baseline had 2 and 4), 6 clarifies, median parse 1050 ms.
+
+**The second tier, measured:** 32 synthesis answers, **100 claims — 42 VERIFIED, 55
+INTERPRETIVE, 3 FAILED-and-cut**, 3 of the cut load-bearing (each said out loud), 8
+honest couldn't-answers, 96 tool calls, **0 budget exhaustions and 0 timeouts**. The
+tool histogram is the shape of the questions: machine_occupancy 21, cost_ledger 15,
+placements_for_machine 15, lateness_set 14, entity_vocabulary 12, placements_for_order
+12, placements_in_window 3, calendars 2, fetch_record 2.
+
+**THE SEAL, MEASURED.** Against the 4A.5a baseline, question by question, **6 route
+moves out of 212 shared questions — and the 120-question route fan moved NOTHING**. Of
+the six: three are `NEAR_MISS -> synthesis` (questions that used to dead-end now get
+answered), one is the 4A.5a residue resolving (`whats holding CUT-01`: NEAR_MISS ->
+synthesis, a real occupancy read lighting seven bars), and two are judgment calls logged
+for the founder in RUBRIC.md (`are you sure about that`: CLARIFY -> prove-it; `maybe if
+splitting is allowed less orders would be late`: advice -> synthesis). **Both 4A.5a
+expect-misses are resolved** — the other via rider (b), which now binds
+`concept=min_chunk`.
+
+**The three remaining misses, not relaxed away.** (1) "are you sure about that" now
+reaches `prove-it` rather than the `verification` clarify; both are honest and neither
+capitulates, and which register is right for a planner who is unsure is a founder
+question, logged as precedent rather than settled by editing the bank. (2) "how much of
+CUT-01s week is actually working time" -> `downtime`, which answers the complement of
+what was asked. (3) "how many orders will be late next month" -> `late-orders`, which
+answers about THIS plan a question asked about next month. Both expectations were kept
+STRICT on purpose: they are real conversation issues, and a bank edited to match
+behaviour grades nothing.
+
+**RIDER (b) — the capability registry gains `min_chunk`** (§5.3, authored, ordered
+before `splittable` so it wins over the bare "chunk"/"split" triggers). 4A.5a's named
+residue: a planner who had just been coached on splitting asked "is there a minimum
+piece size" and the registry had no concept for it. The knob was real and specified all
+along; it simply had no entry. Live in the sweep: the question now binds
+`concept=min_chunk` and coaches the field with its § citation.
+
+**RIDER (c) — TOTAL conversational latency, stated.** Rider (c), from the sweep: **parse + contracted route — n=272, median 1275 ms,
+p90 2502 ms. Parse + synthesis — n=32, median 9659 ms, p90 16030 ms.** The second tier
+costs roughly 7.5x the median and 6.4x the p90 of a contracted answer, and that is the
+number round five needs before it happens: a planner waiting ~1.3 s for a proven answer
+will wait ~10 s for a reasoned one, but not silently and not without knowing which they
+are getting — which is why the rendered-by line names the tier. The loop's own median is
+8235 ms of that, so the parse and the render are noise beside the agentic reads.
+
+**RIDER (d) — THE ROLLING PRE-ROUTE: RULED 4A.5c SCOPE, and why.** `classify_rolling`
+is still a keyword matcher, and retiring it into the parse vocabulary is NOT a small
+seam: the three rolling intents already exist in the taxonomy, but the parse resolves
+SUBJECTS against the Explainer's snapshot, which on a rolling run is **window 0 only**.
+An order sitting in the beyond-horizon tray would resolve to nothing and be answered as
+ABSENT — a confident-wrong answer replacing a correct one. Retiring the pre-route
+therefore requires the rolling document's vocabulary to feed subject resolution first,
+which is the connector-era snapshot debt already named in `rolling_questions.py`. It is
+4A.5c scope, and it does not survive past the arc.
+
+**WHAT THE SWEEP FOUND AND WHAT WAS REPAIRED IN-SESSION** (the instrument exception,
+on the 4A.5a precedent: found live, repaired, and the WHOLE sweep re-run — three times
+in all, because a committed sweep that does not match the committed code is not
+evidence). Five defects, every one of them a real one:
+
+  1. **The parse stretched uncontracted questions into the nearest contracted route.**
+     "which machine is the bottleneck" -> `advice`; "is the work spread evenly" ->
+     `inventory`; "whats the busiest day" -> `briefing`; "why so many late orders" ->
+     `late-orders`. Cause: the prompt told the model that `unmatched` was HONEST but
+     never that it was now ANSWERED, and a route that answers something adjacent looks
+     better than a refusal. Parse prompt **v3**: rule 7 rewritten to say what
+     `unmatched` costs (nothing) and what stretching costs (the planner's actual
+     question, answered with perfect citations, which is worse rather than better),
+     with the aggregate/comparison/cause/money/hypothetical families named and three
+     worked contrasts (`late-orders` is not "why are so many late", `briefing` is not
+     "is this plan front-loaded", `inventory` is not "is the work spread evenly").
+  2. **"whats holding CUT-01" was answered as an absent entity.** The parse typed the
+     MACHINE as an ORDER; the relevance guard then told a planner that the machine on
+     their screen is not in the schedule. Dispatch now checks whether an unresolved
+     subject's words name a real entity of another KIND and, when they do, sends the
+     turn to the second tier rather than declaring it absent. The 4A.5a expect-miss is
+     now MET: the answer is a real occupancy read with seven lit bars.
+  3. **A clarify that could not have helped.** The same question also hedged with
+     `ambiguous-intent` on an intent whose required subject it never supplied — asking
+     the planner to choose between two framings of an answer that could not be
+     assembled either way. This is 4A.5a's forbid-clarify-on-unmatched rule
+     generalized: when the planner NAMED something that resolved and the intent is
+     missing a slot it requires, the honest destination is the second tier. When
+     nothing resolved, asking is still exactly right and still happens.
+  4. **`prove-it` was recognized and thrown away.** Asked "how do you know that", the
+     model emitted `"intent": "prove-it"` — an id the vocabulary did not carry — so
+     the parse was discarded as malformed twice and the planner got "I couldn't make
+     out what that one was asking", for the one question this session is best at
+     answering. Diagnosed only because the sweep had just gained MALFORMED-EMISSION
+     SAMPLING (added when the first run produced a `parse-failed` nobody could
+     explain: instrument first, change the rule on evidence). `prove-it` is now an
+     Intent as well as a follow-up kind, exactly as `confirm-take` already was —
+     `Intent`, `INTENT_MEANINGS`, `ROUTE_TAXONOMY`, `ROUTE_OFFERS` and prompt **v4** in
+     one reviewed change.
+  5. **The cost ledger had no citable totals.** Its headline figures lived only in the
+     result summary, which carries no ids, so the model cited the string "cost_ledger"
+     and three true claims about the plan's money were cut for it. The ledger now
+     returns a `totals` row citing the Schedule entity that carries them.
+
+The verifier's own calibration was repaired the same way, from a bench run before the
+sweep: a tolerance taken from the RECORD's value (so a record full of epoch seconds
+waved everything through), a Metric's duration invisible because the unit is named in
+`unit`/`name` rather than the key, the audit trail's own `timestamp` compared against a
+claim's schedule time, comparatives checked as equalities, and thousands separators
+splitting "$5,906" into two numbers. Every one of those errors ran in the SAME
+direction — cutting true claims — which is worth naming: a checker that cannot tell
+under-citation from fabrication makes the answer thinner and less honest than the
+evidence supports, and teaches the model to stop citing rather than to cite better.
+
+**OUT OF SCOPE (named, not built).** Provenance telemetry aggregation and the
+frequency-weighted Pareto / promotion loop (R-AI5(5)/(7)) — 4A.5c. Any promotion of a
+synthesis shape into a contracted route. New contracted route content beyond rider (b).
+Rendering-model changes. Cockpit visual tuning beyond shipping the tokens.
+
+**NAMED LIMITS OF THE VERIFICATION PASS** (stated rather than implied away). (a) A
+COUNT is checked against the tallies the toolbox computed for the ENUMERATING call, not
+typed to the predicate it sits beside — a figure semantically attached to the wrong
+tally of the same call can still pass. (b) A percentage or ratio the model works out is
+its own arithmetic and can never be verified; such claims land interpretive by
+construction, and the prompt says so. (c) Entity grounding runs through the identity
+map, so a claim naming a real entity the cited records do not mention is UNDER-CITED
+(interpretive), not contradicted. (d) The wide-scope appeal means a fabricated figure
+that coincides with something else the loop read is labeled interpretive rather than
+cut.
+
+Lesson: the hard part was not making a model reason over evidence — it did that on the
+first try — but deciding, in code, what its sentences had EARNED. Every calibration
+error on the first live run ran in the same direction: a checker that cannot tell
+under-citation from fabrication cuts true claims, and leaves the answer thinner and less
+honest than the evidence supports. Strictness is the floor, but a floor that punishes
+citing at all teaches the model to stop citing.
