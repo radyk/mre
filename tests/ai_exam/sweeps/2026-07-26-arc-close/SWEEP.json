@@ -1,0 +1,450 @@
+{
+  "target": "out-dir:gb_pinned",
+  "snapshot": "snap-exam",
+  "banks": [
+    {
+      "bank": "regression_founder",
+      "questions": 28,
+      "target": "out-dir:gb_pinned",
+      "graded": 0,
+      "met": 0,
+      "findings": {},
+      "llm_calls": 45,
+      "synthesis": {
+        "answers": 1,
+        "claims": 3,
+        "verified": 1,
+        "interpretive": 2,
+        "failed_and_cut": 0,
+        "ungrounded_load_bearing": 0,
+        "unanswerable": 0,
+        "budget_exhausted": 0,
+        "tool_calls": 1,
+        "tool_histogram": {
+          "lateness_set": 1
+        },
+        "calls_per_answer": {
+          "1": 1
+        }
+      },
+      "shadow": {
+        "shadowed": 0,
+        "clean": 0,
+        "diverged": 0,
+        "unchecked": 0,
+        "provenance_strengthened": 0,
+        "by_intent": {}
+      },
+      "latency": {
+        "route": {
+          "n": 27,
+          "median_ms": 1580.3,
+          "p90_ms": 3491.5
+        },
+        "synthesis": {
+          "n": 1,
+          "median_ms": 8212.0,
+          "p90_ms": 8212.0
+        }
+      }
+    },
+    {
+      "bank": "regression_founder_r4",
+      "questions": 15,
+      "target": "out-dir:gb_pinned",
+      "graded": 15,
+      "met": 15,
+      "findings": {},
+      "llm_calls": 19,
+      "synthesis": {
+        "answers": 0,
+        "claims": 0,
+        "verified": 0,
+        "interpretive": 0,
+        "failed_and_cut": 0,
+        "ungrounded_load_bearing": 0,
+        "unanswerable": 0,
+        "budget_exhausted": 0,
+        "tool_calls": 0,
+        "tool_histogram": {},
+        "calls_per_answer": {}
+      },
+      "shadow": {
+        "shadowed": 0,
+        "clean": 0,
+        "diverged": 0,
+        "unchecked": 0,
+        "provenance_strengthened": 0,
+        "by_intent": {}
+      },
+      "latency": {
+        "route": {
+          "n": 15,
+          "median_ms": 1389.2,
+          "p90_ms": 2960.2
+        },
+        "synthesis": {
+          "n": 0,
+          "median_ms": null,
+          "p90_ms": null
+        }
+      }
+    },
+    {
+      "bank": "sweep_rolling",
+      "questions": 17,
+      "target": "out-dir:rolling_pinned (rolling)",
+      "graded": 17,
+      "met": 17,
+      "findings": {
+        "absent-entity": 1
+      },
+      "llm_calls": 18,
+      "synthesis": {
+        "answers": 0,
+        "claims": 0,
+        "verified": 0,
+        "interpretive": 0,
+        "failed_and_cut": 0,
+        "ungrounded_load_bearing": 0,
+        "unanswerable": 0,
+        "budget_exhausted": 0,
+        "tool_calls": 0,
+        "tool_histogram": {},
+        "calls_per_answer": {}
+      },
+      "shadow": {
+        "shadowed": 0,
+        "clean": 0,
+        "diverged": 0,
+        "unchecked": 0,
+        "provenance_strengthened": 0,
+        "by_intent": {}
+      },
+      "latency": {
+        "route": {
+          "n": 17,
+          "median_ms": 1233.2,
+          "p90_ms": 1651.1
+        },
+        "synthesis": {
+          "n": 0,
+          "median_ms": null,
+          "p90_ms": null
+        }
+      }
+    },
+    {
+      "bank": "sweep_routes",
+      "questions": 120,
+      "target": "out-dir:gb_pinned",
+      "graded": 0,
+      "met": 0,
+      "findings": {},
+      "llm_calls": 152,
+      "synthesis": {
+        "answers": 0,
+        "claims": 0,
+        "verified": 0,
+        "interpretive": 0,
+        "failed_and_cut": 0,
+        "ungrounded_load_bearing": 0,
+        "unanswerable": 0,
+        "budget_exhausted": 0,
+        "tool_calls": 0,
+        "tool_histogram": {},
+        "calls_per_answer": {}
+      },
+      "shadow": {
+        "shadowed": 0,
+        "clean": 0,
+        "diverged": 0,
+        "unchecked": 0,
+        "provenance_strengthened": 0,
+        "by_intent": {}
+      },
+      "latency": {
+        "route": {
+          "n": 120,
+          "median_ms": 1309.9,
+          "p90_ms": 2761.6
+        },
+        "synthesis": {
+          "n": 0,
+          "median_ms": null,
+          "p90_ms": null
+        }
+      }
+    },
+    {
+      "bank": "sweep_scenarios",
+      "questions": 49,
+      "target": "out-dir:gb_pinned",
+      "graded": 48,
+      "met": 47,
+      "findings": {
+        "expect-miss": 1
+      },
+      "llm_calls": 72,
+      "synthesis": {
+        "answers": 4,
+        "claims": 10,
+        "verified": 3,
+        "interpretive": 7,
+        "failed_and_cut": 0,
+        "ungrounded_load_bearing": 0,
+        "unanswerable": 2,
+        "budget_exhausted": 0,
+        "tool_calls": 4,
+        "tool_histogram": {
+          "cost_ledger": 1,
+          "entity_vocabulary": 1,
+          "lateness_set": 1,
+          "placements_for_machine": 1
+        },
+        "calls_per_answer": {
+          "0": 2,
+          "2": 2
+        }
+      },
+      "shadow": {
+        "shadowed": 0,
+        "clean": 0,
+        "diverged": 0,
+        "unchecked": 0,
+        "provenance_strengthened": 0,
+        "by_intent": {}
+      },
+      "latency": {
+        "route": {
+          "n": 45,
+          "median_ms": 1606.5,
+          "p90_ms": 2593.9
+        },
+        "synthesis": {
+          "n": 4,
+          "median_ms": 6571.3,
+          "p90_ms": 11277.8
+        }
+      }
+    },
+    {
+      "bank": "sweep_synthesis",
+      "questions": 30,
+      "target": "out-dir:gb_pinned",
+      "graded": 30,
+      "met": 30,
+      "findings": {
+        "ungrounded-load-bearing": 1
+      },
+      "llm_calls": 120,
+      "synthesis": {
+        "answers": 16,
+        "claims": 65,
+        "verified": 25,
+        "interpretive": 37,
+        "failed_and_cut": 3,
+        "ungrounded_load_bearing": 1,
+        "unanswerable": 1,
+        "budget_exhausted": 0,
+        "tool_calls": 59,
+        "tool_histogram": {
+          "calendars": 1,
+          "cost_ledger": 8,
+          "entity_vocabulary": 8,
+          "fetch_record": 2,
+          "lateness_set": 6,
+          "machine_occupancy": 19,
+          "placements_for_machine": 10,
+          "placements_for_order": 2,
+          "placements_in_window": 3
+        },
+        "calls_per_answer": {
+          "0": 1,
+          "1": 3,
+          "2": 2,
+          "3": 2,
+          "4": 1,
+          "5": 3,
+          "6": 2,
+          "7": 1,
+          "8": 1
+        }
+      },
+      "shadow": {
+        "shadowed": 2,
+        "clean": 2,
+        "diverged": 0,
+        "unchecked": 0,
+        "provenance_strengthened": 1,
+        "by_intent": {
+          "lateness-cause": {
+            "shadowed": 2,
+            "diverged": 0,
+            "unchecked": 0
+          }
+        }
+      },
+      "latency": {
+        "route": {
+          "n": 14,
+          "median_ms": 1083.8,
+          "p90_ms": 1950.3
+        },
+        "synthesis": {
+          "n": 16,
+          "median_ms": 11735.7,
+          "p90_ms": 20871.7
+        }
+      }
+    },
+    {
+      "bank": "sweep_traps",
+      "questions": 62,
+      "target": "out-dir:gb_pinned",
+      "graded": 0,
+      "met": 0,
+      "findings": {
+        "absent-entity": 3,
+        "ungrounded-load-bearing": 2
+      },
+      "llm_calls": 125,
+      "synthesis": {
+        "answers": 13,
+        "claims": 21,
+        "verified": 7,
+        "interpretive": 12,
+        "failed_and_cut": 2,
+        "ungrounded_load_bearing": 2,
+        "unanswerable": 7,
+        "budget_exhausted": 0,
+        "tool_calls": 27,
+        "tool_histogram": {
+          "cost_ledger": 4,
+          "entity_vocabulary": 5,
+          "lateness_set": 5,
+          "machine_occupancy": 3,
+          "placements_for_machine": 4,
+          "placements_for_order": 5,
+          "placements_in_window": 1
+        },
+        "calls_per_answer": {
+          "0": 3,
+          "1": 3,
+          "2": 3,
+          "4": 2,
+          "5": 2
+        }
+      },
+      "shadow": {
+        "shadowed": 1,
+        "clean": 1,
+        "diverged": 0,
+        "unchecked": 0,
+        "provenance_strengthened": 0,
+        "by_intent": {
+          "lateness-cause": {
+            "shadowed": 1,
+            "diverged": 0,
+            "unchecked": 0
+          }
+        }
+      },
+      "latency": {
+        "route": {
+          "n": 49,
+          "median_ms": 1625.2,
+          "p90_ms": 3175.9
+        },
+        "synthesis": {
+          "n": 13,
+          "median_ms": 8518.0,
+          "p90_ms": 11690.1
+        }
+      }
+    }
+  ],
+  "totals": {
+    "questions": 321,
+    "graded": 110,
+    "met": 109,
+    "findings": {
+      "absent-entity": 4,
+      "expect-miss": 1,
+      "ungrounded-load-bearing": 3
+    }
+  },
+  "skipped_banks": [],
+  "shadow": {
+    "shadowed": 3,
+    "clean": 3,
+    "diverged": 0,
+    "unchecked": 0,
+    "provenance_strengthened": 1,
+    "by_intent": {
+      "lateness-cause": {
+        "shadowed": 3,
+        "diverged": 0,
+        "unchecked": 0
+      }
+    }
+  },
+  "synthesis_totals": {
+    "answers": 34,
+    "claims": 99,
+    "verified": 36,
+    "interpretive": 58,
+    "failed_and_cut": 5,
+    "ungrounded_load_bearing": 3,
+    "unanswerable": 10,
+    "budget_exhausted": 0,
+    "tool_calls": 91,
+    "tool_histogram": {
+      "calendars": 1,
+      "cost_ledger": 13,
+      "entity_vocabulary": 14,
+      "fetch_record": 2,
+      "lateness_set": 13,
+      "machine_occupancy": 22,
+      "placements_for_machine": 15,
+      "placements_for_order": 7,
+      "placements_in_window": 4
+    }
+  },
+  "latency": {
+    "route": {
+      "n": 287,
+      "median_ms": 1376.5,
+      "p90_ms": 2791.3
+    },
+    "synthesis": {
+      "n": 34,
+      "median_ms": 9296.7,
+      "p90_ms": 18298.5
+    }
+  },
+  "parser_stats": {
+    "calls": 335,
+    "parses": 334,
+    "retries": 1,
+    "malformed": 2,
+    "clarifies": 10,
+    "unavailable": 0,
+    "median_latency_ms": 1159.064949999447,
+    "malformed_samples": [
+      "```json\n{\n  \"intent\": \"verification\",\n  \"subjects\": [],\n  \"polarity\": null,\n  \"followup_of\": \"none\",\n  \"confidence\": 0.92,\n  \"nearest\": [],\n  \"dropped_qualifier\": \"\",\n  \"clarify\": {\n    \"reason\": \"verification\",\n    \"detail\": \"the previous answer about which orders are late\"\n  }\n}\n```",
+      "```json\n{\n  \"intent\": \"verification\",\n  \"subjects\": [],\n  \"polarity\": null,\n  \"followup_of\": \"none\",\n  \"confidence\": 0.92,\n  \"nearest\": [\"late-orders\"],\n  \"dropped_qualifier\": \"\",\n  \"clarify\": {\n    \"reason\": \"verification\",\n    \"detail\": \"asking whether the previous answer about which orders are late was correct\"\n  }\n}\n```"
+    ]
+  },
+  "synth_stats": {
+    "syntheses": 37,
+    "calls": 144,
+    "tool_calls": 102,
+    "malformed": 5,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 10,
+    "median_latency_ms": 7811.4907999988645,
+    "p90_latency_ms": 15678.562200002489
+  }
+}

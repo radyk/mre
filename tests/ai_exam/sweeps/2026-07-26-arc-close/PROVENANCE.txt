@@ -1,0 +1,416 @@
+PROVENANCE REPORT -- synthesis residue, clustered and ranked
+source      : tests\ai_exam\sweeps\2026-07-26-arc-close\ledger.jsonl
+questions   : 321
+------------------------------------------------------------------------
+R-AI5(6) -- READ THIS BEFORE READING THE PARETO.
+
+  "The target is synthesis rare where a proof exists and honest
+   where it does not -- NEVER ZERO. Interpretive residue (takes,
+   aggregate reads) is first-class conversation, protected, not
+   minimized."
+
+Clusters marked NOT-PROMOTABLE-BY-DESIGN below are exactly that
+residue. They are excluded from the Pareto and are NOT improvement
+backlog. A shape whose sentences the evidence cannot ground is not a
+gap in the route table -- it is a conversation the product is
+supposed to be able to have. Contracting it could only produce a
+route that refuses or one that pretends.
+------------------------------------------------------------------------
+TIERS
+  contracted routes      : 276
+  synthesis (second tier): 34  (unanswerable 10)
+  honest floor           : 11   (REFUSED / NEAR_MISS / CLARIFY)
+  claims                 : verified 36  interpretive 58  cut 5  (load-bearing cut 3)
+------------------------------------------------------------------------
+CLUSTERING METHOD (stated, not implied)
+  Two synthesis answers are the same SHAPE when all three match:
+    1. intent adjacency  -- the <=2 contracted intents the parse
+                            judged closest, sorted
+    2. subject kinds     -- order / machine / customer / concept,
+                            sorted; NOT the refs
+    3. dominant tool     -- the tool the loop called MOST (ties to
+                            the earliest). The whole call set is
+                            reported but is NOT part of the key:
+                            one extra exploratory call would else
+                            split a shape into two clusters of one.
+  This is not semantic clustering. It SPLITS shapes whose parses
+  disagreed, so it UNDER-states frequency; it never invents one.
+  Two clusters with the same exemplar shape side by side is the
+  tell, and a human merges them by naming the shape in a dossier.
+------------------------------------------------------------------------
+RECURRING SHAPES (30 clusters)
+
+  1. unanchored|no-subject|cost_ledger
+     frequency  : 2
+     claims     : verified 4  interpretive 2  cut 1   (verified share 67%)
+     leaned on  : cost_ledger
+     also read  : lateness_set, placements_for_order, machine_occupancy
+     weight     : 1.33  (frequency x verified share)
+     exemplars  :
+       - "how does the setup cost compare to the tardiness cost"
+       - "what's the optimal plan"
+
+  2. unanchored|no-subject|lateness_set
+     frequency  : 2
+     claims     : verified 3  interpretive 3  cut 0   (verified share 50%)
+     leaned on  : lateness_set
+     also read  : -
+     weight     : 1.00  (frequency x verified share)
+     exemplars  :
+       - "is that correct"
+       - "how many orders will be late next month"
+
+  3. lateness-cause+schedule|no-subject|cost_ledger
+     frequency  : 2
+     claims     : verified 3  interpretive 4  cut 1   (verified share 43%)
+     leaned on  : cost_ledger
+     also read  : lateness_set, placements_for_order, placements_for_machine, machine_occupancy, placements_in_window
+     weight     : 0.86  (frequency x verified share)
+     exemplars  :
+       - "is there a better schedule"
+       - "find me a faster schedule"
+
+  4. unanchored|no-subject|no-tools   [NOT-PROMOTABLE-BY-DESIGN]
+     frequency  : 2
+     claims     : verified 0  interpretive 0  cut 0   (verified share 0%)
+     leaned on  : (nothing consulted)
+     also read  : -
+     protected  : consulted no evidence -- conversational, not a question about the plan
+     weight     : 0.00  (frequency x verified share)
+     exemplars  :
+       - "this is not helpful"
+       - "come on, just tell me"
+
+  5. briefing+lateness-cause|no-subject|cost_ledger
+     frequency  : 1
+     claims     : verified 4  interpretive 1  cut 0   (verified share 80%)
+     leaned on  : cost_ledger
+     also read  : lateness_set, placements_for_order, placements_for_machine, machine_occupancy
+     weight     : 0.80  (frequency x verified share)
+     exemplars  :
+       - "is there anything unusual about this schedule"
+
+  6. edit-cost+lateness-cause|no-subject|cost_ledger
+     frequency  : 1
+     claims     : verified 4  interpretive 1  cut 0   (verified share 80%)
+     leaned on  : cost_ledger
+     also read  : -
+     weight     : 0.80  (frequency x verified share)
+     exemplars  :
+       - "where is most of the money going in this plan"
+
+  7. advice+lateness-cause|no-subject|cost_ledger
+     frequency  : 1
+     claims     : verified 3  interpretive 1  cut 0   (verified share 75%)
+     leaned on  : cost_ledger
+     also read  : lateness_set
+     weight     : 0.75  (frequency x verified share)
+     exemplars  :
+       - "cant you just make it cheaper"
+
+  8. late-orders+lateness-cause|no-subject|fetch_record
+     frequency  : 1
+     claims     : verified 2  interpretive 1  cut 0   (verified share 67%)
+     leaned on  : fetch_record
+     also read  : lateness_set, cost_ledger
+     weight     : 0.67  (frequency x verified share)
+     exemplars  :
+       - "which customer is hurt most by the lateness"
+
+  9. unanchored|order|lateness_set
+     frequency  : 1
+     claims     : verified 2  interpretive 1  cut 0   (verified share 67%)
+     leaned on  : lateness_set
+     also read  : entity_vocabulary, placements_for_machine, placements_for_order
+     weight     : 0.67  (frequency x verified share)
+     exemplars  :
+       - "why is CUT-01 late"
+
+  10. machine-idle+machine-schedule|no-subject|machine_occupancy
+     frequency  : 1
+     claims     : verified 3  interpretive 2  cut 1   (verified share 60%)
+     leaned on  : machine_occupancy
+     also read  : entity_vocabulary
+     weight     : 0.60  (frequency x verified share)
+     exemplars  :
+       - "which machine is the bottleneck"
+
+  11. advice+edit-cost|concept|cost_ledger
+     frequency  : 1
+     claims     : verified 2  interpretive 2  cut 0   (verified share 50%)
+     leaned on  : cost_ledger
+     also read  : lateness_set
+     weight     : 0.50  (frequency x verified share)
+     exemplars  :
+       - "is the overtime worth what it bought us"
+
+  12. advice+machine-schedule|machine|entity_vocabulary
+     frequency  : 1
+     claims     : verified 2  interpretive 3  cut 0   (verified share 40%)
+     leaned on  : entity_vocabulary
+     also read  : placements_for_machine, cost_ledger, lateness_set, placements_for_order
+     weight     : 0.40  (frequency x verified share)
+     exemplars  :
+       - "what would happen to this plan if CUT-01 went down tomorrow"
+
+  13. lateness-cause+machine-schedule|machine|machine_occupancy
+     frequency  : 1
+     claims     : verified 2  interpretive 3  cut 1   (verified share 40%)
+     leaned on  : machine_occupancy
+     also read  : entity_vocabulary, calendars, cost_ledger
+     weight     : 0.40  (frequency x verified share)
+     exemplars  :
+       - "why are all five machines overloaded"
+
+  14. unanchored|order|entity_vocabulary
+     frequency  : 1
+     claims     : verified 1  interpretive 2  cut 0   (verified share 33%)
+     leaned on  : entity_vocabulary
+     also read  : placements_for_machine
+     weight     : 0.33  (frequency x verified share)
+     exemplars  :
+       - "whats holding CUT-01"
+
+  15. machine-idle+machine-schedule|machine|placements_for_machine   [NOT-PROMOTABLE-BY-DESIGN]
+     frequency  : 1
+     claims     : verified 1  interpretive 3  cut 0   (verified share 25%)
+     leaned on  : placements_for_machine
+     also read  : entity_vocabulary, machine_occupancy
+     protected  : predominantly conclusions -- a take; R-AI5(6) protects it
+     weight     : 0.25  (frequency x verified share)
+     exemplars  :
+       - "compare CUT-01 and PRESS-SLOW for me"
+
+  16. advice+edit-cost|no-subject|cost_ledger   [NOT-PROMOTABLE-BY-DESIGN]
+     frequency  : 1
+     claims     : verified 0  interpretive 4  cut 0   (verified share 0%)
+     leaned on  : cost_ledger
+     also read  : lateness_set
+     protected  : predominantly interpretive -- an aggregate read; no route could prove it
+     weight     : 0.00  (frequency x verified share)
+     exemplars  :
+       - "can you make it cheaper"
+
+  17. briefing+schedule|no-subject|cost_ledger   [NOT-PROMOTABLE-BY-DESIGN]
+     frequency  : 1
+     claims     : verified 0  interpretive 4  cut 0   (verified share 0%)
+     leaned on  : cost_ledger
+     also read  : lateness_set, placements_in_window
+     protected  : predominantly interpretive -- an aggregate read; no route could prove it
+     weight     : 0.00  (frequency x verified share)
+     exemplars  :
+       - "is this plan front loaded or spread out"
+
+  18. briefing|no-subject|no-tools   [NOT-PROMOTABLE-BY-DESIGN]
+     frequency  : 1
+     claims     : verified 0  interpretive 0  cut 0   (verified share 0%)
+     leaned on  : (nothing consulted)
+     also read  : -
+     protected  : consulted no evidence -- conversational, not a question about the plan
+     weight     : 0.00  (frequency x verified share)
+     exemplars  :
+       - "this is not helpful"
+
+  19. coaching|concept|no-tools   [NOT-PROMOTABLE-BY-DESIGN]
+     frequency  : 1
+     claims     : verified 0  interpretive 0  cut 0   (verified share 0%)
+     leaned on  : (nothing consulted)
+     also read  : -
+     protected  : consulted no evidence -- conversational, not a question about the plan
+     weight     : 0.00  (frequency x verified share)
+     exemplars  :
+       - "the second one"
+
+  20. downtime|machine|no-tools   [NOT-PROMOTABLE-BY-DESIGN]
+     frequency  : 1
+     claims     : verified 0  interpretive 0  cut 0   (verified share 0%)
+     leaned on  : (nothing consulted)
+     also read  : -
+     protected  : consulted no evidence -- conversational, not a question about the plan
+     weight     : 0.00  (frequency x verified share)
+     exemplars  :
+       - "how much of CUT-01s week is actually working time"
+
+  21. excluded-orders+order-attributes|order|entity_vocabulary   [NOT-PROMOTABLE-BY-DESIGN]
+     frequency  : 1
+     claims     : verified 0  interpretive 0  cut 0   (verified share 0%)
+     leaned on  : entity_vocabulary
+     also read  : -
+     protected  : predominantly interpretive -- an aggregate read; no route could prove it
+     weight     : 0.00  (frequency x verified share)
+     exemplars  :
+       - "is ZZZ-1 in this schedule"
+
+  22. inventory+machine-schedule|no-subject|machine_occupancy   [NOT-PROMOTABLE-BY-DESIGN]
+     frequency  : 1
+     claims     : verified 0  interpretive 5  cut 1   (verified share 0%)
+     leaned on  : machine_occupancy
+     also read  : entity_vocabulary
+     protected  : predominantly interpretive -- an aggregate read; no route could prove it
+     weight     : 0.00  (frequency x verified share)
+     exemplars  :
+       - "is the work spread evenly across the machines"
+
+  23. inventory+machine-schedule|no-subject|placements_for_machine   [NOT-PROMOTABLE-BY-DESIGN]
+     frequency  : 1
+     claims     : verified 0  interpretive 6  cut 0   (verified share 0%)
+     leaned on  : placements_for_machine
+     also read  : entity_vocabulary
+     protected  : predominantly interpretive -- an aggregate read; no route could prove it
+     weight     : 0.00  (frequency x verified share)
+     exemplars  :
+       - "which orders are competing for the same machine"
+
+  24. lateness-cause+schedule|no-subject|no-tools   [NOT-PROMOTABLE-BY-DESIGN]
+     frequency  : 1
+     claims     : verified 0  interpretive 0  cut 0   (verified share 0%)
+     leaned on  : (nothing consulted)
+     also read  : -
+     protected  : consulted no evidence -- conversational, not a question about the plan
+     weight     : 0.00  (frequency x verified share)
+     exemplars  :
+       - "just give me a better schedule"
+
+  25. machine-schedule+order-schedule|order|entity_vocabulary   [NOT-PROMOTABLE-BY-DESIGN]
+     frequency  : 1
+     claims     : verified 0  interpretive 6  cut 0   (verified share 0%)
+     leaned on  : entity_vocabulary
+     also read  : placements_for_machine
+     protected  : predominantly interpretive -- an aggregate read; no route could prove it
+     weight     : 0.00  (frequency x verified share)
+     exemplars  :
+       - "whats holding CUT-01"
+
+  26. machine-schedule+schedule|no-subject|placements_in_window   [NOT-PROMOTABLE-BY-DESIGN]
+     frequency  : 1
+     claims     : verified 0  interpretive 2  cut 0   (verified share 0%)
+     leaned on  : placements_in_window
+     also read  : entity_vocabulary
+     protected  : predominantly conclusions -- a take; R-AI5(6) protects it
+     weight     : 0.00  (frequency x verified share)
+     exemplars  :
+       - "whats the busiest day in this schedule"
+
+  27. machine-schedule|machine|placements_for_machine   [NOT-PROMOTABLE-BY-DESIGN]
+     frequency  : 1
+     claims     : verified 0  interpretive 2  cut 0   (verified share 0%)
+     leaned on  : placements_for_machine
+     also read  : -
+     protected  : predominantly interpretive -- an aggregate read; no route could prove it
+     weight     : 0.00  (frequency x verified share)
+     exemplars  :
+       - "i was asking about PAINT-01 not CUT-01"
+
+  28. order-schedule+start-reason|order|entity_vocabulary   [NOT-PROMOTABLE-BY-DESIGN]
+     frequency  : 1
+     claims     : verified 0  interpretive 0  cut 0   (verified share 0%)
+     leaned on  : entity_vocabulary
+     also read  : placements_for_machine
+     protected  : predominantly interpretive -- an aggregate read; no route could prove it
+     weight     : 0.00  (frequency x verified share)
+     exemplars  :
+       - "why is ORD-13 idle"
+
+  29. unanchored|no-subject|entity_vocabulary   [NOT-PROMOTABLE-BY-DESIGN]
+     frequency  : 1
+     claims     : verified 0  interpretive 0  cut 0   (verified share 0%)
+     leaned on  : entity_vocabulary
+     also read  : -
+     protected  : predominantly interpretive -- an aggregate read; no route could prove it
+     weight     : 0.00  (frequency x verified share)
+     exemplars  :
+       - "that's wrong, try again"
+
+  30. unanchored|order|placements_for_order   [NOT-PROMOTABLE-BY-DESIGN]
+     frequency  : 1
+     claims     : verified 0  interpretive 0  cut 0   (verified share 0%)
+     leaned on  : placements_for_order
+     also read  : entity_vocabulary
+     protected  : predominantly interpretive -- an aggregate read; no route could prove it
+     weight     : 0.00  (frequency x verified share)
+     exemplars  :
+       - "when does CUT-01 finish"
+
+------------------------------------------------------------------------
+THE FREQUENCY-WEIGHTED PARETO (promotable clusters only)
+  ordering: frequency x verified share, descending.
+  cumulative runs over PROMOTABLE weight -- never over the whole
+  conversation (R-AI5(6)).
+
+  rank  weight  cum%   frequency  cluster
+  1     1.33    15%    2          unanchored|no-subject|cost_ledger
+  2     1.00    26%    2          unanchored|no-subject|lateness_set
+  3     0.86    35%    2          lateness-cause+schedule|no-subject|cost_ledger
+  4     0.80    44%    1          briefing+lateness-cause|no-subject|cost_ledger
+  5     0.80    53%    1          edit-cost+lateness-cause|no-subject|cost_ledger
+  6     0.75    61%    1          advice+lateness-cause|no-subject|cost_ledger
+  7     0.67    68%    1          late-orders+lateness-cause|no-subject|fetch_record
+  8     0.67    75%    1          unanchored|order|lateness_set
+  9     0.60    82%    1          machine-idle+machine-schedule|no-subject|machine_occupancy
+  10    0.50    88%    1          advice+edit-cost|concept|cost_ledger
+  11    0.40    92%    1          advice+machine-schedule|machine|entity_vocabulary
+  12    0.40    96%    1          lateness-cause+machine-schedule|machine|machine_occupancy
+  13    0.33    100%   1          unanchored|order|entity_vocabulary
+
+  NEXT PROMOTION CANDIDATE: unanchored|no-subject|cost_ledger
+    asked 2x, 67% of its
+    rendered claims grounded. Generate its dossier with:
+      python tools/promotion_dossier.py --cluster "unanchored|no-subject|cost_ledger" ...
+    The dossier is an APPLICATION. Promotion is a reviewed
+    change (R-AI5(7)); this tool never wires anything into
+    dispatch.
+------------------------------------------------------------------------
+PROTECTED RESIDUE (17 clusters) -- R-AI5(6)
+  Not backlog. Not a defect. Not counted above.
+  - unanchored|no-subject|no-tools  (x2)
+      consulted no evidence -- conversational, not a question about the plan
+      e.g. "this is not helpful"
+  - machine-idle+machine-schedule|machine|placements_for_machine  (x1)
+      predominantly conclusions -- a take; R-AI5(6) protects it
+      e.g. "compare CUT-01 and PRESS-SLOW for me"
+  - advice+edit-cost|no-subject|cost_ledger  (x1)
+      predominantly interpretive -- an aggregate read; no route could prove it
+      e.g. "can you make it cheaper"
+  - briefing+schedule|no-subject|cost_ledger  (x1)
+      predominantly interpretive -- an aggregate read; no route could prove it
+      e.g. "is this plan front loaded or spread out"
+  - briefing|no-subject|no-tools  (x1)
+      consulted no evidence -- conversational, not a question about the plan
+      e.g. "this is not helpful"
+  - coaching|concept|no-tools  (x1)
+      consulted no evidence -- conversational, not a question about the plan
+      e.g. "the second one"
+  - downtime|machine|no-tools  (x1)
+      consulted no evidence -- conversational, not a question about the plan
+      e.g. "how much of CUT-01s week is actually working time"
+  - excluded-orders+order-attributes|order|entity_vocabulary  (x1)
+      predominantly interpretive -- an aggregate read; no route could prove it
+      e.g. "is ZZZ-1 in this schedule"
+  - inventory+machine-schedule|no-subject|machine_occupancy  (x1)
+      predominantly interpretive -- an aggregate read; no route could prove it
+      e.g. "is the work spread evenly across the machines"
+  - inventory+machine-schedule|no-subject|placements_for_machine  (x1)
+      predominantly interpretive -- an aggregate read; no route could prove it
+      e.g. "which orders are competing for the same machine"
+  - lateness-cause+schedule|no-subject|no-tools  (x1)
+      consulted no evidence -- conversational, not a question about the plan
+      e.g. "just give me a better schedule"
+  - machine-schedule+order-schedule|order|entity_vocabulary  (x1)
+      predominantly interpretive -- an aggregate read; no route could prove it
+      e.g. "whats holding CUT-01"
+  - machine-schedule+schedule|no-subject|placements_in_window  (x1)
+      predominantly conclusions -- a take; R-AI5(6) protects it
+      e.g. "whats the busiest day in this schedule"
+  - machine-schedule|machine|placements_for_machine  (x1)
+      predominantly interpretive -- an aggregate read; no route could prove it
+      e.g. "i was asking about PAINT-01 not CUT-01"
+  - order-schedule+start-reason|order|entity_vocabulary  (x1)
+      predominantly interpretive -- an aggregate read; no route could prove it
+      e.g. "why is ORD-13 idle"
+  - unanchored|no-subject|entity_vocabulary  (x1)
+      predominantly interpretive -- an aggregate read; no route could prove it
+      e.g. "that's wrong, try again"
+  - unanchored|order|placements_for_order  (x1)
+      predominantly interpretive -- an aggregate read; no route could prove it
+      e.g. "when does CUT-01 finish"
+------------------------------------------------------------------------

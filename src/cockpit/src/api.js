@@ -185,6 +185,29 @@ export function ask(id, question, useLlm = false, ctx = {}) {
   });
 }
 
+// BEAT ONE of the two-phase ask (Session 4A.5c CU3a). Parses the question and
+// returns which TIER will answer it — {tier, waiting, intent} — assembling no
+// evidence and composing no answer. The panel shows `waiting` before a synthesis
+// answer (measured at ~10s median) and nothing before a contracted one (~1.3s).
+//
+// The server REMEMBERS the parse, so the /ask that follows does not parse again:
+// two-phasing costs no extra model call. It is also entirely optional — on any
+// failure this resolves to the route tier with empty copy and the ask proceeds
+// exactly as it did before, so a pacing hint can never break an answer.
+export function askPreflight(id, question, ctx = {}) {
+  return envelope(`/schedules/${id}/ask/preflight`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      question,
+      history: ctx.history || [],
+      selection: ctx.selection || {},
+      last_answered_subject: ctx.lastAnswered || {},
+      session_id: ctx.sessionId || null,
+    }),
+  }).catch(() => ({ tier: "route", waiting: "", intent: null }));
+}
+
 export function ledgerRefusals(limit = 20) {
   // The question ledger's refusal clusters (R-AI1(d), CU3) — the DEV-panel view.
   // The endpoint is DEV-gated server-side (404 unless MRE_DEV is set); a 404 here

@@ -65,6 +65,16 @@ class Intent(str, Enum):
     CERTIFICATE_TESTIMONY = "certificate-testimony"
     EXCLUDED_ORDERS = "excluded-orders"
     # -- the meta / document routes -----------------------------------------
+    # Session 4A.5c (R-AI5(7)) — THE ONE PROMOTED SHAPE. `lateness-cause` did not
+    # come from a designer: it is the `aggregate-lateness` cluster of the 4A.5b
+    # sweep's synthesis residue, the most frequent uncontracted shape in the
+    # ledger, promoted through the pipeline R-AI5(7) specifies — dossier
+    # (docs/promotions/aggregate-lateness-2026-07-26.md), working-thread review,
+    # then this line. It answers "why are so many orders late" / "what is driving
+    # the lateness": the CAUSE mix across the late set, not the list (that is
+    # `late-orders`) and not one order's chain (that is `late-order`). It is on
+    # PROBATION (contracts.promotion.PROMOTIONS) and demotable by a flag flip.
+    LATENESS_CAUSE = "lateness-cause"
     VERSION_DIFF = "version-diff"
     EDIT_SUMMARY = "edit-summary"
     EDIT_COST = "edit-cost"
@@ -171,6 +181,29 @@ class ClarifyReason(str, Enum):
     PARSE_FAILED = "parse-failed"
 
 
+class SubjectDisposition(str, Enum):
+    """WHERE a resolved subject lives in a sliced (rolling) world — Session 4A.5c
+    CU4, the prerequisite the 4A.5b rolling ruling named.
+
+    On a rolling run the Explainer's snapshot is WINDOW 0 ONLY. Before this, an
+    order sitting in the beyond-horizon tray resolved to nothing and was answered
+    as ABSENT — a confident-wrong answer ("that order isn't in this schedule")
+    replacing a correct one ("it's known, it just hasn't been pulled into a window
+    yet"). Subject resolution now reads the rolling document's vocabulary as well,
+    and says WHICH of the three sliced regions the subject came from.
+
+    IN_WINDOW       — placed in the active window (the monolithic default).
+    COMMITTED       — placed AND frozen: it will not move as the schedule rolls.
+    BEYOND_HORIZON  — in the tray: admitted, due-dated, not yet windowed. A real
+                      subject with a real disposition. NEVER "not in this
+                      schedule".
+    """
+
+    IN_WINDOW = "in-window"
+    COMMITTED = "committed"
+    BEYOND_HORIZON = "beyond-horizon"
+
+
 class SubjectRef(BaseModel):
     """One typed subject, as the planner named it and as it resolves here."""
 
@@ -185,10 +218,17 @@ class SubjectRef(BaseModel):
     # binds to nothing CLARIFIES; a NAMED one that resolves to nothing is answered
     # as absent. The two are different honesty failures and get different answers.
     pointed: bool = False
+    # Where the subject lives in a sliced world (Session 4A.5c CU4). None on a
+    # monolithic run, where there is one region and naming it would be noise.
+    disposition: Optional[SubjectDisposition] = None
 
     @property
     def resolved(self) -> bool:
         return bool(self.ref)
+
+    @property
+    def beyond_horizon(self) -> bool:
+        return self.disposition is SubjectDisposition.BEYOND_HORIZON
 
 
 class ClarifyPayload(BaseModel):
@@ -217,6 +257,22 @@ class ParsedQuestion(BaseModel):
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     nearest: list[Intent] = Field(default_factory=list)
     clarify: Optional[ClarifyPayload] = None
+    # -- Session 4A.5c CU3(c): THE ADJACENT-MATCH GUARD ----------------------
+    # The words of a qualifier the planner STATED that the matched intent does not
+    # honour — a time scope ("next month"), an "actually", a comparative. Empty
+    # when the match is clean.
+    #
+    # This is the last hiding place the round-five review named. Both remaining
+    # unmet expectations from 4A.5b are the same shape: "how many orders will be
+    # late NEXT MONTH" matched `late-orders`, which answers about THIS plan; "how
+    # much of CUT-01s week is ACTUALLY working time" matched `downtime`, which
+    # answers the complement. Neither is a mis-parse — the intent really is the
+    # nearest one — and both answer a question the planner did not ask, with
+    # perfect citations. The dispatch reads this field and diverts to the second
+    # tier, which can answer the qualified question or say honestly that it
+    # cannot. The model REPORTS the dropped qualifier; it never decides the
+    # diversion (R-AI5(8)'s discipline applied to routing).
+    dropped_qualifier: str = ""
     # Instrumentation (the sweep's parse-specific counts; never read by a route).
     prompt_version: str = ""
     retries: int = 0
@@ -251,9 +307,27 @@ class ParsedQuestion(BaseModel):
 #: without a meaning is a parity failure, not a silently-unreachable intent.
 INTENT_MEANINGS: dict[Intent, str] = {
     Intent.LATE_ORDER:
-        "why ONE named order is late (its cause chain)",
+        "why ONE order is late (its cause chain) — the order the planner named, "
+        "or the one the conversation is already about. A follow-up like \"but "
+        "why\" after one order's cause chain is THIS, not a plan-wide question",
     Intent.LATE_ORDERS:
-        "which orders are late / how many are late (the whole plan)",
+        "which orders are late / how many are late (the whole plan) — the LIST or "
+        "the COUNT. NOT \"why are so many late\" (that is `lateness-cause`)",
+    # Session 4A.5c: the meaning is written to SEPARATE the intent from its two
+    # neighbours, because that is where a promotion costs something. Its first
+    # sweep proved it: `lateness-cause` immediately over-attracted "but why" — a
+    # DEEPEN follow-up on one selected order, one turn after that order's cause
+    # chain — the same way `prove-it` over-attracted the same question the moment
+    # 4A.5b made it nameable (parse prompt v6). A new vocabulary member perturbs
+    # its neighbours; the cure is the same one, applied at the same place.
+    Intent.LATENESS_CAUSE:
+        "why the PLAN AS A WHOLE has the lateness it has — the cause mix across "
+        "the WHOLE late set (\"why are so many orders late\", \"whats driving the "
+        "lateness in this plan\", \"what is making these orders late\"). It takes "
+        "NO subject and is never about one order: if the question is about a "
+        "named order, a selected order, or the order the previous answer was "
+        "about — including a bare \"but why\" — it is `late-order`. It is also "
+        "not the list or the count (`late-orders`)",
     Intent.WHY_ON_MACHINE:
         "why an order was assigned to a particular machine",
     Intent.MACHINE_SCHEDULE:
@@ -323,12 +397,26 @@ INTENT_MEANINGS: dict[Intent, str] = {
         "how many machines / list the machines",
     Intent.MAINTENANCE:
         "maintenance, shifts, or calendar questions across the plant",
+    # The three ROLLING (sliced-world) meanings, sharpened in Session 4A.5c from
+    # the rolling bank's own miss. They were authored in 4B.3c for a keyword
+    # pre-route, where "beyond the horizon" and "why isn't X scheduled" were
+    # separated by which trigger tuple matched. Under a parse they were separated
+    # by nothing: "what work is coming that isnt scheduled yet" — a question about
+    # the WHOLE TRAY, naming no order — reached `why-not-scheduled-yet`, which
+    # needs one, and the planner was asked which order they meant after asking
+    # about all of them. The distinction is SET vs ONE, and it is now said.
     Intent.BEYOND_HORIZON:
-        "what lies beyond the planning horizon (rolling runs)",
+        "what lies beyond the planning horizon — the WHOLE SET of known orders "
+        "not yet pulled into a scheduling window (\"what's beyond the horizon\", "
+        "\"what work is coming that isn't scheduled yet\", \"what's still to "
+        "come\"). No subject: it is about all of them (rolling runs)",
     Intent.WHY_NOT_SCHEDULED_YET:
-        "why an order is not scheduled yet (rolling runs)",
+        "why ONE NAMED order is not scheduled yet. Only when the planner names a "
+        "specific order — a question about the unscheduled work in general is "
+        "`beyond-horizon` (rolling runs)",
     Intent.FROZEN:
-        "what is frozen / committed (rolling runs)",
+        "what is frozen / committed / locked in and will not move as the plan "
+        "rolls forward (rolling runs)",
     Intent.CONFIRM_TAKE:
         "the planner is repeating the assistant's OWN prior suggestion back as a "
         "question, to confirm it (\"so move the first operation earlier?\")",
@@ -340,9 +428,29 @@ INTENT_MEANINGS: dict[Intent, str] = {
         "no intent above fits this question",
 }
 
-#: The intents the parse prompt offers the model. ``unknown-entity`` is a DISPATCH
-#: outcome (a named order that resolves to nothing), never something a planner
-#: expresses, so it is never offered.
+#: The intents the parse prompt offers the model, BEFORE demotion. ``unknown-entity``
+#: is a DISPATCH outcome (a named order that resolves to nothing), never something a
+#: planner expresses, so it is never offered.
+#:
+#: Read ``model_selectable_intents()`` rather than this tuple: a DEMOTED promotion
+#: (R-AI5(7)) leaves the live vocabulary, and this constant does not know about it.
+#: It is kept as the un-demoted baseline the parity test checks the taxonomy against.
 MODEL_SELECTABLE_INTENTS: tuple[Intent, ...] = tuple(
     i for i in Intent if i is not Intent.UNKNOWN_ENTITY
 )
+
+
+def model_selectable_intents() -> tuple[Intent, ...]:
+    """The intents the parse prompt offers RIGHT NOW (R-AI5(7)).
+
+    Demotion is "a mechanical flag flip": an intent whose ``Promotion`` is DEMOTED
+    is subtracted here, so the prompt stops offering the id, the parse can no
+    longer name it, and the shape it used to serve returns to the second tier. That
+    is the entire demotion path — there is no second switch to remember, and no
+    dead route left reachable by a stale phrasing.
+
+    The import is deferred because ``contracts.promotion`` names ``Intent``: the
+    dependency runs one way, and this function is the only place it turns around."""
+    from mre.contracts.promotion import demoted_intents
+    demoted = demoted_intents()
+    return tuple(i for i in MODEL_SELECTABLE_INTENTS if i not in demoted)

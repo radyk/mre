@@ -24,14 +24,40 @@
 
 # =================================================================================
 # A — THE FLAGSHIP: the aggregate-cause question, the oldest debt in the AI ledger
+#
+# SESSION 4A.5c — THESE TWO EXPECTATIONS CHANGED, and the change is the point.
+#
+# In 4A.5b they read `EXPECT route=synthesis` and they were MET: no contracted
+# route served the aggregate-cause shape, so the second tier answered it and
+# labeled what it could prove. Those two answers are now the exemplars in
+# docs/promotions/aggregate-lateness-2026-07-26.md, the shape was ranked first by
+# the provenance report's Pareto, the working thread reviewed the dossier, and
+# `lateness-cause` joined the vocabulary.
+#
+# So the expectation moves to `lateness-cause`. This is NOT a bank edited to match
+# behaviour — the thing that changed is the product, by a reviewed vocabulary
+# change with a cited authority, which is exactly the transition R-AI5(7) exists
+# to make legible. A bank still expecting `synthesis` here would be asserting that
+# the promotion did not happen.
+#
+# The route is on PROBATION: every sweep asks this shape under BOTH paths and
+# diffs them (see the `shadow:` line on these turns). A contradiction demotes it
+# automatically and these expectations go back to `synthesis`.
+#
+# NAMED CONSEQUENCE, not hidden: the prove-it turns below now follow a CONTRACTED
+# answer, so there is no synthesis claim of ours left open to ground and they get
+# the honest no-target copy ("the records behind it are cited on it"). The route
+# is still `prove-it` and the grading is unchanged, but the ANSWER is different
+# from 4A.5b's — a promotion buys citations on the first turn and spends the
+# grounding pass's second turn to do it.
 # =================================================================================
-EXPECT route=synthesis
+EXPECT intent=lateness-cause route=lateness-cause
 why so many late orders
 EXPECT route=prove-it
 how do you know that
 RESET
 
-EXPECT route=synthesis
+EXPECT intent=lateness-cause route=lateness-cause
 whats actually driving the lateness in this plan
 EXPECT route=prove-it
 prove it
@@ -76,6 +102,13 @@ RESET
 EXPECT route=synthesis
 which orders are competing for the same machine
 RESET
+# THE ADJACENT-MATCH GUARD, specimen 1 of 2 (Session 4A.5c CU3c). In 4A.5b this
+# was the sweep's second surviving miss: it matched `downtime`, which reports the
+# CLOSURES — the complement of what was asked — and the expectation was kept
+# STRICT on purpose rather than relaxed to the behaviour. The parse now reports
+# "actually working time" as a qualifier the route cannot honour and the dispatch
+# diverts; the rendered-by line names the qualifier so the planner knows it was
+# heard. The expectation is unchanged from 4A.5b and should now be MET.
 EXPECT route=synthesis
 how much of CUT-01s week is actually working time
 RESET
@@ -110,6 +143,10 @@ RESET
 EXPECT route=synthesis
 why are all five machines overloaded
 RESET
+# THE ADJACENT-MATCH GUARD, specimen 2 of 2 (Session 4A.5c CU3c). In 4A.5b this
+# was the sweep's third surviving miss: it matched `late-orders`, which answers
+# about THIS plan a question asked about NEXT MONTH. Same class as the specimen
+# above, same fix, same unchanged expectation.
 EXPECT route=synthesis
 how many orders will be late next month
 RESET

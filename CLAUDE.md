@@ -95,31 +95,65 @@ tests/                Tests derived from the specs — write them from the spec 
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**AI-track Session 4A.5b — R-AI5 part 2: labeled synthesis + claim verification**,
-2026-07-26 (docs/07 v2.45; docs/04 amendment same date).
+**AI-track Session 4A.5c — R-AI5 part 3: telemetry, the Pareto, the promotion
+pipeline (the R-AI5 arc CLOSED)**, 2026-07-26 (docs/07 v2.46; docs/04 amendment same
+date). The working thread returns to the 4B mission.
 
-**The ask path (R-AI5) — two tiers, sealed from each other.** Every question is
-parsed FIRST by a model against the closed intent vocabulary
-(`src/mre/contracts/parse.py`), with the conversation history, the live board
-selection and the last-answered subject as context.
+**The ask path (R-AI5) — two tiers, sealed from each other, and a loop between
+them.** Every question is parsed FIRST by a model against the closed intent
+vocabulary (`src/mre/contracts/parse.py`), with the conversation history, the live
+board selection and the last-answered subject as context. **No deterministic
+classifier survives anywhere** — `Explainer.classify` / `answer` went in 4A.5a and
+`rolling_questions.classify_rolling` (the last one) in 4A.5c. They must not come back.
 
 - A **matched** intent dispatches into the unchanged route assembly, render and
-  validator. **There is no deterministic-classifier fallback** — `Explainer.classify`
-  / `answer` are deleted and must not come back.
+  validator — unless the parse reports a **dropped qualifier** (a time scope, an
+  "actually", a comparative the route cannot honour), which diverts it to the second
+  tier and names the qualifier in the rendered-by line. The parse REPORTS; the
+  dispatch decides.
 - An **unmatched** intent goes to **labeled open synthesis** (R-AI5(2)): a model
   reasons over the closed read-only tool surface (`src/mre/modules/evidence_tools.py`)
-  under a stated budget and drafts structured CLAIMS, which are then hardened
-  claim-by-claim by `claim_verifier` — **deterministic code, never a model** — into
-  VERIFIED / INTERPRETIVE / FAILED-and-cut. Provenance is visible per claim, the
-  register is `synthesis`, and "prove it" re-runs the grounding pass on one claim.
-- A matched intent can NEVER fall to synthesis; an unmatched one NEVER guesses a
-  route (pinned by dispatch tests). Without a parser or a synthesizer the honest
-  floor answers that it could not interpret / could not ground — never a guess.
+  under a stated budget and drafts structured CLAIMS, hardened claim-by-claim by
+  `claim_verifier` — **deterministic code, never a model** — into VERIFIED /
+  INTERPRETIVE / FAILED-and-cut. Provenance is visible per claim, the register is
+  `synthesis`, "prove it" re-runs the grounding pass on one claim, and the
+  couldn't-answer floor keeps its nearest-capabilities doors.
+- Otherwise a matched intent can NEVER fall to synthesis, and an unmatched one NEVER
+  guesses a route (pinned by dispatch tests). Without a parser or a synthesizer the
+  honest floor answers that it could not interpret / could not ground.
+- On a **rolling** run, subject resolution reads the document's three regions
+  (`RollingVocabulary`): a beyond-horizon tray order resolves as a real subject with
+  a BEYOND-HORIZON disposition and every placement question about it lands on
+  `why-not-scheduled-yet`. **A tray order is never "not in this schedule."**
+
+**THE PROMOTION LOOP (R-AI5(5)/(7)) — the system proposes its own healing; the
+proven register is entered only by review.** Every sweep writes a question ledger and
+emits `tools/provenance_report.py`: synthesis residue clustered into recurring shapes
+(adjacency + subject kinds + dominant tool, method stated in the report), ranked by a
+frequency-weighted Pareto. **R-AI5(6) is printed in the report's own header** —
+clusters whose residue is takes or aggregate reads are NOT-PROMOTABLE-BY-DESIGN,
+excluded from the Pareto, never counted as backlog.
+
+- `tools/promotion_dossier.py` drafts a dossier autonomously (`docs/promotions/`) and
+  **cannot reach dispatch**. The dossier is the application; the working thread's
+  review is the signature.
+- Promotion is a **reviewed vocabulary-class change** (Intent + meaning + taxonomy +
+  offer + assembler + authored copy + prompt bump + a `PROMOTIONS` entry citing the
+  dossier). **Never automatic.**
+- A promoted route runs **shadowed** through its probation: the sweep answers its
+  shape under both paths and diffs the facts. **Demotion is automatic** on a
+  contradiction — one field in `contracts/promotion.py`, and the intent leaves
+  `model_selectable_intents()`, so the parse can no longer name it and the shape
+  returns to the second tier.
+- Live: **one** promotion, `lateness-cause` (the aggregate-lateness shape), on
+  probation.
 
 **R-AI5(8) is the hard rule of the tier:** the answering model's beliefs about its
-own citations are INPUT to verification, never the label. Both prompts
-(`parse_prompt.md`, `synthesis_prompt.md`) are governed artifacts: changing either is
-a vocabulary-class change, reviewed, versioned, committed with its doc update.
+own citations are INPUT to verification, never the label — and the same discipline
+now governs routing (the parse reports a dropped qualifier; it never decides the
+diversion). Both prompts (`parse_prompt.md` v7, `synthesis_prompt.md`) are governed
+artifacts: changing either is a vocabulary-class change, reviewed, versioned,
+committed with its doc update.
 
 **Where history lives — do not duplicate it here:**
 
@@ -158,18 +192,19 @@ a vocabulary-class change, reviewed, versioned, committed with its doc update.
   fingerprint from Rep 3).
 - Provenance spot-check guard: sampled `observed` values must appear in the cited source.
 - W1 scenarios not yet built: `dwell_heavy`, `calendar_chaos`, `multi_facility_balance`.
-- AI-track named debts: aggregate-cause coaching ("why so many late"); the docs/05
-  structured-constraint surface (prose-locked, retrieval must never read prose);
-  machine-idle eligibility naming no specific ops on the monolithic path; per-order
-  PRODUCTION-dollar attribution (a ledger change).
-- R-AI5 residue: the ROLLING pre-route (`rolling_questions.classify_rolling`) is
-  still a keyword matcher — **ruled 4A.5c scope** (4A.5b rider d): the parse binds
-  subjects against the Explainer's snapshot, which on a rolling run is window 0
-  only, so a beyond-horizon order would resolve to nothing and be answered as
-  absent. It needs the rolling document's vocabulary in subject resolution first.
-  Also carried: start-reason's early-vs-plain read is still the assembler's (only a
-  NEGATIVE polarity is authoritative from the parse); a CLARIFY turn carries no
-  subject forward.
+- AI-track named debts: the docs/05 structured-constraint surface (prose-locked,
+  retrieval must never read prose); machine-idle eligibility naming no specific ops
+  on the monolithic path; per-order PRODUCTION-dollar attribution (a ledger change).
+  (Aggregate-cause coaching is RETIRED — promoted to `lateness-cause`, 4A.5c.)
+- R-AI5 residue, carried: start-reason's early-vs-plain read is still the
+  assembler's (only a NEGATIVE polarity is authoritative from the parse); a CLARIFY
+  turn carries no subject forward.
+- Promotion-loop limits (4A.5c): clustering is crude-but-stated and UNDER-states
+  frequency (it splits shapes whose parses disagreed) — merging is a human's, in a
+  dossier. The shadow diff compares only figures BOTH sides state about the same
+  labelled quantity, which on the promoted shape is thin overlap: the teeth are
+  real but narrow. The two-phase ask's first beat names the tool BUDGET, not a live
+  count — a real ticking count needs streaming or background execution.
 - Synthesis-tier named limits (4A.5b): a claim's COUNT is checked against the
   toolbox's own tallies for the enumerating call, not typed to the predicate it
   sits beside; percentages and ratios the model computes are never verifiable and

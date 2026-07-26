@@ -1,6 +1,6 @@
 # Question-parse prompt — a GOVERNED ARTIFACT (R-AI5(1))
 
-    prompt_version: 6
+    prompt_version: 7
     ruling:         R-AI5(1) — every question is parsed FIRST by a language model
                     against a CLOSED intent vocabulary, with the conversation
                     history, live board selection, and last-answered subject as
@@ -49,6 +49,25 @@
                     plant, or where the assistant's sentence came from. The test:
                     if the question would still make sense asked of the schedule
                     rather than of the assistant, it is not `prove-it`.
+    v7:             Session 4A.5c (2026-07-26) — two changes, both reviewed.
+                    (a) THE ADJACENT-MATCH GUARD (rule 9, new field
+                    `dropped_qualifier`). The 4A.5b sweep's two surviving unmet
+                    expectations were the same shape and neither was a mis-parse:
+                    "how many orders will be late NEXT MONTH" -> `late-orders`,
+                    which answers about THIS plan; "how much of CUT-01s week is
+                    ACTUALLY working time" -> `downtime`, which answers the
+                    complement. In both the nearest intent really IS the nearest
+                    one, and answering as it answers a question the planner did
+                    not ask — with perfect citations, which is the failure mode
+                    rule 7 already names for `unmatched`, wearing a different
+                    hat. The model now REPORTS the stated qualifier the intent
+                    drops; the DISPATCH decides to divert (R-AI5(8)'s discipline
+                    applied to routing: the model reports, it never grades).
+                    (b) `lateness-cause` joins the vocabulary — the ONE promoted
+                    shape (R-AI5(7)), with its dossier as the authority. Rule 7's
+                    "why are so many late" example moves from an `unmatched`
+                    illustration to a named intent, and `late-orders`' meaning is
+                    sharpened against it.
 
 ## Review discipline
 
@@ -214,14 +233,47 @@ RULES
    unavailable.
 
    The contracted routes are for the question they NAME, not for the neighbourhood
-   they sit in. `late-orders` lists which orders are late; it is not the answer to
-   "why are so many late". `briefing` is what needs attention today; it is not the
-   answer to "is this plan front-loaded". `inventory` counts things; it is not the
-   answer to "is the work spread evenly". When in doubt between a route and
-   `unmatched`, choose `unmatched`.
+   they sit in. `late-orders` lists which orders are late or counts them; it is not
+   the answer to "why are so many late" — that is `lateness-cause`, its own intent.
+   `briefing` is what needs attention today; it is not the answer to "is this plan
+   front-loaded". `inventory` counts things; it is not the answer to "is the work
+   spread evenly". When in doubt between a route and `unmatched`, choose
+   `unmatched`.
 
 8. CONFIDENCE is your own read of the intent match, 0.0 to 1.0. Be honest: below
    about 0.45 the system will treat the parse as unmatched rather than answer.
+
+9. REPORT A QUALIFIER THE INTENT DROPS. Sometimes the nearest intent really is the
+   nearest one, and it still cannot honour something the planner SAID. Put those
+   words — just the words — in `dropped_qualifier`. Leave it "" when the intent
+   covers the whole question, which is the normal case.
+
+   What counts, and only these three:
+     - A TIME SCOPE the intent does not take. "how many orders will be late NEXT
+       MONTH" is `late-orders`, and `late-orders` answers about THIS plan.
+       -> dropped_qualifier: "next month"
+     - AN "ACTUALLY" / "REALLY" that asks for the complement or the true figure
+       rather than the one the intent reports. "how much of CUT-01's week is
+       ACTUALLY working time" is nearest `downtime`, and `downtime` reports the
+       closures, not the working time.
+       -> dropped_qualifier: "actually working time"
+     - A COMPARATIVE the intent cannot make. "is CUT-01 busier than PRESS-01" is
+       nearest `machine-schedule`, which describes ONE machine.
+       -> dropped_qualifier: "busier than PRESS-01"
+
+   What does NOT count — be strict, because a false report costs the planner a
+   proven answer and gives them a reasoned one instead:
+     - A subject the intent takes. "why is ORD-05 late" -> "" (the order is a
+       parameter, not a dropped qualifier).
+     - A scope the intent DOES honour. "what's running on CUT-01 tomorrow" -> "":
+       `machine-schedule` reads the question's own date filter.
+     - Politeness, urgency, or framing ("quickly", "I need to know", "can you").
+     - Your own uncertainty. If you are unsure of the INTENT, that is what
+       `confidence` and `unmatched` are for.
+
+   You report; you do not decide. The system reads this field and may send the
+   question to the reasoning tier instead of the route — that is its call, not
+   yours.
 
 OUTPUT — strict JSON, no prose, no code fence. `intent` must be one of the
 vocabulary ids listed at the top; the follow-up names (`deepen`, `list-expand`,
@@ -238,6 +290,7 @@ is what the planner is doing, name it in both fields.)
   "followup_of": "none|deepen|correction|list-expand|menu-select|confirm-take|prove-it",
   "confidence": 0.0,
   "nearest": ["<id>", "<id>"],
+  "dropped_qualifier": "",
   "clarify": null | {"reason": "no-subject|ambiguous-subject|set-reference|verification|ambiguous-intent",
                      "detail": "<a short phrase, never a sentence>"}
 }

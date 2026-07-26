@@ -44,9 +44,10 @@ from mre.contracts.parse import (
     FollowupKind,
     Intent,
     INTENT_MEANINGS,
-    MODEL_SELECTABLE_INTENTS,
+    model_selectable_intents,
     ParsedQuestion,
     Polarity,
+    SubjectDisposition,
     SubjectKind,
     SubjectRef,
     SubjectSource,
@@ -76,10 +77,15 @@ def render_intents() -> str:
     from the route taxonomy, never re-authored, so the two cannot drift. Naming the
     requirement matters: the first sweep had "whats holding CUT-01" parsed as
     `start-reason` — an intent that needs an ORDER — with only a machine named, and
-    the honest result was a near-miss bridge instead of the machine's schedule."""
+    the honest result was a near-miss bridge instead of the machine's schedule.
+
+    Session 4A.5c: the list is ``model_selectable_intents()``, not the constant, so
+    a DEMOTED promotion (R-AI5(7)) actually disappears from the prompt. That is the
+    whole demotion mechanism — the model can only ever name an id it was shown.
+    """
     from mre.modules.explainer import ROUTE_TAXONOMY
     lines = []
-    for i in MODEL_SELECTABLE_INTENTS:
+    for i in model_selectable_intents():
         needs = ROUTE_TAXONOMY.get(i.value, {}).get("params", [])
         suffix = f"  [needs a named {' + '.join(needs)}]" if needs else ""
         lines.append(f"  {i.value} — {INTENT_MEANINGS[i]}{suffix}")
@@ -101,6 +107,14 @@ def render_context(context: Optional[dict]) -> str:
 
     lines = [f"  BOARD SELECTION (what is highlighted right now): {_pair(selection)}",
              f"  SUBJECT OF THE PREVIOUS ANSWER: {_pair(last)}"]
+    # Session 4A.5c CU3(c) rider — the SCOPE NOTE, present only on a question the
+    # ADJACENT-MATCH GUARD diverted. It never appears in a parse's context (the
+    # dispatch adds it after the parse), so this line is a synthesis-only channel
+    # even though both prompts render this block.
+    dropped = (context.get("dropped_qualifier") or "").strip()
+    if dropped:
+        from mre.modules.ask_fallback_copy import SYNTHESIS_SCOPE_NOTE
+        lines.append(SYNTHESIS_SCOPE_NOTE.format(qualifier=dropped[:80]))
     if not history:
         lines.append("  RECENT TURNS: none — this is the first question.")
         return "\n".join(lines)
@@ -117,6 +131,7 @@ def render_context(context: Optional[dict]) -> str:
 # ---------------------------------------------------------------------------
 
 _KIND_BY_NAME = {k.value: k for k in SubjectKind}
+_DISPOSITION_BY_NAME = {d.value: d for d in SubjectDisposition}
 
 
 def _resolve_order(explainer: Any, raw: str) -> Optional[str]:
@@ -202,13 +217,21 @@ def _bind_from_context(kind: SubjectKind, context: dict
 
 
 def bind_subjects(explainer: Any, raw_subjects: list[dict],
-                  context: Optional[dict]) -> list[SubjectRef]:
+                  context: Optional[dict], rolling: Any = None) -> list[SubjectRef]:
     """The model's typed subject WORDS → resolved ``SubjectRef``s.
 
     A subject the planner POINTED at (``from_context``) binds from the live
     channels; a subject the planner NAMED resolves against this run's vocabulary.
     An unresolvable subject is returned UNRESOLVED (``ref=None``) — the dispatch
-    then answers honestly (absent entity / clarify), never globally."""
+    then answers honestly (absent entity / clarify), never globally.
+
+    Session 4A.5c CU4 — ``rolling`` is the sliced world's ``RollingVocabulary``,
+    and it is the prerequisite that let the rolling keyword matcher die. The
+    Explainer's snapshot on a rolling run is WINDOW 0 ONLY, so an order in the
+    beyond-horizon tray resolved to nothing and was answered as absent. Now: a
+    name the window does not carry is tried against the document's three regions,
+    and every resolved order gets a DISPOSITION. A tray order is a real subject
+    that is BEYOND-HORIZON — never "not in this schedule"."""
     context = context or {}
     out: list[SubjectRef] = []
     for raw_subject in raw_subjects or []:
@@ -230,8 +253,15 @@ def bind_subjects(explainer: Any, raw_subjects: list[dict],
                 source = SubjectSource.UTTERANCE if ref else source
         elif explainer is not None:
             ref = _resolve_named(explainer, kind, raw)
+        # The sliced world, second: the window's vocabulary is authoritative for
+        # what it carries, and the document answers for everything else.
+        disposition = None
+        if kind is SubjectKind.ORDER and rolling:
+            if ref is None and raw:
+                ref = rolling.resolve(raw)
+            disposition = _DISPOSITION_BY_NAME.get(rolling.disposition(ref) or "")
         out.append(SubjectRef(kind=kind, raw=raw, ref=ref, source=source,
-                              pointed=pointed))
+                              pointed=pointed, disposition=disposition))
     return out
 
 
@@ -251,11 +281,32 @@ def _resolve_named(explainer: Any, kind: SubjectKind, raw: str) -> Optional[str]
 # ---------------------------------------------------------------------------
 
 def _coerce_intent(value: Any) -> Optional[Intent]:
+    """An emitted id -> a live Intent, or None (not a member of the vocabulary)."""
     try:
         intent = Intent(str(value))
     except ValueError:
         return None
     return None if intent is Intent.UNKNOWN_ENTITY else intent
+
+
+def _is_demoted(value: Any) -> bool:
+    """True when the emission names a REAL intent that is not currently LIVE.
+
+    Session 4A.5c (R-AI5(7)): a DEMOTED intent is dropped from the prompt by
+    ``model_selectable_intents()``, so the model should never name it — but a model
+    that saw the id earlier in the same conversation might, and a demotion a stale
+    phrasing can walk around is not a demotion.
+
+    It is handled as a MISFILING, not as garbage, on exactly the 4A.5b precedent
+    (`prove-it` in the intent field): discarding a recognizable emission twice and
+    then clarifying is not strictness, it is waste. The intent becomes `unmatched`
+    — which is the second tier, which is precisely where a demotion is supposed to
+    put the shape."""
+    try:
+        intent = Intent(str(value))
+    except ValueError:
+        return False
+    return intent not in model_selectable_intents()
 
 
 def _names_a_followup(value: Any) -> bool:
@@ -279,17 +330,23 @@ def _names_a_followup(value: Any) -> bool:
 
 def build_parsed(question: str, emission: dict, explainer: Any,
                  context: Optional[dict], *, prompt_version: str = "",
-                 retries: int = 0, latency_ms: Optional[float] = None
-                 ) -> Optional[ParsedQuestion]:
+                 retries: int = 0, latency_ms: Optional[float] = None,
+                 rolling: Any = None) -> Optional[ParsedQuestion]:
     """A validated emission dict → ``ParsedQuestion``. None when the emission does
     not name a member of the closed vocabulary (the caller retries, then clarifies).
     """
-    intent = _coerce_intent(emission.get("intent"))
+    raw_intent = emission.get("intent")
+    intent = _coerce_intent(raw_intent)
+    if intent is not None and _is_demoted(raw_intent):
+        # A DEMOTED promotion (R-AI5(7)) is a known id that is no longer live.
+        # `unmatched` IS the demotion's destination — the second tier.
+        intent = Intent.UNMATCHED
     if intent is None:
-        if not _names_a_followup(emission.get("intent")):
+        if not _names_a_followup(raw_intent):
             return None
         intent = Intent.UNMATCHED
-    subjects = bind_subjects(explainer, emission.get("subjects") or [], context)
+    subjects = bind_subjects(explainer, emission.get("subjects") or [], context,
+                             rolling=rolling)
 
     polarity = None
     raw_pol = emission.get("polarity")
@@ -310,7 +367,8 @@ def build_parsed(question: str, emission: dict, explainer: Any,
         confidence = 0.0
 
     nearest = [i for i in (_coerce_intent(n) for n in emission.get("nearest") or [])
-               if i is not None and i is not Intent.UNMATCHED]
+               if i is not None and i is not Intent.UNMATCHED
+               and not _is_demoted(i.value)]
 
     clarify = None
     raw_clarify = emission.get("clarify")
@@ -328,11 +386,23 @@ def build_parsed(question: str, emission: dict, explainer: Any,
         except ValueError:
             clarify = None
 
+    # Session 4A.5c CU3(c) — the adjacent-match guard's INPUT. The model reports a
+    # qualifier the planner stated that the named intent does not honour; it never
+    # decides what to do about it (the dispatch does). Truncated hard: this is a
+    # phrase, and a model that starts explaining itself here is emitting prose into
+    # a routing contract.
+    dropped = str(emission.get("dropped_qualifier") or "").strip()[:80]
+    # An `unmatched` parse has no route to drop a qualifier FROM, so the field is
+    # meaningless there and is cleared rather than carried into telemetry as noise.
+    if intent is Intent.UNMATCHED:
+        dropped = ""
+
     try:
         return ParsedQuestion(
             question=question, intent=intent, subjects=subjects,
             polarity=polarity, followup_of=followup, confidence=confidence,
-            nearest=nearest, clarify=clarify, prompt_version=prompt_version,
+            nearest=nearest, clarify=clarify, dropped_qualifier=dropped,
+            prompt_version=prompt_version,
             retries=retries, latency_ms=latency_ms)
     except Exception:  # noqa: BLE001 — validation failure is a malformed emission
         return None
@@ -456,7 +526,8 @@ class QuestionParser:
             return None
 
     def parse(self, question: str, *, explainer: Any,
-              context: Optional[dict] = None) -> Optional[ParsedQuestion]:
+              context: Optional[dict] = None,
+              rolling: Any = None) -> Optional[ParsedQuestion]:
         """Parse one question. Returns None ONLY when the parser is unavailable
         (no client) — every other failure yields a ParsedQuestion, clarifying
         rather than guessing."""
@@ -475,7 +546,8 @@ class QuestionParser:
             if emission is not None:
                 parsed = build_parsed(
                     question, emission, explainer, context,
-                    prompt_version=self.prompt_version, retries=attempt)
+                    prompt_version=self.prompt_version, retries=attempt,
+                    rolling=rolling)
                 if parsed is not None:
                     break
             self.stats.note_malformed(text or "")

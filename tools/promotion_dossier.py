@@ -1,0 +1,546 @@
+"""The promotion dossier generator (R-AI5(7), Session 4A.5c CU2a).
+
+R-AI5(7), verbatim: *"The promotion loop runs autonomously through analysis,
+drafting from verified-synthesis exemplars, and harness validation; promotion into
+the contracted vocabulary is a reviewed change carrying a machine-produced
+dossier."*
+
+This tool is the AUTONOMOUS half. It reads a question ledger, takes one cluster
+from the provenance report, and writes:
+
+  * ``docs/promotions/<shape>-<date>.md``  — the dossier: the shape's frequency and
+    exemplars, the evidence-assembly pattern derived from the cluster's VERIFIED
+    tool-call transcripts, the claims a contracted route would have to be able to
+    make, and the harness-validation result.
+  * ``docs/promotions/drafts/<shape>_route_draft.py`` — a DRAFT route
+    implementation (assembler + pre-computed facts + authored-copy skeleton)
+    generated from those exemplars, on a clearly marked path.
+
+**IT NEVER WIRES ANYTHING INTO DISPATCH.** Not the Intent, not INTENT_MEANINGS, not
+ROUTE_TAXONOMY, not the parse prompt. The draft is on a path nothing imports and
+the dossier is a document. Promotion is a REVIEWED CHANGE performed by a session
+given the reviewed dossier — the dossier is the application, the working thread's
+review is the signature (R-AI5(7): "the proven register is entered only by
+review").
+
+    # 1. see what is worth promoting
+    python tools/provenance_report.py --ledger <ledger.jsonl>
+
+    # 2. draft the application for one cluster
+    python tools/promotion_dossier.py --ledger <ledger.jsonl> \
+        --cluster "unanchored|no-subject|lateness_set" --name aggregate-lateness
+
+    # 3. after a session implements the draft, re-run with the candidate route to
+    #    fill in the HARNESS VALIDATION section against a pinned world
+    python tools/promotion_dossier.py --ledger <ledger.jsonl> --cluster ... \
+        --name aggregate-lateness \
+        --validate-with lateness-cause --out-dir _ai_exam_scratch/gb_pinned \
+        --snapshot-id snap-exam
+
+Without ``--validate-with`` the dossier states VALIDATION: NOT RUN. It never
+states "clean" for a check that did not run.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from collections import Counter
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "src"))
+
+from mre.modules.provenance_report import (  # noqa: E402
+    cluster, rows_from_ledger, tier_counts,
+)
+
+DOSSIER_DIR = REPO / "docs" / "promotions"
+DRAFT_DIR = DOSSIER_DIR / "drafts"
+
+_RULE = "-" * 72
+
+
+# ---------------------------------------------------------------------------
+# The evidence-assembly pattern
+# ---------------------------------------------------------------------------
+
+def assembly_pattern(entries: list) -> tuple:
+    """The tool-call pattern of the cluster's answers, and the ARG SHAPES.
+
+    Derived from the transcripts of answers that produced at least one VERIFIED
+    claim — the ones that actually proved something. An answer whose every claim
+    stayed interpretive read the evidence too, but it did not demonstrate that
+    the evidence CARRIES the answer, and the point of this section is to tell the
+    implementing session which readers a contracted assembler must call.
+
+    Arg VALUES are reduced to their shape (``order=<order>``): the pattern is
+    "call placements_for_order with an order", not "call it with ORD-05"."""
+    seq = Counter()
+    shapes = Counter()
+    for e in entries:
+        syn = getattr(e, "synthesis", None)
+        if syn is None:
+            continue
+        claims = list(getattr(syn, "claims", []) or [])
+        if not any(c.get("status") == "verified" for c in claims):
+            continue
+        for call in getattr(syn, "tool_calls", []) or []:
+            seq[call.tool] += 1
+            arg_shape = ", ".join(
+                f"{k}=<{k}>" for k in sorted((call.args or {}).keys()))
+            shapes[f"{call.tool}({arg_shape})"] += 1
+    return seq, shapes
+
+
+def verified_claims(entries: list) -> list:
+    out = []
+    for e in entries:
+        syn = getattr(e, "synthesis", None)
+        if syn is None:
+            continue
+        for c in getattr(syn, "claims", []) or []:
+            if c.get("status") == "verified":
+                out.append(c.get("text", ""))
+    return out
+
+
+def interpretive_claims(entries: list) -> list:
+    out = []
+    for e in entries:
+        syn = getattr(e, "synthesis", None)
+        if syn is None:
+            continue
+        for c in getattr(syn, "claims", []) or []:
+            if c.get("status") == "interpretive":
+                out.append(c.get("text", ""))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# The draft route
+# ---------------------------------------------------------------------------
+
+_DRAFT_TEMPLATE = '''"""DRAFT ROUTE — MACHINE-GENERATED, NOT WIRED INTO DISPATCH.
+
+Generated by tools/promotion_dossier.py for cluster:
+    {cluster_id}
+from {frequency} synthesis answer(s) in {source}.
+
+THIS FILE IS NOT IMPORTED BY ANYTHING. It sits under docs/promotions/drafts/ on
+purpose: R-AI5(7) makes promotion a REVIEWED change, and a draft that any module
+could import would be a promotion nobody signed.
+
+What a reviewing session does with it: read the assembly pattern below against the
+dossier, decide whether a contracted route can honestly serve this shape, and — if
+so — implement the real assembler in ``mre.modules.explainer`` with its authored
+copy in ``mre.modules.ask_fallback_copy``, citing the dossier. The draft is
+scaffolding, not the implementation: it names the readers the cluster's verified
+answers actually used and the facts they proved, and it deliberately does NOT
+guess at the planner-facing wording, which is authored copy and a human's.
+
+EVIDENCE-ASSEMBLY PATTERN (from the cluster's verified transcripts):
+{pattern_block}
+
+CLAIMS A CONTRACTED ROUTE MUST BE ABLE TO MAKE (verified in synthesis):
+{claims_block}
+"""
+from __future__ import annotations
+
+from typing import Any
+
+
+DRAFT_ROUTE_ID = "{route_id}"
+DRAFT_PARAMS = {params!r}
+
+
+def assemble_draft(explainer: Any, params: dict):
+    """Pre-computed facts for the draft route.
+
+    Each reader below is the SAME reader the synthesis tier called, reached the way
+    a contracted assembler reaches it. The tool surface is a thin wrapper over these
+    (Session 4A.5b CU1), so a promotion is not a reimplementation — it is the same
+    evidence assembled deterministically instead of agentically.
+    """
+    from mre.modules.evidence_tools import EvidenceToolbox
+    toolbox = EvidenceToolbox(explainer)
+
+    facts: dict = {{}}
+    records: list = []
+{reader_block}
+    return facts, records
+
+
+def authored_copy_skeleton() -> dict:
+    """The authored strings this route needs. EMPTY ON PURPOSE.
+
+    Planner-facing copy is authored by a human in ``ask_fallback_copy`` (R-AI1(c):
+    intelligence accrues only in reviewable artifacts). Generating it here would
+    put model prose on the answer surface through the back door, which is the one
+    thing the whole tier is built to prevent."""
+    return {{
+{copy_block}
+    }}
+'''
+
+_READER_LINE = "    # {tool}: called {n}x across the cluster's verified answers\n" \
+               "    _{var} = toolbox.call(\"{tool}\", {{{args}}})\n" \
+               "    records.extend(_{var}.record_ids)\n"
+
+
+def render_draft(cluster_obj, entries: list, *, name: str, route_id: str,
+                 source: str) -> str:
+    seq, shapes = assembly_pattern(entries)
+    pattern_block = "\n".join(
+        f"      {shape}   x{n}" for shape, n in shapes.most_common()) or \
+        "      (no verified answer in this cluster — nothing to pattern from)"
+    claims = verified_claims(entries)
+    claims_block = "\n".join(f"      - {c}" for c in claims[:12]) or \
+        "      (none)"
+
+    reader_block = ""
+    for tool, n in seq.most_common():
+        args = ", ".join(
+            f'"{k}": params.get("{k}")'
+            for k in sorted({k for shape, _ in shapes.most_common()
+                             for k in _args_of(shape) if shape.startswith(tool + "(")}))
+        reader_block += _READER_LINE.format(
+            tool=tool, n=n, var=tool, args=args)
+    if not reader_block:
+        reader_block = "    pass  # nothing to assemble\n"
+
+    copy_block = "\n".join(
+        f'        # "{c[:70]}..."' for c in claims[:5]) or "        # (none)"
+
+    params = sorted({k for shape, _ in shapes.most_common()
+                     for k in _args_of(shape)})
+    return _DRAFT_TEMPLATE.format(
+        cluster_id=cluster_obj.cluster_id, frequency=cluster_obj.frequency,
+        source=source, pattern_block=pattern_block, claims_block=claims_block,
+        route_id=route_id, params=params, reader_block=reader_block,
+        copy_block=copy_block)
+
+
+def _args_of(shape: str) -> list:
+    inner = shape[shape.index("(") + 1:shape.rindex(")")]
+    return [p.split("=")[0].strip() for p in inner.split(",") if p.strip()]
+
+
+# ---------------------------------------------------------------------------
+# Harness validation
+# ---------------------------------------------------------------------------
+
+def validate(entries: list, route_id: str, out_dir: str, snapshot_id: str,
+             runs_subdir: str = "runs") -> list:
+    """Replay the cluster's historical questions under the DRAFT route and diff
+    each against the synthesis answer that question actually got.
+
+    This is the honest form of "does the route agree with what the tier proved":
+    the synthesis side is not re-run (it is read from the ledger, where it was
+    recorded live), and the route side is assembled against the same pinned world.
+    A route that contradicts a verified claim is not promotable, and the dossier
+    says so in the section a reviewer reads first.
+
+    The diff is ``mre.modules.shadow.diff_claims`` — the SAME function the
+    probation shadow uses. Two definitions of divergence would mean a promotion
+    could pass validation and then be demoted by a stricter rule the next day."""
+    from mre.modules.evidence_index import EvidenceIndex
+    from mre.modules.explainer import Explainer
+    from mre.modules.shadow import diff_claims
+    from mre.modules.snapshot_store import SnapshotStore
+
+    out = Path(out_dir)
+    ip = out / "evidence_index.json"
+    index = EvidenceIndex.load(ip) if ip.exists() else \
+        EvidenceIndex().build(out / runs_subdir)
+    explainer = Explainer(SnapshotStore(out / "snapshots"), index,
+                          snapshot_id=snapshot_id)
+
+    results = []
+    for e in entries:
+        q = e.verbatim_question
+        try:
+            bundle = explainer.route(route_id, {"question": q})
+        except Exception as exc:  # noqa: BLE001 — a draft that raises is a result
+            results.append({"question": q, "error": f"{type(exc).__name__}: {exc}"})
+            continue
+        syn = getattr(e, "synthesis", None)
+        claims = list(getattr(syn, "claims", []) or []) if syn else []
+        d = diff_claims(bundle, claims, question=q, intent=route_id)
+        results.append({
+            "question": q,
+            "records_cited": len(getattr(bundle, "ordered_records", []) or []),
+            "agreed": d.agreed,
+            "contradicted": d.contradicted,
+            "shadow_only": d.shadow_only,
+            "provenance_strengthened": d.provenance_strengthened,
+        })
+    return results
+
+
+# ---------------------------------------------------------------------------
+# The dossier
+# ---------------------------------------------------------------------------
+
+def render_dossier(cluster_obj, entries: list, *, name: str, route_id: str,
+                   date: str, source: str, tiers: dict,
+                   validation: list | None, draft_path: str) -> str:
+    seq, shapes = assembly_pattern(entries)
+    vclaims = verified_claims(entries)
+    iclaims = interpretive_claims(entries)
+
+    L: list = []
+    L.append(f"# Promotion dossier -- {name}")
+    L.append("")
+    L.append(f"    cluster_id : {cluster_obj.cluster_id}")
+    L.append(f"    generated  : {date}")
+    L.append(f"    source     : {source}")
+    L.append(f"    tool       : tools/promotion_dossier.py (machine-produced)")
+    L.append(f"    draft route: {draft_path}")
+    L.append("")
+    L.append("## What this is, and what it is not")
+    L.append("")
+    L.append("This is an APPLICATION, produced autonomously by the promotion loop")
+    L.append("(R-AI5(7)). It argues that a recurring shape of synthesis residue is")
+    L.append("worth contracting into a route, and it shows its working.")
+    L.append("")
+    L.append("It promotes nothing. The tool that wrote it cannot reach dispatch:")
+    L.append("no Intent, no INTENT_MEANING, no ROUTE_TAXONOMY entry, no parse-prompt")
+    L.append("line. Promotion is a REVIEWED CHANGE made by a session that has been")
+    L.append("given this document; the working thread's review is the signature.")
+    L.append("Demotion, by contrast, is automatic (R-AI5(7)) -- see PROBATION below.")
+    L.append("")
+    L.append("## The shape")
+    L.append("")
+    L.append(f"- **Frequency**: {cluster_obj.frequency} question(s) in this ledger "
+             f"(of {tiers['synthesis']} synthesis answers over "
+             f"{tiers['questions']} questions).")
+    L.append(f"- **Intent adjacency**: "
+             f"{', '.join(cluster_obj.adjacency) or '(none recorded)'}")
+    L.append(f"- **Subject kinds**: "
+             f"{', '.join(cluster_obj.subject_kinds) or 'none'}")
+    L.append(f"- **Leaned on**: {cluster_obj.dominant_tool or '(nothing)'}")
+    L.append(f"- **Also read**: "
+             f"{', '.join(t for t in cluster_obj.tools if t != cluster_obj.dominant_tool) or '-'}")
+    L.append(f"- **Claims**: {cluster_obj.verified} verified, "
+             f"{cluster_obj.interpretive} interpretive, {cluster_obj.failed} cut "
+             f"(**verified share {cluster_obj.verified_share:.0%}**)")
+    L.append(f"- **Pareto weight**: {cluster_obj.weight:.2f} "
+             f"(frequency x verified share)")
+    L.append("")
+    L.append("### Exemplars (every question in the cluster)")
+    L.append("")
+    for q in cluster_obj.questions:
+        L.append(f"- \"{q}\"")
+    L.append("")
+    L.append("## The evidence-assembly pattern")
+    L.append("")
+    L.append("Derived from the transcripts of the answers that produced at least one")
+    L.append("VERIFIED claim -- the ones that demonstrated the evidence CARRIES this")
+    L.append("shape. Argument values are reduced to their shape; the pattern is")
+    L.append("\"call it with an order\", never \"call it with ORD-05\".")
+    L.append("")
+    L.append("```")
+    for shape, n in shapes.most_common():
+        L.append(f"{shape}   x{n}")
+    if not shapes:
+        L.append("(no verified answer in this cluster)")
+    L.append("```")
+    L.append("")
+    L.append("The tool surface is a thin wrapper over the SAME readers a contracted")
+    L.append("route uses (Session 4A.5b CU1), so a promotion is not a")
+    L.append("reimplementation: it is this evidence assembled deterministically")
+    L.append("instead of agentically.")
+    L.append("")
+    L.append("## What a contracted route would have to be able to say")
+    L.append("")
+    L.append("### Verified in synthesis (a route must PROVE these)")
+    L.append("")
+    for c in vclaims[:20]:
+        L.append(f"- {c}")
+    if not vclaims:
+        L.append("- (none)")
+    L.append("")
+    L.append("### Interpretive in synthesis (a route may prove, or must keep labeled)")
+    L.append("")
+    for c in iclaims[:20]:
+        L.append(f"- {c}")
+    if not iclaims:
+        L.append("- (none)")
+    L.append("")
+    L.append("R-AI5(6) applies inside a promoted route as much as outside it. An")
+    L.append("interpretive claim a route cannot prove does not become true by being")
+    L.append("assembled deterministically -- it stays a labeled reading or it is")
+    L.append("left out. A promotion that launders a take into testimony is worse")
+    L.append("than no promotion.")
+    L.append("")
+    L.append("## Harness validation")
+    L.append("")
+    if validation is None:
+        L.append("**VALIDATION: NOT RUN.** No `--validate-with` route was supplied,")
+        L.append("so no draft was executed against a pinned world. This section is")
+        L.append("empty rather than clean: a reviewer must not read an unrun check")
+        L.append("as a passed one.")
+    else:
+        errors = [r for r in validation if r.get("error")]
+        contra = [r for r in validation if r.get("contradicted")]
+        strong = [r for r in validation if r.get("provenance_strengthened")]
+        _ = strong
+        L.append(f"Replayed **{len(validation)}** historical question(s) of this")
+        L.append(f"cluster under the candidate route `{route_id}` against the pinned")
+        L.append("world, diffed against the synthesis answers recorded in the ledger.")
+        L.append("")
+        L.append(f"- route raised on: **{len(errors)}**")
+        L.append(f"- contradicted a synthesis claim on: **{len(contra)}**")
+        L.append(f"- strengthened provenance (route CITES what synthesis could only")
+        L.append(f"  read) on: **{len(strong)}**")
+        L.append("")
+        L.append("```")
+        for r in validation:
+            if r.get("error"):
+                L.append(f"! {r['question']}\n    ERROR {r['error']}")
+                continue
+            L.append(f"  {r['question']}")
+            L.append(f"    records cited : {r['records_cited']}")
+            L.append(f"    agreed on     : {', '.join(r['agreed']) or '-'}")
+            L.append(f"    contradicted  : {', '.join(r['contradicted']) or '-'}")
+            L.append(f"    strengthened  : "
+                     f"{'yes' if r['provenance_strengthened'] else 'no'}")
+            for s in r.get("shadow_only", []):
+                L.append(f"    shadow only   : {s}")
+        L.append("```")
+        L.append("")
+        if contra or errors:
+            L.append("**NOT CLEAN.** A contradiction or a raise here is a reason to")
+            L.append("refuse the promotion, not a detail to fix later: the route and")
+            L.append("the tier disagree about the same evidence.")
+        else:
+            L.append("**CLEAN.** The route agrees with every verified claim it")
+            L.append("speaks to. That is a necessary condition for promotion, not a")
+            L.append("sufficient one -- whether the shape SHOULD be contracted is a")
+            L.append("judgment, and it is the reviewer's.")
+    L.append("")
+    L.append("## The gate (R-AI5(7))")
+    L.append("")
+    L.append("Promotion is a vocabulary-class change. A session acting on this")
+    L.append("dossier must land ALL of the following in ONE reviewed commit, citing")
+    L.append("this file as the authority:")
+    L.append("")
+    L.append(f"1. `Intent.{route_id.upper().replace('-', '_')}` in")
+    L.append("   `mre.contracts.parse` (add, never repurpose).")
+    L.append("2. Its authored one-line meaning in `INTENT_MEANINGS`, written to")
+    L.append("   SEPARATE it from its neighbours -- the adjacency above is exactly")
+    L.append("   the set of intents it will be confused with.")
+    L.append(f"3. A `ROUTE_TAXONOMY['{route_id}']` entry with its params and")
+    L.append("   canonical question, and a `ROUTE_OFFERS` line.")
+    L.append("4. The assembler + its AUTHORED copy (a human's, never generated).")
+    L.append("5. A `parse_prompt.md` version bump documenting the new id.")
+    L.append("6. A `Promotion` entry in `mre.contracts.promotion.PROMOTIONS`")
+    L.append("   citing this dossier by path, status `probation`.")
+    L.append("7. The docs/04 amendment.")
+    L.append("")
+    L.append("## Probation and demotion")
+    L.append("")
+    L.append("On promotion the route runs SHADOWED (`mre.modules.shadow`): every")
+    L.append("sweep asks this shape's questions under BOTH paths and diffs the")
+    L.append("route's pre-computed facts against the synthesis tier's verified")
+    L.append("claims. A contradiction on a shared quantity fires a loud sidecar")
+    L.append("signal and DEMOTES the intent automatically -- it leaves")
+    L.append("`model_selectable_intents()`, the parse can no longer name it, and")
+    L.append("the shape returns to the second tier.")
+    L.append("")
+    L.append("Promotion is never automatic. Demotion always is. That asymmetry is")
+    L.append("the ruling, not an implementation detail.")
+    L.append("")
+    return "\n".join(L) + "\n"
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+def _slug(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--ledger", required=True)
+    ap.add_argument("--cluster", required=True,
+                    help="cluster_id from the provenance report")
+    ap.add_argument("--name", help="the SHAPE's human name (the dossier filename). "
+                                   "A human names the shape; the machine names the "
+                                   "cluster.")
+    ap.add_argument("--route-id", help="the route id a promotion would use "
+                                       "(default: derived from --name)")
+    ap.add_argument("--date", default="", help="YYYY-MM-DD (default: today)")
+    ap.add_argument("--validate-with", help="run harness validation with this "
+                                            "route id (must already exist)")
+    ap.add_argument("--out-dir", help="pinned run out-dir, for validation")
+    ap.add_argument("--snapshot-id", help="pinned snapshot, for validation")
+    args = ap.parse_args(argv)
+
+    from mre.contracts.question_ledger import QuestionLedgerEntry
+    from mre.modules.provenance_report import cluster_key, _row_of
+
+    raw = [QuestionLedgerEntry.model_validate_json(ln)
+           for ln in Path(args.ledger).read_text(encoding="utf-8").splitlines()
+           if ln.strip()]
+    rows = rows_from_ledger(args.ledger)
+    clusters = cluster(rows)
+    target = next((c for c in clusters if c.cluster_id == args.cluster), None)
+    if target is None:
+        print(f"dossier: no cluster {args.cluster!r}. Available:", file=sys.stderr)
+        for c in clusters:
+            print(f"  {c.cluster_id}  (x{c.frequency})", file=sys.stderr)
+        return 1
+    if not target.promotable:
+        print(f"dossier: cluster {args.cluster!r} is NOT-PROMOTABLE-BY-DESIGN "
+              f"({target.protected}). R-AI5(6) protects this residue; a dossier "
+              f"for it would be a request to contract away a conversation the "
+              f"product is supposed to be able to have. Refusing.", file=sys.stderr)
+        return 2
+
+    # The LEDGER ENTRIES of this cluster. The report's rows carry no tool ARGS;
+    # the entries do, and the assembly pattern is about arguments — so the cluster
+    # is re-keyed over the entries rather than read off the rows.
+    key = (tuple(target.adjacency), tuple(target.subject_kinds),
+           target.dominant_tool)
+    entries = [e for e in raw
+               if _row_of(e).is_synthesis and cluster_key(_row_of(e)) == key]
+
+    name = args.name or _slug(target.cluster_id)
+    route_id = args.route_id or name
+    date = args.date or __import__("datetime").date.today().isoformat()
+
+    validation = None
+    if args.validate_with:
+        if not (args.out_dir and args.snapshot_id):
+            print("dossier: --validate-with needs --out-dir and --snapshot-id",
+                  file=sys.stderr)
+            return 1
+        validation = validate(entries, args.validate_with, args.out_dir,
+                              args.snapshot_id)
+
+    DOSSIER_DIR.mkdir(parents=True, exist_ok=True)
+    DRAFT_DIR.mkdir(parents=True, exist_ok=True)
+    draft_rel = f"docs/promotions/drafts/{_slug(name)}_route_draft.py"
+    (REPO / draft_rel).write_text(
+        render_draft(target, entries, name=name, route_id=route_id,
+                     source=args.ledger), encoding="utf-8")
+    dossier = DOSSIER_DIR / f"{_slug(name)}-{date}.md"
+    dossier.write_text(
+        render_dossier(target, entries, name=name, route_id=route_id, date=date,
+                       source=args.ledger, tiers=tier_counts(rows),
+                       validation=validation, draft_path=draft_rel),
+        encoding="utf-8")
+    print(f"dossier: -> {dossier}")
+    print(f"dossier: -> {REPO / draft_rel}")
+    print("dossier: NOTHING WAS WIRED INTO DISPATCH. Promotion is a reviewed "
+          "change (R-AI5(7)).")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

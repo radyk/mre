@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 from mre.modules.rolling_questions import (
-    classify_rolling, answer_beyond_horizon, answer_frozen,
+    RollingVocabulary, answer_beyond_horizon, answer_frozen,
     answer_why_not_scheduled_yet,
 )
 
@@ -33,14 +33,55 @@ def empty_doc():
     return json.loads(EMPTY_DOC.read_text(encoding="utf-8"))
 
 
-def test_classify_only_fires_on_a_rolling_document(doc):
-    # a monolithic document (no rolling block) never routes here.
-    assert classify_rolling("what's beyond the horizon?", {"rolling": None}) is None
-    assert classify_rolling("what's frozen?", {}) is None
-    # the three shapes route on a rolling document.
-    assert classify_rolling("what's beyond the horizon?", doc) == "beyond-horizon"
-    assert classify_rolling("what's frozen?", doc) == "frozen"
-    assert classify_rolling("why isn't ORD-01 scheduled yet?", doc) == "why-not-scheduled-yet"
+# Session 4A.5c CU4 — `classify_rolling` is DELETED (the last deterministic
+# classifier). What used to be asserted here — "these three phrasings route to
+# these three ids" — is a claim about a LIVE PARSE now, and it is graded where a
+# live model is actually measured: the sweep's rolling bank (R-AI4(2)). What is
+# asserted offline is the prerequisite that made the deletion safe.
+
+
+def test_the_keyword_matcher_is_gone_not_bypassed(doc):
+    """R-AI5(2) forbids a deterministic-classifier fallback. The rolling matcher
+    was the last one; a private reimplementation would be the same router wearing
+    a different name, so the symbol's ABSENCE is the assertion."""
+    import mre.modules.rolling_questions as rq
+    assert not hasattr(rq, "classify_rolling")
+    assert not any(n.endswith("_TRIGGERS") for n in vars(rq))
+
+
+def test_rolling_vocabulary_places_every_region(doc):
+    """THE PREREQUISITE (4A.5b rider d): subject resolution can see all three
+    sliced regions, not just window 0."""
+    vocab = RollingVocabulary(doc)
+    assert vocab.is_rolling
+    tray = doc["rolling"]["beyond_horizon"]
+    assert tray, "fixture must have a populated tray"
+    order = tray[0]["work_order"]
+    assert vocab.resolve(order) == order.upper()
+    assert vocab.disposition(order) == "beyond-horizon"
+    assert vocab.beyond_horizon(order)
+    # a placed bar resolves too, and is NOT beyond the horizon
+    placed = next(a["work_orders"][0] for a in doc["assignments"]
+                  if a.get("work_orders"))
+    assert vocab.disposition(placed) in ("in-window", "committed")
+    assert not vocab.beyond_horizon(placed)
+
+
+def test_rolling_vocabulary_is_falsy_on_a_monolithic_document():
+    assert not RollingVocabulary({"rolling": None})
+    assert not RollingVocabulary({})
+    assert not RollingVocabulary(None)
+    # and it resolves nothing, so a monolithic run pays no cost and gains no
+    # phantom vocabulary.
+    assert RollingVocabulary({}).resolve("ORD-01") is None
+
+
+def test_rolling_vocabulary_never_guesses_between_two_candidates(doc):
+    """The relevance guard's rule, unchanged: two candidates leave it unresolved.
+    Only names the document actually carries can match — no id-shape regex."""
+    vocab = RollingVocabulary(doc)
+    assert vocab.resolve("ORD-DOES-NOT-EXIST") is None
+    assert vocab.resolve("") is None
 
 
 def test_beyond_horizon_answer_names_the_tray(doc):

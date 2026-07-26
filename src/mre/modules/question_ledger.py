@@ -53,13 +53,20 @@ class QuestionLedger:
         schedule_id: Optional[str] = None,
         session_id: Optional[str] = None,
         synthesis: Optional[object] = None,
+        parse: Optional[object] = None,
+        shadow: Optional[object] = None,
     ) -> QuestionLedgerEntry:
         """Append one entry. When ``route`` is a real taxonomy route (not a
         refusal sentinel) and the same session refused a question inside the
         rephrase window, link this entry to that refusal (free labeled data).
 
         ``synthesis`` carries the second tier's per-claim provenance and its tool
-        calls (R-AI5(5), Session 4A.5b) — present only on a synthesis answer."""
+        calls (R-AI5(5), Session 4A.5b) — present only on a synthesis answer.
+        ``parse`` carries what the parse NAMED (Session 4A.5c) — the clustering
+        signal ``tools/provenance_report.py`` reads, since every second-tier answer
+        takes the same route and the route alone cannot tell two shapes apart.
+        ``shadow`` carries a probation comparison (R-AI5(7)), present only on a
+        turn a promoted route answered while its probation window is open."""
         entry = QuestionLedgerEntry(
             entry_id=str(uuid.uuid4()),
             verbatim_question=verbatim_question,
@@ -71,6 +78,8 @@ class QuestionLedger:
             schedule_id=schedule_id,
             session_id=session_id,
             synthesis=synthesis,
+            parse=parse,
+            shadow=shadow,
         )
         if not entry.refused and session_id:
             entry.rephrase_of = self._recent_refusal_id(session_id, entry.ts)

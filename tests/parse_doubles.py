@@ -118,12 +118,13 @@ def parsed(question: str, intent: Intent, *,
 
 
 def resolve(p: ParsedQuestion, explainer: Any,
-            context: Optional[dict] = None) -> ParsedQuestion:
+            context: Optional[dict] = None, rolling: Any = None) -> ParsedQuestion:
     """Run the REAL subject binding over a scripted parse — the same code the live
     parser uses, so a scripted test still proves resolution end to end."""
     raw = [{"kind": s.kind.value, "raw": s.raw, "from_context": s.pointed}
            for s in p.subjects]
-    return p.model_copy(update={"subjects": bind_subjects(explainer, raw, context)})
+    return p.model_copy(update={
+        "subjects": bind_subjects(explainer, raw, context, rolling=rolling)})
 
 
 class ScriptedParser:
@@ -140,7 +141,13 @@ class ScriptedParser:
         self.asked: list[str] = []
 
     def parse(self, question: str, *, explainer: Any,
-              context: Optional[dict] = None) -> ParsedQuestion:
+              context: Optional[dict] = None,
+              rolling: Any = None) -> ParsedQuestion:
+        # ``rolling`` (Session 4A.5c CU4) is the sliced world's order vocabulary.
+        # The double accepts it and resolves through it, so a test whose subject is
+        # the DISPATCH of a tray order gets a real BEYOND-HORIZON disposition
+        # rather than a scripted one — the disposition is resolution, and
+        # resolution stays real in the doubles by design.
         self.calls += 1
         self.asked.append(question)
         hit = self._table.get((question or "").strip().lower())
@@ -149,7 +156,7 @@ class ScriptedParser:
                                   confidence=0.1, nearest=self._default_nearest,
                                   prompt_version="test")
         return resolve(hit.model_copy(update={"question": question}),
-                       explainer, context)
+                       explainer, context, rolling=rolling)
 
 
 # ---------------------------------------------------------------------------

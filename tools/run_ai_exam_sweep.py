@@ -18,6 +18,13 @@ Session 4A.5b: ONE SYNTHESIZER is shared the same way, so the second tier's coun
 are also the sweep's; and the run reports TOTAL conversational latency split by
 tier (parse+route vs parse+synthesis), which is the number the next round needs.
 
+Session 4A.5c: the sweep WRITES A QUESTION LEDGER (``ledger.jsonl``) and emits the
+PROVENANCE REPORT from it (``PROVENANCE.txt`` / ``.json``) beside the sidecars —
+R-AI5(5)'s standing prioritization, produced automatically rather than on request.
+Every ask already logged an entry; what the sweep lacked was a path to write it to,
+so the residue that R-AI5(5) exists to rank was being computed and discarded 300
+times a run.
+
 The key is read from the gitignored ``.env.local`` at the repo root (the same
 source every prior sweep used) when it is not already in the environment.
 """
@@ -65,6 +72,11 @@ def main(argv=None) -> int:
     ap.add_argument("--banks", nargs="*", help="bank file names (default: all)")
     ap.add_argument("--timeout", type=float, default=120.0)
     ap.add_argument("--limit", type=int)
+    ap.add_argument("--rolling-target",
+                    default="_ai_exam_scratch/rolling_pinned",
+                    help="the pinned ROLLING run (tools/build_rolling_exam_run.py). "
+                         "The rolling bank asks THIS world; every other bank asks "
+                         "the monolithic one.")
     args = ap.parse_args(argv)
 
     sweep_dir = Path(args.sweep_dir)
@@ -74,6 +86,13 @@ def main(argv=None) -> int:
 
     target = RunTarget.from_out_dir(args.out_dir, args.snapshot_id,
                                     label=f"out-dir:{Path(args.out_dir).name}")
+
+    # Session 4A.5c CU5 — the ROLLING bank asks a DIFFERENT world. The monolithic
+    # glass_box run has no sliced state, so every rolling question there is
+    # answered "this isn't a rolling schedule" — honest, and a test of nothing.
+    # Built by tools/build_rolling_exam_run.py; SKIPPED loudly (never silently
+    # passed against the wrong world) when it has not been built.
+    rolling_target = _rolling_target(args.rolling_target)
     # ONE parser and ONE synthesizer for the whole sweep — both tiers' counts are
     # then the sweep's, not one bank's.
     from mre.modules.question_parser import QuestionParser
@@ -85,11 +104,40 @@ def main(argv=None) -> int:
     print(f"sweep: synthesizer available={synthesizer.available} "
           f"prompt_version={synthesizer.prompt_version}")
 
+    # A SWEEP DIRECTORY IS ONE RUN. Stale outputs are cleared before anything
+    # fires, because a directory holding one bank's transcript from an older run
+    # beside the rest is exactly the thing 4A.5b named: a committed sweep that does
+    # not match the committed code is not evidence. A re-run that dies halfway must
+    # leave an obviously INCOMPLETE sweep, never a plausible mixed one.
+    for stale in ("SWEEP.json", "PROVENANCE.txt", "PROVENANCE.json",
+                  "ledger.jsonl"):
+        (sweep_dir / stale).unlink(missing_ok=True)
+    for stale_bank in list(sweep_dir.glob("*.txt")) + \
+            list(sweep_dir.glob("*.sidecar.json")):
+        stale_bank.unlink(missing_ok=True)
+
+    # ONE ledger for the whole sweep (Session 4A.5c). The provenance report is a
+    # read over it, so a per-bank ledger would produce per-bank Paretos — which is
+    # exactly the wrong grain: a recurring SHAPE recurs across banks.
+    ledger_path = sweep_dir / "ledger.jsonl"
+
     summary = []
     latencies: dict[str, list[float]] = {"route": [], "synthesis": []}
+    skipped: list = []
     for bank in banks:
-        runner = ExamRunner(target, per_question_timeout=args.timeout,
+        bank_target = target
+        if bank.stem == "sweep_rolling":
+            if rolling_target is None:
+                print(f"sweep: {bank.stem}: SKIPPED — no pinned rolling run at "
+                      f"{args.rolling_target}. Build it with "
+                      f"'python tools/build_rolling_exam_run.py'. NOT run against "
+                      f"the monolithic world, which would pass vacuously.")
+                skipped.append(bank.stem)
+                continue
+            bank_target = rolling_target
+        runner = ExamRunner(bank_target, per_question_timeout=args.timeout,
                             parser=parser, synthesizer=synthesizer,
+                            ledger_path=ledger_path,
                             session_id=f"sweep-{bank.stem}")
         result = runner.run(parse_script(bank.read_text(encoding="utf-8")),
                             limit=args.limit)
@@ -99,10 +147,12 @@ def main(argv=None) -> int:
             render_sidecar(result), encoding="utf-8")
         graded, met = result.graded()
         row = {"bank": bank.stem, "questions": len(result.turns),
+               "target": bank_target.label,
                "graded": graded, "met": met,
                "findings": result.finding_counts(),
                "llm_calls": result.total_llm_calls,
                "synthesis": result.synthesis_totals(),
+               "shadow": result.shadow_totals(),
                "latency": result.latency()}
         summary.append(row)
         for t in result.turns:
@@ -133,6 +183,9 @@ def main(argv=None) -> int:
                    "graded": sum(r["graded"] for r in summary),
                    "met": sum(r["met"] for r in summary),
                    "findings": totals},
+        # Named, never silent: a bank that did not run is not a bank that passed.
+        "skipped_banks": skipped,
+        "shadow": _merge_shadow(summary),
         "synthesis_totals": {**synth_totals,
                              "tool_histogram": dict(sorted(histogram.items()))},
         "latency": {k: _stats(v) for k, v in latencies.items()},
@@ -141,12 +194,62 @@ def main(argv=None) -> int:
     }
     (sweep_dir / "SWEEP.json").write_text(
         json.dumps(payload, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
+
+    # R-AI5(5) — the standing report, emitted automatically. Never a separate step
+    # someone has to remember: the prioritization is a PRODUCT of the sweep.
+    from mre.modules.provenance_report import rows_from_ledger, write_report
+    rows = rows_from_ledger(ledger_path)
+    if rows:
+        txt, _js = write_report(rows, sweep_dir, source=str(ledger_path))
+        print(f"sweep: provenance report -> {txt}")
+    else:
+        print("sweep: NO LEDGER ROWS — provenance report SKIPPED (not clean)")
+
     print(json.dumps(payload["totals"], indent=2))
+    print(json.dumps(payload["shadow"], indent=2))
     print(json.dumps(payload["synthesis_totals"], indent=2))
     print(json.dumps(payload["latency"], indent=2))
     print(json.dumps(payload["parser_stats"], indent=2))
     print(f"sweep: -> {sweep_dir}")
     return 0
+
+
+def _merge_shadow(summary: list) -> dict:
+    """The PROBATION block across the whole sweep (R-AI5(7)). ``diverged`` is the
+    number that means something on its own: it is the demotion trigger."""
+    out = {"shadowed": 0, "clean": 0, "diverged": 0, "unchecked": 0,
+           "provenance_strengthened": 0}
+    by_intent: dict = {}
+    for row in summary:
+        sh = row.get("shadow") or {}
+        for k in out:
+            out[k] += int(sh.get(k) or 0)
+        for intent, counts in (sh.get("by_intent") or {}).items():
+            dest = by_intent.setdefault(
+                intent, {"shadowed": 0, "diverged": 0, "unchecked": 0})
+            for k in dest:
+                dest[k] += int(counts.get(k) or 0)
+    return {**out, "by_intent": by_intent}
+
+
+def _rolling_target(path: str):
+    """The pinned rolling run as a ``RunTarget``, or None when it has not been
+    built. Reads TARGET.json — the builder writes the snapshot id and document
+    path there so the sweep never has to guess either."""
+    d = Path(path)
+    manifest = d / "TARGET.json"
+    if not manifest.exists():
+        return None
+    try:
+        spec = json.loads(manifest.read_text(encoding="utf-8"))
+        return RunTarget.from_out_dir(
+            spec["out_dir"], spec["snapshot_id"],
+            document_path=Path(spec["document_path"]),
+            label=f"out-dir:{d.name} (rolling)")
+    except Exception as exc:  # noqa: BLE001 — a bad manifest is a skip, not a crash
+        print(f"sweep: rolling target unreadable ({exc}); the rolling bank will "
+              f"be SKIPPED")
+        return None
 
 
 def _stats(xs: list) -> dict:

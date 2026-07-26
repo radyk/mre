@@ -330,6 +330,17 @@ html, body {
   color: var(--synthesis-mark-ink); background: var(--synthesis-mark-bg);
   border-radius: var(--radius-xs); padding: 0 4px;
 }
+/* Session 4A.5c CU3(a) — BEAT ONE of the two-phase ask. The waiting state is the
+ * synthesis register already (it says which tier is working), muted to read as
+ * provisional and gently pulsing so it is alive without being a progress bar we
+ * cannot honestly fill. Motion carries register (R-M1): this is the slow, patient
+ * one, and it respects reduced-motion by simply holding still. */
+.ask .msg.answer.synthesis.waiting { opacity: 0.72; font-style: italic; }
+.ask .msg.answer.synthesis.waiting .reg-chip { animation: synth-breathe 1.8s ease-in-out infinite; }
+@keyframes synth-breathe { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .ask .msg.answer.synthesis.waiting .reg-chip { animation: none; opacity: 0.8; }
+}
 .ask .msg .reg-chip {
   float: right; font-size: var(--fs-2xs); font-weight: var(--fw-semibold);
   padding: 1px 5px; border-radius: var(--radius-xs);

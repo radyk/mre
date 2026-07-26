@@ -142,6 +142,14 @@ def _rendered_by(bundle: ExplanationBundle, default: str) -> str:
         model = kf.get("model") or ""
         tier = f"synthesis ({model})" if model else "synthesis"
         n = kf.get("tool_call_count", 0)
+        # Session 4A.5c CU3(c) — when the ADJACENT-MATCH GUARD diverted a matched
+        # intent here, the rendered-by says WHY. A planner who asked about next
+        # month and got a reasoned answer instead of a proven one is owed the
+        # reason in the same breath: it was their qualifier, not a failure to
+        # understand them.
+        diverted = kf.get("diverted_qualifier") or ""
+        if diverted:
+            tier = f"{tier} — no route covers \"{diverted}\""
         return f"[rendered by: {tier} — {n} tool call(s) | register: synthesis]"
     if bundle.subject_type == "prove_it":
         return "[rendered by: synthesis (grounding pass) | register: synthesis]"
@@ -156,6 +164,9 @@ _HEADER_ONLY_SUBJECTS = frozenset({
     # Session 4A.3 — the swap/move bridge + the absence pair compose their whole
     # answer in the header (the R-AI3 ladder in planner language).
     "swap_move", "gap_between", "machine_idle",
+    # Session 4A.5c CU4 — the rolling answers compose their whole body in the
+    # header (they are read from the document, not from evidence records).
+    "rolling",
     # Session 4A.3c CU2 — a schedule listing renders its table in the header; it now
     # carries ordered_records (real assignment Decisions) to LIGHT the narrated bars
     # (cited_refs), but header-only keeps the prose the clean table it was — no
@@ -800,6 +811,17 @@ class TemplateRenderer:
         elif bundle.subject_type == "gap_between":
             self._render_gap(lines, bundle)
 
+        elif bundle.subject_type == "rolling":
+            # Session 4A.5c CU4 — the sliced-world answers, authored in
+            # rolling_questions and rendered verbatim. They carry the hedge that
+            # makes them honest ("that's an estimate, not a committed placement");
+            # an LLM reword is exactly where that hedge goes missing.
+            lines.append(bundle.key_facts.get("body", ""))
+            lines.append("")
+
+        elif bundle.subject_type == "lateness_cause":
+            self._render_lateness_cause(lines, bundle)
+
         elif bundle.subject_type == "machine_idle":
             self._render_machine_idle(lines, bundle)
 
@@ -817,7 +839,7 @@ class TemplateRenderer:
         are which) is the contract here; the colour/badge treatment ships as cockpit
         tokens for the founder to tune."""
         from mre.modules.ask_fallback_copy import (
-            SYNTHESIS_CITE, SYNTHESIS_LEAD, SYNTHESIS_MARK,
+            SYNTHESIS_CITE, SYNTHESIS_FLOOR_DOORS, SYNTHESIS_LEAD, SYNTHESIS_MARK,
             SYNTHESIS_MARK_NO_RECORDS, SYNTHESIS_PARTIAL, SYNTHESIS_UNANSWERABLE,
             SYNTHESIS_UNANSWERABLE_CONSULTED, SYNTHESIS_UNGROUNDED,
         )
@@ -829,6 +851,15 @@ class TemplateRenderer:
             lines.append(SYNTHESIS_UNANSWERABLE)
             if kf.get("consulted_tools"):
                 lines.append(SYNTHESIS_UNANSWERABLE_CONSULTED.format(tools=tools))
+            # CU3(b) — THE WARM FLOOR. The honest non-answer keeps the doors part
+            # 1's bridge offered. Absence-tested: when the dispatch could compute
+            # no offers, the floor ends here rather than on a dangling header.
+            offers = kf.get("offers") or []
+            if offers:
+                lines.append("")
+                lines.append(SYNTHESIS_FLOOR_DOORS)
+                for offer in offers:
+                    lines.append(f"  - {offer}")
             lines.append("")
             return
 
@@ -1026,6 +1057,97 @@ class TemplateRenderer:
                          "eligible for it. Ask \"what's running on <machine>?\" to see "
                          "where the work went.")
         lines.append("")
+
+    def _render_lateness_cause(self, lines: list[str],
+                               bundle: ExplanationBundle) -> None:
+        """THE PROMOTED ROUTE (Session 4A.5c, R-AI5(7)) — the cause mix across the
+        late set. Authority: docs/promotions/aggregate-lateness-2026-07-26.md.
+
+        Composed authored copy, rendered verbatim: the shape it replaces was
+        answered by verified synthesis claims, and handing a proven cause mix to
+        the rendering model to reword is how a hedge goes missing."""
+        from mre.modules.ask_fallback_copy import (
+            LATENESS_CAUSE_BLOCKER, LATENESS_CAUSE_LEAD,
+            LATENESS_CAUSE_LEAD_NO_TOTAL, LATENESS_CAUSE_MIX_HEADER,
+            LATENESS_CAUSE_MIX_HEADER_ONE, LATENESS_CAUSE_MIX_LINE,
+            LATENESS_CAUSE_MIX_LINE_ONE, LATENESS_CAUSE_MONEY,
+            LATENESS_CAUSE_MONEY_WORST, LATENESS_CAUSE_NONE,
+            LATENESS_CAUSE_PREMISE_ONE, LATENESS_CAUSE_UNATTRIBUTED,
+        )
+        kf = bundle.key_facts
+        late = int(kf.get("late_count", 0) or 0)
+        total = kf.get("total_orders") or 0
+        causes = kf.get("causes") or []
+
+        # 1 — THE PREMISE, first. "Why are so many late" on a plan with one late
+        # order is answered by saying so; the causes still follow, but the planner
+        # is not left believing a premise the evidence does not support.
+        if late == 0:
+            lines.append(LATENESS_CAUSE_NONE)
+            lines.append("")
+            return
+        if late == 1:
+            c = causes[0] if causes else {}
+            mins = c.get("lateness_minutes")
+            amount = (f"{int(mins)} minutes" if mins and mins < 120
+                      else f"{round((mins or 0) / 60, 1)} hours")
+            lines.append(LATENESS_CAUSE_PREMISE_ONE.format(
+                order=c.get("order", "?"), amount=amount,
+                on_time=(total - 1) if total else "rest"))
+        elif total:
+            lines.append(LATENESS_CAUSE_LEAD.format(late=late, total=total))
+        else:
+            lines.append(LATENESS_CAUSE_LEAD_NO_TOTAL.format(late=late))
+        lines.append("")
+
+        # 2 — THE MIX. Which chains repeat is the question; one order's chain is
+        # `late-order`.
+        mix = [m for m in (kf.get("cause_mix") or [])
+               if m.get("cause") != "no recorded driver"]
+        if mix:
+            lines.append(LATENESS_CAUSE_MIX_HEADER if late > 1
+                         else LATENESS_CAUSE_MIX_HEADER_ONE)
+            for m in mix:
+                lines.append(
+                    LATENESS_CAUSE_MIX_LINE.format(
+                        cause=m["cause"], orders=", ".join(m["orders"]))
+                    if late > 1 else
+                    LATENESS_CAUSE_MIX_LINE_ONE.format(cause=m["cause"]))
+            lines.append("")
+
+        # 3 — THE CONCRETE HOLDS, from the solved occupancy. Only where there is
+        # one: a named blocker is evidence, an assumed one is a fabrication.
+        blocked = [c for c in causes if c.get("blocked_by")]
+        if blocked:
+            lines.append("Where the hold is concrete:")
+            for c in blocked:
+                b = c["blocked_by"]
+                lines.append(LATENESS_CAUSE_BLOCKER.format(
+                    order=c["order"], machine=b.get("machine", "?"),
+                    until=b.get("until", "?"), blocker=b.get("blocker_order", "?"),
+                    start=b.get("my_start", "?")))
+            lines.append("")
+
+        # 4 — WHAT CANNOT BE ATTRIBUTED, said out loud rather than papered over.
+        unattributed = [c["order"] for c in causes if not c.get("blocked_by")]
+        if unattributed:
+            lines.append(LATENESS_CAUSE_UNATTRIBUTED.format(
+                orders=", ".join(unattributed)))
+            lines.append("")
+
+        # 5 — the money.
+        total_cost = kf.get("tardiness_total") or 0.0
+        if total_cost:
+            worstline = ""
+            worst = (kf.get("tardiness_lines") or [None])[0]
+            if worst and len(kf.get("tardiness_lines") or []) > 1:
+                worstline = LATENESS_CAUSE_MONEY_WORST.format(
+                    cost=f"{worst['cost']:,.2f}", order=worst["order"])
+            lines.append(LATENESS_CAUSE_MONEY.format(
+                total=f"{total_cost:,.2f}", worst=worstline))
+            lines.append("")
+
+        self._render_excluded_note(lines, bundle)
 
     # ------------------------------------------------------------------
     # Session 4A.2 composed-answer helpers
@@ -1524,6 +1646,18 @@ class LLMRenderer:
         # model to reword would dissolve the very thing that was verified — the
         # words the provenance label is attached to. Rendered verbatim, always.
         "synthesis", "prove_it",
+        # Session 4A.5c: the PROMOTED route's cause mix is composed authored copy
+        # over pre-computed facts, and it carries the two hedges the dossier made
+        # conditions of promotion — the premise check and the named-unattributed
+        # line. Both are exactly the sentences an "answer in 2-3 sentences" reword
+        # drops first, and dropping either turns a proven answer into a confident
+        # wrong one. Rendered verbatim.
+        "lateness_cause",
+        # Session 4A.5c CU4: the rolling answers are authored, ID-free and HEDGED
+        # (the beyond-horizon estimate is explicitly not a placement). Rendered
+        # verbatim — a reword that drops "that's an estimate" turns an honest
+        # answer into a commitment the solver never made.
+        "rolling",
     })
 
     def render(self, bundle: ExplanationBundle) -> str:

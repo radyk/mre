@@ -107,6 +107,17 @@ def _remediation_limit(q: str) -> "Optional[int]":
 ROUTE_TAXONOMY: dict[str, dict] = {
     "late-order":            {"params": ["order"],   "canonical": "why is {order} late?"},
     "late-orders":           {"params": [],          "canonical": "which orders are late?"},
+    # Session 4A.5c (R-AI5(7)) — THE ONE PROMOTED SHAPE, and the only route in this
+    # table that no designer chose. It is the `aggregate-lateness` cluster of the
+    # 4A.5b synthesis residue, promoted through the pipeline the ruling specifies:
+    # the provenance report ranked it, tools/promotion_dossier.py drafted the
+    # application, the working thread reviewed it, and THIS LINE is the signature.
+    # Authority: docs/promotions/aggregate-lateness-2026-07-26.md.
+    # It answers the CAUSE MIX across the late set — not the list (`late-orders`)
+    # and not one order's chain (`late-order`). On PROBATION: every sweep asks its
+    # shape under both paths and a contradiction demotes it automatically.
+    "lateness-cause":        {"params": [],
+                              "canonical": "why are so many orders late?"},
     "why-on-machine":        {"params": ["order", "machine"],
                               "canonical": "why is {order} on {machine}?"},
     "machine-schedule":      {"params": ["machine"], "canonical": "what is running on {machine}?"},
@@ -552,6 +563,8 @@ class Explainer:
             return self._explain_why_late(params["order"])
         if route_id == "late-orders":
             return self._list_late_orders()
+        if route_id == "lateness-cause":
+            return self._explain_lateness_cause(q)
         if route_id == "why-on-machine":
             return self._explain_why_on_machine(params["order"], params["machine"])
         if route_id == "data-problems":
@@ -565,10 +578,15 @@ class Explainer:
             return self._schedule_query(q, q.lower(), params.get("order"),
                                         params.get("machine"))
         if route_id == "synthesis":
-            return self._synthesis_bundle(q, params["answer"])
+            return self._synthesis_bundle(q, params["answer"],
+                                          params.get("diverted_qualifier", ""),
+                                          params.get("offers"))
         if route_id == "prove-it":
             return self._prove_it_bundle(q, params.get("claim"),
                                          params.get("answer"))
+        if route_id in ("beyond-horizon", "why-not-scheduled-yet", "frozen"):
+            return self._rolling_bundle(route_id, q, params.get("document"),
+                                        params.get("order"))
         if route_id == "near-miss":
             return self._near_miss(q, params.get("offers", []),
                                    params.get("routes", []))
@@ -785,6 +803,122 @@ class Explainer:
                 ],
                 "worst_late_order": worst["wo"] if worst else None,
                 "excluded_summary": self._excluded_summary(),
+            },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _explain_lateness_cause(self, question: str) -> ExplanationBundle:
+        """THE PROMOTED ROUTE (R-AI5(7), Session 4A.5c) — the cause mix across the
+        late set. Authority: docs/promotions/aggregate-lateness-2026-07-26.md.
+
+        The dossier's evidence-assembly pattern, implemented deterministically:
+        the whole lateness set (enumerable in one read, which is what lets a COUNT
+        be stated rather than sampled), each late order's assignment driver and its
+        concrete blocked-by fact, and the tardiness lines from the cost ledger. All
+        three are the SAME readers the synthesis tier called through the tool
+        surface — a promotion is not a reimplementation, it is this evidence
+        assembled deterministically instead of agentically.
+
+        TWO HONESTY RULES the dossier carried over from R-AI5(6), and they are the
+        reason this route is safe to contract at all:
+
+          * **The premise is checked, not assumed.** "Why are so many orders late"
+            asked of a plan with one late order is answered by saying so. The
+            synthesis tier did exactly this ("the premise ... does not match the
+            data") and it is the single most useful thing this shape says; a route
+            that skipped straight to causes would be a worse answer than the one it
+            replaced.
+          * **A cause the evidence does not carry stays out.** Each late order
+            contributes a driver phrase and, where the solved occupancy shows one, a
+            named blocker. Where it shows nothing, the answer says the cause is not
+            attributable rather than reaching for one. An interpretive claim does
+            not become true by being assembled deterministically — promoting a take
+            into testimony would be worse than not promoting at all.
+        """
+        late_bundle = self._list_late_orders()
+        kf = late_bundle.key_facts
+        late_count = int(kf.get("late_count", 0) or 0)
+        records = list(late_bundle.ordered_records)
+
+        # The whole book, so "N of M" is enumerable rather than sampled.
+        total_orders = 0
+        if self._reader is not None:
+            try:
+                total_orders = sum(1 for _ in self._reader.iter_entities("demand"))
+            except Exception:  # noqa: BLE001 — a count is never worth a raise
+                total_orders = 0
+
+        # Per late order: the driver the assignment recorded and the concrete
+        # blocked-by fact from the solved occupancy.
+        causes: list[dict] = []
+        for item in kf.get("late_orders", []) or []:
+            order = str(item).split(" ")[0]
+            detail = self._explain_why_late(order)
+            dkf = detail.key_facts
+            causes.append({
+                "order": order,
+                "lateness_minutes": dkf.get("lateness_minutes"),
+                "driver_code": dkf.get("driver_code"),
+                "driver_phrase": dkf.get("driver_phrase"),
+                "blocked_by": dkf.get("blocked_by"),
+            })
+            records.extend(r for r in detail.ordered_records if r not in records)
+
+        # The cause MIX: driver phrase -> the orders it accounts for. This is the
+        # whole point of the shape — one order's chain is `late-order`; what the
+        # planner asked is which chains repeat.
+        mix: dict[str, list] = {}
+        for c in causes:
+            phrase = c["driver_phrase"] or "no recorded driver"
+            mix.setdefault(phrase, []).append(c["order"])
+        unattributed = [c["order"] for c in causes if not c["driver_phrase"]]
+
+        # The money, from the ledger's tardiness lines.
+        tardiness_total = 0.0
+        tardiness_lines: list[dict] = []
+        if self._reader is not None:
+            try:
+                demands = {d.get("id"): d for d in self._reader.iter_entities("demand")}
+                for svc in self._reader.iter_entities("serviceoutcome"):
+                    cost = float(svc.get("tardiness_cost") or 0.0)
+                    if not cost:
+                        continue
+                    dem = demands.get(svc.get("demand_ref")) or {}
+                    order = ""
+                    for ref in dem.get("external_refs", []) or []:
+                        if ref.get("type") in ("order_id", "work_order"):
+                            order = ref["value"]
+                            break
+                    tardiness_total += cost
+                    tardiness_lines.append({"order": order or "?",
+                                            "cost": round(cost, 2)})
+            except Exception:  # noqa: BLE001
+                tardiness_lines = []
+        tardiness_lines.sort(key=lambda r: -r["cost"])
+
+        return ExplanationBundle(
+            question=question or "Why are so many orders late?",
+            subject_id="all",
+            subject_type="lateness_cause",
+            subject_external_name="all demands",
+            ordered_records=records,
+            key_facts={
+                "late_count": late_count,
+                "total_orders": total_orders,
+                "on_time_count": max(0, total_orders - late_count) if total_orders else None,
+                # The premise check. A route that answers "why are so many late" on
+                # a plan with 0 or 1 late orders must lead with that fact.
+                "premise_holds": late_count > 1,
+                "causes": causes,
+                "cause_mix": [{"cause": phrase, "orders": orders}
+                              for phrase, orders in sorted(
+                                  mix.items(), key=lambda kv: (-len(kv[1]), kv[0]))],
+                "unattributed": unattributed,
+                "worst_late_order": kf.get("worst_late_order"),
+                "tardiness_total": round(tardiness_total, 2),
+                "tardiness_lines": tardiness_lines,
+                "excluded_summary": kf.get("excluded_summary"),
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
@@ -2109,8 +2243,16 @@ class Explainer:
                 out.append(rec)
         return out
 
-    def _synthesis_bundle(self, question: str, answer: Any) -> ExplanationBundle:
-        """A verified ``SynthesisAnswer`` → the bundle the surface renders (CU4)."""
+    def _synthesis_bundle(self, question: str, answer: Any,
+                          diverted_qualifier: str = "",
+                          offers: Optional[list] = None) -> ExplanationBundle:
+        """A verified ``SynthesisAnswer`` → the bundle the surface renders (CU4).
+
+        ``diverted_qualifier`` is set when the ADJACENT-MATCH GUARD (Session 4A.5c
+        CU3(c)) sent a MATCHED intent here because the route could not honour a
+        qualifier the planner stated. It reaches only the rendered-by line: a
+        planner who asked about next month and got a reasoned answer instead of a
+        proven one is owed the reason."""
         cited: list[str] = []
         for c in answer.claims:
             for rid in c.cited_record_ids:
@@ -2133,7 +2275,46 @@ class Explainer:
                 "unanswerable": answer.unanswerable,
                 "counts": answer.counts(),
                 "model": answer.model,
+                "diverted_qualifier": diverted_qualifier,
+                # CU3(b) — the warm floor's doors. Carried on every synthesis
+                # bundle, rendered ONLY on the couldn't-answer: an answer that
+                # grounded something needs no consolation prize.
+                "offers": list(offers or []),
             },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _rolling_bundle(self, route_id: str, question: str, document: Any,
+                        order: Optional[str] = None) -> ExplanationBundle:
+        """THE ROLLING (sliced-world) ROUTES (Session 4A.5c CU4).
+
+        The three answers still come from ``rolling_questions``, unchanged in
+        authority and still authored, ID-free and hedged. What changed is how they
+        are REACHED: a keyword pre-route in the API used to answer them before the
+        parse ran, and that matcher — the last deterministic classifier in the
+        codebase — is deleted. The parse names the intent; this is where the intent
+        lands.
+
+        The document rides in as a param because a rolling run's sliced state lives
+        in the contract-1.7 RollingBlock, not in the window-0 snapshot the
+        Explainer reads. Asked of a MONOLITHIC document the answerers say so
+        honestly ("this isn't a rolling schedule"), which is the right answer to a
+        sliced-world question about a plan that has no slices."""
+        from mre.modules import rolling_questions as rq
+        if route_id == "beyond-horizon":
+            body = rq.answer_beyond_horizon(document)
+        elif route_id == "frozen":
+            body = rq.answer_frozen(document)
+        else:
+            body = rq.answer_why_not_scheduled_yet(document, order)
+        return ExplanationBundle(
+            question=question,
+            subject_id=order or "rolling",
+            subject_type="rolling",
+            subject_external_name=order or "?",
+            ordered_records=[],
+            key_facts={"route": route_id, "body": body, "order": order},
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )

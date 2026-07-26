@@ -1,0 +1,107 @@
+{
+  "target": "out-dir:gb_pinned",
+  "snapshot": "snap-exam",
+  "started_at": "2026-07-26T14:32:22Z",
+  "llm_mode": "live",
+  "questions": 30,
+  "llm_calls": 120,
+  "parser_stats": {
+    "calls": 271,
+    "parses": 270,
+    "retries": 1,
+    "malformed": 2,
+    "clarifies": 6,
+    "unavailable": 0,
+    "median_latency_ms": 1146.825550000358,
+    "malformed_samples": [
+      "```json\n{\n  \"intent\": \"verification\",\n  \"subjects\": [],\n  \"polarity\": null,\n  \"followup_of\": \"none\",\n  \"confidence\": 0.92,\n  \"nearest\": [],\n  \"dropped_qualifier\": \"\",\n  \"clarify\": {\n    \"reason\": \"verification\",\n    \"detail\": \"the previous answer about which orders are late\"\n  }\n}\n```",
+      "```json\n{\n  \"intent\": \"verification\",\n  \"subjects\": [],\n  \"polarity\": null,\n  \"followup_of\": \"none\",\n  \"confidence\": 0.92,\n  \"nearest\": [\"late-orders\"],\n  \"dropped_qualifier\": \"\",\n  \"clarify\": {\n    \"reason\": \"verification\",\n    \"detail\": \"asking whether the previous answer about which orders are late was correct\"\n  }\n}\n```"
+    ]
+  },
+  "synth_stats": {
+    "syntheses": 23,
+    "calls": 97,
+    "tool_calls": 72,
+    "malformed": 2,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 3,
+    "median_latency_ms": 8476.974000004702,
+    "p90_latency_ms": 18348.984900003416
+  },
+  "synthesis": {
+    "answers": 16,
+    "claims": 65,
+    "verified": 25,
+    "interpretive": 37,
+    "failed_and_cut": 3,
+    "ungrounded_load_bearing": 1,
+    "unanswerable": 1,
+    "budget_exhausted": 0,
+    "tool_calls": 59,
+    "tool_histogram": {
+      "calendars": 1,
+      "cost_ledger": 8,
+      "entity_vocabulary": 8,
+      "fetch_record": 2,
+      "lateness_set": 6,
+      "machine_occupancy": 19,
+      "placements_for_machine": 10,
+      "placements_for_order": 2,
+      "placements_in_window": 3
+    },
+    "calls_per_answer": {
+      "0": 1,
+      "1": 3,
+      "2": 2,
+      "3": 2,
+      "4": 1,
+      "5": 3,
+      "6": 2,
+      "7": 1,
+      "8": 1
+    }
+  },
+  "shadow": {
+    "shadowed": 2,
+    "clean": 2,
+    "diverged": 0,
+    "unchecked": 0,
+    "provenance_strengthened": 1,
+    "by_intent": {
+      "lateness-cause": {
+        "shadowed": 2,
+        "diverged": 0,
+        "unchecked": 0
+      }
+    }
+  },
+  "latency": {
+    "route": {
+      "n": 14,
+      "median_ms": 1083.8,
+      "p90_ms": 1950.3
+    },
+    "synthesis": {
+      "n": 16,
+      "median_ms": 11735.7,
+      "p90_ms": 20871.7
+    }
+  },
+  "graded_expectations": {
+    "graded": 30,
+    "met": 30
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "ungrounded-load-bearing": 1
+  },
+  "findings": [
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 82,
+      "question": "is the work spread evenly across the machines",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    }
+  ]
+}

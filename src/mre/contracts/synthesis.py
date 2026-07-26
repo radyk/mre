@@ -345,8 +345,14 @@ class SynthesisProvenance(BaseModel):
 
     @classmethod
     def of(cls, answer: SynthesisAnswer) -> "SynthesisProvenance":
+        # ``kind`` rides from Session 4A.5c: the provenance report has to tell a
+        # cluster whose residue is FACTS the tools could ground (promotable) from
+        # one whose residue is CONCLUSIONS (a take, protected by R-AI5(6)), and
+        # status alone cannot — an interpretive fact and an interpretive
+        # conclusion wear the same label for different reasons.
         return cls(
             claims=[{"text": c.text, "status": c.status.value,
+                     "kind": c.kind.value,
                      "record_ids": c.cited_record_ids,
                      "load_bearing": c.load_bearing}
                     for c in (list(answer.claims) + list(answer.cut))],

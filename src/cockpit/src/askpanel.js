@@ -8,7 +8,7 @@
 //   3. Selection is shared: clicking a bar scopes a deictic "why is this here?"
 //      to it (the board tells us the work_order + resource; we compose the
 //      question the explainer already understands).
-import { ask } from "./api.js";
+import { ask, askPreflight } from "./api.js";
 import { createVoiceInput, speak, spokenSummary, speechRecognitionAvailable } from "./voice.js";
 
 export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
@@ -164,18 +164,44 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
     return el;
   }
 
+  // BEAT ONE (Session 4A.5c CU3a): an honest non-answer while the second tier
+  // reads. Never a fake answer and never an invented progress figure — it says
+  // what is happening and commits to nothing about what will be found. Removed
+  // the moment beat two lands, whether that is an answer or an error.
+  function appendWaiting(text) {
+    clearEmpty();
+    const el = document.createElement("div");
+    el.className = "msg answer synthesis waiting";
+    el.setAttribute("aria-live", "polite");
+    el.innerHTML = `<div class="who">synthesis<span class="reg-chip">reading</span></div><pre></pre>`;
+    el.querySelector("pre").textContent = text;
+    logEl.appendChild(el); scrollDown();
+    return el;
+  }
+
   async function run(question, { spoken = false } = {}) {
     if (!question.trim()) return;
     appendYou(question);
     inputEl.value = "";
     asking = true;
+    let waitingEl = null;
     try {
-      const res = await ask(scheduleId, question, useLlm, {
+      const ctx = {
         history: askHistory.slice(-4),
         selection: currentSelectionRefs(),
         lastAnswered,
         sessionId,
-      });
+      };
+      // Two-phase: ask which tier will answer BEFORE asking for the answer. The
+      // preflight never throws (it resolves to the route tier on any failure), so
+      // this adds a branch, not a failure mode. The server remembers the parse,
+      // so the ask below does not pay for a second one.
+      const pre = await askPreflight(scheduleId, question, ctx);
+      if (pre && pre.tier === "synthesis" && pre.waiting) {
+        waitingEl = appendWaiting(pre.waiting);
+      }
+      const res = await ask(scheduleId, question, useLlm, ctx);
+      if (waitingEl) { waitingEl.remove(); waitingEl = null; }
       // CU2: an elliptical follow-up the server resolved shows the question it
       // actually answered (the deictic pattern from 3.2d, generalized).
       const resolved = res.bundle && res.bundle.resolved_question;
@@ -195,6 +221,7 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
       // aloud + a one-sentence summary; record IDs stay on screen, never voiced.
       if (spoken) speak(spokenSummary(res.answer, res.bundle?.register));
     } catch (e) {
+      if (waitingEl) { waitingEl.remove(); waitingEl = null; }
       // A superseded target is not an error to show raw (session 3.8 CU3): word
       // it as the plan having moved on, and offer a one-click jump to current.
       if (e && e.superseded) return appendSuperseded();

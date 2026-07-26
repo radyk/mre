@@ -1,0 +1,340 @@
+AI EXAM TRANSCRIPT
+target      : out-dir:rolling_pinned (rolling)
+snapshot    : snap-rolling
+started     : 2026-07-26T14:26:48Z
+llm mode    : live
+questions   : 17
+llm calls   : 18
+door check  : live
+parse       : parses=65 calls=66 retries=1 malformed=2 clarifies=3 unavailable=0 median=1193ms
+synthesis   : answers=1 calls=2 tools=1 malformed=0 budget-out=0 unanswerable=0 median=5508ms p90=5508ms
+claims      : 0 total  verified=0 interpretive=0 failed-and-cut=0  ungrounded-load-bearing=0
+latency     : route n=17 median=1233ms p90=1651ms | synthesis n=0 median=- p90=-
+graded      : 17/17 expectations met
+sidecar     : absent-entity=1
+------------------------------------------------------------------------
+# AI EXAM BANK — the sliced world (Session 4A.5c, CU4/CU5)
+# generated: 2026-07-26
+# ruling  : R-AI5(1)/(2) — every question is parsed FIRST by a model against the
+# closed intent vocabulary. There is no deterministic-classifier
+# fallback anywhere, and as of this session that includes the rolling
+# pre-route, which was the last one.
+# world   : the PINNED ROLLING RUN (tools/build_rolling_exam_run.py) — pilot_scale,
+# 40 orders, window 14d / frozen 3d, deterministic seed 42, window 0
+# persisted. 56 bars: 38 committed, 18 active, 14 in the beyond-horizon
+# tray. Frozen through 2026-01-08.
+# 
+# THIS BANK RUNS AGAINST A DIFFERENT TARGET FROM EVERY OTHER BANK. The rest of the
+# sweep asks the monolithic glass_box world, which has no sliced state at all — a
+# rolling question there is answered "this isn't a rolling schedule", which is
+# honest and tests nothing. The sweep runner points this bank at the rolling run.
+# 
+# WHAT IS GRADED HERE, and why it is graded LIVE. Until this session the three
+# rolling shapes were matched by `classify_rolling`, three tuples of keyword
+# triggers ("beyond the horizon", "frozen", "why isn't", "when will"). That
+# matcher is DELETED. So the claim "these phrasings reach these three intents" is
+# now a claim about a live model, and R-AI4(2) puts such claims here rather than
+# in an offline test: a keyword table can be asserted, an understanding must be
+# measured.
+# 
+# THE DISTINCTION THIS BANK EXISTS TO PIN. A tray order is NEVER "not in this
+# schedule". 4A.5b refused to retire the matcher precisely because the parse
+# resolved subjects against the window-0 snapshot only, so a tray order resolved
+# to nothing and was answered as ABSENT — a confident-wrong answer replacing a
+# correct one. Subject resolution now reads the document's three regions, and the
+# `beyond-horizon` disposition is what every placement question about a tray order
+# lands on. Section D is that pin, from both sides.
+# 
+# Vocabulary of this world, for reading the expectations:
+# tray (beyond horizon) : ORD-000018 (due 01-20), ORD-000010, ORD-000017,
+# ORD-000032, ORD-000007, ORD-000020, ... (14 total)
+# committed / active    : ORD-000023, ORD-000009, ORD-000030, ORD-000039,
+# ORD-000012, ORD-000025, ORD-000016, ORD-000024, ...
+# machines              : CUT-01, MILL-01, MILL-02, ASM-01, HEAT-01, PAINT-01,
+# FINISH-01, FINISH-02
+# =================================================================================
+# A — THE THREE SHAPES, in the founder's own sliced-board phrasings
+# 
+# These are the phrasings the 4B-era transcripts carry. Each one used to be a
+# keyword hit; each one is now a parse. `frozen` and `beyond-horizon` take no
+# subject, so the expectation is the intent alone.
+# =================================================================================
+# [EXPECT intent=beyond-horizon route=beyond-horizon]
+Q[49]: whats beyond the horizon
+  route=beyond-horizon  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=beyond-horizon  conf=0.95  1105ms
+  expect: intent=beyond-horizon route=beyond-horizon  -> MET
+  A:
+    14 orders are known but not yet scheduled — they sit beyond the current window and will enter a later one as the schedule rolls forward. Nearest by due date: ORD-000018 (due 2026-01-20); ORD-000010 (due 2026-01-21); ORD-000017 (due 2026-01-21); ORD-000032 (due 2026-01-22); ORD-000007 (due 2026-01-24); and 9 more.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT intent=beyond-horizon route=beyond-horizon]
+Q[53]: what work is coming that isnt scheduled yet
+  route=beyond-horizon  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=beyond-horizon  conf=0.95  908ms
+  expect: intent=beyond-horizon route=beyond-horizon  -> MET
+  A:
+    14 orders are known but not yet scheduled — they sit beyond the current window and will enter a later one as the schedule rolls forward. Nearest by due date: ORD-000018 (due 2026-01-20); ORD-000010 (due 2026-01-21); ORD-000017 (due 2026-01-21); ORD-000032 (due 2026-01-22); ORD-000007 (due 2026-01-24); and 9 more.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT intent=frozen route=frozen]
+Q[57]: whats frozen
+  route=frozen  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=frozen  conf=0.95  1210ms
+  expect: intent=frozen route=frozen  -> MET
+  A:
+    38 operations are frozen and committed — locked in the frozen zone through 2026-01-08; they will not move as the schedule rolls. Another 18 operations are active in the current window, solved but not yet frozen.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT intent=frozen route=frozen]
+Q[61]: what is locked in and wont move when this rolls forward
+  route=frozen  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=frozen  conf=0.95  1194ms
+  expect: intent=frozen route=frozen  -> MET
+  A:
+    38 operations are frozen and committed — locked in the frozen zone through 2026-01-08; they will not move as the schedule rolls. Another 18 operations are active in the current window, solved but not yet frozen.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT intent=why-not-scheduled-yet route=why-not-scheduled-yet order=ORD-000018]
+Q[65]: why isnt ORD-000018 scheduled yet
+  route=why-not-scheduled-yet  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=why-not-scheduled-yet  conf=0.95  polarity=negative  order=ORD-000018<-utterance("ORD-000018")  1083ms
+  expect: intent=why-not-scheduled-yet route=why-not-scheduled-yet order=ORD-000018  -> MET
+  A:
+    ORD-000018 isn't scheduled yet because it sits beyond the current window — its work hasn't been pulled into a scheduling window. It's due 2026-01-20, and I estimate it needs to enter a window around 2026-01-19 (based on its due date and work content — that's an estimate, not a committed placement). It will be scheduled as the horizon rolls forward.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT intent=why-not-scheduled-yet route=why-not-scheduled-yet order=ORD-000010]
+Q[69]: when will ORD-000010 get scheduled
+  route=why-not-scheduled-yet  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=why-not-scheduled-yet  conf=0.95  order=ORD-000010<-utterance("ORD-000010")  1149ms
+  expect: intent=why-not-scheduled-yet route=why-not-scheduled-yet order=ORD-000010  -> MET
+  A:
+    ORD-000010 isn't scheduled yet because it sits beyond the current window — its work hasn't been pulled into a scheduling window. It's due 2026-01-21, and I estimate it needs to enter a window around 2026-01-20 (based on its due date and work content — that's an estimate, not a committed placement). It will be scheduled as the horizon rolls forward.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# B — SLICED-BOARD DEIXIS
+# 
+# The panel sends the board selection; the parse binds a pointed subject from it.
+# A tray order cannot be SELECTED (it has no bar), so a deictic question with a
+# committed order selected must bind THAT order — the tray must not become a
+# catch-all for anything the window does not explain.
+# =================================================================================
+# [SELECT order=ORD-000023]
+# [EXPECT order=ORD-000023]
+Q[82]: why is this order where it is
+  selection: order=ORD-000023
+  interpreted as: why is ORD-000023 where it is  (resolved against ORD-000023 (from board selection))
+  route=start-reason  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=3  records=1  refs=1/2/0
+  parse: intent=start-reason  conf=0.92  order=ORD-000023<-selection("this order")  1030ms
+  expect: order=ORD-000023  -> MET
+  A:
+    ORD-000023 starts Monday (2026-01-05 07:00) because it isn't released for production until Monday 2026-01-05 — nothing can begin before its release date.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [SELECT order=ORD-000009]
+# [EXPECT intent=order-schedule order=ORD-000009]
+Q[87]: when does this one finish
+  selection: order=ORD-000009
+  interpreted as: when does ORD-000009 finish  (resolved against ORD-000009 (from board selection))
+  route=order-schedule  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=6  records=3  refs=3/3/0
+  parse: intent=order-schedule  conf=0.95  order=ORD-000009<-selection("this one")  1198ms
+  expect: intent=order-schedule order=ORD-000009  -> MET
+  A:
+    ORD-000009 completes 2026-01-06 18:53 — 14.2 day(s) early (due 2026-01-20).
+    It starts 2026-01-05 07:00.
+
+    ORD-000009 runs across 3 operation(s):
+
+      [ASM-01]
+        seq= 20  2026-01-06 07:00 -> 2026-01-06 14:30  ORD-000009
+      [FINISH-01]
+        seq= 30  2026-01-06 14:31 -> 2026-01-06 18:53  ORD-000009
+      [MILL-02]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 12:56  ORD-000009
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# C — THE COMMITTED FRONT
+# 
+# "Frozen" is a state, not just a question. A committed order asked about directly
+# is still a normal placement question — the freeze does not change which route
+# answers it, only what the answer says.
+# =================================================================================
+# [EXPECT order=ORD-000030]
+Q[98]: whats running on ORD-000030
+  route=order-schedule  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=3  records=1  refs=1/2/0
+  parse: intent=order-schedule  conf=0.95  order=ORD-000030<-utterance("ORD-000030")  1033ms
+  expect: order=ORD-000030  -> MET
+  A:
+    ORD-000030: 1 operation(s):
+
+      [PRESS-FAST]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 08:45  ORD-000030  -19634min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT intent=frozen route=frozen]
+Q[102]: how much of this plan is already committed
+  route=frozen  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=frozen  conf=0.92  1252ms
+  expect: intent=frozen route=frozen  -> MET
+  A:
+    38 operations are frozen and committed — locked in the frozen zone through 2026-01-08; they will not move as the schedule rolls. Another 18 operations are active in the current window, solved but not yet frozen.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# D — THE PIN: BEYOND-HORIZON vs ABSENT
+# 
+# The distinction the whole CU exists for, asserted from BOTH sides.
+# 
+# a tray order         -> a real subject with a beyond-horizon disposition, and
+# EVERY placement question about it lands on
+# `why-not-scheduled-yet`. Never "not in this schedule".
+# a name nothing carries -> still absent. The tray is not a wildcard, and the
+# relevance guard is intact.
+# =================================================================================
+# [EXPECT route=why-not-scheduled-yet order=ORD-000017]
+Q[117]: why is ORD-000017 late
+  route=why-not-scheduled-yet  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=late-order  conf=0.99  polarity=positive  order=ORD-000017<-utterance("ORD-000017")  1133ms
+  expect: route=why-not-scheduled-yet order=ORD-000017  -> MET
+  A:
+    ORD-000017 isn't scheduled yet because it sits beyond the current window — its work hasn't been pulled into a scheduling window. It's due 2026-01-21, and I estimate it needs to enter a window around 2026-01-20 (based on its due date and work content — that's an estimate, not a committed placement). It will be scheduled as the horizon rolls forward.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT route=why-not-scheduled-yet order=ORD-000032]
+Q[121]: when does ORD-000032 start
+  route=why-not-scheduled-yet  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=order-schedule  conf=0.99  order=ORD-000032<-utterance("ORD-000032")  1603ms
+  expect: route=why-not-scheduled-yet order=ORD-000032  -> MET
+  A:
+    ORD-000032 isn't scheduled yet because it sits beyond the current window — its work hasn't been pulled into a scheduling window. It's due 2026-01-22, and I estimate it needs to enter a window around 2026-01-21 (based on its due date and work content — that's an estimate, not a committed placement). It will be scheduled as the horizon rolls forward.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT route=why-not-scheduled-yet order=ORD-000007]
+Q[125]: what machine is ORD-000007 on
+  route=why-not-scheduled-yet  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=machine-schedule  conf=0.95  order=ORD-000007<-utterance("ORD-000007")  1457ms
+  expect: route=why-not-scheduled-yet order=ORD-000007  -> MET
+  A:
+    ORD-000007 isn't scheduled yet because it sits beyond the current window — its work hasn't been pulled into a scheduling window. It's due 2026-01-24, and I estimate it needs to enter a window around 2026-01-23 (based on its due date and work content — that's an estimate, not a committed placement). It will be scheduled as the horizon rolls forward.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# the other side of the pin: a name this world does not carry is STILL absent.
+# [EXPECT route=unknown-entity]
+Q[130]: why is ORD-999999 late
+  route=unknown-entity  source=parse  conf=0.99  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=late-order  conf=0.99  polarity=positive  order=UNRESOLVED<-utterance("ORD-999999")  1955ms
+  expect: route=unknown-entity  -> MET
+  A:
+    ORD-999999 isn't in this schedule — I don't see it among the planned orders.
+    Orders I do have include: ORD-000001, ORD-000002, ORD-000003, ORD-000004, ORD-000005, ORD-000006.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+  >> sidecar[absent-entity]: interpreted-as names 'ORD-999999', absent from the pinned document
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# E — THE SEAL, from the sliced side
+# 
+# A rolling document must not turn every question into a rolling question. These
+# are ordinary questions asked of a rolling run, and they must reach the ordinary
+# routes over the persisted window-0 snapshot — the 4B.3c guarantee, unchanged by
+# the retirement.
+# =================================================================================
+# [EXPECT intent=machine-schedule route=machine-schedule machine=CUT-01]
+Q[142]: whats running on CUT-01
+  route=machine-schedule  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=21  records=18  refs=18/3/0
+  parse: intent=machine-schedule  conf=0.99  machine=CUT-01<-utterance("CUT-01")  1275ms
+  expect: intent=machine-schedule route=machine-schedule machine=CUT-01  -> MET
+  A:
+    CUT-01: 18 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 08:21  ORD-000039  -12371min early
+        seq= 10  2026-01-05 08:21 -> 2026-01-05 09:25  ORD-000012  -18051min early
+        seq= 10  2026-01-05 09:25 -> 2026-01-05 10:43  ORD-000016  -13615min early
+        seq= 10  2026-01-05 10:43 -> 2026-01-05 15:19  ORD-000029  -10887min early
+        seq= 10  2026-01-05 15:19 -> 2026-01-05 18:15  ORD-000038  -16510min early
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 09:00  ORD-000001  -23496min early
+        seq= 10  2026-01-06 09:00 -> 2026-01-06 10:09  ORD-000002  -20756min early
+        seq= 10  2026-01-06 10:09 -> 2026-01-06 18:48  ORD-000028  -27855min early
+        seq= 10  2026-01-07 07:00 -> 2026-01-07 08:12  ORD-000004  -18149min early
+        seq= 10  2026-01-07 08:12 -> 2026-01-07 11:27  ORD-000027  -6649min early
+        seq= 10  2026-01-07 11:27 -> 2026-01-07 18:21  ORD-000022  -19320min early
+        seq= 10  2026-01-08 07:00 -> 2026-01-08 07:54  ORD-000021  -24825min early
+        seq= 10  2026-01-08 07:54 -> 2026-01-08 11:09  ORD-000037  -8089min early
+        seq= 10  2026-01-08 11:09 -> 2026-01-08 18:45  ORD-000019  -12078min early
+        seq= 10  2026-01-09 07:00 -> 2026-01-09 14:06  ORD-000013  -4908min early
+        seq= 10  2026-01-09 14:06 -> 2026-01-09 15:30  ORD-000008  -17699min early
+        seq= 10  2026-01-15 11:59 -> 2026-01-15 19:00  ORD-000003  -959min early
+        seq= 10  2026-01-27 07:01 -> 2026-01-27 19:00  ORD-000011  +23522min LATE
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT intent=machine-count route=machine-count]
+Q[146]: how many machines are there
+  route=machine-count  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=machine-count  conf=0.99  844ms
+  expect: intent=machine-count route=machine-count  -> MET
+  A:
+    15 machine(s) carry work in this plan.
+
+      - ASM-01
+      - CUT-01
+      - CUT-02
+      - CUT-03
+      - FINISH-01
+      - FINISH-02
+      - FINISH-03
+      - HEAT-01
+      - HEAT-02
+      - MILL-01
+      - MILL-02
+      - PAINT-01
+      - PAINT-02
+      - PRESS-FAST
+      - PRESS-SLOW
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT intent=late-orders]
+Q[150]: which orders are late
+  route=late-orders  source=parse  conf=0.99  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=late-orders  conf=0.99  830ms
+  expect: intent=late-orders  -> MET
+  A:
+    Yes, there is 1 late order(s): ORD-000011 with a lateness of 23522 min (392.0h) [record: 5c73618c...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------

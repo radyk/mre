@@ -418,6 +418,19 @@ const server = createServer(async (req, res) => {
       res.writeHead(200, { "content-type": "application/json" });
       return res.end(envelope({ schedule_id: sid, status: "published", superseded }));
     }
+    // Session 4A.5c CU3(a) — BEAT ONE of the two-phase ask. Every canned answer
+    // in this harness is a CONTRACTED one, so the honest fixture response is the
+    // route tier with no waiting copy: the panel shows no waiting state and the
+    // flow is exactly what it was. Served explicitly rather than left to 404 into
+    // the SPA fallback, so the harness exercises the real request/response shape
+    // instead of the client's catch branch.
+    const mPre = p.match(/^\/schedules\/([^/]+)\/ask\/preflight$/);
+    if (mPre && req.method === "POST") {
+      if (_SUPERSEDED.has(mPre[1])) return supersededError(res, mPre[1]);
+      await body(req);
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(envelope({ tier: "route", waiting: "", intent: null }));
+    }
     const mAsk = p.match(/^\/schedules\/([^/]+)\/ask$/);
     if (mAsk && req.method === "POST") {
       const sid = mAsk[1];

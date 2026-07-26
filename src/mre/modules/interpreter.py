@@ -99,6 +99,9 @@ class AskResult:
     parsed: Optional[ParsedQuestion] = None
     #: The hardened SynthesisAnswer, when the second tier answered (R-AI5(2)).
     synthesis: Any = None
+    #: The probation comparison, when a promoted route on probation answered and
+    #: the caller supplied a shadow runner (R-AI5(7)).
+    shadow: Any = None
 
 
 # ---------------------------------------------------------------------------
@@ -137,6 +140,95 @@ class SynthesisMemory:
 
 #: The process-wide memory the API ask path uses. Tests construct their own.
 SYNTHESIS_MEMORY = SynthesisMemory()
+
+
+# ---------------------------------------------------------------------------
+# The parse memory — what makes the two-phase ask FREE (Session 4A.5c CU3a).
+# ---------------------------------------------------------------------------
+
+class ParseMemory:
+    """A bounded, short-lived cache of PARSES, keyed by exactly what produced them.
+
+    Why it exists. CU3(a) wants the panel to show an honest waiting state the
+    moment the second tier starts, because a planner who waits ~1.3s for a proven
+    answer will wait ~10s for a reasoned one — but not silently, and not without
+    knowing which they are getting (4A.5b rider c). Knowing WHICH TIER will answer
+    means running the parse first, and a preflight that re-parses would double
+    every question's parse cost to buy a spinner on one question in ten.
+
+    So the preflight parses ONCE and remembers; the ask that follows finds the same
+    parse and skips its own. Total model calls are unchanged.
+
+    What this is NOT: it is not client-supplied routing. The cache holds OUR parse,
+    computed server-side, and the key includes the full context — a question asked
+    again with a different board selection is a different key and is re-parsed. A
+    client can at worst cause its own parse to be reused within seconds of itself.
+    Like ``SynthesisMemory`` this is the AI layer's own output held in process; it
+    is not state in the canonical model or the evidence store (M10 has no write
+    path)."""
+
+    def __init__(self, limit: int = 64) -> None:
+        self._limit = limit
+        self._entries: dict[str, Any] = {}
+
+    @staticmethod
+    def key(question: str, context: Optional[dict], session_id: Optional[str],
+            schedule_id: Optional[str]) -> str:
+        import hashlib
+        import json as _json
+        context = context or {}
+        payload = _json.dumps({
+            "q": (question or "").strip().lower(),
+            "sel": context.get("selection") or {},
+            "last": context.get("last_answered_subject") or {},
+            "hist": [t.get("question") for t in (context.get("history") or [])][-4:],
+            "sid": session_id or "",
+            "sched": schedule_id or "",
+        }, sort_keys=True, default=str)
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+    def remember(self, key: str, parsed: Any) -> None:
+        if parsed is None:
+            return
+        self._entries.pop(key, None)
+        self._entries[key] = parsed
+        while len(self._entries) > self._limit:
+            self._entries.pop(next(iter(self._entries)))
+
+    def take(self, key: str) -> Any:
+        """Read AND evict. A parse is consumed by the ask it was made for; leaving
+        it behind would let a later identical question skip a parse that should
+        have seen a changed world."""
+        return self._entries.pop(key, None)
+
+
+#: The process-wide parse memory the API preflight/ask pair uses.
+PARSE_MEMORY = ParseMemory()
+
+
+#: Which TIER a parse will be answered by — the preflight's whole output, and the
+#: only thing the panel needs to choose a waiting state. Derived from the SAME
+#: dispatch rules the answer will follow, never re-decided.
+def tier_of(parsed: Any, explainer: Any = None) -> str:
+    """"route" | "synthesis" | "floor". Computed from the parse contract.
+
+    ``explainer`` is optional because the preflight is a PACING HINT and must never
+    be the reason an answer fails. Without it the other-kind rescue cannot be
+    evaluated and a clarify reads as the floor — the conservative miss, since it
+    only means a waiting state is not shown for a turn that turns out to reason."""
+    if parsed is None:
+        return "floor"
+    if parsed.clarify is not None and not _clarify_leads_nowhere(
+            explainer, parsed, route_params(parsed, parsed.question)):
+        return "floor"
+    if parsed.followup_of is FollowupKind.PROVE_IT or \
+            parsed.intent is Intent.PROVE_IT:
+        return "route"
+    if parsed.intent is Intent.UNMATCHED or parsed.confidence < CONF_MATCH:
+        return "synthesis"
+    if parsed.dropped_qualifier:
+        return "synthesis"
+    return "route"
 
 
 def pick_claim(answer: Any, question: str) -> Any:
@@ -310,7 +402,8 @@ def _nearest_offers(parsed: ParsedQuestion, params: dict) -> tuple[list[str], li
     return [route_offer(r, params) for r in routes], routes
 
 
-def _clarify_leads_nowhere(parsed: ParsedQuestion, params: dict) -> bool:
+def _clarify_leads_nowhere(explainer: Any, parsed: ParsedQuestion,
+                           params: dict) -> bool:
     """True when asking the planner to disambiguate would be a DEAD END.
 
     4A.5a forbade a clarify on an `unmatched` parse for exactly this reason: there
@@ -324,10 +417,22 @@ def _clarify_leads_nowhere(parsed: ParsedQuestion, params: dict) -> bool:
     So: when the planner NAMED something that resolved, and the intent the parse
     reached for is missing a slot it requires, the honest destination is the second
     tier — which reads what they actually named — not a question back. When nothing
-    resolved at all, asking IS the right move and this returns False."""
+    resolved at all, asking IS the right move and this returns False.
+
+    Session 4A.5c adds the case the arc-close sweep found, which is 4A.5b's
+    other-kind rescue one branch further out. "whats holding CUT-01" parsed as
+    `start-reason` with CUT-01 typed as an ORDER (unresolved, because it is a
+    MACHINE) and hedged with `ambiguous-subject`. Nothing resolved, so the rule
+    above said "asking is right" and the planner was asked which order they meant —
+    about the machine on their screen. The rescue in the matched branch below would
+    have caught it, and never ran, because a clarify short-circuits ahead of it.
+    So an unresolved subject whose WORDS name a real entity of another kind counts
+    as resolved for this decision: the second tier can read what they named, and
+    asking cannot help."""
     if parsed.intent is Intent.UNMATCHED:
         return True
-    if not any(s.resolved for s in parsed.subjects):
+    if not any(s.resolved or _names_another_kind(explainer, s.kind, s.raw)
+               for s in parsed.subjects):
         return False
     return any(not params.get(slot)
                for slot in _required_slots(parsed.intent, params))
@@ -337,7 +442,7 @@ def _names_another_kind(explainer: Any, kind: SubjectKind, raw: str) -> bool:
     """True when the planner's words resolve to a real entity of the OTHER kind —
     the parse typed a machine as an order, or the reverse. Resolution only; it
     decides no intent."""
-    if not raw:
+    if not raw or explainer is None:
         return False
     try:
         if kind is SubjectKind.ORDER:
@@ -372,13 +477,25 @@ class Dispatched:
 
 def _synthesis_dispatch(explainer: Any, parsed: ParsedQuestion, note: str,
                         synthesizer: Any, context: Optional[dict],
-                        memory: Any, session_id: Optional[str]) -> Dispatched:
+                        memory: Any, session_id: Optional[str],
+                        diverted_qualifier: str = "") -> Dispatched:
     """The SECOND TIER (R-AI5(2)): labeled open synthesis over read-only evidence,
     hardened by claim-level verification before it renders (R-AI5(3)).
 
-    Reached ONLY from the unmatched branch. When no synthesizer is available the
-    honest floor is part 1's bridge — never a keyword guess, and never a route."""
+    Reached from the unmatched branch, and — since Session 4A.5c — from the
+    ADJACENT-MATCH GUARD, which is the only way a MATCHED intent ever arrives
+    here. When no synthesizer is available the honest floor is part 1's bridge —
+    never a keyword guess, and never a route."""
     from mre.modules.evidence_tools import EvidenceToolbox
+
+    # The scope note rides on the context channel when the ADJACENT-MATCH GUARD
+    # sent us here: the tier is told what the planner asked for that no route
+    # covers, and that the evidence is this plan only. Without it the tier plays
+    # the qualifier back — the arc-close sweep's own specimen, "one order will be
+    # late next month: ORD-05 ... due 2026-01-05", where the figure grounded and
+    # the FRAME did not, which claim verification cannot catch.
+    if diverted_qualifier:
+        context = {**(context or {}), "dropped_qualifier": diverted_qualifier}
 
     answer = synthesizer.synthesize(
         parsed.question, explainer=explainer, context=context,
@@ -387,9 +504,16 @@ def _synthesis_dispatch(explainer: Any, parsed: ParsedQuestion, note: str,
         return _unmatched_bridge(explainer, parsed, note)
     if memory is not None and not answer.unanswerable:
         memory.remember(session_id, answer)
+    # CU3(b) — the warm floor's doors, computed HERE (the same offers part 1's
+    # bridge would have made, chosen by what the planner named) and rendered only
+    # if the tier could not ground an answer.
+    offers, _routes = _nearest_offers(parsed, route_params(parsed, parsed.question))
     return Dispatched("synthesis",
-                      explainer.route("synthesis", {"question": parsed.question,
-                                                    "answer": answer}),
+                      explainer.route("synthesis",
+                                      {"question": parsed.question,
+                                       "answer": answer,
+                                       "diverted_qualifier": diverted_qualifier,
+                                       "offers": offers}),
                       note, parsed.question, synthesis=answer)
 
 
@@ -416,7 +540,8 @@ def _unmatched_bridge(explainer: Any, parsed: ParsedQuestion,
 def dispatch(explainer: Any, parsed: ParsedQuestion, *,
              ledger: Any = None, synthesizer: Any = None,
              context: Optional[dict] = None, memory: Any = None,
-             session_id: Optional[str] = None) -> Dispatched:
+             session_id: Optional[str] = None,
+             document: Any = None) -> Dispatched:
     """A parsed question → the assembled answer.
 
     A matched intent goes to the CONTRACTED deterministic evidence assembly — the
@@ -426,17 +551,54 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     """
     note = _subject_note(parsed)
 
-    def _second_tier() -> Dispatched:
+    def _second_tier(diverted: str = "") -> Dispatched:
         if synthesizer is not None and getattr(synthesizer, "available", False):
             return _synthesis_dispatch(explainer, parsed, note, synthesizer,
-                                       context, memory, session_id)
+                                       context, memory, session_id,
+                                       diverted_qualifier=diverted)
         return _unmatched_bridge(explainer, parsed, note)
+
+    # 0 — THE TRAY, before anything else (Session 4A.5c CU4).
+    #
+    # When the planner NAMES an order that sits in the beyond-horizon tray, the
+    # document already answers every placement question about it the same way: it
+    # has no placement yet, and here is when it is expected to get one. That answer
+    # outranks the intent the parse reached for, because the window-0 snapshot
+    # every placement assembler reads does not contain the order at all — so each
+    # of those intents would find nothing and say something wrong in its own way.
+    #
+    # It runs FIRST because the rolling bank found the branches that pre-empted it.
+    # "what machine is ORD-000007 on" parsed as `machine-schedule` (which needs a
+    # MACHINE, not an order) with an `ambiguous-intent` clarify; the clarify branch
+    # below sent it to the second tier, which read `placements_for_order` for a
+    # tray order, found nothing, and honestly could not answer — a correct process
+    # producing a useless answer to a question the document could answer outright.
+    #
+    # Three exclusions, each for a reason: the ROLLING intents already speak about
+    # the sliced world; `prove-it` and `confirm-take` are gestures about OUR OWN
+    # sentence, not about the order's placement; and a POINTED subject is excluded
+    # by construction, since a tray order has no bar to point at.
+    tray = [s for s in parsed.of_kind(SubjectKind.ORDER)
+            if s.beyond_horizon and not s.pointed]
+    if (tray and document is not None
+            and parsed.intent not in ROLLING_INTENTS
+            and parsed.intent not in (Intent.PROVE_IT, Intent.CONFIRM_TAKE)
+            and parsed.followup_of not in (FollowupKind.PROVE_IT,
+                                           FollowupKind.CONFIRM_TAKE)):
+        params = route_params(parsed, parsed.question)
+        params["order"] = tray[0].ref
+        params["document"] = document
+        return Dispatched(
+            Intent.WHY_NOT_SCHEDULED_YET.value,
+            explainer.route(Intent.WHY_NOT_SCHEDULED_YET.value, params),
+            note, parsed.question)
 
     # 1 — the parse could not commit. Ask; never guess — UNLESS asking leads
     # nowhere (see _clarify_leads_nowhere), in which case the honest destination is
     # the second tier, which can actually read the thing the planner named.
     if parsed.clarify is not None:
-        if _clarify_leads_nowhere(parsed, route_params(parsed, parsed.question)):
+        if _clarify_leads_nowhere(explainer, parsed,
+                                  route_params(parsed, parsed.question)):
             return _second_tier()
         return Dispatched("CLARIFY", _clarify_bundle(explainer, parsed), note,
                           parsed.question)
@@ -478,6 +640,46 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     # ONLY door into it. Part 1's honest bridge stays as the floor beneath it.
     if parsed.intent is Intent.UNMATCHED or parsed.confidence < CONF_MATCH:
         return _second_tier()
+
+    # 4b — THE ADJACENT-MATCH GUARD (Session 4A.5c CU3(c)). The last hiding place.
+    #
+    # Rule 7 of the parse prompt already forbids stretching a question into a
+    # NEARBY route. This is the same failure one step further in, where the route
+    # genuinely IS the nearest one and still cannot honour something the planner
+    # said. Both of 4A.5b's surviving unmet expectations were this shape:
+    #
+    #   "how many orders will be late NEXT MONTH"  -> late-orders, which answers
+    #                                                 about THIS plan
+    #   "how much of CUT-01s week is ACTUALLY working time"
+    #                                              -> downtime, which answers the
+    #                                                 complement of what was asked
+    #
+    # Neither is a mis-parse. Both answer a question nobody asked, with perfect
+    # citations — which is worse than not answering, because the citations make it
+    # look right. The parse REPORTS the dropped qualifier (it never decides); the
+    # dispatch diverts to the tier that can either answer the qualified question or
+    # say honestly that it cannot, and the rendered-by line names the qualifier so
+    # the planner knows it was heard.
+    #
+    # Deliberately conservative in three ways: the parse must have NAMED the
+    # dropped words (an empty field never diverts); a low-confidence match already
+    # went to the tier above; and a qualifier the route DOES honour must not be
+    # reported at all, which is what the prompt's negative examples are for.
+    if parsed.dropped_qualifier:
+        return _second_tier(diverted=parsed.dropped_qualifier)
+
+    # 4c — THE ROLLING (SLICED-WORLD) INTENTS (Session 4A.5c CU4). These three were
+    # in the closed vocabulary all along; what they lacked was a way to be REACHED,
+    # because a keyword pre-route upstream in the API answered them before the
+    # parse ever ran. That matcher is deleted. The answers still come from the
+    # document's RollingBlock — the Explainer's snapshot is window 0 — so the
+    # document rides in as a route param.
+    if parsed.intent in ROLLING_INTENTS:
+        params = route_params(parsed, parsed.question)
+        params["document"] = document
+        return Dispatched(parsed.intent.value,
+                          explainer.route(parsed.intent.value, params),
+                          note, parsed.question)
 
     # 5 — a matched intent. The question the assemblers see is the planner's own
     # text unless the parse rewrote the subject (context bind / near-miss id /
@@ -545,20 +747,67 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
 # Orchestration
 # ---------------------------------------------------------------------------
 
+def parse_provenance(parsed: Optional[ParsedQuestion]) -> Any:
+    """The parse contract → the ledger's ``ParseProvenance`` (R-AI5(5)).
+
+    Ids and counts only, and deliberately NOT the resolved refs: a cluster is a
+    SHAPE, and which order the planner named is not part of the shape. Keeping the
+    refs out is also what lets the report be read by anyone — a ledger row says
+    "an order-shaped question that consulted lateness_set and cost_ledger", never
+    "ORD-05"."""
+    if parsed is None:
+        return None
+    from mre.contracts.question_ledger import ParseProvenance
+    return ParseProvenance(
+        intent=parsed.intent.value,
+        nearest=[i.value for i in parsed.nearest],
+        subject_kinds=sorted({s.kind.value for s in parsed.subjects}),
+        polarity=parsed.polarity.value if parsed.polarity else None,
+        followup_of=parsed.followup_of.value,
+        confidence=parsed.confidence,
+        prompt_version=parsed.prompt_version,
+        dropped_qualifier=parsed.dropped_qualifier,
+    )
+
 def run_ask(explainer: Any, question: str, *, context: Optional[dict] = None,
             parser: Optional[QuestionParser] = None,
             ledger: Any = None, schedule_id: Optional[str] = None,
             session_id: Optional[str] = None,
-            synthesizer: Any = None, memory: Any = None) -> AskResult:
+            synthesizer: Any = None, memory: Any = None,
+            shadow: Any = None, document: Any = None,
+            parse_memory: Any = None) -> AskResult:
     """parse → dispatch → assemble, then log one question-ledger entry.
 
     The single entry point the API ask path calls. With no parser the answer is the
     honest unsupported one — R-AI5(2) leaves no deterministic fallback to reach for.
     With no synthesizer the second tier is simply unavailable and an unmatched
     question gets part 1's honest bridge.
+
+    ``shadow`` (Session 4A.5c, R-AI5(7)) is an optional callable run AFTER a
+    promoted route on probation answers: it answers the same question again
+    through the synthesis tier and diffs the two. It is a PARAMETER rather than a
+    default because a shadow costs a full synthesis, and making every planner pay
+    ten seconds so a promotion can be audited would be charging the user for our
+    own quality control. The exam sweep supplies it; the live ask path does not.
     """
-    parsed = parser.parse(question, explainer=explainer, context=context) \
-        if parser is not None else None
+    # Session 4A.5c CU4 — the sliced world's order vocabulary, so subject
+    # resolution sees the beyond-horizon tray and the committed front, not just
+    # window 0. On a monolithic document this is falsy and costs nothing.
+    rolling = None
+    if document is not None:
+        from mre.modules.rolling_questions import RollingVocabulary
+        rolling = RollingVocabulary(document) or None
+
+    # A parse the PREFLIGHT already made for exactly this question and context is
+    # reused (CU3a) — one parse per question whether or not the panel two-phased.
+    parsed = None
+    cache_key = None
+    if parse_memory is not None:
+        cache_key = ParseMemory.key(question, context, session_id, schedule_id)
+        parsed = parse_memory.take(cache_key)
+    if parsed is None and parser is not None:
+        parsed = parser.parse(question, explainer=explainer, context=context,
+                              rolling=rolling)
     if memory is None:
         memory = SYNTHESIS_MEMORY
 
@@ -569,7 +818,8 @@ def run_ask(explainer: Any, question: str, *, context: Optional[dict] = None,
         resolved_question = question
     else:
         d = dispatch(explainer, parsed, ledger=ledger, synthesizer=synthesizer,
-                     context=context, memory=memory, session_id=session_id)
+                     context=context, memory=memory, session_id=session_id,
+                     document=document)
         route_label, bundle, note = d.route, d.bundle, d.note
         resolved_question = d.routed_question
         source, confidence = "parse", parsed.confidence
@@ -584,6 +834,16 @@ def run_ask(explainer: Any, question: str, *, context: Optional[dict] = None,
             memory.forget(session_id)
 
     register = register_of(bundle)
+
+    # R-AI5(7) — the probation shadow. Runs only when a caller asked for it AND
+    # the route that answered is a promotion still on probation (the callable
+    # itself returns None otherwise), so it is bounded twice over.
+    shadow_diff = None
+    if shadow is not None and parsed is not None:
+        try:
+            shadow_diff = shadow(explainer, question, bundle, route_label)
+        except Exception:  # noqa: BLE001 — auditing must never break the answer
+            shadow_diff = None
 
     if ledger is not None:
         # CU1's logging requirement: a synthesis answer's per-claim provenance AND
@@ -603,9 +863,15 @@ def run_ask(explainer: Any, question: str, *, context: Optional[dict] = None,
             schedule_id=schedule_id,
             session_id=session_id,
             synthesis=provenance,
+            # R-AI5(5), Session 4A.5c: what the PARSE named rides too. Without it
+            # the ledger's synthesis entries are 32 rows all reading `synthesis`,
+            # and no clustering can tell an aggregate-cause question from a
+            # cross-entity comparison.
+            parse=parse_provenance(parsed),
+            shadow=shadow_diff,
         )
 
     return AskResult(bundle=bundle, resolved_question=resolved_question,
                      route=route_label, source=source, confidence=confidence,
                      register=register, resolution_note=note, parsed=parsed,
-                     synthesis=synthesis)
+                     synthesis=synthesis, shadow=shadow_diff)

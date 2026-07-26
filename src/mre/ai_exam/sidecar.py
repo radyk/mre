@@ -199,6 +199,35 @@ def check_synthesis(turn: Any) -> list[Finding]:
     return out
 
 
+def check_shadow(turn: Any) -> list[Finding]:
+    """The PROBATION signal (Session 4A.5c CU2c, R-AI5(7)).
+
+    ``shadow-divergence`` — a promoted route's pre-computed fact CONTRADICTS a
+    VERIFIED claim the synthesis tier made about the same evidence. This is the
+    loud one: R-AI5(7) makes demotion automatic on divergence, so a finding of
+    this kind is not a note to triage, it is the trigger. The flag flip itself is
+    a committed edit to ``PROMOTIONS`` — a vocabulary that rewrote itself at
+    runtime would be the router rewriting its own routing.
+
+    ``shadow-unchecked`` — the shadow could not run (no synthesizer). Reported so
+    a probation sweep with no key reads as UNCHECKED rather than as a clean
+    window served."""
+    s = getattr(turn, "shadow", None) or {}
+    if not s:
+        return []
+    if s.get("unchecked"):
+        return [Finding("shadow-unchecked", turn.lineno, turn.question,
+                        "probation shadow did not run; this sweep does not "
+                        "count toward the probation window")]
+    contradicted = s.get("contradicted") or []
+    if contradicted:
+        return [Finding(
+            "shadow-divergence", turn.lineno, turn.question,
+            f"promoted route '{s.get('intent')}' contradicts the synthesis "
+            f"shadow on {', '.join(contradicted)} — R-AI5(7): DEMOTE")]
+    return []
+
+
 def check_turn(turn: Any, vocab: Vocab) -> list[Finding]:
     """All mechanical findings for one finished turn."""
     findings: list[Finding] = []
@@ -242,6 +271,10 @@ def check_turn(turn: Any, vocab: Vocab) -> list[Finding]:
     # planner, and a cut claim that the answer's reasoning RESTED on must be said
     # out loud rather than papered over.
     findings.extend(check_synthesis(turn))
+
+    # 9 — the PROBATION shadow (Session 4A.5c CU2c). A divergence here is the
+    # demotion trigger, not a triage note.
+    findings.extend(check_shadow(turn))
 
     # 6 — an invitation offering a door into a wall. Skipped (not passed) when no
     # parser is available: the honest state is "unchecked", never "clean".

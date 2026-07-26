@@ -273,13 +273,43 @@ def test_forced_alternative_inherits_the_two_beat_shape_on_rolling(rolling):
 # CU4 — the Explainer reads the persisted rolling run
 # ---------------------------------------------------------------------------
 
+# Session 4A.5c CU4 — these five were written against `app._try_rolling_answer`, the
+# deterministic KEYWORD PRE-ROUTE that answered sliced-world questions before the
+# parse ever ran. That matcher is DELETED (the last one in the codebase), so the
+# tests are re-pointed at the path that replaced it: the PARSE CONTRACT and the
+# DISPATCH. Every property they asserted survives unchanged — the three shapes reach
+# their answerers, the tray answer is hedged, a placed order is declined honestly, a
+# phantom id is never echoed — and one is now asserted MORE strongly, because the
+# tray no longer depends on a keyword landing.
+#
+# The parse itself is SCRIPTED here, exactly as `test_api_endpoints` scripts it: the
+# claim "these phrasings reach these intents" is about a live model and is graded in
+# the sweep's rolling bank (R-AI4(2)). What these prove is what the DISPATCH and the
+# ANSWERERS do once an intent arrives, which is the part a slow substrate test is for.
+
+def _ask(rolling, question, parsed_q):
+    """Run one question through the real ask path against the persisted rolling run,
+    with the parse scripted and the document supplied."""
+    import mre.api.app as app
+    from tests.parse_doubles import ScriptedParser
+    return app._answer_question(
+        rolling["out_dir"], rolling["snapshot_id"], question, use_llm=False,
+        document=rolling["doc"],
+        parser=ScriptedParser({question: parsed_q}))
+
+
 @pytest.mark.slow
 def test_rolling_ask_routes_the_sliced_world_shapes(rolling):
-    import mre.api.app as app
-    docd = rolling["doc"]
-    a, m = app._try_rolling_answer("what's beyond the horizon?", docd, None, None, None)
+    """The two subject-free shapes reach their answerers through the DISPATCH."""
+    from mre.contracts.parse import Intent
+    from tests.parse_doubles import parsed
+
+    a, m = _ask(rolling, "what's beyond the horizon?",
+                parsed("what's beyond the horizon?", Intent.BEYOND_HORIZON))
     assert m["route"] == "beyond-horizon" and "beyond" in a.lower()
-    a, m = app._try_rolling_answer("what's frozen?", docd, None, None, None)
+
+    a, m = _ask(rolling, "what's frozen?",
+                parsed("what's frozen?", Intent.FROZEN))
     assert m["route"] == "frozen" and ("frozen" in a.lower() or "committed" in a.lower())
 
 
@@ -287,14 +317,41 @@ def test_rolling_ask_routes_the_sliced_world_shapes(rolling):
 def test_rolling_ask_why_not_scheduled_yet_is_answerable_for_a_tray_order(rolling):
     """A tray order gets a grounded, HEDGED answer (admitted, due, estimate — never
     a placement). The 'answerable' specimen of the CU4 audit pair."""
-    import mre.api.app as app
-    docd = rolling["doc"]
-    tray = docd["rolling"]["beyond_horizon"]
+    from mre.contracts.parse import Intent
+    from tests.parse_doubles import parsed
+
+    tray = rolling["doc"]["rolling"]["beyond_horizon"]
     assert tray, "empty tray — cannot test why-not-scheduled"
     wo = tray[0]["work_order"] or tray[0]["demand_ref"]
-    a, m = app._try_rolling_answer(f"why isn't {wo} scheduled yet?", docd, None, None, None)
+    q = f"why isn't {wo} scheduled yet?"
+    a, m = _ask(rolling, q, parsed(q, Intent.WHY_NOT_SCHEDULED_YET, orders=(wo,)))
     assert m["route"] == "why-not-scheduled-yet"
     assert str(wo) in a and "beyond the current window" in a
+
+
+@pytest.mark.slow
+def test_a_tray_order_is_never_answered_as_absent(rolling):
+    """Session 4A.5c CU4, the reason the pre-route could not be retired until now.
+
+    The parse resolves subjects against the Explainer's snapshot, which on a rolling
+    run is WINDOW 0 ONLY. Before `RollingVocabulary`, a tray order resolved to
+    nothing and a placement question about it was answered "that order isn't in this
+    schedule" — a confident-wrong answer replacing a correct one. Asserted here on a
+    REAL persisted rolling run, with an intent that has nothing to do with the tray:
+    the disposition outranks it."""
+    from mre.contracts.parse import Intent
+    from tests.parse_doubles import parsed
+
+    tray = rolling["doc"]["rolling"]["beyond_horizon"]
+    assert tray, "empty tray — cannot test the disposition"
+    wo = tray[0]["work_order"] or tray[0]["demand_ref"]
+    q = f"why is {wo} late?"
+    a, m = _ask(rolling, q, parsed(q, Intent.LATE_ORDER, orders=(wo,)))
+    assert m["route"] == "why-not-scheduled-yet"
+    assert "beyond the current window" in a
+    for absent in ("not in this schedule", "isn't in this schedule",
+                   "not part of this schedule"):
+        assert absent not in a
 
 
 @pytest.mark.slow
@@ -302,24 +359,29 @@ def test_rolling_ask_why_not_hedges_for_an_already_placed_order(rolling):
     """The 'must hedge / decline' specimen: asking why a PLACED (committed/active)
     order 'isn't scheduled yet' gets an honest 'not in the beyond-horizon list —
     it's already in the current window' answer, never a confident fabrication."""
-    import mre.api.app as app
-    docd = rolling["doc"]
-    placed_wo = next(a["work_orders"][0] for a in docd["assignments"]
+    from mre.contracts.parse import Intent
+    from tests.parse_doubles import parsed
+
+    placed_wo = next(a["work_orders"][0] for a in rolling["doc"]["assignments"]
                      if a.get("work_orders"))
-    a, m = app._try_rolling_answer(f"why isn't {placed_wo} scheduled yet?",
-                                   docd, None, None, None)
+    q = f"why isn't {placed_wo} scheduled yet?"
+    a, m = _ask(rolling, q,
+                parsed(q, Intent.WHY_NOT_SCHEDULED_YET, orders=(placed_wo,)))
     assert m["route"] == "why-not-scheduled-yet"
     assert "isn't in the beyond-horizon list" in a
 
 
 @pytest.mark.slow
 def test_rolling_ask_why_not_declines_cleanly_for_an_unknown_order(rolling):
-    """An order-shaped token not in the schedule never gets a fabricated placement
-    — the resolver refuses to echo an id it cannot resolve (relevance guard); the
-    answer is an honest clarify, not a confident wrong."""
-    import mre.api.app as app
-    a, m = app._try_rolling_answer("why isn't ORD-999999 scheduled yet?",
-                                   rolling["doc"], None, None, None)
+    """An order-shaped token not in the schedule never gets a fabricated placement —
+    the resolver refuses to echo an id it cannot resolve (relevance guard). The tray
+    is NOT a wildcard: the other side of the CU4 pin."""
+    from mre.contracts.parse import Intent
+    from tests.parse_doubles import parsed
+
+    q = "why isn't ORD-999999 scheduled yet?"
+    a, m = _ask(rolling, q,
+                parsed(q, Intent.WHY_NOT_SCHEDULED_YET, orders=("ORD-999999",)))
     assert m["route"] == "why-not-scheduled-yet"
     assert "ORD-999999" not in a          # never fabricates against a phantom id
     assert "which order" in a.lower()
@@ -328,13 +390,18 @@ def test_rolling_ask_why_not_declines_cleanly_for_an_unknown_order(rolling):
 @pytest.mark.slow
 def test_ask_why_on_machine_is_grounded_on_the_persisted_run(rolling):
     """CU4(c): 'ask why' from a beat-two card reaches a REAL grounded answer — the
-    Explainer resolves why-on-machine against the persisted window-0 evidence."""
-    import mre.api.app as app
-    docd = rolling["doc"]
-    a0 = next(a for a in docd["assignments"] if a.get("work_orders"))
+    Explainer resolves why-on-machine against the persisted window-0 evidence.
+
+    Session 4A.5c: this is also the SEAL from the sliced side. A rolling document
+    must not turn every question into a rolling question; an ordinary question asked
+    of a rolling run still reaches the ordinary route over window 0."""
+    from mre.contracts.parse import Intent
+    from tests.parse_doubles import parsed
+
+    a0 = next(a for a in rolling["doc"]["assignments"] if a.get("work_orders"))
     wo, mach = a0["work_orders"][0], a0["external_name"]
-    ans, meta = app._answer_question(
-        rolling["out_dir"], rolling["snapshot_id"],
-        f"why is {wo} on {mach}?", use_llm=False, document=docd)
+    q = f"why is {wo} on {mach}?"
+    ans, meta = _ask(rolling, q, parsed(q, Intent.WHY_ON_MACHINE,
+                                        orders=(wo,), machines=(mach,)))
     assert meta["route"] == "why-on-machine"
     assert wo in ans and "because" in ans.lower()

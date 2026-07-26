@@ -146,6 +146,12 @@ class TurnRecord:
     synthesis: dict = field(default_factory=dict)
     # The graded expectation this turn carried (an EXPECT line), if any.
     expect: dict = field(default_factory=dict)
+    # PROBATION SHADOW (Session 4A.5c CU2c, R-AI5(7)): present only when a
+    # PROMOTED route on probation answered this turn, in which case the same
+    # question was ALSO answered by the synthesis tier and the two were diffed for
+    # fact agreement. Empty on every other turn — the shadow is what a probation
+    # IS, not a permanent tax on every answer.
+    shadow: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -187,6 +193,35 @@ class ExamResult:
             per_answer[n] = per_answer.get(n, 0) + 1
         return {**totals, "tool_histogram": dict(sorted(histogram.items())),
                 "calls_per_answer": dict(sorted(per_answer.items()))}
+
+    def shadow_totals(self) -> dict:
+        """The probation block (Session 4A.5c CU2c). ``diverged`` is the only
+        number here that means anything on its own: R-AI5(7) makes it the demotion
+        trigger. ``unchecked`` is reported separately and never folded into
+        ``clean`` — a window nobody watched is not a window served."""
+        totals = {"shadowed": 0, "clean": 0, "diverged": 0, "unchecked": 0,
+                  "provenance_strengthened": 0}
+        by_intent: dict[str, dict] = {}
+        for t in self.turns:
+            s = t.shadow or {}
+            if not s:
+                continue
+            totals["shadowed"] += 1
+            intent = s.get("intent") or "?"
+            row = by_intent.setdefault(
+                intent, {"shadowed": 0, "diverged": 0, "unchecked": 0})
+            row["shadowed"] += 1
+            if s.get("unchecked"):
+                totals["unchecked"] += 1
+                row["unchecked"] += 1
+            elif s.get("contradicted"):
+                totals["diverged"] += 1
+                row["diverged"] += 1
+            else:
+                totals["clean"] += 1
+            if s.get("provenance_strengthened"):
+                totals["provenance_strengthened"] += 1
+        return {**totals, "by_intent": by_intent}
 
     def latency(self) -> dict:
         """TOTAL conversational latency, split by tier (rider c). ``route`` is
@@ -350,6 +385,7 @@ class ExamRunner:
             ledger_path=self.ledger_path, schedule_id=self.target.label,
             session_id=self.session_id, document=self.target.document,
             parser=self.parser, synthesizer=self.synthesizer,
+            shadow=self._shadow,
         )
 
     def _ask_with_timeout(self, question: str, history: list[dict],
@@ -366,6 +402,29 @@ class ExamRunner:
                 return None, None, f"timed out after {self.per_question_timeout:g}s"
             except Exception as exc:  # noqa: BLE001 — ask-path failure is a finding
                 return None, None, f"{type(exc).__name__}: {exc}"
+
+    # -- the probation shadow (R-AI5(7), Session 4A.5c CU2c) ----------------
+
+    def _shadow(self, explainer: Any, question: str, bundle: Any,
+                route: str) -> Any:
+        """The shadow runner handed to ``run_ask``.
+
+        This is where R-AI5(7)'s "promoted routes run shadowed for a probation
+        window" actually happens, and it happens in the SWEEP rather than on the
+        planner's turn for an honest reason: a shadow costs a full synthesis
+        (roughly ten seconds and a dozen model calls), and making every planner
+        pay that so a promotion can be audited would be charging the user for our
+        own quality control.
+
+        ``run_shadow`` returns None for any route that is not a promotion on
+        probation, so this is bounded by the registry rather than by a list kept
+        here. A fired divergence becomes a sidecar finding, and the finding is the
+        demotion trigger — the flip itself is a committed edit to ``PROMOTIONS``,
+        because a vocabulary that changed itself at runtime would be the router
+        rewriting its own routing, which R-AI1 forbids."""
+        from mre.modules.shadow import run_shadow
+        return run_shadow(explainer, question, bundle, route,
+                          synthesizer=self.synthesizer)
 
     # -- the whole script ---------------------------------------------------
 
@@ -473,6 +532,16 @@ class ExamRunner:
                         for k in ("operations", "resources", "demands"))
                     turn.parse = meta.get("parse") or {}
                     turn.synthesis = meta.get("synthesis") or {}
+                    turn.shadow = meta.get("shadow") or {}
+                    # The PROBATION SHADOW runs inside the ask, so its cost is
+                    # inside the wall-clock measured above — and a planner never
+                    # pays it (it is our own quality control, and it runs only in
+                    # the sweep). Left in, a promoted route would be reported as
+                    # ~10x SLOWER than it is, which is the exact opposite of what
+                    # the promotion bought. Subtracted, and reported separately.
+                    shadow_ms = turn.shadow.get("latency_ms")
+                    if shadow_ms and turn.latency_ms is not None:
+                        turn.latency_ms = max(0.0, turn.latency_ms - shadow_ms)
                 turn.llm_calls = counter.count - before
                 turn.findings = check_turn(turn, self._vocab)
                 result.turns.append(turn)

@@ -1,6 +1,36 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.45 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.46 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.46:** **AI-track Session 4A.5c — R-AI5 part 3: telemetry, the Pareto, the promotion
+pipeline. THE R-AI5 ARC IS CLOSED** 2026-07-26 (docs/04 amendment). Implements clauses (5),
+(6) and (7) and finishes the residue parts 1 and 2 named. **CU1 — provenance telemetry:**
+the question-ledger entry gains a `ParseProvenance` block (intent, ADJACENCY, subject kinds)
+because every second-tier answer takes the same route and the route alone cannot tell two
+shapes apart; the sweep now WRITES a ledger at all and EMITS the standing report beside the
+sidecars (`tools/provenance_report.py`) — residue clustered by adjacency + subject kinds +
+DOMINANT TOOL, ranked by a **frequency-weighted Pareto (frequency x verified share)**, with
+the clustering method and its known weakness printed in the report. **R-AI5(6) is printed in
+the report's own header:** clusters whose residue is takes or aggregate reads are
+NOT-PROMOTABLE-BY-DESIGN, excluded from the Pareto, never counted as backlog. **CU2 — the
+promotion pipeline, walked end to end as the proof:** the 4A.5b banks were replayed with the
+candidate intent DEMOTED (reproducing the pre-promotion vocabulary with the session's own
+flag), the report ranked `late-orders|no-subject|lateness_set` first, `promotion_dossier.py`
+drafted the application + a draft route on a path nothing imports and validated it against
+the pinned world, and the working thread's review put `lateness-cause` into the vocabulary
+in one change citing the dossier. The route runs SHADOWED on probation; **demotion is one
+field** (the intent leaves `model_selectable_intents()` and the shape returns to synthesis);
+promotion is never automatic. **CU3 — the felt bar:** the ask TWO-PHASES (a preflight names
+the tier and the panel shows an honest first beat before a ~10s answer, at NO extra model
+call — the preflight's parse is remembered and reused); the couldn't-answer floor keeps its
+doors; and the **ADJACENT-MATCH GUARD** diverts a matched intent whose stated qualifier it
+cannot honour ("next month", "actually working time"), naming the qualifier in the
+rendered-by line. **CU4 — the LAST deterministic classifier dies:** `classify_rolling` is
+deleted, after its stated prerequisite was built — subject resolution reads the rolling
+document's three regions, so **a tray order is never "not in this schedule"**. **CU5 — the
+arc-close sweep** (`tests/ai_exam/sweeps/2026-07-26-arc-close/`, 7 banks incl. a new rolling
+bank against a new pinned rolling run): totals in docs/04. The working thread returns to the
+4B mission.
 
 **v2.45:** **AI-track Session 4A.5b — R-AI5 part 2: labeled synthesis, claim-level
 verification, and the provenance surface** 2026-07-26 (docs/04 amendment). Part 1 left an

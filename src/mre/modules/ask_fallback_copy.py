@@ -31,6 +31,7 @@ NEAR_MISS_OFFER = "Here's what I can do that's closest:"
 ROUTE_OFFERS = {
     "late-order": "show why {order} is late",
     "late-orders": "show every late order at a glance",
+    "lateness-cause": "explain what is driving the lateness across the plan",
     "why-on-machine": "explain why {order} is on {machine}",
     "machine-schedule": "show what's running on {machine}",
     "order-schedule": "show when {order} starts and finishes",
@@ -205,6 +206,65 @@ SYNTHESIS_UNANSWERABLE = (
     "it grounds an answer I'd stand behind, so I'd rather say so than guess.")
 SYNTHESIS_UNANSWERABLE_CONSULTED = "I looked at: {tools}."
 
+# Session 4A.5c CU3(b) — THE WARM FLOOR. RUBRIC precedent entry 6, ruled: the
+# couldn't-answer keeps the nearest-capabilities offers.
+#
+# 4A.5b's sweep found the cost of not having them. "this is not helpful" used to
+# reach the near-miss bridge and got two concrete doors; once the second tier took
+# it, the same turn got an honest refusal and NOTHING to do next. Honest, and
+# colder — and the two are not in tension. This is the same authored offer surface
+# the bridge uses, appended to the floor, not a second authored body: the floor
+# says what it could not do, and this says what it can.
+SYNTHESIS_FLOOR_DOORS = "Here's what I can do that's closest:"
+
+# ---------------------------------------------------------------------------
+# Session 4A.5c CU3(a) — THE FIRST BEAT of the two-phase ask.
+#
+# Rider (c) of 4A.5b measured the thing this copy exists for: a contracted answer
+# lands in ~1.3s, a reasoned one in ~10s. A planner will wait ten seconds for a
+# reasoned answer — but not silently, and not without knowing which they are
+# getting. So the ask two-phases: the preflight says which TIER will answer, the
+# panel shows this line the moment it is synthesis, and the answer replaces it.
+#
+# THE TWO-BEAT PATTERN (R-T2), applied: beat one is an HONEST NON-ANSWER. It says
+# what is happening and commits to nothing about what will be found. It must never
+# be a fake answer, a progress bar with an invented percentage, or a promise the
+# second beat might not keep.
+# ---------------------------------------------------------------------------
+
+WAITING_SYNTHESIS = (
+    "Reading the evidence — no contracted answer covers that one, so I'm working "
+    "it out from the records (up to {budget} reads).")
+WAITING_SYNTHESIS_DIVERTED = (
+    "Reading the evidence — I can answer close to that, but not \"{qualifier}\", "
+    "so I'm working it out from the records (up to {budget} reads).")
+# A contracted answer needs no waiting state: it lands before one could be read.
+WAITING_ROUTE = ""
+
+# ---------------------------------------------------------------------------
+# Session 4A.5c CU3(c) rider — THE SCOPE NOTE the diverted question carries.
+#
+# The arc-close sweep found the guard's own failure mode. "how many orders will be
+# late NEXT MONTH" diverted correctly, and the second tier then answered "One order
+# will be late next month: ORD-05 ... past its due date of 2026-01-05" — playing the
+# qualifier back as though the evidence covered it. 2026-01-05 is not next month.
+# The figure grounded, so the claim VERIFIED; what was wrong was the SCOPE, which
+# claim verification does not check because no record contradicts a frame.
+#
+# Diverting was right and answering as though the frame held was not. So the tier is
+# TOLD what the qualifier was and what the evidence actually covers, and told to say
+# so rather than play along. Authored here (a reviewable artifact); rendered into the
+# CONTEXT block both governed prompts share.
+# ---------------------------------------------------------------------------
+SYNTHESIS_SCOPE_NOTE = (
+    "  SCOPE THE PLANNER ASKED FOR, WHICH NO ROUTE COVERS: \"{qualifier}\".\n"
+    "  The evidence you can read is THIS SOLVED PLAN and nothing else — it does\n"
+    "  not extend past the schedule's own horizon, to another plan, or to a\n"
+    "  scope the records do not carry. If that qualifier is outside what the\n"
+    "  evidence covers, SAY SO plainly and answer what the plan DOES show,\n"
+    "  labelled as such. Never restate the qualifier as though the records\n"
+    "  supported it.")
+
 # "PROVE IT" (R-AI5(4)) — the planner contests or probes one claim and the grounding
 # pass re-runs on it, conversationally.
 PROVE_IT_NO_TARGET = (
@@ -219,6 +279,53 @@ PROVE_IT_INTERPRETIVE_BARE = (
     "That part is my reading of the plan, and no single record states it. I have "
     "nothing further to show behind it.")
 PROVE_IT_RECORD_LINE = "  - {summary}  [record: {rid}...]"
+
+
+# ---------------------------------------------------------------------------
+# Session 4A.5c (R-AI5(7)) — THE PROMOTED ROUTE's authored copy.
+#
+# `lateness-cause` is the one shape this session promoted out of synthesis
+# residue, on the authority of docs/promotions/aggregate-lateness-2026-07-26.md.
+# The dossier's draft deliberately generated NO copy: planner-facing wording is
+# authored by a human (R-AI1(c)), and a promotion pipeline that wrote its own
+# answer prose would put model sentences on the answer surface through the back
+# door — the one thing the whole tier exists to prevent. These are that copy.
+# ---------------------------------------------------------------------------
+
+# THE PREMISE CHECK LEADS. Asked "why are so many orders late" of a plan with one
+# late order, the honest answer says so first. The synthesis tier did exactly this
+# before the promotion, and it was the most useful sentence in the answer; a
+# contracted route that skipped to causes would be a worse answer than the one it
+# replaced.
+LATENESS_CAUSE_NONE = (
+    "Nothing is late in this plan — every order finishes on or before its due "
+    "date, so there is no lateness to account for.")
+LATENESS_CAUSE_PREMISE_ONE = (
+    "There aren't many — exactly one order is late: {order}, by {amount}. "
+    "The other {on_time} finish on time or early.")
+LATENESS_CAUSE_LEAD = (
+    "{late} of {total} orders are late. Here is what is driving it.")
+LATENESS_CAUSE_LEAD_NO_TOTAL = "{late} orders are late. Here is what is driving it."
+
+# One line per repeated cause — the MIX is the answer, not the list. With ONE late
+# order there is no mix to speak of, and "What they have in common:" over a single
+# name reads as a template that did not notice (C4). Same facts, correct grammar.
+LATENESS_CAUSE_MIX_HEADER = "What they have in common:"
+LATENESS_CAUSE_MIX_HEADER_ONE = "What put it there:"
+LATENESS_CAUSE_MIX_LINE = "  - {cause}: {orders}"
+LATENESS_CAUSE_MIX_LINE_ONE = "  - {cause}"
+LATENESS_CAUSE_BLOCKER = (
+    "  - {order} was held on {machine} until {until} by {blocker}, and started "
+    "at {start}.")
+# Where the solved occupancy shows no preceding job, say so rather than reach for
+# a cause. An unattributed order is a fact; an invented mechanism is a defect.
+LATENESS_CAUSE_UNATTRIBUTED = (
+    "I can't attribute {orders} to a specific hold — nothing directly precedes "
+    "the first operation on its machine, so the cause is the order's own work "
+    "content or its release, not a queue behind something else.")
+LATENESS_CAUSE_MONEY = (
+    "The lateness costs ${total} in tardiness charges{worst}.")
+LATENESS_CAUSE_MONEY_WORST = ", ${cost} of it on {order}"
 
 
 # The meta-route header (R-AI1(d) — the ledger answering about itself).

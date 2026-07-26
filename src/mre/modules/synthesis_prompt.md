@@ -1,6 +1,6 @@
 # Labeled-synthesis prompt — a GOVERNED ARTIFACT (R-AI5(2))
 
-    prompt_version: 1
+    prompt_version: 2
     ruling:         R-AI5(2) — a matched intent dispatches to contracted
                     deterministic evidence assembly; an UNMATCHED intent receives
                     LABELED OPEN SYNTHESIS over read-only evidence access. There is
@@ -12,6 +12,21 @@
                     against independently assembled evidence, NEVER by the answering
                     model's self-assessment.
     introduced:     Session 4A.5b (2026-07-26)
+    v2:             Session 4A.5c (2026-07-26), from the arc-close sweep. The
+                    ADJACENT-MATCH GUARD (CU3c) began diverting questions whose
+                    QUALIFIER no route honours, and the tier answered them as
+                    though the qualifier held: "how many orders will be late NEXT
+                    MONTH" produced "one order will be late next month: ORD-05 ...
+                    past its due date of 2026-01-05". The figure grounded, so the
+                    claim VERIFIED — what was wrong was the FRAME, and claim
+                    verification cannot catch a frame because no record
+                    contradicts one. The `{CONTEXT}` block may now carry a SCOPE
+                    NOTE (authored in `ask_fallback_copy.SYNTHESIS_SCOPE_NOTE`,
+                    rendered by `question_parser.render_context`) naming the
+                    qualifier and stating that the evidence is THIS PLAN ONLY,
+                    with the instruction to say so rather than play along. It
+                    appears only on a diverted question; the parse's own context
+                    never carries it.
 
 ## Review discipline
 

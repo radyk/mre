@@ -1,0 +1,89 @@
+{
+  "target": "out-dir:gb_pinned",
+  "snapshot": "snap-exam",
+  "started_at": "2026-07-26T14:30:37Z",
+  "llm_mode": "live",
+  "questions": 49,
+  "llm_calls": 72,
+  "parser_stats": {
+    "calls": 240,
+    "parses": 239,
+    "retries": 1,
+    "malformed": 2,
+    "clarifies": 6,
+    "unavailable": 0,
+    "median_latency_ms": 1158.605600001465,
+    "malformed_samples": [
+      "```json\n{\n  \"intent\": \"verification\",\n  \"subjects\": [],\n  \"polarity\": null,\n  \"followup_of\": \"none\",\n  \"confidence\": 0.92,\n  \"nearest\": [],\n  \"dropped_qualifier\": \"\",\n  \"clarify\": {\n    \"reason\": \"verification\",\n    \"detail\": \"the previous answer about which orders are late\"\n  }\n}\n```",
+      "```json\n{\n  \"intent\": \"verification\",\n  \"subjects\": [],\n  \"polarity\": null,\n  \"followup_of\": \"none\",\n  \"confidence\": 0.92,\n  \"nearest\": [\"late-orders\"],\n  \"dropped_qualifier\": \"\",\n  \"clarify\": {\n    \"reason\": \"verification\",\n    \"detail\": \"asking whether the previous answer about which orders are late was correct\"\n  }\n}\n```"
+    ]
+  },
+  "synth_stats": {
+    "syntheses": 5,
+    "calls": 10,
+    "tool_calls": 5,
+    "malformed": 0,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 2,
+    "median_latency_ms": 5507.787100003043,
+    "p90_latency_ms": 10038.17419999541
+  },
+  "synthesis": {
+    "answers": 4,
+    "claims": 10,
+    "verified": 3,
+    "interpretive": 7,
+    "failed_and_cut": 0,
+    "ungrounded_load_bearing": 0,
+    "unanswerable": 2,
+    "budget_exhausted": 0,
+    "tool_calls": 4,
+    "tool_histogram": {
+      "cost_ledger": 1,
+      "entity_vocabulary": 1,
+      "lateness_set": 1,
+      "placements_for_machine": 1
+    },
+    "calls_per_answer": {
+      "0": 2,
+      "2": 2
+    }
+  },
+  "shadow": {
+    "shadowed": 0,
+    "clean": 0,
+    "diverged": 0,
+    "unchecked": 0,
+    "provenance_strengthened": 0,
+    "by_intent": {}
+  },
+  "latency": {
+    "route": {
+      "n": 45,
+      "median_ms": 1606.5,
+      "p90_ms": 2593.9
+    },
+    "synthesis": {
+      "n": 4,
+      "median_ms": 6571.3,
+      "p90_ms": 11277.8
+    }
+  },
+  "graded_expectations": {
+    "graded": 48,
+    "met": 47
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "expect-miss": 1
+  },
+  "findings": [
+    {
+      "kind": "expect-miss",
+      "lineno": 89,
+      "question": "are you sure about that",
+      "detail": "clarify: expected 'verification', got None; route: expected 'CLARIFY', got 'prove-it'"
+    }
+  ]
+}

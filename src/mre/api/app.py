@@ -666,6 +666,35 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
         return _ok({"question": req.question, "answer": answer,
                     "bundle": bundle_meta})
 
+    @app.post("/schedules/{schedule_id}/ask/preflight")
+    def ask_preflight(schedule_id: str, req: AskRequest):
+        """BEAT ONE of the two-phase ask (Session 4A.5c CU3a).
+
+        Parses the question and says WHICH TIER will answer it — nothing else. No
+        evidence is assembled, no answer is composed, no route is run. The panel
+        uses it to show an honest waiting state before a ~10s synthesis, and to
+        show nothing at all before a ~1.3s contracted answer.
+
+        The parse is REMEMBERED (``PARSE_MEMORY``), so the ``/ask`` that follows
+        finds it and does not parse again: two-phasing costs no extra model call.
+        Calling ``/ask`` directly is unchanged and still correct — the preflight is
+        an optimization of the WAIT, never a step the answer depends on."""
+        row = _live_schedule(registry, schedule_id)
+        run = registry.get_run(row["run_id"])
+        document = None
+        try:
+            document = json.loads(
+                Path(row["document_path"]).read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            document = None
+        return _ok(_preflight(
+            Path(run["out_dir"]), row["snapshot_id"], req.question,
+            runs_subdir="scenario_runs" if row["is_scenario"] else "runs",
+            context={"history": req.history, "selection": req.selection,
+                     "last_answered_subject": req.last_answered_subject},
+            schedule_id=schedule_id, session_id=req.session_id,
+            document=document))
+
     @app.get("/ledger/refusals")
     def ledger_refusals(limit: int = 20):
         """The question ledger's refusal clusters (R-AI1(d)) — the DEV-panel
@@ -1256,64 +1285,63 @@ def _render_fail_closed(bundle: Any, use_llm: bool, log: Any) -> str:
     return TemplateRenderer().render(bundle)
 
 
-def _rolling_order_ref(question: str, document: dict) -> Optional[str]:
-    """Resolve an order (work-order) name mentioned in ``question`` against the
-    rolling document's known orders — the tray plus every placed bar's work_orders.
-    Returns the work-order string (planner vocabulary) or None. No id-shape regex:
-    only names the document actually carries can match (the relevance guard)."""
-    q = (question or "").lower()
-    names: set = set()
-    for it in (document.get("rolling") or {}).get("beyond_horizon", []) or []:
-        if it.get("work_order"):
-            names.add(it["work_order"])
-    for a in document.get("assignments", []) or []:
-        for wo in a.get("work_orders", []) or []:
-            names.add(wo)
-    for s in document.get("service_outcomes", []) or []:
-        if s.get("work_order"):
-            names.add(s["work_order"])
-    # longest-name-first so "ORD-012" wins over a prefix "ORD-01"
-    for name in sorted(names, key=len, reverse=True):
-        if name and name.lower() in q:
-            return name
-    return None
+def _preflight(out_dir: Path, snapshot_id: str, question: str,
+               runs_subdir: str = "runs", context: Optional[dict] = None,
+               schedule_id: Optional[str] = None,
+               session_id: Optional[str] = None,
+               document: Optional[dict] = None,
+               parser: Optional[Any] = None) -> dict:
+    """Which tier will answer, and the authored first-beat copy (CU3a).
 
+    Runs the PARSE and stops. Fail-open by design: with no parser, or on any
+    failure at all, it reports the ``route`` tier and empty copy — the panel then
+    shows no waiting state and the ask behaves exactly as it did before this
+    endpoint existed. A pacing hint must never be able to break an answer."""
+    from mre.contracts.synthesis import MAX_TOOL_CALLS
+    from mre.modules.ask_fallback_copy import (
+        WAITING_ROUTE, WAITING_SYNTHESIS, WAITING_SYNTHESIS_DIVERTED,
+    )
+    from mre.modules.evidence_index import EvidenceIndex
+    from mre.modules.explainer import Explainer
+    from mre.modules.interpreter import PARSE_MEMORY, ParseMemory, tier_of
+    from mre.modules.question_parser import QuestionParser
+    from mre.modules.rolling_questions import RollingVocabulary
+    from mre.modules.snapshot_store import SnapshotStore
 
-def _try_rolling_answer(question: str, document: Optional[dict],
-                        ledger_path: Optional[Path], schedule_id: Optional[str],
-                        session_id: Optional[str]) -> Optional[tuple[str, dict]]:
-    """CU4: answer a rolling (sliced-world) question from the document, or return
-    None to fall through to the Explainer. Deterministic + planner-voiced; logs the
-    ask to the question ledger so a rolling ask is first-class labeled data."""
-    if not document or not document.get("rolling"):
-        return None
-    from mre.modules import rolling_questions as rq
-    route = rq.classify_rolling(question, document)
-    if route is None:
-        return None
-    if route == "beyond-horizon":
-        answer = rq.answer_beyond_horizon(document)
-    elif route == "frozen":
-        answer = rq.answer_frozen(document)
-    else:  # why-not-scheduled-yet
-        order_ref = _rolling_order_ref(question, document)
-        answer = rq.answer_why_not_scheduled_yet(document, order_ref)
-    if ledger_path is not None:
-        try:
-            from mre.modules.question_ledger import QuestionLedger
-            QuestionLedger(ledger_path).record(
-                question, question, route, source="deterministic",
-                answer_register="testimony", schedule_id=schedule_id,
-                session_id=session_id)
-        except Exception:  # noqa: BLE001 — logging must never break the answer
-            pass
-    meta = {"subject_id": None, "subject_type": "rolling",
-            "subject_external_name": None, "snapshot_id": document.get("snapshot_id"),
-            "record_count": 0, "register": "testimony",
-            "cited_refs": {"operations": [], "resources": [], "demands": []},
-            "resolved_question": question, "route": route,
-            "source": "deterministic", "confidence": None, "resolution_note": None}
-    return answer, meta
+    plain = {"tier": "route", "waiting": WAITING_ROUTE, "intent": None}
+    if parser is None and os.environ.get("ANTHROPIC_API_KEY"):
+        parser = QuestionParser()
+    if parser is None:
+        return plain
+    try:
+        index_path = out_dir / "evidence_index.json"
+        index = (EvidenceIndex.load(index_path) if index_path.exists()
+                 else EvidenceIndex().build(out_dir / runs_subdir))
+        explainer = Explainer(SnapshotStore(out_dir / "snapshots"), index,
+                              snapshot_id=snapshot_id)
+        rolling = RollingVocabulary(document) or None if document else None
+        parsed = parser.parse(question, explainer=explainer, context=context,
+                              rolling=rolling)
+        if parsed is None:
+            return plain
+        PARSE_MEMORY.remember(
+            ParseMemory.key(question, context, session_id, schedule_id), parsed)
+        tier = tier_of(parsed, explainer)
+        if tier != "synthesis":
+            return {"tier": tier, "waiting": WAITING_ROUTE,
+                    "intent": parsed.intent.value}
+        waiting = (
+            WAITING_SYNTHESIS_DIVERTED.format(
+                qualifier=parsed.dropped_qualifier, budget=MAX_TOOL_CALLS)
+            if parsed.dropped_qualifier
+            else WAITING_SYNTHESIS.format(budget=MAX_TOOL_CALLS))
+        return {"tier": "synthesis", "waiting": waiting,
+                "intent": parsed.intent.value}
+    except Exception:  # noqa: BLE001 — a pacing hint never breaks an answer
+        logging.getLogger("mre.api").warning(
+            "EVENT ask.preflight_degraded: preflight failed; the ask proceeds "
+            "with no waiting state")
+        return plain
 
 
 def _answer_question(out_dir: Path, snapshot_id: str, question: str,
@@ -1324,7 +1352,8 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
                      session_id: Optional[str] = None,
                      document: Optional[dict] = None,
                      parser: Optional[Any] = None,
-                     synthesizer: Optional[Any] = None) -> tuple[str, dict]:
+                     synthesizer: Optional[Any] = None,
+                     shadow: Optional[Any] = None) -> tuple[str, dict]:
     """Route a question through the M10 explainer for a persisted run.
 
     Session 4A.5a (R-AI5 part 1): the ask path is LLM-FIRST. Every question is
@@ -1337,25 +1366,22 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
     a sweep so it can report parse-specific counts); otherwise one is built per
     question when a key is present. Every ask is logged.
 
-    Session 4B.3c CU4: on a ROLLING document, the three sliced-world shapes
-    (beyond-horizon / why-not-scheduled-yet / frozen) are answered FIRST, from the
-    document's RollingBlock via ``rolling_questions`` — the live wiring that retires
-    the R-AI1 rolling-explainer debt. Everything else (why-on-machine, order
-    schedule, …) falls through to the Explainer over the persisted window-0
-    snapshot exactly as a monolithic run, so "ask why" from a beat-two card is a
-    real grounded answer now."""
+    Session 4A.5c CU4: THE ROLLING PRE-ROUTE IS GONE. 4B.3c answered the three
+    sliced-world shapes here, ahead of everything, by keyword-matching the question
+    against three trigger tuples — the last deterministic classifier in the
+    codebase, and the last place a question's route was decided by string
+    matching. It is deleted. The three intents were always in the closed
+    vocabulary; now the PARSE names them and the dispatch reaches the same
+    ``rolling_questions`` answerers, with the document passed through as a route
+    param. Subject resolution reads the document's three regions first
+    (``RollingVocabulary``), which is what makes this safe: before it, an order in
+    the beyond-horizon tray resolved to nothing and was answered as absent."""
     from mre.modules.evidence_index import EvidenceIndex
     from mre.modules.explainer import Explainer
-    from mre.modules.interpreter import run_ask
+    from mre.modules.interpreter import PARSE_MEMORY, run_ask
     from mre.modules.question_parser import QuestionParser
     from mre.modules.question_ledger import QuestionLedger
     from mre.modules.snapshot_store import SnapshotStore
-
-    # --- rolling pre-route (deterministic, from the document) ------------------
-    rolling_answer = _try_rolling_answer(question, document, ledger_path,
-                                         schedule_id, session_id)
-    if rolling_answer is not None:
-        return rolling_answer
 
     index_path = out_dir / "evidence_index.json"
     if index_path.exists():
@@ -1392,7 +1418,8 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
             result = run_ask(explainer, question, context=context,
                              parser=parser, ledger=ledger,
                              schedule_id=schedule_id, session_id=session_id,
-                             synthesizer=synthesizer)
+                             synthesizer=synthesizer, shadow=shadow,
+                             document=document, parse_memory=PARSE_MEMORY)
         except Exception as exc:  # noqa: BLE001 — the ask surface must never 5xx
             _log.warning(
                 "EVENT ask.llm_degraded: ask surface raised %s: %s — "
@@ -1401,14 +1428,17 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
             )
             result = run_ask(explainer, question, context=context,
                              parser=None, ledger=None,
-                             schedule_id=schedule_id, session_id=session_id)
+                             schedule_id=schedule_id, session_id=session_id,
+                             document=document)
         bundle = result.bundle
         ask_meta = {"resolved_question": result.resolved_question,
                     "route": result.route, "source": result.source,
                     "confidence": result.confidence,
                     "resolution_note": result.resolution_note,
                     "parse": _parse_meta(result.parsed),
-                    "synthesis": _synthesis_meta(result.synthesis)}
+                    "synthesis": _synthesis_meta(result.synthesis),
+                    "shadow": (result.shadow.model_dump(mode="json")
+                               if result.shadow is not None else None)}
 
     # --- render (the LLM renderer is the real hazard; it is internally sealed
     #     and this boundary is the outer belt: ANY failure — construction,

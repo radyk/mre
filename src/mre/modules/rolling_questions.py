@@ -3,18 +3,31 @@
 The M10 Explainer answers over a persisted canonical snapshot + evidence index; a
 rolling-horizon run's sliced state (committed frozen front / active window /
 beyond-horizon tray) lives in the contract-1.7 RollingBlock of the schedule
-document, NOT in a snapshot the Explainer reads today. So the three rolling
-questions are answered HERE — deterministically, from the document, planner-voiced
-— the AI-reachable capability. This is the reviewable artifact R-AI1 requires: the
-answers are authored, ID-free, and honest (the beyond-horizon estimate is hedged
-because it is an estimate, never a placement).
+document, NOT in a snapshot the Explainer reads. So the three rolling questions are
+answered HERE — deterministically, from the document, planner-voiced. The answers
+are authored, ID-free, and honest (the beyond-horizon estimate is hedged because it
+is an estimate, never a placement).
 
-NAMED R-AI1 DEBT (docs/04, Session 4B.3a): these answers are NOT yet wired into the
-free-phrasing Interpreter, the question ledger, or the deterministic route
-taxonomy. Doing so cleanly requires a rolling run to persist a canonical snapshot
-the Explainer reads (the connector-era work) — until then this module is the
-deterministic surface a caller (the cockpit ask panel, a future explainer route)
-delegates the three shapes to. It does not bolt an ad-hoc route onto the router.
+**Session 4A.5c CU4 — THE LAST DETERMINISTIC CLASSIFIER IS GONE.**
+
+``classify_rolling`` — a keyword matcher over three trigger tuples — was the final
+surviving piece of the router R-AI5 retired in 4A.5a. It lived on because retiring
+it was NOT a small seam, and 4A.5b ruled it 4A.5c scope with the reason stated:
+
+    the parse resolves SUBJECTS against the Explainer's snapshot, which on a
+    rolling run is WINDOW 0 ONLY. An order sitting in the beyond-horizon tray
+    would resolve to nothing and be answered as ABSENT — a confident-wrong
+    answer replacing a correct one.
+
+So the prerequisite came first. ``RollingVocabulary`` below reads the document's
+THREE regions — the committed frozen front, the active window, and the tray — and
+subject resolution consults it, giving every resolved subject a DISPOSITION
+(``SubjectDisposition``). A tray order is now a real subject that is
+BEYOND-HORIZON; it is never "not in this schedule". Only then did the matcher die:
+the three rolling intents were already in the closed vocabulary
+(``Intent.BEYOND_HORIZON`` / ``WHY_NOT_SCHEDULED_YET`` / ``FROZEN``) with authored
+meanings, so the parse names them and the dispatch reaches these answerers. The
+keyword tables are DELETED, not bypassed.
 
 Three shapes answered:
   * "what's beyond the horizon?"        → the tray contents
@@ -29,14 +42,6 @@ from typing import Any, Optional
 
 # The three rolling question shapes (a closed set — never an ad-hoc route).
 ROLLING_ROUTES = ("beyond-horizon", "why-not-scheduled-yet", "frozen")
-
-_BEYOND_TRIGGERS = ("beyond the horizon", "beyond horizon", "not yet scheduled",
-                    "unscheduled", "future work", "what's coming", "whats coming",
-                    "what is coming", "not in the window", "outside the window")
-_FROZEN_TRIGGERS = ("what's frozen", "whats frozen", "what is frozen", "frozen",
-                    "committed", "locked in", "what's locked", "whats locked")
-_WHYNOT_TRIGGERS = ("why isn't", "why isnt", "why is not", "why not",
-                    "not scheduled yet", "not yet scheduled", "when will")
 
 
 def _rolling(doc: Any) -> Optional[dict]:
@@ -57,21 +62,70 @@ def _fmt_date(iso: Optional[str]) -> str:
     return str(iso)[:10]
 
 
-def classify_rolling(question: str, doc: Any) -> Optional[str]:
-    """Return the rolling route a question matches, or None. Returns None on a
-    monolithic document (there is no sliced world to ask about) so a caller only
-    delegates here when it is a rolling document."""
-    if _rolling(doc) is None:
-        return None
-    q = (question or "").lower().strip()
-    # why-not is checked first: it is the most specific (an order + a "why not").
-    if any(t in q for t in _WHYNOT_TRIGGERS):
-        return "why-not-scheduled-yet"
-    if any(t in q for t in _BEYOND_TRIGGERS):
-        return "beyond-horizon"
-    if any(t in q for t in _FROZEN_TRIGGERS):
-        return "frozen"
-    return None
+class RollingVocabulary:
+    """The sliced world's ORDER VOCABULARY, read from the schedule document.
+
+    THE PREREQUISITE (4A.5b rider d). Subject resolution against the Explainer's
+    snapshot sees window 0 and nothing else. This class supplies the rest — every
+    work order the document knows and WHICH REGION it is in:
+
+      * ``committed``      — placed and frozen; it will not move as the plan rolls
+      * ``in_window``      — placed in the active window
+      * ``beyond_horizon`` — in the tray: admitted, due-dated, not yet windowed
+
+    Read-only, built per ask from the document the API already loads. It resolves
+    names the customer's own vocabulary uses (work orders), never an id shape —
+    the relevance guard's rule holds here exactly as it does in the Explainer: only
+    names the document actually carries can match.
+    """
+
+    def __init__(self, doc: Any) -> None:
+        self._by_order: dict[str, str] = {}
+        rolling = _rolling(doc) or {}
+        self.is_rolling = bool(rolling)
+        if not self.is_rolling or doc is None:
+            return
+        d = doc if isinstance(doc, dict) else (
+            doc.model_dump(mode="json") if hasattr(doc, "model_dump") else {})
+        # The tray first, then the placed bars: a bar's region wins over the tray
+        # if a name somehow appears in both (a placed order is placed).
+        for item in rolling.get("beyond_horizon") or []:
+            wo = item.get("work_order")
+            if wo:
+                self._by_order[str(wo).upper()] = "beyond-horizon"
+        for a in d.get("assignments") or []:
+            region = ("committed" if a.get("commitment_state") == "committed"
+                      else "in-window")
+            for wo in a.get("work_orders") or []:
+                if wo:
+                    self._by_order[str(wo).upper()] = region
+
+    def __bool__(self) -> bool:
+        return self.is_rolling
+
+    def resolve(self, raw: str) -> Optional[str]:
+        """A planner's words → the work order this document carries, or None.
+
+        Exact match first, then a UNIQUE substring — the same discipline
+        ``Explainer.resolve_order_value`` uses, and for the same reason: two
+        candidates leave it unresolved rather than guessed."""
+        if not raw or not self._by_order:
+            return None
+        key = raw.upper().strip(" .,?!")
+        if key in self._by_order:
+            return key
+        hits = [k for k in self._by_order if key in k or k in key]
+        return hits[0] if len(hits) == 1 else None
+
+    def disposition(self, order: Optional[str]) -> Optional[str]:
+        """The region a resolved order sits in, or None if the document does not
+        carry it."""
+        if not order:
+            return None
+        return self._by_order.get(str(order).upper())
+
+    def beyond_horizon(self, order: Optional[str]) -> bool:
+        return self.disposition(order) == "beyond-horizon"
 
 
 def answer_beyond_horizon(doc: Any) -> str:

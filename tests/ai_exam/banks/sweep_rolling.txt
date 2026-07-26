@@ -1,0 +1,151 @@
+# AI EXAM BANK — the sliced world (Session 4A.5c, CU4/CU5)
+# generated: 2026-07-26
+# ruling  : R-AI5(1)/(2) — every question is parsed FIRST by a model against the
+#           closed intent vocabulary. There is no deterministic-classifier
+#           fallback anywhere, and as of this session that includes the rolling
+#           pre-route, which was the last one.
+# world   : the PINNED ROLLING RUN (tools/build_rolling_exam_run.py) — pilot_scale,
+#           40 orders, window 14d / frozen 3d, deterministic seed 42, window 0
+#           persisted. 56 bars: 38 committed, 18 active, 14 in the beyond-horizon
+#           tray. Frozen through 2026-01-08.
+#
+# THIS BANK RUNS AGAINST A DIFFERENT TARGET FROM EVERY OTHER BANK. The rest of the
+# sweep asks the monolithic glass_box world, which has no sliced state at all — a
+# rolling question there is answered "this isn't a rolling schedule", which is
+# honest and tests nothing. The sweep runner points this bank at the rolling run.
+#
+# WHAT IS GRADED HERE, and why it is graded LIVE. Until this session the three
+# rolling shapes were matched by `classify_rolling`, three tuples of keyword
+# triggers ("beyond the horizon", "frozen", "why isn't", "when will"). That
+# matcher is DELETED. So the claim "these phrasings reach these three intents" is
+# now a claim about a live model, and R-AI4(2) puts such claims here rather than
+# in an offline test: a keyword table can be asserted, an understanding must be
+# measured.
+#
+# THE DISTINCTION THIS BANK EXISTS TO PIN. A tray order is NEVER "not in this
+# schedule". 4A.5b refused to retire the matcher precisely because the parse
+# resolved subjects against the window-0 snapshot only, so a tray order resolved
+# to nothing and was answered as ABSENT — a confident-wrong answer replacing a
+# correct one. Subject resolution now reads the document's three regions, and the
+# `beyond-horizon` disposition is what every placement question about a tray order
+# lands on. Section D is that pin, from both sides.
+#
+# Vocabulary of this world, for reading the expectations:
+#   tray (beyond horizon) : ORD-000018 (due 01-20), ORD-000010, ORD-000017,
+#                           ORD-000032, ORD-000007, ORD-000020, ... (14 total)
+#   committed / active    : ORD-000023, ORD-000009, ORD-000030, ORD-000039,
+#                           ORD-000012, ORD-000025, ORD-000016, ORD-000024, ...
+#   machines              : CUT-01, MILL-01, MILL-02, ASM-01, HEAT-01, PAINT-01,
+#                           FINISH-01, FINISH-02
+
+# =================================================================================
+# A — THE THREE SHAPES, in the founder's own sliced-board phrasings
+#
+# These are the phrasings the 4B-era transcripts carry. Each one used to be a
+# keyword hit; each one is now a parse. `frozen` and `beyond-horizon` take no
+# subject, so the expectation is the intent alone.
+# =================================================================================
+EXPECT intent=beyond-horizon route=beyond-horizon
+whats beyond the horizon
+RESET
+
+EXPECT intent=beyond-horizon route=beyond-horizon
+what work is coming that isnt scheduled yet
+RESET
+
+EXPECT intent=frozen route=frozen
+whats frozen
+RESET
+
+EXPECT intent=frozen route=frozen
+what is locked in and wont move when this rolls forward
+RESET
+
+EXPECT intent=why-not-scheduled-yet route=why-not-scheduled-yet order=ORD-000018
+why isnt ORD-000018 scheduled yet
+RESET
+
+EXPECT intent=why-not-scheduled-yet route=why-not-scheduled-yet order=ORD-000010
+when will ORD-000010 get scheduled
+RESET
+
+# =================================================================================
+# B — SLICED-BOARD DEIXIS
+#
+# The panel sends the board selection; the parse binds a pointed subject from it.
+# A tray order cannot be SELECTED (it has no bar), so a deictic question with a
+# committed order selected must bind THAT order — the tray must not become a
+# catch-all for anything the window does not explain.
+# =================================================================================
+SELECT order=ORD-000023
+EXPECT order=ORD-000023
+why is this order where it is
+RESET
+
+SELECT order=ORD-000009
+EXPECT intent=order-schedule order=ORD-000009
+when does this one finish
+RESET
+
+# =================================================================================
+# C — THE COMMITTED FRONT
+#
+# "Frozen" is a state, not just a question. A committed order asked about directly
+# is still a normal placement question — the freeze does not change which route
+# answers it, only what the answer says.
+# =================================================================================
+EXPECT order=ORD-000030
+whats running on ORD-000030
+RESET
+
+EXPECT intent=frozen route=frozen
+how much of this plan is already committed
+RESET
+
+# =================================================================================
+# D — THE PIN: BEYOND-HORIZON vs ABSENT
+#
+# The distinction the whole CU exists for, asserted from BOTH sides.
+#
+#   a tray order         -> a real subject with a beyond-horizon disposition, and
+#                           EVERY placement question about it lands on
+#                           `why-not-scheduled-yet`. Never "not in this schedule".
+#   a name nothing carries -> still absent. The tray is not a wildcard, and the
+#                           relevance guard is intact.
+# =================================================================================
+EXPECT route=why-not-scheduled-yet order=ORD-000017
+why is ORD-000017 late
+RESET
+
+EXPECT route=why-not-scheduled-yet order=ORD-000032
+when does ORD-000032 start
+RESET
+
+EXPECT route=why-not-scheduled-yet order=ORD-000007
+what machine is ORD-000007 on
+RESET
+
+# the other side of the pin: a name this world does not carry is STILL absent.
+EXPECT route=unknown-entity
+why is ORD-999999 late
+RESET
+
+# =================================================================================
+# E — THE SEAL, from the sliced side
+#
+# A rolling document must not turn every question into a rolling question. These
+# are ordinary questions asked of a rolling run, and they must reach the ordinary
+# routes over the persisted window-0 snapshot — the 4B.3c guarantee, unchanged by
+# the retirement.
+# =================================================================================
+EXPECT intent=machine-schedule route=machine-schedule machine=CUT-01
+whats running on CUT-01
+RESET
+
+EXPECT intent=machine-count route=machine-count
+how many machines are there
+RESET
+
+EXPECT intent=late-orders
+which orders are late
+RESET

@@ -18,13 +18,54 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
+from mre.contracts.promotion import ShadowDiff
 from mre.contracts.synthesis import SynthesisProvenance
 
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+class ParseProvenance(BaseModel):
+    """What the PARSE named, recorded on the ledger entry (R-AI5(5), Session
+    4A.5c).
+
+    The ledger already carried the ROUTE an answer took. That is not enough to
+    cluster synthesis residue: every second-tier answer takes the same route
+    (``synthesis``), so a ledger of routes alone says only "these 32 questions were
+    uncontracted" and nothing about WHICH SHAPES they were. The parse knows more
+    than the route does — which contracted intents it thought were ADJACENT
+    (``nearest``), and what KINDS of subject the planner named — and those two
+    fields plus the tool-call pattern are the clustering signal the provenance
+    report uses.
+
+    Counts and closed-vocabulary ids only. No prose, no answer, nothing about the
+    schedule: a ledger entry is a fact ABOUT the AI layer."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    #: The intent the parse named (``Intent`` value). ``unmatched`` on a
+    #: second-tier answer, which is exactly why ``nearest`` matters.
+    intent: str = ""
+    #: The contracted intents the parse judged closest, in its own order. On an
+    #: unmatched parse this is the only statement of what NEIGHBOURHOOD the
+    #: question sat in.
+    nearest: list[str] = Field(default_factory=list)
+    #: The KINDS of subject the parse bound (order / machine / customer /
+    #: concept), de-duplicated and sorted. Not the refs — a cluster is a shape,
+    #: and which order was named is not part of the shape.
+    subject_kinds: list[str] = Field(default_factory=list)
+    polarity: Optional[str] = None
+    followup_of: str = "none"
+    confidence: float = 0.0
+    prompt_version: str = ""
+    #: Session 4A.5c CU3(c): the parse reported that the planner stated a
+    #: qualifier the matched route does not honour (a time scope, an "actually",
+    #: a comparative). Recorded because a diverted turn is telemetry about the
+    #: VOCABULARY's gaps, not about the planner.
+    dropped_qualifier: str = ""
 
 
 class QuestionLedgerEntry(BaseModel):
@@ -58,8 +99,14 @@ class QuestionLedgerEntry(BaseModel):
     - ``synthesis``          — present only on a SECOND-TIER answer (R-AI5(2)):
       the per-claim provenance and every tool call with its arguments. R-AI5(5)
       records per-claim provenance in this ledger; the frequency-weighted Pareto
-      that consumes it is 4A.5c. Still a fact ABOUT the AI layer, never schedule
-      evidence.
+      that consumes it is ``tools/provenance_report.py`` (Session 4A.5c). Still a
+      fact ABOUT the AI layer, never schedule evidence.
+    - ``parse``              — what the parse named (Session 4A.5c): intent,
+      adjacency, subject kinds. The clustering signal; see ``ParseProvenance``.
+    - ``shadow``             — present only on a turn a PROMOTED route answered
+      while its probation window is open (R-AI5(7)): the diff between the route's
+      answer and the synthesis shadow's. A fired divergence is the demotion
+      trigger; see ``ShadowDiff``.
     """
 
     entry_id: str
@@ -74,6 +121,8 @@ class QuestionLedgerEntry(BaseModel):
     session_id: Optional[str] = None
     rephrase_of: Optional[str] = None
     synthesis: Optional[SynthesisProvenance] = None
+    parse: Optional[ParseProvenance] = None
+    shadow: Optional[ShadowDiff] = None
 
     @property
     def refused(self) -> bool:

@@ -58,6 +58,12 @@ def render_transcript(result: ExamResult) -> str:
             "claims      : {claims} total  verified={verified} "
             "interpretive={interpretive} failed-and-cut={failed_and_cut}  "
             "ungrounded-load-bearing={ungrounded_load_bearing}".format(**tot))
+    sh = result.shadow_totals()
+    if sh["shadowed"]:
+        lines.append(
+            "probation   : shadowed={shadowed} clean={clean} "
+            "DIVERGED={diverged} unchecked={unchecked} "
+            "provenance-strengthened={provenance_strengthened}".format(**sh))
     lat = result.latency()
     lines.append(
         "latency     : route n={r[n]} median={rm} p90={rp} | "
@@ -99,6 +105,8 @@ def render_transcript(result: ExamResult) -> str:
             lines.append("  parse: " + _parse_str(t.parse))
         if t.synthesis:
             lines.append("  synthesis: " + _synth_str(t.synthesis))
+        if t.shadow:
+            lines.append("  shadow: " + _shadow_str(t.shadow))
         if t.expect:
             ok = not any(f.kind == "expect-miss" for f in t.findings)
             lines.append("  expect: " + " ".join(
@@ -155,6 +163,28 @@ def _synth_str(s: dict) -> str:
     return "  ".join(bits)
 
 
+def _shadow_str(s: dict) -> str:
+    """The probation comparison on one line (Session 4A.5c): what the promoted
+    route and its synthesis shadow agreed on, and what — if anything — they
+    contradicted each other about, which is the demotion trigger."""
+    if s.get("unchecked"):
+        return "UNCHECKED (no synthesizer) — this sweep does not serve the window"
+    bits = [f"agreed={','.join(s.get('agreed') or []) or '-'}"]
+    contradicted = s.get("contradicted") or []
+    bits.append(f"contradicted={','.join(contradicted) or '-'}")
+    if contradicted:
+        bits.append("** DIVERGED — R-AI5(7): DEMOTE **")
+    bits.append("provenance-strengthened="
+                + ("yes" if s.get("provenance_strengthened") else "no"))
+    if s.get("shadow_only"):
+        bits.append(f"shadow-only={len(s['shadow_only'])}")
+    if s.get("latency_ms") is not None:
+        # Reported, and SUBTRACTED from the turn's latency above: the planner
+        # never waits for the probation.
+        bits.append(f"cost {s['latency_ms']:.0f}ms (not the planner's)")
+    return "  ".join(bits)
+
+
 def _refs_str(refs: dict) -> str:
     if not refs:
         return "0/0/0"
@@ -176,6 +206,7 @@ def render_sidecar(result: ExamResult) -> str:
         "parser_stats": result.parser_stats,
         "synth_stats": result.synth_stats,
         "synthesis": result.synthesis_totals(),
+        "shadow": result.shadow_totals(),
         "latency": result.latency(),
         "graded_expectations": {"graded": result.graded()[0],
                                 "met": result.graded()[1]},

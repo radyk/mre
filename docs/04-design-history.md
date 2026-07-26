@@ -8725,3 +8725,419 @@ error on the first live run ran in the same direction: a checker that cannot tel
 under-citation from fabrication cuts true claims, and leaves the answer thinner and less
 honest than the evidence supports. Strictness is the floor, but a floor that punishes
 citing at all teaches the model to stop citing.
+
+### 2026-07-26 — AI-track Session 4A.5c: R-AI5 part 3 — telemetry, the Pareto, the promotion pipeline (THE ARC CLOSES)
+
+Implements **R-AI5 clauses (5), (6) and (7)**, finishes the residue parts 1 and 2
+named, and closes the arc. Backend + contracts + two governed-prompt bumps + banks +
+tests + cockpit + docs; **no solver / model / schedule-contract change; no golden
+moved** (the pinned rolling run is a NEW fixture).
+
+**WHAT PARTS 1 AND 2 LEFT.** 4A.5a made every question parse first against a closed
+intent vocabulary and deleted the deterministic classifier. 4A.5b gave an unmatched
+intent a second tier — labeled open synthesis, hardened claim by claim. Both WROTE
+per-claim provenance to the question ledger and neither READ it back. R-AI5(5) makes
+that provenance "the standing prioritization for promoting recurring shapes to
+contracted intents"; R-AI5(7) makes the promotion loop autonomous up to a human gate
+and the demotion automatic past it. Three things were still open: the telemetry, the
+loop, and one keyword matcher.
+
+**CU1 — PROVENANCE TELEMETRY AND THE PARETO (R-AI5(5)/(6)).**
+
+*The ledger had to say more first.* Every second-tier answer takes the same ROUTE
+(`synthesis`), so a ledger of routes says only "these N questions were uncontracted"
+and nothing about WHICH SHAPES they were. `QuestionLedgerEntry` gains a
+`ParseProvenance` block — intent, the parse's own ADJACENCY (`nearest`), subject
+KINDS, polarity, follow-up linkage — ids and counts only, never the resolved refs,
+because a cluster is a shape and which order was named is not part of it. And the
+sweep now WRITES a ledger at all: every ask already logged an entry and the sweep had
+no path to write it to, so the residue R-AI5(5) exists to rank was being computed and
+discarded 300 times a run.
+
+*The report* (`modules/provenance_report.py` + `tools/provenance_report.py`) is
+runnable against any ledger and is EMITTED AUTOMATICALLY at the end of every sweep
+beside the sidecars — the prioritization is a PRODUCT of the sweep, never a step
+someone has to remember. It states questions by tier, the residue clustered into
+recurring shapes, each cluster's frequency / verified-interpretive ratio / exemplars /
+tools, and the frequency-weighted Pareto.
+
+*The clustering method, printed in the report itself* (crude-but-stated beats
+clever-but-opaque). Two synthesis answers are the same SHAPE when three things match:
+**intent adjacency** (the <=2 contracted intents the parse judged closest), **subject
+kinds**, and the **DOMINANT TOOL** — the tool the loop called most. The whole call SET
+was tried first and fragments shapes badly: on the 4A.5b residue it split "why so many
+late orders" from "cant you just make it cheaper" into two clusters of one because the
+loop made one extra exploratory call. The long tail is the model's exploration; the
+tool it leaned on is the shape. The report also prints what the method is NOT — not
+semantic, it SPLITS shapes whose parses disagreed, and it therefore UNDER-states
+frequency. Under-counting is the safe error for a prioritization whose output is
+"build a route", and the failure mode is visible: two clusters with the same exemplar
+shape side by side is the tell, and a human merges them by naming the shape in a
+dossier.
+
+*The Pareto weight is frequency x verified share*, not frequency. Frequency alone
+ranks a shape nobody can prove above one asked half as often that a route could answer
+outright; the product asks the promotion question directly — how much PROVEN answering
+would contracting this shape buy.
+
+**R-AI5(6) IS PRINTED IN THE REPORT'S OWN HEADER, not implied.** A report that ranked
+every cluster by frequency would put the plan's most interesting conversations at the
+top of an "improvement backlog" and quietly instruct the next session to contract them
+away. Three ways a cluster is NOT-PROMOTABLE-BY-DESIGN, each a statement about the
+EVIDENCE and never about the question's worth: predominantly interpretive (an
+aggregate read no route could prove), predominantly conclusions (a take), or nothing
+consulted at all (conversational). Protected clusters are excluded from the Pareto and
+counted nowhere near the backlog, and the header says why in the ruling's own words.
+The dossier generator REFUSES to draft one.
+
+**CU2 — THE PROMOTION PIPELINE, AND ONE FULL CYCLE AS THE PROOF (R-AI5(7)).**
+
+Four asymmetries, each a shape in `contracts/promotion.py`: proposing is autonomous
+and entering is not; promotion is never automatic and demotion always is; probation is
+measured rather than waited out; and interpretive residue is never dossier material.
+
+**(a) THE DOSSIER, autonomous.** `tools/promotion_dossier.py` takes a cluster and
+writes `docs/promotions/<shape>-<date>.md` plus a DRAFT route on a clearly marked path
+(`docs/promotions/drafts/`, which nothing imports). The dossier carries the shape's
+frequency and every exemplar, the **evidence-assembly pattern** derived from the
+cluster's VERIFIED tool-call transcripts (argument VALUES reduced to their shape —
+"call it with an order", never "call it with ORD-05"), the claims a route would have
+to be able to prove, the interpretive claims it must keep labeled, and the
+harness-validation result. The draft deliberately generates NO planner-facing copy:
+that is authored by a human (R-AI1(c)), and a promotion pipeline that wrote its own
+answer prose would put model sentences on the answer surface through the back door —
+the one thing the whole tier prevents.
+
+**(b) THE GATE, human — and this session walked through it, in order.**
+
+1. The 4A.5b banks were replayed against the pinned world with the candidate intent
+   **DEMOTED**, reproducing the pre-promotion vocabulary exactly. Using the session's
+   own demotion flag to do it is also a live proof that the flag works.
+2. The provenance report ranked the residue. **The top cluster by frequency AND by
+   weight was `late-orders|no-subject|lateness_set`** — "why so many late orders" and
+   "whats actually driving the lateness in this plan". Nobody chose it; the telemetry
+   named it.
+3. `promotion_dossier.py` drafted the application and, run again with
+   `--validate-with`, replayed the cluster's historical questions under the candidate
+   route and diffed them against the synthesis answers the ledger recorded: 0 raised,
+   0 contradicted, 2 of 2 strengthening provenance. CLEAN.
+4. The working thread reviewed it, and `lateness-cause` joined the vocabulary in ONE
+   change: `Intent`, `INTENT_MEANINGS`, `ROUTE_TAXONOMY`, `ROUTE_OFFERS`, the
+   assembler, its AUTHORED copy, parse prompt **v7**, and a `PROMOTIONS` entry citing
+   the dossier by path.
+
+*The route* answers the CAUSE MIX across the late set — not the list (`late-orders`),
+not one order's chain (`late-order`) — from the same readers the tool surface wraps:
+the whole lateness set (enumerable in one read, which is what lets a COUNT be stated
+rather than sampled), each late order's assignment driver and its concrete blocked-by
+fact from the solved occupancy, and the ledger's tardiness lines. Two hedges were made
+CONDITIONS of promotion in the dossier and are pinned in the RUBRIC: the **premise
+check** ("why are so many late" asked of a plan with one late order is answered by
+saying so first — the synthesis tier did exactly this and it was the most useful
+sentence in the answer) and the **named unattributed set** (an order whose hold the
+occupancy does not show is said to be unattributable, never given an invented
+mechanism). An interpretive claim does not become true by being assembled
+deterministically; a promotion that launders a take into testimony would be worse than
+no promotion.
+
+**(c) SHADOW AND DEMOTION, autonomous, with teeth.** During probation the sweep answers
+the shape under BOTH paths and diffs them (`modules/shadow.py`), and the diff is the
+most conservative thing in the session because a false positive DEMOTES A CORRECT
+ROUTE. What is compared: only figures BOTH sides state about the SAME labelled
+quantity — the route's pre-computed `key_facts` against the numbers in the shadow's
+VERIFIED claims, the label required within a window of the figure AND the units
+required to agree. A figure only one side mentions is not a disagreement; an
+INTERPRETIVE claim is never a divergence (it is a labeled reading, and proving what
+synthesis could only read is the POINT of promoting); a cut claim never reached a
+planner. Demotion is one field: the intent leaves `model_selectable_intents()`, the
+prompt stops offering the id, the parse cannot name it, and the shape returns to the
+second tier. A demoted id emitted from a model's memory of an earlier turn coerces to
+`unmatched` — a demotion a stale phrasing can walk around is not a demotion. Both
+directions tested with hand-built cases. The flip itself is a COMMITTED EDIT: a
+vocabulary that rewrote itself at runtime would be the router rewriting its own
+routing, which R-AI1 forbids. The shadow is a PARAMETER of `run_ask`, not a default —
+it costs a full synthesis, and making every planner pay ten seconds so a promotion can
+be audited would be charging the user for our own quality control.
+
+**THE DIFF'S THREE FALSE-POSITIVE CLASSES, found by running it** (the dossier's own
+first validation reported the promoted route as contradicting claims that agree with
+it perfectly). Each was a real defect in the trigger, and a trigger that fires on
+agreement is worse than no trigger: (1) a figure carrying a UNIT the label does not
+have — "890 minutes" sat four tokens from the word "late" and was offered as a
+candidate for `late_count` = 1; (2) CLOCK TIMES and dates read as quantities — the 59
+of "23:59:59" sat six tokens from the word "time" and was reported as contradicting
+`on_time_count` = 14; (3) SYNTHESIZED `<label>_count` facts from list-valued
+`key_facts` — `tardiness_lines_count` = 1 "contradicted" the perfectly correct claim
+"a tardiness cost of $370.83", because a fact nobody asserts cannot be contradicted and
+should never have been in the comparison. Units now gate the match, timestamps are
+stripped like entity refs, and only SCALARS the route actually states take part.
+
+**CU3 — THE FELT-BAR RESIDUE.**
+
+**(a) SYNTHESIS PACING.** Rider (c) measured the problem: ~1.3s for a proven answer,
+~10s for a reasoned one. A planner will wait ten seconds — but not silently, and not
+without knowing which they are getting. The ask now TWO-PHASES: `POST
+/schedules/{id}/ask/preflight` parses the question and returns which TIER will answer
+and the authored first-beat copy, assembling no evidence and composing no answer. The
+panel shows an honest non-answer while the tier reads, replaced by the answer when it
+lands (R-T2's two-beat pattern: beat one commits to nothing about what will be found —
+never a fake answer, never an invented progress figure). It costs NO EXTRA MODEL CALL:
+the preflight remembers its parse in a bounded `ParseMemory` keyed by the question and
+the full context, and the `/ask` that follows finds it and skips its own. Fail-open at
+every step — with no parser, or on any failure at all, the preflight reports the route
+tier with empty copy and the ask behaves exactly as it did before the endpoint existed.
+**Named residue:** the first beat states the tool BUDGET, not a live count.
+
+**(b) THE WARM FLOOR.** RUBRIC precedent entry 6, RULED: the synthesis
+couldn't-answer keeps the nearest-capabilities offers. 4A.5b's sweep had found the cost
+of not having them — "this is not helpful" used to reach the near-miss bridge and get
+two concrete doors, and once the second tier took it the same turn got an honest
+refusal and nothing to do next. Honest, and colder. The offers are the same authored
+surface the bridge uses, appended to the floor and rendered only there, chosen by what
+the planner named; absence-tested where no doors exist.
+
+**(c) THE ADJACENT-MATCH GUARD — the last hiding place.** Both of 4A.5b's surviving
+unmet expectations were one shape, and neither was a mis-parse: "how many orders will
+be late NEXT MONTH" -> `late-orders`, which answers about THIS plan; "how much of
+CUT-01s week is ACTUALLY working time" -> `downtime`, which answers the complement. The
+nearest intent really IS the nearest one, and answering as it answers a question the
+planner did not ask — with perfect citations, which makes it worse rather than better.
+This is rule 7's failure one step further in. The parse now REPORTS a stated qualifier
+the intent drops (`dropped_qualifier`; prompt **v7** rule 9, with three admitted
+families and four explicit non-qualifiers); the DISPATCH decides to divert; and the
+rendered-by line names the qualifier so the planner knows it was heard. R-AI5(8)'s
+discipline applied to routing: the model reports, it never grades. Conservative by
+construction — the parse must have named the words, a low-confidence match already went
+to the tier, and a qualifier the route DOES honour must not be reported at all. **Both
+expectations are now MET.**
+
+**CU4 — THE LAST DETERMINISTIC CLASSIFIER DIES.**
+
+`rolling_questions.classify_rolling` — three tuples of keyword triggers — was the final
+surviving piece of the router R-AI5 retired in 4A.5a. 4A.5b ruled it this session's
+scope and stated the prerequisite: the parse resolved SUBJECTS against the Explainer's
+snapshot, which on a rolling run is WINDOW 0 ONLY, so an order in the beyond-horizon
+tray would resolve to nothing and be answered as ABSENT — a confident-wrong answer
+replacing a correct one.
+
+**The prerequisite came first.** `RollingVocabulary` reads the document's three regions
+(committed frozen front, active window, beyond-horizon tray); subject resolution
+consults it after the window's own vocabulary; and every resolved order carries a
+`SubjectDisposition`. A tray order is now a real subject that is BEYOND-HORIZON.
+**A tray order is never "not in this schedule."** Every placement question about one
+lands on `why-not-scheduled-yet`, which is the one honest answer the document can give.
+The other side of the pin is intact: a name nothing carries is still ABSENT — the tray
+is not a wildcard.
+
+Only then did the matcher die. The three rolling intents were already in the closed
+vocabulary; the parse names them, the dispatch reaches the same `rolling_questions`
+answerers with the document as a route param, and the answers stay authored, ID-free
+and hedged (rendered verbatim — a reword that drops "that's an estimate, not a
+committed placement" turns an honest answer into a commitment the solver never made).
+The keyword tables are DELETED, not bypassed, and the symbol's ABSENCE is the
+assertion: a private reimplementation would be the same router wearing a different
+name. The phrasing->intent claim moves to the sweep, where a live model is measured
+(R-AI4(2)) — a keyword table can be asserted offline, an understanding must be
+measured.
+
+**CU5 — THE ARC-CLOSING SWEEP.**
+
+`tests/ai_exam/sweeps/2026-07-26-arc-close/` — SEVEN banks, **321 questions**, live.
+Six against the pinned monolithic glass_box world; the seventh — the new
+`sweep_rolling` bank, 17 questions — against a NEW PINNED ROLLING RUN
+(`tools/build_rolling_exam_run.py`: pilot_scale, 40 orders, window 14d / frozen 3d,
+deterministic seed 42, window 0 persisted; 56 bars — 38 committed, 18 active, 14 in
+the tray). The rolling bank asks a different target on purpose: the monolithic world
+has no sliced state, so a rolling question there is answered "this isn't a rolling
+schedule" — honest, and a test of nothing. The runner SKIPS that bank loudly rather
+than running it against the wrong world.
+
+**Result: 109 of 110 graded expectations met.** On the 93 expectations SHARED with
+the 4A.5b baseline: **92/93, up from 90/93.** The two adjacent-match expectations
+that 4A.5b kept strict and unmet are now MET, and the 17 new rolling expectations are
+17/17. The one remaining miss is the carried judgment call ("are you sure about
+that" reaches `prove-it` rather than the `verification` clarify — RUBRIC precedent 4,
+OPEN, deliberately not relaxed).
+
+| bank | q | graded | route median | synthesis median | findings |
+|---|---|---|---|---|---|
+| regression_founder | 28 | — | 1580 ms | 8212 ms | clean |
+| regression_founder_r4 | 15 | 15/15 | 1389 ms | — | clean |
+| sweep_rolling | 17 | 17/17 | 1233 ms | — | absent-entity 1 (its own control) |
+| sweep_routes | 120 | — | 1310 ms | — | clean |
+| sweep_scenarios | 49 | 47/48 | 1607 ms | 6571 ms | expect-miss 1 |
+| sweep_synthesis | 30 | 30/30 | 1084 ms | 11736 ms | ungrounded-load-bearing 1 |
+| sweep_traps | 62 | — | 1625 ms | 8518 ms | absent-entity 3, u-l-b 2 |
+
+**Mechanical signals.** exception 0, empty 0, validator 0, dark-evidence 0, dead-door
+0, target-unloadable 0, failed-claim-rendered 0, shadow-divergence 0,
+shadow-unchecked 0. `absent-entity` 3 on the SHARED banks — identical to the
+baseline's three (the traps bank's deliberate absent-order questions); the fourth is
+the rolling bank's own control ("why is ORD-999999 late", graded MET as
+`unknown-entity`), which is the other side of the tray pin and is expected to trip
+this shape check every sweep. *Carried instrument note: the sidecar could suppress an
+`absent-entity` finding on a turn whose EXPECT line asks for `unknown-entity` — the
+behaviour is already graded there — and it does not yet.*
+
+**ONE SIGNAL MOVED THE WRONG WAY, and it is named rather than explained away.**
+`ungrounded-load-bearing` went **0 -> 3**: "what's the optimal plan", "find me a
+faster schedule", "whats the busiest day in this schedule". In each the second tier
+drafted a conclusion, the verifier could not ground it, cut it, and the answer SAID
+so — the mechanism working, on three questions that deserve it. But the RUBRIC reads
+a rising count as "the tier is reaching past its evidence", and that reading is
+available here too: two of the three are optimality questions, which is exactly where
+reaching is tempting. It is a live-model property, not a code regression (the same
+questions grounded on the 4A.5b run), and the honest statement is that this sweep is
+**not** strictly-no-worse on every mechanical signal. It is no-worse on every
+truth-floor tripwire.
+
+**Parse counts:** 334 parses, 335 calls, **1 retry, 2 malformed**, 10 clarifies, 0
+unavailable, median **1159 ms**. Against the baseline's 317 / 0 / 0 / 6 / 1050 ms:
+slightly worse on retries, malformed emissions and median latency, on a prompt that
+grew by a new intent and a new rule. Single-digit counts on a live model; stated, not
+excused.
+
+**The two tiers, measured.** 276 contracted answers, **34 synthesis answers** (10 of
+them honest couldn't-answers), 11 honest-floor answers. **99 claims — 36 VERIFIED,
+58 INTERPRETIVE, 5 FAILED-and-cut**, 3 of the cut load-bearing (each said out loud),
+91 tool calls, **0 budget exhaustions and 0 timeouts**. The verified share is 38%
+against the baseline's 43%; the tool histogram is the shape of the questions —
+machine_occupancy 22, placements_for_machine 15, entity_vocabulary 14, cost_ledger
+13, lateness_set 13, placements_for_order 7, placements_in_window 4, fetch_record 2,
+calendars 1.
+
+**Latency, by tier** (rider (c)'s number, carried forward): **parse + contracted route
+— n=287, median 1377 ms, p90 2791 ms. Parse + synthesis — n=34, median 9297 ms, p90
+18299 ms.** Essentially unchanged from the baseline (1275 / 2502 and 9659 / 16030),
+which matters for CU3(a): the number that justified the first beat is still the
+number. **The probation shadow is EXCLUDED from these** — it runs inside the ask but
+a planner never pays it, and leaving it in reported the promoted route at a p90 of
+~9 s, making the promotion look like a slowdown.
+
+**PROBATION.** The promoted `lateness-cause` route was **shadowed 3 times, 3 clean, 0
+diverged, 0 unchecked**, 1 of the 3 strengthening provenance (the route citing
+records for what the shadow could only label). The probation window
+(`PROBATION_SWEEPS = 2`) is served by this sweep and one more.
+
+**THE FIRST REAL PARETO, from sweep telemetry** (`PROVENANCE.txt` / `.json`,
+committed): 34 synthesis answers cluster into **30 shapes — 13 promotable, 17
+NOT-PROMOTABLE-BY-DESIGN** (10 predominantly interpretive, 5 conversational, 2
+takes). That ratio is itself the R-AI5(6) point: more than half of what the second
+tier answers is residue the ruling protects, and a report ranking by frequency alone
+would have listed all 17 as backlog. Top of the Pareto:
+
+```
+  rank  weight  cum%   frequency  cluster
+  1     1.33    15%    2          unanchored|no-subject|cost_ledger
+  2     1.00    26%    2          unanchored|no-subject|lateness_set
+  3     0.86    35%    2          lateness-cause+schedule|no-subject|cost_ledger
+```
+
+The next promotion candidate is a MONEY-shaped read ("how does the setup cost compare
+to the tardiness cost"), asked twice, 67% of its rendered claims grounded. It is NOT
+promoted — this session was pre-authorized for exactly one proof cycle — and it is
+the queue's head for whoever picks the thread up. Note also what the adjacency column
+now shows: `lateness-cause` appears in five clusters' adjacency, so the promoted
+intent immediately became a near neighbour for a large part of the remaining residue.
+That is worth reading twice before promoting the next one.
+
+**WHAT THE SWEEP FOUND AND WHAT WAS REPAIRED IN-SESSION** (the instrument exception,
+on the 4A.5a/4A.5b precedent: found live, repaired, and the WHOLE sweep re-run —
+three times in all, because a committed sweep that does not match the committed code
+is not evidence). Six defects, four of them in this session's own new work:
+
+  1. **THE PROMOTION IMMEDIATELY PERTURBED ITS NEIGHBOUR.** With `lateness-cause`
+     nameable, "but why" — a DEEPEN follow-up on ORD-05, selected, one turn after
+     that order's cause chain — parsed as `lateness-cause` and answered about the
+     whole plan. This is the same class 4A.5b hit the moment `prove-it` became
+     nameable (parse prompt v6), and it is the honest price of a promotion: a new
+     vocabulary member is a new attractor for its neighbours' questions. The cure is
+     the same one at the same place — the authored meaning now says the intent takes
+     NO subject and is never about one order, naming the bare "but why" explicitly,
+     and `late-order`'s meaning says the reverse. **This is the single strongest
+     argument for R-AI5(7)'s review gate**: the dossier's harness validation was
+     CLEAN and could not have caught it, because the damage a promotion does is to
+     questions that are not the promoted shape.
+  2. **The rolling meanings were written for a keyword world.** "what work is coming
+     that isnt scheduled yet" — about the WHOLE TRAY, naming no order — reached
+     `why-not-scheduled-yet`, which needs one, and the planner was asked which order
+     they meant after asking about all of them. Under the old pre-route the two
+     shapes were separated by which trigger tuple matched; under a parse they were
+     separated by nothing. The three meanings now say SET vs ONE.
+  3. **The tray check was pre-empted by the branches above it.** "what machine is
+     ORD-000007 on" parsed as `machine-schedule` (which needs a MACHINE) with the
+     tray order bound and an `ambiguous-intent` clarify; the clarify branch sent it
+     to the second tier, which read `placements_for_order` for an order with no
+     placements, found nothing, and honestly could not answer — a correct process
+     producing a useless answer to a question the document answers outright. The
+     tray check now runs FIRST in the dispatch, on any NAMED beyond-horizon order,
+     excluding only the rolling intents and the two gestures about our own sentence.
+  4. **A clarify short-circuited the other-kind rescue.** "whats holding CUT-01"
+     parsed as `start-reason` with CUT-01 typed as an ORDER (unresolved, because it
+     is a machine) AND hedged with `ambiguous-subject`; nothing resolved, so the
+     clarify branch asked the planner which ORDER they meant — about the machine on
+     their screen. 4A.5b's other-kind rescue would have caught it and never ran,
+     because a clarify decides before the matched branch. An unresolved subject whose
+     WORDS name a real entity of another kind now counts as resolved for that
+     decision: the tier can read what they named, and asking cannot help.
+  5. **The adjacent-match guard's own failure mode: the tier played the qualifier
+     back.** "how many orders will be late NEXT MONTH" diverted correctly and was
+     then answered "One order will be late next month: ORD-05 ... past its due date
+     of 2026-01-05". 2026-01-05 is not next month. The FIGURE grounded, so the claim
+     VERIFIED — what was wrong was the FRAME, and claim verification cannot catch a
+     frame because no record contradicts one. Diverting was right; answering as
+     though the frame held was not. The diverted question now carries an authored
+     SCOPE NOTE into the tier (`SYNTHESIS_SCOPE_NOTE`, rendered into the shared
+     `{CONTEXT}` block; synthesis prompt **v2**) naming the qualifier and stating
+     that the evidence is THIS PLAN ONLY, with the instruction to say so rather than
+     play along.
+  6. **The probation shadow was being charged to the planner**, and a seventh,
+     smaller: with one late order the promoted route's cause block read "What they
+     have in common:" over a single name — a template that had not noticed (C4).
+     Singular copy added. A stale-file hazard was closed at the same time: a sweep
+     directory is now CLEARED before a run, so a re-run that dies halfway leaves an
+     obviously incomplete sweep rather than a plausible mixed one (this session
+     produced exactly that mixed state once, and it is the kind that gets committed).
+
+**CU6 — DOCS.** This amendment; docs/07 v2.46 same-day; `CLAUDE.md`'s ask-path
+paragraph in its final form (the promotion/demotion process named, the rolling
+retirement folded in, the aggregate-cause debt struck off); RUBRIC.md gains a
+GRADING A PROMOTED ROUTE section, the two new sidecar signals, precedent entry 6
+RESOLVED (keep the doors) and three new OPEN entries stating the CU3 items' expected
+behaviours so round five grades them rather than re-discovering them.
+
+**OUT OF SCOPE (named, not built).** Any promotion beyond the one pre-authorized
+proof cycle — the Pareto's current head (a money-shaped read) is left for the next
+session. Per-claim cockpit badge ELEMENTS (the tokens shipped in 4A.5b; the element
+work rides a cockpit session). Rendering-model changes. Anything on the 4B queue.
+
+**NAMED LIMITS (stated rather than implied away).** (a) Clustering UNDER-states
+frequency by design; merging split shapes is a human's, in a dossier. (b) The shadow
+diff compares only quantities BOTH sides state about the same labelled thing, and on
+the promoted shape the overlap is thin (one shared quantity across the probation's
+three questions) — the teeth are real but narrow, and a route that diverged in ways
+neither side quantifies would pass clean. (c) The first beat names the tool BUDGET,
+not a live count; a ticking "(N tools consulted)" needs streaming or background
+execution of the ask. (d) The promoted route is measured against ONE world's late set
+(a single late order), so its premise check is well-exercised and its cause MIX is
+not. (e) The dossier's harness validation cannot see collateral damage to
+neighbouring intents — defect #1 above is what that costs, and the review gate is
+what catches it. (f) The sidecar still flags the rolling bank's deliberate
+absent-order control.
+
+Lesson: the promotion loop's first cycle taught the thing the loop was built to
+survive. The dossier was clean, the harness validation was clean, the shadow diff was
+clean — and the promotion still broke a question that was not the promoted shape,
+because adding a member to a closed vocabulary changes what every neighbouring member
+attracts. That is not an argument against promoting; it is the whole argument for
+R-AI5(7)'s asymmetry. A machine can measure whether a route answers its own shape
+correctly. It cannot measure what the route's EXISTENCE does to the conversation
+around it — which is why proposing is autonomous, entering is reviewed, and leaving
+is automatic.
+
+**THE ARC.** 4A.5a retired the classifier and made every question parse first. 4A.5b
+gave the unmatched question a tier and made every one of its sentences earn its
+label. 4A.5c made the residue legible, gave the system a way to propose its own
+routes and an automatic way to take them back, and killed the last keyword matcher in
+the ask path. R-AI5's eight clauses are implemented. The working thread returns to
+the 4B mission.

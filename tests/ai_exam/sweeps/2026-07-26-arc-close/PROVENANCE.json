@@ -1,0 +1,843 @@
+{
+  "source": "tests\\ai_exam\\sweeps\\2026-07-26-arc-close\\ledger.jsonl",
+  "tiers": {
+    "questions": 321,
+    "contracted": 276,
+    "synthesis": 34,
+    "floor": 11,
+    "synthesis_unanswerable": 10,
+    "claims_verified": 36,
+    "claims_interpretive": 58,
+    "claims_cut": 5,
+    "load_bearing_cut": 3
+  },
+  "method": {
+    "keys": [
+      "intent_adjacency",
+      "subject_kinds",
+      "tool_pattern"
+    ],
+    "adjacency_depth": 2,
+    "weight": "frequency * verified_share",
+    "verified_share_floor": 0.3333333333333333,
+    "conclusion_share_ceiling": 0.5,
+    "semantic": false,
+    "under_states_frequency": true
+  },
+  "clusters": [
+    {
+      "cluster_id": "unanchored|no-subject|cost_ledger",
+      "adjacency": [],
+      "subject_kinds": [],
+      "tools": [
+        "cost_ledger",
+        "lateness_set",
+        "placements_for_order",
+        "machine_occupancy"
+      ],
+      "frequency": 2,
+      "verified": 4,
+      "interpretive": 2,
+      "cut": 1,
+      "verified_share": 0.6667,
+      "conclusion_share": 0.2857,
+      "weight": 1.3333,
+      "promotable": true,
+      "protected_reason": null,
+      "adjacency_unknown": false,
+      "exemplars": [
+        "how does the setup cost compare to the tardiness cost",
+        "what's the optimal plan"
+      ],
+      "pareto_rank": 1,
+      "pareto_cumulative": 0.1464
+    },
+    {
+      "cluster_id": "unanchored|no-subject|lateness_set",
+      "adjacency": [],
+      "subject_kinds": [],
+      "tools": [
+        "lateness_set"
+      ],
+      "frequency": 2,
+      "verified": 3,
+      "interpretive": 3,
+      "cut": 0,
+      "verified_share": 0.5,
+      "conclusion_share": 0.3333,
+      "weight": 1.0,
+      "promotable": true,
+      "protected_reason": null,
+      "adjacency_unknown": false,
+      "exemplars": [
+        "is that correct",
+        "how many orders will be late next month"
+      ],
+      "pareto_rank": 2,
+      "pareto_cumulative": 0.2562
+    },
+    {
+      "cluster_id": "lateness-cause+schedule|no-subject|cost_ledger",
+      "adjacency": [
+        "lateness-cause",
+        "schedule"
+      ],
+      "subject_kinds": [],
+      "tools": [
+        "cost_ledger",
+        "lateness_set",
+        "placements_for_order",
+        "placements_for_machine",
+        "machine_occupancy",
+        "placements_in_window"
+      ],
+      "frequency": 2,
+      "verified": 3,
+      "interpretive": 4,
+      "cut": 1,
+      "verified_share": 0.4286,
+      "conclusion_share": 0.375,
+      "weight": 0.8571,
+      "promotable": true,
+      "protected_reason": null,
+      "adjacency_unknown": false,
+      "exemplars": [
+        "is there a better schedule",
+        "find me a faster schedule"
+      ],
+      "pareto_rank": 3,
+      "pareto_cumulative": 0.3503
+    },
+    {
+      "cluster_id": "unanchored|no-subject|no-tools",
+      "adjacency": [],
+      "subject_kinds": [],
+      "tools": [],
+      "frequency": 2,
+      "verified": 0,
+      "interpretive": 0,
+      "cut": 0,
+      "verified_share": 0.0,
+      "conclusion_share": 0.0,
+      "weight": 0.0,
+      "promotable": false,
+      "protected_reason": "consulted no evidence -- conversational, not a question about the plan",
+      "adjacency_unknown": false,
+      "exemplars": [
+        "this is not helpful",
+        "come on, just tell me"
+      ],
+      "pareto_rank": null,
+      "pareto_cumulative": null
+    },
+    {
+      "cluster_id": "briefing+lateness-cause|no-subject|cost_ledger",
+      "adjacency": [
+        "briefing",
+        "lateness-cause"
+      ],
+      "subject_kinds": [],
+      "tools": [
+        "cost_ledger",
+        "lateness_set",
+        "placements_for_order",
+        "placements_for_machine",
+        "machine_occupancy"
+      ],
+      "frequency": 1,
+      "verified": 4,
+      "interpretive": 1,
+      "cut": 0,
+      "verified_share": 0.8,
+      "conclusion_share": 0.2,
+      "weight": 0.8,
+      "promotable": true,
+      "protected_reason": null,
+      "adjacency_unknown": false,
+      "exemplars": [
+        "is there anything unusual about this schedule"
+      ],
+      "pareto_rank": 4,
+      "pareto_cumulative": 0.4382
+    },
+    {
+      "cluster_id": "edit-cost+lateness-cause|no-subject|cost_ledger",
+      "adjacency": [
+        "edit-cost",
+        "lateness-cause"
+      ],
+      "subject_kinds": [],
+      "tools": [
+        "cost_ledger"
+      ],
+      "frequency": 1,
+      "verified": 4,
+      "interpretive": 1,
+      "cut": 0,
+      "verified_share": 0.8,
+      "conclusion_share": 0.2,
+      "weight": 0.8,
+      "promotable": true,
+      "protected_reason": null,
+      "adjacency_unknown": false,
+      "exemplars": [
+        "where is most of the money going in this plan"
+      ],
+      "pareto_rank": 5,
+      "pareto_cumulative": 0.526
+    },
+    {
+      "cluster_id": "advice+lateness-cause|no-subject|cost_ledger",
+      "adjacency": [
+        "advice",
+        "lateness-cause"
+      ],
+      "subject_kinds": [],
+      "tools": [
+        "cost_ledger",
+        "lateness_set"
+      ],
+      "frequency": 1,
+      "verified": 3,
+      "interpretive": 1,
+      "cut": 0,
+      "verified_share": 0.75,
+      "conclusion_share": 0.25,
+      "weight": 0.75,
+      "promotable": true,
+      "protected_reason": null,
+      "adjacency_unknown": false,
+      "exemplars": [
+        "cant you just make it cheaper"
+      ],
+      "pareto_rank": 6,
+      "pareto_cumulative": 0.6084
+    },
+    {
+      "cluster_id": "late-orders+lateness-cause|no-subject|fetch_record",
+      "adjacency": [
+        "late-orders",
+        "lateness-cause"
+      ],
+      "subject_kinds": [],
+      "tools": [
+        "lateness_set",
+        "fetch_record",
+        "cost_ledger"
+      ],
+      "frequency": 1,
+      "verified": 2,
+      "interpretive": 1,
+      "cut": 0,
+      "verified_share": 0.6667,
+      "conclusion_share": 0.3333,
+      "weight": 0.6667,
+      "promotable": true,
+      "protected_reason": null,
+      "adjacency_unknown": false,
+      "exemplars": [
+        "which customer is hurt most by the lateness"
+      ],
+      "pareto_rank": 7,
+      "pareto_cumulative": 0.6816
+    },
+    {
+      "cluster_id": "unanchored|order|lateness_set",
+      "adjacency": [],
+      "subject_kinds": [
+        "order"
+      ],
+      "tools": [
+        "lateness_set",
+        "entity_vocabulary",
+        "placements_for_machine",
+        "placements_for_order"
+      ],
+      "frequency": 1,
+      "verified": 2,
+      "interpretive": 1,
+      "cut": 0,
+      "verified_share": 0.6667,
+      "conclusion_share": 0.3333,
+      "weight": 0.6667,
+      "promotable": true,
+      "protected_reason": null,
+      "adjacency_unknown": false,
+      "exemplars": [
+        "why is CUT-01 late"
+      ],
+      "pareto_rank": 8,
+      "pareto_cumulative": 0.7548
+    },
+    {
+      "cluster_id": "machine-idle+machine-schedule|no-subject|machine_occupancy",
+      "adjacency": [
+        "machine-idle",
+        "machine-schedule"
+      ],
+      "subject_kinds": [],
+      "tools": [
+        "machine_occupancy",
+        "entity_vocabulary"
+      ],
+      "frequency": 1,
+      "verified": 3,
+      "interpretive": 2,
+      "cut": 1,
+      "verified_share": 0.6,
+      "conclusion_share": 0.1667,
+      "weight": 0.6,
+      "promotable": true,
+      "protected_reason": null,
+      "adjacency_unknown": false,
+      "exemplars": [
+        "which machine is the bottleneck"
+      ],
+      "pareto_rank": 9,
+      "pareto_cumulative": 0.8207
+    },
+    {
+      "cluster_id": "advice+edit-cost|concept|cost_ledger",
+      "adjacency": [
+        "advice",
+        "edit-cost"
+      ],
+      "subject_kinds": [
+        "concept"
+      ],
+      "tools": [
+        "cost_ledger",
+        "lateness_set"
+      ],
+      "frequency": 1,
+      "verified": 2,
+      "interpretive": 2,
+      "cut": 0,
+      "verified_share": 0.5,
+      "conclusion_share": 0.25,
+      "weight": 0.5,
+      "promotable": true,
+      "protected_reason": null,
+      "adjacency_unknown": false,
+      "exemplars": [
+        "is the overtime worth what it bought us"
+      ],
+      "pareto_rank": 10,
+      "pareto_cumulative": 0.8756
+    },
+    {
+      "cluster_id": "advice+machine-schedule|machine|entity_vocabulary",
+      "adjacency": [
+        "advice",
+        "machine-schedule"
+      ],
+      "subject_kinds": [
+        "machine"
+      ],
+      "tools": [
+        "entity_vocabulary",
+        "placements_for_machine",
+        "cost_ledger",
+        "lateness_set",
+        "placements_for_order"
+      ],
+      "frequency": 1,
+      "verified": 2,
+      "interpretive": 3,
+      "cut": 0,
+      "verified_share": 0.4,
+      "conclusion_share": 0.4,
+      "weight": 0.4,
+      "promotable": true,
+      "protected_reason": null,
+      "adjacency_unknown": false,
+      "exemplars": [
+        "what would happen to this plan if CUT-01 went down tomorrow"
+      ],
+      "pareto_rank": 11,
+      "pareto_cumulative": 0.9195
+    },
+    {
+      "cluster_id": "lateness-cause+machine-schedule|machine|machine_occupancy",
+      "adjacency": [
+        "lateness-cause",
+        "machine-schedule"
+      ],
+      "subject_kinds": [
+        "machine"
+      ],
+      "tools": [
+        "entity_vocabulary",
+        "machine_occupancy",
+        "calendars",
+        "cost_ledger"
+      ],
+      "frequency": 1,
+      "verified": 2,
+      "interpretive": 3,
+      "cut": 1,
+      "verified_share": 0.4,
+      "conclusion_share": 0.3333,
+      "weight": 0.4,
+      "promotable": true,
+      "protected_reason": null,
+      "adjacency_unknown": false,
+      "exemplars": [
+        "why are all five machines overloaded"
+      ],
+      "pareto_rank": 12,
+      "pareto_cumulative": 0.9634
+    },
+    {
+      "cluster_id": "unanchored|order|entity_vocabulary",
+      "adjacency": [],
+      "subject_kinds": [
+        "order"
+      ],
+      "tools": [
+        "entity_vocabulary",
+        "placements_for_machine"
+      ],
+      "frequency": 1,
+      "verified": 1,
+      "interpretive": 2,
+      "cut": 0,
+      "verified_share": 0.3333,
+      "conclusion_share": 0.3333,
+      "weight": 0.3333,
+      "promotable": true,
+      "protected_reason": null,
+      "adjacency_unknown": false,
+      "exemplars": [
+        "whats holding CUT-01"
+      ],
+      "pareto_rank": 13,
+      "pareto_cumulative": 1.0
+    },
+    {
+      "cluster_id": "machine-idle+machine-schedule|machine|placements_for_machine",
+      "adjacency": [
+        "machine-idle",
+        "machine-schedule"
+      ],
+      "subject_kinds": [
+        "machine"
+      ],
+      "tools": [
+        "entity_vocabulary",
+        "placements_for_machine",
+        "machine_occupancy"
+      ],
+      "frequency": 1,
+      "verified": 1,
+      "interpretive": 3,
+      "cut": 0,
+      "verified_share": 0.25,
+      "conclusion_share": 0.5,
+      "weight": 0.25,
+      "promotable": false,
+      "protected_reason": "predominantly conclusions -- a take; R-AI5(6) protects it",
+      "adjacency_unknown": false,
+      "exemplars": [
+        "compare CUT-01 and PRESS-SLOW for me"
+      ],
+      "pareto_rank": null,
+      "pareto_cumulative": null
+    },
+    {
+      "cluster_id": "advice+edit-cost|no-subject|cost_ledger",
+      "adjacency": [
+        "advice",
+        "edit-cost"
+      ],
+      "subject_kinds": [],
+      "tools": [
+        "cost_ledger",
+        "lateness_set"
+      ],
+      "frequency": 1,
+      "verified": 0,
+      "interpretive": 4,
+      "cut": 0,
+      "verified_share": 0.0,
+      "conclusion_share": 0.25,
+      "weight": 0.0,
+      "promotable": false,
+      "protected_reason": "predominantly interpretive -- an aggregate read; no route could prove it",
+      "adjacency_unknown": false,
+      "exemplars": [
+        "can you make it cheaper"
+      ],
+      "pareto_rank": null,
+      "pareto_cumulative": null
+    },
+    {
+      "cluster_id": "briefing+schedule|no-subject|cost_ledger",
+      "adjacency": [
+        "briefing",
+        "schedule"
+      ],
+      "subject_kinds": [],
+      "tools": [
+        "cost_ledger",
+        "lateness_set",
+        "placements_in_window"
+      ],
+      "frequency": 1,
+      "verified": 0,
+      "interpretive": 4,
+      "cut": 0,
+      "verified_share": 0.0,
+      "conclusion_share": 0.25,
+      "weight": 0.0,
+      "promotable": false,
+      "protected_reason": "predominantly interpretive -- an aggregate read; no route could prove it",
+      "adjacency_unknown": false,
+      "exemplars": [
+        "is this plan front loaded or spread out"
+      ],
+      "pareto_rank": null,
+      "pareto_cumulative": null
+    },
+    {
+      "cluster_id": "briefing|no-subject|no-tools",
+      "adjacency": [
+        "briefing"
+      ],
+      "subject_kinds": [],
+      "tools": [],
+      "frequency": 1,
+      "verified": 0,
+      "interpretive": 0,
+      "cut": 0,
+      "verified_share": 0.0,
+      "conclusion_share": 0.0,
+      "weight": 0.0,
+      "promotable": false,
+      "protected_reason": "consulted no evidence -- conversational, not a question about the plan",
+      "adjacency_unknown": false,
+      "exemplars": [
+        "this is not helpful"
+      ],
+      "pareto_rank": null,
+      "pareto_cumulative": null
+    },
+    {
+      "cluster_id": "coaching|concept|no-tools",
+      "adjacency": [
+        "coaching"
+      ],
+      "subject_kinds": [
+        "concept"
+      ],
+      "tools": [],
+      "frequency": 1,
+      "verified": 0,
+      "interpretive": 0,
+      "cut": 0,
+      "verified_share": 0.0,
+      "conclusion_share": 0.0,
+      "weight": 0.0,
+      "promotable": false,
+      "protected_reason": "consulted no evidence -- conversational, not a question about the plan",
+      "adjacency_unknown": false,
+      "exemplars": [
+        "the second one"
+      ],
+      "pareto_rank": null,
+      "pareto_cumulative": null
+    },
+    {
+      "cluster_id": "downtime|machine|no-tools",
+      "adjacency": [
+        "downtime"
+      ],
+      "subject_kinds": [
+        "machine"
+      ],
+      "tools": [],
+      "frequency": 1,
+      "verified": 0,
+      "interpretive": 0,
+      "cut": 0,
+      "verified_share": 0.0,
+      "conclusion_share": 0.0,
+      "weight": 0.0,
+      "promotable": false,
+      "protected_reason": "consulted no evidence -- conversational, not a question about the plan",
+      "adjacency_unknown": false,
+      "exemplars": [
+        "how much of CUT-01s week is actually working time"
+      ],
+      "pareto_rank": null,
+      "pareto_cumulative": null
+    },
+    {
+      "cluster_id": "excluded-orders+order-attributes|order|entity_vocabulary",
+      "adjacency": [
+        "excluded-orders",
+        "order-attributes"
+      ],
+      "subject_kinds": [
+        "order"
+      ],
+      "tools": [
+        "entity_vocabulary"
+      ],
+      "frequency": 1,
+      "verified": 0,
+      "interpretive": 0,
+      "cut": 0,
+      "verified_share": 0.0,
+      "conclusion_share": 0.0,
+      "weight": 0.0,
+      "promotable": false,
+      "protected_reason": "predominantly interpretive -- an aggregate read; no route could prove it",
+      "adjacency_unknown": false,
+      "exemplars": [
+        "is ZZZ-1 in this schedule"
+      ],
+      "pareto_rank": null,
+      "pareto_cumulative": null
+    },
+    {
+      "cluster_id": "inventory+machine-schedule|no-subject|machine_occupancy",
+      "adjacency": [
+        "inventory",
+        "machine-schedule"
+      ],
+      "subject_kinds": [],
+      "tools": [
+        "entity_vocabulary",
+        "machine_occupancy"
+      ],
+      "frequency": 1,
+      "verified": 0,
+      "interpretive": 5,
+      "cut": 1,
+      "verified_share": 0.0,
+      "conclusion_share": 0.1667,
+      "weight": 0.0,
+      "promotable": false,
+      "protected_reason": "predominantly interpretive -- an aggregate read; no route could prove it",
+      "adjacency_unknown": false,
+      "exemplars": [
+        "is the work spread evenly across the machines"
+      ],
+      "pareto_rank": null,
+      "pareto_cumulative": null
+    },
+    {
+      "cluster_id": "inventory+machine-schedule|no-subject|placements_for_machine",
+      "adjacency": [
+        "inventory",
+        "machine-schedule"
+      ],
+      "subject_kinds": [],
+      "tools": [
+        "entity_vocabulary",
+        "placements_for_machine"
+      ],
+      "frequency": 1,
+      "verified": 0,
+      "interpretive": 6,
+      "cut": 0,
+      "verified_share": 0.0,
+      "conclusion_share": 0.1667,
+      "weight": 0.0,
+      "promotable": false,
+      "protected_reason": "predominantly interpretive -- an aggregate read; no route could prove it",
+      "adjacency_unknown": false,
+      "exemplars": [
+        "which orders are competing for the same machine"
+      ],
+      "pareto_rank": null,
+      "pareto_cumulative": null
+    },
+    {
+      "cluster_id": "lateness-cause+schedule|no-subject|no-tools",
+      "adjacency": [
+        "lateness-cause",
+        "schedule"
+      ],
+      "subject_kinds": [],
+      "tools": [],
+      "frequency": 1,
+      "verified": 0,
+      "interpretive": 0,
+      "cut": 0,
+      "verified_share": 0.0,
+      "conclusion_share": 0.0,
+      "weight": 0.0,
+      "promotable": false,
+      "protected_reason": "consulted no evidence -- conversational, not a question about the plan",
+      "adjacency_unknown": false,
+      "exemplars": [
+        "just give me a better schedule"
+      ],
+      "pareto_rank": null,
+      "pareto_cumulative": null
+    },
+    {
+      "cluster_id": "machine-schedule+order-schedule|order|entity_vocabulary",
+      "adjacency": [
+        "machine-schedule",
+        "order-schedule"
+      ],
+      "subject_kinds": [
+        "order"
+      ],
+      "tools": [
+        "entity_vocabulary",
+        "placements_for_machine"
+      ],
+      "frequency": 1,
+      "verified": 0,
+      "interpretive": 6,
+      "cut": 0,
+      "verified_share": 0.0,
+      "conclusion_share": 0.0,
+      "weight": 0.0,
+      "promotable": false,
+      "protected_reason": "predominantly interpretive -- an aggregate read; no route could prove it",
+      "adjacency_unknown": false,
+      "exemplars": [
+        "whats holding CUT-01"
+      ],
+      "pareto_rank": null,
+      "pareto_cumulative": null
+    },
+    {
+      "cluster_id": "machine-schedule+schedule|no-subject|placements_in_window",
+      "adjacency": [
+        "machine-schedule",
+        "schedule"
+      ],
+      "subject_kinds": [],
+      "tools": [
+        "entity_vocabulary",
+        "placements_in_window"
+      ],
+      "frequency": 1,
+      "verified": 0,
+      "interpretive": 2,
+      "cut": 0,
+      "verified_share": 0.0,
+      "conclusion_share": 0.5,
+      "weight": 0.0,
+      "promotable": false,
+      "protected_reason": "predominantly conclusions -- a take; R-AI5(6) protects it",
+      "adjacency_unknown": false,
+      "exemplars": [
+        "whats the busiest day in this schedule"
+      ],
+      "pareto_rank": null,
+      "pareto_cumulative": null
+    },
+    {
+      "cluster_id": "machine-schedule|machine|placements_for_machine",
+      "adjacency": [
+        "machine-schedule"
+      ],
+      "subject_kinds": [
+        "machine"
+      ],
+      "tools": [
+        "placements_for_machine"
+      ],
+      "frequency": 1,
+      "verified": 0,
+      "interpretive": 2,
+      "cut": 0,
+      "verified_share": 0.0,
+      "conclusion_share": 0.0,
+      "weight": 0.0,
+      "promotable": false,
+      "protected_reason": "predominantly interpretive -- an aggregate read; no route could prove it",
+      "adjacency_unknown": false,
+      "exemplars": [
+        "i was asking about PAINT-01 not CUT-01"
+      ],
+      "pareto_rank": null,
+      "pareto_cumulative": null
+    },
+    {
+      "cluster_id": "order-schedule+start-reason|order|entity_vocabulary",
+      "adjacency": [
+        "order-schedule",
+        "start-reason"
+      ],
+      "subject_kinds": [
+        "order"
+      ],
+      "tools": [
+        "entity_vocabulary",
+        "placements_for_machine"
+      ],
+      "frequency": 1,
+      "verified": 0,
+      "interpretive": 0,
+      "cut": 0,
+      "verified_share": 0.0,
+      "conclusion_share": 0.0,
+      "weight": 0.0,
+      "promotable": false,
+      "protected_reason": "predominantly interpretive -- an aggregate read; no route could prove it",
+      "adjacency_unknown": false,
+      "exemplars": [
+        "why is ORD-13 idle"
+      ],
+      "pareto_rank": null,
+      "pareto_cumulative": null
+    },
+    {
+      "cluster_id": "unanchored|no-subject|entity_vocabulary",
+      "adjacency": [],
+      "subject_kinds": [],
+      "tools": [
+        "entity_vocabulary"
+      ],
+      "frequency": 1,
+      "verified": 0,
+      "interpretive": 0,
+      "cut": 0,
+      "verified_share": 0.0,
+      "conclusion_share": 0.0,
+      "weight": 0.0,
+      "promotable": false,
+      "protected_reason": "predominantly interpretive -- an aggregate read; no route could prove it",
+      "adjacency_unknown": false,
+      "exemplars": [
+        "that's wrong, try again"
+      ],
+      "pareto_rank": null,
+      "pareto_cumulative": null
+    },
+    {
+      "cluster_id": "unanchored|order|placements_for_order",
+      "adjacency": [],
+      "subject_kinds": [
+        "order"
+      ],
+      "tools": [
+        "placements_for_order",
+        "entity_vocabulary"
+      ],
+      "frequency": 1,
+      "verified": 0,
+      "interpretive": 0,
+      "cut": 0,
+      "verified_share": 0.0,
+      "conclusion_share": 0.0,
+      "weight": 0.0,
+      "promotable": false,
+      "protected_reason": "predominantly interpretive -- an aggregate read; no route could prove it",
+      "adjacency_unknown": false,
+      "exemplars": [
+        "when does CUT-01 finish"
+      ],
+      "pareto_rank": null,
+      "pareto_cumulative": null
+    }
+  ]
+}

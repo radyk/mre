@@ -161,6 +161,40 @@ the two axes above still apply -- but they apply to the right thing.
   hardening pass, not a conversation note -- report it as such.
 
 ------------------------------------------------------------------------------
+GRADING A PROMOTED ROUTE (Session 4A.5c -- R-AI5(7))
+------------------------------------------------------------------------------
+
+A PROMOTED route is a contracted route that used to be synthesis residue. It is
+graded as TESTIMONY like any other route -- and it carries one extra question no
+other route does, because it replaced something.
+
+  DID THE PROMOTION KEEP THE HEDGES? The shape was answerable by the second tier
+  only because the tier LABELED what it could not prove. A promoted route that
+  states as testimony what synthesis could only read has laundered a take into
+  the proven register, and that is a DEFECT of the promotion, not a conversation
+  note. For `lateness-cause` specifically, two hedges were made conditions of
+  promotion in its dossier: the PREMISE CHECK ("why are so many late" asked of a
+  plan with one late order is answered by saying so first) and the NAMED
+  UNATTRIBUTED set (an order whose hold the solved occupancy does not show is
+  said to be unattributable, never given an invented mechanism). Either one
+  missing is a defect.
+
+  IS IT BETTER THAN WHAT IT REPLACED? A promotion should buy CITATIONS and
+  SPEED -- the same facts, proven, in ~1.3s instead of ~10s. If the contracted
+  answer says less than the synthesis answer did and proves no more, the shape
+  was not ready and the honest move is demotion, not a patch.
+
+  THE SHADOW IS NOT A GRADE. During probation the sweep answers the shape both
+  ways and diffs the FACTS (`shadow:` on the transcript line). A clean diff means
+  the two readings of the same evidence agree; it says nothing about whether the
+  answer is good. A DIVERGED diff is not a judgment call at all -- R-AI5(7) makes
+  it automatic demotion, and it is reported as a defect.
+
+  WHAT A DEMOTION IS NOT. A demoted shape returning to synthesis is the system
+  working, not a failure to report as regression. The failure would be a
+  divergence that fired and was argued with.
+
+------------------------------------------------------------------------------
 THE MECHANICAL PRE-TRIAGE (the sidecar -- what the runner emits, machine-checked)
 ------------------------------------------------------------------------------
 
@@ -188,6 +222,14 @@ grades conversation. The six signals:
                       a verdict.
   target-unloadable-- the pinned run did not load; NO questions were fired
                       (the instrument refuses to emit garbage)
+  shadow-divergence-- a PROMOTED route on probation contradicted its synthesis
+                      shadow on a shared quantity (Session 4A.5c). The LOUD one:
+                      R-AI5(7) makes demotion automatic on divergence, so this
+                      is not a note to triage, it is the trigger. Read the diff,
+                      then flip the flag in PROMOTIONS.
+  shadow-unchecked -- the probation shadow could not run (no synthesizer). The
+                      sweep does NOT count toward the probation window. A window
+                      nobody watched is not a window served.
   failed-claim-rendered
                    -- a claim the verifier CUT reached the answer surface
                       (Session 4A.5b). By construction it cannot; this is the
@@ -295,6 +337,76 @@ OPEN (Session 4A.5b, from its own sweep):
      answer is honest but colder, and it offers no door. Should the unanswerable
      synthesis floor carry the nearest-capabilities offers, or does bolting them
      on blend two authored bodies?
+     Verdict: OPEN.
+
+RESOLVED (Session 4A.5c, ruled by the working thread and implemented):
+
+  6. SYNTHESIS ON A FRUSTRATION TURN (C5) -- RULED: KEEP THE DOORS.
+     Verdict: the unanswerable synthesis floor CARRIES the nearest-capabilities
+     offers. Honest and warm are not in tension, and the offers are the same
+     authored surface part 1's bridge uses rather than a second authored body.
+     Implemented 4A.5c CU3(b); absence-tested where no doors exist.
+     ROUND FIVE GRADES: on any unanswerable synthesis turn, the answer must say
+     it could not ground an answer AND offer at least one concrete follow-up
+     chosen by what the planner named. A floor with no doors is now a
+     CONVERSATION FAILURE (C5), not a judgment call. A floor that offers doors
+     unrelated to the subject the planner named is the same failure wearing
+     politeness.
+
+OPEN (Session 4A.5c, for round five -- the CU3 items' expected behaviours are
+stated so round five grades them rather than re-discovering them):
+
+  7. THE FIRST BEAT: IS ~10s WITH A WAITING LINE ACCEPTABLE? (C1/C4)
+     Route: synthesis (any second-tier answer).
+     Disputed property: the ask now two-phases. The moment the parse says the
+     second tier will answer, the panel shows an authored non-answer -- "Reading
+     the evidence -- no contracted answer covers that one, so I'm working it out
+     from the records (up to 12 reads)" -- replaced by the answer when it lands.
+     EXPECTED BEHAVIOUR round five grades: (a) the line appears BEFORE the wait,
+     not with the answer; (b) it never states a fact about the schedule, a
+     progress percentage, or a promise about what will be found; (c) it does not
+     appear at all on a contracted answer; (d) it is gone the instant beat two
+     lands, including on an error.
+     The founder question: does the line make ten seconds feel attended-to, or
+     does naming the wait make it feel longer? And is "up to 12 reads" useful
+     honesty or machine-talk on the answer surface?
+     NAMED RESIDUE: the count is a BUDGET, not a live counter. A real "(N tools
+     consulted)" ticking upward needs either streaming or background execution of
+     the ask, both disproportionate here; the actual count lands on the answer's
+     rendered-by line. If the founder wants the live count, that is the work.
+     Verdict: OPEN.
+
+  8. THE ADJACENT-MATCH GUARD: IS A REASONED ANSWER BETTER THAN A NEAR ONE? (C1)
+     Route: synthesis (was: late-orders / downtime).
+     Questions: "how many orders will be late next month"; "how much of CUT-01s
+     week is actually working time".
+     Disputed property: both used to reach the nearest contracted route and be
+     answered, correctly, about something slightly different -- with citations,
+     which made the near-miss harder to notice. The parse now reports the
+     qualifier the route cannot honour and the dispatch diverts to the second
+     tier, whose answer names the qualifier in its rendered-by line.
+     EXPECTED BEHAVIOUR round five grades: (a) the answer engages the QUALIFIER
+     ("next month", "actually working time") or says honestly that the evidence
+     does not carry it; (b) the rendered-by line names the qualifier; (c) a
+     qualifier the route DOES honour ("what's running on CUT-01 tomorrow") must
+     NOT divert -- a guard that fires too often is a second way to lose a proven
+     answer, and that failure would look like slowness plus hedging.
+     The founder question: a planner asked a question the plan cannot answer.
+     Is a labeled reading of the adjacent evidence the right response, or would
+     they rather have the near answer with the mismatch stated plainly?
+     Verdict: OPEN.
+
+  9. THE PROMOTED ROUTE'S SECOND TURN (C1/C2).
+     Route: prove-it, following `lateness-cause`.
+     Disputed property: before the promotion, "why so many late orders" was a
+     synthesis answer and "how do you know that" opened the record behind one of
+     its claims. Now the first answer is contracted and cites its records
+     inline, so the prove-it turn has no claim of OURS open to ground and gives
+     the honest no-target copy.
+     EXPECTED BEHAVIOUR round five grades: the no-target copy must point at the
+     citations already on the previous answer, not read as a shrug.
+     The founder question: is that a downgrade the planner feels? A promotion
+     buys citations on turn one and spends the grounding pass on turn two.
      Verdict: OPEN.
 
 (Resolved entries accrete below as the founder rules; newest last.)

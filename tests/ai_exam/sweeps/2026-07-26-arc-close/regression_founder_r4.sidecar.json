@@ -1,0 +1,72 @@
+{
+  "target": "out-dir:gb_pinned",
+  "snapshot": "snap-exam",
+  "started_at": "2026-07-26T14:26:20Z",
+  "llm_mode": "live",
+  "questions": 15,
+  "llm_calls": 19,
+  "parser_stats": {
+    "calls": 49,
+    "parses": 48,
+    "retries": 1,
+    "malformed": 2,
+    "clarifies": 3,
+    "unavailable": 0,
+    "median_latency_ms": 1202.3083999993105,
+    "malformed_samples": [
+      "```json\n{\n  \"intent\": \"verification\",\n  \"subjects\": [],\n  \"polarity\": null,\n  \"followup_of\": \"none\",\n  \"confidence\": 0.92,\n  \"nearest\": [],\n  \"dropped_qualifier\": \"\",\n  \"clarify\": {\n    \"reason\": \"verification\",\n    \"detail\": \"the previous answer about which orders are late\"\n  }\n}\n```",
+      "```json\n{\n  \"intent\": \"verification\",\n  \"subjects\": [],\n  \"polarity\": null,\n  \"followup_of\": \"none\",\n  \"confidence\": 0.92,\n  \"nearest\": [\"late-orders\"],\n  \"dropped_qualifier\": \"\",\n  \"clarify\": {\n    \"reason\": \"verification\",\n    \"detail\": \"asking whether the previous answer about which orders are late was correct\"\n  }\n}\n```"
+    ]
+  },
+  "synth_stats": {
+    "syntheses": 1,
+    "calls": 2,
+    "tool_calls": 1,
+    "malformed": 0,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 0,
+    "median_latency_ms": 5507.787100003043,
+    "p90_latency_ms": 5507.787100003043
+  },
+  "synthesis": {
+    "answers": 0,
+    "claims": 0,
+    "verified": 0,
+    "interpretive": 0,
+    "failed_and_cut": 0,
+    "ungrounded_load_bearing": 0,
+    "unanswerable": 0,
+    "budget_exhausted": 0,
+    "tool_calls": 0,
+    "tool_histogram": {},
+    "calls_per_answer": {}
+  },
+  "shadow": {
+    "shadowed": 0,
+    "clean": 0,
+    "diverged": 0,
+    "unchecked": 0,
+    "provenance_strengthened": 0,
+    "by_intent": {}
+  },
+  "latency": {
+    "route": {
+      "n": 15,
+      "median_ms": 1389.2,
+      "p90_ms": 2960.2
+    },
+    "synthesis": {
+      "n": 0,
+      "median_ms": null,
+      "p90_ms": null
+    }
+  },
+  "graded_expectations": {
+    "graded": 15,
+    "met": 15
+  },
+  "door_check": "live",
+  "finding_counts": {},
+  "findings": []
+}
