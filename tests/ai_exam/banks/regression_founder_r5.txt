@@ -50,13 +50,18 @@ RESET
 # READ THE CARD BACK rather than re-derive it. Nothing proved the ASK PANEL
 # voices the MOVE part when the planner asks specifically about the move.
 #
-# The runner's synthesized card carries total -11,975.83 = reopt -11,600.00 +
-# move -375.83.
+# The runner stands up the SHIPPED card, figure for figure (Session 4B.6b item
+# 3b): total -11,953.08 = reopt -11,975.83 + move +22.75. Note the SIGNS. The
+# move COSTS $22.75; the window re-optimization SAVES $11,975.83; the total is a
+# saving that the move made slightly smaller. The previously synthesized card
+# (-11,600.00 + -375.83) had both parts saving, and could not express the case
+# the split exists for.
 #
-# SUBSTANTIVE EXPECTATION: the answer voices the MOVE figure ($375.83) as what
-# the move cost, and names the window re-optimization ($11,600.00) as the part
-# the planner did not cause. If it answers the TOTAL ($11,975.83) as the cost of
-# the move, the exact defect 4B.5 CU1 fixed on the card is alive in the
+# SUBSTANTIVE EXPECTATION: the answer voices the MOVE figure (+$22.75) as what
+# the move cost — as a COST, not a saving — and names the window
+# re-optimization (-$11,975.83) as the part the planner did not cause. If it
+# answers the TOTAL (-$11,953.08) as the cost of the move, or reports the move
+# as a saving, the exact defect 4B.5 CU1 fixed on the card is alive in the
 # conversational channel — the two surfaces would be stating different things
 # about one move, which is what CU2 exists to prevent.
 CARD order=ORD-000023 machine=MILL-01

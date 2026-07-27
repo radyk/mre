@@ -1,6 +1,40 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.49 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.50 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.50:** **Session 4B.6b — errand: four answers** 2026-07-27 (docs/04 session amendment).
+A FINDINGS session; its product is knowledge. One behaviour changed, everything else was
+measured and left alone. **Item 1 — the baseline delta is a MEASUREMENT, not an identity, and
+neither reading in the brief was right.** `baseline_total_cost` includes the tardiness term
+(same ledger code as the incumbent, `extractor.py:390`) and it is NONZERO on an unrelated
+instance (200 orders: baseline tardiness 361.67, `baseline − (incumbent − tardiness)` =
+**+405.42**), so the MECHANICAL reading is falsified empirically and by code-read. But the
+BENIGN reading's premise — "the incumbent is simply poor" — is false too: the budget probe
+shows the gap does not close at 2×/4×/8× the deterministic budget (it is DEARER at 8×). The
+actual cause is an **OBJECTIVE MISMATCH**: the rolling window solve minimizes
+`cost + earliness_coeff · Σ starts` (the plant's DECLARED `earliness_value` = 0.05 $/min,
+R-SC3) while the sandbox baseline's `SolverBuilder` minimizes cost ALONE, and the extractor's
+ledger carries **no earliness line at all**. Forcing `earliness_value = 0` drives
+`reopt_delta` to **exactly 0.00** on the shipped fixture. **4B.5's headline fix does not
+reopen** — the MOVE half is apples-to-apples (both the pinned re-solve and the baseline run
+under the earliness-free objective); it is the LABEL on the other half that is wrong (§5a.12).
+**Item 2 — canonical ids SURVIVE a new submission.** Under `identity_v1` the derivation is
+closed-form `Demand = f(order_id)`, `Operation = f(order_id, route_id, product_id, sequence)`
+with no submission id, run id, reference date, timestamp or row ordinal anywhere. Three
+consecutive-day submissions with real data deltas accrued **78 cross-submission realizations**;
+all 33 demands predicted by more than one run share op ids. Splicing seam 3 is NOT blocked on
+an IDS-identity key. The open seam is RETIREMENT, not identity (§5a.13). **Item 3 — the one
+fix.** `tools/build_rolling_exam_run.py` now builds a coarse zone for the harness fixture and
+requests `coarse` (and an explicit `reference_date`) on the registered solve; the exam world
+verified carrying a contract-1.9 `coarse_zone` with all 14 tray items coarsely placed. The
+exam runner's synthesized delta card is replaced by the SHIPPED card, figure for figure
+(§5a.10). **Item 4 — the data-root sweep is a CORRECTNESS debt, not a performance one**: two
+plants with overlapping order numbering in one data root produced **20 cross-plant
+realizations** (§5a.8). **Item 5** — the 4B.6a count discrepancies reconciled: `test_coarse_horizon.py`
+added **10** tests, not 11 (the suite's 1614 -> 1624 was exact and the close-out over-counted
+by one), and the cockpit ladder collects **227**, not 225 (the one red in a full run is the
+standing 4A.3 due-marker flake, re-verified green in isolation). **Nothing was removed and
+nothing is silently skipped** on either side.
 
 **v2.49:** **Session 4B.6a — consolidation: the history is wired, the exclusions are voiced,
 the goldens move once** 2026-07-27 (docs/04 session amendment; docs/06 v0.6a). **No new
@@ -1253,24 +1287,118 @@ where the reasoning lives.
    neither a parser nor a synthesizer, so every question lands on the honest
    could-not-interpret floor and the "grade" would measure the absence of a key.
    Not skipped, not marked delivered: unrun.
-8. **`record_roll_history` sweeps the WHOLE data root on every rolling solve**
-   (4B.6a CU1) to find prior rolls' predictions. O(runs) per solve, fine at demo
-   size; needs an index or a per-submission scope before a pilot data root grows.
+8. **`record_roll_history`'s data-root sweep is a CORRECTNESS debt, not a
+   performance one** (re-filed 4B.6b item 4; was filed at 4B.6a CU1 as O(runs)).
+   `sweep_data_root` is `root.rglob("coarse_predictions.jsonl")` with exactly one
+   filter — `p.run_id != run_id` (`coarse_predictions.py:169-178`, `:360`). It is
+   scoped by **nothing**: not submission, not plant, not facility. A realization
+   then matches on **`op_id` alone** (`placed.get(pred.op_id)`, `:230`); nothing
+   else is compared before the row is written — not the demand, not the plant,
+   not the bucket grid. Because `Operation = f(order_id, route_id, product_id,
+   sequence)` carries no plant term (§5a.13's derivation), two sites of one
+   company on one ERP catalogue collide by construction.
+   **MEASURED:** two plants, same scenario catalogue, different seed (different
+   order book), one data root — plant P solved first (5-day window, 174
+   predictions), plant Q second (45-day window, 96 ops placed). Q's roll wrote
+   **20 realizations against P's predictions**. Demand-id overlap 40/40,
+   operation-id overlap 10, resource-id overlap 15/15. The rows are nonsense on
+   their face (`predicted_bucket 1 → realized_bucket −1`, a "realized resource"
+   from the other plant) and they land in the conformance report's
+   `realized_fraction`, slip census and gravity-disagreement count.
+   Harmless in a single-tenant demo root; wrong the first day a pilot root holds
+   two plants. **NOT FIXED HERE** — the fix is a scope key on the store plus a
+   decision about what plant identity IS in the canonical model (the manifest's
+   `facility_scope` is the only candidate and nothing downstream reads it).
+   The performance reading still stands on top of it: every prediction ever
+   written, including the permanently-orphaned ones in §5a.13, is re-swept on
+   every subsequent rolling solve forever.
 9. **The regenerated cockpit fixture's window incumbent is ~7.9% dearer** than
    the one it replaced (total 26,507.78 -> 28,597.23), because the window solve
    returns FEASIBLE and its cost is an INCUMBENT whose identity moved with the
    2026-07-26 variable-ordering fixes. Fully accounted in the docs/04 4B.6a
    amendment and reproducible across PYTHONHASHSEED 0/1/2 — recorded here because
    it changes what the demo board shows, not because it is unexplained.
-10. **`tools/build_rolling_exam_run.py` does not pass the new `coarse` flag**, so
-    the pinned rolling exam world has no coarse zone and its `coarse-fit` /
-    `bucket-load` routes answer "I haven't run the coarse look-ahead" — honest,
-    and a test of nothing. One field on the solve request when the ask-path sweep
-    next runs.
+10. **DISCHARGED (4B.6b item 3).** `tools/build_rolling_exam_run.py` builds a
+    coarse zone for the harness fixture (failing the build on a wall-truncated
+    coarse run, and on a document that comes back without a zone) and sends
+    `"coarse": true` plus an explicit `"reference_date"` on the registered solve.
+    Verified: the exam world's `document.json` carries a contract-1.9
+    `coarse_zone` with all 14 tray items coarsely placed.
+    **RESIDUE, named:** the pinned submission under `_ai_exam_scratch/` predates
+    the generator's `refinements.coarse_horizon` block, so the exam world runs at
+    **rho 1.0, provenance `defaulted`** — 10 density cells, 0 binding, 0
+    tardiness buckets. That is correct behaviour (an undeclared plant is never
+    given an invented margin) and it exercises the §5.9 "figures assume full
+    utilization" voice, but it grades no BINDING answer. Measured and left: a
+    fresh generate at the same seed differs from the pinned submission in exactly
+    two bytes-worth of things — the manifest's `extract_timestamp` and the
+    cost model's `coarse_horizon` (declared 0.85) — every table byte-identical.
+    Since `coarse_horizon` never enters the fine solve (clause 4, import-direction
+    test), `--fresh` would give the exam world its declared derate with the fine
+    world provably unchanged. Not done here: the world the r5 bank's expectations
+    were calibrated against is not this session's to move.
 11. **The hot-band fixture is a declared-derate contrivance.**
     `tests/cockpit/fixtures/rolling_coarse_hot/` binds because it DECLARES rho
     0.10, not because the plant is loaded. It buys the density band's
     binding-state screenshot coverage; it does not retire item 5.
+    *(4B.6b note: it is also degenerate for any FINE-solve comparison — it is the
+    same 40-order plant as `rolling/` with only a different declared coarse
+    coefficient, and coarse never constrains fine, so its window solve and its
+    sandbox baseline are `rolling/`'s to the cent.)*
+12. **`reopt_delta_abs` measures an OBJECTIVE MISMATCH, not window
+    re-optimization** (4B.6b item 1; the label is wrong, the arithmetic is not).
+    The rolling window solve minimizes `sum(objective_terms) +
+    earliness_coeff_scaled · Σ(free op start vars)` (`rolling_horizon.py:150-151`)
+    where the coefficient is the plant's DECLARED `refinements.earliness_value`
+    (R-SC3; pilot_scale declares 0.05 $/min-of-start). The sandbox baseline is
+    built by `SolverBuilder.build`, whose own objective is `sum(objective_terms)`
+    alone — there is no earliness term. And the extractor's cost ledger has **no
+    earliness line at all**: `earliness_value` is read (`extractor.py:101`) only
+    to classify a driver (`:637-639`). So the incumbent spends ledger dollars
+    buying early starts at a declared price, the ledger never shows what it
+    bought, and a baseline that is not charged for early starts beats it on the
+    ledger essentially always.
+    **PROVEN, not inferred:** forcing `earliness_value = 0` on the shipped fixture
+    plant collapses `reopt_delta` from −11,975.83 to **exactly 0.00** (incumbent
+    16,481.95 = baseline 16,481.95, incumbent tardiness 0.00). The identity the
+    fixture displays — `baseline == total − tardiness` to the cent — holds on the
+    40- and 120-order plants and BREAKS at 200 orders (+405.42, baseline
+    tardiness 361.67), so it is a property of light-loaded windows where zero
+    tardiness is reachable, not an arithmetic identity.
+    **WHAT DOES NOT REOPEN:** the MOVE half. Both the pinned re-solve and the
+    baseline run under the builder's earliness-free objective, so
+    `move_delta_abs = pinned − baseline` is apples-to-apples, and 4B.5 CU1's
+    ruling (judge the planner's move against the baseline, never the stale
+    incumbent) stands. **NOT FIXED HERE** — changing what the card measures is a
+    working-thread decision, and there are at least three shapes (price earliness
+    into the ledger as its own line; build the baseline under the SAME objective
+    the window solve used; or relabel the half honestly). Whichever lands, the
+    two-solve BASELINE has never been extended to forced-alternatives pricing
+    (4B.5 debt) and both should move together.
+13. **A completed order's coarse predictions are never RETIRED** (4B.6b item 2).
+    Predictions are judged only when a later roll PLACES the predicted op. An
+    order that leaves the book — completed and dropped from tomorrow's ERP
+    extract — can never be placed again, so its predictions stay
+    `prior_predictions_pending` forever, are re-swept on every subsequent solve
+    (§5a.8), and are counted as neither hit nor miss. **MEASURED:** across three
+    consecutive-day submissions, ORD-000001 minted 4 predictions on day 1 and got
+    0 realizations; ORD-000002 minted 8 and got 0; day-1's 164 predictions ended
+    116 permanently pending. The conformance report's `realized_fraction` is
+    computed over REALIZATIONS only, so an orphan does not bias the ratio — but
+    it is silently absent from it, which is exactly what clause (7) ("we publish
+    our own error bars") should not tolerate. *Fix shape:* a terminal disposition
+    (`unjudgeable_absent`) written when a sweep sees a prediction whose demand is
+    no longer in the submitting plant's book — which needs §5a.8's scope key
+    first, or it would retire another plant's predictions.
+14. **The realization INTAKE PATH label does not discriminate at short windows**
+    (4B.6b item 2, observed). `gravity_admitted_demand_ids` is
+    `admitted(gravity) − admitted(no gravity)` (`rolling_horizon.py:752-769`),
+    and on a 7-day window almost everything admitted is admitted by gravity: all
+    **78 of 78** realizations across the three-submission run came back
+    `gravity_admission`, none `natural_roll`. The definition is right and the
+    label is honest; it just carries no signal at that window length, so clause
+    (7)'s "two mechanisms disagreeing" count reads ~100% and means nothing.
+    Anything built on that count must state the window length beside it.
 
 ## 6. Open rulings queue
 

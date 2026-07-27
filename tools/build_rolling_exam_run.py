@@ -65,6 +65,14 @@ WINDOW_DAYS = 14
 FROZEN_DAYS = 3
 DET_TIME = 2.0            # the window-0 solve's DETERMINISTIC budget (what binds)
 
+# THE COARSE ZONE (Session 4B.6b item 3). Before this, the pinned exam world
+# carried no coarse zone, so every coarse route in the r5 bank answered "I
+# haven't run the coarse look-ahead" — honest, and a test of nothing. The first
+# graded run against a zone-less world would have burned the run. The zone is
+# built here for the harness fixture AND requested on the registered solve, so
+# both faces of the pinned world carry it.
+COARSE_SAFETY_CEILING_S = 300.0   # a CEILING, never the budget
+
 # The wall-clock limit is a SAFETY CEILING, never the budget (Errand session,
 # CU2b). CP-SAT always gets a max_time_in_seconds as well as a
 # max_deterministic_time; at the old 10.0s the WALL clock stopped the solve every
@@ -246,9 +254,19 @@ def register(base: str, submission: Path, poll_timeout_s: float) -> int:
         # fixture above but not a bit-identical solve (a larger budget, its own
         # run dir). That is deliberate: the cockpit run is the API's, end to end.
         "time_limit": WALL_CEILING_S,
+        # THE COARSE ZONE is opt-in per solve (4B.6a). Without it the registered
+        # board carries no contract-1.9 blocks and every coarse route answers
+        # "I haven't run the coarse look-ahead" — the exam world must carry the
+        # same zone the harness fixture above does.
+        "coarse": True,
+        # The clock, pinned. Without an explicit reference_date the API reads the
+        # manifest's — which IS 2026-01-05 for this generated world, so this
+        # changes nothing today and stops the world from drifting if the
+        # generator's default ever moves.
+        "reference_date": REF.date().isoformat(),
     }
     print(f"rolling-exam: solving sliced (window={WINDOW_DAYS}d "
-          f"frozen={FROZEN_DAYS}d, deterministic) ...")
+          f"frozen={FROZEN_DAYS}d, deterministic, coarse) ...")
     run = _api(base, f"/submissions/{sub_id}/solve", solve_req, timeout=60.0)["data"]
     run_id = run["run_id"]
 
@@ -304,6 +322,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="seconds to wait for the async solve (default 600)")
     args = ap.parse_args(argv)
 
+    from mre.modules.coarse_horizon import build_coarse_zone
     from mre.modules.evidence_index import EvidenceIndex
     from mre.modules.schedule_assembler import assemble_rolling_document
 
@@ -319,11 +338,24 @@ def main(argv: list[str] | None = None) -> int:
           f"det budget={DET_TIME}s) ...")
     plant, view = solve_window0(submission, tmp, persist=True)
 
+    # THE COARSE ZONE. rho comes from the submission's DECLARED coefficient
+    # (docs/06 §5.9) — never an invented margin — and a wall-truncated coarse run
+    # is a lottery wearing a determinism label, so it fails the build.
+    print("rolling-exam: building the coarse zone (declared coefficients) ...")
+    zone = build_coarse_zone(plant, view, deterministic=True, seed=SEED,
+                             det_time=DET_TIME,
+                             safety_ceiling_s=COARSE_SAFETY_CEILING_S)
+    if zone.proof.wall_truncated or zone.planning.wall_truncated:
+        print("rolling-exam: !! a coarse run hit the WALL ceiling - the zone is "
+              "not reproducible. Raise COARSE_SAFETY_CEILING_S.", file=sys.stderr)
+        return 1
+
     idmap = plant.store.load_snapshot(plant.snapshot_id).read_identity_map()
     doc = assemble_rolling_document(plant=plant, view=view,
                                     schedule_id="sched-rolling-exam",
                                     run_id="run-rolling-exam",
-                                    identity_map=idmap).model_dump(mode="json")
+                                    identity_map=idmap,
+                                    coarse_zone=zone).model_dump(mode="json")
 
     OUT.mkdir(parents=True, exist_ok=True)
     # Copy the persisted run beside the document so the exam target is one
@@ -360,6 +392,18 @@ def main(argv: list[str] | None = None) -> int:
               "would test nothing. Shorten the window and rebuild.",
               file=sys.stderr)
         return 1
+
+    cz = r.get("coarse_zone")
+    if not cz:
+        print("rolling-exam: !! NO COARSE ZONE in the assembled document - every "
+              "coarse question in the bank would be answered 'I haven't run the "
+              "coarse look-ahead', which grades nothing.", file=sys.stderr)
+        return 1
+    print(f"rolling-exam: coarse zone rho={cz['capacity_derate']:g} "
+          f"({cz['capacity_derate_provenance']}) "
+          f"cells={len(cz['density'])} binding={len(cz['binding_cells'])} "
+          f"unmodelable={cz['unmodelable_count']} "
+          f"tardiness_buckets={cz['tardiness_buckets_total']}")
 
     # §DETERMINISM — prove the fixture is reproducible, every build.
     print("rolling-exam: verifying determinism (a second spine + window-0 solve)...")

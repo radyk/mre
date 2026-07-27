@@ -155,12 +155,17 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.6a — consolidation: the history is wired, the exclusions are voiced, the
-goldens move once**, 2026-07-27 (docs/07 v2.49; docs/06 v0.6a; docs/04 amendment same
-date). No new capability: it wired the coarse prediction store, voiced the coarse
-model's uncounted population and its absent derate, pinned the binding behaviour at
-200 orders, and regenerated the rolling cockpit fixture with every moved figure
-accounted for.
+**Session 4B.6b — errand: four answers**, 2026-07-27 (docs/07 v2.50; docs/04 amendment
+same date). A FINDINGS session: three investigations reported and stopped, one thing
+fixed (`build_rolling_exam_run.py` now runs a coarse zone and requests `coarse`; the
+exam runner feeds the SHIPPED delta card, not a synthesized one). Its four answers:
+the baseline delta is a MEASUREMENT whose reopt half is **labelled wrong** (§5a.12,
+below); canonical ids **survive a new submission** so splicing seam 3 is unblocked;
+the prediction store's data-root sweep is a **CORRECTNESS** debt, not a perf one; the
+4B.6a counts reconcile with nothing removed or skipped. Before it: **Session 4B.6a —
+consolidation**, which wired the coarse prediction store, voiced the coarse model's
+uncounted population and its absent derate, pinned the binding behaviour at 200
+orders, and regenerated the rolling cockpit fixture.
 
 **THE COARSE ZONE (R-SC2 amendment, 4B.6).** Beyond-horizon demand is coarsely
 PLACED, not merely listed (`src/mre/modules/coarse_horizon.py`; contract **1.9**
@@ -319,13 +324,27 @@ committed with its doc update.
   retrieval must never read prose); machine-idle eligibility naming no specific ops
   on the monolithic path; per-order PRODUCTION-dollar attribution (a ledger change).
   (Aggregate-cause coaching is RETIRED — promoted to `lateness-cause`, 4A.5c.)
-- 4B.6a debts (docs/07 §5a.7-11): **`regression_founder_r5` is UNRUN AFTER TWO
-  SESSIONS** — blocked on `ANTHROPIC_API_KEY`, nothing else, and its 27 expectations
-  have never been graded; `record_roll_history` sweeps the WHOLE data root per solve
-  (needs an index before pilot volume); the regenerated fixture's window incumbent is
+- 4B.6b findings (docs/07 §5a.8, .10, .12-14 — REPORTED, deliberately NOT fixed):
+  **`reopt_delta_abs` is LABELLED WRONG.** It is a real measurement, but of an
+  OBJECTIVE MISMATCH: the window solve minimizes `cost + earliness_coeff·Σstarts`
+  (the plant's DECLARED `earliness_value`, R-SC3) while the sandbox baseline's
+  `SolverBuilder` minimizes cost alone, and the extractor's ledger has NO earliness
+  line — forcing `earliness_value=0` drives the delta to exactly 0.00. **4B.5 CU1
+  does NOT reopen**: the MOVE half is apples-to-apples. Changing what the card
+  measures is a working-thread call. Also: the prediction store's data-root sweep is
+  scoped by NOTHING and matches on `op_id` alone — two plants sharing order numbering
+  in one root produced **20 cross-plant realizations** (a CORRECTNESS debt now, plus
+  the perf one); a COMPLETED order's predictions are never retired (orphaned,
+  re-swept forever); the intake-path label reads ~100% `gravity_admission` at short
+  windows and carries no signal; the pinned exam world's coarse zone runs at
+  DEFAULTED rho 1.0 because its submission predates the generator's declaration
+  (`--fresh` would fix it and is provably free — measured, not done).
+- 4B.6a debts (docs/07 §5a.7, .9, .11): **`regression_founder_r5` is UNRUN AFTER
+  THREE SESSIONS** — blocked on `ANTHROPIC_API_KEY`, nothing else, and its 27
+  expectations have never been graded; the regenerated fixture's window incumbent is
   ~7.9% dearer than its predecessor (accounted, reproducible, but it changes the demo
-  board); `build_rolling_exam_run.py` does not pass `coarse`, so the pinned exam world
-  has no coarse zone; `rolling_coarse_hot/` binds by DECLARED derate 0.10, a
+  board — and 4B.6b explains WHY the ledger wobbles with budget: it is not what the
+  window solve minimizes); `rolling_coarse_hot/` binds by DECLARED derate 0.10, a
   contrivance for screenshot coverage, not a discharge of the demo-density limit.
 - 4B.5 debts: the two-solve BASELINE is not extended to FORCED-ALTERNATIVES pricing
   (same economics, separate audit); the causal vacuity tripwire counts a quantity

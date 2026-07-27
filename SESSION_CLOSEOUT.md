@@ -1,490 +1,486 @@
-SESSION 4B.6a CLOSE-OUT -- CONSOLIDATION
-Wire the history, voice the exclusions, move the goldens once
+SESSION 4B.6b CLOSE-OUT -- ERRAND: FOUR ANSWERS
+A findings session. Its product is knowledge, not capability.
 2026-07-27
 
-Repo: C:\dev\mre, branch master. docs/07 v2.49; docs/06 v0.6a; docs/04 one
-amendment same date; CLAUDE.md position, quick reference and carry-forwards
-updated.
+Repo: C:\dev\mre, branch master. docs/07 v2.50; docs/04 one amendment same date;
+CLAUDE.md position and carry-forwards updated. No docs/06 change (no gate rule
+moved; the registry is still 36 rules).
 
 All solver work ran deterministic: PYTHONHASHSEED=0, one worker, seed 42, with
 wall ceilings kept generous so the DETERMINISTIC budget is what binds.
 
-This session shipped NO new capability. Its product is that three carried debts
-stopped compounding and one measurement landed.
+ONE thing changed behaviour (item 3). Items 1, 2 and 4 report and stop. Nothing
+tempting was fixed; the tempting fixes are named at the bottom.
 
 
 ======================================================================
-CU1 -- WIRE THE PREDICTION STORE
+ITEM 1 -- IS THE BASELINE DELTA A MEASUREMENT OR AN IDENTITY?
 ======================================================================
 
-CLAIMED: a rolling solve that runs a coarse zone mints predictions and judges
-earlier rolls' predictions against this window; three constraints tested;
-accrual proven over consecutive rolls with the record count stated.
-
-PROVEN. tests/test_coarse_history_wiring.py -- 7 slow tests, green.
-
-What was built:
-  * coarse_predictions.record_roll_history() -- the ONE entry point the rolling
-    worker calls, strictly AFTER the document is assembled, persisted and
-    registered. It never raises. (The orchestration lives in the module, not in
-    app.py, so the API surface stays thin.)
-  * app.py _execute_rolling_solve builds the zone when asked, passes it to the
-    assembler, then records history as a side-channel.
-  * Two new SolveRequest fields, named rather than smuggled:
-      coarse          -- the coarse zone was module-level only; now opt-in per
-                         solve, so a rolling run can publish the 1.9 blocks.
-      reference_date  -- before this, EVERY solve of a submission used the
-                         manifest's date, so two solves rendered the SAME window
-                         and the plant never actually rolled. Cross-roll history
-                         cannot accrue against a clock that does not move.
-  * CoarseRealization gained run_label + key(). With rho declared below 1.0 the
-    proof and planning runs BOTH predict the same op; without the label their
-    two realizations are indistinguishable rows and the dedup collapses them.
-
-(a) DOCUMENT BYTE-IDENTICAL, store on and off -- PROVEN.
-    Two full worker runs of the same submission at the same reference origin,
-    one with record_roll_history replaced by a no-op. Exactly TWO fields are
-    normalized before the comparison: run_id and schedule_id, the two the
-    registry mints per run and cannot repeat. Nothing else. The test also
-    asserts the two data roots really did differ in what was written, so it
-    cannot pass by both sides writing nothing.
-
-(b) WRITE FAILURE LOSES NO SCHEDULE AND IS NOT SWALLOWED -- PROVEN.
-    OSError injected into record_predictions. The run stays SUCCEEDED; the
-    schedule is registered and readable with its coarse zone and its assignments
-    intact; the failure is on run.result.coarse_history.error and a WARNING is
-    logged. Silent failure here would be worse than no store at all -- it
-    manufactures a false belief that history is accruing.
-
-(c) BOTH INTAKE PATHS, END TO END THROUGH THE WORKER -- PROVEN.
-    Not the unit-level substitute. The gravity-admitted set is read from
-    rolling_horizon.gravity_admitted_demand_ids -- a FACT from the admission
-    mechanism, never inferred from a gap's sign.
-
-IT ACCRUES -- RECORD COUNTS STATED.
-pilot_scale 40 orders, window 7 / frozen 2, ONE data root, three rolls:
-
-    roll 0 (2026-01-05)   164 predictions written     0 judged
-    roll 1 (2026-01-12)    64 predictions written   100 judged
-                             -- 62 natural roll, 38 GRAVITY ADMISSION
-    roll 2 (2026-01-19)     0 predictions written    80 judged (128 pending)
-
-    store after three rolls: 228 predictions, 180 realizations,
-    ZERO duplicate realization keys (a prediction is judged exactly once,
-    however many rolls sweep past it).
-
-
-======================================================================
-CU2 -- VOICE WHAT WAS NOT COUNTED
-======================================================================
-
-CLAIMED: every capacity answer that states load or utilization names the
-uncounted population, both directions tested; the band tooltip carries the same
-caveat; the absent derate is loud and is NOT a gate finding.
-
-PROVEN. tests/test_coarse_horizon.py (TestUncountedPopulation,
-TestNoDerateDeclared -- 11 new tests) + tests/cockpit/coarse.spec.mjs.
-
-(a) Every capacity-answer branch now names it: how many ops, and that their
-    MINUTES are counted in no figure above. Four branches covered, including the
-    zero-load one -- "nothing lands in that week" is the most misleading
-    sentence to say over a partial population. BOTH DIRECTIONS tested: the
-    caveat is present when unmodelable_count > 0 and absent when it is 0.
-
-    On the PROVEN-INFEASIBLE branch the exclusion is named in the HONEST
-    DIRECTION -- leaving work out can only make a refutation stronger, never
-    weaker -- so the caveat does not read as a hedge on a proof.
-
-(b) The density band's per-CELL tooltip carries it, not only the footer: a
-    planner reading one cell would otherwise never see it. The band's probe
-    reports unmodelableCount and cellsWithUncountedNote so the harness asserts
-    EVERY cell has it, not just that the band mentions it somewhere.
-
-(d) NO DERATE DECLARED is loud in three places: a coarse_capacity_derate_note on
-    the certificate's coefficient block, the band header ("no capacity margin
-    declared -- figures assume every available minute is usable"), and every
-    capacity answer, which also names the remedy. No default margin is invented:
-    clause 3 stands and the defaulted rho is still 1.0.
-
-    NOT A GATE FINDING -- PROVEN. The registry stays at 36 rules (asserted). A
-    real gate run over clean_small, which declares nothing, stays ACCEPTED with
-    ids.coarse_horizon_coefficients_sane silent. The entry is an INFORMATIONAL
-    remediation note in docs/06 sec 5.9, not a registry rule -- and it could not
-    have been a catalog note either: test_no_orphan_rule_notes requires every
-    catalog note to name a registry rule, which is exactly the discipline that
-    keeps "informational" from quietly becoming "checked".
-
-
-======================================================================
-CU3 -- PIN THE BINDING BEHAVIOUR
-======================================================================
-
-CLAIMED: a slow deterministic 200-order test asserting cells reach capacity,
-bucket-tardiness nonzero, rho 0.5 INFEASIBLE; and the non-monotonicity property
-still pinned and still passing at this density.
-
-PROVEN, with one qualification stated rather than smoothed.
-tests/test_coarse_binding.py -- 5 slow tests, 4m29s, green.
-
-Measured, and asserted as SHAPE and thresholds set well clear of the figures so
-an ordinary solver tie cannot move them:
-
-    157 beyond-horizon demands; 408 coarse ops (404 modeled, 4 unmodelable)
-    peak machine-week utilization 0.998; 9 binding cells
-    coarse tardiness 123 buckets over 41 demands; status FEASIBLE, so the
-      figures are flagged UPPER BOUNDS
-    rho 0.5 INFEASIBLE with all 404 ops STILL MODELED -- an aggregate-capacity
-      refutation, not ops leaving the model -- and proves_infeasible False,
-      because it is a planning run
-
-All four reproduce 4B.6's prose figures exactly.
-
-THE QUALIFICATION: the 40-order non-monotonicity STATUS LADDER (0.20 OPTIMAL /
-0.15 INFEASIBLE / 0.10 OPTIMAL) does NOT reproduce at 200 orders -- all three
-are INFEASIBLE, the book being far too heavy for the leftovers to fit either.
-What the 40-order test actually PINS is the MECHANISM, and both of its
-assertions hold here: 0.15 INFEASIBLE (393 modeled, 11 exceeds_bucket_capacity)
-and 0.10 pushing more ops out (357 modeled, 47). The 40-order test remains the
-pin for the status ladder.
-
-
-======================================================================
-CU4 -- THE GOLDENS MOVE (the highest-risk work in this session)
-======================================================================
-
-CLAIMED: regenerate tests/cockpit/fixtures/rolling/ under one-time
-authorization, account for EVERY moved figure, replace the synthesized
-attribution split with real figures, add the band's screenshot coverage, re-run
-the full cockpit ladder both themes.
-
-PROVEN. No unexplained movement; the session did not halt.
-
-
---- Step 1: BEFORE digests (sha256, first 16 chars) ---
-
-    schedule.json     908f9f8e4f17ba52
-    sandbox.json      19bbe81d4aa4ca30
-    feasibility.json  4d398e11916b59e5
-    gesture.json      5128886ca98a0b71
-    interaction.json  d2906b1e52c94cd0
-    meta.json         9d2bbb4ec218c1f1
-    asks.json         66efa92a5fe6b92f
-
---- Step 2: AFTER digests ---
-
-    schedule.json     64cd69f051d631cf
-    sandbox.json      eccb1bcba592c7aa
-    feasibility.json  338c0bf124830637
-    gesture.json      bf2e67f18dd17ce9
-    interaction.json  b07b97c40e43db36
-    meta.json         b5d017280a33f5e6
-    asks.json         efe6fbaf3d7acc75
-
-    Same scenario (pilot_scale, 40 orders, seed 1), same reference origin
-    (2026-01-05), same window 14 / frozen 3, deterministic seed 42.
-
-
---- Step 3: THE ACCOUNTING -- every moved figure ---
-
-A positional diff reported 639 moved values, which tells you nothing once a list
-is ordered differently. Keyed BY OPERATION IDENTITY the picture is exact:
-
-    56 assignments before, 56 after -- THE SAME 56 OPERATIONS.
-    None arrived. None left.
-    The same 26 orders on the board.
-    The same 14-order beyond-horizon tray, order for order.
-    Of the 56: 3 changed machine, 49 changed start, 16 changed commitment state.
-
-Every difference attributes to one of the two permitted causes.
-
-CAUSE 1 -- CONTRACT 1.8 -> 1.9, ADDITIVE FIELDS.
-    contract_version 1.8 -> 1.9 (schedule.json and meta.json)
-    + rolling.coarse_zone                  (1 added key)
-    + rolling.beyond_horizon[i].coarse     (14 added keys, one per tray item)
-    ZERO keys were REMOVED from schedule.json.
-
-CAUSE 2 -- THE 2026-07-26 DETERMINISM FIXES.
-    The committed schedule.json was built at Session 4B.3c (commit 4301e6f),
-    BEFORE the determinism errand (commit 65982e5). This accounts for:
-
-        rolling.committed_count              38 -> 42
-        rolling.active_count                 18 -> 14
-        cost_summary.production_regular  14466.95 -> 14381.40
-        cost_summary.tardiness            9800.83 -> 11975.83
-        cost_summary.total               26507.78 -> 28597.23
-
-    and, downstream of the changed board, every identity in gesture.json,
-    feasibility.json, sandbox.json, interaction.json and asks.json -- the
-    gesture op moved from 8ad19d5c to 2a163c51 because the board it is picked
-    from changed, and the canned "why is ORD-000021 on CUT-01" became
-    ORD-000027 for the same reason.
-
-THE COST FIGURES ARE FIGURES THAT SHOULD NOT HAVE DEPENDED ON ORDERING, so
-"the fixture was stale" was NOT accepted as their explanation. Three things
-were established instead:
-
-  1. AN ATTRIBUTION EXPERIMENT, to separate the two candidate causes.
-     Rebuilt under the CURRENT code at the OLD 10s wall ceiling: the split is
-     ALSO 42/14, and wall_truncated comes back True. So raising the ceiling is
-     NOT the mover -- it only removes the truncation flag, i.e. it changes the
-     CLAIM the fixture can make, not the numbers. The ordering fixes are the
-     mover.
-
-  2. WHY A COST FIGURE CAN MOVE AT ALL. solver.status is FEASIBLE, not OPTIMAL.
-     The cost is an INCUMBENT, and which incumbent CP-SAT returns is a function
-     of variable-creation order -- precisely what was hash-dependent before
-     2026-07-26 and is explicitly sorted now. Two legitimate incumbents of a
-     search that never proved an optimum.
-
-     NAMED, NOT GLOSSED: the regenerated incumbent is ~7.9% DEARER than the one
-     it replaced. That is a real change in what the demo board shows. It is
-     recorded in docs/07 sec 5a.9.
-
-  3. THE NEW FIXTURE REPRODUCES -- which is what the debt was actually about.
-     A digest over committed + active placements, the tray, the cost ledger and
-     the coarse certificate is IDENTICAL across PYTHONHASHSEED 0 / 1 / 2:
-
-         4863367aa342f96d6334ee4f7660b30d62e995d3664d5a66c468d7ddb0ebe1ed
-
-     Two independent full regenerations produced BYTE-IDENTICAL schedule.json,
-     interaction.json, gesture.json, meta.json and asks.json. The ONLY bytes
-     that differ between passes are elapsed-time measurements (wall_time_s and
-     baseline_wall_time_s in sandbox.json / feasibility.json) -- measurements of
-     the machine, which cannot be deterministic. They are deliberately NOT
-     normalized away, because a synthesized zero there is precisely the defect
-     step 4 removes.
-
-
---- Step 4: THE SYNTHESIZED ATTRIBUTION SPLIT IS GONE ---
-
-4B.5 hand-inserted reopt_delta_abs -9500.0 / move_delta_abs -294.53 into the
-fixture because it could not be regenerated, so the decomposition-sums invariant
-had NEVER ONCE run against numbers a solver produced. The regenerated card
-carries a real sandbox_pin_resolve(baseline=True) -- two solves of the same
-window, one with the pin and one without:
-
-    total  -11953.08  =  reopt  -11975.83  +  move  +22.75
-    baseline_total_cost 16621.40, baseline_wall_time_s 0.987
-
-Note the shape, which the synthesized pair could not have shown: a move that
-COSTS money sitting inside a re-optimization that saves it. That is exactly the
-confusion 4B.5 CU1 existed to end.
-
-tests/cockpit/attribution.spec.mjs now asserts the sum ON THESE FIGURES, asserts
-the two synthesized values are gone (a guard against a future hand-edit
-restoring them), asserts a real baseline solve happened (baseline_wall_time_s >
-0), and asserts an "unavailable" card stays UNSPLIT rather than half-split.
-
-
---- Step 5: THE DENSITY BAND'S FIRST SCREENSHOT COVERAGE ---
-
-tests/cockpit/coarse.spec.mjs -- 5 tests x 2 themes, green. Screenshots written:
-cb1_band_populated, cb2_band_empty, cb3_band_binding_cell (each __light/__dark).
-
-    POPULATED -- a grid of load cells and ZERO bar elements (clause 6); the
-                 title reads "load, not placement"; the word "scheduled" appears
-                 nowhere in the band.
-    EMPTY     -- a coarse zone over an empty tray renders its header and no
-                 rows: it claims nothing rather than hiding.
-    BINDING   -- a hot cell's tooltip states load against DERATED capacity in
-                 minutes with its percentage, says "not a placement", and
-                 carries the CU2(b) uncounted caveat -- on every cell, not just
-                 in the footer.
-    plus      -- the derate provenance is asserted on the band (clause 3), and
-                 a band with nothing excluded is asserted to invent NO caveat.
-
-The binding state needed a fixture that binds, and the real board does not: at
-the plant's declared 0.85 the demo book loads the coarse zone to a few percent
-and no cell is hot. A NEW fixture set was added -- rolling_coarse_hot/, the SAME
-40-order plant with a DECLARED derate of 0.10: 18 density cells, 5 binding cells
-(0.958 to 1.000), unmodelable_count 5, tardiness 3 buckets, and both tray
-sub-dispositions present. It is an ADDITION, not a moved golden. The real board
-keeps its real 0.85 and its zero binding cells -- which is what makes the
-"invents no caveat" direction testable on the same run.
-
-rolling_empty/ now also carries a coarse zone; its tray is blanked BEFORE the
-zone is built, so the empty band matches the tray it belongs to rather than
-showing load for orders the document says are not there.
-
-
---- SCOPE NOTE: rolling_empty/ ALSO MOVED, and it is disclosed here ---
-
-The authorization named tests/cockpit/fixtures/rolling/. rolling_empty/ moved
-too, because CU4 step 5 requires an EMPTY-BAND screenshot and a band cannot be
-empty in a document that carries no coarse zone at all -- so that fixture had to
-gain one. It is a consequence of the CU's own step 5, not a second golden taken
-on the side, and it is accounted for to the same standard:
-
-    schedule.json  85518088c90e045d -> b228fd9c86e1f298
-    meta.json      fd2cbb29b284f8fe -> ddfe8c9bcfdd967a
-
-    THE SAME 18 operations, none arrived, none left.
-    committed/active unchanged at 18 / 0. Tray unchanged at 0. Tardiness
-    unchanged at 0.00.
-    5 of the 18 ops swapped (machine, start) -- the same tied-incumbent
-    ordering class as above -- moving production_regular by +$7.65
-    (5251.08 -> 5258.73, 0.15%).
-    ADDED: rolling.coarse_zone (2 buckets, 0 density cells, 0 binding, 0
-    unmodelable -- which IS the empty state) and contract_version 1.8 -> 1.9.
-    ZERO keys removed.
-
-No other golden moved. tests/cockpit/fixtures/rolling_coarse_hot/ is a NEW
-fixture set, not a moved one.
-
-
---- Step 6: THE FULL COCKPIT LADDER, BOTH THEMES ---
-
-    225 passed (3.7m) -- including the 10 new coarse-band tests and the 2 new
-    real-figure attribution tests.
-
-
---- Two incidental fixes found doing this work ---
-
-  * build_rolling_fixture.py now RAISES on a wall-truncated view or coarse run.
-    A fixture that cannot be reproduced is not a golden.
-  * Its print strings became plain ASCII. The tool DIED mid-run on a cp1252
-    console at an arrow character -- the same defect class an earlier errand
-    fixed elsewhere, found here only because the tool was finally run.
+VERDICT, plainly: NOT MECHANICAL. The identity is falsified both empirically and
+by code-read. But BENIGN is not right either -- its premise ("the published
+incumbent is simply poor") is false. The truth is a third thing, worse than
+BENIGN and better than MECHANICAL:
+
+    reopt_delta_abs is a REAL measurement of a REAL quantity, and the card
+    puts the WRONG NAME on it. It is not window re-optimization the planner
+    did not cause. It is what the incumbent paid, in ledger dollars, for a
+    DECLARED priced objective term that the baseline solve does not carry
+    and the ledger does not print.
+
+4B.5's headline fix does NOT reopen. See "what does not reopen" below.
+
+----------------------------------------------------------------------
+(a) EMPIRICAL -- four instances, and the identity BREAKS
+----------------------------------------------------------------------
+
+Each row: build the rolling world (persisted window-0 solve), read the
+incumbent's persisted schedule summary, then run the REAL
+sandbox.baseline_window_solve over the same window holding the same committed
+frozen front, and compare against (incumbent_total - incumbent_tardiness).
+
+  inst  plant                  win   incumbent   inc.tard    baseline   total-tard    diff   base.tard
+  A     40 orders, seed 1      14/3  28,597.23  11,975.83  16,621.40   16,621.40    0.00     0.00
+  A'    A, no standing pins    14/3  28,597.23  11,975.83  16,481.95   16,621.40  -139.45    0.00
+  B     200 orders, seed 1      7/2  35,406.90   7,127.92  28,684.40   28,278.98  +405.42   361.67
+  C     80 orders, seed 7      10/2  14,514.75       0.00  14,514.75   14,514.75    0.00     0.00
+  D     120 orders, seed 3      7/2  31,306.22  13,312.08  17,994.13   17,994.13    0.00     0.00
+
+Instance A reproduces the shipped fixture's figures to the cent (16,621.40,
+difference 0.00), which validates the harness before anything is concluded.
+
+DEGENERATE INSTANCES, named as the brief asked:
+  * C is degenerate in exactly the way warned about -- its incumbent carries
+    ZERO tardiness, so total-tardiness IS total and the test is vacuous. It was
+    replaced by D.
+  * rolling_coarse_hot was rejected as degenerate BY CONSTRUCTION, not by luck:
+    it is the same 40-order plant as A with only a different DECLARED coarse
+    coefficient, and coarse never constrains fine (an import-direction test), so
+    its window solve and its sandbox baseline are A's to the cent. It could
+    never have been a second data point. D was built instead.
+
+B SETTLES IT. The baseline's own tardiness component is 361.67 -- present,
+computed, NONZERO -- and baseline - (incumbent - tardiness) is +405.42. There is
+no identity.
+
+A' settles a second thing that matters for reading the fixture: release the
+standing pins and PRODUCTION moves too (-139.45). So even the "production
+unmoved to the cent" half of the fingerprint is a property of the pin set, not
+of the code.
+
+----------------------------------------------------------------------
+(b) CODE-READ -- the call chain, not a conclusion
+----------------------------------------------------------------------
+
+  sandbox.sandbox_pin_resolve                     sandbox.py:939-944
+    -> sandbox.baseline_window_solve              :326   (cached per incumbent)
+       -> _baseline_window_solve_uncached         :370
+          -> SnapshotStore.load_snapshot
+          -> _restrict_window(ops, wps, fuls, demands, restrict_op_ids)   :242
+          -> SolverBuilder(reference_date).build(wps+ops+edges,
+                 resources+pools, cals, fuls+demands, constraints,
+                 cost_model)                                              :425
+          -> apply_solution_hints + standing_pins.apply_standing_pins  :431-435
+          -> SolveRunner(time_limit_seconds=budget_s, workers, seed)
+                 .solve(model, var_map, r_rep)                            :450
+          -> Extractor().extract(..., is_scenario=True)                   :465
+          -> ledger = er.cost_ledger ; total = ledger["total_cost"]   :473-474
+
+Extractor.extract (extractor.py:390-399):
+
+    total_cost = production_cost + setup_cost + tardiness_cost
+    cost_ledger = {total_cost, production_cost, production_regular_cost,
+                   production_overtime_cost, setup_cost, tardiness_cost}
+
+So the tardiness term IS in the baseline's ledger, and it is the SAME ledger
+code the incumbent's own summary was written by -- one implementation, no second
+path, no omission.
+
+Two structural facts fell out of the read, and both change how the fixture's
+fingerprint should be read:
+
+  * setup_cost = new_setup_ops * setup_fixed (extractor.py:382-387) is a function
+    of the OPERATION SET only. It cannot move under re-placement at all.
+    "Setup unmoved to the cent" is guaranteed by construction and is evidence of
+    nothing.
+  * incumbent_total is the PERSISTED schedule summary (sandbox.py:1058-1059);
+    baseline.total_cost is a fresh in-memory extract of a window-restricted
+    re-solve. Same ledger code, different provenance.
+
+----------------------------------------------------------------------
+(c) THE BUDGET PROBE -- the gap is not a search gap
+----------------------------------------------------------------------
+
+The fixture's window re-solved at 1x / 2x / 4x / 8x the deterministic budget:
+
+  det budget   window status   incumbent   inc.tard    baseline    reopt delta
+  2.0s  (1x)   FEASIBLE        28,597.23  11,975.83   16,621.40   -11,975.83
+  4.0s  (2x)   FEASIBLE        28,547.38  11,975.83   16,571.55   -11,975.83
+  8.0s  (4x)   FEASIBLE        28,594.62  11,976.67   16,617.95   -11,976.67
+  16.0s (8x)   FEASIBLE        28,853.83  11,975.83   16,878.00   -11,975.83
+
+The gap does NOT close. At 8x budget the incumbent is DEARER on the ledger
+(28,853.83). The window solve never reaches OPTIMAL at any budget; the baseline
+proves OPTIMAL in 0.03-1.5s on every instance tried. The fixture is NOT
+budget-starved, and the ~1% wobble across budgets is the fingerprint of a ledger
+that is not the thing being minimized.
+
+That is what forced the third answer: neither "the incumbent is poor" nor "the
+term is missing" survives this table.
+
+----------------------------------------------------------------------
+THE ACTUAL CAUSE -- an objective mismatch, proven by a forced variable
+----------------------------------------------------------------------
+
+The two solves minimize DIFFERENT OBJECTIVES.
+
+  * The incumbent (rolling_horizon._two_stage_solve, :150-151) minimizes
+        sum(objective_terms) + earliness_coeff_scaled * sum(free op start vars)
+    where the coefficient is the plant's DECLARED refinements.earliness_value
+    (R-SC3; pilot_scale declares 0.05 $/min-of-start, scaled to 5).
+  * The baseline is built by SolverBuilder.build, whose own objective is
+    sum(objective_terms) ALONE. There is no earliness term in the builder.
+  * The extractor's cost ledger has NO EARLINESS LINE AT ALL. earliness_value is
+    read at extractor.py:101 and used ONLY to classify a driver (:637-639).
+
+So the incumbent spends ledger dollars buying early starts at a price the plant
+declared; the ledger never shows what it bought; and a baseline that is not
+charged for early starts beats it on the ledger essentially always.
+
+The falsifiable prediction that follows -- force earliness_value to 0 and the
+two solves optimize the same objective, so the delta should collapse -- was run:
+
+  earliness        incumbent   inc.tard    baseline    reopt delta
+  declared 0.05    28,597.23  11,975.83   16,621.40   -11,975.83
+  forced   0.00    16,481.95       0.00   16,481.95         0.00
+
+EXACTLY zero. The entire $11,975.83 "window re-optimization" on the shipped
+fixture is the declared earliness price, invisible in the ledger.
+
+This also explains, retroactively, the 4B.6a carry-forward that the regenerated
+fixture's incumbent is ~7.9% dearer than its predecessor and wobbles ~1% with
+budget: the ledger is a bystander to what the window solve is minimizing.
+
+----------------------------------------------------------------------
+WHAT DOES NOT REOPEN
+----------------------------------------------------------------------
+
+4B.5 CU1's ruling stands. move_delta_abs = pinned - baseline is
+apples-to-apples: the pinned re-solve and the baseline are BOTH built by
+SolverBuilder under the earliness-free objective. A planner's move is still
+judged against the baseline and never against the stale incumbent, and the
+founder's specimen (two different gestures, identical cards to the cent) is
+still fixed. What is wrong is the LABEL on the other half.
+
+NOT FIXED HERE, on purpose. Changing what the card measures is a working-thread
+decision. Three shapes exist that I can see -- price earliness into the ledger
+as its own line; build the baseline under the SAME objective the window solve
+used; or relabel the half honestly -- and whichever lands should move together
+with 4B.5's open debt that the two-solve baseline was never extended to
+forced-alternatives pricing. Filed docs/07 section 5a.12.
 
 
 ======================================================================
-CU5 -- THE r5 CORPUS BANK
+ITEM 2 -- DO IDENTITIES SURVIVE A NEW SUBMISSION?
 ======================================================================
 
-(a) DELIVERED. The bank gains the question CU5 named: with a delta card open,
-    ask what the MOVE cost. The bank is now 27 questions.
+VERDICT, plainly: THEY SURVIVE. Cross-submission accrual works today, across
+three genuinely different submissions with real data deltas. Splicing seam 3 is
+NOT blocked on re-keying the store to IDS-visible identity, and no id derivation
+was changed. The seam that IS open is RETIREMENT, not identity.
 
-    This is the untested intersection of 4B.5's CU1 and CU2. The runner's
-    synthesized card carries total -11,975.83 = reopt -11,600.00 + move
-    -375.83, and the substantive expectation written into the bank is that the
-    answer voices 375.83 as what the move cost and names 11,600.00 as the part
-    the planner did not cause. If it voices the TOTAL, the defect the card fixed
-    is alive in the conversational channel and the two surfaces state different
-    things about one move.
+----------------------------------------------------------------------
+(a) THE DERIVATION, VERBATIM
+----------------------------------------------------------------------
 
-(b) NOT DELIVERED. HALTED per CU5(c).
+One namespace, in both minting sites:
+uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
-    NO ANTHROPIC_API_KEY IS AVAILABLE in this environment. Without one the exam
-    runner builds neither a parser nor a synthesizer (both are gated on the key
-    in ExamRunner.__init__), so every question would land on the honest
-    could-not-interpret floor and the resulting "grade" would measure the
-    absence of a key rather than the system.
+  # adapter.py:74-77
+  def _stable_id(namespace: str, value: str) -> str:
+      """Deterministic UUID5 from a namespace+value pair."""
+      ns = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")  # URL namespace
+      return str(uuid.uuid5(ns, f"{namespace}:{value}"))
 
-    The bank is recorded as UNRUN AFTER TWO SESSIONS in docs/07 sec 5a.7. Not
-    skipped silently. Not marked delivered.
+  # planner.py:50-54
+  _NS = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+  def _uid(*parts: str) -> str:
+      return str(uuid.uuid5(_NS, ":".join(parts)))
+
+  # ids_adapter.py:616   demand_id = _stable_id("demand", ext_oid)
+  # ids_adapter.py:450   spec_id   = _stable_id("operationspec",
+  #                                   f"{route_id}:{ext_pid}:{seq}")
+  # planner.py:182       wp_id     = _uid("wp", *[d["id"] for d in batch])
+  # planner.py:203       op_id     = _uid("op", wp_id, spec_id)
+  # planner.py:268       ful_id    = _uid("fulfillment", demand["id"], wp_id)
+
+Under identity_v1 every batch is a singleton (planner.py:112-113,
+batches = [[d] for d in demands.values()]), so the closed forms are:
+
+  Demand        = uuid5(NS, "demand:" + order_id)
+  WorkPackage   = uuid5(NS, "wp:" + Demand)
+  OperationSpec = uuid5(NS, "operationspec:" + route_id + ":" + product_id
+                              + ":" + sequence)
+  Operation     = uuid5(NS, "op:" + WorkPackage + ":" + OperationSpec)
+
+NOTHING in any of those strings is a submission id, a run id, the manifest
+reference_date, the extract_timestamp, an ingest timestamp, or a row ordinal.
+Quantity, due date, release date, priority class and customer move none of them.
+
+What DOES move an id (stated so it is not rediscovered later):
+  * re-routing an order (route_id) or re-parting it (product_id) re-mints every
+    one of its OPERATION ids, while its DEMAND id is unchanged;
+  * a renumbered sequence re-mints that operation;
+  * under a MERGE policy (merge_by_family_v1/v2 -- NOT the supported doorway's),
+    wp_id is a function of the WHOLE batch, so adding or removing ONE order in a
+    batch re-mints every operation id in it. That is the real fragility and it
+    is not on the supported path today.
+
+Note in passing: adapter.py's comment says "URL namespace" for what is actually
+the RFC-4122 DNS namespace. Cosmetic; the VALUE is what matters and it is
+stable. Not touched.
+
+----------------------------------------------------------------------
+(b) EMPIRICAL -- three days, three submissions, one data root
+----------------------------------------------------------------------
+
+Same plant, advancing reference_date, a real data delta each day, cumulative:
+  day 1  ref 2026-01-05  orders 1..40
+  day 2  ref 2026-01-06  ORD-000001 completed and dropped, ORD-000041 added
+  day 3  ref 2026-01-07  ORD-000002 also completed, ORD-000042 added
+
+Each solved as its OWN submission (its own spine run, its own run dir) into ONE
+data root, exactly as the API's rolling worker does it: prepare_plant ->
+build_rolling_view -> build_coarse_zone -> record_roll_history. Window 7 /
+frozen 2, coarse on at the plant's declared rho 0.85, deterministic.
+
+  roll                predictions   prior pending seen   realizations written
+  day 1 (2026-01-05)      164             0                     0
+  day 2 (2026-01-06)      142           164                    18
+  day 3 (2026-01-07)      114           288                    60
+
+MATCH COUNTS, as asked:
+
+  * Predictions from submission 1 REALIZED against submissions 2 and 3:
+    48 of 164 (18 judged by day 2, 30 by day 3). 78 realizations in total.
+  * Permanently pending: day 1, 116 of 164; day 2, 112 of 142; day 3, all 114
+    (nothing later exists to judge them).
+  * ID STABILITY, measured rather than assumed: 33 demands were predicted by
+    more than one run, and ALL 33 share at least one operation id across runs.
+    That is the code-read confirmed end to end.
+  * THE COMPLETED ORDER'S PREDICTIONS ARE ORPHANED. ORD-000001 minted 4
+    predictions on day 1, is absent from days 2 and 3, and got ZERO
+    realizations. ORD-000002 the same, with 8. They are neither judged nor
+    retired. They stay in prior_predictions_pending forever and are re-swept on
+    every subsequent solve.
+  * THE NEW ORDERS COLLIDED WITH NOTHING. A new order id mints a fresh demand id
+    by construction. ORD-000041 minted zero coarse predictions -- it was
+    admitted into the FINE window on both days it existed, so it never entered
+    the tray. ORD-000042 minted 6 on day 3, in the tray, with no later roll to
+    realize it.
+
+ONE MORE, unprompted but material: all 78 realizations came back
+intake_path = gravity_admission, none natural_roll. The definition is behaving
+correctly (gravity_admitted = admitted(gravity) - admitted(no gravity),
+rolling_horizon.py:752-769) -- on a 7-day window nearly everything admitted is
+admitted by gravity. But it means clause (7)'s "two mechanisms disagreeing"
+count reads ~100% and carries no signal at that window length. Anything built on
+that count must print the window length beside it. Filed section 5a.14.
+
+HALT CONDITION HONOURED: no id derivation was touched, and no mapping layer was
+added. There was nothing to paper over -- the ids held.
 
 
 ======================================================================
-CU6 -- THE RESUMABLE FRACTION (report only; no code changed)
+ITEM 3 -- THE ONE THING THIS SESSION FIXED
 ======================================================================
 
-DELIVERED. pilot_scale, window 7 / frozen 2, measured over the beyond-horizon
-population the coarse zone actually runs on:
+(a) tools/build_rolling_exam_run.py
 
-  40 orders   -- 38 beyond demands, 83 coarse ops, 19,191 coarse minutes
-      resumable_out_of_scope     1 op   ( 1.2%)    1,200 min  ( 6.3%)
-      exceeds_bucket_capacity    0      ( 0.0%)        0 min  ( 0.0%)
-      no_eligible_resource       0      ( 0.0%)        0 min  ( 0.0%)
+    Builds a coarse zone at the submission's DECLARED coefficients and passes it
+    to assemble_rolling_document; fails the build if either coarse run was
+    stopped by the WALL clock (a wall-truncated run is a lottery wearing a
+    determinism label); and fails it again if the assembled document comes back
+    without a zone. The registered solve now sends "coarse": true and an
+    explicit "reference_date" (2026-01-05 -- the manifest's own value today, so
+    it changes nothing now and stops the world drifting if the generator's
+    default ever moves).
 
- 200 orders  -- 157 beyond demands, 408 coarse ops, 83,180 coarse minutes
-      resumable_out_of_scope     4 ops  ( 1.0%)    4,500 min  ( 5.4%)
-      exceeds_bucket_capacity    0      ( 0.0%)        0 min  ( 0.0%)
-      no_eligible_resource       0      ( 0.0%)        0 min  ( 0.0%)
+    VERIFIED BY RUNNING IT:
+      rolling-exam: building the coarse zone (declared coefficients) ...
+      rolling-exam: 56 bars, 42 committed, 14 active, 14 in the tray
+      rolling-exam: coarse zone rho=1 (defaulted) cells=10 binding=0
+                    unmodelable=0 tardiness_buckets=0
+      rolling-exam: determinism verified (identical split and placements)
 
- (exceeds_bucket_capacity measured at BOTH rho 1.0 and the declared rho 0.85.)
+    and the written document.json is contract 1.9 with rolling.coarse_zone
+    present and all 14 tray items carrying a coarse placement.
 
-THE READING. By op count the exclusion is ~1%. By MINUTES -- the number that
-matters -- it is 5 to 6%, FIVE TIMES what the count suggests. That is the
-predicted shape: resumables average ~1,125 minutes against a ~210-minute
-population mean, so an op-count percentage understates the capacity blindness by
-exactly the factor the brief anticipated, which is why the count alone would
-have been a misleading statistic.
+    RESIDUE, named and filed (section 5a.10): the pinned submission under
+    _ai_exam_scratch/ predates the generator's refinements.coarse_horizon block,
+    so the exam world runs at rho 1.0, provenance "defaulted" -- correct
+    behaviour (an undeclared plant is never given an invented margin), and it
+    exercises the docs/06 section 5.9 "figures assume full utilization" voice,
+    but it grades no BINDING answer. Measured: a fresh generate at the same seed
+    differs from the pinned submission in exactly two things -- the manifest's
+    extract_timestamp and the cost model's coarse_horizon (declared 0.85) --
+    with every table byte-identical. Since coarse_horizon never enters the fine
+    solve, --fresh would give the exam world its declared derate with the fine
+    world PROVABLY unchanged. Left alone: the world the r5 bank's expectations
+    were calibrated against is not this session's to move.
 
-In absolute terms it is small. CROSS-BUCKET ALLOCATION FOR RESUMABLES STAYS A
-QUEUED REFINEMENT, NOT AN URGENT CORRECTION, at this plant's parameters.
-exceeds_bucket_capacity excludes NOTHING at any realistic rho on this plant --
-it only bites below ~0.15, where it is the non-monotonicity MECHANISM rather
-than a capacity blind spot.
+(b) src/mre/ai_exam/runner.py::_exam_card
 
-The decision returns to the working thread. No code changed.
+    Was a SYNTHESIZED card: -11,975.83 = -11,600.00 + -375.83, a move that saves
+    inside a re-optimization that saves. The SHIPPED card (captured from a real
+    sandbox_pin_resolve into tests/cockpit/fixtures/rolling/sandbox.json) is
+    -11,953.08 = -11,975.83 + 22.75 -- a move that COSTS $22.75 inside a
+    re-optimization that saves $11,975.83. The synthesized pair could not express
+    that sign disagreement, which is the case the CU1 split exists for.
 
+    The runner now feeds the shipped figures, plus the fields the shipped
+    surface actually sends and the synthesized card omitted: message,
+    correlation_id, cost_lines, a POPULATED affected_orders (four orders by
+    name, two with tardiness savings and two with lateness moves at zero
+    tardiness delta), and the real dominant_driver with its hedge. Test-realism
+    law: a context test feeds ONLY what the shipped surface sends, in the shapes
+    it sends them. Both decompositions close exactly -- the two parts sum to the
+    total, and the five cost lines sum to the total. Only the identity fields
+    still vary with the bank's directive.
 
-======================================================================
-CU7 -- DOCS
-======================================================================
+    The r5 bank's comment block quoted the synthesized figures and its
+    substantive expectation was written around them; it was corrected in the
+    same commit, including the sign.
 
-DELIVERED.
-  docs/04  session amendment appended (append-only respected;
-           635,631 -> 653,347 chars).
-  docs/06  v0.6a -- the NO CAPACITY MARGIN DECLARED remediation entry in sec 5.9
-           (informational, NOT a registry rule; the rule count is asserted
-           unchanged at 36) plus a header change note.
-  docs/07  v2.49 summary entry; sec 5a items 5 and 6 updated to reflect what
-           this session discharged, items 7 to 11 added.
-  CLAUDE.md  position, quick reference (the coarse flag, reference_date, where
-           predictions land), coarse-zone bullets, carry-forwards. 25.9k chars,
-           well under the 40k ceiling.
+    Item 1 came back not-MECHANICAL, so (b) was in scope. Had it come back
+    MECHANICAL the shipped card's own figures would themselves have been in
+    question and (b) would have been skipped.
 
-
-======================================================================
-ACCEPTANCE
-======================================================================
-
- 1. Store wired; consecutive rolls prove accrual; count stated.         MET
-    (three rolls: 228 predictions, 180 realizations)
- 2. Document byte-identical with the store on and off.                  MET
- 3. Capacity answers name the uncounted population, both directions.    MET
- 4. No-derate absence loud and NOT a gate finding; 36 rules unchanged.  MET
- 5. 200-order binding test green and deterministic.                     MET
- 6. Fixture regenerated, every moved figure accounted for; band
-    screenshots exist; attribution split asserted on real figures.      MET
- 7. r5 bank run and graded, OR halted and recorded per CU5(c).          HALTED
-    and recorded. The added question is delivered; the run is not.
- 8. Resumable fraction reported by count AND by minutes, both
-    densities.                                                          MET
-
-
-UNDERDELIVERED, NAMED IN FULL
-
-  * CU5(b): the bank is UNRUN. Blocked on ANTHROPIC_API_KEY, nothing else. It
-    is now unrun after two sessions and is docs/07 sec 5a.7.
-  * CU3's non-monotonicity clause asked that the 0.20 / 0.15 / 0.10 property
-    "still pass at this density". The MECHANISM does and is asserted; the full
-    STATUS LADDER does not reproduce at 200 orders, and the 40-order test
-    remains its pin. Stated, not smoothed.
+(c) The bank was NOT run. No ANTHROPIC_API_KEY. Section 5a.7 unchanged, except
+    that it is now UNRUN AFTER THREE SESSIONS.
 
 
 ======================================================================
-DEBTS OPENED BY THIS SESSION (in docs/04 and docs/07 sec 5a, same commit)
+ITEM 4 -- IS THE DATA-ROOT SWEEP PERF OR CORRECTNESS?
 ======================================================================
 
-  * record_roll_history sweeps the WHOLE data root on every rolling solve to
-    find prior rolls' predictions. O(runs) per solve; fine at demo size, needs
-    an index or a per-submission scope before a pilot data root grows.
-  * The regenerated window incumbent is ~7.9% dearer than the fixture's old one.
-    Explained and reproducible, but it changes what the demo board shows.
-  * rolling_coarse_hot/ binds because it DECLARES rho 0.10, not because the
-    plant is loaded. A contrivance that buys screenshot coverage; it does not
-    retire the demo-density limit (CU3 covers that at 200 orders instead).
-  * tools/build_rolling_exam_run.py does not pass the new coarse flag, so the
-    pinned rolling exam world has no coarse zone and its coarse routes answer
-    "I haven't run the coarse look-ahead" -- honest, and a test of nothing.
+VERDICT, plainly: CORRECTNESS, in a multi-tenant pilot data root. Re-filed as
+such in docs/07 section 5a.8, superseding its 4B.6a filing as O(runs)
+performance. The performance reading survives on top of it.
+
+  * IS THE SWEEP SCOPED? By nothing. record_roll_history(data_root=
+    registry.data_root, ...) (app.py:974-977) calls sweep_data_root =
+    root.rglob("coarse_predictions.jsonl") (coarse_predictions.py:169-178) and
+    filters on exactly one thing: p.run_id != run_id (:360). Not by submission,
+    not by plant, not by facility.
+  * WHAT DOES A REALIZATION MATCH ON? op_id ALONE --
+    pl = placed.get(pred.op_id) (:230). Nothing else is compared before the row
+    is written: not the demand, not the plant, not the bucket grid.
+  * CAN TWO PLANTS SHARING ORDER NUMBERING COLLIDE? Yes, by construction. From
+    item 2(a), Operation = f(order_id, route_id, product_id, sequence). There is
+    no plant term anywhere in it.
+
+THE CONSTRUCTED CASE. Two plants, same scenario catalogue (the realistic
+multi-site case: one company, one ERP, one part and route numbering), different
+seed so the order BOOK genuinely differs, one data root. Plant P solved first
+with a 5-day window (40 demands in the tray, 174 predictions); plant Q second
+with a 45-day window (96 operations placed, empty tray).
+
+    Q'S ROLL WROTE 20 REALIZATIONS AGAINST P'S PREDICTIONS.
+
+    demand-id overlap     40 of 40
+    operation-id overlap  10
+    resource-id overlap   15 of 15
+
+The rows are nonsense on their face -- predicted_bucket 1 -> realized_bucket -1,
+gap -2, with a "realized resource" belonging to the other plant -- and they land
+in the conformance report's realized_fraction, its slip census and its
+gravity-disagreement count.
+
+NOT FIXED. The fix needs a scope key on the store AND a decision about what
+plant identity IS in the canonical model: the manifest's facility_scope is the
+only candidate and nothing downstream reads it.
+
+
+======================================================================
+ITEM 5 -- THE COUNTS RECONCILED
+======================================================================
+
+PYTHON: tests/test_coarse_horizon.py collects 47 -> 57 = +10, not the +11 the
+4B.6a close-out claimed. No parametrize in the file; the git diff adds exactly
+10 def test_ blocks. Nothing removed, nothing newly skipped (38 pass / 19 skip
+today; all 19 are pre-existing --runslow gates). The suite delta 1614 -> 1624 is
+exact -- the close-out over-counted by one.
+
+COCKPIT: coarse.spec.mjs carries 5 tests and runs in the light and dark projects
+(10); attribution.spec.mjs gained 2 and runs in the theme-free logic project
+(2). 12 new against a reported 215 -> 225. The ladder collects 227 today and
+runs them all, so the close-out's "225 passed" is two short of what the ladder
+reports. Nothing removed, nothing skipped: the harness's only test.skip
+(rolling.two_beat.spec.mjs:167) is conditional on a missing forced
+contradiction, and the fixture captures one, so it never fires.
 
 
 ======================================================================
 TESTS
 ======================================================================
 
-  NEW python
-    tests/test_coarse_history_wiring.py    7 slow, green
-    tests/test_coarse_binding.py           5 slow, green (4m29s)
-    tests/test_coarse_horizon.py          +11 (CU2), green
+  NO NEW TESTS, deliberately. This session added no capability, and the four
+  items are investigations whose evidence is measured figures in docs/04 rather
+  than assertions. The item-1/2/4 probes are scratch harnesses, not committed:
+  they generate plants and solve them (the slow ladder's job), and none of them
+  asserts a behaviour worth pinning -- item 1's finding is that a figure is
+  MISLABELLED, and pinning a mislabelled figure would be worse than not pinning
+  it.
 
-  NEW cockpit JS
-    tests/cockpit/coarse.spec.mjs          5 x 2 themes, green
-    tests/cockpit/attribution.spec.mjs    +2, green
+  FULL SUITES:
+    python non-slow    green, unchanged at 1624 passed / 239 skipped
+    cockpit ladder     227 collected; 226 passed + 1 failed
+                       ([light] planner.spec.mjs:128 "CU4 -- the due marker",
+                       the standing 4A.3 member of the parallel-load
+                       screenshot-flake class), re-verified GREEN in isolation
+                       (planner.spec.mjs 16/16 in 34.2s)
 
-  FULL SUITES, both green after every edit:
-    python non-slow    1624 passed, 239 skipped (11m37s)
-    cockpit ladder      225 passed, both themes (3.7m)
-    plus the two slow files above run explicitly with --runslow.
+  No test asserts on _exam_card and none imports build_rolling_exam_run, so
+  neither behaviour change could move a suite figure -- and neither did.
+
+
+======================================================================
+CHANGED FILES
+======================================================================
+
+  tools/build_rolling_exam_run.py                 item 3(a)
+  src/mre/ai_exam/runner.py                       item 3(b) -- _exam_card
+  tests/ai_exam/banks/regression_founder_r5.txt   item 3(b) -- the comment and
+                                                  substantive expectation,
+                                                  corrected to the shipped
+                                                  figures and their signs
+  docs/04-design-history.md                       amendment (append-only)
+  docs/07-roadmap.md                              v2.50; section 5a items 8, 10,
+                                                  11 rewritten, 12/13/14 added
+  CLAUDE.md                                       position + carry-forwards
+  SESSION_CLOSEOUT.md                             this file
+
+  No golden moved. No fixture regenerated. No test file changed except the bank
+  comment above.
+
+
+======================================================================
+TEMPTING, AND LEFT (as the brief required)
+======================================================================
+
+  1. Fixing the earliness/ledger mismatch behind item 1. Three shapes, all
+     working-thread calls; naming it was the deliverable.
+  2. Relabelling the delta card's reopt half. Same reason.
+  3. Scoping the prediction store's sweep by submission or plant (item 4). It
+     needs a plant-identity decision first.
+  4. Retiring orphaned predictions for completed orders (item 2). Needs item
+     4's scope key first, or it would retire another plant's predictions.
+  5. Running build_rolling_exam_run.py --fresh so the exam world declares its
+     0.85 derate. Measured to be free (only extract_timestamp and
+     coarse_horizon differ, and coarse never touches the fine solve) -- but it
+     is the world the r5 bank was calibrated against, so it is not mine to move.
+  6. Fixing adapter.py's "URL namespace" comment (it is the DNS namespace).
+     One word, and noise in a findings commit.
+
+  Nothing else changed.

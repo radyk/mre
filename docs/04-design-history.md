@@ -10140,3 +10140,341 @@ Zero keys removed.
 
 `tests/cockpit/fixtures/rolling_coarse_hot/` is a **NEW** fixture set, not a
 moved one. No other golden moved.
+
+
+---
+
+## Amendment 2026-07-27 (Session 4B.6b) — errand: four answers
+
+A FINDINGS session. Its product is knowledge, not capability. Four questions were
+asked; three were answered and left alone, one thing was fixed. Two of the four
+gate work already queued, which is why they were asked before that work started
+rather than during it.
+
+All solver work deterministic: `PYTHONHASHSEED=0`, one worker, seed 42, wall
+ceilings kept generous so the DETERMINISTIC budget is what binds.
+
+### ITEM 1 — the baseline delta is a MEASUREMENT, and neither reading was right
+
+**The observation** (from 4B.6a's regenerated fixture): `cost_summary.total`
+28,597.23 minus `cost_summary.tardiness` 11,975.83 equals `baseline_total_cost`
+16,621.40 **exactly**, with production and setup unmoved to the cent. Two
+readings were offered — BENIGN (a real re-solve; the incumbent is simply poor)
+and MECHANICAL (`baseline_total_cost` omits tardiness by construction, so
+`reopt_delta = −tardiness` always). **Both are wrong.**
+
+**(a) EMPIRICAL — four instances, and the identity BREAKS.**
+
+| instance | plant | window | incumbent total | incumbent tardiness | baseline total | `total − tard` | difference | baseline tardiness |
+|---|---|---|---|---|---|---|---|---|
+| A  | 40 orders, seed 1   | 14/3 | 28,597.23 | 11,975.83 | 16,621.40 | 16,621.40 | **0.00** | 0.00 |
+| A' | A, no standing pins | 14/3 | 28,597.23 | 11,975.83 | 16,481.95 | 16,621.40 | −139.45 | 0.00 |
+| B  | 200 orders, seed 1  | 7/2  | 35,406.90 |  7,127.92 | 28,684.40 | 28,278.98 | **+405.42** | **361.67** |
+| C  | 80 orders, seed 7   | 10/2 | 14,514.75 |      0.00 | 14,514.75 | 14,514.75 | 0.00 | 0.00 |
+| D  | 120 orders, seed 3  | 7/2  | 31,306.22 | 13,312.08 | 17,994.13 | 17,994.13 | **0.00** | 0.00 |
+
+Instance A reproduces the shipped fixture's figures to the cent, which validates
+the harness. **Instance C is DEGENERATE and is reported as such**: its incumbent
+carries zero tardiness, so `total − tardiness` is `total` and the test is vacuous
+— it was replaced by D. `rolling_coarse_hot` was ALSO rejected as degenerate, by
+construction rather than by luck: it is the same 40-order plant as A with only a
+different DECLARED coarse coefficient, and coarse never constrains fine, so its
+fine solve and its baseline are A's.
+
+**B settles it.** The baseline's tardiness is 361.67 — present, computed,
+nonzero — and `baseline − (incumbent − tardiness)` is +405.42. Not an identity.
+A' settles a second thing: with the standing pins released, production moves too
+(−139.45), so even the "production unmoved" half of the fingerprint is a property
+of the pin set, not of the code.
+
+**(b) CODE-READ — the call chain, not a conclusion.**
+
+```
+sandbox.sandbox_pin_resolve                     sandbox.py:939-944
+  -> sandbox.baseline_window_solve              :326   (cached per incumbent)
+     -> _baseline_window_solve_uncached         :370
+        -> SnapshotStore.load_snapshot
+        -> _restrict_window(ops, wps, fuls, demands, restrict_op_ids)    :242
+        -> SolverBuilder(reference_date).build(wps+ops+edges, resources+pools,
+                cals, fuls+demands, constraints, cost_model)             :425
+        -> apply_solution_hints + standing_pins.apply_standing_pins      :431-435
+        -> SolveRunner(time_limit_seconds=budget_s, workers, seed).solve :450
+        -> Extractor().extract(..., is_scenario=True)                    :465
+        -> ledger = er.cost_ledger ; total = ledger["total_cost"]        :473-474
+```
+
+`Extractor.extract` (`extractor.py:390-399`) computes
+`total_cost = production_cost + setup_cost + tardiness_cost` and emits all six
+lines. **The tardiness term is present, and it is the SAME ledger code the
+incumbent's own summary was written by** — one implementation, no second path.
+Two structural notes fell out of the read and both matter for reading the card:
+
+* `setup_cost = new_setup_ops * setup_fixed` (`extractor.py:382-387`) is a
+  function of the OPERATION SET only. It cannot move under re-placement. "Setup
+  unmoved to the cent" in the fixture is guaranteed by construction and is
+  evidence of nothing.
+* `incumbent_total` is the PERSISTED schedule summary (`sandbox.py:1058-1059`);
+  `baseline.total_cost` is a fresh in-memory extract of a window-restricted
+  re-solve. Same ledger code, different provenance.
+
+**(c) THE BUDGET PROBE — the gap is not a search gap.**
+
+| deterministic budget | window status | incumbent total | incumbent tardiness | baseline total | reopt delta |
+|---|---|---|---|---|---|
+| 2.0 s (1x)  | FEASIBLE | 28,597.23 | 11,975.83 | 16,621.40 | −11,975.83 |
+| 4.0 s (2x)  | FEASIBLE | 28,547.38 | 11,975.83 | 16,571.55 | −11,975.83 |
+| 8.0 s (4x)  | FEASIBLE | 28,594.62 | 11,976.67 | 16,617.95 | −11,976.67 |
+| 16.0 s (8x) | FEASIBLE | 28,853.83 | 11,975.83 | 16,878.00 | −11,975.83 |
+
+The gap does not close. At 8x budget the incumbent is **dearer** on the ledger.
+The window solve never reaches OPTIMAL at any budget; the baseline proves OPTIMAL
+in 0.03–1.5 s on every instance tried. **The fixture is not budget-starved**, and
+the ~1% wobble across budgets is the signature of a ledger that is not what is
+being minimized.
+
+**THE ACTUAL CAUSE — an objective mismatch, proven by a forced variable.**
+
+* The incumbent (`rolling_horizon._two_stage_solve`, `:150-151`) minimizes
+  `sum(objective_terms) + earliness_coeff_scaled * sum(free op start vars)`,
+  where the coefficient is the plant's **DECLARED** `refinements.earliness_value`
+  (R-SC3; pilot_scale declares 0.05 $/min-of-start, scaled to 5).
+* The baseline is built by `SolverBuilder.build`, whose own objective is
+  `sum(objective_terms)` **alone**. There is no earliness term in the builder.
+* The extractor's cost ledger has **no earliness line at all**. `earliness_value`
+  is read at `extractor.py:101` and used ONLY to classify a driver (`:637-639`).
+
+So the incumbent pays ledger dollars to buy early starts at a price the plant
+declared, the ledger never shows what it bought, and a baseline that is not
+charged for early starts wins on the ledger essentially always.
+
+The prediction that follows — force `earliness_value = 0` and the two solves
+optimize the same objective, so the delta should collapse — was run:
+
+| earliness | incumbent total | incumbent tardiness | baseline total | reopt delta |
+|---|---|---|---|---|
+| declared 0.05 | 28,597.23 | 11,975.83 | 16,621.40 | −11,975.83 |
+| forced 0.00   | 16,481.95 | **0.00**  | 16,481.95 | **0.00** |
+
+**Exactly zero.** The entire $11,975.83 "window re-optimization" on the shipped
+fixture is the declared earliness price, invisible in the ledger.
+
+**VERDICT: not MECHANICAL — falsified empirically and by code-read. Nearest to
+BENIGN in mechanism (a real search, a real tardiness term), but BENIGN's premise
+is false: the incumbent is not poor, it is optimal-ish for a different, declared,
+priced objective. The defect is the LABEL, not the arithmetic.**
+
+**WHAT DOES NOT REOPEN.** 4B.5 CU1's ruling stands. The MOVE half —
+`move_delta_abs = pinned − baseline` — is apples-to-apples: the pinned re-solve
+and the baseline are both built by `SolverBuilder` under the earliness-free
+objective. A planner's move is still judged against the baseline and not against
+the stale incumbent, and the founder's specimen (two gestures, identical cards)
+is still fixed. What is wrong is that the OTHER half is labelled *window
+re-optimization the planner did not cause* when it is *what the incumbent paid,
+in ledger dollars, for an objective term the baseline does not carry*.
+
+**NOT FIXED HERE.** Changing what the card measures is a working-thread decision;
+the last time a number was fixed without one it took a founder exam to find it.
+At least three shapes exist (price earliness into the ledger as its own line;
+build the baseline under the same objective the window solve used; relabel the
+half honestly), and whichever lands should move together with 4B.5's open debt
+that the two-solve baseline was never extended to forced-alternatives pricing.
+Filed docs/07 §5a.12.
+
+### ITEM 2 — canonical ids SURVIVE a new submission
+
+**(a) The derivation, verbatim.** One namespace in both minting sites:
+`uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")` (commented "URL namespace"
+in `adapter.py`; it is in fact the RFC-4122 DNS namespace — a cosmetic comment
+error, noted, not touched).
+
+```python
+# adapter.py:74-77
+def _stable_id(namespace: str, value: str) -> str:
+    ns = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")  # URL namespace
+    return str(uuid.uuid5(ns, f"{namespace}:{value}"))
+
+# planner.py:50-54
+_NS = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+def _uid(*parts: str) -> str:
+    return str(uuid.uuid5(_NS, ":".join(parts)))
+
+# ids_adapter.py:616     demand_id = _stable_id("demand", ext_oid)
+# ids_adapter.py:450     spec_id   = _stable_id("operationspec", f"{route_id}:{ext_pid}:{seq}")
+# planner.py:182         wp_id     = _uid("wp", *[d["id"] for d in batch])
+# planner.py:203         op_id     = _uid("op", wp_id, spec_id)
+# planner.py:268         ful_id    = _uid("fulfillment", demand["id"], wp_id)
+```
+
+Under `identity_v1` every batch is a singleton (`planner.py:112-113`:
+`batches = [[d] for d in demands.values()]`), so the closed forms are:
+
+```
+Demand        = uuid5(NS, "demand:" + order_id)
+WorkPackage   = uuid5(NS, "wp:" + Demand)
+OperationSpec = uuid5(NS, "operationspec:" + route_id + ":" + product_id + ":" + sequence)
+Operation     = uuid5(NS, "op:" + WorkPackage + ":" + OperationSpec)
+```
+
+**Nothing in any of those strings is a submission id, a run id, the manifest
+`reference_date`, the `extract_timestamp`, an ingest timestamp, or a row
+ordinal.** Quantity, due date, release date, priority class and customer move
+none of them.
+
+What DOES move an id, stated so it is not rediscovered later: re-routing an order
+(`route_id`) or re-parting it (`product_id`) re-mints every one of its operation
+ids while its demand id is unchanged; a renumbered `sequence` re-mints that
+operation; and under a MERGE policy (`merge_by_family_v1/v2` — not the WIP
+doorway's) `wp_id` is a function of the WHOLE batch, so adding or removing ONE
+order in a batch re-mints every operation id in it. That last one is the real
+fragility, and it is not on the supported path today.
+
+**(b) EMPIRICAL — three days, three submissions, one data root.** Same plant,
+advancing `reference_date`, a real data delta each day (one order completed and
+dropped, one new order added, cumulative), window 7 / frozen 2, coarse on at the
+declared rho 0.85, deterministic.
+
+| roll | predictions written | prior predictions pending | realizations written |
+|---|---|---|---|
+| day 1 (2026-01-05) | 164 | 0 | 0 |
+| day 2 (2026-01-06) | 142 | 164 | 18 |
+| day 3 (2026-01-07) | 114 | 288 | 60 |
+
+* **Submission 1's predictions realized against 2 and 3: 48 of 164** (18 judged
+  by day 2, 30 by day 3). 78 realizations in total across the three.
+* **Permanently pending:** day 1, 116 of 164; day 2, 112 of 142; day 3, all 114
+  (nothing later exists to judge them).
+* **Id stability, measured rather than assumed:** 33 demands were predicted by
+  more than one run, and **all 33 share at least one operation id across runs**.
+* **The completed order's predictions are ORPHANED.** ORD-000001 minted 4
+  predictions on day 1, is absent from days 2 and 3, and received **0
+  realizations**; ORD-000002 the same with 8. They are neither judged nor
+  retired, and they are re-swept forever. Filed docs/07 §5a.13.
+* **The new orders collided with nothing.** A new order id mints a fresh demand
+  id by construction. ORD-000041 minted zero coarse predictions because it was
+  admitted into the FINE window on both days it existed — never in the tray;
+  ORD-000042 minted 6 on day 3, in the tray, with no later roll to realize it.
+
+**VERDICT: ids survive. Cross-submission accrual works, and splicing seam 3 is
+NOT blocked on re-keying the store to IDS-visible identity.** The seam that IS
+open is retirement, not identity. No id derivation was changed.
+
+**One more, unprompted.** All 78 realizations came back
+`intake_path = gravity_admission`, none `natural_roll`. That is the definition
+behaving correctly (`gravity_admitted = admitted(gravity) − admitted(no gravity)`,
+`rolling_horizon.py:752-769`) on a 7-day window, where nearly everything admitted
+is admitted by gravity — but it means clause (7)'s "two mechanisms disagreeing"
+count reads ~100% and carries no signal at that window length. Filed §5a.14.
+
+### ITEM 3 — the one thing this session fixed
+
+**(a)** `tools/build_rolling_exam_run.py` now builds a coarse zone at the
+submission's DECLARED coefficients and passes it to `assemble_rolling_document`,
+fails the build if either coarse run was stopped by the WALL clock, and fails it
+again if the assembled document comes back without a zone. The registered solve
+sends `"coarse": true` and an explicit `"reference_date"` (2026-01-05 — the
+manifest's own value today, so it changes nothing now and stops the world
+drifting if the generator's default ever moves). **Verified by running it:** the
+exam world's `document.json` is contract 1.9 and carries `rolling.coarse_zone`,
+with all 14 tray items coarsely placed, and the determinism check still passes.
+
+Residue, named and filed (§5a.10): the pinned submission predates the generator's
+`refinements.coarse_horizon` block, so the exam world runs at **rho 1.0,
+provenance `defaulted`** — correct behaviour (never an invented margin) but no
+binding cell to grade. Measured: a fresh generate at the same seed differs in
+exactly the manifest `extract_timestamp` and the cost model's `coarse_horizon`
+(declared 0.85), every table byte-identical — so `--fresh` would give it the
+declared derate with the fine world provably unchanged. Left alone: the world the
+r5 bank's expectations were calibrated against is not this session's to move.
+
+**(b)** `src/mre/ai_exam/runner.py::_exam_card` stood up a SYNTHESIZED card:
+−11,975.83 = −11,600.00 + −375.83, a move that saves inside a re-optimization
+that saves. The shipped card (captured from a real `sandbox_pin_resolve` into
+`tests/cockpit/fixtures/rolling/sandbox.json`) is **−11,953.08 = −11,975.83 +
+22.75** — a move that **COSTS** $22.75 inside a re-optimization that saves
+$11,975.83. The synthesized pair could not express that sign disagreement, which
+is the case the CU1 split exists for. The runner now feeds the shipped figures,
+plus the fields the shipped surface actually sends and the synthesized card
+omitted (`message`, `correlation_id`, `cost_lines`, a populated
+`affected_orders`, the real `dominant_driver`) — test-realism law: a context test
+feeds only what the shipped surface sends, in the shapes it sends them. Both
+decompositions close exactly (the two parts sum to the total; the five cost lines
+sum to the total). Only the identity fields still vary with the bank's directive.
+The r5 bank's comment block, which quoted the synthesized figures, was corrected
+in the same commit.
+
+*Item 1 came back not-MECHANICAL, so (b) was in scope. Had it come back
+MECHANICAL the shipped card's own figures would have been in question and (b)
+would have been skipped.*
+
+**(c)** The bank was NOT run. No `ANTHROPIC_API_KEY`. §5a.7 unchanged.
+
+### ITEM 4 — the data-root sweep is a CORRECTNESS debt
+
+Scoped by **nothing**: `record_roll_history(data_root=registry.data_root, ...)`
+(`app.py:974-977`) calls `sweep_data_root` = `root.rglob(PREDICTIONS_FILENAME)`
+(`coarse_predictions.py:169-178`) and filters on exactly one thing,
+`p.run_id != run_id` (`:360`). Not submission, not plant, not facility. A
+realization then matches on **`op_id` alone** (`placed.get(pred.op_id)`, `:230`);
+nothing else is compared before the row is written — not the demand, not the
+plant, not the bucket grid. Since `Operation = f(order_id, route_id, product_id,
+sequence)` carries no plant term, two sites of one company on one ERP catalogue
+collide by construction.
+
+**The constructed case.** Two plants, same scenario catalogue (the realistic
+multi-site case: one ERP, one part/route numbering), different seed so the order
+BOOK genuinely differs, one data root. Plant P solved first with a 5-day window
+(40 demands in the tray, 174 predictions); plant Q second with a 45-day window
+(96 operations placed, empty tray).
+
+**Q's roll wrote 20 realizations against P's predictions.** Demand-id overlap
+40/40; operation-id overlap 10; resource-id overlap 15/15. The rows are nonsense
+on their face — `predicted_bucket 1 -> realized_bucket −1, gap −2`, with a
+"realized resource" belonging to the other plant — and they land in the
+conformance report's `realized_fraction`, its slip census and its
+gravity-disagreement count.
+
+**Re-filed as a CORRECTNESS debt** (docs/07 §5a.8), superseding its 4B.6a filing
+as O(runs) performance. The performance reading survives on top of it. Not
+fixed: the fix needs a scope key on the store AND a decision about what plant
+identity IS in the canonical model — the manifest's `facility_scope` is the only
+candidate and nothing downstream reads it.
+
+### ITEM 5 — the counts reconciled
+
+* **Python.** `tests/test_coarse_horizon.py` collects **47 -> 57 = +10**, not the
+  +11 the 4B.6a close-out claimed; there is no parametrize in the file and the
+  git diff adds exactly 10 `def test_` blocks. Nothing was removed and nothing
+  newly skipped (38 pass / 19 skip today; all 19 are pre-existing `--runslow`
+  gates). The suite delta 1614 -> 1624 is exact; the close-out over-counted by
+  one.
+* **Cockpit.** `coarse.spec.mjs` carries 5 tests and runs in the light and dark
+  projects (10); `attribution.spec.mjs` gained 2 and runs in the theme-free
+  `logic` project (2) — 12 new, against a reported 215 -> 225. The ladder
+  collects **227** today, and a full run reports **226 passed, 1 failed** — the
+  failure being `[light] planner.spec.mjs:128 CU4 — the due marker`, i.e. the
+  standing 4A.3 member of the parallel-load screenshot-flake class, re-verified
+  GREEN in isolation (16/16) in the same session. So the real ladder figure is
+  227 and the 4B.6a close-out's "225 passed" is two short. Nothing was removed
+  and nothing is skipped: the only `test.skip` in the harness
+  (`rolling.two_beat.spec.mjs:167`) is conditional on a missing forced
+  contradiction, and the fixture captures one, so it does not fire.
+
+### Named debts of this session (also in docs/07 §5a)
+
+* **`reopt_delta_abs` is labelled wrong** (§5a.12). The arithmetic closes; the
+  half it names is an objective mismatch, not window re-optimization.
+* **A completed order's coarse predictions are never retired** (§5a.13).
+* **The realization intake label does not discriminate at short windows**
+  (§5a.14).
+* **The pinned exam world runs at a DEFAULTED rho** (§5a.10 residue).
+* **`adapter._stable_id`'s comment says "URL namespace"** for what is the DNS
+  namespace. Cosmetic; the value is what matters and it is stable. Not touched —
+  it is one word in a comment, and changing it in a findings session is noise.
+
+### Out of scope, named (tempting, and left)
+
+Fixing the baseline ledger or the card's label. Changing id derivation. Scoping
+the data-root sweep. Retiring orphaned predictions. Regenerating the pinned exam
+submission so it declares its coarse derate. Cross-bucket allocation; splicing
+seams; the `--horizon-days` mis-shelving. Any golden move — the 4B.6a
+authorization was single-use and is spent, and no golden moved here.

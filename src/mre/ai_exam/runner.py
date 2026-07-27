@@ -301,15 +301,66 @@ def resolved_subject(subject_type: str, subject_external_name: str) -> dict:
     return {}
 
 
+# The SHIPPED card, verbatim (Session 4B.6b item 3b). Read off
+# ``tests/cockpit/fixtures/rolling/sandbox.json`` — the two-beat the fixture
+# builder captured from a real ``sandbox_pin_resolve`` — so a card bank feeds the
+# ask path exactly what ``drag/controller.js::cardContextFrom`` sends it.
+#
+# WHY IT WAS REPLACED. The synthesized pair was -11,975.83 = -11,600.00 +
+# -375.83: a move that SAVES inside a re-optimization that SAVES. The real card
+# is -11,953.08 = -11,975.83 + 22.75 — a move that COSTS $22.75 inside a
+# re-optimization that saves $11,975.83 — and that sign disagreement is the whole
+# point of the CU1 split. A bank whose card cannot express it grades the easy
+# half. Test-realism law: a context test feeds ONLY what the shipped surface
+# sends, in the shapes it sends them.
+_SHIPPED_CARD_COST_DELTA = -11953.08
+_SHIPPED_CARD_REOPT_DELTA = -11975.83
+_SHIPPED_CARD_MOVE_DELTA = 22.75
+_SHIPPED_CARD_COST_LINES = [
+    {"line": "tardiness", "delta": -11975.83},
+    {"line": "setup", "delta": 0.0},
+    {"line": "production (regular)", "delta": 22.75},
+    {"line": "production (overtime)", "delta": 0.0},
+    {"line": "other placement changes", "delta": 0.0},
+]
+_SHIPPED_CARD_AFFECTED = [
+    {"demand_ref": "a5e2ba83-dca5-5d86-95ce-af8f558e21ed",
+     "work_order": "ORD-000011", "tardiness_delta": -9800.42,
+     "lateness_delta_min": -24479},
+    {"demand_ref": "a11593de-eeb8-5dc6-9553-1369b380b411",
+     "work_order": "ORD-000003", "tardiness_delta": -2175.42,
+     "lateness_delta_min": -14338},
+    {"demand_ref": "eeb98ca1-0786-5090-af8f-67b2a65fc13f",
+     "work_order": "ORD-000022", "tardiness_delta": 0.0,
+     "lateness_delta_min": 10080},
+    {"demand_ref": "03570922-92a1-5544-bc00-9cc1dca64833",
+     "work_order": "ORD-000028", "tardiness_delta": 0.0,
+     "lateness_delta_min": 10080},
+]
+_SHIPPED_CARD_DRIVER = {
+    "code": "EARLINESS_PREFERENCE",
+    "phrase": "a declared earliness preference paid a little more to start it "
+              "sooner on a machine that was free earlier",
+    "hedge": "— though I'm attributing this by price alone, so I can't be "
+             "certain the earlier start was the real reason rather than the "
+             "cheaper machine simply being busy at the time (capacity pressure "
+             "can bind here too)",
+}
+
+
 def _exam_card(order: Optional[str], machine: Optional[str]) -> dict:
     """The card payload a ``CARD`` directive stands up (Session 4B.5 CU2).
 
-    A bank states WHICH move is showing; the figures around it are synthesized
-    here, deliberately and visibly. What a card bank grades is ROUTING — does a
-    question asked with a card open reach `open-card` rather than the nearest
-    plan-wide route — and the figures are the sandbox's own in the product, where
-    the answer reads them straight off the result. Synthesizing them here keeps
-    the bank about the thing it can grade.
+    A bank states WHICH move is showing; every figure around it is the SHIPPED
+    card's, lifted from the committed rolling fixture (see the constants above).
+    What a card bank grades is ROUTING — does a question asked with a card open
+    reach `open-card` rather than the nearest plan-wide route — but a route that
+    READS THE CARD BACK can only be graded against numbers the product actually
+    produces, signs included.
+
+    Only the identity fields vary with the directive: the order and machine the
+    bank names, and a synthetic ``operation_ref`` (an identifier, never a
+    figure — the exam world's own op ids are not the fixture's).
 
     The shape mirrors what ``askpanel.js`` sends, field for field, so a bank
     exercises the same contract the cockpit does."""
@@ -319,12 +370,18 @@ def _exam_card(order: Optional[str], machine: Optional[str]) -> dict:
         "order": order, "machine": machine,
         "when": "Jan 8, 08:30",
         "outcome": "verdict", "feasible": True,
-        "cost_delta_abs": -11975.83,
+        "message": "optimal delta proven",
+        "correlation_id": "corr-656ad68c26b888ee",
+        "cost_delta_abs": _SHIPPED_CARD_COST_DELTA,
         "attribution": "split",
-        "reopt_delta_abs": -11600.0, "move_delta_abs": -375.83,
+        "reopt_delta_abs": _SHIPPED_CARD_REOPT_DELTA,
+        "move_delta_abs": _SHIPPED_CARD_MOVE_DELTA,
         "attribution_note": "",
-        "affected_orders": [], "lateness_delta_min": 0, "moves": 3,
-        "no_committed_work_changes": True, "dominant_driver": None,
+        "cost_lines": [dict(l) for l in _SHIPPED_CARD_COST_LINES],
+        "affected_orders": [dict(a) for a in _SHIPPED_CARD_AFFECTED],
+        "lateness_delta_min": -28742, "moves": 7,
+        "no_committed_work_changes": True,
+        "dominant_driver": dict(_SHIPPED_CARD_DRIVER),
     }
 
 
