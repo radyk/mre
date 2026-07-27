@@ -1,6 +1,46 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.47 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.48 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.48:** **Session 4B.6 — the coarse zone: R-SC2's parked far-horizon clause, discharged**
+2026-07-27 (docs/04 R-SC2 coarse-zone amendment + session amendment). R-SC2 closed with
+"far-horizon look-ahead pricing: named, parked"; this session builds it. **Beyond-horizon
+demand is now coarsely PLACED, not merely listed.** The ruling's seven clauses govern
+everything: the coarse model is a RELAXATION, so only the NEGATIVE is ever claimed
+(coarse-infeasible ⇒ fine-infeasible, never the converse); the PROOF run (rho = 1.0) and the
+PLANNING run (rho declared) are different runs and only the first may prove anything; **rho is
+a declared IDS coefficient**, never a constant in solver code; coarse never constrains fine nor
+its admission policy; the two ledgers never fuse; coarse renders as LOAD, never as a bar; and
+the conformance report is ours to publish. **CU1** — `coarse_horizon.py`: `x[op,res,wk]`
+created only for capability-eligible pairs (eligibility carried by VARIABLE EXISTENCE, so an
+aggregation error is structurally unrepresentable), real calendar minutes entering as a NUMBER,
+coarse precedence, bucket tardiness, and a machine choice that is a **feasibility WITNESS, not
+a plan**. **CU2** — contract 1.8 → **1.9**, additive: `BeyondHorizonItem.coarse` +
+`RollingBlock.coarse_zone`. `earliest_window_estimate` is UNCHANGED (see the pre-flight below).
+**CU3** — the prediction store SHIPPED, not deferred: the document is a window-0 view by ruling,
+the audit is cross-roll, so predictions live in an append-only JSONL store keyed
+(run_id, demand, op, bucket, witness, run_label), with realization captured on BOTH intake
+paths — natural roll and **gravity admission**, the case where two mechanisms on record
+disagree about the same job. **CU4** — the RELAXATION GUARD makes clause (1) a theorem (87 ops
+mapped, 0 violations) and its **NEGATIVE CONTROL goes red** under a stubbed tightening (13
+violations); clause (2)'s necessity is DEMONSTRATED, not asserted (rho = 0.15 returns INFEASIBLE
+with 80 of 82 ops still modeled on an instance the proof run places). Cross-hashseed
+determinism on both runs. **CU5** — two intents join the closed vocabulary (`coarse-fit`,
+`bucket-load`; parse prompt **v9**) and a docked **density band** renders load, never bars;
+"when will ORD-X start" gets NO new route — it is already `why-not-scheduled-yet`, now carrying
+the coarse bucket beside the due-date heuristic. **No R-AI1 debt is left open.** **CU6** — rho
+is pipeline-proven per docs/06 §8 in full: doorway (§5.9 `refinements.coarse_horizon`), gate
+rule `ids.coarse_horizon_coefficients_sane` (registry v0.3 → **v0.4**, 35 → 36 rules), adapter
+translation with truthful provenance, a pilot_scale truth manifest and an anomaly generator.
+**PRE-FLIGHT: two of three tripwires fired.** (1) `excluded_demand_ids` DOES appear in the
+rolling path — but only as a READ of the validator's set; no rolling site writes it, so the
+disposition story stands, and a test now LOCKS that while it is true. (2)
+`earliest_window_estimate` was ALREADY POPULATED by a due-date backoff heuristic with tests, an
+AI route and fixture values — the design's premise that CU2 would finally fill it was FALSE, and
+overwriting it would have repurposed a live field. Ruled in-session: the coarse bucket sits
+BESIDE it. (3) The gravity setup-family-affinity debt was already recorded in docs/04 and here.
+**A SECOND FINDING, unasked:** `--horizon-days` writes `excluded_demand_ids` on a PRODUCTION
+path — see the carry-forward below. See the docs/04 2026-07-27 amendments.
 
 **v2.47:** **Session 4B.5 — round-five harvest: the card tells the truth about itself,
 and the R-F rulings land** 2026-07-26 (docs/04 amendment). **CU1 — DELTA ATTRIBUTION (the
@@ -1115,6 +1155,57 @@ The ticketing client. Entry conditions (the no-half-baked rule): Phase 1 exit pa
 **W3 — Go-to-Market surface (real in Phase 3).** The website, the demo script as repeatable asset, the certificate-as-sales-artifact motion, capability matrix = docs/05 with test-status.
 
 **W4 — Security & Compliance.** Encryption + secrets from first cloud deploy; tenant isolation architectural from tenant #2; audit story half-built by the evidence contract; certification on its trigger, post-window.
+
+## 5a. Carry-forwards owned here (named debts, not close-out prose)
+
+A debt named only in a session close-out does not exist. These are owned and
+re-read when the area is next touched; CLAUDE.md carries the short list, this is
+where the reasoning lives.
+
+1. **`--horizon-days` files horizon work as EXCLUSION** (found by a Session 4B.6
+   pre-flight, not fixed there — out of scope, naming it was the deliverable).
+   `src/mre/__main__.py` (251-300) adds every demand due beyond
+   `reference_date + N days` to `ValidationResult.excluded_demand_ids` — the same
+   set that carries GATE exclusions, i.e. data defects. It is a **production
+   path**, reachable through the API (`SolveRequest.horizon_days` →
+   `app.py:854`); `scenario.py:278-293` only reproduces it for what-if parity.
+   What it removes is exactly the population the coarse zone exists to price, so
+   it is **a horizon category shelved as a data-defect category**. It is not
+   silent (a MODEL_SIMPLIFICATION / POLICY_RULE Decision records the deferred
+   count), but the shelf is wrong: a demand deferred by a planning horizon is not
+   a demand we could not read. **NOT reachable from a rolling run** — the rolling
+   worker never passes it — so the coarse zone is not starved by it today.
+   *Fix shape:* a distinct `deferred_demand_ids` set with its own disposition, so
+   the completeness invariant can tell "beyond our horizon" from "we could not
+   use it". Blocked on nothing; sequenced behind the RawAdapter retirement, which
+   touches the same entry points.
+2. **Per-component gravity ablation** (4B.2c, restated here because Session 4B.6
+   built a mechanism ADJACENT to gravity and an unproven component must not be
+   invisible while we do). `test_gravity_counterfactual` proves the BUNDLE — all
+   three pulls on vs all off. **No INDIVIDUAL component is proven, and
+   setup-family affinity is the priced-air candidate** (it may contribute nothing
+   on its own). Also recorded in docs/04's 4B.2c amendment; now in CLAUDE.md's
+   carry-forwards, where it was missing.
+3. **The coarse-to-gravity UNLOCK CONDITION** (R-SC2 coarse-zone amendment clause
+   4). Coarse output must not reach gravity's criticality read or the window
+   build. Enforced today as an import-direction test. **Revisit only once the
+   conformance report (CU3's store) shows coarse bucket-tardiness is calibrated**
+   — stated in advance so a future coupling is a decision, not a drift.
+4. **The three deferred coarse refinements**, gated on CU3's data: family-presence
+   setup in the coarse model; **cross-bucket allocation for resumables** (today
+   resumable ops are EXCLUDED and named, because single-bucket forcing would
+   TIGHTEN the relaxation and break clause (1) — the exclusion is what makes the
+   clause true); and the per-WorkPackage makespan bound. Each is a TIGHTENING, so
+   each must be landed against the CU4 relaxation guard.
+5. **The coarse zone is UNEXERCISED at demo density.** On the 40-order
+   pilot_scale plant the beyond-horizon set is real (38 demands, 83 ops) but the
+   load is ~8% of derated capacity: no cell binds and coarse tardiness is 0. The
+   teeth at that size come from the clause-(2) and non-monotonicity tests. At 200
+   orders it binds properly. Same root as the 4B.2c CU5 finding — the demo
+   instance is too lightly loaded to exercise contention.
+6. **Coarse slip attribution is mostly `unattributed`.** A confident attribution
+   needs the FINE solve's binding constraints, which the prediction store does not
+   carry. The report states this about itself rather than guessing a cause.
 
 ## 6. Open rulings queue
 

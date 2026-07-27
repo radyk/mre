@@ -830,7 +830,11 @@ class RawAdapter:
                             ["version", "effective_from", "resource_rates",
                              "setup_cost_basis", "tardiness_weights",
                              "overtime_premium", "inventory_carrying",
-                             "earliness_value"],
+                             "earliness_value",
+                             # R-SC2 coarse-zone amendment (Session 4B.6): the
+                             # raw path declares no coarse-horizon coefficients,
+                             # so both are None under DEFAULTED provenance.
+                             "coarse_bucket_days", "coarse_capacity_derate"],
                             snapshot_id, cm_version_label)
         writer.write_entity(cm, cm_prov)
         if not cm_cfg:

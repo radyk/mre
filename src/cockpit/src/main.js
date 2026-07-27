@@ -13,6 +13,7 @@ import { wireInteraction } from "./interaction.js";
 import { mountDevLedger } from "./devledger.js";
 import { findNewerSchedule } from "./freshness.js";
 import { mountTray } from "./tray.js";
+import { mountCoarseBand } from "./coarse.js";
 
 // Rewrite the address bar to bind the given schedule version WITHOUT a reload
 // (session 3.8 CU1): a live accept/publish stays in the same session, but the
@@ -469,12 +470,21 @@ async function boot() {
     // board — mark the host BEFORE createBoard so vis sizes the timeline to the
     // reduced height (board flex:1 + tray fixed) from the first frame.
     if (doc.rolling) boardHost.parentElement.classList.add("has-tray");
+    // Session 4B.6 CU5: a rolling document that ran the COARSE ZONE docks a
+    // density band under the tray. Clause (6) — coarse output is LOAD, never a
+    // bar — so it is its own docked surface, not another timeline row.
+    if (doc.rolling && doc.rolling.coarse_zone) {
+      boardHost.parentElement.classList.add("has-coarse-band");
+    }
     const board = createBoard(boardHost, doc);
     const chrome = mountBoardChrome(boardHost, board);
     // Session 4B.3a CU2(d): the beyond-horizon tray — a docked panel of known
     // future work with no bar to draw. Present only on a rolling document; a
     // monolithic board mounts nothing. Docked in the board-host, below the board.
     const tray = mountTray(boardHost.parentElement, doc);
+    // Session 4B.6 CU5: the coarse zone's density band, below the tray. Returns
+    // null (renders nothing, claims nothing) when the coarse zone did not run.
+    const coarseBand = mountCoarseBand(boardHost.parentElement, doc);
     // Session 4B.3a CU2: on a rolling board, extend the legend with the sliced-
     // world vocabulary — the committed (locked) swatch + the frozen-boundary tick.
     if (doc.rolling) {
@@ -522,7 +532,7 @@ async function boot() {
       getTheme: currentTheme,
       setTheme: applyTheme,
       toggleTheme,
-      board, panel, tray,
+      board, panel, tray, coarseBand,
       ask: (q) => panel.run(q),
       select: (opRef) => board.select(opRef),
       highlight: (refs) => board.highlight(refs),

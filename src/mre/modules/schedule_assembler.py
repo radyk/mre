@@ -30,6 +30,10 @@ from mre.contracts.schedule_document import (
     BeyondHorizonItem,
     CalendarWindow,
     Chunk,
+    CoarseBucket,
+    CoarseDensityCell,
+    CoarsePlacementBlock,
+    CoarseZoneBlock,
     CONTRACT_VERSION,
     CostSummary,
     HorizonBlock,
@@ -359,6 +363,120 @@ def _earliest_window_estimate(demand: dict, working_min: int,
     return est if est > ref else ref
 
 
+def _coarse_zone_block(zone: Any) -> CoarseZoneBlock:
+    """Contract 1.9: the CoarseZoneBlock from a coarse_horizon.CoarseZone
+    (duck-typed, like ``plant``/``view``, so the assembler stays solver-free).
+
+    The run whose figures the document publishes is the PLANNING run — planning
+    signal is what a board shows. The PROOF run contributes exactly one thing:
+    ``infeasibility_proven``, and only when it holds (clause 2). Nothing here
+    converts a bucket into currency (clause 5)."""
+    coef, proof, plan = zone.coefficients, zone.proof, zone.planning
+
+    def _cells(d: dict) -> list:
+        out = []
+        for (rid, wk) in sorted(d):
+            load = int(d[(rid, wk)])
+            cap = int(plan.capacity.get((rid, wk), 0))
+            out.append(CoarseDensityCell(
+                resource_id=rid, bucket_index=wk, load_minutes=load,
+                capacity_minutes=cap,
+                utilization=(load / cap) if cap > 0 else 0.0))
+        return out
+
+    binding = [CoarseDensityCell(
+        resource_id=rid, bucket_index=wk, load_minutes=int(load),
+        capacity_minutes=int(cap), utilization=(load / cap) if cap else 0.0)
+        for (rid, wk, load, cap) in plan.binding]
+
+    return CoarseZoneBlock(
+        bucket_days=coef.bucket_days,
+        bucket_days_provenance=("declared" if coef.bucket_days_declared
+                                else "defaulted"),
+        capacity_derate=coef.capacity_derate,
+        capacity_derate_provenance=("declared" if coef.capacity_derate_declared
+                                    else "defaulted"),
+        buckets=[CoarseBucket(index=b.index, start=b.start, end=b.end)
+                 for b in zone.buckets],
+        proof_status=proof.status,
+        planning_status=plan.status,
+        planning_mirrors_proof=bool(getattr(plan, "mirrors_proof", False)),
+        infeasibility_proven=bool(proof.proves_infeasible),
+        tardiness_buckets_total=int(sum(plan.demand_tardiness_buckets.values())),
+        # a run that stopped at FEASIBLE proved no optimum: its tardiness is an
+        # UPPER BOUND, and every surface downstream must say so.
+        figures_are_upper_bounds=(plan.status == "FEASIBLE"),
+        wall_truncated=bool(plan.wall_truncated or proof.wall_truncated),
+        unmodelable_count=len(plan.unmodelable),
+        density=_cells(plan.density),
+        binding_cells=binding,
+    )
+
+
+def _coarse_placements_by_demand(zone: Any) -> dict:
+    """demand_id -> CoarsePlacementBlock, from the PLANNING run's placements.
+
+    A demand with ANY unmodelable op gets ``coarse_unmodelable`` carrying that
+    op's named reason — flagged and named, never a silent drop. Its remaining
+    ops may still be placed, but the demand-level disposition tells the truth
+    about the weakest link."""
+    plan = zone.planning
+    unmod_reason: dict = {}
+    for u in sorted(plan.unmodelable, key=lambda u: (u.demand_id, u.op_id)):
+        unmod_reason.setdefault(u.demand_id, u.reason)
+
+    by_demand: dict = {}
+    for p in sorted(plan.placements, key=lambda p: (p.demand_id, p.bucket_index,
+                                                    p.op_id)):
+        cur = by_demand.get(p.demand_id)
+        if cur is None:
+            by_demand[p.demand_id] = {"first": p, "last": p}
+        else:
+            if p.bucket_index < cur["first"].bucket_index:
+                cur["first"] = p
+            if p.bucket_index > cur["last"].bucket_index:
+                cur["last"] = p
+
+    buckets_by_index = {b.index: b for b in zone.buckets}
+    out: dict = {}
+    for did in sorted(set(by_demand) | set(unmod_reason)):
+        entry = by_demand.get(did)
+        if entry is None:
+            # every op unmodelable: no bucket at all, but the demand is NAMED
+            continue
+        first, last = entry["first"], entry["last"]
+        b = buckets_by_index.get(first.bucket_index)
+        if b is None:
+            continue
+        reason = unmod_reason.get(did)
+        out[did] = CoarsePlacementBlock(
+            start_bucket_index=first.bucket_index,
+            start_bucket_start=b.start, start_bucket_end=b.end,
+            completion_bucket_index=last.bucket_index,
+            resource_witness=first.resource_witness,
+            coarse_tardiness_buckets=int(
+                plan.demand_tardiness_buckets.get(did, 0)),
+            run_label=plan.label,
+            sub_disposition=("coarse_unmodelable" if reason
+                             else "coarsely_placed"),
+            unmodelable_reason=reason,
+        )
+    # demands whose EVERY op was unmodelable still need a visible disposition
+    for did, reason in sorted(unmod_reason.items()):
+        if did in out:
+            continue
+        b0 = zone.buckets[0] if zone.buckets else None
+        if b0 is None:
+            continue
+        out[did] = CoarsePlacementBlock(
+            start_bucket_index=-1, start_bucket_start=b0.start,
+            start_bucket_end=b0.end, completion_bucket_index=-1,
+            resource_witness="", coarse_tardiness_buckets=0,
+            run_label=plan.label, sub_disposition="coarse_unmodelable",
+            unmodelable_reason=reason)
+    return out
+
+
 def assemble_rolling_document(
     *,
     plant: Any,
@@ -366,10 +484,16 @@ def assemble_rolling_document(
     schedule_id: str,
     run_id: str,
     identity_map: Any = None,
+    coarse_zone: Any = None,
 ) -> ScheduleDocument:
-    """Assemble a contract-1.7 rolling document from a PreparedPlant + a
+    """Assemble a contract-1.9 rolling document from a PreparedPlant + a
     RollingView (rolling_horizon.build_rolling_view). ``plant`` and ``view`` are
-    duck-typed (attribute access only) to avoid a solver-module import cycle."""
+    duck-typed (attribute access only) to avoid a solver-module import cycle.
+
+    ``coarse_zone`` (contract 1.9, optional) is a
+    ``coarse_horizon.CoarseZone``. When given, the tray entries gain their
+    coarse placement and the RollingBlock gains the zone's density band. When
+    absent the document is exactly the 1.8 shape it was."""
     ref = view.reference_origin
     horizon = HorizonBlock(start=ref, end=view.window_end + timedelta(days=21))
 
@@ -461,6 +585,8 @@ def assemble_rolling_document(
 
     # ---- the beyond-horizon tray + window metadata --------------------------
     working_min_of = getattr(plant, "demand_working_minutes", {}) or {}
+    # contract 1.9: coarse placements, when the coarse zone ran for this view
+    coarse_of = _coarse_placements_by_demand(coarse_zone) if coarse_zone else {}
     beyond: list[BeyondHorizonItem] = []
     for did in view.beyond_demand_ids:
         d = demands_by_id.get(did, {})
@@ -471,8 +597,11 @@ def assemble_rolling_document(
             customer_name=(_external_name(identity_map, customer_ref, _CUSTOMER_REF_TYPES)
                            if customer_ref else None),
             due=_parse_dt(d.get("due")),
+            # UNCHANGED since 1.7 — the due-date backoff heuristic. The coarse
+            # bucket sits BESIDE it (``coarse``), never on top of it.
             earliest_window_estimate=_earliest_window_estimate(
                 d, int(working_min_of.get(did, 0)), ref),
+            coarse=coarse_of.get(did),
         ))
     beyond.sort(key=lambda b: (b.due or datetime.max.replace(tzinfo=UTC), b.work_order or "", b.demand_ref))
 
@@ -483,6 +612,7 @@ def assemble_rolling_document(
         window_days=view.window_days, frozen_days=view.frozen_days,
         committed_count=len(view.committed), active_count=len(view.active),
         beyond_horizon=beyond,
+        coarse_zone=(_coarse_zone_block(coarse_zone) if coarse_zone else None),
     )
 
     # ---- COMPLETENESS INVARIANT (the anti-silent-exclusion clause) ----------

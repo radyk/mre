@@ -196,6 +196,12 @@ ROUTE_TAXONOMY: dict[str, dict] = {
     "beyond-horizon":        {"params": [],          "canonical": "what's beyond the horizon?"},
     "why-not-scheduled-yet": {"params": ["order"],   "canonical": "why isn't {order} scheduled yet?"},
     "frozen":                {"params": [],          "canonical": "what's frozen?"},
+    # Session 4B.6 — the coarse zone (R-SC2 amendment). `coarse-fit` takes no
+    # subject: it is about the whole beyond-horizon book against capacity.
+    # `bucket-load` takes an optional `bucket` (a week number or a period the
+    # planner names); with none, the answer names the fullest cell it has.
+    "coarse-fit":            {"params": [],          "canonical": "will the coming work fit?"},
+    "bucket-load":           {"params": ["bucket"],  "canonical": "why is that week full?"},
 }
 
 
@@ -591,9 +597,11 @@ class Explainer:
         if route_id == "prove-it":
             return self._prove_it_bundle(q, params.get("claim"),
                                          params.get("answer"))
-        if route_id in ("beyond-horizon", "why-not-scheduled-yet", "frozen"):
+        if route_id in ("beyond-horizon", "why-not-scheduled-yet", "frozen",
+                        "coarse-fit", "bucket-load"):
             return self._rolling_bundle(route_id, q, params.get("document"),
-                                        params.get("order"))
+                                        params.get("order"),
+                                        params.get("bucket"))
         if route_id == "near-miss":
             return self._near_miss(q, params.get("offers", []),
                                    params.get("routes", []))
@@ -2433,8 +2441,10 @@ class Explainer:
         )
 
     def _rolling_bundle(self, route_id: str, question: str, document: Any,
-                        order: Optional[str] = None) -> ExplanationBundle:
-        """THE ROLLING (sliced-world) ROUTES (Session 4A.5c CU4).
+                        order: Optional[str] = None,
+                        bucket: Any = None) -> ExplanationBundle:
+        """THE ROLLING (sliced-world) ROUTES (Session 4A.5c CU4; the two coarse
+        routes added in Session 4B.6).
 
         The three answers still come from ``rolling_questions``, unchanged in
         authority and still authored, ID-free and hedged. What changed is how they
@@ -2453,6 +2463,10 @@ class Explainer:
             body = rq.answer_beyond_horizon(document)
         elif route_id == "frozen":
             body = rq.answer_frozen(document)
+        elif route_id == "coarse-fit":
+            body = rq.answer_coarse_fit(document)
+        elif route_id == "bucket-load":
+            body = rq.answer_bucket_load(document, bucket)
         else:
             body = rq.answer_why_not_scheduled_yet(document, order)
         return ExplanationBundle(
@@ -2461,7 +2475,8 @@ class Explainer:
             subject_type="rolling",
             subject_external_name=order or "?",
             ordered_records=[],
-            key_facts={"route": route_id, "body": body, "order": order},
+            key_facts={"route": route_id, "body": body, "order": order,
+                       "bucket": bucket},
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )

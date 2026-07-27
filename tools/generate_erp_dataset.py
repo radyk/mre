@@ -1234,6 +1234,14 @@ def _apply_pilot_scale(ds: Dataset, rng: random.Random, n_orders: int) -> dict:
     # under the cheapest machine's per-minute rate ($45/h = $0.75/min → the sane
     # band), so it is used as declared, not flagged. See PROFILE_PROVENANCE.md.
     ds.cost_model["refinements"]["earliness_value"] = 0.05
+    # R-SC2 coarse-zone amendment (Session 4B.6): pilot_scale DECLARES the
+    # far-horizon look-ahead coefficients, so the doorway is pipeline-proven
+    # (docs/06 sec 8) rather than model-proven. 0.85 is an authored planning
+    # derate — 15% of calendar time held back for the unknown — and weekly
+    # buckets match the profile's 7.5-day median lead time (the same
+    # measurement that set the 7-day window knee).
+    ds.cost_model["refinements"]["coarse_horizon"] = {
+        "bucket_days": 7, "capacity_derate": 0.85}
 
     n_res = len(ds.resources)
     return {
@@ -1342,6 +1350,21 @@ def _anomaly_bad_earliness_value(ds: Dataset, rng: random.Random, n: Any = None)
     ds.cost_model.setdefault("refinements", {})["earliness_value"] = -1.0
     return _entry("bad_earliness_value", "VALUE_OUT_OF_RANGE",
                   "ids.earliness_value_sane", "degraded", "warning",
+                  "defaulted", "CONDITIONAL")
+
+
+def _anomaly_bad_coarse_horizon(ds: Dataset, rng: random.Random, n: Any = None) -> dict:
+    """Rule #36 (R-SC2 coarse-zone amendment, clause 3): declare a capacity
+    derate as a PERCENTAGE rather than a fraction. rho is the fraction of
+    calendar capacity the far-horizon look-ahead may plan against, so it must
+    lie in (0, 1]; 85 is the single most likely slip and cannot be honored. It
+    degrades the grade to CONDITIONAL and is defaulted downstream to 1.0 — full
+    calendar capacity, recorded as DEFAULTED rather than declared, because a
+    coefficient we chose must never read as one the plant chose."""
+    ds.cost_model.setdefault("refinements", {})["coarse_horizon"] = {
+        "bucket_days": 7, "capacity_derate": 85}
+    return _entry("bad_coarse_horizon", "VALUE_OUT_OF_RANGE",
+                  "ids.coarse_horizon_coefficients_sane", "degraded", "error",
                   "defaulted", "CONDITIONAL")
 
 
@@ -1817,6 +1840,7 @@ _ANOMALY_FUNCS = {
     "duplicate_order_ids": _anomaly_duplicate_order_ids,
     "negative_quantity": _anomaly_negative_quantity,
     "bad_earliness_value": _anomaly_bad_earliness_value,
+    "bad_coarse_horizon": _anomaly_bad_coarse_horizon,
     "zero_lot_size": _anomaly_zero_lot_size,
     "inactive_route_refs": _anomaly_inactive_route_refs,
     "inverted_dates": _anomaly_inverted_dates,
@@ -1871,6 +1895,7 @@ RULE_TO_ANOMALY: dict[str, str] = {
     "ids.orders_use_active_routes": "inactive_route_refs:3",
     "ids.priority_classes_priced": "uncovered_priority_class",
     "ids.earliness_value_sane": "bad_earliness_value",
+    "ids.coarse_horizon_coefficients_sane": "bad_coarse_horizon",
     "ids.setup_families_have_transition_matrix": "setup_family_without_matrix",
     "ids.alternative_step_attributes_agree": "alternative_step_disagreement",
     "ids.transition_matrix_references_declared_families": "unused_transition_matrix",

@@ -58,6 +58,11 @@ html, body {
 .board-host.has-tray { display: flex; flex-direction: column; }
 .board-host.has-tray #tl { flex: 1 1 auto; min-height: 0; height: auto; }
 .board-host.has-tray .board-chrome { bottom: calc(var(--beyond-tray-h) + var(--sp-3)); }
+/* Session 4B.6 CU5: the coarse density band docks below the tray, so the board
+ * chrome clears both. */
+.board-host.has-tray.has-coarse-band .board-chrome {
+  bottom: calc(var(--beyond-tray-h) + var(--coarse-band-h) + var(--sp-3));
+}
 
 /* --- board chrome row (Session 4.3 CU1) --------------------------------- *
  * ONE layout row along the board bottom holding the legend (left) and the
@@ -666,6 +671,67 @@ html, body {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .beyond-tray .bt-due { font-size: var(--fs-2xs); color: var(--muted); flex: 0 0 auto; }
+
+/* =========================================================================
+ * Session 4B.6 CU5 — the COARSE ZONE's DENSITY BAND (R-SC2 amendment).
+ * CLAUSE (6): coarse output renders as LOAD, never as a bar. A resource x
+ * bucket grid whose cell ALPHA carries utilization; no timeline, no drag
+ * affordance, no bar geometry — a different epistemic status gets a different
+ * visual grammar. Every cell states its own arithmetic in its tooltip.
+ * ====================================================================== */
+.coarse-band {
+  flex: 0 0 var(--coarse-band-h); box-sizing: border-box;
+  display: flex; flex-direction: column; min-height: 0;
+  background: var(--coarse-bg); border-top: 1px solid var(--coarse-edge);
+  color: var(--coarse-ink);
+}
+.coarse-band .cb-head {
+  display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap;
+  padding: var(--sp-1) var(--sp-3); border-bottom: 1px solid var(--coarse-edge);
+  flex: 0 0 auto;
+}
+.coarse-band .cb-title {
+  font: var(--fw-bold) var(--fs-2xs)/1 var(--font-mono);
+  text-transform: uppercase; letter-spacing: var(--ls-caps); color: var(--muted);
+}
+.coarse-band .cb-note { font-size: var(--fs-2xs); color: var(--muted-2); }
+.coarse-band .cb-warn {
+  font: var(--fw-semibold) var(--fs-2xs)/1 var(--font-mono);
+  color: var(--coarse-hot-edge);
+}
+.coarse-band .cb-proof {
+  font: var(--fw-bold) var(--fs-2xs)/1 var(--font-mono); color: var(--coarse-proof);
+}
+.coarse-band .cb-grid {
+  overflow: auto; padding: var(--sp-2) var(--sp-3); min-height: 0;
+  display: grid; gap: var(--coarse-cell-gap);
+  grid-template-columns:
+    var(--coarse-rowhead-w)
+    repeat(var(--cb-cols, 1), minmax(var(--coarse-cell-min-w), 1fr));
+  align-content: start;
+}
+.coarse-band .cb-corner { grid-column: 1; }
+.coarse-band .cb-colhead,
+.coarse-band .cb-rowhead {
+  font: var(--fw-medium) var(--fs-2xs)/1 var(--font-mono); color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  align-self: center;
+}
+.coarse-band .cb-rowhead { text-align: right; padding-right: var(--sp-1); }
+.coarse-band .cb-cell {
+  height: var(--coarse-cell-h); border-radius: var(--coarse-cell-radius);
+  background: rgba(var(--coarse-cell-fill), var(--cb-u, 0));
+  box-shadow: inset 0 0 0 1px var(--coarse-cell-empty);
+}
+.coarse-band .cb-cell.cb-idle { background: var(--coarse-cell-empty); }
+.coarse-band .cb-cell.cb-hot {
+  background: var(--coarse-cell-hot);
+  box-shadow: inset 0 0 0 var(--coarse-hot-ring) var(--coarse-hot-edge);
+}
+.coarse-band .cb-foot {
+  font-size: var(--fs-2xs); color: var(--muted-2); flex: 0 0 auto;
+  padding: 0 var(--sp-3) var(--sp-1);
+}
 
 /* the legend (Session 4B.3a CU2): a committed swatch (locked edge) + the frozen
  * boundary tick, so the sliced-world vocabulary is legible. */

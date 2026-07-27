@@ -71,6 +71,9 @@ class RuleId(str, Enum):
     ORDERS_USE_ACTIVE_ROUTES = "ids.orders_use_active_routes"
     PRIORITY_CLASSES_PRICED = "ids.priority_classes_priced"
     EARLINESS_VALUE_SANE = "ids.earliness_value_sane"
+    # Session 4B.6 (R-SC2 coarse-zone amendment, clause 3): rho and the bucket
+    # length are DECLARED IDS coefficients, never constants in solver code.
+    COARSE_HORIZON_COEFFICIENTS_SANE = "ids.coarse_horizon_coefficients_sane"
     SETUP_FAMILIES_HAVE_TRANSITION_MATRIX = "ids.setup_families_have_transition_matrix"
     TRANSITION_MATRIX_REFERENCES_DECLARED_FAMILIES = (
         "ids.transition_matrix_references_declared_families")
@@ -154,7 +157,7 @@ _C = RuleCategory.CONDITIONAL
 _Q = RuleCategory.QUALITY
 _APP_A = "App A"
 
-# The Rule Registry v0.3 (35 rules). Order is documentation order (docs/06 §4).
+# The Rule Registry v0.4 (36 rules). Order is documentation order (docs/06 §4).
 RULE_REGISTRY: dict[RuleId, RuleSpec] = {
     r.rule_id: r for r in [
         # Boolean structural
@@ -199,6 +202,19 @@ RULE_REGISTRY: dict[RuleId, RuleSpec] = {
                            "dearer than the cheapest resource's per-minute rate is "
                            "almost certainly a unit error (hours vs minutes) and is "
                            "flagged — the gate checks, never repairs"),
+        _spec(RuleId.COARSE_HORIZON_COEFFICIENTS_SANE, _C,
+              FindingCode.VALUE_OUT_OF_RANGE,
+              "§5.9", note="cost_model refinements.coarse_horizon (R-SC2 "
+                           "coarse-zone amendment, clause 3): capacity_derate "
+                           "(rho, 0 < rho <= 1) and bucket_days (>= 1) govern "
+                           "the far-horizon look-ahead. Both optional; absent "
+                           "=> the stated defaults (rho 1.0 — a NO-OP derate, "
+                           "so an undeclared plant is never given an invented "
+                           "margin — and 7-day buckets), recorded as DEFAULTED "
+                           "provenance and printed as such in the certificate. "
+                           "An out-of-band or unparseable value is invalid "
+                           "(degraded, defaulted downstream and stripped of "
+                           "declared status). The gate checks; it never repairs"),
         _spec(RuleId.SETUP_FAMILIES_HAVE_TRANSITION_MATRIX, _C,
               FindingCode.AMBIGUOUS_SOURCE, "§5.11"),
         _spec(RuleId.TRANSITION_MATRIX_REFERENCES_DECLARED_FAMILIES, _C,
@@ -236,7 +252,7 @@ RULE_REGISTRY: dict[RuleId, RuleSpec] = {
     ]
 }
 
-assert len(RULE_REGISTRY) == 35, f"registry must hold 35 rules, has {len(RULE_REGISTRY)}"
+assert len(RULE_REGISTRY) == 36, f"registry must hold 36 rules, has {len(RULE_REGISTRY)}"
 
 
 # Finding severity derives from the DISPOSITION — what the system actually did —

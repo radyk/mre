@@ -1,6 +1,6 @@
 # Question-parse prompt — a GOVERNED ARTIFACT (R-AI5(1))
 
-    prompt_version: 8
+    prompt_version: 9
     ruling:         R-AI5(1) — every question is parsed FIRST by a language model
                     against a CLOSED intent vocabulary, with the conversation
                     history, live board selection, and last-answered subject as
@@ -84,6 +84,28 @@
                     `Intent`, `INTENT_MEANINGS`, `SubjectSource`,
                     `ROUTE_TAXONOMY`, `ROUTE_OFFERS`, the assembler and its
                     authored copy in the same commit as this bump.
+    v9:             Session 4B.6 (2026-07-27) — THE COARSE ZONE joins the
+                    vocabulary (R-SC2 coarse-zone amendment, R-AI1). Beyond-
+                    horizon demand is now coarsely PLACED rather than merely
+                    listed, which makes two questions answerable that previously
+                    had no route at all and would have fallen to the second tier
+                    for want of a vocabulary entry, not for want of grounds:
+                    `coarse-fit` ("will it fit", "can we take this on") and
+                    `bucket-load` ("why is week 3 full", "what's filling up
+                    March"). Both are ROLLING intents — they speak about the
+                    sliced world, whose state lives in the document's
+                    RollingBlock rather than in the window-0 snapshot.
+                    Deliberately NOT added: a route for "when will ORD-X start".
+                    That is already `why-not-scheduled-yet`, whose answer now
+                    carries the coarse bucket beside the due-date heuristic; a
+                    third route for it would be the ad-hoc bolt-on this ruling
+                    forbids. The asymmetry of the coarse model is carried in the
+                    MEANINGS so the model does not learn a false symmetry: a
+                    coarse refutation is a proof, a coarse placement is not a
+                    promise. A vocabulary-class change: `Intent`,
+                    `INTENT_MEANINGS`, `ROUTE_TAXONOMY`, `ROUTE_OFFERS`,
+                    `ROLLING_INTENTS`, the two answerers and their authored copy
+                    in the same commit as this bump.
 
 ## Review discipline
 

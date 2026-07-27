@@ -697,6 +697,28 @@ class IDSAdapter:
         # declared must not be recorded as one it did).
         earliness_declared = "earliness_value" in refinements
         earliness_value = _num(refinements.get("earliness_value"), 0.0)
+        # R-SC2 coarse-zone amendment clause 3 (docs/06 §5.9, Session 4B.6):
+        # refinements.coarse_horizon.{capacity_derate, bucket_days}. PRESENT and
+        # IN BAND => an OBSERVED fact; absent or invalid => None, which the
+        # coarse zone reads as DEFAULTED (rho 1.0, 7-day buckets) and says so.
+        # Writing our default under an observed sidecar would be the defect
+        # class the 2026-07-12 amendments named.
+        ch_raw = refinements.get("coarse_horizon")
+        ch = ch_raw if isinstance(ch_raw, dict) else {}
+        coarse_bucket_days = None
+        if "bucket_days" in ch:
+            try:
+                bd = int(ch["bucket_days"])
+                coarse_bucket_days = bd if bd >= 1 else None
+            except (TypeError, ValueError):
+                coarse_bucket_days = None
+        coarse_capacity_derate = None
+        if "capacity_derate" in ch:
+            try:
+                rho = float(ch["capacity_derate"])
+                coarse_capacity_derate = rho if 0.0 < rho <= 1.0 else None
+            except (TypeError, ValueError):
+                coarse_capacity_derate = None
         cm = CostModel(
             id=cm_id, snapshot_id=snapshot_id, version=1, effective_from=None,
             resource_rates=resource_rates,
@@ -711,6 +733,8 @@ class IDSAdapter:
             overtime_premium=_num(refinements.get("overtime_premium_multiplier")),
             inventory_carrying=_num(refinements.get("inventory_carrying")),
             earliness_value=earliness_value,
+            coarse_bucket_days=coarse_bucket_days,
+            coarse_capacity_derate=coarse_capacity_derate,
         )
         cm_prov = _def_list(cm_id, ["version", "effective_from", "resource_rates", "setup_cost_basis",
                                    "tardiness_weights", "overtime_premium", "inventory_carrying"],
@@ -721,6 +745,16 @@ class IDSAdapter:
         else:
             cm_prov.append(_def(cm_id, "earliness_value", snapshot_id,
                                 "ids_cost_model_v1_default_zero"))
+        for _field, _value, _src in (
+                ("coarse_bucket_days", coarse_bucket_days,
+                 "refinements.coarse_horizon.bucket_days"),
+                ("coarse_capacity_derate", coarse_capacity_derate,
+                 "refinements.coarse_horizon.capacity_derate")):
+            if _value is not None:
+                cm_prov.append(_obs(cm_id, _field, snapshot_id, _src))
+            else:
+                cm_prov.append(_def(cm_id, _field, snapshot_id,
+                                    "ids_cost_model_v1_coarse_horizon_absent"))
         writer.write_entity(cm, cm_prov)
 
         # ------------------------------------------------------------

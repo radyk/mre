@@ -930,6 +930,61 @@ class ConformanceGate:
                            "cheapest_resource_rate_per_min": cheapest_per_min})
 
         # ------------------------------------------------------------
+        # Conditional integrity: coarse-horizon coefficients sane
+        # (R-SC2 coarse-zone amendment clause 3, Session 4B.6).
+        # cost_model refinements.coarse_horizon governs the FAR-HORIZON
+        # look-ahead: capacity_derate (rho) and bucket_days. rho is a DECLARED
+        # coefficient precisely so no constant in solver code can shave capacity
+        # off a plant that never asked for it — the same prohibition R-SC3(3)
+        # applies to earliness. Absent => the stated defaults (rho 1.0, a NO-OP
+        # derate; 7-day buckets), which the certificate prints as DEFAULTED so a
+        # default can never read as the customer's choice. Out of band or
+        # unparseable => DEGRADED (defaulted downstream, declared status lost).
+        # The gate checks; the adapter proceeds.
+        # ------------------------------------------------------------
+        coarse_decl = (cm_refinements.get("coarse_horizon") or {}
+                       if isinstance(cm_refinements.get("coarse_horizon"), dict)
+                       else {})
+        if cost_model is not None and not cost_model_bad_json \
+                and "coarse_horizon" in cm_refinements:
+            problems: list[str] = []
+            if "capacity_derate" in coarse_decl:
+                raw_rho = coarse_decl.get("capacity_derate")
+                try:
+                    rho_v = float(raw_rho)
+                    if not (0.0 < rho_v <= 1.0):
+                        problems.append(
+                            f"capacity_derate {rho_v:g} is outside (0, 1] — a "
+                            f"derate is a FRACTION of calendar capacity")
+                except (TypeError, ValueError):
+                    problems.append(
+                        f"capacity_derate {raw_rho!r} is not a number")
+            if "bucket_days" in coarse_decl:
+                raw_bd = coarse_decl.get("bucket_days")
+                try:
+                    bd_v = int(raw_bd)
+                    if bd_v < 1:
+                        problems.append(f"bucket_days {bd_v} is less than 1")
+                except (TypeError, ValueError):
+                    problems.append(f"bucket_days {raw_bd!r} is not an integer")
+            if not isinstance(cm_refinements.get("coarse_horizon"), dict):
+                problems.append("coarse_horizon is not an object")
+            if problems:
+                ch_outcome = RuleOutcome.DEGRADED
+                ch_msg = ("coarse_horizon coefficients are invalid: "
+                          + "; ".join(problems)
+                          + " — defaulted downstream (rho 1.0, 7-day buckets) "
+                            "and recorded as DEFAULTED, not declared")
+                ch_disp = FindingDisposition.DEFAULTED
+            else:
+                ch_outcome = RuleOutcome.SATISFIED
+                ch_msg = "coarse_horizon coefficients within their declared bands"
+                ch_disp = FindingDisposition.PROCEEDED_FLAGGED
+            record(RuleId.COARSE_HORIZON_COEFFICIENTS_SANE, ch_outcome,
+                   _submission_subject(), ch_msg, disposition=ch_disp,
+                   detail={"coarse_horizon": cm_refinements.get("coarse_horizon")})
+
+        # ------------------------------------------------------------
         # Quality (informational; never degrades a grade)
         # ------------------------------------------------------------
         ref_date = (date.fromisoformat(manifest["reference_date"][:10])

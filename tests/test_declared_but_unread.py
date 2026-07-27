@@ -119,6 +119,15 @@ _DORMANT_REGISTER: dict[tuple[str, str], str] = {
     ("process", "effective_from"): "reserved for multi-version/temporal process tracking; single-snapshot solves don't need it yet",
     ("costmodel", "effective_from"): "reserved for multi-version/temporal cost-model tracking; single-snapshot solves don't need it yet",
     ("costmodel", "inventory_carrying"): "reserved cost-model term, not yet priced into any objective",
+    # R-SC2 coarse-zone amendment clause 4 (Session 4B.6): these two ARE
+    # consumed — by coarse_horizon.CoarseCoefficients.from_cost_model — but by
+    # design NOT by any module in _CONSUMER_MODULES. Clause (4) is exactly the
+    # rule that COARSE NEVER CONSTRAINS FINE: the far-horizon look-ahead reads
+    # them, the window solve re-decides from scratch and must never see them.
+    # Their appearance in the fine pipeline would be the defect, not their
+    # absence from it.
+    ("costmodel", "coarse_bucket_days"): "R-SC2 coarse-zone clause 4 — read by coarse_horizon.CoarseCoefficients.from_cost_model; the fine pipeline must NOT read it",
+    ("costmodel", "coarse_capacity_derate"): "R-SC2 coarse-zone clause 4 — rho, read by coarse_horizon.CoarseCoefficients.from_cost_model; the fine pipeline must NOT read it",
 }
 
 

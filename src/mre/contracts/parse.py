@@ -100,6 +100,27 @@ class Intent(str, Enum):
     BEYOND_HORIZON = "beyond-horizon"
     WHY_NOT_SCHEDULED_YET = "why-not-scheduled-yet"
     FROZEN = "frozen"
+    # Session 4B.6 (R-SC2 coarse-zone amendment) — THE COARSE ZONE reaches the
+    # ask path (R-AI1). Beyond-horizon work is now coarsely PLACED, not merely
+    # listed, so two questions became answerable that previously had no route
+    # and would have fallen to synthesis for want of a vocabulary entry:
+    #
+    #   COARSE_FIT  — "will it fit?" / "can we take this on?". Answered from the
+    #                 PROOF run ONLY (clause 2), and only the NEGATIVE is ever
+    #                 claimed: a complete proof-run INFEASIBLE names the
+    #                 resource-week that refutes it. A proof run that PLACES the
+    #                 book proves nothing about the fine model, and the answer
+    #                 says exactly that rather than converting it into a yes.
+    #   BUCKET_LOAD — "why is week N full?". Answered from the binding capacity
+    #                 constraint: the resource-week, its load, and its DERATED
+    #                 capacity, with rho and its provenance stated.
+    #
+    # "When will ORD-X start?" deliberately gets NO new intent: it is already
+    # `why-not-scheduled-yet`, whose answer now carries the coarse bucket beside
+    # the due-date heuristic. Adding a route for it would have been the ad-hoc
+    # bolt-on the session brief forbids.
+    COARSE_FIT = "coarse-fit"
+    BUCKET_LOAD = "bucket-load"
     # -- dispatch outcomes, not planner intents (never offered to the model) --
     UNKNOWN_ENTITY = "unknown-entity"
     # -- R-AI5 additions -----------------------------------------------------
@@ -450,6 +471,18 @@ INTENT_MEANINGS: dict[Intent, str] = {
     Intent.FROZEN:
         "what is frozen / committed / locked in and will not move as the plan "
         "rolls forward (rolling runs)",
+    Intent.COARSE_FIT:
+        "whether known future work FITS — \"will it fit\", \"can we take this "
+        "on\", \"is there room for this\", \"can the plant absorb the backlog\". "
+        "About CAPACITY over the coming weeks, not about one order's placement "
+        "(that is `why-not-scheduled-yet`) and not about lateness in the current "
+        "window (that is `late-orders`) (rolling runs)",
+    Intent.BUCKET_LOAD:
+        "why a future WEEK or period is full / saturated / has no room — \"why "
+        "is week 3 full\", \"what's filling up March\", \"which machine is the "
+        "bottleneck beyond the horizon\". About a coarse time bucket's capacity, "
+        "not about a machine's current-window schedule (that is "
+        "`machine-schedule`) (rolling runs)",
     Intent.CONFIRM_TAKE:
         "the planner is repeating the assistant's OWN prior suggestion back as a "
         "question, to confirm it (\"so move the first operation earlier?\")",

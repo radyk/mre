@@ -337,6 +337,36 @@ rules:
       degraded: "earliness_value is negative or unparseable; it is defaulted to 0 (earliness reverts to a free tiebreak) and triage is required"
     note_version: 1
 
+  - rule_id: ids.coarse_horizon_coefficients_sane
+    meaning: >
+      cost_model refinements.coarse_horizon (R-SC2 coarse-zone amendment)
+      governs the FAR-HORIZON look-ahead — the coarse capacity model that
+      places known work beyond the current scheduling window into weekly
+      buckets. capacity_derate (rho) is the FRACTION of calendar capacity the
+      planning run may use, between 0 and 1; bucket_days is the bucket length.
+      Both are optional. Absent, they default to a no-op derate of 1.0 and
+      7-day buckets, and the certificate prints them as DEFAULTED — we never
+      shave capacity off a plant that did not ask us to.
+    typical_causes:
+      - a derate entered as a PERCENTAGE (85) rather than a fraction (0.85)
+      - a derate of 0, which would leave no capacity at all
+      - bucket_days set to 0 or a non-integer
+      - coarse_horizon written as a string or list rather than an object
+    fix_looks_like: >
+      Declare the §5.9 cost_model refinements.coarse_horizon as an object
+      with capacity_derate strictly between
+      0 and 1 (0.85 means "plan against 85% of calendar time, holding 15% back
+      for the unknown") and bucket_days as a whole number of days, typically 7.
+      An out-of-band value cannot be honored: it is defaulted downstream and
+      loses its declared status, so the look-ahead runs against full calendar
+      capacity and says so. Leave coarse_horizon absent to accept the defaults
+      deliberately — that is a valid choice, and it is disclosed as ours rather
+      than reported as yours.
+    verify: resubmit; the certificate reports both coefficients with their provenance (declared or defaulted)
+    outcome_phrasing:
+      degraded: "a coarse_horizon coefficient is out of band or unparseable; it is defaulted (full calendar capacity, weekly buckets), recorded as defaulted rather than declared, and triage is required"
+    note_version: 1
+
   - rule_id: ids.order_dates_internally_consistent
     meaning: >
       Within each order, the dates must tell a possible story — due on or

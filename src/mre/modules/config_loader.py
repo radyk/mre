@@ -88,12 +88,17 @@ def load_cost_model(
         overtime_premium=raw.get("overtime_premium", 0.0),
         inventory_carrying=raw.get("inventory_carrying", 0.0),
         earliness_value=raw.get("earliness_value", 0.0),   # R-SC3
+        # R-SC2 coarse-zone amendment clause 3 (Session 4B.6): None means the
+        # config was silent, which the coarse zone reads as DEFAULTED.
+        coarse_bucket_days=raw.get("coarse_bucket_days"),
+        coarse_capacity_derate=raw.get("coarse_capacity_derate"),
     )
 
     attrs = [
         "version", "effective_from", "resource_rates",
         "setup_cost_basis", "tardiness_weights",
         "overtime_premium", "inventory_carrying", "earliness_value",
+        "coarse_bucket_days", "coarse_capacity_derate",
     ]
     provenance = [_defaulted(cm_id, a, snapshot_id, policy_label) for a in attrs]
     return cm, provenance, unresolved_keys

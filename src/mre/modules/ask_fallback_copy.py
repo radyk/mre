@@ -68,6 +68,9 @@ ROUTE_OFFERS = {
     "beyond-horizon": "show what lies beyond the planning horizon",
     "why-not-scheduled-yet": "explain why {order} isn't scheduled yet",
     "frozen": "show what is frozen",
+    # Session 4B.6 — the coarse zone (R-SC2 amendment).
+    "coarse-fit": "check whether the work beyond the horizon fits",
+    "bucket-load": "show what is filling up a week beyond the horizon",
 }
 
 # Generic planner nouns when a param slot has nothing resolved to fill it.

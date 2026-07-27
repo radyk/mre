@@ -110,6 +110,19 @@ GET  /runs/{run_id}              -> data.status, data.result.schedule_id
 GET  /schedules                  -> every registered schedule (the cockpit's list)
 ```
 
+The COARSE ZONE is opt-in per solve and backend-only at the module level: build a
+`RollingView`, then
+
+```python
+from mre.modules.coarse_horizon import build_coarse_zone
+zone = build_coarse_zone(plant, view)              # rho/bucket_days from the cost model
+doc  = assemble_rolling_document(..., coarse_zone=zone)   # 1.9 blocks appear
+```
+
+`zone.certificate_block()` carries rho + its provenance (acceptance: a hidden default
+is a failure). Declare the coefficients in a submission via `cost_model.json`
+`refinements.coarse_horizon = {"bucket_days": 7, "capacity_derate": 0.85}`.
+
 A submission dir is IDS files (`manifest.json` + the seven required tables), NOT a
 generator scenario name or a profile dir; generate one with
 `python tools/generate_erp_dataset.py --scenario <name> --out <dir>`. `time_limit`
@@ -137,8 +150,40 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.5 — round-five harvest: the card tells the truth about itself, and the
-R-F rulings land**, 2026-07-26 (docs/07 v2.47; docs/04 amendment same date).
+**Session 4B.6 — the coarse zone: R-SC2's parked far-horizon clause, discharged**,
+2026-07-27 (docs/07 v2.48; docs/04 amendments same date).
+
+**THE COARSE ZONE (R-SC2 amendment, 4B.6).** Beyond-horizon demand is coarsely
+PLACED, not merely listed (`src/mre/modules/coarse_horizon.py`; contract **1.9**
+adds `BeyondHorizonItem.coarse` + `RollingBlock.coarse_zone`, both Optional and
+absent on a monolithic run). Seven clauses govern it, and the ones that bite:
+
+- **RELAXATION, ALWAYS.** Only the NEGATIVE is claimed — coarse-INFEASIBLE implies
+  fine-INFEASIBLE; **the converse is never asserted in code, certificate or AI
+  answer.** The relaxation guard (`tests/test_coarse_horizon.py`) makes this a
+  theorem, and its NEGATIVE CONTROL proves the guard can go red.
+- **THE PROOF RUN AND THE PLANNING RUN ARE DIFFERENT RUNS.** `proves_infeasible`
+  is the only gate the negative escapes through: False for a planning run, a
+  FEASIBLE run, and a wall-truncated one.
+- **rho IS A DECLARED IDS COEFFICIENT** (docs/06 §5.9 `refinements.coarse_horizon`),
+  pipeline-proven per §8. Defaulted rho is **1.0 — a no-op derate**; an undeclared
+  plant is never given an invented margin, and provenance prints beside the value.
+- **COARSE NEVER CONSTRAINS FINE, nor its admission policy** — enforced as an
+  import-direction test. Unlock condition is stated in docs/07 §5a, not left to drift.
+- **TWO LEDGERS, NEVER FUSED** — enforced by SHAPE: coarse tardiness is counted in
+  BUCKETS and there is no currency field on the coarse surface at all.
+- **COARSE NEVER RENDERS AS A BAR** — a density band (`src/cockpit/src/coarse.js`).
+- Predictions are persisted OUTSIDE the document (`coarse_predictions.py`): the
+  document is a window-0 view, the audit is cross-roll. Realization is captured on
+  both intake paths — natural roll and **gravity admission**.
+- Resumable ops are EXCLUDED and NAMED (`coarse_unmodelable`), because
+  single-bucket forcing would TIGHTEN the relaxation. The exclusion is what makes
+  clause (1) true; the ruling's own "permissive" parenthetical is corrected in
+  docs/04.
+- Ask path: `coarse-fit` + `bucket-load` join the closed vocabulary (parse prompt
+  **v9**). "When will ORD-X start" gets NO new route — it is
+  `why-not-scheduled-yet`, now carrying the coarse bucket BESIDE the untouched
+  `earliest_window_estimate` heuristic (two figures, two methods, never fused).
 
 **THE DELTA CARD SPLITS ITS VERDICT (4B.5 CU1).** `cost_delta_abs` measures the
 RE-SOLVE, not the move — two different gestures on one incumbent produced identical
@@ -282,6 +327,21 @@ committed with its doc update.
   unexercised).
 - Pilot-volume latency (174 workcenters) is UNMEASURED — every committed figure is demo
   density.
+- **`--horizon-days` files horizon work as EXCLUSION on a PRODUCTION path**
+  (`__main__.py` 251-300, reachable via `SolveRequest.horizon_days`): demand due
+  beyond ref+N joins the same set that carries gate exclusions — a horizon category
+  shelved as a data-defect category. NOT reachable from a rolling run. Full reasoning
+  and fix shape in docs/07 §5a.
+- **Per-component gravity ablation** (4B.2c): the counterfactual proves the BUNDLE;
+  **no individual pull is proven, and setup-family affinity is the priced-air
+  candidate.** Restated here because 4B.6 built a mechanism adjacent to gravity.
+- 4B.6 debts (all in docs/07 §5a): the three deferred coarse refinements (family-presence
+  setup, cross-bucket allocation for resumables, the WP makespan bound — each a
+  TIGHTENING, so each must land against the CU4 guard); the coarse zone is UNEXERCISED
+  at demo density (38 beyond-horizon demands but ~8% load, nothing binds — it bites at
+  200 orders); coarse slip attribution is mostly `unattributed` by construction;
+  `coarse_horizon.py` carries its own narrow ortools surface (a stated deviation from
+  the solver_builder/solve_runner quarantine, not an oversight).
 
 Everything else — what a session built, its test counts, its commit — lives in docs/04
 and docs/07. Do not restate it here.

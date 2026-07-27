@@ -41,7 +41,7 @@ def _run_gate(sub_dir: Path, runs_dir: Path):
 
 class TestRegistryShape:
     def test_thirty_five_rules(self):
-        assert len(RULE_REGISTRY) == 35
+        assert len(RULE_REGISTRY) == 36
 
     def test_every_implemented_rule_has_an_anomaly(self):
         """Completeness by construction: the coverage map must name a trigger

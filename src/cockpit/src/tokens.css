@@ -131,6 +131,17 @@
   --committed-inset: 1.5px;         /* the locked-edge inset on a committed bar */
   --beyond-tray-h: 116px;           /* the docked beyond-horizon tray height */
 
+  /* --- the COARSE ZONE's density band (Session 4B.6 CU5) --------------
+   * Clause (6): coarse output is LOAD, not placement, so it gets its own
+   * geometry — a resource x bucket grid, never the timeline's bar metrics. */
+  --coarse-band-h: 132px;           /* the docked density-band height */
+  --coarse-cell-h: 14px;            /* one resource-week cell */
+  --coarse-cell-min-w: 34px;
+  --coarse-cell-gap: 2px;
+  --coarse-rowhead-w: 92px;
+  --coarse-cell-radius: var(--radius-xs);
+  --coarse-hot-ring: 1.5px;         /* the at-capacity cell's ring width */
+
   --setup-hatch-px: 4px;            /* setup leading-segment hatch pitch (CU5) */
   --chunk-link-width: 2px;          /* split-op kinship connector (CU5) */
 

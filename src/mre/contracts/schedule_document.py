@@ -118,6 +118,24 @@ Version history:
   4B.3a/4B.3b debts named). A monolithic document is byte-unchanged apart from the
   version string; a 1.7 consumer ignores nothing new (the field already existed).
   MINOR.
+
+* **1.9** (Session 4B.6) — THE COARSE ZONE (R-SC2 amendment): beyond-horizon
+  demand is coarsely PLACED rather than merely listed. Additive only. A rolling
+  document gains ``rolling.coarse_zone`` (``CoarseZoneBlock``: the declared
+  bucket length and derate rho WITH THEIR PROVENANCE, the bucket grid, per-run
+  status, and the per-resource-per-bucket density band) and each tray entry
+  gains ``coarse`` (``CoarsePlacementBlock``: its bucket, a resource
+  FEASIBILITY WITNESS, coarse tardiness in BUCKETS, and the run label the figure
+  came from). Both are Optional and None when the coarse zone did not run.
+  ``earliest_window_estimate`` is UNCHANGED — it remains the due-date backoff
+  heuristic it has been since 1.7, and the coarse bucket sits beside it rather
+  than overwriting it (a 4B.6 pre-flight found the heuristic already populated
+  on every tray entry with a due date; filling it from the coarse bucket would
+  have repurposed a live field, which CLAUDE.md forbids). A MONOLITHIC document
+  is byte-unchanged apart from the version string: it has no beyond-horizon set,
+  so ``rolling`` is None and the whole block is simply absent. Coarse currency
+  never appears — coarse tardiness is counted in buckets, so no consumer can sum
+  it into ``cost_summary`` (clause 5, enforced by shape). MINOR.
 """
 from __future__ import annotations
 
@@ -128,7 +146,7 @@ from pydantic import BaseModel, model_validator
 
 from mre.contracts.vocabularies import ScheduleStatus
 
-CONTRACT_VERSION = "1.8"
+CONTRACT_VERSION = "1.9"
 
 # Exact decomposition tolerance: cost components are currency values
 # accumulated in float; "exactly" means to the cent, matching the
@@ -365,6 +383,91 @@ class InteractionBlock(BaseModel):
     precedence_edges: list[PrecedenceEdgeBlock] = []
 
 
+class CoarseBucket(BaseModel):
+    """One coarse-zone bucket (contract 1.9, R-SC2 coarse-zone amendment). Fixed
+    length, DECLARED not hardcoded (``CoarseZoneBlock.bucket_days``), spanning
+    from the active-window end to the last beyond-horizon due date plus a
+    capacity-sized tail."""
+    index: int
+    start: datetime
+    end: datetime
+
+
+class CoarseDensityCell(BaseModel):
+    """Load against DERATED capacity for one resource in one bucket.
+
+    CLAUSE (6) — COARSE NEVER RENDERS AS A BAR. Bars mean placement; this is
+    LOAD. The cockpit draws these as a density band per resource per bucket:
+    different epistemic status, different visual grammar. ``load_minutes`` and
+    ``capacity_minutes`` are both carried so the reader checks the arithmetic
+    rather than trusting an adjective."""
+    resource_id: str
+    bucket_index: int
+    load_minutes: int
+    capacity_minutes: int                      # already DERATED by rho
+    utilization: float                         # load / capacity, 0.0 when cap==0
+
+
+class CoarsePlacementBlock(BaseModel):
+    """One beyond-horizon demand's COARSE placement (contract 1.9).
+
+    A coarse placement is an ALLOCATION TO A BUCKET, never a schedule. It comes
+    from a relaxation of the fine model whose only claimed direction is the
+    negative (coarse-infeasible ⇒ fine-infeasible), so every consumer — the
+    cockpit, the AI layer — must present it as an estimate carrying its
+    ``run_label``, never as a placement.
+
+    ``resource_witness`` is a FEASIBILITY WITNESS, NOT A PLAN. It exists because
+    per-resource capacity cannot be checked honestly without deciding which
+    resource's bucket budget an op consumes. It is not rendered as an
+    assignment, and the fine solve re-decides it freely."""
+    start_bucket_index: int                    # earliest bucket any of its ops occupies
+    start_bucket_start: datetime               # → "when will ORD-X start?" (an ESTIMATE)
+    start_bucket_end: datetime
+    completion_bucket_index: int               # the terminal op's bucket
+    resource_witness: str                      # WITNESS, never a plan (see above)
+    coarse_tardiness_buckets: int              # BUCKETS, never currency (clause 5)
+    run_label: str                             # "proof" | "planning" — clause (2)
+    sub_disposition: str                       # coarsely_placed | coarse_unmodelable
+    unmodelable_reason: Optional[str] = None   # named, never a silent drop
+    #                                            resumable_out_of_scope |
+    #                                            exceeds_bucket_capacity |
+    #                                            no_eligible_resource
+
+
+class CoarseZoneBlock(BaseModel):
+    """The coarse zone's run-level facts (contract 1.9, R-SC2 amendment).
+
+    CLAUSE (3): ``capacity_derate`` (rho) and ``bucket_days`` are DECLARED IDS
+    coefficients (docs/06 §5.9), and each carries its provenance — a defaulted
+    value can never read as a customer's choice.
+
+    CLAUSE (5) — TWO LEDGERS, NEVER FUSED: coarse tardiness is reported in
+    BUCKETS and there is no currency field here at all, so no caller can add it
+    to ``cost_summary`` by accident. The shape enforces the discipline."""
+    bucket_days: int
+    bucket_days_provenance: str                # "declared" | "defaulted"
+    capacity_derate: float                     # rho
+    capacity_derate_provenance: str            # "declared" | "defaulted"
+    buckets: list[CoarseBucket] = []
+    proof_status: str                          # OPTIMAL | FEASIBLE | INFEASIBLE | UNKNOWN
+    planning_status: str
+    planning_mirrors_proof: bool = False       # rho == 1.0 ⇒ copied, not re-solved
+    # CLAUSE (1)+(2): True only when the PROOF run (rho = 1.0) returned a
+    # COMPLETE (not wall-truncated) INFEASIBLE. This is the only field that
+    # licenses "this cannot fit", and it licenses the NEGATIVE only — the
+    # converse is never asserted anywhere.
+    infeasibility_proven: bool = False
+    tardiness_buckets_total: int = 0
+    # True when a run stopped at FEASIBLE rather than OPTIMAL: its objective and
+    # tardiness figures are UPPER BOUNDS, and every surface must say so.
+    figures_are_upper_bounds: bool = False
+    wall_truncated: bool = False
+    unmodelable_count: int = 0
+    density: list[CoarseDensityCell] = []
+    binding_cells: list[CoarseDensityCell] = []   # at/near capacity → "why is week N full?"
+
+
 class BeyondHorizonItem(BaseModel):
     """One admitted-but-unscheduled future job (contract 1.7): known work with
     no placement yet — it has no bar to draw, so it lives in the board's tray.
@@ -384,6 +487,14 @@ class BeyondHorizonItem(BaseModel):
     #                                            not derivable (no due). It is an
     #                                            estimate, never a placement — the
     #                                            AI answer hedges accordingly.
+    # Contract 1.9 (R-SC2 coarse-zone amendment): the COARSE placement, when the
+    # coarse zone ran. DISTINCT from earliest_window_estimate above, which stays
+    # exactly what it has always been — a due-date backoff heuristic. The two are
+    # different figures from different methods and are never fused: a 4B.6
+    # pre-flight found the heuristic already populated on every tray entry with a
+    # due date, so filling it from the coarse bucket would have silently
+    # repurposed a live field (CLAUDE.md: add, never repurpose).
+    coarse: Optional[CoarsePlacementBlock] = None
 
 
 class RollingBlock(BaseModel):
@@ -403,6 +514,10 @@ class RollingBlock(BaseModel):
     committed_count: int = 0                   # bars in the ``committed`` state
     active_count: int = 0                      # bars in the ``active_window`` state
     beyond_horizon: list[BeyondHorizonItem] = []   # the tray (may be empty)
+    # Contract 1.9: the coarse zone over the tray. None when the coarse zone did
+    # not run (it is opt-in per solve), so a 1.8-shaped rolling document remains
+    # exactly what it was.
+    coarse_zone: Optional[CoarseZoneBlock] = None
 
 
 class Annotations(BaseModel):

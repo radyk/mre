@@ -1,269 +1,390 @@
-SESSION 4B.5 CLOSE-OUT
-Round-five harvest: the card tells the truth about itself, and the R-F rulings land
-2026-07-26
+SESSION 4B.6 CLOSE-OUT -- THE COARSE ZONE
+R-SC2's parked far-horizon look-ahead clause, discharged
+2026-07-27
 
-Repo: C:\dev\mre, branch master. Deterministic settings throughout.
-docs/07 v2.47; docs/04 amendment same date; CLAUDE.md position updated.
+Repo: C:\dev\mre, branch master. Contract 1.8 -> 1.9. IDS registry v0.3 -> v0.4
+(35 -> 36 rules). Parse prompt v8 -> v9. docs/07 v2.48; docs/04 two amendments
+same date; CLAUDE.md position updated.
+
+All solver work ran deterministic: PYTHONHASHSEED=0, --solver-workers 1, seed 42.
 
 ======================================================================
 SUMMARY -- claimed vs proven, per CU
 ======================================================================
-  CU1  delta attribution      DELIVERED + proven live on the founder's own board
-  CU2  the open delta card    DELIVERED
-  CU3  vacuous-causal         DELIVERED (audit + path fix + structural floor)
-  CU4  banner + picker        DELIVERED (a,c,d,e proven; b named as defence)
-  CU5  conversational riders  DELIVERED (d found a real defect)
-  CU6  R-F1/R-F2/R-F3 + queue DELIVERED (transcribed, not built)
-
-Tests: Python 1582 passed / 208 skipped (full non-slow). Slow sandbox ladder
-72 passed. Cockpit JS 215 passed (both themes). New: 5 Python modules
-(test_delta_attribution 22, test_open_card 28, test_causal_vacuity 27,
-test_conversational_riders 24) + attribution.spec.mjs (9) + 6 new Playwright
-specs. New corpus bank: regression_founder_r5 (26 questions, 26 graded).
-No goldens moved.
+  CU1  the coarse model       DELIVERED + a correction to the ruling itself
+  CU2  contract 1.9           DELIVERED, with an approved deviation (pre-flight 2)
+  CU3  prediction store       DELIVERED (store + skeleton; NOT yet wired to a worker)
+  CU4  relaxation guard       DELIVERED + negative control proven red
+  CU5  reachability + render  DELIVERED (no R-AI1 debt); band NOT screenshot-tested
+  CU6  docs                   DELIVERED (docs/01, 04, 06, 07, CLAUDE.md)
 
 ======================================================================
-CU1 -- DELTA ATTRIBUTION (the trust item)
+PART 0 -- PRE-FLIGHT FINDINGS (all three, reported explicitly)
 ======================================================================
-CLAIMED: beat two gains a baseline solve; the card splits, always.
 
-PROVEN, and the proof is the founder's own number. Re-ran the exact double
-gesture on the LIVE incumbent (schedule rolling-279dec02-411 in _data, the
-board the founder was looking at): ORD-000038's MILL-01 step, pinned first at
-Jan-8 08:30 and then at 07:00, deterministic, standing pins = the committed
-frozen front, restricted to the active window.
+TWO OF THE THREE TRIPWIRES FIRED. Both were reported to the working thread
+BEFORE any code was written, and the session proceeded on its instruction.
 
-  gesture A -- Jan-8 08:30      (7.4s wall: 1.45s solve + 1.38s baseline)
-    outcome              verdict / OPTIMAL   feasible=True
-    TOTAL                -11967.03
-    window re-optimize   -11975.83
-    your move            +8.80
-    sums exactly         True
-    affected orders      ORD-000011 (-9800.42, -24477 min)
-                         ORD-000003 (-2175.42,  -5758 min)
-                         ORD-000019 (    0.00, +10080 min)
-                         ORD-000013 (    0.00,  +4321 min)
-    moved-set            8 ops
+(1) `excluded_demand_ids` DOES appear in the ROLLING path.
 
-  gesture B -- Jan-8 07:00      (1.5s wall: 1.28s solve + 0.0s baseline [cached])
-    TOTAL                -11967.03
-    window re-optimize   -11975.83
-    your move            +8.80
-    sums exactly         True
-    ... identical affected set, 8 ops
+    LITERALLY TRUE, SEMANTICALLY NOT. It is a PreparedPlant field
+    (rolling_horizon.py:195), defines `schedulable_demands` (:205), is set from
+    the validator's result (:262/:288), and is read by the completeness
+    invariant (schedule_assembler._assert_rolling_completeness:542,560-562).
 
-READ THAT SECOND LINE. -11,975.83 is the founder's number, to the cent -- the
-figure both cards showed and that looked like what their move had done. It is
-the WINDOW RE-OPTIMIZATION. Their move cost +$8.80, twice, and the card now
-says so in its own row instead of hiding it inside a five-figure headline.
+    BUT NO ROLLING-PATH SITE EVER WRITES IT. Exclusion is decided in
+    validator.py (five sites) and nowhere else on that path. The disposition
+    story is therefore exactly as the design believed: gate/validator EXCLUDES,
+    the rolling path only CLASSIFIES what survives into committed / active /
+    beyond-horizon. The coarse zone's scope (beyond-horizon = schedulable minus
+    placed) is unaffected.
 
-The two gestures still agree, and that is correct: both placements cost the
-same $8.80. What changed is that the card now says they agree ABOUT THE MOVE
-rather than about the plan -- and $8.80 vs $8.80 is a statement a planner can
-act on, where -$11,975.83 vs -$11,975.83 was not.
+    Per the working thread's addition (C), that distinction is now LOCKED WHILE
+    IT IS TRUE: test_no_rolling_path_site_writes_excluded_demand_ids fails the
+    day someone files horizon work as exclusion.
 
-Screenshot-level description of the card (light theme, rolling board): under
-the headline "-0.05% cost - $11,967.03" sits a recessed two-row block --
-"window re-optimization  -$11,975.83" in muted type, then a hairline rule and
-"your move  +$8.80" in full ink, semibold. Below it, unchanged: the placement
-line, the lateness line, the affected-orders table, the driver, the
-committed-safe note, and the details disclosure.
+(2) `earliest_window_estimate` was ALREADY POPULATED -- universally.
 
-Also proven: the second gesture paid 0.0s for its attribution (the baseline is
-cached per incumbent), the two parts sum exactly to the total on both, a
-cross-machine pin shows a nonzero move part different from a trivial pin's, and
-suppressing the baseline yields the unsplit total plus the authored "includes
-window re-optimization" line -- never a silent fused number, never a half split.
+    THE DESIGN'S PREMISE WAS FALSE. schedule_assembler._earliest_window_estimate
+    (due minus ceil(working_min/720), clamped to the reference origin) is called
+    unconditionally for every tray entry; it is absent only when a demand has no
+    due date. It has consumers and guards: rolling_questions.py:195 renders it,
+    test_rolling_document.py:40 and test_rolling_dispatch.py:188 pin it, and all
+    14 tray entries of the committed rolling fixture carry a value.
 
-======================================================================
-CU2 -- THE OPEN DELTA CARD JOINS THE RESOLUTION LADDER
-======================================================================
-CLAIMED: card > selection > last answer > history > clarify; "this move" binds
-to the card and is answered FROM it; dismissal clears the context.
+    CU2 as briefed would have SILENTLY REPURPOSED a live field whose meaning is
+    a different method's estimate. Reported and stopped before overwriting.
+    RULED IN-SESSION: the coarse bucket sits BESIDE it as
+    BeyondHorizonItem.coarse; earliest_window_estimate is byte-unchanged, and a
+    test asserts it field-by-field against the original function.
 
-PROVEN. `SubjectSource.CARD` sits at the top of the ladder; `open-card` joins
-the closed vocabulary (parse prompt v8, a vocabulary-class change committed with
-Intent / INTENT_MEANINGS / ROUTE_TAXONOMY / ROUTE_OFFERS / assembler / authored
-copy). The route re-derives NOTHING -- every figure comes off the sandbox result
-the card is showing -- and it runs ahead of the clarify branch, because asking
-"which orders do you mean" about the card in front of the planner is exactly the
-dead end the clarify guard exists to prevent and a card is not a resolved
-subject, so that guard cannot see it.
+(3) The gravity setup-family-affinity debt WAS already recorded.
 
-The founder's exact failing exchange ("what orders are affected in this move",
-previously misparsed as swap-intent) is the regression specimen, graded, in
-test_open_card.py AND in regression_founder_r5. With NO card open the same words
-are answered "there's no priced move open on the board right now" plus how to
-get one back -- never a guess, never a stale card. A card open does not capture
-questions naming a different intent: it is a channel, not a mode.
+    docs/04 carries an explicit "Named debt -- per-component gravity ablation"
+    block (4B.2c amendment, ~line 6710) and docs/07 mentions it at v2.31/v2.32.
+    The brief's "record it if it exists only in close-out prose" clause
+    therefore did NOT fire.
 
-Wiring proven in the browser: the controller publishes the card's own content
-when one lands and clears it on discard / accept / return-home / a fresh grab;
-the published payload's figures are ASSERTED equal to what the card is showing.
+    It was NOT in CLAUDE.md's carry-forward list. Since this session built a
+    mechanism adjacent to gravity, it is now in CLAUDE.md and in the new
+    docs/07 section 5a.
 
-NOT DONE (named): a `CARD` directive was added to the exam script + runner so a
-bank can open one, but this session had no ANTHROPIC_API_KEY, so the r5 bank is
-COMMITTED AND UNRUN. It is graded when the next sweep runs.
+(A) SECOND FINDING, unasked, reported per the working thread's instruction:
+    `--horizon-days` writes `excluded_demand_ids`.
+
+    (i)   PRODUCTION path, not scenario generation. src/mre/__main__.py:251-300
+          adds every demand due beyond reference_date + N days to
+          v_result.excluded_demand_ids, and it is reachable through the API
+          (SolveRequest.horizon_days -> app.py:854-855). scenario.py:278-293
+          only REPRODUCES the base run's slice for what-if parity.
+    (ii)  YES, precisely. What it removes is demand due beyond the horizon --
+          exactly the population the coarse zone exists to price. On that path it
+          is filed in the same set that carries gate exclusions: a horizon
+          category shelved as a DATA-DEFECT category. It is not silent (a
+          MODEL_SIMPLIFICATION / POLICY_RULE Decision records the deferred
+          count), but the shelf is wrong: a demand deferred by a planning horizon
+          is not a demand we could not read.
+    (iii) NOT reachable from a rolling run. app._execute_rolling_solve goes
+          through prepare_plant / build_rolling_view and never passes
+          --horizon-days; only the monolithic worker does. The coarse zone is
+          NOT starved by it.
+
+    RECORDED as docs/07 section 5a item 1 with its fix shape, plus one line in
+    CLAUDE.md. NOT FIXED -- out of scope, as instructed.
 
 ======================================================================
-CU3 -- THE VACUOUS-CAUSAL TRIPWIRE + THE WHY-ON-MACHINE AUDIT
+PART 1 -- PER-CU: CLAIMED vs PROVEN
 ======================================================================
-(a) THE AUDIT, answered as asked. Record bafa03f1-1213-4e9b-9989-cb2ab529bec8
-    (pulled from _data/runs/279dec02-.../runs/b738acd7-...jsonl) is a REAL
-    assignment Decision: module M7, driver CAPACITY_BLOCKED, basis
-    reconstructed, subject a real operation. The clause "the machine was busy
-    with other work" is DRIVER_PHRASING["CAPACITY_BLOCKED"] VERBATIM.
 
-    VERDICT: NOT an LLM reword of authored copy. The verbatim path is intact
-    and this is not a CU4-4A.5b breach. The ASSEMBLER emitted it, using the
-    driver phrase as the whole causal clause -- and that phrase names no
-    machine, no alternative and no quantity. On a why-on-MACHINE question it is
-    worse than thin: the machine that was busy is one the order did not get.
-    The testimony validator passed it and was RIGHT to -- every check it makes
-    is about fabrication, and an unfalsifiable sentence fabricates nothing.
+----------------------------------------------------------------------
+CU1 -- THE COARSE MODEL (src/mre/modules/coarse_horizon.py)
+----------------------------------------------------------------------
+CLAIMED: a bucketed relaxation over every op of every beyond-horizon demand;
+declared bucket length; real calendar minutes as a number; eligibility by
+variable existence; coarse precedence; bucket tardiness; two runs per slice;
+unmodelable ops flagged and named; determinism.
 
-    FIXED AT THAT PATH: a CAPACITY_BLOCKED placement now reads its story out of
-    the solved occupancy -- which machines were eligible (capability_eligible
-    over the op's own requirements) and what ran on each while the step ran.
-    Three facts, never collapsed: alternatives occupied (named, with what held
-    them and until when); no eligible alternative at all (a CAPABILITY fact --
-    no rearrangement would have changed it); alternatives but none shown blocked
-    (say the occupancy does not attribute it, and refuse to name one).
+PROVEN:
+  * Built and running on a real plant. 40-order pilot_scale, window 7 / frozen 2:
+    38 beyond-horizon demands, 83 ops in scope, 82 modeled, 1 unmodelable.
+  * Capacity is REAL working minutes -- a unit test asserts a 5-day 07:00-19:00
+    calendar yields 5x720 = 3600 min/week and is strictly less than 7x1440. A
+    resource with no resolvable calendar gets FULL wall-clock minutes, which is
+    deliberately permissive (zero would tighten and break clause 1); also tested.
+  * Eligibility carried by VARIABLE EXISTENCE -- no variable is created for an
+    ineligible (op, res) pair, so the aggregation error is structurally
+    unrepresentable. The guard checks it independently.
+  * Two runs per slice, both persisted. proves_infeasible is the ONLY gate the
+    negative escapes through -- four unit tests: complete proof (True), planning
+    (False), wall-truncated (False), FEASIBLE (False).
+  * CROSS-HASHSEED DETERMINISM PROVEN (PYTHONHASHSEED 0/1/2, three subprocesses,
+    digest over both runs' placements plus the certificate block). Not
+    same-seed-both-sides.
+  * A MEASURED PROPERTY, pinned as a test: the derate is NON-MONOTONIC. rho 0.20
+    OPTIMAL (82 ops), rho 0.15 INFEASIBLE (80 ops), rho 0.10 OPTIMAL with 19 ops
+    gone as exceeds_bucket_capacity. Below a threshold, ops stop fitting in ANY
+    single derated bucket and LEAVE the model. Without the unmodelable COUNT the
+    0.10 result reads as "it fits".
 
-(b) THE STRUCTURAL GUARD. Causal routes (why-on-machine, late-order,
-    start-reason, gap-between) gain a vacuity check: an answer naming neither a
-    driver phrase, nor a concrete entity beyond the question's own subjects, nor
-    a quantity FAILS CLOSED to the template. Proven against hand-built vacuous
-    renders and on the real LLM render path.
+CORRECTION TO THE RULING, found in implementation and recorded in docs/04:
+  The ruling asserts that all three out-of-scope omissions "relax in the
+  PERMISSIVE direction, which is what keeps clause (1) true". For
+  family-presence setup and the makespan bound that holds. For CROSS-BUCKET
+  ALLOCATION OF RESUMABLES IT DOES NOT: forcing a splittable op into one bucket
+  is a TIGHTENING against a fine model that may split it across a boundary, so
+  the claim would have been FALSE rather than merely unproven. Resumable ops are
+  therefore EXCLUDED outright under the named sub-disposition
+  coarse_unmodelable(resumable_out_of_scope) -- a CONSTRUCTION that makes clause
+  (1) true, rather than an assertion that it already was.
 
-    Its own subtlest bug, found by its own tests: entity refs carry digits, so
-    scanning the raw text let "ORD-000008 is on PAINT-02" count as stating a
-    quantity -- the exact shape it exists to catch. The question's own subjects
-    come out before the quantity scan.
+UNDERDELIVERED / NAMED:
+  * coarse_horizon.py carries its OWN narrow CP-SAT surface (confined to
+    _solve_coarse). CLAUDE.md quarantines ortools to solver_builder /
+    solve_runner. This is a STATED DEVIATION -- in the module docstring, docs/04
+    and CLAUDE.md -- not an oversight. Nothing there returns an ortools type.
+  * At 200 orders the proof run returns FEASIBLE, not OPTIMAL, within its
+    deterministic budget: its tardiness is an UPPER BOUND. The contract carries
+    figures_are_upper_bounds and every surface states it, but the session did NOT
+    tune a budget that reaches OPTIMAL at that size.
 
-    TWO LIMITS, asserted so they cannot be assumed away. (i) The founder's own
-    sentence PASSES the tripwire, because it reaches for the driver vocabulary;
-    it is fixed at (a), not here. A floor cannot also be a ceiling. (ii) A
-    quantity is a DIGIT -- "two other jobs were ahead of it" states a real one
-    and still fails closed, which is the safe direction for a floor.
+----------------------------------------------------------------------
+CU2 -- CONTRACT 1.8 -> 1.9 (additive)
+----------------------------------------------------------------------
+CLAIMED: beyond-horizon entries gain coarse placement; earliest_window_estimate
+populated from the coarse bucket; monolithic goldens byte-identical.
 
-(c) The exchange joins the corpus graded (regression_founder_r5 section B).
+PROVEN:
+  * CoarsePlacementBlock (start bucket + its dates, completion bucket, resource
+    WITNESS, coarse tardiness in BUCKETS, run_label, sub_disposition, named
+    unmodelable reason) and CoarseZoneBlock (both coefficients WITH PROVENANCE,
+    bucket grid, per-run status, infeasibility_proven, figures_are_upper_bounds,
+    wall_truncated, unmodelable_count, density band, binding cells). Both
+    Optional, both None when the coarse zone did not run.
+  * CLAUSE (5) ENFORCED BY SHAPE: a test asserts no currency field exists
+    anywhere on the coarse surface, so no consumer can sum coarse into
+    cost_summary even by accident.
+  * MONOLITHIC GOLDENS: UNAFFECTED and verified. They are schedule.csv
+    byte-comparison plus the cost ledger (test_defaults_reproduce_baseline), not
+    document JSON. The coarse blocks are unreachable on that path -- a monolithic
+    document has no RollingBlock -- and that is asserted structurally.
+  * Contract docstring updated in the same commit.
 
-======================================================================
-CU4 -- BANNER + PICKER REPAIRS
-======================================================================
-(a) STICKY DISMISSAL -- proven. sessionStorage, per offered id, per tab. The
-    root cause was concrete: the 4.4 dismiss handler removed the element and
-    remembered nothing, and the watch's idempotence guard asked whether the
-    banner was IN THE DOM -- so a dismissed banner failed it on the next check
-    and was rebuilt, every 30s and on every focus. Test fires checkFreshness,
-    focus and visibilitychange after a dismissal; the banner stays gone.
-(c) ONE OFFER PER NEWER ID -- proven. The guard is what the tab has OFFERED,
-    not what is in the DOM; the test asserts the SAME ELEMENT survives three
-    re-checks (never torn down and rebuilt), and that a genuinely newer id is
-    offered once in its turn.
-(d) THE CARET -- proven. A caret at rest inside the chip (aria-hidden), rotating
-    when the picker is open. A dotted underline only announces itself to someone
-    already looking.
-(e) dev_cockpit.ps1 RESUMES BY DEFAULT; -Fresh mints. The dev loop stops
-    manufacturing the "newer schedule" noise the product then has to handle.
+DELIBERATE DEVIATION FROM THE BRIEF (approved in-session, see pre-flight 2):
+  earliest_window_estimate is NOT populated from the coarse bucket. It keeps its
+  1.7 meaning; the coarse bucket is a SEPARATE field. A test asserts the
+  heuristic is byte-unchanged for every tray entry.
 
-(b) VIEWPORT PRESERVATION -- DELIVERED, and honestly labelled. What the founder
-    saw is diagnosed: on a tab with no uncommitted state the check AUTO-FOLLOWS,
-    which is a full page reload, which resets everything -- 4.4 CU2 working as
-    designed, firing constantly because every dev restart minted something newer
-    to follow. (e) removes the supply; (a)/(c) remove the second source (the
-    30-second rebuild, which reflowed the board each time). What ships as (b) is
-    DEFENCE: any DOM the watch inserts is wrapped and the board window restored
-    if the reflow moved it.
-    UNDERDELIVERED, NAMED: on the harness fixture the prepend does NOT move the
-    window, so the Playwright test for (b) is a standing invariant and NOT a
-    reproduction of the symptom. Verified by stubbing the restore and watching
-    the test still pass. Said out loud because a green test that never could
-    have failed is worth what it cost.
+----------------------------------------------------------------------
+CU3 -- PREDICTION PERSISTENCE + THE CONFORMANCE SKELETON
+----------------------------------------------------------------------
+CLAIMED: ships in THIS unit, not later. Non-negotiable.
 
-======================================================================
-CU5 -- CONVERSATIONAL RIDERS
-======================================================================
-(a) An ADVICE turn naming a capability routes to that capability's coaching.
-    The concept is the PARSE's (the advice meaning now says to carry it); the
-    dispatch only reads whether one resolved. Proven: the push-back's answer is
-    not the advice answer; an advice question naming no capability still routes
-    to advice; an unresolvable capability word does not divert.
-(b) A route re-fired within TWO turns varies its lead from an authored tuple
-    indexed by depth. Proven that the body beneath is byte-identical
-    (`again.endswith(fresh)`) -- the facts never vary, only the lead.
-(c) A re-asked COUNT answers "13 -- want the list?" instead of reciting. Proven
-    the answer really shortens, the offer is only made when a list exists behind
-    it, and the rendered-by footer survives (delivery metadata is not
-    conversation).
-(d) A REAL DEFECT, found by the verification this rider asked for.
-    VerifiedClaim.consulted_record_ids was toolbox.consulted -- the ANSWER-LEVEL
-    set, identical on every claim -- and the surface printed its first three
-    beside every interpretive sentence as that sentence's provenance.
-    Answer-level provenance wearing per-claim clothes is worse than none: it
-    looks like an attribution and cannot be wrong, so nobody checks it.
-    FIXED: it is now the claim's own scope (its citations when it made any; the
-    whole consulted set when it made none, which is the accurate label), plus a
-    new per-claim `read_from` naming WHICH TOOL CALLS surfaced those records,
-    derived from the toolbox's own per-call record sets. Proven that two claims
-    in one answer carry different provenance. It rides on the question-ledger
-    entry and renders on the prove-it turn ("Read from: cost_ledger,
-    lateness_set.").
+PROVEN -- SHIPPED (src/mre/modules/coarse_predictions.py):
+  * Append-only JSONL store under the run dir, keyed (run_id, demand_id, op_id,
+    bucket_index, resource_witness, run_label), plus sweep_data_root for the
+    cross-roll read the document cannot provide (the document is a window-0 view
+    by ruling; the audit is inherently cross-roll). Round-trip tested.
+  * BOTH INTAKE PATHS. rolling_horizon.gravity_admitted_demand_ids (new, pure
+    arithmetic over _admit, feeding NOTHING back into admission) supplies path
+    (b) as a FACT FROM THE ADMISSION MECHANISM rather than an inference from the
+    gap's sign. Both the path and the gap are recorded per realization, so a
+    gravity disagreement is stored as what it is: two mechanisms on record
+    disagreeing about the same job.
+  * A mirrored planning run (rho == 1.0: the model is byte-identical and is
+    COPIED, not re-solved) is EXCLUDED from prediction minting -- recording it
+    would double-count the proof run in every error bar. CoarseRun.mirrors_proof
+    says so on the surface, and a test pins it.
+  * The report skeleton computes the four named figures and SAYS WHEN A FIGURE IS
+    UNDEFINED rather than printing a confident 0 (tested).
 
-======================================================================
+UNDERDELIVERED, and stated by the report about itself:
+  * Slip attribution is CONSERVATIVE and mostly returns `unattributed`. A
+    confident attribution needs the FINE solve's binding constraints, which this
+    store does not carry. The report emits a note saying exactly that when every
+    slip is unattributed.
+  * The coarse-vs-fine cost error is computed ONLY when the fine figure is
+    supplied in BUCKETS. Clause (5) forbids fusing the ledgers, so the comparison
+    is made in the coarse unit or not at all; otherwise the report says why.
+  * THE STORE SHIPS BUT NO ROLL HAS WRITTEN TO IT IN PRODUCTION -- the wiring into
+    the API rolling worker is NOT done. The honest limit: the mechanism exists and
+    is tested, the history does not exist yet. Six weeks of history is recoverable
+    from here; it was not before.
+
+----------------------------------------------------------------------
+CU4 -- THE RELAXATION GUARD
+----------------------------------------------------------------------
+CLAIMED: a property test making clause (1) a theorem; a negative control proving
+it can fail; a second test showing rho < 1 can declare a fine-feasible instance
+infeasible.
+
+PROVEN -- all three, with numbers:
+  * GUARD: a fine-feasible schedule from reference_solve maps to a coarse
+    allocation and is coarse-FEASIBLE at rho = 1.0. Measured: 87 ops mapped, 1
+    excluded as unmodelable (COUNTED, not silently skipped), 0 violations.
+  * NEGATIVE CONTROL: a stubbed capacity tightening (_capacity_scale, which
+    exists for no other purpose and says so in its docstring) makes the guard go
+    RED with 13 violations, at least one of class `capacity:`. The guard CAN fail.
+  * CLAUSE (2)'s NECESSITY, demonstrated not asserted: at rho = 0.15 the planning
+    run returns INFEASIBLE with 80 of 82 ops STILL MODELED -- so the verdict is a
+    real aggregate-capacity refutation, not an artifact of ops dropping out -- on
+    the same instance the proof run places comfortably. proves_infeasible is
+    False for it.
+
+(B) THE SET IS NON-TRIVIAL -- COUNT STATED, as instructed:
+  * 38 beyond-horizon demands; 83 coarse ops in scope (82 modeled, 1
+    unmodelable). Floors asserted (MIN_BEYOND_DEMANDS=10, MIN_COARSE_OPS=25) so
+    the suite cannot go green over an empty tray.
+  * STATED HONESTLY: at this density the plant is FAR TOO LIGHT for the coarse
+    zone to bind. Total load is ~8% of derated capacity (17,991 min against
+    225,360), coarse tardiness is 0, and no cell reaches capacity. At 200 orders
+    it bites properly: 404 ops, 123 bucket-tardiness, cells at ~100%, and rho =
+    0.5 goes INFEASIBLE. The teeth at 40 orders come from the clause-(2) and
+    non-monotonicity tests, NOT from the headline guard.
+  * The (A) horizon cutoff is NOT what starves it -- --horizon-days is not
+    reachable on the rolling path, so there is no second count to report.
+
+----------------------------------------------------------------------
+CU5 -- REACHABILITY (R-AI1) + RENDERING
+----------------------------------------------------------------------
+CLAIMED: three questions answerable; name the R-AI1 debt where the taxonomy does
+not reach; a density band, never a bar; tokens.
+
+PROVEN:
+  * Two intents join the CLOSED vocabulary as a reviewed vocabulary-class change,
+    registered at ALL SIX sites (Intent, INTENT_MEANINGS, ROUTE_TAXONOMY,
+    ROUTE_OFFERS, ROLLING_INTENTS, ROLLING_ROUTES) with parse prompt bumped
+    v8 -> v9 and its reasoning recorded in the prompt's own version log. A test
+    asserts every site carries them AND that the prompt was bumped.
+  * "will it fit?" -- PROOF RUN ONLY. A proven negative answers "No -- and this
+    one I can prove" and names the resource-week with its load and capacity. A
+    proof run that PLACES the book is NOT converted into a yes: the answer says
+    it "can only ever prove that something DOESN'T fit, never that it does". A
+    truncated check refuses both ways. All asserted.
+  * "why is week N full?" -- the binding constraint stated as ARITHMETIC (load
+    against derated capacity), with rho and its PROVENANCE in every capacity
+    sentence. An unfull week is not called full (asserted).
+  * "when will ORD-X start?" -- NO NEW ROUTE, deliberately. It is already
+    why-not-scheduled-yet, whose answer now carries the coarse bucket BESIDE the
+    due-date heuristic; the resource WITNESS is never voiced (asserted).
+  * NO R-AI1 DEBT IS LEFT OPEN: all three shapes reach the taxonomy.
+  * A test asserts no coarse answer mentions money -- clause (5) at the language
+    surface, not just the schema.
+  * RENDERING: src/cockpit/src/coarse.js docks a density band -- a resource x
+    bucket grid whose cell ALPHA carries utilization, every cell's arithmetic in
+    its tooltip, never on the timeline, no drag affordance, and a probe() that
+    asserts zero bar elements. Vite build clean (33 modules). All new
+    colour/spacing/motion are design tokens (tokens.css + both themes).
+
+UNDERDELIVERED:
+  * The band has a probe() but NO PLAYWRIGHT SCREENSHOT TEST. The cockpit harness
+    was not extended: the committed rolling fixture predates the 2026-07-26
+    determinism fix and does not reproduce (a carried 4B.5 debt), so no fixture
+    carries a coarse_zone to screenshot. The band is verified by build + probe
+    shape only, NOT VISUALLY.
+  * Feel is Daryn's at the panel, as instructed -- tokens are placed, values are
+    a first pass.
+
+----------------------------------------------------------------------
 CU6 -- DOCS
-======================================================================
-docs/04: this session's amendment, with R-F1 / R-F2 / R-F3 transcribed VERBATIM
-and the four NAMED-QUEUED features summarized (the pin register;
-amend-submission, flagged pilot-relevant; the boundary-drag feature; the window
-constraint). docs/07 v2.47 same-day, with the rulings entered in the open-rulings
-queue as item 6. CLAUDE.md position, ask-path paragraph and carry-forwards
-updated. RUBRIC.md gains three new OPEN precedent entries (10 the open card, 11
-the vacuous causal answer, 12 the repeat riders) so round six grades them rather
-than rediscovering them.
+----------------------------------------------------------------------
+PROVEN:
+  * docs/04: the R-SC2 amendment transcribed VERBATIM under its own dated
+    heading, plus the full session amendment (pre-flight findings, the ruling
+    correction, per-CU detail, measured numbers). Append-only respected.
+  * docs/06: rho as a declared coefficient with the section-8 PIPELINE-PROOF rule
+    satisfied IN FULL -- doorway (5.9 example + prose), gate check
+    (ids.coarse_horizon_coefficients_sane), adapter translation with truthful
+    provenance, generator scenario with truth manifest (pilot_scale declares
+    bucket_days 7 / capacity_derate 0.85) AND an anomaly generator
+    (bad_coarse_horizon: a percentage where a fraction belongs), plus a
+    schedule-level assertion. Registry v0.3 -> v0.4, 35 -> 36 rules, with the
+    count assertions and the docs/06 header moved together.
+  * docs/01: two CostModel attribute rows, both Optional-with-null so a numeric
+    default cannot erase the declared/defaulted distinction.
+  * docs/07: v2.47 -> v2.48 entry, plus a NEW section 5a "Carry-forwards owned
+    here" holding all six named debts with reasoning and fix shapes.
+  * CLAUDE.md: position, coarse-zone summary, quick reference, and the debts.
+    24,004 chars against the 40k ceiling.
 
 ======================================================================
-OUT OF SCOPE (named, not built)
+PART 2 -- ACCEPTANCE, ITEM BY ITEM
 ======================================================================
-* Any R-F feature. The rulings are recorded; the pin register, amend-submission,
-  the boundary-drag gesture and the window constraint are designed and queued.
-* The two-solve baseline extended to FORCED-ALTERNATIVES pricing. Same
-  economics, separate audit. CARRIED AS DEBT.
-* Rendering-model changes.
+1. Monolithic goldens byte-identical.                            MET.
+   test_defaults_reproduce_baseline green; coarse blocks unreachable on that
+   path and asserted structurally.
+2. The 4B.3a completeness invariant passes unchanged.            MET.
+   NOT weakened. An unmodelable op keeps its demand's beyond-horizon
+   disposition, so the counting test passes as written.
+3. CU4's guard passes AND its negative control goes red.         MET.
+   0 violations green / 13 violations red under the stubbed tightening.
+4. Cross-hashseed determinism on both coarse runs.               MET.
+   PYTHONHASHSEED 0/1/2, digest over both runs' placements + certificate.
+5. Coarse and fine currency in separate ledger lines; no fused   MET.
+   figure anywhere, including the AI layer.
+   Enforced BY SHAPE (no currency field on the coarse surface at all) and
+   asserted at the language surface too.
+6. rho appears in the certificate; a hidden default is a         MET.
+   failure.
+   certificate_block carries value AND provenance; the defaulted rho is 1.0,
+   a NO-OP derate, so an undeclared plant gets no invented margin.
+7. Pre-flight findings reported explicitly, all three.           MET. Part 0.
 
 ======================================================================
-UNDERDELIVERED / NAMED, in full
+PART 3 -- TEST RESULTS
 ======================================================================
-1. The r5 corpus bank is COMMITTED AND UNRUN -- no ANTHROPIC_API_KEY in this
-   session. Its 26 expectations are graded by the next sweep. The CARD directive
-   it needs is built and unit-parsed (26 q / 26 expect / 6 card, no parse
-   errors), and run_ai_exam_sweep points the bank at the pinned rolling run.
-2. CU4(b)'s viewport test is a standing invariant, not a reproduction (above).
-3. The vacuity tripwire would NOT have caught the founder's own sentence; the
-   assembler fix is what catches it (above).
-4. THE COMMITTED ROLLING COCKPIT FIXTURE NO LONGER REPRODUCES. Regenerating
-   tests/cockpit/fixtures/rolling/ moves the whole document -- different
-   placements, a different cost summary -- because it predates the 2026-07-26
-   errand's determinism fixes. That is a goldens move this session was not
-   authorized to make, so sandbox.json was patched ADDITIVELY with an
-   attribution split (figures SYNTHESIZED, on the precedent the builder already
-   uses for its FLAGGED and NO_VERDICT cards). Regenerating it is a named
-   follow-up, and a regeneration replaces those figures with real ones.
-5. A pre-existing under-wait was found and fixed in the harness, not papered
-   over: cockpit.spec.mjs's zoom test slept a fixed 150ms against vis's ~500ms
-   zoom animation. It was green in isolation and went red once this session's
-   frontend shifted the timing under file load. Bisected to main.js, confirmed
-   green on the pre-session frontend, and fixed by polling for the property
-   ("zoom out widens it") instead of a sleep. This is a TEST fix; no product
-   behaviour changed.
+FINAL: 1614 passed, 227 skipped, 0 FAILED. Run TWICE, independently, after the
+last code edit -- 636s and 670s. Both clean.
+
+Mid-session the suite showed 5 failures; all five are fixed and accounted for:
+  * FOUR were contract-version string assertions (1.8 -> 1.9) in
+    test_api_endpoints / test_rolling_document / test_schedule_document.
+  * ONE was the declared-but-unread ARCHITECTURAL GUARD, and IT WAS RIGHT: the
+    two new CostModel attributes are read by coarse_horizon, which sits outside
+    the fine pipeline BY DESIGN under clause (4). Resolved with a
+    dormant-register entry citing the real consumer AND the clause -- NOT by
+    widening the guard's consumer list, which would have blurred exactly the
+    distinction clause (4) exists to hold.
+
+Coarse suite:      tests/test_coarse_horizon.py -- 47 passed (28 fast + 19 slow,
+                   --runslow, 392s).
+Cockpit:           vite build clean, 33 modules transformed.
+Doorway, live:     the gate rule was exercised end-to-end on a generated
+                   submission -- clean pilot_scale ACCEPTED with
+                   capacity_derate 0.85; the bad_coarse_horizon anomaly
+                   (a percentage where a fraction belongs) -> CONDITIONAL with
+                   a VALUE_OUT_OF_RANGE finding naming the derate; and the
+                   declared 0.85 / 7d arrives at CoarseCoefficients with
+                   DECLARED provenance through gate -> adapter -> CostModel.
+
+NOT RUN: the cockpit Playwright screenshot ladder (no fixture carries a
+coarse_zone -- see CU5).
 
 ======================================================================
-TEST TOTALS
+PART 4 -- OUT OF SCOPE (named, not built) -- honored
 ======================================================================
-Python  full non-slow          1582 passed, 208 skipped
-Python  slow sandbox ladder      72 passed  (sandbox, two_beat, rolling_two_beat,
-                                             delta_attribution, planner_edit)
-Cockpit JS (light + dark)       215 passed
-Corpus banks parse clean         8 banks, 0 parse errors
-Goldens                          unchanged
+* Setup in the coarse model; cross-bucket allocation for resumables (EXCLUDED
+  and named instead -- see the CU1 correction); the WP makespan bound. Gated on
+  CU3 data; recorded in docs/07 5a.4.
+* Any coupling from coarse output into gravity admission (clause 4). Enforced as
+  an import-direction test; the UNLOCK CONDITION is written down in docs/07 5a.3
+  so a future coupling is a decision, not a drift.
+* Accept/publish splicing seams 1, 3, 5.
+* Rendering-model changes beyond the density band.
+* The --horizon-days exclusion mis-shelving: NAMED, not fixed, as instructed.
+
+======================================================================
+PART 5 -- EVERY DEBT NAMED HERE ALSO LANDS IN docs/04 OR docs/07
+======================================================================
+A debt named only in close-out prose does not exist. Checked, same commit:
+
+  ortools deviation in coarse_horizon      -> docs/04 amendment + CLAUDE.md
+  resumable exclusion / ruling correction  -> docs/04 amendment (its own block)
+  --horizon-days mis-shelving              -> docs/07 5a.1 + CLAUDE.md
+  gravity per-component ablation           -> docs/07 5a.2 + CLAUDE.md
+  coarse-to-gravity unlock condition       -> docs/07 5a.3
+  three deferred coarse refinements        -> docs/07 5a.4 + CLAUDE.md
+  coarse unexercised at demo density       -> docs/07 5a.5 + CLAUDE.md + docs/04
+  slip attribution mostly unattributed     -> docs/07 5a.6 + CLAUDE.md + docs/04
+  CU3 store not yet wired into the worker  -> docs/04 CU3 limits + this close-out
+  no screenshot test for the density band  -> docs/04 CU5 + this close-out
+  proof run FEASIBLE not OPTIMAL at 200    -> docs/04 CU1 + the contract field

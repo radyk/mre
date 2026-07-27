@@ -83,7 +83,12 @@ _TWO_ORDER_INTENTS = frozenset({Intent.SWAP_MOVE, Intent.GAP_BETWEEN})
 # The rolling (sliced-world) intents. On a monolithic run these degrade through the
 # normal route table; the rolling document pre-route is upstream in the API.
 ROLLING_INTENTS = frozenset(
-    {Intent.BEYOND_HORIZON, Intent.WHY_NOT_SCHEDULED_YET, Intent.FROZEN})
+    {Intent.BEYOND_HORIZON, Intent.WHY_NOT_SCHEDULED_YET, Intent.FROZEN,
+     # Session 4B.6 — the coarse zone's two shapes are rolling intents for the
+     # same reason the other three are: they speak about the sliced world, whose
+     # state lives in the document's RollingBlock and not in the window-0
+     # snapshot the Explainer reads.
+     Intent.COARSE_FIT, Intent.BUCKET_LOAD})
 
 
 @dataclass

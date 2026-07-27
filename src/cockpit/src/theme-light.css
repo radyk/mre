@@ -186,6 +186,18 @@
   --bt-ink: var(--ink);
   --bt-row-bg: var(--panel-float);
 
+  /* The COARSE ZONE's density band (Session 4B.6 CU5). Same discipline as dark:
+   * a coarse cell must not read as a placement (clause 6), so it uses an ink
+   * wash whose ALPHA carries utilization rather than any bar colour. */
+  --coarse-bg: #ecebe4;
+  --coarse-edge: var(--grid);
+  --coarse-ink: var(--ink);
+  --coarse-cell-empty: rgba(56, 62, 78, 0.07);
+  --coarse-cell-fill: 62, 84, 130;        /* rgb triple; alpha = utilization */
+  --coarse-cell-hot: rgba(176, 108, 20, 0.92);
+  --coarse-hot-edge: #b06c14;
+  --coarse-proof: #a33b3b;
+
   /* Operation anatomy (CU5). Setup = a darker leading hatch on the bar; the
    * split-op kinship connector = a dashed slate line across each pause. */
   --setup-hatch: rgba(0, 0, 0, 0.26);

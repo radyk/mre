@@ -399,6 +399,17 @@ class CostModel(BaseModel):
     # (the R-SC3(1) FLOOR); positive => earliness enters the primary objective
     # at this price and every placement it buys is traceable to it.
     earliness_value: float = 0.0
+    # R-SC2 coarse-zone amendment clause 3 (docs/06 §5.9, Session 4B.6): the
+    # FAR-HORIZON look-ahead's declared coefficients. rho (capacity_derate) is
+    # the fraction of calendar capacity the coarse planning run may use, and
+    # bucket_days is the coarse bucket length. BOTH ARE Optional AND DEFAULT TO
+    # None — None means "the submission was silent", which the coarse zone
+    # records as DEFAULTED provenance (rho 1.0, a NO-OP derate; 7-day buckets)
+    # and prints as such in the certificate. A float default here would erase
+    # the distinction between a plant's choice and ours, which is exactly what
+    # clause (3) forbids.
+    coarse_bucket_days: Optional[int] = None
+    coarse_capacity_derate: Optional[float] = None
 
 
 # ---------------------------------------------------------------------------

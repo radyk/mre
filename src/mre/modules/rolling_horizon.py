@@ -749,6 +749,26 @@ def _admit(plant, candidates, window_start, window_end, gravity, crit_threshold)
     return admitted, reasons
 
 
+def gravity_admitted_demand_ids(plant, candidates, window_start, window_end,
+                                crit_threshold: float = 3.0) -> set:
+    """The demands this window admitted BY GRAVITY rather than by the time
+    window — exactly ``admitted(gravity=True) − admitted(gravity=False)``.
+
+    Session 4B.6 CU3 needs this to label a coarse prediction's realization
+    intake path: a demand pulled in early by gravity is TWO MECHANISMS ON RECORD
+    DISAGREEING about the same job (the coarse model said "week 3", gravity said
+    "now"), and the conformance report counts those rather than smoothing them.
+
+    Pure arithmetic over ``_admit`` — no solve, no state, and NOTHING here feeds
+    back into admission (clause 4: coarse never constrains fine, nor its
+    admission policy)."""
+    with_gravity, _ = _admit(plant, candidates, window_start, window_end,
+                             True, crit_threshold)
+    base_only, _ = _admit(plant, candidates, window_start, window_end,
+                          False, crit_threshold)
+    return set(with_gravity) - set(base_only)
+
+
 # ---------------------------------------------------------------------------
 # per-window model build (subset of the canonical entities)
 # ---------------------------------------------------------------------------

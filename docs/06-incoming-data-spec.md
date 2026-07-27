@@ -6,6 +6,8 @@
 
 **v0.2 changes:** cost model REQUIRED with a minimal core (§5.9); customer and priority doorways (§5.10, §3); setup transitions (§5.11); locks (§5.12); overtime expression (§5.6, §5.9); extension & pipeline-proof clause (§8); costing-completeness grade on the certificate (§4).
 
+**v0.6 changes:** `coarse_horizon` coefficient doorway (§5.9) — the far-horizon look-ahead's declared bucket length and capacity derate (rho), with a gate check (`ids.coarse_horizon_coefficients_sane`, §4), adapter translation onto the canonical CostModel, a pilot_scale truth manifest and an anomaly generator: pipeline-proven per §8, not model-proven. Registry v0.3 → v0.4 (36 rules).
+
 **v0.3 changes:** `wip_status.csv` doorway for in-flight work / soft-start rescheduling (§5.13); `wip_progress_basis` manifest declaration (§3); WIP gate checks (§4 Tier 2); the reschedule-from-a-point invariant amendment (§5.13).
 
 **v0.5 changes:** §5.3 **alternative groups** made real — repeated (route_id, sequence) rows carry a **per-alternative time model** (`setup_minutes`/`run_minutes_per_unit` read per row → `ResourceRequirement.rate_overrides`, docs/01 §5.5; the solver builds per-resource durations, the extractor prices the chosen machine's honest rate), while `setup_family`/`dwell`/`splittable`/`min_chunk` are **STEP attributes that must agree** across the group (new rule `ids.alternative_step_attributes_agree`, AMBIGUOUS_SOURCE, first-row-wins) — registry now **33 rules**; `active=false` removes a row; zero active rows = unroutable; identical triples remain duplicates; `role` column RESERVED (B3). Empty overrides ⇒ byte-identical solves (the no-map guarantee). Before v0.5 the adapter silently DROPPED every non-first row's time (a per-alternative rate never reached the solver) — the latent silent-wrong this closes.
@@ -103,7 +105,7 @@ The gate runs as an evidence-emitting module (standard finding vocabulary). Outp
 | **CONDITIONALLY ACCEPTED** | Quantified gaps within thresholds; submitter triages each class: fix / waive-with-exclusion / block. |
 | **ACCEPTED** | Proceeds; quality flags disclosed. |
 
-### 4.1 The Rule Registry (v0.3 of the registry; IDS v0.5; 35 rules)
+### 4.1 The Rule Registry (v0.4 of the registry; IDS v0.6; 36 rules)
 
 The gate is a **registry of named rules**, not a prose tier list. The registry
 below is the constitution; `src/mre/contracts/ids_rules.py` is its executable
@@ -182,6 +184,7 @@ the new definitions (recorded in the anomaly catalog, not hand-tuned).
 | ids.orders_use_active_routes | LOW_CONFIDENCE_INPUT | §5.2 | implemented |
 | ids.priority_classes_priced | UNMAPPABLE_VALUE | §5.9, App A | implemented |
 | ids.earliness_value_sane | VALUE_OUT_OF_RANGE | §5.9 | implemented |
+| ids.coarse_horizon_coefficients_sane | VALUE_OUT_OF_RANGE | §5.9 | implemented |
 | ids.setup_families_have_transition_matrix | AMBIGUOUS_SOURCE | §5.11 | implemented |
 | ids.transition_matrix_references_declared_families | AMBIGUOUS_SOURCE | §5.11 | implemented |
 | ids.customer_references_have_master | AMBIGUOUS_SOURCE | §5.10 | implemented |
@@ -296,7 +299,8 @@ The mission is **cost-optimized scheduling**; economics are not optional. The re
     "transition_costs": "see setup_transitions.csv",
     "scrap_cost_per_unit": null,
     "inventory_carrying": null,
-    "earliness_value": 0.05
+    "earliness_value": 0.05,
+    "coarse_horizon": { "bucket_days": 7, "capacity_derate": 0.85 }
   }
 }
 ```
@@ -304,6 +308,8 @@ The mission is **cost-optimized scheduling**; economics are not optional. The re
 `core` is Tier-1 required in full. `priority_multipliers` keys must cover every priority/commitment class used in orders/customers (Tier-2 check otherwise). Customer priority **is a cost coefficient**: there is a priced cost to failing high-priority customers, and it enters the objective as the per-demand tardiness weight.
 
 **`earliness_value` (optional refinement; R-SC3).** Currency **per minute** of op-start earliness, applied plant-wide (`>= 0`; **absent ⇒ 0**). Semantics: it **prices earliness**, biasing the optimizer toward earlier starts and, when positive, willing to pay a small bounded production premium to pull a job onto a machine that is free earlier — it is a **preference, not a service guarantee** (a service guarantee is a due date, priced as tardiness). **0 makes earliness a pure zero-cost tiebreak** (among cost-optimal schedules the solver prefers earlier starts; no priced term is created). It is a *declared* coefficient precisely so no internal, undeclared weight can move placement (R-SC3(3)): schedule slack at the horizon tail is an option on unknown future demand, and only a human declaration prices it. Units matter — a value dearer than the cheapest resource's per-minute rate is almost certainly an hours-vs-minutes slip, and the gate flags it (rule `ids.earliness_value_sane`, §4).
+
+**`coarse_horizon` (optional refinement; R-SC2 coarse-zone amendment).** Governs the **far-horizon look-ahead** — the coarse capacity model that places known work BEYOND the current scheduling window into fixed-length buckets, so beyond-horizon demand is coarsely *placed* rather than merely listed. Two coefficients: **`capacity_derate`** (rho) is the FRACTION of calendar capacity the planning run may use (`0 < rho <= 1`), and **`bucket_days`** is the bucket length in days (`>= 1`). Both optional; **absent ⇒ the stated defaults**, `rho = 1.0` and 7-day buckets. The default derate is deliberately a **no-op**: an undeclared plant is never given an invented safety margin, and the certificate prints each coefficient beside its **provenance** (`declared` / `defaulted`) so a coefficient we chose can never read as one the plant chose. rho is a *declared* coefficient for exactly the reason `earliness_value` is (R-SC3(3), amendment clause 3): capacity held back for the unknown is a business judgment, and only a human declaration may make it. **The asymmetry the coefficient serves:** the coarse model is a RELAXATION of the real one, so a coarse INFEASIBLE proves the real schedule cannot fit the work, while a coarse placement proves nothing — and only the run at `rho = 1.0` may be cited as such a proof. An out-of-band or unparseable value cannot be honored: it is defaulted downstream, **loses its declared status**, and degrades the grade (rule `ids.coarse_horizon_coefficients_sane`, §4).
 
 ### 5.10 customers.csv (optional*, doorway)
 customer_id ✓ · name · priority_class ✓ (→ priority_multipliers) · notes. Order-level priority interacts per manifest `priority_precedence`.
