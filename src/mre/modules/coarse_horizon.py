@@ -147,7 +147,16 @@ class CoarseCoefficients:
 
     def certificate_block(self) -> dict:
         """The certificate's view of the coefficients (acceptance item 6: rho
-        appears in the certificate; a hidden default is a failure)."""
+        appears in the certificate; a hidden default is a failure).
+
+        4B.6a CU2(d): when no derate is DECLARED the certificate carries a
+        DECLARATION NOTE saying so in words. At rho = 1.0 the planning run
+        mirrors the proof run, so an undeclared plant gets no planning signal at
+        all and every capacity figure assumes full utilization — the optimistic
+        direction. We do not invent a margin to cover that (clause 3 stands);
+        we make the absence loud. This is NOT a gate finding: rho is an
+        undeclared OPTIONAL coefficient, not a data defect, so it moves no
+        verdict and fires no rule (docs/06 remediation entry, informational)."""
         return {
             "coarse_bucket_days": self.bucket_days,
             "coarse_bucket_days_provenance": (
@@ -155,7 +164,26 @@ class CoarseCoefficients:
             "coarse_capacity_derate": self.capacity_derate,
             "coarse_capacity_derate_provenance": (
                 "declared" if self.capacity_derate_declared else "defaulted"),
+            "coarse_capacity_derate_note": self.derate_note(),
         }
+
+    def derate_note(self) -> str:
+        """The declaration note, in words. Never empty: a declared coefficient
+        says it is declared, an absent one says what its absence costs."""
+        if self.capacity_derate_declared:
+            if self.capacity_derate >= 1.0:
+                return ("capacity derate DECLARED at 1.0: full calendar capacity "
+                        "by the plant's own choice — coarse figures assume every "
+                        "available minute is usable")
+            return (f"capacity derate DECLARED at {self.capacity_derate:g}: "
+                    f"coarse capacity is that fraction of calendar time")
+        return ("NO CAPACITY MARGIN DECLARED for this plant. The defaulted "
+                "derate is 1.0 — a no-op, not an invented margin — so the "
+                "planning run mirrors the proof run and every coarse capacity "
+                "figure assumes full utilization of every available minute. "
+                "Declare cost_model.refinements.coarse_horizon.capacity_derate "
+                "(docs/06 s5.9) to hold time back for the unknown. This is a "
+                "DECLARATION NOTE, not a data defect: it moves no gate verdict.")
 
 
 # ---------------------------------------------------------------------------

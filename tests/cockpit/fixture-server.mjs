@@ -30,6 +30,11 @@ const DIRS = {
   // beyond-horizon tray; and an EMPTY-tray variant for the empty-state screenshot.
   "sched-rolling-fixture": resolve(FIX, "rolling"),
   "sched-rolling-empty": resolve(FIX, "rolling_empty"),
+  // Session 4B.6a CU4: the SAME 40-order plant with a tight DECLARED derate, so
+  // machine-weeks actually bind. At the plant's real 0.85 the demo book loads
+  // the coarse zone to a few percent and no cell is hot — the density band's
+  // binding-cell tooltip had nothing to be screenshotted against.
+  "sched-rolling-coarse-hot": resolve(FIX, "rolling_coarse_hot"),
 };
 // An accepted edit mints a new version id ``<base>-edit`` (CU1); a CHAINED edit
 // appends another ``-edit``. All map back to the base fixture directory so a

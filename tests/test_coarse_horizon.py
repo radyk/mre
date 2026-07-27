@@ -786,6 +786,148 @@ class TestCoarseAnswers:
             assert "$" not in body and "cost" not in body.lower()
 
 
+class TestUncountedPopulation:
+    """Session 4B.6a CU2 — VOICE WHAT WAS NOT COUNTED.
+
+    The coarse capacity arithmetic runs over a population missing every
+    resumable op and every op exceeding a single bucket's capacity. Excluded ops
+    consume ZERO coarse minutes, so load is UNDERSTATED — and resumables are the
+    LONG ops, the ones that most stress capacity. The count is on
+    ``CoarseZoneBlock.unmodelable_count``; until this CU it was not voiced.
+
+    The precedent is 4B.6's own finding: without the unmodelable COUNT the
+    rho = 0.10 result read as "it fits". Same lesson, second exclusion.
+
+    BOTH DIRECTIONS are tested: a caveat when there is something to caveat, and
+    NO invented caveat when there is not.
+    """
+
+    _CELLS = [{"resource_id": "MILL-01", "bucket_index": 1, "load_minutes": 2800,
+               "capacity_minutes": 2880, "utilization": 0.972}]
+
+    def _bodies(self, **cz):
+        from mre.modules.rolling_questions import (
+            answer_bucket_load, answer_coarse_fit,
+        )
+        doc = TestCoarseAnswers()._doc(density=self._CELLS,
+                                       binding_cells=self._CELLS, **cz)
+        return {
+            "coarse_fit": answer_coarse_fit(doc),
+            "bucket_load_named": answer_bucket_load(doc, "week 1"),
+            "bucket_load_fullest": answer_bucket_load(doc),
+            "bucket_load_empty_week": answer_bucket_load(doc, "week 0"),
+        }
+
+    def test_every_capacity_answer_names_the_uncounted_population(self):
+        for name, body in self._bodies(unmodelable_count=7).items():
+            assert "7 operations" in body, f"{name} does not name the count"
+            assert "not counted" in body or "not in this figure" in body, (
+                f"{name} names the count but not that the MINUTES are missing")
+
+    def test_no_caveat_is_invented_when_nothing_is_excluded(self):
+        for name, body in self._bodies(unmodelable_count=0).items():
+            assert "outside what my coarse model" not in body, (
+                f"{name} invented an exclusion caveat with nothing excluded")
+            assert "not counted" not in body, name
+
+    def test_a_proven_negative_names_the_exclusion_in_the_honest_direction(self):
+        """Leaving work OUT can only make a refutation STRONGER — the excluded
+        minutes would add load. The caveat must not read as a hedge on a proof."""
+        from mre.modules.rolling_questions import answer_coarse_fit
+        body = answer_coarse_fit(TestCoarseAnswers()._doc(
+            infeasibility_proven=True, proof_status="INFEASIBLE",
+            unmodelable_count=3, binding_cells=self._CELLS))
+        assert body.startswith("No")
+        assert "3 operations" in body
+        assert "stronger, never weaker" in body
+
+    def test_the_caveat_carries_no_currency(self):
+        """CLAUSE (5) still holds over the new sentence."""
+        for body in self._bodies(unmodelable_count=4).values():
+            assert "$" not in body and "cost" not in body.lower()
+
+
+class TestNoDerateDeclared:
+    """Session 4B.6a CU2(d) — THE ABSENCE IS LOUD, AND IS NOT A GATE FINDING.
+
+    At rho = 1.0 the planning run MIRRORS the proof run, so an undeclared plant
+    gets NO planning signal and its capacity figures assume every available
+    minute is usable — the optimistic direction, the one we do not want to be
+    wrong in. No default margin is invented (clause 3 stands); the absence is
+    made loud instead.
+    """
+
+    def test_the_certificate_carries_a_declaration_note(self):
+        c = CoarseCoefficients.from_cost_model({})
+        block = c.certificate_block()
+        note = block["coarse_capacity_derate_note"]
+        assert "NO CAPACITY MARGIN DECLARED" in note
+        assert "full utilization" in note
+        assert "moves no gate verdict" in note
+
+    def test_a_declared_derate_says_it_was_declared(self):
+        c = CoarseCoefficients.from_cost_model({"coarse_capacity_derate": 0.85})
+        note = c.certificate_block()["coarse_capacity_derate_note"]
+        assert "DECLARED at 0.85" in note
+        assert "NO CAPACITY MARGIN DECLARED" not in note
+
+    def test_no_invented_margin(self):
+        """The loudness must never become a silent default (clause 3)."""
+        assert CoarseCoefficients.from_cost_model({}).capacity_derate == 1.0
+
+    def test_capacity_answers_say_the_figures_assume_full_utilization(self):
+        from mre.modules.rolling_questions import answer_bucket_load
+        cells = [{"resource_id": "M1", "bucket_index": 0, "load_minutes": 10,
+                  "capacity_minutes": 100, "utilization": 0.1}]
+        doc = TestCoarseAnswers()._doc(
+            density=cells, capacity_derate=1.0,
+            capacity_derate_provenance="defaulted")
+        body = answer_bucket_load(doc, "week 0")
+        assert "no capacity margin is declared" in body
+        assert "assume every available minute is usable" in body
+
+    def test_the_rule_count_is_unchanged(self):
+        """CU2(d) adds a remediation entry (INFORMATIONAL), never a registry
+        rule. The one coarse rule that exists (``coarse_horizon_coefficients_
+        sane``, 4B.6) checks a DECLARED value's sanity; loudness about an ABSENT
+        one must not become a 37th rule."""
+        from mre.contracts.ids_rules import RULE_REGISTRY
+        assert len(RULE_REGISTRY) == 36
+
+    def test_an_undeclared_derate_fires_no_rule_and_moves_no_verdict(self,
+                                                                     tmp_path):
+        """THIS IS NOT A GATE FINDING. rho is an undeclared OPTIONAL coefficient
+        (docs/06 §5.9), not a data defect: it must not move a verdict to
+        CONDITIONAL or fire a rule violation. Asserted on a real gate run over a
+        submission that declares nothing."""
+        import json as _json
+        from generate_erp_dataset import generate
+        from mre.contracts.vocabularies import ModuleCode, RunStatus
+        from mre.modules.conformance import ConformanceGate
+        from mre.reporter import Reporter
+
+        sub = tmp_path / "sub"
+        generate(sub, scenario="clean_small", seed=7)
+        cm = _json.loads((sub / "cost_model.json").read_text(encoding="utf-8"))
+        assert "coarse_horizon" not in (cm.get("refinements") or {}), (
+            "this scenario now declares the coefficient — pick one that doesn't")
+
+        rep = Reporter.begin(module=ModuleCode.M0, purpose="CU2(d)", config={},
+                             trigger="test", snapshot_id="pre-adapter",
+                             sink_dir=tmp_path / "runs")
+        result = ConformanceGate().run(sub, rep)
+        rep.end(RunStatus.SUCCESS if result.go else RunStatus.PARTIAL)
+
+        assert result.grade == "ACCEPTED", (
+            f"an undeclared capacity derate moved the verdict to "
+            f"{result.grade} — it is a declaration note, not a defect")
+        fired = [f for f in result.certificate.get("rule_outcomes", [])
+                 if "coarse_horizon" in str(f)]
+        assert fired == [], (
+            f"the coarse coefficient rule fired on a submission that never "
+            f"declared it: {fired}")
+
+
 def test_the_two_coarse_intents_are_fully_registered():
     """A vocabulary-class change is only done when EVERY registration site
     carries it: Intent, meaning, taxonomy, offer, rolling dispatch set."""

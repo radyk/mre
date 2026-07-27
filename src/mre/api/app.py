@@ -72,6 +72,16 @@ class SolveRequest(BaseModel):
     sliced: bool = False
     window_days: int = 7            # the rolling window length (the knee is ~7d)
     frozen_days: int = 2            # the frozen-front length (<= window_days)
+    # THE COARSE ZONE (R-SC2 amendment, 4B.6), opt-in per solve: coarsely PLACE
+    # the beyond-horizon tray instead of merely listing it, and publish the
+    # contract-1.9 blocks. Sliced runs only — a monolithic run has no tray.
+    coarse: bool = False
+    # The roll's reference origin (ISO date or datetime). Defaults to the
+    # manifest's, which is what every solve of the same submission got before
+    # 4B.6a — meaning two solves rendered the SAME window and the plant never
+    # actually rolled. The cross-roll prediction history (clause 7) only accrues
+    # when the clock advances, so the clock became a request field.
+    reference_date: Optional[str] = None
 
 
 class PoolRequest(BaseModel):
@@ -907,23 +917,40 @@ def _execute_rolling_solve(registry: Registry, run: dict, files_dir: Path,
     once (prepare_plant), solve the CURRENT window (build_rolling_view), assemble
     the contract-1.7 rolling document, and register it like any other schedule.
     The document renders the plant AS OF the reference origin — a committed frozen
-    front + an active window + a beyond-horizon tray (the sliced world)."""
+    front + an active window + a beyond-horizon tray (the sliced world).
+
+    THE COARSE ZONE (``req.coarse``, 4B.6 / wired 4B.6a CU1) is opt-in: when set,
+    the beyond-horizon tray is coarsely PLACED and the contract-1.9 blocks appear.
+    Its predictions are then persisted to the cross-roll store and every EARLIER
+    roll's predictions are judged against this window's placements — strictly
+    after the schedule is registered, so a store fault can never lose a schedule
+    (``record_roll_history`` never raises; its ``error`` is surfaced on the run)."""
     from mre.contracts.schedule_document import CONTRACT_VERSION
-    from mre.modules.rolling_horizon import prepare_plant, build_rolling_view
+    from mre.modules.coarse_predictions import record_roll_history
+    from mre.modules.rolling_horizon import (
+        gravity_admitted_demand_ids, prepare_plant, build_rolling_view,
+    )
     from mre.modules.schedule_assembler import assemble_rolling_document
 
     run_id, out_dir = run["id"], Path(run["out_dir"])
     try:
-        plant = prepare_plant(files_dir, out_dir, policy=req.policy)
+        ref = _parse_reference_date(req.reference_date)
+        plant = prepare_plant(files_dir, out_dir, reference_date=ref,
+                              policy=req.policy)
         view = build_rolling_view(
             plant, window_days=req.window_days, frozen_days=req.frozen_days,
             deterministic=req.deterministic, member_time_limit_s=req.time_limit,
             persist=True)
+        zone = None
+        if req.coarse:
+            from mre.modules.coarse_horizon import build_coarse_zone
+            zone = build_coarse_zone(plant, view,
+                                     deterministic=req.deterministic, seed=42)
         idmap = plant.store.load_snapshot(plant.snapshot_id).read_identity_map()
         schedule_id = f"rolling-{run_id[:12]}"
         document = assemble_rolling_document(
             plant=plant, view=view, schedule_id=schedule_id,
-            run_id=run_id, identity_map=idmap)
+            run_id=run_id, identity_map=idmap, coarse_zone=zone)
         doc_path = _persist_document(document, out_dir)
         registry.register_schedule(
             schedule_id=document.schedule_id, run_id=run_id,
@@ -931,14 +958,48 @@ def _execute_rolling_solve(registry: Registry, run: dict, files_dir: Path,
             contract_version=CONTRACT_VERSION, document_path=doc_path,
             submission_id=submission_id,
         )
-        registry.finish_run(run_id, "succeeded", result={
-            "schedule_id": document.schedule_id, "sliced": True,
-            "committed": view.committed and len(view.committed) or 0,
-            "beyond_horizon": len(view.beyond_demand_ids),
-        })
     except Exception as exc:  # noqa: BLE001 — background task must not raise
         registry.finish_run(run_id, "failed",
                             error=f"rolling solve: {type(exc).__name__}: {exc}")
+        return
+
+    # SIDE-CHANNEL, after registration. The schedule is already safe on disk and
+    # in the registry; NOTHING below may take it away — which is why even the
+    # gravity read is inside the guard, not just the store write. Realization
+    # intake is labelled from the ADMISSION MECHANISM, never inferred from the
+    # sign of a gap.
+    try:
+        gravity = gravity_admitted_demand_ids(
+            plant, plant.schedulable_demands, view.window_start, view.window_end)
+        hist = record_roll_history(
+            run_dir=out_dir, data_root=registry.data_root, run_id=run_id,
+            view=view, plant=plant, zone=zone,
+            gravity_admitted_demand_ids=gravity)
+    except Exception as exc:  # noqa: BLE001 — caught, NEVER swallowed (see below)
+        from mre.modules.coarse_predictions import RollHistory
+        hist = RollHistory(error=f"{type(exc).__name__}: {exc}")
+    if hist.error:
+        logging.getLogger("mre.api").warning(
+            "coarse prediction store FAILED on run %s: %s — the schedule is "
+            "registered and intact, but this roll accrued no history", run_id,
+            hist.error)
+    registry.finish_run(run_id, "succeeded", result={
+        "schedule_id": document.schedule_id, "sliced": True,
+        "committed": view.committed and len(view.committed) or 0,
+        "beyond_horizon": len(view.beyond_demand_ids),
+        "coarse": bool(zone is not None),
+        "coarse_history": hist.to_dict(),
+    })
+
+
+def _parse_reference_date(raw: Optional[str]):
+    """An ISO date or datetime for the roll's origin; None keeps the manifest's.
+    Naive values are read as UTC, matching the spine."""
+    if not raw:
+        return None
+    from datetime import datetime as _dt, timezone as _tz
+    d = _dt.fromisoformat(str(raw))
+    return d if d.tzinfo else d.replace(tzinfo=_tz.utc)
 
 
 def _execute_pool(registry: Registry, pool_id: str, schedule_row: dict,

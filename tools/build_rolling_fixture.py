@@ -5,19 +5,36 @@ hermetic fixture set the Playwright harness serves — so CI renders the real
 rolling document (committed frozen front + active window + beyond-horizon tray)
 with NO solver in the browser test.
 
-Two fixtures are written under tests/cockpit/fixtures/rolling/:
-  * schedule.json  — the real assembled contract-1.7 document (POPULATED tray)
-  * meta.json      — the registry meta the top strip reads
-  * asks.json      — canned AI answers for the CU3 rolling questions
-and under tests/cockpit/fixtures/rolling_empty/:
-  * schedule.json  — a variant whose tray is empty (window covers the whole book)
+Three fixture sets are written under tests/cockpit/fixtures/:
+  * rolling/            — the real assembled document (POPULATED tray), with a
+                          coarse zone, plus the captured two-beat set
+  * rolling_empty/       — a variant whose tray is empty (window covers the whole
+                          book), so its coarse band is the EMPTY state
+  * rolling_coarse_hot/  — the SAME 40-order plant with a low DECLARED derate, so
+                          machine-weeks actually bind and the density band's
+                          hot-cell tooltip has something to be about (see
+                          COARSE_HOT_DERATE below)
 
-Run:  python tools/build_rolling_fixture.py
+Run:  PYTHONHASHSEED=0 python tools/build_rolling_fixture.py
 The output JSON is committed; regenerate only when the contract or plant changes.
+
+SESSION 4B.6a CU4 — WHY THIS WAS REGENERATED, ONCE, UNDER AUTHORIZATION. The
+committed set predated the 2026-07-26 determinism fixes (adapter set-order,
+admitted-set order, wall-as-budget) and no longer reproduced, which blocked
+visual verification in two consecutive sessions. Two things changed here besides
+the coarse zone, and both are the determinism fix rather than a new choice:
+
+  * MEMBER_TIME_LIMIT_S is now generous. It is the WALL CEILING, never the
+    budget: under a deterministic run the DETERMINISTIC budget (``det_time``)
+    is what must bind, and a wall-truncated solve is a lottery wearing a
+    determinism label. The old 10 s ceiling could bind first.
+  * A wall-truncated view or coarse run now RAISES instead of being written.
+    A fixture that cannot be reproduced is not a golden.
 """
 from __future__ import annotations
 
 import copy
+import dataclasses
 import json
 import sys
 from datetime import datetime, timezone
@@ -27,17 +44,33 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "tools"))
 sys.path.insert(0, str(REPO / "src"))
 
+from mre.modules.coarse_horizon import CoarseCoefficients, build_coarse_zone
 from mre.modules.rolling_horizon import prepare_plant, build_rolling_view
 from mre.modules.schedule_assembler import assemble_rolling_document
 
 REF = datetime(2026, 1, 5, tzinfo=timezone.utc)
 OUT = REPO / "tests" / "cockpit" / "fixtures"
 
+# The WALL CEILING, not the budget (see the module docstring). Generous by
+# design so the deterministic budget is what binds.
+MEMBER_TIME_LIMIT_S = 300.0
+DET_TIME_S = 2.0
+COARSE_SAFETY_CEILING_S = 120.0
+
+# The hot-band fixture's DECLARED derate. At the plant's own declared 0.85 the
+# 40-order demo book loads the coarse zone to a few percent and NOTHING binds —
+# the standing "unexercised at demo density" limit (docs/07 §5a). A binding
+# cell's tooltip cannot be screenshotted over a band with no binding cell, so
+# one fixture declares a deliberately tight derate on the SAME plant. It is a
+# DECLARED coefficient, printed as declared, and it is a separate fixture: the
+# real board keeps the plant's real 0.85.
+COARSE_HOT_DERATE = 0.10
+
 
 def _meta(sid: str) -> dict:
     return {
         "id": sid, "schedule_id": sid, "status": "proposed",
-        "contract_version": "1.8", "grade": "ACCEPTED", "costing_grade": "C2",
+        "contract_version": "1.9", "grade": "ACCEPTED", "costing_grade": "C2",
         "created_at": "2026-01-05T09:41:00Z", "generation": 1,
     }
 
@@ -92,12 +125,23 @@ def _asks(doc: dict, gesture: dict | None = None) -> dict:
 
 
 def build(orders: int, window_days: int, frozen_days: int, sid: str,
-          capture_gesture: bool = False):
+          capture_gesture: bool = False, coarse: bool = True,
+          coarse_derate: float | None = None, blank_tray: bool = False):
     """Build a rolling document. When ``capture_gesture`` is set (4B.3c), PERSIST
     the window-0 solve as a first-class run and run the REAL two-beat against it,
     capturing byte-faithful interaction / feasibility / sandbox / contradiction
     fixtures the Playwright harness serves — so the browser test exercises a real
-    sliced-board two-beat with no solver in the browser."""
+    sliced-board two-beat with no solver in the browser.
+
+    ``coarse`` (4B.6a CU4) runs the coarse zone so the document carries the
+    contract-1.9 blocks and the cockpit's density band has something to render.
+    ``coarse_derate`` overrides the plant's DECLARED derate (the hot-band
+    fixture); None keeps whatever the submission declares.
+
+    ``blank_tray`` is the empty-state variant: the tray is emptied AND the coarse
+    zone is rebuilt over the emptied set, so the band's empty state is coherent
+    with the tray rather than showing load for orders the document says are not
+    there."""
     import tempfile
     from generate_erp_dataset import generate
     tmp = Path(tempfile.mkdtemp(prefix="rollfix"))
@@ -105,11 +149,33 @@ def build(orders: int, window_days: int, frozen_days: int, sid: str,
     plant = prepare_plant(tmp / "sub", tmp / "prep", reference_date=REF)
     view = build_rolling_view(plant, window_days=window_days, frozen_days=frozen_days,
                               gravity=True, deterministic=True, seed=42,
-                              member_time_limit_s=10.0, det_time=2.0,
-                              persist=capture_gesture)
+                              member_time_limit_s=MEMBER_TIME_LIMIT_S,
+                              det_time=DET_TIME_S, persist=capture_gesture)
+    # A fixture that cannot be reproduced is not a golden (4B.6a CU4).
+    if view.wall_truncated:
+        raise RuntimeError(
+            "the window solve hit the WALL ceiling, so this fixture is a "
+            "wall-clock lottery wearing a determinism label — raise "
+            "MEMBER_TIME_LIMIT_S until the deterministic budget binds")
+    if blank_tray and view.beyond_demand_ids:
+        view = dataclasses.replace(view, beyond_demand_ids=[])
+
+    zone = None
+    if coarse:
+        coef = (CoarseCoefficients(7, coarse_derate, True, True)
+                if coarse_derate is not None
+                else CoarseCoefficients.from_cost_model(plant.cost_model))
+        zone = build_coarse_zone(plant, view, coefficients=coef,
+                                 deterministic=True, seed=42,
+                                 det_time=DET_TIME_S,
+                                 safety_ceiling_s=COARSE_SAFETY_CEILING_S)
+        if zone.proof.wall_truncated or zone.planning.wall_truncated:
+            raise RuntimeError("a coarse run hit the WALL ceiling — not a golden")
+
     idmap = plant.store.load_snapshot(plant.snapshot_id).read_identity_map()
     doc = assemble_rolling_document(plant=plant, view=view, schedule_id=sid,
-                                    run_id="run-fixture", identity_map=idmap)
+                                    run_id="run-fixture", identity_map=idmap,
+                                    coarse_zone=zone)
     docd = doc.model_dump(mode="json")
     gesture = _capture_gesture(plant, docd) if capture_gesture else None
     return docd, view, gesture
@@ -220,32 +286,47 @@ def write_set(subdir: str, doc: dict, sid: str, gesture: dict | None = None):
         (d / "feasibility.json").write_text(json.dumps(feas, indent=2), encoding="utf-8")
         (d / "sandbox.json").write_text(json.dumps(sb, indent=2), encoding="utf-8")
         (d / "gesture.json").write_text(json.dumps(gesture["gesture"], indent=2), encoding="utf-8")
+    cz = doc["rolling"].get("coarse_zone")
     print(f"  {subdir}: {len(doc['assignments'])} bars, "
           f"{len(doc['rolling']['beyond_horizon'])} in tray "
           f"({doc['rolling']['committed_count']} committed, "
           f"{doc['rolling']['active_count']} active)"
+          + (f" · coarse rho={cz['capacity_derate']:g}"
+             f" ({cz['capacity_derate_provenance']}) cells={len(cz['density'])}"
+             f" binding={len(cz['binding_cells'])}"
+             f" unmodelable={cz['unmodelable_count']}"
+             f" tardiness_buckets={cz['tardiness_buckets_total']}" if cz else
+             " · no coarse zone")
           + (f" · gesture op {gesture['gesture']['op'][:8]}"
              + (" +contradiction" if gesture.get('contradiction') else " (no contradiction)")
              if gesture else ""))
 
 
 def main():
-    print("building rolling fixture (populated tray, MIXED committed/active, gesturable)…")
+    print("building rolling fixture (populated tray, MIXED committed/active, gesturable)...")
     # window 14 / frozen 3 on the 40-order plant yields a rich sliced world — a
     # frozen front, a wide active window with cross-machine ops, and a full tray.
     doc, _, gesture = build(orders=40, window_days=14, frozen_days=3,
                             sid="sched-rolling-fixture", capture_gesture=True)
     write_set("rolling", doc, "sched-rolling-fixture", gesture)
 
-    print("building rolling_empty fixture (empty tray)…")
+    print("building rolling_empty fixture (empty tray, EMPTY coarse band)...")
     # A window long enough to admit the whole (small) book → nothing beyond it.
-    # If the solve still leaves work beyond, blank the tray deterministically for
-    # the empty-state screenshot (the render path is what the test asserts).
-    doc2, _, _ = build(orders=8, window_days=60, frozen_days=3, sid="sched-rolling-empty")
-    if doc2["rolling"]["beyond_horizon"]:
-        doc2 = copy.deepcopy(doc2)
-        doc2["rolling"]["beyond_horizon"] = []
+    # If the solve still leaves work beyond, the tray is blanked BEFORE the coarse
+    # zone is built, so the band's empty state matches the tray it belongs to.
+    doc2, _, _ = build(orders=8, window_days=60, frozen_days=3,
+                       sid="sched-rolling-empty", blank_tray=True)
     write_set("rolling_empty", doc2, "sched-rolling-empty")
+
+    print(f"building rolling_coarse_hot fixture (declared derate "
+          f"{COARSE_HOT_DERATE:g} -> binding machine-weeks)...")
+    # THE SAME PLANT, a tight DECLARED derate. At the plant's own 0.85 nothing
+    # binds at demo density, so the band's hot cell — and the tooltip a planner
+    # reads off it — had no fixture to be screenshotted against.
+    doc3, _, _ = build(orders=40, window_days=14, frozen_days=3,
+                       sid="sched-rolling-coarse-hot",
+                       coarse_derate=COARSE_HOT_DERATE)
+    write_set("rolling_coarse_hot", doc3, "sched-rolling-coarse-hot")
     print("done.")
 
 

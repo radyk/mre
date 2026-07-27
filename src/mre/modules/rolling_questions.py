@@ -268,15 +268,26 @@ def _bucket_label(cz: dict, index: int) -> str:
 
 def _rho_clause(cz: dict) -> str:
     """State rho and its PROVENANCE. A defaulted derate must never read as the
-    plant's own choice (clause 3)."""
+    plant's own choice (clause 3).
+
+    4B.6a CU2(d) — THE ABSENCE IS MADE LOUD. At rho = 1.0 the planning run
+    MIRRORS the proof run, so an undeclared plant gets no planning signal at all
+    and every figure here assumes each available minute is usable. That is the
+    OPTIMISTIC direction, which is the one we do not want to be wrong in. We do
+    not invent a margin to cover it (clause 3 stands) — we say out loud that
+    there isn't one.
+    """
     rho = float(cz.get("capacity_derate", 1.0))
     declared = cz.get("capacity_derate_provenance") == "declared"
     if rho >= 1.0:
         if declared:
             return (" That's against full calendar capacity (a derate of 1.0 is "
-                    "declared).")
-        return (" That's against full calendar capacity — no capacity derate is "
-                "declared for this plant, so I've shaved nothing off.")
+                    "declared), so these figures assume every available minute "
+                    "is usable.")
+        return (" That's against full calendar capacity — no capacity margin is "
+                "declared for this plant, so I've shaved nothing off and these "
+                "figures assume every available minute is usable. Declare a "
+                "planning derate and I'll hold time back for the unknown.")
     pct = f"{rho:.0%}"
     if declared:
         return (f" Capacity here is your declared planning derate of {pct} of "
@@ -287,6 +298,32 @@ def _rho_clause(cz: dict) -> str:
 
 def _plural(n: int) -> str:
     return "s" if n != 1 else ""
+
+
+def _uncounted_clause(cz: dict) -> str:
+    """4B.6a CU2(a) — VOICE WHAT WAS NOT COUNTED.
+
+    The coarse capacity arithmetic runs over a population missing every
+    resumable op and every op that exceeds a single bucket's capacity. An
+    excluded op consumes ZERO coarse minutes, so every load and every
+    utilization here is UNDERSTATED — and resumables are the LONG ops, the ones
+    that most stress capacity. A cell reading 60% over a partial population is
+    not 60%.
+
+    The precedent is 4B.6's own finding: without the unmodelable COUNT, the
+    rho = 0.10 result read as "it fits". Same lesson, second exclusion.
+
+    Empty when nothing is excluded — an answer must not invent a caveat it does
+    not have.
+    """
+    n = int(cz.get("unmodelable_count", 0) or 0)
+    if n <= 0:
+        return ""
+    return (f" One caveat on those numbers: {n} operation{_plural(n)} "
+            f"{'are' if n != 1 else 'is'} outside what my coarse model can "
+            f"represent, and {'their' if n != 1 else 'its'} minutes are not "
+            f"counted in any load or percentage above — so the real load is "
+            f"higher than what I've shown.")
 
 
 def _coarse_sentence(tray_item: dict, r: dict) -> str:
@@ -354,13 +391,25 @@ def answer_coarse_fit(doc: Any) -> str:
                      f"{_bucket_label(cz, int(c0.get('bucket_index', 0)))}: "
                      f"{int(c0.get('load_minutes', 0))} minutes of work against "
                      f"{int(c0.get('capacity_minutes', 0))} minutes of capacity.")
+        # The exclusion is named here too (CU2(a)) — and named in the direction
+        # that is true: leaving work OUT can only make the refutation stronger,
+        # never weaker, because the excluded minutes would add load. Saying so
+        # keeps the caveat from reading as a hedge on a proof.
+        left_out = ""
+        unmod = int(cz.get("unmodelable_count", 0) or 0)
+        if unmod:
+            left_out = (f" That count leaves out {unmod} operation"
+                        f"{_plural(unmod)} my coarse model can't represent — "
+                        f"{'their' if unmod != 1 else 'its'} minutes aren't in "
+                        f"these figures at all, which only makes the case "
+                        f"stronger, never weaker.")
         return (f"No — and this one I can prove. Running the {n} order{_plural(n)} "
                 f"beyond the horizon against full calendar capacity, there is no "
                 f"way to fit them: the coarse model is infeasible at full "
                 f"capacity, and because it is a simplification of the real "
                 f"schedule, the real schedule can't fit them either.{where} "
                 f"Something has to give — a due date, overtime, or work moving "
-                f"out.")
+                f"out.{left_out}")
 
     if cz.get("proof_status") == "UNKNOWN" or cz.get("wall_truncated"):
         return (f"I can't answer that one honestly. The capacity check over the "
@@ -385,14 +434,7 @@ def answer_coarse_fit(doc: Any) -> str:
         parts.append(f"The tightest spot is {c0.get('resource_id')} in "
                      f"{_bucket_label(cz, int(c0.get('bucket_index', 0)))}, "
                      f"running at {c0.get('utilization', 0):.0%} of capacity.")
-    unmod = int(cz.get("unmodelable_count", 0) or 0)
-    if unmod:
-        parts.append(f"{unmod} operation{_plural(unmod)} "
-                     f"{'are' if unmod != 1 else 'is'} left out of the check "
-                     f"entirely because the coarse model can't represent "
-                     f"{'them' if unmod != 1 else 'it'} — so even the rough "
-                     f"picture is incomplete.")
-    return " ".join(parts) + _rho_clause(cz)
+    return (" ".join(parts) + _rho_clause(cz)).rstrip() + _uncounted_clause(cz)
 
 
 def answer_bucket_load(doc: Any, bucket: Any = None) -> str:
@@ -413,8 +455,11 @@ def answer_bucket_load(doc: Any, bucket: Any = None) -> str:
     if idx is not None:
         here = [c for c in density if int(c.get("bucket_index", -1)) == idx]
         if not here:
+            # A ZERO is a load claim too, and the most misleading one to make
+            # over a partial population.
             return (f"I don't have any load in {_bucket_label(cz, idx)} — nothing "
-                    f"beyond the horizon lands there in my coarse model.")
+                    f"beyond the horizon lands there in my coarse "
+                    f"model.{_uncounted_clause(cz)}")
         top = sorted(here, key=lambda c: -c.get("utilization", 0))[:3]
         lines = "; ".join(
             f"{c.get('resource_id')} at {c.get('utilization', 0):.0%} "
@@ -425,20 +470,21 @@ def answer_bucket_load(doc: Any, bucket: Any = None) -> str:
         return (f"{verdict} in {_bucket_label(cz, idx)}. The busiest machines "
                 f"there: {lines}.{_rho_clause(cz)} These are whole-week loads "
                 f"from my coarse look-ahead, not a schedule — no operation has a "
-                f"start time yet.")
+                f"start time yet.{_uncounted_clause(cz)}")
 
     cells = cz.get("binding_cells") or []
     if not cells:
         return ("Nothing beyond the horizon is running at capacity in my coarse "
                 "look-ahead — no machine-week is full. Name a week and I'll show "
-                "you what's in it.")
+                "you what's in it." + _uncounted_clause(cz))
     c0 = max(cells, key=lambda c: c.get("utilization", 0))
     return (f"The fullest spot beyond the horizon is {c0.get('resource_id')} in "
             f"{_bucket_label(cz, int(c0.get('bucket_index', 0)))}: "
             f"{int(c0.get('load_minutes', 0))} minutes of work against "
             f"{int(c0.get('capacity_minutes', 0))} minutes of capacity "
             f"({c0.get('utilization', 0):.0%}).{_rho_clause(cz)} That's a "
-            f"whole-week load from my coarse look-ahead, not a schedule.")
+            f"whole-week load from my coarse look-ahead, not a "
+            f"schedule.{_uncounted_clause(cz)}")
 
 
 def _bucket_index_from(bucket: Any, cz: dict) -> Optional[int]:

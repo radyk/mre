@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.8",
+  "contract_version": "1.9",
   "schedule_id": "sched-rolling-empty",
   "snapshot_id": "snap-rolling",
   "run_id": "run-fixture",
@@ -17,8 +17,8 @@
     "deterministic": true
   },
   "cost_summary": {
-    "total": 5971.083333333333,
-    "production_regular": 5251.083333333333,
+    "total": 5978.733333333334,
+    "production_regular": 5258.733333333334,
     "production_overtime": 0.0,
     "setup": 720.0,
     "tardiness": 0.0,
@@ -5531,37 +5531,6 @@
       "commitment_state": "committed"
     },
     {
-      "assignment_id": "rasgn-4f7134cb-774f-5e61-a80b-3a1012edf7a9",
-      "operation_ref": "4f7134cb-774f-5e61-a80b-3a1012edf7a9",
-      "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
-      "work_orders": [
-        "ORD-000001"
-      ],
-      "op_seq": 10,
-      "setup_family": "",
-      "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
-      "external_name": "CUT-03",
-      "chunks": [
-        {
-          "chunk_seq": 1,
-          "start": "2026-01-05T07:00:00Z",
-          "end": "2026-01-05T14:00:00Z",
-          "working_min": 420
-        }
-      ],
-      "phases": {
-        "setup": {
-          "start": "2026-01-05T07:00:00Z",
-          "end": "2026-01-05T07:15:00Z"
-        },
-        "teardown": null
-      },
-      "in_overtime_min": 0,
-      "decision_ref": "",
-      "standing_pin": false,
-      "commitment_state": "committed"
-    },
-    {
       "assignment_id": "rasgn-602a5f74-4b31-5d72-8f77-145f9a42332a",
       "operation_ref": "602a5f74-4b31-5d72-8f77-145f9a42332a",
       "workpackage_ref": "f6af0cc8-9383-5d83-821c-5d41d6267eaa",
@@ -5570,8 +5539,8 @@
       ],
       "op_seq": 10,
       "setup_family": "",
-      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
-      "external_name": "CUT-01",
+      "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+      "external_name": "CUT-03",
       "chunks": [
         {
           "chunk_seq": 1,
@@ -5593,6 +5562,34 @@
       "commitment_state": "committed"
     },
     {
+      "assignment_id": "rasgn-7cb19a72-f20a-5f9a-9028-c96dd54e08d0",
+      "operation_ref": "7cb19a72-f20a-5f9a-9028-c96dd54e08d0",
+      "workpackage_ref": "0c11621b-72c0-5d4a-b1c5-d6cf423b8f53",
+      "work_orders": [
+        "ORD-000005"
+      ],
+      "op_seq": 10,
+      "setup_family": "",
+      "resource_id": "df5aa682-bc17-5d5a-b721-edd24de1725d",
+      "external_name": "CUT-02",
+      "chunks": [
+        {
+          "chunk_seq": 1,
+          "start": "2026-01-05T07:00:00Z",
+          "end": "2026-01-06T15:01:00Z",
+          "working_min": 1921
+        }
+      ],
+      "phases": {
+        "setup": null,
+        "teardown": null
+      },
+      "in_overtime_min": 0,
+      "decision_ref": "",
+      "standing_pin": false,
+      "commitment_state": "committed"
+    },
+    {
       "assignment_id": "rasgn-9cf056b8-a5bd-505a-b6ad-154f3bd52ddf",
       "operation_ref": "9cf056b8-a5bd-505a-b6ad-154f3bd52ddf",
       "workpackage_ref": "71a0d592-ecb4-56b6-a3c8-8aadef848330",
@@ -5601,8 +5598,8 @@
       ],
       "op_seq": 10,
       "setup_family": "",
-      "resource_id": "df5aa682-bc17-5d5a-b721-edd24de1725d",
-      "external_name": "CUT-02",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
       "chunks": [
         {
           "chunk_seq": 1,
@@ -5748,26 +5745,29 @@
       "commitment_state": "committed"
     },
     {
-      "assignment_id": "rasgn-7cb19a72-f20a-5f9a-9028-c96dd54e08d0",
-      "operation_ref": "7cb19a72-f20a-5f9a-9028-c96dd54e08d0",
-      "workpackage_ref": "0c11621b-72c0-5d4a-b1c5-d6cf423b8f53",
+      "assignment_id": "rasgn-4f7134cb-774f-5e61-a80b-3a1012edf7a9",
+      "operation_ref": "4f7134cb-774f-5e61-a80b-3a1012edf7a9",
+      "workpackage_ref": "e4e75f02-4ca8-5c20-bbbc-d5b8c5e09ae8",
       "work_orders": [
-        "ORD-000005"
+        "ORD-000001"
       ],
       "op_seq": 10,
       "setup_family": "",
-      "resource_id": "df5aa682-bc17-5d5a-b721-edd24de1725d",
-      "external_name": "CUT-02",
+      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+      "external_name": "CUT-01",
       "chunks": [
         {
           "chunk_seq": 1,
           "start": "2026-01-05T10:24:00Z",
-          "end": "2026-01-06T18:25:00Z",
-          "working_min": 1921
+          "end": "2026-01-05T17:24:00Z",
+          "working_min": 420
         }
       ],
       "phases": {
-        "setup": null,
+        "setup": {
+          "start": "2026-01-05T10:24:00Z",
+          "end": "2026-01-05T10:39:00Z"
+        },
         "teardown": null
       },
       "in_overtime_min": 0,
@@ -5815,8 +5815,8 @@
       ],
       "op_seq": 10,
       "setup_family": "",
-      "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
-      "external_name": "CUT-01",
+      "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+      "external_name": "CUT-03",
       "chunks": [
         {
           "chunk_seq": 1,
@@ -6112,8 +6112,8 @@
       "quantity": 40.0,
       "quantity_uom": "EA",
       "due": "2026-01-21T23:59:59Z",
-      "projected_completion": "2026-01-06T18:25:00Z",
-      "lateness_min": -21934,
+      "projected_completion": "2026-01-06T15:01:00Z",
+      "lateness_min": -22138,
       "tardiness_cost": 0.0
     },
     {
@@ -6171,6 +6171,34 @@
     "frozen_days": 3,
     "committed_count": 18,
     "active_count": 0,
-    "beyond_horizon": []
+    "beyond_horizon": [],
+    "coarse_zone": {
+      "bucket_days": 7,
+      "bucket_days_provenance": "declared",
+      "capacity_derate": 0.85,
+      "capacity_derate_provenance": "declared",
+      "buckets": [
+        {
+          "index": 0,
+          "start": "2026-03-06T00:00:00Z",
+          "end": "2026-03-13T00:00:00Z"
+        },
+        {
+          "index": 1,
+          "start": "2026-03-13T00:00:00Z",
+          "end": "2026-03-20T00:00:00Z"
+        }
+      ],
+      "proof_status": "OPTIMAL",
+      "planning_status": "OPTIMAL",
+      "planning_mirrors_proof": false,
+      "infeasibility_proven": false,
+      "tardiness_buckets_total": 0,
+      "figures_are_upper_bounds": false,
+      "wall_truncated": false,
+      "unmodelable_count": 0,
+      "density": [],
+      "binding_cells": []
+    }
   }
 }

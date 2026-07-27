@@ -1,6 +1,40 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.48 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.49 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.49:** **Session 4B.6a — consolidation: the history is wired, the exclusions are voiced,
+the goldens move once** 2026-07-27 (docs/04 session amendment; docs/06 v0.6a). **No new
+capability.** Three carried debts stop compounding and one measurement lands. **CU1** — the
+coarse PREDICTION STORE is wired into the rolling worker (`record_roll_history`), so history
+actually accrues: three consecutive rolls on pilot_scale wrote **228 predictions and 180
+realizations**, with both intake paths captured end-to-end (**62 natural roll, 38 gravity
+admission** at roll 1) and each prediction judged exactly once. Three constraints tested: the
+document is **byte-identical with the store on and off** (only `run_id`/`schedule_id`
+normalized), a store write failure **loses no schedule and is surfaced** on the run record, and
+realization capture fires on both intake paths through the worker. Two named request fields
+made it possible: `SolveRequest.coarse` (opt-in per solve) and `SolveRequest.reference_date`
+(without it every solve rendered the same window and **the plant never rolled**). **CU2** —
+every capacity answer, and every density-band cell tooltip, now names the **uncounted
+population** (excluded ops consume zero coarse minutes, so load is understated); both
+directions tested, no caveat invented when nothing is excluded. A plant that declares **no
+capacity margin** gets a loud declaration note on the certificate, the band and every answer —
+and it is **NOT a gate finding**: no rule fires, no verdict moves, the registry stays at **36
+rules**, and the entry is an informational remediation note in docs/06 §5.9. **CU3** — the
+coarse model's BINDING behaviour is pinned at 200 orders (404 ops modeled, peak utilization
+0.998, 123 buckets of tardiness, rho 0.5 INFEASIBLE with the population unchanged); the
+40-order guard could have passed with the capacity constraints removed. **CU4** — the rolling
+cockpit fixture was regenerated under one-time authorization with **every moved figure
+accounted for** (contract 1.8 → 1.9 additive fields, or the 2026-07-26 determinism fixes,
+proven by an attribution experiment), the fixture now **reproduces across PYTHONHASHSEED
+0/1/2**, 4B.5's **synthesized** attribution split is replaced by real solver figures whose
+parts are asserted to sum, and the density band gains its first screenshot coverage
+(populated / empty / binding-cell tooltip, both themes). `rolling_empty/` moved too and is
+disclosed with the same accounting (the empty-band screenshot needs a document that RAN a
+coarse zone and found nothing); `rolling_coarse_hot/` is a NEW fixture, not a moved one.
+**CU6** — the resumable exclusion
+measured: ~1% of beyond-horizon ops but **5–6% of beyond-horizon minutes**, five times what
+the op count suggests; cross-bucket allocation stays a queued refinement. **CU5 HALTED** —
+`regression_founder_r5` remains UNRUN for want of an API key (§5a.7).
 
 **v2.48:** **Session 4B.6 — the coarse zone: R-SC2's parked far-horizon clause, discharged**
 2026-07-27 (docs/04 R-SC2 coarse-zone amendment + session amendment). R-SC2 closed with
@@ -1200,12 +1234,43 @@ where the reasoning lives.
 5. **The coarse zone is UNEXERCISED at demo density.** On the 40-order
    pilot_scale plant the beyond-horizon set is real (38 demands, 83 ops) but the
    load is ~8% of derated capacity: no cell binds and coarse tardiness is 0. The
-   teeth at that size come from the clause-(2) and non-monotonicity tests. At 200
-   orders it binds properly. Same root as the 4B.2c CU5 finding — the demo
-   instance is too lightly loaded to exercise contention.
+   teeth at that size come from the clause-(2) and non-monotonicity tests.
+   **PARTIALLY DISCHARGED (4B.6a CU3):** `tests/test_coarse_binding.py` now pins
+   the binding behaviour at 200 orders — 404 ops modeled, peak utilization 0.998,
+   9 binding cells, 123 buckets of tardiness, rho 0.5 INFEASIBLE with the op
+   population unchanged. The DEMO instance is still light (same root as the 4B.2c
+   CU5 finding), but the model's binding behaviour is no longer unregressed.
 6. **Coarse slip attribution is mostly `unattributed`.** A confident attribution
    needs the FINE solve's binding constraints, which the prediction store does not
-   carry. The report states this about itself rather than guessing a cause.
+   carry. The report states this about itself rather than guessing a cause. The
+   store now HAS data to attribute over (4B.6a CU1), so this is next-actionable
+   rather than blocked.
+7. **`regression_founder_r5` is UNRUN AFTER TWO SESSIONS** (committed 4B.5, unrun
+   through 4B.6 and 4B.6a). Its 27 graded expectations have never been graded —
+   including the 4B.6a question that is the only check that the ASK PANEL voices
+   the delta card's MOVE part rather than the total. **Blocked on one thing: no
+   `ANTHROPIC_API_KEY` in the working environment.** Without it the runner builds
+   neither a parser nor a synthesizer, so every question lands on the honest
+   could-not-interpret floor and the "grade" would measure the absence of a key.
+   Not skipped, not marked delivered: unrun.
+8. **`record_roll_history` sweeps the WHOLE data root on every rolling solve**
+   (4B.6a CU1) to find prior rolls' predictions. O(runs) per solve, fine at demo
+   size; needs an index or a per-submission scope before a pilot data root grows.
+9. **The regenerated cockpit fixture's window incumbent is ~7.9% dearer** than
+   the one it replaced (total 26,507.78 -> 28,597.23), because the window solve
+   returns FEASIBLE and its cost is an INCUMBENT whose identity moved with the
+   2026-07-26 variable-ordering fixes. Fully accounted in the docs/04 4B.6a
+   amendment and reproducible across PYTHONHASHSEED 0/1/2 — recorded here because
+   it changes what the demo board shows, not because it is unexplained.
+10. **`tools/build_rolling_exam_run.py` does not pass the new `coarse` flag**, so
+    the pinned rolling exam world has no coarse zone and its `coarse-fit` /
+    `bucket-load` routes answer "I haven't run the coarse look-ahead" — honest,
+    and a test of nothing. One field on the solve request when the ask-path sweep
+    next runs.
+11. **The hot-band fixture is a declared-derate contrivance.**
+    `tests/cockpit/fixtures/rolling_coarse_hot/` binds because it DECLARES rho
+    0.10, not because the plant is loaded. It buys the density band's
+    binding-state screenshot coverage; it does not retire item 5.
 
 ## 6. Open rulings queue
 

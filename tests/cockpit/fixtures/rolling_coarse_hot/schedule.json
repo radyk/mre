@@ -1,6 +1,6 @@
 {
   "contract_version": "1.9",
-  "schedule_id": "sched-rolling-fixture",
+  "schedule_id": "sched-rolling-coarse-hot",
   "snapshot_id": "snap-rolling",
   "run_id": "run-fixture",
   "status": "proposed",
@@ -4514,7 +4514,7 @@
           "start_bucket_start": "2026-01-19T00:00:00Z",
           "start_bucket_end": "2026-01-26T00:00:00Z",
           "completion_bucket_index": 0,
-          "resource_witness": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+          "resource_witness": "440fbc69-bb11-5b15-944c-9f0844e57db6",
           "coarse_tardiness_buckets": 0,
           "run_label": "planning",
           "sub_disposition": "coarsely_placed",
@@ -4567,9 +4567,9 @@
           "start_bucket_index": 0,
           "start_bucket_start": "2026-01-19T00:00:00Z",
           "start_bucket_end": "2026-01-26T00:00:00Z",
-          "completion_bucket_index": 0,
-          "resource_witness": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
-          "coarse_tardiness_buckets": 0,
+          "completion_bucket_index": 1,
+          "resource_witness": "df5aa682-bc17-5d5a-b721-edd24de1725d",
+          "coarse_tardiness_buckets": 1,
           "run_label": "planning",
           "sub_disposition": "coarsely_placed",
           "unmodelable_reason": null
@@ -4586,7 +4586,7 @@
           "start_bucket_start": "2026-01-19T00:00:00Z",
           "start_bucket_end": "2026-01-26T00:00:00Z",
           "completion_bucket_index": 0,
-          "resource_witness": "148bd645-8436-53f4-9f8c-def564be43e0",
+          "resource_witness": "edd97059-3d1d-5719-adbf-c9017ee86852",
           "coarse_tardiness_buckets": 0,
           "run_label": "planning",
           "sub_disposition": "coarsely_placed",
@@ -4621,9 +4621,9 @@
           "start_bucket_index": 0,
           "start_bucket_start": "2026-01-19T00:00:00Z",
           "start_bucket_end": "2026-01-26T00:00:00Z",
-          "completion_bucket_index": 0,
-          "resource_witness": "7c78eed8-d762-5640-aeb0-5291be2b161e",
-          "coarse_tardiness_buckets": 0,
+          "completion_bucket_index": 1,
+          "resource_witness": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
+          "coarse_tardiness_buckets": 1,
           "run_label": "planning",
           "sub_disposition": "coarsely_placed",
           "unmodelable_reason": null
@@ -4636,15 +4636,15 @@
         "due": "2026-01-26T23:59:59Z",
         "earliest_window_estimate": "2026-01-23T23:59:59Z",
         "coarse": {
-          "start_bucket_index": 0,
+          "start_bucket_index": -1,
           "start_bucket_start": "2026-01-19T00:00:00Z",
           "start_bucket_end": "2026-01-26T00:00:00Z",
-          "completion_bucket_index": 0,
-          "resource_witness": "14e704b3-938a-539a-aa17-9338ce79fbc5",
+          "completion_bucket_index": -1,
+          "resource_witness": "",
           "coarse_tardiness_buckets": 0,
           "run_label": "planning",
-          "sub_disposition": "coarsely_placed",
-          "unmodelable_reason": null
+          "sub_disposition": "coarse_unmodelable",
+          "unmodelable_reason": "exceeds_bucket_capacity"
         }
       },
       {
@@ -4654,11 +4654,11 @@
         "due": "2026-01-26T23:59:59Z",
         "earliest_window_estimate": "2026-01-25T23:59:59Z",
         "coarse": {
-          "start_bucket_index": 0,
-          "start_bucket_start": "2026-01-19T00:00:00Z",
-          "start_bucket_end": "2026-01-26T00:00:00Z",
-          "completion_bucket_index": 0,
-          "resource_witness": "148bd645-8436-53f4-9f8c-def564be43e0",
+          "start_bucket_index": 1,
+          "start_bucket_start": "2026-01-26T00:00:00Z",
+          "start_bucket_end": "2026-02-02T00:00:00Z",
+          "completion_bucket_index": 1,
+          "resource_witness": "edd97059-3d1d-5719-adbf-c9017ee86852",
           "coarse_tardiness_buckets": 0,
           "run_label": "planning",
           "sub_disposition": "coarsely_placed",
@@ -4693,9 +4693,9 @@
           "start_bucket_index": 0,
           "start_bucket_start": "2026-01-19T00:00:00Z",
           "start_bucket_end": "2026-01-26T00:00:00Z",
-          "completion_bucket_index": 0,
-          "resource_witness": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
-          "coarse_tardiness_buckets": 0,
+          "completion_bucket_index": 2,
+          "resource_witness": "df5aa682-bc17-5d5a-b721-edd24de1725d",
+          "coarse_tardiness_buckets": 1,
           "run_label": "planning",
           "sub_disposition": "coarsely_placed",
           "unmodelable_reason": null
@@ -4708,10 +4708,10 @@
         "due": "2026-01-28T23:59:59Z",
         "earliest_window_estimate": "2026-01-27T23:59:59Z",
         "coarse": {
-          "start_bucket_index": 0,
-          "start_bucket_start": "2026-01-19T00:00:00Z",
-          "start_bucket_end": "2026-01-26T00:00:00Z",
-          "completion_bucket_index": 0,
+          "start_bucket_index": 1,
+          "start_bucket_start": "2026-01-26T00:00:00Z",
+          "start_bucket_end": "2026-02-02T00:00:00Z",
+          "completion_bucket_index": 1,
           "resource_witness": "d9cc6ac1-db81-5f9d-b946-d33e96f60256",
           "coarse_tardiness_buckets": 0,
           "run_label": "planning",
@@ -4730,11 +4730,11 @@
           "start_bucket_start": "2026-01-19T00:00:00Z",
           "start_bucket_end": "2026-01-26T00:00:00Z",
           "completion_bucket_index": 0,
-          "resource_witness": "fd34d391-ffa4-5def-a712-05266480c417",
+          "resource_witness": "3793479c-d1e7-5f6c-92c0-a1b03309b8a5",
           "coarse_tardiness_buckets": 0,
           "run_label": "planning",
-          "sub_disposition": "coarsely_placed",
-          "unmodelable_reason": null
+          "sub_disposition": "coarse_unmodelable",
+          "unmodelable_reason": "exceeds_bucket_capacity"
         }
       },
       {
@@ -4759,7 +4759,7 @@
     "coarse_zone": {
       "bucket_days": 7,
       "bucket_days_provenance": "declared",
-      "capacity_derate": 0.85,
+      "capacity_derate": 0.1,
       "capacity_derate_provenance": "declared",
       "buckets": [
         {
@@ -4787,83 +4787,175 @@
       "planning_status": "OPTIMAL",
       "planning_mirrors_proof": false,
       "infeasibility_proven": false,
-      "tardiness_buckets_total": 0,
+      "tardiness_buckets_total": 3,
       "figures_are_upper_bounds": false,
       "wall_truncated": false,
-      "unmodelable_count": 0,
+      "unmodelable_count": 5,
       "density": [
-        {
-          "resource_id": "0ec64e4c-748b-5d1e-9889-014909facee0",
-          "bucket_index": 0,
-          "load_minutes": 615,
-          "capacity_minutes": 3060,
-          "utilization": 0.20098039215686275
-        },
         {
           "resource_id": "148bd645-8436-53f4-9f8c-def564be43e0",
           "bucket_index": 0,
-          "load_minutes": 1088,
-          "capacity_minutes": 3060,
-          "utilization": 0.35555555555555557
+          "load_minutes": 360,
+          "capacity_minutes": 360,
+          "utilization": 1.0
         },
         {
-          "resource_id": "14e704b3-938a-539a-aa17-9338ce79fbc5",
-          "bucket_index": 0,
-          "load_minutes": 488,
-          "capacity_minutes": 3060,
-          "utilization": 0.15947712418300652
+          "resource_id": "148bd645-8436-53f4-9f8c-def564be43e0",
+          "bucket_index": 1,
+          "load_minutes": 355,
+          "capacity_minutes": 360,
+          "utilization": 0.9861111111111112
         },
         {
           "resource_id": "3793479c-d1e7-5f6c-92c0-a1b03309b8a5",
           "bucket_index": 0,
           "load_minutes": 360,
-          "capacity_minutes": 3060,
-          "utilization": 0.11764705882352941
+          "capacity_minutes": 360,
+          "utilization": 1.0
         },
         {
           "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
           "bucket_index": 0,
-          "load_minutes": 1108,
-          "capacity_minutes": 3060,
-          "utilization": 0.36209150326797385
+          "load_minutes": 172,
+          "capacity_minutes": 360,
+          "utilization": 0.4777777777777778
+        },
+        {
+          "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+          "bucket_index": 0,
+          "load_minutes": 252,
+          "capacity_minutes": 360,
+          "utilization": 0.7
         },
         {
           "resource_id": "7c78eed8-d762-5640-aeb0-5291be2b161e",
           "bucket_index": 0,
-          "load_minutes": 328,
-          "capacity_minutes": 3060,
-          "utilization": 0.10718954248366012
+          "load_minutes": 194,
+          "capacity_minutes": 360,
+          "utilization": 0.5388888888888889
+        },
+        {
+          "resource_id": "7c78eed8-d762-5640-aeb0-5291be2b161e",
+          "bucket_index": 1,
+          "load_minutes": 134,
+          "capacity_minutes": 360,
+          "utilization": 0.37222222222222223
         },
         {
           "resource_id": "c3459e27-de11-5e09-be75-5ec5e29b1499",
-          "bucket_index": 0,
-          "load_minutes": 555,
-          "capacity_minutes": 3060,
-          "utilization": 0.18137254901960784
+          "bucket_index": 1,
+          "load_minutes": 130,
+          "capacity_minutes": 360,
+          "utilization": 0.3611111111111111
+        },
+        {
+          "resource_id": "c3459e27-de11-5e09-be75-5ec5e29b1499",
+          "bucket_index": 2,
+          "load_minutes": 64,
+          "capacity_minutes": 360,
+          "utilization": 0.17777777777777778
         },
         {
           "resource_id": "ce249601-8798-576b-88ed-2af0bf016812",
           "bucket_index": 0,
           "load_minutes": 320,
-          "capacity_minutes": 3060,
-          "utilization": 0.10457516339869281
+          "capacity_minutes": 360,
+          "utilization": 0.8888888888888888
         },
         {
           "resource_id": "d9cc6ac1-db81-5f9d-b946-d33e96f60256",
           "bucket_index": 0,
-          "load_minutes": 376,
-          "capacity_minutes": 3060,
-          "utilization": 0.12287581699346405
+          "load_minutes": 101,
+          "capacity_minutes": 360,
+          "utilization": 0.28055555555555556
+        },
+        {
+          "resource_id": "d9cc6ac1-db81-5f9d-b946-d33e96f60256",
+          "bucket_index": 1,
+          "load_minutes": 275,
+          "capacity_minutes": 360,
+          "utilization": 0.7638888888888888
+        },
+        {
+          "resource_id": "df5aa682-bc17-5d5a-b721-edd24de1725d",
+          "bucket_index": 0,
+          "load_minutes": 312,
+          "capacity_minutes": 360,
+          "utilization": 0.8666666666666667
+        },
+        {
+          "resource_id": "edd97059-3d1d-5719-adbf-c9017ee86852",
+          "bucket_index": 0,
+          "load_minutes": 356,
+          "capacity_minutes": 360,
+          "utilization": 0.9888888888888889
+        },
+        {
+          "resource_id": "edd97059-3d1d-5719-adbf-c9017ee86852",
+          "bucket_index": 1,
+          "load_minutes": 345,
+          "capacity_minutes": 360,
+          "utilization": 0.9583333333333334
         },
         {
           "resource_id": "fd34d391-ffa4-5def-a712-05266480c417",
           "bucket_index": 0,
-          "load_minutes": 1230,
-          "capacity_minutes": 3060,
-          "utilization": 0.4019607843137255
+          "load_minutes": 333,
+          "capacity_minutes": 360,
+          "utilization": 0.925
+        },
+        {
+          "resource_id": "fd34d391-ffa4-5def-a712-05266480c417",
+          "bucket_index": 1,
+          "load_minutes": 309,
+          "capacity_minutes": 360,
+          "utilization": 0.8583333333333333
+        },
+        {
+          "resource_id": "fd34d391-ffa4-5def-a712-05266480c417",
+          "bucket_index": 2,
+          "load_minutes": 92,
+          "capacity_minutes": 360,
+          "utilization": 0.25555555555555554
         }
       ],
-      "binding_cells": []
+      "binding_cells": [
+        {
+          "resource_id": "148bd645-8436-53f4-9f8c-def564be43e0",
+          "bucket_index": 0,
+          "load_minutes": 360,
+          "capacity_minutes": 360,
+          "utilization": 1.0
+        },
+        {
+          "resource_id": "148bd645-8436-53f4-9f8c-def564be43e0",
+          "bucket_index": 1,
+          "load_minutes": 355,
+          "capacity_minutes": 360,
+          "utilization": 0.9861111111111112
+        },
+        {
+          "resource_id": "3793479c-d1e7-5f6c-92c0-a1b03309b8a5",
+          "bucket_index": 0,
+          "load_minutes": 360,
+          "capacity_minutes": 360,
+          "utilization": 1.0
+        },
+        {
+          "resource_id": "edd97059-3d1d-5719-adbf-c9017ee86852",
+          "bucket_index": 0,
+          "load_minutes": 356,
+          "capacity_minutes": 360,
+          "utilization": 0.9888888888888889
+        },
+        {
+          "resource_id": "edd97059-3d1d-5719-adbf-c9017ee86852",
+          "bucket_index": 1,
+          "load_minutes": 345,
+          "capacity_minutes": 360,
+          "utilization": 0.9583333333333334
+        }
+      ]
     }
   }
 }

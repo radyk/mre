@@ -42,6 +42,28 @@ EXPECT intent=open-card route=open-card
 what orders are affected in this move
 RESET
 
+# THE SPLIT, ASKED FOR DIRECTLY (added Session 4B.6a CU5(a)). This is the
+# untested intersection of 4B.5's CU1 and CU2. CU1 split the card's verdict
+# because `cost_delta_abs` measures the RE-SOLVE, not the move: the card now
+# shows *window re-optimization* beside *your move*, and a planner's move is
+# judged against the baseline, never the stale incumbent. CU2 made `open-card`
+# READ THE CARD BACK rather than re-derive it. Nothing proved the ASK PANEL
+# voices the MOVE part when the planner asks specifically about the move.
+#
+# The runner's synthesized card carries total -11,975.83 = reopt -11,600.00 +
+# move -375.83.
+#
+# SUBSTANTIVE EXPECTATION: the answer voices the MOVE figure ($375.83) as what
+# the move cost, and names the window re-optimization ($11,600.00) as the part
+# the planner did not cause. If it answers the TOTAL ($11,975.83) as the cost of
+# the move, the exact defect 4B.5 CU1 fixed on the card is alive in the
+# conversational channel — the two surfaces would be stating different things
+# about one move, which is what CU2 exists to prevent.
+CARD order=ORD-000023 machine=MILL-01
+EXPECT intent=open-card route=open-card
+what did the move itself cost, not the re-solve
+RESET
+
 # The same channel, the other three phrasings the founder used for it.
 CARD order=ORD-000023 machine=MILL-01
 EXPECT intent=open-card route=open-card

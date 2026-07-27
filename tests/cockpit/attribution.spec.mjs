@@ -78,3 +78,53 @@ test("the unsplit note is one wording, shared with the server", () => {
   // mre.modules.sandbox.UNSPLIT_NOTE — the same sentence in two languages.
   expect(UNSPLIT_NOTE).toBe("includes window re-optimization");
 });
+
+// --- Session 4B.6a CU4(4): THE SPLIT, ASSERTED ON REAL SOLVER FIGURES -----
+//
+// Every assertion above runs against a hand-written object. The COMMITTED
+// rolling fixture's split was hand-written too: 4B.5 could not regenerate the
+// fixture (it predated the 2026-07-26 determinism fixes), so its
+// `reopt_delta_abs: -9500.0 / move_delta_abs: -294.53` were SYNTHESIZED to the
+// shape and the decomposition-sums invariant had never once been checked
+// against numbers a solver actually produced.
+//
+// CU4 regenerated the fixture under authorization. These figures come from a
+// real `sandbox_pin_resolve(baseline=True)` — two solves of the same window,
+// one with the pin and one without — and the sum is now asserted on them.
+import { readFileSync } from "node:fs";
+import { resolve as _resolve, dirname as _dirname } from "node:path";
+import { fileURLToPath as _fileURLToPath } from "node:url";
+
+const _FIX = _resolve(_dirname(_fileURLToPath(import.meta.url)), "fixtures", "rolling");
+const REAL = JSON.parse(readFileSync(_resolve(_FIX, "sandbox.json"), "utf8"));
+
+test("the committed fixture's split sums exactly, on REAL solver figures", () => {
+  const cards = [REAL.default, ...Object.values(REAL.by_op)]
+    .filter((c) => c && c.attribution === "split");
+  expect(cards.length, "the fixture carries at least one split card").toBeGreaterThan(0);
+  for (const c of cards) {
+    // not the synthesized pair this replaced — a guard against a future
+    // hand-edit quietly restoring them.
+    expect(c.reopt_delta_abs, "the synthesized -9500.0 is gone").not.toBe(-9500.0);
+    expect(c.move_delta_abs, "the synthesized -294.53 is gone").not.toBe(-294.53);
+    // a real baseline solve happened, and the card says what it cost
+    expect(c.baseline_total_cost).not.toBeNull();
+    expect(c.baseline_wall_time_s).toBeGreaterThan(0);
+    // DECOMPOSITION-SUMS, on numbers a solver produced
+    expect(Number((c.reopt_delta_abs + c.move_delta_abs).toFixed(2)))
+      .toBe(Number(c.cost_delta_abs.toFixed(2)));
+    // and the rows the card draws are those same two numbers
+    const rows = attributionRows(c);
+    expect(rows.map((r) => r.value)).toEqual([c.reopt_delta_abs, c.move_delta_abs]);
+  }
+});
+
+test("an unprovable baseline in the real fixture stays UNSPLIT, never half-split", () => {
+  const unavailable = Object.values(REAL.by_op)
+    .filter((c) => c && c.attribution === "unavailable");
+  for (const c of unavailable) {
+    expect(c.reopt_delta_abs).toBeNull();
+    expect(c.move_delta_abs).toBeNull();
+    expect(attributionRows(c)).toBeNull();
+  }
+});

@@ -25,6 +25,11 @@ const fmtBucket = (b, bucketDays) => {
 
 // The provenance sentence. CLAUSE (3): a DEFAULTED derate must never read as
 // the plant's own choice, so the band says which it is, every time.
+//
+// 4B.6a CU2(d): when NOTHING is declared the absence is made LOUD rather than
+// merely stated. At rho = 1.0 the planning run mirrors the proof run, so an
+// undeclared plant gets no planning signal and every figure here assumes full
+// utilization — the optimistic direction. No margin is invented to cover it.
 function derateNote(cz) {
   const pct = `${Math.round(cz.capacity_derate * 100)}%`;
   if (cz.capacity_derate_provenance === "declared") {
@@ -33,8 +38,19 @@ function derateNote(cz) {
       : `capacity: ${pct} of calendar — your declared planning derate`;
   }
   return cz.capacity_derate >= 1
-    ? "capacity: full calendar — no derate declared, nothing shaved off"
+    ? "no capacity margin declared — figures assume every available minute is usable"
     : `capacity: ${pct} of calendar — a default, not declared by this plant`;
+}
+
+// 4B.6a CU2(b): THE SAME CAVEAT THE ANSWERS CARRY, on the cell arithmetic. An
+// excluded op consumes ZERO coarse minutes, so a cell reading 60% over a
+// partial population is not 60%. Empty when nothing is excluded — the tooltip
+// must not invent a caveat it does not have.
+function uncountedNote(cz) {
+  const n = cz.unmodelable_count || 0;
+  if (n <= 0) return "";
+  return `\nexcludes ${n} operation${n === 1 ? "" : "s"} the coarse model cannot `
+    + `represent — ${n === 1 ? "its" : "their"} minutes are not in this figure`;
 }
 
 export function mountCoarseBand(hostEl, doc) {
@@ -86,6 +102,8 @@ export function mountCoarseBand(hostEl, doc) {
   }
   el.appendChild(head);
 
+  const uncounted = uncountedNote(cz);
+
   const grid = document.createElement("div");
   grid.className = "cb-grid";
   grid.style.setProperty("--cb-cols", String(buckets.length));
@@ -119,13 +137,15 @@ export function mountCoarseBand(hostEl, doc) {
       cell.dataset.res = resId;
       cell.dataset.bucket = String(b.index);
       cell.dataset.util = c ? String(c.utilization) : "0";
-      // the arithmetic, never just the colour
+      // the arithmetic, never just the colour — and never without the caveat
+      // that the arithmetic ran over a partial population
       cell.title = c
         ? `${resId} · week of ${b.start.slice(0, 10)}\n`
           + `${c.load_minutes} min of work against ${c.capacity_minutes} min `
           + `of capacity (${Math.round(c.utilization * 100)}%)\n`
           + "a load estimate over whole weeks — not a placement"
-        : `${resId} · week of ${b.start.slice(0, 10)}\nno coarse load`;
+          + uncounted
+        : `${resId} · week of ${b.start.slice(0, 10)}\nno coarse load` + uncounted;
       grid.appendChild(cell);
     }
   }
@@ -137,7 +157,9 @@ export function mountCoarseBand(hostEl, doc) {
     foot.textContent =
       `${cz.unmodelable_count} operation${cz.unmodelable_count === 1 ? "" : "s"} `
       + `left out — the coarse model cannot represent `
-      + `${cz.unmodelable_count === 1 ? "it" : "them"}, so this picture is incomplete`;
+      + `${cz.unmodelable_count === 1 ? "it" : "them"}, and `
+      + `${cz.unmodelable_count === 1 ? "its" : "their"} minutes are counted in `
+      + `no cell above, so every load here is understated`;
     el.appendChild(foot);
   }
 
@@ -154,6 +176,13 @@ export function mountCoarseBand(hostEl, doc) {
         hot: cellEls.filter((c) => c.classList.contains("cb-hot")).length,
         derateProvenance: cz.capacity_derate_provenance,
         infeasibilityProven: !!cz.infeasibility_proven,
+        unmodelableCount: cz.unmodelable_count || 0,
+        // CU2(b): does every cell tooltip carry the uncounted-population
+        // caveat? A band whose footer says it and whose cells don't is a
+        // caveat a planner reading one cell never sees.
+        cellsWithUncountedNote: uncounted
+          ? cellEls.filter((c) => (c.title || "").includes("not in this figure")).length
+          : 0,
         // CLAUSE (6): the band must never emit a bar element.
         bars: el.querySelectorAll(".bar, .vis-item").length,
       };

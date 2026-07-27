@@ -110,8 +110,13 @@ GET  /runs/{run_id}              -> data.status, data.result.schedule_id
 GET  /schedules                  -> every registered schedule (the cockpit's list)
 ```
 
-The COARSE ZONE is opt-in per solve and backend-only at the module level: build a
-`RollingView`, then
+The COARSE ZONE is **opt-in per solve** — `"coarse": true` on a `sliced` SolveRequest
+(4B.6a). `"reference_date": "2026-01-12"` rolls the clock; without it every solve of a
+submission renders the SAME window, so cross-roll prediction history never accrues.
+A coarse solve mints predictions into `<run_dir>/coarse_predictions.jsonl` and judges
+every earlier roll's against this window (`coarse_realizations.jsonl`); the counts and
+any store error come back on `run.result.coarse_history`. A store failure never loses a
+schedule and is never swallowed. Module level, unchanged:
 
 ```python
 from mre.modules.coarse_horizon import build_coarse_zone
@@ -150,8 +155,12 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.6 — the coarse zone: R-SC2's parked far-horizon clause, discharged**,
-2026-07-27 (docs/07 v2.48; docs/04 amendments same date).
+**Session 4B.6a — consolidation: the history is wired, the exclusions are voiced, the
+goldens move once**, 2026-07-27 (docs/07 v2.49; docs/06 v0.6a; docs/04 amendment same
+date). No new capability: it wired the coarse prediction store, voiced the coarse
+model's uncounted population and its absent derate, pinned the binding behaviour at
+200 orders, and regenerated the rolling cockpit fixture with every moved figure
+accounted for.
 
 **THE COARSE ZONE (R-SC2 amendment, 4B.6).** Beyond-horizon demand is coarsely
 PLACED, not merely listed (`src/mre/modules/coarse_horizon.py`; contract **1.9**
@@ -175,7 +184,15 @@ absent on a monolithic run). Seven clauses govern it, and the ones that bite:
 - **COARSE NEVER RENDERS AS A BAR** — a density band (`src/cockpit/src/coarse.js`).
 - Predictions are persisted OUTSIDE the document (`coarse_predictions.py`): the
   document is a window-0 view, the audit is cross-roll. Realization is captured on
-  both intake paths — natural roll and **gravity admission**.
+  both intake paths — natural roll and **gravity admission** — and since 4B.6a the
+  rolling worker actually WRITES it (`record_roll_history`), judging each prediction
+  exactly once however many rolls sweep past it.
+- **EVERY LOAD FIGURE NAMES WHAT IT DID NOT COUNT** (4B.6a). Resumables and
+  over-capacity ops consume ZERO coarse minutes, so load is understated — answers,
+  tooltips and the band footer say so, and say nothing when nothing is excluded. A
+  plant with **no declared derate** is told loudly that its figures assume full
+  utilization; that is a docs/06 §5.9 remediation note, **not a gate rule** (36
+  rules, unchanged).
 - Resumable ops are EXCLUDED and NAMED (`coarse_unmodelable`), because
   single-bucket forcing would TIGHTEN the relaxation. The exclusion is what makes
   clause (1) true; the ruling's own "permissive" parenthetical is corrected in
@@ -302,10 +319,16 @@ committed with its doc update.
   retrieval must never read prose); machine-idle eligibility naming no specific ops
   on the monolithic path; per-order PRODUCTION-dollar attribution (a ledger change).
   (Aggregate-cause coaching is RETIRED — promoted to `lateness-cause`, 4A.5c.)
+- 4B.6a debts (docs/07 §5a.7-11): **`regression_founder_r5` is UNRUN AFTER TWO
+  SESSIONS** — blocked on `ANTHROPIC_API_KEY`, nothing else, and its 27 expectations
+  have never been graded; `record_roll_history` sweeps the WHOLE data root per solve
+  (needs an index before pilot volume); the regenerated fixture's window incumbent is
+  ~7.9% dearer than its predecessor (accounted, reproducible, but it changes the demo
+  board); `build_rolling_exam_run.py` does not pass `coarse`, so the pinned exam world
+  has no coarse zone; `rolling_coarse_hot/` binds by DECLARED derate 0.10, a
+  contrivance for screenshot coverage, not a discharge of the demo-density limit.
 - 4B.5 debts: the two-solve BASELINE is not extended to FORCED-ALTERNATIVES pricing
-  (same economics, separate audit); the committed rolling cockpit fixture predates the
-  2026-07-26 determinism fix and no longer reproduces, so its canned attribution split
-  is SYNTHESIZED until it is regenerated; the causal vacuity tripwire counts a quantity
+  (same economics, separate audit); the causal vacuity tripwire counts a quantity
   as a DIGIT only, and a driver phrase alone clears it (the founder's own specimen is
   fixed at the assembler, not by the tripwire); CU4(b)'s viewport guard is a standing
   invariant the harness cannot make fail.
@@ -338,8 +361,10 @@ committed with its doc update.
 - 4B.6 debts (all in docs/07 §5a): the three deferred coarse refinements (family-presence
   setup, cross-bucket allocation for resumables, the WP makespan bound — each a
   TIGHTENING, so each must land against the CU4 guard); the coarse zone is UNEXERCISED
-  at demo density (38 beyond-horizon demands but ~8% load, nothing binds — it bites at
-  200 orders); coarse slip attribution is mostly `unattributed` by construction;
+  at demo density (38 beyond-horizon demands but ~8% load, nothing binds — **the
+  binding behaviour is now pinned at 200 orders by `tests/test_coarse_binding.py`,
+  4B.6a CU3; the DEMO instance is still light**); coarse slip attribution is mostly
+  `unattributed` by construction (the store now has data to attribute over);
   `coarse_horizon.py` carries its own narrow ortools surface (a stated deviation from
   the solver_builder/solve_runner quarantine, not an oversight).
 

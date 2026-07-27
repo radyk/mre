@@ -1,6 +1,6 @@
 {
-  "id": "sched-rolling-fixture",
-  "schedule_id": "sched-rolling-fixture",
+  "id": "sched-rolling-coarse-hot",
+  "schedule_id": "sched-rolling-coarse-hot",
   "status": "proposed",
   "contract_version": "1.9",
   "grade": "ACCEPTED",

@@ -1,72 +1,58 @@
 {
   "by_op": {
-    "8ad19d5c-7054-57e1-b959-38ad76a67982": {
-      "correlation_id": "corr-62d2e07a6b67ae75",
+    "2a163c51-6f2a-5062-aa8b-156f75996cf8": {
+      "correlation_id": "corr-656ad68c26b888ee",
       "feasible": true,
       "within_budget": true,
-      "wall_time_s": 0.48,
+      "wall_time_s": 0.763,
       "budget_s": 2.0,
       "status": "FEASIBLE",
       "message": "this placement is possible \u2014 pricing it now",
       "placement": [
         {
-          "operation_ref": "8ad19d5c-7054-57e1-b959-38ad76a67982",
+          "operation_ref": "2a163c51-6f2a-5062-aa8b-156f75996cf8",
           "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
           "start": "2026-01-08T07:00:00+00:00",
-          "end": "2026-01-08T07:54:00+00:00",
+          "end": "2026-01-08T10:15:00+00:00",
           "pinned": true
         }
       ],
       "pin": {
-        "operation_ref": "8ad19d5c-7054-57e1-b959-38ad76a67982",
+        "operation_ref": "2a163c51-6f2a-5062-aa8b-156f75996cf8",
         "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
         "start": "2026-01-08T07:00:00+00:00"
       }
     },
-    "9699d0fb-82ec-55dc-8f59-c89b191396c5": {
-      "correlation_id": "corr-b5ef6c23e8b5d471",
+    "b476297e-5fa8-5eb9-a048-2761b657a0d1": {
+      "correlation_id": "corr-f5b01829032e5821",
       "feasible": true,
       "within_budget": true,
-      "wall_time_s": 0.526,
+      "wall_time_s": 0.874,
       "budget_s": 2.0,
       "status": "FEASIBLE",
       "message": "this placement is possible \u2014 pricing it now",
       "placement": [
         {
-          "operation_ref": "9699d0fb-82ec-55dc-8f59-c89b191396c5",
-          "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+          "operation_ref": "b476297e-5fa8-5eb9-a048-2761b657a0d1",
+          "resource_id": "df5aa682-bc17-5d5a-b721-edd24de1725d",
           "start": "2026-01-05T07:00:00+00:00",
-          "end": "2026-01-05T10:15:00+00:00",
+          "end": "2026-01-05T13:54:00+00:00",
           "pinned": true
         },
         {
-          "operation_ref": "e6e287c5-8159-5d41-a460-386fede05d05",
+          "operation_ref": "1df784af-c106-56fe-a8ac-996c389145de",
           "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
           "start": "2026-01-05T07:00:00+00:00",
-          "end": "2026-01-05T08:21:00+00:00",
-          "pinned": false
-        },
-        {
-          "operation_ref": "d038c02e-f706-595f-9aa5-885c30fcdd24",
-          "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
-          "start": "2026-01-05T09:25:00+00:00",
-          "end": "2026-01-05T10:43:00+00:00",
-          "pinned": false
-        },
-        {
-          "operation_ref": "85695f95-c3bd-544d-9fb8-99aa26eb8c57",
-          "resource_id": "3f032ed0-20fa-50b1-b6bd-98a831f48187",
-          "start": "2026-01-05T08:21:00+00:00",
-          "end": "2026-01-05T09:25:00+00:00",
+          "end": "2026-01-05T08:09:00+00:00",
           "pinned": false
         }
       ],
       "pin": {
-        "operation_ref": "9699d0fb-82ec-55dc-8f59-c89b191396c5",
-        "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+        "operation_ref": "b476297e-5fa8-5eb9-a048-2761b657a0d1",
+        "resource_id": "df5aa682-bc17-5d5a-b721-edd24de1725d",
         "start": "2026-01-05T07:00:00+00:00"
       }
     }
   },
-  "contra_op": "9699d0fb-82ec-55dc-8f59-c89b191396c5"
+  "contra_op": "b476297e-5fa8-5eb9-a048-2761b657a0d1"
 }

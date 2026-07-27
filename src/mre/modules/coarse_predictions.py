@@ -95,6 +95,18 @@ class CoarseRealization:
     realized_at: str               # ISO
     slip_attribution: str = SLIP_UNATTRIBUTED
     note: str = ""
+    # Which of the two runs (clause 2) made the prediction being judged. Added
+    # 4B.6a CU1: with rho declared < 1.0 the proof and planning runs BOTH predict
+    # the same op, and without this field their two realizations are
+    # indistinguishable rows — and the wiring's own de-duplication would collapse
+    # them. Defaulted to "" so rows written by 4B.6's unit still read back.
+    run_label: str = ""
+
+    def key(self) -> tuple:
+        """The identity of a realization: which prediction, from which run, was
+        judged. The wiring de-duplicates on this, so a prediction is realized
+        exactly ONCE however many later rolls sweep past it."""
+        return (self.run_id, self.demand_id, self.op_id, self.run_label)
 
 
 # ---------------------------------------------------------------------------
@@ -232,7 +244,8 @@ def realizations_from_view(predictions: list, view: Any, plant: Any,
             realized_resource=pl["resource"], intake_path=intake,
             gap_buckets=gap, realizing_run_id=realizing_run_id,
             realized_at=stamp,
-            slip_attribution=_attribute_slip(gap, pred, pl, plant)))
+            slip_attribution=_attribute_slip(gap, pred, pl, plant),
+            run_label=pred.run_label))
     return out
 
 
@@ -269,6 +282,100 @@ def _attribute_slip(gap: int, pred: CoarsePrediction, placement: dict,
     if placement.get("resource") != pred.resource_witness:
         return SLIP_ELIGIBILITY
     return SLIP_UNATTRIBUTED
+
+
+# ---------------------------------------------------------------------------
+# THE WIRING (Session 4B.6a CU1) — where history actually accrues
+# ---------------------------------------------------------------------------
+#
+# 4B.6 shipped this store tested and round-tripped, and no roll ever wrote to
+# it: the mechanism existed, the history did not. This function is the one entry
+# point a rolling worker calls, and it is deliberately shaped by three
+# constraints the session named:
+#
+#   (a) PERSISTENCE IS A SIDE-CHANNEL. Nothing here touches the schedule
+#       document or the view. It runs strictly AFTER the document is assembled,
+#       persisted and registered, and it reads both as immutable inputs. The
+#       document is byte-identical with the store enabled and disabled, and
+#       ``tests/test_coarse_history_wiring.py`` asserts that rather than assuming
+#       it.
+#   (b) A WRITE FAILURE NEVER LOSES A SCHEDULE AND IS NEVER SWALLOWED. Every
+#       exception is caught (a store fault must not fail a solve that already
+#       succeeded) and returned on ``RollHistory.error`` for the caller to
+#       surface on the run record. Silent failure here is worse than no store at
+#       all: it manufactures a false belief that history is accruing.
+#   (c) REALIZATION IS CAPTURED ON BOTH INTAKE PATHS. The gravity-admitted set
+#       is a FACT FROM THE ADMISSION MECHANISM (``rolling_horizon.
+#       gravity_admitted_demand_ids``), never inferred from the gap's sign.
+#
+# CLAUSE (4) IS NOT AT RISK HERE. This reads coarse output and fine output and
+# writes a file. It returns nothing to admission and nothing to the window
+# build; the caller uses its result only to report.
+# ---------------------------------------------------------------------------
+
+@dataclass
+class RollHistory:
+    """What one roll contributed to the cross-roll history."""
+    predictions_written: int = 0
+    realizations_written: int = 0
+    prior_runs_seen: int = 0
+    prior_predictions_pending: int = 0
+    natural_roll_realizations: int = 0
+    gravity_admission_realizations: int = 0
+    error: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+def record_roll_history(*, run_dir: Path | str, data_root: Path | str,
+                        run_id: str, view: Any, plant: Any,
+                        zone: Any = None,
+                        gravity_admitted_demand_ids: Optional[set] = None,
+                        now: Optional[datetime] = None) -> RollHistory:
+    """Mint this roll's predictions and judge every EARLIER roll's against it.
+
+    Two halves, in this order:
+
+      1. WRITE — every placement of every non-mirroring run in ``zone`` becomes a
+         prediction row under this run's dir. With rho defaulted (or declared) at
+         1.0 the planning run MIRRORS the proof run and mints nothing, so the
+         proof run is the only predictor and no error bar is double-counted.
+      2. JUDGE — sweep the data root for predictions made by OTHER runs, drop the
+         ones already judged (dedup on ``CoarseRealization.key()``, so a
+         prediction is realized exactly once however many rolls sweep past it),
+         and compare what remains against THIS view's fine placements.
+
+    Never raises. On any fault the partial counts and the error string come back
+    together, and the caller must surface both.
+    """
+    hist = RollHistory()
+    try:
+        store = CoarsePredictionStore(run_dir)
+        if zone is not None:
+            hist.predictions_written = store.record_predictions(
+                predictions_from_zone(zone, run_id=run_id, predicted_at=now))
+
+        prior_preds, prior_reals = sweep_data_root(data_root)
+        prior_preds = [p for p in prior_preds if p.run_id != run_id]
+        hist.prior_runs_seen = len({p.run_id for p in prior_preds})
+        judged = {r.key() for r in prior_reals}
+        pending = [p for p in prior_preds
+                   if (p.run_id, p.demand_id, p.op_id, p.run_label) not in judged]
+        hist.prior_predictions_pending = len(pending)
+        if pending:
+            reals = realizations_from_view(
+                pending, view, plant, realizing_run_id=run_id,
+                gravity_admitted_demand_ids=(gravity_admitted_demand_ids or set()),
+                realized_at=now)
+            hist.realizations_written = store.record_realizations(reals)
+            hist.gravity_admission_realizations = sum(
+                1 for r in reals if r.intake_path == INTAKE_GRAVITY_ADMISSION)
+            hist.natural_roll_realizations = sum(
+                1 for r in reals if r.intake_path == INTAKE_NATURAL_ROLL)
+    except Exception as exc:  # noqa: BLE001 — (b): caught, NEVER swallowed
+        hist.error = f"{type(exc).__name__}: {exc}"
+    return hist
 
 
 # ---------------------------------------------------------------------------
