@@ -1,6 +1,33 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.50 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.51 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.51:** **Session 4B.6c — measurement: does the zero-cost tiebreak cost us?** 2026-07-27
+(docs/04 session amendment; full table in `SESSION_CLOSEOUT.md`). A MEASUREMENT session: its
+product is a table. No shipped objective changed, no ruling amended, no golden or fixture
+moved, no module in `src/` touched; ONE test committed (`tests/test_objective_units.py`).
+**THE VERDICT: candidate B COSTS US — `BIG · cost + Σ starts` degrades CP-SAT's search badly,
+and the hour-granularity variant does not rescue it above 15 orders.** Five arms (cost-only,
+the shipped status quo, B, B-at-hour-granularity, B-at-10×-BIG) × six instances × five seeds,
+at a deterministic budget of 6.0 identical on every arm; 151 runs (148 comparable, all
+producing a ledger, plus 3 excluded probes), zero wall-truncated.
+Against a cost-only arm whose seed spread is **exactly zero**, B's median ledger is **+69.02%**
+at 40 orders, **+39.50%** at 200 orders (7-day window) and **+1354%** at 15 — and at 120 and
+200 orders B is *also worse on sum-of-starts* than having no tiebreak at all. **BIG is not the
+mechanism** (10× BIG is identical to the cent on every shared seed); the mechanism is that a
+zero-tardiness cost objective is START-INDEPENDENT, so cost-only is a feasibility problem
+CP-SAT closes in **1.7% of its budget**, and any start-sum term turns it into an optimization
+it cannot close in 60× that. The correctness check passes with **no defect** (where both prove
+OPTIMAL the ledgers are identical, 7/7). The **status quo's own damage** is measured on the
+same axis — **+73.20%** at 40 orders, **+97.61%** at 120, almost all of it tardiness — which
+extends §5a.12 from the fixture to every instance above ~15 orders. Also measured: a scratch
+sequence-preserving compressor (56 runs, 1 rejected shift at +$151.67, ledger never rose,
+56/56 re-validated OPTIMAL by CP-SAT) that moves **nothing** on proven-optimal schedules and
+takes **−16.7%** off a budget-truncated one. New §5a debts: **15** the shipped 14-day window
+is budget-starved at 200 orders (UNKNOWN at 6.0 *and* 20.0 units), **16** the rolling path
+records a MINUTE COUNT as its solver objective (a defect, pinned), **17** the pool's cost
+bound is looser than its stated tolerance under a declared `earliness_value`, **18** R-SC3(1)'s
+price, now measured.
 
 **v2.50:** **Session 4B.6b — errand: four answers** 2026-07-27 (docs/04 session amendment).
 A FINDINGS session; its product is knowledge. One behaviour changed, everything else was
@@ -1399,6 +1426,80 @@ where the reasoning lives.
     label is honest; it just carries no signal at that window length, so clause
     (7)'s "two mechanisms disagreeing" count reads ~100% and means nothing.
     Anything built on that count must state the window length beside it.
+15. **The shipped window depth is BUDGET-STARVED at pilot volume** (4B.6c
+    item 1, measured). `pilot_scale` at **200 orders with the standing window
+    14d / frozen 3d** admits **313 free operations** and the window-0 solve
+    returns **UNKNOWN — no feasible solution at all** — on the plain cost-only
+    objective at a **6.0** deterministic budget (3 seeds; wall 144 / 195 /
+    229 s) *and* at **20.0** (1 seed; wall 509 s). Not a tie-break effect:
+    this is the cheapest objective the model has. A 7-day window on the same
+    plant (99 free ops) proves OPTIMAL at 27,863.63 with 0 tardiness in
+    1.86–4.96 deterministic units, so the fix shape is the window length, not
+    the budget — but the knee was last measured at 4B.2 CU4b on a 40-order
+    plant, and nothing has re-measured it at pilot density. **NOT FIXED HERE.**
+    Whatever `SolveRequest.window_days` a pilot ships with must be justified by
+    a curve measured at that plant's volume; 14 days is currently a convention
+    inherited from a plant 5× smaller.
+16. **The ROLLING path records a MINUTE COUNT as its solver objective**
+    (4B.6c item 4; a defect, PINNED not fixed).
+    `solver_builder.solve_two_stage` deliberately rebuilds its `SolveResult` to
+    carry **stage 1's** objective with stage 2's placements
+    (`solver_builder.py:409-418`) — the whole point being that "the M6
+    `solve_complete` objective the assembler + `_incumbent_objective` read stays
+    the COST objective" (docs/04, 4B.4 CU1). `rolling_horizon._two_stage_solve`
+    returns the stage-2 `SolveResult` **whole** (`rolling_horizon.py:166-172`),
+    and stage 2 minimizes `Σ free-op starts` — so its `.objective` is a sum of
+    **start minutes**. `build_rolling_view` writes that value into the M6
+    `solve_complete` payload (`:574-576`) and `WindowMetric.objective` carries
+    it (`:973`). Every consumer named in `SESSION_CLOSEOUT.md` §6 therefore sees,
+    on a rolling board, an "incumbent objective" that is a minute count rather
+    than cost in any units — including `sandbox`/`planner_edit`'s
+    `delta_abs`/`delta_pct` (the labelled non-money fallback headline) and, once
+    the pool becomes slice-aware, its cost bound.
+    **MEASURED** on a hand-built model (cost a constant 300, coefficient 5,
+    start forced to 20): monolithic records **400**, rolling records **20**.
+    Pinned by `tests/test_objective_units.py::test_rolling_two_stage_returns_stage_twos_objective_not_stage_ones`.
+    *Fix shape:* return stage 1's objective the way the monolithic twin does —
+    one line — but it moves rolling telemetry and every golden that reads it, so
+    it is a working-thread call, not a measurement session's.
+17. **The solution pool's cost bound is looser than its stated tolerance**
+    whenever a plant declares a positive `earliness_value` (4B.6c item 4;
+    PINNED not fixed). `solution_pool.py:214-218` computes
+    `int(incumbent_objective × (1 + tolerance_pct/100))` and hands it to
+    `add_objective_upper_bound`, which constrains `Σ var_map.objective_terms`
+    (`solver_builder.py:209-215`) — the COST objective alone. But
+    `_incumbent_objective` returns the recorded **stage-1** objective, which is
+    `cost + earliness_coeff_scaled · Σ starts` (R-SC3). The bound's source and
+    the bounded expression are in different units the moment the coefficient is
+    positive. **Worked example, pinned as arithmetic in the test:** cost 300,
+    recorded objective 400, a stated **5%** tolerance is really **40%**.
+    Harmless while every plant declares 0; live for `pilot_scale`, which
+    declares 0.05 $/min. Compounds with §5a.16 on the rolling path (the bound
+    would be derived from a minute count). *Fix shape:* bound the same
+    expression the incumbent figure came from, or record the cost objective
+    separately for the pool to read — either way, one decision with §5a.16.
+18. **R-SC3(1)'s "always and unconditionally" is not free, and the price is now
+    measured** (4B.6c items 1–2; a RULING-LEVEL observation, no ruling moved).
+    The two-stage implementation is not the problem and the single-objective
+    alternative is worse: candidate B (`BIG · cost + Σ starts`) costs **+69%**
+    (40 orders) and **+39%** (200 orders, 7-day window) on the LEDGER against a
+    cost-only arm whose seed spread is **exactly zero**, and at 120 and 200
+    orders it is *also worse on sum-of-starts* than not having a tiebreak at
+    all. The hour-granularity variant matches the optimum exactly at 15 orders
+    (and proves it in 0.35 deterministic units) but degrades identically from 40
+    orders up. **The mechanism is diagnosed, not guessed:** with zero tardiness
+    the cost objective is start-INDEPENDENT (production = duration × rate,
+    setup a fixed per-op charge), so the cost-only model is a feasibility
+    problem CP-SAT closes using **1.7% of its budget** at 40 orders; any
+    start-sum term turns it into a min-Σ-starts optimization it cannot close in
+    60× that. Corroborated by the 120-order row, where the cost-only arm is
+    itself unable to prove optimality and B's penalty collapses to **inside**
+    A0's own 87,783 seed spread. The status quo's own damage is measured on the
+    same axis: **+73.20%** (40 orders) and **+97.61%** (120 orders) of ledger
+    total, almost all of it tardiness — which extends §5a.12 from the fixture to
+    every instance above ~15 orders. **Nothing was changed.** Whether R-SC3's
+    floor is worth its price at pilot volume is a ruling decision, and it now
+    has numbers under it.
 
 ## 6. Open rulings queue
 

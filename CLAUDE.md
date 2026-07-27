@@ -155,8 +155,20 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.6b — errand: four answers**, 2026-07-27 (docs/07 v2.50; docs/04 amendment
-same date). A FINDINGS session: three investigations reported and stopped, one thing
+**Session 4B.6c — measurement: does the zero-cost tiebreak cost us?**, 2026-07-27
+(docs/07 v2.51; docs/04 amendment same date; full table in `SESSION_CLOSEOUT.md`).
+A MEASUREMENT session — nothing built, one test committed. **VERDICT: the single
+lexicographic objective (`BIG · cost + Σ starts`) COSTS US** — against a cost-only arm
+whose seed spread is exactly zero it is +69% (40 orders) and +39.5% (200 orders, 7-day
+window) on the LEDGER, and at 120/200 orders it is *also worse on sum-of-starts* than
+having no tiebreak. BIG is not the mechanism (10× BIG is identical to the cent); a
+zero-tardiness cost objective is START-INDEPENDENT, so cost-only is a feasibility problem
+CP-SAT closes in 1.7% of its budget and any start-sum term makes it one it cannot close.
+The status quo's damage on the same axis is **+73% (40 orders) / +98% (120 orders)**,
+almost all tardiness — extending §5a.12 from the fixture to every instance above ~15
+orders. **R-SC3 is untouched**; the ruling now has numbers under it (docs/07 §5a.18).
+Before it: **Session 4B.6b — errand: four answers**
+(docs/07 v2.50). A FINDINGS session: three investigations reported and stopped, one thing
 fixed (`build_rolling_exam_run.py` now runs a coarse zone and requests `coarse`; the
 exam runner feeds the SHIPPED delta card, not a synthesized one). Its four answers:
 the baseline delta is a MEASUREMENT whose reopt half is **labelled wrong** (§5a.12,
@@ -308,7 +320,16 @@ committed with its doc update.
   warming-on-publish becomes the default when the publish workflow lands.
 - `test_n3000` is contention-sensitive (green in isolation).
 - The **parallel-load screenshot-flake** class is standing debt (two members: 3.1c
-  0-bars, 4A.3 planner due-marker; both pass in isolation).
+  0-bars, 4A.3 planner due-marker; both pass in isolation). A THIRD, non-screenshot
+  member observed 4B.6c: `test_scenario.py::test_scenario_untouched_moves_bounded`
+  failed once in a full-suite run and passes in isolation and as a whole file (32/32).
+  Root cause is structural, not incidental: its fixture solves with
+  `time_limit_seconds=30.0` and **no pinned workers or seed**
+  (`tests/test_scenario.py:341-344`), i.e. CP-SAT default PARALLEL search under a
+  WALL-CLOCK limit — which the hard rules already say is not reproducible. Under load
+  it reaches a different tied-optimal placement and the `moves <= 3` bound breaks.
+  The fix is deterministic mode in that fixture, not a wider bound. NOT fixed in 4B.6c
+  (a measurement session changes no test but its own).
 - Product naming is under review in the GTM thread — "MRE" is the working repository
   name, not a confirmed brand.
 
@@ -324,6 +345,19 @@ committed with its doc update.
   retrieval must never read prose); machine-idle eligibility naming no specific ops
   on the monolithic path; per-order PRODUCTION-dollar attribution (a ledger change).
   (Aggregate-cause coaching is RETIRED — promoted to `lateness-cause`, 4A.5c.)
+- 4B.6c findings (docs/07 §5a.15-18 — REPORTED, deliberately NOT fixed):
+  **The shipped 14-day window is BUDGET-STARVED at 200 orders** — 313 free ops,
+  UNKNOWN (no feasible solution) on the plain cost objective at a deterministic
+  budget of 6.0 AND of 20.0; a 7-day window on the same plant proves OPTIMAL in
+  under 5. The 14-day convention was measured on a plant 5× smaller (§5a.15).
+  **The ROLLING path records a MINUTE COUNT as its solver objective** —
+  `rolling_horizon._two_stage_solve` returns the stage-2 result WHOLE (`:166-172`)
+  where `solver_builder.solve_two_stage` deliberately rebuilds it to carry stage
+  1's COST objective (`:409-418`); `build_rolling_view` writes it to M6
+  `solve_complete` (`:574-576`). A one-line defect, PINNED not fixed because it
+  moves rolling telemetry and its goldens (§5a.16). **The solution pool's cost
+  bound is looser than its stated tolerance** under a declared `earliness_value`:
+  a stated 5% is really 40% (§5a.17). Both pinned by `tests/test_objective_units.py`.
 - 4B.6b findings (docs/07 §5a.8, .10, .12-14 — REPORTED, deliberately NOT fixed):
   **`reopt_delta_abs` is LABELLED WRONG.** It is a real measurement, but of an
   OBJECTIVE MISMATCH: the window solve minimizes `cost + earliness_coeff·Σstarts`

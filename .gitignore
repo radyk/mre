@@ -27,3 +27,5 @@ deploy/.smoke_*/
 *_baseline.json
 # Session 4A.3b — exam-harness scratch (pinned runs, logs); sweeps/ IS committed
 _ai_exam_scratch/
+# Session 4B.6c measurement scratch (generated pilot_scale submissions + run dirs)
+_4b6c_scratch/

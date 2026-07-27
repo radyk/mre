@@ -1,0 +1,111 @@
+﻿====================================================================================================================================
+THE COMPRESSOR (C) — sequence-preserving left-shift over a solved schedule; FULL ledger recomputed after every shift
+====================================================================================================================================
+instance       from  variant   seed  movable  moved  rejected     rej $  sum starts before          after          won  ledger before   ledger after  validated
+------------------------------------------------------------------------------------------------------------------------------------
+15o w14        A0    C_free      42       19      0         0      0.00             70,329         70,329            0       5,596.65       5,596.65    OPTIMAL
+15o w14        A0    C_frozen    42        4      0         0      0.00             70,329         70,329            0       5,596.65       5,596.65    OPTIMAL
+15o w14        A0    C_free      43       19      0         0      0.00             70,329         70,329            0       5,596.65       5,596.65    OPTIMAL
+15o w14        A0    C_frozen    43        4      0         0      0.00             70,329         70,329            0       5,596.65       5,596.65    OPTIMAL
+15o w14        A0    C_free      44       19      0         0      0.00             70,329         70,329            0       5,596.65       5,596.65    OPTIMAL
+15o w14        A0    C_frozen    44        4      0         0      0.00             70,329         70,329            0       5,596.65       5,596.65    OPTIMAL
+15o w14        A0    C_free      45       19      0         0      0.00             70,329         70,329            0       5,596.65       5,596.65    OPTIMAL
+15o w14        A0    C_frozen    45        4      0         0      0.00             70,329         70,329            0       5,596.65       5,596.65    OPTIMAL
+15o w14        A0    C_free      46       19      0         0      0.00             70,329         70,329            0       5,596.65       5,596.65    OPTIMAL
+15o w14        A0    C_frozen    46        4      0         0      0.00             70,329         70,329            0       5,596.65       5,596.65    OPTIMAL
+15o w14        A2h   C_free      42       19      5         0      0.00             29,454         29,448            6       5,596.65       5,596.65    OPTIMAL
+15o w14        A2h   C_frozen    42        0      0         0      0.00             29,454         29,454            0       5,596.65       5,596.65    OPTIMAL
+15o w14        A2h   C_free      43       19      5         0      0.00             29,454         29,448            6       5,596.65       5,596.65    OPTIMAL
+15o w14        A2h   C_frozen    43        0      0         0      0.00             29,454         29,454            0       5,596.65       5,596.65    OPTIMAL
+15o w14        A2h   C_free      44       19      5         0      0.00             29,454         29,448            6       5,596.65       5,596.65    OPTIMAL
+15o w14        A2h   C_frozen    44        0      0         0      0.00             29,454         29,454            0       5,596.65       5,596.65    OPTIMAL
+15o w14        A2h   C_free      45       19      5         0      0.00             29,454         29,448            6       5,596.65       5,596.65    OPTIMAL
+15o w14        A2h   C_frozen    45        0      0         0      0.00             29,454         29,454            0       5,596.65       5,596.65    OPTIMAL
+15o w14        A2h   C_free      46       19      5         0      0.00             29,454         29,448            6       5,596.65       5,596.65    OPTIMAL
+15o w14        A2h   C_frozen    46        0      0         0      0.00             29,454         29,454            0       5,596.65       5,596.65    OPTIMAL
+40o w14        A0    C_free      42       54      0         0      0.00            363,638        363,638            0      16,481.95      16,481.95    OPTIMAL
+40o w14        A0    C_frozen    42       33      0         0      0.00            363,638        363,638            0      16,481.95      16,481.95    OPTIMAL
+40o w14        A0    C_free      43       54      0         0      0.00            363,638        363,638            0      16,481.95      16,481.95    OPTIMAL
+40o w14        A0    C_frozen    43       33      0         0      0.00            363,638        363,638            0      16,481.95      16,481.95    OPTIMAL
+40o w14        A0    C_free      44       54      0         0      0.00            363,638        363,638            0      16,481.95      16,481.95    OPTIMAL
+40o w14        A0    C_frozen    44       33      0         0      0.00            363,638        363,638            0      16,481.95      16,481.95    OPTIMAL
+40o w14        A0    C_free      45       54      0         0      0.00            363,638        363,638            0      16,481.95      16,481.95    OPTIMAL
+40o w14        A0    C_frozen    45       33      0         0      0.00            363,638        363,638            0      16,481.95      16,481.95    OPTIMAL
+40o w14        A0    C_free      46       54      0         0      0.00            363,638        363,638            0      16,481.95      16,481.95    OPTIMAL
+40o w14        A0    C_frozen    46       33      0         0      0.00            363,638        363,638            0      16,481.95      16,481.95    OPTIMAL
+40o w14        A2h   C_free      42       54     21         0      0.00            348,014        278,618       69,396      25,857.78      25,857.78    OPTIMAL
+40o w14        A2h   C_frozen    42       15      9         0      0.00            348,014        279,807       68,207      25,857.78      25,857.78    OPTIMAL
+40o w14        A2h   C_free      43       54     17         0      0.00            396,624        242,118      154,506      24,893.62      21,682.78    OPTIMAL
+40o w14        A2h   C_frozen    43       16     12         0      0.00            396,624        245,366      151,258      24,893.62      21,682.78    OPTIMAL
+40o w14        A2h   C_free      44       54     22         0      0.00            346,278        340,872        5,406      16,481.95      16,481.95    OPTIMAL
+40o w14        A2h   C_frozen    44       26     12         0      0.00            346,278        341,112        5,166      16,481.95      16,481.95    OPTIMAL
+40o w14        A2h   C_free      45       54     20         0      0.00            400,426        220,505      179,921      22,882.78      22,882.78    OPTIMAL
+40o w14        A2h   C_frozen    45       22     13         0      0.00            400,426        226,445      173,981      22,882.78      22,882.78    OPTIMAL
+40o w14        A2h   C_free      46       54     23         0      0.00            388,137        284,818      103,319      25,892.88      25,892.88    OPTIMAL
+40o w14        A2h   C_frozen    46       26     19         0      0.00            388,137        289,120       99,017      25,892.88      25,892.88    OPTIMAL
+200o w7        A0    C_free      42       99     48         0      0.00          1,032,991        989,925       43,066      27,863.63      27,863.63    OPTIMAL
+200o w7        A0    C_frozen    42       69     41         0      0.00          1,032,991        990,091       42,900      27,863.63      27,863.63    OPTIMAL
+200o w7        A0    C_free      43       99     42         1    151.67          1,113,986      1,077,363       36,623      27,863.63      27,863.63    OPTIMAL
+200o w7        A0    C_frozen    43       70     36         1    151.67          1,113,986      1,077,492       36,494      27,863.63      27,863.63    OPTIMAL
+200o w7        A2h   C_free      42       99     29         0      0.00          1,148,513      1,088,836       59,677      33,292.80      33,055.72    OPTIMAL
+200o w7        A2h   C_frozen    42       70     29         0      0.00          1,148,513      1,092,978       55,535      33,292.80      33,055.72    OPTIMAL
+200o w7        A2h   C_free      43       99     29         0      0.00          1,148,513      1,088,836       59,677      33,292.80      33,055.72    OPTIMAL
+200o w7        A2h   C_frozen    43       70     29         0      0.00          1,148,513      1,092,978       55,535      33,292.80      33,055.72    OPTIMAL
+120o w14       A0    C_free      42      180     82         0      0.00          1,680,564      1,560,993      119,571      63,549.10      63,549.10    OPTIMAL
+120o w14       A0    C_frozen    42      104     60         0      0.00          1,680,564      1,565,638      114,926      63,549.10      63,549.10    OPTIMAL
+120o w14       A0    C_free      43      180     87         0      0.00          1,558,104      1,445,053      113,051      95,762.23      79,815.98    OPTIMAL
+120o w14       A0    C_frozen    43      102     45         0      0.00          1,558,104      1,453,308      104,796      95,762.23      79,815.98    OPTIMAL
+120o w14       A2h   C_free      42      180      9         0      0.00          2,275,558      2,259,635       15,923     197,689.37     196,085.62    OPTIMAL
+120o w14       A2h   C_frozen    42      109      9         0      0.00          2,275,558      2,260,639       14,919     197,689.37     196,085.62    OPTIMAL
+120o w14       A2h   C_free      43      180     16         0      0.00          1,363,515      1,294,339       69,176     123,813.87     100,012.20    OPTIMAL
+120o w14       A2h   C_frozen    43       78     10         0      0.00          1,363,515      1,295,676       67,839     123,813.87     100,012.20    OPTIMAL
+
+ROLLUP
+  C_free: 28 runs, rejected shifts 1 (total magnitude 151.67), runs whose ledger ROSE 0, validation failures 0
+  C_frozen: 28 runs, rejected shifts 1 (total magnitude 151.67), runs whose ledger ROSE 0, validation failures 0
+
+STACKED — A2h + C vs each alone (start-time reduction, C_frozen)
+  15o w14 seed 42: A0 alone       70,329 | A0+C       70,329 | A2h alone       29,454 | A2h+C       29,454 | ledger A0     5,596.65 A2h+C     5,596.65
+  15o w14 seed 43: A0 alone       70,329 | A0+C       70,329 | A2h alone       29,454 | A2h+C       29,454 | ledger A0     5,596.65 A2h+C     5,596.65
+  15o w14 seed 44: A0 alone       70,329 | A0+C       70,329 | A2h alone       29,454 | A2h+C       29,454 | ledger A0     5,596.65 A2h+C     5,596.65
+  15o w14 seed 45: A0 alone       70,329 | A0+C       70,329 | A2h alone       29,454 | A2h+C       29,454 | ledger A0     5,596.65 A2h+C     5,596.65
+  15o w14 seed 46: A0 alone       70,329 | A0+C       70,329 | A2h alone       29,454 | A2h+C       29,454 | ledger A0     5,596.65 A2h+C     5,596.65
+  40o w14 seed 42: A0 alone      363,638 | A0+C      363,638 | A2h alone      348,014 | A2h+C      279,807 | ledger A0    16,481.95 A2h+C    25,857.78
+  40o w14 seed 43: A0 alone      363,638 | A0+C      363,638 | A2h alone      396,624 | A2h+C      245,366 | ledger A0    16,481.95 A2h+C    21,682.78
+  40o w14 seed 44: A0 alone      363,638 | A0+C      363,638 | A2h alone      346,278 | A2h+C      341,112 | ledger A0    16,481.95 A2h+C    16,481.95
+  40o w14 seed 45: A0 alone      363,638 | A0+C      363,638 | A2h alone      400,426 | A2h+C      226,445 | ledger A0    16,481.95 A2h+C    22,882.78
+  40o w14 seed 46: A0 alone      363,638 | A0+C      363,638 | A2h alone      388,137 | A2h+C      289,120 | ledger A0    16,481.95 A2h+C    25,892.88
+  120o w14 seed 42: A0 alone    1,680,564 | A0+C    1,565,638 | A2h alone    2,275,558 | A2h+C    2,260,639 | ledger A0    63,549.10 A2h+C   196,085.62
+  120o w14 seed 43: A0 alone    1,558,104 | A0+C    1,453,308 | A2h alone    1,363,515 | A2h+C    1,295,676 | ledger A0    95,762.23 A2h+C   100,012.20
+  200o w7 seed 42: A0 alone    1,032,991 | A0+C      990,091 | A2h alone    1,148,513 | A2h+C    1,092,978 | ledger A0    27,863.63 A2h+C    33,055.72
+  200o w7 seed 43: A0 alone    1,113,986 | A0+C    1,077,492 | A2h alone    1,148,513 | A2h+C    1,092,978 | ledger A0    27,863.63 A2h+C    33,055.72
+
+DIRECTION NUMBERS — dwell before/after compression (item 5, C_frozen)
+  15o w14 A0   seed 42: dwell      8,639 ->      8,639 | mean WIP 0.91 -> 0.91 | peak 6 -> 6
+  15o w14 A0   seed 43: dwell      8,639 ->      8,639 | mean WIP 0.91 -> 0.91 | peak 6 -> 6
+  15o w14 A0   seed 44: dwell      8,639 ->      8,639 | mean WIP 0.91 -> 0.91 | peak 6 -> 6
+  15o w14 A0   seed 45: dwell      8,639 ->      8,639 | mean WIP 0.91 -> 0.91 | peak 6 -> 6
+  15o w14 A0   seed 46: dwell      8,639 ->      8,639 | mean WIP 0.91 -> 0.91 | peak 6 -> 6
+  15o w14 A2h  seed 42: dwell      2,428 ->      2,428 | mean WIP 1.80 -> 1.80 | peak 4 -> 4
+  15o w14 A2h  seed 43: dwell      2,428 ->      2,428 | mean WIP 1.80 -> 1.80 | peak 4 -> 4
+  15o w14 A2h  seed 44: dwell      2,428 ->      2,428 | mean WIP 1.80 -> 1.80 | peak 4 -> 4
+  15o w14 A2h  seed 45: dwell      2,428 ->      2,428 | mean WIP 1.80 -> 1.80 | peak 4 -> 4
+  15o w14 A2h  seed 46: dwell      2,428 ->      2,428 | mean WIP 1.80 -> 1.80 | peak 4 -> 4
+  40o w14 A0   seed 42: dwell     23,980 ->     23,980 | mean WIP 2.52 -> 2.52 | peak 9 -> 9
+  40o w14 A0   seed 43: dwell     23,980 ->     23,980 | mean WIP 2.52 -> 2.52 | peak 9 -> 9
+  40o w14 A0   seed 44: dwell     23,980 ->     23,980 | mean WIP 2.52 -> 2.52 | peak 9 -> 9
+  40o w14 A0   seed 45: dwell     23,980 ->     23,980 | mean WIP 2.52 -> 2.52 | peak 9 -> 9
+  40o w14 A0   seed 46: dwell     23,980 ->     23,980 | mean WIP 2.52 -> 2.52 | peak 9 -> 9
+  40o w14 A2h  seed 42: dwell    152,140 ->     83,933 | mean WIP 3.94 -> 2.38 | peak 12 -> 12
+  40o w14 A2h  seed 43: dwell    223,736 ->     72,478 | mean WIP 7.87 -> 3.92 | peak 14 -> 14
+  40o w14 A2h  seed 44: dwell     57,845 ->     52,679 | mean WIP 3.49 -> 3.27 | peak 6 -> 6
+  40o w14 A2h  seed 45: dwell    197,474 ->     33,613 | mean WIP 6.92 -> 1.76 | peak 11 -> 11
+  40o w14 A2h  seed 46: dwell    165,944 ->     74,173 | mean WIP 4.19 -> 2.09 | peak 13 -> 13
+  200o w7 A0   seed 42: dwell    201,549 ->    161,087 | mean WIP 6.23 -> 7.07 | peak 16 -> 16
+  200o w7 A0   seed 43: dwell    236,817 ->    200,855 | mean WIP 7.20 -> 7.44 | peak 13 -> 13
+  200o w7 A2h  seed 42: dwell    308,292 ->    253,082 | mean WIP 9.45 -> 9.12 | peak 17 -> 16
+  200o w7 A2h  seed 43: dwell    308,292 ->    253,082 | mean WIP 9.45 -> 9.12 | peak 17 -> 16
+  120o w14 A0   seed 42: dwell    398,593 ->    328,136 | mean WIP 12.11 -> 10.81 | peak 29 -> 29
+  120o w14 A0   seed 43: dwell    498,003 ->    400,588 | mean WIP 12.06 -> 9.90 | peak 40 -> 40
+  120o w14 A2h  seed 42: dwell    132,432 ->    117,513 | mean WIP 3.93 -> 3.60 | peak 15 -> 15
+  120o w14 A2h  seed 43: dwell    308,002 ->    240,163 | mean WIP 7.80 -> 6.31 | peak 23 -> 23

@@ -10478,3 +10478,204 @@ the data-root sweep. Retiring orphaned predictions. Regenerating the pinned exam
 submission so it declares its coarse derate. Cross-bucket allocation; splicing
 seams; the `--horizon-days` mis-shelving. Any golden move — the 4B.6a
 authorization was single-use and is spent, and no golden moved here.
+
+## 2026-07-27 — Session 4B.6c: the tiebreak measured (candidate B, negative)
+
+A MEASUREMENT session against R-SC3. No shipped objective changed, no ruling
+amended, no golden or fixture moved, no module in `src/` touched. One test
+committed (`tests/test_objective_units.py`, 4 tests) under the item-4
+authorization. Full table and method: `SESSION_CLOSEOUT.md` (repo root);
+harness and raw rows under `tools/spikes/tiebreak_4b6c/`.
+
+### The question
+
+R-SC3(1) says "among cost-optimal schedules, the solver prefers earlier starts
+(lexicographic tiebreak) … all cost-free front-loading happens always and
+unconditionally." Session 4B.2d implemented that as a TWO-STAGE solve.
+**CANDIDATE B** was the obvious single-objective encoding of the same clause —
+`BIG = n_free_ops × start_range + 1`, then `minimize(BIG × cost_expr + Σ start_vars)`
+— whose argmin is cost-optimal BY CONSTRUCTION, so earliness can only ever break
+exact ties. The question this session answers is whether that encoding degrades
+CP-SAT's search enough to cost more than it saves.
+
+### The design
+
+ONE code path — a faithful transcription of `build_rolling_view`'s window-0
+solve (same spine, same gravity admission, same build, same `>= t0` floor, same
+Extractor pass) with the OBJECTIVE as the only thing that varies. Five arms:
+**A0** cost only; **A1** the shipped status quo (stage 1 `terms + 5·ΣS`, stage 2
+cap + minimize ΣS); **A2** candidate B; **A2h** candidate B at HOUR granularity
+(`S == 60·H + R`, a linear-equality encoding, `BIGh ≈ BIG/60`); **A2x** candidate
+B at 10× BIG. **6.0 deterministic units, identical on every arm and every seed**
+(A1 splits it 4.0 + 2.0 exactly as shipped). Seeds 42–46 as DELIBERATE
+REPLICATES — a single-seed comparison of two FEASIBLE incumbents measures noise.
+**151 runs: 148 comparable (all producing a ledger) plus the 3 excluded probes
+below; zero wall-truncated.**
+
+Instances: pilot_scale at 5 / 8 / 15 / 40 / 120 orders at window 14d / frozen
+3d, plus 200 orders at a 7-day window. **200 orders at the standing 14-day
+window is EXCLUDED and named: it admits 313 free ops and returns UNKNOWN — no
+feasible solution at all — on the cost-only arm at 6.0 deterministic units
+(3 seeds; wall 144/195/229 s) AND at 20.0 (1 seed; wall 509 s).** That is a
+product finding about the shipped window depth at pilot volume — docs/07 §5a.15.
+
+### THE VERDICT: B COSTS US. The finding is negative and was not rescued.
+
+**Reading one — A2 vs A0 on LEDGER COST** (A0 median | A0 seed spread | A2
+median | delta): 5o 1,959.25 | 0.00 | 1,959.25 | +0.00%. 8o 2,395.00 | 0.00 |
+2,395.00 | +0.00%. 15o 5,596.65 | 0.00 | 81,396.65 | **+1354.38%**. 40o
+16,481.95 | 0.00 | 27,858.20 | **+69.02%**. 120o 95,762.23 | 87,783.28 |
+102,878.65 | +7.43% (INSIDE the spread). 200o w7 27,863.63 | 0.00 | 38,870.63 |
+**+39.50%**. On three of the four instances where the cost-only arm proves
+optimality, A2's median ledger is worse by 39–1354% against a seed spread of
+EXACTLY ZERO.
+
+**Reading two — A2 vs A0 on SUM OF STARTS.** B is not even reliably better on
+the quantity it exists to minimize: +26.68% at 5o, +0.83% at 15o, +42.47% at
+40o, but **−16.78% at 120o and −8.36% at 200o w7 — WORSE than cost-only.** At
+pilot volume B is not "costs money, buys earliness"; it is "costs money, buys
+nothing".
+
+**Reading three — A1 vs A0, the STATUS QUO's damage** as a percentage of ledger
+total: +0.58% (5o), +0.67% (8o), +4.71% (15o), **+73.20% (40o)**, **+97.61%
+(120o)**, +27.07% (200o w7). At 5 and 8 orders A1 PROVES OPTIMAL and the sub-1%
+is the declared earliness price honestly paid for a 27–30% start reduction —
+R-SC3(2) working exactly as ruled. From 15 orders up A1 stops proving optimality
+and the number stops being a price: at 40 orders 11,975.83 of the 12,065.43
+delta is TARDINESS. **This confirms docs/07 §5a.12 and extends it — the
+mislabelled reopt half is not a fixture artifact but the shape of the status quo
+everywhere above ~15 orders.**
+
+### The correctness check: NO DEFECT
+
+Where BOTH A0 and a candidate prove OPTIMAL the ledgers must be identical, and
+they are: 5o and 8o for A2 / A2h / A2x, and 15o for A2h — seven cases, all OK.
+BIG is large enough, nothing overflows, no cost term sits outside `cost_expr`.
+**B's argmin IS cost-optimal by construction; it is the SEARCH that fails.**
+
+### BIG is NOT the mechanism (item 2)
+
+`|obj|` worst-case magnitudes were computed EXACTLY from the objective proto
+(Σ |coeff| × max(|lb|,|ub|)) rather than asserted. Minimal-BIG A2 keeps ≥ 325×
+int64 headroom everywhere measured; **A2x (10× BIG) is down to 33× at 120
+orders**, and full pilot volume (313 free ops, BIG 52,733,928) would take a
+further ~3× — named as a real ceiling for the 10× variant, not a blocker for the
+minimal one.
+
+**A2x is IDENTICAL TO THE CENT to A2** at 5 / 8 / 15 / 40 orders and at 120
+orders on every shared seed; at 200o w7 the medians differ by 0.79% inside an
+8,960.00 seed spread. **A 10× weakening of the LP relaxation changes nothing
+measurable — coefficient magnitude is not the mechanism.**
+
+### What the mechanism IS (diagnosed, not assumed)
+
+When tardiness is zero the cost objective is **START-INDEPENDENT** (production =
+duration × rate with duration fixed; setup a fixed charge per running op), so
+the cost-only model is a pure FEASIBILITY problem with an effectively constant
+objective. A0 proves OPTIMAL at 5/8/15/40 orders and at 200o w7 with identical
+totals across all five seeds, consuming 0.00005–3.08 of its 6.0 deterministic
+units — **0.10 at 40 orders, 1.7% of the budget.** Adding ANY start-sum term
+converts that into a genuine min-Σ-starts scheduling optimization CP-SAT cannot
+close in 60× the budget.
+
+The confirmation is the 120-order row: there the cost-only arm is ITSELF unable
+to prove optimality (tardiness > 0, so cost is already start-dependent) and
+carries an 87,783 seed spread — and exactly there A2's penalty collapses to
++7.43%, inside that spread. **The penalty is large precisely where the cost-only
+problem was trivial, and vanishes into noise where it was not.**
+
+### A2h — a real granularity effect that does not scale
+
+At 15 orders A2h **matches A0's ledger EXACTLY (5,596.65, 5/5 OPTIMAL, 0.35
+deterministic units) while taking 58.12% off the sum of starts**, where A2 at
+minute granularity is +1354%. That is the anticipated headline, and it is real.
+It does not survive scale: +51.04% (40o), +106.44% (120o), +19.48% (200o w7) —
+and at all three A2h's sum of starts is WORSE than the cost-only arm's. **The
+design does not change shape.**
+
+### The compressor C — measured, works, deliberately not shipped
+
+A scratch sequence-preserving left-shift post-processor over a solved schedule.
+Across **56 runs** (28 C_free + 28 C_frozen): **1 rejected shift, magnitude
++$151.67** (200o w7 seed 43 — an op that would have landed in a dearer hour),
+**0 runs whose ledger rose**, and **56/56 re-validated OPTIMAL** by pinning every
+placement into a freshly built window model and asking CP-SAT. Bounds asserted
+per run: fixed ops immobile; no crossing of the frozen boundary under C_frozen;
+no machine change; no resequencing. NAMED LIMIT — a window-0 view carries no
+standing pins, so the literal R-DP8 bound is asserted over an empty set; the
+weight is carried by the frozen-front bound, which is what R-F1 says those ops
+become on the next roll.
+
+**On A0's PROVEN-OPTIMAL solutions at 15 and 40 orders C moves NOTHING — zero
+ops, every seed.** Those schedules are already fully left-packed under
+sequence-preserving shifts. On BUDGET-TRUNCATED solutions it does real work:
+120o seed 43 went 95,762.23 → **79,815.98 (−16.7%)** for free. And the
+comparison that matters: at 40 orders A2 wins 154,441 start minutes INSIDE the
+solver where C wins 0 from A0 — **the solver's win comes from RESEQUENCING,
+which C by construction cannot do.** Stacked A2h+C is substantially ADDITIVE
+(recovers 5,166–173,981 minutes A2h left behind, and cut the ledger on two runs),
+but still dearer than plain A0 on four of five seeds at 40 orders.
+
+**A methodological note worth keeping:** a naive left-shift honouring precedence,
+calendar and machine sequence still produced INFEASIBLE schedules. The CP-SAT
+validation caught it and `sufficient_assumptions_for_infeasibility` isolated the
+conflicting pair. The missing constraint was the **sequence-dependent setup
+transition matrix** (`SolverBuilder._add_transition_constraints`; a 15-minute
+family changeover on pilot_scale), which is PAIRWISE over every pair that may
+share a resource, not only adjacent ones. Any future compressor must carry it.
+
+### Item 4 — the objective's consumers, and two live unit seams
+
+Enumerated by call site (all ten in `SESSION_CLOSEOUT.md` §6). **NOTHING reads
+the objective as MONEY** — the Phase-3 exit audit fixed that and the discipline
+is documented at every site, so item 4's stated trigger finds nothing. The read
+found two unit problems B would make far worse, and one is a defect TODAY. Both
+are PINNED, not fixed, by `tests/test_objective_units.py`:
+
+* **The ROLLING path records a MINUTE COUNT as its objective.**
+  `solver_builder.solve_two_stage` deliberately rebuilds its result to carry
+  STAGE 1's objective with stage 2's placements (`:409-418`) so the recorded
+  objective stays the COST objective. `rolling_horizon._two_stage_solve` returns
+  the stage-2 `SolveResult` WHOLE (`:166-172`), and stage 2 minimizes
+  `Σ free-op starts` — so `.objective` is a sum of START MINUTES.
+  `build_rolling_view` writes it into the M6 `solve_complete` payload
+  (`:574-576`) and `WindowMetric.objective` carries it (`:973`). Measured on a
+  hand-built model (cost 300 constant, coefficient 5, start forced to 20):
+  monolithic records 400, rolling records 20. **docs/07 §5a.16.**
+* **The pool's cost bound is looser than its stated tolerance** whenever a
+  positive `earliness_value` is declared: `add_objective_upper_bound` applies
+  `int(incumbent_objective × (1 + X/100))` to `Σ objective_terms`, but the
+  incumbent objective carries the earliness term and the bounded expression does
+  not. Worked example in the test: a stated 5% tolerance is really 40%. Under B
+  it becomes vacuous. **docs/07 §5a.17.**
+
+### Direction numbers (item 5) — reported, NO recommendation
+
+Dwell, mean and peak WIP per arm, and dwell before/after compression, are in
+`SESSION_CLOSEOUT.md` §7. Stated there and repeated here so it is not measured
+again: **minimizing Σ COMPLETIONS is the SAME objective as minimizing Σ starts**
+(completion = start + fixed duration); it is not an alternative. Direction —
+earlier-is-better versus JIT — is settled at the board, not here.
+
+### Harness caveats, named
+
+The harness's A1 arm reports STAGE 1's objective (the monolithic convention)
+where shipped rolling reports stage 2's — a TELEMETRY difference only, touching
+no solve, placement, ledger or comparison, and the same divergence reported
+above. One harness bug was found and fixed mid-session: protobuf repeated fields
+reject negative indexing, so `v.proto.domain[-1]` raised inside a `try/except`
+and silently collapsed BIG to 1; every affected row was discarded and re-run and
+the fix is commented at the site. Wall times are machine-specific and some were
+measured alongside a second single-worker solve — the deterministic time
+consumed is the reproducible measure and is reported beside them. A2x carries 3
+seeds at 120 orders, and the compressor 2 seeds at 120 and 200o w7 — deliberate
+cuts, stated rather than silently dropped.
+
+### Out of scope, named (tempting, and left)
+
+Fixing `rolling_horizon._two_stage_solve` to return stage 1's objective (a
+one-line change, plainly a defect — pinned instead). Scoping or fixing the
+pool's objective bound. Removing or repricing the shipped earliness term despite
+reading three. Relabelling `reopt_delta_abs`. Shipping C, A2h or B to any path.
+Raising the deterministic budget until the 200-order 14-day window produces
+something. The r5 bank. Any golden move or fixture regeneration — none occurred.
