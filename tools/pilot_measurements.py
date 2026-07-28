@@ -174,7 +174,7 @@ def measure_density(plant) -> dict:
 # CU4d — interaction latencies on ONE window's model
 # ---------------------------------------------------------------------------
 
-def measure_latencies(plant, det_time=4.0, window_days=7, frozen_days=2) -> dict:
+def measure_latencies(plant, det_total=6.0, window_days=7, frozen_days=2) -> dict:
     """CU2 (4B.2c) — interaction latency on the MOST LOADED window of the
     deployment (7-day) configuration, NOT the first (near-empty) window.
 
@@ -197,7 +197,7 @@ def measure_latencies(plant, det_time=4.0, window_days=7, frozen_days=2) -> dict
             loaded = b
     run_rolling_horizon(plant, window_days=window_days, frozen_days=frozen_days,
                         gravity=True, deterministic=True, seed=42,
-                        det_time=det_time, member_time_limit_s=30.0,
+                        det_total=det_total, member_time_limit_s=30.0,
                         window_observer=_observe)
     if loaded["free_op_count"] <= 0:
         return {"error": "no loaded window found", "window_days": window_days}
@@ -248,7 +248,7 @@ def measure_latencies(plant, det_time=4.0, window_days=7, frozen_days=2) -> dict
     # --- solve-to-budget (deterministic-time budget: reproducible) --------------
     t0 = time.perf_counter()
     budget_solve = SolveRunner(time_limit_seconds=30.0, num_search_workers=1,
-                               random_seed=42, deterministic_time=det_time
+                               random_seed=42, deterministic_time=det_total
                                ).solve(model, var_map, None)
     budget_s = time.perf_counter() - t0
 
@@ -266,7 +266,7 @@ def measure_latencies(plant, det_time=4.0, window_days=7, frozen_days=2) -> dict
             add_required_resource_cut(model, var_map, oid, alt)
             t0 = time.perf_counter()
             fa_solve = SolveRunner(time_limit_seconds=30.0, num_search_workers=1,
-                                   random_seed=42, deterministic_time=det_time
+                                   random_seed=42, deterministic_time=det_total
                                    ).solve(model, var_map, None)
             fa = {"available": True, "op_eligible_count": len(elig),
                   "resolve_s": round(time.perf_counter() - t0, 3),
@@ -283,7 +283,7 @@ def measure_latencies(plant, det_time=4.0, window_days=7, frozen_days=2) -> dict
         "solve_to_first_feasible_status": first_status,
         "solve_to_budget_s": round(budget_s, 3),
         "solve_to_budget_status": budget_solve.status,
-        "det_time_budget_units": det_time,
+        "det_total_budget_units": det_total,
         "forced_alternative_resolve": fa,
         "note": ("Measured on the MOST-LOADED window of the deployment 7-day roll "
                  "(worst case). grab->shade / on-demand ghost pricing / single-pin "
@@ -305,7 +305,7 @@ def main(argv=None):
     ap.add_argument("--frozen", type=int, default=2)
     ap.add_argument("--member-time-limit", type=float, default=30.0,
                     help="wall-clock safety cap per window solve")
-    ap.add_argument("--det-time", type=float, default=4.0,
+    ap.add_argument("--det-total", type=float, default=6.0,
                     help="CP-SAT deterministic-time budget per window (reproducible)")
     ap.add_argument("--quick", action="store_true", help="fewer window settings")
     args = ap.parse_args(argv)
@@ -322,7 +322,7 @@ def main(argv=None):
 
     report: dict = {"orders": args.orders, "reference_date": REF.date().isoformat(),
                     "deterministic": True, "solver_workers": 1, "seed": 0,
-                    "det_time_units_per_window": args.det_time}
+                    "det_total_units_per_window": args.det_total}
 
     # --- CU4a density (from the planner snapshot; no solve) ------------------
     print("[measure] CU4a density ...")
@@ -338,7 +338,7 @@ def main(argv=None):
         t0 = time.perf_counter()
         r = run_rolling_horizon(plant, window_days=w, frozen_days=min(args.frozen, w),
                                 gravity=True, deterministic=True, seed=0,
-                                det_time=args.det_time,
+                                det_total=args.det_total,
                                 member_time_limit_s=args.member_time_limit)
         wall = time.perf_counter() - t0
         row = {"window_days": w, "frozen_days": min(args.frozen, w),
@@ -366,11 +366,11 @@ def main(argv=None):
     gcfg = write_gravity_submission(grav_sub, chain_len=8, op_minutes=600, due_day=12)
     gplant_on = prepare_plant(grav_sub, scratch / "grav_on", reference_date=REF)
     r_on = run_rolling_horizon(gplant_on, window_days=6, frozen_days=2, gravity=True,
-                               deterministic=True, seed=0, det_time=args.det_time,
+                               deterministic=True, seed=0, det_total=args.det_total,
                                member_time_limit_s=15.0)
     gplant_off = prepare_plant(grav_sub, scratch / "grav_off", reference_date=REF)
     r_off = run_rolling_horizon(gplant_off, window_days=6, frozen_days=2, gravity=False,
-                                deterministic=True, seed=0, det_time=args.det_time,
+                                deterministic=True, seed=0, det_total=args.det_total,
                                 member_time_limit_s=15.0)
 
     def _monster_lateness(res):
@@ -390,7 +390,7 @@ def main(argv=None):
 
     # --- CU4d interaction latencies (on the LOADED 7-day window) --------------
     print("[measure] CU4d interaction latencies (loaded window) ...")
-    report["latencies"] = measure_latencies(plant, det_time=args.det_time,
+    report["latencies"] = measure_latencies(plant, det_total=args.det_total,
                                              window_days=7, frozen_days=args.frozen)
     print("   ", report["latencies"])
 

@@ -647,7 +647,11 @@ def assemble_rolling_document(
         tardiness=float(led.get("tardiness_cost", 0.0)),
     )
 
-    solver = SolverBlock(status=view.status, deterministic=True)
+    # 4B.8 CU3: view.status is STAGE 1's (the COST proof); the tiebreak proof
+    # rides beside it as its own optional field.
+    solver = SolverBlock(status=view.status, deterministic=True,
+                         tiebreak_status=view.tiebreak_status,
+                         tiebreak_skipped_reason=view.tiebreak_skipped_reason)
 
     return ScheduleDocument(
         contract_version=CONTRACT_VERSION,
@@ -735,6 +739,11 @@ def _solver_block(evidence: list[dict]) -> SolverBlock:
         gap=p.get("gap"),
         wall_time_s=float(p.get("wall_time_s", 0.0)),
         deterministic=deterministic,
+        # 4B.8 CU3. Absent on a pre-1.10 evidence stream and on any single-stage
+        # solve, which is correct: no stage 2 ran, so there is no tiebreak proof
+        # to report. The recorded `status` is stage 1's on both paths.
+        tiebreak_status=p.get("tiebreak_status"),
+        tiebreak_skipped_reason=p.get("tiebreak_skipped_reason"),
     )
 
 def _reference_date(evidence: list[dict]) -> Optional[datetime]:

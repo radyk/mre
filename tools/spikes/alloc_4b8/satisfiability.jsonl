@@ -1,0 +1,1 @@
+{"orders": 200, "window_days": 14, "seed": 42, "workers": 1, "wall_ceiling": 900.0, "first_solution_only": true, "n_free_ops": 313, "n_machines": 13, "ops_per_machine_max": 92, "ops_per_machine_median": 27, "build_s": 0.17, "solve_s": 4.51, "satisfiable": "OPTIMAL", "det_consumed": 0.08162848761468386, "wall_truncated": false}

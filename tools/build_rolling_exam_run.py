@@ -63,7 +63,10 @@ SEED = 42                 # the standing seed for rolling / pilot_scale work
 ORDERS = 40
 WINDOW_DAYS = 14
 FROZEN_DAYS = 3
-DET_TIME = 2.0            # the window-0 solve's DETERMINISTIC budget (what binds)
+# The window-0 solve's TOTAL deterministic budget (what binds). 4B.8 CU2
+# renamed the parameter det_time -> det_total; this caller's historical total
+# was its old stage-1 share (2.0) plus the deleted fixed stage-2 2.0.
+DET_TOTAL = 4.0
 
 # THE COARSE ZONE (Session 4B.6b item 3). Before this, the pinned exam world
 # carried no coarse zone, so every coarse route in the r5 bank answered "I
@@ -122,7 +125,7 @@ def solve_window0(submission: Path, out_dir: Path, persist: bool):
                               frozen_days=FROZEN_DAYS, gravity=True,
                               deterministic=True, seed=SEED,
                               member_time_limit_s=WALL_CEILING_S,
-                              det_time=DET_TIME, persist=persist)
+                              det_total=DET_TOTAL, persist=persist)
     return plant, view
 
 
@@ -154,7 +157,7 @@ def verify_determinism(submission: Path, first_view) -> list[str]:
     if first_view.wall_truncated:
         failures.append(
             "the window-0 solve was stopped by the WALL CLOCK, not by its "
-            f"deterministic budget of {DET_TIME}s - the result is not "
+            f"deterministic budget of {DET_TOTAL}s - the result is not "
             f"reproducible. Raise WALL_CEILING_S (currently {WALL_CEILING_S}s).")
 
     tmp = Path(tempfile.mkdtemp(prefix="rollexam-verify"))
@@ -249,7 +252,7 @@ def register(base: str, submission: Path, poll_timeout_s: float) -> int:
         "window_days": WINDOW_DAYS,
         "frozen_days": FROZEN_DAYS,
         # SolveRequest.time_limit becomes build_rolling_view's member_time_limit_s
-        # — the WALL ceiling, not the budget. The API's own det_time (4.0) is what
+        # — the WALL ceiling, not the budget. The API's own det_total (6.0) is what
         # stops this solve, so it is the same world and window as the harness
         # fixture above but not a bit-identical solve (a larger budget, its own
         # run dir). That is deliberate: the cockpit run is the API's, end to end.
@@ -335,7 +338,7 @@ def main(argv: list[str] | None = None) -> int:
     tmp = Path(tempfile.mkdtemp(prefix="rollexam"))
     print(f"rolling-exam: solving window 0 (window={WINDOW_DAYS}d "
           f"frozen={FROZEN_DAYS}d, deterministic, seed={SEED}, "
-          f"det budget={DET_TIME}s) ...")
+          f"det budget={DET_TOTAL}s) ...")
     plant, view = solve_window0(submission, tmp, persist=True)
 
     # THE COARSE ZONE. rho comes from the submission's DECLARED coefficient
@@ -343,7 +346,7 @@ def main(argv: list[str] | None = None) -> int:
     # is a lottery wearing a determinism label, so it fails the build.
     print("rolling-exam: building the coarse zone (declared coefficients) ...")
     zone = build_coarse_zone(plant, view, deterministic=True, seed=SEED,
-                             det_time=DET_TIME,
+                             det_total=DET_TOTAL,
                              safety_ceiling_s=COARSE_SAFETY_CEILING_S)
     if zone.proof.wall_truncated or zone.planning.wall_truncated:
         print("rolling-exam: !! a coarse run hit the WALL ceiling - the zone is "

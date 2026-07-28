@@ -870,26 +870,43 @@ class TestAuditCorpusSabotaged:
 
 @pytest.mark.slow
 class TestAuditCorpusEarlinessHedge:
-    """Session 4B.3a CU4b — the attribution-limitation specimen. ORD-06 is
-    capacity-forced onto PRESS-SLOW, but a positive earliness_value makes the
-    extractor attribute it to EARLINESS_PREFERENCE (docs/02 §4.2: dearer-than-
-    cheapest ⇒ EARLINESS_PREFERENCE, by price rank, with no occupancy check). A
-    graded-correct answer HEDGES — it names the preference AND that capacity
-    pressure may bind; a confidently unhedged single-cause answer is wrong."""
+    """Session 4B.3a CU4b, REPLACED AND REVERSED at 4B.8 CU4.
 
-    def test_why_on_dearer_machine_hedges_to_the_limitation(self, earliness_forcing):
+    THE SPECIMEN IS UNCHANGED: ORD-06 is still capacity-forced onto the
+    marginally dearer PRESS-SLOW, with a positive ``earliness_value`` declared.
+    What changed is the right answer.
+
+    It used to be: the extractor attributes this to EARLINESS_PREFERENCE by PRICE
+    RANK with no occupancy check (the docs/02 §4.2 limitation), so a
+    graded-correct answer must name the preference AND HEDGE that capacity may
+    really be binding. That test enshrined a wrong cause and graded the hedge.
+
+    Since 4B.7 retired R-SC3(2) nothing purchases a placement, so the
+    attribution named a mechanism that does not exist; 4B.8 CU4 made the branch
+    dormant. The placement now classifies as CAPACITY_BLOCKED — which is the
+    TRUE cause here, by the fixture's own construction (PRESS-FAST holds the
+    other two bracket ops). So the answer no longer hedges toward capacity: it
+    STATES capacity, and must NOT claim earliness bought anything.
+
+    The hedging machinery itself is not under test here and is not removed — it
+    is what any genuinely ambiguous attribution still goes through."""
+
+    def test_why_on_dearer_machine_names_capacity_not_earliness(self, earliness_forcing):
         res_and = _ask(earliness_forcing, "why is ORD-06 on PRESS-SLOW")
         res, a = res_and
         assert res.route == "why-on-machine"
         low = a.lower()
-        # names the placement and the earliness attribution…
+        # names the placement…
         assert "ord-06" in low and "press-slow" in low
-        assert "earliness" in low
-        # …AND hedges to the limitation (does NOT claim earliness as the sole
-        # cause): the cheaper machine may simply have been busy (capacity forcing).
-        assert "busy" in low or "capacity" in low, (
-            "the answer must hedge — a confident single-cause EARLINESS_PREFERENCE "
-            "answer is wrong (docs/02 §4.2 attribution limitation)")
+        # …and its real cause, capacity, with no hedge needed.
+        assert "busy" in low or "capacity" in low
+        # THE REVERSAL: the answer must no longer attribute this to a priced
+        # earliness preference. R-SC3(2) is retired; claiming a declared rate
+        # bought this machine would be a false causal claim, hedged or not.
+        assert "earliness" not in low, (
+            "the answer still attributes the placement to earliness — the "
+            "EARLINESS_PREFERENCE branch is meant to be dormant (4B.8 CU4), and "
+            "nothing has purchased a placement since 4B.7 retired R-SC3(2)")
 
 
 @pytest.mark.slow
@@ -1286,9 +1303,11 @@ def test_cu10_zero_confident_wrong(clean, sabotaged, earliness_forcing):
         ("when does ORD-13 finish", clean, None, lambda a: "completes" in a.lower()),
         ("why is this on CUT-01", clean, {"selection": {"order": "ORD-05"}},
          lambda a: "ord-05" in a.lower()),
-        # Session 4B.3a CU4b — the attribution-limitation specimen. A
-        # capacity-forced placement attributed to EARLINESS_PREFERENCE must HEDGE;
-        # a confident single-cause answer is confident-wrong (docs/02 §4.2).
+        # Session 4B.3a CU4b, AMENDED 4B.8 CU4 — this specimen used to test that
+        # a capacity-forced placement MISATTRIBUTED to EARLINESS_PREFERENCE still
+        # hedged toward capacity. The misattribution is gone (the branch is
+        # dormant), so the same assertion now checks the plain truth rather than
+        # a hedge: the placement was capacity-forced and the answer says so.
         ("why is ORD-06 on PRESS-SLOW", earliness_forcing, None,
          lambda a: "busy" in a.lower() or "capacity" in a.lower()),
         # Session 4B.4 — the founder's listening-session failures. An advice

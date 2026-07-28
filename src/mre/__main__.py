@@ -442,12 +442,24 @@ def main(argv: list[str] | None = None) -> int:
     # earliness sum is over every op start.
     # Session 4B.7: the declared earliness_value is NOT passed — it is no longer a
     # price, and stage 2 runs unconditionally without it (R-SC3(2) retired).
+    # Session 4B.8 CU2: the two-stage budget is DECLARED AS A TOTAL and split by
+    # policy (stage 1 capped at total minus a reserve; stage 2 gets the
+    # remainder), replacing "stage 1 unbudgeted, stage 2 a fixed 2.0". Stage 2
+    # must carry a DETERMINISTIC budget on this path specifically: it is the path
+    # the byte-for-byte goldens are captured from, and a wall-stopped stage 2
+    # would make those goldens a property of the machine and the load. Measured
+    # on sample_data, stage 1 proves OPTIMAL in 0.043 of its cap, so the split
+    # hands the tiebreak essentially the whole budget.
+    from mre.modules.rolling_horizon import DET_TOTAL_MONOLITHIC
+
     solve_result, _stage2_ran = solve_two_stage(
         model, var_map,
         stage1_reporter=r_rep,
         time_limit_seconds=args.time_limit,
         num_search_workers=args.solver_workers,
         random_seed=args.solver_seed,
+        deterministic_time_total=DET_TOTAL_MONOLITHIC,
+        cap_stage1=False,   # the cost proof stays uncapped, exactly as before
     )
     r_rep.end(RunStatus.SUCCESS if solve_result.status in ("OPTIMAL", "FEASIBLE") else RunStatus.PARTIAL)
     _p(

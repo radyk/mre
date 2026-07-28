@@ -94,11 +94,13 @@ class Extractor:
         setup_fixed: float = cost_model.get(
             "setup_cost_basis", {}
         ).get("fixed_per_setup", 0.0)
-        # R-SC3: declared price of op-start earliness ($/min). 0 => earliness is a
-        # pure zero-cost tiebreak and no assignment is attributed to it (the byte-
-        # identical guarantee for pre-R-SC3 datasets); positive => a dearer-but-
-        # earlier eligible placement is attributed to EARLINESS_PREFERENCE.
-        earliness_value: float = float(cost_model.get("earliness_value", 0.0) or 0.0)
+        # SESSION 4B.8 CU4 — ``earliness_value`` IS NO LONGER READ HERE. It used
+        # to gate the EARLINESS_PREFERENCE attribution; R-SC3(2) is retired
+        # (4B.7) and there is no longer any mechanism by which a declared rate
+        # purchases a placement, so that attribution named a cause that does not
+        # exist. See ``_assignment_driver``. The read is DELETED rather than left
+        # inert: a value still flowing into a classifier is a value that gets
+        # branched on again.
         base_w: float = cost_model.get("tardiness_weights", {}).get("base_weight", 1.0)
         cc_mult: dict = cost_model.get("tardiness_weights", {}).get(
             "commitment_class_multipliers", {}
@@ -180,7 +182,7 @@ class Extractor:
             driver = self._assignment_driver(
                 chosen_rid, eligible_rids, rates,
                 op_start_min=start_min, op_end_min=end_min,
-                cal_windows=cal_windows, earliness_value=earliness_value,
+                cal_windows=cal_windows,
             )
 
             # Per-alternative duration (docs/06 §5.3): an eligible machine may
@@ -605,18 +607,38 @@ class Extractor:
         op_start_min: int = 0,
         op_end_min: int = 0,
         cal_windows: Optional[dict] = None,
-        earliness_value: float = 0.0,
     ) -> DriverCode:
         """Classify the primary driver for this assignment choice.
 
-        Priority: CALENDAR_WINDOW > COST_TRADEOFF > EARLINESS_PREFERENCE >
-        CAPACITY_BLOCKED. EARLINESS_PREFERENCE fires only when a positive
-        earliness_value is declared (R-SC3) AND a dearer-than-cheapest eligible
-        machine was chosen — under the declared model, paying more per unit for
-        an eligible machine is the earliness preference being exercised (the only
-        priced reason to prefer a dearer eligible machine is an earlier start;
-        tardiness has its own weight). With earliness_value == 0 this branch is
-        unreachable, so pre-R-SC3 datasets classify byte-identically.
+        Priority: CALENDAR_WINDOW > COST_TRADEOFF > CAPACITY_BLOCKED.
+
+        SESSION 4B.8 CU4 — EARLINESS_PREFERENCE IS DORMANT, and the parameter
+        that fired it (``earliness_value``) is DELETED from this signature.
+
+        The retired branch attributed any dearer-than-cheapest eligible choice to
+        the earliness preference whenever a positive ``earliness_value`` was
+        declared. Its stated justification was that "the only priced reason to
+        prefer a dearer eligible machine is an earlier start" — TRUE while
+        R-SC3(2) put the coefficient in the objective, and FALSE since 4B.7
+        retired it. Nothing purchases anything now: stage 1 minimizes cost alone
+        and stage 2 is a zero-cost tiebreak that cannot move a placement to a
+        dearer machine (the cap forbids it). So on the pilot_scale plant, which
+        declares 0.05, the branch fired on placements caused by capacity,
+        precedence or setup and named a mechanism that no longer exists. It
+        hedged (4B.3a CU4b), but a hedged false causal claim is still a false
+        causal claim.
+
+        THE FALLTHROUGH IS BETTER, WHICH IS WHY THIS IS SAFE TO STOP. A dearer
+        eligible choice under a cost-only objective means the cheaper alternative
+        was not usable at that slot — capacity. CAPACITY_BLOCKED is not a bare
+        phrase any more: since 4B.5 CU3(a) the explainer reads the SOLVED
+        OCCUPANCY behind it and names which eligible machines existed and what
+        was running on each, with an honest third branch that says the occupancy
+        does not attribute it rather than inventing a mechanism.
+
+        The DriverCode member itself is NOT removed — vocabulary is add-never-
+        repurpose, and retiring a code is the reviewed migration docs/07 §5a.20
+        still owns. This makes the extractor stop EMITTING it; §5a.20 stays OPEN.
         """
         if not eligible or len(eligible) == 1:
             return DriverCode.CAPACITY_BLOCKED
@@ -634,10 +656,9 @@ class Extractor:
         other_rates = [rates.get(r, 0.0) for r in eligible if r != chosen_rid]
         if other_rates and chosen_rate < min(other_rates):
             return DriverCode.COST_TRADEOFF
-        # EARLINESS_PREFERENCE: a declared earliness price chose a dearer eligible
-        # machine (a strictly-cheaper eligible alternative existed and was passed).
-        if earliness_value > 0 and other_rates and chosen_rate > min(other_rates):
-            return DriverCode.EARLINESS_PREFERENCE
+        # A dearer-than-cheapest eligible choice now falls through to
+        # CAPACITY_BLOCKED with the rest — see the docstring. There is no
+        # EARLINESS_PREFERENCE branch here any more.
         return DriverCode.CAPACITY_BLOCKED
 
 

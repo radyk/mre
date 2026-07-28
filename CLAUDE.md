@@ -155,8 +155,59 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.7 — the earliness price is removed from the objective**, 2026-07-27
-(docs/07 v2.52; docs/04 R-SC3 AMENDMENT same date; full table in `SESSION_CLOSEOUT.md`).
+**Session 4B.8 — the budget split, the status ruling, and the 14-day diagnosis**,
+2026-07-28 (docs/07 v2.53; docs/04 session amendment same date; full table in
+`SESSION_CLOSEOUT.md`).
+
+**THE TWO-STAGE BUDGET IS DERIVED, NOT A CONSTANT (CU2).** The caller declares a
+TOTAL (`det_total`); stage 1 is capped at total minus a **1/12 RESERVE**; **stage 2
+gets what the total has left after stage 1 actually ran**. `_STAGE2_DET_TIME_S = 2.0`
+is DELETED from both twins. Measured first (`tools/spikes/alloc_4b8/`, 3 policies x
+6 instances x 5 seeds): the old fixed split **loses the COST PROOF at 200 orders**
+(two seeds need 4.542/4.962 units against a 4.0 cap — ledger 35,127.05 vs the optimum
+**27,863.63** the alternatives prove 5/5 with **zero** spread), while a plain
+cost-first remainder gives stage 2 **ZERO on 5/5 seeds at 120 orders** and silently
+retires the tiebreak. The reserve is what keeps R-SC3(1) true at scale. NB the
+parameter was **RENAMED `det_time` -> `det_total`**, not reinterpreted: the old total
+was `stage1 + 2.0`, so no single multiplier preserved every caller (6.0 default, 4.0
+exam/fixture, 2.5 golden driver) — each now declares its own. The MONOLITHIC path
+passes `cap_stage1=False` (its cost proof stays uncapped) with a 2.0 total; raising
+that was measured and REJECTED (−0.01% start-minutes for 2.5x the wall clock).
+
+**THE STATUS LINE REPORTS THE COST PROOF (CU3 — a RULING, contract 1.9 -> 1.10).**
+`solver.status` carries **STAGE 1's** status; new Optional `solver.tiebreak_status` /
+`tiebreak_skipped_reason` carry stage 2's. Stage 2 exhausts its budget above ~8
+orders, so every rolling board used to read FEASIBLE over a provably OPTIMAL ledger.
+**A schedule whose cost is proven optimal SAYS SO, and an unproven tiebreak never
+downgrades that claim.** A tiebreak that never ran is distinguishable from one that
+ran and won nothing. **§5a.23 is the standing debt: NOTHING VOICES IT** — neither the
+cockpit nor the answer surface reads any solve status (an R-AI1 debt, named not
+built, per the brief).
+
+**`EARLINESS_PREFERENCE` IS DORMANT (CU4, interim only).** The extractor no longer
+emits it and `earliness_value` is DELETED from `_assignment_driver`'s signature. The
+fallthrough was checked FIRST and is better: `CAPACITY_BLOCKED` carries real
+occupancy evidence (4B.5 CU3a), and under a cost-only objective a dearer eligible
+choice IS capacity. **The DriverCode member SURVIVES and docs/07 §5a.20 stays OPEN**
+for the vocabulary migration. The declared-but-unread guard was resolved by a
+dormant-register entry, never by widening.
+
+**§5a.15 DIAGNOSED, NOT FIXED (CU5): THE 200-ORDER / 14-DAY INSTANCE IS FEASIBLE** —
+a solution in **0.082 deterministic units** once the objective is dropped, so this is
+**NOT an R-SC2 admission defect**. Build time is 0.05–0.19 s and ops-per-machine peaks
+at **92**, killing both standing hypotheses. The cliff is between **8 and 9 days** at
+200 orders, and is **NOT general**: 200 orders proves optimality at 123 free ops while
+120 orders fails at 115, so neither n_free nor ops/machine predicts it. At 14 days the
+COST solve finds **nothing at all** in 6.0 units while satisfiability takes 0.082 — a
+factor of **74**. **Discharged: §5a.19, §5a.21.**
+
+**PRE-FLIGHT: the missing API key was LOADER WIRING.** `.env.local` was present all
+along; `tests/conftest.py` had no loader while `tools/run_ai_exam_sweep.py` carried
+the repo's only one. Now loaded in conftest (repo-root anchored) — **the four blocked
+slow tests pass**. No `skipif`, no assertion weakened, the r5 bank still NOT run.
+
+Before it: **Session 4B.7 — the earliness price is removed from the objective**
+(docs/07 v2.52).
 
 **R-SC3(2) IS RETIRED — `earliness_value` IS NO LONGER A PRICE.** Stage 1 of the two-stage
 solve minimizes COST ALONE on both paths, and the coefficient parameter is DELETED from

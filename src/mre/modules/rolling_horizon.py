@@ -97,10 +97,79 @@ def _dt(iso: str) -> datetime:
     return d if d.tzinfo else d.replace(tzinfo=UTC)
 
 
-# R-SC3: a small deterministic budget for the stage-2 earliness tiebreak. Warm-
-# started from a feasible stage-1 incumbent, so budget exhaustion is benign — the
-# stage-1 schedule stands and is never worse in cost.
-_STAGE2_DET_TIME_S = 2.0
+# ---------------------------------------------------------------------------
+# SESSION 4B.8 CU2 — THE BUDGET SPLIT, DERIVED.
+#
+# ``_STAGE2_DET_TIME_S = 2.0`` IS DELETED, not defaulted. It gave stage 2 a
+# FIXED slice regardless of what stage 1 spent, and the allocation was backwards
+# in both directions at once (docs/07 §5a.19):
+#   * 40 orders — stage 1 proves OPTIMAL in 0.101 of its 4.0 while stage 2
+#     exhausts its whole 2.0 without closing the tiebreak. 3.9 units unused.
+#   * 200 orders / 7d — stage 1 needs 4.542 and 4.962 units on two seeds and
+#     gets 4.0, so it truncates: +5.46% and +26.07% ledger against a
+#     full-budget cost-only solve.
+# A constant that can still be read is a constant that comes back (the 4B.7
+# precedent for the earliness coefficient), so it is gone rather than zeroed.
+#
+# THE REPLACEMENT: the caller declares a TOTAL, stage 1 is capped at the total
+# minus a small RESERVE, and stage 2 receives whatever the total has left after
+# stage 1 actually ran. Stage 2's limit is therefore never a constant, and
+# stage 1 can never starve the tiebreak to nothing.
+#
+# WHY A RESERVE RATHER THAN A PLAIN REMAINDER (P2 vs P3, measured in CU1):
+# R-SC3(1) makes the tiebreak zero-cost, so cost strictly dominates and the
+# budget should go to cost FIRST — which argues for a plain remainder. But at
+# 120 orders and above stage 1 exhausts everything, so a plain remainder hands
+# stage 2 ZERO at exactly the plant sizes where a planner sees the defect
+# Session 4B.4 found (an op parked at 14:39 behind a free 11:21 slot). The
+# reserve is what keeps R-SC3(1)'s "always and unconditionally" true at scale.
+# It is priced in CU1's table, not assumed: stage 1's extra budget beyond the
+# cost proof buys nothing (the plateau), so the reserve is free where stage 1
+# closes and cheap where it does not.
+#
+# Expressed as a FRACTION of the total so it scales with the budget the caller
+# declared. 1/12 of the shipped 6.0 total is exactly the 0.5 units CU1 measured.
+_STAGE2_RESERVE_FRACTION = 1.0 / 12.0
+
+#: The historical TOTAL of the old scheme was ``stage1 + 2.0`` — the caller's
+#: ``det_time`` plus the deleted constant. That is 6.0 at the shipped default of
+#: 4.0, but it was 4.0 for the exam/fixture builders (det_time 2.0) and 2.5 for
+#: the golden driver (det_time 0.5), so there is no single multiplier that
+#: preserves every caller's budget. This is why the parameter was RENAMED
+#: ``det_time`` -> ``det_total`` rather than reinterpreted: a rename makes every
+#: call site fail loudly until someone states the total it means, which is
+#: exactly the review this change needed. Each caller now declares its own
+#: historical total explicitly and nobody's budget moved silently.
+_DET_TOTAL_DEFAULT = 6.0
+
+#: The MONOLITHIC path's two-stage budget. That path declared no deterministic
+#: budget for stage 1 (wall-limited) and a fixed 2.0 for stage 2, so 2.0 IS its
+#: historical total — and it is passed with ``cap_stage1=False``, leaving the
+#: cost proof exactly as uncapped as it has always been. Only the TIEBREAK's
+#: share becomes derived (total minus what stage 1 actually spent).
+#:
+#: Stage 2 cannot simply be left wall-limited instead: a wall-stopped solve is
+#: not reproducible run-to-run, and this is the path the byte-for-byte goldens
+#: are captured from (tests/test_defaults_reproduce_baseline.py), so an
+#: unbudgeted stage 2 would make the golden a property of the machine and the
+#: load. Measured, sample_data, seed 42: stage 1 proves OPTIMAL in 0.043 units,
+#: so stage 2 receives 1.957 and the schedule is BYTE-IDENTICAL to the golden.
+#:
+#: Raising it was measured and REJECTED, not assumed: at 4.0 and 6.0 the tiebreak
+#: improves its own objective by 344 and 422 start-minutes out of 3,307,818
+#: (-0.01%) while wall time goes 19.6 s -> 37.5 s -> 50.2 s. Paying 2.5x the wall
+#: clock for one hundredth of a percent is not a trade this path should make; the
+#: instances where stage-2 budget genuinely pays (CU1 measured -19.41% at 15
+#: orders) are on the rolling path, which declares its own larger total.
+DET_TOTAL_MONOLITHIC = 2.0
+
+
+def _stage_budgets(det_total: float) -> tuple[float, float]:
+    """(stage-1 cap, stage-2 reserve) for a declared total. Stage 2's ACTUAL
+    budget is not here — it is the remainder after stage 1 runs, and cannot be
+    known before it does."""
+    reserve = det_total * _STAGE2_RESERVE_FRACTION
+    return max(0.0, det_total - reserve), reserve
 
 
 def _earliness_rate(cost_model: dict, override: Optional[float]) -> float:
@@ -179,8 +248,7 @@ def _sum_free_starts(solve_values, free_op_ids) -> Optional[int]:
 
 def _two_stage_solve(model, var_map, free_start_vars, *,
                      workers, seed, deterministic, member_time_limit_s,
-                     stage1_det_time, stage2_det_time=_STAGE2_DET_TIME_S,
-                     free_op_ids=None):
+                     det_total, free_op_ids=None):
     """R-SC3 two-stage solve on an already-built model (constraints/pins applied,
     warm-start hints seeded by the caller).
 
@@ -207,10 +275,24 @@ def _two_stage_solve(model, var_map, free_start_vars, *,
       stage-2 result WHOLE, so ``.objective`` was Σ free-op starts — a MINUTE
       COUNT — and ``build_rolling_view`` wrote that into M6 ``solve_complete``
       for every downstream reader (docs/07 §5a.16). It is now the cost objective,
-      trivially, because stage 1's objective IS cost."""
+      trivially, because stage 1's objective IS cost.
+
+    SESSION 4B.8, two more:
+
+    * **THE BUDGET IS DERIVED** (CU2). ``det_total`` is the whole two-stage
+      deterministic budget. Stage 1 is capped at total minus a small reserve;
+      stage 2 gets what the total has LEFT after stage 1 actually ran. Nothing
+      here is a constant, and stage 1 cannot starve the tiebreak to nothing.
+    * **THE REPORTED STATUS IS STAGE 1's** (CU3). ``status`` is the COST proof;
+      ``tiebreak_status`` is stage 2's, and ``tiebreak_skipped_reason`` says why
+      when stage 2 did not run. Before this the returned status was stage 2's,
+      so a schedule whose cost we could prove OPTIMAL reported FEASIBLE
+      (docs/07 §5a.21)."""
     from mre.modules.solve_runner import SolveRunner, SolveResult
+    from dataclasses import replace
 
     terms = var_map.objective_terms
+    cap1, reserve = _stage_budgets(det_total)
 
     def _runner(det):
         return SolveRunner(time_limit_seconds=member_time_limit_s,
@@ -218,10 +300,27 @@ def _two_stage_solve(model, var_map, free_start_vars, *,
                            deterministic_time=(det if deterministic else None))
 
     # STAGE 1 — COST. This function sets no objective of its own.
-    s1 = _runner(stage1_det_time).solve(model, var_map, None)
+    s1 = _runner(cap1).solve(model, var_map, None)
     if (not terms or not free_start_vars or s1.objective is None
             or s1.status not in ("OPTIMAL", "FEASIBLE")):
-        return s1, False, (None, None)
+        return replace(
+            s1, tiebreak_skipped_reason="stage1_no_solution_or_degenerate_model",
+        ), False, (None, None)
+
+    # STAGE 2's budget: the REMAINDER of the declared total. The reserve floor is
+    # what makes R-SC3(1)'s "always and unconditionally" survive a stage 1 that
+    # spent everything — without it, the tiebreak would silently stop running at
+    # exactly the plant sizes where a planner notices its absence.
+    #
+    # A solve whose deterministic time could not be read (det_consumed is None)
+    # is treated as having spent its whole cap: the guard "stage 1 + stage 2 <=
+    # total" must hold on the PESSIMISTIC reading, never on an optimistic guess.
+    spent1 = s1.det_consumed if s1.det_consumed is not None else cap1
+    b2 = max(reserve, det_total - spent1) if reserve > 0 else max(0.0, det_total - spent1)
+    if b2 <= 0.0:
+        return replace(
+            s1, tiebreak_skipped_reason="budget_exhausted_by_stage1",
+        ), False, (None, None)
 
     # STAGE 2 — cap the stage-1 COST objective, re-minimize the raw earliness.
     # Cap source and cap target are the same expression in the same units.
@@ -229,7 +328,7 @@ def _two_stage_solve(model, var_map, free_start_vars, *,
     model.add(sum(terms) <= best)
     model.minimize(sum(free_start_vars))
     _hint_from_solve(model, var_map, s1.solve_values)
-    s2 = _runner(stage2_det_time).solve(model, var_map, None)
+    s2 = _runner(b2).solve(model, var_map, None)
     if s2.status in ("OPTIMAL", "FEASIBLE"):
         before = _sum_free_starts(s1.solve_values, free_op_ids or ())
         after = _sum_free_starts(s2.solve_values, free_op_ids or ())
@@ -237,13 +336,20 @@ def _two_stage_solve(model, var_map, free_start_vars, *,
         # deterministic budget) stopped stage 1, the whole two-stage result is a
         # wall-clock lottery, whatever stage 2 then did (Errand session, CU2b).
         return SolveResult(
-            status=s2.status, objective=s1.objective, best_bound=s1.best_bound,
+            status=s1.status, objective=s1.objective, best_bound=s1.best_bound,
             gap=s1.gap, wall_time=s1.wall_time + s2.wall_time,
             solutions_found=s2.solutions_found, solve_values=s2.solve_values,
             wall_truncated=(s1.wall_truncated or s2.wall_truncated),
+            tiebreak_status=s2.status,
+            det_consumed=(spent1 + (s2.det_consumed if s2.det_consumed is not None else b2)),
         ), True, (before, after)
-    # stage-2 budget exhausted → keep the stage-1 incumbent
-    return s1, False, (None, None)
+    # stage-2 budget exhausted → keep the stage-1 incumbent. The tiebreak RAN and
+    # won nothing, which is a different fact from "it never ran" — so its status
+    # is recorded and no skip reason is set.
+    return replace(
+        s1, tiebreak_status=s2.status,
+        det_consumed=(spent1 + (s2.det_consumed if s2.det_consumed is not None else b2)),
+    ), False, (None, None)
 
 
 # ---------------------------------------------------------------------------
@@ -487,6 +593,14 @@ class RollingView:
     # this figure never enters cost_ledger, cost_summary.total, or a delta card's
     # money. See earliness_tiebreak_report.
     earliness_tiebreak: dict = field(default_factory=dict)
+    # 4B.8 CU3 — THE TIEBREAK PROOF, beside the cost proof and never fused with
+    # it. ``status`` above is STAGE 1's: the COST proof, the claim a planner is
+    # asking about. This is stage 2's, and it is routinely weaker — the tiebreak
+    # exhausts its budget above ~8 orders. A schedule whose cost is proven
+    # optimal SAYS SO; an unproven tiebreak does not downgrade that claim.
+    # None when stage 2 never ran, in which case tiebreak_skipped_reason says why.
+    tiebreak_status: Optional[str] = None
+    tiebreak_skipped_reason: Optional[str] = None
 
     @property
     def placed(self) -> dict:
@@ -504,7 +618,7 @@ def build_rolling_view(
     deterministic: bool = True,
     seed: int = 42,
     member_time_limit_s: float = 30.0,
-    det_time: float = 4.0,
+    det_total: float = _DET_TOTAL_DEFAULT,
     crit_threshold: float = 3.0,
     earliness_value: Optional[float] = None,
     persist: bool = False,
@@ -575,6 +689,10 @@ def build_rolling_view(
     ledger: dict = {}
     svc: list = []
     status = "NO_ADMISSION"
+    # 4B.8 CU3: with nothing admitted there is no solve at all, so there is no
+    # tiebreak proof either — and the reason is stated rather than left blank.
+    tiebreak_status: Optional[str] = None
+    tiebreak_skipped: Optional[str] = "no_admitted_work"
     placed_demand_ids: set = set()
     wall_truncated = False
 
@@ -607,10 +725,15 @@ def build_rolling_view(
         solve, _stage2, _recovery = _two_stage_solve(
             model, var_map, free_start_vars,
             workers=workers, seed=seed, deterministic=deterministic,
-            member_time_limit_s=member_time_limit_s, stage1_det_time=det_time,
+            member_time_limit_s=member_time_limit_s,
+            det_total=det_total,
             free_op_ids=[op["id"] for op in free_ops])
         tiebreak = earliness_tiebreak_report(_recovery[0], _recovery[1], ev_used)
+        # 4B.8 CU3: `solve.status` is now STAGE 1's — the COST proof. Stage 2's
+        # rides beside it, never over it.
         status = solve.status
+        tiebreak_status = solve.tiebreak_status
+        tiebreak_skipped = solve.tiebreak_skipped_reason
         wall_truncated = bool(solve.wall_truncated)
         if solve.status in ("OPTIMAL", "FEASIBLE"):
             sv = solve.solve_values
@@ -656,10 +779,17 @@ def build_rolling_view(
                 # `objective` is the STAGE-1 (cost) objective since 4B.7 — see
                 # _two_stage_solve. `earliness_tiebreak` rides BESIDE it as its
                 # own labelled line and is never summed into any cost figure.
+                # 4B.8 CU3: `status` is STAGE 1's (the COST proof) and
+                # `tiebreak_status` is stage 2's. The assembler reads this
+                # payload on the persisted path, so both proofs must reach it —
+                # otherwise the board would still show one proof under the
+                # other's name.
                 s_rep.record_event(
                     status_text="solve_complete",
                     payload={"status": solve.status, "objective": solve.objective,
-                             "earliness_tiebreak": tiebreak})
+                             "earliness_tiebreak": tiebreak,
+                             "tiebreak_status": solve.tiebreak_status,
+                             "tiebreak_skipped_reason": solve.tiebreak_skipped_reason})
                 s_rep.end(RunStatus.SUCCESS)
                 e_rep = _report(ModuleCode.M7, "rolling window-0 extraction",
                                 plant.snapshot_id, runs_dir)
@@ -689,7 +819,8 @@ def build_rolling_view(
         cost_ledger=ledger, service_outcomes=svc, op_drivers=op_drivers,
         win_horizon_start=win_horizon_start, win_horizon_end=win_horizon_end,
         persisted=persist, wall_truncated=wall_truncated,
-        earliness_value=ev_used, status=status, earliness_tiebreak=tiebreak)
+        earliness_value=ev_used, status=status, earliness_tiebreak=tiebreak,
+        tiebreak_status=tiebreak_status, tiebreak_skipped_reason=tiebreak_skipped)
 
 
 
@@ -895,7 +1026,7 @@ def run_rolling_horizon(
     deterministic: bool = True,
     seed: int = 0,
     member_time_limit_s: float = 30.0,
-    det_time: float = 4.0,
+    det_total: float = _DET_TOTAL_DEFAULT,
     crit_threshold: float = 3.0,
     standing_pins: Optional[list[dict]] = None,
     max_windows: Optional[int] = None,
@@ -1015,7 +1146,8 @@ def run_rolling_horizon(
         solve, _stage2, _recovery = _two_stage_solve(
             model, var_map, free_start_vars,
             workers=workers, seed=seed, deterministic=deterministic,
-            member_time_limit_s=member_time_limit_s, stage1_det_time=det_time)
+            member_time_limit_s=member_time_limit_s,
+            det_total=det_total)
         solve_wall = _t.perf_counter() - t_s
         total_solve += solve_wall
 
@@ -1082,7 +1214,7 @@ def run_rolling_horizon(
     # them, then extracts the exact decomposed cost. Same method for every
     # window setting => a fair curve.
     ledger, svc, tot_cost, uncommitted, op_drivers = _final_extract(
-        plant, committed, seed, deterministic, sched, det_time,
+        plant, committed, seed, deterministic, sched, det_total,
         earliness_used)
     on_time = sum(1 for s in svc if s.get("lateness_minutes", 0) <= 0)
     late = sum(1 for s in svc if s.get("lateness_minutes", 0) > 0)
@@ -1107,7 +1239,7 @@ def run_rolling_horizon(
 # final exact cost — one Extractor pass over the fully-pinned committed union
 # ---------------------------------------------------------------------------
 
-def reference_solve(plant, *, seed=42, deterministic=True, det_time=4.0,
+def reference_solve(plant, *, seed=42, deterministic=True, det_total=_DET_TOTAL_DEFAULT,
                     earliness_value=None, two_stage=True):
     """A NON-rolling reference solve: build the full model over every schedulable
     op (no windowing, no pins), solve it, and extract the exact ledger. Used by
@@ -1120,12 +1252,12 @@ def reference_solve(plant, *, seed=42, deterministic=True, det_time=4.0,
     ev_used = _earliness_rate(plant.cost_model, earliness_value)
     placements: dict = {}
     ledger, svc, tot, _leftover, drivers = _final_extract(
-        plant, placements, seed, deterministic, sched, det_time,
+        plant, placements, seed, deterministic, sched, det_total,
         ev_used if two_stage else 0.0, two_stage=two_stage)
     return ledger, svc, drivers, tot, placements
 
 
-def _final_extract(plant, committed, seed, deterministic, sched, det_time=8.0,
+def _final_extract(plant, committed, seed, deterministic, sched, det_total=48.0,
                    earliness_value=0.0, two_stage=True):
     """Build the full model over every scheduled demand's operations, PIN the
     committed operations to their rolling placement, let any leftovers place
@@ -1183,7 +1315,10 @@ def _final_extract(plant, committed, seed, deterministic, sched, det_time=8.0,
         model, var_map, free_start_vars,
         workers=workers, seed=seed, deterministic=deterministic,
         member_time_limit_s=120.0,
-        stage1_det_time=(det_time * 4), stage2_det_time=(det_time * 2))
+        # This call site's historical split was stage 1 = 32.0 and a fixed
+        # stage 2 = 16.0 — a 48.0 total, which is the default above. Preserved
+        # exactly; only the split is now derived.
+        det_total=det_total)
     if solve.status not in ("OPTIMAL", "FEASIBLE"):
         return {}, [], None, len([o for o in ops if o["id"] not in committed]), {}
 

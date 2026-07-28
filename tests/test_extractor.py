@@ -230,35 +230,56 @@ class TestAlternativeConsequenceWording:
         assert cons["resource:res-3"] == "Would cost $300.00 more."
 
 
-class TestEarlinessDriverAttribution:
-    """R-SC3 / CU3: a dearer-but-earlier eligible placement is attributed to
-    EARLINESS_PREFERENCE only when a positive earliness_value is declared — with
-    earliness_value == 0 the classification is byte-identical to pre-R-SC3."""
+class TestEarlinessDriverAttributionIsDormant:
+    """SESSION 4B.8 CU4 — REPLACED, AND REVERSED.
 
-    def _driver(self, chosen, rates, earliness_value):
+    This class used to assert that a dearer-than-cheapest eligible placement WAS
+    attributed to EARLINESS_PREFERENCE whenever a positive ``earliness_value``
+    was declared. That was R-SC3(2) working as ruled. R-SC3(2) is RETIRED (4B.7):
+    the coefficient no longer reaches any objective, so nothing purchases a
+    dearer machine and the attribution named a mechanism that does not exist.
+
+    What the extractor must now do is NOT FIRE IT — and, because the signature no
+    longer accepts the coefficient at all, it cannot be made to fire by any
+    caller. The DriverCode member survives (vocabulary is add-never-repurpose;
+    docs/07 §5a.20 owns the migration); what is gone is the extractor's ability
+    to emit it."""
+
+    def _driver(self, chosen, rates):
         from mre.modules.extractor import Extractor
-        from mre.contracts.vocabularies import DriverCode
         return Extractor()._assignment_driver(
             chosen, list(rates), rates, op_start_min=0, op_end_min=100,
-            cal_windows=None, earliness_value=earliness_value)
+            cal_windows=None)
 
-    def test_dearer_chosen_with_earliness_is_earliness_preference(self):
+    def test_dearer_chosen_is_capacity_blocked_not_earliness(self):
         from mre.contracts.vocabularies import DriverCode
-        # res-2 ($12) chosen over the cheaper eligible res-1 ($10), earliness on.
-        d = self._driver("res-2", {"res-1": 10.0, "res-2": 12.0}, earliness_value=0.05)
-        assert d == DriverCode.EARLINESS_PREFERENCE
-
-    def test_zero_earliness_is_byte_identical(self):
-        from mre.contracts.vocabularies import DriverCode
-        # same dearer choice, earliness OFF -> the pre-R-SC3 classification stands.
-        d = self._driver("res-2", {"res-1": 10.0, "res-2": 12.0}, earliness_value=0.0)
-        assert d != DriverCode.EARLINESS_PREFERENCE
+        # res-2 ($12) chosen over the cheaper eligible res-1 ($10). Under a
+        # cost-only objective the cheap machine was not usable at that slot —
+        # which is capacity, and CAPACITY_BLOCKED carries real occupancy
+        # evidence behind it (explainer._capacity_forced_alternatives, 4B.5 CU3a).
+        d = self._driver("res-2", {"res-1": 10.0, "res-2": 12.0})
         assert d == DriverCode.CAPACITY_BLOCKED
+        assert d != DriverCode.EARLINESS_PREFERENCE
+
+    def test_the_coefficient_cannot_be_passed_back_in(self):
+        """The 4B.7 precedent, applied: a parameter that can still be read is a
+        parameter that comes back. Deleting the branch but keeping the argument
+        would leave the defect one keyword away."""
+        import inspect
+        from mre.modules.extractor import Extractor
+        sig = inspect.signature(Extractor._assignment_driver)
+        assert "earliness_value" not in sig.parameters, (
+            "earliness_value is back in the assignment-driver signature — the "
+            "R-SC3(2) attribution can be re-enabled by a caller")
+        with pytest.raises(TypeError):
+            Extractor()._assignment_driver(
+                "res-2", ["res-1", "res-2"], {"res-1": 10.0, "res-2": 12.0},
+                earliness_value=0.05)   # type: ignore[call-arg]
 
     def test_cheapest_chosen_stays_cost_tradeoff(self):
         from mre.contracts.vocabularies import DriverCode
-        # earliness on, but the cheapest eligible was chosen -> COST_TRADEOFF wins.
-        d = self._driver("res-1", {"res-1": 10.0, "res-2": 12.0}, earliness_value=0.05)
+        # unchanged by CU4: the cheapest eligible was chosen -> COST_TRADEOFF.
+        d = self._driver("res-1", {"res-1": 10.0, "res-2": 12.0})
         assert d == DriverCode.COST_TRADEOFF
 
 

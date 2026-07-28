@@ -226,8 +226,8 @@ def test_roll_converges_and_prices(small_plant):
 def test_rolling_determinism_smoke():
     """Fast: a truncated roll is bit-identical across two in-process runs."""
     from rolling_golden import run
-    a = run(orders=8, window=4, frozen=2, det_time=0.2, seed=42, max_windows=2)
-    b = run(orders=8, window=4, frozen=2, det_time=0.2, seed=42, max_windows=2)
+    a = run(orders=8, window=4, frozen=2, det_total=2.2, seed=42, max_windows=2)
+    b = run(orders=8, window=4, frozen=2, det_total=2.2, seed=42, max_windows=2)
     assert a["schedule_digest"] == b["schedule_digest"]
     assert a["total_cost"] == b["total_cost"]
     assert a["n_committed"] == b["n_committed"]
@@ -239,7 +239,9 @@ def _run_golden_driver(hash_seed: str = "0") -> dict:
     proc = subprocess.run(
         [sys.executable, str(REPO / "tools" / "rolling_golden.py"),
          "--orders", "24", "--window", "7", "--frozen", "3",
-         "--det-time", "0.5", "--seed", "42"],
+         # 4B.8 CU2: a TOTAL now. 0.5 was this driver's stage-1 share and 2.0
+         # the deleted fixed stage-2 constant, so 2.5 is its historical total.
+         "--det-total", "2.5", "--seed", "42"],
         cwd=REPO, env=env, capture_output=True, text=True, timeout=300)
     assert proc.returncode == 0, f"driver failed:\n{proc.stderr[-2000:]}"
     return json.loads(proc.stdout.strip().splitlines()[-1])
@@ -338,9 +340,9 @@ def test_earliness_floor_is_placement_neutral_in_money(tiny_plant):
     from mre.modules.rolling_horizon import reference_solve
 
     led_cost, _, _, tot_cost, pl_cost = reference_solve(
-        tiny_plant, earliness_value=0.0, two_stage=False, seed=42, det_time=4.0)
+        tiny_plant, earliness_value=0.0, two_stage=False, seed=42, det_total=6.0)
     led_floor, _, _, tot_floor, pl_floor = reference_solve(
-        tiny_plant, earliness_value=0.0, two_stage=True, seed=42, det_time=4.0)
+        tiny_plant, earliness_value=0.0, two_stage=True, seed=42, det_total=6.0)
 
     assert abs(tot_cost - tot_floor) < 1e-6, (
         f"floor moved total cost: cost-only={tot_cost:.4f} floor={tot_floor:.4f}")
@@ -373,9 +375,9 @@ def test_the_floor_is_cost_neutral_at_the_DECLARED_earliness_value(tiny_plant):
     assert coeff > 0, "pilot_scale must declare a positive demo earliness_value"
 
     led_cost, _, _, tot_cost, pl_cost = reference_solve(
-        tiny_plant, earliness_value=None, two_stage=False, seed=42, det_time=4.0)
+        tiny_plant, earliness_value=None, two_stage=False, seed=42, det_total=6.0)
     led_floor, _, _, tot_floor, pl_floor = reference_solve(
-        tiny_plant, earliness_value=None, two_stage=True, seed=42, det_time=4.0)
+        tiny_plant, earliness_value=None, two_stage=True, seed=42, det_total=6.0)
 
     assert abs(tot_cost - tot_floor) < 1e-6, (
         f"the floor spent money at the declared earliness_value {coeff}: "
@@ -409,11 +411,11 @@ def test_the_schedule_is_identical_across_every_earliness_value(tiny_plant):
     assert coeff > 0, "pilot_scale must declare a positive demo earliness_value"
 
     led_off, svc_off, drv_off, tot_off, pl_off = reference_solve(
-        tiny_plant, earliness_value=0.0, two_stage=True, seed=42, det_time=4.0)
+        tiny_plant, earliness_value=0.0, two_stage=True, seed=42, det_total=6.0)
     led_on, svc_on, drv_on, tot_on, pl_on = reference_solve(
-        tiny_plant, earliness_value=None, two_stage=True, seed=42, det_time=4.0)
+        tiny_plant, earliness_value=None, two_stage=True, seed=42, det_total=6.0)
     led_big, _, _, tot_big, pl_big = reference_solve(
-        tiny_plant, earliness_value=coeff * 100, two_stage=True, seed=42, det_time=4.0)
+        tiny_plant, earliness_value=coeff * 100, two_stage=True, seed=42, det_total=6.0)
 
     # PLACEMENTS: machine and start, op for op, at 0 / declared / 100x declared.
     assert pl_on == pl_off, (

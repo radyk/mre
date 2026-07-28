@@ -10945,3 +10945,323 @@ compressor C; relabelling the delta card; the r5 bank, whose expectations were
 corrected to the OLD card figures at 4B.6b and which this session invalidates
 again (§5a.22) — named, not fixed, and not recalibrated; extending the two-solve
 baseline to forced-alternatives pricing; per-component gravity ablation.
+
+### 2026-07-28 — Session 4B.8: the budget split, the status ruling, and why 14 days returns nothing at 200 orders
+
+Three build items and one diagnosis. The diagnosis reports and stops; its fix is
+next session's, informed by what it found.
+
+#### Pre-flight — the missing API key was LOADER WIRING, and nothing else
+
+`.env.local` has been present and valid at the repo root throughout. Four
+committed slow tests nonetheless landed on the honest no-parser floor, and
+`regression_founder_r5` has been UNRUN for four sessions. All four diagnostic
+questions, answered:
+
+1. **Inside a pytest process, `ANTHROPIC_API_KEY` was ABSENT from `os.environ`** —
+   confirmed by a probe test, not inferred.
+2. **No `conftest.py` loaded `.env.local`.** `tests/conftest.py` registered
+   `--runslow` and nothing else. There was no loader anywhere on the test path.
+3. **The `anthropic` SDK IS importable** in the venv that runs the slow ladder
+   (0.118.0). Not the cause. NB `python-dotenv` is NOT installed, so the fix
+   could not use it.
+4. **The exam harness has its own loader the test path lacks** —
+   `tools/run_ai_exam_sweep.py:42 load_env_local()`, called at module import
+   (line 58), path anchored to `Path(__file__).resolve().parents[1]` (the repo
+   root, NOT the CWD — so that one is robust).
+
+So the leading hypothesis was right and the NARROW FIX applied: the exam
+harness's loader is copied into `tests/conftest.py` with the same semantics
+(already-set variables win; path anchored to the repo root, never the CWD,
+because pytest is run from the root, from `tests/`, and from `tools/` spikes).
+**The four tests now pass in 40.6 s.** No assertion was touched, no `skipif`
+added, the r5 bank was not run and not recalibrated.
+
+**The fix has a consequence, and it is reported rather than absorbed.** Four
+further tests began FAILING because they had assumed the key was AMBIENTLY
+ABSENT: `test_explainer`'s `test_llm_renderer_no_key_attribution` and
+`test_judgment_no_llm_falls_back_to_testimony`, `test_felt_bar`'s
+`test_the_preflight_is_fail_open`, and `test_synthesis`'s
+`test_an_unavailable_synthesizer_returns_none`. Each was made to CONTROL the key
+with `monkeypatch.delenv` — the precondition made explicit, **no assertion
+changed**. One of them was not merely failing but making a LIVE API CALL and then
+asserting the fallback register on a real LLM answer.
+
+**A structural defect is NAMED, not fixed** (a suite-wide call): `LLMRenderer`,
+`Synthesizer` and `QuestionParser` all spell the key as
+`api_key or os.environ.get("ANTHROPIC_API_KEY", "")`, so an EXPLICIT `api_key=""`
+silently consults the environment. `api_key=""` plainly means "no key". Roughly
+twenty further `LLMRenderer(api_key="")` sites exist in `test_explainer.py`
+alone; they pass today because they only build prompts, but they now construct
+AVAILABLE renderers. The honest fix is for an explicit empty string to mean what
+it says, which is a behaviour change outside this session's scope.
+
+#### CU1 — the allocation policy, MEASURED before it was changed
+
+Three policies over a fixed 6.0 total, on the 4B.6c arm harness (staged
+cost-only, the shipped R-SC3 shape), 6 instances x 5 seeds (42-46),
+PYTHONHASHSEED=0, workers 1. `tools/spikes/alloc_4b8/`.
+
+    P1  CURRENT      stage 1 <= 4.0   stage 2 = fixed 2.0
+    P2  COST FIRST   stage 1 <= 6.0   stage 2 = 6.0 - consumed  (MAY BE ZERO)
+    P3  RESERVED     stage 1 <= 5.5   stage 2 = 6.0 - consumed  (>= 0.5)
+
+    inst    pol  s1 OPT   ledger med     spread   starts med  s1 det  s2 det  s2=0
+    5w14    P1     5/5      1,959.25       0.00        4,817   0.000   0.000   0/5
+    5w14    P2     5/5      1,959.25       0.00        4,817   0.000   0.000   0/5
+    5w14    P3     5/5      1,959.25       0.00        4,817   0.000   0.000   0/5
+    8w14    P1     5/5      2,395.00       0.00       10,610   0.000   0.000   0/5
+    8w14    P2     5/5      2,395.00       0.00       10,610   0.000   0.000   0/5
+    8w14    P3     5/5      2,395.00       0.00       10,610   0.000   0.000   0/5
+    15w14   P1     5/5      5,596.65       0.00       36,442   0.106   2.001   0/5
+    15w14   P2     5/5      5,596.65       0.00       29,368   0.106   5.894   0/5
+    15w14   P3     5/5      5,596.65       0.00       29,368   0.106   5.894   0/5
+    40w14   P1     5/5     16,481.95       0.00      198,088   0.101   2.003   0/5
+    40w14   P2     5/5     16,481.95       0.00      191,294   0.101   5.899   0/5
+    40w14   P3     5/5     16,481.95       0.00      191,294   0.101   5.899   0/5
+    120w14  P1     0/5    100,490.32  75,361.72    1,456,281   4.000   2.000   0/5
+    120w14  P2     0/5     95,762.23  87,783.28    1,711,055   6.000       -   5/5
+    120w14  P3     0/5     92,879.53  87,783.28    1,680,564   5.500   0.500   0/5
+    200w7   P1     3/5     27,863.63   7,263.42      681,413   3.081   2.000   0/5
+    200w7   P2     5/5     27,863.63       0.00      721,777   3.081   2.919   0/5
+    200w7   P3     5/5     27,863.63       0.00      721,777   3.081   2.919   0/5
+
+**THE DECISION IS P3, and the table decides it, not the reasoning.**
+
+* **P1 loses the COST PROOF at 200 orders.** Seeds 42 and 43 need 4.542 and
+  4.962 deterministic units for stage 1 and are capped at 4.0, so they truncate:
+  ledger 29,385.60 and 35,127.05 against the true optimum of **27,863.63** that
+  P2/P3 prove on 5/5 seeds with a seed spread of **exactly zero**. P1's spread is
+  7,263.42 — i.e. up to **+26.07%**, purely from where the cap fell.
+* **The 120-order question the brief asked, answered on its own terms.** Under
+  P2, stage 1's extra 2.0 units buy **NO PROOF**: stage 1 is OPTIMAL on 0/5 seeds
+  under both P1 (4.0) and P2 (6.0). The ledger medians differ by 4,728.08, but
+  the SEED SPREAD at that instance is 75,361-87,783 — an order of magnitude
+  larger — so the difference is not distinguishable from noise. That is the
+  PLATEAU, and the brief's own condition applies: **stage 1's extra budget buys
+  nothing there, so P3's reserve is free.**
+* **P2's cost is concrete where its benefit is not.** At 120 orders stage 1
+  consumes the whole 6.001 and stage 2 receives **ZERO on 5/5 seeds** — the
+  tiebreak never runs, reinstating Session 4B.4's founder finding (an op parked
+  at 14:39 behind a free 11:21 slot) at exactly the plant sizes where a planner
+  will see it. P3 reserves 0.5 and the tiebreak runs on 5/5.
+* **Where the tiebreak's extra budget pays, it pays visibly:** at 15 orders
+  start-minutes fall 36,442 -> 29,368 (**-19.41%**) at an IDENTICAL ledger; at 40
+  orders 198,088 -> 191,294 (**-3.43%**), ledger identical to the cent at
+  16,481.95.
+
+#### CU2 — the split, implemented and DERIVED
+
+`_STAGE2_DET_TIME_S` is **DELETED from both twins**, not defaulted (the 4B.7
+precedent for the earliness coefficient: a constant that can still be read is a
+constant that comes back). The caller declares a TOTAL; stage 1 is capped at the
+total minus a RESERVE; **stage 2 receives what the total has left after stage 1
+actually ran**. The reserve is a FRACTION (1/12), so it scales with the declared
+budget — 1/12 of 6.0 is exactly the 0.5 units CU1 measured.
+
+Two implementation findings worth recording, both caught by measurement rather
+than review:
+
+* **The parameter was RENAMED `det_time` -> `det_total`, not reinterpreted.** The
+  old scheme's total was always `stage1 + 2.0`, which is 6.0 at the shipped
+  default of 4.0 but **4.0** for the exam/fixture builders (det_time 2.0) and
+  **2.5** for the golden driver (det_time 0.5). No single multiplier preserves
+  every caller, and a silent reinterpretation would have quietly cut the golden
+  driver's budget by 70%. The rename makes every call site fail loudly until
+  someone states the total it means; each now declares its own historical total,
+  and **nobody's budget moved**.
+* **The MONOLITHIC path passes `cap_stage1=False`.** Its stage 1 has always run
+  uncapped under a wall limit, and CU1's own finding is that the cost proof is
+  what matters — so this session does not quietly put a deterministic ceiling on
+  it. Only the TIEBREAK's share becomes derived. Stage 2 there cannot simply be
+  left wall-limited either: a wall-stopped solve is not reproducible, and that is
+  the path the byte-for-byte goldens come from, so an unbudgeted stage 2 would
+  make the golden a property of the machine. **Measured and rejected:** at totals
+  of 4.0 and 6.0 the tiebreak improves its own objective by 344 and 422
+  start-minutes out of 3,307,818 (**-0.01%**) while wall time goes 19.6 s ->
+  37.5 s -> 50.2 s. At the historical total of **2.0** the sample_data schedule is
+  **BYTE-IDENTICAL** to the golden. Paying 2.5x the wall clock for one hundredth
+  of a percent is not a trade this path should make.
+* A third candidate was tried and REJECTED for the undeclared-total case: deriving
+  stage 2's budget from stage 1's consumption. On a small model stage 1 proves
+  optimal in ~0 deterministic units, which hands stage 2 ~0 and **silently stops
+  the tiebreak running at all** — the very failure R-SC3(1) forbids, reintroduced
+  through the back door. With no total declared, deterministic budgeting is simply
+  not in force for either stage.
+
+Guards committed with it (`tests/test_budget_allocation.py`, 9 tests): (a) both
+stages' deterministic consumption fits the declared total, asserted on a REAL
+8-order pilot solve, not a mock; (b) stage 2 runs unconditionally on a nonzero
+slice, and where it does NOT run the skip is EXPLICIT AND RECORDED
+(`tiebreak_skipped_reason`) — a tiebreak that silently did not run is
+indistinguishable from one that ran and won nothing; (c) neither twin's signature
+will accept a fixed stage-2 budget, and neither module still defines the constant.
+4B.7's own invariant (the schedule is byte-identical across every
+`earliness_value`) still passes in its end-to-end form. `SolveResult` gained
+`det_consumed` (CP-SAT's own deterministic meter, promoted from the 4B.6c spike
+probe) because a derived split is unprovable without it.
+
+#### CU3 — RULING: which of the two proofs "the solve status" means
+
+**This is a ruling, not a bug fix.** An R-SC3 solve proves two different claims
+and which one `status` meant had simply never been decided.
+
+> **The existing status field carries STAGE 1's status — the COST proof**
+> ("no cheaper schedule exists"). That is what a planner asking "is this
+> optimal?" means.
+>
+> **A NEW optional field carries stage 2's status — the TIEBREAK proof**
+> ("no equally-cheap schedule starts earlier"). Contract 1.9 -> **1.10**,
+> additive in shape.
+>
+> **A schedule whose cost is proven optimal SAYS SO, plainly, and a tiebreak
+> left unproven does not downgrade that claim.**
+
+Before this, `_two_stage_solve` returned `status=s2.status`. Stage 2 exhausts its
+budget above roughly eight orders, so **every rolling board read FEASIBLE over a
+ledger we can prove OPTIMAL** — for a product whose thesis is provable numbers,
+the UI contradicted the strongest claim it had (docs/07 §5a.21, now discharged).
+`SolverBlock` gains `tiebreak_status` and `tiebreak_skipped_reason`, both
+Optional; the M6 `solve_complete` payload carries both so the persisted path
+reaches the assembler too. Both twins moved together. Monolithic goldens are
+byte-identical apart from the version string and the added optional fields.
+
+Note the honest caveat recorded in the contract history: this is additive in
+SHAPE, but the MEANING of the existing `status` field changes on any two-stage
+run. That is precisely why it is a recorded ruling rather than a silent fix.
+
+**R-AI1 DEBT, NAMED AND NOT BOLTED ON.** "Provably optimal" is now a claim the
+system can make and could not before — and **nothing voices it**. Neither the
+cockpit (no `solver.status` reference anywhere in `src/cockpit/src/`) nor the
+answer surface (`explainer.py` / `renderers.py` / `rolling_questions.py` read no
+solve status at all) can state either proof, let alone distinguish them. The
+contract now carries two statuses that no surface renders. Per the brief, no
+route was added; the debt is recorded in docs/07 §5a.23.
+
+#### CU4 — the dead driver made DORMANT (the interim, not the migration)
+
+`extractor.py` attributed any dearer-than-cheapest eligible placement to
+`EARLINESS_PREFERENCE` whenever `earliness_value > 0`. Its stated justification —
+"the only priced reason to prefer a dearer eligible machine is an earlier start"
+— was TRUE while R-SC3(2) put the coefficient in the objective and FALSE since
+4B.7 retired it. pilot_scale declares 0.05, so the branch fired on placements
+caused by capacity, precedence or setup. It hedged (4B.3a CU4b), but a hedged
+false causal claim is still a false causal claim.
+
+**(a) THE FALLTHROUGH WAS REPORTED FIRST, AND IT IS BETTER — which is the whole
+reason this was safe to do.** The branch falls through to `CAPACITY_BLOCKED`,
+which since 4B.5 CU3(a) is not a bare phrase: `explainer.
+_capacity_forced_alternatives` reads the SOLVED OCCUPANCY and names which
+eligible machines existed and what was running on each, with an honest third
+branch that says the occupancy does not attribute it rather than inventing a
+mechanism. Under a cost-only objective a dearer eligible choice means the cheaper
+alternative was not usable at that slot — which IS capacity. So the fallback
+states the true cause with checkable evidence instead of hedging a wrong one.
+
+The `earliness_value` parameter is DELETED from `_assignment_driver`'s signature,
+not merely unused — the 4B.7 precedent again, and a committed test asserts a
+caller cannot pass it back in. **The `DriverCode` member SURVIVES**: vocabulary is
+add-never-repurpose, and retiring a code is the reviewed migration docs/07 §5a.20
+still owns. This makes the extractor stop EMITTING it. **§5a.20 stays OPEN.**
+
+**(b) The declared-but-unread guard was resolved DELIBERATELY, never by
+widening.** The extractor's dead attribution was the last literal read of
+`earliness_value` in `_CONSUMER_MODULES`, so removing it tripped the guard — as
+4B.7 predicted, having flagged that the guard was green FOR THE WRONG REASON (its
+one consumer was the defect). A dormant-register entry now names the dormancy and
+cites the R-SC3 amendment, recording that the value IS still consumed OUTSIDE the
+scheduling pipeline: as a REPORTING rate by `earliness_tiebreak_report`
+(`in_ledger: False`), by conformance rule #35, and by `capabilities.py`.
+
+Two tests were REPLACED AND REVERSED, both premised on the defect:
+`TestEarlinessDriverAttribution` (now `...IsDormant`) and
+`TestAuditCorpusEarlinessHedge`. The latter's SPECIMEN is unchanged — ORD-06 is
+still capacity-forced onto the marginally dearer PRESS-SLOW — but the right
+answer changed: it no longer hedges toward capacity, it STATES capacity, and must
+NOT claim earliness bought anything.
+
+#### CU5 — 5a.15 DIAGNOSIS: why 14 days returns nothing at 200 orders
+
+**REPORTED, NOT FIXED.** No window rule, no fallback, no auto-narrowing.
+
+**(a) THE INSTANCE IS FEASIBLE — asked properly, and this changes everything
+else.** The first probe asked CP-SAT to MINIMIZE COST under a huge budget (400
+deterministic units, 7200 s wall), which conflates satisfiability with
+optimality; it was still running after three hours and was abandoned as the wrong
+question. Replacing the objective with a constant asks the actual question, and
+the answer is immediate: **a feasible schedule is found in 4.51 s wall / 0.082
+deterministic units**, with the model building in 0.17 s. So this is **NOT an
+R-SC2 admission defect** — gravity did not admit more work than the window can
+hold. It is a genuine search finding, and the difficulty lies entirely in
+PROVING, not in placing.
+
+**(b) THE CLIFF, and what it is NOT.** Sweep at 200 orders, one seed, 6.0
+deterministic units, build time separated from solve time throughout:
+
+    win  n_free  ops/mach   build   SAT det      COST   cost det      gap
+      7      99      33/7   0.06s    0.0036   OPTIMAL       4.54   0.0000
+      8     123     37/10   0.05s    0.0041   OPTIMAL       4.03   0.0000
+      9     145     42/14   0.06s    0.0043  FEASIBLE       6.04   0.3330
+     10     193     61/15   0.07s    0.0056  FEASIBLE       6.19   0.7587
+     11     228     71/17   0.09s    0.0069  FEASIBLE       6.00   0.6186
+     12     254     77/20   0.09s    0.0072  FEASIBLE       6.00   0.8859
+     14     313     92/27   0.19s    0.0816   UNKNOWN       6.00      n/a
+
+**BOTH STANDING HYPOTHESES ARE DEAD.** Model BUILD time is 0.05-0.19 s at every
+depth — the 289 s build seen on the monolith is not this path. And ops-per-machine
+peaks at **92**, nowhere near the ~850 cliff seen previously. The cliff is between
+8 and 9 days, i.e. between 123 and 145 free operations.
+
+**The sharpest fact in the sweep:** at 14 days the COST solve returns UNKNOWN — it
+finds NO SOLUTION AT ALL in 6.0 deterministic units — while pure satisfiability on
+the SAME model finds one in **0.082**, a factor of **74**. The objective is not
+merely making the problem hard to optimize; it is making it hard to find anything.
+
+**(c) THE THRESHOLD IS NOT GENERAL — neither n_free nor ops-per-machine
+predicts it.**
+
+    ord  win  n_free  ops/mach      COST   cost det
+     40   14      56      18/6   OPTIMAL       0.10   (OPTIMAL at every depth)
+    120   10      87      27/6   OPTIMAL       1.54
+    120   11     115      33/7  FEASIBLE       6.00
+    200    8     123     37/10   OPTIMAL       4.03
+    200    9     145     42/14  FEASIBLE       6.00
+
+At 40 orders every depth proves OPTIMAL, the worst costing 0.10 units. At 120 the
+cliff falls between **87 and 115** free ops; at 200 between **123 and 145**. So
+200 orders PROVES optimality at 123 free ops while 120 orders FAILS at 115 —
+**n_free does not determine it**, and ops-per-machine max (27->33 vs 37->42) does
+not either. What differs is how much total work the same 13 machines carry, i.e.
+contention density rather than either count. The 120-order column also shows the
+approach to the cliff is steep, not gradual: 0.03 -> 0.09 -> 0.77 -> 1.54 units
+across w7-w10, then a wall.
+
+**The 14-day convention was measured on a plant 5x smaller** (docs/07 §5a.15), and
+this is the evidence for why it does not transfer.
+
+**(d)** The coarse zone's behaviour across the same sweep is reported in
+docs/07 §5a.15.
+
+#### CU6 — goldens
+
+**`tests/fixtures/baselines/rolling_pilot_golden.json`** — regenerated;
+`schedule_digest` and every asserted figure **UNCHANGED** (digest
+`a59b7411...`, total 14,690.08, production 12,530.08, setup 2,160.00, tardiness
+0.00, n_committed 54, on_time 24, late 0). Only the metadata key moved
+(`det_time: 0.5` -> `det_total: 2.5`, the same historical budget under the
+renamed parameter). Reproduced across PYTHONHASHSEED 0/1/2.
+
+**`tests/fixtures/baselines/sample_data_schedule.csv` / `_summary.json`** — NOT
+regenerated, because they did not move: byte-identical, verified by the gate
+itself. Accounted BY OPERATION IDENTITY at the candidate totals that were
+rejected (`tools/spikes/alloc_4b8/account_goldens.py` joins on
+work_orders/op_seq/chunk_seq rather than row position); at the chosen total, 90 of
+90 operations are identical and the row-cost total is unchanged at 19,429.00.
+
+**The 40-order expectation held: the board stays at 16,481.95 with tardiness
+0.00** under every policy in CU1's table, including the two that give stage 2
+nearly triple its old budget. Placements moved (start-minutes 198,088 ->
+191,294); the LEDGER did not, to the cent — which is the stage-1 cap doing
+exactly what it guarantees.
+
+Contract-version assertions moved 1.9 -> 1.10 in six files.

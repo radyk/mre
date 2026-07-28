@@ -128,6 +128,33 @@ _DORMANT_REGISTER: dict[tuple[str, str], str] = {
     # absence from it.
     ("costmodel", "coarse_bucket_days"): "R-SC2 coarse-zone clause 4 — read by coarse_horizon.CoarseCoefficients.from_cost_model; the fine pipeline must NOT read it",
     ("costmodel", "coarse_capacity_derate"): "R-SC2 coarse-zone clause 4 — rho, read by coarse_horizon.CoarseCoefficients.from_cost_model; the fine pipeline must NOT read it",
+
+    # SESSION 4B.8 CU4(b) — earliness_value is DELIBERATELY dormant to the
+    # scheduling pipeline, and this entry is how that was resolved rather than
+    # by widening the guard.
+    #
+    # It was never a "not used yet" field. Until 4B.7 it was a PRICE: R-SC3(2)
+    # put it in stage 1's objective, and the extractor read it to attribute a
+    # dearer-but-earlier placement to EARLINESS_PREFERENCE. The R-SC3 AMENDMENT
+    # (docs/04, 2026-07-27) retired the price — measured at +73.20% of ledger
+    # total at 40 orders and +97.61% at 120 — so no solver, objective, cap or
+    # cost ledger sees it. 4B.8 CU4 then stopped the extractor's attribution,
+    # which named a mechanism that no longer exists. That removed the LAST
+    # literal read in _CONSUMER_MODULES.
+    #
+    # NB the guard was green before this entry existed, but FOR THE WRONG
+    # REASON (flagged 4B.7): its one consumer was the dead attribution. A guard
+    # kept green by a defect is not a guard, so the honest resolution is to name
+    # the dormancy here — not to relax the check.
+    #
+    # The value IS still consumed, outside the scheduling pipeline: as a
+    # REPORTING rate by rolling_horizon._earliness_rate /
+    # earliness_tiebreak_report, which values the start-minutes stage 2
+    # recovered on its own labelled line (in_ledger: False). It is also
+    # gate-checked (conformance rule #35, ids.earliness_value_sane) and offered
+    # by capabilities.py. None of those are scheduling modules, which is
+    # precisely the point.
+    ("costmodel", "earliness_value"): "R-SC3 AMENDMENT (docs/04 2026-07-27) — the price is RETIRED and 4B.8 CU4 made the EARLINESS_PREFERENCE attribution dormant; survives as a REPORTING rate in rolling_horizon.earliness_tiebreak_report (in_ledger: False), never read by the scheduling pipeline. docs/07 §5a.20 owns the vocabulary migration",
 }
 
 

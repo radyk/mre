@@ -429,7 +429,7 @@ class TestCoarseDocument:
             identity_map=identity_map, coarse_zone=zone)
 
     def test_contract_is_1_9_and_the_zone_is_present(self, doc):
-        assert doc.contract_version == "1.9"
+        assert doc.contract_version == "1.10"
         assert doc.rolling is not None and doc.rolling.coarse_zone is not None
 
     def test_completeness_invariant_passes_unchanged(self, plant, view, doc):

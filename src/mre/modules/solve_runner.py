@@ -34,6 +34,53 @@ class SolveResult:
     # force ⇒ nothing was claimed).
     wall_truncated: bool = False
 
+    # SESSION 4B.8 CU3 — THE TWO PROOFS, NEVER FUSED.
+    #
+    # An R-SC3 solve proves two different things. Stage 1 proves a claim about
+    # COST ("no cheaper schedule exists"). Stage 2 proves a claim about the
+    # TIEBREAK ("no equally-cheap schedule starts earlier"). They are separate
+    # claims with separate budgets and they routinely disagree: above ~8 orders
+    # stage 1 proves OPTIMAL in a fraction of its budget while stage 2 exhausts
+    # its own without closing.
+    #
+    # ``status`` is STAGE 1's — the cost proof, which is what a planner asking
+    # "is this optimal?" means. Before this it was stage 2's, so every rolling
+    # board read FEASIBLE over a ledger we could prove OPTIMAL (docs/07 §5a.21).
+    # A tiebreak left unproven does not downgrade the cost claim.
+    #
+    # ``tiebreak_status`` is stage 2's, None when stage 2 did not run at all —
+    # in which case ``tiebreak_skipped_reason`` says WHY. A tiebreak that
+    # silently did not run is indistinguishable from one that ran and won
+    # nothing, so the skip is always recorded rather than inferred from a blank.
+    tiebreak_status: Optional[str] = None
+    tiebreak_skipped_reason: Optional[str] = None
+
+    # The DETERMINISTIC time this solve actually consumed (CP-SAT's own
+    # response_proto.deterministic_time), or None if it could not be read.
+    # Session 4B.8 CU2 needs it because stage 2's budget is now the REMAINDER of
+    # a declared total after stage 1 ran — which is unknowable until stage 1 has
+    # run. It is also the only figure that can hold the budget guard honest:
+    # "stage 1 + stage 2 <= total" is a claim about consumption, not about limits.
+    det_consumed: Optional[float] = None
+
+
+def _deterministic_time_of(solver) -> Optional[float]:
+    """CP-SAT's own deterministic-time reading for a completed solve, or None.
+
+    The accessor has moved across ortools versions, so both spellings are tried
+    and a failure returns None rather than raising — a budget split that cannot
+    read the meter must fall back to a stated default, never crash a solve. The
+    4B.6c spike harness needed the same readback and reached into the response
+    proto directly; this is that probe, promoted to the shipped path so the
+    figure is available to the guards and to evidence."""
+    for getter in (lambda: solver.response_proto.deterministic_time,
+                   lambda: solver.ResponseProto().deterministic_time):
+        try:
+            return float(getter())
+        except Exception:  # noqa: BLE001 — version-dependent accessor
+            continue
+    return None
+
 
 class _SolutionCallback:
     """Callback that streams improving solutions as Evidence Events."""
@@ -231,4 +278,5 @@ class SolveRunner:
             solve_values=sv,
             wall_truncated=(self._deterministic_time is not None
                             and wall_time >= self._time_limit - 0.05),
+            det_consumed=_deterministic_time_of(solver),
         )

@@ -1,6 +1,34 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.52 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.53 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.53:** **Session 4B.8 — the budget split, the status ruling, and why 14 days returns
+nothing at 200 orders** 2026-07-28 (docs/04 session amendment; full table in
+`SESSION_CLOSEOUT.md`). **Pre-flight: the missing API key was LOADER WIRING** — `.env.local` was
+present the whole time and nothing on the test path loaded it (`tools/run_ai_exam_sweep.py`
+carried the repo's only loader). One conftest loader; **the four blocked slow tests pass in
+40.6 s**; no `skipif`, no assertion weakened, the r5 bank still not run. Four OTHER tests had
+been passing only because the key was ambiently absent and now CONTROL it explicitly (§5a.7).
+**CU1 measured three budget policies before changing anything** (6 instances × 5 seeds): the
+current fixed split **loses the COST PROOF at 200 orders** (two seeds need 4.542/4.962 units
+against a 4.0 cap → ledger 35,127.05 vs the optimum **27,863.63** that the alternatives prove
+5/5 with **zero** seed spread), while a plain cost-first remainder hands stage 2 **ZERO on 5/5
+seeds at 120 orders** and silently retires the tiebreak. **Shipped: P3** — stage 1 capped at the
+total minus a 1/12 RESERVE, stage 2 given the remainder. `_STAGE2_DET_TIME_S` **DELETED** from
+both twins; `det_time` **RENAMED** `det_total` so every caller had to state its own historical
+total (no single multiplier preserved them). **CU3 is a RULING, not a fix:** the existing status
+field carries **stage 1's COST proof**, new optional fields carry stage 2's TIEBREAK proof —
+contract **1.9 → 1.10** — so a schedule whose cost is provably optimal finally says so instead of
+reading FEASIBLE. **CU4** made the dead `EARLINESS_PREFERENCE` attribution DORMANT after checking
+the fallthrough is better (CAPACITY_BLOCKED carries real occupancy evidence since 4B.5 CU3a).
+**CU5 diagnosed §5a.15 and stopped: THE 200-ORDER / 14-DAY INSTANCE IS FEASIBLE** — a solution in
+**0.082 deterministic units** once the objective is dropped, so it is NOT an R-SC2 admission
+defect. Build time is 0.05–0.19 s and ops-per-machine peaks at 92, killing both standing
+hypotheses; the cliff sits between 8 and 9 days at 200 orders, and is **NOT general** (200 orders
+proves optimality at 123 free ops while 120 orders fails at 115). **Discharged: §5a.19, §5a.21.**
+**Goldens did NOT move** — the rolling digest and every asserted figure unchanged, sample_data
+byte-identical, the 40-order board still 16,481.95 / tardiness 0.00. New debt: **§5a.23** —
+"provably optimal" is now a claim nothing voices (an R-AI1 debt, named not built).
 
 **v2.52:** **Session 4B.7 — the earliness price is removed from the objective** 2026-07-27
 (docs/04 R-SC3 AMENDMENT, verbatim; full table in `SESSION_CLOSEOUT.md`). **R-SC3(2) — the
@@ -1351,7 +1379,36 @@ where the reasoning lives.
     shape:* mark them `skipif` on the key's absence with the reason stated, so
     "4 failed" becomes "4 skipped: needs ANTHROPIC_API_KEY" — NOT to be confused
     with weakening them. Recorded, not fixed: it is a suite-wide decision.
-    Below, the original entry, whose blocker is the same key:
+    **RESOLVED 2026-07-28 (Session 4B.8 pre-flight) — and it was never the
+    key.** `.env.local` was present and valid at the repo root the whole time;
+    **nothing on the test path loaded it.** `tests/conftest.py` registered
+    `--runslow` and nothing else, while `tools/run_ai_exam_sweep.py:42` carried
+    the repo's ONLY loader — which is why the exam harness saw a key and pytest
+    never did. The `anthropic` SDK was importable throughout (0.118.0), so that
+    was not it either. The loader is now in `tests/conftest.py` (repo-root
+    anchored, already-set variables win; `python-dotenv` is not a dependency, so
+    it is hand-rolled exactly as the exam harness does it). **The four tests pass
+    in 40.6 s.** No `skipif` was added and no assertion weakened — the fix shape
+    named above turned out to be treating the symptom.
+    **A NEW consequence, reported not absorbed:** four OTHER tests had been
+    passing only because the key was AMBIENTLY ABSENT
+    (`test_llm_renderer_no_key_attribution`,
+    `test_judgment_no_llm_falls_back_to_testimony`,
+    `test_the_preflight_is_fail_open`,
+    `test_an_unavailable_synthesizer_returns_none`). Each now CONTROLS the key
+    with `monkeypatch.delenv`; no assertion changed. One was not merely failing
+    but making a LIVE API CALL and asserting the fallback register on a real LLM
+    answer. **STILL OPEN, a suite-wide call:** `LLMRenderer`, `Synthesizer` and
+    `QuestionParser` all spell the key `api_key or os.environ.get(...)`, so an
+    EXPLICIT `api_key=""` silently consults the environment. `api_key=""` plainly
+    means "no key". ~20 further `LLMRenderer(api_key="")` sites in
+    `test_explainer.py` now build AVAILABLE renderers; they pass today because
+    they only build prompts. Making an explicit empty string mean what it says is
+    a behaviour change, deliberately not made here.
+    **`regression_founder_r5` was NOT run** (this session's out-of-scope list) and
+    its expectations were NOT recalibrated. The blocker is now removed, so the
+    next session can run it — see §5a.22 for what must be re-derived first.
+    Below, the original entry:
     **`regression_founder_r5` is UNRUN AFTER FOUR SESSIONS** (committed 4B.5, unrun
    through 4B.6 and 4B.6a). Its 27 graded expectations have never been graded —
    including the 4B.6a question that is the only check that the ASK PANEL voices
@@ -1501,6 +1558,66 @@ where the reasoning lives.
     Whatever `SolveRequest.window_days` a pilot ships with must be justified by
     a curve measured at that plant's volume; 14 days is currently a convention
     inherited from a plant 5× smaller.
+    **DIAGNOSED 2026-07-28 (Session 4B.8 CU5) - STILL OPEN; the diagnosis was the
+    deliverable and no fix was made.** Four findings, full tables in the docs/04
+    2026-07-28 amendment:
+    * **THE INSTANCE IS FEASIBLE, so this is NOT an R-SC2 admission defect.** The
+      earlier UNKNOWN conflated satisfiability with optimality. Asked properly -
+      objective replaced by a constant - a feasible schedule is found in **4.51 s
+      wall / 0.082 deterministic units**. Gravity did not admit more work than
+      the window can hold. The difficulty is entirely in PROVING, not placing.
+    * **BOTH STANDING HYPOTHESES ARE DEAD.** Model BUILD time is **0.05-0.19 s**
+      at every depth (the 289 s build was the monolith, not this path), and
+      ops-per-machine peaks at **92**, nowhere near the ~850 cliff.
+    * **THE CLIFF IS BETWEEN 8 AND 9 DAYS at 200 orders** (123 free ops OPTIMAL
+      in 4.03 units; 145 free ops FEASIBLE with a 33% gap). The sharpest fact:
+      at 14 days the COST solve returns UNKNOWN - **no solution at all** in 6.0
+      units - while satisfiability on the SAME model takes 0.082, a factor of
+      **74**. The objective is not just hard to optimize; it makes the model hard
+      to find anything in.
+    * **THE THRESHOLD IS NOT GENERAL.** At 40 orders every depth proves OPTIMAL
+      (worst 0.10 units). The cliff falls between 87 and 115 free ops at 120
+      orders but between 123 and 145 at 200 - so **200 orders proves optimality
+      at 123 free ops while 120 orders fails at 115**. Neither n_free nor
+      ops-per-machine predicts it; what differs is how much total work the same
+      13 machines carry. Any window rule keyed to a free-op count would be
+      fitted to one plant.
+    * **A SECOND CEILING BINDS FIRST, AND IT IS THE WALL** (4B.8, newly
+      quantified). At 200 orders / 7 days stage 1 needs **37-120 SECONDS of wall
+      clock** to spend its 1.86-4.96 deterministic units (5 seeds), but
+      `build_rolling_view`'s default `member_time_limit_s` is **30.0**. So on the
+      shipped rolling path the WALL stops the cost proof long before the
+      deterministic budget does, and the run is wall-truncated — which by the
+      repository's own hard rule is a lottery, not a deterministic result. The
+      existing `wall_truncated` flag is doing its job here; what is new is the
+      measurement of how far apart the two ceilings are at pilot volume. It is
+      also why CU3's status ruling is INVISIBLE at 200 orders: the board reads
+      FEASIBLE because nothing was proven, not because the wrong proof is being
+      reported. Any window-depth decision must set BOTH ceilings together.
+    * **NARROWING IS GRACEFUL, NOT LOSSY — the coarse zone absorbs what the fine
+      window stops admitting.** Across w7-w12 at 200 orders the exchange is
+      smooth and monotone: beyond-horizon demand falls **157 -> 149 -> 140 ->
+      120 -> 107 -> 98** as the window widens, and the coarse zone PLACES that
+      work rather than listing it — **404 -> 380 -> 358 -> 310 -> 275 -> 249**
+      placements over 59/52/50/42/51/34 cells, with **9/9/7/6/5/4 BINDING
+      cells** and tardiness buckets falling 123 -> 36, at the declared rho 0.85
+      and 4 `coarse_unmodelable` ops named throughout. The displaced demand stays
+      modelled and the zone keeps biting; narrowing trades a fine placement for a
+      coarse one, which is the R-SC2 amendment working as ruled.
+      **The w=14 row is NOT a continuation of that trend and must not be read as
+      one:** beyond-horizon jumps to **200 — every schedulable demand — because
+      the fine window returned UNKNOWN and placed NOTHING AT ALL**, and the
+      coarse zone then carries the whole book (503 placements, 13 binding cells,
+      325 tardiness buckets). That is the zone degrading gracefully under total
+      fine failure, which is reassuring; but the discontinuity is the failure
+      itself, not a window-depth effect. **At the shipped 14-day convention this
+      plant's fine schedule contributes nothing and the board is a coarse
+      projection.**
+    *Fix shape, unchanged and now evidenced:* the window length is the lever, but
+    it must be chosen from a curve measured at the target plant's volume - and
+    since narrowing MOVES work into the coarse zone rather than discarding it,
+    the coarse zone's behaviour at that depth is part of the acceptance, not an
+    afterthought.
 16. **DISCHARGED (4B.7 item 2b).** `rolling_horizon._two_stage_solve` now
     rebuilds its `SolveResult` to carry **stage 1's objective with stage 2's
     placements**, copying `solver_builder.solve_two_stage`'s long-standing
@@ -1602,6 +1719,28 @@ where the reasoning lives.
     to give stage 2 the REMAINDER of the window's deterministic budget once stage
     1 has proven optimality, which is free — but it moves every rolling golden
     and belongs with §5a.15's window-vs-volume work, not bolted onto a removal.
+    **DISCHARGED 2026-07-28 (Session 4B.8 CU1+CU2).** Measured before it was
+    changed: three policies over a fixed 6.0 total, 6 instances x 5 seeds. The
+    fix shape above was RIGHT IN DIRECTION AND WRONG IN DETAIL — a plain
+    remainder (P2) hands stage 2 **ZERO on 5/5 seeds at 120 orders**, because
+    stage 1 exhausts the whole budget there without proving anything, which
+    silently retires the tiebreak at exactly the plant sizes where a planner sees
+    Session 4B.4's founder finding. The shipped policy is **P3**: stage 1 capped
+    at the total minus a RESERVE (a 1/12 fraction, so 0.5 of 6.0), stage 2 given
+    the remainder, floored at the reserve.
+    The second half of the defect turned out to matter more than the first:
+    **P1 loses the COST PROOF at 200 orders**, where two of five seeds need 4.542
+    and 4.962 units and are capped at 4.0 — ledger 29,385.60 and 35,127.05
+    against the optimum of 27,863.63 that P2/P3 prove on 5/5 seeds with a spread
+    of exactly zero. Where the tiebreak's extra budget pays it is visible too:
+    start-minutes -19.41% at 15 orders and -3.43% at 40, both at an IDENTICAL
+    ledger. `_STAGE2_DET_TIME_S` is DELETED from both twins; the parameter was
+    RENAMED `det_time` -> `det_total` rather than reinterpreted, because the old
+    total was `stage1 + 2.0` and no single multiplier preserved every caller.
+    Guards in `tests/test_budget_allocation.py`. Full table: docs/04 2026-07-28.
+    NB the predicted golden churn did NOT materialise — the rolling golden's
+    digest and every asserted figure are unchanged, and sample_data is
+    byte-identical.
 20. **`EARLINESS_PREFERENCE` now names a mechanism that no longer exists**
     (4B.7, REPORTED, deliberately not fixed — the largest thing left).
     `extractor.py:637-640` attributes a dearer-than-cheapest eligible placement
@@ -1620,6 +1759,27 @@ where the reasoning lives.
     `CAPACITY_BLOCKED`, or give it a new, TRUE meaning — a dearer-but-earlier
     placement the CAP permitted, which is a different claim and needs its own
     evidence.
+    **PARTIALLY ADDRESSED 2026-07-28 (Session 4B.8 CU4) — STILL OPEN.** The
+    INTERIM was taken: the extractor no longer EMITS the code. Stopping a driver
+    from firing adds no vocabulary and repurposes none, so it is not itself a
+    vocabulary-class change. The `earliness_value` parameter is DELETED from
+    `_assignment_driver`'s signature (a committed test asserts a caller cannot
+    pass it back in) and those placements now fall to `CAPACITY_BLOCKED` — which
+    was checked FIRST and is strictly better, because since 4B.5 CU3(a)
+    `explainer._capacity_forced_alternatives` reads the SOLVED OCCUPANCY behind
+    it and names the eligible machines and what held each, with an honest
+    "the occupancy does not attribute it" branch. Under a cost-only objective a
+    dearer eligible choice IS capacity, so the fallback states the true cause
+    with checkable evidence rather than hedging a false one.
+    **WHAT REMAINS OPEN is the vocabulary migration itself:** the `DriverCode`
+    member still exists and `vocabularies.py:135-137` + docs/02 §4.2 still
+    DOCUMENT it as "purchased by the declared earliness_value coefficient
+    (R-SC3(2))" — a description of a retired mechanism. Retiring or re-meaning
+    the code remains a reviewed change reaching planner_language, explainer,
+    renderers, `ai_exam/runner.py:341`, `test_open_card.py:63` and the RUBRIC.
+    The two tests premised on the old behaviour were REPLACED AND REVERSED; the
+    declared-but-unread guard was resolved by a dormant-register entry citing the
+    R-SC3 amendment, never by widening the guard.
 21. **The reported window status is stage 2's tiebreak-proof, not stage 1's
     cost-proof** (4B.7, observed, NOT changed). `_two_stage_solve` returns
     `status=s2.status`, so the regenerated fixture reads **FEASIBLE** over a
@@ -1631,6 +1791,19 @@ where the reasoning lives.
     a decision entangled with §5a.19: fixing the budget allocation may make the
     question moot. *Fix shape:* carry both statuses, or report stage 1's and name
     the tiebreak's separately — either way a contract-surface decision.
+    **DISCHARGED 2026-07-28 (Session 4B.8 CU3), by RULING rather than by fix** —
+    which of the two statuses "the solve status" meant had never been decided, so
+    there was nothing to call a bug. Both halves of the fix shape were taken: the
+    EXISTING field carries STAGE 1's status (the COST proof, which is what a
+    planner asking "is this optimal?" means) and NEW optional fields
+    `tiebreak_status` / `tiebreak_skipped_reason` carry stage 2's. Contract
+    **1.9 -> 1.10**, additive in shape — with the honest caveat that the MEANING
+    of the existing field changes on any two-stage run, recorded in the contract
+    history. A schedule whose cost is proven optimal now says so, and an unproven
+    tiebreak never downgrades that claim. Fixing §5a.19 did NOT make the question
+    moot: at 120 orders and above stage 2 still exhausts whatever it is given.
+    Ruling verbatim in docs/04 2026-07-28. See §5a.23 for what still cannot say
+    it.
 22. **The r5 exam bank's card expectations are invalidated AGAIN** (4B.7,
     NAMED not fixed, per the session's own out-of-scope list).
     `ai_exam/runner.py:317-320,377` hard-codes `_SHIPPED_CARD_REOPT_DELTA =
@@ -1643,6 +1816,30 @@ where the reasoning lives.
     `ANTHROPIC_API_KEY` (§5a.7), and calibrating expectations against a bank
     nobody has run would be fitting to a number of unknown quality. Whoever
     obtains a key must re-derive these figures from a fresh exam world FIRST.
+    **UPDATE 2026-07-28 (Session 4B.8):** the KEY BLOCKER IS GONE (§5a.7 — it was
+    loader wiring, never a missing key), but the bank was still NOT run and NOT
+    recalibrated, per this session's out-of-scope list. The invalidation ALSO
+    deepens: 4B.8 changes the reported window STATUS (contract 1.10, §5a.21) and
+    the budget split (§5a.19), so a fresh exam world differs from the r5 world in
+    more than the card figures. The ordering above still stands, and is now
+    actionable: re-derive from a fresh world FIRST, then grade.
+23. **"Provably optimal" is a claim the system can now make and NOTHING VOICES**
+    (4B.8 CU3, NAMED not built — the brief's own instruction was to name the debt
+    rather than bolt on a route). Contract 1.10 carries two distinct proofs —
+    `solver.status` (COST) and `solver.tiebreak_status` (TIEBREAK) — and no
+    surface renders either. **The cockpit never references `solver.status`
+    anywhere in `src/cockpit/src/`**, and the answer surface
+    (`explainer.py` / `renderers.py` / `rolling_questions.py`) reads no solve
+    status at all, so a planner cannot ask "is this schedule optimal?" and get
+    the answer the document now holds. Before this session the omission cost
+    nothing, because the single status field was reporting the WRONG proof; now
+    it withholds the strongest claim the product has. This is an **R-AI1** debt
+    (the answer surface's coverage of run-level facts), not an R-SC3 one — the
+    solver side is complete. *Fix shape:* one route/one strip element that states
+    the COST proof plainly and names the tiebreak proof separately, never fusing
+    them, and never letting an unproven tiebreak downgrade a proven cost. It must
+    also voice `tiebreak_skipped_reason`, or a tiebreak that never ran will read
+    as one that ran and won nothing.
 
 
 ## 6. Open rulings queue

@@ -29,3 +29,5 @@ deploy/.smoke_*/
 _ai_exam_scratch/
 # Session 4B.6c measurement scratch (generated pilot_scale submissions + run dirs)
 _4b6c_scratch/
+# Session 4B.8 scratch (monolithic accounting runs, doc patch scripts)
+_4b8_scratch/

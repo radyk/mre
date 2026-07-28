@@ -143,9 +143,13 @@ def _slack_model(n: int = 3, dur: int = 10, horizon: int = 500, park: bool = Tru
 
 def _rolling(model, vm, free_start_vars, **kw):
     from mre.modules.rolling_horizon import _two_stage_solve
+    # 4B.8 CU2: the budget is declared as a TOTAL and split by policy, so the
+    # old `stage1_det_time=2.0` becomes a 3.0 total (stage 1 capped at 2.75,
+    # stage 2 the remainder). The tests below are about UNITS and CAP SEMANTICS,
+    # not about the budget, and all of them close well inside either figure.
     return _two_stage_solve(
         model, vm, free_start_vars, workers=1, seed=42, deterministic=True,
-        member_time_limit_s=10.0, stage1_det_time=2.0, **kw)
+        member_time_limit_s=10.0, det_total=3.0, **kw)
 
 
 def _monolithic(model, vm, free_start_vars):

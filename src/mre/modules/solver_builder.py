@@ -324,10 +324,13 @@ def add_start_diversity_cut(
 # must stay byte-identical); this is the deliberately-separate monolithic seam.
 # ---------------------------------------------------------------------------
 
-# The stage-2 deterministic-time budget (CP-SAT max_deterministic_time). Warm-
-# started from a feasible stage-1 incumbent, so budget exhaustion is benign — the
-# stage-1 schedule stands and is never worse in cost. Mirrors rolling's token.
-_STAGE2_DET_TIME_S = 2.0
+# SESSION 4B.8 CU2 — ``_STAGE2_DET_TIME_S = 2.0`` IS DELETED HERE TOO. The twins
+# move together, always: the whole reason this helper exists is that rolling and
+# monolithic must not drift on the R-SC3 shape. The budget policy lives in
+# rolling_horizon (``_stage_budgets``) and is IMPORTED rather than restated, so
+# there is exactly one definition of the split and no second constant to update.
+# Full reasoning — the measured defect in both directions — is at that
+# definition.
 
 
 def _reseed_hints_from(model, var_map: "VariableMap", solve_values) -> None:
@@ -359,8 +362,8 @@ def solve_two_stage(
     time_limit_seconds: float = 60.0,
     num_search_workers: Optional[int] = None,
     random_seed: Optional[int] = None,
-    stage1_deterministic_time: Optional[float] = None,
-    stage2_deterministic_time: float = _STAGE2_DET_TIME_S,
+    deterministic_time_total: Optional[float] = None,
+    cap_stage1: bool = True,
     stage2_time_limit_seconds: Optional[float] = None,
 ):
     """R-SC3 two-stage solve on an already-built model (constraints/pins applied
@@ -383,24 +386,78 @@ def solve_two_stage(
     default to every ``var_map.op_start`` var except ``exclude_op_ids`` (pinned /
     committed work, which must not be pulled). The returned :class:`SolveResult`
     carries stage 1's objective/telemetry with stage 2's placements (equal cost,
-    earlier starts). Returns ``(SolveResult, stage2_ran: bool)``."""
+    earlier starts). Returns ``(SolveResult, stage2_ran: bool)``.
+
+    SESSION 4B.8 — the twin changes, identical to rolling's:
+
+    * **THE BUDGET IS DERIVED** (CU2). ``deterministic_time_total`` is the whole
+      two-stage budget; stage 1 is capped at total minus a reserve and stage 2
+      receives the remainder after stage 1 ran. ``stage2_deterministic_time`` is
+      GONE from this signature along with the constant behind it.
+    * **THE REPORTED STATUS IS STAGE 1's** (CU3) — the COST proof — with stage
+      2's carried beside it as ``tiebreak_status``."""
     from mre.modules.solve_runner import SolveRunner
+    from mre.modules.rolling_horizon import _stage_budgets
+    from dataclasses import replace
 
     terms = var_map.objective_terms
     if free_start_vars is None:
         excl = exclude_op_ids or set()
         free_start_vars = [v for oid, v in var_map.op_start.items() if oid not in excl]
 
+    if deterministic_time_total is None:
+        cap1 = reserve = None
+    else:
+        cap1, reserve = _stage_budgets(deterministic_time_total)
+        # ``cap_stage1=False`` declares a budget for the TIEBREAK without
+        # capping the COST PROOF. The monolithic path uses it: stage 1 there has
+        # always run wall-limited and uncapped, and CU1's own finding is that
+        # the cost proof is the thing that matters — so this session does not
+        # quietly put a deterministic ceiling on it. Stage 2 still gets a DERIVED
+        # budget (total minus what stage 1 actually spent), which is the defect
+        # being repaired; nothing about stage 1 changes.
+        if not cap_stage1:
+            cap1 = None
+
     # STAGE 1 — COST, and only cost. The builder's own minimize(sum(terms))
     # stands untouched; this function sets no objective of its own. The solve,
     # and its recorded evidence, are byte-identical to the pre-4B.4 path.
     s1 = SolveRunner(
         time_limit_seconds=time_limit_seconds, num_search_workers=num_search_workers,
-        random_seed=random_seed, deterministic_time=stage1_deterministic_time,
+        random_seed=random_seed, deterministic_time=cap1,
     ).solve(model, var_map, stage1_reporter)
     if (not terms or not free_start_vars or s1.objective is None
             or s1.status not in ("OPTIMAL", "FEASIBLE")):
-        return s1, False
+        return replace(
+            s1, tiebreak_skipped_reason="stage1_no_solution_or_degenerate_model",
+        ), False
+
+    # STAGE 2's budget. DERIVED IN BOTH CASES — there is no constant left here.
+    #
+    #  * A TOTAL WAS DECLARED (the rolling/budgeted path): stage 2 gets the
+    #    REMAINDER after stage 1 ran, floored at the reserve.
+    #  * NO TOTAL WAS DECLARED: deterministic budgeting is simply not in force
+    #    for this solve, so it is not in force for either stage — stage 2 runs
+    #    wall-limited exactly as stage 1 just did. Deriving a budget here from
+    #    stage 1's consumption was tried and REJECTED: on a small model stage 1
+    #    proves optimal in ~0 deterministic units, which would hand stage 2 ~0
+    #    and silently stop the tiebreak from running at all. That is the very
+    #    failure R-SC3(1) forbids, reintroduced through the back door.
+    #
+    #    Callers that need stage 2 bounded declare a total. The monolithic CLI
+    #    path does exactly that (with cap_stage1=False), because it is the path
+    #    the byte-for-byte goldens come from and a wall-stopped stage 2 would
+    #    make those goldens a property of the machine.
+    spent1 = (s1.det_consumed if s1.det_consumed is not None
+              else (cap1 if cap1 is not None else 0.0))
+    if deterministic_time_total is None:
+        b2 = None
+    else:
+        b2 = max(reserve, deterministic_time_total - spent1)
+        if b2 <= 0.0:
+            return replace(
+                s1, tiebreak_skipped_reason="budget_exhausted_by_stage1",
+            ), False
 
     # STAGE 2 — cap the stage-1 COST objective, re-minimize the raw earliness
     # sum. The cap's source (s1.objective) and its target (sum(terms)) are the
@@ -413,20 +470,25 @@ def solve_two_stage(
     s2 = SolveRunner(
         time_limit_seconds=(stage2_time_limit_seconds or time_limit_seconds),
         num_search_workers=num_search_workers, random_seed=random_seed,
-        deterministic_time=stage2_deterministic_time,
+        deterministic_time=b2,
     ).solve(model, var_map, None)   # reporter=None: stage 1 already recorded the cost telemetry
+    _spent = (None if spent1 is None else
+              spent1 + (s2.det_consumed if s2.det_consumed is not None else (b2 or 0.0)))
     if s2.status not in ("OPTIMAL", "FEASIBLE"):
-        return s1, False   # stage-2 budget exhausted → keep the stage-1 incumbent
+        # The tiebreak RAN and won nothing — recorded as such, and distinct from
+        # a tiebreak that never ran (which carries a skip reason instead).
+        return replace(s1, tiebreak_status=s2.status, det_consumed=_spent), False
 
     # Return stage 1's objective/telemetry (COST) with stage 2's placements
     # (equal cost, earlier). Downstream reads the recorded stage-1 evidence for
     # objective; the extractor reads these placements.
     from mre.modules.solve_runner import SolveResult
     return SolveResult(
-        status=s2.status, objective=s1.objective, best_bound=s1.best_bound,
+        status=s1.status, objective=s1.objective, best_bound=s1.best_bound,
         gap=s1.gap, wall_time=s1.wall_time + s2.wall_time,
         solutions_found=s2.solutions_found, solve_values=s2.solve_values,
         wall_truncated=(s1.wall_truncated or s2.wall_truncated),
+        tiebreak_status=s2.status, det_consumed=_spent,
     ), True
 
 

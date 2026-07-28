@@ -376,10 +376,14 @@ class TestFirstBeatCopy:
                                                      budget=MAX_TOOL_CALLS)
         assert "next month" in diverted
 
-    def test_the_preflight_is_fail_open(self, tmp_path):
+    def test_the_preflight_is_fail_open(self, tmp_path, monkeypatch):
         """A pacing hint must never be able to break an answer. With no parser,
         the preflight reports the route tier and empty copy, and the ask behaves
         exactly as it did before the endpoint existed."""
+        # 4B.8 pre-flight: _preflight BUILDS a parser when a key is present, so
+        # "with no parser" has to be established, not inherited from an empty
+        # ambient environment. Assertions unchanged.
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         from mre.api.app import _preflight
         out = _preflight(tmp_path, "snap-missing", "why so many late orders",
                          parser=None)

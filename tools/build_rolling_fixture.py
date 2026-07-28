@@ -25,7 +25,7 @@ visual verification in two consecutive sessions. Two things changed here besides
 the coarse zone, and both are the determinism fix rather than a new choice:
 
   * MEMBER_TIME_LIMIT_S is now generous. It is the WALL CEILING, never the
-    budget: under a deterministic run the DETERMINISTIC budget (``det_time``)
+    budget: under a deterministic run the DETERMINISTIC budget (``det_total``)
     is what must bind, and a wall-truncated solve is a lottery wearing a
     determinism label. The old 10 s ceiling could bind first.
   * A wall-truncated view or coarse run now RAISES instead of being written.
@@ -54,7 +54,8 @@ OUT = REPO / "tests" / "cockpit" / "fixtures"
 # The WALL CEILING, not the budget (see the module docstring). Generous by
 # design so the deterministic budget is what binds.
 MEMBER_TIME_LIMIT_S = 300.0
-DET_TIME_S = 2.0
+# 4B.8 CU2: a TOTAL now (old stage-1 2.0 + the deleted fixed stage-2 2.0).
+DET_TOTAL = 4.0
 COARSE_SAFETY_CEILING_S = 120.0
 
 # The hot-band fixture's DECLARED derate. At the plant's own declared 0.85 the
@@ -70,7 +71,7 @@ COARSE_HOT_DERATE = 0.10
 def _meta(sid: str) -> dict:
     return {
         "id": sid, "schedule_id": sid, "status": "proposed",
-        "contract_version": "1.9", "grade": "ACCEPTED", "costing_grade": "C2",
+        "contract_version": "1.10", "grade": "ACCEPTED", "costing_grade": "C2",
         "created_at": "2026-01-05T09:41:00Z", "generation": 1,
     }
 
@@ -150,7 +151,7 @@ def build(orders: int, window_days: int, frozen_days: int, sid: str,
     view = build_rolling_view(plant, window_days=window_days, frozen_days=frozen_days,
                               gravity=True, deterministic=True, seed=42,
                               member_time_limit_s=MEMBER_TIME_LIMIT_S,
-                              det_time=DET_TIME_S, persist=capture_gesture)
+                              det_total=DET_TOTAL, persist=capture_gesture)
     # A fixture that cannot be reproduced is not a golden (4B.6a CU4).
     if view.wall_truncated:
         raise RuntimeError(
@@ -167,7 +168,7 @@ def build(orders: int, window_days: int, frozen_days: int, sid: str,
                 else CoarseCoefficients.from_cost_model(plant.cost_model))
         zone = build_coarse_zone(plant, view, coefficients=coef,
                                  deterministic=True, seed=42,
-                                 det_time=DET_TIME_S,
+                                 det_total=DET_TOTAL,
                                  safety_ceiling_s=COARSE_SAFETY_CEILING_S)
         if zone.proof.wall_truncated or zone.planning.wall_truncated:
             raise RuntimeError("a coarse run hit the WALL ceiling — not a golden")

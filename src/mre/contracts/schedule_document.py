@@ -136,6 +136,31 @@ Version history:
   so ``rolling`` is None and the whole block is simply absent. Coarse currency
   never appears — coarse tardiness is counted in buckets, so no consumer can sum
   it into ``cost_summary`` (clause 5, enforced by shape). MINOR.
+
+* **1.10** (Session 4B.8 CU3) — THE TWO PROOFS, SEPARATED. An R-SC3 solve proves
+  two different claims and the document conflated them. ``solver.status`` carried
+  STAGE 2's status — the TIEBREAK proof ("no equally-cheap schedule starts
+  earlier") — while the ledger beside it was the product of STAGE 1's COST proof
+  ("no cheaper schedule exists"). Stage 2 exhausts its budget above roughly eight
+  orders, so in practice every rolling board read FEASIBLE over a ledger that was
+  provably OPTIMAL: for a product whose thesis is provable numbers, the UI
+  contradicted the strongest claim it had.
+
+  ``solver.status`` now carries STAGE 1's status — the COST proof, which is what
+  a planner asking "is this optimal?" means. Two Optional fields are ADDED:
+  ``solver.tiebreak_status`` (stage 2's status, None when stage 2 never ran) and
+  ``solver.tiebreak_skipped_reason`` (why, when it did not — so a tiebreak that
+  silently did not run is distinguishable from one that ran and won nothing).
+  A schedule whose cost is proven optimal now SAYS SO, and an unproven tiebreak
+  never downgrades that claim.
+
+  Additive in SHAPE, but note the honest caveat: the MEANING of the existing
+  ``status`` field changes on any two-stage run, which is why this is a recorded
+  RULING (docs/04, 2026-07-28) and not a bug fix — which of the two statuses "the
+  solve status" meant had simply never been decided. A 1.9 consumer keeps reading
+  ``status`` and gets a strictly more accurate answer. Monolithic documents are
+  byte-unchanged apart from the version string and the added optional fields
+  (verified: the sample_data goldens reproduce byte-for-byte). MINOR.
 """
 from __future__ import annotations
 
@@ -146,7 +171,7 @@ from pydantic import BaseModel, model_validator
 
 from mre.contracts.vocabularies import ScheduleStatus
 
-CONTRACT_VERSION = "1.9"
+CONTRACT_VERSION = "1.10"
 
 # Exact decomposition tolerance: cost components are currency values
 # accumulated in float; "exactly" means to the cent, matching the
@@ -162,11 +187,24 @@ class HorizonBlock(BaseModel):
 
 class SolverBlock(BaseModel):
     """M6 RunContext telemetry for the solve that produced this schedule."""
+    # THE COST PROOF (contract 1.10, Session 4B.8 CU3). An R-SC3 solve proves two
+    # different things and this field carries the one a planner is asking about:
+    # "is there a cheaper schedule?". Before 1.10 it carried STAGE 2's status —
+    # the tiebreak proof — so a board whose cost was provably OPTIMAL read
+    # FEASIBLE, understating the strongest claim the product can make.
     status: str                                # OPTIMAL | FEASIBLE
     objective: Optional[float] = None
     gap: Optional[float] = None
     wall_time_s: float = 0.0
     deterministic: bool = False                # workers pinned to 1 + seed set
+    # THE TIEBREAK PROOF (contract 1.10): stage 2's status — "is there an equally
+    # cheap schedule that starts earlier?". Optional and routinely weaker than
+    # the cost proof, because stage 2 exhausts its budget on most real instances.
+    # An unproven tiebreak NEVER downgrades the cost claim. None when stage 2 did
+    # not run at all, in which case tiebreak_skipped_reason says why — a tiebreak
+    # that silently did not run must not look like one that ran and won nothing.
+    tiebreak_status: Optional[str] = None
+    tiebreak_skipped_reason: Optional[str] = None
 
 
 class CostSummary(BaseModel):

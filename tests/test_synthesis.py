@@ -499,8 +499,12 @@ class TestSynthesisLoop:
         answer = synth.synthesize("what will happen next month", explainer=world)
         assert answer.unanswerable and not answer.claims
 
-    def test_an_unavailable_synthesizer_returns_none(self, world):
+    def test_an_unavailable_synthesizer_returns_none(self, world, monkeypatch):
         from mre.modules.synthesizer import Synthesizer
+        # 4B.8 pre-flight: `Synthesizer(api_key="")` falls back to os.environ, so
+        # "unavailable" must be established rather than assumed from an ambient
+        # empty environment. Assertions unchanged.
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         synth = Synthesizer(api_key="")
         assert synth.available is False
         assert synth.synthesize("anything", explainer=world) is None

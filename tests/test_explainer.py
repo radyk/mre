@@ -395,8 +395,14 @@ class TestRendererAttribution:
         text = TemplateRenderer().render(bundle)
         assert "register: testimony" in text
 
-    def test_llm_renderer_no_key_attribution(self, explainer_and_index):
+    def test_llm_renderer_no_key_attribution(self, explainer_and_index, monkeypatch):
         from mre.modules.renderers import LLMRenderer
+        # 4B.8 pre-flight: a test ABOUT the missing key must CONTROL the key.
+        # `LLMRenderer(api_key="")` falls back to os.environ, so this used to
+        # depend on the ambient environment happening to lack one — which stopped
+        # being true the moment conftest started loading .env.local. The
+        # assertions below are unchanged; only the precondition is now explicit.
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         exp, _ = explainer_and_index
         bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")
         renderer = LLMRenderer(api_key="")
@@ -1227,9 +1233,15 @@ class TestDialogueMode:
         text = renderer.render_judgment("Something unrouted", h, fallback_bundle)
         assert "maintenance closure" in text
 
-    def test_judgment_no_llm_falls_back_to_testimony(self, explainer_and_index):
+    def test_judgment_no_llm_falls_back_to_testimony(self, explainer_and_index,
+                                                     monkeypatch):
         from mre.modules.renderers import LLMRenderer
         from mre.ask import SessionHistory, Turn
+        # 4B.8 pre-flight, as above: api_key="" falls back to os.environ, so the
+        # "no LLM" precondition is established rather than inherited. Without
+        # this the test does not merely fail — it makes a LIVE API CALL and then
+        # asserts the fallback register on a real LLM answer.
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         exp, _ = explainer_and_index
         renderer = LLMRenderer(api_key="")  # no key → unavailable
         prior_bundle = assemble(exp, "late-order", "Why is WO-2001 late?", order="WO-2001")

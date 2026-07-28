@@ -15,7 +15,7 @@ stderr so the subprocess stdout is clean.
 
 Usage:
     PYTHONHASHSEED=0 python tools/rolling_golden.py \
-        --orders 24 --window 7 --frozen 3 --det-time 0.5 --seed 42
+        --orders 24 --window 7 --frozen 3 --det-total 2.5 --seed 42
 """
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ def _canonical(result) -> dict:
     }
 
 
-def run(orders: int, window: int, frozen: int, det_time: float, seed: int,
+def run(orders: int, window: int, frozen: int, det_total: float, seed: int,
         max_windows=None) -> dict:
     from generate_erp_dataset import generate
     from mre.modules.rolling_horizon import prepare_plant, run_rolling_horizon
@@ -65,10 +65,10 @@ def run(orders: int, window: int, frozen: int, det_time: float, seed: int,
         plant = prepare_plant(tmp / "sub", tmp / "prep", reference_date=REF)
         result = run_rolling_horizon(
             plant, window_days=window, frozen_days=frozen, gravity=True,
-            deterministic=True, seed=seed, det_time=det_time,
+            deterministic=True, seed=seed, det_total=det_total,
             member_time_limit_s=30.0, max_windows=max_windows)
     out = {"orders": orders, "window": window, "frozen": frozen,
-           "det_time": det_time, "seed": seed}
+           "det_total": det_total, "seed": seed}
     out.update(_canonical(result))
     return out
 
@@ -78,11 +78,13 @@ def main(argv=None) -> int:
     ap.add_argument("--orders", type=int, default=24)
     ap.add_argument("--window", type=int, default=7)
     ap.add_argument("--frozen", type=int, default=3)
-    ap.add_argument("--det-time", type=float, default=0.5)
+    # 4B.8 CU2: a TOTAL now. The historical total here was the old stage-1 share
+    # (0.5) plus the deleted fixed stage-2 2.0.
+    ap.add_argument("--det-total", type=float, default=2.5)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--max-windows", type=int, default=None)
     args = ap.parse_args(argv)
-    out = run(args.orders, args.window, args.frozen, args.det_time, args.seed,
+    out = run(args.orders, args.window, args.frozen, args.det_total, args.seed,
               max_windows=args.max_windows)
     sys.stdout.write(json.dumps(out, sort_keys=True))
     sys.stdout.write("\n")
