@@ -1,0 +1,185 @@
+==========================================================================
+1. INTAKE  (after)
+==========================================================================
+  demands total           : 60
+  demands due < ref       : 21
+  excluded_demand_ids     : 0
+  past-due AND excluded   : 0
+  past-due AND schedulable: 21
+
+==========================================================================
+2. GRAVITY — ADMITTED, AND WHERE IN THE ORDER?
+==========================================================================
+  past-due orders PLACED in window 0 : 21 of 21
+  past-due orders in the TRAY        : 0
+  past-due orders NOWHERE            : 0
+  placed orders (window 0)           : 56
+  past-due among the FIRST QUARTER   : 7 of 21 past-due placed
+  first 8 starts:
+    ORD-000003     2026-01-05T07:00  
+    ORD-000033     2026-01-05T07:00  
+    ORD-000012     2026-01-05T07:00  PAST-DUE
+    ORD-000005     2026-01-05T07:00  
+    ORD-000039     2026-01-05T07:06  PAST-DUE
+    ORD-000009     2026-01-05T07:06  
+    ORD-000043     2026-01-05T07:12  PAST-DUE
+    ORD-000026     2026-01-05T07:13  PAST-DUE
+
+==========================================================================
+3. CERTIFICATE VISIBILITY
+==========================================================================
+  specimen: ORD-000014 due=2025-11-06
+  document chars                      : 183,896
+  document names the specimen         : True
+  solver.status                       : FEASIBLE
+  solver.gap                          : 0.20577267959259635
+  solver.tiebreak_status              : FEASIBLE
+  cost_summary.total                  : 297087.35
+  cost_summary.tardiness              : 285143.3333333333
+  cost_summary.tardiness_floor       : 274800.0
+  cost_summary.tardiness_controllable: 10343.333333333314
+
+==========================================================================
+4. THE THREE ANSWERS (route-level, deterministic)
+==========================================================================
+
+--- Q1  where is ORD-000014?   [route order-schedule] ---
+ORD-000014: 4 operation(s) across 4 machine(s):
+
+  [FR-M1]
+    seq= 10  2026-01-05 07:42 -> 2026-01-05 08:03  ORD-000014
+  [FR-M2]
+    seq= 20  2026-01-05 08:04 -> 2026-01-05 08:26  ORD-000014
+  [FR-M3]
+    seq= 30  2026-01-05 08:27 -> 2026-01-05 08:48  ORD-000014
+  [FR-M4]
+    seq= 40  2026-01-05 08:49 -> 2026-01-05 08:55  ORD-000014
+[rendered by: template | register: testimony]
+
+--- Q2  why isn't ORD-000014 scheduled yet?  [route why-not-scheduled-yet] ---
+ORD-000014 IS scheduled — it's committed in the frozen zone, not waiting beyond the horizon. It finishes 85495 minutes past its due date — but 84960 of those were already unavoidable when this window opened (it was ALREADY PAST DUE), so this schedule adds 535. Ask "where is ORD-000014?" for the operation timeline.
+[rendered by: template | register: testimony]
+
+--- Q3  which orders are already late?  [route late-orders] ---
+21 late order(s):
+  - ORD-000004 (+22664 min; 21600 already past due at the start, 1064 added here)
+  - ORD-000006 (+15122 min; 14400 already past due at the start, 722 added here)
+  - ORD-000007 (+616 min)
+  - ORD-000011 (+62721 min; 61920 already past due at the start, 801 added here)
+  - ORD-000012 (+62412 min; 61920 already past due at the start, 492 added here)
+  - ORD-000014 (+85495 min; 84960 already past due at the start, 535 added here)
+  - ORD-000017 (+3679 min; 2880 already past due at the start, 799 added here)
+  - ORD-000019 (+69819 min; 69120 already past due at the start, 699 added here)
+  - ORD-000025 (+6705 min; 5760 already past due at the start, 945 added here)
+  - ORD-000026 (+6571 min; 5760 already past due at the start, 811 added here)
+  - ORD-000030 (+9745 min; 8640 already past due at the start, 1105 added here)
+  - ORD-000031 (+18136 min; 17280 already past due at the start, 856 added here)
+  - ORD-000039 (+13754 min; 12960 already past due at the start, 794 added here)
+  - ORD-000041 (+1987 min; 1440 already past due at the start, 547 added here)
+  - ORD-000043 (+5047 min; 4320 already past due at the start, 727 added here)
+  - ORD-000044 (+2434 min; 1440 already past due at the start, 994 added here)
+  - ORD-000046 (+5150 min; 4320 already past due at the start, 830 added here)
+  - ORD-000047 (+35447 min; 34560 already past due at the start, 887 added here)
+  - ORD-000048 (+37140 min; 36000 already past due at the start, 1140 added here)
+  - ORD-000058 (+22740 min; 21600 already past due at the start, 1140 added here)
+  - ORD-000060 (+23510 min; 21600 already past due at the start, 1910 added here)
+
+20 of those were ALREADY PAST DUE before this window opened — that is the plant's position, not a data problem, and the work is scheduled. Of the total lateness, 492480 minute(s) were unavoidable at the start and 18414 minute(s) are what this schedule adds.
+
+Want the cause chain for the worst one? Ask "why is ORD-000014 late?"
+
+Evidence chain (21 record(s)):
+
+[1] METRIC  | lateness_minutes  (scheduling)
+    Value: 22664 min (377.7h) (ORD-000004)
+    [record: d71aef99...]
+
+[2] METRIC  | lateness_minutes  (scheduling)
+    Value: 15122 min (252.0h) (ORD-000006)
+    [record: eb698c2e...]
+
+[3] METRIC  | lateness_minutes  (scheduling)
+    Value: 616 min (10.3h) (ORD-000007)
+    [record: 31712669...]
+
+[4] METRIC  | lateness_minutes  (scheduling)
+    Value: 62721 min (1045.3h) (ORD-000011)
+    [record: ae7c690a...]
+
+[5] METRIC  | lateness_minutes  (scheduling)
+    Value: 62412 min (1040.2h) (ORD-000012)
+    [record: 639a268c...]
+
+[6] METRIC  | lateness_minutes  (scheduling)
+    Value: 85495 min (1424.9h) (ORD-000014)
+    [record: ea2b2539...]
+
+[7] METRIC  | lateness_minutes  (scheduling)
+    Value: 3679 min (61.3h) (ORD-000017)
+    [record: a1a217b9...]
+
+[8] METRIC  | lateness_minutes  (scheduling)
+    Value: 69819 min (1163.7h) (ORD-000019)
+    [record: 32009c5f...]
+
+  … and 13 more record(s) (ask about a specific order to narrow this).
+
+[rendered by: template | register: testimony]
+
+==========================================================================
+5. THE EXCLUSION NOTE'S ARITHMETIC (CU5)
+==========================================================================
+  _excluded_summary(): null
+  _excluded_labels count: 0
+  sample labels: []
+  TEMPORAL_IMPOSSIBILITY findings: 1 across 21 distinct subjects
+
+--- Q4  why were orders excluded?  [route excluded-orders] ---
+No data-quality problems — the submission is clean.
+[rendered by: template | register: testimony]
+
+--- Q5  why was ORD-000014 excluded?  [route excluded-orders, one order] ---
+ORD-000014 wasn't excluded — it IS in this schedule. Ask "where is ORD-000014?" for its operation timeline.
+[rendered by: template | register: testimony]
+
+==========================================================================
+6. THE COST PROOF, VOICED ON A MONEY ANSWER (CU1 b)
+==========================================================================
+  proof from evidence : status=FEASIBLE gap=20.6%
+  strip chip          : {"state": "unproved", "label": "optimum not proved \u00b7 gap 20.6%", "title": "The solver ran out of budget before it could prove this is the cheapest schedule. Its own bound leaves a gap of 20.6%: a cheaper schedule may exist and could be up to that much cheaper. The earliest-start tiebreak did not prove out, which does not affect the cost claim above."}
+
+--- Q6  what is driving the lateness?  [route lateness-cause] ---
+21 of 60 orders are late. Here is what is driving it.
+
+What they have in common:
+  - the machine was busy with other work: ORD-000004, ORD-000006, ORD-000007, ORD-000011, ORD-000012, ORD-000014, ORD-000017, ORD-000019, ORD-000025, ORD-000026, ORD-000030, ORD-000031, ORD-000039, ORD-000041, ORD-000043, ORD-000044, ORD-000046, ORD-000047, ORD-000048, ORD-000058, ORD-000060
+
+Where the hold is concrete:
+  - ORD-000004 was held on FR-M3 until 2026-01-05 16:27 by ORD-000044, and started at 2026-01-05 16:27.
+  - ORD-000006 was held on FR-M4 until 2026-01-05 08:22 by ORD-000041, and started at 2026-01-05 08:22.
+  - ORD-000007 was held on FR-M1 until 2026-01-05 09:03 by ORD-000039, and started at 2026-01-05 09:03.
+  - ORD-000011 was held on FR-M4 until 2026-01-05 07:33 by ORD-000048, and started at 2026-01-05 07:33.
+  - ORD-000014 was held on FR-M1 until 2026-01-05 07:42 by ORD-000045, and started at 2026-01-05 07:42.
+  - ORD-000017 was held on FR-M3 until 2026-01-05 12:02 by ORD-000006, and started at 2026-01-05 12:02.
+  - ORD-000019 was held on FR-M2 until 2026-01-05 08:26 by ORD-000014, and started at 2026-01-05 08:26.
+  - ORD-000025 was held on FR-M4 until 2026-01-05 07:57 by ORD-000002, and started at 2026-01-05 07:57.
+  - ORD-000026 was held on FR-M4 until 2026-01-05 07:13 by ORD-000039, and started at 2026-01-05 07:13.
+  - ORD-000030 was held on FR-M3 until 2026-01-05 16:58 by ORD-000004, and started at 2026-01-05 16:58.
+  - ORD-000031 was held on FR-M2 until 2026-01-05 08:50 by ORD-000049, and started at 2026-01-05 08:50.
+  - ORD-000039 was held on FR-M4 until 2026-01-05 07:06 by ORD-000003, and started at 2026-01-05 07:06.
+  - ORD-000041 was held on FR-M4 until 2026-01-05 08:12 by ORD-000012, and started at 2026-01-05 08:12.
+  - ORD-000043 was held on FR-M2 until 2026-0
+
+==========================================================================
+7. CU5 — THE ARITHMETIC, ON A WORLD THAT HAS EXCLUSIONS
+==========================================================================
+  demands in snapshot     : 60
+  excluded_demand_ids     : 3
+  _excluded_labels (match): 6
+  note                    : {"orders": ["ORD-000001", "ORD-000002", "ORD-000003"], "count": 3, "scheduled": 57, "total": 60}
+  scheduled + count == total : True
+  total == demands in world  : True
+  every name is an ORDER ID  : True
+
+--- the trailing note, rendered ---
+Note: 57 of 60 orders are scheduled; 3 excluded (ORD-000001, ORD-000002, ORD-000003) — ask "why was ORD-000001 excluded?" for the reason.

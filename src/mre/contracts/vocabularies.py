@@ -138,7 +138,7 @@ class DriverCode(str, Enum):
 
 
 class FindingCode(str, Enum):
-    """Finding codes. 18 total, grouped by pipeline layer of origin per docs/02 §4.3."""
+    """Finding codes. 19 total, grouped by pipeline layer of origin per docs/02 §4.3."""
     # Adapter (ERP-shape)
     MISSING_REFERENCE = "MISSING_REFERENCE"
     UNMAPPABLE_VALUE = "UNMAPPABLE_VALUE"
@@ -148,6 +148,21 @@ class FindingCode(str, Enum):
     IDENTITY_CHANGED = "IDENTITY_CHANGED"
     # Validation (semantic)
     TEMPORAL_IMPOSSIBILITY = "TEMPORAL_IMPOSSIBILITY"
+    # ADDED, NEVER REPURPOSED (Session 4B.11, R-PD1). M3 was raising
+    # TEMPORAL_IMPOSSIBILITY for `due < reference_date` — a demand that is simply
+    # LATE — while M0 raises the same code for `due < release/created`, a pair of
+    # dates that genuinely cannot both be true. One code, two meanings, and only
+    # one of them a defect: the authored phrase "has dates that can't both be
+    # true" is FALSE of a released work order that is merely overdue, and filing
+    # it under a data-quality code sent 21 real orders to a fix-first queue for a
+    # condition that has no fix (4B.10 §5a.26(e)).
+    #
+    # PAST_DUE_AT_INTAKE names the observation truthfully and is INFORMATIONAL:
+    # severity INFO, disposition PROCEEDED_FLAGGED, never an exclusion. The work
+    # is scheduled and priced with tardiness (R-PD1 clauses (1)/(2));
+    # `cost_summary.tardiness_floor` carries the consequence.
+    # TEMPORAL_IMPOSSIBILITY keeps its M0 meaning, unchanged.
+    PAST_DUE_AT_INTAKE = "PAST_DUE_AT_INTAKE"
     NO_CAPABLE_RESOURCE = "NO_CAPABLE_RESOURCE"
     ORPHAN_ENTITY = "ORPHAN_ENTITY"
     VALUE_OUT_OF_RANGE = "VALUE_OUT_OF_RANGE"

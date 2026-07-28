@@ -601,6 +601,16 @@ class RollingView:
     # None when stage 2 never ran, in which case tiebreak_skipped_reason says why.
     tiebreak_status: Optional[str] = None
     tiebreak_skipped_reason: Optional[str] = None
+    # 4B.11 CU1 — THE COST PROOF'S TWO NUMBERS. `status` above says WHETHER the
+    # cost optimum was proved; these say WHAT was proved and, when it was not,
+    # BY HOW MUCH the claim falls short. Both are stage 1's (the cost proof), the
+    # same source `status` comes from. Before this the rolling assembler wrote
+    # `SolverBlock(gap=None)` unconditionally, so a FEASIBLE rolling board could
+    # say only "not proved" and never "not proved, and here is the distance" —
+    # which is precisely the distinction 4B.10 §5a.27 measured at 13.056% of
+    # ledger. None on a solve that reported neither (never a fabricated 0.0).
+    objective: Optional[float] = None
+    gap: Optional[float] = None
 
     @property
     def placed(self) -> dict:
@@ -695,6 +705,10 @@ def build_rolling_view(
     tiebreak_skipped: Optional[str] = "no_admitted_work"
     placed_demand_ids: set = set()
     wall_truncated = False
+    # 4B.11 CU1 — stage 1's objective and gap, so a board that could not prove
+    # its optimum can state the distance rather than only the fact.
+    objective: Optional[float] = None
+    gap: Optional[float] = None
 
     # CU1 persistence wiring — reporters + snapshot writer are opened only when
     # ``persist`` is set (the API rolling worker). runs_dir mirrors the spine's
@@ -735,6 +749,11 @@ def build_rolling_view(
         tiebreak_status = solve.tiebreak_status
         tiebreak_skipped = solve.tiebreak_skipped_reason
         wall_truncated = bool(solve.wall_truncated)
+        # 4B.11 CU1 — stage 1's own numbers, carried unchanged. `_two_stage_solve`
+        # already returns s1.objective / s1.gap even when stage 2 supplied the
+        # placements, so these describe the COST proof and nothing else.
+        objective = solve.objective
+        gap = solve.gap
         if solve.status in ("OPTIMAL", "FEASIBLE"):
             sv = solve.solve_values
             for op in free_ops:
@@ -787,6 +806,7 @@ def build_rolling_view(
                 s_rep.record_event(
                     status_text="solve_complete",
                     payload={"status": solve.status, "objective": solve.objective,
+                             "gap": solve.gap,
                              "earliness_tiebreak": tiebreak,
                              "tiebreak_status": solve.tiebreak_status,
                              "tiebreak_skipped_reason": solve.tiebreak_skipped_reason})
@@ -820,7 +840,8 @@ def build_rolling_view(
         win_horizon_start=win_horizon_start, win_horizon_end=win_horizon_end,
         persisted=persist, wall_truncated=wall_truncated,
         earliness_value=ev_used, status=status, earliness_tiebreak=tiebreak,
-        tiebreak_status=tiebreak_status, tiebreak_skipped_reason=tiebreak_skipped)
+        tiebreak_status=tiebreak_status, tiebreak_skipped_reason=tiebreak_skipped,
+        objective=objective, gap=gap)
 
 
 

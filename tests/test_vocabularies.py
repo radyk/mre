@@ -23,6 +23,7 @@ ADAPTER_FINDING_CODES = {
 }
 VALIDATION_FINDING_CODES = {
     "TEMPORAL_IMPOSSIBILITY",
+    "PAST_DUE_AT_INTAKE",
     "NO_CAPABLE_RESOURCE",
     "ORPHAN_ENTITY",
     "VALUE_OUT_OF_RANGE",
@@ -56,11 +57,15 @@ class TestDriverCodes:
 
 
 class TestFindingCodes:
-    def test_exactly_18(self):
-        # 6 adapter + 7 validation + 5 plan/solve = 18 codes (docs/02 §4.3).
+    def test_exactly_19(self):
+        # 6 adapter + 8 validation + 5 plan/solve = 19 codes (docs/02 §4.3).
         # DENSITY_LIMIT added 2026-07-12 — the Rep 2 density guard had been
         # repurposing STATISTICAL_OUTLIER (add-never-repurpose violation).
-        assert len(FindingCode) == 18
+        # PAST_DUE_AT_INTAKE added 2026-07-28 (R-PD1) — M3 had been repurposing
+        # TEMPORAL_IMPOSSIBILITY, the gate's code for a date pair that cannot
+        # both be true, to mean "this order is merely late". Same violation,
+        # same remedy: add, never repurpose.
+        assert len(FindingCode) == 19
 
     def test_adapter_layer_codes(self):
         values = {c.value for c in FindingCode}
@@ -76,8 +81,8 @@ class TestFindingCodes:
 
     def test_all_layers_account_for_all_codes(self):
         all_expected = ADAPTER_FINDING_CODES | VALIDATION_FINDING_CODES | PLAN_SOLVE_FINDING_CODES
-        # 6 + 7 + 5 = 18 per the exhaustive enumeration in docs/02 §4.3
-        assert len(all_expected) == 18
+        # 6 + 8 + 5 = 19 per the exhaustive enumeration in docs/02 §4.3
+        assert len(all_expected) == 19
 
 
 class TestProvenanceClass:

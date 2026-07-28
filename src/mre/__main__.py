@@ -201,6 +201,31 @@ def main(argv: list[str] | None = None) -> int:
     elif use_raw and plant_cfg:
         rd = date.fromisoformat(plant_cfg["reference_date"])
         reference_date = datetime(rd.year, rd.month, rd.day, 0, 0, 0, tzinfo=UTC)
+    if reference_date is None:
+        # SESSION 4B.11 (R-PD1) — THE CLOCK LIVES HERE, AND ONLY HERE.
+        #
+        # Nothing declared a planning date, so this run's is today. That is not a
+        # new behaviour — the Validator has always defaulted its own
+        # reference_date to `now()` when given none, and the horizon-days branch
+        # below already read `reference_date or datetime.now(UTC)`. What is new is
+        # that the three of them now agree on ONE value instead of each reaching
+        # for the clock separately.
+        #
+        # It matters because of R-PD1: with past-due demand now SCHEDULED rather
+        # than excluded, a released-long-ago order will otherwise drag
+        # `horizon_start` back to its release date — 2024-12-20 on sample_data, a
+        # 600-day horizon of mostly empty history. Scheduling past-due WORK must
+        # never mean modelling past TIME. The floor cannot live in SolverBuilder
+        # (a wall clock inside the model builder would make every build
+        # time-dependent and break fixtures that deliberately model the past), so
+        # it lives at the entry point that has no other source of a date.
+        #
+        # The resolved value is what gets RECORDED below, replacing the literal
+        # "now" — evidence should say which date a run actually used, not that it
+        # asked the clock.
+        reference_date = datetime.now(UTC).replace(
+            hour=0, minute=0, second=0, microsecond=0)
+        _p(f"reference_date: none declared — using today ({reference_date.date()})")
 
     # outlier_threshold_ratio: CLI flag > plant_config key > Validator's own
     # gauntlet-calibrated default (Rep 3, docs/07 Phase 1).

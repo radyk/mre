@@ -11574,3 +11574,300 @@ its goldens and every existing fixture untouched, proven byte-identical against
 HEAD. Ghost jobs not re-ruled. The hint experiment, the r5 bank, the §5a.20
 vocabulary migration and splicing seams: out of scope, untouched. RawAdapter not
 revived and the extract not submitted — **R-SC1 stands**.
+
+### 2026-07-28 — Session 4B.11: the honesty bundle — the proof rendered, the late work scheduled, the arithmetic reconciled
+
+Four things a customer meets in the first hour, and two of them coupled: R-PD1
+makes real boards tardiness-dominated, which 4B.10 proved is the regime where
+the cost proof fails — so the status had to become visible in the same commit
+that started scheduling late work, or the session would have shipped a change
+that makes boards worse with no way to tell which ones are proved.
+
+#### R-PD1 — PAST-DUE DEMAND DISPOSITION (the ruling, verbatim)
+
+**(1) PAST-DUE IS WORK, NOT A DEFECT.** A past-due unstarted demand is admitted,
+scheduled, and priced with tardiness from its declared due date. Never removed
+from the schedulable set on account of its due date alone. Its must-start-by is
+passed, so gravity pulls it hardest.
+
+**(2) EXCLUSION IS A DATA-DEFECT CATEGORY ONLY.** A demand may be excluded for
+malformed data. It may NEVER be excluded for a true statement about the plant's
+position — late, beyond horizon, over capacity. (Generalizes §5a.1 and this
+finding into one rule.)
+
+**(3) THE GATE'S DISPOSITION BINDS DOWNSTREAM.** Where M0 grades a finding
+`proceeded_flagged`, no later module may silently remove the demand. A module
+that must remove one raises its OWN certificate-visible finding naming itself as
+the source. Silent inter-module disagreement is its own defect class.
+
+**(4) TARDINESS DECOMPOSES AND NEVER FUSES.** `tardiness_floor`
+(`max(0, t0 − due)`, unavoidable) and `tardiness_controllable` (what this
+schedule adds) are separate ledger lines summing EXACTLY. No delta card
+attributes floor tardiness to a planner's move.
+
+**(5) AGE IS NOT LATENESS.** A demand past due beyond a declared threshold raises
+a data-quality finding about its AGE. Informational; the demand is still
+scheduled.
+
+**(6) EVERY PER-ORDER ROUTE VOICES THE DISPOSITION.** A true answer
+indistinguishable from a false one is not an answer.
+
+**Clause (5) is OPEN and deliberately unbuilt.** The threshold is an IDS
+coefficient that does not exist; inventing one would author a business fact we do
+not have, which is the discipline the coarse zone's rho already follows (an
+undeclared plant is never given an invented margin). Emitting an age finding with
+no declared pathway would be evidence with nothing behind it. Carried in docs/07
+§5a.28 with its full pipeline-proof chain named.
+
+#### What R-PD1 cost, in code
+
+`validator.py` Check 1 no longer excludes anything. It raises ONE
+`PAST_DUE_AT_INTAKE` finding — INFO, `proceeded_flagged` — plus two metrics
+(`demands_past_due_at_intake`, `tardiness_floor_minutes_at_intake`). Checks 2–6
+are untouched: a quantity ≤ 0 is still malformed and still excluded, which is
+exactly what clause (2) permits.
+
+**The finding code is ADDED, NEVER REPURPOSED, and the distinction is the point.**
+M0 raises `TEMPORAL_IMPOSSIBILITY` for `due < release/created` — a date pair that
+genuinely cannot both be true. M3 was raising the same code for
+`due < reference_date` — a demand that is merely LATE. One code, two meanings,
+and only one of them a defect: the authored phrase "has dates that can't both be
+true" is FALSE of a released work order that is simply overdue, and filing it
+under a data-quality code sent 21 real orders to a fix-first queue for a
+condition that has no fix. `PAST_DUE_AT_INTAKE` is finding code 19 (docs/02
+§4.3), with a remediation-catalog entry carrying `remediation_applies: false`
+and the rationale the catalog's own out-with-rationale pattern requires.
+`TEMPORAL_IMPOSSIBILITY` keeps its M0 meaning, unchanged.
+
+**A SECOND EXCLUSION SITE WAS FOUND AND CLOSED, and it would have silently
+undone the first.** Check 5's resumable window-fit test asks "does the work fit
+BEFORE THE DUE DATE?" against `elapsed_days = max(0.0, due − now)`. For a
+past-due demand that floor makes `available_minutes` exactly 0.0, so ANY positive
+duration exceeds it. Once Check 1 stopped excluding, every past-due RESUMABLE
+demand would have fallen straight into Check 5 and been excluded there as
+`INFEASIBLE_SUBSET` — the same removal wearing a different finding code. The
+non-resumable single-window test is deliberately NOT skipped: it asks whether one
+operation exceeds the longest contiguous window on EVERY eligible resource
+(docs/05 R-C3), which is a structural impossibility independent of any due date.
+
+**SCHEDULING PAST-DUE WORK MUST NEVER MEAN MODELLING PAST TIME.**
+`SolverBuilder._compute_horizon` floored `horizon_start` at the reference date
+only when one was supplied. Until now no released-long-ago order could contribute
+its `earliest_start`, because it had been excluded; with one admitted, sample_data
+dragged the horizon to 2024-12-20 — a 600-day horizon, most of it empty history.
+The floor now applies unconditionally, falling back to today when no reference
+date is given, which is the same default the validator has always used for its
+own. Every production path supplies one, so behaviour there is byte-identical.
+
+#### Gravity did not have to be told
+
+Measured on the specimen rather than assumed: all 21 past-due demands are
+admitted by the BASE rule (`due <= window_end`), unconditionally, before gravity
+runs at all — not by gravity's must-start-by pull. Gravity's pull is a
+mechanism for work that would otherwise fall OUTSIDE the window; past-due work is
+inside it by definition. **The admission policy needed no change and did not get
+one.** Ordering within the window is the solver's, via tardiness weight, and 7 of
+the 21 land in the first quarter of the window by start time.
+
+#### The tardiness split, and the invariance proof that corrected its own test
+
+Contract **1.10 → 1.11**. `cost_summary` gains `tardiness_floor` and
+`tardiness_controllable`; `ServiceOutcomeBlock` gains `tardiness_floor_min` /
+`tardiness_floor_cost`. Present TOGETHER or not at all, summing to `tardiness` to
+the cent, and ABSENT on any book with no past-due demand — so every monolithic
+document with an on-time book is byte-identical to its 1.10 self.
+
+**The split does not change the model; it makes a decomposition the pipeline
+already contained legible.** `solver_builder` has always clamped
+`due_min = max(0, due − horizon_start)`, so a past-due fulfillment's objective
+term measures completion from t0 — the CONTROLLABLE part alone — while the
+extractor has always priced lateness from the DECLARED due date. The floor was
+never in the objective.
+
+**The brief's stated test for clause (4)(b) was the wrong test, and the data said
+so rather than an argument.** The instruction was: solve with the floor included
+and excluded; placements MUST be identical or the decomposition is wrong. First
+attempt, 60 orders: BOTH arms returned FEASIBLE (gaps 24.6% and 1.0%) and 237 of
+240 placements differed — which says only that two truncated searches stopped in
+different places, exactly what §5a.27 measured about seeds. **An argmin claim can
+only be tested where the argmin is actually found.** At 12 orders both arms prove
+OPTIMAL, and:
+
+| | |
+|---|---|
+| arm A (floor excluded — the shipped clamp) | OPTIMAL, objective 406,973 |
+| arm B (floor included — clamp removed) | OPTIMAL, objective 7,406,813 |
+| B − A | **6,999,840** |
+| predicted Σ (weight × floor minutes) | **6,999,840** |
+
+Placements still differ (34 of 48), and that is a TIE, not a refutation. Since
+`f_B(x) = f_A(x) + C` for every feasible `x`, `min f_B = min f_A + C`, and
+observing precisely that equality is what confirms `C` is independent of `x`;
+`argmin f_B == argmin f_A` as SETS, and the two arms simply returned different
+members of it because a large added constant changes CP-SAT's search trajectory.
+**Placement identity would have been sufficient but is not necessary, and
+requiring it would have manufactured a false failure out of a tie-break.** The
+exact-offset identity is the stronger claim and it holds
+(`tools/spikes/pastdue_4b11/floor_invariance.py`, exit 0).
+
+#### The three answers, before and after
+
+Verbatim, on `facility_real_pastdue` at reference date 2026-01-05, driven at the
+route level so the measurement does not depend on a model parse.
+
+| | before | after |
+|---|---|---|
+| where is ORD-000014? | "Nothing scheduled for ORD-000014." | its 4 operations across 4 machines, with times |
+| why isn't ORD-000014 scheduled yet? | "isn't in the beyond-horizon list — it's either already in the current window (committed or active) or not part of this schedule." | "ORD-000014 IS scheduled — it's committed in the frozen zone… It finishes 85495 minutes past its due date — but 84960 of those were already unavoidable when this window opened…, so this schedule adds 535." |
+| which orders are already late? | "No late orders found in this schedule." | "21 late order(s)" with per-order splits, then "20 of those were ALREADY PAST DUE before this window opened — that is the plant's position, not a data problem, and the work is scheduled." |
+
+The second answer's replacement is not a reworded disjunction: `RollingVocabulary`
+already knew which of the three regions the order sits in, and the route now reads
+it instead of offering the planner a choice to resolve. The third carries the
+clause (4) split in every line, because "ORD-000014 is 85,495 minutes late" with
+no split invites a planner to blame the schedule for 84,960 minutes it did not
+cause. **One nuance the data forced and the copy respects: 21 orders are late but
+only 20 carry a floor.** ORD-000007 was past due by ONE SECOND (due
+2026-01-04T23:59:59 against a t0 of 2026-01-05T00:00:00 — due dates are stored
+end-of-day), so its floor truncates to 0 minutes and all 616 minutes of its
+lateness are genuinely this schedule's. The answer says 20, and 20 is right.
+
+#### The 42, reconciled — two compounding errors, both in `_excluded_summary`
+
+4B.10 reported, undiagnosed: "60 of 102 orders are scheduled; 42 excluded" in a
+world of 60 demands with 21 exclusions.
+
+1. **The COUNT came from a TOKEN set.** `_excluded_labels` holds every string
+   that NAMES an excluded demand — its canonical UUID *and* its `ORD-` id — so a
+   planner pasting either is understood. Counting it counted 21 orders twice, and
+   the names displayed were whichever half sorted first (the UUIDs, since digits
+   precede letters).
+2. **`scheduled` counted EVERY demand in the snapshot**, excluded ones included,
+   and `total` was then that number PLUS the exclusions: 60 + 42 = 102 in a
+   60-order world.
+
+The match set survives unchanged for matching. Display and counting now go
+through `_excluded_records`, keyed by the resolved ORDER — not by the raw subject
+id, because **the same order is excluded in two id-spaces by two layers** (M0's
+subjects are submission-space `ORD-` ids, M3's are canonical UUIDs), and keying
+on the raw id counted one order twice and labelled one copy with a truncated id
+nobody recognizes. The invariant now asserted: `scheduled + count == total` AND
+`total == demands in the snapshot`. Proven on a purpose-built world with three
+genuine `quantity <= 0` exclusions: "57 of 60 orders are scheduled; 3 excluded
+(ORD-000001, ORD-000002, ORD-000003)". **R-PD1 dissolves the note on the specimen
+itself — nothing is excluded there any more — so it was proved on a world that
+still has exclusions rather than assumed covered.**
+
+A third defect fell out of the same investigation and is fixed at its own site:
+`planner_language.finding_subject_label` appended the evidence's `demand_id` to
+the subject list even when the subject had ALREADY resolved, producing
+"ORD-000004, 0f093432-1125-5023-a198-205f5e637507 has dates that can't both be
+true" — the order named correctly, then again in a vocabulary the planner cannot
+use. The fallback exists for the REJECTED run, where nothing resolves; it is now
+skipped when it would simply repeat a subject already named.
+
+#### The cost proof, rendered (§5a.23 DISCHARGED)
+
+`src/mre/modules/cost_proof.py` is the single definition, consumed by two
+surfaces so they cannot state different things about the same solve:
+
+* **the cockpit's top strip** — a chip beside the certificate grade, not in a
+  diagnostics drawer, because it qualifies every number on the board. Label and
+  title are composed SERVER-SIDE and arrive on `/meta`; the JS composes no
+  wording. Outlined rather than filled, in its own tokens, so it cannot read as a
+  second grade — the certificate grade is a statement about the DATA, this one is
+  about the SEARCH.
+* **the answer surface** — an unprompted rider appended by the ONE delivery seam
+  both renderers share, on the same principle `apply_repeat_riders` uses. The
+  rule is deliberately narrow: it fires only when the board is UNPROVED *and* the
+  delivered text states money. A proved board adds nothing (the strip already
+  says so, and a rider on every answer is noise); "ORD-14 is on M-02" is not a
+  cost claim. **The asymmetry is the point — the surface volunteers the thing
+  that WEAKENS its own number.**
+
+Every bundle leaving `Explainer.route` carries the proof, stamped at the ONE
+dispatch rather than in forty assemblers, so a route added tomorrow inherits it
+and none can forget. It is read from the M6 `solve_complete` event — the same
+record `schedule_assembler._solver_block` builds the document's solver block
+from, so the board and the answer agree because they read one record, not because
+two derivations were kept in step. `EvidenceIndex.events()` was added for it.
+
+**The rolling path could not state a gap at all** until this session:
+`assemble_rolling_document` wrote `SolverBlock(gap=None)` unconditionally, so an
+unproved rolling board could say "not proved" and never "by how much" — precisely
+the 13.056% §5a.27 measured. `RollingView` now carries stage 1's `objective` and
+`gap`, the M6 event records the gap, and the assembler passes both through.
+
+**No new "is this optimal?" ROUTE was built.** A new intent is a vocabulary-class
+change and the brief's own instruction was to name that debt rather than bolt one
+on. What exists is the chip and the rider; the standing R-AI1 debt is docs/07
+§5a.29.
+
+#### The sample_data baseline was REGENERATED, and the brief's premise was wrong
+
+The brief's acceptance said every monolithic golden would stay BYTE-IDENTICAL, on
+the premise that no monolithic fixture carries past-due work. **That premise is
+false.** sample_data carries WO-PAST-001 (ScheduleDate 2025-01-15) as seeded
+defect 3, and clause (1) schedules it. The golden could not survive the ruling.
+Saying so is more useful than a criterion quietly dropped.
+
+Note that `sample_data_v2/DEFECTS.md` has ALWAYS declared defect 3's expected
+disposition as `proceeded_flagged`. The implementation had drifted to `excluded`;
+R-PD1 restores what the catalog said. DEFECTS.md is updated for the code change
+only.
+
+**The regeneration is accounted for by construction, not by inspection.**
+Re-running the exact gate pipeline against sample_data with the single row
+`WO-PAST-001` REMOVED reproduces the PREVIOUS golden **byte-for-byte** and its
+ledger to the cent (24,769.00 / 19,429.00 / 4,500.00 / 840.00). So every
+difference between old golden and new is attributable to one order being
+admitted, and to nothing else. Both runs reproduce across repeated invocations
+under pinned determinism.
+
+New golden: total **801,930.00** = production 19,759.00 + setup 4,650.00 +
+tardiness **777,521.00**. Tardiness rises from 840 because WO-PAST-001 is 776,681
+minutes late — **776,160 of them FLOOR**. That ratio is the clearest possible
+argument for contract 1.11: one fused number here would tell a planner their
+schedule caused $777,521 of lateness when it caused $521 of it.
+
+#### Reported, not fixed
+
+**`facility_real`'s CONDITIONAL grade is a GENERATOR TRUTHFULNESS DEFECT, not the
+past-due orders.** 4B.10 recorded that a CONDITIONAL grade "is CORRECT for it
+(the past-due orders), not a defect". That is wrong on inspection of the rule:
+M0's `ids.order_dates_internally_consistent` checks `due < release/created`, NOT
+`due < reference_date`. `generate_erp_dataset` writes
+`created_date = ref.isoformat()` for EVERY order, so a past-due order is emitted
+as created ON the reference date and due before it — a genuine date inversion,
+and the gate is right to flag it. A real backlog order was created before it was
+due. **This is the same defect docs/04 2026-07-10 already fixed once for the
+`stale_due_dates` anomaly** ("the anomaly now ages created_date with the due
+date"). *Fix shape:* age `created_date` with the due date for past-due orders in
+`_apply_facility_real`, and record the authored lead in
+`datasets/facility_real/PROFILE_PROVENANCE.md`. NOT done here: the inversion is
+what makes the specimen's M0 `proceeded_flagged` finding exist, and clause (3)'s
+guard needs a live one to be non-vacuous. Carried in docs/07 §5a.30.
+
+**`scenario.py`'s `--horizon-days` exclusion is a clause (2) AND clause (3)
+violation and remains open** (`scenario.py:280-293`): it adds beyond-horizon
+demands to `excluded_demand_ids` with NO finding of any kind, so nothing names
+the module or the reason. This is §5a.1, now formally the same pattern as this
+session's finding, and clause (3)'s guard would catch it if applied to that path.
+Untouched — out of scope, and the fix is a category change on a production path.
+
+**TWO FIXTURES WERE BUILDING AGAINST TWO CLOCKS, and R-PD1 is what revealed it.**
+Every shipped `SolverBuilder` caller passes a reference date (`__main__`,
+`scenario`, `sandbox`, `solution_pool`), but two test fixtures constructed
+`SolverBuilder()` bare while pinning a reference date everywhere else in the same
+run. The mismatch was invisible while past-due work was excluded, because nothing
+could then drag `min(earliest_start)` away from the pinned date. With
+WO-PAST-001 schedulable it surfaced twice, and neither symptom looked like a
+clock problem: `test_schedule_persist` produced a tardiness floor of None (the
+floor is measured from t0, and the builder's t0 of 2024-12-20 preceded the
+order's due date — the arithmetic was right, the clock was wrong), and
+`test_scenario` produced a **775,841-minute phantom tardiness delta** on a diff
+whose whole purpose is to compare two solves, because the base built against
+`min(earliest_start)` while the scenario re-solve — which reads the date back off
+M3's config — built against the pinned one. Both fixtures now pass the date they
+had already pinned. **An unfloored horizon does not fail loudly; it produces
+confident numbers measured from a clock nobody chose.**

@@ -76,11 +76,14 @@ class TestAllSixDefectsFound:
         # At least one finding for defect 2 (zero lot size) has disposition=defaulted
         assert any(f["disposition"] == "defaulted" for f in found)
 
-    def test_defect3_temporal_impossibility(self, pipeline_run):
-        """TEMPORAL_IMPOSSIBILITY demands are excluded from planning (not merely flagged)."""
-        found = self._findings_by_code(pipeline_run, "TEMPORAL_IMPOSSIBILITY")
+    def test_defect3_past_due_at_intake(self, pipeline_run):
+        """R-PD1 (Session 4B.11): a past-due demand is FLAGGED AND SCHEDULED, not
+        excluded — which is what sample_data_v2/DEFECTS.md declared for defect 3
+        all along. The code is PAST_DUE_AT_INTAKE; TEMPORAL_IMPOSSIBILITY keeps
+        its M0 meaning (a date pair that cannot both be true)."""
+        found = self._findings_by_code(pipeline_run, "PAST_DUE_AT_INTAKE")
         assert len(found) >= 1
-        assert all(f["disposition"] == "excluded" for f in found)
+        assert all(f["disposition"] == "proceeded_flagged" for f in found)
 
     def test_defect4_unmappable_value(self, pipeline_run):
         found = self._findings_by_code(pipeline_run, "UNMAPPABLE_VALUE")

@@ -353,6 +353,54 @@ def apply_repeat_riders(bundle, text: str) -> str:
     return f"{lead}\n{text}" if text else lead
 
 
+#: Session 4B.11 CU1 — the marker that an answer STATES MONEY. Every currency
+#: figure the answer surface emits is formatted with a dollar sign (``$1,234.56``
+#: / ``+$375.83`` / ``$0``), so its presence in the delivered text is the test for
+#: "does the cost proof bear on this answer?". Deterministic and inspectable; no
+#: route list to keep in step with the assemblers.
+_MONEY_MARK = "$"
+
+
+def apply_cost_proof_rider(bundle, text: str) -> Optional[str]:
+    """Append the cost-proof qualifier to an answer that states money on a board
+    whose cost optimum was NOT proved (Session 4B.11 CU1, docs/07 §5a.23).
+
+    Called from the ONE delivery seam both renderers share, for the same reason
+    ``apply_repeat_riders`` is: the template path and the LLM path must not be
+    able to disagree about whether this schedule's numbers are proven.
+
+    THE RULE, and it is narrow on purpose:
+
+      * the bundle carries a ``cost_proof`` (every bundle does — ``Explainer.route``
+        stamps it), and that proof is UNPROVED — a solve ran and did not close
+        the bound. A PROVED board adds nothing: the strip already says so and a
+        rider on every answer is noise.
+      * the delivered text states money. "This schedule costs X" on an
+        11.47%-gap board is the true-but-miscredited species 4B.10 measured;
+        "ORD-14 is on M-02" is not a cost claim and gets no rider.
+
+    Returns the new text, or None when nothing applies (the caller keeps its own).
+    """
+    from mre.modules.cost_proof import CostProof
+    proof = (bundle.key_facts or {}).get("cost_proof")
+    if isinstance(proof, dict):
+        proof = CostProof(**{k: proof.get(k) for k in
+                             ("status", "gap", "objective", "tiebreak_status",
+                              "tiebreak_skipped_reason")})
+    if not isinstance(proof, CostProof):
+        return None
+    rider = proof.rider()
+    if not rider or _MONEY_MARK not in (text or ""):
+        return None
+    # Above the delivery footer, so the qualifier reads as part of the answer
+    # rather than as metadata about it.
+    marker = "\n[rendered by:"
+    if marker in text:
+        head, foot = text.split(marker, 1)
+        return f"{head.rstrip()}\n\n{rider}\n{marker}{foot}"
+    return f"{text.rstrip()}\n\n{rider}"
+
+
 def causal_material(bundle) -> tuple[set, set]:
     """``(subjects, entities)`` for :func:`causal_vacuity`, read off a bundle.
 
@@ -413,8 +461,11 @@ class TemplateRenderer:
     def render(self, bundle: ExplanationBundle) -> str:
         # CU3 — the single delivery seam: strip markdown/backticks from every
         # register's output here, so no register can leak formatting.
-        return apply_repeat_riders(bundle, strip_formatting(
+        text = apply_repeat_riders(bundle, strip_formatting(
             self._render_body(bundle) + "\n" + _rendered_by(bundle, "template")))
+        # 4B.11 CU1 — an unproved board's money claims carry their gap, here,
+        # once, for every route (docs/07 §5a.23).
+        return apply_cost_proof_rider(bundle, text) or text
 
     def _render_body(self, bundle: ExplanationBundle) -> str:
         # R-AI2(d) (Session 4A.2d) — the transcript convention dies: no "=== q ==="
@@ -582,6 +633,24 @@ class TemplateRenderer:
                 lines.append(f"{count} late order(s):")
                 for item in orders:
                     lines.append(f"  - {item}")
+                # R-PD1 clause (4)/(6), Session 4B.11 CU4(b) — the two totals,
+                # stated separately. A planner reading "285,143 minutes late"
+                # would take all of it as this schedule's doing; on the specimen
+                # 96.4% of it was on the clock before the window opened. The
+                # split is spoken BEFORE any invitation to drill in, because it
+                # changes what the drill-down is about.
+                pd_n = kf.get("past_due_at_intake_count") or 0
+                if pd_n:
+                    floor = int(kf.get("tardiness_floor_minutes") or 0)
+                    ctrl = int(kf.get("tardiness_controllable_minutes") or 0)
+                    lines.append("")
+                    lines.append(
+                        f"{pd_n} of those {'was' if pd_n == 1 else 'were'} "
+                        f"ALREADY PAST DUE before this window opened — that is the "
+                        f"plant's position, not a data problem, and the work is "
+                        f"scheduled. Of the total lateness, {floor} minute(s) were "
+                        f"unavoidable at the start and {ctrl} minute(s) are what "
+                        f"this schedule adds.")
             self._render_excluded_note(lines, bundle)
             if count and kf.get("worst_late_order"):
                 from mre.modules.ask_fallback_copy import INVITE_LATE_ORDERS
@@ -1422,7 +1491,25 @@ class TemplateRenderer:
         entity = bundle.key_facts.get("entity_ref")
         if not composed:
             if entity:
-                lines.append(f"No data-quality problems found for {entity}.")
+                # R-PD1 clause (6), Session 4B.11 CU4(d) — "why was ORD-X
+                # excluded?" about an order that was NOT excluded is answered
+                # about THAT ORDER, and says where it actually is. The bare
+                # "no data-quality problems found for ORD-X" left a planner who
+                # had just been told "nothing scheduled" with two negatives and
+                # no fact.
+                sched = bundle.key_facts.get("subject_is_scheduled")
+                if sched:
+                    lines.append(
+                        f"{entity} wasn't excluded — it IS in this schedule. "
+                        f"Ask \"where is {entity}?\" for its operation timeline.")
+                elif sched is False:
+                    lines.append(
+                        f"{entity} wasn't excluded by any check, and it isn't "
+                        f"placed in this schedule either — so nothing in the "
+                        f"record explains its absence. That is a gap worth "
+                        f"reporting, not a data-quality problem.")
+                else:
+                    lines.append(f"No data-quality problems found for {entity}.")
             else:
                 lines.append("No data-quality problems — the submission is clean.")
             lines.append("")
@@ -2029,8 +2116,11 @@ class LLMRenderer:
         # CU3 — the single delivery seam (mirrors TemplateRenderer.render): every
         # register — testimony, remediation, judgment, the authored fallbacks —
         # returns through _render_inner and is stripped of markdown/backticks here.
-        return apply_repeat_riders(bundle, strip_formatting(
+        text = apply_repeat_riders(bundle, strip_formatting(
             self._render_inner(bundle)))
+        # 4B.11 CU1 — same seam, same rule: a reworded answer that still states
+        # money on an unproved board still carries the gap.
+        return apply_cost_proof_rider(bundle, text) or text
 
     def _render_inner(self, bundle: ExplanationBundle) -> str:
         if bundle.subject_type in ("remediation", "triage"):

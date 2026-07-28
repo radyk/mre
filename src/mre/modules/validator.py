@@ -3,7 +3,14 @@
 Semantic quality checks against a canonical snapshot.  Produces go/no-go gate.
 
 Checks performed:
-1. TEMPORAL_IMPOSSIBILITY  — Demand.due < reference_date (historical-replay safe).
+1. PAST-DUE AT INTAKE      — Demand.due < reference_date. RECORDED AS A METRIC,
+                             NOT EXCLUDED (R-PD1, Session 4B.11). Until 4B.11 this
+                             raised TEMPORAL_IMPOSSIBILITY / EXCLUDED and removed
+                             the demand from planning; R-PD1 clause (2) rules that
+                             exclusion is a DATA-DEFECT category only and a true
+                             statement about the plant's position — late, beyond
+                             horizon, over capacity — can never be one. See the
+                             check body for the full reasoning.
 2. VALUE_OUT_OF_RANGE      — Demand.quantity == 0 (or other OOB values).
 3. LOW_CONFIDENCE_INPUT    — Demand.customer_weight derived from defaulted/synthesized provenance.
 4. STATISTICAL_OUTLIER     — OperationSpec.run_rate > threshold × median within product family.
@@ -183,8 +190,53 @@ class Validator:
                 res_window[res["id"]] = 0.0
                 res_weekly_minutes[res["id"]] = 0.0
 
-        # --- Check 1: TEMPORAL_IMPOSSIBILITY ---
+        # --- Check 1: PAST-DUE AT INTAKE (R-PD1, Session 4B.11) ---
+        #
+        # THIS CHECK NO LONGER EXCLUDES ANYTHING, AND THAT IS THE POINT.
+        #
+        # It used to add every demand with ``due < reference_date`` and no
+        # in-flight WIP to ``excluded_demand_ids`` under a TEMPORAL_IMPOSSIBILITY
+        # / WARNING / EXCLUDED finding. On the first fixture that could produce
+        # one (facility_real_pastdue, 4B.10 §5a.26) that removed 21 of 21 real
+        # orders before the solver ever saw them — 7.83% of the pilot plant's
+        # actual book, a quarter of one facility's — and it did so AFTER the M0
+        # gate had graded the same fact ``proceeded_flagged`` with ``go=True``.
+        # The gate said "proceed with these, flagged"; this check removed them.
+        #
+        # R-PD1 (docs/04, 2026-07-28) rules that out in two clauses:
+        #
+        #   (1) PAST-DUE IS WORK, NOT A DEFECT. A past-due unstarted demand is
+        #       admitted, scheduled and priced with tardiness from its DECLARED
+        #       due date. Its must-start-by is already passed, so gravity pulls
+        #       it hardest — which is the behaviour a planner expects from the
+        #       most urgent work in the book.
+        #   (2) EXCLUSION IS A DATA-DEFECT CATEGORY ONLY. A demand may be
+        #       excluded for MALFORMED DATA. It may never be excluded for a TRUE
+        #       STATEMENT ABOUT THE PLANT'S POSITION — late, beyond horizon,
+        #       over capacity. "This order is late" is the plant's position, has
+        #       no fix, and is not a data-quality problem.
+        #
+        # Checks 2..6 below are untouched: a quantity <= 0 is still malformed and
+        # is still excluded (clause (2) permits exactly that), as are the
+        # adapter-layer and window-fit exclusions.
+        #
+        # WHAT REPLACES THE FINDING. Nothing files past-dueness as a defect any
+        # more; it is recorded as a METRIC, because it is a fact about the book
+        # rather than a problem with it. The unavoidable part of the resulting
+        # tardiness is separated in the ledger (clause (4), cost_summary's
+        # ``tardiness_floor``), which is where a planner reads the consequence.
+        # Clause (5)'s AGE finding — "past due beyond a DECLARED threshold" — is
+        # deliberately NOT emitted here: the threshold is an IDS coefficient that
+        # does not exist yet, and inventing one would author a business fact we
+        # do not have (the same discipline the coarse zone's rho follows). It is
+        # left OPEN in docs/07 rather than emitted with no declared pathway.
+        #
+        # The docs/06 §5.13 wip_status doorway is no longer an ESCAPE from
+        # exclusion, because there is nothing to escape. It keeps its other
+        # meaning untouched (an in-flight operation still constrains placement).
         excluded_demand_ids: set[str] = set()
+        past_due_ids: list[str] = []
+        past_due_minutes = 0.0
         for d in demands:
             due_raw = d.get("due")
             if not due_raw:
@@ -195,31 +247,57 @@ class Validator:
                     due = due.replace(tzinfo=UTC)
             except (ValueError, TypeError):
                 continue
-
             if due < now:
-                # WIP exemption (docs/06 §5.13, the amended invariant): a
-                # past-due demand that is actually underway on the floor is
-                # NOT a ghost — excluding it would strand real in-flight work.
-                # Only a past-due demand with no in-flight/complete observation
-                # is a ghost job (the original fix, un-regressed).
-                wip_ops = d.get("wip_operations") or []
-                if any((w.get("status") in ("in_progress", "complete"))
-                       for w in wip_ops):
-                    continue
-                excluded_demand_ids.add(d["id"])
-                reporter.record_finding(
-                    code=FindingCode.TEMPORAL_IMPOSSIBILITY,
-                    severity=FindingSeverity.WARNING,
-                    subjects=[EntityRef(entity_id=d["id"], entity_type="demand")],
-                    evidence={
-                        "demand_id": d["id"],
-                        "due": due_raw,
-                        "reference_date": now.isoformat(),
-                        "reason": "Due date is before reference_date; demand excluded from planning",
-                    },
-                    disposition=FindingDisposition.EXCLUDED,
-                    tier=RecordTier.SUPPORTING,
-                )
+                past_due_ids.append(d["id"])
+                past_due_minutes += (now - due).total_seconds() / 60.0
+
+        if past_due_ids:
+            subjects = [EntityRef(entity_id=i, entity_type="demand")
+                        for i in past_due_ids]
+            # ONE finding, INFORMATIONAL, PROCEEDED_FLAGGED — under its own code.
+            # It is certificate-visible (the fact must not be silent: 7.83% of
+            # the pilot book is already late) but it is NOT a defect: severity
+            # INFO cannot degrade a grade, the disposition is proceed, and the
+            # code says what actually happened instead of borrowing M0's
+            # "dates that can't both be true". `sample_data_v2/DEFECTS.md`
+            # defect 3 has declared `proceeded_flagged` all along; the
+            # implementation had drifted to `excluded`.
+            reporter.record_finding(
+                code=FindingCode.PAST_DUE_AT_INTAKE,
+                severity=FindingSeverity.INFO,
+                subjects=subjects,
+                evidence={
+                    "demand_ids": past_due_ids,
+                    "count": len(past_due_ids),
+                    "reference_date": now.isoformat(),
+                    "tardiness_floor_minutes": round(past_due_minutes, 3),
+                    "reason": (
+                        "Already past their declared due date at the reference "
+                        "date. Scheduled and priced with tardiness (R-PD1 "
+                        "clause 1); not a data defect and not excluded."),
+                },
+                disposition=FindingDisposition.PROCEEDED_FLAGGED,
+                tier=RecordTier.SUPPORTING,
+            )
+            # …and the two quantities as METRICS, which is what they are: the
+            # count of demands that entered already late, and the unavoidable
+            # lateness they carry before any scheduling decision is made. No
+            # rollup_of — two independent quantities, not a decomposition.
+            reporter.record_metric(
+                name="demands_past_due_at_intake", value=float(len(past_due_ids)),
+                unit="count", subjects=subjects, tier=RecordTier.SUPPORTING,
+                message=("Demands whose declared due date is already behind the "
+                         "reference date. They are SCHEDULED (R-PD1 clause 1), "
+                         "not excluded."),
+            )
+            reporter.record_metric(
+                name="tardiness_floor_minutes_at_intake",
+                value=round(past_due_minutes, 3), unit="minutes",
+                subjects=subjects, tier=RecordTier.SUPPORTING,
+                message=("Unavoidable lateness already accrued at the reference "
+                         "date, summed over the past-due demands. No schedule "
+                         "can recover it (R-PD1 clause 4)."),
+            )
 
         # --- Check 2: VALUE_OUT_OF_RANGE on Demand.quantity ---
         for d in demands:
@@ -250,6 +328,10 @@ class Validator:
                     evidence={
                         "demand_id": d["id"],
                         "quantity": qty_value,
+                        # R-PD1 clause (3): a module that removes a demand names
+                        # ITSELF as the source, so an exclusion can never be
+                        # traced to "somewhere in the pipeline".
+                        "excluded_by_module": ModuleCode.M3.value,
                         "reason": "Demand quantity must be > 0; demand excluded from planning",
                     },
                     disposition=FindingDisposition.EXCLUDED,
@@ -417,6 +499,7 @@ class Validator:
                                 "estimated_duration_minutes": round(total_minutes, 1),
                                 "max_window_minutes": max_window,
                                 "quantity": qty,
+                                "excluded_by_module": ModuleCode.M3.value,
                                 "run_rate_min_per_unit": round(run_rate_sec / 60.0, 6),
                                 "setup_minutes": round(setup_sec / 60.0, 1),
                                 "reason": (
@@ -442,6 +525,28 @@ class Validator:
                 )
                 if best_weekly <= 0.0:
                     continue
+                # R-PD1 clause (2), Session 4B.11 — THE SECOND EXCLUSION SITE.
+                # This test asks "does the work fit BEFORE THE DUE DATE?". For a
+                # demand that is ALREADY PAST DUE the answer is trivially no —
+                # `elapsed_days` is floored at 0.0 above, so `available_minutes`
+                # is 0.0 and ANY positive duration exceeds it. Once Check 1 stops
+                # excluding past-due work (clause (1)), every past-due RESUMABLE
+                # demand would have fallen straight into this branch instead and
+                # been excluded here as INFEASIBLE_SUBSET — the same removal
+                # wearing a different finding code.
+                #
+                # "It cannot fit before a due date that has already passed" is a
+                # TRUE STATEMENT ABOUT THE PLANT'S POSITION, not malformed data,
+                # so clause (2) forbids exclusion for it. The demand is scheduled
+                # late and priced with tardiness like any other past-due work.
+                #
+                # The NON-RESUMABLE test above is deliberately NOT skipped: it
+                # asks whether a single operation exceeds the longest contiguous
+                # calendar window on EVERY eligible resource (docs/05 R-C3), which
+                # is a structural impossibility independent of any due date, and
+                # is a genuine defect class.
+                if elapsed_days <= 0.0:
+                    continue
                 available_minutes = best_weekly * (elapsed_days / 7.0)
                 if total_minutes > available_minutes:
                     excluded_demand_ids.add(d["id"])
@@ -456,6 +561,7 @@ class Validator:
                             "available_minutes_before_due": round(available_minutes, 1),
                             "elapsed_days_to_due": round(elapsed_days, 2),
                             "quantity": qty,
+                            "excluded_by_module": ModuleCode.M3.value,
                             "reason": (
                                 "Resumable operation's total working time exceeds what is "
                                 "available (best eligible resource) between reference_date "

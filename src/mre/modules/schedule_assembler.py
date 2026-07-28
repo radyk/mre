@@ -67,6 +67,13 @@ _CUSTOMER_REF_TYPES = ("customer_id", "customer")
 _LOCK_CONSTRAINT_TYPES = ("frozen_assignment", "pinned_window")
 
 
+def _opt_float(v: Any) -> Optional[float]:
+    """``float(v)`` or None — the contract-1.11 optional-ledger-line rule. An
+    absent key and a zero are DIFFERENT facts here: absent means this book had no
+    past-due work at all, so there is nothing to decompose."""
+    return None if v is None else float(v)
+
+
 def assemble_schedule_document(
     *,
     snapshot_id: str,
@@ -128,6 +135,11 @@ def assemble_schedule_document(
         production_overtime=float(sm.get("production_overtime_cost", 0.0)),
         setup=float(sm.get("setup_cost", 0.0)),
         tardiness=float(sm.get("tardiness_cost", 0.0)),
+        # Contract 1.11 (R-PD1 clause 4). Absent unless the extractor recorded a
+        # floor, i.e. unless this book carried past-due work — which no
+        # monolithic fixture does, so their documents stay byte-identical.
+        tardiness_floor=_opt_float(sm.get("tardiness_floor_cost")),
+        tardiness_controllable=_opt_float(sm.get("tardiness_controllable_cost")),
         costmodel_version=_costmodel_version(schedule, costmodels),
     )
 
@@ -202,6 +214,12 @@ def assemble_schedule_document(
             projected_completion=_parse_dt(svc.get("projected_completion")),
             lateness_min=int(lateness),
             tardiness_cost=float(svc.get("tardiness_cost", 0.0)),
+            # Contract 1.11 (R-PD1 clause 4): present only when the extractor
+            # recorded a floor, i.e. only on a demand already late at t0.
+            tardiness_floor_min=(int(svc["tardiness_floor_minutes"])
+                                 if svc.get("tardiness_floor_minutes") else None),
+            tardiness_floor_cost=(float(svc["tardiness_floor_cost"])
+                                  if svc.get("tardiness_floor_minutes") else None),
         ))
     svc_blocks.sort(key=lambda s: (s.work_order or "", s.demand_ref))
 
@@ -560,6 +578,12 @@ def assemble_rolling_document(
             projected_completion=_parse_dt(svc.get("projected_completion")),
             lateness_min=int(lateness),
             tardiness_cost=float(svc.get("tardiness_cost", 0.0)),
+            # Contract 1.11 (R-PD1 clause 4): present only when the extractor
+            # recorded a floor, i.e. only on a demand already late at t0.
+            tardiness_floor_min=(int(svc["tardiness_floor_minutes"])
+                                 if svc.get("tardiness_floor_minutes") else None),
+            tardiness_floor_cost=(float(svc["tardiness_floor_cost"])
+                                  if svc.get("tardiness_floor_minutes") else None),
         ))
     svc_blocks.sort(key=lambda s: (s.work_order or "", s.demand_ref))
 
@@ -645,11 +669,21 @@ def assemble_rolling_document(
         production_overtime=float(led.get("production_overtime_cost", 0.0)),
         setup=float(led.get("setup_cost", 0.0)),
         tardiness=float(led.get("tardiness_cost", 0.0)),
+        # Contract 1.11 (R-PD1 clause 4) — the split the rolling window's own
+        # extraction recorded. Present only when past-due work was scheduled.
+        tardiness_floor=_opt_float(led.get("tardiness_floor_cost")),
+        tardiness_controllable=_opt_float(led.get("tardiness_controllable_cost")),
     )
 
     # 4B.8 CU3: view.status is STAGE 1's (the COST proof); the tiebreak proof
     # rides beside it as its own optional field.
+    # 4B.11 CU1: the cost proof's objective and gap ride with it. A rolling board
+    # that could not prove its optimum has to be able to say BY HOW MUCH, or the
+    # surface can only report "not proved" — and 4B.10 measured that distance at
+    # 13.056% of ledger on the real shape.
     solver = SolverBlock(status=view.status, deterministic=True,
+                         objective=getattr(view, "objective", None),
+                         gap=getattr(view, "gap", None),
                          tiebreak_status=view.tiebreak_status,
                          tiebreak_skipped_reason=view.tiebreak_skipped_reason)
 

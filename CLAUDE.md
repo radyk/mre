@@ -124,6 +124,9 @@ zone = build_coarse_zone(plant, view)              # rho/bucket_days from the co
 doc  = assemble_rolling_document(..., coarse_zone=zone)   # 1.9 blocks appear
 ```
 
+Contract is **1.11** since 4B.11 (the R-PD1 tardiness split; additive, and
+absent on any book with no past-due work).
+
 `zone.certificate_block()` carries rho + its provenance (acceptance: a hidden default
 is a failure). Declare the coefficients in a submission via `cost_model.json`
 `refinements.coarse_horizon = {"bucket_days": 7, "capacity_derate": 0.85}`.
@@ -155,146 +158,166 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.10 — the real shape: few machines, deep queues**, 2026-07-28
-(docs/07 v2.54; docs/04 session amendment same date; full narrative in
-`SESSION_CLOSEOUT.md`). Before it: 4B.9 (intelligence, close-out only — its book is
-now durable in docs/07 §5a.24) and 4B.8 (docs/07 v2.53).
+**Session 4B.11 — the honesty bundle: the proof rendered, the late work scheduled,
+the arithmetic reconciled**, 2026-07-28 (docs/07 v2.55; docs/04 session amendment
+with **R-PD1 verbatim**; full narrative in `SESSION_CLOSEOUT.md`). Before it: 4B.10
+(docs/07 v2.54), 4B.9 (its book is durable in docs/07 §5a.24), 4B.8 (v2.53).
 
-**EVERY SCALE NUMBER WE HELD WAS TAKEN ON THE WRONG AXIS.** `pilot_scale` runs
-13–15 machines at ~24 ops/machine; the measured planning unit is **4 MACHINES
-CARRYING 250–800 OPS EACH** (§5a.24). The book has no long tail — 90% of demand due
-inside 14 days, 50% inside 7, **7.83% ALREADY PAST DUE** — and one facility is the
-planning unit (0 of 134 used routes span facilities).
+**R-PD1 — PAST-DUE IS WORK, NOT A DEFECT (ruled and implemented, docs/04
+2026-07-28).** Six clauses. **(1)** a past-due unstarted demand is admitted,
+scheduled and priced with tardiness from its DECLARED due date. **(2) EXCLUSION IS A
+DATA-DEFECT CATEGORY ONLY** — never for a true statement about the plant's position
+(late, beyond horizon, over capacity); this **generalizes §5a.1 and §5a.26 into one
+rule**. **(3) THE GATE'S DISPOSITION BINDS DOWNSTREAM** — a module removing a
+`proceeded_flagged` demand raises its OWN finding naming ITSELF (`excluded_by_module`
+in evidence; the general guard is committed in `tests/test_pastdue_disposition.py`,
+35 tests). **(4)** tardiness decomposes and never fuses. **(5) AGE IS NOT LATENESS —
+OPEN, deliberately unbuilt** (§5a.28: the threshold is a declared IDS coefficient
+that does not exist, and inventing one authors a business fact we do not have; the
+full pipeline-proof chain is named in docs/06 §5.9). **(6)** every per-order route
+voices the disposition.
 
-**THE DURATION SEMANTICS ARE DETERMINED, NOT AMBIGUOUS (§5a.25).**
-`op = SetUpMinutes + (WoQuantity/CostingLotSize) × ProductionMinutes`, per
-operation — agreed by `legacy/Formatnewjobs.py:68` (the previous-generation
-production code), the standing `legacy_author_definition_v1` ruling, and the data
-itself (log-log **r = +0.683** of PM against lot size). **A SENTINEL CLASS CARRIES
-93.56% OF THE COMPUTED LOAD**: 1,434 products read `lot = setup = production = 1` —
-all three exactly 1 on **100.0%** of those rows — and **no exclusion rule we have
-would catch them** (they fire on `lot == 0`). Every utilisation figure is taken with
-the class removed and says so.
+**21 of 21 past-due orders are SCHEDULED on the specimen, and GRAVITY DID NOT HAVE
+TO BE TOLD** — measured, they are admitted by the BASE rule (`due <= window_end`)
+before gravity runs at all, so the admission policy needed no change and got none.
+`validator.py` Check 1 excludes nothing and raises one
+**`PAST_DUE_AT_INTAKE`** finding (**finding code 19**, ADDED never repurposed —
+`TEMPORAL_IMPOSSIBILITY` is M0's verdict on `due < release/created` and keeps that
+meaning) at INFO / `proceeded_flagged`, `remediation_applies: false`. **A SECOND
+EXCLUSION SITE was found and closed:** Check 5's resumable window-fit test floors
+`elapsed_days` at 0, so every past-due resumable demand would have been excluded
+there as `INFEASIBLE_SUBSET` — the same removal wearing a different code. And
+**scheduling past-due WORK never means modelling past TIME**: `_compute_horizon`'s
+reference-date floor is now unconditional (sample_data dragged the horizon to
+**2024-12-20** without it).
 
-**UTILISATION: BOTH ANSWERS, AND THE CASES MUST NOT BE CONFLATED.** F006, the
-LARGEST facility (4 machines, 803 ops/machine at 14 d) is at **112.5%** —
-structurally over-capacity, and no solver fixes that. F004, the MEDIAN (246
-ops/machine, 984 ops in the window) is at **32.6%** — comfortably feasible, and
-4B.8's cost objective returned UNKNOWN at 313 free ops. **There the difficulty is
-OURS.** 5 of 11 facilities exceed 100% at both depths.
+**THE TARDINESS SPLIT — contract 1.10 -> 1.11.** `cost_summary.tardiness_floor` +
+`tardiness_controllable`, present TOGETHER or not at all, summing to `tardiness` to
+the cent, **ABSENT on any book with no past-due work** (so on-time monolithic
+documents are byte-identical to their 1.10 selves). It does not change the model —
+`solver_builder` has always clamped `due_min = max(0, due − horizon_start)`, so the
+floor was never in the objective. **The brief's own test for this was the WRONG test
+and the data said so:** at 60 orders both arms returned FEASIBLE and 237/240
+placements differed (two truncated searches, not an argmin). At 12 orders **both
+prove OPTIMAL** and `B − A = 6,999,840 = Σ (weight × floor)` **exactly**; placements
+still differ (34/48) because that is a **TIE**. **Placement identity would have been
+sufficient but is not necessary.**
+
+**§5a.23 DISCHARGED — the cost proof is rendered and voiced.**
+`src/mre/modules/cost_proof.py` is the single definition. The cockpit strip carries a
+chip (label + title composed SERVER-SIDE, delivered on `/meta`, so the JS composes no
+wording); the answer surface carries an unprompted rider fired by the ONE delivery
+seam **only when the board is UNPROVED and the text states money** — the asymmetry is
+the point. Every bundle leaving `Explainer.route` carries the proof, read from the M6
+`solve_complete` event the document's `SolverBlock` is also built from. **The rolling
+path could not state a gap at all** before this. **No optimality ROUTE was built** —
+a vocabulary-class change, named as §5a.29.
+
+**THE 42 IS RECONCILED.** Two compounding errors in `_excluded_summary`: the COUNT
+came from a **token set** holding both the UUID and the `ORD-` id of every excluded
+demand (21 × 2 = 42), and `scheduled` counted **every** demand in the snapshot with
+`total` = that + the exclusions (60 + 42 = 102 in a 60-order world). Counting and
+display now key on the **resolved ORDER** (the same order is excluded in two
+id-spaces by two layers). Invariant asserted: `scheduled + count == total` and
+`total == demands in the snapshot`, **proved on a purpose-built world that still HAS
+exclusions** (R-PD1 dissolves the note on the specimen itself).
+
+**THE sample_data BASELINE WAS REGENERATED — the brief's byte-identity premise was
+FALSE.** sample_data carries WO-PAST-001 as seeded defect 3 (whose `DEFECTS.md` has
+declared `proceeded_flagged` all along, while the implementation drifted to
+`excluded`). **Accounted for by construction:** re-running the gate pipeline with
+that single row REMOVED reproduces the previous golden **byte-for-byte** and its
+ledger to the cent (24,769.00). New golden **801,930.00**, tardiness **777,521.00**,
+of which **776,160 is FLOOR**. `pilot_scale` and every rolling golden are untouched.
+**Two test fixtures were found building against TWO CLOCKS** — bare
+`SolverBuilder()` while pinning a reference date elsewhere in the same run — which
+only became visible once a released-long-ago order was schedulable; both now pass the
+date they had already pinned (every shipped caller always did).
+
+**THE REAL SHAPE, AND WHY IT REFRAMES SCALE (4B.10; full tables docs/07 §5a.24-27).**
+`pilot_scale` runs 13-15 machines at ~24 ops/machine; **the measured planning unit is
+4 MACHINES CARRYING 250-800 OPS EACH.** No long tail — 90% of demand due inside 14
+days, 50% inside 7, **7.83% ALREADY PAST DUE** — and one facility is the planning
+unit. Durations are **DETERMINED, not ambiguous**:
+`op = SetUpMinutes + (WoQuantity/CostingLotSize) x ProductionMinutes` per operation
+(§5a.25) — and **a SENTINEL CLASS carries 93.56% of computed load** (1,434 products
+reading `lot = setup = production = 1`; **no exclusion rule we have catches them**,
+they fire on `lot == 0`). Every utilisation figure is taken with the class removed.
+**Utilisation is BOTH answers:** F006, the LARGEST facility, sits at **112.5%**
+(structurally over-capacity — no solver fixes that); F004, the MEDIAN, at **32.6%**
+(comfortably feasible — **there the difficulty is OURS**). The cases must not be
+conflated.
 
 **THE CLIFF IS A REGION WHERE THE SEED DECIDES, AND ITS DRIVER IS TARDINESS
-(§5a.27).** On the real shape the cost proof goes marginal between **94 and 137
-ops/machine** — **BELOW F004's real 246 and far below F006's 803**, so **the gap
-probe's verdict does NOT survive the objective change, and not in the direction
-hoped.** At 94 ops/machine, 5/5 seeds prove in 0.015–0.192 of 5.5 units with the
-ledger identical to the cent. At 137, proof costs **2.294–5.594** units against the
-5.5 cap: **4/5 seeds prove 29,453.35; the fifth exhausts the budget and lands
-33,298.77 — a 13.056% penalty decided by nothing but the seed.** (The same failure
-mode 4B.8 CU1 found for the old split, now on the real shape against the new cap.)
+(§5a.27).** The cost proof goes marginal between **94 and 137 ops/machine** — BELOW
+F004's real 246 and far below F006's 803. At 137, **4/5 seeds prove 29,453.35; the
+fifth exhausts the budget and lands 33,298.77 — a 13.056% penalty decided by nothing
+but the seed**, with every pre-solve quantity identical. **UTILISATION IS REFUTED as
+a predictor, twice**, so **no pre-solve rule can exist for that cell** — the honest
+mechanism is REPORTING, which is why §5a.23 mattered and why 4B.11 discharged it.
+The driver is tardiness, priced not asserted: freeing the tardiness weight turns
+FEASIBLE/gap-11.47% into OPTIMAL and collapses the objective's spread across feasible
+solutions by a factor of **194** — **not constant, nearly flat**.
+**Caveat that must travel:** this mirrors an extract with no setup families, no
+changeover matrix and no overtime; a plant that prices changeovers carries a
+placement-dependent term even at `alternates=1`. What generalizes is the SHAPE of the
+rule — difficulty turns on how much of the objective varies with placement — **not
+the number 137**.
 
-**UTILISATION IS REFUTED AS A PREDICTOR, twice.** Eligibility is invisible to load
-(identical utilisation and ops/machine, **165×** proof-cost difference between the
-alternate arms); and at 137 every pre-solve quantity is IDENTICAL across the five
-seeds that disagree. **No pre-solve rule can exist for that cell** — the honest
-mechanism is REPORTING, not prediction, which is why **§5a.23's severity is raised**:
-`solver.status` is the only thing distinguishing a proved board from one 13% worse,
-and nothing renders it. The DRIVER is tardiness, priced not asserted: freeing the
-tardiness weight turns FEASIBLE/gap-11.47% into OPTIMAL and collapses the
-objective's spread across feasible solutions from **18.402% to 0.095%** (factor
-194). The objective is **not constant, it is nearly flat** — the first reading was
-corrected by the data. **Caveat that must travel:** this mirrors the extract (no
-setup families, no changeover matrix, no overtime); a plant that prices changeovers
-would carry a placement-dependent term even at `alternates=1`. What generalizes is
-the SHAPE of the rule — difficulty turns on how much of the objective varies with
-placement — **not the number 137**.
-
-**`facility_real` ADDED, `pilot_scale` UNTOUCHED AND PROVEN SO** (byte-identical to
-HEAD except the wall-clock `extract_timestamp`; 31 passed / 1 skipped). Four
-variants (F004 median / F006 largest / cross-trained / F005's 25% past-due),
-calibration CHECKED by `tools/spikes/density_4b10/verify_facility_real.py`, and a
-MEASURED-vs-AUTHORED table at `datasets/facility_real/PROFILE_PROVENANCE.md`.
-`pilot_scale` keeps its stated purpose as the LOOK-AHEAD preset; `facility_real` is
-the REALISTIC one. **Alternates are CROSS-TRAINING, not extra machines** — identical
-machine count and load, so the pair is a controlled experiment. A **CONDITIONAL gate
-grade is CORRECT** for it (the past-due orders), not a defect.
-
-**PAST-DUE WORK VANISHES, AND TWO MODULES DISAGREE (§5a.26 — REPORTED, NOT
-RE-RULED).** 21 of 21 gone before the solver. **M0 flags them `proceeded_flagged`**
-(CONDITIONAL, `go=True`); **M3's validator then EXCLUDES them**
-(`validator.py:186-221`) — so **the gate's "proceed with these" is not honoured
-downstream**. They appear NOWHERE in the 111,839-char document,
-`RollingVocabulary.resolve` returns None, and the per-order routes cannot say so
-("where is ORD-X" → "Nothing scheduled"; "which orders are already late" → "**No
-late orders found**" in a world 35% past due). Only `excluded-orders` reaches it,
-filing them as "**21 data-quality problem(s) … Want the fix-first ordering?**" — a
-released order that is genuinely late is not a data defect and has no fix. **The
-same shelving error §5a.1 names for `--horizon-days`.**
+**`facility_real` ADDED, `pilot_scale` UNTOUCHED AND PROVEN SO.** Four variants (F004
+median / F006 largest / cross-trained / F005's 25% past-due), calibration CHECKED by
+`tools/spikes/density_4b10/verify_facility_real.py`, measured-vs-authored table at
+`datasets/facility_real/PROFILE_PROVENANCE.md`. `pilot_scale` keeps its purpose as the
+LOOK-AHEAD preset; `facility_real` is the REALISTIC one. **Alternates are
+CROSS-TRAINING, not extra machines** — identical machine count and load, so the pair
+is a controlled experiment. **Its CONDITIONAL grade is a GENERATOR TRUTHFULNESS
+DEFECT, not the past-due orders — 4B.10's claim to the contrary is CORRECTED
+(§5a.30)**; NOT fixed, because the inversion is what keeps R-PD1 clause (3)'s guard
+non-vacuous.
 
 **THE TWO-STAGE BUDGET IS DERIVED, NOT A CONSTANT (4B.8 CU2).** The caller declares
-a TOTAL (`det_total`); stage 1 is capped at total minus a **1/12 RESERVE**; **stage 2
-gets what the total has left after stage 1 actually ran**. `_STAGE2_DET_TIME_S = 2.0`
-is DELETED from both twins and `det_time` was **RENAMED `det_total`** so every caller
-had to state its own historical total. The reserve is what keeps R-SC3(1) true at
-scale. The MONOLITHIC path passes `cap_stage1=False` (its cost proof stays uncapped)
-with a 2.0 total; raising it was measured and REJECTED. Full table: docs/07 §5a.
+a TOTAL (`det_total`); stage 1 is capped at total minus a **1/12 RESERVE**; stage 2
+gets what the total has left after stage 1 actually ran. The reserve is what keeps
+R-SC3(1) true at scale. The MONOLITHIC path passes `cap_stage1=False` (its cost proof
+stays uncapped) with a 2.0 total; raising it was measured and REJECTED.
 
 **THE STATUS LINE REPORTS THE COST PROOF (4B.8 CU3 — a RULING, contract 1.9 -> 1.10).**
 `solver.status` carries **STAGE 1's** status; Optional `solver.tiebreak_status` /
 `tiebreak_skipped_reason` carry stage 2's. **A schedule whose cost is proven optimal
-SAYS SO, and an unproven tiebreak never downgrades that claim.** **§5a.23 is the
-standing debt: NOTHING VOICES IT** — neither the cockpit nor the answer surface reads
-any solve status (an R-AI1 debt, named not built).
+SAYS SO, and an unproven tiebreak never downgrades that claim.** **§5a.23 is
+DISCHARGED by 4B.11** — the strip chip and the money-answer rider both read it. What
+remains (§5a.29) is that nobody can ASK: there is no optimality INTENT, so
+"is this optimal?" falls to synthesis, which cannot see `solver.status`.
 
 **`EARLINESS_PREFERENCE` IS DORMANT (4B.8 CU4, interim only).** The extractor no
-longer emits it and `earliness_value` is DELETED from `_assignment_driver`'s
-signature; `CAPACITY_BLOCKED` carries real occupancy evidence instead. **The
+longer emits it; `CAPACITY_BLOCKED` carries real occupancy evidence instead. **The
 DriverCode member SURVIVES and docs/07 §5a.20 stays OPEN** for the vocabulary
 migration.
 
-**§5a.15 DIAGNOSED, NOT FIXED (CU5): THE 200-ORDER / 14-DAY INSTANCE IS FEASIBLE** —
-a solution in **0.082 deterministic units** once the objective is dropped, so this is
-**NOT an R-SC2 admission defect**. Build time is 0.05–0.19 s and ops-per-machine peaks
-at **92**, killing both standing hypotheses. The cliff is between **8 and 9 days** at
-200 orders, and is **NOT general**: 200 orders proves optimality at 123 free ops while
-120 orders fails at 115, so neither n_free nor ops/machine predicts it. At 14 days the
-COST solve finds **nothing at all** in 6.0 units while satisfiability takes 0.082 — a
-factor of **74**. **Discharged: §5a.19, §5a.21.**
+**§5a.15 DIAGNOSED, NOT FIXED (4B.8 CU5): THE 200-ORDER / 14-DAY INSTANCE IS
+FEASIBLE** — a solution in **0.082 deterministic units** once the objective is
+dropped, so **NOT an R-SC2 admission defect**. Both standing hypotheses died (build
+0.05–0.19 s; ops/machine peaks at 92). The cliff sits between **8 and 9 days** at 200
+orders and is **NOT general** — 4B.10 §5a.27 supplies the missing mechanism
+(tardiness onset, not density). At 14 days the COST solve finds **nothing at all** in
+6.0 units while satisfiability takes 0.082 — a factor of **74**.
 
-**PRE-FLIGHT: the missing API key was LOADER WIRING.** `.env.local` was present all
-along; `tests/conftest.py` had no loader while `tools/run_ai_exam_sweep.py` carried
-the repo's only one. Now loaded in conftest (repo-root anchored) — **the four blocked
-slow tests pass**. No `skipif`, no assertion weakened, the r5 bank still NOT run.
+**PRE-FLIGHT: the missing API key was LOADER WIRING** (4B.8). `.env.local` was
+present all along; `tests/conftest.py` had no loader. Now loaded (repo-root
+anchored) — the four blocked slow tests pass. The r5 bank is still NOT run.
 
-Before it: **Session 4B.7 — the earliness price is removed from the objective**
-(docs/07 v2.52).
-
-**R-SC3(2) IS RETIRED — `earliness_value` IS NO LONGER A PRICE.** Stage 1 of the two-stage
-solve minimizes COST ALONE on both paths, and the coefficient parameter is DELETED from
-both signatures (`solver_builder.solve_two_stage`, `rolling_horizon._two_stage_solve`) so
-it cannot leak back. **R-SC3(1) stands and is now genuinely implemented: stage 2 IS the
-tiebreak and runs UNCONDITIONALLY** at every coefficient including 0 and undeclared.
-Measured (`tools/spikes/tiebreak_4b6c/`, arm **A0s**, 6 instances x 5 seeds): the price cost
-**+73.20%** of ledger total at 40 orders / **+97.61%** at 120 against a cost-only arm whose
-seed spread is exactly zero. Staged cost-only reproduces the PROVEN OPTIMUM to the cent at
-5/8/15/40 orders (OPTIMAL 5/5) while spending **45.53% fewer start-minutes** at 40.
-`earliness_value` survives as a **REPORTING rate** (`_earliness_rate`,
-`earliness_tiebreak_report`): it values the start-minutes the tiebreak recovered, on its own
-labelled line, `in_ledger: False`, never in `cost_summary.total` and never in a delta card's
-money. **THE INVARIANT, ASSERTED: the SCHEDULE is byte-identical across every
-`earliness_value`** (0 / declared / 100x declared) — a failure means the coefficient is back
-in the objective, and that is the only way it can return.
-
-**Four findings DISCHARGED, three of them by construction:** §5a.16 (rolling now returns
-stage 1's COST objective with stage 2's placements — monolithic 300 / rolling 300, was
-400/20); §5a.17 (the pool's stated 5% is 5%, was 40% — no gap remains, so no second cause);
-§5a.12 (`reopt_delta_abs` **−11,975.83 → exactly 0.00**; the card was NOT relabelled);
-§5a.9 (the fixture's ~7.9%-dearer incumbent is gone — the board now sits at the proven
-optimum **16,481.95, tardiness 0.00**). Fixtures regenerated under a spent single-use
-authorization, every figure accounted BY OPERATION IDENTITY, reproducing across
-PYTHONHASHSEED 0/1/2. Before it: **Session 4B.6c — measurement** (docs/07 v2.51), which
-priced the tiebreak and found candidate B worse; **Session 4B.6b — errand: four answers**
-(v2.50); **Session 4B.6a — consolidation**.
+**R-SC3(2) IS RETIRED — `earliness_value` IS NO LONGER A PRICE** (4B.7, docs/07
+v2.52). Stage 1 minimizes COST ALONE on both paths and the coefficient parameter is
+DELETED from both signatures so it cannot leak back. **R-SC3(1) stands and is
+genuinely implemented: stage 2 IS the tiebreak and runs UNCONDITIONALLY** at every
+coefficient including 0 and undeclared. Measured: the price cost **+73.20%** of
+ledger at 40 orders / **+97.61%** at 120, against a cost-only arm whose seed spread
+is exactly zero. `earliness_value` survives as a **REPORTING rate**, on its own
+labelled line, `in_ledger: False`, never in `cost_summary.total` and never in a
+delta card's money. **THE INVARIANT, ASSERTED: the SCHEDULE is byte-identical across
+every `earliness_value`** (0 / declared / 100x declared) — a failure means the
+coefficient is back in the objective, and that is the only way it can return.
+Discharged with it: §5a.16, §5a.17, §5a.12, §5a.9 (full accounting in docs/04).
 
 **THE COARSE ZONE (R-SC2 amendment, 4B.6).** Beyond-horizon demand is coarsely
 PLACED, not merely listed (`src/mre/modules/coarse_horizon.py`; contract **1.9**
@@ -318,99 +341,85 @@ absent on a monolithic run). Seven clauses govern it, and the ones that bite:
 - **COARSE NEVER RENDERS AS A BAR** — a density band (`src/cockpit/src/coarse.js`).
 - Predictions are persisted OUTSIDE the document (`coarse_predictions.py`): the
   document is a window-0 view, the audit is cross-roll. Realization is captured on
-  both intake paths — natural roll and **gravity admission** — and since 4B.6a the
-  rolling worker actually WRITES it (`record_roll_history`), judging each prediction
-  exactly once however many rolls sweep past it.
+  both intake paths (natural roll and gravity admission) and the rolling worker
+  WRITES it since 4B.6a, judging each prediction exactly once.
 - **EVERY LOAD FIGURE NAMES WHAT IT DID NOT COUNT** (4B.6a). Resumables and
   over-capacity ops consume ZERO coarse minutes, so load is understated — answers,
   tooltips and the band footer say so, and say nothing when nothing is excluded. A
-  plant with **no declared derate** is told loudly that its figures assume full
-  utilization; that is a docs/06 §5.9 remediation note, **not a gate rule** (36
-  rules, unchanged).
-- Resumable ops are EXCLUDED and NAMED (`coarse_unmodelable`), because
-  single-bucket forcing would TIGHTEN the relaxation. The exclusion is what makes
-  clause (1) true; the ruling's own "permissive" parenthetical is corrected in
-  docs/04.
-- Ask path: `coarse-fit` + `bucket-load` join the closed vocabulary (parse prompt
-  **v9**). "When will ORD-X start" gets NO new route — it is
-  `why-not-scheduled-yet`, now carrying the coarse bucket BESIDE the untouched
-  `earliest_window_estimate` heuristic (two figures, two methods, never fused).
+  plant with no declared derate is told loudly its figures assume full utilization
+  (a docs/06 §5.9 remediation note, **not a gate rule** — 36 rules, unchanged).
+  Resumables are EXCLUDED and NAMED (`coarse_unmodelable`): single-bucket forcing
+  would TIGHTEN the relaxation, and that exclusion is what makes clause (1) true.
+- Ask path: `coarse-fit` + `bucket-load` joined the closed vocabulary (parse prompt
+  **v9**). "When will ORD-X start" got NO new route — it is `why-not-scheduled-yet`,
+  carrying the coarse bucket BESIDE the untouched `earliest_window_estimate`
+  heuristic (two figures, two methods, never fused).
 
 **THE DELTA CARD SPLITS ITS VERDICT (4B.5 CU1).** `cost_delta_abs` measures the
-RE-SOLVE, not the move — two different gestures on one incumbent produced identical
-cards to the cent. Beat two also solves the window WITHOUT the pin (the BASELINE,
-cached per incumbent) and the card always shows *window re-optimization* (baseline
-vs incumbent) beside *your move* (pinned vs baseline), summing exactly to the total.
-**A planner's move is judged against the baseline, never the stale incumbent.** An
-unprovable baseline shows the unsplit total with an explicit "includes window
-re-optimization" line — never a silent fused number, never a half split.
+RE-SOLVE, not the move. Beat two also solves the window WITHOUT the pin (the
+BASELINE, cached per incumbent) and the card always shows *window re-optimization*
+beside *your move*, summing exactly to the total. **A planner's move is judged
+against the baseline, never the stale incumbent.** An unprovable baseline shows the
+unsplit total with an explicit "includes window re-optimization" line — never a
+silent fused number, never a half split.
 
 **R-F1/R-F2/R-F3 are RULED and RECORDED, not built** (4B.5 CU6; verbatim in docs/04,
 summarized in docs/07 §6). The planner-movable frozen boundary (a thaw makes standing
 pins, never free work); rush intake as a Demand the SOLVER places; the OUTCOME ->
-WINDOW -> PIN constraint ladder with optional reasons. NAMED-QUEUED behind them: the
-pin register, amend-submission (pilot-relevant), the boundary-drag gesture, the window
-constraint.
+WINDOW -> PIN ladder with optional reasons. NAMED-QUEUED: the pin register,
+amend-submission (pilot-relevant), the boundary-drag gesture, the window constraint.
 
 **The ask path (R-AI5) — two tiers, sealed from each other, and a loop between
 them.** Every question is parsed FIRST by a model against the closed intent
 vocabulary (`src/mre/contracts/parse.py`), with the conversation history, the live
-board selection, the last-answered subject and — since 4B.5 CU2 — the OPEN DELTA CARD
-as context. The resolution ladder is **card > selection > last answer > history >
-clarify**; while a priced card is showing, `open-card` READS IT BACK rather than
-re-deriving it, so the two surfaces cannot state different numbers, and with no card
-open the same words are never answered as a card question. **No deterministic
-classifier survives anywhere** — `Explainer.classify` / `answer` went in 4A.5a and
+board selection, the last-answered subject and the OPEN DELTA CARD as context. The
+resolution ladder is **card > selection > last answer > history > clarify**; while a
+priced card is showing, `open-card` READS IT BACK rather than re-deriving it, so the
+two surfaces cannot state different numbers. **No deterministic classifier survives
+anywhere** — `Explainer.classify` / `answer` went in 4A.5a and
 `rolling_questions.classify_rolling` (the last one) in 4A.5c. They must not come back.
 
 - A **matched** intent dispatches into the unchanged route assembly, render and
   validator — unless the parse reports a **dropped qualifier** (a time scope, an
   "actually", a comparative the route cannot honour), which diverts it to the second
-  tier and names the qualifier in the rendered-by line. The parse REPORTS; the
-  dispatch decides.
+  tier and names it in the rendered-by line. The parse REPORTS; the dispatch decides.
 - An **unmatched** intent goes to **labeled open synthesis** (R-AI5(2)): a model
   reasons over the closed read-only tool surface (`src/mre/modules/evidence_tools.py`)
   under a stated budget and drafts structured CLAIMS, hardened claim-by-claim by
   `claim_verifier` — **deterministic code, never a model** — into VERIFIED /
   INTERPRETIVE / FAILED-and-cut. Provenance is visible per claim, the register is
-  `synthesis`, "prove it" re-runs the grounding pass on one claim, and the
-  couldn't-answer floor keeps its nearest-capabilities doors.
-- Otherwise a matched intent can NEVER fall to synthesis, and an unmatched one NEVER
-  guesses a route (pinned by dispatch tests). Without a parser or a synthesizer the
-  honest floor answers that it could not interpret / could not ground.
+  `synthesis`, and "prove it" re-runs the grounding pass on one claim.
+- A matched intent can NEVER fall to synthesis, and an unmatched one NEVER guesses a
+  route (pinned by dispatch tests). Without a parser or synthesizer the honest floor
+  answers that it could not interpret / could not ground.
 - On a **rolling** run, subject resolution reads the document's three regions
-  (`RollingVocabulary`): a beyond-horizon tray order resolves as a real subject with
-  a BEYOND-HORIZON disposition and every placement question about it lands on
-  `why-not-scheduled-yet`. **A tray order is never "not in this schedule."**
+  (`RollingVocabulary`): a beyond-horizon tray order resolves as a real subject with a
+  BEYOND-HORIZON disposition. **A tray order is never "not in this schedule."** Since
+  4B.11 the same route RESOLVES a placed order instead of offering a disjunction.
 
 **THE PROMOTION LOOP (R-AI5(5)/(7)) — the system proposes its own healing; the
 proven register is entered only by review.** Every sweep writes a question ledger and
-emits `tools/provenance_report.py`: synthesis residue clustered into recurring shapes
-(adjacency + subject kinds + dominant tool, method stated in the report), ranked by a
-frequency-weighted Pareto. **R-AI5(6) is printed in the report's own header** —
-clusters whose residue is takes or aggregate reads are NOT-PROMOTABLE-BY-DESIGN,
-excluded from the Pareto, never counted as backlog.
+emits `tools/provenance_report.py`: synthesis residue clustered into recurring shapes,
+ranked by a frequency-weighted Pareto. **R-AI5(6) is printed in the report's own
+header** — clusters whose residue is takes or aggregate reads are
+NOT-PROMOTABLE-BY-DESIGN, excluded from the Pareto, never counted as backlog.
 
 - `tools/promotion_dossier.py` drafts a dossier autonomously (`docs/promotions/`) and
   **cannot reach dispatch**. The dossier is the application; the working thread's
-  review is the signature.
-- Promotion is a **reviewed vocabulary-class change** (Intent + meaning + taxonomy +
-  offer + assembler + authored copy + prompt bump + a `PROMOTIONS` entry citing the
-  dossier). **Never automatic.**
-- A promoted route runs **shadowed** through its probation: the sweep answers its
-  shape under both paths and diffs the facts. **Demotion is automatic** on a
-  contradiction — one field in `contracts/promotion.py`, and the intent leaves
-  `model_selectable_intents()`, so the parse can no longer name it and the shape
-  returns to the second tier.
-- Live: **one** promotion, `lateness-cause` (the aggregate-lateness shape), on
-  probation.
+  review is the signature. Promotion is a **reviewed vocabulary-class change** (Intent
+  + meaning + taxonomy + offer + assembler + authored copy + prompt bump + a
+  `PROMOTIONS` entry citing the dossier). **Never automatic.**
+- A promoted route runs **shadowed** through probation: the sweep answers its shape
+  under both paths and diffs the facts. **Demotion is automatic** on a contradiction —
+  one field in `contracts/promotion.py`, and the intent leaves
+  `model_selectable_intents()`, so the parse can no longer name it.
+- Live: **one** promotion, `lateness-cause`, on probation.
 
 **R-AI5(8) is the hard rule of the tier:** the answering model's beliefs about its
 own citations are INPUT to verification, never the label — and the same discipline
-now governs routing (the parse reports a dropped qualifier; it never decides the
-diversion). Both prompts (`parse_prompt.md` v7, `synthesis_prompt.md`) are governed
-artifacts: changing either is a vocabulary-class change, reviewed, versioned,
-committed with its doc update.
+governs routing (the parse reports a dropped qualifier; it never decides the
+diversion). Both prompts are governed artifacts: changing either is a
+vocabulary-class change, reviewed, versioned, committed with its doc update.
 
 **Where history lives — do not duplicate it here:**
 
@@ -428,14 +437,13 @@ committed with its doc update.
 - The `raw_data` path bypasses the M0 gate and has no WIP doorway — owned Phase-4 debt
   (RawAdapter retirement / pilot connector); the live gate-free entry points are named in
   docs/04's 4B.2c R-SC1 correction.
-- Phase 3's **cold-stranger cold-drive** is MET-BY-PROXY only — a named Phase-4 *entry*
+- Phase 3's **cold-stranger cold-drive** is MET-BY-PROXY only — a named Phase-4 entry
   condition, not relaxed.
-- Daryn's feel-token export is not yet committed; the cockpit runs on `DEFAULT_FEEL`.
-- Two remediation-catalog quality notes carry no resolvable IDS §-cite (quarantined +
-  pinned) — a design-thread `note_version` fix.
-- Pool service must become **slice-aware** before serving sliced-mode schedules;
-  warming-on-publish becomes the default when the publish workflow lands.
-- `test_n3000` is contention-sensitive (green in isolation).
+- Daryn's feel-token export is not committed; the cockpit runs on `DEFAULT_FEEL`.
+- Two remediation-catalog quality notes carry no resolvable IDS §-cite (quarantined) —
+  a design-thread `note_version` fix.
+- Pool service must become **slice-aware** before serving sliced-mode schedules.
+- `test_n3000` is contention-sensitive (green alone).
 - The **parallel-load screenshot-flake** class is standing debt (two members: 3.1c
   0-bars, 4A.3 planner due-marker; both pass in isolation). A THIRD, non-screenshot
   member observed 4B.6c: `test_scenario.py::test_scenario_untouched_moves_bounded`
@@ -447,17 +455,27 @@ committed with its doc update.
   it reaches a different tied-optimal placement and the `moves <= 3` bound breaks.
   The fix is deterministic mode in that fixture, not a wider bound. NOT fixed in 4B.6c
   (a measurement session changes no test but its own).
-- Product naming is under review in the GTM thread — "MRE" is the working repository
-  name, not a confirmed brand.
+- Product naming is under GTM review — "MRE" is the working repo name, not a brand.
 
 **Small carry-forwards (do not lose):**
 
+- 4B.11 findings (docs/07 §5a.28-30 — REPORTED, deliberately NOT fixed):
+  **R-PD1 clause (5) is OPEN** — no age-vs-lateness finding, because the threshold is
+  a declared IDS coefficient that does not exist and inventing one authors a business
+  fact we do not have; the full pipeline-proof chain is written out in docs/06 §5.9
+  (§5a.28). **No optimality ROUTE** — the proof is rendered and voiced but nobody can
+  ASK for it; a new intent is a vocabulary-class change (§5a.29).
+  **`facility_real`'s CONDITIONAL grade is a GENERATOR truthfulness defect** and
+  4B.10's claim that it was correct is CORRECTED — the generator writes
+  `created_date = ref` for every order, so a past-due order is emitted with an
+  inverted date pair. NOT fixed: that inversion is the only live
+  M0-`proceeded_flagged` specimen keeping R-PD1 clause (3)'s guard non-vacuous, so
+  whoever fixes it must supply the guard a new specimen in the same commit (§5a.30).
 - `OperationSpec.yield_factor` still carries false `observed` provenance (flagged
   2026-07-12, not fixed).
-- Sentinel / repeated-identical-value detector (the 40× `run_rate_seconds=60.0`
-  fingerprint from Rep 3).
+- Sentinel / repeated-identical-value detector (Rep 3's 40× `run_rate_seconds=60.0`).
 - Provenance spot-check guard: sampled `observed` values must appear in the cited source.
-- W1 scenarios not yet built: `dwell_heavy`, `calendar_chaos`, `multi_facility_balance`.
+- W1 scenarios unbuilt: `dwell_heavy`, `calendar_chaos`, `multi_facility_balance`.
 - AI-track named debts: the docs/05 structured-constraint surface (prose-locked,
   retrieval must never read prose); machine-idle eligibility naming no specific ops
   on the monolithic path; per-order PRODUCTION-dollar attribution (a ledger change).
@@ -468,22 +486,16 @@ committed with its doc update.
   objective at a deterministic budget of 6.0 AND of 20.0; a 7-day window on the same
   plant proves OPTIMAL in under 5). The 14-day convention was measured on a plant 5x
   smaller. **Next session's subject.**
-- 4B.7 findings (docs/07 §5a.19-22 — REPORTED, deliberately NOT fixed):
-  **stage 2's deterministic budget is FIXED at 2.0, not the remainder, and the
-  allocation is backwards** — at 40 orders stage 1 proves OPTIMAL in 0.101 of its 4.0
-  while stage 2 exhausts its whole 2.0, so 3.9 units go unused (§5a.19; the fix is free
-  but moves every rolling golden — pair it with §5a.15).
-  **`EARLINESS_PREFERENCE` now names a mechanism that no longer exists** — the extractor
-  still attributes a dearer-than-cheapest placement to it whenever `earliness_value > 0`,
-  and nothing purchases anything any more. Not silently lying (it hedges, 4B.3a CU4b) but
-  its stated MEANING is false. Correcting it is a **vocabulary-class change** reaching
-  planner_language / explainer / renderers / four AI-voice tests / the exam bank (§5a.20).
-  **The reported window status is stage 2's tiebreak-proof, not stage 1's cost-proof** —
-  the fixture reads FEASIBLE over a provably OPTIMAL ledger (§5a.21; pre-existing, newly
-  conspicuous, entangled with §5a.19).
-  **The r5 bank's card expectations are invalidated again** (`ai_exam/runner.py:317-320,377`
-  still hard-codes reopt −11,975.83; the card is now 0.00 / 32.20) and the exam WORLD
-  changes too. NOT recalibrated — the bank has never been graded (§5a.22, §5a.7).
+- 4B.7 findings: **§5a.19 and §5a.21 are DISCHARGED by 4B.8** (the budget is derived,
+  the status line reports the cost proof). **STILL OPEN — §5a.20:**
+  `EARLINESS_PREFERENCE` names a mechanism that no longer exists; the DriverCode member
+  survives while the extractor no longer emits it (4B.8 CU4 made it dormant, interim
+  only). Correcting it is a **vocabulary-class change** reaching planner_language /
+  explainer / renderers / four AI-voice tests / the exam bank.
+  **§5a.22 — the r5 bank's card expectations are invalidated again** and the exam WORLD
+  changes with every contract move (now 1.11 and a regenerated sample_data baseline).
+  NOT recalibrated — the bank has never been graded (§5a.7). Re-derive from a fresh
+  world FIRST, then grade.
 - 4B.6b findings (docs/07 §5a.8, .10, .12-14 — REPORTED, deliberately NOT fixed):
   **§5a.12 is DISCHARGED by 4B.7** — the coefficient left the objective, so the window
   solve and the sandbox baseline now minimize the SAME expression and `reopt_delta_abs`
@@ -516,9 +528,9 @@ committed with its doc update.
   as a DIGIT only, and a driver phrase alone clears it (the founder's own specimen is
   fixed at the assembler, not by the tripwire); CU4(b)'s viewport guard is a standing
   invariant the harness cannot make fail.
-- R-AI5 residue, carried: start-reason's early-vs-plain read is still the
-  assembler's (only a NEGATIVE polarity is authoritative from the parse); a CLARIFY
-  turn carries no subject forward.
+- R-AI5 residue: start-reason's early-vs-plain read is still the assembler's (only a
+  NEGATIVE polarity is authoritative from the parse); a CLARIFY turn carries no
+  subject forward.
 - Promotion-loop limits (4A.5c): clustering is crude-but-stated and UNDER-states
   frequency (it splits shapes whose parses disagreed) — merging is a human's, in a
   dossier. The shadow diff compares only figures BOTH sides state about the same

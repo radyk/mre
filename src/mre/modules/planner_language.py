@@ -47,7 +47,7 @@ DRIVER_PHRASING: dict[str, str] = {
 }
 
 # ---------------------------------------------------------------------------
-# Finding codes → plain cause (CU2). Reads as "<subject> <this clause>". The 18
+# Finding codes → plain cause (CU2). Reads as "<subject> <this clause>". The 19
 # FindingCodes (vocabularies.FindingCode).
 # ---------------------------------------------------------------------------
 FINDING_PHRASING: dict[str, str] = {
@@ -58,6 +58,11 @@ FINDING_PHRASING: dict[str, str] = {
     "DUPLICATE_IDENTITY": "appears more than once under the same id",
     "IDENTITY_CHANGED": "changed its id between extracts",
     "TEMPORAL_IMPOSSIBILITY": "has dates that can't both be true",
+    # R-PD1: a statement about the PLANT'S POSITION, not about the data. The
+    # phrasing says the work is scheduled, because it is — a planner reading this
+    # line must not go looking for something to fix.
+    "PAST_DUE_AT_INTAKE": ("was already past its due date before this plan "
+                           "started, and is scheduled late"),
     "NO_CAPABLE_RESOURCE": "has no machine able to run one of its steps",
     "ORPHAN_ENTITY": "has no working route to any machine",
     "VALUE_OUT_OF_RANGE": "has a number outside the plausible range",
@@ -228,10 +233,12 @@ def finding_subject_label(finding: dict, identity_map: Any = None) -> str:
     finding evidence already carries (the only identity a REJECTED run has).
     Never an id-shape regex (Phase-1 audit lesson) — evidence values only."""
     labels: list[str] = []
+    subject_ids: set[str] = set()
     for s in finding.get("subjects", []) or []:
         eid = s.get("entity_id") if isinstance(s, dict) else getattr(s, "entity_id", "")
         if not eid:
             continue
+        subject_ids.add(str(eid).upper())
         label = None
         if identity_map is not None:
             erefs = identity_map.external_refs(eid)
@@ -241,7 +248,16 @@ def finding_subject_label(finding: dict, identity_map: Any = None) -> str:
     ev = finding.get("evidence", {}) or {}
     erp = (ev.get("order_id") or ev.get("wono") or ev.get("product_no")
            or ev.get("machine_id") or ev.get("demand_id") or "")
-    if erp and erp not in labels:
+    # Session 4B.11 CU4(c) — DO NOT NAME THE SAME ENTITY TWICE, once in a
+    # vocabulary the planner cannot use. This fallback exists for the REJECTED
+    # run, where nothing resolves and the evidence's ERP-space id is the only
+    # identity there is. When the subject DID resolve, appending the evidence's
+    # `demand_id` produced the measured defect: "ORD-000004,
+    # 0f093432-1125-5023-a198-205f5e637507 has dates that can't both be true" —
+    # the order named correctly, then again as a raw canonical UUID, and the
+    # planner invited to paste the UUID back. It is skipped when it is simply the
+    # canonical id of a subject already labelled.
+    if erp and str(erp).upper() not in subject_ids and erp not in labels:
         labels.append(str(erp))
     if not labels:
         return "a record"

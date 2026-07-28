@@ -501,6 +501,31 @@ _MINUTES_PER_DAY = 24 * 60
 _HORIZON_DAYS = 60  # planning horizon length if not derivable from data
 
 
+def _due_minutes(due_dt, horizon_start, include_floor: bool = False) -> int:
+    """A Fulfillment's due date in horizon minutes, for the tardiness term.
+
+    THE CLAMP IS THE TARDINESS SPLIT (Session 4B.11 CU3, R-PD1 clause (4)), and
+    it has been here all along — this function only gives it a name.
+
+    A demand due BEFORE the horizon opens has a negative offset. Clamped to 0,
+    its tardiness variable measures ``wp_end − 0`` — completion from t0 — which
+    is exactly ``tardiness_controllable``. The unavoidable part,
+    ``tardiness_floor = max(0, t0 − due)``, is therefore NOT IN THE OBJECTIVE AT
+    ALL, and never has been. That is why clause (4) can state that the floor
+    cannot change the argmin: it is a per-fulfillment CONSTANT, so including it
+    would add ``Σ weight_f × floor_f`` to every candidate solution equally.
+
+    ``include_floor=True`` removes the clamp, putting the floor back into the
+    objective. It exists ONLY for the invariance experiment
+    (``tools/spikes/pastdue_4b11/floor_invariance.py``), which solves the same
+    instance both ways and asserts the PLACEMENTS are identical. Nothing in the
+    shipped pipeline passes it, and the default is the behaviour that has always
+    shipped — extracted, not changed.
+    """
+    raw = int((due_dt - horizon_start).total_seconds() / 60)
+    return raw if include_floor else max(0, raw)
+
+
 class SolverBuilder:
     """Build a CP-SAT scheduling model from six canonical inputs.
 
@@ -925,7 +950,7 @@ class SolverBuilder:
 
             demand = demands.get(d_id, {})
             due_dt = _parse_dt(demand.get("due", ""))
-            due_min = max(0, int((due_dt - horizon_start).total_seconds() / 60))
+            due_min = _due_minutes(due_dt, horizon_start)
 
             cclass = demand.get("commitment_class", "standard")
             mult = cc_mult.get(cclass, 1.0)
@@ -1076,8 +1101,26 @@ class SolverBuilder:
             hs = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
 
         # Clamp to reference_date: operations must not start before the planning date.
+        #
+        # SESSION 4B.11 (R-PD1) — WHY THIS STAYS CONDITIONAL. Scheduling past-due
+        # WORK must never mean modelling past TIME: until R-PD1, no
+        # released-long-ago order could contribute its `earliest_start` here
+        # because it had been excluded, and with one admitted an unfloored `min()`
+        # drags `horizon_start` back to its release date (sample_data: 2024-12-20,
+        # a 600-day horizon, most of it empty history).
+        #
+        # An unconditional wall-clock floor was TRIED HERE AND REVERTED. It makes
+        # the builder time-dependent, which contradicts the determinism the whole
+        # regression suite rests on, and it breaks every fixture that deliberately
+        # models a window in the past (the overtime-premium, demo and phase-2
+        # suites all build historical worlds with no reference date and expect
+        # their calendars to survive). A clock does not belong inside the model
+        # builder. It belongs at the entry point that has no other source of one,
+        # which is where `__main__` now resolves it — so the builder keeps its
+        # honest contract: no reference date, no floor.
         if self._reference_date is not None:
-            ref_floor = self._reference_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            ref_floor = self._reference_date.replace(
+                hour=0, minute=0, second=0, microsecond=0)
             if ref_floor.tzinfo is None:
                 ref_floor = ref_floor.replace(tzinfo=UTC)
             hs = max(hs, ref_floor)

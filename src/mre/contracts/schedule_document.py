@@ -161,6 +161,31 @@ Version history:
   ``status`` and gets a strictly more accurate answer. Monolithic documents are
   byte-unchanged apart from the version string and the added optional fields
   (verified: the sample_data goldens reproduce byte-for-byte). MINOR.
+
+* **1.11** (Session 4B.11 CU3) — THE TARDINESS SPLIT (R-PD1 clause (4)). Once
+  past-due demand is SCHEDULED rather than excluded (R-PD1 clause (1)), a single
+  tardiness number stops being readable: the pilot book's minimum due date is
+  −1573 days, so one such order's unavoidable lateness would swamp every figure
+  on the board — and every delta card would attribute it to whatever the planner
+  last touched. ``cost_summary`` gains two Optional fields that DECOMPOSE the
+  existing ``tardiness`` rather than adding to it:
+
+    ``tardiness_floor``        max(0, t0 − due) priced — UNAVOIDABLE
+    ``tardiness_controllable`` completion − max(due, t0) priced — this schedule's
+
+  They are present TOGETHER or not at all, and when present sum to ``tardiness``
+  to the cent (enforced in ``CostSummary``). They are absent on any book with no
+  past-due demand — which is every monolithic fixture we own — so those documents
+  are byte-identical to their 1.10 selves apart from the version string.
+  ``ServiceOutcomeBlock`` gains the same pair per demand, on the same
+  present-only-when-non-zero rule.
+
+  The floor provably cannot change the argmin, and not by assertion: the solver
+  has ALWAYS priced the controllable part alone (``solver_builder`` clamps
+  ``due_min = max(0, due − horizon_start)``, so a past-due fulfillment's
+  objective term is measured from t0), while the extractor has always priced
+  lateness from the DECLARED due date. The split does not change the model; it
+  makes a decomposition the pipeline already contained legible. MINOR.
 """
 from __future__ import annotations
 
@@ -171,7 +196,7 @@ from pydantic import BaseModel, model_validator
 
 from mre.contracts.vocabularies import ScheduleStatus
 
-CONTRACT_VERSION = "1.10"
+CONTRACT_VERSION = "1.11"
 
 # Exact decomposition tolerance: cost components are currency values
 # accumulated in float; "exactly" means to the cent, matching the
@@ -214,6 +239,25 @@ class CostSummary(BaseModel):
     production_overtime: float
     setup: float
     tardiness: float
+    # THE TARDINESS SPLIT (contract 1.11, Session 4B.11 CU3, R-PD1 clause (4)).
+    # `tardiness` above is unchanged and still the whole tardiness charge; these
+    # DECOMPOSE it rather than adding to it, so `total`'s decomposition is
+    # untouched and a 1.10 consumer reads exactly what it read before.
+    #
+    #   tardiness_floor        = max(0, t0 − due) priced — UNAVOIDABLE. Already
+    #                            accrued when the horizon opened; no schedule can
+    #                            recover it and no planner's move can be blamed
+    #                            for it.
+    #   tardiness_controllable = completion − max(due, t0) priced — what THIS
+    #                            schedule added.
+    #
+    # Both are None on a book with NO past-due demand, which is every monolithic
+    # fixture we own: the split is present exactly when there is something to
+    # split, so an on-time run's document is byte-identical to its 1.10 self.
+    # Present-or-absent TOGETHER; when present they sum to `tardiness` to the
+    # cent, and the validator below enforces it.
+    tardiness_floor: Optional[float] = None
+    tardiness_controllable: Optional[float] = None
     costmodel_version: int = 1
 
     @model_validator(mode="after")
@@ -226,6 +270,22 @@ class CostSummary(BaseModel):
             raise ValueError(
                 f"cost_summary does not decompose: total={self.total} but "
                 f"components sum to {parts}"
+            )
+        # Contract 1.11 — the split is all-or-nothing and exact. A half-present
+        # split would let a reader infer the missing side by subtraction from a
+        # number nobody asserted; an inexact one would let floor tardiness leak
+        # into a delta card's money, which is the whole thing clause (4) forbids.
+        f, c = self.tardiness_floor, self.tardiness_controllable
+        if (f is None) != (c is None):
+            raise ValueError(
+                "cost_summary tardiness split is half-present: "
+                f"tardiness_floor={f}, tardiness_controllable={c} — both or "
+                "neither."
+            )
+        if f is not None and abs(self.tardiness - (f + c)) > _DECOMP_TOLERANCE:
+            raise ValueError(
+                f"tardiness does not decompose: tardiness={self.tardiness} but "
+                f"floor+controllable={f + c}"
             )
         return self
 
@@ -338,6 +398,15 @@ class ServiceOutcomeBlock(BaseModel):
     projected_completion: datetime
     lateness_min: int                          # negative = early
     tardiness_cost: float = 0.0
+    # THE TARDINESS SPLIT, per demand (contract 1.11, R-PD1 clause (4)). Present
+    # only on a demand that was ALREADY LATE at the reference date; absent (None)
+    # for every demand due on or after t0, so an on-time book's outcomes are
+    # byte-unchanged. `tardiness_floor_cost` decomposes `tardiness_cost`; the
+    # controllable remainder is the difference, and the two are never fused in an
+    # answer or a delta card. `tardiness_floor_min` is the same fact in minutes —
+    # the honest unit for "how late was this before we touched it".
+    tardiness_floor_min: Optional[int] = None
+    tardiness_floor_cost: Optional[float] = None
 
 
 class ScenarioBlock(BaseModel):

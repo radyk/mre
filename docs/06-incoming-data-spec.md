@@ -6,6 +6,8 @@
 
 **v0.2 changes:** cost model REQUIRED with a minimal core (§5.9); customer and priority doorways (§5.10, §3); setup transitions (§5.11); locks (§5.12); overtime expression (§5.6, §5.9); extension & pipeline-proof clause (§8); costing-completeness grade on the certificate (§4).
 
+**v0.7 change (Session 4B.11):** §5.9 records `past_due_age_threshold_days` as **DECLARED IN NEITHER DIRECTION** — R-PD1 clause (5)'s age finding is OPEN, not implemented, and the entry states the full §8 pipeline-proof chain it would require rather than emitting evidence with no pathway. **Registry unchanged at 36 rules.** Separately: past-dueness at intake is no longer an exclusion anywhere (R-PD1 clauses (1)/(2)), so the §5.13 `wip_status` doorway is no longer an ESCAPE from exclusion — it keeps its other meaning untouched (an in-flight operation still constrains placement).
+
 **v0.6a change (Session 4B.6a):** a **remediation entry** for an *absent* `capacity_derate` (§5.9, "NO CAPACITY MARGIN DECLARED") — **informational, NOT a registry rule**. It fires nothing and moves no verdict; the registry stays at **36 rules**. It records what the absence costs (the planning run mirrors the proof run, so capacity figures assume full utilization) and names the surfaces that now say so.
 
 **v0.6 changes:** `coarse_horizon` coefficient doorway (§5.9) — the far-horizon look-ahead's declared bucket length and capacity derate (rho), with a gate check (`ids.coarse_horizon_coefficients_sane`, §4), adapter translation onto the canonical CostModel, a pilot_scale truth manifest and an anomaly generator: pipeline-proven per §8, not model-proven. Registry v0.3 → v0.4 (36 rules).
@@ -327,6 +329,26 @@ R-SC3(3) is untouched and is the reason this field must still be *declared* rath
 - **We do not cover it with an invented margin** (amendment clause 3 stands): a hidden derate would be exactly the undeclared weight R-SC3(3) forbids. We make the absence loud instead.
 - **Where it is voiced:** the certificate carries a **declaration note** beside the coefficient (`coarse_capacity_derate_note` on the coefficients block), the cockpit's density band header reads *"no capacity margin declared — figures assume every available minute is usable"*, and every capacity answer states the same in words and names the remedy (declare `refinements.coarse_horizon.capacity_derate`).
 - **Fix looks like:** declare a planning derate — the fraction of calendar time the plant is willing to plan against. **Verify:** resubmit; the certificate's provenance for the coefficient reads `declared`, and the planning run stops mirroring the proof run.
+
+
+**`past_due_age_threshold_days` — DECLARED IN NEITHER DIRECTION, AND DELIBERATELY SO (R-PD1 clause (5), Session 4B.11, 2026-07-28). NOT IMPLEMENTED; THIS ENTRY EXISTS TO SAY WHY, AND WHAT IMPLEMENTING IT WOULD REQUIRE.**
+
+R-PD1 clause (5) rules that **AGE IS NOT LATENESS**: a demand past due beyond a *declared* threshold raises a data-quality finding about its **age** — informational, and the demand is still scheduled. The distinction the clause draws is real and the pilot data shows why it matters: the book's minimum due date is **−1573 days** (docs/07 §5a.24). An order three days overdue is the plant's normal position; an order four years overdue is very likely a record nobody closed, and *that* is a data-quality question with a real fix.
+
+**Clause (5) is OPEN.** No coefficient is emitted, no finding is raised, and no threshold is assumed — because the threshold **is a business judgment only a human may state**, exactly as `earliness_value` (R-SC3(3)) and the coarse zone's `capacity_derate` are. There is no defensible default: "past due beyond N days is suspicious" depends entirely on the plant's own close-out discipline, and choosing an N here would author a business fact we do not have. The coarse zone's rule applies unchanged — **an undeclared plant is never given an invented margin** — and emitting an age finding with no declared pathway would be evidence with nothing behind it.
+
+**The rule count does NOT move: 36 rules, unchanged.** Nothing in this entry is a registry rule.
+
+**What implementing it requires — the full §8 pipeline-proof chain, none of it done:**
+
+1. **The doorway.** `cost_model.json` `refinements.past_due_age_threshold_days` (integer, `>= 1`), optional. Absent ⇒ **no age finding is ever raised**, which must be the stated default rather than a fallback constant.
+2. **The gate check.** A sanity rule on the *declared* value only (a threshold of 0 or a negative one is a slip; so is one longer than the extract's own history). Adding it moves the registry to 37 rules and is a reviewed change.
+3. **The adapter translation.** Carried onto the canonical CostModel with its provenance recorded (`declared` / absent), and printed beside the value on the certificate so a coefficient we chose can never read as one the plant chose.
+4. **The finding.** A new code — `PAST_DUE_AT_INTAKE` must NOT be stretched to also mean "suspiciously old", for precisely the reason that code exists at all (docs/02 §4.3): one code, one meaning. INFO severity, `proceeded_flagged`, and **the demand is still scheduled** (clause (5) is explicit).
+5. **The authored remediation note.** Unlike `PAST_DUE_AT_INTAKE` — which carries `remediation_applies: false` because a genuinely late order has no fix — an *age* finding DOES have one: close or re-date the stale record at source. The note must say so concretely.
+6. **A truth manifest and an anomaly generator**, so the coefficient is pipeline-proven per §8 rather than model-proven.
+
+Until all six exist, the honest position is that the plant is told nothing about the age of its backlog, and that silence is deliberate. Carried in docs/07 §5a.28.
 
 ### 5.10 customers.csv (optional*, doorway)
 customer_id ✓ · name · priority_class ✓ (→ priority_multipliers) · notes. Order-level priority interacts per manifest `priority_precedence`.

@@ -90,6 +90,17 @@
   --grade-rejected: #b5271e;
   --grade-ink: #ffffff;         /* white ink on every colored grade chip */
 
+  /* --- the cost-proof chip (Session 4B.11 CU1, docs/07 §5a.23) --------- *
+   * Deliberately NOT the grade palette. The certificate grade is a statement
+   * about the DATA; this is a statement about the SEARCH, and reading as a
+   * second grade would invite the two to be confused. Outlined, not filled:
+   * a proved board should read as quiet confidence, and the unproved state
+   * should be the one that draws the eye. */
+  --proof-proved: #167e3c;
+  --proof-unproved: #a5620e;
+  --proof-none: #6b7080;
+  --proof-bg: rgba(0, 0, 0, 0.03);
+
   /* --- gesture surface (3.2b) — Tier-0 shading ------------------------ *
    * On paper, "dim" = a cool grey VEIL that darkens the forbidden zone; green =
    * a legal-zone tint. The dim-dominates-green SEMANTICS carry from dark as a

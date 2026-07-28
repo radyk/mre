@@ -800,6 +800,27 @@ fallbacks:
     guidance: generic; a rule-level note normally applies
     note_version: 1
 
+  # R-PD1 (Session 4B.11). NOT REMEDIABLE, and that is the entry's whole point:
+  # a released work order that is genuinely late is the plant's position, not a
+  # data defect. It has no fix, so it must never reach the fix-first ordering —
+  # answering "21 data-quality problem(s) … want the fix-first ordering?" over
+  # real overdue work is the category error 4B.10 §5a.26(e) measured.
+  - finding_code: PAST_DUE_AT_INTAKE
+    remediation_applies: false
+    meaning: >
+      The order was already past its declared due date when the plan started.
+      This describes the plant's position, not a problem with the submitted
+      data. The work is scheduled and its lateness is priced; the unavoidable
+      part is reported separately as tardiness_floor.
+    rationale: >
+      There is no data fix for an order that is genuinely late. The dates are
+      well formed and internally consistent; the order is simply overdue, which
+      is a fact about the plant and not about the submission. Offering a
+      remediation here would send a planner looking for a correction that does
+      not exist. If the due date itself is wrong that is a different finding,
+      raised by the gate's own date-consistency rule.
+    note_version: 1
+
   - finding_code: VALUE_OUT_OF_RANGE
     remediation_applies: true
     meaning: >

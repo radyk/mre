@@ -319,6 +319,7 @@ class Explainer:
         #                         dataset but resolves to nothing is recognized as
         #                         a named-but-unresolvable entity (→ refuse), never
         #                         silently dropped into a schedule-wide answer.
+        self._cost_proof = None                  # 4B.11 CU1, lazily read once
         self._excluded_labels: set[str] = self._build_excluded_labels()
         self._order_shape_patterns: list[re.Pattern] = self._build_order_shapes()
         # Fuzzy-id tolerance (Session 4A.2b CU6): each real order ref compiled to
@@ -330,28 +331,97 @@ class Explainer:
         self._order_number_index: dict[int, str] = self._build_order_number_index()
 
     def _build_excluded_labels(self) -> set[str]:
-        """Order ids excluded/blocked from the plan, from ANY layer's findings —
-        the same evidence _explain_excluded_orders enumerates. Upper-cased for
-        case-insensitive matching."""
+        """Every TOKEN that names an excluded/blocked demand — the MATCH set.
+
+        Deliberately wide: it holds both the customer's order id and the
+        canonical UUID, so a planner who pastes either gets the excluded answer
+        instead of a global one. It is used ONLY to decide refuse-vs-answer
+        (``_order_mention``, ``_explain_unknown_entity``).
+
+        SESSION 4B.11 CU5 — IT IS NO LONGER USED FOR DISPLAY OR FOR COUNTING,
+        and that was the whole of the "60 of 102 orders are scheduled; 42
+        excluded" defect (4B.10, undiagnosed). Each of 21 excluded demands
+        contributed TWO members here (its UUID and its ORD- id), so the "count"
+        was 2× the truth and the names shown were half raw UUIDs. See
+        ``_excluded_demand_ids`` / ``_excluded_order_labels`` for the two sets
+        that actually mean something.
+        """
         labels: set[str] = set()
+        for _did, order, tokens in self._excluded_records():
+            labels |= tokens
+            if order:
+                labels.add(order.upper())
+        return labels
+
+    def _excluded_records(self) -> list[tuple[str, Optional[str], set[str]]]:
+        """One entry per EXCLUDED/BLOCKED **order**: ``(key, order_ref, tokens)``.
+
+        THE KEY IS THE ORDER, NOT THE FINDING AND NOT THE ID-SPACE (Session
+        4B.11 CU5). The same order is excluded in two id-spaces by two layers —
+        the M0 gate's subjects are SUBMISSION-space order ids (``ORD-000001``),
+        the validator's are CANONICAL demand UUIDs — so keying on the raw subject
+        id counts one order twice and labels one of the two copies with a
+        truncated id nobody recognizes. Resolving to the planner's order ref
+        first, and keying on that, collapses them into the one order they both
+        describe. A finding that resolves to no order at all keeps its own key,
+        because merging unnamed things would under-count.
+        """
+        by_order: dict[str, tuple[Optional[str], set[str]]] = {}
         try:
             findings = self._index.all_findings()
         except Exception:
-            return labels
+            return []
         for f in findings:
             if f.get("disposition") not in ("excluded", "blocked"):
                 continue
             ev = f.get("evidence", {}) or {}
-            for cand in (ev.get("order_id"), ev.get("wono"), ev.get("demand_id")):
-                if cand:
-                    labels.add(str(cand).upper())
-            for s in f.get("subjects", []) or []:
-                sid = s.get("entity_id") if isinstance(s, dict) else ""
-                if sid and self._identity_map is not None:
+            tokens = {str(c).upper() for c in
+                      (ev.get("order_id"), ev.get("wono"), ev.get("demand_id"))
+                      if c}
+            subject_ids = [s.get("entity_id") for s in (f.get("subjects") or [])
+                           if isinstance(s, dict) and s.get("entity_id")]
+            # THE ORDER, in the planner's vocabulary, from whichever id-space
+            # this layer speaks: the identity map for a canonical subject, the
+            # learned order refs for a submission-space one, the evidence's own
+            # order_id as the last resort (a REJECTED run's only identity).
+            order = None
+            for sid in subject_ids:
+                if self._identity_map is not None:
                     erefs = self._identity_map.external_refs(sid)
                     if erefs:
-                        labels.add(erefs[0].value.upper())
-        return labels
+                        order = erefs[0].value
+                        break
+                if str(sid).upper() in self._order_refs:
+                    order = self._order_refs[str(sid).upper()]
+                    break
+            if not order and ev.get("order_id"):
+                order = str(ev["order_id"])
+            key = (order.upper() if order
+                   else (subject_ids[0] if subject_ids
+                         else (ev.get("demand_id") or "")))
+            if not key:
+                continue
+            tokens |= {str(s).upper() for s in subject_ids}
+            prev_order, prev_tokens = by_order.get(key, (None, set()))
+            by_order[key] = (order or prev_order, prev_tokens | tokens)
+        return [(key, order, tokens)
+                for key, (order, tokens) in sorted(by_order.items())]
+
+    @property
+    def _excluded_order_labels(self) -> list[str]:
+        """The excluded demands' names IN THE PLANNER'S VOCABULARY, for DISPLAY.
+
+        Session 4B.11 CU4(c): an answer that names an order as
+        ``01D65946-E8F2-5832-829B-B7D797104857`` has told the planner nothing they
+        can act on and invited them to paste a UUID back. A demand whose external
+        ref does not resolve falls back to a SHORT canonical id, marked as such,
+        rather than a 36-character one — an honest "we have no order number for
+        this" instead of a wall of hex.
+        """
+        out: list[str] = []
+        for did, order, _tokens in self._excluded_records():
+            out.append(order if order else f"(unnamed demand {str(did)[:8]})")
+        return sorted(out)
 
     def _build_order_shapes(self) -> list[re.Pattern]:
         """Generalize each known order ref into a shape pattern by replacing its
@@ -503,6 +573,16 @@ class Explainer:
     # question-to-route shim here: a fallback classifier is exactly what R-AI5(2)
     # forbids, and a private one would be the same router wearing a different name.
 
+    def cost_proof(self):
+        """This run's COST proof, read from the M6 ``solve_complete`` evidence —
+        the same record the schedule document's ``solver`` block is built from
+        (Session 4B.11 CU1, docs/07 §5a.23). Cached per Explainer; never raises.
+        """
+        if self._cost_proof is None:
+            from mre.modules.cost_proof import from_evidence
+            self._cost_proof = from_evidence(self._index)
+        return self._cost_proof
+
     def route(self, route_id: str, params: dict) -> ExplanationBundle:
         """Dispatch a route id + params to its assembler — the ONE way in.
 
@@ -510,7 +590,22 @@ class Explainer:
         and the question text the assemblers still read for their own route-internal
         details (a date filter, a swap-vs-move framing, a "just the worst one"
         qualifier). Nothing here decides WHAT was asked; that arrived on the parse
-        contract (R-AI5(1))."""
+        contract (R-AI5(1)).
+
+        Session 4B.11 CU1: every bundle leaves here carrying this run's COST
+        PROOF. Stamping it at the ONE dispatch rather than in ~40 assemblers is
+        what makes the guarantee total — a route added tomorrow inherits it, and
+        no assembler can forget. The renderer decides whether it bears on the
+        answer (it does when the answer states money); this only supplies it."""
+        bundle = self._route_inner(route_id, params)
+        try:
+            if bundle is not None and isinstance(bundle.key_facts, dict):
+                bundle.key_facts.setdefault("cost_proof", self.cost_proof())
+        except Exception:  # noqa: BLE001 — a missing proof never breaks an answer
+            pass
+        return bundle
+
+    def _route_inner(self, route_id: str, params: dict) -> ExplanationBundle:
         q = params.get("question", "")
         if route_id == "ledger-refusals":
             return self._explain_recent_refusals(params.get("refusals", []))
@@ -523,7 +618,7 @@ class Explainer:
         if route_id == "certificate-testimony":
             return self._explain_data_problems(entity_ref=params.get("order"))
         if route_id == "excluded-orders":
-            return self._explain_excluded_orders(q)
+            return self._explain_excluded_orders(q, params.get("order"))
         if route_id == "briefing":
             return self._explain_briefing(q)
         if route_id == "advice":
@@ -780,7 +875,17 @@ class Explainer:
     # ------------------------------------------------------------------
 
     def _list_late_orders(self) -> ExplanationBundle:
-        """Return all demands with positive lateness_minutes from the evidence index."""
+        """Return all demands with positive lateness_minutes from the evidence index.
+
+        R-PD1 clause (4)/(6), Session 4B.11 CU4(b). Once past-due work is
+        SCHEDULED rather than excluded, this route is the one a planner asks in
+        the first minute of a demo — and a single fused minute-count is the wrong
+        answer to it. On the specimen ORD-000014 reads "+85,495 min late", of
+        which 84,240 were already on the clock before this window opened: the
+        schedule added 1,255. The route therefore reports the FLOOR and the
+        CONTROLLABLE part separately, and never sums them into one figure a
+        planner could read as this schedule's doing.
+        """
         all_ev = self._index._all_evidence
         late_metrics = [
             r for r in all_ev
@@ -788,6 +893,14 @@ class Explainer:
             and r.get("name") == "lateness_minutes"
             and (r.get("value") or 0.0) > 0
         ]
+        # demand_id → minutes already past due at t0 (absent = nothing unavoidable)
+        floors: dict[str, float] = {}
+        for r in all_ev:
+            if (r.get("record_type") == "metric"
+                    and r.get("name") == "tardiness_floor_minutes"):
+                for s in r.get("subjects", []) or []:
+                    if s.get("entity_id"):
+                        floors[s["entity_id"]] = float(r.get("value") or 0.0)
 
         late_items = []
         for m in late_metrics:
@@ -796,14 +909,19 @@ class Explainer:
                 if did:
                     refs = self._identity_map.external_refs(did) if self._identity_map else []
                     wo_name = refs[0].value if refs else did[:8]
+                    total = float(m.get("value") or 0.0)
+                    floor = min(floors.get(did, 0.0), total)
                     late_items.append({
                         "demand_id": did,
                         "wo": wo_name,
                         "lateness_minutes": m.get("value"),
+                        "floor_minutes": floor,
+                        "controllable_minutes": total - floor,
                     })
 
         worst = max(late_items, key=lambda it: it["lateness_minutes"],
                     default=None) if late_items else None
+        past_due = [it for it in late_items if it["floor_minutes"] > 0]
         return ExplanationBundle(
             question="Are there any late orders?",
             subject_id="all",
@@ -813,10 +931,20 @@ class Explainer:
             key_facts={
                 "late_count": len(late_items),
                 "late_orders": [
-                    f"{item['wo']} (+{int(item['lateness_minutes'])} min)"
+                    # The split is IN the line, not a footnote: whoever reads only
+                    # the list still cannot mistake unavoidable lateness for ours.
+                    (f"{item['wo']} (+{int(item['lateness_minutes'])} min"
+                     + (f"; {int(item['floor_minutes'])} already past due at the "
+                        f"start, {int(item['controllable_minutes'])} added here)"
+                        if item["floor_minutes"] > 0 else ")"))
                     for item in late_items
                 ],
                 "worst_late_order": worst["wo"] if worst else None,
+                # Clause (4): two totals, stated separately, never fused.
+                "past_due_at_intake_count": len(past_due),
+                "tardiness_floor_minutes": sum(it["floor_minutes"] for it in late_items),
+                "tardiness_controllable_minutes": sum(
+                    it["controllable_minutes"] for it in late_items),
                 "excluded_summary": self._excluded_summary(),
             },
             snapshot_id=self._snap_id,
@@ -1217,7 +1345,8 @@ class Explainer:
             identity_map=self._identity_map,
         )
 
-    def _explain_excluded_orders(self, question: str) -> ExplanationBundle:
+    def _explain_excluded_orders(self, question: str,
+                                 order: Optional[str] = None) -> ExplanationBundle:
         """The excluded-orders story (Session 4.5 CU4): enumerate every order
         dropped from the plan and why — a finding with disposition ``excluded``
         or ``blocked``, from ANY layer (gate rule, adapter, validator). The
@@ -1225,11 +1354,46 @@ class Explainer:
         already lists adapter + validator exclusions; this makes the same data
         enumerable in the certificate conversation. Full conversational polish is
         4A.2 — this surfaces the DATA (each excluded order, in the customer's
-        vocabulary, with its reason/code/severity/module)."""
+        vocabulary, with its reason/code/severity/module).
+
+        SESSION 4B.11 CU4(d) — IT ANSWERS THE QUESTION THAT WAS ASKED. "Why was
+        ORD-000014 excluded?" used to return ALL TWENTY-ONE exclusions with the
+        subject resolved as "excluded orders" (4B.10 §5a.26(e)): a one-order
+        question answered with an aggregate, which is the same category error as
+        answering "where is my order" with a plant summary. When an order is
+        named, the answer is about THAT order — including the case where it was
+        not excluded at all, which is now said plainly instead of being buried in
+        a list of twenty others.
+        """
         excluded = [
             f for f in self._index.all_findings()
             if f.get("disposition") in ("excluded", "blocked")
         ]
+        subject_of_interest = None
+        if order:
+            subject_of_interest = self.resolve_order_value(order) or order
+            target = subject_of_interest.upper()
+            canon = self._resolve_wo(subject_of_interest)
+
+            def _about_target(f: dict) -> bool:
+                ev = f.get("evidence", {}) or {}
+                if str(ev.get("order_id", "")).upper() == target:
+                    return True
+                for s in f.get("subjects", []) or []:
+                    sid = s.get("entity_id") if isinstance(s, dict) else ""
+                    if not sid:
+                        continue
+                    if canon and sid == canon:
+                        return True
+                    if str(sid).upper() == target:
+                        return True
+                    if self._identity_map is not None:
+                        erefs = self._identity_map.external_refs(sid)
+                        if erefs and erefs[0].value.upper() == target:
+                            return True
+                return False
+
+            excluded = [f for f in excluded if _about_target(f)]
         excluded = sorted(
             excluded,
             key=lambda r: (
@@ -1255,22 +1419,39 @@ class Explainer:
                         label = erefs[0].value
                 ev = f.get("evidence", {})
                 orders.append({
-                    "order": label or ev.get("order_id") or ev.get("demand_id") or sid,
+                    # CU4(c): the planner's own vocabulary first; the raw
+                    # canonical id is the LAST resort, not a co-equal label.
+                    "order": label or ev.get("order_id") or sid,
                     "code": f.get("code", ""),
                     "severity": f.get("severity", ""),
                     "module": f.get("module", ""),
+                    # R-PD1 clause (3): the module that actually removed it, as
+                    # the finding itself states. A demand removed downstream of a
+                    # gate that said "proceed" must be traceable to the module
+                    # that overrode that, by name.
+                    "excluded_by": ev.get("excluded_by_module") or f.get("module", ""),
                     "reason": f.get("message", "") or ev.get("reason", ""),
                 })
         return ExplanationBundle(
             question=question or "which orders were excluded from the plan?",
-            subject_id=self._snap_id,
+            subject_id=subject_of_interest or self._snap_id,
             subject_type="findings",
-            subject_external_name="excluded orders",
+            subject_external_name=subject_of_interest or "excluded orders",
             ordered_records=excluded,
             key_facts={
                 "excluded_orders": orders,
                 "excluded_count": len(orders),
                 "codes": sorted({o["code"] for o in orders}),
+                # CU4(d): the named order, so the renderer can say "ORD-14 was
+                # NOT excluded" rather than falling through to the clean-submission
+                # line, which would be true of the SUBMISSION and silent about the
+                # order actually asked about.
+                "entity_ref": subject_of_interest,
+                # …and whether it is actually on the board, so the not-excluded
+                # answer can say WHERE it is instead of only where it isn't.
+                "subject_is_scheduled": (
+                    bool(self._order_rows(subject_of_interest))
+                    if subject_of_interest else None),
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
@@ -1286,21 +1467,43 @@ class Explainer:
         """CU9 — the proactive excluded-orders volunteer. When any order was
         dropped from the plan, relevant answers say so ("14 of 15 scheduled;
         ORD-01 excluded — ask why"), inverting the certificate-silence gap the
-        audit found into a trust feature. None when nothing was excluded."""
-        orders = sorted(self._excluded_labels)
+        audit found into a trust feature. None when nothing was excluded.
+
+        SESSION 4B.11 CU5 — THE ARITHMETIC, RECONCILED. This note read
+        "60 of 102 orders are scheduled; 42 excluded" in a world of 60 demands
+        with 21 exclusions (4B.10, reported undiagnosed). TWO independent errors,
+        both here, and they compounded:
+
+          (1) the COUNT came from ``_excluded_labels``, a TOKEN set holding both
+              the UUID and the ORD- id of every excluded demand — so 21 became
+              42, and the names shown were whichever half sorted first (the
+              UUIDs). It now counts DEMANDS, via ``_excluded_records``.
+          (2) ``scheduled`` counted EVERY demand entity in the snapshot —
+              including the excluded ones — and ``total`` was then that number
+              PLUS the exclusions, double-counting them: 60 + 42 = 102 in a
+              60-order world.
+
+        The invariant this note must satisfy, and now does:
+        ``scheduled + count == total`` AND ``total == demands in the snapshot``.
+        """
+        orders = self._excluded_order_labels
         if not orders:
             return None
-        scheduled = 0
+        total = 0
         if self._reader is not None:
             try:
-                scheduled = len(list(self._reader.iter_entities("demand")))
+                total = len(list(self._reader.iter_entities("demand")))
             except Exception:
-                scheduled = 0
+                total = 0
+        count = len(orders)
+        # A snapshot read that failed (or a demand excluded before it was ever
+        # written) must never produce a NEGATIVE scheduled count.
+        scheduled = max(0, total - count)
         return {
             "orders": orders,
-            "count": len(orders),
+            "count": count,
             "scheduled": scheduled,
-            "total": scheduled + len(orders),
+            "total": max(total, count),
         }
 
     def _demand_by_order(self, order_ref: str) -> Optional[dict]:

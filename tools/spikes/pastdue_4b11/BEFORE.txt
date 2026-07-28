@@ -1,0 +1,92 @@
+==========================================================================
+1. INTAKE  (before)
+==========================================================================
+  demands total           : 60
+  demands due < ref       : 21
+  excluded_demand_ids     : 21
+  past-due AND excluded   : 21
+  past-due AND schedulable: 0
+
+==========================================================================
+2. GRAVITY — ADMITTED, AND WHERE IN THE ORDER?
+==========================================================================
+  past-due orders PLACED in window 0 : 0 of 21
+  past-due orders in the TRAY        : 0
+  past-due orders NOWHERE            : 21
+  placed orders (window 0)           : 35
+  past-due among the FIRST QUARTER   : 0 of 0 past-due placed
+  first 8 starts:
+    ORD-000024     2026-01-05T07:00  
+    ORD-000049     2026-01-05T07:00  
+    ORD-000021     2026-01-05T07:00  
+    ORD-000009     2026-01-05T07:06  
+    ORD-000010     2026-01-05T07:06  
+    ORD-000053     2026-01-05T07:12  
+    ORD-000016     2026-01-05T07:12  
+    ORD-000013     2026-01-05T07:18  
+
+==========================================================================
+3. CERTIFICATE VISIBILITY
+==========================================================================
+  specimen: ORD-000014 due=2025-11-06
+  document chars                      : 114,247
+  document names the specimen         : False
+  solver.status                       : OPTIMAL
+  solver.gap                          : None
+  solver.tiebreak_status              : FEASIBLE
+  cost_summary.total                  : 7471.716666666667
+  cost_summary.tardiness              : 0.0
+
+==========================================================================
+4. THE THREE ANSWERS (route-level, deterministic)
+==========================================================================
+
+--- Q1  where is ORD-000014?   [route order-schedule] ---
+Nothing scheduled for ORD-000014.
+[rendered by: template | register: testimony]
+
+--- Q2  why isn't ORD-000014 scheduled yet?  [route why-not-scheduled-yet] ---
+ORD-000014 isn't in the beyond-horizon list — it's either already in the current window (committed or active) or not part of this schedule. Ask about its placement directly to see which.
+[rendered by: template | register: testimony]
+
+--- Q3  which orders are already late?  [route late-orders] ---
+No late orders found in this schedule.
+
+Note: 60 of 102 orders are scheduled; 42 excluded (01D65946-E8F2-5832-829B-B7D797104857, 0DEE42A9-6527-50B3-BD7C-DDCEB9DD94A6, 0F093432-1125-5023-A198-205F5E637507, 12B5E06C-23C3-5DC3-84DE-61EFE2524EEE …) — ask "why was 01D65946-E8F2-5832-829B-B7D797104857 excluded?" for the reason.
+
+  (no evidence records found)
+[rendered by: template | register: testimony]
+
+==========================================================================
+5. THE EXCLUSION NOTE'S ARITHMETIC (CU5)
+==========================================================================
+  _excluded_summary(): {"orders": ["01D65946-E8F2-5832-829B-B7D797104857", "0DEE42A9-6527-50B3-BD7C-DDCEB9DD94A6", "0F093432-1125-5023-A198-205F5E637507", "12B5E06C-23C3-5DC3-84DE-61EFE2524EEE", "6BF6083E-CAE0-5057-B310-9413B06E6CE4", "7463C54E-D042-5E2F-BBBF-E791D129A248", "80632455-816E-54EC-95F4-19B0C1DCE2D7", "8F65C060-B058-5425-BD36-8C80E7F9A8AF", "93E2F245-B7B6-5389-A085-2CAB018A9CD2", "A3207FDD-6394-526F-BFFD-A56
+  _excluded_labels count: 42
+  sample labels: ['01D65946-E8F2-5832-829B-B7D797104857', '0DEE42A9-6527-50B3-BD7C-DDCEB9DD94A6', '0F093432-1125-5023-A198-205F5E637507', '12B5E06C-23C3-5DC3-84DE-61EFE2524EEE', '6BF6083E-CAE0-5057-B310-9413B06E6CE4', '7463C54E-D042-5E2F-BBBF-E791D129A248']
+  TEMPORAL_IMPOSSIBILITY findings: 22 across 42 distinct subjects
+
+--- Q4  why was it excluded?  [route excluded-orders] ---
+21 data-quality problem(s):
+
+  1. ORD-000004, 0f093432-1125-5023-a198-205f5e637507 has dates that can't both be true  [WARNING]
+       Affected: ORD-000004
+  2. ORD-000006, 12b5e06c-23c3-5dc3-84de-61efe2524eee has dates that can't both be true  [WARNING]
+       Affected: ORD-000006
+  3. ORD-000007, 01d65946-e8f2-5832-829b-b7d797104857 has dates that can't both be true  [WARNING]
+       Affected: ORD-000007
+  4. ORD-000011, a5e2ba83-dca5-5d86-95ce-af8f558e21ed has dates that can't both be true  [WARNING]
+       Affected: ORD-000011
+  5. ORD-000012, 0dee42a9-6527-50b3-bd7c-ddceb9dd94a6 has dates that can't both be true  [WARNING]
+       Affected: ORD-000012
+  6. ORD-000014, f05a836e-8221-578b-8721-c5802fd6ccca has dates that can't both be true  [WARNING]
+       Affected: ORD-000014
+  7. ORD-000017, d9c6acb1-0e11-505d-9f7a-0d12ad7809bb has dates that can't both be true  [WARNING]
+       Affected: ORD-000017
+  8. ORD-000019, f114217f-2833-5d4e-b4e0-e218b9316c99 has dates that can't both be true  [WARNING]
+       Affected: ORD-000019
+  9. ORD-000025, aebd4d4a-4593-5c09-9a10-ee00b5e6dc53 has dates that can't both be true  [WARNING]
+       Affected: ORD-000025
+  10. ORD-000026, 80632455-816e-54ec-95f4-19b0c1dce2d7 has dates that can't both be true  [WARNING]
+       Affected: ORD-000026
+  11. ORD-000030, d2639f3a-a115-5559-8e61-9853b78b9b52 has dates that can't both be true  [WARNING]
+

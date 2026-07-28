@@ -90,8 +90,11 @@ class TestFallbackCompleteness:
         assert note is not None, f"no fallback note for {code.value}"
         assert note.finding_code == code
 
-    def test_fallback_count_is_eighteen(self):
-        assert len(CATALOG.fallbacks) == len(FindingCode) == 18
+    def test_fallback_count_matches_the_vocabulary(self):
+        # 19 since 2026-07-28 (PAST_DUE_AT_INTAKE, R-PD1). The equality is the
+        # real assertion: every finding code must have a catalog entry, even
+        # when — as here — that entry's job is to say NO remediation applies.
+        assert len(CATALOG.fallbacks) == len(FindingCode) == 19
 
 
 # --------------------------------------------------------------------------

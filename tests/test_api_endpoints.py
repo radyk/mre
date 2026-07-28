@@ -177,7 +177,7 @@ class TestScheduleDocument:
     def test_document_validates_against_contract(self, api):
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
         parsed = ScheduleDocument.model_validate(doc)
-        assert parsed.contract_version == "1.10"
+        assert parsed.contract_version == "1.11"
         assert parsed.schedule_id == api.schedule_id
         assert parsed.run_id == api.run["id"]
         assert parsed.solver.deterministic is True
@@ -227,11 +227,32 @@ class TestScheduleMeta:
     def test_meta_joins_the_certificate_grade(self, api):
         meta = _data(api.client.get(f"/schedules/{api.schedule_id}/meta"))
         assert meta["id"] == api.schedule_id
-        assert meta["contract_version"] == "1.10"
+        assert meta["contract_version"] == "1.11"
         assert meta["grade"] == "ACCEPTED"
         assert meta["costing_grade"] == "C1"
         assert meta["submission_id"] == api.submission["submission_id"]
         assert meta["is_scenario"] in (0, False)
+
+    def test_meta_carries_the_cost_proof(self, api):
+        """Session 4B.11 CU1 (docs/07 §5a.23) — the strip's cost-proof chip.
+
+        It rides on /meta rather than in the document for the same reason the
+        certificate grade does: the document is derived-not-invented and its
+        shape is the contract. The WORDING is composed server-side so the strip
+        chip and the answer surface's rider cannot state different things about
+        the same solve — the cockpit's JS composes none of it."""
+        meta = _data(api.client.get(f"/schedules/{api.schedule_id}/meta"))
+        proof = meta.get("cost_proof")
+        assert proof, "the strip cannot render a proof it is not given"
+        assert proof["state"] in ("proved", "unproved", "none")
+        assert proof["label"] and proof["title"]
+        # the raw fields ride along so a consumer can re-derive rather than parse
+        doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
+        assert proof["status"] == doc["solver"]["status"]
+        if proof["state"] == "unproved" and proof.get("gap") is not None:
+            assert "%" in proof["label"], "an unproved board states its gap"
+        if proof["state"] == "proved":
+            assert "proved" in proof["label"]
 
     def test_meta_carries_human_scale_identity(self, api):
         """Session 4.4 CU3: the strip shows "solve #N · HH:MM", not just the hex —
@@ -262,7 +283,7 @@ class TestScheduleInteraction:
         data = _data(api.client.get(
             f"/schedules/{api.schedule_id}/interaction"))
         assert data["schedule_id"] == api.schedule_id
-        assert data["contract_version"] == "1.10"
+        assert data["contract_version"] == "1.11"
         block = InteractionBlock.model_validate(data["interaction"])
         # one entry per scheduled op, each with its eligible set + the graph
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
@@ -666,7 +687,7 @@ class TestRollingSolve:
 
         sid = run["result"]["schedule_id"]
         doc = _data(client.get(f"/schedules/{sid}"))
-        assert doc["contract_version"] == "1.10"
+        assert doc["contract_version"] == "1.11"
         assert doc["rolling"] is not None
         r = doc["rolling"]
         # the sliced world: committed + active bars, and a populated tray.
@@ -775,7 +796,7 @@ class TestRollingTwoBeatAPI:
 
     def test_served_document_is_rolling_with_interaction(self, rolling_api):
         doc = _data(rolling_api.client.get(f"/schedules/{rolling_api.schedule_id}"))
-        assert doc["contract_version"] == "1.10"
+        assert doc["contract_version"] == "1.11"
         assert doc["rolling"] is not None
         assert doc["rolling"]["beyond_horizon"], "empty tray"
         # the split-endpoint interaction payload is served for the active window

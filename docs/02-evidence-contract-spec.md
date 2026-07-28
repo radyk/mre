@@ -118,16 +118,37 @@ finding severity now derives from the DISPOSITION (`finding_severity`). A
 still degrading the grade to CONDITIONALLY ACCEPTED — the two axes agree instead
 of contradicting.
 
-**Finding codes (18), grouped by pipeline layer of origin:**
+**Finding codes (19), grouped by pipeline layer of origin:**
 
 *Adapter (ERP-shape):*
 `MISSING_REFERENCE` · `UNMAPPABLE_VALUE` · `AMBIGUOUS_SOURCE` · `MALFORMED_FIELD` · `DUPLICATE_IDENTITY` · `IDENTITY_CHANGED`
 
 *Validation (semantic):*
-`TEMPORAL_IMPOSSIBILITY` · `NO_CAPABLE_RESOURCE` · `ORPHAN_ENTITY` · `VALUE_OUT_OF_RANGE` · `STATISTICAL_OUTLIER` · `PROVENANCE_GAP` · `LOW_CONFIDENCE_INPUT`
+`TEMPORAL_IMPOSSIBILITY` · `PAST_DUE_AT_INTAKE` · `NO_CAPABLE_RESOURCE` · `ORPHAN_ENTITY` · `VALUE_OUT_OF_RANGE` · `STATISTICAL_OUTLIER` · `PROVENANCE_GAP` · `LOW_CONFIDENCE_INPUT`
 
 *Planning / Solve:*
 `BATCH_CONFLICT` · `INFEASIBLE_SUBSET` · `HORIZON_EXCEEDED` · `SOLVER_NONOPTIMAL` · `DENSITY_LIMIT`
+
+`PAST_DUE_AT_INTAKE` (added 2026-07-28, R-PD1): a Demand whose declared due
+date is already behind the reference date when planning starts. **INFO severity,
+`proceeded_flagged` disposition, and never an exclusion** — the demand is
+scheduled and priced with tardiness (R-PD1 clause (1)), and the unavoidable part
+of that lateness is reported as `cost_summary.tardiness_floor` (contract 1.11).
+
+It exists because `TEMPORAL_IMPOSSIBILITY` already means something else and must
+not be stretched to cover this. That code is the M0 gate's verdict on
+`due < release/created` — a pair of dates that genuinely cannot both be true, and
+a real data defect with a real fix. M3 was raising the SAME code for
+`due < reference_date`, which is not a contradiction at all: it is a released
+work order that is simply late. The consequences of the conflation were concrete
+— the authored phrase "has dates that can't both be true" is false of an overdue
+order, and 21 real orders on the first fixture that could produce them were filed
+into a fix-first remediation queue for a condition that has no fix (docs/07
+§5a.26). The remediation catalog therefore carries `PAST_DUE_AT_INTAKE` with
+`remediation_applies: false` and an explicit rationale.
+
+The two codes must never be merged or trended together: one asks "is this record
+self-contradictory?", the other asks "how far behind is this plant?".
 
 `DENSITY_LIMIT` (added 2026-07-12): a structural concentration of a scheduling
 feature on one resource exceeds a validated solver-scale ceiling (e.g. resumable

@@ -279,7 +279,14 @@ def base_run(tmp_path_factory):
     # M5
     b_rep = _rep(ModuleCode.M5, "builder")
     from mre.modules.solver_builder import SolverBuilder
-    model, var_map = SolverBuilder().build(
+    # R-PD1 (Session 4B.11): pass the pinned reference date, as EVERY shipped
+    # caller does (`__main__`, `scenario`, `sandbox`, `solution_pool`). Without
+    # it this base run built against `min(earliest_start)` while the scenario
+    # re-solve — which reads the date back off M3's config — built against
+    # `ref_dt`: two different t0 values across a diff that exists to compare
+    # them. Invisible while WO-PAST-001 was excluded; a 775,841-minute phantom
+    # tardiness delta the moment it is schedulable.
+    model, var_map = SolverBuilder(reference_date=ref_dt).build(
         wps + ops + edges, resources + pools, flattened_cals,
         fuls + demands, constraints, cost_model,
     )

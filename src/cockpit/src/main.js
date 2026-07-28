@@ -89,6 +89,33 @@ function scheduleIdentity(doc, meta) {
   return { label: shortId, title: shortId };
 }
 
+// THE COST PROOF CHIP (Session 4B.11 CU1 — docs/07 §5a.23).
+//
+// A schedule whose cost is provably optimal SAYS SO; one that is not says that,
+// with its gap. This is not decoration: 4B.10 measured five runs of one instance
+// differing only in the solver's random seed splitting 4 OPTIMAL / 1 FEASIBLE,
+// the unproved run's ledger 13.056% dearer than the optimum the other four prove
+// to the cent — and `solver.status` was the ONLY thing distinguishing them,
+// rendered nowhere. It sits in the strip beside the certificate grade, not in a
+// diagnostics drawer, because it qualifies every number on the board.
+//
+// The label and title are composed SERVER-SIDE (mre.modules.cost_proof) and
+// arrive on /meta. Nothing here composes wording, so the chip and the ask
+// panel's rider cannot state different things about the same solve. No proof on
+// meta -> no chip: an absent verdict is never guessed.
+function costProofChip(meta) {
+  const p = meta && meta.cost_proof;
+  if (!p || !p.label) return "";
+  const cls = `proof-${p.state || "none"}`;
+  return `<span class="costproof ${cls}" title="${escapeAttr(p.title || "")}">`
+       + `<span class="lbl">cost</span> ${escapeHtml(p.label)}</span>`;
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+const escapeAttr = escapeHtml;
+
 function paintTopStrip(el, doc, meta) {
   const grade = meta?.grade || "—";
   const costing = meta?.costing_grade ? ` / ${meta.costing_grade}` : "";
@@ -98,6 +125,7 @@ function paintTopStrip(el, doc, meta) {
     <span class="brand">Reasoning Cockpit</span>
     <span class="ver" title="${ident.title}">contract ${doc.contract_version} · <button type="button" class="sched-ident" id="sched-ident">${ident.label}<span class="sched-caret" aria-hidden="true">▾</span></button></span>
     <span class="status">${doc.status}</span>
+    ${costProofChip(meta)}
     <span class="grade ${gcls}"><span class="lbl">certificate</span> ${grade}${costing}</span>
     <button class="theme-toggle" id="theme-toggle"></button>`;
   // the toggle is recreated on every repaint (version change too) — (re)bind it.

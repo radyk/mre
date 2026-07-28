@@ -6,12 +6,15 @@ remaining duration. The amended invariant: no NEWLY scheduled op starts
 before reference_date; an observed in-flight op is exempt (its remaining work
 is pinned at reference_date, its observed pre-reference start is history).
 
-The ghost-job non-regression (docs/07 standing risk) is in test_validator-
-style form here: TEMPORAL_IMPOSSIBILITY still excludes a past-due unstarted
-demand in the same run that honors an in-flight op with a pre-reference start.
+The past-due disposition (R-PD1, Session 4B.11) is asserted in
+test_validator-style form here: NEITHER a past-due unstarted demand NOR a
+past-due in-flight one is excluded, in the same run that honors an in-flight
+op with a pre-reference start. This inverts what the file previously asserted
+— see the test's own docstring for the ruling that changed it.
 """
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 
 import pytest
@@ -230,11 +233,21 @@ def test_in_flight_interval_exempt_from_calendar_closure():
 # Ghost-job non-regression (docs/07 standing risk)
 # ---------------------------------------------------------------------------
 
-def test_temporal_impossibility_still_fires_while_in_flight_honored(tmp_path):
-    """One validator run, two demands: a past-due UNSTARTED demand is excluded
-    (the ghost-job fix intact); a past-due demand that is actually in_progress
-    is NOT excluded (work is underway — not a ghost). The amended invariant
-    must not regress the fix, and must not exclude live in-flight work."""
+def test_past_due_is_scheduled_whether_or_not_it_is_in_flight(tmp_path):
+    """One validator run, two past-due demands — one unstarted, one in_progress
+    — and NEITHER is excluded (R-PD1 clauses (1)/(2), Session 4B.11).
+
+    This test used to assert the opposite for the unstarted one: the "ghost-job
+    fix" removed it from planning, and the docs/06 §5.13 wip_status doorway was
+    the only escape. R-PD1 rules that exclusion is a DATA-DEFECT category only,
+    so a past-due unstarted demand — a real released work order that is simply
+    late — is scheduled like any other work. The WIP distinction survives
+    everywhere it means something (an in-flight operation still constrains
+    placement); it is no longer the difference between being planned and
+    vanishing.
+
+    Both demands are still REPORTED: one PAST_DUE_AT_INTAKE finding, INFO,
+    proceeded_flagged, naming both."""
     from mre.contracts.vocabularies import ModuleCode, RunStatus
     from mre.modules.snapshot_store import SnapshotStore
     from mre.modules.validator import Validator
@@ -287,5 +300,21 @@ def test_temporal_impossibility_still_fires_while_in_flight_honored(tmp_path):
     result = Validator().run(snap, store, rep, reference_date=ref)
     rep.end(RunStatus.SUCCESS)
 
-    assert "ghost" in result.excluded_demand_ids     # ghost-job fix intact
-    assert "live" not in result.excluded_demand_ids  # in-flight work honored
+    assert "ghost" not in result.excluded_demand_ids   # R-PD1 clause (2)
+    assert "live" not in result.excluded_demand_ids    # in-flight work honored
+    assert not result.excluded_demand_ids, (
+        "nothing may be excluded for being late")
+
+    # …and the fact is not silent: one INFO finding, proceeded_flagged, naming
+    # both past-due demands, with the unavoidable lateness measured.
+    records = []
+    for path in sorted((tmp_path / "runs").glob("*.jsonl")):
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                records.append(json.loads(line))
+    pd_findings = [r for r in records if r.get("record_type") == "finding"
+                   and r.get("code") == "PAST_DUE_AT_INTAKE"]
+    assert len(pd_findings) == 1
+    assert pd_findings[0]["severity"] == "info"
+    assert pd_findings[0]["disposition"] == "proceeded_flagged"
+    assert {s["entity_id"] for s in pd_findings[0]["subjects"]} == {"ghost", "live"}

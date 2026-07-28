@@ -1,0 +1,51 @@
+world: 12 demands, 3 past due, 48 free ops, horizon 200 d
+predicted objective offset (sum weight x floor): 6,999,840
+
+ARM A — floor EXCLUDED from the objective (the shipped clamp)
+  status OPTIMAL   objective 406973.0   gap 0.0
+
+ARM B — floor INCLUDED in the objective (clamp removed)
+  status OPTIMAL   objective 7406813.0   gap 0.0
+
+======================================================================
+  ops compared                : 48
+  PLACEMENTS IDENTICAL        : False
+  differing ops               : 34
+    d5fbd0ff  A=(613, '5187fae4-653d-5166-8899-bfb1c868abce')  B=(698, '5187fae4-653d-5166-8899-bfb1c868abce')
+    f6912a43  A=(671, '80bba5da-5554-54fd-bded-3f2f1e17c9fa')  B=(756, '80bba5da-5554-54fd-bded-3f2f1e17c9fa')
+    a6f9374e  A=(703, 'a5d4037c-e161-5e57-9ffc-58f4b1c34c05')  B=(788, 'a5d4037c-e161-5e57-9ffc-58f4b1c34c05')
+    eab8c403  A=(37119, '1613a8a8-120c-5254-b8b6-5a5bb0f30b38')  B=(820, '1613a8a8-120c-5254-b8b6-5a5bb0f30b38')
+    3ea2da25  A=(420, 'a5d4037c-e161-5e57-9ffc-58f4b1c34c05')  B=(426, 'a5d4037c-e161-5e57-9ffc-58f4b1c34c05')
+    33b3afb5  A=(495, '1613a8a8-120c-5254-b8b6-5a5bb0f30b38')  B=(660, '1613a8a8-120c-5254-b8b6-5a5bb0f30b38')
+    2735eefb  A=(527, '5187fae4-653d-5166-8899-bfb1c868abce')  B=(692, '5187fae4-653d-5166-8899-bfb1c868abce')
+    e0603245  A=(670, '5187fae4-653d-5166-8899-bfb1c868abce')  B=(574, '5187fae4-653d-5166-8899-bfb1c868abce')
+  BOTH ARMS PROVED OPTIMAL    : True
+  objective A                 : 406,973
+  objective B                 : 7,406,813
+  B - A                       : 6,999,840
+  predicted sum weight x floor: 6,999,840
+  OFFSET IS EXACTLY PREDICTED : True
+======================================================================
+
+READ THIS BEFORE READING 'PLACEMENTS IDENTICAL: False' AS A REFUTATION.
+
+The brief's stated test was placement identity. The data shows that test is the
+WRONG ONE, and shows it cleanly rather than by argument:
+
+  * BOTH arms PROVED OPTIMAL (gap 0), so each found a true argmin — not an
+    incumbent a truncated search happened to stop on.
+  * B* - A* is EXACTLY the predicted constant. Since f_B(x) = f_A(x) + C for
+    every feasible x, min f_B = min f_A + C, and observing precisely that
+    equality is what confirms C really is independent of x. It follows that
+    argmin f_B == argmin f_A AS SETS: A's placement is optimal for B and B's is
+    optimal for A, both at cost A*.
+  * The placements differ because that argmin set has MORE THAN ONE MEMBER, and
+    adding a large constant changes CP-SAT's search TRAJECTORY (bounds, restarts,
+    tie-breaking) without changing which schedules are optimal.
+
+So placement identity would have been sufficient but is not necessary, and
+requiring it would have manufactured a false failure out of an arbitrary
+tie-break. The exact-offset identity is the stronger claim and it holds. The
+verdict below is taken on it.
+
+VERDICT — the floor cannot change the argmin: True

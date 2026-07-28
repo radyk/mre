@@ -34,3 +34,7 @@ _4b8_scratch/
 # Session 4B.10 scratch (generated facility_real submissions + run dirs);
 # tools/spikes/density_4b10/ and its .jsonl results ARE committed
 _4b10_scratch/
+# Session 4B.11 scratch (generated facility_real_pastdue submissions + run dirs,
+# BEFORE/AFTER probe transcripts, the golden-accounting runs). The probe and the
+# floor-invariance spike ARE committed, under tools/spikes/pastdue_4b11/.
+_4b11_scratch/

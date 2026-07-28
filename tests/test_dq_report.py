@@ -84,9 +84,13 @@ class TestReportCoversAllSeededDefects:
         text, _ = dq_report_run
         assert "LOW_CONFIDENCE_INPUT" in text
 
-    def test_temporal_impossibility_mentioned(self, dq_report_run):
+    def test_past_due_at_intake_mentioned(self, dq_report_run):
+        """R-PD1 (Session 4B.11): WO-PAST-001's past-dueness is still REPORTED —
+        7.83% of the pilot book is already late and that fact must not be silent
+        — but under its own code, not TEMPORAL_IMPOSSIBILITY, which means "dates
+        that can't both be true" and is false of a merely-overdue order."""
         text, _ = dq_report_run
-        assert "TEMPORAL_IMPOSSIBILITY" in text
+        assert "PAST_DUE_AT_INTAKE" in text
 
     def test_statistical_outlier_mentioned(self, dq_report_run):
         text, _ = dq_report_run

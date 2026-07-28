@@ -194,7 +194,17 @@ def answer_why_not_scheduled_yet(doc: Any, order_ref: Optional[str]) -> str:
     """Why a specific order isn't scheduled yet — admitted-but-beyond-the-window,
     with its due date and (if derivable) the earliest-window estimate, HEDGED
     honestly (the estimate is not a placement). If the order is in the current
-    window (committed/active), say so; if unknown, say so."""
+    window (committed/active), say so; if unknown, say so.
+
+    R-PD1 clause (6), Session 4B.11 CU4(a). The fall-through used to answer a
+    non-tray order with a DISJUNCTION — "it's either already in the current
+    window (committed or active) or not part of this schedule" — and on the
+    past-due specimen NEITHER BRANCH WAS TRUE (4B.10 §5a.26(d)). The document
+    already knows which: ``RollingVocabulary`` reads the three regions off it.
+    The disjunction is replaced by the answer, and it now RESOLVES rather than
+    redirecting: an order in the window gets its placement region and, when it is
+    late, the floor/controllable split (clause (4) — never one fused number).
+    """
     r = _rolling(doc)
     if r is None:
         return "This isn't a rolling schedule, so there is no horizon to be beyond."
@@ -227,10 +237,48 @@ def answer_why_not_scheduled_yet(doc: Any, order_ref: Optional[str]) -> str:
                 f"window. It's due {due}; I can't cheaply estimate its window (no due "
                 f"date to work back from), but it will be scheduled as the horizon "
                 f"rolls forward.")
-    # not in the tray: it's either in the current window or not in this schedule.
-    return (f"{order_ref} isn't in the beyond-horizon list — it's either already in "
-            f"the current window (committed or active) or not part of this schedule. "
-            f"Ask about its placement directly to see which.")
+    # NOT IN THE TRAY. The document says which of the remaining cases this is —
+    # so say it, rather than offering the planner a disjunction to resolve.
+    region = RollingVocabulary(doc).disposition(order_ref)
+    if region in ("committed", "in-window"):
+        placed = "committed in the frozen zone" if region == "committed" else \
+                 "placed in the current window"
+        late = _lateness_clause(doc, order_ref)
+        return (f"{order_ref} IS scheduled — it's {placed}, not waiting beyond the "
+                f"horizon.{late} Ask \"where is {order_ref}?\" for the operation "
+                f"timeline.")
+    return (f"{order_ref} isn't in this schedule at all: it is neither placed in "
+            f"the current window nor sitting beyond the horizon. That is a data "
+            f"question rather than a scheduling one — ask \"why was {order_ref} "
+            f"excluded?\" and I'll cite the record that removed it, and which "
+            f"module did.")
+
+
+def _lateness_clause(doc: Any, order_ref: str) -> str:
+    """" It finishes N minutes late …" for a placed order, with the R-PD1
+    clause (4) SPLIT when part of that lateness was unavoidable.
+
+    Two figures, never fused: a planner told an order is 85,495 minutes late
+    needs to know that 84,240 of those minutes were already on the clock before
+    this schedule existed. Empty string when the order is on time or the document
+    carries no outcome for it — silence rather than a guess."""
+    d = doc if isinstance(doc, dict) else (
+        doc.model_dump(mode="json") if hasattr(doc, "model_dump") else {})
+    for s in d.get("service_outcomes") or []:
+        if str(s.get("work_order") or "").upper() != str(order_ref).upper():
+            continue
+        late = int(s.get("lateness_min") or 0)
+        if late <= 0:
+            return " It finishes on time."
+        floor = s.get("tardiness_floor_min")
+        if floor:
+            floor = int(floor)
+            return (f" It finishes {late} minutes past its due date — but "
+                    f"{floor} of those were already unavoidable when this window "
+                    f"opened (it was ALREADY PAST DUE), so this schedule adds "
+                    f"{late - floor}.")
+        return f" It finishes {late} minutes past its due date."
+    return ""
 
 
 # ---------------------------------------------------------------------------

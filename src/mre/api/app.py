@@ -395,6 +395,31 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
         # never a raw error and never an editable zombie.
         if meta.get("status") == "superseded":
             meta["successor_id"] = registry.live_successor(schedule_id)
+        # 4B.11 CU1 (docs/07 §5a.23) — THE COST PROOF, composed server-side.
+        # It rides on /meta rather than in the document for the same reason the
+        # certificate grade does: the document is derived-not-invented and its
+        # shape is the contract. The WORDING is composed in `cost_proof.py` and
+        # never in the cockpit's JS, so the strip chip and the answer surface's
+        # rider cannot state different things about the same solve. Absent when
+        # the document cannot be read — the strip then simply shows no chip,
+        # which is honest; it never guesses a verdict.
+        row = registry.get_schedule(schedule_id)
+        if row:
+            try:
+                from mre.modules.cost_proof import from_solver_block
+                doc = json.loads(
+                    Path(row["document_path"]).read_text(encoding="utf-8"))
+                proof = from_solver_block(doc.get("solver"))
+                meta["cost_proof"] = {
+                    **proof.chip(),
+                    "status": proof.status,
+                    "gap": proof.gap,
+                    "tiebreak_status": proof.tiebreak_status,
+                    "tiebreak_skipped_reason": proof.tiebreak_skipped_reason,
+                }
+            except Exception:  # noqa: BLE001 — meta must not 500 on a bad doc
+                logging.getLogger("mre.api").warning(
+                    "EVENT meta.cost_proof_unavailable schedule=%s", schedule_id)
         return _ok(meta)
 
     @app.get("/schedules/{schedule_id}/interaction")

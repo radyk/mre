@@ -1,6 +1,22 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.54 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.55 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.55:** **Session 4B.11 — the honesty bundle: the proof rendered, the late work scheduled, the arithmetic reconciled** 2026-07-28 (docs/04 session amendment with **R-PD1 verbatim**; full narrative in `SESSION_CLOSEOUT.md`). Four things a customer meets in the first hour, two of them coupled: **R-PD1 makes real boards tardiness-dominated, which §5a.27 proved is exactly the regime where the cost proof fails** — so the status had to become visible in the SAME commit that started scheduling late work.
+
+**R-PD1 — PAST-DUE DEMAND DISPOSITION, ruled and implemented (docs/04, verbatim).** Six clauses. **(1) PAST-DUE IS WORK, NOT A DEFECT** — admitted, scheduled, priced with tardiness from its declared due date. **(2) EXCLUSION IS A DATA-DEFECT CATEGORY ONLY** — never for a true statement about the plant's position (late, beyond horizon, over capacity); this **generalizes §5a.1 and §5a.26 into one rule**. **(3) THE GATE'S DISPOSITION BINDS DOWNSTREAM** — a module that removes a `proceeded_flagged` demand raises its OWN finding naming ITSELF. **(4) TARDINESS DECOMPOSES AND NEVER FUSES.** **(5) AGE IS NOT LATENESS** — **OPEN, deliberately unbuilt** (§5a.28). **(6) EVERY PER-ORDER ROUTE VOICES THE DISPOSITION.**
+
+**21 of 21 past-due orders are now SCHEDULED on the specimen**, and **gravity did not have to be told**: measured, they are admitted by the BASE rule (`due <= window_end`) unconditionally, before gravity runs at all — **the admission policy needed no change and did not get one**. `validator.py` Check 1 excludes nothing and raises one `PAST_DUE_AT_INTAKE` finding (**finding code 19**, added never repurposed — `TEMPORAL_IMPOSSIBILITY` is M0's verdict on `due < release/created` and keeps that meaning) at INFO / `proceeded_flagged`, with `remediation_applies: false`. **A SECOND EXCLUSION SITE was found and closed:** Check 5's resumable window-fit test floors `elapsed_days` at 0, so every past-due resumable demand would have fallen straight into it and been excluded as `INFEASIBLE_SUBSET` — the same removal wearing a different code. And **scheduling past-due WORK must never mean modelling past TIME**: `_compute_horizon`'s reference-date floor now applies unconditionally (sample_data dragged the horizon to **2024-12-20** without it).
+
+**THE TARDINESS SPLIT — contract 1.10 → 1.11.** `cost_summary.tardiness_floor` + `tardiness_controllable`, present TOGETHER or not at all, summing to `tardiness` to the cent, and **ABSENT on any book with no past-due work** (so on-time monolithic documents are byte-identical to their 1.10 selves). **It does not change the model; it makes a decomposition the pipeline already contained legible** — `solver_builder` has always clamped `due_min = max(0, due − horizon_start)`, so the floor was never in the objective. **The brief's stated test for this was the WRONG test and the data said so:** at 60 orders both arms returned FEASIBLE and 237/240 placements differed, which measures two truncated searches, not an argmin. At 12 orders **both arms prove OPTIMAL** and `B − A = 6,999,840 = Σ (weight × floor)` **exactly**; placements still differ (34/48) because that is a **TIE**, not a refutation — `argmin f_B == argmin f_A` as SETS. **Placement identity would have been sufficient but is not necessary.**
+
+**§5a.23 DISCHARGED — the cost proof is rendered and voiced.** `src/mre/modules/cost_proof.py` is the single definition; the cockpit's top strip carries a chip (label + title composed SERVER-SIDE, arriving on `/meta`, so the JS composes no wording) and the answer surface carries an unprompted rider fired by the ONE delivery seam **only when the board is UNPROVED and the text states money** — the asymmetry is the point: the surface volunteers the thing that weakens its own number. Every bundle leaving `Explainer.route` carries the proof, stamped at the one dispatch. **The rolling path could not state a gap at all** until now (`SolverBlock(gap=None)` unconditionally); `RollingView` now carries stage 1's `objective` and `gap`. **No new route was built** — that is a vocabulary-class change, named as §5a.29.
+
+**THE 42, RECONCILED (§5a.26's undiagnosed observation, closed).** Two compounding errors in `_excluded_summary`: the COUNT came from a **token set** holding both the UUID and the `ORD-` id of every excluded demand (21 × 2 = 42), and `scheduled` counted **every** demand in the snapshot with `total` = that + the exclusions (60 + 42 = 102 in a 60-order world). Display and counting now key on the **resolved ORDER**, because the same order is excluded in two id-spaces by two layers. Invariant asserted: `scheduled + count == total` and `total == demands in the snapshot`. **Proved on a purpose-built world that still HAS exclusions** — R-PD1 dissolves the note on the specimen itself, so covering it was not assumed. A third defect fixed at its own site: `finding_subject_label` appended the evidence's raw `demand_id` even when the subject had already resolved.
+
+**THE THREE MEASURED FALSE ANSWERS ARE FIXED AND PINNED** (`tests/test_pastdue_disposition.py`, 35 tests): "where is ORD-X" no longer says "Nothing scheduled"; "why isn't X scheduled yet" no longer offers a disjunction **neither branch of which was true**; "which orders are already late" no longer says "No late orders found" in a world 35% past due — it lists 21 with the clause-(4) split per line.
+
+**THE sample_data BASELINE WAS REGENERATED, and the brief's premise was wrong.** The acceptance criterion assumed no monolithic golden carries past-due work; **sample_data carries WO-PAST-001 as seeded defect 3** — whose `DEFECTS.md` entry has declared `proceeded_flagged` all along, while the implementation had drifted to `excluded`. **Accounted for by construction:** re-running the gate pipeline with that single row REMOVED reproduces the previous golden **byte-for-byte** and its ledger to the cent (24,769.00). New golden **801,930.00**, tardiness **777,521.00** — of which **776,160 is FLOOR**, which is the clearest possible argument for 1.11. `pilot_scale` and every rolling golden are untouched. New/updated debts: **§5a.28** (clause 5 open), **§5a.29** (no optimality ROUTE), **§5a.30** (`facility_real`'s CONDITIONAL grade is a generator truthfulness defect, correcting 4B.10).
 
 **v2.54:** **Session 4B.10 — the real shape: few machines, deep queues** 2026-07-28
 (docs/04 session amendment; full narrative in `SESSION_CLOSEOUT.md`). **First act:
@@ -1356,6 +1372,18 @@ where the reasoning lives.
    the completeness invariant can tell "beyond our horizon" from "we could not
    use it". Blocked on nothing; sequenced behind the RawAdapter retirement, which
    touches the same entry points.
+
+   **RAISED 2026-07-28 (Session 4B.11): THIS IS NOW A NAMED RULING VIOLATION, not
+   just an untidy category.** R-PD1 clause (2) rules that exclusion is a
+   DATA-DEFECT category only and can never be applied to a true statement about
+   the plant's position — *late, beyond horizon, over capacity*. "Beyond our
+   horizon" is exactly such a statement, so this path violates the same clause the
+   past-due finding did, and does so on a **production** entry point. It is also a
+   clause (3) violation, and a worse one: `scenario.py:280-293` raises **no finding
+   of any kind**, so nothing names the module that removed the demand or the reason
+   — the general guard committed in `tests/test_pastdue_disposition.py` would catch
+   it if applied to that path. Untouched in 4B.11 (out of scope; the fix is a
+   category change on a production path), but it is no longer a matter of taste.
 2. **Per-component gravity ablation** (4B.2c, restated here because Session 4B.6
    built a mechanism ADJACENT to gravity and an unproven component must not be
    invisible while we do). `test_gravity_counterfactual` proves the BUNDLE — all
@@ -1849,7 +1877,7 @@ where the reasoning lives.
     the budget split (§5a.19), so a fresh exam world differs from the r5 world in
     more than the card figures. The ordering above still stands, and is now
     actionable: re-derive from a fresh world FIRST, then grade.
-23. **"Provably optimal" is a claim the system can now make and NOTHING VOICES**
+23. **"Provably optimal" is a claim the system can now make and NOTHING VOICES** — **DISCHARGED 2026-07-28 (Session 4B.11 CU1).** `src/mre/modules/cost_proof.py` is the single definition of the claim; the cockpit's top strip renders it as a chip beside the certificate grade (label and title composed SERVER-SIDE and delivered on `/meta`, so the JS composes no wording and the two surfaces cannot disagree), and the answer surface carries an unprompted rider appended by the ONE delivery seam both renderers share. The rider's rule is narrow on purpose: it fires **only when the board is UNPROVED *and* the delivered text states money** — a proved board adds nothing (the strip already says so) and "ORD-14 is on M-02" is not a cost claim. Every bundle leaving `Explainer.route` carries the proof, stamped at the one dispatch rather than in forty assemblers. It is read from the M6 `solve_complete` event — the same record the document's `SolverBlock` is built from — so the board and the answer agree because they read ONE record. **The rolling path could not state a gap at all** before this: `assemble_rolling_document` wrote `SolverBlock(gap=None)` unconditionally, so an unproved rolling board could say "not proved" and never "by how much"; `RollingView` now carries stage 1's `objective` and `gap`. `tiebreak_skipped_reason` is voiced, so a tiebreak that never ran is distinguishable from one that ran and won nothing. **What is NOT built and is now §5a.29: a "is this schedule optimal?" ROUTE** — a new intent is a vocabulary-class change, and the brief's own instruction was to name that debt rather than bolt one on. *Original entry:*
     (4B.8 CU3, NAMED not built — the brief's own instruction was to name the debt
     rather than bolt on a route). Contract 1.10 carries two distinct proofs —
     `solver.status` (COST) and `solver.tiebreak_status` (TIEBREAK) — and no
@@ -2077,7 +2105,7 @@ where the reasoning lives.
     machine** in a 14-day window. `pilot_scale` runs 13–15 machines at ~24
     ops/machine. **Every scale number the programme holds was taken on the wrong
     axis** — which is what `facility_real` (item 2) exists to correct.
-26. **PAST-DUE WORK VANISHES, AND THE PER-ORDER ROUTES CANNOT SAY SO**
+26. **PAST-DUE WORK VANISHES, AND THE PER-ORDER ROUTES CANNOT SAY SO** — **DISCHARGED 2026-07-28 (Session 4B.11) by R-PD1**, ruled verbatim in docs/04. Past-due unstarted demand is now SCHEDULED, not excluded (21 of 21 on the specimen); the M0/M3 disagreement is gone because M3 no longer removes anything for being late, and clause (3)'s general guard is committed as a test (`tests/test_pastdue_disposition.py`) so the THIRD instance of this defect class is caught in whatever module invents it. **A SECOND EXCLUSION SITE was found in the process** — Check 5's resumable window-fit test floors `elapsed_days` at 0, so every past-due resumable demand would have been excluded there as `INFEASIBLE_SUBSET` instead: the same removal wearing a different code. All three measured answers are fixed and pinned. **The undiagnosed "60 of 102 / 42 excluded" note is RECONCILED** — see the v2.55 banner for both root causes. **STILL OPEN from this item's family: §5a.1** (`--horizon-days` on the `scenario.py` path adds beyond-horizon demands to `excluded_demand_ids` with NO finding at all, so nothing names the module or the reason — now formally a clause (2) AND clause (3) violation). *Original entry:*
     (Session 4B.10 item 4 — REPORTED, deliberately NOT fixed; the ghost-job
     re-ruling is a design conversation and this session's job was to hand it a
     live specimen and a number). Until now no fixture could ask the question:
@@ -2300,6 +2328,99 @@ where the reasoning lives.
     That assumption is consistent with the 22→137 series and with 4B.8's
     higher-density results, but **it is an inference, not a measurement**, and
     those two densities are the obvious next cells to run.
+
+
+28. **R-PD1 CLAUSE (5) IS OPEN — AGE IS NOT LATENESS, AND THE PLANT IS TOLD
+    NOTHING ABOUT THE AGE OF ITS BACKLOG** (Session 4B.11, NOT built, and the
+    reason it was not built is the finding). Clause (5) rules that a demand past
+    due beyond a **declared** threshold raises a data-quality finding about its
+    AGE — informational, and the demand is still scheduled. The distinction is
+    real and the data shows why: the book's minimum due date is **−1573 days**
+    (§5a.24). Three days overdue is the plant's normal position; four years
+    overdue is very likely a record nobody closed, and *that* is a data-quality
+    question with a real fix.
+
+    **Nothing is emitted, because the threshold is a business judgment only a
+    human may state.** There is no defensible default — "past due beyond N days
+    is suspicious" depends entirely on the plant's own close-out discipline — and
+    choosing an N here would author a business fact we do not have. This is the
+    same discipline `earliness_value` (R-SC3(3)) and the coarse zone's
+    `capacity_derate` already follow: **an undeclared plant is never given an
+    invented margin.** Emitting an age finding with no declared pathway would be
+    evidence with nothing behind it, which is worse than silence.
+
+    Recorded in **docs/06 §5.9** with the full §8 pipeline-proof chain it would
+    require, none of it done: the `refinements.past_due_age_threshold_days`
+    doorway; a gate check on the *declared* value only (which would move the
+    registry to 37 rules — a reviewed change); adapter translation with
+    provenance printed beside the value; **a NEW finding code** (`PAST_DUE_AT_INTAKE`
+    must not be stretched to also mean "suspiciously old", for exactly the reason
+    that code exists at all); an authored remediation note — and unlike
+    `PAST_DUE_AT_INTAKE`, which carries `remediation_applies: false` because a
+    genuinely late order has no fix, an AGE finding DOES have one (close or
+    re-date the stale record at source); and a truth manifest plus an anomaly
+    generator so the coefficient is pipeline-proven rather than model-proven.
+
+    **The honest position until all six exist:** the plant is told nothing about
+    the age of its backlog, and that silence is deliberate.
+
+29. **THERE IS STILL NO "IS THIS SCHEDULE OPTIMAL?" ROUTE** (Session 4B.11 CU1,
+    NAMED not built — the successor debt to §5a.23, which is discharged). The
+    cost proof is now RENDERED (the strip chip) and VOICED where it bears on a
+    money claim (the unprompted rider), so a planner looking at an unproved board
+    can see it and cannot be given a cost figure without its gap. What they still
+    cannot do is **ASK**. "Is this optimal?" / "how close to optimal is this?" /
+    "why couldn't you prove it?" reach no route: the intent is not in the closed
+    vocabulary (`contracts/parse.py`), so the parse cannot name it and the
+    question falls to the synthesis tier, which will answer it from the tool
+    surface with no access to `solver.status` at all.
+
+    This is an **R-AI1** debt (the answer surface's coverage of run-level facts),
+    deliberately not discharged here: **a new intent is a vocabulary-class
+    change** — Intent + meaning + taxonomy + offer + assembler + authored copy +
+    a parse-prompt version bump, reviewed and committed with its doc update — and
+    the brief's own instruction was to name it rather than bolt a route on at the
+    end of a session that had already changed a contract.
+
+    *Fix shape:* one intent (`solve-proof` or similar) dispatching to a route
+    that reads `cost_proof.from_evidence` and states the COST proof plainly, the
+    TIEBREAK proof separately, and `tiebreak_skipped_reason` when the tiebreak
+    never ran — never fusing them, and never letting an unproven tiebreak
+    downgrade a proven cost. The language already exists in `cost_proof.chip()`
+    and `cost_proof.rider()`; what is missing is the door.
+
+30. **`facility_real`'s CONDITIONAL GRADE IS A GENERATOR TRUTHFULNESS DEFECT, NOT
+    THE PAST-DUE ORDERS — correcting 4B.10** (Session 4B.11, REPORTED not fixed).
+    4B.10's close-out recorded that "a CONDITIONAL gate grade is CORRECT for it
+    (the past-due orders), not a defect". **That is wrong**, and inspection of the
+    rule shows why: M0's `ids.order_dates_internally_consistent` checks
+    `due < release/created`, **NOT** `due < reference_date`. Past-dueness alone
+    does not trip it and never did.
+
+    `tools/generate_erp_dataset.py` `_apply_facility_real` writes
+    `created_date = ref.isoformat()` for **every** order, so a past-due order is
+    emitted as *created on the reference date and due before it* — a genuine date
+    inversion, and the gate is right to flag it. A real backlog order was created
+    *before* it was due. **This is the same defect docs/04's 2026-07-10 amendment
+    already fixed once**, for the `stale_due_dates` anomaly: "a stale-backlog
+    order was *created* long ago too, so the anomaly now ages created_date with
+    the due date — the row stays internally coherent and the stale flag is a pure
+    backlog signal, not a spurious inconsistency." The lesson did not transfer to
+    the preset written eighteen months of sessions later.
+
+    *Fix shape:* for a past-due order, age `created_date` with the due date (the
+    book's measured median lead of 7 days is the natural authored value), and
+    record it in `datasets/facility_real/PROFILE_PROVENANCE.md`'s
+    measured-vs-authored table. Consequence: `facility_real` would grade
+    **ACCEPTED**, matching `pilot_scale`.
+
+    **NOT DONE IN 4B.11, deliberately, and the reason is worth keeping:** that
+    inversion is what makes the specimen's M0 `proceeded_flagged` finding exist,
+    and clause (3)'s general guard needs a live one to be **non-vacuous**
+    (`test_the_guard_has_something_to_guard` asserts exactly that). Fixing the
+    generator and the guard's specimen in the same session would have left the
+    guard passing for the wrong reason. Whoever fixes this must give the guard a
+    different non-vacuous specimen in the same commit.
 
 
 ## 6. Open rulings queue

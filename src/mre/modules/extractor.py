@@ -300,6 +300,27 @@ class Extractor:
         # ------------------------------------------------------------------
         service_outcomes: list[dict] = []
         tardiness_cost = 0.0
+        # R-PD1 clause (4), Session 4B.11 CU3 — THE TARDINESS SPLIT.
+        #
+        #   tardiness_floor        = max(0, t0 - due)          UNAVOIDABLE
+        #   tardiness_controllable = completion - max(due, t0) THIS SCHEDULE'S
+        #   they SUM EXACTLY to total tardiness
+        #
+        # Why this has to exist before past-due work is scheduled: the pilot
+        # book's minimum due date is −1573 DAYS (docs/07 §5a.24). Unsplit, ONE
+        # such order's floor would swamp every figure on the board and every
+        # delta card would attribute it to whatever the planner last touched.
+        #
+        # The split is not a new model — it makes an existing one legible. The
+        # SOLVER has always priced the controllable part alone: `solver_builder`
+        # clamps `due_min = max(0, due − horizon_start)`, so a past-due
+        # fulfillment's objective term is `wp_end − 0`, i.e. completion measured
+        # from t0. The EXTRACTOR, meanwhile, prices lateness from the DECLARED
+        # due date, so the LEDGER has always carried floor + controllable fused
+        # into one number. That is why the floor provably cannot change the
+        # argmin — it is not in the argmin, and never was. CU3 verifies that
+        # rather than asserting it (tools/spikes/pastdue_4b11/floor_invariance.py).
+        tardiness_floor_cost = 0.0
 
         for ful in fulfillments:
             fid = ful["id"]
@@ -339,6 +360,15 @@ class Extractor:
             t_cost = tard_min * base_w * mult * cust_w
             tardiness_cost += t_cost
 
+            # The FLOOR: lateness already accrued before the horizon opened. Zero
+            # for every demand due on or after t0, which is why a book with no
+            # past-due work produces a byte-identical ledger. `floor_min` can
+            # never exceed `tard_min` — completion is always >= horizon — so the
+            # controllable remainder is never negative.
+            floor_min = max(0, int((horizon - due_dt).total_seconds() / 60))
+            f_cost = floor_min * base_w * mult * cust_w
+            tardiness_floor_cost += f_cost
+
             svc: dict = {
                 "id": str(uuid.uuid4()),
                 "snapshot_id": snapshot_id,
@@ -348,6 +378,11 @@ class Extractor:
                 "lateness_minutes": lateness_min,
                 "tardiness_cost": t_cost,
             }
+            if floor_min:
+                # Additive and present ONLY on a demand that was already late at
+                # intake: an on-time book's ServiceOutcomes are unchanged.
+                svc["tardiness_floor_minutes"] = floor_min
+                svc["tardiness_floor_cost"] = f_cost
             service_outcomes.append(svc)
 
             # Emit lateness and completion metrics so M9 can answer
@@ -361,6 +396,21 @@ class Extractor:
                     subjects=subj,
                     message=f"Demand {d_id[:8]} lateness: {lateness_min} min",
                 )
+                if floor_min:
+                    # R-PD1 clause (4)/(6): the answer surface must be able to
+                    # split a late order's minutes without re-deriving them, so
+                    # the floor is recorded as its own metric beside the total.
+                    # Emitted only when non-zero — an on-time book's evidence
+                    # stream is unchanged.
+                    reporter.record_metric(
+                        name="tardiness_floor_minutes",
+                        value=float(floor_min),
+                        unit="minutes",
+                        subjects=subj,
+                        message=(f"Demand {d_id[:8]} was already {floor_min} min "
+                                 f"past due when the horizon opened; that part of "
+                                 f"its lateness is unavoidable."),
+                    )
                 reporter.record_metric(
                     name="projected_completion_epoch",
                     value=float(completion.timestamp()),
@@ -403,6 +453,15 @@ class Extractor:
         # observed, so WIP-less runs keep a byte-identical ledger.
         if sunk_setup_cost:
             cost_ledger["sunk_setup_cost"] = sunk_setup_cost
+        # R-PD1 clause (4): the tardiness split, present ONLY when this book
+        # actually carried past-due work. It DECOMPOSES `tardiness_cost` exactly
+        # (floor + controllable == tardiness) rather than adding to the total, so
+        # `total = production + setup + tardiness` is untouched, and a book with
+        # no past-due demand keeps a byte-identical ledger.
+        if tardiness_floor_cost:
+            cost_ledger["tardiness_floor_cost"] = tardiness_floor_cost
+            cost_ledger["tardiness_controllable_cost"] = (
+                tardiness_cost - tardiness_floor_cost)
 
         # Attach summary to schedule — full cost breakdown stored for diff queries
         schedule["summary_metrics"] = {
@@ -417,6 +476,10 @@ class Extractor:
         }
         if sunk_setup_cost:
             schedule["summary_metrics"]["sunk_setup_cost"] = sunk_setup_cost
+        if tardiness_floor_cost:
+            schedule["summary_metrics"]["tardiness_floor_cost"] = tardiness_floor_cost
+            schedule["summary_metrics"]["tardiness_controllable_cost"] = (
+                tardiness_cost - tardiness_floor_cost)
         if is_scenario:
             schedule["summary_metrics"]["is_scenario"] = True
 

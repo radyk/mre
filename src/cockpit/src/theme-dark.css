@@ -75,6 +75,12 @@
   --grade-rejected: #e0564f;
   --grade-ink: #0b0d12;         /* dark ink on a colored grade chip */
 
+  /* --- the cost-proof chip (Session 4B.11 CU1, docs/07 §5a.23) --------- */
+  --proof-proved: #2fbf71;
+  --proof-unproved: #e0a63c;
+  --proof-none: #8b93a7;
+  --proof-bg: rgba(255, 255, 255, 0.05);
+
   /* --- gesture surface (3.2b) — Tier-0 shading ------------------------ */
   --shade-green: rgba(47, 191, 113, 0.22);
   --shade-green-edge: rgba(47, 191, 113, 0.5);

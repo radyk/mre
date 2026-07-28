@@ -35,6 +35,23 @@ html, body {
 .topstrip .grade.g-rejected { background: var(--grade-rejected); color: var(--ink-inverse); }
 .topstrip .grade .lbl { font-weight: var(--fw-medium); opacity: 0.8; }
 
+/* THE COST-PROOF CHIP (Session 4B.11 CU1, docs/07 §5a.23) — whether this
+ * schedule's cost was PROVEN optimal, in the strip, beside the certificate
+ * grade rather than in a diagnostics drawer: it qualifies every number on the
+ * board. Outlined rather than filled so it reads as a distinct KIND of claim
+ * from the grade chip (data vs search) and cannot be mistaken for a second
+ * grade. Only tokens (tokens.css / theme-*.css) — no literal colors. */
+.topstrip .costproof {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  font: var(--fw-semibold) var(--fs-sm)/1 var(--font-mono);
+  border: 1px solid currentColor; border-radius: var(--radius-sm);
+  background: var(--proof-bg); padding: 4px 9px; cursor: help;
+}
+.topstrip .costproof.proof-proved { color: var(--proof-proved); }
+.topstrip .costproof.proof-unproved { color: var(--proof-unproved); }
+.topstrip .costproof.proof-none { color: var(--proof-none); }
+.topstrip .costproof .lbl { font-weight: var(--fw-medium); opacity: 0.7; }
+
 /* theme toggle (Session 4.1): light is the shipped default, dark an option. The
  * button shows the theme you'd switch TO. Sits after the grade (grade owns the
  * margin-left:auto that pushes this right cluster over). */

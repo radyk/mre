@@ -79,28 +79,78 @@ def validated_run(tmp_path_factory):
     return val_result, val_reporter.consolidated_doc
 
 
-class TestSeededDefect3_TemporalImpossibility:
-    """WO-PAST-001 ScheduleDate=2025-01-15 is in the past → TEMPORAL_IMPOSSIBILITY."""
+class TestSeededDefect3_PastDueAtIntake:
+    """WO-PAST-001 ScheduleDate=2025-01-15 is already past due at intake.
+
+    R-PD1 (Session 4B.11) REWROTE what this defect means. It used to raise
+    TEMPORAL_IMPOSSIBILITY / WARNING / EXCLUDED — M0's code for "dates that
+    can't both be true", borrowed for a demand that is merely LATE, with the
+    demand removed from planning as a consequence. Under R-PD1:
+
+      clause (1) past-due is WORK: admitted, scheduled, priced with tardiness
+      clause (2) exclusion is a DATA-DEFECT category only; "this order is late"
+                 is a true statement about the plant's position and can never
+                 be one
+
+    so the code is now PAST_DUE_AT_INTAKE (added, not repurposed — the M0
+    meaning of TEMPORAL_IMPOSSIBILITY is untouched), the severity is INFO, the
+    disposition is PROCEEDED_FLAGGED, and nothing is excluded. Note that
+    `sample_data_v2/DEFECTS.md` declared `proceeded_flagged` for this defect all
+    along; the implementation had drifted.
+    """
 
     def test_finding_emitted(self, validated_run):
         result, doc = validated_run
         findings = [r for r in doc["records"] if r.get("record_type") == "finding"
-                    and r["code"] == "TEMPORAL_IMPOSSIBILITY"]
+                    and r["code"] == "PAST_DUE_AT_INTAKE"]
         assert len(findings) >= 1
 
-    def test_disposition_excluded(self, validated_run):
-        """TEMPORAL_IMPOSSIBILITY demands are now excluded from planning, not merely flagged."""
+    def test_disposition_is_proceed_not_excluded(self, validated_run):
+        """R-PD1 clauses (1)/(2): flagged and scheduled, never removed."""
         result, doc = validated_run
         findings = [r for r in doc["records"] if r.get("record_type") == "finding"
-                    and r["code"] == "TEMPORAL_IMPOSSIBILITY"]
-        assert all(f["disposition"] == "excluded" for f in findings)
+                    and r["code"] == "PAST_DUE_AT_INTAKE"]
+        assert findings
+        assert all(f["disposition"] == "proceeded_flagged" for f in findings)
+        assert all(f["severity"] == "info" for f in findings), (
+            "past-dueness is INFO: it is the plant's position, and an INFO "
+            "finding cannot degrade a grade")
+
+    def test_nothing_excluded_for_being_late(self, validated_run):
+        """The demand stays schedulable. This is the whole ruling."""
+        result, doc = validated_run
+        findings = [r for r in doc["records"] if r.get("record_type") == "finding"
+                    and r["code"] == "PAST_DUE_AT_INTAKE"]
+        subjects = {s["entity_id"] for f in findings for s in f["subjects"]}
+        assert subjects
+        assert not (subjects & set(result.excluded_demand_ids)), (
+            "a demand was excluded for being past due — R-PD1 clause (2)")
+
+    def test_no_temporal_impossibility_raised_by_m3(self, validated_run):
+        """M3 must not borrow M0's code for a different meaning (add, never
+        repurpose). A genuinely inverted date pair is still M0's to report."""
+        result, doc = validated_run
+        m3_temporal = [r for r in doc["records"]
+                       if r.get("record_type") == "finding"
+                       and r["code"] == "TEMPORAL_IMPOSSIBILITY"
+                       and r.get("module") == "M3"]
+        assert not m3_temporal
 
     def test_subjects_not_empty(self, validated_run):
         result, doc = validated_run
         findings = [r for r in doc["records"] if r.get("record_type") == "finding"
-                    and r["code"] == "TEMPORAL_IMPOSSIBILITY"]
+                    and r["code"] == "PAST_DUE_AT_INTAKE"]
         for f in findings:
-            assert f["subjects"], "TEMPORAL_IMPOSSIBILITY must have non-empty subjects"
+            assert f["subjects"], "PAST_DUE_AT_INTAKE must have non-empty subjects"
+
+    def test_floor_minutes_recorded(self, validated_run):
+        """R-PD1 clause (4): the unavoidable lateness is a MEASURED quantity at
+        intake, not an inference made later."""
+        result, doc = validated_run
+        metrics = [r for r in doc["records"] if r.get("record_type") == "metric"
+                   and r.get("name") == "tardiness_floor_minutes_at_intake"]
+        assert len(metrics) == 1
+        assert metrics[0]["value"] > 0
 
 
 class TestSeededDefect5_StatisticalOutlier:

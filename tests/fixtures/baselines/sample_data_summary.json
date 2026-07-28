@@ -1,6 +1,6 @@
 {
-  "total_cost": 24769.0,
-  "production_cost": 19429.0,
-  "setup_cost": 4500.0,
-  "tardiness_cost": 840.0
+  "total_cost": 801930.0,
+  "production_cost": 19759.0,
+  "setup_cost": 4650.0,
+  "tardiness_cost": 777521.0
 }

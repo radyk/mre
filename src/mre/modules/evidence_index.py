@@ -107,6 +107,16 @@ class EvidenceIndex:
     def all_decisions(self) -> list[dict]:
         return [r for r in self._all_evidence if r.get("record_type") == "decision"]
 
+    def events(self) -> list[dict]:
+        """All Event records, in index order (Session 4B.11 CU1).
+
+        Added so the answer surface can read the M6 ``solve_complete`` payload —
+        the SAME record ``schedule_assembler._solver_block`` builds the document's
+        solver block from. The board and the answer agree about the cost proof
+        because they read one record, not because two derivations were kept in
+        step. Additive: no existing query changes."""
+        return [r for r in self._all_evidence if r.get("record_type") == "event"]
+
     def runs(self) -> list[dict]:
         return list(self._run_registry.values())
 

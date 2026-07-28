@@ -105,7 +105,18 @@ def full_run(tmp_path_factory):
         datetime.fromisoformat(d["due"]).replace(tzinfo=UTC)
         for d in schedulable if d.get("due")
     ]
-    horizon_start = min(all_earliest).replace(hour=0, minute=0, second=0, microsecond=0)
+    # R-PD1 (Session 4B.11): with past-due work now SCHEDULABLE, `all_earliest`
+    # contains WO-PAST-001's 2024-12-20 release date and an unfloored min() would
+    # drag the horizon back ~600 days. This fixture hand-rolls the horizon the
+    # pipeline computes, so it must apply the same floor SolverBuilder
+    # ._compute_horizon does: never before the planning reference date.
+    # Scheduling past-due WORK does not mean modelling past TIME.
+    # This fixture builds with `SolverBuilder()` — no reference_date — so the
+    # floor is the builder's own no-reference-date default: today.
+    _floor = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+    horizon_start = max(
+        min(all_earliest).replace(hour=0, minute=0, second=0, microsecond=0),
+        _floor)
     horizon_end = max(all_due).replace(hour=23, minute=59, second=59) + dt.timedelta(days=14)
 
     flattened_cals = []
@@ -130,7 +141,14 @@ def full_run(tmp_path_factory):
         flattened_cals.append(cal_copy)
 
     b_rep = _rep(ModuleCode.M5, "builder")
-    builder = SolverBuilder()
+    # R-PD1 (Session 4B.11): the builder must be given the SAME planning date
+    # this fixture floored its own horizon and calendars at. Passing no reference
+    # date let SolverBuilder compute its own `horizon_start` from `min(earliest
+    # start)` — a latent disagreement that was invisible while past-due work was
+    # excluded, and that resurfaces as a 2024 origin the moment WO-PAST-001 is
+    # schedulable. Two different t0 values in one run make the extractor's
+    # tardiness floor (measured from t0) describe a clock nothing else uses.
+    builder = SolverBuilder(reference_date=horizon_start)
     model, var_map = builder.build(
         wps + ops + edges, resources + pools, flattened_cals,
         fuls + demands, constraints, cm,
@@ -334,23 +352,29 @@ class TestScheduleCSV:
 # Fix 2: Ghost job exclusion
 # ---------------------------------------------------------------------------
 
-class TestGhostJobExclusion:
-    def test_temporal_impossibility_disposition_excluded(self, full_run):
-        """TEMPORAL_IMPOSSIBILITY finding must carry disposition=EXCLUDED."""
-        from mre.modules.evidence_index import EvidenceIndex
-        idx = EvidenceIndex().build(full_run["store"]._base.parent.parent / "runs" or
-                                     # Fall back to scanning the v_rep sink
-                                     Path("/nonexistent"))
-        # Read directly from the validator reporter sink findings
-        # (runs_dir is tmp / "runs" which we don't have direct access to here,
-        #  so use ValidationResult.excluded_demand_ids as the proxy)
-        assert len(full_run["v_result"].excluded_demand_ids) >= 1, (
-            "At least one demand (WO-PAST-001) must be in excluded_demand_ids"
+class TestPastDueIsScheduled:
+    """R-PD1 (Session 4B.11) — THIS CLASS ASSERTS THE OPPOSITE OF WHAT IT USED TO.
+
+    It was `TestGhostJobExclusion`, and it pinned the behaviour R-PD1 overturns:
+    WO-PAST-001 (due 2025-01-15) was excluded by the validator, so it had no
+    Fulfillment, no WorkPackage, no operations and no assignments — 100% of a
+    real released work order removed from the plan for the crime of being late.
+    R-PD1 clause (2) rules that exclusion is a DATA-DEFECT category only and can
+    never be applied to a true statement about the plant's position.
+
+    What survives unchanged, and is the reason a horizon test still lives here:
+    scheduling past-due WORK must never mean modelling past TIME. Nothing may be
+    placed before the reference date, and the horizon must not be dragged back to
+    the order's 2024 release date.
+    """
+
+    def test_nothing_excluded_for_being_past_due(self, full_run):
+        assert full_run["v_result"].excluded_demand_ids == set(), (
+            "R-PD1 clause (2): no demand may be excluded for being late"
         )
 
-    def test_wo_past_001_has_no_fulfillment(self, full_run):
-        """WO-PAST-001 must not appear in any Fulfillment after M4 planning."""
-        # Find the canonical ID for WO-PAST-001
+    def test_wo_past_001_has_a_fulfillment(self, full_run):
+        """It is planned like any other order (R-PD1 clause 1)."""
         past_demand = next(
             (d for d in full_run["demands"]
              if any(r.get("value") == "WO-PAST-001"
@@ -358,30 +382,53 @@ class TestGhostJobExclusion:
             None,
         )
         assert past_demand is not None, "WO-PAST-001 demand must exist in snapshot"
-        past_id = past_demand["id"]
-        fuls_for_past = [f for f in full_run["fuls"] if f["demand_ref"] == past_id]
-        assert len(fuls_for_past) == 0, (
-            "WO-PAST-001 must have no Fulfillment (excluded from planning)"
+        fuls_for_past = [f for f in full_run["fuls"]
+                         if f["demand_ref"] == past_demand["id"]]
+        assert len(fuls_for_past) >= 1, (
+            "WO-PAST-001 must be planned — it is work, not a defect"
         )
 
-    def test_wo_past_001_has_no_assignment(self, full_run):
-        """WO-PAST-001 operations (if any) must not appear in the schedule."""
+    def test_wo_past_001_is_on_the_board(self, full_run):
+        """…and it reaches the schedule, with real assignments."""
         past_demand = next(
             (d for d in full_run["demands"]
              if any(r.get("value") == "WO-PAST-001"
                     for r in d.get("external_refs", []))),
             None,
         )
-        if past_demand is None:
-            return
-        # No fulfillment → no workpackage → no operations → no assignments
-        past_fuls = [f for f in full_run["fuls"] if f["demand_ref"] == past_demand["id"]]
+        assert past_demand is not None
+        past_fuls = [f for f in full_run["fuls"]
+                     if f["demand_ref"] == past_demand["id"]]
         past_wp_ids = {f["workpackage_ref"] for f in past_fuls}
         past_assignments = [
             a for a in full_run["extract"].assignments
             if a["workpackage_ref"] in past_wp_ids
         ]
-        assert len(past_assignments) == 0
+        assert len(past_assignments) >= 1, (
+            "a past-due order must be SCHEDULED LATE, not vanish"
+        )
+
+    def test_its_lateness_is_priced_and_split(self, full_run):
+        """R-PD1 clause (4): the outcome carries the unavoidable FLOOR separately
+        from what this schedule added. WO-PAST-001 is ~776,681 minutes late and
+        ~776,160 of those were on the clock before the plan existed — a fused
+        number here would blame the schedule for essentially all of it."""
+        past_demand = next(
+            (d for d in full_run["demands"]
+             if any(r.get("value") == "WO-PAST-001"
+                    for r in d.get("external_refs", []))),
+            None,
+        )
+        assert past_demand is not None
+        svc = next((s for s in full_run["extract"].service_outcomes
+                    if s["demand_ref"] == past_demand["id"]), None)
+        assert svc is not None, "a scheduled demand must have a ServiceOutcome"
+        assert svc["lateness_minutes"] > 0
+        floor = svc.get("tardiness_floor_minutes")
+        assert floor and floor > 0, "the floor must be recorded, not inferred"
+        assert floor < svc["lateness_minutes"], (
+            "the floor is part of the lateness, never the whole of it"
+        )
 
     def test_no_assignment_before_snapshot_date(self, full_run):
         """No assignment start date may precede the horizon_start (2026-07-13)."""

@@ -39,6 +39,48 @@ comparison requires pinning three things simultaneously:
   - --solver-seed 42 (CP-SAT's internal tie-breaking)
 All three are pinned here via subprocess so the test exercises the exact
 same code path (python -m mre) used to capture the golden fixtures.
+
+===========================================================================
+GOLDEN REGENERATION, SESSION 4B.11 (R-PD1) — READ THE ACCOUNTING
+===========================================================================
+
+The sample_data goldens were regenerated ONCE in Session 4B.11, for the second
+time in this gate's life (the first was Rep 2's chunk_seq column). The session
+brief's acceptance criterion said every monolithic golden would stay
+BYTE-IDENTICAL, on the premise that no monolithic fixture carries past-due
+work. THAT PREMISE IS FALSE: sample_data carries WO-PAST-001 (ScheduleDate
+2025-01-15) as seeded defect 3, and R-PD1 clause (1) rules that a past-due
+unstarted demand is SCHEDULED rather than excluded. The golden could not
+survive the ruling, and saying so is more useful than a criterion quietly
+dropped.
+
+Note that `sample_data_v2/DEFECTS.md` has always declared defect 3's expected
+disposition as `proceeded_flagged`. The implementation had drifted to
+`excluded`; R-PD1 restores what the catalog said.
+
+THE CHANGE IS FULLY ACCOUNTED FOR, and by construction rather than by
+inspection. Re-running this exact pipeline against sample_data WITH THE SINGLE
+ROW `WO-PAST-001` REMOVED reproduces the PREVIOUS golden BYTE-FOR-BYTE and its
+ledger TO THE CENT (total 24,769.00 / production 19,429.00 / setup 4,500.00 /
+tardiness 840.00). So every difference between the old golden and the new one
+is attributable to one order being admitted, and to nothing else in the
+pipeline. Both runs reproduce across repeated invocations under the pinned
+determinism above.
+
+What the new golden says:
+
+  total 801,930.00 = production 19,759.00 + setup 4,650.00
+                     + tardiness 777,521.00
+
+Tardiness rises from 840 to 777,521 because WO-PAST-001 was due 2025-01-15 and
+the reference date is 2026-07-09 — it is 776,681 minutes late, of which
+**776,160 are the R-PD1 clause (4) FLOOR**: unavoidable before this plan
+existed, and not something any schedule could have prevented. The remaining
+521 minutes are what this schedule adds. That ratio is precisely why the
+tardiness split exists (contract 1.11): a single fused number here would tell a
+planner their schedule caused $777,521 of lateness when it caused $521 of it.
+The floor is provably outside the objective — see
+tools/spikes/pastdue_4b11/floor_invariance.py.
 """
 from __future__ import annotations
 
