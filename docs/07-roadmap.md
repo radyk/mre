@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.55 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.56 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.56:** **Session 4B.12 — where the cliff actually is, and whether a hint moves it** 2026-07-28 (docs/04 session amendment; narrative in `SESSION_CLOSEOUT.md`). A MEASUREMENT session, no ruling. **The cliff is at 92 ops/machine, not 137** — re-run against byte-identical worlds, R-PD1's admitted past-due work puts tardiness into every density and the proof costs 200–360× what it did (§5a.31, superseding §5a.27's numbers by a dated note rather than a rewrite). **F004 and F006 are SOLVED, not bracketed** — 83.5–85.8% and 98.8% gaps — but **not one cell at any density returned UNKNOWN**, so the engine's problem at real density is proving an answer, not producing one. The warm start (§5a.32) ships behind a flag, DEFAULT OFF: it is a re-roll, paying in the cliff region and costing beyond it.
 
 **v2.55:** **Session 4B.11 — the honesty bundle: the proof rendered, the late work scheduled, the arithmetic reconciled** 2026-07-28 (docs/04 session amendment with **R-PD1 verbatim**; full narrative in `SESSION_CLOSEOUT.md`). Four things a customer meets in the first hour, two of them coupled: **R-PD1 makes real boards tardiness-dominated, which §5a.27 proved is exactly the regime where the cost proof fails** — so the status had to become visible in the SAME commit that started scheduling late work.
 
@@ -2176,7 +2178,22 @@ where the reasoning lives.
     urgent work in the book stays invisible to every question a planner would
     actually ask about it.
 27. **THE CLIFF IS THE ONSET OF TARDINESS, NOT DENSITY AND NOT UTILISATION**
-    (Session 4B.10 item 3; `tools/spikes/density_4b10/`). Measured on
+    (Session 4B.10 item 3; `tools/spikes/density_4b10/`).
+
+    > **SUPERSEDED IN ITS NUMBERS, 2026-07-28 (Session 4B.12, §5a.31). THE
+    > FIGURE 137 IS NO LONGER THE CLIFF; the MECHANISM below is confirmed and
+    > strengthened.** Everything in this item was measured on a pipeline that
+    > silently EXCLUDED past-due demands. R-PD1 (4B.11) admits them, and
+    > re-running these exact cells against the identical worlds moves the cost
+    > proof's last all-OPTIMAL density from **137 to 92 ops/machine**. Read (d),
+    > (e) and (g) — the mechanism, its caveat and its explanatory power — as
+    > still current. Read every NUMBER in (a), (b), (c) and (f), including 137,
+    > 13.056% and 165×, as a measurement of a plant that dropped its late work.
+    > (h)'s honesty about bracketing is what 4B.12 discharged: F004 and F006 are
+    > now SOLVED, not inferred. The original figures are left standing rather
+    > than rewritten — they are the before half of the comparison.
+
+    Measured on
     `facility_real` — 4 machines, 4-op routes, the book's due-date histogram —
     with all three conditions the brief required: the **cost-only** objective as
     shipped since 4B.7, the **P3 allocation** as shipped since 4B.8 (the sweep
@@ -2421,6 +2438,213 @@ where the reasoning lives.
     generator and the guard's specimen in the same session would have left the
     guard passing for the wrong reason. Whoever fixes this must give the guard a
     different non-vacuous specimen in the same commit.
+
+31. **THE CLIFF IS AT 92 OPS/MACHINE, NOT 137 — AND BOTH REAL FACILITIES ARE
+    NOW SOLVED RATHER THAN BRACKETED** (Session 4B.12 CU1/CU2;
+    `tools/spikes/density_4b12/`). §5a.27 carries a dated supersession note
+    pointing here.
+
+    **THE MEASUREMENT IS CONTROLLED, and that is checked rather than claimed.**
+    The worlds are the ones 4B.10 solved — `verify_world_identity.py` compares
+    each regenerated submission to `_4b10_scratch` byte for byte (two clock
+    fields masked) and all eight are IDENTICAL; `tools/generate_erp_dataset.py`
+    has not been touched since 4B.10's own commit. Same generation seed (1),
+    same window (14 d), same frozen front (3 d), same `det_total` (6.0), same
+    1800 s wall ceiling, same shipped two-stage call. **Only the pipeline
+    changed.**
+
+    **(a) WHAT R-PD1 DID BEFORE ANY SOLVING.** Every past-due demand now
+    survives to `schedulable` AND is admitted — `n_past_due_admitted ==
+    n_past_due_all` at every cell measured, from 4 of 4 at 28 orders to 66 of 66
+    at 851. The same order count therefore carries **more operations**: 110
+    orders went from 376 free ops to 400, so 4B.10's "94 ops/machine" cell is
+    **100 ops/machine** today. The density axis itself moved by ~6%.
+
+    **(b) THE COST PROOF, SAME CELLS, SIDE BY SIDE** (`alternates=1`, seeds
+    42–46, deterministic units to proof):
+
+    | ops/machine | 4B.10 proved | NOW proved | proof 4B.10 | proof NOW | gap NOW |
+    |---|---|---|---|---|---|
+    | 26 (was 22) | 1/1 | **5/5** | 0.0002 | 0.035–0.069 | — |
+    | 50 (was 46) | 1/1 | **5/5** | 0.0015 | 0.294–0.735 | — |
+    | 100 (was 94) | **5/5** | **1/5** | 0.015–0.192 | 5.459 | 3.9–16.0% |
+    | 149 (was 137) | 4/5 | **0/5** | 2.294–5.393 | — | 40.5–49.3% |
+
+    Below the cliff the proof still lands, but it costs **200–360× what it cost
+    on the same world without its late work**. 4B.10's headline cell — five
+    seeds agreeing to the cent at 94 ops/machine — now splits 1/5 with an
+    8.463% ledger spread.
+
+    **(c) THE CLIFF, PINNED.** Four densities were added to locate it:
+
+    | ops/machine | orders | util | proved | units to proof | ledger spread |
+    |---|---|---|---|---|---|
+    | 65 | 70 | 10.0% | 5/5 | 0.045–0.286 | 0.000% |
+    | 76 | 85 | 11.1% | 5/5 | 0.576–1.024 | 0.000% |
+    | **92** | 100 | 16.4% | **5/5** | 2.141–2.735 | 0.000% |
+    | **94** | 105 | 24.7% | **0/5** | — (gap 2.8–33.4%) | **22.906%** |
+
+    **The last all-proved density is 92 and the first all-failed is 94** — a
+    sharper transition than 4B.10 saw, and 45 ops/machine lower. At 94 the
+    ledger spread across five seeds is **22.906%**, against the 13.056% that
+    made §5a.23 urgent.
+
+    **(d) OPS/MACHINE IS REFUTED AS A PREDICTOR BY A SHARPER ARGUMENT THAN
+    UTILISATION WAS: the proof cost is not even MONOTONE in density.** 65
+    ops/machine proves in 0.045–0.286 units; the LIGHTER 50 ops/machine takes
+    0.294–0.735. The 70-order world carries a smaller past-due burden (floor
+    4,200 vs 16,800) and its solutions carry less tardiness. **Stated
+    honestly:** each cell is an independent draw at its own order count, so
+    between-cell differences include world variation and not density alone —
+    which is precisely the point. Density does not determine difficulty, so no
+    threshold in density can be a rule. §5a.27(c)'s conclusion stands, by a
+    second and independent route.
+
+    **(e) F004 AND F006, MEASURED.** §5a.27(h) recorded that both were
+    BRACKETED, not solved, and named them as the obvious next cells. They are
+    now run, on the calibrated profiles (276 and 851 orders — F004 and F006 as
+    `PROFILE_PROVENANCE.md` defines them), `alternates=1`, seeds 42–46 (F006's
+    remaining seeds were still landing at session close; its row states n=2):
+
+    | | ops/machine | util | proved | gap | ledger spread | tardiness as % of ledger |
+    |---|---|---|---|---|---|---|
+    | **F004** (median) | 254 | 54.2% | 0/5 | **83.5–85.8%** | 11.121% | 90.4% |
+    | **F006** (largest) | 772 | 134.9% | 0/2 | **98.8%** | 0.289% | **99.05%** |
+
+    The inference §5a.27 flagged is confirmed: both are far past the cliff. What
+    the inference could not have told anyone is the **magnitude** — an 85% gap
+    at the MEDIAN facility.
+
+    **(f) THE ANSWERABILITY RESULT, WHICH IS THE ONE THAT MATTERS FOR THE
+    PRODUCT.** **Not one cell at any density returned UNKNOWN.** Every failing
+    cell returned a FEASIBLE schedule that places every admitted operation, with
+    a gap the solver stated itself. The satisfiability probe explains why: a
+    first solution costs **0.0002–0.147** deterministic units across the whole
+    ladder, against a 5.5-unit stage-1 cap that cannot close the bound — a
+    factor of **37× at F006 and 948× at 149 ops/machine**, the same shape 4B.8
+    measured at 74×. **The engine's problem at real density is not producing an
+    answer; it is proving one.** That is what makes 4B.11's rendered gap the
+    right response and a pre-solve warning the wrong one.
+
+    **(g) F006 IS AN OVER-CAPACITY QUESTION, NOT A PROOF FAILURE — and the
+    tardiness split is what makes its answer legible.** At 134.9% utilisation
+    the window cannot hold the work, so the optimum itself carries enormous
+    tardiness and "prove the optimum" is not the operative question. Its ledger
+    is **16,887,473**, of which production is 37,472 and setup 123,520 — **0.95%
+    of the total.** The other 99.05% is tardiness, and contract 1.11 splits it:
+    **1,447,800 floor** (already late at intake, unrecoverable by any schedule)
+    and **15,278,680 controllable**. 705 of 772 admitted demands are late.
+
+    **A LIMIT OF THE SPLIT, FOUND HERE AND NOT FIXED.** "Controllable" means
+    *not already accrued at t0* — it does NOT mean *discretionary*. On a plant
+    committed to 134.9% of its window, most of that 15.3M cannot be scheduled
+    away by any placement; it is a capacity fact wearing a placement label. The
+    split has two categories and this plant needs three (floor / capacity-
+    infeasible / genuinely placement-dependent). Naming it is the deliverable
+    here; the third category needs a ruling, because computing it means solving
+    a relaxation and asserting a lower bound as a business fact.
+
+    **(h) ALTERNATES: THE REAL CLIFF IS LOWER STILL IF THE PLANT CROSS-TRAINS.**
+    Daryn has confirmed the plant cross-trains, so the extract's
+    single-workcenter routings are believed to be an extract limitation and
+    `alternates=2` is the more realistic setting. Measured at a=2: 26 and 50
+    ops/machine still prove 5/5 (at 3–5× the a=1 cost); **100 ops/machine proves
+    0/5 where a=1 still manages 1/5**; 149 gives 54.6–61.0% gaps against a=1's
+    40.5–49.3%; F004 gives **95.9%** against 83.5–85.8%. **So every a=1 figure
+    in this item is the OPTIMISTIC one.** The a=2 cliff is bracketed between 50
+    and 100 ops/machine and was not pinned — the cells cost 25–30 minutes each
+    and the session spent its budget on the two real densities instead.
+
+    **(i) COVERAGE — what was and was NOT measured.** MEASURED: `alternates=1`
+    at 26 / 50 / 65 / 76 / 92 / 94 / 100 / 149 / 254 ops/machine, seeds 42–46 at
+    every one; 772 ops/machine (F006) at seeds 42–46 as they land, one row
+    reported here (n=2, gap identical to three decimals on both); `alternates=2`
+    at 26 / 50 / 65 / 100 / 149 / 254. NOT
+    MEASURED, and each for a stated reason: **the a=2 cliff pin** (cost, above);
+    **F006 at `alternates=2`** — F004's a=2 cells already exceed the 1800 s wall
+    ceiling on a plant a third the size, so the cell cannot produce a *reportable*
+    row under this session's own configuration rule, and running it would only
+    manufacture an excluded one. **THREE F004 `alternates=2` ROWS WERE EXCLUDED
+    FOR WALL TRUNCATION** — in the end FOUR of the five (seeds 42/43/44/46, at
+    1984–2787 s), quarantined in `cu2_f004_a2_WALLTRUNCATED.bak` rather than
+    deleted. **One clean `alternates=2` row survives at F004** (seed 45), which
+    is why that column reads n=1 — and it is the direct evidence that F006 at
+    `alternates=2` cannot produce a reportable row, F006 being three times the
+    size.
+
+32. **THE WARM START IS A RE-ROLL, NOT AN IMPROVEMENT — IT PAYS IN THE CLIFF
+    REGION AND COSTS BEYOND IT** (Session 4B.12 CU3; `hint_mode` in
+    `src/mre/modules/rolling_horizon.py`, guards in
+    `tests/test_hint_warm_start.py`, arms in `cu3_*.jsonl`).
+    **SHIPPED BEHIND A FLAG, DEFAULT OFF, and turning it on is a ruling** — the
+    numbers below do not support one.
+
+    **THE EXPERIMENT.** 4B.8 measured that the objective is what makes the model
+    hard to find anything in, not merely hard to optimize (satisfiability 0.082
+    units against a cost solve that returned nothing in 6.0). §5a.31 re-measured
+    that at 37×–948× across nine densities. So phase 0 clears the objective,
+    solves for any feasible solution, and seeds it: **H1** hints start, end AND
+    assignment vars (via the same `_hint_from_solve` the shipped stage-1 →
+    stage-2 warm start already uses); **H2** hints ASSIGNMENT LITERALS ONLY —
+    structure, not times, a partial hint that survives what exact times may not.
+    **H0** is the shipped path. `alternates=1`, seeds 42–46.
+
+    **PHASE 0'S COST COMES OUT OF THE SAME `det_total`** and is counted into the
+    returned `det_consumed`, so the arms compare on TOTAL consumption. It is
+    nearly free: **0.0024 units at 100 ops/machine, 0.0058 at 149, 0.0140 at
+    254** — 0.04%–0.23% of the 6.0 budget. Cost is not why it fails.
+
+    **THE RESULT, PAIRED SEED BY SEED AGAINST ITS OWN CONTROL** (never pooled:
+    the cliff is a region where the SEED decides, so a mean over seeds hides the
+    only effect there is). A WIN needs the gap better by ≥1 percentage point, so
+    solver noise cannot manufacture one:
+
+    | ops/machine | arm | n | H0 proved | arm proved | W/L/T | median gap H0 → arm | median ledger |
+    |---|---|---|---|---|---|---|---|
+    | 100 | H1 full | 5 | 1/5 | **2/5** | **3/1/1** | 10.1% → **2.2%** | −0.79% |
+    | 100 | H2 assign | 5 | 1/5 | **3/5** | **3/1/1** | 10.1% → **0.0%** | **−4.56%** |
+    | 149 | H1 full | 5 | 0/5 | 0/5 | 2/3/0 | 44.8% → 43.3% | +1.01% |
+    | 149 | H2 assign | 5 | 0/5 | 0/5 | 0/4/1 | 44.8% → 46.3% | +1.05% |
+    | 254 (F004) | H1 full | 3 | 0/5 | 0/3 | 0/1/2 | 83.7% → 86.4% | +3.56% |
+    | 254 (F004) | H2 assign | 3 | 0/5 | 0/3 | 0/1/2 | 83.7% → 85.6% | +1.74% |
+
+    **THE VERDICT IS OUTCOME 2 IN THE CLIFF REGION AND OUTCOME 3 BEYOND IT.**
+    At 100 ops/machine — just past the cliff, where the budget is marginal — the
+    hint is worth having: seed 42 goes from FEASIBLE at a 16.0% gap and a
+    53,585 ledger to **OPTIMAL at 49,404, the same optimum another seed proves**,
+    and the assign arm triples the proof count. At 149 it is a wash or slightly
+    negative. At F004's 254 it is a liability: one of the three seeds measured
+    returned a ledger of **1,080,587 against the control's 571,543** — 89%
+    worse.
+
+    **AND EVEN WHERE IT WINS IT IS A RE-ROLL, NOT AN IMPROVEMENT.** The same
+    density that produces the 16%→proved win also produces a loss: seed 45 goes
+    from a 3.9% gap to 8.5% (H1) and 23.0% (H2). A hint changes where the search
+    starts, which in a region where the seed decides is **another way of
+    changing the seed**. That is why the win column and the loss column are both
+    non-empty at every density, and why no ruling follows from these numbers.
+
+    **OUTCOME 1 COULD NOT OCCUR, and that is itself the finding.** The hint's
+    largest theoretical prize was UNKNOWN → FEASIBLE. **There is no UNKNOWN to
+    convert:** §5a.31(f) found that the shipped path already returns a solution
+    at every density measured, up to 772 ops/machine at 134.9% utilisation. The
+    74× that motivated this experiment is real, but it describes the distance to
+    a PROOF, not to an answer.
+
+    **WHAT THIS SAYS ABOUT THE DETERMINISM RULE, recorded as 4B.12's brief
+    required.** CP-SAT's large-neighbourhood-search improvement workers live in
+    the parallel portfolio this repository disables by hard rule (any identical
+    schedule claim requires `--solver-workers 1`). A single-worker search cannot
+    exploit a good incumbent the way the portfolio would. So the honest reading
+    of outcome 3 is **not** "hints do not work" but "hints do not work *for us*
+    at one worker", and it strengthens the case for **per-facility partitioning**
+    (the 4B.10 partition ruling's corollary): partitioning buys parallelism
+    without giving up reproducibility, which is the thing a hint cannot do.
+
+    **NOT MEASURED:** `alternates=2` arms (a=1 is already the optimistic setting
+    per §5a.31(h), and the a=2 cells cost 25–30 minutes each); seeds beyond the
+    counts in the table at 149 and 254, where the runs were still landing at
+    session close. The table states its own n per row.
 
 
 ## 6. Open rulings queue

@@ -158,10 +158,47 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.11 — the honesty bundle: the proof rendered, the late work scheduled,
-the arithmetic reconciled**, 2026-07-28 (docs/07 v2.55; docs/04 session amendment
-with **R-PD1 verbatim**; full narrative in `SESSION_CLOSEOUT.md`). Before it: 4B.10
-(docs/07 v2.54), 4B.9 (its book is durable in docs/07 §5a.24), 4B.8 (v2.53).
+**Session 4B.12 — where the cliff actually is, and whether a hint moves it**,
+2026-07-28 (docs/07 v2.56, §5a.31-32; docs/04 session amendment; narrative in
+`SESSION_CLOSEOUT.md`). A MEASUREMENT session: one capability behind a flag,
+default OFF; nothing it found was fixed. Before it: 4B.11 (v2.55, **R-PD1
+verbatim**), 4B.10 (v2.54), 4B.9 (§5a.24), 4B.8 (v2.53).
+
+**THE CLIFF IS AT 92 OPS/MACHINE, NOT 137 — AND §5a.27's NUMBERS ARE SUPERSEDED
+(4B.12, docs/07 §5a.31; §5a.27 carries a dated note and is NOT rewritten).**
+Re-run against **byte-identical worlds** (`verify_world_identity.py`: 8 worlds,
+all identical; the generator untouched since 4B.10's commit), the last density
+proving 5/5 is **92** and at **94** it is **0/5**. Cause is 4B.10's own
+mechanism firing everywhere: R-PD1 admits past-due work, so the floor is nonzero
+wherever late work exists and CONTROLLABLE tardiness is nonzero at the LIGHTEST
+density measured — **there is no tardiness-free regime left on this book**, and
+the proof costs **200-360x** what it cost on the same world without its late
+work. **OPS/MACHINE IS REFUTED AS A PREDICTOR by a sharper argument than
+utilisation was: the proof cost is not even MONOTONE** — 65 ops/machine proves
+in 0.045-0.286 units while the LIGHTER 50 takes 0.294-0.735.
+
+**F004 AND F006 ARE SOLVED, NOT BRACKETED (§5a.31(e-g)), and the product result
+is ANSWERABILITY.** F004, the MEDIAN facility: 254 ops/machine, **0/5 proved,
+gap 83.5-85.8%**. F006, the largest: 772 ops/machine at 134.9% utilisation,
+**gap 98.8%**. **NOT ONE CELL AT ANY DENSITY RETURNED UNKNOWN** — every failing
+cell places every admitted op and states its own gap, while a FIRST SOLUTION
+costs 0.0002-0.147 units against a 5.5-unit cap that cannot close the bound
+(37x at F006, 948x at 149 ops/machine; 4B.8 measured the same shape at 74x).
+**The problem at real density is not producing an answer, it is proving one** —
+which is why 4B.11's rendered gap is the right response and a pre-solve warning
+is the wrong one. **EVERY a=1 FIGURE IS THE OPTIMISTIC ONE:** the plant
+cross-trains, and a=2 proves 0/5 at 100 ops/machine where a=1 manages 1/5.
+**REPORTED, NOT FIXED — the tardiness split needs a THIRD category** at F006:
+"controllable" means not-already-accrued, NOT discretionary, and on a 134.9%
+plant most of it cannot be scheduled away by any placement (§5a.31(g)).
+
+**`hint_mode` — THE WARM START, SHIPPED BEHIND A FLAG, DEFAULT OFF** (4B.12 CU3,
+`rolling_horizon.py`; 11 guards in `tests/test_hint_warm_start.py`). Phase 0
+clears the objective, solves for satisfiability and seeds the solution as a hint;
+its spend comes out of the SAME `det_total` and is counted into `det_consumed`.
+**Turning it on is a ruling, not a default change** — every golden is captured
+with it off, and the guards pin that (`test_defaults_reproduce_baseline` +
+`test_budget_allocation`, 11 passed, byte-identical). Verdict in docs/07 §5a.32.
 
 **R-PD1 — PAST-DUE IS WORK, NOT A DEFECT (ruled and implemented, docs/04
 2026-07-28).** Six clauses. **(1)** a past-due unstarted demand is admitted,
@@ -196,12 +233,9 @@ reference-date floor is now unconditional (sample_data dragged the horizon to
 the cent, **ABSENT on any book with no past-due work** (so on-time monolithic
 documents are byte-identical to their 1.10 selves). It does not change the model —
 `solver_builder` has always clamped `due_min = max(0, due − horizon_start)`, so the
-floor was never in the objective. **The brief's own test for this was the WRONG test
-and the data said so:** at 60 orders both arms returned FEASIBLE and 237/240
-placements differed (two truncated searches, not an argmin). At 12 orders **both
-prove OPTIMAL** and `B − A = 6,999,840 = Σ (weight × floor)` **exactly**; placements
-still differ (34/48) because that is a **TIE**. **Placement identity would have been
-sufficient but is not necessary.**
+floor was never in the objective (proved at 12 orders where both arms are OPTIMAL and
+`B − A = Σ (weight × floor)` exactly; placements still differ, because that is a TIE).
+**4B.12 found its LIMIT: an over-capacity plant needs a THIRD category** — see above.
 
 **§5a.23 DISCHARGED — the cost proof is rendered and voiced.**
 `src/mre/modules/cost_proof.py` is the single definition. The cockpit strip carries a
@@ -213,26 +247,20 @@ the point. Every bundle leaving `Explainer.route` carries the proof, read from t
 path could not state a gap at all** before this. **No optimality ROUTE was built** —
 a vocabulary-class change, named as §5a.29.
 
-**THE 42 IS RECONCILED.** Two compounding errors in `_excluded_summary`: the COUNT
-came from a **token set** holding both the UUID and the `ORD-` id of every excluded
-demand (21 × 2 = 42), and `scheduled` counted **every** demand in the snapshot with
-`total` = that + the exclusions (60 + 42 = 102 in a 60-order world). Counting and
-display now key on the **resolved ORDER** (the same order is excluded in two
-id-spaces by two layers). Invariant asserted: `scheduled + count == total` and
-`total == demands in the snapshot`, **proved on a purpose-built world that still HAS
-exclusions** (R-PD1 dissolves the note on the specimen itself).
+**THE 42 IS RECONCILED.** `_excluded_summary` counted a **token set** holding both
+id-spaces of every excluded demand (21 x 2 = 42) and summed `total` wrongly on top.
+Counting and display now key on the **resolved ORDER**; the invariant
+`scheduled + count == total == demands in the snapshot` is asserted and proved on a
+purpose-built world that still HAS exclusions.
 
-**THE sample_data BASELINE WAS REGENERATED — the brief's byte-identity premise was
-FALSE.** sample_data carries WO-PAST-001 as seeded defect 3 (whose `DEFECTS.md` has
-declared `proceeded_flagged` all along, while the implementation drifted to
-`excluded`). **Accounted for by construction:** re-running the gate pipeline with
-that single row REMOVED reproduces the previous golden **byte-for-byte** and its
-ledger to the cent (24,769.00). New golden **801,930.00**, tardiness **777,521.00**,
-of which **776,160 is FLOOR**. `pilot_scale` and every rolling golden are untouched.
-**Two test fixtures were found building against TWO CLOCKS** — bare
-`SolverBuilder()` while pinning a reference date elsewhere in the same run — which
-only became visible once a released-long-ago order was schedulable; both now pass the
-date they had already pinned (every shipped caller always did).
+**THE sample_data BASELINE WAS REGENERATED** (WO-PAST-001, seeded defect 3, whose
+`DEFECTS.md` declared `proceeded_flagged` all along). **Accounted for by
+construction:** the pipeline re-run with that single row REMOVED reproduces the
+previous golden **byte-for-byte**. New golden **801,930.00**, tardiness
+**777,521.00**, of which **776,160 is FLOOR**; `pilot_scale` and every rolling golden
+untouched. **Two fixtures were building against TWO CLOCKS** (bare `SolverBuilder()`
+while pinning a reference date elsewhere in the same run) — invisible until a
+released-long-ago order became schedulable; both now pass the date they had pinned.
 
 **THE REAL SHAPE, AND WHY IT REFRAMES SCALE (4B.10; full tables docs/07 §5a.24-27).**
 `pilot_scale` runs 13-15 machines at ~24 ops/machine; **the measured planning unit is
@@ -243,26 +271,24 @@ unit. Durations are **DETERMINED, not ambiguous**:
 (§5a.25) — and **a SENTINEL CLASS carries 93.56% of computed load** (1,434 products
 reading `lot = setup = production = 1`; **no exclusion rule we have catches them**,
 they fire on `lot == 0`). Every utilisation figure is taken with the class removed.
-**Utilisation is BOTH answers:** F006, the LARGEST facility, sits at **112.5%**
-(structurally over-capacity — no solver fixes that); F004, the MEDIAN, at **32.6%**
-(comfortably feasible — **there the difficulty is OURS**). The cases must not be
-conflated.
+**Utilisation is BOTH answers:** F006, the LARGEST facility, is structurally
+over-capacity (no solver fixes that); F004, the MEDIAN, is comfortably feasible —
+**there the difficulty is OURS**. The cases must not be conflated. (4B.12 SOLVED
+both: F004 gaps 83.5-85.8%, F006 98.8%, against a REAL Mon-Fri calendar rather
+than §5a.25's 7-day denominator.)
 
 **THE CLIFF IS A REGION WHERE THE SEED DECIDES, AND ITS DRIVER IS TARDINESS
-(§5a.27).** The cost proof goes marginal between **94 and 137 ops/machine** — BELOW
-F004's real 246 and far below F006's 803. At 137, **4/5 seeds prove 29,453.35; the
-fifth exhausts the budget and lands 33,298.77 — a 13.056% penalty decided by nothing
-but the seed**, with every pre-solve quantity identical. **UTILISATION IS REFUTED as
-a predictor, twice**, so **no pre-solve rule can exist for that cell** — the honest
-mechanism is REPORTING, which is why §5a.23 mattered and why 4B.11 discharged it.
-The driver is tardiness, priced not asserted: freeing the tardiness weight turns
+(§5a.27). ITS NUMBERS ARE SUPERSEDED BY 4B.12 — the MECHANISM below is current,
+137 and 13.056% are not.** Priced, not asserted: freeing the tardiness weight turns
 FEASIBLE/gap-11.47% into OPTIMAL and collapses the objective's spread across feasible
-solutions by a factor of **194** — **not constant, nearly flat**.
+solutions by a factor of **194** — **not constant, nearly flat**. UTILISATION was
+refuted as a predictor twice; 4B.12 refuted ops/machine as well, so **no pre-solve
+rule can exist** and the honest mechanism is REPORTING (why §5a.23 mattered).
 **Caveat that must travel:** this mirrors an extract with no setup families, no
 changeover matrix and no overtime; a plant that prices changeovers carries a
 placement-dependent term even at `alternates=1`. What generalizes is the SHAPE of the
 rule — difficulty turns on how much of the objective varies with placement — **not
-the number 137**.
+any particular number**.
 
 **`facility_real` ADDED, `pilot_scale` UNTOUCHED AND PROVEN SO.** Four variants (F004
 median / F006 largest / cross-trained / F005's 25% past-due), calibration CHECKED by
@@ -296,28 +322,20 @@ migration.
 
 **§5a.15 DIAGNOSED, NOT FIXED (4B.8 CU5): THE 200-ORDER / 14-DAY INSTANCE IS
 FEASIBLE** — a solution in **0.082 deterministic units** once the objective is
-dropped, so **NOT an R-SC2 admission defect**. Both standing hypotheses died (build
-0.05–0.19 s; ops/machine peaks at 92). The cliff sits between **8 and 9 days** at 200
-orders and is **NOT general** — 4B.10 §5a.27 supplies the missing mechanism
-(tardiness onset, not density). At 14 days the COST solve finds **nothing at all** in
-6.0 units while satisfiability takes 0.082 — a factor of **74**.
-
-**PRE-FLIGHT: the missing API key was LOADER WIRING** (4B.8). `.env.local` was
-present all along; `tests/conftest.py` had no loader. Now loaded (repo-root
-anchored) — the four blocked slow tests pass. The r5 bank is still NOT run.
+dropped, so **NOT an R-SC2 admission defect**; the COST solve finds nothing in 6.0,
+a factor of **74**. 4B.12 measured that same shape across nine densities (37x-948x)
+and it is the reason CU3's warm start exists.
 
 **R-SC3(2) IS RETIRED — `earliness_value` IS NO LONGER A PRICE** (4B.7, docs/07
 v2.52). Stage 1 minimizes COST ALONE on both paths and the coefficient parameter is
-DELETED from both signatures so it cannot leak back. **R-SC3(1) stands and is
-genuinely implemented: stage 2 IS the tiebreak and runs UNCONDITIONALLY** at every
-coefficient including 0 and undeclared. Measured: the price cost **+73.20%** of
-ledger at 40 orders / **+97.61%** at 120, against a cost-only arm whose seed spread
-is exactly zero. `earliness_value` survives as a **REPORTING rate**, on its own
-labelled line, `in_ledger: False`, never in `cost_summary.total` and never in a
-delta card's money. **THE INVARIANT, ASSERTED: the SCHEDULE is byte-identical across
-every `earliness_value`** (0 / declared / 100x declared) — a failure means the
-coefficient is back in the objective, and that is the only way it can return.
-Discharged with it: §5a.16, §5a.17, §5a.12, §5a.9 (full accounting in docs/04).
+DELETED from both signatures so it cannot leak back (measured: the price cost
++73.20% of ledger at 40 orders / +97.61% at 120). **R-SC3(1) stands: stage 2 IS the
+tiebreak and runs UNCONDITIONALLY** at every coefficient including 0 and undeclared.
+`earliness_value` survives as a **REPORTING rate** on its own labelled line,
+`in_ledger: False`, never in `cost_summary.total` nor a delta card's money.
+**THE INVARIANT, ASSERTED: the SCHEDULE is byte-identical across every
+`earliness_value`** — a failure means the coefficient is back in the objective, and
+that is the only way it can return. Discharged with it: §5a.16, .17, .12, .9.
 
 **THE COARSE ZONE (R-SC2 amendment, 4B.6).** Beyond-horizon demand is coarsely
 PLACED, not merely listed (`src/mre/modules/coarse_horizon.py`; contract **1.9**
@@ -459,6 +477,20 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
 
 **Small carry-forwards (do not lose):**
 
+- 4B.12 findings (docs/07 §5a.31-32 — REPORTED, deliberately NOT fixed):
+  **THE TARDINESS SPLIT NEEDS A THIRD CATEGORY** — at F006's 134.9% utilisation
+  "controllable" (15.3M of a 16.9M ledger) means not-already-accrued, NOT
+  discretionary; the missing member is `capacity_infeasible` and it is unbuilt for
+  R-PD1 clause (5)'s reason — computing it means solving a relaxation and asserting
+  its bound as a business fact (§5a.31(g)). **THE a=2 CLIFF IS BRACKETED, NOT
+  PINNED** (between 50 and 100 ops/machine; those cells cost 25-30 min each), and
+  **F006 at a=2 is UNMEASURABLE under this repo's own wall rule** — four of five
+  F004 a=2 rows already truncate at 1984-2787 s on a plant a third the size.
+  **PER-FACILITY PARTITIONING is the named conditional follow-up** (the 4B.10
+  partition ruling's corollary): CP-SAT's LNS improvement workers live in the
+  parallel portfolio the determinism rule disables, which is why a hint cannot
+  substitute for them — partitioning buys parallelism without losing
+  reproducibility.
 - 4B.11 findings (docs/07 §5a.28-30 — REPORTED, deliberately NOT fixed):
   **R-PD1 clause (5) is OPEN** — no age-vs-lateness finding, because the threshold is
   a declared IDS coefficient that does not exist and inventing one authors a business

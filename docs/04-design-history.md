@@ -11871,3 +11871,103 @@ whose whole purpose is to compare two solves, because the base built against
 M3's config — built against the pinned one. Both fixtures now pass the date they
 had already pinned. **An unfloored horizon does not fail loudly; it produces
 confident numbers measured from a clock nobody chose.**
+
+### 2026-07-28 — Session 4B.12: the cliff re-baselined under R-PD1, and a warm start measured
+
+**MEASUREMENT SESSION. NO RULING.** One capability shipped behind a flag, default
+OFF; everything else is numbers. Nothing found here was fixed. Durable figures in
+docs/07 §5a.31 (the re-baseline, the pin, the two real densities) and §5a.32 (the
+hint verdict); §5a.27 carries a dated supersession note and is **not rewritten** —
+its numbers are the before half of the comparison.
+
+#### The finding: the cliff is at 92 ops/machine, not 137
+
+4B.10 measured the cost proof's cliff at **137 ops/machine** on `facility_real`.
+Re-run against **byte-identical worlds** on current master, the last density at
+which all five seeds prove the cost optimum is **92**, and at **94** none of them
+do. The brief's own halt condition ("if the cliff has moved below 94, stop and
+report") fired; the working thread ruled to re-size the remaining plan downward,
+and what was dropped is named in the close-out.
+
+**Why it moved is not a new mechanism — it is 4B.10's mechanism, now firing
+everywhere.** R-PD1 (4B.11) admits past-due work the pipeline used to exclude,
+and 4B.10 had already proved the cliff's driver is tardiness onset. Before R-PD1
+every cell below 137 carried **zero** tardiness: the objective barely varied
+between schedules and the first solution was already near-optimal. Under R-PD1
+the floor is nonzero wherever past-due work exists — everywhere — and the
+CONTROLLABLE part is nonzero at the lightest density measured (26 ops/machine).
+**There is no tardiness-free regime left on this book,** and the proof costs
+**200–360×** what it cost on the same world without its late work.
+
+4B.11's roadmap entry predicted this in words ("R-PD1 makes real boards
+tardiness-dominated, which §5a.27 proved is exactly the regime where the cost
+proof fails"). This session is the number.
+
+#### The re-baseline is controlled, and that is checked rather than claimed
+
+A re-baseline's whole claim is that only the PIPELINE changed.
+`verify_world_identity.py` compares each regenerated submission to 4B.10's
+on-disk world **byte for byte** — eight worlds, all identical, with exactly two
+wall-clock fields masked. The mask is why that is not the whole proof; the
+complement is git: `generate_erp_dataset.py` has not been touched since 4B.10's
+own commit. Configuration was the brief's four: the shipped `_two_stage_solve`
+(called, not transcribed), the shipped 4B.8 allocation, a 1800 s wall ceiling so
+the deterministic budget binds, and `det_total` 6.0 / 14 d / 3 d / 4 machines.
+
+#### Ops/machine is refuted as a predictor, by a sharper argument than utilisation was
+
+4B.10 refuted utilisation twice. 4B.12 refutes the density axis itself: **the
+proof cost is not even MONOTONE in ops/machine.** 65 ops/machine proves in
+0.045–0.286 units while the LIGHTER 50 takes 0.294–0.735 — the 70-order world
+carries a smaller past-due burden. Stated honestly, each cell is an independent
+draw at its own order count, so between-cell differences include world variation
+and not density alone. That is the point: density does not determine difficulty,
+so no threshold in density can be a rule. §5a.27's conclusion — the honest
+mechanism is REPORTING, not prediction — stands by a second, independent route.
+
+#### The two real densities, and the result that matters for the product
+
+§5a.27(h) recorded that F004's 246 and F006's 803 were BRACKETED, not solved.
+They are now solved, on the calibrated 276- and 851-order profiles. F004, the
+MEDIAN facility, returns FEASIBLE with an **83.5–85.8%** gap; F006, the largest,
+**98.8%**. The inference was right; what it could not supply is the magnitude —
+an 85% gap at the median facility, not at a pathological one.
+
+**NOT ONE CELL AT ANY DENSITY RETURNED UNKNOWN.** Every failing cell returned a
+FEASIBLE schedule placing every admitted operation, with a gap the solver stated
+itself, while a first solution costs **0.0002–0.147** deterministic units against
+a 5.5-unit cap that cannot close the bound — 37× at F006, 948× at 149
+ops/machine, the shape 4B.8 measured at 74×. **The engine's problem at real
+density is not producing an answer; it is proving one.** That is what makes
+4B.11's rendered gap the right response and a pre-solve warning the wrong one.
+
+#### Reported, not fixed
+
+**THE TARDINESS SPLIT HAS TWO CATEGORIES AND AN OVER-CAPACITY PLANT NEEDS
+THREE.** F006 runs at 134.9% utilisation; its ledger is 16,887,473, of which
+production and setup together are **0.95%** and tardiness is the rest. Contract
+1.11 splits that into 1,447,800 floor and 15,278,680 controllable. But
+"controllable" means *not already accrued at t0* — it does **not** mean
+*discretionary*, and on a plant committed to 134.9% of its window most of that
+15.3M cannot be scheduled away by any placement. The missing category is
+`capacity_infeasible`, and it is deliberately unbuilt for the reason R-PD1
+clause (5) is unbuilt: computing it means solving a relaxation and then asserting
+its lower bound as a business fact about what the plant could have done. That is
+a ruling, not an implementation detail. Carried in docs/07 §5a.31(g).
+
+**EVERY a=1 FIGURE IS THE OPTIMISTIC ONE.** Daryn has confirmed the plant
+cross-trains, so `alternates=2` is the more realistic setting; it proves 0/5 at
+100 ops/machine where a=1 manages 1/5, and gives a 95.9% gap at F004 against
+83.5–85.8%. The a=2 cliff is **bracketed between 50 and 100 and was not pinned**
+— those cells cost 25–30 minutes each.
+
+**A CONTAMINATION INCIDENT, RECORDED BECAUSE IT WAS SILENT.** `prepare_plant`
+wipes and rebuilds its run directory, and the two hint arms at one density differ
+only in `hint_mode` — so both processes wrote one spine output directory and the
+second corrupted the snapshot store the first was reading. The result was not a
+crash but **plausible numbers**: 800 free operations in a world that has 400, and
+INFEASIBLE at 0.0 deterministic units. Those rows were discarded, not repaired;
+`cliff_sweep.py` gained `--run-tag`. A second incident during the cleanup — a
+surviving process appending to a file the re-run was also writing — was caught by
+the analyzer's inherited duplicate-cell refusal, which is what that guard exists
+for. Written up as trap 3 in `tools/spikes/density_4b12/README.md`.

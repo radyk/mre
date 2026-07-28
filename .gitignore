@@ -38,3 +38,8 @@ _4b10_scratch/
 # BEFORE/AFTER probe transcripts, the golden-accounting runs). The probe and the
 # floor-invariance spike ARE committed, under tools/spikes/pastdue_4b11/.
 _4b11_scratch/
+# Session 4B.12 scratch (regenerated facility_real submissions + per-process run
+# dirs) and sweep logs; tools/spikes/density_4b12/ and its .jsonl results ARE
+# committed, including the quarantined wall-truncated rows (.bak)
+_4b12_scratch/
+_4b12_logs/

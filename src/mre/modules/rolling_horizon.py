@@ -238,6 +238,84 @@ def _hint_from_solve(model, var_map, sv) -> None:
                 model.add_hint(bv, 1 if r2 == res else 0)
 
 
+def _hint_assign_only(model, var_map, sv) -> None:
+    """Seed the ASSIGNMENT literals alone — structure, not times (4B.12 CU3
+    arm H2).
+
+    A full hint asserts a complete solution; if any part of it conflicts with a
+    constraint the objective later tightens, CP-SAT can discard the whole seed.
+    A PARTIAL hint asserts only which machine does which operation and leaves
+    every start time free, so it survives what an exact-time hint may not. The
+    two are measured against each other rather than assumed."""
+    model.clear_hints()
+    for oid, res in sv.op_resource.items():
+        if res is None:
+            continue
+        for r2, bv in var_map.op_assign.get(oid, {}).items():
+            model.add_hint(bv, 1 if r2 == res else 0)
+
+
+# ---------------------------------------------------------------------------
+# SESSION 4B.12 CU3 — THE WARM START, SHIPPED BEHIND A FLAG, DEFAULT OFF.
+#
+# 4B.8 measured the fact this exists to act on: at 200 orders / 14 days the COST
+# solve returned UNKNOWN in 6.0 deterministic units while SATISFIABILITY on the
+# SAME model took 0.082 — a factor of 74. The objective does not merely make the
+# model hard to OPTIMIZE; it makes it hard to find anything in. So the search can
+# be handed a feasible starting point it is demonstrably able to find cheaply.
+#
+# THE HINT IS NOT FREE, and the flag's contract says so: phase 0 spends out of
+# the SAME declared `det_total`, and the cost stages receive what it leaves. An
+# arm that bought its speedup with extra budget would not be a speedup.
+#
+# DEFAULT OFF, and it stays off until a session rules otherwise. 4B.12 measures
+# it; the numbers are in docs/07 §5a.31. Turning it on is a ruling, not a
+# default change — every golden in the repository is captured with it off.
+HINT_OFF = "off"
+#: Seed start, end AND assignment vars — the complete solution, via the same
+#: `_hint_from_solve` the shipped stage-1 -> stage-2 warm start already uses. Using
+#: a different seeder here would measure the seeder rather than the hint.
+HINT_FULL = "full"
+#: Seed the assignment literals only. See `_hint_assign_only`.
+HINT_ASSIGN = "assign"
+HINT_MODES = (HINT_OFF, HINT_FULL, HINT_ASSIGN)
+
+#: Phase 0's share of the declared total. 4B.8 measured satisfiability at 0.082
+#: units on the largest instance the programme had then, so 1/6 of the shipped
+#: 6.0 total is ~12x that — generous enough that a failure to find a solution is
+#: a fact about the model, not about the allowance. Unspent budget is NOT lost:
+#: the cost stages are sized from `det_total - actually spent`.
+_HINT_DET_FRACTION = 1.0 / 6.0
+
+
+def _warm_start(model, var_map, terms, runner, mode: str):
+    """Phase 0: clear the objective, solve for ANY feasible solution, seed it as
+    a hint, and restore the cost objective. Returns ``(det_spent, status)``.
+
+    Restoring the objective is done in a ``finally``: a phase-0 solve that raises
+    or returns nothing must leave the model exactly as the cost stages expect it,
+    or the flag would silently change what stage 1 minimizes."""
+    model.clear_hints()
+    model.minimize(0)
+    try:
+        r0 = runner.solve(model, var_map, None)
+    finally:
+        # `terms` is non-empty by the caller's guard, so this restores the same
+        # expression `solver_builder.build` set and nothing else.
+        model.minimize(sum(terms))
+    spent = r0.det_consumed if r0.det_consumed is not None else 0.0
+    if r0.status in ("OPTIMAL", "FEASIBLE") and r0.solve_values is not None:
+        if mode == HINT_ASSIGN:
+            _hint_assign_only(model, var_map, r0.solve_values)
+        else:
+            _hint_from_solve(model, var_map, r0.solve_values)
+    else:
+        # No solution found: no hint to give. The budget it spent is still spent,
+        # and the cost stages are sized accordingly — the arm pays for its miss.
+        model.clear_hints()
+    return spent, r0.status
+
+
 def _sum_free_starts(solve_values, free_op_ids) -> Optional[int]:
     """Σ start-minutes over the free ops actually placed, or None with no values."""
     if solve_values is None:
@@ -248,7 +326,7 @@ def _sum_free_starts(solve_values, free_op_ids) -> Optional[int]:
 
 def _two_stage_solve(model, var_map, free_start_vars, *,
                      workers, seed, deterministic, member_time_limit_s,
-                     det_total, free_op_ids=None):
+                     det_total, free_op_ids=None, hint_mode=HINT_OFF):
     """R-SC3 two-stage solve on an already-built model (constraints/pins applied,
     warm-start hints seeded by the caller).
 
@@ -287,17 +365,42 @@ def _two_stage_solve(model, var_map, free_start_vars, *,
       ``tiebreak_status`` is stage 2's, and ``tiebreak_skipped_reason`` says why
       when stage 2 did not run. Before this the returned status was stage 2's,
       so a schedule whose cost we could prove OPTIMAL reported FEASIBLE
-      (docs/07 §5a.21)."""
+      (docs/07 §5a.21).
+
+    SESSION 4B.12 CU3 — ``hint_mode``, DEFAULT OFF and shipped off. With a mode
+    set, a PHASE 0 runs first: the objective is cleared, the model is solved for
+    any feasible solution, and that solution is seeded as a hint for stage 1. Its
+    deterministic spend comes out of the SAME ``det_total`` (see
+    ``_HINT_DET_FRACTION``), so the arms compare on TOTAL consumption. At
+    ``HINT_OFF`` — which is every shipped caller — not one line below behaves
+    differently: ``spent0`` is 0.0 and both budget expressions reduce to the ones
+    4B.8 derived."""
     from mre.modules.solve_runner import SolveRunner, SolveResult
     from dataclasses import replace
 
     terms = var_map.objective_terms
-    cap1, reserve = _stage_budgets(det_total)
 
     def _runner(det):
         return SolveRunner(time_limit_seconds=member_time_limit_s,
                            num_search_workers=workers, random_seed=seed,
                            deterministic_time=(det if deterministic else None))
+
+    # PHASE 0 — the warm start (off by default). Skipped outright on a model with
+    # no objective: stage 1 is already a pure satisfiability solve there, so there
+    # would be nothing to warm and nothing to restore.
+    spent0 = 0.0
+    if hint_mode != HINT_OFF and terms:
+        if hint_mode not in HINT_MODES:
+            raise ValueError(f"unknown hint_mode {hint_mode!r}; expected one "
+                             f"of {HINT_MODES}")
+        spent0, _p0_status = _warm_start(
+            model, var_map, terms,
+            _runner(det_total * _HINT_DET_FRACTION), hint_mode)
+
+    # What the COST stages have left. Identical to `det_total` when no phase 0
+    # ran, which is what keeps every existing caller byte-unchanged.
+    remaining = max(0.0, det_total - spent0)
+    cap1, reserve = _stage_budgets(remaining)
 
     # STAGE 1 — COST. This function sets no objective of its own.
     s1 = _runner(cap1).solve(model, var_map, None)
@@ -305,6 +408,8 @@ def _two_stage_solve(model, var_map, free_start_vars, *,
             or s1.status not in ("OPTIMAL", "FEASIBLE")):
         return replace(
             s1, tiebreak_skipped_reason="stage1_no_solution_or_degenerate_model",
+            det_consumed=((s1.det_consumed or 0.0) + spent0
+                          if spent0 else s1.det_consumed),
         ), False, (None, None)
 
     # STAGE 2's budget: the REMAINDER of the declared total. The reserve floor is
@@ -316,10 +421,12 @@ def _two_stage_solve(model, var_map, free_start_vars, *,
     # is treated as having spent its whole cap: the guard "stage 1 + stage 2 <=
     # total" must hold on the PESSIMISTIC reading, never on an optimistic guess.
     spent1 = s1.det_consumed if s1.det_consumed is not None else cap1
-    b2 = max(reserve, det_total - spent1) if reserve > 0 else max(0.0, det_total - spent1)
+    b2 = max(reserve, remaining - spent1) if reserve > 0 else max(0.0, remaining - spent1)
     if b2 <= 0.0:
         return replace(
             s1, tiebreak_skipped_reason="budget_exhausted_by_stage1",
+            det_consumed=((s1.det_consumed or 0.0) + spent0
+                          if spent0 else s1.det_consumed),
         ), False, (None, None)
 
     # STAGE 2 — cap the stage-1 COST objective, re-minimize the raw earliness.
@@ -341,14 +448,19 @@ def _two_stage_solve(model, var_map, free_start_vars, *,
             solutions_found=s2.solutions_found, solve_values=s2.solve_values,
             wall_truncated=(s1.wall_truncated or s2.wall_truncated),
             tiebreak_status=s2.status,
-            det_consumed=(spent1 + (s2.det_consumed if s2.det_consumed is not None else b2)),
+            # Phase 0 (4B.12 CU3) is INCLUDED: `det_consumed` is what the whole
+            # call spent, and a warm start that is not counted is a warm start
+            # that looks free. 0.0 at HINT_OFF, so unchanged for every caller.
+            det_consumed=(spent0 + spent1
+                          + (s2.det_consumed if s2.det_consumed is not None else b2)),
         ), True, (before, after)
     # stage-2 budget exhausted → keep the stage-1 incumbent. The tiebreak RAN and
     # won nothing, which is a different fact from "it never ran" — so its status
     # is recorded and no skip reason is set.
     return replace(
         s1, tiebreak_status=s2.status,
-        det_consumed=(spent1 + (s2.det_consumed if s2.det_consumed is not None else b2)),
+        det_consumed=(spent0 + spent1
+                      + (s2.det_consumed if s2.det_consumed is not None else b2)),
     ), False, (None, None)
 
 
@@ -632,6 +744,7 @@ def build_rolling_view(
     crit_threshold: float = 3.0,
     earliness_value: Optional[float] = None,
     persist: bool = False,
+    hint_mode: str = HINT_OFF,
 ) -> RollingView:
     """Solve the CURRENT window (window 0) and classify the sliced world.
 
@@ -741,7 +854,8 @@ def build_rolling_view(
             workers=workers, seed=seed, deterministic=deterministic,
             member_time_limit_s=member_time_limit_s,
             det_total=det_total,
-            free_op_ids=[op["id"] for op in free_ops])
+            free_op_ids=[op["id"] for op in free_ops],
+            hint_mode=hint_mode)
         tiebreak = earliness_tiebreak_report(_recovery[0], _recovery[1], ev_used)
         # 4B.8 CU3: `solve.status` is now STAGE 1's — the COST proof. Stage 2's
         # rides beside it, never over it.
@@ -1053,6 +1167,7 @@ def run_rolling_horizon(
     max_windows: Optional[int] = None,
     earliness_value: Optional[float] = None,
     window_observer: Optional[Any] = None,
+    hint_mode: str = HINT_OFF,
 ) -> RollingResult:
     """Roll a window of `window_days`, committing the frozen front of
     `frozen_days`, until every operation is committed.
@@ -1168,7 +1283,7 @@ def run_rolling_horizon(
             model, var_map, free_start_vars,
             workers=workers, seed=seed, deterministic=deterministic,
             member_time_limit_s=member_time_limit_s,
-            det_total=det_total)
+            det_total=det_total, hint_mode=hint_mode)
         solve_wall = _t.perf_counter() - t_s
         total_solve += solve_wall
 
