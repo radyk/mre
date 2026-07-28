@@ -398,15 +398,29 @@ GREEN, at the final state of the code:
 That is the set that bears on the change: the 13 hint guards, and the goldens
 plus the budget-split guards that prove the flag-off path is byte-identical.
 
+ALSO GREEN -- the adjacent files, everything the changed module is consumed by:
+
+  test_pastdue_disposition.py + test_objective_units.py + test_ortools_pin.py +
+  test_horizon_slice.py + test_coarse_horizon.py + test_rolling_horizon.py
+  ............................................ 98 passed, 28 skipped, 200.77 s
+
 NOT COMPLETED WITHIN SESSION TIME, and named rather than implied:
 
-  * The full non-slow suite. It was started and reached roughly 45% with ZERO
-    failures under -x before being stopped to free the machine for the
-    measurement sweeps. Not a green stamp -- a partial one, reported as such.
-  * tests/test_pastdue_disposition.py, test_objective_units.py, test_ortools_pin.py,
-    test_horizon_slice.py, test_coarse_horizon.py, test_rolling_horizon.py as a
-    batch: started, 5 passed and 0 failed when the session closed. Left running.
+  * The full non-slow suite in ONE run. It was started and reached roughly 45%
+    with ZERO failures under -x before being stopped to free the machine for the
+    measurement sweeps. The two batches above cover the changed module and its
+    consumers; the rest of the suite has not been run against this commit.
 
-A note worth keeping, because it cost this session real time: piping pytest
-through `tail` BLOCKS ALL OUTPUT until the process exits, which reads exactly
-like a hang. Redirect to a file and tail the file instead.
+TWO NOTES WORTH KEEPING, because between them they cost this session hours:
+
+  * PIPING PYTEST THROUGH `tail` BLOCKS ALL OUTPUT until the process exits,
+    which reads exactly like a hang and was diagnosed twice as one. Redirect to
+    a file and tail the file.
+  * test_pastdue_disposition.py::TestCostProof::
+    test_the_proof_reaches_the_answer_surface_from_evidence takes MINUTES on its
+    own. It calls build_rolling_view with member_time_limit_s=600.0 on the 4B.11
+    specimen -- a 60-order facility_real_pastdue plant, which section 2 of this
+    document shows is ABOVE the cliff, so stage 1 now burns its whole budget
+    where in 4B.11 it did not. A committed non-slow test got materially slower
+    because the WORLD changed, not because the test did. Not fixed here; it is
+    the kind of drift that eventually makes a suite unrunnable.
