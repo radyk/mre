@@ -31,3 +31,6 @@ _ai_exam_scratch/
 _4b6c_scratch/
 # Session 4B.8 scratch (monolithic accounting runs, doc patch scripts)
 _4b8_scratch/
+# Session 4B.10 scratch (generated facility_real submissions + run dirs);
+# tools/spikes/density_4b10/ and its .jsonl results ARE committed
+_4b10_scratch/

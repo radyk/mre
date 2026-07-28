@@ -152,6 +152,43 @@ SCENARIOS: dict[str, dict[str, Any]] = {
         with_customers=False, cost_profile="C2",
         pilot_scale=True, feel=True,
     ),
+    # The facility_real plant (Session 4B.10): the REAL SHAPE measured in
+    # docs/07 §5a.24/.25 — FOUR machines carrying 250-800 ops each, 4-op routes,
+    # the book's due-date histogram, and 7.83% PAST-DUE orders (which no fixture
+    # has ever produced). pilot_scale is the LOOK-AHEAD preset and is untouched;
+    # this is the REALISTIC one. Default size = F004, the MEDIAN facility (276
+    # orders). `facility_real_large` = F006, the LARGEST (851). Both feel=True:
+    # a measurement substrate, not a truth-bearing gate scenario.
+    "facility_real": dict(
+        orders=276, resources=4, facilities=1, anomalies=[],
+        with_customers=False, cost_profile="C2",
+        facility_real=True, feel=True,
+        fr_machines=4, fr_alternates=1, fr_past_due=0.0783,
+    ),
+    "facility_real_large": dict(
+        orders=851, resources=4, facilities=1, anomalies=[],
+        with_customers=False, cost_profile="C2",
+        facility_real=True, feel=True,
+        fr_machines=4, fr_alternates=1, fr_past_due=0.0783,
+    ),
+    # Same plant with CROSS-TRAINED machines: every operation is eligible on its
+    # own stage and the next one. Machine count and load are IDENTICAL to
+    # facility_real — only the assignment combinatorics change, so the pair is a
+    # controlled experiment on whether alternates help or hurt (4B.10 item 3 Q2).
+    "facility_real_alt": dict(
+        orders=276, resources=4, facilities=1, anomalies=[],
+        with_customers=False, cost_profile="C2",
+        facility_real=True, feel=True,
+        fr_machines=4, fr_alternates=2, fr_past_due=0.0783,
+    ),
+    # F005's book: a QUARTER of it already past due. The variant that exercises
+    # already-late work at the share the worst real facility carries.
+    "facility_real_pastdue": dict(
+        orders=400, resources=4, facilities=1, anomalies=[],
+        with_customers=False, cost_profile="C2",
+        facility_real=True, feel=True,
+        fr_machines=4, fr_alternates=1, fr_past_due=0.252,
+    ),
 }
 
 
@@ -1259,6 +1296,276 @@ def _apply_pilot_scale(ds: Dataset, rng: random.Random, n_orders: int) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# facility_real — the REAL SHAPE: few machines, deep queues (Session 4B.10).
+#
+# WHY THIS EXISTS, AND WHY IT DOES NOT REPLACE pilot_scale. Session 4B.9
+# measured the historical extract and found every scale number the programme
+# holds was taken on the wrong axis: pilot_scale runs 13-15 machines at ~24
+# ops/machine, while the real planning unit is FOUR MACHINES carrying 250-800
+# OPERATIONS EACH. The two presets are LABELLED and both keep their purpose:
+#
+#   pilot_scale    the LOOK-AHEAD preset. Its due-date spread is deliberately
+#                  wider than the book's (generate_erp_dataset.py:1197-1200,
+#                  "the regime where a longer look-ahead actually buys cost").
+#                  It carries every regression golden we own and is UNTOUCHED.
+#   facility_real  the REALISTIC preset. Calibrated to the measured book:
+#                  4 machines, 4-op routes, the book's due-date histogram,
+#                  and PAST-DUE ORDERS, which no fixture has ever produced.
+#
+# R-SC1 STANDS: the extract supplies SHAPES, never plant physics. Every
+# authored value is named in datasets/facility_real/PROFILE_PROVENANCE.md.
+# ---------------------------------------------------------------------------
+
+# Machines are STAGES, and a route visits DISTINCT stages in sequence order.
+# MEASURED (4B.10): across the 134 routes open work actually uses, the ratio of
+# routing lines to DISTINCT workcenters is exactly 1.00 — no route in the
+# extract ever revisits a workcenter. Rates are AUTHORED (the extract carries no
+# resource-rate source of any kind): an honest $/h split so a cross-machine
+# choice has a real price when alternates are enabled.
+_FR_MACHINES = [
+    ("FR-M1", 52.0), ("FR-M2", 55.0), ("FR-M3", 58.0),
+    ("FR-M4", 61.0), ("FR-M5", 64.0), ("FR-M6", 67.0),
+]
+
+# Route-length mix per machine count. MEASURED: at every 4-machine facility in
+# the extract (F004, F006, F00A — 1,720 orders) the route length is EXACTLY 4,
+# on 100% of orders. Longer routes (p90 8, max 12 book-wide) occur ONLY at
+# facilities with 10-26 machines, because routes never revisit. So route length
+# and machine count are COUPLED in the book and the preset couples them too.
+_FR_ROUTE_MIX = {
+    4: [(4, 1.00)],                                        # F004 / F006 exactly
+    5: [(4, 0.55), (5, 0.45)],                             # mean 4.45
+    6: [(3, 0.05), (4, 0.50), (5, 0.05), (6, 0.40)],       # mean 4.80
+}
+
+# Setup minutes per operation. MEASURED at F006 (normal tier): median 5,
+# p75 20, p90 30, p99 56, mean 12.4. This ladder reproduces that shape.
+_FR_SETUP_LADDER = [(5, 0.65), (20, 0.20), (30, 0.12), (56, 0.03)]   # mean 12.53
+
+# Per-unit run rates (minutes/unit). MEASURED at F004/F006 (normal tier): run
+# minutes have median 0.5-2.9, p90 4.7-21, mean 2.0-8.6 — the real book's
+# operations are SHORT (mean op 13.2-14.4 minutes including setup). Combined
+# with the quantity ladder below these reproduce that band.
+_FR_RUN_RATES = [(0.0005, 0.25), (0.001, 0.30), (0.002, 0.25),
+                 (0.005, 0.12), (0.010, 0.05), (0.020, 0.03)]
+
+# Order quantity. MEASURED: WoQuantity median 244 (F006) / 450 (F004);
+# book-wide p25 147, median 500, p75 2,000. TRUNCATED at 5,000 — an AUTHORED
+# simplification (the extract's p99 is 200,000 and its max 10,000,000, both
+# inside the sentinel class named in docs/07 §5a.25).
+_FR_QTY_LADDER = [((50, 150), 0.25), ((150, 400), 0.30), ((400, 1200), 0.30),
+                  ((1200, 5000), 0.15)]
+
+# Customers/priorities are AUTHORED. The extract has NO priority, customer
+# weight or commitment class anywhere (docs/07 §5a.24) — but an empty priority
+# column is a silent lie (the Glass Box's standing warning), so they are
+# populated deliberately, exactly as pilot_scale does.
+_FR_CUSTOMERS = [
+    ("CUST-NORTH", "Northfield Tooling", "critical"),
+    ("CUST-EAST", "Eastgate Components", "high"),
+    ("CUST-WEST", "Westbrook Supply", "standard"),
+    ("CUST-SOUTH", "Southline Metal", "standard"),
+]
+
+# The DUE-DATE HISTOGRAM, measured (docs/07 §5a.24). Buckets are (lo, hi, share)
+# in days from the reference date; the past-due bucket is drawn separately so
+# its DEPTH can follow the measured shape too.
+#
+# The coarse buckets are SUBDIVIDED to honour the book's QUANTILES as well as
+# its histogram — the mass inside 0-7 and 8-14 is front-loaded, not uniform.
+# Measured: p25 = 2 d, MEDIAN = 7 d, p75 = 9 d, p90 = 15 d. A uniform 0-7 draw
+# reproduces the bucket totals but puts the median at 6 and p75 at 12. The
+# subdivision below is pinned by those four quantiles and preserves every
+# bucket total exactly: 0-7 sums to 0.4222 and 8-14 to 0.3992.
+_FR_DUE_BUCKETS = [
+    (0, 2, 0.1731), (3, 6, 0.1478), (7, 7, 0.1013),      # 0-7 d  = 0.4222
+    (8, 9, 0.2495), (10, 14, 0.1497),                    # 8-14 d = 0.3992
+    (15, 30, 0.0861), (31, 34, 0.0141),
+]
+# Past-due DEPTH, measured over the 272 past-due orders: 41.2% are <=7 days
+# late, 76.8% <=30 days. The book's minimum is -1573 days (a stale outlier);
+# the preset TRUNCATES the depth at 60 days — AUTHORED, so that past-due work
+# is late-but-plausible rather than a data defect the gate would flag.
+_FR_PASTDUE_DEPTH = [((1, 7), 0.412), ((8, 30), 0.356), ((31, 60), 0.232)]
+
+_FR_SHIFT_MIN = 720          # 07:00-19:00. AUTHORED — the extract has NO calendars.
+
+
+def _fr_pick(rng: random.Random, ladder):
+    """Draw from a [(value, weight), ...] ladder."""
+    vals = [v for v, _w in ladder]
+    wts = [w for _v, w in ladder]
+    return rng.choices(vals, weights=wts, k=1)[0]
+
+
+def _fr_lead_days(rng: random.Random, past_due_share: float) -> int:
+    """Sample a due-date lead in days reproducing the MEASURED histogram."""
+    if rng.random() < past_due_share:
+        lo, hi = _fr_pick(rng, _FR_PASTDUE_DEPTH)
+        return -rng.randint(lo, hi)
+    # renormalize the forward buckets over their own mass
+    total = sum(s for _lo, _hi, s in _FR_DUE_BUCKETS)
+    r = rng.random() * total
+    acc = 0.0
+    for lo, hi, share in _FR_DUE_BUCKETS:
+        acc += share
+        if r <= acc:
+            return rng.randint(lo, hi)
+    return _FR_DUE_BUCKETS[-1][1]
+
+
+def _apply_facility_real(ds: Dataset, rng: random.Random, n_orders: int,
+                         n_machines: int, alternates: int,
+                         past_due_share: float) -> dict:
+    """Build the facility_real plant — ONE facility, FEW machines, DEEP queues.
+
+    Returns a descriptive marker (facility_real is a MEASUREMENT substrate, not
+    a truth-bearing gate scenario: it seeds no anomalies).
+    """
+    ref = ds.reference_date
+    fac = ds.facilities[0]
+    ds.products, ds.routings, ds.routing_lines, ds.orders = [], [], [], []
+    ds.resources, ds.calendars, ds.setup_transitions, ds.customers = [], [], [], []
+
+    n_machines = max(4, min(6, int(n_machines)))
+    alternates = max(1, min(n_machines, int(alternates)))
+    machines = _FR_MACHINES[:n_machines]
+    rate_by_res = {rid: rate for rid, rate in machines}
+
+    # --- resources: one stage each, all on one calendar ----------------------
+    for rid, _rate in machines:
+        ds.resources.append({
+            "resource_id": rid, "facility_id": fac, "resource_type": "workcenter",
+            "parallel_units": "1", "calendar_id": "CAL-STD", "pool_id": "",
+            "cost_rate": "",
+        })
+
+    # --- calendar: Mon-Fri 07:00-19:00. WHOLLY AUTHORED --------------------
+    # The extract carries no time-of-day, shift pattern, holiday or closure of
+    # any kind (docs/07 §5a.24). No maintenance closure and no overtime window
+    # are authored here either: facility_real exists to measure DENSITY, and a
+    # closure day is a confound. pilot_scale keeps both.
+    for dow in range(0, 5):
+        ds.calendars.append({
+            "calendar_id": "CAL-STD", "row_type": "pattern", "day_of_week": str(dow),
+            "start_time": "07:00", "end_time": "19:00",
+            "exception_date": "", "exception_type": "", "reason": "",
+        })
+
+    # --- products / routes ----------------------------------------------------
+    # One product per (route length, starting stage) combination, so load spreads
+    # evenly over the stages and every machine carries work. A route visits
+    # CONSECUTIVE stages from its start, wrapping — distinct stages, never a
+    # revisit (the measured invariant).
+    lengths = sorted({ln for ln, _w in _FR_ROUTE_MIX[n_machines]})
+    products: list[tuple[str, str, list[tuple[str, float, int]]]] = []
+    for ln in lengths:
+        for start in range(n_machines):
+            pid = f"P-L{ln}-S{start + 1}"
+            steps = []
+            for k in range(ln):
+                rid = machines[(start + k) % n_machines][0]
+                steps.append((rid, _fr_pick(rng, _FR_RUN_RATES),
+                              _fr_pick(rng, _FR_SETUP_LADDER)))
+            products.append((pid, f"stage{start + 1}", steps))
+
+    len_weight = dict(_FR_ROUTE_MIX[n_machines])
+    prod_weights = []
+    for pid, _fam, steps in products:
+        prod_weights.append(len_weight[len(steps)] / n_machines)
+
+    for pid, family, steps in products:
+        route_id = f"RT-{pid[2:]}"
+        ds.products.append({
+            "product_id": pid, "uom": "EA", "facility_id": fac,
+            "product_group": family, "costing_lot_size": "1",
+            "setup_minutes": str(steps[0][2]),
+            "production_minutes": str(steps[0][1]),
+            "cost_price": str(round(rng.uniform(8, 45), 2)),
+        })
+        ds.routings.append({
+            "route_id": route_id, "facility_id": fac, "product_id": pid,
+            "status": "active", "approved": "Y", "version": "1",
+            "effective_from": ref.isoformat(),
+        })
+        for step_idx, (rid, run, setup) in enumerate(steps):
+            seq = (step_idx + 1) * 10
+            # ALTERNATES: the eligible set is this stage's machine plus the next
+            # (alternates-1) stages cyclically — CROSS-TRAINING, not extra
+            # machines. The machine count and the load are IDENTICAL across
+            # alternate settings, so the two arms differ ONLY in assignment
+            # combinatorics. alternates=1 is the extract as measured: of 30,594
+            # (RoutingCode, Sequence) pairs, exactly ZERO carry more than one row.
+            base = next(i for i, (m, _r) in enumerate(machines) if m == rid)
+            eligible = [machines[(base + o) % n_machines][0] for o in range(alternates)]
+            for erid in eligible:
+                ds.routing_lines.append({
+                    "route_id": route_id, "sequence": str(seq), "resource_id": erid,
+                    "active": "1", "setup_minutes": str(setup),
+                    "run_minutes_per_unit": f"{run:g}",
+                    "dwell_minutes": "0", "setup_family": "",
+                    "splittable": "false", "min_chunk_minutes": "",
+                })
+
+    # --- customers (AUTHORED; populated deliberately) -------------------------
+    for cid, name, pclass in _FR_CUSTOMERS:
+        ds.customers.append({"customer_id": cid, "name": name,
+                             "priority_class": pclass, "notes": ""})
+    ds.manifest["semantics"]["priority_precedence"] = "customer_over_order"
+
+    # --- orders ---------------------------------------------------------------
+    priority_ladder = ["critical"] * 1 + ["high"] * 2 + ["standard"] * 7
+    n_past_due = 0
+    for i in range(n_orders):
+        idx = rng.choices(range(len(products)), weights=prod_weights, k=1)[0]
+        pid, _family, steps = products[idx]
+        route_id = f"RT-{pid[2:]}"
+        lo, hi = _fr_pick(rng, _FR_QTY_LADDER)
+        qty = rng.randint(lo, hi)
+        lead = _fr_lead_days(rng, past_due_share)
+        if lead < 0:
+            n_past_due += 1
+        due = ref + timedelta(days=lead)
+        pclass = rng.choice(priority_ladder)
+        cust = next((cid for cid, _n, pc in _FR_CUSTOMERS if pc == pclass), "CUST-WEST")
+        ds.orders.append({
+            "order_id": f"ORD-{i + 1:06d}", "product_id": pid, "route_id": route_id,
+            "quantity": str(qty), "due_date": due.isoformat(),
+            "created_date": ref.isoformat(), "release_date": "",
+            "facility_id": fac, "customer_id": cust,
+            "priority_class": pclass, "commitment_class": pclass,
+        })
+
+    # --- cost model -----------------------------------------------------------
+    ds.cost_model["refinements"]["resource_rates"] = dict(rate_by_res)
+    # NO earliness_value is declared. The extract carries no earliness
+    # preference (docs/07 §5a.24), and since 4B.7 the coefficient is a REPORTING
+    # rate only — declaring one here would author a business fact we do not have.
+    # Coarse-horizon coefficients ARE declared so the zone runs on a DECLARED rho
+    # rather than the defaulted 1.0 no-op (the 4B.6b debt). 7-day buckets match
+    # the book's measured 7-day median lead; the 0.85 derate is AUTHORED.
+    ds.cost_model["refinements"]["coarse_horizon"] = {
+        "bucket_days": 7, "capacity_derate": 0.85}
+
+    return {
+        "plant": "facility_real",
+        "n_orders": n_orders, "n_resources": len(ds.resources),
+        "machines": [m for m, _r in machines],
+        "alternates": alternates,
+        "route_lengths": sorted(len_weight),
+        "mean_ops_per_order": round(
+            sum(len(s) * w for (_p, _f, s), w in zip(products, prod_weights))
+            / sum(prod_weights), 3),
+        "past_due_share_declared": past_due_share,
+        "past_due_orders_generated": n_past_due,
+        "reference_date": ref.isoformat(),
+        "shift_minutes": _FR_SHIFT_MIN,
+        "calibration_source": "docs/07 §5a.24 / §5a.25 (Session 4B.9 / 4B.10)",
+        "provenance": "datasets/facility_real/PROFILE_PROVENANCE.md",
+    }
+
+
+# ---------------------------------------------------------------------------
 # Anomaly catalog v1 — each returns a truth_manifest entry
 # ---------------------------------------------------------------------------
 
@@ -1999,11 +2306,17 @@ def generate(
     scenario: str = "clean_small",
     anomalies: Optional[list[str]] = None,
     reference_date: Optional[date] = None,
+    fr_machines: Optional[int] = None,
+    fr_alternates: Optional[int] = None,
+    fr_past_due: Optional[float] = None,
 ) -> dict[str, Any]:
     """Generate an IDS submission + truth_manifest.json under out_dir.
 
     CLI-supplied orders/resources/facilities/anomalies override the scenario
-    preset's defaults; None means "use the preset's value".
+    preset's defaults; None means "use the preset's value". The `fr_*`
+    arguments override the facility_real plant's machine count, alternate-set
+    size and past-due share (Session 4B.10); they are ignored by every other
+    scenario.
     """
     if scenario not in SCENARIOS:
         raise ValueError(f"Unknown scenario '{scenario}'. Known: {sorted(SCENARIOS)}")
@@ -2047,6 +2360,15 @@ def generate(
         truth_extra["busy_board"] = _apply_busy_board(ds, rng)
     if preset.get("pilot_scale"):
         truth_extra["pilot_scale"] = _apply_pilot_scale(ds, rng, n_orders)
+    if preset.get("facility_real"):
+        truth_extra["facility_real"] = _apply_facility_real(
+            ds, rng, n_orders,
+            n_machines=(fr_machines if fr_machines is not None
+                        else preset.get("fr_machines", 4)),
+            alternates=(fr_alternates if fr_alternates is not None
+                        else preset.get("fr_alternates", 1)),
+            past_due_share=(fr_past_due if fr_past_due is not None
+                            else preset.get("fr_past_due", 0.0783)))
 
     anomaly_entries: list[dict] = []
     for spec in anomaly_specs:
@@ -2109,6 +2431,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--scenario", default="clean_small", choices=sorted(SCENARIOS))
     parser.add_argument("--anomalies", default=None,
                         help="Comma-separated anomaly specs, e.g. 'orphan_product_refs:5,duplicate_order_ids:2'")
+    parser.add_argument("--fr-machines", type=int, default=None,
+                        help="facility_real only: scheduled machine count (4-6)")
+    parser.add_argument("--fr-alternates", type=int, default=None,
+                        help="facility_real only: eligible machines per operation "
+                             "(1 = the extract as measured; >1 = cross-training)")
+    parser.add_argument("--fr-past-due", type=float, default=None,
+                        help="facility_real only: share of orders already past due "
+                             "(book 0.0783; F005 0.252)")
     parser.add_argument("--out", required=True)
     args = parser.parse_args(argv)
 
@@ -2116,7 +2446,8 @@ def main(argv: list[str] | None = None) -> int:
     truth = generate(
         out_dir=args.out, orders=args.orders, resources=args.resources,
         facilities=args.facilities, seed=args.seed, scenario=args.scenario,
-        anomalies=anomalies,
+        anomalies=anomalies, fr_machines=args.fr_machines,
+        fr_alternates=args.fr_alternates, fr_past_due=args.fr_past_due,
     )
     print(f"[generate_erp_dataset] wrote submission to {args.out}")
     if truth.get("feel_fixture"):

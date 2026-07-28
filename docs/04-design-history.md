@@ -11265,3 +11265,312 @@ nearly triple its old budget. Placements moved (start-minutes 198,088 ->
 exactly what it guarantees.
 
 Contract-version assertions moved 1.9 -> 1.10 in six files.
+
+### 2026-07-28 — Session 4B.10: the real shape — few machines, deep queues
+
+**Why this session.** Session 4B.9 measured the historical extract and found
+that every scale number the programme holds was taken on the WRONG SHAPE:
+`pilot_scale` runs 13–15 machines at ~24 ops/machine, while the real planning
+unit is **four machines carrying 250–800 operations each**. Separately, the gap
+probe's "8 of 10 facilities UNKNOWN" was measured **with the priced earliness
+term** that 4B.6c proved converts a feasibility problem into an optimization
+CP-SAT cannot close, and that 4B.7 removed from the objective. Both foundations
+were unsound. This session rebuilt them.
+
+**First act — 4B.9's numbers made durable.** 4B.9 was a read-only session whose
+close-out was its whole deliverable, and it said so: "if these numbers are to
+become durable, docs/07 §5a is where they belong, and that is the next session's
+first act." Done, before any measurement: **docs/07 §5a.24** now carries the
+due-date histogram, the one-facility-is-the-planning-unit verification, the
+per-facility ops-per-window table, the `pilot_scale` gap table with the
+generator's own deliberate-divergence citation, findings F1–F7, and the list of
+what the extract cannot supply. R-SC1 is restated at the head of it: the extract
+is intelligence, never a fixture.
+
+#### CU1 — LOAD, NOT OP COUNT (docs/07 §5a.25)
+
+Ops are not minutes and the solver feels minutes, so 4B.9's op counts were
+converted to workload. Read-only pandas; nothing submitted, gated or solved.
+
+**(a) THE DURATION SEMANTICS ARE DETERMINED.** The brief allowed for reporting
+both readings if the data could not decide. It can. `ProductionMinutes` is **per
+LOT** (per `CostingLotSize` units) and the full rate applies to **each operation
+independently**; `SetUpMinutes` is per operation. Three independent lines agree:
+
+1. The previous-generation PRODUCTION code computes exactly this, per routing
+   line, inside its per-line loop — `legacy/Formatnewjobs.py:68`,
+   `proc_time = int((wo_quantity / casting_lot_size) * production_minutes)`.
+2. The repository already RULED it: `legacy_author_definition_v1`,
+   docs/04:693-701, confirmed 2026-07-07, implemented at `raw_adapter.py:621`
+   and reproduced by the IDS adapter's own fallback (`ids_adapter.py:426`).
+3. **The data.** log-log correlation of `ProductionMinutes` against
+   `CostingLotSize` is **r = +0.683** (n = 20,131), and median PM rises
+   monotonically with the lot band (lot 1 → 1; 1k–10k → 51; 10k–50k → 874;
+   50k+ → 1,663). A per-ORDER or per-UNIT figure would be independent of lot
+   size.
+
+**(b) A SENTINEL CLASS CARRIES 94% OF THE COMPUTED LOAD.** 1,434 of 20,743
+products (6.9%) read `CostingLotSize = SetUpMinutes = ProductionMinutes = 1` —
+**all three columns exactly 1 on 100.0% of those rows**, against a median
+`ProductionMinutes` of 549 for every other product. **227 open orders (7.01%)
+use them and they carry 93.56% of all computed machine-minutes.** The largest,
+`PP10293020`, is 10,000,000 units at `lot=1, PM=1` → 30,000,003 minutes for one
+order. **They are not excluded today** — the retired adapter's exclusions fire
+on `CostingLotSize == 0` (131 orders) or a missing product (104), and a `lot=1`
+row is well-formed. This is the repeated-identical-value fingerprint the
+carry-forwards already warn about, found in the wild. Every utilisation figure
+in this session is taken with the class removed, and says so.
+
+**(c) UTILISATION — the answer is BOTH, and the two cases must not be
+conflated.** On normal work, against `touched_machines × window_days × 720`
+(the 720-minute day is AUTHORED — the extract has no calendars at all): **5 of
+11 facilities are over 100% at both depths**, book-wide 14-day utilisation is
+**210.4%**, and the median facility by utilisation sits at **99.4%**, precisely
+at the boundary. But the two facilities that matter diverge sharply:
+
+- **F006, the LARGEST** (851 orders, 4 machines, 803 ops/machine at 14 days) is
+  at **112.5%** — structurally over-capacity. No solver fixes that; the honest
+  product answer there is a shorter window with tardiness priced.
+- **F004, the MEDIAN** (276 orders, 4 machines, 246 ops/machine, 984 ops in a
+  14-day window) is at **32.6%** — comfortably feasible. And 4B.8's cost
+  objective returned UNKNOWN at 313 free ops. **There the difficulty is OURS.**
+
+**(d) FOUR MACHINES IS THE REAL SHAPE, CONFIRMED**, and it is the axis that has
+never been tested.
+
+#### CU2 — `facility_real`, added never repurposed (datasets/facility_real/)
+
+`pilot_scale` **is untouched and proven so**: generating it at 200 orders from
+the working tree and from git HEAD produces byte-identical output in every file,
+the only difference anywhere being `manifest.json`'s `extract_timestamp`, a
+wall-clock stamp. `tests/test_generate_erp_dataset.py` +
+`tests/test_defaults_reproduce_baseline.py`: **31 passed, 1 skipped**.
+
+Both presets are now LABELLED and both keep their purpose: `pilot_scale` is the
+**look-ahead** preset (its due-date spread is deliberately wider than the book's
+— `generate_erp_dataset.py:1197-1200`, "the regime where a longer look-ahead
+actually buys cost" — and it carries every regression golden we own);
+`facility_real` is the **realistic** one. Four variants: `facility_real` (276
+orders = F004, the median), `facility_real_large` (851 = F006), `facility_real_alt`
+(cross-trained), `facility_real_pastdue` (400 orders at F005's 25.2% past due).
+
+**Calibration is CHECKED, not asserted** —
+`tools/spikes/density_4b10/verify_facility_real.py` prints the generated shape
+beside each measured target. At 851 orders: ops/order **4.00** (target 4.00),
+past due **7.76%** (7.83%), due ≤7 d **51.7%** (50.1%), ≤14 d **90.7%** (90.0%),
+lead p25/median/p75 **2/7/9** (2/7/9), setup median **5** (5), run median **0.5**
+(0.5), op mean **12.6** (F004 13.2 / F006 14.4).
+
+**ALTERNATES ARE CROSS-TRAINING, NOT EXTRA MACHINES.** With `alternates=2` an
+operation is eligible on its own stage plus the next, cyclically. Machine count
+and total load are IDENTICAL across settings — verified: both arms report 572
+ops, 8,671 required minutes, 43.0% utilisation at 7 days, differing only in
+eligible-machines-per-operation. The section-3 comparison is therefore a
+**controlled experiment on assignment combinatorics alone**. The extract's
+single-workcenter routings are believed to be an EXTRACT LIMITATION rather than
+a plant fact, so both are built and neither is assumed real.
+
+**A MEASURED-vs-AUTHORED table** is written at
+`datasets/facility_real/PROFILE_PROVENANCE.md`, naming the 720-minute day and
+Mon–Fri week, machine rates, cross-training, customers/priorities, the absence
+of setup families and splittable flags, the coarse-horizon coefficients, and two
+truncations. **Three departures from the book are named**, not hidden: route
+length p90/max (the book's 8/12-op routes occur only at 10–26-machine
+facilities, because **no route in the extract ever revisits a workcenter** —
+lines/distinct = 1.00 across all 134 used routes — so route length and machine
+count are COUPLED and the preset couples them); the operation-duration TAIL is
+coarser than the book's (4 machines ⇒ 4 products ⇒ 16 routing steps, so
+durations are drawn 16 times and reused — median and mean on target, upper
+quantiles lumpy); and the sentinel class is deliberately not reproduced.
+
+#### CU3 — THE DENSITY SWEEP (docs/07 §5a.27; `tools/spikes/density_4b10/`)
+
+The primary axis changed: hold the real shape fixed (4 machines, 4-op routes,
+the book's due dates) and sweep **ops per machine**, not window depth.
+
+**All three conditions the brief set, or the measurement is void.** Cost-only
+objective (the sweep *calls* `rolling_horizon._two_stage_solve`; it does not
+transcribe it); the P3 allocation as shipped since 4B.8; and the **wall ceiling
+raised to 1800 s** so the deterministic budget is what binds —
+`member_time_limit_s` defaults to 30.0 while stage 1 needs 37–120 s at 200
+orders, so every prior measurement on the shipped path was wall-truncated and
+therefore, by this repository's own hard rule, a lottery. `wall_truncated` is
+FALSE on all 15 reported rows.
+
+**A METHOD NOTE, because it is the kind of thing that silently ruins a
+measurement.** A first pass was **discarded**: a backgrounded process outlived
+its shell and ran concurrently with its replacement, duplicating cells and
+contending for CPU. `analyze.py` now **refuses** a file containing a duplicated
+`(orders, alternates, seed)` rather than averaging over it, and the specimen is
+kept at `density_CONTAMINATED.jsonl.bak`. The discard cost nothing
+scientifically and validated the design: **deterministic units reproduced to
+every digit** across the two runs (`0.001531178799999749`,
+`0.015006761634700314`, `2.4746173155819227`) while wall times differed by up to
+**1.6×**.
+
+**(a) THE CLIFF IS NOT A LINE — IT IS A REGION WHERE THE SEED DECIDES.**
+
+| ops/machine | util | n | proved | units to proof | ledger spread |
+|---|---|---|---|---|---|
+| 22 | 4.2% | 1 | 1/1 | 0.0002 | — |
+| 46 | 10.3% | 1 | 1/1 | 0.0015 | — |
+| 94 | 19.0% | 5 | **5/5** | 0.015–0.192 (med 0.041) | **0.000%** |
+| **137** | **27.4%** | 5 | **4/5** | **2.294–5.594** (med 3.049) | **13.056%** |
+
+Below the cliff the proof is free and five seeds agree on the ledger **to the
+cent**. At 137 the proof costs 2.294–5.594 units against a **5.5-unit stage-1
+cap**: four seeds fit, one does not. Seed 42 exhausts the budget, returns
+FEASIBLE at an 11.47% gap, and lands on **33,298.77** where the other four prove
+**29,453.35** — **a 13.056% penalty decided by nothing but the random seed.**
+This is the same failure mode CU1 of 4B.8 measured for the OLD budget split at
+200 orders (seeds needing 4.542/4.962 against a 4.0 cap), now reproduced on the
+REAL shape at the REAL density against the NEW cap. The 1/12 reserve neither
+caused it nor cures it — the instance simply costs more than the budget on some
+seeds.
+
+**Both real facilities are past it**: F004 runs 246 ops/machine in a 14-day
+window, F006 runs 803.
+
+**(b) ALTERNATES HELP THE LEDGER AND HURT THE SEARCH**, at rates that are not
+comparable: −0.93% / −1.07% / −1.44% of ledger for **3× / 52× / 165×** the proof
+effort (seed-42 pairs, so like-for-like). Stated honestly: `alternates=2` was
+measured at ONE seed while `alternates=1` has five at 94 ops/machine spanning
+0.015–0.192 units, so against that range the a=2 cost is **13×–165×, median
+60×** — the direction is not in doubt at any seed, but the exact multiple is a
+one-seed figure and is labelled as one. Because machine count and total load are
+IDENTICAL across the two arms (verified: same ops, same required minutes, same
+utilisation), this is a controlled comparison on assignment combinatorics alone.
+
+**(c) UTILISATION IS REFUTED AS THE PREDICTOR — twice, and the second refutation
+is fatal to the whole idea.** The most valuable possible outcome would have been
+a load ratio computable BEFORE solving that the gate could warn on.
+
+1. **Eligibility is invisible to load.** At 110 orders the two arms have
+   identical utilisation (19.02%) and identical ops per machine (94), and their
+   proof costs differ by **165×**.
+2. **The seed decides.** At 137 ops/machine five runs differing ONLY in the
+   solver seed split 4 OPTIMAL / 1 FEASIBLE with a 13.056% ledger spread.
+   **Every pre-solve quantity is identical across those five runs.**
+
+`analyze.py` prints both verdicts itself (`UTILISATION separates the two classes
+cleanly : False`; `OPS/MACHINE … : False`). **So the hoped-for gate warning does
+not exist in this form.** What can be known is not *predicted* but **REPORTED**:
+the solve knows whether it proved the cost optimum, and since 4B.8 CU3
+`solver.status` carries exactly that. **§5a.23's severity is therefore RAISED in
+this session** — at real density the difference between a proved and an unproved
+window is 13% of the ledger, and no surface renders the one field that
+distinguishes them.
+
+**(d) THE DRIVER IS TARDINESS — and the second experiment CORRECTED the first
+explanation, which is why both are recorded.** Every cell with tardiness 0 proved
+the optimum; the first cell with tardiness > 0 (7,049 minutes, 8 late demands)
+failed. The counterfactual — same instance, changing ONLY the tardiness weight —
+gives **PRICED: FEASIBLE, 5.59 units, gap 11.47%** against **FREE: OPTIMAL, 4.72
+units, gap 0**. The tempting reading was that with one eligible machine per
+operation the rest of the objective is a CONSTANT; that predicts a near-instant
+proof, and 4.72 units is not that. So it was tested rather than asserted:
+evaluating `sum(objective_terms)` at several different feasible solutions of the
+same model (eligible-set sizes verified `{1: 548}`, so the assignment really is
+forced) gives a spread of **18.402%** with tardiness priced and **0.095%** with
+it free.
+
+**The objective is not constant — it is NEARLY FLAT.** At `alternates=1` the
+placement-dependent part of the cost is *almost entirely tardiness*; freeing it
+collapses the spread by a factor of **194**. Below the cliff nothing is late, the
+objective barely moves between schedules, and the first solution is already
+within a whisker of optimal. Above it tardiness dominates and the budget cannot
+close the search. Proving a nearly-flat objective is not free either — the FREE
+arm still spent 4.72 units closing 0.095%.
+
+**The caveat travels with the finding.** This decomposition is a property of
+`facility_real`'s authored physics, and those choices faithfully mirror the
+extract (no setup families, no changeover matrix, no overtime windows — §5a.24).
+A plant that DOES price changeovers would carry a placement-dependent term even
+at `alternates=1` and its cliff would not sit at 137. **What generalizes is the
+shape of the rule — difficulty turns on how much of the objective varies with
+placement — not the number.**
+
+**(e) THE GAP PROBE'S VERDICT DOES NOT SURVIVE, and not in the direction hoped.**
+Its "F004 solved near 260, F006 died near 850" was measured with the priced
+earliness term 4B.7 removed; removing it should have made things easier. Instead
+the cost proof goes marginal at **137** ops/machine, *below* F004's real 246 and
+far below F006's 803.
+
+**(f) IT ALSO EXPLAINS 4B.8's UNRESOLVED "NOT GENERAL"** (§5a.15: 200 orders
+proves at 123 free ops while 120 orders fails at 115). Those instances differ not
+in size but in whether their due dates can be met. §5a.15 is **not discharged** —
+it was measured on `pilot_scale`, whose due-date spread is deliberately widened,
+so the depth does not transfer — but its puzzle now has a mechanism.
+
+**(g) COVERAGE, stated rather than hidden.** MEASURED: 22 / 46 / 94 / 137 ops per
+machine; **both** alternate settings at 22 / 46 / 94; `alternates=1` at 137;
+seeds 42–46 at both bracket densities (94 and 137) for `alternates=1`. NOT
+MEASURED: anything above 137 ops/machine, `alternates=2` at 137 and above, and
+seeds 43–46 at the two lightest densities. Every cell above the cliff spends the
+full budget and the `alternates=2` cells there run to tens of minutes each, so
+the session spent its time LOCATING the cliff and PRICING its mechanism rather
+than characterizing how bad it gets past it. **Consequence for the headline
+claim:** F004's 246 and F006's 803 ops/machine are **BRACKETED, not directly
+solved** — "both real facilities are past the cliff" follows from the cliff
+sitting at 137 *plus* the assumption that difficulty does not decrease with
+density above it. That is consistent with the 22→137 series and with 4B.8's
+higher-density results, but **it is an inference, not a measurement**.
+
+#### CU4 — PAST-DUE WORK, FINALLY EXERCISED (docs/07 §5a.26)
+
+REPORT ONLY; the ghost-job re-ruling is a design conversation and this session's
+job was to hand it a live specimen and a number. Specimen world:
+`facility_real_pastdue`, 60 orders, 21 past due.
+
+**It VANISHES — 21 of 21, before the solver.** And the mechanism is **two sites
+disagreeing**, which is the part worth keeping:
+
+- **M0, the gate.** Rule `ids.order_dates_internally_consistent` raises one
+  `TEMPORAL_IMPOSSIBILITY` / WARNING over all 21, `outcome: degraded`,
+  **`disposition = proceeded_flagged`**; the submission grades **CONDITIONAL,
+  `go = True`**. The gate sees them, names them, and passes them on.
+- **M3, the validator** (`validator.py:186-221`). Same code, `disposition =
+  EXCLUDED`; `PreparedPlant.schedulable_demands` (`rolling_horizon.py:385`)
+  subtracts the set. **The gate's "proceed with these" is not honoured
+  downstream**, and nothing reconciles the two.
+
+The only escape is the docs/06 §5.13 `wip_status` doorway — which the extract
+cannot populate, because it carries no WIP field of any kind (§5a.24).
+
+**They are invisible to the surfaces a planner uses.** The assembled contract-1.9
+document is 111,839 characters and contains **zero** occurrences of the
+specimen's order id, of `TEMPORAL_IMPOSSIBILITY`, or of `excluded` / `past due` /
+`past_due` / `temporal`. `RollingVocabulary.resolve('ORD-000014')` returns
+**None**. They are not beyond-horizon either, so 4B.5's "a tray order is never
+*not in this schedule*" does not cover them. Measured on the live ask path with a
+key present: *"where is ORD-X"* → "Nothing scheduled for ORD-000014" (true, and
+indistinguishable from unplaced); *"why isn't it scheduled yet"* → a disjunction
+**neither branch of which is true**, pointing back at the first route; *"which
+orders are already late"* → "**No late orders found in this schedule**" in a
+world 35% past due. Only `why was <id> excluded?` reaches it — route
+`excluded-orders`, register `testimony`, 21 records, every order named.
+
+**THE CATEGORY ERROR is the finding.** That one working door answers "**21
+data-quality problem(s)** … has dates that can't both be true … *Want the
+fix-first ordering?*". A released work order that is genuinely late is not a
+data defect and has no fix — it is the plant's actual position, 7.83% of this
+book and a quarter of F005's. **This is the same shelving error §5a.1 already
+names for `--horizon-days`**: a real-world category filed as a data-defect
+category. *Fix shape, named not built:* a past-due unstarted demand needs a
+disposition of its own, distinct from both a data defect and a beyond-horizon
+tray order, and the per-order placement routes need to voice it.
+
+One undiagnosed observation, recorded so it is not lost: the trailing note on the
+aggregate lateness answer read "60 of 102 orders are scheduled; 42 excluded" in a
+world of 60 demands with 21 past due. The store holds 22 `TEMPORAL_IMPOSSIBILITY`
+findings across 22 **distinct** demand subjects, so the records are not
+duplicated and the note's arithmetic does not reconcile. Root cause not
+established.
+
+#### What was NOT done
+
+No `window_days` change and no window rule — this session measured. `pilot_scale`,
+its goldens and every existing fixture untouched, proven byte-identical against
+HEAD. Ghost jobs not re-ruled. The hint experiment, the r5 bank, the §5a.20
+vocabulary migration and splicing seams: out of scope, untouched. RawAdapter not
+revived and the extract not submitted — **R-SC1 stands**.

@@ -155,42 +155,102 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.8 — the budget split, the status ruling, and the 14-day diagnosis**,
-2026-07-28 (docs/07 v2.53; docs/04 session amendment same date; full table in
-`SESSION_CLOSEOUT.md`).
+**Session 4B.10 — the real shape: few machines, deep queues**, 2026-07-28
+(docs/07 v2.54; docs/04 session amendment same date; full narrative in
+`SESSION_CLOSEOUT.md`). Before it: 4B.9 (intelligence, close-out only — its book is
+now durable in docs/07 §5a.24) and 4B.8 (docs/07 v2.53).
 
-**THE TWO-STAGE BUDGET IS DERIVED, NOT A CONSTANT (CU2).** The caller declares a
-TOTAL (`det_total`); stage 1 is capped at total minus a **1/12 RESERVE**; **stage 2
+**EVERY SCALE NUMBER WE HELD WAS TAKEN ON THE WRONG AXIS.** `pilot_scale` runs
+13–15 machines at ~24 ops/machine; the measured planning unit is **4 MACHINES
+CARRYING 250–800 OPS EACH** (§5a.24). The book has no long tail — 90% of demand due
+inside 14 days, 50% inside 7, **7.83% ALREADY PAST DUE** — and one facility is the
+planning unit (0 of 134 used routes span facilities).
+
+**THE DURATION SEMANTICS ARE DETERMINED, NOT AMBIGUOUS (§5a.25).**
+`op = SetUpMinutes + (WoQuantity/CostingLotSize) × ProductionMinutes`, per
+operation — agreed by `legacy/Formatnewjobs.py:68` (the previous-generation
+production code), the standing `legacy_author_definition_v1` ruling, and the data
+itself (log-log **r = +0.683** of PM against lot size). **A SENTINEL CLASS CARRIES
+93.56% OF THE COMPUTED LOAD**: 1,434 products read `lot = setup = production = 1` —
+all three exactly 1 on **100.0%** of those rows — and **no exclusion rule we have
+would catch them** (they fire on `lot == 0`). Every utilisation figure is taken with
+the class removed and says so.
+
+**UTILISATION: BOTH ANSWERS, AND THE CASES MUST NOT BE CONFLATED.** F006, the
+LARGEST facility (4 machines, 803 ops/machine at 14 d) is at **112.5%** —
+structurally over-capacity, and no solver fixes that. F004, the MEDIAN (246
+ops/machine, 984 ops in the window) is at **32.6%** — comfortably feasible, and
+4B.8's cost objective returned UNKNOWN at 313 free ops. **There the difficulty is
+OURS.** 5 of 11 facilities exceed 100% at both depths.
+
+**THE CLIFF IS A REGION WHERE THE SEED DECIDES, AND ITS DRIVER IS TARDINESS
+(§5a.27).** On the real shape the cost proof goes marginal between **94 and 137
+ops/machine** — **BELOW F004's real 246 and far below F006's 803**, so **the gap
+probe's verdict does NOT survive the objective change, and not in the direction
+hoped.** At 94 ops/machine, 5/5 seeds prove in 0.015–0.192 of 5.5 units with the
+ledger identical to the cent. At 137, proof costs **2.294–5.594** units against the
+5.5 cap: **4/5 seeds prove 29,453.35; the fifth exhausts the budget and lands
+33,298.77 — a 13.056% penalty decided by nothing but the seed.** (The same failure
+mode 4B.8 CU1 found for the old split, now on the real shape against the new cap.)
+
+**UTILISATION IS REFUTED AS A PREDICTOR, twice.** Eligibility is invisible to load
+(identical utilisation and ops/machine, **165×** proof-cost difference between the
+alternate arms); and at 137 every pre-solve quantity is IDENTICAL across the five
+seeds that disagree. **No pre-solve rule can exist for that cell** — the honest
+mechanism is REPORTING, not prediction, which is why **§5a.23's severity is raised**:
+`solver.status` is the only thing distinguishing a proved board from one 13% worse,
+and nothing renders it. The DRIVER is tardiness, priced not asserted: freeing the
+tardiness weight turns FEASIBLE/gap-11.47% into OPTIMAL and collapses the
+objective's spread across feasible solutions from **18.402% to 0.095%** (factor
+194). The objective is **not constant, it is nearly flat** — the first reading was
+corrected by the data. **Caveat that must travel:** this mirrors the extract (no
+setup families, no changeover matrix, no overtime); a plant that prices changeovers
+would carry a placement-dependent term even at `alternates=1`. What generalizes is
+the SHAPE of the rule — difficulty turns on how much of the objective varies with
+placement — **not the number 137**.
+
+**`facility_real` ADDED, `pilot_scale` UNTOUCHED AND PROVEN SO** (byte-identical to
+HEAD except the wall-clock `extract_timestamp`; 31 passed / 1 skipped). Four
+variants (F004 median / F006 largest / cross-trained / F005's 25% past-due),
+calibration CHECKED by `tools/spikes/density_4b10/verify_facility_real.py`, and a
+MEASURED-vs-AUTHORED table at `datasets/facility_real/PROFILE_PROVENANCE.md`.
+`pilot_scale` keeps its stated purpose as the LOOK-AHEAD preset; `facility_real` is
+the REALISTIC one. **Alternates are CROSS-TRAINING, not extra machines** — identical
+machine count and load, so the pair is a controlled experiment. A **CONDITIONAL gate
+grade is CORRECT** for it (the past-due orders), not a defect.
+
+**PAST-DUE WORK VANISHES, AND TWO MODULES DISAGREE (§5a.26 — REPORTED, NOT
+RE-RULED).** 21 of 21 gone before the solver. **M0 flags them `proceeded_flagged`**
+(CONDITIONAL, `go=True`); **M3's validator then EXCLUDES them**
+(`validator.py:186-221`) — so **the gate's "proceed with these" is not honoured
+downstream**. They appear NOWHERE in the 111,839-char document,
+`RollingVocabulary.resolve` returns None, and the per-order routes cannot say so
+("where is ORD-X" → "Nothing scheduled"; "which orders are already late" → "**No
+late orders found**" in a world 35% past due). Only `excluded-orders` reaches it,
+filing them as "**21 data-quality problem(s) … Want the fix-first ordering?**" — a
+released order that is genuinely late is not a data defect and has no fix. **The
+same shelving error §5a.1 names for `--horizon-days`.**
+
+**THE TWO-STAGE BUDGET IS DERIVED, NOT A CONSTANT (4B.8 CU2).** The caller declares
+a TOTAL (`det_total`); stage 1 is capped at total minus a **1/12 RESERVE**; **stage 2
 gets what the total has left after stage 1 actually ran**. `_STAGE2_DET_TIME_S = 2.0`
-is DELETED from both twins. Measured first (`tools/spikes/alloc_4b8/`, 3 policies x
-6 instances x 5 seeds): the old fixed split **loses the COST PROOF at 200 orders**
-(two seeds need 4.542/4.962 units against a 4.0 cap — ledger 35,127.05 vs the optimum
-**27,863.63** the alternatives prove 5/5 with **zero** spread), while a plain
-cost-first remainder gives stage 2 **ZERO on 5/5 seeds at 120 orders** and silently
-retires the tiebreak. The reserve is what keeps R-SC3(1) true at scale. NB the
-parameter was **RENAMED `det_time` -> `det_total`**, not reinterpreted: the old total
-was `stage1 + 2.0`, so no single multiplier preserved every caller (6.0 default, 4.0
-exam/fixture, 2.5 golden driver) — each now declares its own. The MONOLITHIC path
-passes `cap_stage1=False` (its cost proof stays uncapped) with a 2.0 total; raising
-that was measured and REJECTED (−0.01% start-minutes for 2.5x the wall clock).
+is DELETED from both twins and `det_time` was **RENAMED `det_total`** so every caller
+had to state its own historical total. The reserve is what keeps R-SC3(1) true at
+scale. The MONOLITHIC path passes `cap_stage1=False` (its cost proof stays uncapped)
+with a 2.0 total; raising it was measured and REJECTED. Full table: docs/07 §5a.
 
-**THE STATUS LINE REPORTS THE COST PROOF (CU3 — a RULING, contract 1.9 -> 1.10).**
-`solver.status` carries **STAGE 1's** status; new Optional `solver.tiebreak_status` /
-`tiebreak_skipped_reason` carry stage 2's. Stage 2 exhausts its budget above ~8
-orders, so every rolling board used to read FEASIBLE over a provably OPTIMAL ledger.
-**A schedule whose cost is proven optimal SAYS SO, and an unproven tiebreak never
-downgrades that claim.** A tiebreak that never ran is distinguishable from one that
-ran and won nothing. **§5a.23 is the standing debt: NOTHING VOICES IT** — neither the
-cockpit nor the answer surface reads any solve status (an R-AI1 debt, named not
-built, per the brief).
+**THE STATUS LINE REPORTS THE COST PROOF (4B.8 CU3 — a RULING, contract 1.9 -> 1.10).**
+`solver.status` carries **STAGE 1's** status; Optional `solver.tiebreak_status` /
+`tiebreak_skipped_reason` carry stage 2's. **A schedule whose cost is proven optimal
+SAYS SO, and an unproven tiebreak never downgrades that claim.** **§5a.23 is the
+standing debt: NOTHING VOICES IT** — neither the cockpit nor the answer surface reads
+any solve status (an R-AI1 debt, named not built).
 
-**`EARLINESS_PREFERENCE` IS DORMANT (CU4, interim only).** The extractor no longer
-emits it and `earliness_value` is DELETED from `_assignment_driver`'s signature. The
-fallthrough was checked FIRST and is better: `CAPACITY_BLOCKED` carries real
-occupancy evidence (4B.5 CU3a), and under a cost-only objective a dearer eligible
-choice IS capacity. **The DriverCode member SURVIVES and docs/07 §5a.20 stays OPEN**
-for the vocabulary migration. The declared-but-unread guard was resolved by a
-dormant-register entry, never by widening.
+**`EARLINESS_PREFERENCE` IS DORMANT (4B.8 CU4, interim only).** The extractor no
+longer emits it and `earliness_value` is DELETED from `_assignment_driver`'s
+signature; `CAPACITY_BLOCKED` carries real occupancy evidence instead. **The
+DriverCode member SURVIVES and docs/07 §5a.20 stays OPEN** for the vocabulary
+migration.
 
 **§5a.15 DIAGNOSED, NOT FIXED (CU5): THE 200-ORDER / 14-DAY INSTANCE IS FEASIBLE** —
 a solution in **0.082 deterministic units** once the objective is dropped, so this is
