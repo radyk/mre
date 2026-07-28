@@ -68,7 +68,7 @@ def _two_disjoint_ops_one_machine():
 
 def _solve(model, var_map, seed=42):
     return solve_two_stage(
-        model, var_map, stage1_reporter=None, earliness_coeff_scaled=0,
+        model, var_map, stage1_reporter=None,
         time_limit_seconds=10.0, num_search_workers=1, random_seed=seed,
     )
 
@@ -114,7 +114,7 @@ class TestTwoStageFloor:
         (stage2_ran False) — nothing to tiebreak."""
         model, vm, _ = _two_disjoint_ops_one_machine()
         result, stage2_ran = solve_two_stage(
-            model, vm, stage1_reporter=None, earliness_coeff_scaled=0,
+            model, vm, stage1_reporter=None,
             free_start_vars=[], time_limit_seconds=10.0,
             num_search_workers=1, random_seed=42)
         assert stage2_ran is False

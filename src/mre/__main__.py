@@ -424,7 +424,7 @@ def main(argv: list[str] | None = None) -> int:
     # -----------------------------------------------------------------------
     # M6: Solve Runner
     # -----------------------------------------------------------------------
-    from mre.modules.solver_builder import solve_two_stage, _COST_SCALE
+    from mre.modules.solver_builder import solve_two_stage
 
     r_rep = Reporter.begin(
         module=ModuleCode.M6, purpose="solve run",
@@ -440,12 +440,11 @@ def main(argv: list[str] | None = None) -> int:
     # The monolithic schedule of record now places cost-equal work at the earliest
     # slot, unscoped, like the rolling path. No pins in the CLI path, so the
     # earliness sum is over every op start.
-    _earliness_value = float(cost_model.get("earliness_value", 0.0) or 0.0)
-    _earliness_coeff = int(round(max(0.0, _earliness_value) * _COST_SCALE))
+    # Session 4B.7: the declared earliness_value is NOT passed — it is no longer a
+    # price, and stage 2 runs unconditionally without it (R-SC3(2) retired).
     solve_result, _stage2_ran = solve_two_stage(
         model, var_map,
         stage1_reporter=r_rep,
-        earliness_coeff_scaled=_earliness_coeff,
         time_limit_seconds=args.time_limit,
         num_search_workers=args.solver_workers,
         random_seed=args.solver_seed,

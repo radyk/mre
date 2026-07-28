@@ -25,15 +25,15 @@
       }
     }
   },
-  "why is ORD-000027 on CUT-01?": {
-    "question": "why is ORD-000027 on CUT-01?",
-    "answer": "ORD-000027 is on CUT-01 because the machine was the lowest-cost eligible placement for it in this window.\n\nregister: testimony",
+  "why is ORD-000029 on CUT-01?": {
+    "question": "why is ORD-000029 on CUT-01?",
+    "answer": "ORD-000029 is on CUT-01 because the machine was the lowest-cost eligible placement for it in this window.\n\nregister: testimony",
     "bundle": {
       "register": "testimony",
       "subject_type": "operation",
       "cited_refs": {
         "operations": [
-          "2a163c51-6f2a-5062-aa8b-156f75996cf8"
+          "898edad8-b2cd-5a84-b99c-cbb7b20cf9d4"
         ],
         "resources": [
           "440fbc69-bb11-5b15-944c-9f0844e57db6"

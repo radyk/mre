@@ -16,11 +16,20 @@ literally the same code on every arm.
 
 ARMS
   A0    cost only                sum(terms)                     one solve
+  A0s   STAGED cost-only (4B.7)  stage1 sum(terms)              two solves
+                                 stage2 cap + minimize sum(S)
   A1    status quo (shipped)     stage1 sum(terms) + C*sum(S)   two solves
                                  stage2 cap + minimize sum(S)
   A2    candidate B              BIG*sum(terms) + sum(S)        one solve
   A2h   candidate B, hour gran.  BIGh*sum(terms) + sum(H)       one solve
   A2x   candidate B, 10x BIG     10*BIG*sum(terms) + sum(S)     one solve
+
+A0s is Session 4B.7's item 1 — the arm 4B.6c never measured, and the one this
+session proposes to SHIP (the R-SC3 stage-2 tiebreak with the stage-1
+coefficient removed). It records BOTH stages' ledgers, because the cap
+guarantees only "stage 2's cost <= stage 1's cost" WITHIN a run; comparing A0s
+to A0 also crosses a budget split (A0s stage 1 gets DET_STAGE1, A0 gets
+DET_TOTAL) and a failure there is a budget fact, not a units defect.
 
 BUDGET PARITY: every arm gets the SAME total deterministic budget
 (DET_TOTAL). A1 splits it exactly as shipped (4.0 stage 1 + 2.0 stage 2);
@@ -177,6 +186,10 @@ def apply_arm(model, var_map, free_start_vars, arm, coeff_scaled):
 
     if arm == "A0":
         model.minimize(sum(terms))
+    elif arm == "A0s":
+        # 4B.7 item 1: stage 1 is cost ALONE. The staging happens in run_arm.
+        model.minimize(sum(terms))
+        rep["coeff_scaled"] = 0
     elif arm == "A1":
         if coeff_scaled > 0:
             model.minimize(sum(terms) + coeff_scaled * sum(free_start_vars))
@@ -248,25 +261,43 @@ def run_arm(plant, win, arm, seed, det_total=DET_TOTAL, keep_placements=False):
     probes = {"cost_scaled": sum(var_map.objective_terms),
               "start_sum": sum(free_start_vars)} if var_map.objective_terms and free_start_vars else {}
 
-    if arm == "A1":
+    stage_detail = None
+    if arm in ("A1", "A0s"):
         # the SHIPPED two-stage shape, transcribed from
-        # rolling_horizon._two_stage_solve (lines 147-172).
+        # rolling_horizon._two_stage_solve (lines 147-172). A1 carries the
+        # stage-1 coefficient; A0s (4B.7) is the same shape with it removed.
+        stage_coeff = coeff if arm == "A1" else 0
         s1 = _solve(model, var_map, seed=seed, det=DET_STAGE1, wall=WALL_CEILING_S,
                     eval_exprs=probes)
         res = s1
         stage2_ran = False
         terms = var_map.objective_terms
+        stage_detail = {"stage1_det": s1["det_consumed"], "stage1_wall": round(s1["wall_s"], 3),
+                        "stage1_status": s1["status"], "stage1_raw_objective": s1["objective"],
+                        "stage1_cost_scaled": (s1.get("values") or {}).get("cost_scaled"),
+                        "stage1_start_sum": (s1.get("values") or {}).get("start_sum"),
+                        "stage2_det": None, "stage2_wall": None, "stage2_status": None,
+                        "stage1_ledger": None, "stage1_tardiness_minutes": None}
+        if s1["solve_values"] is not None:
+            m1 = measure_solution(plant, win, var_map, s1["solve_values"],
+                                  free_ops, free_start_vars)
+            stage_detail["stage1_ledger"] = m1["ledger"]
+            stage_detail["stage1_sum_free_starts_min"] = m1["sum_free_starts_min"]
+            stage_detail["stage1_tardiness_minutes"] = m1["tardiness_minutes"]
         if (terms and free_start_vars and s1["objective"] is not None
                 and s1["status"] in ("OPTIMAL", "FEASIBLE")):
             best = int(round(s1["objective"]))
-            if coeff > 0:
-                model.add(sum(terms) + coeff * sum(free_start_vars) <= best)
+            if stage_coeff > 0:
+                model.add(sum(terms) + stage_coeff * sum(free_start_vars) <= best)
             else:
                 model.add(sum(terms) <= best)
             model.minimize(sum(free_start_vars))
             _rehint(model, var_map, s1["solve_values"])
             s2 = _solve(model, var_map, seed=seed, det=DET_STAGE2,
                         wall=WALL_CEILING_S, eval_exprs=probes)
+            stage_detail.update(stage2_det=s2["det_consumed"],
+                                stage2_wall=round(s2["wall_s"], 3),
+                                stage2_status=s2["status"])
             if s2["status"] in ("OPTIMAL", "FEASIBLE"):
                 s2["stage1_objective"] = s1["objective"]
                 s2["objective"] = s1["objective"]     # stage 1's is the recorded one
@@ -279,9 +310,9 @@ def run_arm(plant, win, arm, seed, det_total=DET_TOTAL, keep_placements=False):
         if not stage2_ran:
             res["status_stage1"] = s1["status"]
         res["stage2_ran"] = stage2_ran
-        # A1's REPORTED status is stage 1's — the cost-proof status, the only
-        # one comparable to the single-solve arms (stage 2 proves optimality of
-        # the TIEBREAK, not of the cost).
+        # The REPORTED status is stage 1's — the cost-proof status, the only one
+        # comparable to the single-solve arms (stage 2 proves optimality of the
+        # TIEBREAK, not of the cost).
         res["status_reported"] = res.get("status_stage1", res["status"])
     else:
         res = _solve(model, var_map, seed=seed, det=det_total, wall=WALL_CEILING_S,
@@ -300,6 +331,7 @@ def run_arm(plant, win, arm, seed, det_total=DET_TOTAL, keep_placements=False):
                det_consumed=res["det_consumed"],
                wall_truncated=res["wall_truncated"],
                stage2_ran=res["stage2_ran"],
+               stages=stage_detail,
                n_free_ops=len(free_start_vars))
 
     if res["solve_values"] is None:

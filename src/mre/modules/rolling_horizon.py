@@ -1,19 +1,25 @@
 """Rolling-horizon (sliced) solve runner — Session 4B.2, R-SC2 / R-SC3.
 
-R-SC3 (docs/04, Session 4B.2d): earliness is a ZERO-COST TIEBREAK, and PAID
-earliness is a declared cost-model coefficient — NOT the hidden weight-1/min
-incentive 4B.2 shipped. Each window (and the final pricing pass) solves in TWO
-STAGES:
-  * Stage 1 minimizes sum(objective_terms) [+ earliness_value×Σ free-op starts
-    when a positive earliness_value is declared — the priced-earliness term is
-    OMITTED ENTIRELY when the coefficient is 0, never multiplied by zero];
+R-SC3 (docs/04, Session 4B.2d, AMENDED 4B.7): earliness is a ZERO-COST TIEBREAK
+— and ONLY that. Each window (and the final pricing pass) solves in TWO STAGES:
+  * Stage 1 minimizes sum(objective_terms) — COST, and only cost;
   * Stage 2 caps the stage-1 objective at its optimum and re-minimizes Σ free-op
     starts (warm-started from stage 1) — the lexicographic "prefer earlier among
     cost-optimal placements" floor. A small deterministic budget bounds stage 2;
     on exhaustion the stage-1 incumbent stands (never a worse-cost schedule).
+    STAGE 2 RUNS UNCONDITIONALLY: R-SC3(1)'s "always and unconditionally" is the
+    whole clause, and no declared coefficient gates it.
 This replaces the 4B.2 hidden incentive (removed, not re-scoped): no internal
-undeclared weight influences placement; a placement a positive coefficient buys
-is traceable via the EARLINESS_PREFERENCE driver (docs/02).
+undeclared weight influences placement.
+
+SESSION 4B.7 RETIRED R-SC3(2) — the declared `earliness_value` as a PRICE in the
+primary objective. It was measured against a cost-only arm whose seed spread is
+exactly zero and cost +73.20% of ledger total at 40 orders / +97.61% at 120,
+almost all of it tardiness. `earliness_value` survives as a REPORTING rate only
+(`_earliness_rate`, `earliness_tiebreak_report`): it values the start-minutes
+stage 2 recovered, on its own labelled line, and never enters a cost figure. The
+SCHEDULE is byte-identical across every `earliness_value` setting — asserted, not
+assumed (tests/test_objective_units.py).
 
 R-SC2 (docs/04): slicing is a ROLLING HORIZON with a FROZEN ZONE and GRAVITY
 admission. Solve a window of declared length; commit only the frozen front;
@@ -97,13 +103,51 @@ def _dt(iso: str) -> datetime:
 _STAGE2_DET_TIME_S = 2.0
 
 
-def _earliness_coeff_scaled(cost_model: dict, override: Optional[float]) -> int:
-    """The earliness coefficient in CP-SAT objective units (dollars × _COST_SCALE
-    per minute-of-start). override wins when given (tests / measurement); else the
-    declared CostModel.earliness_value. 0 ⇒ 0 ⇒ the priced term is omitted."""
-    from mre.modules.solver_builder import _COST_SCALE
-    val = override if override is not None else float(cost_model.get("earliness_value", 0.0) or 0.0)
-    return int(round(max(0.0, val) * _COST_SCALE))
+def _earliness_rate(cost_model: dict, override: Optional[float]) -> float:
+    """The plant's declared earliness rate in DOLLARS PER MINUTE of op start.
+    override wins when given (tests / measurement); else the declared
+    CostModel.earliness_value; never negative.
+
+    SESSION 4B.7 — this is a REPORTING rate and nothing else. It reaches no
+    solver, no objective, no cap and no cost ledger. Its one job is to value the
+    start-minutes stage 2 recovered, on its own labelled line. The predecessor
+    (``_earliness_coeff_scaled``, which returned CP-SAT objective units) is
+    DELETED rather than left callable: a scaled coefficient that still exists is
+    a coefficient that can be handed back to ``model.minimize``."""
+    val = override if override is not None else float(
+        cost_model.get("earliness_value", 0.0) or 0.0)
+    return max(0.0, float(val))
+
+
+def earliness_tiebreak_report(start_minutes_before: Optional[int],
+                              start_minutes_after: Optional[int],
+                              rate_per_minute: float) -> dict:
+    """The R-SC3 tiebreak's own labelled line (Session 4B.7, item 2c).
+
+    Stage 2 recovers ``before - after`` op-start minutes at ZERO ledger cost —
+    that is the FLOOR working, and it happens at every ``earliness_value``
+    including 0 and undeclared. A plant that has DECLARED what a start-minute is
+    worth to it gets that recovery valued at its own rate.
+
+    TWO LEDGERS, NEVER FUSED. ``valued_at`` is not money the plant spent or
+    saved on this schedule: no such dollar appears in ``cost_summary.total``, in
+    a delta card, or in any ledger line. It is what the plant's own declared rate
+    says the recovered minutes are worth to it. ``rate_provenance`` names which
+    it is, so a reader is never left to guess whether a zero means "declared
+    zero" or "never declared"."""
+    if start_minutes_before is None or start_minutes_after is None:
+        return {"start_minutes_recovered": None, "declared_rate_per_minute": rate_per_minute,
+                "valued_at": None, "in_ledger": False,
+                "rate_provenance": "declared" if rate_per_minute > 0 else "undeclared_or_zero"}
+    recovered = int(start_minutes_before) - int(start_minutes_after)
+    return {
+        "start_minutes_recovered": recovered,
+        "declared_rate_per_minute": rate_per_minute,
+        "valued_at": (round(recovered * rate_per_minute, 2)
+                      if rate_per_minute > 0 else None),
+        "in_ledger": False,
+        "rate_provenance": "declared" if rate_per_minute > 0 else "undeclared_or_zero",
+    }
 
 
 def _hint_from_solve(model, var_map, sv) -> None:
@@ -125,17 +169,46 @@ def _hint_from_solve(model, var_map, sv) -> None:
                 model.add_hint(bv, 1 if r2 == res else 0)
 
 
-def _two_stage_solve(model, var_map, free_start_vars, earliness_coeff_scaled, *,
-                     workers, seed, deterministic, member_time_limit_s,
-                     stage1_det_time, stage2_det_time=_STAGE2_DET_TIME_S):
-    """R-SC3 two-stage solve on an already-built model (constraints/pins applied,
-    warm-start hints seeded by the caller). Returns (SolveResult, stage2_ran).
+def _sum_free_starts(solve_values, free_op_ids) -> Optional[int]:
+    """Σ start-minutes over the free ops actually placed, or None with no values."""
+    if solve_values is None:
+        return None
+    return sum(solve_values.op_start_minutes[o] for o in free_op_ids
+               if o in solve_values.op_start_minutes)
 
-    Stage 1 minimizes cost (+ priced earliness at earliness_coeff_scaled); stage
-    2 caps the stage-1 objective at round(best) and re-minimizes Σ free-op starts
-    (the zero-cost tiebreak). With no objective terms or no free-op starts, only
-    stage 1 runs. On a stage-2 non-solution the stage-1 incumbent stands."""
-    from mre.modules.solve_runner import SolveRunner
+
+def _two_stage_solve(model, var_map, free_start_vars, *,
+                     workers, seed, deterministic, member_time_limit_s,
+                     stage1_det_time, stage2_det_time=_STAGE2_DET_TIME_S,
+                     free_op_ids=None):
+    """R-SC3 two-stage solve on an already-built model (constraints/pins applied,
+    warm-start hints seeded by the caller).
+
+    Returns ``(SolveResult, stage2_ran, recovery)`` where ``recovery`` is
+    ``(start_minutes_before, start_minutes_after)`` over ``free_op_ids`` — the
+    raw material for the tiebreak's own labelled reporting line — or
+    ``(None, None)`` when ``free_op_ids`` is not supplied or stage 2 did not run.
+
+    Stage 1 minimizes COST and only cost — the builder's own
+    ``minimize(sum(objective_terms))``, left as set. Stage 2 caps that objective
+    at round(best) and re-minimizes Σ free-op starts (the zero-cost tiebreak).
+    With no objective terms or no free-op starts, only stage 1 runs. On a stage-2
+    non-solution the stage-1 incumbent stands.
+
+    SESSION 4B.7, two changes, both to close measured defects:
+
+    * **The priced-earliness term is GONE from stage 1**, and the parameter that
+      carried it is gone from this signature so it cannot leak back. R-SC3(2) is
+      retired; R-SC3(1) is not, and stage 2 therefore runs UNCONDITIONALLY at
+      every ``earliness_value`` including 0 and undeclared.
+    * **The returned result carries stage 1's OBJECTIVE with stage 2's
+      PLACEMENTS**, the way ``solver_builder.solve_two_stage`` has always done it
+      (``solver_builder.py``, same rebuild). Before this, rolling returned the
+      stage-2 result WHOLE, so ``.objective`` was Σ free-op starts — a MINUTE
+      COUNT — and ``build_rolling_view`` wrote that into M6 ``solve_complete``
+      for every downstream reader (docs/07 §5a.16). It is now the cost objective,
+      trivially, because stage 1's objective IS cost."""
+    from mre.modules.solve_runner import SolveRunner, SolveResult
 
     terms = var_map.objective_terms
 
@@ -144,32 +217,33 @@ def _two_stage_solve(model, var_map, free_start_vars, earliness_coeff_scaled, *,
                            num_search_workers=workers, random_seed=seed,
                            deterministic_time=(det if deterministic else None))
 
-    # STAGE 1 — cost (+ priced earliness when declared). When the coefficient is
-    # 0 the priced term is omitted entirely (the builder's own minimize(sum(terms))
-    # stands); when positive it enters the primary objective at its price.
-    if terms and earliness_coeff_scaled > 0 and free_start_vars:
-        model.minimize(sum(terms) + earliness_coeff_scaled * sum(free_start_vars))
+    # STAGE 1 — COST. This function sets no objective of its own.
     s1 = _runner(stage1_det_time).solve(model, var_map, None)
     if (not terms or not free_start_vars or s1.objective is None
             or s1.status not in ("OPTIMAL", "FEASIBLE")):
-        return s1, False
+        return s1, False, (None, None)
 
-    # STAGE 2 — cap the stage-1 objective, re-minimize the raw earliness.
+    # STAGE 2 — cap the stage-1 COST objective, re-minimize the raw earliness.
+    # Cap source and cap target are the same expression in the same units.
     best = int(round(s1.objective))
-    if earliness_coeff_scaled > 0:
-        model.add(sum(terms) + earliness_coeff_scaled * sum(free_start_vars) <= best)
-    else:
-        model.add(sum(terms) <= best)
+    model.add(sum(terms) <= best)
     model.minimize(sum(free_start_vars))
     _hint_from_solve(model, var_map, s1.solve_values)
     s2 = _runner(stage2_det_time).solve(model, var_map, None)
     if s2.status in ("OPTIMAL", "FEASIBLE"):
+        before = _sum_free_starts(s1.solve_values, free_op_ids or ())
+        after = _sum_free_starts(s2.solve_values, free_op_ids or ())
         # Stage 1's truncation is carried forward: if the WALL clock (not the
         # deterministic budget) stopped stage 1, the whole two-stage result is a
         # wall-clock lottery, whatever stage 2 then did (Errand session, CU2b).
-        s2.wall_truncated = s2.wall_truncated or s1.wall_truncated
-        return s2, True
-    return s1, False   # stage-2 budget exhausted → keep the stage-1 incumbent
+        return SolveResult(
+            status=s2.status, objective=s1.objective, best_bound=s1.best_bound,
+            gap=s1.gap, wall_time=s1.wall_time + s2.wall_time,
+            solutions_found=s2.solutions_found, solve_values=s2.solve_values,
+            wall_truncated=(s1.wall_truncated or s2.wall_truncated),
+        ), True, (before, after)
+    # stage-2 budget exhausted → keep the stage-1 incumbent
+    return s1, False, (None, None)
 
 
 # ---------------------------------------------------------------------------
@@ -407,6 +481,12 @@ class RollingView:
     # it; raising the caller's ``member_time_limit_s`` until the deterministic
     # budget binds is the fix.
     wall_truncated: bool = False
+    # 4B.7 — the R-SC3 stage-2 tiebreak's OWN labelled line: how many op-start
+    # minutes stage 2 recovered at zero ledger cost, and what the plant's DECLARED
+    # earliness rate says they are worth. `in_ledger` is False and stays False:
+    # this figure never enters cost_ledger, cost_summary.total, or a delta card's
+    # money. See earliness_tiebreak_report.
+    earliness_tiebreak: dict = field(default_factory=dict)
 
     @property
     def placed(self) -> dict:
@@ -463,9 +543,9 @@ def build_rolling_view(
     frozen_end_min = int((frozen_end - ref).total_seconds() / 60.0)
     win_horizon_end = window_end + timedelta(days=_WINDOW_TAIL_DAYS)
 
-    coeff_scaled = _earliness_coeff_scaled(plant.cost_model, earliness_value)
-    ev_used = (float(earliness_value) if earliness_value is not None
-               else float(plant.cost_model.get("earliness_value", 0.0) or 0.0))
+    # A REPORTING rate only (4B.7). It reaches no objective and no cap.
+    ev_used = _earliness_rate(plant.cost_model, earliness_value)
+    tiebreak = earliness_tiebreak_report(None, None, ev_used)
 
     def _ops_of(did):
         return plant.ops_by_wp.get(plant.wp_of_demand.get(did), [])
@@ -524,10 +604,12 @@ def build_rolling_view(
             if v is not None:
                 model.add(v >= t0_min)
                 free_start_vars.append(v)
-        solve, _stage2 = _two_stage_solve(
-            model, var_map, free_start_vars, coeff_scaled,
+        solve, _stage2, _recovery = _two_stage_solve(
+            model, var_map, free_start_vars,
             workers=workers, seed=seed, deterministic=deterministic,
-            member_time_limit_s=member_time_limit_s, stage1_det_time=det_time)
+            member_time_limit_s=member_time_limit_s, stage1_det_time=det_time,
+            free_op_ids=[op["id"] for op in free_ops])
+        tiebreak = earliness_tiebreak_report(_recovery[0], _recovery[1], ev_used)
         status = solve.status
         wall_truncated = bool(solve.wall_truncated)
         if solve.status in ("OPTIMAL", "FEASIBLE"):
@@ -571,9 +653,13 @@ def build_rolling_view(
                 s_rep = _report(ModuleCode.M6, "rolling window-0 solve",
                                 plant.snapshot_id, runs_dir,
                                 {"num_search_workers": workers, "random_seed": seed})
+                # `objective` is the STAGE-1 (cost) objective since 4B.7 — see
+                # _two_stage_solve. `earliness_tiebreak` rides BESIDE it as its
+                # own labelled line and is never summed into any cost figure.
                 s_rep.record_event(
                     status_text="solve_complete",
-                    payload={"status": solve.status, "objective": solve.objective})
+                    payload={"status": solve.status, "objective": solve.objective,
+                             "earliness_tiebreak": tiebreak})
                 s_rep.end(RunStatus.SUCCESS)
                 e_rep = _report(ModuleCode.M7, "rolling window-0 extraction",
                                 plant.snapshot_id, runs_dir)
@@ -603,7 +689,7 @@ def build_rolling_view(
         cost_ledger=ledger, service_outcomes=svc, op_drivers=op_drivers,
         win_horizon_start=win_horizon_start, win_horizon_end=win_horizon_end,
         persisted=persist, wall_truncated=wall_truncated,
-        earliness_value=ev_used, status=status)
+        earliness_value=ev_used, status=status, earliness_tiebreak=tiebreak)
 
 
 
@@ -849,9 +935,7 @@ def run_rolling_horizon(
     total_solve = total_build = 0.0
     workers = 1 if deterministic else None
     sp_norm = [sp.normalize_pin(p) for p in (standing_pins or [])]
-    earliness_used = (float(earliness_value) if earliness_value is not None
-                      else float(plant.cost_model.get("earliness_value", 0.0) or 0.0))
-    coeff_scaled = _earliness_coeff_scaled(plant.cost_model, earliness_value)
+    earliness_used = _earliness_rate(plant.cost_model, earliness_value)
 
     # A windowed build only needs to reach far enough to place near-term work
     # (free ops are earliness-pulled and floored at t0), so a MODEST horizon
@@ -923,13 +1007,13 @@ def run_rolling_horizon(
         if sp_norm:
             sp.apply_standing_pins(model, var_map, sp_norm, var_map.horizon_start)
 
-        # R-SC3 two-stage: stage 1 minimizes cost (+ priced earliness when a
-        # positive coefficient is declared); stage 2 caps the stage-1 objective
-        # and re-minimizes Σ free-op starts (the zero-cost earliest-start tiebreak
-        # that makes the frozen front fill). No hidden weight-1 incentive.
+        # R-SC3 two-stage: stage 1 minimizes COST; stage 2 caps the stage-1
+        # objective and re-minimizes Σ free-op starts (the zero-cost earliest-start
+        # tiebreak that makes the frozen front fill). No hidden weight-1 incentive,
+        # and since 4B.7 no declared price in the primary objective either.
         t_s = _t.perf_counter()
-        solve, _stage2 = _two_stage_solve(
-            model, var_map, free_start_vars, coeff_scaled,
+        solve, _stage2, _recovery = _two_stage_solve(
+            model, var_map, free_start_vars,
             workers=workers, seed=seed, deterministic=deterministic,
             member_time_limit_s=member_time_limit_s, stage1_det_time=det_time)
         solve_wall = _t.perf_counter() - t_s
@@ -998,7 +1082,7 @@ def run_rolling_horizon(
     # them, then extracts the exact decomposed cost. Same method for every
     # window setting => a fair curve.
     ledger, svc, tot_cost, uncommitted, op_drivers = _final_extract(
-        plant, committed, seed, deterministic, sched, det_time, coeff_scaled,
+        plant, committed, seed, deterministic, sched, det_time,
         earliness_used)
     on_time = sum(1 for s in svc if s.get("lateness_minutes", 0) <= 0)
     late = sum(1 for s in svc if s.get("lateness_minutes", 0) > 0)
@@ -1033,19 +1117,16 @@ def reference_solve(plant, *, seed=42, deterministic=True, det_time=4.0,
     Returns (cost_ledger, service_outcomes, op_drivers, total_cost, placements)
     where placements is op_id -> {resource, start(iso), end(iso)}."""
     sched = plant.schedulable_demands
-    coeff = _earliness_coeff_scaled(plant.cost_model, earliness_value)
-    ev_used = (float(earliness_value) if earliness_value is not None
-               else float(plant.cost_model.get("earliness_value", 0.0) or 0.0))
+    ev_used = _earliness_rate(plant.cost_model, earliness_value)
     placements: dict = {}
     ledger, svc, tot, _leftover, drivers = _final_extract(
         plant, placements, seed, deterministic, sched, det_time,
-        coeff if two_stage else 0, ev_used if two_stage else 0.0,
-        two_stage=two_stage)
+        ev_used if two_stage else 0.0, two_stage=two_stage)
     return ledger, svc, drivers, tot, placements
 
 
 def _final_extract(plant, committed, seed, deterministic, sched, det_time=8.0,
-                   coeff_scaled=0, earliness_value=0.0, two_stage=True):
+                   earliness_value=0.0, two_stage=True):
     """Build the full model over every scheduled demand's operations, PIN the
     committed operations to their rolling placement, let any leftovers place
     FREELY around the pins (so they cannot conflict), solve in the same R-SC3
@@ -1098,8 +1179,8 @@ def _final_extract(plant, committed, seed, deterministic, sched, det_time=8.0,
     free_start_vars = ([var_map.op_start[o["id"]] for o in ops
                         if o["id"] not in pinned_oids and o["id"] in var_map.op_start]
                        if two_stage else [])
-    solve, _stage2 = _two_stage_solve(
-        model, var_map, free_start_vars, coeff_scaled,
+    solve, _stage2, _recovery = _two_stage_solve(
+        model, var_map, free_start_vars,
         workers=workers, seed=seed, deterministic=deterministic,
         member_time_limit_s=120.0,
         stage1_det_time=(det_time * 4), stage2_det_time=(det_time * 2))

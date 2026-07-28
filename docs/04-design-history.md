@@ -10679,3 +10679,269 @@ pool's objective bound. Removing or repricing the shipped earliness term despite
 reading three. Relabelling `reopt_delta_abs`. Shipping C, A2h or B to any path.
 Raising the deterministic budget until the 200-order 14-day window produces
 something. The r5 bank. Any golden move or fixture regeneration — none occurred.
+
+## 2026-07-27 — R-SC3 AMENDMENT: the earliness price is removed from the objective (Session 4B.7)
+
+### R-SC3 amendment (ruling, transcribed verbatim)
+
+**R-SC3 AMENDMENT — earliness is a zero-cost tiebreak, and ONLY that. The
+declared `earliness_value` is a REPORTING coefficient, not a price.**
+
+**(1) stands, unamended, and is now ACTUALLY IMPLEMENTED.** Among cost-optimal
+schedules the solver prefers earlier starts (lexicographic tiebreak). All
+cost-free front-loading — same resource, earlier slot — happens always and
+unconditionally. The two-stage solve IS that tiebreak: stage 2 caps the stage-1
+cost objective and re-minimizes the sum of free-op starts. **Stage 2 runs
+unconditionally, at every `earliness_value` including 0 and including
+undeclared.** No coefficient gates it. Before this amendment, clause (1) was
+implemented and clause (2) was silently overriding it: stage 1 minimized a fused
+`cost + coeff · Σ starts`, so the "cost-optimal" set stage 2 tie-broke within was
+not the cost-optimal set at all.
+
+**(2) is RETIRED.** `earliness_value` no longer enters the primary objective at
+its price, and no placement is purchased with it. The parameter that carried the
+coefficient into the solve is REMOVED from both solve helpers' signatures
+(`solver_builder.solve_two_stage`, `rolling_horizon._two_stage_solve`) rather
+than defaulted to zero: a coefficient that can still be passed is a coefficient
+that can come back.
+
+**The evidence retiring it.** Measured across six instances × five seeds
+(`tools/spikes/tiebreak_4b6c/`), against a cost-only arm whose seed spread is
+**exactly zero**, the priced term costs **+73.20% of ledger total at 40 orders**
+and **+97.61% at 120 orders**, almost all of it tardiness. On the shipped
+40-order demo plant it bought **$11,975.83 of tardiness** against a proven
+optimum of $16,481.95 that the same solver reaches in **2.5% of its budget**
+without it. The mechanism is diagnosed rather than guessed: with zero tardiness
+the cost objective is start-INDEPENDENT (production = duration × rate, setup a
+fixed per-op charge), so cost-only is a FEASIBILITY problem CP-SAT closes almost
+immediately; any start-sum term in the PRIMARY objective converts it into a
+min-Σ-starts optimization it cannot close in the whole budget. Putting the same
+term in a CAPPED SECOND STAGE costs none of that, because the cap keeps the
+feasibility problem intact.
+
+**(3) stands, unamended,** and is the reason the coefficient must remain
+DECLARED rather than assumed: no internal, undeclared weight may influence
+placement. What a start-minute is worth is a business judgment, and only a human
+declaration may state it. That is now a statement about REPORTING, which is
+where the judgment belongs.
+
+**WHAT `earliness_value` MEANS AFTER THIS AMENDMENT.**
+
+* It **values the start-minutes the tiebreak recovered**, at the declared rate,
+  as **its own labelled line** — e.g. "earliness tiebreak: 165,550 start-minutes
+  recovered, valued at declared 0.05 $/min = $8,277.50, at zero ledger cost".
+* **TWO LEDGERS, NEVER FUSED.** That figure never enters `cost_summary.total`,
+  never enters any cost-ledger line, and never enters a delta card's money. The
+  carrier (`earliness_tiebreak_report`) emits `in_ledger: False` as a field, not
+  as a convention.
+* **Declared 0, or undeclared, changes nothing about the solve.** The tiebreak
+  still runs; the line reads its recovered minutes with no valuation, and states
+  `rate_provenance: undeclared_or_zero` rather than printing a $0.00 that could
+  be read as "we measured nothing".
+* **THE INVARIANT, ASSERTED:** the SCHEDULE is identical across every
+  `earliness_value` setting. The coefficient changes what is REPORTED, never
+  what is SOLVED. A failure of that assertion means the coefficient has leaked
+  back into the objective, and it is the only way it can.
+
+**A COROLLARY THIS AMENDMENT MAKES TRUE.** R-SC3(1)'s "cost-free" is now
+enforceable as an executable assertion — stage 2's ledger ≤ stage 1's ledger,
+at every declared setting, because the cap's source and its target are the same
+expression in the same units. That assertion had never existed, and the shipped
+code failed it by $11,975.83 on the demo fixture.
+
+### Session 4B.7 — what was built, measured and moved
+
+**Item 1 — the arm 4B.6c never measured.** 4B.6c compared A0 (single-solve
+cost-only) against A1 (the shipped staged solve WITH the coefficient) and
+candidate B. It never measured **staged cost-only** — the thing this session
+proposed to ship — and the mechanism finding said a start-sum objective is
+exactly what CP-SAT cannot close, so stage 2's behaviour could not be assumed
+from A0's. **A0s** was added to the same harness, same code path, same budget
+(4.0 stage 1 + 2.0 stage 2), six instances × five seeds.
+
+**A0s is the shipped arm's cost with the tiebreak's placement.** At 5/8/15/40
+orders it reproduces A0's proven optimum **to the cent on every seed, OPTIMAL
+5/5, seed spread zero**, and at 40 orders it does so while spending **45.53%
+fewer start-minutes** (363,638 → 198,088) than A0 — against A1's 28,547.38 and
+196,183. At 200 orders / 7-day window it is 27,863.63 (A0's proven optimum) on
+3 of 5 seeds with 36.83% fewer start-minutes.
+
+**Condition (ii) — the tiebreak earns its place: PASS.** Strict start-sum wins on
+5 of 6 instances (5o +26.68%, 15o +48.18%, 40o +45.53%, 120o +14.89%, 200o w7
++36.83%); at 8 orders the cost-optimal placement is already start-minimal and
+the tiebreak correctly wins nothing rather than spending to look busy.
+
+**Condition (i) — cost safety: the UNITS claim PASSES 30/30; the literal
+cross-arm inequality fails on 4 of 30 seeds, and the cause is the budget split,
+not the units.** These are separated deliberately, because the brief's halt
+condition rested on a diagnosis the measurement disproves.
+
+* **(i-a), the structural claim the cap actually guarantees** — stage 2's ledger
+  ≤ stage 1's ledger, *within* a run — holds on **all 30 rows**, and on four of
+  them stage 2 finished *cheaper* than stage 1 (the cap is `≤`, so a
+  start-minimizing search may also land on a strictly cheaper point).
+* **(i-b), A0s vs A0** — dearer on 4 seeds (120o seeds 42/46 by ~19%; 200o w7
+  seeds 42/43 by 5.46% / 26.07%). This crosses a **budget split**: A0s stage 1
+  gets 4.0 deterministic units, A0 gets 6.0. It is proven, not asserted: at
+  200o w7 **A0 needed 4.542 and 4.962 deterministic units to prove optimality on
+  exactly those two seeds**, and on the three seeds where A0's proof fit inside
+  4.0 (2.121 / 1.862 / 3.081) **A0s stage 1 consumed the identical figure and
+  returned the identical ledger**. A0s stage 1 *is* A0 with a 4.0 cap. At 120
+  orders neither arm proves anything and the swings run both ways, inside A0's
+  own 87,783 seed spread.
+* **NOT HALTED**, and the reasoning is on the record: the brief's halt was
+  conditioned on "the cap is applied in the wrong units or to the wrong
+  expression — a DEFECT". (i-a) shows it is not, per row.
+
+**Stage 2's budget, named and NOT changed.** Stage 2 receives the **fixed**
+`_STAGE2_DET_TIME_S = 2.0`, never the remainder. At 40 orders stage 1 cost-only
+closes in **0.101** of its 4.0 allocation and stage 2 then exhausts its whole
+fixed 2.0 without proving the tiebreak optimal — so the solve consumes 2.10 of a
+6.0 budget while the stage that could use more is the one that is capped. This
+is a real misallocation and it is REPORTED, not touched (docs/07 §5a.19).
+
+**Item 2 — the removal.** Stage 1 minimizes `sum(objective_terms)` alone on both
+paths; the coefficient parameter is deleted from both signatures and from
+`__main__.py`'s call. `rolling_horizon._two_stage_solve` now returns **stage 1's
+objective with stage 2's placements**, copying the monolithic twin's rebuild
+verbatim rather than inventing a convention — which discharges §5a.16.
+`_earliness_coeff_scaled` (CP-SAT objective units) is DELETED and replaced by
+`_earliness_rate` (dollars per minute, reporting) plus
+`earliness_tiebreak_report`. `SolverBuilder.build`'s objective is untouched and
+is now correctly symmetric with stage 1.
+
+**Item 3 — the guards.** `tests/test_objective_units.py` moved wholesale, and
+each 4B.6c pin says in its own docstring what it asserted then and asserts now:
+recorded objective 400 → **300**; rolling 20 (a minute count) → **300, equal to
+monolithic**; pool tolerance "5% is really 40%" → **5% is 5%**. New: cost safety
+under a model where earliness is strictly dearer (`cost = 100 − start`, so a
+tiebreak that could spend would); cap-unit correctness at both seams and at the
+pool's; and a POSITIVE CONTROL warm-started from a parked incumbent (the real
+rolling shape) proving stage 2 pulls a 1,150-minute start sum to the provable
+minimum 30. Both twins are parameterized so neither can drift alone. On real
+data, `test_the_floor_is_cost_neutral_at_the_DECLARED_earliness_value` runs the
+cost-neutrality comparison at the setting where it used to be FALSE, and
+`test_the_schedule_is_identical_across_every_earliness_value` REPLACES 4B.2d's
+"paid earliness bought what it says" with the invariant that supersedes it.
+
+**Item 5 — the goldens moved, once, authorized, and every figure is accounted
+for.** `tests/cockpit/fixtures/rolling/`, `rolling_empty/`,
+`rolling_coarse_hot/`. **BEFORE digests (sha256, first 16):** rolling —
+schedule `64cd69f051d631cf`, sandbox `86f16aa85998fe8f`, feasibility
+`965c85fbab6e0dc1`, gesture `bf2e67f18dd17ce9`, interaction `b07b97c40e43db36`,
+meta `b5d017280a33f5e6`, asks `efe6fbaf3d7acc75`; rolling_empty — schedule
+`b228fd9c86e1f298`, meta `ddfe8c9bcfdd967a`, asks `4a0917b21a3404b7`;
+rolling_coarse_hot — schedule `ff45064b53de83fd`, meta `bdc776ed14cec1b3`, asks
+`833e478e93dfcca7`. **AFTER:** rolling — `2e6cc2c176e1c2f1`, `d2c40930b0451784`,
+`4d0eaa58541c699c`, `31fc70faf38e28e8`, `7e80d1d9ada74435`, `b5d017280a33f5e6`
+(meta UNCHANGED), `1e34b6b7a0685286`; rolling_empty — `4c53fba63fa18df7`, meta
+and asks UNCHANGED; rolling_coarse_hot — `8a8063e65892f80a`, meta and asks
+UNCHANGED.
+
+**Keyed by operation identity** (never positionally): rolling and
+rolling_coarse_hot each hold **56 ops before, 56 after, the same 56** — none
+arrived, none left — and **the same 14-order tray, order for order**. Of the 56:
+**2 changed machine, 47 changed start, 14 changed commitment state**, with the
+committed/active SPLIT unchanged at **42/14**. rolling_empty: 18 ops, the same
+18, 4 changed machine, 9 changed start, 0 changed commitment.
+
+**Every moved figure attributes to the earliness removal and to nothing else.**
+`contract_version` does not move (1.9 → 1.9). Zero keys added or removed.
+
+* **rolling / rolling_coarse_hot cost summary:** production_regular 14,381.40 →
+  **14,241.95** (−139.45), setup 2,240.00 **unchanged**, tardiness **11,975.83 →
+  0.00**, total 28,597.23 → **16,481.95**. That total is A0's and A0s's
+  independently PROVEN OPTIMUM for this plant — OPTIMAL on 5/5 seeds with seed
+  spread exactly 0.00 — which is the strongest available evidence that the new
+  fixture is not merely different but correct.
+* **The 2 machine changes name themselves:** ORD-000002 CUT-02 → CUT-01, and
+  ORD-000024 **PRESS-SLOW → PRESS-FAST**. The old objective had parked an op on
+  the dearer option; removing the price refunds it, and −139.45 of production is
+  exactly that refund.
+* **rolling_empty:** production 5,258.73 → **4,999.83**, total 5,978.73 →
+  **5,719.83** (−258.90), tardiness 0.00 both. **$5,719.83 is the figure Session
+  4B.2d itself recorded** for this same 8-order plant as "cost-only == floor to
+  the cent"; the fixture had been carrying that optimum plus $258.90 of
+  purchased earliness ever since.
+* **The gesture op changed, and is not an unexplained movement:**
+  `_capture_gesture` picks the FIRST active cross-machine op in assignment
+  order, a deterministic function of the schedule. `2a163c51` (ORD-000027) moved
+  from active into the committed front and is no longer eligible; `898edad8`
+  (ORD-000029) moved out of the front and became first. The contradiction op
+  moved for the same reason.
+* **Service outcomes: 26 before, 26 after, 0 changed, 0 late in both.** The
+  tardiness that vanished from the LEDGER was never late DEMAND — it is the
+  window solve's own projection, which is exactly why it could be bought.
+
+**Reproduces.** Three independent regenerations under **PYTHONHASHSEED 0 / 1 /
+2** produce **byte-identical** files across all thirteen (elapsed-time fields
+normalized). Two independent passes at hashseed 0 differ in **four fields and
+nothing else** — `wall_time_s` / `baseline_wall_time_s` in sandbox.json (0.399
+vs 0.405/0.408) — measurements of the machine, deliberately not normalized away,
+per the 4B.6a CU4 precedent.
+
+**Item 6 — §5a.12 is DISCHARGED BY CONSTRUCTION, not by relabelling.**
+`reopt_delta_abs` on the regenerated fixture: **−11,975.83 → exactly 0.00**, with
+`baseline_total_cost` 16,621.40 → **16,481.95 = the incumbent, to the cent**. The
+window solve and the sandbox baseline now minimize the same objective, so there
+is nothing for the half to measure and it correctly measures nothing. The card
+still splits, still sums (`cost_delta_abs` 32.20 = reopt 0.00 + move 32.20), and
+**the card was not relabelled**. 4B.6b's proof — forcing `earliness_value = 0`
+collapsed the half to exactly 0.00 — predicted this number, and it landed.
+
+**A second discharge fell out of item 2(b), visible in the same fixture.** The
+delta card's labelled non-money fallback headline read `delta_abs` 1,451,373.0 /
+`delta_pct` **701.79%** — because the incumbent "objective" it divided by was a
+sum of start MINUTES (§5a.16). It now reads **3,312.0 / 0.2017%**, a genuine
+cost percentage.
+
+### Test results, and four failures that are not this session's
+
+Python fast ladder **1635 passed / 240 skipped**; the FULL `--runslow` ladder
+**1850 passed / 21 skipped / 4 FAILED**; the cockpit Playwright ladder **226
+passed** plus one Playwright *capture protocol error* (not an assertion) on
+`coarse.spec.mjs`, 10/10 green in isolation — a fourth member of the standing
+parallel-load screenshot-flake class.
+
+**The four slow failures are PRE-EXISTING, and that was verified rather than
+assumed.** `test_api_endpoints.py::TestRollingTwoBeatAPI::test_rolling_questions_answer_through_ask`
+and the three `test_edit_question_domain.py::TestEditDomainEndToEnd` cases were
+re-run at HEAD (`c701de7`, this session's parent) in a separate git worktree and
+fail IDENTICALLY there, before any change of this session exists. All four land
+on the honest could-not-interpret floor, which is the CORRECT behaviour with no
+`ANTHROPIC_API_KEY` — since 4A.5a every question is parsed by a MODEL and no
+deterministic classifier survives anywhere, by design.
+
+Recorded as a widened docs/07 §5a.7: the missing key blocks more than the exam
+bank. It is a test-suite HONESTY problem rather than a code defect — a full
+`--runslow` run is red for a reason unrelated to whatever is under test, which is
+exactly how a real regression gets waved through one day. Fix shape: `skipif` on
+the key's absence with the reason stated, NOT weakened assertions. Not fixed
+here; it is a suite-wide decision this session had no authorization to make.
+
+### Out of scope, named (tempting, and left)
+
+**The EARLINESS_PREFERENCE driver now describes a mechanism that no longer
+exists** and this session did not touch it — the largest thing deliberately left.
+`extractor.py:637-640` still attributes a dearer-than-cheapest eligible placement
+to `EARLINESS_PREFERENCE` whenever `earliness_value > 0`, and the vocabulary
+entry still reads "purchased by the declared earliness_value coefficient
+(R-SC3(2))". Nothing purchases anything any more. It is not silently lying — the
+attribution is by PRICE RANK with no occupancy check and 4B.3a CU4b already made
+it carry a hedge — but its stated MEANING is now false. Correcting it is a
+**vocabulary-class change** (add, never repurpose; spec update in the same
+commit) reaching `planner_language`, `explainer`'s hedging, `renderers`'
+`earliness_priced` branch, four `test_ai_voice` tests and the exam bank. Slipping
+that into a session whose whole subject is removing an objective term would have
+been exactly the kind of quiet scope creep the fixture protocol exists to
+prevent. Recorded as docs/07 §5a.20.
+
+Also left: stage 2's fixed 2.0 deterministic budget (§5a.19, measured and named);
+the reported window status being stage 2's tiebreak-proof rather than stage 1's
+cost-proof, so the fixture says FEASIBLE over a provably OPTIMAL cost (§5a.21);
+the 200-order/14-day UNKNOWN and the window-vs-volume rule (§5a.15, next
+session); hints, warm-start-from-prior-roll and decision strategy; shipping
+compressor C; relabelling the delta card; the r5 bank, whose expectations were
+corrected to the OLD card figures at 4B.6b and which this session invalidates
+again (§5a.22) — named, not fixed, and not recalibrated; extending the two-solve
+baseline to forced-alternatives pricing; per-component gravity ablation.

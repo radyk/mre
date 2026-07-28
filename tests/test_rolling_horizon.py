@@ -353,33 +353,83 @@ def test_earliness_floor_is_placement_neutral_in_money(tiny_plant):
 
 
 @pytest.mark.slow
-def test_earliness_coefficient_bought_earliness(tiny_plant):
-    """(b): coefficient > 0 (the demo value) — paid earliness bought what it says:
-    (i) earliness-minutes strictly improve, (ii) the cost increase is bounded by
-    coeff x earliness-minutes-gained, (iii) >=1 placement cites the driver."""
-    from mre.contracts.vocabularies import DriverCode
+def test_the_floor_is_cost_neutral_at_the_DECLARED_earliness_value(tiny_plant):
+    """Session 4B.7 item 3(a) — R-SC3(1)'s ZERO-COST clause on real data, at the
+    setting where it used to be FALSE.
+
+    The test above proves cost-neutrality at coefficient 0, which was never in
+    doubt: at 0 the priced term was omitted entirely. This one runs the same
+    comparison at the plant's DECLARED `earliness_value` — the setting the demo
+    and the pilot actually ship — and asserts the same epsilon-0 equality. Under
+    the retired R-SC3(2) this could not pass by construction: stage 1 minimized
+    `cost + coeff x Σ starts`, so it deliberately bought earliness with ledger
+    dollars. On the 40-order fixture that purchase was $11,975.83 of tardiness.
+
+    'Cost-free front-loading' has to mean free at every declared setting or it
+    means nothing."""
     from mre.modules.rolling_horizon import reference_solve
 
     coeff = float(tiny_plant.cost_model.get("earliness_value", 0.0))
     assert coeff > 0, "pilot_scale must declare a positive demo earliness_value"
 
-    _, _, _, tot_off, pl_off = reference_solve(
-        tiny_plant, earliness_value=0.0, two_stage=True, seed=42, det_time=4.0)
-    _, _, drivers_on, tot_on, pl_on = reference_solve(
+    led_cost, _, _, tot_cost, pl_cost = reference_solve(
+        tiny_plant, earliness_value=None, two_stage=False, seed=42, det_time=4.0)
+    led_floor, _, _, tot_floor, pl_floor = reference_solve(
         tiny_plant, earliness_value=None, two_stage=True, seed=42, det_time=4.0)
 
-    gained = _start_minutes_sum(pl_off) - _start_minutes_sum(pl_on)
-    # (i) earliness-minutes strictly improve — the price bought something.
-    assert gained > 0, f"paid earliness did not improve start-sum (gained={gained})"
-    # (ii) the cost increase is at most coeff x earliness-minutes-gained.
-    cost_increase = tot_on - tot_off
-    assert cost_increase <= coeff * gained + 1e-6, (
-        f"cost increase {cost_increase:.2f} exceeds coeff*gained "
-        f"{coeff * gained:.2f} (coeff={coeff}, gained={gained})")
-    # (iii) at least one purchased placement is attributed to the driver.
-    purchased = [oid for oid, d in drivers_on.items()
-                 if d == DriverCode.EARLINESS_PREFERENCE.value]
-    assert purchased, "no placement cited EARLINESS_PREFERENCE (raise the demo value)"
+    assert abs(tot_cost - tot_floor) < 1e-6, (
+        f"the floor spent money at the declared earliness_value {coeff}: "
+        f"cost-only={tot_cost:.4f} floor={tot_floor:.4f}")
+    for line in ("production_cost", "setup_cost", "tardiness_cost"):
+        assert abs(led_cost.get(line, 0.0) - led_floor.get(line, 0.0)) < 1e-6, (
+            f"floor changed priced line {line} at the declared coefficient: "
+            f"{led_cost.get(line)} vs {led_floor.get(line)}")
+    assert _start_minutes_sum(pl_floor) <= _start_minutes_sum(pl_cost)
+
+
+@pytest.mark.slow
+def test_the_schedule_is_identical_across_every_earliness_value(tiny_plant):
+    """(b), REPLACED AT SESSION 4B.7 — and reversed.
+
+    It used to assert that a positive `earliness_value` BOUGHT earliness: start
+    minutes strictly improve, the cost increase is bounded by coeff x minutes
+    gained, and a placement cites EARLINESS_PREFERENCE. That was R-SC3(2) working
+    as ruled, and R-SC3(2) is now RETIRED — measured to cost +73.20% of ledger
+    total at 40 orders and +97.61% at 120 against a cost-only arm whose seed
+    spread is exactly zero, almost all of it tardiness.
+
+    THE INVARIANT THAT REPLACES IT: the SCHEDULE is identical across every
+    `earliness_value` setting. The declared coefficient changes what is REPORTED
+    and NEVER what is SOLVED. If this fails, the coefficient has leaked back into
+    the objective — which is precisely the defect the retirement removed, and the
+    only way it can return."""
+    from mre.modules.rolling_horizon import reference_solve
+
+    coeff = float(tiny_plant.cost_model.get("earliness_value", 0.0))
+    assert coeff > 0, "pilot_scale must declare a positive demo earliness_value"
+
+    led_off, svc_off, drv_off, tot_off, pl_off = reference_solve(
+        tiny_plant, earliness_value=0.0, two_stage=True, seed=42, det_time=4.0)
+    led_on, svc_on, drv_on, tot_on, pl_on = reference_solve(
+        tiny_plant, earliness_value=None, two_stage=True, seed=42, det_time=4.0)
+    led_big, _, _, tot_big, pl_big = reference_solve(
+        tiny_plant, earliness_value=coeff * 100, two_stage=True, seed=42, det_time=4.0)
+
+    # PLACEMENTS: machine and start, op for op, at 0 / declared / 100x declared.
+    assert pl_on == pl_off, (
+        "the declared earliness_value changed the SCHEDULE — it is a reporting "
+        "rate, not a price, and must reach no objective")
+    assert pl_big == pl_off, (
+        "a 100x earliness_value changed the SCHEDULE — the coefficient has "
+        "leaked back into the objective")
+    # LEDGER: to the cent, on every priced line.
+    assert tot_on == pytest.approx(tot_off) and tot_big == pytest.approx(tot_off)
+    for line in ("production_cost", "setup_cost", "tardiness_cost"):
+        assert led_on.get(line, 0.0) == pytest.approx(led_off.get(line, 0.0))
+        assert led_big.get(line, 0.0) == pytest.approx(led_off.get(line, 0.0))
+    # and the start sum, which is what the tiebreak actually decides, is the
+    # SAME sum — stage 2 already minimizes it at every setting.
+    assert _start_minutes_sum(pl_on) == _start_minutes_sum(pl_off)
 
 
 # ---------------------------------------------------------------------------

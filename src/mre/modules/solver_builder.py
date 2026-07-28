@@ -300,12 +300,21 @@ def add_start_diversity_cut(
 # slot behind a later placement at $0.00 delta). This lifts the same two-stage
 # shape rolling_horizon._two_stage_solve proved into a shared, reporter-aware
 # helper the monolithic solve path uses:
-#   * STAGE 1 minimizes cost (the model's own minimize(sum(objective_terms)),
-#     UNCHANGED — plus the priced earliness_value term when a positive coefficient
-#     is declared, exactly as rolling; omitted entirely at 0, never ×0). Stage 1
-#     is byte-identical to the pre-4B.4 single solve, so its recorded telemetry
-#     (the M6 solve_complete objective the assembler + _incumbent_objective read)
-#     stays the COST objective.
+#   * STAGE 1 minimizes cost — the model's own minimize(sum(objective_terms)),
+#     UNCHANGED and now UNCONDITIONALLY so. Stage 1 is byte-identical to the
+#     pre-4B.4 single solve, so its recorded telemetry (the M6 solve_complete
+#     objective the assembler + _incumbent_objective read) stays the COST
+#     objective.
+#
+#     Session 4B.7 REMOVED the priced-earliness term from stage 1. R-SC3(2) —
+#     "when positive, earliness enters the primary objective at that price" — is
+#     RETIRED, and the parameter that carried it is gone from this signature so
+#     it cannot leak back. Measured: against a cost-only arm whose seed spread is
+#     exactly zero, the coefficient cost +73.20% of ledger total at 40 orders and
+#     +97.61% at 120, almost all of it tardiness. Mechanism: with zero tardiness
+#     the cost objective is start-INDEPENDENT, so cost-only is a feasibility
+#     problem CP-SAT closes in ~2.5% of its budget; any start-sum term in the
+#     PRIMARY objective turns it into an optimization it cannot close.
 #   * STAGE 2 caps the stage-1 objective at round(best) and re-minimizes the sum
 #     of free-op starts (warm-started via add_hint), under a small deterministic
 #     budget. On budget exhaustion the stage-1 incumbent stands — never a
@@ -347,7 +356,6 @@ def solve_two_stage(
     stage1_reporter=None,
     free_start_vars: Optional[list] = None,
     exclude_op_ids: Optional[set] = None,
-    earliness_coeff_scaled: int = 0,
     time_limit_seconds: float = 60.0,
     num_search_workers: Optional[int] = None,
     random_seed: Optional[int] = None,
@@ -358,12 +366,18 @@ def solve_two_stage(
     """R-SC3 two-stage solve on an already-built model (constraints/pins applied
     by the caller; the builder has already set minimize(sum(objective_terms))).
 
-    Stage 1 is the model's cost solve (+ priced earliness when
-    ``earliness_coeff_scaled > 0``), recorded to ``stage1_reporter`` exactly as a
-    plain single solve — so the M6 solve_complete telemetry stays the COST
-    objective. Stage 2 caps that objective and re-minimizes the sum of free-op
-    starts (the zero-cost earliest-start tiebreak), warm-started from stage 1,
-    under a deterministic budget; on a non-solution the stage-1 incumbent stands.
+    Stage 1 is the model's cost solve — the builder's own
+    ``minimize(sum(objective_terms))``, left exactly as set — recorded to
+    ``stage1_reporter`` exactly as a plain single solve, so the M6 solve_complete
+    telemetry stays the COST objective. Stage 2 caps that objective and
+    re-minimizes the sum of free-op starts (the zero-cost earliest-start
+    tiebreak), warm-started from stage 1, under a deterministic budget; on a
+    non-solution the stage-1 incumbent stands.
+
+    STAGE 2 RUNS UNCONDITIONALLY — at every ``earliness_value`` including 0 and
+    including undeclared. R-SC3(1)'s "always and unconditionally" is the whole
+    clause; a declared coefficient no longer gates, scales or prices anything the
+    solver sees (Session 4B.7).
 
     ``free_start_vars`` are the op-start vars stage 2 minimizes; when omitted they
     default to every ``var_map.op_start`` var except ``exclude_op_ids`` (pinned /
@@ -377,11 +391,9 @@ def solve_two_stage(
         excl = exclude_op_ids or set()
         free_start_vars = [v for oid, v in var_map.op_start.items() if oid not in excl]
 
-    # STAGE 1 — cost (+ priced earliness when declared). At coefficient 0 the
-    # priced term is omitted entirely (the builder's own minimize stands); the
-    # solve, and its recorded evidence, are byte-identical to the pre-4B.4 path.
-    if terms and earliness_coeff_scaled > 0 and free_start_vars:
-        model.minimize(sum(terms) + earliness_coeff_scaled * sum(free_start_vars))
+    # STAGE 1 — COST, and only cost. The builder's own minimize(sum(terms))
+    # stands untouched; this function sets no objective of its own. The solve,
+    # and its recorded evidence, are byte-identical to the pre-4B.4 path.
     s1 = SolveRunner(
         time_limit_seconds=time_limit_seconds, num_search_workers=num_search_workers,
         random_seed=random_seed, deterministic_time=stage1_deterministic_time,
@@ -390,12 +402,12 @@ def solve_two_stage(
             or s1.status not in ("OPTIMAL", "FEASIBLE")):
         return s1, False
 
-    # STAGE 2 — cap the stage-1 objective, re-minimize the raw earliness sum.
+    # STAGE 2 — cap the stage-1 COST objective, re-minimize the raw earliness
+    # sum. The cap's source (s1.objective) and its target (sum(terms)) are the
+    # SAME expression in the SAME units, which is what makes "stage 2 never
+    # raises cost" a structural guarantee rather than a hope.
     best = int(round(s1.objective))
-    if earliness_coeff_scaled > 0:
-        model.add(sum(terms) + earliness_coeff_scaled * sum(free_start_vars) <= best)
-    else:
-        model.add(sum(terms) <= best)
+    model.add(sum(terms) <= best)
     model.minimize(sum(free_start_vars))
     _reseed_hints_from(model, var_map, s1.solve_values)
     s2 = SolveRunner(

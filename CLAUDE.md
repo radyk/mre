@@ -155,29 +155,35 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.6c — measurement: does the zero-cost tiebreak cost us?**, 2026-07-27
-(docs/07 v2.51; docs/04 amendment same date; full table in `SESSION_CLOSEOUT.md`).
-A MEASUREMENT session — nothing built, one test committed. **VERDICT: the single
-lexicographic objective (`BIG · cost + Σ starts`) COSTS US** — against a cost-only arm
-whose seed spread is exactly zero it is +69% (40 orders) and +39.5% (200 orders, 7-day
-window) on the LEDGER, and at 120/200 orders it is *also worse on sum-of-starts* than
-having no tiebreak. BIG is not the mechanism (10× BIG is identical to the cent); a
-zero-tardiness cost objective is START-INDEPENDENT, so cost-only is a feasibility problem
-CP-SAT closes in 1.7% of its budget and any start-sum term makes it one it cannot close.
-The status quo's damage on the same axis is **+73% (40 orders) / +98% (120 orders)**,
-almost all tardiness — extending §5a.12 from the fixture to every instance above ~15
-orders. **R-SC3 is untouched**; the ruling now has numbers under it (docs/07 §5a.18).
-Before it: **Session 4B.6b — errand: four answers**
-(docs/07 v2.50). A FINDINGS session: three investigations reported and stopped, one thing
-fixed (`build_rolling_exam_run.py` now runs a coarse zone and requests `coarse`; the
-exam runner feeds the SHIPPED delta card, not a synthesized one). Its four answers:
-the baseline delta is a MEASUREMENT whose reopt half is **labelled wrong** (§5a.12,
-below); canonical ids **survive a new submission** so splicing seam 3 is unblocked;
-the prediction store's data-root sweep is a **CORRECTNESS** debt, not a perf one; the
-4B.6a counts reconcile with nothing removed or skipped. Before it: **Session 4B.6a —
-consolidation**, which wired the coarse prediction store, voiced the coarse model's
-uncounted population and its absent derate, pinned the binding behaviour at 200
-orders, and regenerated the rolling cockpit fixture.
+**Session 4B.7 — the earliness price is removed from the objective**, 2026-07-27
+(docs/07 v2.52; docs/04 R-SC3 AMENDMENT same date; full table in `SESSION_CLOSEOUT.md`).
+
+**R-SC3(2) IS RETIRED — `earliness_value` IS NO LONGER A PRICE.** Stage 1 of the two-stage
+solve minimizes COST ALONE on both paths, and the coefficient parameter is DELETED from
+both signatures (`solver_builder.solve_two_stage`, `rolling_horizon._two_stage_solve`) so
+it cannot leak back. **R-SC3(1) stands and is now genuinely implemented: stage 2 IS the
+tiebreak and runs UNCONDITIONALLY** at every coefficient including 0 and undeclared.
+Measured (`tools/spikes/tiebreak_4b6c/`, arm **A0s**, 6 instances x 5 seeds): the price cost
+**+73.20%** of ledger total at 40 orders / **+97.61%** at 120 against a cost-only arm whose
+seed spread is exactly zero. Staged cost-only reproduces the PROVEN OPTIMUM to the cent at
+5/8/15/40 orders (OPTIMAL 5/5) while spending **45.53% fewer start-minutes** at 40.
+`earliness_value` survives as a **REPORTING rate** (`_earliness_rate`,
+`earliness_tiebreak_report`): it values the start-minutes the tiebreak recovered, on its own
+labelled line, `in_ledger: False`, never in `cost_summary.total` and never in a delta card's
+money. **THE INVARIANT, ASSERTED: the SCHEDULE is byte-identical across every
+`earliness_value`** (0 / declared / 100x declared) — a failure means the coefficient is back
+in the objective, and that is the only way it can return.
+
+**Four findings DISCHARGED, three of them by construction:** §5a.16 (rolling now returns
+stage 1's COST objective with stage 2's placements — monolithic 300 / rolling 300, was
+400/20); §5a.17 (the pool's stated 5% is 5%, was 40% — no gap remains, so no second cause);
+§5a.12 (`reopt_delta_abs` **−11,975.83 → exactly 0.00**; the card was NOT relabelled);
+§5a.9 (the fixture's ~7.9%-dearer incumbent is gone — the board now sits at the proven
+optimum **16,481.95, tardiness 0.00**). Fixtures regenerated under a spent single-use
+authorization, every figure accounted BY OPERATION IDENTITY, reproducing across
+PYTHONHASHSEED 0/1/2. Before it: **Session 4B.6c — measurement** (docs/07 v2.51), which
+priced the tiebreak and found candidate B worse; **Session 4B.6b — errand: four answers**
+(v2.50); **Session 4B.6a — consolidation**.
 
 **THE COARSE ZONE (R-SC2 amendment, 4B.6).** Beyond-horizon demand is coarsely
 PLACED, not merely listed (`src/mre/modules/coarse_horizon.py`; contract **1.9**
@@ -345,27 +351,34 @@ committed with its doc update.
   retrieval must never read prose); machine-idle eligibility naming no specific ops
   on the monolithic path; per-order PRODUCTION-dollar attribution (a ledger change).
   (Aggregate-cause coaching is RETIRED — promoted to `lateness-cause`, 4A.5c.)
-- 4B.6c findings (docs/07 §5a.15-18 — REPORTED, deliberately NOT fixed):
-  **The shipped 14-day window is BUDGET-STARVED at 200 orders** — 313 free ops,
-  UNKNOWN (no feasible solution) on the plain cost objective at a deterministic
-  budget of 6.0 AND of 20.0; a 7-day window on the same plant proves OPTIMAL in
-  under 5. The 14-day convention was measured on a plant 5× smaller (§5a.15).
-  **The ROLLING path records a MINUTE COUNT as its solver objective** —
-  `rolling_horizon._two_stage_solve` returns the stage-2 result WHOLE (`:166-172`)
-  where `solver_builder.solve_two_stage` deliberately rebuilds it to carry stage
-  1's COST objective (`:409-418`); `build_rolling_view` writes it to M6
-  `solve_complete` (`:574-576`). A one-line defect, PINNED not fixed because it
-  moves rolling telemetry and its goldens (§5a.16). **The solution pool's cost
-  bound is looser than its stated tolerance** under a declared `earliness_value`:
-  a stated 5% is really 40% (§5a.17). Both pinned by `tests/test_objective_units.py`.
+- 4B.6c findings: **§5a.16 and §5a.17 are DISCHARGED by 4B.7** (rolling records the
+  COST objective; the pool's 5% is 5%). **STILL OPEN — §5a.15: the shipped 14-day
+  window is BUDGET-STARVED at 200 orders** (313 free ops, UNKNOWN on the plain cost
+  objective at a deterministic budget of 6.0 AND of 20.0; a 7-day window on the same
+  plant proves OPTIMAL in under 5). The 14-day convention was measured on a plant 5x
+  smaller. **Next session's subject.**
+- 4B.7 findings (docs/07 §5a.19-22 — REPORTED, deliberately NOT fixed):
+  **stage 2's deterministic budget is FIXED at 2.0, not the remainder, and the
+  allocation is backwards** — at 40 orders stage 1 proves OPTIMAL in 0.101 of its 4.0
+  while stage 2 exhausts its whole 2.0, so 3.9 units go unused (§5a.19; the fix is free
+  but moves every rolling golden — pair it with §5a.15).
+  **`EARLINESS_PREFERENCE` now names a mechanism that no longer exists** — the extractor
+  still attributes a dearer-than-cheapest placement to it whenever `earliness_value > 0`,
+  and nothing purchases anything any more. Not silently lying (it hedges, 4B.3a CU4b) but
+  its stated MEANING is false. Correcting it is a **vocabulary-class change** reaching
+  planner_language / explainer / renderers / four AI-voice tests / the exam bank (§5a.20).
+  **The reported window status is stage 2's tiebreak-proof, not stage 1's cost-proof** —
+  the fixture reads FEASIBLE over a provably OPTIMAL ledger (§5a.21; pre-existing, newly
+  conspicuous, entangled with §5a.19).
+  **The r5 bank's card expectations are invalidated again** (`ai_exam/runner.py:317-320,377`
+  still hard-codes reopt −11,975.83; the card is now 0.00 / 32.20) and the exam WORLD
+  changes too. NOT recalibrated — the bank has never been graded (§5a.22, §5a.7).
 - 4B.6b findings (docs/07 §5a.8, .10, .12-14 — REPORTED, deliberately NOT fixed):
-  **`reopt_delta_abs` is LABELLED WRONG.** It is a real measurement, but of an
-  OBJECTIVE MISMATCH: the window solve minimizes `cost + earliness_coeff·Σstarts`
-  (the plant's DECLARED `earliness_value`, R-SC3) while the sandbox baseline's
-  `SolverBuilder` minimizes cost alone, and the extractor's ledger has NO earliness
-  line — forcing `earliness_value=0` drives the delta to exactly 0.00. **4B.5 CU1
-  does NOT reopen**: the MOVE half is apples-to-apples. Changing what the card
-  measures is a working-thread call. Also: the prediction store's data-root sweep is
+  **§5a.12 is DISCHARGED by 4B.7** — the coefficient left the objective, so the window
+  solve and the sandbox baseline now minimize the SAME expression and `reopt_delta_abs`
+  collapsed to **exactly 0.00** by construction; the card was NOT relabelled, and 4B.6b's
+  own proof (forcing `earliness_value=0` drove it to 0.00) predicted the number. STILL
+  OPEN: the prediction store's data-root sweep is
   scoped by NOTHING and matches on `op_id` alone — two plants sharing order numbering
   in one root produced **20 cross-plant realizations** (a CORRECTNESS debt now, plus
   the perf one); a COMPLETED order's predictions are never retired (orphaned,
@@ -373,13 +386,20 @@ committed with its doc update.
   windows and carries no signal; the pinned exam world's coarse zone runs at
   DEFAULTED rho 1.0 because its submission predates the generator's declaration
   (`--fresh` would fix it and is provably free — measured, not done).
+- **The absent `ANTHROPIC_API_KEY` blocks MORE than the exam bank** (4B.7, §5a.7):
+  FOUR committed SLOW tests fail on it — `test_api_endpoints.py`'s rolling-ask case and
+  the three `test_edit_question_domain.py::TestEditDomainEndToEnd` cases — all landing
+  on the honest could-not-interpret floor, which is CORRECT with no parser. Verified
+  pre-existing against HEAD in a separate worktree, not assumed. So a full `--runslow`
+  run is red for a reason unrelated to whatever is under test, which is how a real
+  regression eventually gets waved through. Fix shape is `skipif` on the key with the
+  reason stated, NOT weaker assertions; it is a suite-wide call, unmade.
 - 4B.6a debts (docs/07 §5a.7, .9, .11): **`regression_founder_r5` is UNRUN AFTER
-  THREE SESSIONS** — blocked on `ANTHROPIC_API_KEY`, nothing else, and its 27
-  expectations have never been graded; the regenerated fixture's window incumbent is
-  ~7.9% dearer than its predecessor (accounted, reproducible, but it changes the demo
-  board — and 4B.6b explains WHY the ledger wobbles with budget: it is not what the
-  window solve minimizes); `rolling_coarse_hot/` binds by DECLARED derate 0.10, a
-  contrivance for screenshot coverage, not a discharge of the demo-density limit.
+  FOUR SESSIONS** — blocked on the same key, and its 27
+  expectations have never been graded (4B.7 invalidates them again, §5a.22); **§5a.9 is DISCHARGED by 4B.7** — the ~7.9%-dearer incumbent is gone, the board
+  now sits at the proven optimum 16,481.95 / tardiness 0.00; `rolling_coarse_hot/` binds by
+  DECLARED derate 0.10, a contrivance for screenshot coverage, not a discharge of the
+  demo-density limit.
 - 4B.5 debts: the two-solve BASELINE is not extended to FORCED-ALTERNATIVES pricing
   (same economics, separate audit); the causal vacuity tripwire counts a quantity
   as a DIGIT only, and a driver phrase alone clears it (the founder's own specimen is
