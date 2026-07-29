@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.59 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.60 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.60:** **Errand 4B.15a — ship the tier split** 2026-07-29 (narrative in `docs/closeouts/4B.15a.md`). §5a.44's recommendation was RULED and is now the shipped default: **the parse constructs on Haiku, synthesis on Sonnet 5**, resolved at construction time from **THREE SEPARATE CONSTANTS** (`llm_compat.parse_model` / `synthesis_model` / `voice_model`, each with its own env override). A single shared MODEL dial cannot express a split and would un-ship the measurement as a tidy-up — `tests/test_model_tiers.py` forbids it, and also pins that the shipped synthesis default is a model `llm_compat` can build a VALID request for, which is not decoration (§5a.44's `temperature=0` finding is exactly a default nobody could call). **THE THIRD CONSTANT IS THE VOICE** (`LLMRenderer`, which rewords an already-validated answer): it was not in the bench, it did not move, and it is now named so it cannot be swept along by a grep for the old literal. **LATENCY IS THE COLUMN THE BENCH SUMMARY DROPPED (§5a.46)** — the shipped split's p90 is **23.1s** against Haiku-everywhere's **14.6s**, while the median barely moves (2.1 → 2.3s); live, end to end on the shipped defaults, synthesis answered in **9.9 / 16.2 / 18.1s** against **1.7s** for contracted routes. The gap between those two columns is the whole story: a demo on contracted routes feels identical, and a demo asking the open questions waits 10–20s an answer. **THE TAIL IS NOT THE MODEL CLASS** — every tier's p90 is 6–9× its median, which is the second tier's multi-step tool loop; a cheaper model runs the same steps faster, not fewer. **THE QUALITY RANKING DID NOT REPRODUCE ON ANY COLUMN** — two runs of the same 15 questions against the same world (Opus 14/15 → 10/15, Haiku 13/15 → **14/15**, the split 14/15 → **13/15**, below Haiku-everywhere on the second run); only cost reproduced. The honest statement of the case is "the bank can resolve the cost, not the quality difference," and that limit travels with the decision. **A SYNTHESIS ANSWER THAT READ NOTHING DOES NOT SHIP (§5a.47)** — §5a.44's fabricated-machines specimen is closed by three deterministic conditions with no model judgment anywhere, at the one delivery seam, failing OPEN in every direction; the negative control proving an honest no-tools answer STILL SHIPS is the test that matters most, because without it the guard is a mute button and the honest floor is the first thing it eats. **NEW DEBT: §5a.48** — a corpus-grounded claim cannot carry a `[record:]` citation, so an answer quoting a spec VERBATIM is labelled "my reading, no record states this" and reads weaker than an inference over placements. No solve; the pinned world untouched; **no fixture, golden or test pinned a model string** (enumerated exhaustively, not assumed — the recorded exam sweeps carry the old literal as OUTPUT and were deliberately left alone).
 
 **v2.59:** **Session 4B.15 — give the reasoner the manual** 2026-07-29 (docs/04 session amendment; narrative in `docs/closeouts/4B.15.md`). **ITEM 0 SETTLED: 4B.14's CLOSE-OUT IS RIGHT AND THE FAULT IS DATE RESOLUTION (§5a.45)** — PAINT-01 is OPEN on Tue 2026-01-13 and carries ZERO work; the live answer's "07:00 to 11:24" is real contiguous occupancy on Tuesday **2026-01-06**, the other Tuesday in a five-Tuesday horizon. A true fact about the wrong day, because neither governed prompt carried a reference date. **A MATCHED ROUTE COULD NOT BE WRONG (§5a.40)** — five consecutive measured turns were swallowed by `coaching` at 0.92 confidence; `route_falsifiability` now checks the DETERMINISTIC rendering at the dispatch seam and falls through to synthesis on subject-silence or a discarded disjunction. It can only REJECT a route, never name one. **THERE WAS NO ROUTE THAT READS A FIELD (§5a.41)** — `attribute-lookup` joins the vocabulary (parse prompt **v12**); the field vocabulary is REFLECTED off `contracts/entities.py` and the provenance chain is walked to the submission column. **CAPABILITY CLAIMS GROUND IN docs/05 OR ARE REFUSED (§5a.43)** — the catalog's own markdown TABLES are parsed into 26 records + 6 rulings + 6 exclusions, discharging the prose-locked debt for the catalog rows; the honesty register is DERIVED from (verdict, status) and "can two machines share one operator" now agrees with the blocker analysis's own not-weighed list. **THE REPEAT DETECTOR WAS INVERTED (§5a.42)** — four measured firings, zero true positives; the signal is now the delivered ANSWER, not the route, and the scold is deleted. **THE CORPUS SHIPS WITH THE BUILD, IN TIERS (§5a.39)** — docs/07 is reachable by NOTHING, docs/04 is opt-in and every passage dated (15 undated sections DROPPED, fail-closed), and the committed index carries a sha256 per document so a spec edit without a rebuild is a red test. **THE TIER IS MEASURED (§5a.44)** — and the ask path could not run on Opus 5 or Sonnet 5 at all until `llm_compat` landed, because both call sites hardcoded `temperature=0`. Recommendation: **parse on Haiku, synthesis on Sonnet 5** — ties best correctness and multi-hop, lowest median latency, 37% under Sonnet-everywhere and 62% under Opus-everywhere. Synthesis prompt **v3**. No solve; the pinned world untouched.
 
@@ -2983,6 +2985,17 @@ DETERMINISTIC assembly, which is itself the finding; the rates are a constant in
 the tool. **THE DECISION IS DARYN'S — nothing shipped changed, both layers still
 run Haiku.**
 
+> **DECIDED AND SHIPPED, 2026-07-29 (Errand 4B.15a, §5a.46).** The
+> recommendation above was ruled: synthesis constructs on `claude-sonnet-5` and
+> the parse stays on Haiku, so the closing sentence "nothing shipped changed" is
+> the state on 4B.15's evening, not the state now. **The table above is ALSO the
+> first of two runs, not a settled measurement** — re-running the identical bank
+> against the identical world moved every quality column and inverted the
+> ranking (§5a.46). Read the `correct` / `fact` / `multi-hop` figures here as one
+> sample; read the cost column, and "Opus is dearest, slowest and best at
+> nothing", as the two findings that reproduced. The figures are left standing
+> rather than rewritten — they are the first half of the comparison.
+
 **§5a.45 — A TRUE FACT ABOUT THE WRONG DAY (4B.15 Item 0).** 4B.14's close-out
 is CORRECT: PAINT-01 is OPEN on Tue 2026-01-13 (07:00-19:00, no closure) and
 carries ZERO work. The live synthesis answer's "ran continuously from 07:00 to
@@ -2999,6 +3012,117 @@ needed, 294 left after op10 ends 14:06, Wednesday a maintenance closure, op20
 running Thursday 07:00-14:11 = 431 exactly). FIXED: `render_calendar` puts the
 reference date and horizon into the shared context block and synthesis prompt
 rule 10 forbids taking a weekday from whichever row appeared first.
+
+**§5a.46 — LATENCY IS THE COLUMN THE BENCH SUMMARY DROPPED (Errand 4B.15a).**
+4B.15 recorded per-question latency and its summary carried only the MEDIAN, and
+no report JSON was persisted — so the p90 could not be recovered from that
+session at all, and the tier decision was taken without it.
+`tools/model_tier_bench.py` now carries `p90_latency_ms` in the summary and the
+table so this cannot recur. Nearest-rank on 15 rows: the p90 IS the 14th-slowest
+question, an actual question that actually happened, not an interpolation.
+
+RE-RUN, 2026-07-29, same bank, same pinned world, same tool:
+
+| tier | model | correct | fact | multi-hop | false | median s | **p90 s** | $/question |
+|---|---|---|---|---|---|---|---|---|
+| haiku | claude-haiku-4-5 | 14/15 | 11 | 7/8 | 0 | 2.1 | **14.6** | 0.0224 |
+| sonnet | claude-sonnet-5 | 14/15 | 12 | 7/8 | 0 | 2.4 | **21.3** | 0.0673 |
+| opus | claude-opus-5 | 10/15 | 9 | 3/8 | 1 | 5.8 | **37.7** | 0.1150 |
+| **split-hs** | **haiku + sonnet (SHIPPED)** | 13/15 | 11 | 6/8 | 0 | 2.3 | **23.1** | 0.0420 |
+
+**THE P90 IS MATERIALLY WORSE AND THE ASK PANEL IS INTERACTIVE.** The shipped
+split's tail is +8.5s (+58%) over Haiku-everywhere while the MEDIAN barely moves,
+and the gap between those two columns is the whole finding: most questions are
+answered by a deterministic route after a fast parse and are untouched by the
+tier change, while every question that reaches the second tier now waits on a
+bigger model. Measured live, end to end, on the shipped defaults — contracted
+routes **1.7s**; synthesis **9.9 / 16.2 / 18.1s**. So a demo that stays on
+contracted routes feels identical and a demo that asks the open questions — which
+is what the second tier is FOR — waits 10–20s an answer. **THE TAIL IS NOT THE
+MODEL CLASS AND THE FIX IS NOT A CHEAPER MODEL:** every tier's p90 is 6–9× its
+own median, including Haiku's, which is the second tier's multi-step tool loop. A
+cheaper model runs the same steps faster; it does not run fewer. If interactive
+feel becomes binding the lever is streaming the first beat or running the loop in
+the background.
+
+COST, measured tokens × published per-MTok rates (only as current as the `TIERS`
+dict in the tool): Haiku-everywhere **$2.24**, THE SHIPPED SPLIT **$4.20**,
+Sonnet-everywhere **$6.73**, Opus-everywhere **$11.50**, per 100 questions. The
+split is +2¢ a question over what shipped before it (+88% in ratio) and **38%
+under Sonnet-everywhere**, because the parse runs on every question and only the
+synthesis-bound ones pay Sonnet. 4B.15 measured 37%; the two runs agree.
+
+**THE QUALITY RANKING DID NOT REPRODUCE, AND THAT MUST TRAVEL WITH THE
+DECISION.** Between two runs of the same 15 questions against the same world:
+Opus fell 14/15 → 10/15 and produced this errand's one forbidden falsehood; Haiku
+ROSE 13/15 → 14/15; the shipped split FELL 14/15 → 13/15, **below
+Haiku-everywhere on this run**. §5a.44 said a one-or-two-question difference is
+inside the noise; two runs say something sharper — on a 15-question bank the
+quality ranking is **not stable at all**, and the only columns that reproduced
+are cost (same ordering, within 10% on every tier) and the finding that Opus is
+slowest, dearest and best at nothing. What survives both runs in Sonnet's favour:
+it reached the most facts of any tier in BOTH (12, against Haiku's 10 then 11)
+and never produced a forbidden falsehood in either. **The honest statement is
+"the bank can resolve the cost, not the quality difference" — not "the split is
+measurably more correct."** A tier decision that wants to rest on correctness
+needs a bigger bank or repeated runs; the instrument for that is the r5 bank at
+~30 graded questions, which is queued and has never been run (§5a.7, §5a.22).
+
+**§5a.47 — A SYNTHESIS ANSWER THAT READ NOTHING DOES NOT SHIP (Errand 4B.15a,
+`modules/ungrounded_guard.py`).** THE SPECIMEN is §5a.44's: Opus, asked which
+machine carries the most work, named three machines that DO NOT EXIST in this
+plant, with **ZERO tool calls**. Claim verification did its job — every sentence
+was labelled unsupported — and **the answer shipped anyway**, because the tier's
+contract is to LABEL what it grounds, not to withhold what it cannot. An answer
+that read nothing and still names this plant's entities did not reason from
+evidence; it recalled a plausible shape. Three conditions, all deterministic, no
+model judgment anywhere: **(1)** the answer came from the SYNTHESIS tier; **(2)**
+ZERO tool calls AND no cited record that RESOLVES against the evidence index;
+**(3)** a delivered claim names something specific to THIS WORLD — an entity
+identifier, money, an ISO date, a clock time — **that the planner did not put
+there themselves**.
+
+**CLAUSE (3) IS WHAT MAKES IT SAFE.** A token the planner typed is not the
+tier's invention: an answer echoing "ORD-000013" back at the person who asked
+about ORD-000013 fabricated nothing, so only tokens the tier INTRODUCED count. A
+bare integer is deliberately NOT a world token ("two ways to read that" is prose,
+not a claim about the plan). **CLAUSE (2)'s SECOND HALF IS WHAT MAKES IT
+DODGE-RESISTANT:** a model that invents record ids alongside its machines gains
+nothing, because the assembler resolves cited ids against the real index and
+drops the rest — a fabricated citation is an empty list, not a free pass.
+Attached at the ONE delivery seam both renderers share, beside the cost-proof,
+sufficiency and coverage riders, and it is the only one there that **WITHHOLDS**
+rather than qualifies: the defect is not an under-stated qualification, it is an
+answer with nothing behind it. Fails OPEN in every direction — an odd bundle
+shape, a missing count, an exception all deliver the answer untouched.
+
+**THE NEGATIVE CONTROL IS THE TEST THAT MATTERS MOST:** a synthesis answer that
+legitimately needs no tools STILL SHIPS. `TestNegativeControl` pins four — the
+bench's weather floor (no answer in any evidence store, and the right response
+reads nothing and says so), a general statement about the product's scope, a bare
+count, and the no-claims honest floor. Without it the guard is a mute button on
+the second tier, and the honest floor is the first thing a mute button eats.
+**LIMIT, NAMED:** the guard is scoped to the synthesis subject type, so
+`prove_it` — a second model surface at the same seam — is NOT covered. It re-runs
+grounding on one existing claim and has a different failure mode; covering it was
+not measured and is not assumed.
+
+**§5a.48 — A CORPUS-GROUNDED CLAIM CANNOT CARRY A `[record:]` CITATION (Errand
+4B.15a).** Measured live: asked whether downtime is set per machine or per
+operation, the second tier answered CORRECTLY from docs/05's catalog rows and all
+four of its claims landed **INTERPRETIVE** — `[synthesis — my reading, no record
+states this]` — because the corpus and catalog tools return SPEC TEXT rather than
+evidence records, so `claim_verifier` has nothing to re-fetch. The labels are
+honest and the answer is right, and the surface still makes a
+documentation-grounded answer read WEAKER than an inference over placements.
+**THAT INVERTS THE EVIDENCE HIERARCHY THE PRODUCT IS BUILT ON**: a verbatim quote
+of the constitution is the strongest ground available for a capability claim
+(§5a.43 is the ruling that says so), and it is currently labelled with the
+weakest register the surface has. The fix is a CITATION KIND for spec passages,
+which is a contract change and therefore a reviewed vocabulary-class change — not
+a relabelling. Until it exists, an answer whose strongest evidence is a spec
+passage should route that reference through authored copy rather than let
+synthesis carry it under the interpretive label.
 
 
 ## 6. Open rulings queue

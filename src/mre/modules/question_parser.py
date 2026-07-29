@@ -578,10 +578,16 @@ class QuestionParser:
     UNAVAILABLE: ``parse`` returns None and the ask path answers honestly that it
     could not interpret the question. There is no keyword fallback (R-AI5(2))."""
 
-    def __init__(self, model: str = "claude-haiku-4-5-20251001",
+    def __init__(self, model: Optional[str] = None,
                  api_key: Optional[str] = None, _client: Any = None,
                  max_tokens: int = 600) -> None:
-        self._model = model
+        # Errand 4B.15a — the DEFAULT lives in `llm_compat`, which is also where
+        # the synthesis tier's lives, deliberately as a SEPARATE constant. The
+        # parse stays on Haiku: 4B.15's bench moved the SECOND tier, not this
+        # one, and a shared constant that moved both would erase the split the
+        # measurement actually recommends.
+        from mre.modules.llm_compat import parse_model
+        self._model = model or parse_model()
         self._api_key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
         self._client = _client
         self._max_tokens = max_tokens

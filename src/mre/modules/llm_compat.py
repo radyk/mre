@@ -1,7 +1,7 @@
 """MODEL-TIER COMPATIBILITY FOR THE TWO GOVERNED CALL SITES (Session 4B.15 Item 6).
 
-THE MEASURED BLOCKER. The ask path pins ``claude-haiku-4-5`` in both the parse
-layer and the synthesis tier, and both send ``temperature=0`` — the right thing
+THE MEASURED BLOCKER. The ask path pinned ``claude-haiku-4-5`` in both the parse
+layer and the synthesis tier, and both sent ``temperature=0`` — the right thing
 on Haiku, and a **400 on Claude Opus 5 and Claude Sonnet 5**, which removed the
 sampling parameters entirely. So the tier question ("should synthesis run on a
 bigger model?") could not even be MEASURED without this: every request to the
@@ -25,8 +25,57 @@ and no cost figure depends on a model call.
 """
 from __future__ import annotations
 
+import os
 import re
 from typing import Any, Optional
+
+# ---------------------------------------------------------------------------
+# THE SHIPPED TIERS (Errand 4B.15a — Daryn's ruling on 4B.15's bench).
+#
+# THREE CONSTANTS, NOT ONE. The measured recommendation is a SPLIT: the parse is
+# a closed-vocabulary classification that Haiku does as well as anything (13/15
+# route accuracy, 1.9s median), and synthesis is open reasoning over evidence
+# where Sonnet 5 reached 12 facts to Haiku's 10 and 7/8 multi-hop to Haiku's 4/8.
+# A single shared MODEL constant would move both layers together and destroy the
+# split the measurement recommends — which is why these are three separate names
+# with three separate env overrides, and why `tests/test_model_tiers.py` asserts
+# that moving one does not move another.
+#
+# The third is the LLM VOICE (`renderers.LLMRenderer`), which rewords an already
+# assembled and validated answer. It was NOT in 4B.15's bench and is NOT changed
+# by this errand: it stays on Haiku, named here so it cannot be mistaken for
+# either governed tier.
+# ---------------------------------------------------------------------------
+
+#: R-AI5(1), the parse layer. UNCHANGED by the tier split.
+PARSE_MODEL_DEFAULT = "claude-haiku-4-5-20251001"
+PARSE_MODEL_ENV = "MRE_PARSE_MODEL"
+
+#: R-AI5(2), the open synthesis tier. MOVED to Sonnet 5 by Errand 4B.15a.
+SYNTHESIS_MODEL_DEFAULT = "claude-sonnet-5"
+SYNTHESIS_MODEL_ENV = "MRE_SYNTHESIS_MODEL"
+
+#: The reword-an-assembled-answer voice. Unmeasured, unchanged.
+VOICE_MODEL_DEFAULT = "claude-haiku-4-5-20251001"
+VOICE_MODEL_ENV = "MRE_VOICE_MODEL"
+
+
+def _resolve(env_name: str, default: str) -> str:
+    """An env override, or the declared default. Read at CONSTRUCTION time so a
+    test (or a deployment) can set one layer without touching the other."""
+    return (os.environ.get(env_name) or "").strip() or default
+
+
+def parse_model() -> str:
+    return _resolve(PARSE_MODEL_ENV, PARSE_MODEL_DEFAULT)
+
+
+def synthesis_model() -> str:
+    return _resolve(SYNTHESIS_MODEL_ENV, SYNTHESIS_MODEL_DEFAULT)
+
+
+def voice_model() -> str:
+    return _resolve(VOICE_MODEL_ENV, VOICE_MODEL_DEFAULT)
 
 #: Model families that REJECT `temperature` / `top_p` / `top_k` outright.
 #: Claude Opus 4.7 removed them; Opus 4.8, Opus 5, Sonnet 5 and Fable 5 keep

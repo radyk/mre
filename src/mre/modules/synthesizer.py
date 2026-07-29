@@ -137,11 +137,17 @@ class Synthesizer:
     ``synthesize`` returns None and the dispatch answers with part 1's honest
     unsupported bridge."""
 
-    def __init__(self, model: str = "claude-haiku-4-5-20251001",
+    def __init__(self, model: Optional[str] = None,
                  api_key: Optional[str] = None, _client: Any = None,
                  max_tokens: int = 1400,
                  timeout_s: float = SYNTHESIS_TIMEOUT_S) -> None:
-        self._model = model
+        # Errand 4B.15a — SYNTHESIS RUNS ON SONNET 5. Daryn's ruling on 4B.15's
+        # measured bench: at this tier Sonnet reached 12 of 15 facts to Haiku's
+        # 10 and answered 7 of 8 multi-hop questions to Haiku's 4, for $0.047 a
+        # question against Haiku-everywhere's $0.021. The parse layer is a
+        # SEPARATE constant and stays on Haiku (see `llm_compat`).
+        from mre.modules.llm_compat import synthesis_model
+        self._model = model or synthesis_model()
         self._api_key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
         self._client = _client
         self._max_tokens = max_tokens

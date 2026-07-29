@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import statistics
 import sys
 import time
@@ -294,6 +295,15 @@ def run_tier(tier: str, run_id: str, bank: tuple[Question, ...],
         "multihop_correct": sum(r["correct"] for r in multi),
         "said_forbidden": sum(r["said_forbidden"] for r in rows),
         "median_latency_ms": round(statistics.median(latencies), 1),
+        # Errand 4B.15a — P90, because the ask panel is INTERACTIVE. A median is
+        # what the tier decision reads like on paper; the p90 is what a planner
+        # actually feels when a question happens to be the slow one, and 4B.15
+        # reported only the median. Nearest-rank on a 15-row bank: no
+        # interpolation, so the figure is a question that really happened.
+        "p90_latency_ms": round(
+            sorted(latencies)[min(len(latencies) - 1,
+                                  max(0, math.ceil(0.9 * len(latencies)) - 1))],
+            1) if latencies else 0.0,
         "total_cost_usd": round(sum(r["cost_usd"] for r in rows), 6),
         "cost_per_question_usd": round(
             sum(r["cost_usd"] for r in rows) / max(len(rows), 1), 6),
@@ -302,7 +312,8 @@ def run_tier(tier: str, run_id: str, bank: tuple[Question, ...],
 
 def render_table(results: list[dict]) -> str:
     head = (f"{'tier':<10}{'model':<22}{'correct':>9}{'fact':>7}"
-            f"{'multihop':>10}{'false':>7}{'median s':>10}{'$/question':>12}")
+            f"{'multihop':>10}{'false':>7}{'median s':>10}{'p90 s':>8}"
+            f"{'$/question':>12}")
     lines = [head, "-" * len(head)]
     for r in results:
         lines.append(
@@ -312,6 +323,7 @@ def render_table(results: list[dict]) -> str:
             f"{r['multihop_correct']:>6}/{r['multihop_n']:<3}"
             f"{r['said_forbidden']:>7}"
             f"{r['median_latency_ms']/1000:>10.1f}"
+            f"{r['p90_latency_ms']/1000:>8.1f}"
             f"{r['cost_per_question_usd']:>12.5f}")
     return "\n".join(lines)
 

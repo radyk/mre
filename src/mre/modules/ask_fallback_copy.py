@@ -358,6 +358,25 @@ SYNTHESIS_UNANSWERABLE = (
     "it grounds an answer I'd stand behind, so I'd rather say so than guess.")
 SYNTHESIS_UNANSWERABLE_CONSULTED = "I looked at: {tools}."
 
+# Errand 4B.15a, rider — THE ZERO-TOOL-CALL FLOOR.
+#
+# 4B.15's tier bench produced exactly one fabricated answer: Opus, asked which
+# machine carried the most work, named three machines that DO NOT EXIST in this
+# plant and made ZERO tool calls to get them. Claim verification labelled every
+# sentence unsupported and the answer SHIPPED ANYWAY, because the tier's contract
+# is to label what it grounds, not to withhold what it cannot.
+#
+# An answer that read nothing and still names this plant's orders, machines,
+# dates or money did not reason from evidence — it recalled a plausible shape. So
+# it does not ship. Deliberately CONTENTLESS about what was withheld, for the
+# same reason SYNTHESIS_UNGROUNDED is: repeating the invented machine names
+# inside the apology puts them in front of the planner anyway.
+SYNTHESIS_UNREAD = (
+    "I drafted an answer to that without reading anything from this schedule — no "
+    "evidence tool ran — so every name and figure in it would have been mine "
+    "rather than the plan's, and I've held it back. Ask me again and I'll go to "
+    "the records, or name one order or machine and I'll pull them directly.")
+
 # Session 4A.5c CU3(b) — THE WARM FLOOR. RUBRIC precedent entry 6, ruled: the
 # couldn't-answer keeps the nearest-capabilities offers.
 #

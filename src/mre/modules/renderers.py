@@ -432,6 +432,21 @@ def apply_sufficiency_rider(bundle, text: str) -> Optional[str]:
         return None
 
 
+def apply_unread_guard(bundle, text: str) -> Optional[str]:
+    """Errand 4B.15a — the ZERO-TOOL-CALL guard, at the ONE delivery seam both
+    renderers share. All the judgment (and there is none of the model kind) lives
+    in ``ungrounded_guard``; this is only the attachment point.
+
+    It is the one thing here that REPLACES an answer instead of qualifying it,
+    because the defect it catches is not an under-stated qualification — it is an
+    answer with nothing behind it at all."""
+    from mre.modules.ungrounded_guard import apply_unread_guard as _apply
+    try:
+        return _apply(bundle, text)
+    except Exception:  # noqa: BLE001 — a guard never breaks an answer
+        return None
+
+
 def apply_cost_proof_rider(bundle, text: str) -> Optional[str]:
     """Append the cost-proof qualifier to an answer that states money on a board
     whose cost optimum was NOT proved (Session 4B.11 CU1, docs/07 §5a.23).
@@ -565,7 +580,11 @@ class TemplateRenderer:
         text = apply_sufficiency_rider(bundle, text) or text
         # 4B.13 Item 1(ii) — and a predicate the answer never addressed is
         # admitted rather than left for the planner to notice.
-        return apply_coverage_rider(bundle, text) or text
+        text = apply_coverage_rider(bundle, text) or text
+        # Errand 4B.15a — LAST, and the only one here that WITHHOLDS rather than
+        # qualifies: a synthesis answer that read nothing and still names this
+        # plant's entities does not ship at all.
+        return apply_unread_guard(bundle, text) or text
 
     def _render_body(self, bundle: ExplanationBundle) -> str:
         # R-AI2(d) (Session 4A.2d) — the transcript convention dies: no "=== q ==="
@@ -2477,11 +2496,16 @@ class LLMRenderer:
 
     def __init__(
         self,
-        model: str = "claude-haiku-4-5-20251001",
+        model: Optional[str] = None,
         api_key: Optional[str] = None,
         _client: Any = None,
     ) -> None:
-        self._model = model
+        # Errand 4B.15a — the VOICE tier, a third constant in `llm_compat` and
+        # deliberately not either of the two governed ones. This model rewords an
+        # answer that was already assembled and validated; it was not in 4B.15's
+        # bench and this errand does not move it.
+        from mre.modules.llm_compat import voice_model
+        self._model = model or voice_model()
         self._api_key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
         self._client = None
         self._available = False
@@ -2625,7 +2649,10 @@ class LLMRenderer:
         # 4B.13 Item 1(ii) — and same seam, same rule again: a reworded answer
         # that still never addressed the predicate says so. Both renderers or
         # neither; a floor one path can skip is not a floor.
-        return apply_coverage_rider(bundle, text) or text
+        text = apply_coverage_rider(bundle, text) or text
+        # Errand 4B.15a — same seam, same rule. A reword cannot launder an answer
+        # that read nothing, so the withholding guard runs on both paths.
+        return apply_unread_guard(bundle, text) or text
 
     def _render_inner(self, bundle: ExplanationBundle) -> str:
         if bundle.subject_type in ("remediation", "triage"):
