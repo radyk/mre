@@ -12171,3 +12171,235 @@ preserves the historical budget, which is why every caller had to state its own.
 Picking numbers for these four would author budgets nobody measured, and one of
 the files carries a digest golden. Whoever fixes them must state the budget they
 chose and re-derive that golden in the same commit.
+
+## Amendment — 2026-07-29: Session 4B.14 — why is it here: the blocker analysis
+
+Narrative in `docs/closeouts/4B.14.md`; durable summary in docs/07 v2.58,
+§5a.34-38. Deterministic throughout (PYTHONHASHSEED=0, solver workers 1, seed
+42). All diagnosis read the PERSISTED document of the pinned world
+`rolling-c362baa4-1b0` — never a re-solve (R-AI4).
+
+### Item 0 — the halt condition returned reading (A). The session did not halt.
+
+The board showed ORD-000013's op10 finishing on CUT-01 Tuesday 2026-01-13 at
+14:06 with the shift open until 19:00, and its op20 not starting on PAINT-01
+until Thursday the 15th. The hypothesis under test was that op20 could not fit
+the remainder of Tuesday. Three lookups, from the document plus the plant:
+
+1. **op20 is `splittable=False`, `min_chunk=None`.** It must run in one piece.
+2. **It needs 431 working minutes** (setup PT20M + run PT6H51M) against the
+   **294 minutes** between op10's finish at 14:06 and PAINT-01's close at 19:00.
+   It does not fit, and there is no legal way to start it and pause.
+3. **Wednesday Jan 14 is a full-day `closure` with reason `planned_maintenance`,
+   00:00 to 23:59:59, and it is PLANT-WIDE but not universal** — 13 of the 15
+   machines carry it; HEAT-01 and HEAT-02 are open that day. PAINT-01 carries
+   it. Thursday's 07:00-19:00 window is the first stretch long enough.
+
+**Verdict (A): the schedule is right, the explanation was wrong.** PAINT-01 was
+free all Tuesday afternoon and all Thursday morning — resource contention had
+nothing to do with it. The cause is docs/05 **C3**, interruptibility.
+
+### The root cause of the four-day timestamp, and why 4B.13 did not catch it
+
+The live answer cited "held by ORD-000011 until 2026-01-08 19:00". ORD-000011
+runs three chunks and completes 2026-01-12 15:37; 19:00 on the 8th is its first
+PAUSE. `Explainer._load_enriched_assignments` read
+`phase_windows["run"][0]["end"]` — the first chunk only.
+
+4B.13 fixed this exact class in `assemble_rolling_document` and confirmed the
+board had drawn per-chunk pieces since CU5. It did not look at the explainer's
+own row model, which feeds the blocked-by cause, order completion, slack and the
+gap resolver. **A defect class fixed at one seam is not fixed** — and this
+instance was harder to see than the merged bar, because nothing draws prose, so
+nothing looked wrong. `end` is now the last run window's end; `chunks`,
+`run_min` and `span_min` travel with the row.
+
+### Item 1 — causal sufficiency, a deterministic floor
+
+Ruled and implemented: **when an answer explains a quantity by citing a cause,
+the cited cause must account for that quantity.** For the "held until T, so it
+took the next opening" shape this is an arithmetic identity — the explained
+start must EQUAL the first open window on that resource at or after T — and it
+was never checked. On the specimen the next opening is Jan 9 07:00 against a
+start of Jan 13 07:00, with three further placements in between.
+
+**This is a different check from the 4B.5 CU3 vacuity tripwire and neither
+subsumes the other.** Vacuity asks whether a causal answer names anything
+concrete; the specimen names an order, a machine and a timestamp, and passes
+cleanly — it would pass with the timestamp off by a year. Sufficiency asks
+whether what was said adds up, and needs no model judgment: it is subtraction
+against the persisted document.
+
+**A finding worth recording: the two fixes are independent.** Repair the
+chunk-blind read alone and the sentence is still false — CUT-01 frees mid-shift
+on Monday and the operation starts Tuesday morning, because the real cause is
+chunk-fit. The chunk fix makes the cited number true; only the blocker analysis
+makes the cause right; only the sufficiency check can tell that a corrected
+sentence is still over-claiming. Pinned as a test.
+
+The floor is applied at the ONE delivery seam both renderers share, alongside
+the cost-proof and predicate-coverage riders, for the same reason: the LLM path
+rewords, and a reword is exactly how "so it took the next opening" comes back
+after the assembler removed it.
+
+### Item 2 — the blocker analysis (`why-here`), a vocabulary-class change
+
+The deeper shortage was never the timestamp. The explainer knew ONE causal
+story, resource contention, and the plant has at least six.
+`blocker_analysis.py` computes an earliest-feasible-start per docs/05 family,
+independently, from the persisted document:
+
+    release     A4      the demand's release date
+    precedence  A1/A2   max(end + min_lag) over placed predecessors
+    frozen      R-F1    the frozen boundary, where it applies
+    pin         A7/F1   an exact pinned window, where one exists
+    resource    B1      first moment the machine is not otherwise held
+    calendar    C1/C2   first OPEN moment on that machine's calendar
+    chunkfit    C3      first placement with room for the WHOLE operation
+
+BINDING is the earliest family in ladder order attaining the maximum. **The tie
+rule is load-bearing:** when precedence and chunk-fit land on the same instant,
+precedence is what pushed it there and chunk-fit merely failed to push further —
+naming chunk-fit would send a planner looking for a window problem that does not
+exist. RUNNER-UP is the previous pusher.
+
+**THE DISTINCTION THAT MATTERS MOST.** `actual_start == max(est)` means it could
+not have started earlier; `actual_start > max(est)` means nothing prevented it
+and the solver CHOSE this placement. Those are different facts to a planner and
+the explainer asserted the first for both. Measured, ORD-000011 is a genuine
+`chose`: holding every other placement where it is, CUT-01 had open unheld time
+from Jan 6 16:15 and the solve took Jan 8 14:36. The copy for that branch is
+worded against what is actually computed — open, unheld time on the machine —
+never against what a re-solve would produce. A third verdict, `undetermined`,
+exists for the case where the actual start precedes every computed lower bound:
+that is a contradiction in our own reading, and R-AI3(1) says say nothing rather
+than pick a branch and sound certain.
+
+**Families that cannot be computed are NAMED on every answer, not silently
+omitted.** B3/B5 (secondary and cumulative resources — the document carries
+primary-lane occupancy only, so a tool or operator pool holding an operation
+back is invisible); B7/B8 (sequence-dependent changeover — a METHOD gap, not a
+data gap: the pinned world does carry a `setup_transition` Constraint with a
+PAINT_RED/PAINT_BLUE table, but the setup an operation would need at an EARLIER
+position depends on what would then precede it, which is a re-solve wearing an
+estimate's clothes); C4 (no adapter populates the doorway); F3 (unimplemented).
+A3 and A6 are recorded as OUT OF SCOPE rather than missing — they are upper
+bounds and can never be why something could not start EARLIER.
+
+**R-C3's degenerate-split rule is applied through the shared
+`calendar_utils.is_effectively_resumable`**, exactly as the SolverBuilder and
+the Validator apply it. The three must agree: an analysis that split an
+operation the solver treats as atomic would report a fit the solver cannot
+place, and would then call a real constraint a free choice.
+
+The route is AUTHORED COPY, rendered verbatim. Two reasons, the second
+load-bearing: its body is composed from pre-computed key_facts and carries
+docs/05 citations the testimony validator correctly reads as fabricated record
+ids (the recurring disease with the recurring cure, 4A.3c CU3); and **the verb
+is the answer** — a reword that softened "couldn't" or "the solver chose" into
+"took the next opening" would restore precisely the failure the route was built
+to end.
+
+### Item 3 — disagreement is not re-parsed
+
+Measured live: "it seems it should be able to start on tuesday after op10
+finishes" — a challenge to the system's causal claim, carrying the correct
+hypothesis — was answered "Is ORD-000013 really on time? Yes - the record
+agrees."
+
+**The intent was never wrong: it IS a contest.** The assembler knew exactly one
+proposition, and its canonical question said so verbatim — "is {order} really on
+time?". A challenge to the reasoning became a question about lateness, and the
+affirmative reads as agreement while addressing nothing that was said. Call it
+what it is: **disagreement laundering**. For a product whose pitch is
+"interrogate the schedule" it is the worst available failure — worse than a
+wrong number, because the planner cannot tell they were ignored.
+
+`ContestedClaim` (`lateness` / `timing` / `other`) is what the parse REPORTS so
+the dispatch can decide (R-AI5(8)). A `timing` contest is answered by the
+blocker analysis, carrying the challenge so the copy addresses the hypothesis.
+An `other` contest says the challenge could not be evaluated — it never
+substitutes an adjacent question it can answer. An absent value reads as
+`lateness`, which is the behaviour before the field existed, so no older parse
+becomes unanswerable by upgrading.
+
+**`predicate_coverage`'s vocabulary went from one entry to three**, both
+additions measured rather than designed: `disagreement` (this specimen) and
+`temporal_alternative` ("why can't this order start on Monday" answered with
+when it DOES start — Monday never addressed). The tripwire that forces a
+reviewer to look went red for both before they were reviewed in, which is what
+it is for.
+
+### Item 4 — run time and elapsed span, never conflated
+
+Contract **1.11 -> 1.12**: `AssignmentBlock.splittable` and `min_chunk_min`,
+both Optional and absent on a document assembled before this, so every 1.11
+reader is unaffected. They are the R-C3 class as DECLARED, not
+`is_effectively_resumable`'s verdict — a card showing the derived boolean would
+tell a planner `splittable: false` about an operation whose spec says true, with
+no way to see why.
+
+The job card now carries start/finish, RUN TIME and ELAPSED SPAN as separate
+labelled rows (elapsed only when it actually exceeds the run), the chunk count,
+the splitting rule, due and slack. After 4B.13's chunk fix run and span
+genuinely differ — ORD-000011 is 1,501 working minutes across a 5,821-minute
+span — and that difference is the answer to half the "why is there a gap"
+questions. Conflating them is the confusion the merged bar used to create. The
+same distinction is voiced in the answer: a chunked operation states its pieces,
+its actual work, and that it pauses when the machine closes. That is also what
+makes `why-here` an honest answer to "why does it go through downtime" rather
+than an accidental word-match on "closed" — every chunk sits inside open
+calendar time by construction (4B.13's closure sweep proved zero exceptions), so
+the pauses ARE non-working time.
+
+### Item 5 — four measured cockpit defects
+
+(a) A transport failure rendered as a chat turn: "ERROR / Failed to fetch" in
+the testimony register, telling a planner the system had considered their
+question and this is what it came back with. It is now a connection notice with
+no register, a retry affordance, and a different sentence for a network failure
+(the question never arrived) than for a server error (it arrived and failed).
+
+(b) "why can't this order start on Monday" was answered with when it DOES start.
+Item 2's route is the real answer and the parse meaning now points there;
+`temporal_alternative` is the floor for the case where an older route answers
+anyway.
+
+(c) `cited_refs` fused the lanes an answer NARRATED with the alternatives it
+merely weighed, so two bars on CUT-01 reported four lanes, two of them at 0%
+utilisation — empty machines cited as evidence. `alternatives` is its own
+channel now: separated rather than dropped, because they ARE evidence when the
+answer prices them, and the cockpit shades them differently and names them for
+what they are.
+
+(d) An order-level question resolved to the order's FIRST operation regardless
+of the board selection — which is how a question asked with ORD-000013 selected
+on PAINT-01 came back about CUT-01, with no bridging sentence. The selection
+carries `op_seq` now; only three operation-scoped intents read it (a selection
+that could re-scope `downtime` or `late-orders` would change what a plant-wide
+question means without saying so); and an unscoped question SAYS which operation
+it answered about.
+
+Also: the cockpit's deictic button has been labelled "Why is this here?" since
+4A.2 and fired `why is X on Y?` — `why-on-machine`, a CAPABILITY question
+answered with which machines could have run the step. A fine answer to a
+question the button does not ask: "here" is a position in TIME at least as much
+as on a lane. It now fires the blocker analysis.
+
+### Named, not fixed
+
+* **The `chose` verdict for a SPLITTABLE operation is a lower bound, and the
+  copy is worded to it.** Setup is a separate phase with its own
+  interruptibility class (R-C3), and the fit scan treats an operation's working
+  minutes as one divisible quantity. So "there was open, unheld time from T" is
+  exactly what is computed and exactly what is claimed; "the solver could have
+  placed it there" is not claimed, and must not be.
+* **The runner-up can be a stale true fact.** On ORD-000013's op10 the previous
+  pusher is CUT-01's calendar opening on Jan 5 — eight days before the start
+  being explained. The renderer suppresses it when the binding family's
+  near-miss window is more recent, which is a heuristic about relevance, not a
+  proof.
+* **`start-reason` was not retired.** It still answers "why does it start when
+  it does" and "why so early", and it now honours the selected operation and
+  carries the sufficiency fact. Whether the two routes should merge is a
+  vocabulary question this session did not rule on.

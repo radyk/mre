@@ -60,6 +60,7 @@ ROUTE_OFFERS = {
     "inventory": "count the orders and operations in the plan",
     "integrity-check": "check whether anything is double-booked",
     "start-reason": "explain why {order} starts when it does",
+    "why-here": "name the binding constraint on {order} starting earlier",
     "excluded-orders": "list the orders excluded from the plan and why",
     "drill-down": "open the full record behind that",
     "briefing": "show what needs your attention today",

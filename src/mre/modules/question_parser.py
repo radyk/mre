@@ -41,6 +41,7 @@ from typing import Any, Optional
 from mre.contracts.parse import (
     ClarifyPayload,
     ClarifyReason,
+    ContestedClaim,
     FollowupKind,
     Intent,
     INTENT_MEANINGS,
@@ -428,11 +429,31 @@ def build_parsed(question: str, emission: dict, explainer: Any,
     if intent is Intent.UNMATCHED:
         dropped = ""
 
+    # Session 4B.14 Item 3 — WHICH claim a contest disputes, and whether the turn
+    # is a contest at all. Carried on the two intents that can ANSWER one:
+    # `contested-fact`, and `why-here` — because a challenge to the system's
+    # reasoning usually names the right route by itself ("it seems it should be
+    # able to start on tuesday" IS a blocker question) and would otherwise lose
+    # the fact that someone pushed back. On every other intent it is meaningless
+    # and a stray value would be a routing signal the prompt never promised. An
+    # unreadable or absent value stays None, which the assemblers read as the
+    # behaviour before this field existed, so no older parse becomes
+    # unanswerable by upgrading.
+    contested_claim = None
+    if intent in (Intent.CONTESTED_FACT, Intent.WHY_HERE):
+        raw_cc = emission.get("contested_claim")
+        if raw_cc not in (None, "", "null"):
+            try:
+                contested_claim = ContestedClaim(str(raw_cc))
+            except ValueError:
+                contested_claim = None
+
     try:
         return ParsedQuestion(
             question=question, intent=intent, subjects=subjects,
             polarity=polarity, followup_of=followup, confidence=confidence,
             nearest=nearest, clarify=clarify, dropped_qualifier=dropped,
+            contested_claim=contested_claim,
             prompt_version=prompt_version,
             retries=retries, latency_ms=latency_ms)
     except Exception:  # noqa: BLE001 — validation failure is a malformed emission

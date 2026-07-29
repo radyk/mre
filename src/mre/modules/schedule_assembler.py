@@ -179,6 +179,7 @@ def assemble_schedule_document(
             in_overtime_min=_overtime_minutes(asgn, decisions_by_id),
             decision_ref=asgn.get("decision_ref", "") or "",
             standing_pin=op_ref in pinned_ops,
+            **_interruptibility(op),
         ))
     asgn_blocks.sort(key=lambda a: (
         a.chunks[0].start.isoformat() if a.chunks else "",
@@ -548,6 +549,7 @@ def assemble_rolling_document(
             chunks=chunks,
             phases=_phases(op, chunks),
             commitment_state="committed" if oid in committed_ops else "active_window",
+            **_interruptibility(op),
         ))
     asgn_blocks.sort(key=lambda a: (
         a.chunks[0].start.isoformat() if a.chunks else "", a.operation_ref))
@@ -857,6 +859,31 @@ def _rolling_chunks(pl: dict) -> list[Chunk]:
         s, e = _parse_dt(c["start"]), _parse_dt(c["end"])
         out.append(Chunk(chunk_seq=len(out) + 1, start=s, end=e,
                          working_min=int((e - s).total_seconds() // 60)))
+    return out
+
+
+def _interruptibility(op: dict) -> dict:
+    """Contract 1.12 (Session 4B.14 Item 4) — the R-C3 class as DECLARED, for
+    the job card and the blocker analysis.
+
+    Deliberately the declared pair, not ``is_effectively_resumable``'s verdict:
+    the degenerate-split rule is a function of the two values plus the
+    operation's duration, and a card that showed the DERIVED boolean would tell a
+    planner ``splittable: false`` about an operation whose spec says true, with
+    no way to see why. The reader that needs the verdict computes it from these
+    two through the shared rule, exactly as the SolverBuilder and the Validator
+    do. Both keys are omitted when the operation declares neither, so a document
+    whose ops carry no interruptibility data is byte-identical to its 1.11 self."""
+    if not op:
+        return {}
+    out: dict = {}
+    if op.get("splittable") is not None:
+        out["splittable"] = bool(op["splittable"])
+    mc = op.get("min_chunk")
+    if mc:
+        mins = _iso_minutes(mc)
+        if mins:
+            out["min_chunk_min"] = float(mins)
     return out
 
 

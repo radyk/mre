@@ -178,6 +178,9 @@ html, body {
 .vis-item.vis-background.cal-overtime { background: var(--cal-overtime); }
 /* a cited resource lane glows */
 .vis-item.vis-background.cited-lane { background: var(--cite-lane); }
+/* 4B.14 Item 5(c): a road NOT taken is shaded, but never as strongly as the
+   lane the cited work actually runs on. The two are different claims. */
+.vis-item.vis-background.cited-lane.cited-alt { opacity: 0.45; }
 
 /* =========================================================================
  * Session 4.2 — planner surface (read layer).
@@ -317,6 +320,11 @@ html, body {
 .hc-grid { display: grid; grid-template-columns: auto 1fr; gap: 1px var(--sp-2); margin: 0; }
 .hc-grid dt { color: var(--muted-2); text-transform: uppercase; letter-spacing: var(--ls-caps); font-size: var(--fs-2xs); }
 .hc-grid dd { margin: 0; color: var(--ink); }
+/* 4B.14 Item 4: the qualifier beside a figure (what part of an elapsed span was
+   paused, how many pieces). Subordinate to the number it qualifies, never
+   competing with it — the number is the fact, this is its shape. */
+.hc-grid dd .hc-note { color: var(--muted-2); font-size: var(--fs-2xs); }
+.hc-grid dd.hc-split { color: var(--muted); }
 .hc-pin { margin-top: var(--sp-2); padding-top: var(--sp-1); border-top: 1px dashed var(--hc-edge); color: var(--standing-pin-edge); font-weight: var(--fw-semibold); }
 .hover-card .hc-sub { color: var(--muted); }
 .hover-card .hc-sub b { color: var(--ink); }
@@ -341,6 +349,25 @@ html, body {
 .ask .msg.answer.judgment  { border-left-color: var(--reg-judgment);  background: var(--reg-judgment-fill); }
 /* Session 4A.5b — the synthesis register (R-AI5(4)): visibly not testimony. */
 .ask .msg.answer.synthesis { border-left-color: var(--reg-synthesis); background: var(--reg-synthesis-fill); }
+/* Session 4B.14 Item 5(a) — a TRANSPORT failure, deliberately not an answer
+ * card. No register border, no register fill, no register chip: the question
+ * never reached the server, so there is nothing here in any register to read.
+ * It carries a retry and the raw reason, small, for whoever wants it. */
+.ask .msg.transport-error {
+  border: 1px dashed var(--grid); background: var(--panel-2);
+}
+.ask .msg.transport-error .who { color: var(--ink-dim); }
+.ask .msg.transport-error .cites { display: flex; align-items: center; gap: var(--sp-2); }
+.ask .msg.transport-error .detail {
+  font: var(--fs-2xs)/1.4 var(--font-mono); color: var(--ink-dim); opacity: 0.75;
+}
+.ask .msg.transport-error .retry-ask {
+  font: var(--fw-semibold) var(--fs-2xs) var(--font-mono);
+  padding: 2px 8px; border-radius: var(--radius-xs);
+  border: 1px solid var(--grid); background: var(--panel); color: var(--ink);
+  cursor: pointer;
+}
+.ask .msg.transport-error .retry-ask:hover { border-color: var(--select); }
 .ask .msg .who { font: var(--fw-bold) var(--fs-xs)/1 var(--font-mono); text-transform: uppercase; letter-spacing: var(--ls-caps-wide); margin-bottom: var(--sp-2); }
 .ask .msg.answer.testimony .who { color: var(--reg-testimony); }
 .ask .msg.answer.judgment  .who { color: var(--reg-judgment); }

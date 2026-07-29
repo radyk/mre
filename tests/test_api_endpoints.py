@@ -177,7 +177,7 @@ class TestScheduleDocument:
     def test_document_validates_against_contract(self, api):
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
         parsed = ScheduleDocument.model_validate(doc)
-        assert parsed.contract_version == "1.11"
+        assert parsed.contract_version == "1.12"
         assert parsed.schedule_id == api.schedule_id
         assert parsed.run_id == api.run["id"]
         assert parsed.solver.deterministic is True
@@ -227,7 +227,7 @@ class TestScheduleMeta:
     def test_meta_joins_the_certificate_grade(self, api):
         meta = _data(api.client.get(f"/schedules/{api.schedule_id}/meta"))
         assert meta["id"] == api.schedule_id
-        assert meta["contract_version"] == "1.11"
+        assert meta["contract_version"] == "1.12"
         assert meta["grade"] == "ACCEPTED"
         assert meta["costing_grade"] == "C1"
         assert meta["submission_id"] == api.submission["submission_id"]
@@ -283,7 +283,7 @@ class TestScheduleInteraction:
         data = _data(api.client.get(
             f"/schedules/{api.schedule_id}/interaction"))
         assert data["schedule_id"] == api.schedule_id
-        assert data["contract_version"] == "1.11"
+        assert data["contract_version"] == "1.12"
         block = InteractionBlock.model_validate(data["interaction"])
         # one entry per scheduled op, each with its eligible set + the graph
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
@@ -375,11 +375,17 @@ class TestAsk:
         bundle = data["bundle"]
         assert bundle["register"] in ("testimony", "judgment")
         refs = bundle["cited_refs"]
-        assert set(refs) == {"operations", "resources", "demands"}
+        # Session 4B.14 Item 5(c): `alternatives` is its own channel now. The
+        # priced roads-not-taken used to be appended to `resources`, so an answer
+        # narrating two bars on one lane reported four lanes, two of them
+        # carrying no work — empty machines cited as evidence.
+        assert set(refs) == {"operations", "resources", "alternatives", "demands"}
         # a why-on-machine answer cites the assigned op and its resource lane
         assert refs["operations"], "no cited operations to highlight"
         assert a["operation_ref"] in refs["operations"]
         assert a["resource_id"] in refs["resources"]
+        # and a lane the answer merely WEIGHED is never reported as one it used
+        assert a["resource_id"] not in refs["alternatives"]
 
     def test_cited_refs_point_at_real_board_entities(self, api):
         """Every cited op ref resolves to an assignment bar and every cited
@@ -395,6 +401,7 @@ class TestAsk:
         refs = data["bundle"]["cited_refs"]
         assert all(o in op_refs for o in refs["operations"])
         assert all(r in res_refs for r in refs["resources"])
+        assert all(r in res_refs for r in refs["alternatives"])
 
 
 # ---------------------------------------------------------------------------
@@ -687,7 +694,7 @@ class TestRollingSolve:
 
         sid = run["result"]["schedule_id"]
         doc = _data(client.get(f"/schedules/{sid}"))
-        assert doc["contract_version"] == "1.11"
+        assert doc["contract_version"] == "1.12"
         assert doc["rolling"] is not None
         r = doc["rolling"]
         # the sliced world: committed + active bars, and a populated tray.
@@ -796,7 +803,7 @@ class TestRollingTwoBeatAPI:
 
     def test_served_document_is_rolling_with_interaction(self, rolling_api):
         doc = _data(rolling_api.client.get(f"/schedules/{rolling_api.schedule_id}"))
-        assert doc["contract_version"] == "1.11"
+        assert doc["contract_version"] == "1.12"
         assert doc["rolling"] is not None
         assert doc["rolling"]["beyond_horizon"], "empty tray"
         # the split-endpoint interaction payload is served for the active window

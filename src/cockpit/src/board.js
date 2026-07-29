@@ -301,6 +301,16 @@ export function createBoard(hostEl, initialDoc) {
     const opens = (openWinsByRes.get(resourceId) || []).map(([s]) => s).filter((s) => s >= band.end).sort((a, b) => a - b);
     return opens.length ? Math.round((opens[0] - band.start) / MIN_MS) : null;
   }
+  // Contract 1.12 (Session 4B.14 Item 4): the R-C3 interruptibility pair the
+  // solver applied, straight off the assignment. Absent on a pre-1.12 document,
+  // and the card simply omits the row rather than guessing a default — a card
+  // that said "splittable: no" about an operation whose spec never said so
+  // would be the same confident-wrong class this session is about.
+  function opSpecFor(a) {
+    if (!a || (a.splittable == null && a.min_chunk_min == null)) return null;
+    return { splittable: a.splittable ?? null, min_chunk_min: a.min_chunk_min ?? null };
+  }
+
   // job facts for a bar (or a split piece) → the job hover card.
   function jobFor(itemId) {
     const a = doc.assignments.find((x) => x.assignment_id === itemId)
@@ -316,12 +326,28 @@ export function createBoard(hostEl, initialDoc) {
     const chunks = a.chunks || [];
     const start = chunks.length ? chunks[0].start : null;
     const end = chunks.length ? chunks[chunks.length - 1].end : null;
+    // Session 4B.14 Item 4 — RUN TIME AND ELAPSED SPAN, SEPARATELY.
+    //
+    // After 4B.13's chunk fix these genuinely differ: ORD-000011 is 1,501
+    // working minutes across a 5,821-minute span, and that difference IS the
+    // answer to half the "why is there a gap" questions. Conflating them is the
+    // confusion the merged bar used to create, so they are two labelled facts
+    // here and never one. Splittable / min_chunk travel with them because they
+    // are what decides whether an operation can take a short window — the fact
+    // that decided ORD-000013's op20, and that a planner previously had to
+    // count pixels to confirm.
+    const runMin = chunks.reduce((n, c) => n + (c.working_min || 0), 0) || null;
+    const spanMin = (start != null && end != null)
+      ? Math.round((end - start) / MIN_MS) : null;
+    const op = opSpecFor(a);
     return {
       order: wo, qty: so?.quantity ?? null, uom: so?.quantity_uom ?? null,
       due: so?.due ?? null, customer: so?.customer_name ?? null,
       opSeq: a.op_seq, status, standingPin: !!a.standing_pin,
       resourceName: nameOf(a.resource_id),
       start, end, latenessMin: lateness,
+      runMin, spanMin, chunkCount: chunks.length,
+      splittable: op?.splittable ?? null, minChunkMin: op?.min_chunk_min ?? null,
     };
   }
   const hoverCards = createHoverCards(hostEl, timeline, {
@@ -407,6 +433,12 @@ export function createBoard(hostEl, initialDoc) {
       work_orders: a.work_orders || [],
       resource_id: a.resource_id,
       resource_name: nameOf(a.resource_id),
+      // Session 4B.14 Item 5(d): WHICH operation of the order is selected. The
+      // ask panel forwarded only {order, machine}, so the server never learned
+      // it and an order-level question fell back to the order's FIRST operation
+      // — which is how a question asked with ORD-000013 selected on PAINT-01
+      // came back about CUT-01, with no bridging sentence.
+      op_seq: a.op_seq ?? null,
     };
   }
 
@@ -475,17 +507,30 @@ export function createBoard(hostEl, initialDoc) {
       for (const id of woToItems.get(wo) || []) barIds.add(id);
     }
     for (const id of barIds) toggleClass(id, "cited", true);
-    // lanes: the chosen + alternative resources the answer prices ("the other
-    // press"). Shade the whole lane across the window.
-    for (const rid of citedRefs.resources || []) {
-      if (!resById.has(rid)) continue;
+    // lanes: the resources the cited work actually RUNS on. Shade the whole
+    // lane across the window.
+    //
+    // Session 4B.14 Item 5(c): the priced ALTERNATIVES ("the other press") come
+    // in on their own channel now and are shaded distinctly. Fusing them here
+    // is what made an answer about two bars on CUT-01 report four lanes, two of
+    // which carry no work at all — an empty machine shaded as if it were part
+    // of the evidence.
+    const shadeLane = (rid, cls) => {
+      if (!resById.has(rid)) return false;
       const lid = `citelane-${rid}`;
-      items.add({ id: lid, group: rid, type: "background", start: win.start, end: win.end, className: "cited-lane" });
+      items.add({ id: lid, group: rid, type: "background", start: win.start, end: win.end, className: cls });
       laneItems.push(lid);
-    }
+      return true;
+    };
+    for (const rid of citedRefs.resources || []) shadeLane(rid, "cited-lane");
+    for (const rid of citedRefs.alternatives || []) shadeLane(rid, "cited-lane cited-alt");
     citedBars = [...barIds];
     renderOverlay();
-    return { bars: [...barIds], lanes: (citedRefs.resources || []).filter((r) => resById.has(r)) };
+    return {
+      bars: [...barIds],
+      lanes: (citedRefs.resources || []).filter((r) => resById.has(r)),
+      alternatives: (citedRefs.alternatives || []).filter((r) => resById.has(r)),
+    };
   }
 
   // Tier-0 interaction payload (contract 1.3, delivered by interaction.js after

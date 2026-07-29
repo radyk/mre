@@ -70,7 +70,13 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
 
   function currentSelectionRefs() {
     const wo = selection && (selection.work_orders || [])[0];
-    return { order: wo || null, machine: (selection && selection.resource_name) || null };
+    return {
+      order: wo || null,
+      machine: (selection && selection.resource_name) || null,
+      // Item 5(d): the SELECTED operation, not just its order. Carried so an
+      // order-level question resolves to the bar the planner is pointing at.
+      op_seq: (selection && selection.op_seq != null) ? selection.op_seq : null,
+    };
   }
 
   rootEl.innerHTML = `
@@ -119,9 +125,10 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
       deicticBtn.title = "select a bar on the board first";
       return;
     }
-    scopeEl.innerHTML = `selected <b>${wo}</b> on <b>${selection.resource_name}</b>`;
+    const op = selection.op_seq != null ? ` op${selection.op_seq}` : "";
+    scopeEl.innerHTML = `selected <b>${wo}${op}</b> on <b>${selection.resource_name}</b>`;
     deicticBtn.disabled = false;
-    deicticBtn.title = `ask: why is ${wo} on ${selection.resource_name}?`;
+    deicticBtn.title = `ask: why is ${wo} placed where it is on ${selection.resource_name}?`;
   }
 
   // shared selection: a clicked bar scopes the deictic ask (R-DP shared state).
@@ -165,11 +172,19 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
     const refs = meta?.cited_refs;
     const lit = board.highlight(refs);
     const cites = el.querySelector(".cites");
+    // Session 4B.14 Item 5(c) — CITE WHAT THE ANSWER USED. This line used to
+    // fuse the lanes the answer narrated with the alternatives it merely had
+    // available, so two bars on CUT-01 reported four lanes, two of them at 0%
+    // utilisation — empty machines presented as evidence. The two channels are
+    // separate on the wire now and they read as different claims here: lanes
+    // are where the cited work RUNS, alternatives are roads the answer weighed.
     const nBars = lit?.bars?.length || 0;
     const laneNames = (lit?.lanes || []).map((r) => board.resourceName(r));
-    if (nBars || laneNames.length) {
+    const altNames = (lit?.alternatives || []).map((r) => board.resourceName(r));
+    if (nBars || laneNames.length || altNames.length) {
       cites.innerHTML = `lit <b>${nBars}</b> bar(s)` +
-        (laneNames.length ? ` · lanes: <b>${laneNames.join(", ")}</b>` : "");
+        (laneNames.length ? ` · on: <b>${laneNames.join(", ")}</b>` : "") +
+        (altNames.length ? ` · alternatives weighed: <b>${altNames.join(", ")}</b>` : "");
     } else {
       cites.remove();
     }
@@ -239,14 +254,44 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
       // A superseded target is not an error to show raw (session 3.8 CU3): word
       // it as the plan having moved on, and offer a one-click jump to current.
       if (e && e.superseded) return appendSuperseded();
-      const el = document.createElement("div");
-      el.className = "msg answer testimony";
-      el.innerHTML = `<div class="who">error</div><pre></pre>`;
-      el.querySelector("pre").textContent = String(e.message || e);
-      logEl.appendChild(el); scrollDown();
+      appendTransportError(e, question);
     } finally {
       asking = false;
     }
+  }
+
+  // Session 4B.14 Item 5(a) — A TRANSPORT FAILURE IS NOT A CONVERSATIONAL TURN.
+  //
+  // Measured live: "ERROR / Failed to fetch" rendered in the log with the same
+  // chrome as an answer. That string is the browser telling us the request never
+  // reached the server; presenting it in the register a planner reads answers in
+  // says the system considered their question and this is what it came back
+  // with. It is not testimony, it has no register, and there is nothing to
+  // audit — what it needs is to say plainly that nothing was asked yet, and to
+  // offer the retry that is the only useful next action.
+  function appendTransportError(e, question) {
+    clearEmpty();
+    const raw = String((e && e.message) || e || "");
+    // A network-layer failure ("Failed to fetch", "NetworkError", a timeout)
+    // versus a server that answered with a status. Different sentences: one
+    // means the question never arrived, the other means it arrived and failed.
+    const offline = /failed to fetch|networkerror|load failed|timeout|aborted/i.test(raw);
+    const el = document.createElement("div");
+    el.className = "msg transport-error";
+    const said = offline
+      ? "I couldn't reach the server, so your question hasn't been asked yet."
+      : "The server couldn't answer that request.";
+    el.innerHTML =
+      `<div class="who">connection</div><pre></pre>` +
+      `<div class="cites"><button class="retry-ask" type="button">Try again</button>` +
+      `<span class="detail"></span></div>`;
+    el.querySelector("pre").textContent = said;
+    el.querySelector(".detail").textContent = raw;
+    el.querySelector(".retry-ask").addEventListener("click", () => {
+      el.remove();
+      run(question);
+    });
+    logEl.appendChild(el); scrollDown();
   }
 
   // Planner-language notice + jump when the asked version was replaced (CU3).
@@ -270,7 +315,13 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
   function deictic() {
     const wo = selection && (selection.work_orders || [])[0];
     if (!wo || !selection.resource_name) return;   // unresolvable — button is disabled anyway
-    run(`why is ${wo} on ${selection.resource_name}?`);
+    // Session 4B.14 Item 2 — THE BUTTON NOW ASKS ITS OWN QUESTION. It is
+    // labelled "Why is this here?" and fired "why is X on Y?", which is
+    // `why-on-machine`: a CAPABILITY question, answered with which machines
+    // could have run the step. That is a fine answer to a question the button
+    // does not ask. "Here" is a position in TIME as much as on a lane, and the
+    // blocker analysis is what answers it.
+    run(`why is ${wo} placed where it is on ${selection.resource_name}?`);
   }
 
   function clearEmpty() { const e = logEl.querySelector(".empty"); if (e) e.remove(); }

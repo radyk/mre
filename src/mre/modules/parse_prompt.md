@@ -1,6 +1,6 @@
 # Question-parse prompt — a GOVERNED ARTIFACT (R-AI5(1))
 
-    prompt_version: 10
+    prompt_version: 11
     ruling:         R-AI5(1) — every question is parsed FIRST by a language model
                     against a CLOSED intent vocabulary, with the conversation
                     history, live board selection, and last-answered subject as
@@ -125,6 +125,44 @@
                     `Intent`, `INTENT_MEANINGS`, `ROUTE_TAXONOMY`, `ROUTE_OFFERS`,
                     the assembler, its authored copy and the docs/07 §5a.29
                     discharge in the same commit as this bump.
+
+    v11:            Session 4B.14 (2026-07-29) — TWO changes, one root. `why-here`
+                    joins the vocabulary and `contested-fact` gains
+                    `contested_claim`.
+
+                    (a) THE BLOCKER ANALYSIS. `start-reason` knew one causal
+                    story, resource contention, and the plant has at least six
+                    (docs/05 A4, A1/A2, R-F1, A7/F1, B1, C1/C2, C3). When the
+                    true cause was one of the other five it reached for the only
+                    one it had and rendered it fluently, with citations. Measured
+                    on the pinned board: ORD-000013's op20 waits for Thursday
+                    because it needs 7h11m in one piece and 4h54m remained before
+                    PAINT-01 closed — a chunk-fit cause explained as contention,
+                    citing a timestamp four days off. `why-here` answers the
+                    question actually being asked — what is the BINDING
+                    CONSTRAINT on this starting earlier — and draws the
+                    distinction the product could not: COULDN'T versus
+                    CHOSE-NOT-TO. The two MEANINGS are written as a pair so the
+                    model learns the boundary rather than a synonym: a question
+                    naming an earlier time, an alternative day, or asking what
+                    PREVENTS something is `why-here`; "why does it start when it
+                    does" and "why so early" stay `start-reason`.
+
+                    (b) DISAGREEMENT IS NOT RE-PARSED. Measured live: "it seems
+                    it should be able to start on tuesday after op10 finishes" —
+                    a challenge to the system's reasoning, carrying the correct
+                    hypothesis — parsed as `contested-fact`, whose assembler knew
+                    only lateness, and came back "is ORD-000013 really on time?
+                    Yes - the record agrees." An affirmative that reads as
+                    agreement while addressing nothing that was said. The intent
+                    was right; the assembler had one proposition. The parse now
+                    REPORTS which claim is disputed and the dispatch answers a
+                    `timing` contest with the blocker analysis, on the planner's
+                    own terms (R-AI5(8): the parse reports, the dispatch
+                    decides). A vocabulary-class change: `Intent`,
+                    `ContestedClaim`, `INTENT_MEANINGS`, `ROUTE_TAXONOMY`,
+                    `ROUTE_OFFERS`, the assemblers, their authored copy, the
+                    predicate-coverage vocabulary and this bump, one commit.
 
 ## Review discipline
 
@@ -348,6 +386,31 @@ RULES
    question to the reasoning tier instead of the route — that is its call, not
    yours.
 
+10. WHEN THE PLANNER DISAGREES, SAY WHAT WITH. `contested-fact` covers every turn
+   that DISPUTES something the assistant just said, and the system must know which
+   claim is under challenge or it will answer an adjacent question and sound like
+   it agreed. Set `contested_claim`:
+
+     - `lateness` — a STATUS is disputed. "isn't ORD-05 on time?", "I thought that
+       one was fine", "you said it was late".
+     - `timing` — the assistant's account of WHEN or WHY something is placed is
+       disputed. "it seems it should be able to start on tuesday after op10
+       finishes", "but the machine was free all afternoon", "that can't be right,
+       nothing was running then", "surely it could go earlier than that".
+     - `other` — a dispute that is neither. The system will say it cannot evaluate
+       the challenge, which is the honest answer; do not stretch it into one of
+       the two above to make it answerable.
+
+   Set it on `why-here` too, not only on `contested-fact`. A challenge to the
+   system's reasoning very often names the right route by itself — "it seems it
+   should be able to start on tuesday after op10 finishes" IS a blocker question
+   — and the answer still needs to know it is answering a PUSH-BACK rather than
+   a fresh question, so it can say plainly where the planner is right.
+
+   Leave it null on every other intent. A turn that merely ASKS about lateness or
+   timing is not a contest — this field needs the planner to be pushing back on
+   something already said.
+
 OUTPUT — strict JSON, no prose, no code fence. `intent` must be one of the
 vocabulary ids listed at the top; the follow-up names (`deepen`, `list-expand`,
 `menu-select`, `correction`) are values for `followup_of`, never intents.
@@ -364,6 +427,7 @@ is what the planner is doing, name it in both fields.)
   "confidence": 0.0,
   "nearest": ["<id>", "<id>"],
   "dropped_qualifier": "",
+  "contested_claim": null | "lateness" | "timing" | "other",
   "clarify": null | {"reason": "no-subject|ambiguous-subject|set-reference|verification|ambiguous-intent",
                      "detail": "<a short phrase, never a sentence>"}
 }

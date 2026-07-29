@@ -106,13 +106,54 @@ def test_both_renderers_apply_the_floor_or_neither_does():
             f"{cls.__name__}.render does not apply the predicate-coverage floor")
         assert "apply_cost_proof_rider" in src, (
             f"{cls.__name__}.render does not apply the cost-proof rider")
+        # Session 4B.14 Item 1 — the causal-sufficiency floor, same rule. The
+        # LLM path is the one that matters here: a reword is exactly how "so it
+        # took the next opening" comes back after the assembler removed it.
+        assert "apply_sufficiency_rider" in src, (
+            f"{cls.__name__}.render does not apply the causal-sufficiency floor")
 
 
 def test_the_vocabulary_is_deliberately_minimal_and_stays_declared():
-    """The vocabulary grows only with a measured specimen (module docstring).
+    """The vocabulary grows only with a MEASURED specimen (module docstring).
     This pins the intent: if a topic is added, this test is the place the
-    reviewer is forced to look."""
-    assert [t.key for t in TOPICS] == ["downtime_traversal"]
+    reviewer is forced to look, and it went red for both of Session 4B.14's
+    additions before they were reviewed in.
+
+    The three, each with the live exchange that earned it:
+
+      downtime_traversal   (4B.13) "why does this order go through downtime"
+                           answered with why it STARTS when it starts.
+      disagreement         (4B.14) "it seems it should be able to start on
+                           tuesday after op10 finishes" answered "is ORD-000013
+                           really on time? Yes - the record agrees."
+      temporal_alternative (4B.14) "why can't this order start on Monday"
+                           answered with when it DOES start; Monday never
+                           addressed.
+    """
+    assert [t.key for t in TOPICS] == [
+        "downtime_traversal", "disagreement", "temporal_alternative"]
+
+
+def test_every_topic_declares_the_routes_that_cover_it():
+    """A topic with no COVERED_BY entry fires its rider on the very route built
+    to answer it — a false admission, which is its own species of lying."""
+    from mre.modules.predicate_coverage import COVERED_BY
+    for topic in TOPICS:
+        assert COVERED_BY.get(topic.key), f"{topic.key} declares no covering route"
+        assert topic.route in COVERED_BY[topic.key], (
+            f"{topic.key} points at {topic.route}, which is not declared to "
+            "cover it — the pointer would send a planner to a route that then "
+            "admits it did not answer")
+
+
+def test_every_topic_has_surface_forms_and_an_authored_pointer():
+    for topic in TOPICS:
+        assert topic.terms or topic.phrases, f"{topic.key} matches nothing"
+        assert topic.admission.strip()
+        # The first topic composes its pointer from `label`; the later two are
+        # authored, because the honest next step is not always a question of the
+        # "how much X does <machine> have?" shape.
+        assert topic.pointer.strip() or topic.label.strip()
 
 
 # ---------------------------------------------------------------------------

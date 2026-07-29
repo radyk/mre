@@ -108,12 +108,29 @@ def test_the_route_is_registered_end_to_end():
 
 
 def test_the_parse_prompt_was_bumped_with_the_vocabulary():
-    """The governed artifact and the vocabulary move together or not at all."""
+    """The governed artifact and the vocabulary move together or not at all.
+
+    Session 4B.14: this pinned `version == "10"` and went red on the very next
+    vocabulary change (`why-here`, v11) — reporting a MISSING bump when what had
+    happened was another bump. A guard that cries wolf on every correct change
+    is one a future session learns to edit without reading.
+
+    So it now asserts what it was actually built to protect: 4B.13's addition is
+    IN the governed artifact, its changelog entry survives, and the live version
+    is at or past the one that introduced it. Each session's own bump is pinned
+    by its own tests (4B.14's is in ``test_why_here_route.py``), which is where a
+    version assertion belongs — beside the change it is asserting."""
     from mre.modules.question_parser import load_prompt
+    from pathlib import Path
+    import mre.modules as m
     _template, version = load_prompt()
-    assert version == "10", (
-        "the intent vocabulary gained solve-optimality; parse_prompt.md must "
-        "carry the matching bump and its changelog entry")
+    assert int(version) >= 10, (
+        "the intent vocabulary gained solve-optimality at prompt v10; "
+        "parse_prompt.md is behind it")
+    text = (Path(m.__file__).parent / "parse_prompt.md").read_text(encoding="utf-8")
+    assert "solve-optimality" in text, (
+        "solve-optimality left the governed prompt without a recorded ruling")
+    assert "v10:" in text, "the v10 changelog entry was removed"
 
 
 # ---------------------------------------------------------------------------

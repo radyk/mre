@@ -80,6 +80,13 @@ _CLARIFY_COPY: dict[ClarifyReason, str] = {
 # absence pair) — the dispatch hands them the subject list in the planner's order.
 _TWO_ORDER_INTENTS = frozenset({Intent.SWAP_MOVE, Intent.GAP_BETWEEN})
 
+#: Session 4B.14 Item 5(d) — the intents whose answer is about ONE OPERATION, and
+#: therefore the only ones that may read the board selection's operation scope.
+#: Kept narrow deliberately: a selection that could re-scope `downtime` or
+#: `late-orders` would change what a plant-wide question means without saying so.
+_OPERATION_SCOPED_INTENTS = frozenset(
+    {Intent.WHY_HERE, Intent.START_REASON, Intent.CONTESTED_FACT})
+
 # The rolling (sliced-world) intents. On a monolithic run these degrade through the
 # normal route table; the rolling document pre-route is upstream in the API.
 ROLLING_INTENTS = frozenset(
@@ -371,6 +378,17 @@ def route_params(parsed: ParsedQuestion, question_text: str) -> dict:
         params["concept"] = concept
     if parsed.polarity is not None:
         params["polarity"] = parsed.polarity.value
+    # Session 4B.14 Item 3: the parse's report of WHICH claim a contest disputes.
+    # Carried, never interpreted here — the assembler decides what to do with it.
+    if parsed.contested_claim is not None:
+        params["contested_claim"] = parsed.contested_claim.value
+        # A challenge that named its own route (`why-here` usually does) still
+        # has to be ANSWERED as a challenge. The route reads this to say plainly
+        # where the planner is right, per R-AI3(4); without it the answer is
+        # correct, complete and reads as though nobody said anything.
+        if parsed.intent is Intent.WHY_HERE:
+            params["challenge"] = {"kind": parsed.contested_claim.value,
+                                   "said": parsed.question}
     if parsed.intent in _TWO_ORDER_INTENTS:
         params["order_a"] = orders[0] if orders else None
         params["order_b"] = orders[1] if len(orders) >= 2 else None
@@ -772,6 +790,31 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     # at their own branch above; this is the non-rolling route that needs it too.
     if parsed.intent is Intent.LATE_ORDERS:
         params["document"] = document
+    # Session 4B.14 Item 2: the blocker analysis reads the FROZEN BOUNDARY (R-F1)
+    # from the rolling block, so its ladder is missing a family without the
+    # document. `contested-fact` takes it for the same reason: a `timing` contest
+    # is answered BY the blocker analysis.
+    if parsed.intent in (Intent.WHY_HERE, Intent.CONTESTED_FACT):
+        params["document"] = document
+    # And the SELECTED OPERATION (Item 5(d)). The board selection carries the
+    # operation the planner is pointing at; without it an order-level question
+    # resolves to the order's FIRST operation, which is how a question asked with
+    # ORD-000013 selected on PAINT-01 was answered about CUT-01, with no bridging
+    # sentence. Narrow on purpose: only the three routes that speak about ONE
+    # operation read it, so a selection can never silently re-scope a plant-wide
+    # answer. It runs BEFORE the subject-resolution guard below and still cannot
+    # satisfy a required slot, because all three of these routes require an
+    # ORDER and none of them requires a machine — a selection can sharpen which
+    # operation is answered about, never conjure the subject itself.
+    if parsed.intent in _OPERATION_SCOPED_INTENTS:
+        sel = (context or {}).get("selection") or {}
+        if params.get("op_seq") is None and sel.get("op_seq") is not None:
+            try:
+                params["op_seq"] = int(sel["op_seq"])
+            except (TypeError, ValueError):
+                pass
+        if not params.get("machine") and sel.get("machine"):
+            params["machine"] = sel["machine"]
 
     required = _required_slots(parsed.intent, params)
 

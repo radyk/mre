@@ -148,6 +148,15 @@ ROUTE_TAXONOMY: dict[str, dict] = {
     "inventory":             {"params": [],          "canonical": "how many orders are in the plan?"},
     "integrity-check":       {"params": ["machine"], "canonical": "is anything double-booked?"},
     "start-reason":          {"params": ["order"],   "canonical": "why does {order} start when it does?"},
+    # Session 4B.14 Item 2 — THE BLOCKER ANALYSIS. The "Why is this here?"
+    # button's answer, and the route a temporal-alternative question ("why can't
+    # it start Monday") must reach: the BINDING CONSTRAINT on this operation
+    # starting earlier, computed per docs/05 family from the persisted document,
+    # with COULDN'T distinguished from CHOSE-NOT-TO. Takes the machine too,
+    # because an order-level question asked with one bar selected is about THAT
+    # operation (Item 5(d)).
+    "why-here":              {"params": ["order"],
+                              "canonical": "why is {order} placed where it is?"},
     "drill-down":            {"params": [],          "canonical": "tell me more about that"},
     "briefing":              {"params": [],          "canonical": "what should I worry about today?"},
     "unknown-entity":        {"params": ["order"],   "canonical": "is {order} in this schedule?"},
@@ -659,9 +668,21 @@ class Explainer:
             return self._explain_order_attributes(params.get("order"))
         if route_id == "start-reason":
             return self._explain_start_reason(params.get("order"), q,
-                                              polarity=params.get("polarity"))
+                                              polarity=params.get("polarity"),
+                                              machine_ref=params.get("machine"),
+                                              op_seq=params.get("op_seq"))
+        if route_id == "why-here":
+            return self._explain_why_here(params.get("order"),
+                                          params.get("machine"), q,
+                                          op_seq=params.get("op_seq"),
+                                          document=params.get("document"),
+                                          challenge=params.get("challenge"))
         if route_id == "contested-fact":
-            return self._explain_contested(params.get("order"), q)
+            return self._explain_contested(params.get("order"), q,
+                                           claim=params.get("contested_claim"),
+                                           machine_ref=params.get("machine"),
+                                           op_seq=params.get("op_seq"),
+                                           document=params.get("document"))
         if route_id == "swap-move":
             return self._explain_swap_move(params.get("order_a") or params.get("order"),
                                            params.get("order_b"),
@@ -1731,15 +1752,27 @@ class Explainer:
         rows.sort(key=lambda r: r["start"] or "")
         return rows
 
-    def _blocked_by(self, order_ref: str) -> Optional[dict]:
-        """The CU4 blocked-by fact: for an order's FIRST scheduled operation, the
-        job that occupied its machine immediately before it started (the concrete
-        cause behind a CAPACITY_BLOCKED driver). Read from the solved occupancy —
-        real evidence, never fabricated. None when nothing directly precedes it."""
+    def _blocked_by(self, order_ref: str,
+                    row: Optional[dict] = None) -> Optional[dict]:
+        """The CU4 blocked-by fact: the job that occupied this operation's machine
+        immediately before it started (the concrete cause behind a
+        CAPACITY_BLOCKED driver). Read from the solved occupancy — real evidence,
+        never fabricated. None when nothing directly precedes it.
+
+        Session 4B.14 Item 1: the fact now carries its own SUFFICIENCY. The
+        blocker is the LAST thing on the machine before this operation, which is
+        a true statement and was never the whole cause — the answer built on it
+        went on to claim "so it took the next opening", an arithmetic identity
+        nobody checked. ``accounts_for_start`` is that check, and
+        ``causal_sufficiency`` carries the blockers in between when it fails.
+
+        Session 4B.14 Item 5(d): ``row`` selects WHICH operation is being
+        explained. It defaulted to the order's first, so a question asked with
+        ORD-000013 selected on PAINT-01 was answered about CUT-01."""
         rows = self._order_rows(order_ref)
         if not rows or not rows[0].get("start"):
             return None
-        first = rows[0]
+        first = row if (row is not None and row.get("start")) else rows[0]
         machine = first["machine"]
         try:
             my_start = _parse_ts(first["start"])
@@ -1772,13 +1805,295 @@ class Explainer:
                 if wt > 1.0:
                     prio = lbl
                 break
+        suff = self._sufficiency_of(machine, blocker.get("end"),
+                                    first.get("start"), order_ref)
         return {
             "machine": machine,
             "blocker_order": blk_order,
             "blocker_priority": prio,
             "until": _fmt_ts(blocker["end"]),
             "my_start": _fmt_ts(first["start"]),
+            "op_seq": first.get("op_seq"),
+            # Item 1's floor, computed here so the sentence that cites this fact
+            # can be true when it is composed, not corrected after the fact.
+            "accounts_for_start": bool(suff.get("accounts")),
+            "causal_sufficiency": suff,
         }
+
+    def _sufficiency_of(self, machine: str, cited_end: Optional[str],
+                        explained_start: Optional[str],
+                        exclude_order: str = "") -> dict:
+        """Session 4B.14 Item 1 — does "held until T, so it took the next opening"
+        actually account for the start it explains?
+
+        Arithmetic against the persisted document: the first OPEN window on the
+        machine at or after T, and the placements standing between that opening
+        and the start. Returns the ``causal_sufficiency`` key_fact shape, with
+        display-formatted timestamps because it is quoted verbatim in copy."""
+        from mre.modules.causal_sufficiency import check_next_opening
+
+        cited = _to_dt(cited_end)
+        start = _to_dt(explained_start)
+        windows = self._open_windows(machine)
+        occupancy = []
+        for r in self._load_enriched_assignments():
+            if r["machine"] != machine or not r.get("start"):
+                continue
+            if exclude_order and exclude_order.upper() in [
+                    w.upper() for w in r["work_orders"]]:
+                continue
+            occupancy.append({"order": "+".join(sorted(r["work_orders"])) or "?",
+                              "start": _to_dt(r["start"]),
+                              "end": _to_dt(r["end"])})
+        s = check_next_opening(cited_until=cited, explained_start=start,
+                               open_windows=windows, occupancy=occupancy)
+        return {
+            "accounts": s.accounts,
+            "first_opening": (s.first_opening.strftime("%Y-%m-%d %H:%M")
+                              if s.first_opening else None),
+            "unexplained_min": s.unexplained_min,
+            "remaining": [{"order": r["order"],
+                           "start": r["start"].strftime("%Y-%m-%d %H:%M"),
+                           "end": r["end"].strftime("%Y-%m-%d %H:%M")}
+                          for r in s.remaining],
+            "undetermined": s.undetermined,
+        }
+
+    # ------------------------------------------------------------------
+    # Session 4B.14 Item 2 — THE BLOCKER ANALYSIS ("why is it here?")
+    # ------------------------------------------------------------------
+
+    def _pick_op_row(self, order_ref: str, machine_ref: Optional[str] = None,
+                     op_seq: Optional[int] = None) -> Optional[dict]:
+        """WHICH operation an order-level question is about (Item 5(d)).
+
+        The board selection carries the machine (and, since this session, the
+        operation) the planner is pointing at; ignoring it and answering about
+        ``rows[0]`` is how a question asked with ORD-000013 selected on PAINT-01
+        came back about CUT-01. Resolution order: an explicit op sequence, then
+        the named/selected machine, then the order's first operation — and the
+        caller is expected to SAY which one it chose when it fell back."""
+        rows = [r for r in self._order_rows(order_ref) if r.get("start")]
+        if not rows:
+            return None
+        if op_seq is not None:
+            for r in rows:
+                if r.get("op_seq") == op_seq:
+                    return r
+        if machine_ref:
+            name = self._machine_refs.get(str(machine_ref).upper(), machine_ref)
+            for r in rows:
+                if str(r.get("machine", "")).upper() == str(name).upper():
+                    return r
+        return rows[0]
+
+    def _min_lag_minutes(self, pred_op: str, succ_op: str) -> float:
+        """The declared min lag on the precedence edge between two operations
+        (docs/05 A2), 0.0 when no edge carries one."""
+        if self._reader is None:
+            return 0.0
+        try:
+            for e in self._reader.iter_entities("precedenceedge"):
+                if e.get("predecessor") == pred_op and e.get("successor") == succ_op:
+                    return _parse_iso_duration_minutes(str(e.get("min_lag") or ""))
+        except Exception:  # noqa: BLE001
+            return 0.0
+        return 0.0
+
+    def _pin_start_for(self, op_id: str) -> Optional[datetime]:
+        """An exact pinned window's start for one operation (docs/05 A7/F1), or
+        None. Read from Constraint records — the only place a pin may live."""
+        if self._reader is None or not op_id:
+            return None
+        try:
+            for c in self._reader.iter_entities("constraint"):
+                if c.get("constraint_type") not in ("pinned_window",
+                                                    "frozen_assignment"):
+                    continue
+                if op_id not in (c.get("subjects") or []):
+                    continue
+                w = (c.get("parameters") or {}).get("window") or {}
+                dt = _to_dt(w.get("start"))
+                if dt is not None:
+                    return dt
+        except Exception:  # noqa: BLE001
+            return None
+        return None
+
+    def _blocker_analysis(self, order_ref: str, machine_ref: Optional[str] = None,
+                          op_seq: Optional[int] = None,
+                          document: Any = None):
+        """Assemble the blocker analysis for ONE placed operation, entirely from
+        the persisted document (R-AI4 — never a re-solve).
+
+        Returns ``(analysis, row)`` or ``(None, None)``. Everything the pure
+        module needs is read here, because this is the layer that knows how to
+        resolve an order to its rows, a machine to its calendar and an operation
+        to its spec."""
+        from mre.modules.blocker_analysis import analyze
+        from mre.modules.calendar_utils import is_effectively_resumable
+
+        row = self._pick_op_row(order_ref, machine_ref, op_seq)
+        if row is None:
+            return None, None
+        machine = row["machine"]
+        my_start, my_end = _to_dt(row["start"]), _to_dt(row["end"])
+
+        occupied: list[tuple] = []
+        holder: dict = {}
+        for r in self._load_enriched_assignments():
+            if r["machine"] != machine or r["assignment_id"] == row["assignment_id"]:
+                continue
+            for c in r.get("chunks") or []:
+                cs, ce = _to_dt(c.get("start")), _to_dt(c.get("end"))
+                if cs is not None and ce is not None:
+                    occupied.append((cs, ce))
+            rend = _to_dt(r["end"])
+            if my_start is not None and rend is not None and rend <= my_start:
+                if not holder or rend > holder["_end"]:
+                    holder = {"order": "+".join(sorted(r["work_orders"])) or "?",
+                              "_end": rend}
+        holder.pop("_end", None)
+
+        predecessors = []
+        for r in self._order_rows(order_ref):
+            if (r.get("workpackage_ref") != row.get("workpackage_ref")
+                    or not r.get("end")):
+                continue
+            if (r.get("op_seq") or 0) >= (row.get("op_seq") or 0):
+                continue
+            predecessors.append({
+                "op_seq": r.get("op_seq"), "machine": r.get("machine"),
+                "end": _to_dt(r["end"]),
+                "min_lag_min": self._min_lag_minutes(r["operation_ref"],
+                                                     row["operation_ref"]),
+            })
+
+        demand = self._demand_by_order(order_ref) or {}
+        working_min = float(row.get("run_min") or 0.0)
+        min_chunk = _parse_iso_duration_minutes(str(row.get("min_chunk") or "")) \
+            or None
+        # R-C3's degenerate-split rule, applied exactly as the SolverBuilder and
+        # the Validator apply it. The three MUST agree: an analysis that split an
+        # operation the solver treats as atomic would report a fit the solver
+        # cannot place, and would then call a real constraint a free choice.
+        splittable = is_effectively_resumable(bool(row.get("splittable")),
+                                              working_min, float(min_chunk or 0.0))
+
+        frozen_until = None
+        frozen_applies = False
+        try:
+            rb = (document or {}).get("rolling") if isinstance(document, dict) \
+                else getattr(document, "rolling", None)
+            if rb is not None:
+                fu = rb.get("frozen_until") if isinstance(rb, dict) \
+                    else getattr(rb, "frozen_until", None)
+                frozen_until = _to_dt(fu if isinstance(fu, str) else
+                                      (fu.isoformat() if fu else None))
+                frozen_applies = (frozen_until is not None and my_start is not None
+                                  and my_start < frozen_until)
+        except Exception:  # noqa: BLE001 — a monolithic run has no rolling block
+            frozen_until, frozen_applies = None, False
+
+        analysis = analyze(
+            order=order_ref, op_seq=row.get("op_seq"), machine=machine,
+            actual_start=my_start, actual_end=my_end,
+            working_min=working_min, splittable=splittable,
+            min_chunk_min=min_chunk,
+            open_windows=self._open_windows(machine),
+            occupied=occupied, predecessors=predecessors,
+            release=_to_dt(demand.get("earliest_start")),
+            frozen_until=frozen_until, frozen_applies=frozen_applies,
+            pin_start=self._pin_start_for(row["operation_ref"]),
+            chosen_driver=self._first_assignment_driver(order_ref),
+            holder=holder, closures=self._closures(machine))
+        return analysis, row
+
+    def _explain_why_here(self, order_ref: Optional[str],
+                          machine_ref: Optional[str] = None,
+                          question: str = "", op_seq: Optional[int] = None,
+                          document: Any = None,
+                          challenge: Optional[dict] = None) -> ExplanationBundle:
+        """"Why is this here?" — the binding constraint on this operation
+        starting earlier (Item 2), and whether there was one at all.
+
+        This is the answer the board's own button asks for. It draws the
+        distinction the product could not draw before: COULDN'T (name the
+        binding family, with its numbers) versus CHOSE-NOT-TO (nothing prevented
+        it — the solver placed it here). ``challenge`` carries a planner's
+        hypothesis when this route is answering a disagreement (Item 3), so the
+        copy can address what they actually said."""
+        if not order_ref:
+            return self._unknown_question("why is that operation where it is?")
+        if self._demand_by_order(order_ref) is None:
+            return self._explain_unknown_entity(order_ref)
+        analysis, row = self._blocker_analysis(order_ref, machine_ref, op_seq,
+                                               document=document)
+        if analysis is None or row is None:
+            return self._explain_why_not_placed(order_ref)
+
+        def _e(est) -> Optional[dict]:
+            if est is None:
+                return None
+            return {"family": est.family, "citation": est.citation,
+                    "label": est.label,
+                    "at": est.est.strftime("%Y-%m-%d %H:%M") if est.est else None,
+                    "because": est.because,
+                    "facts": _display_facts(est.facts)}
+
+        # Item 5(d): when the operation was chosen by fallback rather than named,
+        # the answer SAYS which one it is about. A bridging sentence is cheap; a
+        # planner silently answered about a different bar is not.
+        rows = [r for r in self._order_rows(order_ref) if r.get("start")]
+        return ExplanationBundle(
+            question=f"Why is {order_ref} op{row.get('op_seq')} where it is?",
+            subject_id=(self._demand_by_order(order_ref) or {}).get("id", order_ref),
+            subject_type="why_here",
+            subject_external_name=order_ref,
+            ordered_records=self._assignment_records_for_ops(
+                {row["operation_ref"]}, set(row.get("demand_ids") or [])),
+            key_facts={
+                "order": order_ref,
+                "op_seq": row.get("op_seq"),
+                "machine": analysis.machine,
+                "start": _fmt_ts(row["start"]),
+                "start_weekday": _weekday(row["start"]),
+                "end": _fmt_ts(row["end"]),
+                "run_min": row.get("run_min"),
+                "span_min": row.get("span_min"),
+                "chunk_count": len(row.get("chunks") or []),
+                "splittable": analysis.splittable,
+                "min_chunk_min": analysis.min_chunk_min,
+                "verdict": analysis.verdict,
+                "binding": _e(analysis.binding),
+                "runner_up": _e(analysis.runner_up),
+                "chain": [_e(e) for e in analysis.pushers],
+                "estimates": [_e(e) for e in analysis.estimates if e.computed],
+                "slack_min": analysis.slack_min,
+                "chosen_driver": analysis.chosen_driver,
+                "uncomputed": [{"catalog": c, "why": w}
+                               for c, w in analysis.uncomputed],
+                "op_count": len(rows),
+                "op_named": bool(op_seq is not None or machine_ref),
+                "challenge": challenge or None,
+            },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _explain_why_not_placed(self, order_ref: str) -> ExplanationBundle:
+        """The honest floor for a blocker question about an order with no
+        placement in this window — it has no 'here' to explain."""
+        return ExplanationBundle(
+            question=f"Why is {order_ref} where it is?",
+            subject_id=(self._demand_by_order(order_ref) or {}).get("id", order_ref),
+            subject_type="why_here",
+            subject_external_name=order_ref,
+            ordered_records=[],
+            key_facts={"order": order_ref, "verdict": "unplaced"},
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
 
     def _explain_order_attributes(self, order_ref: Optional[str]) -> ExplanationBundle:
         """The hover card, askable (CU5): product / quantity / customer / due /
@@ -1897,7 +2212,9 @@ class Explainer:
 
     def _explain_start_reason(self, order_ref: Optional[str],
                               question: str = "",
-                              polarity: Optional[str] = None) -> ExplanationBundle:
+                              polarity: Optional[str] = None,
+                              machine_ref: Optional[str] = None,
+                              op_seq: Optional[int] = None) -> ExplanationBundle:
         """Why an order starts when it does (CU5 + CU4 + CU3 polarity).
 
         POLARITY matters (Session 4A.3-pre CU3). "why can't X start EARLIER / why
@@ -1914,9 +2231,12 @@ class Explainer:
         if demand is None:
             return self._explain_unknown_entity(order_ref)
         rows = self._order_rows(order_ref)
-        start = rows[0]["start"] if rows else None
+        # Item 5(d): the SELECTED operation, not reflexively the order's first.
+        row = self._pick_op_row(order_ref, machine_ref, op_seq) or (
+            rows[0] if rows else None)
+        start = row["start"] if row else None
         release = demand.get("earliest_start")
-        blocked = self._blocked_by(order_ref)
+        blocked = self._blocked_by(order_ref, row=row)
         # which bound governs: release if the start sits at/after a release later
         # than the horizon open; else the machine-busy (blocked-by) cause.
         release_binds = False
@@ -1965,8 +2285,13 @@ class Explainer:
                 "release_weekday": _weekday(release) if release else None,
                 "release_binds": bool(release and release_binds),
                 "blocked_by": blocked,
-                "machine": rows[0]["machine"] if rows else None,
+                "machine": row["machine"] if row else None,
+                "op_seq": row.get("op_seq") if row else None,
                 "why_early": early,
+                # Item 1 — the floor travels with the fact that needs it, so a
+                # reworded answer that reasserts "took the next opening" is
+                # still checked against the arithmetic.
+                "causal_sufficiency": (blocked or {}).get("causal_sufficiency"),
                 "due": _fmt_date(due),
                 "early_by_days": early_by_days,
                 "earliness_priced": (str(driver).upper() == "EARLINESS_PREFERENCE"),
@@ -2007,14 +2332,54 @@ class Explainer:
         return None
 
     def _explain_contested(self, order_ref: Optional[str],
-                           question: str) -> ExplanationBundle:
+                           question: str, claim: Optional[str] = None,
+                           machine_ref: Optional[str] = None,
+                           op_seq: Optional[int] = None,
+                           document: Any = None) -> ExplanationBundle:
         """CU6 / R-AI3(4) — the user contests a cited fact. Meet it with warm
         EVIDENCE: restate what the record shows and offer to walk the chain. Never
         capitulate ("you're right, my mistake") and never harden (a curt
         re-assertion). The renderer composes the warmth; this assembles the facts.
 
         contested-wrong: the record contradicts the user's claim → hold, warmly.
-        contested-agree: the record agrees with the user → confirm plainly."""
+        contested-agree: the record agrees with the user → confirm plainly.
+
+        SESSION 4B.14 ITEM 3 — DISAGREEMENT IS NOT RE-PARSED. This assembler knew
+        exactly ONE proposition, lateness, and its canonical question said so:
+        "is {order} really on time?". So a challenge to the system's REASONING —
+        "it seems it should be able to start on tuesday after op10 finishes" —
+        was answered "Yes, the record agrees", an affirmative that reads as
+        agreement while addressing nothing that was said. The parse now reports
+        WHICH claim is disputed (``ContestedClaim``) and a TIMING challenge is
+        answered by the blocker analysis, on the planner's own terms: whether
+        they are right, and if not, the arithmetic that decides it. Where the
+        challenge cannot be evaluated the answer says THAT, and never
+        substitutes an adjacent question it can answer."""
+        from mre.contracts.parse import ContestedClaim
+
+        kind = str(claim or ContestedClaim.LATENESS.value)
+        if kind == ContestedClaim.TIMING.value and order_ref:
+            # Answered by the blocker analysis, carrying the challenge so the
+            # copy can address the hypothesis rather than recite a placement.
+            bundle = self._explain_why_here(
+                order_ref, machine_ref, question, op_seq=op_seq,
+                document=document,
+                challenge={"kind": kind, "said": question})
+            if isinstance(bundle.key_facts, dict):
+                bundle.key_facts["contested"] = True
+            return bundle
+        if kind == ContestedClaim.OTHER.value:
+            return ExplanationBundle(
+                question=question or "what are you disputing?",
+                subject_id=order_ref or "",
+                subject_type="contested_fact",
+                subject_external_name=order_ref or "",
+                ordered_records=[],
+                key_facts={"order": order_ref, "unevaluable": True,
+                           "said": question},
+                snapshot_id=self._snap_id,
+                identity_map=self._identity_map,
+            )
         if not order_ref:
             return self._unknown_question(question)
         demand = self._demand_by_order(order_ref)
@@ -2228,6 +2593,68 @@ class Explainer:
                         "start": _fmt_ts(w.get("start", "")),
                         "end": _fmt_ts(w.get("end", ""))}
         return None
+
+    def _machine_calendar(self, machine_name: str) -> Optional[dict]:
+        """The Calendar entity behind a machine, or None."""
+        rid = self._resolve_machine(machine_name)
+        if rid is None or self._reader is None:
+            return None
+        resources = {r["id"]: r for r in self._reader.iter_entities("resource")}
+        calendars = {c["id"]: c for c in self._reader.iter_entities("calendar")}
+        res = resources.get(rid)
+        return calendars.get(res.get("calendar_ref")) if res else None
+
+    def _closures(self, machine_name: str) -> list[dict]:
+        """A machine's DECLARED closures (docs/05 C2) with their reasons — the
+        evidence behind "after maintenance". Never inferred from a calendar gap:
+        a night and a shutdown look identical in a window list, and only one of
+        them is a thing the plant decided."""
+        out: list[dict] = []
+        for exc in (self._machine_calendar(machine_name) or {}).get(
+                "exceptions", []) or []:
+            if exc.get("type") != "closure":
+                continue
+            w = exc.get("window", {}) or {}
+            s, e = _to_dt(w.get("start")), _to_dt(w.get("end"))
+            if s is not None and e is not None:
+                out.append({"start": s, "end": e,
+                            "reason": exc.get("reason") or "closure"})
+        return out
+
+    def _open_windows(self, machine_name: str) -> list[tuple]:
+        """A machine's RESOLVED open calendar over the solved span: regular
+        windows plus declared additions (overtime), MINUS closures.
+
+        Session 4B.14. ``_machine_working_windows`` expands the base pattern and
+        stops there — it has never subtracted a closure, which is harmless for
+        the gap resolver (it asks a separate closure question) and fatal for the
+        blocker analysis, which would place work inside a maintenance day. The
+        span is taken from the solved placements themselves, padded a fortnight
+        each way, so no horizon plumbing is needed and a machine carrying no work
+        still resolves against the same grid as one that does."""
+        rows = [r for r in self._load_enriched_assignments() if r.get("start")]
+        starts = [_to_dt(r["start"]) for r in rows]
+        ends = [_to_dt(r["end"]) for r in rows]
+        pts = [p for p in starts + ends if p is not None]
+        if not pts:
+            return []
+        lo, hi = min(pts) - timedelta(days=14), max(pts) + timedelta(days=14)
+        base = self._machine_working_windows(machine_name, lo, hi)
+        if not base:
+            return []
+        cal = self._machine_calendar(machine_name)
+        closures: list[tuple] = []
+        for exc in (cal or {}).get("exceptions", []) or []:
+            w = exc.get("window", {}) or {}
+            s, e = _to_dt(w.get("start")), _to_dt(w.get("end"))
+            if s is None or e is None:
+                continue
+            if exc.get("type") == "closure":
+                closures.append((s, e))
+            else:
+                base.append((s, e))          # declared addition (overtime)
+        from mre.modules.blocker_analysis import _subtract
+        return _subtract(base, closures)
 
     def _machine_working_windows(self, machine_name: str, from_dt=None,
                                  to_dt=None) -> list[tuple]:
@@ -3606,6 +4033,20 @@ class Explainer:
         return result
 
     def _load_enriched_assignments(self) -> list[dict]:
+        """The solved placements as planner-vocabulary rows, memoized per
+        Explainer.
+
+        Session 4B.14 added the memo, for a cost this session introduced: the
+        blocker analysis reads these rows four or five times per answer (the
+        order's own rows, the machine's occupancy, the sufficiency check, the
+        open-window span), and each call re-walked every operation, fulfillment,
+        demand and service outcome in the snapshot. A snapshot is immutable for
+        the life of an Explainer, so the derived view is too — and no caller
+        mutates a row (``_order_rows`` sorts a fresh comprehension,
+        ``_apply_schedule_filter`` returns a filtered list)."""
+        cached = getattr(self, "_enriched_cache", None)
+        if cached is not None:
+            return cached
         ops_by_id = {o["id"]: o for o in self._reader.iter_entities("operation")}
         wp_to_fuls: dict[str, list[dict]] = {}
         for f in self._reader.iter_entities("fulfillment"):
@@ -3650,9 +4091,32 @@ class Explainer:
                     elif ref.get("type") == "customer":
                         customer_vals.append(ref["value"])
 
+            # Session 4B.14 Item 0 — THE EXPLAINER'S ROW MODEL WAS CHUNK-BLIND.
+            # ``end`` read ``run[0]["end"]``: the first CHUNK's end, not the
+            # operation's. On the pinned board ORD-000011 runs three chunks and
+            # this reported its end as 2026-01-08 19:00, its first PAUSE, when it
+            # completes 2026-01-12 15:37 — and that wrong figure is exactly what
+            # "held by ORD-000011 until 2026-01-08 19:00" cited. 4B.13 fixed this
+            # class in the document assembler and on the board; the explainer's
+            # own read was still first-chunk-only, so every consumer of ``end``
+            # (the blocked-by cause, order completion, slack, the gap resolver)
+            # was reading a pause as a finish. ``end`` is now the LAST run
+            # window's end, and the chunks travel with the row so an answer can
+            # distinguish RUN TIME from ELAPSED SPAN rather than conflating them.
             run_windows = asgn.get("phase_windows", {}).get("run", [])
             start_str = run_windows[0]["start"] if run_windows else ""
-            end_str = run_windows[0]["end"] if run_windows else ""
+            end_str = run_windows[-1]["end"] if run_windows else ""
+            chunks: list[dict] = []
+            run_min = 0.0
+            for i, w in enumerate(run_windows, start=1):
+                cs, ce = _to_dt(w.get("start")), _to_dt(w.get("end"))
+                mins = (ce - cs).total_seconds() / 60.0 if (cs and ce) else 0.0
+                run_min += mins
+                chunks.append({"chunk_seq": i, "start": w.get("start"),
+                               "end": w.get("end"), "working_min": round(mins, 3)})
+            sdt, edt = _to_dt(start_str), _to_dt(end_str)
+            span_min = ((edt - sdt).total_seconds() / 60.0
+                        if (sdt and edt) else 0.0)
 
             svc_facts: dict[str, dict] = {}
             for did in demand_ids:
@@ -3674,11 +4138,24 @@ class Explainer:
                 "resource_id": res_id,
                 "start": start_str,
                 "end": end_str,
+                # 4B.14 Item 0 / Item 4: run time and elapsed span, SEPARATELY.
+                # After 4B.13's chunk fix these genuinely differ (ORD-000011 is
+                # 1,501 working minutes across a 5,821-minute span) and that
+                # difference IS the answer to half the "why is there a gap"
+                # questions. Conflating them is the confusion the merged bar
+                # used to create.
+                "chunks": chunks,
+                "run_min": round(run_min, 3),
+                "span_min": round(span_min, 3),
+                "splittable": bool(op.get("splittable")),
+                "min_chunk": op.get("min_chunk"),
+                "setup_duration": op.get("setup_duration"),
                 "work_orders": wo_names,
                 "demand_ids": demand_ids,
                 "customer_ids": customer_vals,
                 "service_outcomes": svc_facts,
             })
+        self._enriched_cache = rows
         return rows
 
     @staticmethod
@@ -3855,6 +4332,21 @@ def _to_dt(s: Optional[str]) -> Optional[datetime]:
         return datetime(d.year, d.month, d.day)
     except ValueError:
         return None
+
+
+def _display_facts(facts: Optional[dict]) -> dict:
+    """A family's evidence with datetimes formatted for copy (Session 4B.14).
+    key_facts are quoted verbatim by the renderers and serialized onto the ask
+    response, so a raw datetime here would leak an ISO string into planner text."""
+    out: dict = {}
+    for k, v in (facts or {}).items():
+        if isinstance(v, datetime):
+            out[k] = v.strftime("%Y-%m-%d %H:%M")
+        elif isinstance(v, dict):
+            out[k] = _display_facts(v)
+        else:
+            out[k] = v
+    return out
 
 
 def _fmt_ts(s: str) -> str:

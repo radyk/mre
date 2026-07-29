@@ -186,6 +186,20 @@ Version history:
   objective term is measured from t0), while the extractor has always priced
   lateness from the DECLARED due date. The split does not change the model; it
   makes a decomposition the pipeline already contained legible. MINOR.
+
+1.12 (Session 4B.14 Item 4) — ``AssignmentBlock.splittable`` and
+  ``min_chunk_min``: the R-C3 interruptibility class the SOLVER applied to this
+  operation, and its minimum-piece floor. Both Optional, both absent on a
+  document assembled before this, so every 1.11 reader is unaffected and a
+  monolithic golden built without them is byte-identical to its 1.11 self.
+
+  WHY THE DOCUMENT NEEDS THEM. They are what decides whether an operation can
+  take a short window, which is what put ORD-000013's op20 on Thursday: it needs
+  7h11m in one piece and PAINT-01 had 4h54m left. Confirming that from the
+  cockpit meant zooming the board and counting pixels, and the job card — the
+  one surface built to answer "what is this bar" — could not say it. The board
+  already renders the CONSEQUENCE (a chunked bar, since 4B.13); this states the
+  RULE that produced it. MINOR.
 """
 from __future__ import annotations
 
@@ -196,7 +210,7 @@ from pydantic import BaseModel, model_validator
 
 from mre.contracts.vocabularies import ScheduleStatus
 
-CONTRACT_VERSION = "1.11"
+CONTRACT_VERSION = "1.12"
 
 # Exact decomposition tolerance: cost components are currency values
 # accumulated in float; "exactly" means to the cent, matching the
@@ -370,6 +384,18 @@ class AssignmentBlock(BaseModel):
     #                                            on this lineage (R-DP8, 1.5): the
     #                                            board marks it and never lists it
     #                                            as a moved consequence
+    splittable: Optional[bool] = None           # 1.12 (Session 4B.14 Item 4): the
+    #                                             R-C3 interruptibility class as the
+    #                                             SOLVER applied it, and its floor.
+    min_chunk_min: Optional[float] = None       # These are what decide whether an
+    #                                             operation can take a short window
+    #                                             — the fact that put ORD-000013's
+    #                                             op20 on Thursday — and confirming
+    #                                             it previously meant zooming the
+    #                                             board and counting pixels. Both
+    #                                             Optional and absent on a document
+    #                                             built before this, so a 1.11
+    #                                             reader is unaffected.
     commitment_state: Optional[Literal["committed", "active_window"]] = None
     #                                            rolling-horizon state (1.7): the
     #                                            frozen front commits (``committed``

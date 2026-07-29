@@ -1618,6 +1618,7 @@ def _cited_refs_from_bundle(bundle: Any) -> dict:
     are the citations, not a new computation over them."""
     operations: list[str] = []
     resources: list[str] = []
+    alternatives: list[str] = []
     demands: list[str] = []
 
     if getattr(bundle, "subject_type", "") == "demand" and bundle.subject_id:
@@ -1637,18 +1638,29 @@ def _cited_refs_from_bundle(bundle: Any) -> dict:
         chosen = rec.get("chosen") or {}
         if isinstance(chosen, dict) and chosen.get("resource_id"):
             resources.append(chosen["resource_id"])
+        # Session 4B.14 Item 5(c) — THE ROADS NOT TAKEN GET THEIR OWN CHANNEL.
+        # These used to be appended to `resources`, so an answer that narrated
+        # two bars on CUT-01 reported "lanes: CUT-01, CUT-02, CUT-03, PAINT-01" —
+        # four lanes for two bars, two of them carrying no work at all. Empty
+        # machines cited as evidence for an answer that never mentioned them.
+        # They ARE evidence when the answer prices them ("the other press was
+        # occupied"), which is why they are separated rather than dropped: the
+        # cockpit shades them differently and names them for what they are.
         for alt in rec.get("alternatives", []) or []:
             opt = str(alt.get("option", ""))
             if opt.startswith("resource:"):
-                resources.append(opt.split(":", 1)[1])
+                alternatives.append(opt.split(":", 1)[1])
 
     # de-dup, preserve first-seen order
     def _uniq(xs: list[str]) -> list[str]:
         seen: set[str] = set()
         return [x for x in xs if not (x in seen or seen.add(x))]
 
+    chosen_set = set(_uniq(resources))
     return {
         "operations": _uniq(operations),
         "resources": _uniq(resources),
+        # An alternative that IS the chosen lane is not an alternative.
+        "alternatives": [r for r in _uniq(alternatives) if r not in chosen_set],
         "demands": _uniq(demands),
     }

@@ -54,6 +54,22 @@ class Intent(str, Enum):
     INVENTORY = "inventory"
     INTEGRITY_CHECK = "integrity-check"
     START_REASON = "start-reason"
+    # Session 4B.14 Item 2 — THE BLOCKER ANALYSIS. `start-reason` answers "why
+    # does it start when it does" from ONE causal story, resource contention:
+    # the last job on the machine before it. The plant has at least six stories
+    # (docs/05 A4, A1/A2, R-F1, A7/F1, B1, C1/C2, C3) and when the true cause was
+    # one of the other five the route reached for the only one it had and
+    # rendered it fluently, with citations. The measured specimen: ORD-000013's
+    # op20 waited for Thursday because it needs 7h11m in one piece and 4h54m
+    # remained before PAINT-01 closed — a chunk-fit cause, explained as
+    # contention, citing a timestamp four days off.
+    #
+    # `why-here` computes an earliest-feasible-start per FAMILY and names the one
+    # that binds. It also draws the distinction `start-reason` cannot: whether
+    # the operation COULD NOT have gone earlier, or whether nothing prevented it
+    # and the solver CHOSE this placement. Those are different facts to a
+    # planner and the product asserted the first for both.
+    WHY_HERE = "why-here"
     CONTESTED_FACT = "contested-fact"
     SWAP_MOVE = "swap-move"
     GAP_BETWEEN = "gap-between"
@@ -190,6 +206,40 @@ class Polarity(str, Enum):
     NEGATIVE = "negative"
 
 
+class ContestedClaim(str, Enum):
+    """WHAT a `contested-fact` turn is disputing (Session 4B.14 Item 3).
+
+    THE MEASURED FAILURE — DISAGREEMENT LAUNDERING. Live on the pinned board the
+    planner said "it seems it should be able to start on tuesday after op10
+    finishes": a challenge to the system's causal reasoning, carrying the correct
+    hypothesis. The parse turned it into "is ORD-000013 really on time?" and
+    answered "Yes - the record agrees."
+
+    A challenge to the reasoning became a question about lateness, and the
+    affirmative reads as agreement while addressing nothing that was said. For a
+    product whose pitch is "interrogate the schedule" that is the worst available
+    failure — worse than a wrong number, because the planner cannot tell they
+    were ignored.
+
+    The intent was never the problem: it IS a contest. The ASSEMBLER knew one
+    proposition, lateness, and its canonical question was literally "is {order}
+    really on time?". This enum is what the parse REPORTS so the dispatch can
+    answer on the planner's own terms (R-AI5(8): the parse reports, the dispatch
+    decides).
+
+    LATENESS — a status the assistant stated ("isn't ORD-05 on time?").
+    TIMING   — the assistant's account of WHEN or WHY something was placed ("it
+               should be able to start Tuesday", "but the machine was free").
+    OTHER    — a dispute this vocabulary cannot classify. Answered by saying the
+               challenge could not be evaluated, never by substituting a
+               question that could.
+    """
+
+    LATENESS = "lateness"
+    TIMING = "timing"
+    OTHER = "other"
+
+
 class FollowupKind(str, Enum):
     """How this question links to the one before it (R-AI5(1) follow-up linkage).
 
@@ -323,6 +373,13 @@ class ParsedQuestion(BaseModel):
     # cannot. The model REPORTS the dropped qualifier; it never decides the
     # diversion (R-AI5(8)'s discipline applied to routing).
     dropped_qualifier: str = ""
+    # -- Session 4B.14 Item 3: WHICH claim a contest disputes ----------------
+    # Reported only on `contested-fact`. The dispatch reads it to answer the
+    # challenge on its own terms instead of re-parsing it into the one
+    # proposition the assembler happened to know. None from an older parse or a
+    # non-contest intent, which the assembler treats as LATENESS — the behaviour
+    # before this field existed, so no parse becomes unanswerable by upgrading.
+    contested_claim: Optional[ContestedClaim] = None
     # Instrumentation (the sweep's parse-specific counts; never read by a route).
     prompt_version: str = ""
     retries: int = 0
@@ -406,11 +463,28 @@ INTENT_MEANINGS: dict[Intent, str] = {
     Intent.INTEGRITY_CHECK:
         "is anything double-booked / overlapping on a machine",
     Intent.START_REASON:
-        "why an order starts when it does, or why it cannot start earlier, or "
-        "why it is running so early",
+        "why an order starts when it does at all, or why it is running so EARLY "
+        "(ahead of its due date). A question about what is HOLDING IT BACK, or "
+        "why it could not go earlier / on a named earlier day, is `why-here`",
+    Intent.WHY_HERE:
+        "what is BLOCKING this operation from starting earlier — \"why is this "
+        "here?\", \"why can't it start Monday?\", \"what's holding it up?\", "
+        "\"why not earlier?\", \"why the wait?\", \"couldn't it go before "
+        "that?\". The question asks for the BINDING CONSTRAINT on a placement, "
+        "which may be an earlier step, the machine being held, the calendar, a "
+        "window too short for the work, a pin or the frozen boundary — or "
+        "nothing at all. Prefer this over `start-reason` whenever the question "
+        "names an earlier time, an alternative day, or asks what prevents "
+        "something; prefer `gap-between` only when the planner asks about the "
+        "space between TWO named orders",
     Intent.CONTESTED_FACT:
-        "the planner CONTESTS a status the assistant stated (\"isn't ORD-05 on "
-        "time?\", \"I thought that one was fine\")",
+        "the planner DISPUTES something the assistant just said — a status "
+        "(\"isn't ORD-05 on time?\", \"I thought that one was fine\") or, just "
+        "as often, the assistant's REASONING (\"it seems it should be able to "
+        "start on tuesday after op10 finishes\", \"that can't be right\", \"but "
+        "the machine was free\"). Set `contested_claim` to say WHICH kind: "
+        "`lateness` for a status, `timing` for a challenge to when or why "
+        "something was placed, `other` when it is neither",
     Intent.SWAP_MOVE:
         "should/could two orders swap slots, or one order move earlier / to "
         "another machine (the board gesture)",

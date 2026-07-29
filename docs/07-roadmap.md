@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.57 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.58 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.58:** **Session 4B.14 — why is it here: the blocker analysis** 2026-07-29 (docs/04 session amendment; narrative in `docs/closeouts/4B.14.md`). **ITEM 0 RETURNED READING (A): THE SCHEDULE IS RIGHT, THE EXPLANATION WAS WRONG** — ORD-000013's op20 is not splittable, needs 431 working minutes and had 294 left before PAINT-01 closed on Tuesday; Wednesday is a plant-wide `planned_maintenance` closure (13 of 15 machines, HEAT-01/02 excepted); Thursday is the first window long enough. The session did not halt. **THE EXPLAINER KNEW ONE CAUSAL STORY AND THE PLANT HAS SIX (§5a.35)** — `why-here` computes an earliest-feasible-start per docs/05 family (A4, A1/A2, R-F1, A7/F1, B1, C1/C2, C3), names the family that binds, and draws the distinction the product could not: **COULDN'T versus CHOSE-NOT-TO**. Four families are NAMED as uncomputed on every answer rather than silently omitted. **CAUSAL SUFFICIENCY (§5a.36)** — a cited cause must account for the quantity it explains; the vacuity tripwire passes this class cleanly and neither check subsumes the other. **THE ROOT CAUSE WAS A THIRD FIRST-CHUNK-ONLY READ (§5a.34)** — the explainer's row model reported a chunked operation's first PAUSE as its end, the exact figure the bad answer cited; 4B.13 fixed the same class at two other seams and stopped. **DISAGREEMENT LAUNDERING (§5a.37)** — a challenge to the reasoning was re-parsed into a question about lateness and answered "yes, the record agrees"; `ContestedClaim` lets the parse say which claim is disputed and a `timing` contest is answered by the blocker analysis. **THE "WHY IS THIS HERE?" BUTTON WAS ASKING A DIFFERENT QUESTION (§5a.38)**, plus the transport-error turn, the fused lane citations and the selected-operation scope. Contract **1.12** (the R-C3 pair on the job card, both Optional). Parse prompt **v11**.
 
 **v2.57:** **Session 4B.13 — clear the board for a cold stranger** 2026-07-29 (docs/04 session amendment; narrative in `docs/closeouts/4B.13.md`). Not a feature session: it removed the things that would tell a first-time user the software is lying or unfinished. **THE DOWNTIME BAR IS A RENDER MERGE, NOT A PHYSICS VIOLATION** — the canonical Assignment carries three run windows (1501 working minutes) and NO assignment interval anywhere on the board overlaps a closure; `assemble_rolling_document` collapsed them to one chunk because `RollingView` placements carried no chunk data, and the cockpit has drawn per-chunk pieces since CU5. It hid the pauses of every chunked op on every rolling board, **which is how a real violation would have stayed invisible**; `tests/test_rolling_chunk_fidelity.py` is now the test that can tell the two apart. **VERIFICATION IS DOWNSTREAM OF TOOL VOCABULARY** — `lateness_set` counted 14 unplaced tray orders as "on time or early", synthesis repeated it faithfully and claim verification PASSED it, because the count really was what the tool said; a tool that fuses two categories makes every claim built on it unfalsifiable-but-verified, so the fix is in the TOOL and the verifier did not change. **THE RELEVANCE GUARD, two clauses, both FLOORS** — a false "why is X on Y" premise is now CORRECTED with evidence instead of echoed (a stranger mistyping a machine name got a fluent falsehood with an evidence chain attached), and a predicate the answer never addressed is ADMITTED at the delivery seam; `predicate_coverage.py` never routes, never suppresses, never changes a figure. **§5a.29 DISCHARGED** — `solve-optimality` joins the closed vocabulary (parse prompt **v10**), answering from the same M6 record the strip chip reads. Machine count no longer calls declared resources working. **New debt: §5a.33** (four slow fixtures broken since 4B.8). Close-outs now live at `docs/closeouts/<session-id>.md`, one path per session.
 
@@ -2699,6 +2701,135 @@ where the reasoning lives.
     four tests actually PASS afterwards** — they have never run, so a signature
     fix may only reveal the next failure. Consider also extending the AST
     signature guard to `tests/`, which would have caught this in 0.3 s.
+
+34. **THE EXPLAINER'S ROW MODEL WAS CHUNK-BLIND, AND IT IS WHY THE CITED
+    TIMESTAMP WAS FOUR DAYS OFF** (Session 4B.14 Item 0, FIXED).
+    `Explainer._load_enriched_assignments` read `phase_windows["run"][0]["end"]`
+    — the FIRST chunk of a chunked operation — so ORD-000011's end was reported
+    as its first PAUSE (2026-01-08 19:00) rather than its completion
+    (2026-01-12 15:37). That is exactly the figure the live answer cited.
+
+    4B.13 fixed this class twice already, in `assemble_rolling_document` and on
+    the board; the explainer's own read was never looked at, and it feeds the
+    blocked-by cause, order completion, slack and the gap resolver. `end` is now
+    the LAST run window's end, and the row carries `chunks`, `run_min` and
+    `span_min` so a consumer can distinguish run time from elapsed span rather
+    than conflating them.
+
+    **The general lesson, and it is the reusable one:** a defect class fixed at
+    one seam is not fixed. 4B.13 found the merge in the document assembler and
+    the board and stopped; the same first-chunk-only read sat in a third
+    consumer, producing a wrong number in prose instead of a wrong shape on
+    screen — where nothing draws it, so nothing looks wrong.
+
+35. **THE EXPLAINER KNEW ONE CAUSAL STORY AND THE PLANT HAS AT LEAST SIX**
+    (Session 4B.14 Item 2, FIXED — `why-here`, parse prompt **v11**).
+    `start-reason` answered every "why is it placed here" question with resource
+    contention: the last job on the machine. When the true cause was one of the
+    other five it reached for the only one it had and rendered it fluently, with
+    citations.
+
+    **The measured specimen.** ORD-000013's op20 waits for Thursday because it
+    needs **7h11m in one piece** and PAINT-01 had **4h54m** left when op10
+    finished — a docs/05 **C3** chunk-fit cause, explained as contention, citing
+    a timestamp four days off. Its op10 is the same shape one step earlier:
+    CUT-01 came free Monday 15:37 with 3h23m of shift left against 7h06m of
+    work, so it waited for Tuesday morning.
+
+    `blocker_analysis.py` computes an earliest-feasible-start per docs/05 family
+    — release (A4), precedence (A1/A2), frozen (R-F1), pin (A7/F1), resource
+    (B1), calendar (C1/C2), chunk-fit (C3) — and names the family that binds.
+    The ladder is monotone by construction; BINDING is the earliest family
+    attaining the maximum (the tie rule matters: when precedence and chunk-fit
+    land together, precedence pushed it and chunk-fit merely failed to push
+    further); RUNNER-UP is the previous pusher.
+
+    **THE DISTINCTION THAT MATTERS MOST, and the product could not draw it:**
+    `actual_start == max(est)` means IT COULD NOT START EARLIER; `actual_start >
+    max(est)` means NOTHING PREVENTED IT and the solver CHOSE this placement.
+    Those are different facts to a planner and the explainer asserted the first
+    for both. Measured on the pinned board, ORD-000011 is a genuine `chose`:
+    holding every other placement where it is, CUT-01 had open unheld time from
+    Jan 6 16:15 and the solve took Jan 8 14:36.
+
+    **Four docs/05 families are NAMED as uncomputed, on every answer**, rather
+    than silently omitted: B3/B5 (secondary and cumulative resources — the
+    document carries primary-lane occupancy only), B7/B8 (sequence-dependent
+    changeover — a METHOD gap, not a data gap: the matrix is readable, but the
+    setup an operation would need at an earlier position depends on what would
+    then precede it, which is a re-solve), C4 (no adapter populates the doorway),
+    F3 (unimplemented). A3 and A6 are out of scope rather than missing — they
+    are UPPER bounds and can never be why something could not start earlier.
+
+36. **CAUSAL SUFFICIENCY: A CITED CAUSE MUST ACCOUNT FOR THE QUANTITY IT
+    EXPLAINS** (Session 4B.14 Item 1, FIXED — `causal_sufficiency.py`).
+    "Held until T, so it took the next opening" asserts an arithmetic identity —
+    the explained start EQUALS the first open window on that resource after T —
+    and nobody checked it. On the specimen the next opening was Jan 9 07:00
+    against a start of Jan 13 07:00.
+
+    **The vacuity tripwire (4B.5 CU3) cannot catch this and neither subsumes the
+    other.** That check asks whether an answer names anything concrete; this one
+    named an order, a machine AND a timestamp, and would have passed just as
+    cleanly with the timestamp off by a year. Vacuity asks whether the answer
+    says anything; sufficiency asks whether what it says adds up, and needs no
+    model judgment at all — it is subtraction against the persisted document.
+
+    **A finding worth keeping: the two 4B.14 fixes are independent.** Repair the
+    chunk-blind read alone and the sentence is STILL false — CUT-01 frees
+    mid-shift Monday and the operation starts Tuesday morning, because the real
+    cause is chunk-fit. The chunk fix makes the cited NUMBER true; only the
+    blocker analysis makes the CAUSE right; only this check can tell that a
+    corrected sentence is still over-claiming. Pinned in
+    `tests/test_causal_sufficiency.py`.
+
+37. **DISAGREEMENT LAUNDERING — A CHALLENGE TO THE REASONING WAS ANSWERED AS A
+    QUESTION ABOUT LATENESS** (Session 4B.14 Item 3, FIXED — `ContestedClaim`).
+    Measured live: "it seems it should be able to start on tuesday after op10
+    finishes" — a challenge carrying the correct hypothesis — came back as "is
+    ORD-000013 really on time? Yes - the record agrees."
+
+    The intent was never wrong: it IS a contest. The ASSEMBLER knew exactly one
+    proposition, and its canonical question said so — literally "is {order}
+    really on time?". An affirmative that reads as agreement while addressing
+    nothing that was said. **For a product whose pitch is "interrogate the
+    schedule" this is the worst available failure — worse than a wrong number,
+    because the planner cannot tell they were ignored.**
+
+    The parse now REPORTS which claim is disputed (`lateness` / `timing` /
+    `other`) and the dispatch answers a `timing` contest with the blocker
+    analysis, on the planner's own terms; `other` says the challenge could not be
+    evaluated rather than substituting an adjacent question it can answer.
+    R-AI5(8)'s discipline throughout: the parse reports, the dispatch decides.
+
+    **`predicate_coverage`'s vocabulary went from one entry to three**, both
+    additions measured, never speculative: `disagreement` (this specimen) and
+    `temporal_alternative` ("why can't this order start on Monday" answered with
+    when it DOES start). The tripwire that forces a reviewer to look
+    (`test_the_vocabulary_is_deliberately_minimal_and_stays_declared`) went red
+    for both before they were reviewed in, which is what it is for.
+
+38. **THE "WHY IS THIS HERE?" BUTTON WAS ASKING A DIFFERENT QUESTION**
+    (Session 4B.14, FIXED). The cockpit's deictic button has been labelled *Why
+    is this here?* since 4A.2 and fired `why is X on Y?` — which is
+    `why-on-machine`, a CAPABILITY question answered with which machines could
+    have run the step. A fine answer to a question the button does not ask:
+    "here" is a position in TIME at least as much as on a lane. It now fires the
+    blocker analysis.
+
+    Three adjacent measured defects went with it. **(a)** A transport failure
+    ("Failed to fetch") rendered as a chat turn in the testimony register,
+    telling a planner the system had considered their question; it is now a
+    connection notice with a retry and no register at all. **(b)** `cited_refs`
+    fused the lanes an answer NARRATED with the alternatives it merely weighed,
+    so two bars on CUT-01 reported four lanes, two at 0% utilisation — empty
+    machines cited as evidence; `alternatives` is its own channel now (contract
+    unchanged; an API response field, additive). **(c)** An order-level question
+    resolved to the order's FIRST operation regardless of the board selection,
+    which is how a question asked with ORD-000013 selected on PAINT-01 came back
+    about CUT-01 with no bridging sentence; the selection carries `op_seq` now,
+    only three operation-scoped intents read it, and an unscoped question SAYS
+    which operation it answered about.
 
 
 ## 6. Open rulings queue

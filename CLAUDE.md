@@ -158,11 +158,61 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.12 — where the cliff actually is, and whether a hint moves it**,
-2026-07-28 (docs/07 v2.56, §5a.31-32; docs/04 session amendment; narrative in
-`docs/closeouts/4B.12.md`). A MEASUREMENT session: one capability behind a flag,
-default OFF; nothing it found was fixed. Before it: 4B.11 (v2.55, **R-PD1
-verbatim**), 4B.10 (v2.54), 4B.9 (§5a.24), 4B.8 (v2.53).
+**Session 4B.14 — why is it here: the blocker analysis**, 2026-07-29 (docs/07
+v2.58, §5a.34-38; docs/04 session amendment; narrative in
+`docs/closeouts/4B.14.md`). Before it: 4B.13 (v2.57), 4B.12 (v2.56, a
+MEASUREMENT session), 4B.11 (v2.55, **R-PD1 verbatim**), 4B.10 (v2.54).
+
+**THE EXPLAINER KNEW ONE CAUSAL STORY AND THE PLANT HAS SIX — `why-here`
+(4B.14, docs/07 §5a.35, parse prompt v11).** `start-reason` answered every
+"why is it placed here" with resource contention, the last job on the machine;
+when the true cause was one of the other five it reached for the only one it
+had and rendered it fluently, with citations.
+`src/mre/modules/blocker_analysis.py` computes an earliest-feasible-start per
+docs/05 family — release A4, precedence A1/A2, frozen R-F1, pin A7/F1, resource
+B1, calendar C1/C2, chunk-fit C3 — and names the one that BINDS. **BINDING is
+the EARLIEST family attaining the maximum**: when precedence and chunk-fit land
+together, precedence pushed it and chunk-fit merely failed to push further.
+**THE DISTINCTION THAT MATTERS MOST, and the product could not draw it:**
+`actual == max(est)` is COULDN'T; `actual > max(est)` is NOTHING PREVENTED IT
+and the solver CHOSE. Four docs/05 families are **NAMED as uncomputed on every
+answer** (B3/B5, B7/B8, C4, F3); A3/A6 are out of scope, being upper bounds.
+The route is AUTHORED COPY — **the verb is the answer**, and a reword that
+softens "couldn't" is the failure it was built to end.
+
+**ITEM 0 RETURNED (A): THE SCHEDULE IS RIGHT, THE EXPLANATION WAS WRONG.**
+ORD-000013's op20 is `splittable=False`, needs **431 working minutes**, and had
+**294** left before PAINT-01 closed on Tuesday; Wed Jan 14 is a
+`planned_maintenance` closure on **13 of 15 machines** (HEAT-01/02 open).
+**THE ROOT CAUSE WAS A THIRD FIRST-CHUNK-ONLY READ (§5a.34):**
+`_load_enriched_assignments` read `phase_windows["run"][0]["end"]`, so a chunked
+op reported its first PAUSE as its end — the exact figure the bad answer cited.
+4B.13 fixed the same class at two other seams and stopped. **A defect class
+fixed at one seam is not fixed.**
+
+**CAUSAL SUFFICIENCY — A CITED CAUSE MUST ACCOUNT FOR THE QUANTITY IT EXPLAINS
+(§5a.36, `causal_sufficiency.py`).** "Held until T, so it took the next opening"
+asserts an arithmetic identity nobody checked. **The 4B.5 vacuity tripwire
+cannot catch this and neither check subsumes the other** — the specimen names an
+order, a machine AND a timestamp, and would pass with the timestamp off by a
+year. **The two 4B.14 fixes are independent, and this is pinned:** repairing the
+chunk read alone leaves the sentence false, because the real cause is chunk-fit.
+
+**DISAGREEMENT LAUNDERING (§5a.37, `ContestedClaim`).** "it seems it should be
+able to start on tuesday after op10 finishes" came back "is ORD-000013 really on
+time? Yes - the record agrees." The intent was right; the ASSEMBLER knew one
+proposition and its canonical question said so verbatim. **Worse than a wrong
+number, because the planner cannot tell they were ignored.** The parse now
+reports which claim is disputed (`lateness`/`timing`/`other`, also on
+`why-here`) and a challenge is answered ON ITS OWN TERMS — where the planner is
+right, plainly, first. `predicate_coverage` went from **one entry to three**,
+both additions measured.
+
+**Contract 1.12** (4B.14): `AssignmentBlock.splittable` + `min_chunk_min`, both
+Optional and absent on an older document. The job card carries RUN TIME and
+ELAPSED SPAN as **separate labelled rows** — after 4B.13's chunk fix they
+genuinely differ (1,501 working minutes across a 5,821-minute span) and
+conflating them is the confusion the merged bar used to create.
 
 **CLOSE-OUTS LIVE AT `docs/closeouts/<session-id>.md` — ONE PATH PER SESSION,
 NOTHING OVERWRITES** (4B.13 Item 6). Until then every session wrote the repo-root
@@ -201,12 +251,9 @@ cross-trains, and a=2 proves 0/5 at 100 ops/machine where a=1 manages 1/5.
 plant most of it cannot be scheduled away by any placement (§5a.31(g)).
 
 **`hint_mode` — THE WARM START, SHIPPED BEHIND A FLAG, DEFAULT OFF** (4B.12 CU3,
-`rolling_horizon.py`; 11 guards in `tests/test_hint_warm_start.py`). Phase 0
-clears the objective, solves for satisfiability and seeds the solution as a hint;
-its spend comes out of the SAME `det_total` and is counted into `det_consumed`.
-**Turning it on is a ruling, not a default change** — every golden is captured
-with it off, and the guards pin that (`test_defaults_reproduce_baseline` +
-`test_budget_allocation`, 11 passed, byte-identical). Verdict in docs/07 §5a.32.
+`rolling_horizon.py`; guards in `tests/test_hint_warm_start.py`). Its spend comes
+out of the SAME `det_total`. **Turning it on is a ruling, not a default change** —
+every golden is captured with it off. Verdict in docs/07 §5a.32.
 
 **R-PD1 — PAST-DUE IS WORK, NOT A DEFECT (ruled and implemented, docs/04
 2026-07-28).** Six clauses. **(1)** a past-due unstarted demand is admitted,
@@ -238,12 +285,9 @@ reference-date floor is now unconditional (sample_data dragged the horizon to
 
 **THE TARDINESS SPLIT — contract 1.10 -> 1.11.** `cost_summary.tardiness_floor` +
 `tardiness_controllable`, present TOGETHER or not at all, summing to `tardiness` to
-the cent, **ABSENT on any book with no past-due work** (so on-time monolithic
-documents are byte-identical to their 1.10 selves). It does not change the model —
-`solver_builder` has always clamped `due_min = max(0, due − horizon_start)`, so the
-floor was never in the objective (proved at 12 orders where both arms are OPTIMAL and
-`B − A = Σ (weight × floor)` exactly; placements still differ, because that is a TIE).
-**4B.12 found its LIMIT: an over-capacity plant needs a THIRD category** — see above.
+the cent, **ABSENT on any book with no past-due work**. It does not change the model
+— the floor was never in the objective. **4B.12 found its LIMIT: an over-capacity
+plant needs a THIRD category** — see above.
 
 **§5a.23 DISCHARGED — the cost proof is rendered and voiced.**
 `src/mre/modules/cost_proof.py` is the single definition. The cockpit strip carries a
@@ -255,11 +299,9 @@ the point. Every bundle leaving `Explainer.route` carries the proof, read from t
 path could not state a gap at all** before this. **No optimality ROUTE was built** —
 a vocabulary-class change, named as §5a.29.
 
-**THE 42 IS RECONCILED.** `_excluded_summary` counted a **token set** holding both
-id-spaces of every excluded demand (21 x 2 = 42) and summed `total` wrongly on top.
-Counting and display now key on the **resolved ORDER**; the invariant
-`scheduled + count == total == demands in the snapshot` is asserted and proved on a
-purpose-built world that still HAS exclusions.
+**THE 42 IS RECONCILED** (4B.11): `_excluded_summary` counted a token set holding
+both id-spaces of every excluded demand. Counting keys on the **resolved ORDER**
+and `scheduled + count == total` is asserted.
 
 **THE sample_data BASELINE WAS REGENERATED** (WO-PAST-001, seeded defect 3, whose
 `DEFECTS.md` declared `proceeded_flagged` all along). **Accounted for by
@@ -273,17 +315,14 @@ released-long-ago order became schedulable; both now pass the date they had pinn
 **THE REAL SHAPE, AND WHY IT REFRAMES SCALE (4B.10; full tables docs/07 §5a.24-27).**
 `pilot_scale` runs 13-15 machines at ~24 ops/machine; **the measured planning unit is
 4 MACHINES CARRYING 250-800 OPS EACH.** No long tail — 90% of demand due inside 14
-days, 50% inside 7, **7.83% ALREADY PAST DUE** — and one facility is the planning
-unit. Durations are **DETERMINED, not ambiguous**:
-`op = SetUpMinutes + (WoQuantity/CostingLotSize) x ProductionMinutes` per operation
-(§5a.25) — and **a SENTINEL CLASS carries 93.56% of computed load** (1,434 products
-reading `lot = setup = production = 1`; **no exclusion rule we have catches them**,
-they fire on `lot == 0`). Every utilisation figure is taken with the class removed.
+days, 50% inside 7, **7.83% ALREADY PAST DUE**. Durations are **DETERMINED**:
+`op = SetUpMinutes + (WoQuantity/CostingLotSize) x ProductionMinutes` (§5a.25) — and
+**a SENTINEL CLASS carries 93.56% of computed load** (1,434 products reading
+`lot = setup = production = 1`; **no exclusion rule we have catches them**, they fire
+on `lot == 0`). Every utilisation figure is taken with the class removed.
 **Utilisation is BOTH answers:** F006, the LARGEST facility, is structurally
 over-capacity (no solver fixes that); F004, the MEDIAN, is comfortably feasible —
-**there the difficulty is OURS**. The cases must not be conflated. (4B.12 SOLVED
-both: F004 gaps 83.5-85.8%, F006 98.8%, against a REAL Mon-Fri calendar rather
-than §5a.25's 7-day denominator.)
+**there the difficulty is OURS**. The cases must not be conflated.
 
 **THE CLIFF IS A REGION WHERE THE SEED DECIDES, AND ITS DRIVER IS TARDINESS
 (§5a.27). ITS NUMBERS ARE SUPERSEDED BY 4B.12 — the MECHANISM below is current,
@@ -485,6 +524,17 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
 
 **Small carry-forwards (do not lose):**
 
+- 4B.14 findings (docs/07 §5a.34-38 — REPORTED, deliberately NOT fixed):
+  **A `chose` VERDICT ON A SPLITTABLE OPERATION IS A LOWER BOUND** — setup is a
+  separate R-C3 phase and the fit scan treats working minutes as one divisible
+  quantity, so the copy claims only what is computed ("there was open, unheld
+  time from T") and never "the solver could have placed it there".
+  **THE RUNNER-UP CAN BE A STALE TRUE FACT** — the renderer suppresses it when
+  the binding family's near-miss window is more recent, which is a heuristic
+  about relevance, not a proof. **`start-reason` WAS NOT RETIRED**; whether it
+  and `why-here` should merge is a vocabulary question 4B.14 did not rule on.
+  **CLAUDE.md is 45k against its 40k phase-exit ceiling** (43k before this
+  session) — the status section is what shrinks first.
 - 4B.12 findings (docs/07 §5a.31-32 — REPORTED, deliberately NOT fixed):
   **THE TARDINESS SPLIT NEEDS A THIRD CATEGORY** — at F006's 134.9% utilisation
   "controllable" (15.3M of a 16.9M ledger) means not-already-accrued, NOT

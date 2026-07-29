@@ -161,6 +161,9 @@ def _rendered_by(bundle: ExplanationBundle, default: str) -> str:
 _HEADER_ONLY_SUBJECTS = frozenset({
     "findings", "order_attributes", "inventory", "integrity", "start_reason",
     "unknown_entity", "drill_down", "briefing", "contested_fact",
+    # Session 4B.14 Item 2 — the blocker analysis composes its whole answer from
+    # pre-computed key_facts (the ladder, the binding family, its arithmetic).
+    "why_here",
     # Session 4A.3 — the swap/move bridge + the absence pair compose their whole
     # answer in the header (the R-AI3 ladder in planner language).
     "swap_move", "gap_between", "machine_idle",
@@ -386,6 +389,17 @@ def apply_coverage_rider(bundle, text: str) -> Optional[str]:
         return None
 
 
+def apply_sufficiency_rider(bundle, text: str) -> Optional[str]:
+    """Session 4B.14 Item 1 — the causal-sufficiency floor, at the ONE delivery
+    seam both renderers share. All the arithmetic lives in
+    ``causal_sufficiency``; this is only the attachment point."""
+    from mre.modules.causal_sufficiency import apply_sufficiency_rider as _apply
+    try:
+        return _apply(bundle, text)
+    except Exception:  # noqa: BLE001 — a guard never breaks an answer
+        return None
+
+
 def apply_cost_proof_rider(bundle, text: str) -> Optional[str]:
     """Append the cost-proof qualifier to an answer that states money on a board
     whose cost optimum was NOT proved (Session 4B.11 CU1, docs/07 §5a.23).
@@ -424,6 +438,29 @@ def apply_cost_proof_rider(bundle, text: str) -> Optional[str]:
         head, foot = text.split(marker, 1)
         return f"{head.rstrip()}\n\n{rider}\n{marker}{foot}"
     return f"{text.rstrip()}\n\n{rider}"
+
+
+def _dur_min(minutes) -> str:
+    """A duration in the register a planner reads — "7h11m", "1d 1h", "45m".
+    Mirrors the cockpit job card's ``fmtDur`` so a figure reads the same whether
+    it arrives in an answer or on a hover (Session 4B.14 Item 4)."""
+    if minutes is None:
+        return "?"
+    m = int(round(float(minutes)))
+    if m < 60:
+        return f"{m}m"
+    h, r = divmod(m, 60)
+    # Deliberately no days: these are WORKING minutes, and "1d 1h" of work
+    # invites the reader to ask a day of what — calendar or shift. Hours stay
+    # unambiguous however many of them there are.
+    return f"{h}h" if r == 0 else f"{h}h{r:02d}m"
+
+
+def _family_gist(why: str) -> str:
+    """The short name of an uncomputed docs/05 family, from its own recorded
+    reason (Session 4B.14). The full sentence lives in ``blocker_analysis`` and
+    is the authority; this is the clause a planner reads in a one-line list."""
+    return (why or "").split(" — ")[0].split(" - ")[0].strip() or "not computed"
 
 
 def causal_material(bundle) -> tuple[set, set]:
@@ -491,6 +528,9 @@ class TemplateRenderer:
         # 4B.11 CU1 — an unproved board's money claims carry their gap, here,
         # once, for every route (docs/07 §5a.23).
         text = apply_cost_proof_rider(bundle, text) or text
+        # 4B.14 Item 1 — a cited cause that does not account for the quantity it
+        # explains says so, before anything else can read it as the whole cause.
+        text = apply_sufficiency_rider(bundle, text) or text
         # 4B.13 Item 1(ii) — and a predicate the answer never addressed is
         # admitted rather than left for the planner to notice.
         return apply_coverage_rider(bundle, text) or text
@@ -1031,6 +1071,9 @@ class TemplateRenderer:
 
         elif bundle.subject_type == "start_reason":
             self._render_start_reason(lines, bundle)
+
+        elif bundle.subject_type == "why_here":
+            self._render_why_here(lines, bundle)
 
         elif bundle.subject_type == "unknown_entity":
             self._render_unknown_entity(lines, bundle)
@@ -1778,6 +1821,190 @@ class TemplateRenderer:
             lines.append(f"{name} isn't scheduled, so it has no start to explain.")
         lines.append("")
 
+    def _render_why_here(self, lines: list[str], bundle: ExplanationBundle) -> None:
+        """THE BLOCKER ANALYSIS, voiced (Session 4B.14 Item 2).
+
+        The bar this copy is written against, from the session brief:
+
+            "op20 couldn't start Tuesday afternoon: it needs 6h and 3h remain
+             before PAINT-01 closes, and it can't be split. The next window long
+             enough is Thursday, after maintenance."
+
+        Three things that sentence does and the old start-reason copy did not: it
+        says COULDN'T rather than implying it, it states the arithmetic that makes
+        it true, and it names what the operation was waiting FOR. Authored, not
+        LLM-reworded, because a reword that softens "couldn't" into "took the next
+        opening" is precisely the failure this route exists to end."""
+        kf = bundle.key_facts
+        name = bundle.subject_external_name
+        seq = kf.get("op_seq")
+        op = f"op{seq}" if seq is not None else "this operation"
+        machine = kf.get("machine")
+        verdict = kf.get("verdict")
+
+        if verdict == "unplaced":
+            lines.append(f"{name} has no placement in this window, so there is no "
+                         "'here' to explain yet. Ask \"why isn't "
+                         f"{name} scheduled yet?\" and I'll answer that instead.")
+            lines.append("")
+            return
+
+        # Item 5(d) — say WHICH operation this is about when the planner named an
+        # order and the order has more than one. A bridging sentence is cheap; a
+        # planner silently answered about a different bar is not.
+        if (kf.get("op_count") or 0) > 1 and not kf.get("op_named"):
+            lines.append(f"Answering about {name} {op} on {machine} — the first of "
+                         f"its {kf['op_count']} operations.")
+
+        binding = kf.get("binding") or {}
+        start = kf.get("start")
+        wd = kf.get("start_weekday")
+        when = f"{wd} {start}" if wd and start else (start or "when it does")
+
+        # Session 4B.14 Item 3 — WHEN THE PLANNER IS PUSHING BACK, ANSWER THE
+        # PUSH-BACK. R-AI3(4): disagreement is met with warm evidence, never
+        # capitulation and never a curt re-assertion; where the planner is RIGHT,
+        # say so plainly and correct the record. The measured failure was an
+        # answer that addressed nothing that was said and still read as
+        # agreement, so silence here is not neutral — it is the defect.
+        if kf.get("challenge"):
+            lines.append(self._challenge_lead(kf, verdict, binding))
+
+        if verdict == "could_not":
+            lead = (f"{name} {op} couldn't start before {when}: "
+                    f"{binding.get('because', 'a constraint bound it there')}.")
+            if not kf.get("splittable") and binding.get("family") == "chunkfit":
+                lead = lead[:-1] + ", and it can't be split."
+            lines.append(lead)
+            # The runner-up earns its line only when it is at least as recent as
+            # the near miss the lead already described. Otherwise it is a true
+            # sentence about a constraint that stopped mattering days earlier
+            # ("CUT-01 is closed until Jan 5 07:00" under an answer about Jan 13),
+            # and padding a causal answer with stale true facts is how the
+            # original defect read as thorough.
+            runner = kf.get("runner_up") or {}
+            near = (binding.get("facts") or {}).get("short_window") or {}
+            recent = (not near.get("start")
+                      or (runner.get("at") or "") >= near["start"])
+            if (runner.get("because") and recent
+                    and runner.get("family") != binding.get("family")):
+                lines.append(f"Before that: {runner['because']}.")
+            closure = self._closure_note(kf)
+            if closure:
+                lines.append(closure)
+        elif verdict == "chose":
+            at = binding.get("at")
+            lines.append(
+                f"Nothing prevented {name} {op} from starting earlier. Holding "
+                f"every other placement where it is, {machine} had open, unheld "
+                f"time from {at} — the solver chose {when} rather than being "
+                "forced into it.")
+            driver = kf.get("chosen_driver")
+            if driver:
+                lines.append(f"The assignment decision records its driver as "
+                             f"{driver}.")
+            else:
+                lines.append("No decision record states a cost reason for the "
+                             "later placement, so I can't tell you why it "
+                             "preferred it — only that it was not forced.")
+        else:
+            lines.append(
+                f"I can't attribute {name} {op}'s placement at {when} to a "
+                "binding constraint: the earliest-start estimates I can compute "
+                "don't line up with where it actually sits. Rather than pick one "
+                "and sound certain, I'd rather say I don't know.")
+
+        # Session 4B.14 Item 4, voiced. A chunked operation's RUN TIME and its
+        # ELAPSED SPAN are different numbers and the gap between them is where
+        # the pauses live. Stating it here is what makes this route an honest
+        # answer to "why does it go through downtime" rather than merely a
+        # word-match on "closed": every chunk is placed inside open calendar
+        # time by construction (4B.13's closure sweep proved zero exceptions),
+        # so the pauses ARE non-working time, and that is a fact, not a guess.
+        chunks = kf.get("chunk_count") or 0
+        run_min, span_min = kf.get("run_min"), kf.get("span_min")
+        if chunks > 1 and run_min and span_min:
+            # The span is stated as its wall-clock bracket rather than as a
+            # duration: "97h" is a true number a planner cannot picture, and
+            # rendering working minutes as DAYS would be worse — a day of what,
+            # calendar or shift? The dates are unambiguous and the answer
+            # already carries them.
+            lines.append(
+                f"It runs in {chunks} pieces between {start} and {kf.get('end')}, "
+                f"{_dur_min(run_min)} of actual work — it pauses when {machine} "
+                f"closes and resumes when it reopens, which is what it means for "
+                f"this operation to be splittable.")
+
+        # The chain, when there is more than one link — the planner's own audit.
+        chain = [c for c in (kf.get("chain") or []) if c]
+        if len(chain) > 1:
+            lines.append("")
+            lines.append("What pushed it, in order:")
+            for c in chain:
+                lines.append(f"  {c.get('at')}  {c.get('label')} "
+                             f"[docs/05 {c.get('citation')}] — {c.get('because')}")
+
+        # R-AI3(1): what this reading did NOT weigh, so the planner can price the
+        # answer's confidence themselves.
+        unc = kf.get("uncomputed") or []
+        if unc and verdict in ("could_not", "chose"):
+            lines.append("")
+            lines.append("Not weighed here (docs/05): "
+                         + "; ".join(f"{u.get('catalog', '?')} "
+                                     f"{_family_gist(u.get('why', ''))}"
+                                     for u in unc) + ".")
+        lines.append("")
+
+    @staticmethod
+    def _challenge_lead(kf: dict, verdict: str, binding: dict) -> str:
+        """The opening sentence of an answer to a CHALLENGE (Item 3).
+
+        It concedes exactly what the analysis concedes and no more. Three cases,
+        and the concession in each is computed, never a courtesy:
+
+          * verdict `chose` — the planner is RIGHT. Nothing prevented an earlier
+            start. Say it first and plainly; burying a correction under a
+            paragraph of agreement-shaped prose is the same failure in a
+            politer register.
+          * the binding family is NOT `resource` — then contention was not the
+            cause, so "the machine was free" is TRUE and is conceded with the
+            instant it was free from. That is the specimen's own case: the
+            planner said op20 should be able to start Tuesday after op10, and
+            PAINT-01 genuinely was free all Tuesday afternoon.
+          * otherwise the machine really was held, and the honest lead says the
+            record does not agree rather than manufacturing something to concede.
+        """
+        machine = kf.get("machine")
+        if verdict == "chose":
+            return ("You're right, and I'll correct what I said: nothing in the "
+                    "plan prevented an earlier start.")
+        if verdict == "undetermined":
+            return ("I can't settle this one either way — my own earliest-start "
+                    "estimates don't line up with where it actually sits.")
+        est = {e.get("family"): e for e in (kf.get("estimates") or []) if e}
+        res = est.get("resource") or {}
+        if binding.get("family") != "resource" and res.get("at"):
+            return (f"You're right about the machine: {machine} wasn't busy — it "
+                    f"was free from {res['at']}. That isn't what held this up.")
+        return (f"The record doesn't agree, and here is what it shows — "
+                f"{machine} really was held.")
+
+    @staticmethod
+    def _closure_note(kf: dict) -> str:
+        """"...after maintenance" — the target sentence's closing clause.
+
+        Only stated when a DECLARED closure actually stands between the near miss
+        and the placement (the analysis puts it there and nowhere else). A
+        maintenance day that delayed nothing is not part of the cause, and naming
+        it would be the same over-claim this route exists to end."""
+        binding = kf.get("binding") or {}
+        cl = (binding.get("facts") or {}).get("closure") or {}
+        if not cl.get("start"):
+            return ""
+        reason = str(cl.get("reason") or "closure").replace("_", " ")
+        return (f"The wait spans {reason} on {kf.get('machine')}, "
+                f"{cl['start']} to {cl['end']}.")
+
     def _render_unknown_entity(self, lines: list[str], bundle: ExplanationBundle) -> None:
         kf = bundle.key_facts
         token = kf.get("mention", "that order")
@@ -2257,6 +2484,15 @@ class LLMRenderer:
         # Session 4A.3-pre CU6: the contested-fact restatement is authored warmth
         # over a pinned fact — the LLM must never soften it into capitulation.
         "contested_fact",
+        # Session 4B.14 Item 2: the blocker analysis. Two reasons, and the second
+        # is the load-bearing one. (a) Its body is composed entirely from
+        # pre-computed key_facts and carries docs/05 citations, which the
+        # testimony validator correctly reads as fabricated record ids — the
+        # recurring disease with the recurring cure (4A.3c CU3). (b) The verb is
+        # the answer. "Couldn't" and "the solver chose" are the distinction this
+        # route exists to draw, and a reword that softens either into "took the
+        # next opening" would put back exactly the failure it was built to end.
+        "why_here",
         # Session 4A.3: the swap/move bridge + the absence pair are authored — the
         # take + gesture bridge are composed on the evidence, never LLM-improvised.
         "swap_move", "gap_between", "machine_idle",
@@ -2303,6 +2539,9 @@ class LLMRenderer:
         # 4B.11 CU1 — same seam, same rule: a reworded answer that still states
         # money on an unproved board still carries the gap.
         text = apply_cost_proof_rider(bundle, text) or text
+        # 4B.14 Item 1 — same seam, same rule: a REWORD is exactly how "so it
+        # took the next opening" comes back after the assembler removed it.
+        text = apply_sufficiency_rider(bundle, text) or text
         # 4B.13 Item 1(ii) — and same seam, same rule again: a reworded answer
         # that still never addressed the predicate says so. Both renderers or
         # neither; a floor one path can skip is not a floor.

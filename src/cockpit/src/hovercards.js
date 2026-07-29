@@ -42,6 +42,19 @@ const fmtSlack = (min) => {
     : e >= 60 ? `${(e / 60).toFixed(1)}h early` : `${e} min early`;
 };
 
+// Session 4B.14 Item 4: a WORKING duration in the register a planner reads —
+// "7h11m", "45m", "1d 1h". Distinct from fmtSlack, which is signed and relative
+// to a due date; this one is an absolute quantity of work or of elapsed time.
+const fmtDur = (min) => {
+  if (min == null) return "—";
+  const m = Math.round(min);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60), r = m % 60;
+  if (h < 24) return r ? `${h}h${String(r).padStart(2, "0")}m` : `${h}h`;
+  const d = Math.floor(h / 24), rh = h % 24;
+  return rh ? `${d}d ${rh}h` : `${d}d`;
+};
+
 const CLOSURE_LABEL = {
   planned_maintenance: "Planned maintenance",
   breakdown: "Recorded downtime",
@@ -92,12 +105,40 @@ export function createHoverCards(hostEl, timeline, ctx) {
     const span = (job.start != null && job.end != null)
       ? `${fmtDay(job.start)} → ${fmtDay(job.end)}` : "—";
     const slack = fmtSlack(job.latenessMin);
+    // Session 4B.14 Item 4 — RUN TIME AND ELAPSED SPAN, DISTINCTLY LABELLED.
+    //
+    // After 4B.13's chunk fix these genuinely differ (ORD-000011 is 1,501
+    // working minutes across a 5,821-minute span) and that difference IS the
+    // answer to half the "why is there a gap" questions. Two labelled rows, and
+    // "Elapsed" only appears when it is actually longer than the run — on an
+    // unbroken operation the two are the same number and printing it twice is
+    // noise. Confirming any of this used to mean zooming and counting pixels.
+    const runTxt = fmtDur(job.runMin);
+    const showElapsed = job.spanMin != null && job.runMin != null
+      && job.spanMin - job.runMin >= 1;
+    const elapsedRow = showElapsed
+      ? `<dt>Elapsed</dt><dd class="hc-elapsed">${fmtDur(job.spanMin)}` +
+        `<span class="hc-note"> — ${fmtDur(job.spanMin - job.runMin)} paused` +
+        (job.chunkCount > 1 ? `, ${job.chunkCount} pieces` : "") + `</span></dd>`
+      : "";
+    // What decides whether this operation can take a short window. Omitted
+    // entirely when the document does not carry it (pre-1.12): a card that
+    // guessed a default here would be the confident-wrong class again.
+    const splitRow = job.splittable == null ? ""
+      : `<dt>Splitting</dt><dd class="hc-split">` +
+        (job.splittable
+          ? "can be split" + (job.minChunkMin
+              ? ` — pieces of at least ${fmtDur(job.minChunkMin)}` : "")
+          : "cannot be split — needs one unbroken window") + `</dd>`;
     card.className = `hover-card job ${statusCls}`;
     card.innerHTML = `
       <div class="hc-head"><span class="hc-order"></span>
         <span class="hc-status ${statusCls}">${statusTxt}</span></div>
       <dl class="hc-grid">
         <dt>When</dt><dd class="hc-when"></dd>
+        <dt>Run time</dt><dd class="hc-run">${runTxt}</dd>
+        ${elapsedRow}
+        ${splitRow}
         <dt>Slack</dt><dd class="hc-slack">${slack}</dd>
         <dt>Qty</dt><dd class="hc-qty"></dd>
         <dt>Customer</dt><dd class="hc-cust"></dd>
