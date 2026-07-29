@@ -173,6 +173,8 @@ ROUTE_TAXONOMY: dict[str, dict] = {
     "coaching":              {"params": [],          "canonical": "how do I enable that?"},
     "solve-time":            {"params": [],          "canonical": "how long did the solve take?"},
     "machine-count":         {"params": [],          "canonical": "how many machines are there?"},
+    # Session 4B.13 Item 2 — the cost proof becomes ASKABLE (docs/07 §5a.29).
+    "solve-optimality":      {"params": [],          "canonical": "is this schedule optimal?"},
     "maintenance":           {"params": [],          "canonical": "is any maintenance scheduled?"},
     # Session 4B.3c CU4 — the ROLLING (sliced-world) routes. Live only when the
     # schedule is a rolling document (the /ask path delegates to rolling_questions,
@@ -601,6 +603,18 @@ class Explainer:
         try:
             if bundle is not None and isinstance(bundle.key_facts, dict):
                 bundle.key_facts.setdefault("cost_proof", self.cost_proof())
+                # Session 4B.13 Item 1, clause (ii): the ROUTE THAT ANSWERED,
+                # stamped at the same one dispatch and for the same reason. The
+                # predicate-coverage floor at the delivery seam needs to know
+                # which route spoke in order to know what it was expected to
+                # cover; a bundle alone carries a subject type, not a route.
+                bundle.key_facts.setdefault("route_id", route_id)
+                # The planner's ORIGINAL words, when the dispatch carried them.
+                # Assemblers overwrite bundle.question with canonical phrasing,
+                # so this is the only surviving record of what was asked.
+                asked = params.get("asked_question") or params.get("question")
+                if asked:
+                    bundle.key_facts.setdefault("asked_question", asked)
         except Exception:  # noqa: BLE001 — a missing proof never breaks an answer
             pass
         return bundle
@@ -633,6 +647,8 @@ class Explainer:
             return self._explain_solve_time(q)
         if route_id == "machine-count":
             return self._explain_machine_count(q)
+        if route_id == "solve-optimality":
+            return self._explain_optimality(q)
         if route_id == "maintenance":
             return self._explain_maintenance(q)
         if route_id == "inventory":
@@ -660,7 +676,8 @@ class Explainer:
                                             params.get("history"))
         if route_id == "unknown-entity":
             return self._explain_unknown_entity(
-                params.get("mention") or params.get("order") or q)
+                params.get("mention") or params.get("order") or q,
+                params.get("mention_kind") or "")
         if route_id == "open-card":
             return self._explain_open_card(q, params.get("card") or {})
         if route_id == "edit-cost":
@@ -670,7 +687,7 @@ class Explainer:
         if route_id == "late-order":
             return self._explain_why_late(params["order"])
         if route_id == "late-orders":
-            return self._list_late_orders()
+            return self._list_late_orders(params.get("document"))
         if route_id == "lateness-cause":
             return self._explain_lateness_cause(q)
         if route_id == "why-on-machine":
@@ -874,8 +891,17 @@ class Explainer:
     # Private assemblers
     # ------------------------------------------------------------------
 
-    def _list_late_orders(self) -> ExplanationBundle:
+    def _list_late_orders(self, document: Any = None) -> ExplanationBundle:
         """Return all demands with positive lateness_minutes from the evidence index.
+
+        ``document`` (Session 4B.13 Item 3) is the rolling schedule document when
+        one is in play. NOT-LATE AND NOT-SCHEDULED ARE DIFFERENT STATES: on the
+        pinned exam world 26 orders are in the window and on time while 14 sit in
+        the beyond-horizon tray with no placement at all, and "No late orders
+        found in this schedule." said alone lets a stranger read the tray as a
+        clean bill of health. The count of late orders is unchanged and still
+        comes from the evidence index — the tray count rides BESIDE it as its own
+        labelled figure, never summed into it and never used to soften it.
 
         R-PD1 clause (4)/(6), Session 4B.11 CU4(b). Once past-due work is
         SCHEDULED rather than excluded, this route is the one a planner asks in
@@ -922,6 +948,25 @@ class Explainer:
         worst = max(late_items, key=lambda it: it["lateness_minutes"],
                     default=None) if late_items else None
         past_due = [it for it in late_items if it["floor_minutes"] > 0]
+        # The rolling regions, when there is a rolling document. On a monolithic
+        # document (or none) both stay None and the rendered answer is
+        # byte-identical to its pre-4B.13 self.
+        placed_n = tray_n = None
+        if document is not None:
+            d = document if isinstance(document, dict) else (
+                document.model_dump(mode="json")
+                if hasattr(document, "model_dump") else {})
+            rolling = d.get("rolling") or {}
+            if rolling:
+                placed = set()
+                for a in d.get("assignments") or []:
+                    for wo in a.get("work_orders") or []:
+                        if wo:
+                            placed.add(str(wo))
+                tray = {str(i.get("work_order")) for i in
+                        (rolling.get("beyond_horizon") or []) if i.get("work_order")}
+                tray -= placed          # a placed order is placed
+                placed_n, tray_n = len(placed), len(tray)
         return ExplanationBundle(
             question="Are there any late orders?",
             subject_id="all",
@@ -946,6 +991,10 @@ class Explainer:
                 "tardiness_controllable_minutes": sum(
                     it["controllable_minutes"] for it in late_items),
                 "excluded_summary": self._excluded_summary(),
+                # Item 3: the two regions, separately counted. None on a
+                # monolithic board — absent, not zero.
+                "scheduled_order_count": placed_n,
+                "not_scheduled_order_count": tray_n,
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
@@ -1135,10 +1184,117 @@ class Explainer:
             identity_map=self._identity_map,
         )
 
+    def _machine_exists(self, machine_ref: str) -> bool:
+        """Does the plant declare a machine by this external name?"""
+        if not machine_ref:
+            return False
+        target = machine_ref.strip().upper()
+        try:
+            for r in self._reader.iter_entities("resource"):
+                for ref in (r.get("external_refs") or []):
+                    if str(ref.get("value") or "").upper() == target:
+                        return True
+        except Exception:  # noqa: BLE001
+            return False
+        return False
+
+    def _verify_placement_premise(self, wo_ref: str,
+                                  machine_ref: str) -> Optional[dict]:
+        """CLAUSE (i) OF THE RELEVANCE GUARD (Session 4B.13 Item 1).
+
+        A question of the form "why is X on Y" ASSERTS a fact about the world.
+        Verify it before adopting it. Returns None when the premise HOLDS (or
+        cannot be checked, which is never treated as a failure); otherwise a dict
+        describing how it fails, for the correction bundle.
+
+        THE SPECIMENS, both reproduced against the live registered board:
+
+          "why is ORD-000023 on MILL-01"  -> ORD-000023 has exactly one operation
+              and it is on PRESS-FAST. The answer asserted the false placement in
+              its first sentence and printed the true one in the evidence block
+              directly below it.
+          "why did ORD-000009 end up on CUT-01" -> it runs MILL-02, ASM-01,
+              FINISH-01. False twice: the placement, and an added claim that
+              CUT-01 "is the only machine that can run it" about a machine the
+              order never touches.
+
+        Both routes ACCEPTED the machine from the utterance and never checked it
+        against the placement they were about to explain. A stranger who mistypes
+        or guesses a machine name off the board got a fluent falsehood with an
+        evidence chain attached — the worst failure mode this product has,
+        because the evidence block makes it look audited.
+
+        A false premise is CORRECTED, with evidence, not answered around. That is
+        R-AI3's register ladder doing its job — testimony first, disagreement met
+        with warm evidence — and it is a BETTER answer than the one it replaces,
+        not a refusal.
+        """
+        if not machine_ref:
+            return None
+        try:
+            rows = self._order_rows(wo_ref)
+        except Exception:  # noqa: BLE001 — unreadable is not refuted
+            return None
+        if not rows:
+            # No placements to contradict: the order may be beyond-horizon or
+            # unscheduled. Other routes own that disposition; this guard only
+            # refutes a relation it can see is false.
+            return None
+        actual = []
+        for r in rows:
+            m = r.get("machine")
+            if m and m not in actual:
+                actual.append(m)
+        if machine_ref.strip().upper() in {m.upper() for m in actual}:
+            return None                      # the premise HOLDS
+        return {
+            "order": wo_ref,
+            "claimed_machine": machine_ref,
+            "actual_machines": actual,
+            # A machine that does not exist in the plant at all is a DIFFERENT
+            # correction from one that exists but carries none of this order's
+            # work — a stranger mistyping a name needs to be told which.
+            "claimed_machine_exists": self._machine_exists(machine_ref),
+            "rows": rows,
+        }
+
+    def _premise_correction(self, question: str, bad: dict) -> ExplanationBundle:
+        """The bundle a refuted premise produces (Item 1, clause (i)). Carries the
+        REAL placements as its evidence chain, so the correction is cited exactly
+        as an answer would be."""
+        return ExplanationBundle(
+            question=question,
+            subject_id=self._resolve_wo(bad["order"]) or bad["order"],
+            subject_type="premise_correction",
+            subject_external_name=bad["order"],
+            ordered_records=[],
+            key_facts={
+                "order": bad["order"],
+                "claimed_machine": bad["claimed_machine"],
+                "claimed_machine_exists": bad["claimed_machine_exists"],
+                "actual_machines": bad["actual_machines"],
+                "placements": [
+                    {"machine": r.get("machine"), "seq": r.get("op_seq"),
+                     "start": r.get("start"), "end": r.get("end")}
+                    for r in bad["rows"]
+                ],
+            },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
     def _explain_why_on_machine(self, wo_ref: str, machine_ref: str) -> ExplanationBundle:
         demand_id = self._resolve_wo(wo_ref)
         if demand_id is None:
             return self._unknown(f"Why is {wo_ref} on {machine_ref}?", wo_ref, "demand")
+
+        # THE FLOOR, before any cause is assembled: this route's whole question
+        # presupposes the placement. If the placement is false the cause is
+        # unanswerable, and every sentence built on it inherits the falsehood.
+        bad = self._verify_placement_premise(wo_ref, machine_ref)
+        if bad is not None:
+            return self._premise_correction(
+                f"Why is {wo_ref} on {machine_ref}?", bad)
 
         records = self._index.lineage_walk(demand_id, snapshot_reader=self._reader)
 
@@ -1153,9 +1309,40 @@ class Explainer:
         # only (docs/02 §4.2), so append the honest hedge — it cannot distinguish
         # earliness from capacity forcing; a confident single-cause answer would
         # grade wrong on the zero-confident-wrong axis.
+        # THE CAUSE MUST BE THE CAUSE OF *THIS* PLACEMENT (Session 4B.13 Item 1,
+        # the predicate-coverage discipline applied within a matched route).
+        #
+        # A multi-operation order carries one assignment Decision PER OPERATION,
+        # and this loop used to take the first one with a driver — whichever
+        # `lineage_walk` returned first. Asked "why is ORD-000012 on PAINT-01"
+        # (a TRUE premise, seq 30) it answered from the decision about the same
+        # order's CUT-01 operation (seq 10) and reported that cause — "the
+        # cheaper option once every cost was weighed" — as the reason for the
+        # PAINT-01 placement. Same family as the false-premise defect above: the
+        # route never checked what it was explaining against what was asked.
+        # Prefer the decision whose chosen resource IS the named machine; fall
+        # back to the old order-wide behaviour only when none can be matched, so
+        # a single-operation order is unaffected.
+        target_machine = (machine_ref or "").strip().upper()
+
+        def _decision_machine(rec: dict) -> str:
+            rid = (rec.get("chosen") or {}).get("resource_id", "")
+            if not rid or self._identity_map is None:
+                return ""
+            refs = self._identity_map.external_refs(rid)
+            return (refs[0].value if refs else "").upper()
+
+        ranked = assignment_records
+        if target_machine:
+            on_machine = [r for r in assignment_records
+                          if _decision_machine(r) == target_machine]
+            if on_machine:
+                ranked = on_machine + [r for r in assignment_records
+                                       if r not in on_machine]
+
         cause = None
         driver_code = None
-        for r in assignment_records:
+        for r in ranked:
             cause = driver_phrase(r.get("driver"))
             if cause:
                 driver_code = r.get("driver")
@@ -1199,7 +1386,7 @@ class Explainer:
             subject_id=demand_id,
             subject_type="demand",
             subject_external_name=wo_ref,
-            ordered_records=assignment_records or records,
+            ordered_records=ranked or records,
             key_facts={"machine_ref": machine_ref, "cause": cause,
                        "order": wo_ref, "driver_code": driver_code,
                        "blocked_alternatives": blocked_alternatives,
@@ -2245,7 +2432,8 @@ class Explainer:
             facts["manned_idle_hours"] = self._manned_idle_hours(rid)
         return self._authored_bundle("machine_idle", question, facts)
 
-    def _explain_unknown_entity(self, mention: str) -> ExplanationBundle:
+    def _explain_unknown_entity(self, mention: str,
+                                kind: str = "") -> ExplanationBundle:
         """The relevance guard's honest destination (CU1): a named order that is
         not in this schedule. If it was EXCLUDED at a gate/adapter/validator
         layer, say so and cite the finding; otherwise say plainly it isn't here
@@ -2270,6 +2458,23 @@ class Explainer:
                     excluded_finding = f
                     break
         known_orders = sorted(self._order_refs.values())[:6]
+        # Session 4B.13 — a MACHINE that is not here is not an unknown ORDER.
+        # A mistyped machine name off the board ("MILL-99") was answered "I don't
+        # see it among the planned orders", offering orders back, which names the
+        # wrong vocabulary at the one moment the planner needs the right one. The
+        # kind comes from the parse; this route never infers it from the string.
+        known_machines: list[str] = []
+        if kind == "machine":
+            try:
+                names = set()
+                for r in self._reader.iter_entities("resource"):
+                    for ref in (r.get("external_refs") or []):
+                        if ref.get("value"):
+                            names.add(ref["value"])
+                            break
+                known_machines = sorted(names)[:8]
+            except Exception:  # noqa: BLE001
+                known_machines = []
         return ExplanationBundle(
             question=f"Is {token} in this schedule?",
             subject_id=token,
@@ -2283,6 +2488,8 @@ class Explainer:
                     excluded_finding, self._identity_map, _load_catalog_safe())
                     if excluded_finding else None),
                 "known_orders": known_orders,
+                "mention_kind": kind,
+                "known_machines": known_machines,
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
@@ -2998,10 +3205,71 @@ class Explainer:
         return self._authored_bundle("solve_time", question,
                                      {"solve_seconds": seconds})
 
+    def _explain_optimality(self, question: str) -> ExplanationBundle:
+        """"Is this schedule optimal?" — ANSWERED FROM THE SOLVER'S OWN PROOF
+        (Session 4B.13 Item 2; discharges docs/07 §5a.29).
+
+        Read, never re-derived: ``cost_proof.from_evidence`` takes the M6
+        ``solve_complete`` event — the same record the document's ``SolverBlock``
+        and the strip chip are built from — so the answer and the board agree
+        because they read ONE record, not because they were kept in step.
+
+        Before this route existed the question fell to synthesis, which cannot
+        see ``solver.status``. On the pinned exam world it therefore invented its
+        own definition ("optimal on the dimensions that matter most") from a
+        lateness count that was itself false, and reached the right verdict by
+        the wrong road. The proof was rendered, correct, and unaskable.
+
+        BOTH DIRECTIONS ARE FIRST-CLASS. A proved board says so plainly and says
+        WHAT was proved — the COST optimum (4B.8 CU3's ruling), never the
+        tiebreak, which rides beside it and never downgrades it. An unproved
+        board says so WITH ITS GAP and is not thereby called bad: 4B.12 measured
+        F006 at a 98.8% gap whose ledger spread across seeds was 0.289%, so the
+        gap measures our inability to PROVE, not the answer's quality. That
+        distinction is authored into the copy rather than left to the reader.
+        """
+        from mre.modules import cost_proof as cp
+        proof = cp.from_evidence(self._index)
+        # UNREADABLE IS NOT THE SAME AS NO-SOLVE. CostProof.no_solve covers both
+        # "nothing was admitted" (a real fact about the run) and status=None,
+        # which is what an index with no solve_complete event yields — including
+        # one this Explainer simply could not read. Fusing them would make the
+        # answer assert "there was no solve" about a solve that happened, which
+        # is the same class of defect as the rest of this session. Separated
+        # here rather than in CostProof, whose chip/rider callers want the
+        # existing three-way split.
+        unknown = proof.status is None
+        return self._authored_bundle("optimality", question, {
+            "unknown": unknown,
+            "no_solve": proof.no_solve and not unknown,
+            "proved": proof.proved,
+            "unproved": proof.unproved,
+            "gap_text": proof.gap_text(),
+            "objective": proof.objective,
+            "status": proof.status,
+            "tiebreak_status": proof.tiebreak_status,
+            "tiebreak_skipped_reason": proof.tiebreak_skipped_reason,
+            # The tiebreak clause is composed by the SINGLE definition, so the
+            # answer, the strip chip and the money rider cannot word it
+            # differently.
+            "tiebreak_clause": proof._tiebreak_clause(),
+        })
+
     def _explain_machine_count(self, question: str) -> ExplanationBundle:
         """CU3 — how many machines / list the machines. A pure document read of the
-        resource entities, rendered in the planner's external vocabulary."""
+        resource entities, rendered in the planner's external vocabulary.
+
+        TWO NUMBERS, SEPARATELY LABELLED (Session 4B.13 Item 4). This route
+        counted DECLARED resources and the renderer called them "machine(s) carry
+        work in this plan" — on the pinned exam world, "15 machine(s) carry work"
+        on a board where five rows (CUT-02, CUT-03, FINISH-03, HEAT-02,
+        PRESS-SLOW) sit at 0%, which a stranger falsifies by counting bars. The
+        count a stranger wants (15 machines exist) was right; the sentence was
+        false. Both facts are now carried and both are labelled, so neither has
+        to stand in for the other.
+        """
         names: list[str] = []
+        by_id: dict[str, str] = {}
         try:
             for r in self._reader.iter_entities("resource"):
                 nm = None
@@ -3009,12 +3277,37 @@ class Explainer:
                     if ref.get("ref_type") in _MACHINE_REF_TYPES or ref.get("value"):
                         nm = ref.get("value")
                         break
-                names.append(nm or r.get("id", "?"))
+                label = nm or r.get("id", "?")
+                names.append(label)
+                if r.get("id"):
+                    by_id[r["id"]] = label
         except Exception:
             names = []
+            by_id = {}
         names = sorted(dict.fromkeys(names))
-        return self._authored_bundle("machine_count", question,
-                                     {"machine_count": len(names), "machines": names})
+
+        # Which of them actually carry an assignment in this plan.
+        working: list[str] = []
+        try:
+            seen: set[str] = set()
+            for asgn in self._reader.iter_entities("assignment"):
+                for ra in asgn.get("resource_assignments", []) or []:
+                    rid = (ra.get("resource_ref", "") if isinstance(ra, dict)
+                           else getattr(ra, "resource_ref", ""))
+                    if rid:
+                        seen.add(rid)
+            working = sorted({by_id.get(rid, rid) for rid in seen})
+        except Exception:
+            working = []
+
+        return self._authored_bundle("machine_count", question, {
+            "machine_count": len(names), "machines": names,
+            # None (not 0) when the assignments could not be read at all — an
+            # unknown is never rendered as "nothing is working".
+            "working_machine_count": len(working) if working else None,
+            "working_machines": working,
+            "idle_machines": [n for n in names if n not in set(working)] if working else [],
+        })
 
     def _explain_maintenance(self, question: str) -> ExplanationBundle:
         """CU3 — maintenance / shift / calendar shape-recognition. Answered with an

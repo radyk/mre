@@ -757,6 +757,21 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     params = route_params(parsed, parsed.question)
     routed_question, rewritten = routed_text(parsed, params)
     params["question"] = routed_question
+    # Session 4B.13 — THE PLANNER'S OWN WORDS, carried alongside the routed
+    # question. Assemblers legitimately overwrite `bundle.question` with their
+    # canonical phrasing, so by the time an answer reaches the delivery seam the
+    # words the planner actually typed are gone. The predicate-coverage floor
+    # needs them: "why does ORD-000011 go through downtime" is answered by
+    # start-time causation, and the only place "downtime" still appears is the
+    # original utterance. Never used for routing — routing already happened.
+    params["asked_question"] = parsed.question
+    # And the DOCUMENT for the routes whose honesty depends on the sliced world.
+    # `late-orders` is one: "no late orders" is true of the SCHEDULED orders, and
+    # on a rolling board the tray has to be named beside it or a stranger reads
+    # it as a clean bill of health for the whole book. Rolling intents get this
+    # at their own branch above; this is the non-rolling route that needs it too.
+    if parsed.intent is Intent.LATE_ORDERS:
+        params["document"] = document
 
     required = _required_slots(parsed.intent, params)
 
@@ -785,7 +800,15 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
         return Dispatched(
             "unknown-entity",
             explainer.route("unknown-entity",
-                            {**params, "mention": unresolved[0].raw}),
+                            {**params, "mention": unresolved[0].raw,
+                             # Session 4B.13 — WHICH KIND was not found. Without
+                             # it this route answers every miss as an order and
+                             # offers orders back: a mistyped MACHINE name got
+                             # "MILL-99 isn't in this schedule — I don't see it
+                             # among the planned orders", which mislabels the
+                             # thing the planner named. The kind comes from the
+                             # parse; nothing here infers it from the string.
+                             "mention_kind": kind.value}),
             note, routed_question)
 
     # (c) a required slot nothing mentioned at all → the nearest-capabilities bridge.

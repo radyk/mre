@@ -116,6 +116,25 @@ function escapeHtml(s) {
 }
 const escapeAttr = escapeHtml;
 
+// Session 4B.13 Item 5(b) — the feel tuning panel's SECOND gate. A dev build is
+// necessary but no longer sufficient: the panel is off unless asked for.
+// sessionStorage, not localStorage, matching the convention already used for
+// per-tab decisions in this file — a new tab is a new decision, so a stray
+// `?feel=1` never follows the product into a demo.
+function feelTuningEnabled() {
+  try {
+    const q = new URL(window.location.href).searchParams.get("feel");
+    if (q !== null) {
+      const on = q !== "0" && q !== "false";
+      sessionStorage.setItem("mre-feel-tuning", on ? "1" : "0");
+      return on;
+    }
+    return sessionStorage.getItem("mre-feel-tuning") === "1";
+  } catch {            // private mode / no storage — default OFF, never on
+    return false;
+  }
+}
+
 function paintTopStrip(el, doc, meta) {
   const grade = meta?.grade || "—";
   const costing = meta?.costing_grade ? ` / ${meta.costing_grade}` : "";
@@ -613,11 +632,15 @@ async function boot() {
       // Fetch the Tier-0 interaction payload in the BACKGROUND, after first
       // paint (R-T1d) — the board is already interactive read-only; the 3.2b
       // gesture surface stands up when it arrives. Never blocks render or ask.
-      // The dev build (vite dev / non-production) also mounts the feel tuning
-      // panel (CU6). import.meta.env.DEV is true under `vite` and false in the
-      // production `vite build` the harness serves — so tuning never ships.
+      // The feel tuning panel (CU6) needs BOTH a dev build AND an explicit
+      // opt-in (Session 4B.13 Item 5(b)). import.meta.env.DEV is true under
+      // `vite` and false in the production `vite build` the harness serves, so
+      // tuning never SHIPS — but Daryn's own dev server is a vite dev server,
+      // which meant "FEEL TUNING · DEV" sat on screen during every walkthrough,
+      // reading to a stranger as unfinished software. Off by default now; Daryn
+      // keeps access with `?feel=1` (sticky per tab, `?feel=0` to clear).
       wireInteraction(id, board, window.__cockpit, {
-        doc, devMode: !!import.meta.env?.DEV, onSuperseded,
+        doc, devMode: !!import.meta.env?.DEV && feelTuningEnabled(), onSuperseded,
         // Session 4B.5 CU2: a priced delta card is the TOP of the ask panel's
         // resolution ladder. The controller publishes the card's own content
         // when one lands and null when it is dismissed / accepted / returned

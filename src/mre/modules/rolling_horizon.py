@@ -882,6 +882,25 @@ def build_rolling_view(
                 e_dt = ref + timedelta(minutes=sv.op_end_minutes[oid])
                 placement = {"resource": res, "start": s_dt.isoformat(),
                              "end": e_dt.isoformat()}
+                # Session 4B.13 Item 0 — THE PAUSES TRAVEL WITH THE PLACEMENT.
+                # `start`/`end` are the op's overall SPAN; for a resumable op
+                # (R-C3) that span includes the calendar pauses between chunks,
+                # which are NOT working time. Without the chunk windows every
+                # downstream reader of this dict can only reconstruct one
+                # bar from first-start to last-end — which is exactly what
+                # assemble_rolling_document did, drawing ORD-000011 as a single
+                # continuous 5821-minute bar across a weekend CUT-01 is shut.
+                # The solver placed it correctly in three windows (1501 working
+                # minutes); only the view lost them. Absent/empty for a
+                # non-resumable op, so a monolithic-shaped placement is
+                # byte-identical to its pre-4B.13 self.
+                chunk_windows = sv.op_chunk_windows.get(oid)
+                if chunk_windows:
+                    placement["chunks"] = [
+                        {"start": (ref + timedelta(minutes=cs)).isoformat(),
+                         "end":   (ref + timedelta(minutes=ce)).isoformat()}
+                        for cs, ce in chunk_windows
+                    ]
                 if s_min < frozen_end_min:
                     committed[oid] = placement
                 else:

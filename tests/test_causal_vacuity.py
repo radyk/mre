@@ -259,9 +259,18 @@ def test_an_unattributable_capacity_block_is_NAMED_as_unattributable():
 
 
 def test_the_only_eligible_machine_is_a_CAPABILITY_fact_and_says_so():
+    """Session 4B.13 Item 1 sharpened this. The answer used to LEAD with the
+    capacity clause and then contradict it: "the machines that could have run it
+    instead were occupied ... In fact it is the only machine that can run this
+    step" — two sentences that cannot both be true. With no eligible alternative
+    the cause is CAPABILITY, which is what this test has always been named for,
+    so the capacity lead is no longer said at all."""
     out = TemplateRenderer().render(_capacity_bundle([], only_option=True))
-    assert "the only machine that can run this step" in out
-    assert "nothing about the rest of the plan would have changed" in out
+    assert "the only machine qualified to run this step" in out
+    assert "there was no alternative to weigh" in out
+    # THE CONTRADICTION, pinned as absent: no occupied-alternatives claim may
+    # accompany a no-alternatives fact.
+    assert "the machines that could have run it instead were occupied" not in out
 
 
 def test_a_non_capacity_driver_keeps_its_own_authored_clause():

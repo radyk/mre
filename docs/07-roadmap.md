@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.56 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.57 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.57:** **Session 4B.13 — clear the board for a cold stranger** 2026-07-29 (docs/04 session amendment; narrative in `docs/closeouts/4B.13.md`). Not a feature session: it removed the things that would tell a first-time user the software is lying or unfinished. **THE DOWNTIME BAR IS A RENDER MERGE, NOT A PHYSICS VIOLATION** — the canonical Assignment carries three run windows (1501 working minutes) and NO assignment interval anywhere on the board overlaps a closure; `assemble_rolling_document` collapsed them to one chunk because `RollingView` placements carried no chunk data, and the cockpit has drawn per-chunk pieces since CU5. It hid the pauses of every chunked op on every rolling board, **which is how a real violation would have stayed invisible**; `tests/test_rolling_chunk_fidelity.py` is now the test that can tell the two apart. **VERIFICATION IS DOWNSTREAM OF TOOL VOCABULARY** — `lateness_set` counted 14 unplaced tray orders as "on time or early", synthesis repeated it faithfully and claim verification PASSED it, because the count really was what the tool said; a tool that fuses two categories makes every claim built on it unfalsifiable-but-verified, so the fix is in the TOOL and the verifier did not change. **THE RELEVANCE GUARD, two clauses, both FLOORS** — a false "why is X on Y" premise is now CORRECTED with evidence instead of echoed (a stranger mistyping a machine name got a fluent falsehood with an evidence chain attached), and a predicate the answer never addressed is ADMITTED at the delivery seam; `predicate_coverage.py` never routes, never suppresses, never changes a figure. **§5a.29 DISCHARGED** — `solve-optimality` joins the closed vocabulary (parse prompt **v10**), answering from the same M6 record the strip chip reads. Machine count no longer calls declared resources working. **New debt: §5a.33** (four slow fixtures broken since 4B.8). Close-outs now live at `docs/closeouts/<session-id>.md`, one path per session.
 
 **v2.56:** **Session 4B.12 — where the cliff actually is, and whether a hint moves it** 2026-07-28 (docs/04 session amendment; narrative in `SESSION_CLOSEOUT.md`). A MEASUREMENT session, no ruling. **The cliff is at 92 ops/machine, not 137** — re-run against byte-identical worlds, R-PD1's admitted past-due work puts tardiness into every density and the proof costs 200–360× what it did (§5a.31, superseding §5a.27's numbers by a dated note rather than a rewrite). **F004 and F006 are SOLVED, not bracketed** — 83.5–85.8% and 98.8% gaps — but **not one cell at any density returned UNKNOWN**, so the engine's problem at real density is proving an answer, not producing one. The warm start (§5a.32) ships behind a flag, DEFAULT OFF: it is a re-roll, paying in the cliff region and costing beyond it.
 
@@ -2381,8 +2383,30 @@ where the reasoning lives.
     **The honest position until all six exist:** the plant is told nothing about
     the age of its backlog, and that silence is deliberate.
 
-29. **THERE IS STILL NO "IS THIS SCHEDULE OPTIMAL?" ROUTE** (Session 4B.11 CU1,
-    NAMED not built — the successor debt to §5a.23, which is discharged). The
+29. **THERE IS STILL NO "IS THIS SCHEDULE OPTIMAL?" ROUTE** — **DISCHARGED
+    2026-07-29 (Session 4B.13 Item 2).** `solve-optimality` is in the closed
+    vocabulary and answers from `cost_proof.from_evidence` — the same M6
+    `solve_complete` record the document's `SolverBlock` and the strip chip are
+    built from, so the answer and the board agree because they read ONE record.
+    The fix shape below was followed as written: the COST proof stated plainly,
+    the TIEBREAK beside it and never over it, `tiebreak_skipped_reason` voiced.
+    Paid as the vocabulary-class change this entry insisted it was — `Intent`,
+    `INTENT_MEANINGS`, `ROUTE_TAXONOMY`, `ROUTE_OFFERS`, the assembler, the
+    authored copy and **parse prompt v10**, in one commit.
+
+    Two things the fix shape did not anticipate. **An unproved board must not be
+    slandered by its own gap**: 4B.12 measured F006 at 98.8% over a ledger whose
+    spread across seeds was 0.289%, so the copy says in as many words that the
+    gap is the limit of the PROOF and not a measure of the schedule's quality.
+    And **`CostProof.no_solve` fuses two facts** — "nothing was admitted" and
+    `status=None` (an index with no solve event, including one that could not be
+    read). The route separates them, because answering "there was no solve"
+    about a solve that happened is the same defect class as the rest of that
+    session. Separated in the route rather than in `CostProof`, whose chip and
+    rider callers want the existing three-way split.
+
+    *Original entry (Session 4B.11 CU1, NAMED not built — the successor debt to
+    §5a.23, which is discharged):* The
     cost proof is now RENDERED (the strip chip) and VOICED where it bears on a
     money claim (the unprompted rider), so a planner looking at an unproved board
     can see it and cannot be given a cost figure without its gap. What they still
@@ -2645,6 +2669,36 @@ where the reasoning lives.
     per §5a.31(h), and the a=2 cells cost 25–30 minutes each); seeds beyond the
     counts in the table at 149 and 254, where the runs were still landing at
     session close. The table states its own n per row.
+
+
+33. **FOUR SLOW TEST FIXTURES HAVE BEEN RAISING `TypeError` SINCE 4B.8**
+    (Session 4B.13, REPORTED not fixed). `tests/test_coarse_horizon.py` (three
+    call sites) and `tests/test_coarse_binding.py` (one) call
+    `build_rolling_view(..., det_time=...)` — a parameter 4B.8 CU2 renamed
+    `det_total`. Every one of them is `@pytest.mark.slow`, so they are skipped
+    in every normal run and **have not executed since that rename**.
+
+    This is the same defect class the errand's AST guard
+    (`tests/test_build_rolling_exam_run.py`) was built to catch, in a surface
+    that guard does not read: it binds the BUILDER TOOL's call sites against
+    live signatures, not the test suite's.
+
+    **Why it was not fixed here.** The rename was not an identity. `det_time`
+    was a PER-STAGE budget; `det_total` is a two-stage total from which stage 1
+    is capped at total minus a 1/12 reserve. docs/04's own 4B.8 entry records
+    that **no single multiplier preserves the historical budget**, which is
+    precisely why every caller had to state its own — the exam/fixture builders
+    went 2.0 → 4.0 and the golden driver 0.5 → 2.5. Choosing numbers for these
+    four would author budgets nobody measured, and `test_coarse_horizon.py`
+    carries a **digest golden** that a changed budget can move.
+
+    *Fix shape:* state the budget chosen and why, in the same commit that
+    re-derives the digest golden against it. Cheapest defensible reading is that
+    each fixture wants its stage-1 budget preserved, i.e. `det_total ≈
+    det_time × 12/11`, but that is a proposal, not a measurement. **Verify the
+    four tests actually PASS afterwards** — they have never run, so a signature
+    fix may only reveal the next failure. Consider also extending the AST
+    signature guard to `tests/`, which would have caught this in 0.3 s.
 
 
 ## 6. Open rulings queue

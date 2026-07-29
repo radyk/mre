@@ -101,7 +101,11 @@ TOOL_MEANINGS: dict[ToolName, str] = {
         "them, and the totals",
     ToolName.LATENESS_SET:
         "every order's lateness in minutes (positive = late, negative = early) — "
-        "the WHOLE set, so counts over it are enumerable",
+        "the WHOLE set, so counts over it are enumerable. THREE disjoint states, "
+        "never two: 'late', 'on_time_or_early', and 'not_scheduled' (an order "
+        "with no placement in this schedule, e.g. beyond the rolling horizon). "
+        "An unscheduled order is NOT on time — it has no service outcome at all. "
+        "Read summary.scheduled before saying anything about 'all orders'",
     ToolName.COST_LEDGER:
         "the schedule's cost ledger: the totals (production, setup, tardiness, "
         "overtime) and the per-order tardiness lines",

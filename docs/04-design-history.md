@@ -11971,3 +11971,203 @@ INFEASIBLE at 0.0 deterministic units. Those rows were discarded, not repaired;
 surviving process appending to a file the re-run was also writing — was caught by
 the analyzer's inherited duplicate-cell refusal, which is what that guard exists
 for. Written up as trap 3 in `tools/spikes/density_4b12/README.md`.
+
+### 2026-07-29 — Session 4B.13: clear the board for a cold stranger
+
+A person who has never seen this product is handed the board and asked to use it
+with no coaching. This session removed the things that would tell that person the
+software is lying or unfinished. It is not a feature session; nothing here is
+research. Every diagnosis read the PERSISTED document of the pinned world
+`rolling-1b170235-64d`, never a re-solve (R-AI4's audit protocol).
+
+#### The downtime bar: a RENDER MERGE, and the merge was upstream of the cockpit
+
+ORD-000011 on CUT-01 rendered as one continuous bar from Thu Jan 8 14:36 to Mon
+Jan 12 15:37, crossing shading the legend calls off-shift. Three readings were
+open: a render merge, a physics violation, or no closure to violate. The session
+was to HALT on a physics violation.
+
+It is the render merge. The three lookups:
+
+* **The canonical Assignment entity carries THREE run windows** — 14:36–19:00,
+  07:00–19:00, 07:00–15:37 — summing to 1501 working minutes against a
+  `run_duration` of `P1DT1H`. The op is `splittable: True`, `min_chunk: PT1H`,
+  so it is resumable and the solver chunked it correctly.
+* **No single assignment interval overlaps a closure.** Sweeping all 56 chunks
+  against every resource calendar, exactly two spans contained non-open time
+  (ORD-000011 and ORD-000003, both CUT-01, each 4320 minutes of nights + a
+  weekend) — and both were the merged artifact, not the placement. Zero minutes
+  fall inside an explicit `closure`-kind window anywhere on the board.
+* **CUT-01 is Mon–Fri 07:00–19:00**, with no window at all on Jan 10–11 and a
+  `planned_maintenance` closure on Jan 14.
+
+The calendar bound correctly. `_blocking_intervals` covers every gap between open
+windows — nights and weekends included — and `add_no_overlap` enforces it, so a
+non-resumable op could not span this even in principle.
+
+**The defect is `assemble_rolling_document`, not the cockpit.** It built a single
+`Chunk` from the placement's overall span, because `RollingView` placements
+carried only `{resource, start, end}` and had no chunk data to build from. The
+monolithic path never had this defect (`_chunks` reads `phase_windows.run`). The
+cockpit has drawn one piece per chunk with a dashed connector since CU5 and
+simply never received more than one. Fixed by carrying
+`solve_values.op_chunk_windows` onto the placement and fanning it out in
+`_rolling_chunks`; a non-resumable placement has no `chunks` key and yields
+exactly the single chunk it always did.
+
+Two consequences worth recording: the merged bar also reported `working_min` 5821
+for 1501 minutes of real work, and the merge hid the pauses of EVERY chunked
+operation on every rolling board — **which is how a genuine physics violation
+would have stayed invisible**. `tests/test_rolling_chunk_fidelity.py` now asserts
+that every chunk lies inside open calendar time on its own machine; it is the
+test that can tell reading (a) from reading (b), and its negative control fires
+on all four cases.
+
+#### VERIFICATION IS DOWNSTREAM OF TOOL VOCABULARY
+
+Recorded here because it generalizes past its instance. `lateness_set` returned
+`{'orders': 40, 'late': 0, 'on_time_or_early': 40}` on a board where fourteen
+rows have no placement at all — exactly the beyond-horizon tray. Synthesis
+repeated it faithfully, attached a correct grounding rider, and **claim
+verification passed it**, because the count really was what the tool returned.
+
+**A tool that fuses two categories makes every claim built on it
+unfalsifiable-but-verified.** Claim-level verification checks a claim against
+what the tool SAID; it cannot check whether the tool's categories are honest. So
+the fix belongs in the tool and nowhere else — the verifier did not get smarter
+and should not have to. `not-late` and `not-scheduled` are different states, and
+they are now separately counted, separately voiced per row, and named in the
+tool's authored meaning (which the governed synthesis prompt renders). The
+invariants are asserted: `late + on_time_or_early == scheduled`, and
+`scheduled + not_scheduled == orders`.
+
+This also restores a standing rule the fused count violated: *a tray order is
+never "not in this schedule"* — here it was worse, silently counted as a success.
+
+#### The relevance guard (R-AI3): two clauses, both floors
+
+**Clause (i), PREMISE VERIFICATION.** A question of the form "why is X on Y"
+ASSERTS a fact. It was never checked. "why is ORD-000023 on MILL-01" returned an
+answer asserting the placement and printed the true one (PRESS-FAST) in its own
+evidence block one line below; "why did ORD-000009 end up on CUT-01" was false
+twice, adding that CUT-01 "is the only machine that can run it" about a machine
+the order never touches. A stranger mistyping a machine name off the board got a
+fluent falsehood with an evidence chain attached — the worst failure mode this
+product has, because the evidence block makes it look audited. The premise is now
+verified before it is adopted, and a false one is CORRECTED with the order's real
+placements as its evidence. A name that is not in the plant at all gets a
+different correction from one that is: a stranger needs to know which mistake
+they made.
+
+Two adjacent defects fell out of the same root and were fixed with it. A
+multi-operation order carries one assignment Decision per operation, and the
+route took whichever `lineage_walk` returned first — so "why is ORD-000012 on
+PAINT-01" (a TRUE premise, seq 30) was answered from the decision about the same
+order's CUT-01 operation. And with no eligible alternative the authored capacity
+lead asserted "the machines that could have run it instead were occupied" and was
+then contradicted by the next line, "in fact it is the only machine that can run
+this step". That case is a CAPABILITY fact, as this file's own copy comment
+already said, and now has its own lead. That discharges the founder's original
+round-five specimen: the bare driver phrase as the whole causal clause is gone
+from this route.
+
+**Clause (ii), PREDICATE COVERAGE.** Asked "why does this order go through
+downtime", the system explained why the order STARTS when it starts — true,
+cited, right register, and not about downtime at all. Same species as the false
+premise: right subject, wrong predicate, full apparatus of correctness.
+
+`predicate_coverage.py` is a FLOOR at the delivery seam. It can only append an
+honest admission that something asked about went unaddressed, plus a pointer to
+the route that can address it. **It never selects a route, never suppresses an
+answer, never changes a figure** — routing stays the parse's, exactly as
+R-AI5(8) requires. That is why it is not the return of a deterministic
+classifier: `Explainer.classify` and `rolling_questions.classify_rolling` chose
+the answer; this reads one already chosen. Its nearest relative is
+`claim_verifier` — deterministic code, never a model, hardening what the model
+produced.
+
+**Its vocabulary is deliberately one entry long.** Every topic costs an accurate
+coverage declaration on ~40 routes, and a wrong declaration fires a false rider,
+which is its own species of lying. A topic is added when a specimen has been
+measured, never speculatively. Three conditions must all hold before the rider
+fires, and the third gives the ANSWER the benefit of the doubt over the
+declaration.
+
+#### The optimality route (discharges docs/07 §5a.29)
+
+4B.11 rendered the cost proof on the strip and as an unprompted money rider, but
+nobody could ASK for it. "is this schedule optimal?" — the first question a cold
+stranger asks after seeing that badge — fell to open synthesis, which cannot see
+`solver.status`, so it improvised its own definition ("optimal on the dimensions
+that matter most") over a lateness count that was itself false, and reached the
+right verdict by the wrong road. The proof existed, was correct, and was
+unreachable by asking.
+
+`solve-optimality` is now in the closed vocabulary, answered from
+`cost_proof.from_evidence` — the same M6 `solve_complete` record the document's
+`SolverBlock` and the strip chip are built from, so the answer and the board
+agree because they read ONE record. A vocabulary-class change, paid in full:
+`Intent`, `INTENT_MEANINGS`, `ROUTE_TAXONOMY`, `ROUTE_OFFERS`, the assembler, the
+authored copy and **parse prompt v10**, in one commit.
+
+Both directions are first-class. A proved board says so and scopes itself to the
+COST optimum (4B.8 CU3's ruling), with the tiebreak beside it and never over it.
+An unproved board states its gap and is not thereby called bad — 4B.12 measured
+F006 at a 98.8% gap whose ledger spread across seeds was 0.289%, so **the gap
+measures our inability to prove, not the answer's quality**, and the copy carries
+that rather than leaving it to the reader. A fourth branch was added that
+`CostProof` does not distinguish: `no_solve` covers both "nothing was admitted"
+and `status=None`, and fusing them would assert "there was no solve" about a
+solve that happened — the same defect class as everything else in this session.
+
+#### The machine count
+
+"15 machine(s) carry work in this plan" counted DECLARED resources on a board
+where five rows sit at 0%, so a stranger falsifies it by counting bars. The
+number a stranger wants (15 machines exist) was right; the sentence was false.
+Both facts are now carried, both labelled, and the idle machines are named rather
+than left to be differenced.
+
+#### Close-outs move to `docs/closeouts/<session-id>.md`
+
+One path per session, nothing overwrites. Every session until now wrote the
+repo-root `SESSION_CLOSEOUT.md`, so the newest close-out silently replaced the
+last and a stale root file kept being read as current. Historical references to
+the root path in THIS file are not rewritten — it is append-only — and mean that
+session's file, now under `docs/closeouts/`.
+
+#### Found and reported, not fixed
+
+**THE REPL'S DIALOGUE-MODE JUDGMENT PATH IS UNREACHABLE WHENEVER A PARSER
+EXISTS.** `_render_repl_turn` invokes `LLMRenderer.render_judgment` only when the
+bundle's subject type is `unsupported`. That is the no-parser honest floor. With
+an `ANTHROPIC_API_KEY` present the real parse runs, a vague conversational turn
+("What do you think about this?") reads as UNMATCHED, and the dispatch sends it
+to the R-AI5 SECOND TIER — so the bundle is `synthesis` and the judgment renderer
+is never reached. In other words the REPL's dialogue mode has been superseded by
+the synthesis tier, which is arguably correct, and nothing said so.
+
+It surfaced as a test that passed or failed depending on whether an untracked
+`.env.local` existed: `test_judgment_path_calls_mocked_llm` was green before
+4B.8 added the conftest loader and red after, on any machine holding a dev key.
+It is a **fifth member of the key-sensitivity class** CLAUDE.md already carries,
+and the first in the opposite direction — a test that fails when the key is
+PRESENT. Confirmed pre-existing by running it at HEAD in a worktree **with
+`.env.local` copied in**; the first comparison, without that file, was invalid
+and said the opposite. The test now clears the key so it measures the judgment
+path rather than the environment. **Retiring the path is a ruling and was not
+taken here.**
+
+**FOUR SLOW TEST FIXTURES HAVE BEEN RAISING `TypeError` SINCE 4B.8.**
+`tests/test_coarse_horizon.py` (x3) and `tests/test_coarse_binding.py` (x1) call
+`build_rolling_view(..., det_time=...)`, a parameter 4B.8 CU2 renamed
+`det_total`. They are `@pytest.mark.slow`, so they are skipped in every normal
+run and have never executed since. This is the same defect class the errand's AST
+guard was built to catch, in a surface that guard does not read (it reads the
+builder tool, not tests). **Deliberately not fixed here:** the rename was not an
+identity — `det_time` was per-stage, `det_total` is both stages under a 1/12
+reserve — and this file's own 4B.8 entry records that no single multiplier
+preserves the historical budget, which is why every caller had to state its own.
+Picking numbers for these four would author budgets nobody measured, and one of
+the files carries a digest golden. Whoever fixes them must state the budget they
+chose and re-derive that golden in the same commit.

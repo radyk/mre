@@ -95,6 +95,15 @@ class Intent(str, Enum):
     COACHING = "coaching"
     SOLVE_TIME = "solve-time"
     MACHINE_COUNT = "machine-count"
+    # Session 4B.13 Item 2 — THE OPTIMALITY QUESTION GETS A ROUTE (discharges
+    # docs/07 §5a.29). 4B.11 rendered the cost proof on the strip and as an
+    # unprompted rider, but nobody could ASK for it: "is this schedule optimal?"
+    # — the most obvious question a stranger asks after seeing the badge — fell
+    # to synthesis, which cannot see `solver.status`, so it invented its own
+    # definition of optimal from a bar count and reached the right verdict by
+    # the wrong road, from a false premise. The proof existed, was correct, and
+    # was unreachable by asking.
+    SOLVE_OPTIMALITY = "solve-optimality"
     MAINTENANCE = "maintenance"
     # -- the rolling (sliced-world) routes ----------------------------------
     BEYOND_HORIZON = "beyond-horizon"
@@ -449,6 +458,11 @@ INTENT_MEANINGS: dict[Intent, str] = {
         "how long the solve took",
     Intent.MACHINE_COUNT:
         "how many machines / list the machines",
+    Intent.SOLVE_OPTIMALITY:
+        "is this schedule optimal / is this the best/cheapest plan / could it be "
+        "cheaper / did the solver finish — a question about the SOLVER'S OWN "
+        "PROOF of the cost optimum, answered from what the solve reported. Not "
+        "about whether the plan is good or whether orders are late",
     Intent.MAINTENANCE:
         "maintenance, shifts, or calendar questions across the plant",
     # The three ROLLING (sliced-world) meanings, sharpened in Session 4A.5c from

@@ -1,6 +1,6 @@
 # Question-parse prompt — a GOVERNED ARTIFACT (R-AI5(1))
 
-    prompt_version: 9
+    prompt_version: 10
     ruling:         R-AI5(1) — every question is parsed FIRST by a language model
                     against a CLOSED intent vocabulary, with the conversation
                     history, live board selection, and last-answered subject as
@@ -106,6 +106,25 @@
                     `INTENT_MEANINGS`, `ROUTE_TAXONOMY`, `ROUTE_OFFERS`,
                     `ROLLING_INTENTS`, the two answerers and their authored copy
                     in the same commit as this bump.
+    v10:            Session 4B.13 (2026-07-29) — `solve-optimality` joins the
+                    vocabulary, discharging docs/07 §5a.29. 4B.11 rendered the
+                    cost proof on the strip chip and as an unprompted money
+                    rider, but nobody could ASK for it: "is this schedule
+                    optimal?" — the first question a cold stranger asks after
+                    seeing that badge — had no route and fell to open synthesis,
+                    which cannot see `solver.status`. On the pinned exam world it
+                    therefore improvised its own definition ("optimal on the
+                    dimensions that matter most") over a lateness count that was
+                    itself false, and arrived at the right verdict by the wrong
+                    road. The proof existed, was correct, and was unreachable by
+                    asking. The MEANING is written to hold the boundary the
+                    answer depends on: this intent is about the SOLVER'S PROOF of
+                    the cost optimum, not about whether the plan is good or
+                    whether orders are late — those remain `advice`,
+                    `late-orders` and the second tier. A vocabulary-class change:
+                    `Intent`, `INTENT_MEANINGS`, `ROUTE_TAXONOMY`, `ROUTE_OFFERS`,
+                    the assembler, its authored copy and the docs/07 §5a.29
+                    discharge in the same commit as this bump.
 
 ## Review discipline
 

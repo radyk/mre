@@ -33,11 +33,19 @@ Three rules the wording obeys, and they are the whole point:
   (3) A TIEBREAK THAT NEVER RAN IS DISTINGUISHABLE FROM ONE THAT RAN AND WON
       NOTHING. ``tiebreak_skipped_reason`` is voiced, not swallowed.
 
-R-AI1 NOTE, recorded rather than worked around: there is deliberately NO new
-"is this schedule optimal?" ROUTE here. A new intent is a vocabulary-class change
-(CLAUDE.md), and the brief's own instruction was to name that debt rather than
-bolt on a route. What exists is the unprompted rider and the strip chip; the
-standing debt is in docs/07 §5a.23.
+Three consumers since Session 4B.13 — the third closes the loop:
+
+  * the ASK path, via ``from_evidence()`` — the ``solve-optimality`` route
+    (``Explainer._explain_optimality``) answers "is this schedule optimal?" from
+    this module and nothing else.
+
+That route is new in 4B.13 (docs/07 §5a.29, discharged). Until then the note
+here read that there was deliberately NO such route, because a new intent is a
+vocabulary-class change (CLAUDE.md) and 4B.11's brief said to NAME the debt
+rather than bolt on a route. 4B.13 paid it properly: `Intent`,
+`INTENT_MEANINGS`, `ROUTE_TAXONOMY`, `ROUTE_OFFERS`, the assembler, the authored
+copy and parse prompt v10, in one commit. The proof is now rendered, voiced AND
+askable.
 """
 from __future__ import annotations
 
@@ -104,12 +112,21 @@ class CostProof:
         """The strip chip's payload: a short label, a tone, and the long-form
         title. The JS renders these; it never composes the wording itself, so
         the two surfaces cannot state different things."""
+        # Session 4B.13 Item 5(a). Every label here is rendered UNDER the strip's
+        # "cost" tag (`<span class="lbl">cost</span> {label}`, main.js), exactly
+        # as the certificate chip renders its grade under "certificate". The
+        # proved label carried its own "cost" and the strip read
+        # "cost cost optimum proved". Fixed on this side rather than by dropping
+        # the tag, so all three states read as one sentence with it:
+        #   cost | proof not attempted
+        #   cost | optimum proved
+        #   cost | optimum not proved · gap 11.5%
         if self.no_solve:
-            return {"state": "none", "label": "no solve",
+            return {"state": "none", "label": "proof not attempted",
                     "title": "Nothing was admitted to this window, so no cost "
                              "proof was attempted."}
         if self.proved:
-            label = "cost optimum proved"
+            label = "optimum proved"
             title = ("No cheaper schedule exists for this window under the "
                      "declared cost model — the solver closed the bound.")
             return {"state": "proved", "label": label,

@@ -361,6 +361,31 @@ def apply_repeat_riders(bundle, text: str) -> str:
 _MONEY_MARK = "$"
 
 
+def apply_coverage_rider(bundle, text: str) -> Optional[str]:
+    """Session 4B.13 Item 1, clause (ii) — the predicate-coverage floor, at the
+    ONE delivery seam both renderers share, for the same reason the other two
+    riders are here: the template path and the LLM path must not be able to
+    disagree about whether the question was actually answered.
+
+    Reads the route stamped by ``Explainer.route``. All the judgment lives in
+    ``predicate_coverage``; this is only the attachment point. Returns the new
+    text, or None when nothing applies — which is the common case."""
+    from mre.modules.predicate_coverage import apply_predicate_rider
+    kf = bundle.key_facts if isinstance(bundle.key_facts, dict) else {}
+    route = str(kf.get("route_id") or "")
+    # The PLANNER'S words first. `bundle.question` is routinely the assembler's
+    # canonical phrasing ("Why does ORD-11 start when it does?"), which has
+    # already dropped the predicate the planner asked about — checking coverage
+    # against it would ask whether the answer covers its own paraphrase.
+    question = str(kf.get("asked_question") or getattr(bundle, "question", "") or "")
+    if not route or not question:
+        return None
+    try:
+        return apply_predicate_rider(question, route, text)
+    except Exception:  # noqa: BLE001 — a guard never breaks an answer
+        return None
+
+
 def apply_cost_proof_rider(bundle, text: str) -> Optional[str]:
     """Append the cost-proof qualifier to an answer that states money on a board
     whose cost optimum was NOT proved (Session 4B.11 CU1, docs/07 §5a.23).
@@ -465,7 +490,10 @@ class TemplateRenderer:
             self._render_body(bundle) + "\n" + _rendered_by(bundle, "template")))
         # 4B.11 CU1 — an unproved board's money claims carry their gap, here,
         # once, for every route (docs/07 §5a.23).
-        return apply_cost_proof_rider(bundle, text) or text
+        text = apply_cost_proof_rider(bundle, text) or text
+        # 4B.13 Item 1(ii) — and a predicate the answer never addressed is
+        # admitted rather than left for the planner to notice.
+        return apply_coverage_rider(bundle, text) or text
 
     def _render_body(self, bundle: ExplanationBundle) -> str:
         # R-AI2(d) (Session 4A.2d) — the transcript convention dies: no "=== q ==="
@@ -503,8 +531,24 @@ class TemplateRenderer:
                 "downtime", "unsupported", "schedule", "scenario_diff",
                 "near_miss", "clarify", "refusals",
                 "advice", "solve_time", "machine_count", "maintenance", "coaching",
+                # Item 2: the optimality answer IS the solver's own report; it
+                # cites the M6 solve_complete event rather than a record list.
+                "optimality",
+                # Item 1: a premise correction renders the order's REAL
+                # placements inline — that IS its evidence, and appending
+                # "(no evidence records found)" under it would read as a failure
+                # to check rather than as the check that just fired.
+                "premise_correction",
                 # Session 4A.5a CU2 — the confirmation-of-take bridge.
                 "confirm_take",
+                # Session 4B.13 Item 3 (errand C3). A late_orders bundle reaches
+                # here ONLY when no order carries a lateness metric — i.e. when
+                # nothing is late, which the sentence above has just said. The
+                # old "(no evidence records found)" read to a stranger as the
+                # system failing rather than as a clean bill of health. With one
+                # or more late orders the bundle carries their metrics and this
+                # branch is never taken, so no citation is ever suppressed.
+                "late_orders",
             ):
                 pass  # header already rendered all content
             elif "error" in bundle.key_facts:
@@ -550,9 +594,19 @@ class TemplateRenderer:
                 alts = kf.get("blocked_alternatives")
                 if kf.get("driver_code") == "CAPACITY_BLOCKED" and alts is not None:
                     from mre.modules.ask_fallback_copy import (
+                        WHY_MACHINE_CAPABILITY_LEAD,
                         WHY_MACHINE_CAPACITY_LEAD, WHY_MACHINE_CAPACITY_ONLY_OPTION,
                         WHY_MACHINE_CAPACITY_ROW, WHY_MACHINE_CAPACITY_UNATTRIBUTED,
                     )
+                    # Item 1: with NO eligible alternative the capacity lead is
+                    # false — it asserts occupied alternatives that do not
+                    # exist. That case is a capability fact and gets its own
+                    # lead, said once, instead of a contradiction said twice.
+                    if not alts and kf.get("only_option"):
+                        lines.append(WHY_MACHINE_CAPABILITY_LEAD.format(
+                            order=name, machine=kf["machine_ref"]))
+                        lines.append("")
+                        return
                     lines.append(WHY_MACHINE_CAPACITY_LEAD.format(
                         order=name, machine=kf["machine_ref"]))
                     if alts:
@@ -561,9 +615,7 @@ class TemplateRenderer:
                                 machine=a["machine"], blocker=a["blocker_order"],
                                 until=a["until"]))
                     else:
-                        lines.append(WHY_MACHINE_CAPACITY_ONLY_OPTION
-                                     if kf.get("only_option")
-                                     else WHY_MACHINE_CAPACITY_UNATTRIBUTED)
+                        lines.append(WHY_MACHINE_CAPACITY_UNATTRIBUTED)
                     lines.append("")
                     return
                 because = f" because {cause}" if cause else ""
@@ -627,10 +679,24 @@ class TemplateRenderer:
             kf = bundle.key_facts
             count = kf.get("late_count", 0)
             orders = kf.get("late_orders", [])
+            # Session 4B.13 Item 3 — WHICH ORDERS THE CLAIM IS ABOUT. On a
+            # rolling board "no late orders" is true of the SCHEDULED ones; the
+            # tray has no service outcome at all and is neither late nor on
+            # time. Absent (None) on a monolithic board, where the claim really
+            # does cover the whole plan.
+            sched_n = kf.get("scheduled_order_count")
+            tray_n = kf.get("not_scheduled_order_count")
+            scope = ""
+            if sched_n is not None and tray_n:
+                scope = (f" Of the {sched_n + tray_n} orders on this plan, that "
+                         f"covers the {sched_n} scheduled in this window — the "
+                         f"other {tray_n} sit beyond the horizon with no "
+                         f"placement yet, so they are neither late nor on time.")
             if count == 0:
-                lines.append("No late orders found in this schedule.")
+                lines.append(
+                    "No late orders found in this schedule." + scope)
             else:
-                lines.append(f"{count} late order(s):")
+                lines.append(f"{count} late order(s):" + scope)
                 for item in orders:
                     lines.append(f"  - {item}")
                 # R-PD1 clause (4)/(6), Session 4B.11 CU4(b) — the two totals,
@@ -1068,15 +1134,123 @@ class TemplateRenderer:
                 lines.append(f"The solve stage took about {secs:.1f} second(s).")
             lines.append("")
 
+        elif bundle.subject_type == "premise_correction":
+            # Session 4B.13 Item 1, clause (i). R-AI3's register ladder: the
+            # disagreement is met with evidence and a way forward, never a
+            # refusal and never a lecture. The planner is far more likely to
+            # have mistyped than to be wrong about their own plant.
+            kf = bundle.key_facts
+            order = kf.get("order", "?")
+            claimed = kf.get("claimed_machine", "?")
+            actual = kf.get("actual_machines") or []
+            if len(actual) == 1:
+                runs = f"it runs on {actual[0]}"
+            elif actual:
+                runs = ("it runs " + ", ".join(actual[:-1]) + f" and {actual[-1]}")
+            else:
+                runs = "I can't see any placement for it"
+            if not kf.get("claimed_machine_exists"):
+                lines.append(
+                    f"There's no machine called {claimed} in this plant, so I "
+                    f"can't answer that as asked — but {order} is scheduled, and "
+                    f"{runs}.")
+            else:
+                lines.append(
+                    f"{order} isn't on {claimed} — {runs}.")
+            placements = kf.get("placements") or []
+            if placements:
+                lines.append("")
+                for p in placements:
+                    seq = p.get("seq")
+                    when = ""
+                    if p.get("start") and p.get("end"):
+                        when = f"  {p['start']} -> {p['end']}"
+                    lines.append(
+                        f"  - {p.get('machine', '?')}"
+                        + (f"  (op {seq})" if seq else "") + when)
+            if actual:
+                lines.append("")
+                lines.append(
+                    "Did you mean one of those? Ask \"why is " + order + " on "
+                    + actual[0] + "?\" and I'll give you the cause.")
+            lines.append("")
+
+        elif bundle.subject_type == "optimality":
+            # Session 4B.13 Item 2 — the cost proof, ASKED FOR and answered.
+            # Every figure here comes from cost_proof; nothing is recomputed.
+            kf = bundle.key_facts
+            tb = kf.get("tiebreak_clause") or ""
+            if kf.get("unknown"):
+                lines.append(
+                    "I can't tell you — this schedule carries no solver report "
+                    "I can read, so I don't know whether its cost was proved "
+                    "optimal. I won't guess either way.")
+            elif kf.get("no_solve"):
+                lines.append(
+                    "There was no solve to prove anything about — nothing was "
+                    "admitted to this window, so the question doesn't arise yet.")
+            elif kf.get("proved"):
+                lines.append(
+                    "Yes — and this is proved, not asserted. The solver closed "
+                    "the bound: no cheaper schedule exists for this window under "
+                    "the declared cost model." + tb)
+                lines.append("")
+                lines.append(
+                    "To be exact about what that covers: it is the COST optimum. "
+                    "It doesn't mean every order is on time, or that you'd like "
+                    "the shape of it — only that no arrangement of this work is "
+                    "cheaper.")
+            else:
+                g = kf.get("gap_text") or ""
+                lines.append(
+                    "I can't prove it, and I'd rather say so than guess. The "
+                    "solver ran out of budget before it could close the bound"
+                    + (f", with a gap of {g} still open." if g else
+                       " and reported no gap, so the distance to the cheapest "
+                       "schedule is unknown.") + tb)
+                lines.append("")
+                if g:
+                    lines.append(
+                        f"That gap is the limit of the PROOF, not a measure of "
+                        f"how good the schedule is: it says a cheaper plan may "
+                        f"exist and could be up to {g} cheaper. On large plants "
+                        f"we have measured wide gaps over schedules whose actual "
+                        f"cost barely moved.")
+                else:
+                    lines.append(
+                        "That is a statement about the proof, not about the "
+                        "schedule's quality — the plan in front of you places "
+                        "every operation it admitted.")
+            lines.append("")
+
         elif bundle.subject_type == "machine_count":
             kf = bundle.key_facts
             machines = kf.get("machines", [])
             n = kf.get("machine_count", len(machines))
-            lines.append(f"{n} machine(s) carry work in this plan.")
+            # Session 4B.13 Item 4 — SAY WHAT IS COUNTED. This line used to read
+            # "N machine(s) carry work in this plan" over a count of DECLARED
+            # resources, which a stranger falsifies by counting bars on a board
+            # with idle rows. Declared and working are different facts; both are
+            # said, each labelled, and the idle ones are named rather than left
+            # for the reader to difference.
+            working = kf.get("working_machine_count")
+            idle = kf.get("idle_machines") or []
+            if working is None:
+                lines.append(f"{n} machine(s) in this plant.")
+            elif working == n:
+                lines.append(f"{n} machine(s) in this plant, and all {n} carry "
+                             f"work in this plan.")
+            else:
+                lines.append(f"{n} machine(s) in this plant; {working} of them "
+                             f"carry work in this plan.")
             if machines:
                 lines.append("")
                 for m in machines:
                     lines.append(f"  - {m}")
+            if idle:
+                lines.append("")
+                lines.append("Carrying no work in this window: "
+                             + ", ".join(idle) + ".")
             lines.append("")
 
         elif bundle.subject_type == "maintenance":
@@ -1614,6 +1788,14 @@ class TemplateRenderer:
                 f"solve. {c['cause']}.")
             if c.get("fix"):
                 lines.append(f"Fix: {c['fix']}")
+        elif kf.get("mention_kind") == "machine":
+            # 4B.13: name the right vocabulary. Calling an unknown MACHINE an
+            # unknown order, and then listing orders, tells the planner their
+            # machine name is an order id.
+            lines.append(f"There's no machine called {token} in this plant.")
+            known = kf.get("known_machines") or []
+            if known:
+                lines.append(f"The machines here are: {', '.join(known)}.")
         else:
             lines.append(f"{token} isn't in this schedule — I don't see it among "
                          "the planned orders.")
@@ -2120,7 +2302,11 @@ class LLMRenderer:
             self._render_inner(bundle)))
         # 4B.11 CU1 — same seam, same rule: a reworded answer that still states
         # money on an unproved board still carries the gap.
-        return apply_cost_proof_rider(bundle, text) or text
+        text = apply_cost_proof_rider(bundle, text) or text
+        # 4B.13 Item 1(ii) — and same seam, same rule again: a reworded answer
+        # that still never addressed the predicate says so. Both renderers or
+        # neither; a floor one path can skip is not a floor.
+        return apply_coverage_rider(bundle, text) or text
 
     def _render_inner(self, bundle: ExplanationBundle) -> str:
         if bundle.subject_type in ("remediation", "triage"):

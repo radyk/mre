@@ -365,7 +365,23 @@ class EvidenceToolbox:
     def _lateness_set(self) -> ToolResult:
         """EVERY order's lateness — the whole set, deliberately unfiltered, so a
         count over it is enumerable from ONE call (the completeness-honesty rule in
-        CU3 turns on exactly that)."""
+        CU3 turns on exactly that).
+
+        NOT-LATE AND NOT-SCHEDULED ARE DIFFERENT STATES (Session 4B.13 Item 3).
+        Until 4B.13 this summary read ``on_time_or_early = len(rows) - late_n``,
+        which counted an UNPLACED order as a success: on the pinned exam world it
+        returned ``{'orders': 40, 'late': 0, 'on_time_or_early': 40}`` on a board
+        where 14 of those 40 are beyond-horizon tray rows with no placement at
+        all. Synthesis repeated it faithfully and claim verification PASSED it —
+        the count really was what the tool said. The falsehood was in the tool's
+        own vocabulary, which is why the fix is here and not in the verifier:
+        verification is downstream of tool vocabulary, and a tool that fuses two
+        categories makes every claim built on it unfalsifiable-but-verified.
+
+        The three states are disjoint and cover the set:
+        ``late`` + ``on_time_or_early`` == ``scheduled``, and
+        ``scheduled`` + ``not_scheduled`` == ``orders``.
+        """
         reader = getattr(self._ex, "_reader", None)
         imap = getattr(self._ex, "_identity_map", None)
         rows: list[dict] = []
@@ -390,17 +406,35 @@ class EvidenceToolbox:
                     "order": order,
                     "lateness_minutes": None if late is None else round(late, 1),
                     "late": bool(late is not None and late > 0),
+                    # The row says its own state, so a model reading rows rather
+                    # than the summary cannot make the same fusion by hand.
+                    "scheduled": late is not None,
+                    "service_state": ("not_scheduled" if late is None
+                                      else "late" if late > 0 else "on_time_or_early"),
                     "due": dem.get("due"),
                     "record_ids": rids or [did],
                 })
         rows.sort(key=lambda r: -(r["lateness_minutes"] or 0.0))
         late_n = sum(1 for r in rows if r["late"])
+        unscheduled_n = sum(1 for r in rows if not r["scheduled"])
+        scheduled_n = len(rows) - unscheduled_n
+        note = "" if rows else "this run records no lateness metrics"
+        if unscheduled_n:
+            # Said, not merely counted: the completeness rider a claim about
+            # "all orders" has to survive. A tray order is never "on time".
+            note = (f"{unscheduled_n} of {len(rows)} order(s) have NO placement in "
+                    f"this schedule and therefore no service outcome — they are "
+                    f"neither late nor on time. Lateness is stated for the "
+                    f"{scheduled_n} scheduled order(s) only.")
         return ToolResult(tool=ToolName.LATENESS_SET, rows=rows[: self.max_rows],
                           truncated=len(rows) > self.max_rows,
                           enumerates_set=len(rows) <= self.max_rows,
-                          note="" if rows else "this run records no lateness metrics",
-                          summary={"orders": len(rows), "late": late_n,
-                                   "on_time_or_early": len(rows) - late_n})
+                          note=note,
+                          summary={"orders": len(rows),
+                                   "scheduled": scheduled_n,
+                                   "late": late_n,
+                                   "on_time_or_early": scheduled_n - late_n,
+                                   "not_scheduled": unscheduled_n})
 
     def _cost_ledger(self) -> ToolResult:
         reader = getattr(self._ex, "_reader", None)

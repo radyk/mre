@@ -534,10 +534,7 @@ def assemble_rolling_document(
     asgn_blocks: list[AssignmentBlock] = []
     for oid, pl in placed.items():
         op = ops_by_id.get(oid, {})
-        start = _parse_dt(pl["start"])
-        end = _parse_dt(pl["end"])
-        chunks = [Chunk(chunk_seq=1, start=start, end=end,
-                        working_min=int((end - start).total_seconds() // 60))]
+        chunks = _rolling_chunks(pl)
         wp_ref = op.get("workpackage_ref", "")
         asgn_blocks.append(AssignmentBlock(
             assignment_id=f"rasgn-{oid}",
@@ -828,6 +825,40 @@ def _chunks(asgn: dict) -> list[Chunk]:
             working_min=int((end - start).total_seconds() // 60),
         ))
     return out
+
+def _rolling_chunks(pl: dict) -> list[Chunk]:
+    """ONE CHUNK PER CALENDAR WINDOW for a rolling placement — never one bar
+    per operation (Session 4B.13 Item 0).
+
+    ``pl`` is a RollingView placement: ``{resource, start, end}`` plus, for a
+    RESUMABLE op (R-C3), ``chunks`` — the calendar windows the solver actually
+    used. ``start``/``end`` are the overall SPAN, and for a resumable op that
+    span includes the pauses, which are not working time.
+
+    The specimen this was written against: ORD-000011 on CUT-01 works 1501
+    minutes across three windows but spans 5821, because Jan 10-11 is a weekend
+    the machine is shut. Collapsing that to a single first-start..last-end chunk
+    drew a continuous bar straight through a closure on the board and reported
+    the elapsed span as ``working_min``. The placement was never wrong — the
+    solver blocks every calendar gap and no-overlaps against it — only the view
+    was, and it hid the pauses of EVERY chunked op on every rolling board.
+
+    A non-resumable placement carries no ``chunks`` key and yields exactly the
+    single chunk it always did, so an unchunked rolling document is
+    byte-identical to its pre-4B.13 self.
+    """
+    raw = pl.get("chunks") or []
+    if not raw:
+        start, end = _parse_dt(pl["start"]), _parse_dt(pl["end"])
+        return [Chunk(chunk_seq=1, start=start, end=end,
+                      working_min=int((end - start).total_seconds() // 60))]
+    out: list[Chunk] = []
+    for c in sorted(raw, key=lambda c: c["start"]):
+        s, e = _parse_dt(c["start"]), _parse_dt(c["end"])
+        out.append(Chunk(chunk_seq=len(out) + 1, start=s, end=e,
+                         working_min=int((e - s).total_seconds() // 60)))
+    return out
+
 
 def _phases(op: dict, chunks: list[Chunk]) -> Phases:
     """Setup occupies the first setup_duration minutes of the first chunk

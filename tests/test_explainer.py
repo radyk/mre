@@ -1170,7 +1170,27 @@ class TestDialogueMode:
 
     # --- judgment path: mocked LLM ---
 
-    def test_judgment_path_calls_mocked_llm(self, explainer_and_index):
+    def test_judgment_path_calls_mocked_llm(self, explainer_and_index, monkeypatch):
+        """The REPL's dialogue-mode judgment path, made DETERMINISTIC about the
+        regime it tests (Session 4B.13).
+
+        This test's outcome used to depend on whether an untracked `.env.local`
+        happened to exist. With no ANTHROPIC_API_KEY, `_assemble_bundle` builds no
+        parser, an uninterpretable question lands on the honest `unsupported`
+        floor, and `_render_repl_turn` routes it to `render_judgment` — the path
+        under test. WITH a key the real parse runs, "What do you think about
+        this?" reads as UNMATCHED, and the dispatch sends it to the R-AI5 SECOND
+        TIER instead; the bundle is `synthesis`, not `unsupported`, and the
+        judgment renderer is never reached. So the test failed on any machine
+        holding a dev key, and 4B.8's conftest loader made that every machine.
+
+        The key is cleared here so the test measures the judgment path rather
+        than the environment. **That the path is unreachable whenever a parser
+        exists is a real finding, not a test defect** — the REPL's dialogue mode
+        is superseded by the synthesis tier — and it is recorded in docs/04
+        (4B.13, reported not fixed) because retiring it is a ruling.
+        """
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         from mre.ask import SessionHistory, Turn, _render_repl_turn
         from mre.modules.renderers import LLMRenderer
         exp, _ = explainer_and_index

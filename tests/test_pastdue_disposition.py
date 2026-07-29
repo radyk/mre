@@ -488,7 +488,11 @@ class TestCostProof:
         assert p.proved and not p.unproved
         assert p.chip()["state"] == "proved"
         # An unproven TIEBREAK never downgrades a proven COST (contract 1.10).
-        assert "cost optimum proved" in p.chip()["label"]
+        # 4B.13 Item 5(a): the label no longer carries its own "cost" — the
+        # strip renders it under a "cost" tag and read "cost cost optimum
+        # proved". The claim being pinned is unchanged.
+        assert "optimum proved" in p.chip()["label"]
+        assert "cost optimum proved" not in p.chip()["label"]
         assert p.rider() is None
 
     def test_an_unproved_board_carries_its_gap(self):

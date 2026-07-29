@@ -60,6 +60,17 @@ export function mountCoarseBand(hostEl, doc) {
 
   const buckets = cz.buckets || [];
   const cells = cz.density || [];
+  // Session 4B.13 Item 5(c) — RESOURCE NAMES, NOT CANONICAL IDS. The band's row
+  // heads rendered raw UUIDs ("fd34d391-ffa4…"): the same defect class as an
+  // exclusion answer naming orders by canonical id, now on the board, in the
+  // panel a stranger reads last. The document already carries the external name
+  // on every resource lane; the coarse cell carries only the id, so the mapping
+  // is done here rather than widening the contract. An id with no lane keeps
+  // its id — a missing name is never invented.
+  const nameOf = (rid) => {
+    const lane = (doc.resources || []).find((r) => r.resource_id === rid);
+    return (lane && lane.external_name) || rid;
+  };
   const byRes = new Map();
   for (const c of cells) {
     if (!byRes.has(c.resource_id)) byRes.set(c.resource_id, new Map());
@@ -121,10 +132,13 @@ export function mountCoarseBand(hostEl, doc) {
   }
 
   for (const [resId, m] of rows) {
+    const resName = nameOf(resId);
     const label = document.createElement("div");
     label.className = "cb-rowhead";
-    label.textContent = resId.length > 14 ? `${resId.slice(0, 13)}…` : resId;
-    label.title = resId;
+    label.textContent = resName.length > 14 ? `${resName.slice(0, 13)}…` : resName;
+    // The canonical id stays reachable on hover — this panel is evidence, and
+    // the id is what an auditor traces. It is just no longer the LABEL.
+    label.title = resName === resId ? resId : `${resName}  (${resId})`;
     grid.appendChild(label);
     for (const b of buckets) {
       const c = m.get(b.index);
@@ -140,12 +154,12 @@ export function mountCoarseBand(hostEl, doc) {
       // the arithmetic, never just the colour — and never without the caveat
       // that the arithmetic ran over a partial population
       cell.title = c
-        ? `${resId} · week of ${b.start.slice(0, 10)}\n`
+        ? `${resName} · week of ${b.start.slice(0, 10)}\n`
           + `${c.load_minutes} min of work against ${c.capacity_minutes} min `
           + `of capacity (${Math.round(c.utilization * 100)}%)\n`
           + "a load estimate over whole weeks — not a placement"
           + uncounted
-        : `${resId} · week of ${b.start.slice(0, 10)}\nno coarse load` + uncounted;
+        : `${resName} · week of ${b.start.slice(0, 10)}\nno coarse load` + uncounted;
       grid.appendChild(cell);
     }
   }

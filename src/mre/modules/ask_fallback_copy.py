@@ -51,6 +51,7 @@ ROUTE_OFFERS = {
     "coaching": "show how to enable that capability in the submission",
     "solve-time": "tell you how long the solve took",
     "machine-count": "list the machines in the plan",
+    "solve-optimality": "say whether this schedule's cost is proven optimal",
     "maintenance": "show one machine's downtime (calendar closures)",
     "swap-move": "weigh swapping {order} with another order and how to price it",
     "gap-between": "explain the gap before {order} on its machine",
@@ -191,6 +192,20 @@ WHY_MACHINE_CAPACITY_UNATTRIBUTED = (
 WHY_MACHINE_CAPACITY_ONLY_OPTION = (
     "  In fact it is the only machine that can run this step, so nothing about "
     "the rest of the plan would have changed where it went."
+)
+# Session 4B.13 Item 1 — THE ONLY-OPTION CASE NEEDS ITS OWN LEAD, because the
+# capacity lead above is FALSE here. Asked "why is ORD-000012 on PAINT-01" the
+# answer read: "because the machines that could have run it instead were
+# occupied when it needed to run. In fact it is the only machine that can run
+# this step" — two sentences that cannot both be true, the first asserting
+# occupied alternatives the second says do not exist. The driver code really is
+# CAPACITY_BLOCKED, so the lead fired; but when eligibility resolves to a single
+# machine the honest cause is CAPABILITY, and this file's own comment above
+# already said so. The step's requirement is an explicit set of one — that is
+# the whole story, and it is a better answer than the contradiction it replaces.
+WHY_MACHINE_CAPABILITY_LEAD = (
+    "{order} is on {machine} because that is the only machine qualified to run "
+    "this step — there was no alternative to weigh."
 )
 
 # ---------------------------------------------------------------------------

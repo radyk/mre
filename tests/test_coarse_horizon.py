@@ -949,5 +949,13 @@ def test_the_governed_prompt_was_bumped_with_the_vocabulary():
     without its bump is a review that did not happen."""
     md = (REPO / "src" / "mre" / "modules" / "parse_prompt.md").read_text(
         encoding="utf-8")
-    assert "prompt_version: 9" in md
+    # Session 4B.13: this pinned `prompt_version: 9` exactly, so it broke on the
+    # NEXT legitimate bump (v10, `solve-optimality`) — a governance guard that
+    # cries wolf at every review is one that gets edited without being read.
+    # What it must actually prove is that THIS session's vocabulary landed WITH
+    # its review: the v9 changelog entry is permanent, and the live version can
+    # only ever move forward from it.
+    assert "v9:" in md, "the coarse bump's changelog entry is gone"
+    version = int(md.split("prompt_version:")[1].split()[0])
+    assert version >= 9, f"prompt_version went backwards: {version}"
     assert "coarse-fit" in md and "bucket-load" in md

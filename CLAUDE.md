@@ -160,9 +160,17 @@ kept offering to follow it.
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
 **Session 4B.12 — where the cliff actually is, and whether a hint moves it**,
 2026-07-28 (docs/07 v2.56, §5a.31-32; docs/04 session amendment; narrative in
-`SESSION_CLOSEOUT.md`). A MEASUREMENT session: one capability behind a flag,
+`docs/closeouts/4B.12.md`). A MEASUREMENT session: one capability behind a flag,
 default OFF; nothing it found was fixed. Before it: 4B.11 (v2.55, **R-PD1
 verbatim**), 4B.10 (v2.54), 4B.9 (§5a.24), 4B.8 (v2.53).
+
+**CLOSE-OUTS LIVE AT `docs/closeouts/<session-id>.md` — ONE PATH PER SESSION,
+NOTHING OVERWRITES** (4B.13 Item 6). Until then every session wrote the repo-root
+`SESSION_CLOSEOUT.md`, so the newest close-out silently replaced the last one and
+a stale root file kept being read as current. Historical references in docs/04
+(append-only, never rewritten) and older docs/07 entries name the ROOT path; they
+mean that session's file, now under `docs/closeouts/`. Errand and recon reports
+follow the same rule with a qualified name (`4B.12-errand-exam-world.md`).
 
 **THE CLIFF IS AT 92 OPS/MACHINE, NOT 137 — AND §5a.27's NUMBERS ARE SUPERSEDED
 (4B.12, docs/07 §5a.31; §5a.27 carries a dated note and is NOT rewritten).**
