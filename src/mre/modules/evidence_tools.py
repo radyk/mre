@@ -187,6 +187,10 @@ class EvidenceToolbox:
             return self._capability_registry()
         if name is ToolName.ENTITY_VOCABULARY:
             return self._entity_vocabulary()
+        if name is ToolName.CONSTRAINT_CATALOG:
+            return self._constraint_catalog(args.get("topic"))
+        if name is ToolName.SPEC_LOOKUP:
+            return self._spec_lookup(str(args.get("query") or ""))
         return self._fetch_record(str(args["id"]))
 
     # ------------------------------------------------------------------
@@ -551,6 +555,87 @@ class EvidenceToolbox:
         return ToolResult(tool=ToolName.CAPABILITY_REGISTRY, rows=rows,
                           enumerates_set=True,
                           summary={"capabilities": len(rows)})
+
+    def _constraint_catalog(self, topic: Any = None) -> ToolResult:
+        """docs/05's catalog AS RECORDS (Session 4B.15 Item 5).
+
+        The registry above answers "how do I turn X on" and carries no verdict
+        and no proof status, so it cannot say "not today". This does: each row
+        is the catalog's own verdict, proof status verbatim, and doorway, plus
+        the rulings and exclusions that govern it.
+
+        ``record_ids`` is deliberately EMPTY — the same shape
+        ``capability_registry`` uses. A catalog row is not an evidence record
+        about this run, so a claim resting on it lands INTERPRETIVE rather than
+        VERIFIED, which is the honest label: the claim is about the PRODUCT, not
+        about this schedule, and the verifier has nothing in the evidence store
+        to re-fetch. What stops the claim being invented is that the row is
+        quoted; what stops it being overstated is that the verdict and status
+        travel with it."""
+        from mre.modules.constraint_catalog import ground, load_catalog
+        cat = load_catalog()
+        if not cat.items:
+            return ToolResult(tool=ToolName.CONSTRAINT_CATALOG,
+                              args={"topic": topic} if topic else {}, ok=False,
+                              note="the constraint catalog is not available in "
+                                   "this build")
+        g = ground(str(topic)) if topic else None
+        items = list(g.items) if g else list(cat.items)
+        rows = [{"id": i.item_id, "item": i.name,
+                 "verdict": i.verdict.value, "proof_status": i.status_raw,
+                 "means": i.register.value,
+                 "declarable_today": i.declarable,
+                 "submission_doorway": i.doorway,
+                 "record_ids": []} for i in items]
+        if g:
+            for r in g.rulings:
+                rows.append({"id": r.ruling_id, "item": f"RULING: {r.title}",
+                             "verdict": "locked ruling", "proof_status": "",
+                             "means": "", "declarable_today": False,
+                             "submission_doorway": r.text[:400],
+                             "record_ids": []})
+            for e in g.exclusions:
+                rows.append({"id": "EXCLUSION", "item": e.name,
+                             "verdict": "out", "proof_status": "",
+                             "means": "excluded", "declarable_today": False,
+                             "submission_doorway": e.text[:400],
+                             "record_ids": []})
+        note = ("" if rows else
+                "the catalog names nothing matching that topic — say so rather "
+                "than reasoning out a capability answer")
+        return ToolResult(
+            tool=ToolName.CONSTRAINT_CATALOG,
+            args={"topic": topic} if topic else {},
+            rows=rows[: self.max_rows], note=note,
+            truncated=len(rows) > self.max_rows,
+            # The WHOLE catalog is enumerable; a topic query is a FILTER.
+            enumerates_set=(not topic and len(rows) <= self.max_rows),
+            summary={"items": len(rows),
+                     "topic": g.topic.key if g else "all"})
+
+    def _spec_lookup(self, query: str) -> ToolResult:
+        """Prose from the CURRENT specification tier (docs/01, 05, 06).
+
+        The tier boundary is enforced in ``corpus.TIERS_FOR_PURPOSE``, not here
+        and not in the prompt: ``Purpose.CAPABILITY`` admits the current specs
+        and nothing else, so the roadmap (what we INTEND to build) and the
+        design history (which carries superseded rulings as first-class text)
+        are unreachable from this tool by construction."""
+        from mre.modules.corpus import Purpose, load_corpus, load_error
+        corp = load_corpus()
+        if corp is None:
+            return ToolResult(tool=ToolName.SPEC_LOOKUP, args={"query": query},
+                              ok=False,
+                              note=f"the specification corpus is not available "
+                                   f"in this build ({load_error()})")
+        hits = corp.retrieve(query, Purpose.CAPABILITY, limit=4)
+        rows = [{"source": p.citation, "text": p.text[:1400], "record_ids": []}
+                for p in hits]
+        return ToolResult(
+            tool=ToolName.SPEC_LOOKUP, args={"query": query}, rows=rows,
+            note="" if rows else "the specifications say nothing about that",
+            enumerates_set=False,          # a search is never a set
+            summary={"passages": len(rows)})
 
     def _entity_vocabulary(self) -> ToolResult:
         orders = sorted((self._ex._order_refs or {}).values())

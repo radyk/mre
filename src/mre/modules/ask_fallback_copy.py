@@ -158,7 +158,37 @@ CONFIRM_TAKE_GESTURE_GENERIC = (
 
 REPEAT_LEADS = (
     "Same answer as a moment ago —",
-    "Still the same; nothing has changed since you asked —",
+    # Session 4B.15 Item 4: the second variant used to read "Still the same;
+    # nothing has changed since you asked", which is the product telling the
+    # planner off for its own deafness. It now only ever fires on a genuine
+    # re-ask of the SAME question, and even there it does not scold.
+    "Same answer — nothing in the plan has moved since you asked —",
+)
+
+# ---------------------------------------------------------------------------
+# THE DEAFNESS RIDER (Session 4B.15 Item 4) — THE REVERSAL.
+#
+# Measured, the repeat detector fired four times with ZERO true positives: on a
+# DIFFERENT question, on an EXPLICIT CORRECTION ("no, I mean for ORD-000013
+# specifically"), on a factual lookup, and on the demo opener. In every case
+# several DIFFERENT questions had collapsed onto one route.
+#
+# That is evidence about the ASSISTANT, not about the planner. When distinct
+# questions keep producing one answer the correct inference is "I am not
+# understanding you" — so this copy expresses doubt and offers to narrow, and
+# it never rebukes. There is no variant of it that blames the planner, by
+# design: the escalating second line is what made the original defect sting.
+# ---------------------------------------------------------------------------
+
+DEAF_LEAD = (
+    "I've now given you this same answer for two different questions, which "
+    "probably means I'm not understanding what you're asking."
+)
+DEAF_PRIOR = 'Last time you asked: "{prior}".'
+DEAF_OFFER = (
+    "If you're after a specific field on a specific job — whether an operation "
+    "is splittable, how long it takes, its due date, which machines can run it "
+    "— name the order and the field and I'll read it straight off the record."
 )
 
 # CU5(c): a COUNT answered in the previous turn does not want its recitation

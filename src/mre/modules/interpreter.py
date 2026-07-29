@@ -36,6 +36,7 @@ The provenance telemetry's Pareto and the promotion loop (R-AI5(5)/(7)) are 4A.5
 """
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass
 from typing import Any, Optional
@@ -85,7 +86,11 @@ _TWO_ORDER_INTENTS = frozenset({Intent.SWAP_MOVE, Intent.GAP_BETWEEN})
 #: Kept narrow deliberately: a selection that could re-scope `downtime` or
 #: `late-orders` would change what a plant-wide question means without saying so.
 _OPERATION_SCOPED_INTENTS = frozenset(
-    {Intent.WHY_HERE, Intent.START_REASON, Intent.CONTESTED_FACT})
+    {Intent.WHY_HERE, Intent.START_REASON, Intent.CONTESTED_FACT,
+     # Session 4B.15 Item 3: "is this one splittable" asked with an operation
+     # selected must read THAT operation, not the order's first one — the same
+     # mis-scoping 4B.14 Item 5(d) fixed for the other three.
+     Intent.ATTRIBUTE_LOOKUP})
 
 # The rolling (sliced-world) intents. On a monolithic run these degrade through the
 # normal route table; the rolling document pre-route is upstream in the API.
@@ -410,6 +415,11 @@ def _required_slots(intent: Intent, params: dict) -> list[str]:
         return []                       # plant-wide is a legitimate scope
     if intent is Intent.GAP_BETWEEN:
         return [] if params.get("machine") else slots
+    # Session 4B.15 Item 3: an attribute lookup takes an ORDER, but a RESOURCE
+    # field ("what is PAINT-01's capacity") is named by a machine instead. Same
+    # shape as the gap explainer: either subject satisfies it.
+    if intent is Intent.ATTRIBUTE_LOOKUP:
+        return [] if params.get("machine") else slots
     return slots
 
 
@@ -514,10 +524,144 @@ def _repeat_depth(context: Optional[dict], route: str) -> int:
 
     Read off the history the panel already sends — each turn carries the route
     that answered it — so this needs no server state and no new channel. 0 means
-    the question is fresh."""
+    the question is fresh.
+
+    NOTE (Session 4B.15 Item 4): this is a signal about MY OUTPUT, not about the
+    planner's input, and reading it as the latter is the defect Item 4 reverses.
+    Callers must use :func:`bundle_repeat`, which splits it by whether the
+    QUESTIONS differed."""
     history = (context or {}).get("history") or []
     return sum(1 for turn in history[-REPEAT_WINDOW:]
                if (turn.get("route") or "") == route)
+
+
+def _normalize_q(text: str) -> str:
+    """A question reduced to its content words, for same-question comparison.
+    Punctuation, filler and word order survive nothing here: "how many are
+    late?" and "how many are late" are the same ask; "is op20 splittable" and
+    "can I make this one splittable" are not."""
+    words = re.findall(r"[a-z0-9]+", (text or "").lower())
+    drop = {"a", "an", "the", "is", "are", "do", "does", "did", "can", "could",
+            "would", "will", "please", "tell", "me", "you", "i", "we", "so",
+            "just", "again", "and", "of", "to", "for", "on", "in", "it",
+            "that", "this", "what", "whats"}
+    return " ".join(sorted(w for w in words if w not in drop))
+
+
+def _same_question(a: str, b: str) -> bool:
+    """True when two turns are the SAME ask. Deliberately strict: a Jaccard
+    overlap above 0.8 on content words. Anything less is a different question,
+    and a different question reaching the same route is the signal Item 4
+    cares about."""
+    sa, sb = set(_normalize_q(a).split()), set(_normalize_q(b).split())
+    if not sa or not sb:
+        return False
+    return len(sa & sb) / max(len(sa | sb), 1) >= 0.8
+
+
+#: Server-side memory of what was actually DELIVERED, per session. Keyed by
+#: session id, holding the last few (route, question, answer fingerprint).
+#:
+#: It lives here rather than on the context channel because the panel's history
+#: carries the question and the route but NOT the answer — and the answer is the
+#: whole signal. "Several different questions produced ONE ANSWER" cannot be
+#: read off a route id: turns 4 and 5 of the measured transcript share a route
+#: and, once the route works, say completely different things.
+_DELIVERED: dict[str, list[dict]] = {}
+_DELIVERED_KEEP = 4
+
+
+def _answer_fingerprint(text: str) -> str:
+    """A stable hash of the DELIVERED BODY, ignoring the riders this very
+    mechanism adds (else the second delivery never matches the first) and
+    ignoring the rendered-by footer."""
+    body = (text or "").split("\n[rendered by:")[0]
+    words = re.findall(r"[a-z0-9]+", body.lower())
+    return hashlib.sha1(" ".join(words).encode("utf-8")).hexdigest()
+
+
+def remember_delivery(session_id: Optional[str], route: str, question: str,
+                      text: str) -> None:
+    """Record what was delivered, so the next turn can tell whether it is about
+    to say the same thing again."""
+    if not session_id:
+        return
+    row = {"route": route, "question": question,
+           "fp": _answer_fingerprint(text)}
+    seq = _DELIVERED.setdefault(session_id, [])
+    seq.append(row)
+    del seq[:-_DELIVERED_KEEP]
+
+
+def bundle_repeat(bundle: Any, context: Optional[dict],
+                  parsed: ParsedQuestion, text: str = "",
+                  session_id: Optional[str] = None) -> None:
+    """Stamp the repeat signal on a bundle — REVERSED (Session 4B.15 Item 4).
+
+    Two different facts were fused into one counter, and the fused counter fired
+    four times measured with ZERO true positives:
+
+      ``repeat``  the planner asked the SAME question again. Their intent, their
+                  words. Terse is right here, and it never rebukes.
+      ``deaf``    DIFFERENT questions produced THE SAME ANSWER. That is evidence
+                  about ME. The correct inference is "I am not understanding
+                  you", and the correct response is self-doubt and an offer to
+                  narrow — never "nothing has changed since you asked".
+
+    THE SIGNAL IS THE OUTPUT, NOT THE ROUTE. Two different questions reaching
+    one route and getting two good answers is the route working; the defect is
+    two different questions getting one answer. So ``deaf`` requires a matching
+    answer FINGERPRINT, which is why deliveries are remembered.
+    """
+    if not isinstance(getattr(bundle, "key_facts", None), dict):
+        return
+    route = parsed.intent.value
+    history = (context or {}).get("history") or []
+    same = sum(1 for t in history[-REPEAT_WINDOW:]
+               if (t.get("route") or "") == route
+               and _same_question(t.get("question") or "", parsed.question))
+    if same:
+        bundle.key_facts["repeat"] = same
+        return
+    if not text or not session_id:
+        return
+    fp = _answer_fingerprint(text)
+    prior = [row for row in _DELIVERED.get(session_id, [])[-REPEAT_WINDOW:]
+             if row["fp"] == fp
+             and not _same_question(row["question"], parsed.question)]
+    if prior:
+        bundle.key_facts["deaf"] = len(prior)
+        bundle.key_facts["deaf_prior"] = prior[-1]["question"][:120]
+
+
+def _template_text(bundle: Any) -> str:
+    """The deterministic rendering of an assembled bundle — computed ONCE per
+    dispatch and read by both the falsifiability check and the repeat signal.
+
+    It is the template path deliberately: pure, cheap, faithful to the assembled
+    facts, and computed BEFORE any LLM render, so neither decision can depend on
+    prose a model happened to write. Returns "" on any failure, which both
+    readers treat as "no signal"."""
+    try:
+        from mre.modules.renderers import TemplateRenderer
+        return TemplateRenderer().render(bundle)
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def _falsified(parsed: ParsedQuestion, text: str) -> Any:
+    """Run the route-falsifiability check against the deterministic rendering.
+
+    Fails OPEN in every direction: a missing module or an unexpected shape
+    yields "no failure", because a check that can break an answer path is worse
+    than the defect it guards."""
+    if not text:
+        return None
+    try:
+        from mre.modules.route_falsifiability import falsify
+        return falsify(parsed.question, parsed.intent.value, text, parsed)
+    except Exception:  # noqa: BLE001
+        return None
 
 
 @dataclass
@@ -534,7 +678,8 @@ class Dispatched:
 def _synthesis_dispatch(explainer: Any, parsed: ParsedQuestion, note: str,
                         synthesizer: Any, context: Optional[dict],
                         memory: Any, session_id: Optional[str],
-                        diverted_qualifier: str = "") -> Dispatched:
+                        diverted_qualifier: str = "",
+                        document: Any = None) -> Dispatched:
     """The SECOND TIER (R-AI5(2)): labeled open synthesis over read-only evidence,
     hardened by claim-level verification before it renders (R-AI5(3)).
 
@@ -552,6 +697,12 @@ def _synthesis_dispatch(explainer: Any, parsed: ParsedQuestion, note: str,
     # the FRAME did not, which claim verification cannot catch.
     if diverted_qualifier:
         context = {**(context or {}), "dropped_qualifier": diverted_qualifier}
+    # Session 4B.15 Item 0 — THE CALENDAR ANCHOR. The tier had no idea what day
+    # it was, so "Tuesday" bound to the first Tuesday in the data rather than
+    # the one under discussion. The document carries the reference date and the
+    # horizon; ``render_calendar`` turns them into two lines of context.
+    if document is not None:
+        context = {**(context or {}), "document": document}
 
     answer = synthesizer.synthesize(
         parsed.question, explainer=explainer, context=context,
@@ -611,7 +762,8 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
         if synthesizer is not None and getattr(synthesizer, "available", False):
             return _synthesis_dispatch(explainer, parsed, note, synthesizer,
                                        context, memory, session_id,
-                                       diverted_qualifier=diverted)
+                                       diverted_qualifier=diverted,
+                                       document=document)
         return _unmatched_bridge(explainer, parsed, note)
 
     # 0 — THE TRAY, before anything else (Session 4A.5c CU4).
@@ -806,6 +958,18 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     # satisfy a required slot, because all three of these routes require an
     # ORDER and none of them requires a machine — a selection can sharpen which
     # operation is answered about, never conjure the subject itself.
+    # Session 4B.15 Item 3 — THE PREVIOUS TURN'S WORDS, for the one route that
+    # needs a PREDICATE carried forward. "no, I mean for ORD-000013
+    # specifically" re-binds the subject and inherits the field from the turn
+    # before it; without this the correction names no field and is answered as
+    # though nothing was asked — which is how an explicit correction got the
+    # same wrong answer twice in the measured transcript. Read only when this
+    # question names no field of its own.
+    if parsed.intent is Intent.ATTRIBUTE_LOOKUP:
+        history = (context or {}).get("history") or []
+        if history:
+            params["prior_question"] = history[-1].get("question") or ""
+
     if parsed.intent in _OPERATION_SCOPED_INTENTS:
         sel = (context or {}).get("selection") or {}
         if params.get("op_seq") is None and sel.get("op_seq") is not None:
@@ -887,16 +1051,42 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
 
     bundle = explainer.route(parsed.intent.value, params)
 
-    # 5b — CU5(b)/(c): A ROUTE RE-FIRED WITHIN TWO TURNS DOES NOT REPEAT ITSELF.
+    # 5a-bis — ROUTE FALSIFIABILITY (Session 4B.15 Item 2). A matched route
+    # could not be wrong: once the parse named an intent above the confidence
+    # floor, that route's canned copy shipped whatever it said, and five
+    # consecutive measured turns were swallowed by `coaching` that way.
     #
-    # Two riders, one signal. An answer delivered word-for-word twice in a row
-    # reads as not having heard the second question, and a COUNT re-asked does not
-    # want its whole recitation again — it wants the number. The depth is read off
-    # the history the panel already sends (each turn carries the route that
-    # answered it); the WORDS are authored and the renderer picks them.
-    repeat = _repeat_depth(context, parsed.intent.value)
-    if repeat and isinstance(bundle.key_facts, dict):
-        bundle.key_facts["repeat"] = repeat
+    # The check runs on the TEMPLATE rendering — pure, cheap, faithful to the
+    # assembled facts, and computed BEFORE any LLM render, so a fall-through
+    # costs nothing it would not have cost anyway. It can only REJECT the route
+    # the parse chose; it can never name one, and rejection has exactly one
+    # destination, which is the tier that reasons from evidence and labels what
+    # it grounds.
+    draft = _template_text(bundle)
+    failure = _falsified(parsed, draft)
+    if failure is not None and synthesizer is not None \
+            and getattr(synthesizer, "available", False):
+        return _synthesis_dispatch(explainer, parsed, note, synthesizer,
+                                   context, memory, session_id,
+                                   diverted_qualifier=failure.note,
+                                   document=document)
+
+    # 5b — CU5(b)/(c) as REVERSED by Session 4B.15 Item 4.
+    #
+    # THE MEASURED FAILURE: the old signal counted how many of the last two
+    # turns THIS ROUTE answered, and read that as "the planner is repeating
+    # themselves". It fired four times measured — on a DIFFERENT question, on an
+    # EXPLICIT CORRECTION, on a factual lookup and on the demo opener — with
+    # ZERO true positives, and it escalated: "Still the same; nothing has
+    # changed since you asked" is the product blaming the planner for its own
+    # deafness.
+    #
+    # THE INFERENCE WAS BACKWARDS. Several DIFFERENT questions collapsing onto
+    # one route is evidence that I AM NOT UNDERSTANDING YOU, not that you are
+    # repeating yourself. So the signal is now split by whether the QUESTIONS
+    # differ, and only a genuine re-ask keeps the old terse behaviour.
+    bundle_repeat(bundle, context, parsed, draft, session_id)
+    remember_delivery(session_id, parsed.intent.value, parsed.question, draft)
     # Make the resolution visible (RUBRIC C3): the answer shows the question it
     # actually answered, whenever the parse rewrote it.
     if rewritten:

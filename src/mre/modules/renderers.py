@@ -339,10 +339,42 @@ def repeat_lead(bundle) -> str:
     return REPEAT_LEADS[min(depth, len(REPEAT_LEADS)) - 1]
 
 
+def deafness_rider(bundle, text: str) -> Optional[str]:
+    """Session 4B.15 Item 4 — THE REVERSAL. Several DIFFERENT questions have
+    landed on this one route, so the answer opens by DOUBTING ITSELF and offers
+    a narrower way in. It never rebukes the planner, and there is no escalating
+    variant: the escalation is what made the original defect sting.
+
+    Returns the new text, or None when this is an ordinary turn."""
+    from mre.modules.ask_fallback_copy import DEAF_LEAD, DEAF_OFFER, DEAF_PRIOR
+    kf = bundle.key_facts or {}
+    if not kf.get("deaf"):
+        return None
+    lead = [DEAF_LEAD]
+    prior = (kf.get("deaf_prior") or "").strip()
+    if prior:
+        lead.append(DEAF_PRIOR.format(prior=prior))
+    head = " ".join(lead)
+    marker = "\n[rendered by:"
+    if marker in (text or ""):
+        body, foot = text.split(marker, 1)
+        return f"{head}\n\n{body.rstrip()}\n\n{DEAF_OFFER}\n{marker}{foot}"
+    return f"{head}\n\n{(text or '').rstrip()}\n\n{DEAF_OFFER}"
+
+
 def apply_repeat_riders(bundle, text: str) -> str:
-    """The single delivery seam for both repeat riders — called from BOTH
+    """The single delivery seam for the repeat riders — called from BOTH
     renderers' ``render``, so the template and the LLM path can never disagree
-    about whether the planner just asked this."""
+    about whether the planner just asked this.
+
+    Since 4B.15 there are TWO different signals here and they mean opposite
+    things: ``repeat`` is the planner asking the same thing again (terse is
+    right), ``deaf`` is different questions collapsing onto one route (self-
+    doubt is right). They are mutually exclusive by construction in
+    ``interpreter.bundle_repeat``."""
+    deaf = deafness_rider(bundle, text)
+    if deaf is not None:
+        return deaf
     terse = terse_count_answer(bundle)
     if terse is not None:
         footer = ""
@@ -589,6 +621,11 @@ class TemplateRenderer:
                 # or more late orders the bundle carries their metrics and this
                 # branch is never taken, so no citation is ever suppressed.
                 "late_orders",
+                # Session 4B.15 Item 3: an attribute lookup CITES ITS SOURCE IN
+                # THE SENTENCE — the submission column and the provenance class
+                # are the answer, not a footnote — so an evidence-chain stub
+                # under it would read as a failure to check.
+                "attribute_lookup",
             ):
                 pass  # header already rendered all content
             elif "error" in bundle.key_facts:
@@ -1308,6 +1345,24 @@ class TemplateRenderer:
                    else "\"how much downtime does <machine> have?\"") + ".")
             lines.append("")
 
+        elif bundle.subject_type == "attribute_lookup":
+            # Session 4B.15 Item 3 — the value first, its source second, and
+            # nothing else. A lookup that opens with a paragraph is a lookup
+            # that lost.
+            from mre.modules.attribute_lookup import render as _render_attrs
+            ans = (bundle.key_facts or {}).get("attribute_answer")
+            if ans is not None and ans.answered:
+                lines.append(_render_attrs(ans))
+            else:
+                subject = (bundle.key_facts or {}).get("subject") or "that"
+                lines.append(
+                    f"I couldn't find that field on {subject} in this run. I "
+                    "can read any field the submission declared — splittable, "
+                    "minimum chunk, setup family, durations, due date, "
+                    "quantity, customer, eligible machines — if you name the "
+                    "order (and the operation, where it matters).")
+            lines.append("")
+
         elif bundle.subject_type == "coaching":
             # CU4 (Session 4A.3-pre) — the retrieved capability answer: what the
             # knob enables, how to declare it (the submission field), and the spec
@@ -1315,7 +1370,21 @@ class TemplateRenderer:
             # surgery. An unrecognized capability question lists what CAN be coached.
             kf = bundle.key_facts
             how = kf.get("how")
-            if how:
+            cap = kf.get("capability")
+            if cap is not None:
+                # Session 4B.15 Item 5 — GROUNDED IN docs/05. The catalog's own
+                # verdict / proof-status / doorway columns, composed by authored
+                # copy keyed to the derived register. This wins over the
+                # registry's "Yes — ..." lead, which carries no verdict and no
+                # proof status and therefore cannot say "not today".
+                from mre.modules.capability_answer import render as _render_cap
+                lines.append(_render_cap(cap))
+                from mre.modules.ask_fallback_copy import invitation_line
+                inv = invitation_line("coaching")
+                if inv:
+                    lines.append("")
+                    lines.append(inv)
+            elif how:
                 lines.append(f"Yes — {kf.get('enables')}.")
                 lines.append("")
                 lines.append(f"To enable it: {how}. See the incoming-data spec "
@@ -2464,7 +2533,18 @@ class LLMRenderer:
         # header IS the answer; nothing to testify from, never the LLM's to rewrite.
         "advice", "solve_time", "machine_count", "maintenance",
         # Session 4A.3-pre CU4: the coaching answer is retrieved authored copy.
+        # Session 4B.15 Item 5 makes that stricter, not looser: the capability
+        # body is composed from docs/05's own verdict, proof status and doorway
+        # columns, and a reword that softens "not today" into "not currently
+        # supported out of the box" is the exact failure it was built to end. A
+        # planner acts on a capability claim by AUTHORING DATA, so there is no
+        # board to check a fluent overstatement against.
         "coaching",
+        # Session 4B.15 Item 3: an attribute lookup is a VALUE and its SOURCE.
+        # There is nothing to testify from and nothing to improve — a reword can
+        # only blur "not declared" into "none" or drop the provenance clause,
+        # which is the whole answer.
+        "attribute_lookup",
         # Session 4A.5a CU2: the confirmation-of-take bridge is authored copy — it
         # names a gesture and a boundary (M10 has no write path). An LLM reword is
         # exactly where "I'll move it for you" would come from.

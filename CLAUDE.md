@@ -158,10 +158,87 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.14 — why is it here: the blocker analysis**, 2026-07-29 (docs/07
-v2.58, §5a.34-38; docs/04 session amendment; narrative in
-`docs/closeouts/4B.14.md`). Before it: 4B.13 (v2.57), 4B.12 (v2.56, a
+**Session 4B.15 — give the reasoner the manual**, 2026-07-29 (docs/07 v2.59,
+§5a.39-45; docs/04 session amendment; narrative in `docs/closeouts/4B.15.md`).
+Before it: 4B.14 (v2.58, §5a.34-38), 4B.13 (v2.57), 4B.12 (v2.56, a
 MEASUREMENT session), 4B.11 (v2.55, **R-PD1 verbatim**), 4B.10 (v2.54).
+
+**A MATCHED ROUTE COULD NOT BE WRONG (4B.15, §5a.40).** Five consecutive
+measured turns were swallowed by `coaching` at 0.92 confidence — including an
+EXPLICIT CORRECTION reparsed into the same wrong intent. R-AI5 inverted: tier
+one over-claims, tier two is never reached, and synthesis OUTPERFORMED the
+routes everywhere it was allowed to run. `route_falsifiability.py` checks the
+DETERMINISTIC template rendering at the dispatch seam (before any LLM render)
+and falls through to synthesis on **SUBJECT SILENCE** or a **DISCARDED
+DISJUNCTION** — the alternatives carry the question's own preposition, so an
+answer CONTAINING the fact without surfacing the choice is a fall-through, not
+a pass. **IT CAN ONLY REJECT THE ROUTE THE PARSE CHOSE**, never name one, so no
+deterministic classifier returns. Fails OPEN in every direction.
+
+**ANY DECLARED FIELD IS ASKABLE (4B.15, §5a.41).** `Intent.ATTRIBUTE_LOOKUP` +
+`attribute_lookup.py`, parse prompt **v12**. "is ORD-000013 op20 splittable"
+returned capability documentation with a scold while the blocker analysis
+quoted the answer off the same snapshot one exchange later. The field
+vocabulary is **REFLECTED off `contracts/entities.py`** — a new entity field is
+askable the day it lands; the authored alias map picks WHICH FIELD to read,
+never a value. The provenance chain is walked (an Operation's `splittable` is
+`derived` → cite the OperationSpec's `observed` submission column). NOT
+DECLARED and DECLARED-AS-ZERO render differently, always.
+
+**CAPABILITY CLAIMS GROUND IN docs/05 OR ARE REFUSED (4B.15, §5a.43).**
+`constraint_catalog.py` parses docs/05's own **MARKDOWN TABLES** into 26
+records + 6 rulings + 6 exclusions — a table is structure, and docs/05 §0 says
+the catalog is "structured records first". **THE PROSE-LOCKED DEBT IS
+DISCHARGED FOR THE CATALOG ROWS, NOT THE PROSE** (quoted verbatim, never parsed
+for meaning). The honesty register is **DERIVED** from (verdict, status), so
+moving a status column changes every answer about that item; a MIXED status
+gets its own register rather than being flattened. Two synthesis tools
+(`constraint_catalog`, `spec_lookup`) put the same ground under tier two;
+synthesis prompt **v3** rule 9 makes reaching for them mandatory before a
+capability claim. Agreement with the blocker analysis's not-weighed list is
+ASSERTED from `UNCOMPUTED_FAMILIES`, so the two surfaces cannot drift.
+**LABELING IS NOT SUFFICIENT WHERE THE CLAIM IS WHAT THE PRODUCT CAN DO** — a
+planner acts on it by authoring data that is then silently ignored, and there
+is no board to check that against.
+
+**THE CORPUS SHIPS WITH THE BUILD, IN TIERS (4B.15, §5a.39).** `corpus.py`:
+CURRENT (docs/01/05/06) free rein; **HISTORICAL (docs/04) opt-in and every
+passage DATED** — it carries superseded rulings as first-class text, so a
+first-match retriever states a retired mechanism as current with a real
+citation; **INTENT (docs/07) REACHABLE BY NOTHING**, enforced by
+`TIERS_FOR_PURPOSE` not listing it. Fail-closed dating DROPS the 15 undated
+`D-nn` founding decisions. **`docs/` IS NOT IN THE RUNTIME IMAGE** (the
+Dockerfile says so), so the index is package data with a sha256 per document —
+a spec edit without `python tools/build_corpus_index.py` is a RED TEST.
+
+**THE REPEAT DETECTOR WAS INVERTED AND IT SCOLDED (4B.15, §5a.42).** Four
+measured firings, ZERO true positives, escalating to "Still the same; nothing
+has changed since you asked". It counted MY OUTPUT (how recently a route
+answered) and read it as THEIR INPUT. Split: `repeat` needs the same QUESTION;
+`deaf` needs the same delivered ANSWER for a DIFFERENT question and responds
+with self-doubt plus an offer to narrow. **THE SIGNAL IS THE OUTPUT, NOT THE
+ROUTE.**
+
+**THE TIER IS MEASURED, AND WAS UNASKABLE UNTIL IT WAS (4B.15, §5a.44).** Both
+governed call sites hardcoded `temperature=0` — a **400 on Claude Opus 5 and
+Sonnet 5**, so every request to both candidate tiers failed at the transport
+before any answer existed to grade. `llm_compat.py` fixes it and retries once
+without the offending field. `tools/model_tier_bench.py`, counted tokens:
+**parse on Haiku + synthesis on Sonnet 5** ties best correctness (14/15) and
+multi-hop (7/8) at the LOWEST median latency (1.5s) and 37% under
+Sonnet-everywhere. **Opus 5 is NOT recommended** — 2.7x, better on no quality
+column, and the source of the bench's only fabricated answer (three
+non-existent machines, zero tool calls, correctly labelled and shipped anyway).
+**NOTHING SHIPPED CHANGED — both layers still run Haiku; the tier is Daryn's
+call.**
+
+**ITEM 0: A TRUE FACT ABOUT THE WRONG DAY (4B.15, §5a.45).** 4B.14's close-out
+is CORRECT — PAINT-01 is OPEN on Tue Jan 13 and carries ZERO work; the live
+answer's "07:00 to 11:24" is real occupancy on Tuesday **Jan 6**, the other
+Tuesday in a five-Tuesday horizon. Nothing told the model what day it was. The
+shared context block now carries the reference date and horizon; synthesis rule
+10 forbids taking a weekday from whichever row appeared first. 4B.14's chain
+was re-verified from the snapshot and is unchanged.
 
 **THE EXPLAINER KNEW ONE CAUSAL STORY AND THE PLANT HAS SIX — `why-here`
 (4B.14, docs/07 §5a.35, parse prompt v11).** `start-reason` answered every
@@ -524,6 +601,23 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
 
 **Small carry-forwards (do not lose):**
 
+- 4B.15 findings (docs/07 §5a.39-45 — REPORTED, deliberately NOT fixed):
+  **THE SYNTHESIS TOOLBOX CANNOT READ A DECLARED FIELD** — measured as Sonnet's
+  single bench failure: the parse sent a field question to tier two, which
+  honestly reported that per-operation submission data "is not something the
+  placement, cost, or lateness tools expose". It is right. The fix is a third
+  tool wrapping `attribute_lookup`; left undone because the tool surface is a
+  governed artifact this session already changed twice.
+  **THE DEAFNESS RIDER FIRES WHEN THE ONE ANSWER IS CORRECT** (three phrasings
+  of one question) — humble rather than wrong, but distinguishing "one answer
+  because I am confused" from "one answer because it IS the answer" needs a
+  signal this session does not have.
+  **CLAUDE.md IS 53k AGAINST ITS 40k CEILING** — 47k before this session, which added ~5.6k of status. Compression was explicitly out of 4B.15's scope; it is now the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
+  day-shift restriction answered as C1/C2 "proven end to end" when the item is
+  C4 (model-proven, §8 doorway). Caught and pinned; the class stands.
+  **THE CORPUS EXCLUDES 15 FOUNDING `D-nn` DECISIONS** for having no date — the
+  fail-closed side, named so a future session can rule on dating them instead.
 - 4B.14 findings (docs/07 §5a.34-38 — REPORTED, deliberately NOT fixed):
   **A `chose` VERDICT ON A SPLITTABLE OPERATION IS A LOWER BOUND** — setup is a
   separate R-C3 phase and the fit scan treats working minutes as one divisible

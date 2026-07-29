@@ -174,14 +174,12 @@ class Synthesizer:
     # -- one model step -----------------------------------------------------
 
     def _call(self, messages: list[dict]) -> Optional[str]:
-        try:
-            resp = self._client.messages.create(
-                model=self._model, max_tokens=self._max_tokens, temperature=0,
-                messages=messages,
-            )
-            return resp.content[0].text
-        except Exception:  # noqa: BLE001 — a model failure is never a crash
-            return None
+        # Session 4B.15 Item 6 — the request fields are MODEL-DEPENDENT; see
+        # `llm_compat`. The tier this loop runs on is the whole subject of the
+        # tier measurement, and it could not be measured while the request
+        # shape was pinned to one model family's rules.
+        from mre.modules.llm_compat import call_text
+        return call_text(self._client, self._model, self._max_tokens, messages)
 
     # -- the loop -----------------------------------------------------------
 

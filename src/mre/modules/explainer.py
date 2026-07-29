@@ -180,6 +180,13 @@ ROUTE_TAXONOMY: dict[str, dict] = {
     # enable X / does MRE support W". Answered from the authored capability
     # registry (capabilities.py) with a docs/06 § citation.
     "coaching":              {"params": [],          "canonical": "how do I enable that?"},
+    # Session 4B.15 Item 3 — ATTRIBUTE LOOKUP. "is ORD-000013 op20 splittable"
+    # and "how long does op20 take" are fully specified, zero-ambiguity reads of
+    # a declared field, and both were answered with documentation because no
+    # route read a field off an entity and stated it. Requires an ORDER (or a
+    # machine, for a resource field); the operation is narrowed by op_seq.
+    "attribute-lookup":      {"params": ["order"],
+                              "canonical": "what does the record say about that?"},
     "solve-time":            {"params": [],          "canonical": "how long did the solve take?"},
     "machine-count":         {"params": [],          "canonical": "how many machines are there?"},
     # Session 4B.13 Item 2 — the cost proof becomes ASKABLE (docs/07 §5a.29).
@@ -652,6 +659,17 @@ class Explainer:
         if route_id == "coaching":
             concept = params.get("concept") or coaching_concept(q.lower())
             return self._explain_coaching(q, concept)
+        if route_id == "attribute-lookup":
+            # THE PLANNER'S OWN WORDS, not the canonical question. `q` is the
+            # ROUTED question, which a subject rewrite replaces with the route's
+            # canonical phrasing ("what does the record say about that?") — and
+            # that phrasing names no field, so the lookup found nothing to look
+            # up. `asked_question` is threaded by the dispatch for exactly this
+            # class of reader (4B.13 added it for predicate coverage).
+            asked = params.get("asked_question") or q
+            return self._explain_attribute_lookup(
+                asked, params.get("order"), params.get("op_seq"),
+                params.get("machine"), params.get("prior_question") or "")
         if route_id == "solve-time":
             return self._explain_solve_time(q)
         if route_id == "machine-count":
@@ -3603,6 +3621,21 @@ class Explainer:
         not-yet that lists what CAN be coached — never an entity-lookup miss."""
         note = note_for_concept(concept) if concept else None
         coachable = [c.concept for c in CAPABILITIES]
+        # Session 4B.15 Item 5 — GROUND THE CLAIM IN docs/05, OR REFUSE IT.
+        #
+        # The nine-entry registry above answers "how do I turn X on" and it
+        # answers it well. What it cannot do is say whether the product HAS X,
+        # because it carries no verdict and no proof status — so a question it
+        # did not recognize reached the second tier, which had no constraint
+        # catalog either, and "can two machines share one operator" came back a
+        # confident YES describing alternates. The catalog answers exactly that
+        # question and this is where it is read.
+        cap = None
+        try:
+            from mre.modules.capability_answer import answer as _cap_answer
+            cap = _cap_answer(question, concept)
+        except Exception:  # noqa: BLE001 — an unreadable catalog is "no ground"
+            cap = None
         return self._authored_bundle("coaching", question, {
             "concept": concept,
             "enables": note.enables if note else None,
@@ -3610,6 +3643,27 @@ class Explainer:
             "ids_ref": note.ids_ref if note else None,
             "rationale": note.rationale if note else None,
             "coachable": coachable,
+            "capability": cap,
+        })
+
+    def _explain_attribute_lookup(self, question: str, order: Optional[str],
+                                  op_seq: Optional[int],
+                                  machine: Optional[str],
+                                  prior_question: str = "") -> ExplanationBundle:
+        """Session 4B.15 Item 3 — ANY DECLARED FIELD, VERBATIM, WITH ITS SOURCE.
+
+        Reads the canonical entity and its provenance sidecar off the persisted
+        snapshot (R-AI4: no re-solve). The facts were always loaded — the
+        blocker analysis quoted `splittable=False` and 431 working minutes one
+        exchange after both questions were answered with documentation — there
+        was simply no route that reads a field and states it."""
+        from mre.modules.attribute_lookup import lookup
+        ans = lookup(self, question, order=order, op_seq=op_seq,
+                     machine=machine, prior_question=prior_question)
+        return self._authored_bundle("attribute_lookup", question, {
+            "attribute_answer": ans,
+            "subject": ans.subject if ans else (order or machine or ""),
+            "unresolved": ans is None,
         })
 
     def _explain_solve_time(self, question: str) -> ExplanationBundle:

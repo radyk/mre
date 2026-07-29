@@ -228,7 +228,9 @@ class TestToolSurface:
         """A name in the closed set with no live implementation would be a door
         into a wall — the same reverse-guard the invitations get."""
         args = {"order": "ORD-01", "machine": "CUT-01", "id": REC_LATE1,
-                "start": "2026-01-01T00:00:00Z", "end": "2026-02-01T00:00:00Z"}
+                "start": "2026-01-01T00:00:00Z", "end": "2026-02-01T00:00:00Z",
+                # Session 4B.15: the corpus tools take free text.
+                "query": "splittable operations", "topic": "operator"}
         for tool in ToolName:
             b = EvidenceToolbox(box._ex)
             need = {a.name: args[a.name] for a in TOOL_ARGS[tool] if a.required}

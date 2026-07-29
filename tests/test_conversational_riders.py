@@ -47,8 +47,12 @@ def _dispatch(explainer, p, context=None):
     return dispatch(explainer, resolve(p, explainer, context), context=context)
 
 
-def _turns(*routes):
-    return {"history": [{"question": "q", "route": r} for r in routes]}
+def _turns(*routes, question: str = "q"):
+    """History turns. ``question`` matters since Session 4B.15 Item 4: the
+    repeat signal is only a REPEAT when the planner asked the SAME thing again.
+    Different questions landing on one route is the opposite signal (deafness),
+    so a test that means "they re-asked" must say so with the same words."""
+    return {"history": [{"question": question, "route": r} for r in routes]}
 
 
 # ===========================================================================
@@ -112,19 +116,32 @@ class TestRepeatLead:
         assert repeat_lead(d.bundle) == ""
 
     def test_a_re_fire_varies_the_lead_and_a_third_ask_varies_again(self, explainer):
-        first = _dispatch(explainer, parsed("what should i do", Intent.ADVICE),
-                          _turns("advice"))
-        second = _dispatch(explainer, parsed("what should i do", Intent.ADVICE),
-                           _turns("advice", "advice"))
+        q = "what should i do"
+        first = _dispatch(explainer, parsed(q, Intent.ADVICE),
+                          _turns("advice", question=q))
+        second = _dispatch(explainer, parsed(q, Intent.ADVICE),
+                           _turns("advice", "advice", question=q))
         l1, l2 = repeat_lead(first.bundle), repeat_lead(second.bundle)
         assert l1 and l2 and l1 != l2
 
+    def test_a_DIFFERENT_question_on_the_same_route_is_not_a_repeat(self, explainer):
+        """Session 4B.15 Item 4 — THE REVERSAL. The old signal counted the
+        ROUTE and read a re-fire as the planner repeating themselves; measured,
+        it fired four times with zero true positives, every one of them a
+        DIFFERENT question landing on one route. That is evidence about the
+        assistant, and it must not wear the repeat lead's words."""
+        d = _dispatch(explainer, parsed("what should i do", Intent.ADVICE),
+                      _turns("advice", question="why is ORD-05 late"))
+        assert "repeat" not in (d.bundle.key_facts or {})
+        assert repeat_lead(d.bundle) == ""
+
     def test_the_lead_prefixes_the_answer_and_changes_not_one_fact(self, explainer):
+        q = "what should i do"
         fresh = TemplateRenderer().render(
-            _dispatch(explainer, parsed("what should i do", Intent.ADVICE)).bundle)
+            _dispatch(explainer, parsed(q, Intent.ADVICE)).bundle)
         again = TemplateRenderer().render(
-            _dispatch(explainer, parsed("what should i do", Intent.ADVICE),
-                      _turns("advice")).bundle)
+            _dispatch(explainer, parsed(q, Intent.ADVICE),
+                      _turns("advice", question=q)).bundle)
         assert again != fresh
         assert again.endswith(fresh)          # the body is byte-identical beneath
 
@@ -190,12 +207,12 @@ class TestTerseCount:
         assert set(COUNT_SUBJECTS) == {"late_orders", "inventory", "machine_count"}
 
     def test_a_re_asked_count_really_shortens_the_answer(self, explainer):
+        q = "which orders are late"
         full = TemplateRenderer().render(
-            _dispatch(explainer, parsed("which orders are late",
-                                        Intent.LATE_ORDERS)).bundle)
+            _dispatch(explainer, parsed(q, Intent.LATE_ORDERS)).bundle)
         again = TemplateRenderer().render(
-            _dispatch(explainer, parsed("which orders are late", Intent.LATE_ORDERS),
-                      _turns("late-orders")).bundle)
+            _dispatch(explainer, parsed(q, Intent.LATE_ORDERS),
+                      _turns("late-orders", question=q)).bundle)
         assert len(again) < len(full)
 
 

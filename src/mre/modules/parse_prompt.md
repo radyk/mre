@@ -1,6 +1,6 @@
 # Question-parse prompt — a GOVERNED ARTIFACT (R-AI5(1))
 
-    prompt_version: 11
+    prompt_version: 12
     ruling:         R-AI5(1) — every question is parsed FIRST by a language model
                     against a CLOSED intent vocabulary, with the conversation
                     history, live board selection, and last-answered subject as
@@ -163,6 +163,38 @@
                     `ContestedClaim`, `INTENT_MEANINGS`, `ROUTE_TAXONOMY`,
                     `ROUTE_OFFERS`, the assemblers, their authored copy, the
                     predicate-coverage vocabulary and this bump, one commit.
+
+    v12:            Session 4B.15 (2026-07-29) — `attribute-lookup` joins the
+                    vocabulary and `coaching`'s meaning is WIDENED. One root:
+                    the coaching route was swallowing questions it could not
+                    answer, and had no competitor.
+
+                    (a) ATTRIBUTE LOOKUP. Measured live, five consecutive turns
+                    went to `coaching`, four of them asking for a VALUE: "is
+                    ORD-000013 op20 splittable" got capability documentation
+                    with a scold; "how long does op20 take" got the order card.
+                    Both are fully specified and zero-ambiguity, and the blocker
+                    analysis quoted BOTH answers one exchange later off the same
+                    snapshot. There was no route that reads a declared field off
+                    an entity and states it. The meaning is written to separate
+                    it from its two neighbours — it asks for a VALUE, not for
+                    how to change one (`coaching`) and not for a whole order's
+                    card (`order-attributes`) — because that boundary is where a
+                    new vocabulary member costs something.
+
+                    (b) CAPABILITY QUESTIONS ARE CATALOG QUESTIONS. `coaching`
+                    meant "how do I enable X", so "can two machines share one
+                    operator" — a question about what the PRODUCT can model —
+                    fell to synthesis, which had no constraint catalog and
+                    answered a confident YES describing alternates, while the
+                    blocker analysis on the same board correctly listed B3/B5
+                    operator pools among the families it does not weigh. The
+                    meaning now covers "can it handle X" as well, and the route
+                    grounds every capability claim in docs/05's own verdict,
+                    proof-status and doorway columns. A vocabulary-class change:
+                    `Intent`, `INTENT_MEANINGS`, `ROUTE_TAXONOMY`,
+                    `ROUTE_OFFERS`, the assemblers, their authored copy and this
+                    bump, one commit.
 
 ## Review discipline
 

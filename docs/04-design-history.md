@@ -12403,3 +12403,132 @@ as on a lane. It now fires the blocker analysis.
   it does" and "why so early", and it now honours the selected operation and
   carries the sufficiency fact. Whether the two routes should merge is a
   vocabulary question this session did not rule on.
+
+## Amendment — 2026-07-29: Session 4B.15 — give the reasoner the manual (corpus access, route capture, attribute lookup, model tier)
+
+Backend + governed-artifact session against the pinned world
+`rolling-c362baa4-1b0`. All reads from the PERSISTED run (R-AI4); no solve, no
+re-mint, no solver change, no contract change. Two prompt bumps (parse v11→v12,
+synthesis v2→v3), one Intent added, two synthesis tools added — each a
+vocabulary-class change committed with its doc update.
+
+**THE THESIS, AND THE HALF OF IT THAT TURNED OUT TO BE WORSE.** The session
+brief's thesis was that synthesis fails at RETRIEVAL rather than intelligence:
+"can two machines share one operator" came back a confident YES describing
+alternates while the blocker analysis, same board same session, correctly listed
+B3/B5 operator pools among the families it does not weigh. That held. What the
+work exposed underneath it is sharper: **a matched route could not be wrong.**
+Five consecutive measured turns were swallowed by the capability-coaching route
+at 0.92 confidence, and once the parse named an intent above the floor that
+route's canned copy shipped whatever it said. R-AI5 inverted — tier one
+over-claiming, tier two never reached — and synthesis outperforming the routes
+everywhere it was allowed to run.
+
+**ITEM 0 — A TRUE FACT ABOUT THE WRONG DAY.** 4B.14's close-out is CORRECT.
+PAINT-01 is OPEN on Tue 2026-01-13 and carries ZERO work; the live answer's
+"07:00 to 11:24" is real contiguous occupancy on Tuesday **2026-01-06**, the
+other Tuesday in a five-Tuesday horizon (three back-to-back ops ending at
+exactly 11:24). The fault IS date resolution: neither governed prompt carried a
+reference date, a horizon or a weekday mapping, so "Tuesday" bound to the first
+one in the tool result. The blocker analysis got Jan 13 right in the same
+session because it COMPUTES with dates and never reads a weekday off a row.
+4B.14's chain was re-verified end to end from the snapshot and stands unchanged
+(431 needed, 294 left, Wednesday closed, Thursday 07:00–14:11 = 431 exactly).
+Fixed by a calendar anchor in the shared context block plus synthesis rule 10.
+
+**THE FIVE DECISIONS THIS SESSION MADE, AND WHY:**
+
+**(1) THE CORPUS IS TIERED, AND THE BOUNDARIES ARE CODE.** docs/07 describes
+what we INTEND to build, which to a retriever is indistinguishable from what we
+DID build — so no purpose reaches it, enforced by `TIERS_FOR_PURPOSE` not
+listing the tier rather than by asking a prompt to behave. docs/04 carries
+SUPERSEDED rulings as first-class text (R-SC3(2)'s earliness price is present
+both as landed and as retired), so a retriever taking the first match would
+state a retired mechanism as current WITH A REAL CITATION — worse than not
+knowing. It is opt-in, and every passage is dated and marked as history.
+**Fail-closed dating cost the 15 undated `D-nn` founding decisions**, which is a
+real loss and the right side to fail on: the rule is that every historical claim
+is dated, so an undatable one is unservable rather than served bare.
+
+**(2) CURRENCY IS ENFORCED AT BUILD TIME BECAUSE docs/ DOES NOT SHIP.** The
+Dockerfile copies `docs/` into the TEST stage only and says so in a comment, so
+a corpus reading `docs/` at runtime would be EMPTY in production rather than
+merely stale — a worse failure, and silent. The index is package data carrying a
+sha256 per source document; editing a spec without rebuilding is a red test.
+
+**(3) A CONTRACTED ROUTE CAN NOW BE FALSIFIED, BUT ONLY REJECTED.** The check
+runs on the DETERMINISTIC template rendering at the dispatch seam, before any
+LLM render, so a fall-through costs nothing it would not have cost anyway and
+the decision cannot depend on prose a model happened to write. It can reject the
+route the parse chose; it can never name one, and rejection has exactly one
+destination — which is why this is not the return of a deterministic classifier.
+`Explainer.classify` and `rolling_questions.classify_rolling` stay deleted.
+Two rules, both with measured specimens: **subject silence** and **discarded
+disjunction**. The second is deliberately strict — the alternatives carry the
+question's own preposition, so an answer that CONTAINS the fact without
+surfacing the choice ("that OPERATION'S routing line") is a fall-through, not a
+pass, exactly as the brief specifies.
+
+**(4) ANY DECLARED FIELD IS ASKABLE, AND THE VOCABULARY IS REFLECTED, NOT
+ENUMERATED.** The field list comes from `contracts/entities.py` at import, so a
+field added to an entity is askable the day it lands. What is authored is the
+alias map — the planner's words for a field — which authors WHICH FIELD TO READ
+and never a value. The provenance chain is walked rather than reported bare: an
+Operation's `splittable` is `derived`, so the answer cites the OperationSpec's
+`observed` source, which is the submission column where the value entered the
+system. Reading the sidecar here is explicitly permitted (the Solver Builder
+never reads it; the AI layer reads everything).
+
+**(5) A CAPABILITY CLAIM GROUNDS IN docs/05 OR IS REFUSED.** Labeling is not
+sufficient where the claim is what the product can do: every other synthesis
+claim is a reading of the board and a planner who distrusts it can look at the
+board, but a capability claim is acted on by AUTHORING DATA that is then
+silently ignored, and there is no board to check that against. docs/05 §0 says
+the catalog is "structured records first; prose is rendered from them" — so its
+own MARKDOWN TABLES are parsed back into 26 records, 6 rulings and 6 exclusions.
+A table is structure; the surrounding prose is quoted verbatim and never parsed
+for meaning, so **the prose-locked debt is discharged for the catalog rows and
+not for the prose**. The honesty register is DERIVED from (verdict, status), so
+moving a status column in docs/05 changes every answer about that item and
+nobody authors an aspiration twice. A MIXED status gets its own register rather
+than being flattened in either direction.
+
+**THE REPEAT DETECTOR WAS MEASURING MY OUTPUT AND BLAMING THEIR INPUT.** It
+counted how recently a route had answered and read that as the planner repeating
+themselves — four measured firings, ZERO true positives, escalating to "Still
+the same; nothing has changed since you asked". Reversed: `repeat` needs the
+same QUESTION, `deaf` needs the same delivered ANSWER for a DIFFERENT question,
+and the second doubts itself and offers to narrow. The signal is the OUTPUT, not
+the route, because two questions reaching one route and getting two good answers
+is the route WORKING — the distinction the old counter could not draw and
+therefore always got wrong.
+
+**THE TIER QUESTION WAS UNASKABLE, NOT MERELY UNANSWERED.** Both governed call
+sites hardcoded `temperature=0` — correct on Haiku, a 400 on Claude Opus 5 and
+Sonnet 5, which removed the sampling parameters. Every request to both candidate
+tiers failed at the transport before any answer existed to grade. `llm_compat`
+sends a sampling parameter only where accepted, disables thinking where thinking
+is on by default (both call sites want one short structured emission and
+`max_tokens` caps thinking plus text), and retries once without the offending
+field so a later model family degrades rather than taking the ask path down.
+Measured across four configurations with counted tokens, the recommendation is
+**parse on Haiku, synthesis on Sonnet 5** — best correctness and multi-hop,
+lowest median latency, 37% under Sonnet-everywhere. **Opus 5 is not recommended
+on this evidence**: 2.7x the cost, better on no quality column, and the source of
+the bench's only fully-fabricated answer (three non-existent machine names, zero
+tool calls, every sentence correctly labelled unsupported and shipped anyway).
+The hypothesis that the compat layer's disabled thinking caused that was TESTED
+AND REFUTED — a re-run with the identical setting called tools and answered
+correctly, so the failure is stochastic. **Nothing shipped changed; both layers
+still run Haiku, and the tier decision is Daryn's.**
+
+**REPORTED, DELIBERATELY NOT FIXED:** the synthesis toolbox still cannot read a
+declared field, so a field question the parse routes to the second tier is
+answered honestly and uselessly (measured — it is Sonnet's single bench
+failure); the deafness rider fires when the one repeated answer is CORRECT; the
+docs/05 topic map's ORDER is load-bearing and mis-ordered once in this session
+(a day-shift restriction answered as C1/C2 "proven end to end" when the item is
+C4, model-proven with a §8 doorway — the optimistic direction, caught and
+pinned); CLAUDE.md remains over its ceiling. Full detail and the verbatim
+re-asked turns in `docs/closeouts/4B.15.md`; carry-forwards in docs/07
+§5a.39–45.

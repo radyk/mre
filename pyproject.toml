@@ -37,6 +37,13 @@ where = ["src"]
 # artifacts loaded at runtime from beside their module — they must ship with the
 # package, like the remediation catalog.
 "mre.modules" = ["*.md"]
+# Session 4B.15 — THE DOCUMENT CORPUS. `docs/` is deliberately NOT in the runtime
+# image (the Dockerfile copies it into the TEST stage only, and says so), so a
+# corpus that read `docs/` at runtime would be EMPTY in production rather than
+# merely stale. The committed index ships instead, carrying a sha256 per source
+# document; `tests/test_corpus.py` re-fingerprints the live `docs/` against it, so
+# editing a spec without rebuilding is a red test.
+"mre" = ["corpus_index.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

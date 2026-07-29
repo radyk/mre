@@ -112,10 +112,50 @@ def describe_card(card: Optional[dict]) -> str:
             f"else moved).")
 
 
+def render_calendar(document: Optional[dict]) -> str:
+    """THE CALENDAR ANCHOR (Session 4B.15 Item 0). Nothing told the model what
+    day it was.
+
+    THE MEASURED FAILURE: asked about "Tuesday" on a five-week horizon holding
+    several Tuesdays, synthesis described PAINT-01 running 07:00-11:24 — a real,
+    contiguous occupancy on Tuesday Jan 6, the FIRST Tuesday in the data — while
+    the conversation was about Tuesday Jan 13, on which PAINT-01 carries no work
+    at all. A true fact about the wrong day, in the same session whose blocker
+    analysis reasoned correctly about Jan 13 because it computes with dates
+    rather than reading a weekday off a row.
+
+    Two lines. They do not resolve the ambiguity — the model cannot know which
+    Tuesday was meant — but they make it VISIBLE, which is what rule 10 needs to
+    be followable."""
+    if not document:
+        return ""
+    ref = (document.get("reference_date") or "")[:10]
+    horizon = document.get("horizon") or {}
+    start, end = (horizon.get("start") or "")[:10], (horizon.get("end") or "")[:10]
+    if not ref and not start:
+        return ""
+    bits = []
+    if ref:
+        try:
+            from datetime import datetime
+            day = datetime.fromisoformat(ref).strftime("%A")
+            bits.append(f"  PLAN REFERENCE DATE: {ref} (a {day})")
+        except Exception:  # noqa: BLE001 — a bad date simply prints as itself
+            bits.append(f"  PLAN REFERENCE DATE: {ref}")
+    if start and end:
+        bits.append(f"  HORIZON: {start} to {end} — a bare weekday name is "
+                    "AMBIGUOUS over this span; resolve it or say which you "
+                    "assumed")
+    return "\n".join(bits)
+
+
 def render_context(context: Optional[dict]) -> str:
     """The conversation context the parse reads (R-AI5(1)): the live board
     selection, the last answered subject, and the recent turns — exactly the three
-    channels the cockpit panel transmits, never more."""
+    channels the cockpit panel transmits, never more.
+
+    Since 4B.15 it also carries the CALENDAR ANCHOR when the caller supplies the
+    document, for the reason in :func:`render_calendar`."""
     context = context or {}
     selection = context.get("selection") or {}
     last = context.get("last_answered_subject") or {}
@@ -128,6 +168,9 @@ def render_context(context: Optional[dict]) -> str:
     lines = [f"  OPEN DELTA CARD: {describe_card(context.get('card'))}",
              f"  BOARD SELECTION (what is highlighted right now): {_pair(selection)}",
              f"  SUBJECT OF THE PREVIOUS ANSWER: {_pair(last)}"]
+    calendar = render_calendar(context.get("document"))
+    if calendar:
+        lines.append(calendar)
     # Session 4A.5c CU3(c) rider — the SCOPE NOTE, present only on a question the
     # ADJACENT-MATCH GUARD diverted. It never appears in a parse's context (the
     # dispatch adds it after the parse), so this line is a synthesis-only channel
@@ -568,14 +611,14 @@ class QuestionParser:
     # -- one parse ----------------------------------------------------------
 
     def _call(self, prompt: str) -> Optional[str]:
-        try:
-            resp = self._client.messages.create(
-                model=self._model, max_tokens=self._max_tokens, temperature=0,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            return resp.content[0].text
-        except Exception:  # noqa: BLE001 — a model failure is never a crash
-            return None
+        # Session 4B.15 Item 6 — the request fields are MODEL-DEPENDENT.
+        # `temperature=0` is right on Haiku and a 400 on Claude Opus 5 and
+        # Sonnet 5, which removed the sampling parameters. Hardcoding it made
+        # the two candidate tiers untestable: every request failed at the
+        # transport, before any answer existed to grade.
+        from mre.modules.llm_compat import call_text
+        return call_text(self._client, self._model, self._max_tokens,
+                         [{"role": "user", "content": prompt}])
 
     def parse(self, question: str, *, explainer: Any,
               context: Optional[dict] = None,

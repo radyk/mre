@@ -74,6 +74,22 @@ class ToolName(str, Enum):
     CAPABILITY_REGISTRY = "capability_registry"
     ENTITY_VOCABULARY = "entity_vocabulary"
     FETCH_RECORD = "fetch_record"
+    # Session 4B.15 Items 1 + 5 — THE MANUAL. Measured live, "can two machines
+    # share one operator" came back a confident YES describing alternates,
+    # because the tier could reach a nine-entry capability registry and could
+    # NOT reach the constraint catalog, which answers the question exactly. Two
+    # tools, deliberately separate:
+    #
+    #   CONSTRAINT_CATALOG — docs/05's catalog rows AS RECORDS: verdict, plane,
+    #       proof status, IDS doorway, plus the locked rulings and the global
+    #       exclusions. The authority on what the product does and does not
+    #       model.
+    #   SPEC_LOOKUP — prose from the CURRENT tier only (docs/01, 05, 06). It
+    #       cannot reach docs/07 (intent, not behaviour) or docs/04 (history,
+    #       carrying superseded rulings as first-class text) — that boundary is
+    #       enforced in `corpus.TIERS_FOR_PURPOSE`, not asked for here.
+    CONSTRAINT_CATALOG = "constraint_catalog"
+    SPEC_LOOKUP = "spec_lookup"
 
 
 class ToolArg(BaseModel):
@@ -121,6 +137,19 @@ TOOL_MEANINGS: dict[ToolName, str] = {
         "you are unsure whether something the planner named is here",
     ToolName.FETCH_RECORD:
         "one evidence record or entity by id, in full",
+    ToolName.CONSTRAINT_CATALOG:
+        "WHAT THE SYSTEM MODELS AND WHAT IT DELIBERATELY DOES NOT — the "
+        "constraint catalog, as records: each item's verdict (in-core / "
+        "later-slot / out), its proof status (proven end to end / model only / "
+        "unbuilt), where it is declared in a submission, and the rulings and "
+        "exclusions behind it. CALL THIS BEFORE ANY CLAIM ABOUT WHAT THE "
+        "PRODUCT CAN DO — a capability answer you reasoned out is one a planner "
+        "will act on by authoring data that may be silently ignored",
+    ToolName.SPEC_LOOKUP:
+        "the specifications themselves, in prose: the canonical model, the "
+        "constraint catalog and the incoming-data spec (every submission field "
+        "and how to declare it). CURRENT specs only — the roadmap and the "
+        "design history are deliberately out of reach",
 }
 
 
@@ -161,6 +190,16 @@ TOOL_ARGS: dict[ToolName, tuple[ToolArg, ...]] = {
     ToolName.FETCH_RECORD: (
         ToolArg(name="id", type="id", required=True,
                 meaning="an evidence record id or a canonical entity id"),
+    ),
+    ToolName.CONSTRAINT_CATALOG: (
+        ToolArg(name="topic", type="text", required=False,
+                meaning="what the planner asked about, in their own words "
+                        "(\"share one operator\", \"oven cycle\", \"day shift "
+                        "only\"); omit to list every catalog item"),
+    ),
+    ToolName.SPEC_LOOKUP: (
+        ToolArg(name="query", type="text", required=True,
+                meaning="what to look up, in a few words"),
     ),
 }
 

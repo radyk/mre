@@ -70,6 +70,18 @@ class Intent(str, Enum):
     # and the solver CHOSE this placement. Those are different facts to a
     # planner and the product asserted the first for both.
     WHY_HERE = "why-here"
+    # Session 4B.15 Item 3 — ATTRIBUTE LOOKUP. There was no route that reads a
+    # declared field off an entity and states it, so "is ORD-000013 op20
+    # splittable" returned capability documentation with a scold and "how long
+    # does op20 take" returned the order card — while the blocker analysis, one
+    # exchange later, quoted both answers off the same snapshot. The facts were
+    # loaded; nothing asked for them.
+    #
+    # The rule is deliberately broad rather than an enumeration: ANY declared
+    # field on ANY entity in the persisted run is askable and answerable,
+    # verbatim, with its source. Operation-scoped where the entity is an
+    # operation.
+    ATTRIBUTE_LOOKUP = "attribute-lookup"
     CONTESTED_FACT = "contested-fact"
     SWAP_MOVE = "swap-move"
     GAP_BETWEEN = "gap-between"
@@ -525,9 +537,33 @@ INTENT_MEANINGS: dict[Intent, str] = {
         "customers, earliness, spanning downtime, WIP), carry it as a concept "
         "subject — including in a push-back like \"so you can't tell me if "
         "overtime will help\", where the capability is what they actually want",
+    # Session 4B.15 Item 3. Written to SEPARATE it from `coaching` and
+    # `order-attributes`, because that is where a new vocabulary member costs
+    # something: all five measured turns that `coaching` swallowed are this
+    # intent, and two of them name a field outright.
+    Intent.ATTRIBUTE_LOOKUP:
+        "what does the record SAY about a specific job — one declared field on "
+        "one order or operation, read off and stated. \"is ORD-13 op20 "
+        "splittable?\", \"what's the minimum chunk on that operation?\", \"how "
+        "long does op20 take?\", \"what's its setup family / due date / "
+        "quantity / which machines can run it?\". It asks for a VALUE, not for "
+        "how to change one (`coaching`) and not for a whole order's card "
+        "(`order-attributes`). Prefer this whenever the question names a field "
+        "and a job, however the planner phrases it",
+    # Session 4B.15 Item 5 — WIDENED from "how do I enable X" to cover "can it
+    # handle X" as well. Both are answered from the same place now: the
+    # constraint catalog says what is modeled, what is deliberately excluded and
+    # what is designed-but-unbuilt, and the registry says how to declare the
+    # ones you can declare. Before this, a capability question the registry did
+    # not recognize fell to synthesis, which had no catalog and answered "can
+    # two machines share one operator" with a confident yes about alternates.
     Intent.COACHING:
-        "how do I enable / configure a capability in the submission (splitting, "
-        "overtime, alternates, customers, earliness, spanning downtime, WIP)",
+        "WHAT THE SYSTEM CAN AND CANNOT MODEL, and how to declare it — \"can it "
+        "handle X?\", \"does it support Y?\", \"can two machines share one "
+        "operator?\", \"can two orders share an oven cycle?\", \"how do I "
+        "enable splitting / overtime / alternates / customers / WIP?\". About "
+        "the PRODUCT'S CAPABILITIES, not about a value in this plan (that is "
+        "`attribute-lookup`)",
     Intent.SOLVE_TIME:
         "how long the solve took",
     Intent.MACHINE_COUNT:

@@ -506,6 +506,9 @@ class TestVocabularyParity:
         import mre.modules as m
         text = (Path(m.__file__).parent / "parse_prompt.md").read_text(
             encoding="utf-8")
-        assert "prompt_version: 11" in text
+        # Session 4B.15 bumped this to 12 (attribute-lookup + the widened
+        # coaching meaning). The guard is that the bump HAPPENED with the
+        # vocabulary change, not that it froze at one number.
+        assert "prompt_version: 12" in text
         assert "why-here" in text
         assert "contested_claim" in text
