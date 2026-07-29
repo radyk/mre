@@ -1,0 +1,519 @@
+================================================================================
+ERRAND CLOSE-OUT -- FIX THE BUILDER, MINT THE WORLD, RUN r5
+2026-07-28  |  repo C:\dev\mre  |  branch master
+================================================================================
+
+================================================================================
+1. THE SCHEDULE ID
+================================================================================
+
+    SCHEDULE ID :  rolling-1b170235-64d
+
+    Select it in the cockpit with ?schedule=rolling-1b170235-64d, or via the
+    strip's identity chip -> schedule picker.
+
+    run id            : 1b170235-64d2-4914-9421-da88f910415f
+    submission id     : b5fe3d67-e85e-4cfa-a4da-2dcb0ca7979d
+    certificate grade : ACCEPTED   (costing C2)
+    world             : pilot_scale, 40 orders, seed 1, reference date 2026-01-05
+    window            : 14d window / 3d frozen, deterministic, seed 42, coarse ON
+    shape             : 56 bars, 45 committed, 11 active, 14 in the beyond-horizon tray
+    determinism       : VERIFIED (second full spine + window-0 solve, identical
+                        split and placements; no wall-clock truncation)
+
+    VERIFIED ON THE MINTED DOCUMENT (both faces -- the harness fixture at
+    _ai_exam_scratch/rolling_pinned/document.json AND the registered schedule
+    served by the API):
+
+      contract_version : 1.11
+      coarse_zone      : PRESENT (10 density cells, 0 binding, 0 unmodelable,
+                         0 tardiness buckets)
+      cost proof       : RENDERED -- solver.status = OPTIMAL, gap = 0.0,
+                         tiebreak_status = FEASIBLE, deterministic = true
+      cost_summary     : total 16,481.95 = production 14,241.95 + setup 2,240.00
+                         tardiness 0.00; tardiness_floor / tardiness_controllable
+                         both null (correct per R-PD1 -- absent on a book with no
+                         past-due work)
+
+    NOTED, NOT FIXED (out of scope): the coarse zone binds at rho = 1.0 with
+    provenance "defaulted", because this submission predates the generator's
+    declaration of refinements.coarse_horizon. This is the known 4B.6b debt
+    (docs/07 §5a); --fresh would fix it and was previously measured as free, but
+    regenerating mid-errand would have moved the pinned world.
+
+================================================================================
+2. TRUTH FAILURES  (Pile A -- the answer is FALSE. R-AI4's binary floor.)
+================================================================================
+
+FOUR. Every one reproduced against the LIVE registered board, not only the
+harness fixture. Every one is reachable by a question a cold stranger asks.
+
+--------------------------------------------------------------------------------
+A1. `why-on-machine` RESTATES THE PLANNER'S PREMISE AS FACT, AND CONTRADICTS
+    ITS OWN CITED RECORD ONE LINE LATER.
+--------------------------------------------------------------------------------
+
+  Q: why is ORD-000023 on MILL-01
+  A: "ORD-000023 is on MILL-01 because the machines that could have run it
+      instead were occupied when it needed to run.
+        I can see the placement was capacity-forced, but the solved occupancy
+        doesn't show which alternative was blocked -- so I won't name one.
+
+      Evidence chain (1 record(s)):
+      [1] DECISION | ASSIGNMENT (scheduling)
+          Assigned to: PRESS-FAST
+          ..."
+
+  FALSE. ORD-000023 has exactly ONE operation and it is on PRESS-FAST
+  (seq 10, 2026-01-05 12:51 -> 16:51, committed). It never touches MILL-01.
+  The answer asserts the false placement in its first sentence and prints the
+  true one in the evidence block directly below it.
+
+  Q: why did ORD-000009 end up on CUT-01
+  A: "ORD-000009 is on CUT-01 because the machines that could have run it
+      instead were occupied when it needed to run.
+        In fact it is the only machine that can run this step, so nothing about
+        the rest of the plan would have changed where it went.
+
+      Evidence chain (3 record(s)):
+      [1] Assigned to: MILL-02   [2] Assigned to: ASM-01   [3] Assigned to: FINISH-01"
+
+  FALSE TWICE. ORD-000009 runs MILL-02 (seq 10) -> ASM-01 (seq 20) ->
+  FINISH-01 (seq 30). It never touches CUT-01. So the placement claim is false
+  AND the uniqueness claim ("it is the only machine that can run this step") is
+  false about a machine the order does not use. Again the cited records name the
+  real machines.
+
+  WHY IT MATTERS FOR THE DEMO: MILL-01 and CUT-01 both EXIST on this board and
+  both carry work. A stranger guessing or mistyping a machine name gets a
+  confident, fluent falsehood with an evidence chain attached -- the single worst
+  failure mode this product has, because the evidence block makes it look audited.
+
+  TRIGGERED BY a stale bank premise (see B5) -- but the stale premise is the
+  trigger, not the defect. The route accepts the machine from the utterance and
+  never checks it against the placement it is about to explain. Fixing the bank
+  would HIDE this; the guard has to come first.
+
+  NOTE ON THE RENDERER: both of these fell back to TEMPLATE after the LLM
+  validator caught fabricated citations. The template is what carries the
+  falsehood. See C1 -- on this route the fallback answer is the better one.
+
+--------------------------------------------------------------------------------
+A2. UNSCHEDULED ORDERS ARE COUNTED AS ON TIME. (a toolbox defect, not a model slip)
+--------------------------------------------------------------------------------
+
+  Q: is this schedule optimal?
+  A: "All 40 orders in the schedule are on time or early; zero orders are late.
+      (based on the 40 row(s) lateness_set returned, not the whole plan)"
+
+  FALSE. Only 26 orders are in the window and carry a service outcome. FOURTEEN
+  are in the beyond-horizon tray with no placement at all -- they cannot be "on
+  time or early" because they are not scheduled.
+
+  VERIFIED AT THE SOURCE, not inferred. Calling the tool directly against the
+  pinned run:
+
+      EvidenceToolbox._lateness_set()
+      -> summary {'orders': 40, 'late': 0, 'on_time_or_early': 40}
+      -> 14 rows carry lateness_minutes = None because they are NOT PLACED:
+         ORD-000005, ORD-000006, ORD-000007, ORD-000010, ORD-000014, ORD-000017,
+         ORD-000018, ORD-000020, ORD-000026, ORD-000031, ORD-000032, ORD-000033,
+         ORD-000035, ORD-000036
+         -- exactly the beyond-horizon tray.
+
+  ROOT CAUSE: src/mre/modules/evidence_tools.py:365-403.
+      late = self._ex._order_lateness(order)          # None for an unplaced order
+      "late": bool(late is not None and late > 0)     # None -> False
+      "on_time_or_early": len(rows) - late_n          # fuses NOT-LATE with NOT-SCHEDULED
+
+  The synthesizer repeated it faithfully and attached a correct grounding rider,
+  so claim verification passed it: the count IS what the tool returned. The
+  falsehood is in the tool's own vocabulary.
+
+  This also contradicts a standing rule in CLAUDE.md: "A tray order is never
+  'not in this schedule.'" Here it is worse -- a tray order is silently counted
+  as a success.
+
+--------------------------------------------------------------------------------
+A3. "15 MACHINES CARRY WORK IN THIS PLAN" -- TEN DO.
+--------------------------------------------------------------------------------
+
+  Q: how many machines are there
+  A: "15 machine(s) carry work in this plan."  + a 15-name list
+
+  FALSE. 15 resources are DECLARED; 10 carry a bar in this window:
+
+      ASM-01 2, CUT-01 18, FINISH-01 2, FINISH-02 2, HEAT-01 2,
+      MILL-01 5, MILL-02 2, PAINT-01 10, PAINT-02 7, PRESS-FAST 6   = 56 bars
+
+  Carrying NOTHING: CUT-02, CUT-03, FINISH-03, HEAT-02, PRESS-SLOW.
+
+  ROOT CAUSE is a copy/semantics mismatch across two files:
+      explainer.py:3001  _explain_machine_count -- docstring says "a pure document
+                         read of the RESOURCE ENTITIES"; counts all 15.
+      renderers.py:1075  renders that count as "carry work in this plan".
+
+  The NUMBER a stranger wants (15 machines exist) is right. The SENTENCE is
+  false. Cheapest fix in this list -- it is one clause of authored copy -- but it
+  is still a false statement on a certain demo question.
+
+--------------------------------------------------------------------------------
+A4. (same defect as A2, stated separately because it is the DEMO question)
+--------------------------------------------------------------------------------
+
+  "is this schedule optimal?" is answered by SYNTHESIS, from a false premise,
+  while the board's PROVEN optimality sits unread in the document
+  (solver.status = OPTIMAL, gap = 0.0). See C6 -- the conclusion happens to be
+  right; the reasoning is not the proof and one of its four claims is false.
+
+================================================================================
+3. DEMO PRE-FLIGHT  (asked of the pinned world, verbatim; answers as returned)
+================================================================================
+
+Asked through POST /schedules/rolling-1b170235-64d/ask with llm=true -- i.e. the
+exact path the cockpit's ask panel uses.
+
+--------------------------------------------------------------------------------
+(1) "where is <a past-due order>?"
+--------------------------------------------------------------------------------
+
+  *** THERE IS NO PAST-DUE ORDER ON THIS WORLD. ***
+
+  Measured: reference date 2026-01-05; the EARLIEST due date on the board is
+  2026-01-20. Zero demands are past due, zero orders are late, tardiness is
+  0.00, and cost_summary.tardiness_floor / tardiness_controllable are both null.
+
+  Asked in the cold-stranger phrasing anyway:
+
+    Q: where is my past due order?
+    A: "I need one more detail to answer "where is my past due order?".
+        Which order, machine, or customer do you mean? Ask it again naming one,
+        e.g. "why is that order late?" becomes "why is <order> late?""
+       [route=CLARIFY]
+
+    NOT a truth failure -- this is the honest floor and the resolution ladder
+    behaving correctly. See C5: the better answer ("this plan has no past-due
+    orders") was available and not given.
+
+  Nearest ask that the world can actually answer:
+
+    Q: where is ORD-000023?
+    A: "ORD-000023: 1 operation(s):
+          [PRESS-FAST]
+            seq= 10  2026-01-05 12:51 -> 2026-01-05 16:51  ORD-000023  -13388min early"
+       [route=order-schedule]
+
+    TRUE and clean.
+
+  >> DEMO BLOCKER, CONTENT NOT CORRECTNESS: 4B.11's headline capability -- R-PD1,
+     past-due is work, scheduled and priced with a tardiness floor -- HAS NO
+     SPECIMEN ON THE BOARD KHALIL WILL SHOW. The 1.11 contract fields are
+     correctly absent because there is nothing to put in them. If the past-due
+     story is in the demo script, this world cannot tell it.
+
+--------------------------------------------------------------------------------
+(2) "which orders are late?"
+--------------------------------------------------------------------------------
+
+    A: "No late orders found in this schedule.
+
+          (no evidence records found)"
+       [route=late-orders]
+
+    TRUE. Zero late orders is the fact.
+
+    Two problems, neither a truth failure:
+      - "(no evidence records found)" reads to a stranger as the system failing,
+        not as a clean bill of health.
+      - On a ROLLING board the answer does not say which world it is speaking
+        about: 26 orders are in the window and on time, 14 are beyond horizon and
+        not yet scheduled. Same root as A2, in the template channel. (C3)
+
+    >> Also a DEMO CONTENT problem: a zero-lateness board cannot demonstrate the
+       lateness story, the tardiness split, or the cost of being late.
+
+--------------------------------------------------------------------------------
+(3) "why isn't <a tray order> scheduled?"
+--------------------------------------------------------------------------------
+
+    Q: why isn't ORD-000018 scheduled?
+    A: "ORD-000018 isn't scheduled yet because it sits beyond the current window
+        -- its work hasn't been pulled into a scheduling window. It's due
+        2026-01-20, and I estimate it needs to enter a window around 2026-01-19
+        (based on its due date and work content -- that's an estimate, not a
+        committed placement). Looking further out, my coarse capacity model puts
+        its first work in the week of 2026-01-19 -- that's a load estimate over
+        whole weeks, not a placement, and the real schedule will re-decide it.
+        It will be scheduled as the horizon rolls forward."
+       [route=why-not-scheduled-yet]
+
+    TRUE, and the best answer of the four. It names the disposition, carries the
+    coarse bucket BESIDE the earliest_window_estimate, labels both as estimates,
+    and never fuses them -- exactly what 4B.6 specified. Ship this one.
+
+--------------------------------------------------------------------------------
+(4) "is this schedule optimal?"
+--------------------------------------------------------------------------------
+
+    A: "No contracted answer covers that one, so this is me reading the evidence
+        directly -- each line below says what backs it.
+
+        All 40 orders in the schedule are on time or early; zero orders are late.
+          (based on the 40 row(s) lateness_set returned, not the whole plan)
+          [synthesis -- read from: 04c00e66]
+        The schedule incurs no tardiness cost, with total cost of $16,481.95
+        split between production ($14,241.95) and setup ($2,240.00).
+          [record: 04c00e66...]
+        No overtime is being used; all production runs at regular rates.
+          (based on the 40 row(s) lateness_set returned, not the whole plan)
+        This schedule is optimal on the dimensions that matter most: it meets
+        every due date without penalty, eliminates tardiness cost entirely, and
+        avoids overtime expense.
+          (based on the 40 row(s) lateness_set returned, not the whole plan)"
+       [route=synthesis, register=synthesis, 2 tool calls]
+
+    *** TRUTH FAILURE (A2) -- claim 1 is false: 14 of those 40 are not
+        scheduled at all. ***
+
+    And the FRAME is wrong even where the words are true. This board IS PROVEN
+    OPTIMAL: solver.status = OPTIMAL, gap = 0.0, deterministic. 4B.11 rendered
+    that proof and put it on the strip chip. But synthesis cannot see
+    solver.status, so it invents its own definition of optimal ("on the
+    dimensions that matter most") and reaches the right verdict by the wrong
+    road, from a false premise.
+
+    This is docs/07 §5a.29 -- "no optimality ROUTE; nobody can ASK" -- landing on
+    the single most obvious question a cold stranger asks about a scheduler.
+    The proof exists, is correct, and is unreachable by asking.
+
+    >> BLOCKS KHALIL. Not because the conclusion is wrong, but because the one
+       question the product is built to answer with a proof is answered by
+       improvisation over a false count.
+
+================================================================================
+4. THE r5 RUN
+================================================================================
+
+  COMMAND (never minted its own world -- R-AI4 audits the pinned run's persisted
+  document, read via TARGET.json):
+
+    python tools/run_ai_exam_sweep.py \
+      --out-dir _ai_exam_scratch/gb_pinned --snapshot-id snap-exam \
+      --sweep-dir _ai_exam_scratch/r5_errand \
+      --banks regression_founder_r5.txt \
+      --rolling-target _ai_exam_scratch/rolling_pinned
+
+  RESULT -- THE FIRST TIME THIS BANK HAS EVER RUN (unrun after four sessions,
+  docs/07 §5a.7):
+
+    target      : out-dir:rolling_pinned (rolling), snapshot snap-rolling
+    questions   : 27      llm calls: 35      parser v9, synthesizer v2
+    ROUTING     : 27/27 expectations MET
+    findings    : validator=2 (LLM testimony failed validation, fell back to
+                  template -- both on why-on-machine)
+    synthesis   : 0 answers (every r5 question matched a route)
+    latency     : route median 1160ms, p90 2433ms
+    parse       : 28 parses, 0 retries, 0 malformed, 2 clarifies
+
+  ROUTING IS GREEN. The bank grades ROUTING only (R-AI4(2)); the ANSWERS are
+  triaged below and in section 2 above. Sweep artifacts, transcript, sidecar and
+  provenance report: _ai_exam_scratch/r5_errand/
+
+================================================================================
+5. PILE B -- STALE EXPECTATIONS (answer right, bank out of date)
+================================================================================
+
+As the errand predicted: many. The card block is the bulk of it.
+
+B1. THE WHOLE OPEN-CARD BLOCK (Q42, Q69, Q75, Q77, Q79 -- 5 of 27 questions).
+    The runner stands up a SYNTHETIC card, figure for figure:
+      total -11,953.08 = reopt -11,975.83 + move +22.75
+    4B.7 removed earliness_value from the objective, so the window solve and the
+    sandbox baseline now minimize the SAME expression and reopt_delta_abs
+    collapsed to EXACTLY 0.00 by construction (docs/07 §5a.12, discharged). A
+    real card on this board cannot produce -11,975.83 of window re-optimization.
+    The answers echo the fixture faithfully and grade MET -- the block is testing
+    a card shape the product no longer produces.
+
+B2. THE EARLINESS CLAUSE, in every one of those five answers:
+      "Why it lands there: a declared earliness preference paid a little more to
+       start it sooner on a machine that was free earlier..."
+    EARLINESS_PREFERENCE went DORMANT at 4B.8 CU4 -- the extractor no longer
+    emits it; the DriverCode member survives and docs/07 §5a.20 is open. The card
+    fixture still supplies it as dominant_driver, so authored copy for a dead
+    mechanism fires five times. On a real 4B.12 board this phrase is unreachable.
+
+B3. THE CARD'S TARDINESS FIGURES describe a world that no longer exists:
+      "ORD-000011 -- -$9,800.42 tardiness ... Across the plan it recovers
+       479.0h of lateness."
+    This board's tardiness is 0.00 and it has zero late orders. No move on it can
+    recover 479 hours of lateness.
+
+B4. SECTION C(c)'s PREMISE. The bank's comment expects a terse re-ask --
+    "13 -- want the list?". The world's count is 0. The MECHANISM still
+    demonstrates ("0, same as before" -- correct and terse), but the specimen it
+    was written against is gone.
+
+B5. SECTION B's PREMISE PAIRS. The bank adapted the founder's ids onto a world
+    that has since been re-minted. Of the three pairs, only ORD-000012/PAINT-01
+    still holds:
+      ORD-000023 / MILL-01   -> actually PRESS-FAST                (drives A1)
+      ORD-000009 / CUT-01    -> actually MILL-02, ASM-01, FINISH-01 (drives A1)
+      ORD-000012 / PAINT-01  -> STILL TRUE (seq 30)
+    *** DO NOT FIX THIS FIRST. Correcting the bank hides A1. A1 needs its own
+        guard before the premises are refreshed, or the defect goes back to
+        being invisible. ***
+
+B6. THE BANK HEADER'S WORLD VOCABULARY lists 8 machines; the world declares 15
+    and works 10. The tray list it gives (ORD-000018, -10, -17, -32, -7, -20,
+    ... 14 total) DOES still hold.
+
+================================================================================
+6. PILE C -- CONVERSATIONAL MISSES (true but poorly said; Daryn arbitrates)
+================================================================================
+
+C1. *** HIGHEST PRIORITY C -- THE FOUNDER'S ORIGINAL SPECIMEN IS ALIVE. ***
+    Q: why is ORD-000012 on PAINT-01
+    A: "ORD-000012 is on PAINT-01 because the machine was busy with other work
+        [record: db5d1a85...]."
+    The placement is TRUE (seq 30, PAINT-01, 2026-01-06 10:31->11:24). But this
+    is the bare CAPACITY_BLOCKED driver phrase as the whole causal clause -- no
+    machine named, no alternative, no quantity, and "the machine" has no
+    resolvable referent. It is, almost verbatim, the round-five failure that
+    section B of this bank exists to catch, and the bank's own substantive
+    expectation says: "Never the bare driver phrase as the whole causal clause."
+    Routing graded MET; the defect CU3 was written to fix is back.
+
+    THE INVERSION WORTH NOTING: this fires when the LLM renderer SUCCEEDS. Where
+    the validator caught a fabrication and fell back to template (A1's two), the
+    answer was actually RICHER -- "I can see the placement was capacity-forced,
+    but the solved occupancy doesn't show which alternative was blocked -- so I
+    won't name one." On this route the fallback is the better answer and the
+    success path is the worse one.
+
+C2. `open-card` READS THE CARD BACK; IT DOES NOT ANSWER ABOUT IT.
+    Five different questions -- "what orders are affected in this move", "what
+    did the move itself cost, not the re-solve", "what does this move cost",
+    "these orders -- which ones are they", "whats the delta" -- returned the SAME
+    paragraph, byte for byte. Q69 in particular excluded the re-solve explicitly
+    and got the re-solve figure in the opening sentence. The substantive
+    expectation is technically met (+$22.75 is stated, as an addition, in the
+    right sign), but a planner asking a pointed question gets a recitation.
+
+C3. "No late orders found in this schedule." + "(no evidence records found)"
+    True, but the parenthetical reads as a system failure rather than a clean
+    bill of health, and on a rolling board the answer never says which world it
+    speaks about (26 in-window on time, 14 beyond horizon, unscheduled).
+
+C4. Q: why is this one late  (card resolves it to ORD-000023)
+    A: "ORD-000023 is not late -- it finished 9.3 days early..."
+    Correct, and it names its resolution ("from the move you have open") -- the
+    ladder works. But the presupposition is silently corrected: a stranger asking
+    about lateness is never told the board has NO late orders at all.
+
+C5. Q: where is my past due order?  -> CLARIFY.
+    Correct per the ladder, but the world can answer better than a clarify: it
+    has zero past-due orders and could say so.
+
+C6. "is this schedule optimal?" -- see A4/section 3(4). Beyond the false claim,
+    the frame is improvised where a proof exists. docs/07 §5a.29.
+
+================================================================================
+7. WHAT WAS CHANGED (items 1, 2 -- committed)
+================================================================================
+
+FIX (item 1) -- tools/build_rolling_exam_run.py
+
+  The bug: line 348 called build_coarse_zone(..., det_total=DET_TOTAL). The
+  parameter is det_time. Every --register run died with TypeError AT THE COARSE
+  ZONE -- after the window-0 solve had already been paid for. Introduced when
+  4B.8 CU2 renamed build_rolling_view's det_time -> det_total and the ADJACENT
+  call was renamed along with it.
+
+  DET_TOTAL's value was checked before renaming, as instructed. The two are
+  DIFFERENT QUANTITIES that happen to hold the same number:
+    DET_TOTAL       = 4.0  -- the rolling window-0 solve's budget for BOTH stages
+    build_coarse_zone's det_time default = 4.0 -- what ONE coarse solve gets,
+                             and build_coarse_zone runs TWO (proof + planning)
+
+  So the intended coarse budget was PRESERVED, not inherited: a new constant
+  COARSE_DET_TIME = 4.0 was declared with the distinction written out, and the
+  call now passes det_time=COARSE_DET_TIME. The rolling total was NOT silently
+  handed to the coarse zone.
+
+GUARD (item 2) -- tests/test_build_rolling_exam_run.py, 6 tests
+
+  This tool mints the world for a 300-question sweep and had no test. The guard
+  reads the builder's own source (AST), finds every call it makes to a
+  module-level function this repo owns, and binds each call site against the
+  callee's LIVE signature -- so a renamed, dropped or re-typed parameter fails in
+  0.3s instead of eleven seconds into a mint. Covers generate, prepare_plant,
+  build_rolling_view, build_coarse_zone, assemble_rolling_document, plus a
+  coverage assertion so the callee map cannot silently drift out of date.
+
+  NEGATIVE CONTROL RUN: the fix was reverted in place and the guard went RED on
+  the real bug (test_builder_call_signatures_match_their_callees), then green
+  again on restore. It is not a test that cannot fail.
+
+  A second test pins the DISTINCTION the signature check cannot see -- both
+  budgets are floats reading 4.0, so passing the wrong one binds cleanly. And a
+  third pins the world constants (40 orders / 14d / 3d / seed 42), because a bank
+  graded against a 14-day window is not comparable to one graded against any
+  other.
+
+  TESTS: 6 passed. Regression surface (coarse horizon, defaults-reproduce-
+  baseline, budget allocation, hint warm start): 68 passed, 19 skipped.
+
+================================================================================
+8. THE KEY (item 4) -- NOTHING NEEDED FIXING; §5a.7 IS STALE
+================================================================================
+
+REPORTED AS ASKED, no wiring changed, because none was missing.
+
+THREE loaders already exist, all reading the repo-root .env.local with identical
+semantics (an already-set environment variable always wins):
+
+  tools/run_ai_exam_sweep.py:44   load_env_local()   -- the exam harness's OWN
+  tests/conftest.py:42            _load_env_local()  -- added 4B.8 pre-flight
+  src/cockpit/dev_api.ps1:39-51                      -- so the dev API has it too
+
+CONCLUSION, stated plainly:
+
+  THE EXAM HARNESS HAS ALWAYS HAD ITS OWN LOADER. §5a.7's "regression_founder_r5
+  is UNRUN AFTER FOUR SESSIONS -- blocked on the same key" IS WRONG about the
+  cause. The bank could have run all along. Proven this session: it ran, first
+  attempt, no wiring change -- parser available=True, synthesizer available=True,
+  35 LLM calls, 0 unavailable.
+
+  §5a.7's key problem was ALREADY reduced to the pytest path by 4B.8, and 4B.8
+  fixed that too. The remaining carry-forward in CLAUDE.md -- "the absent
+  ANTHROPIC_API_KEY blocks MORE than the exam bank ... FOUR committed SLOW tests
+  fail on it" -- is describing a world before conftest.py:42 existed.
+
+  What genuinely does not see .env.local is a bare `python -c` (and any ad-hoc
+  script that does not anchor to the repo root itself). That is the whole
+  remaining gap, and it is not worth a loader.
+
+  RECOMMEND: docs/07 §5a.7 be corrected to say the bank was never key-blocked,
+  and that its 27 expectations are NOW GRADED for the first time -- with the
+  three piles above as the grade.
+
+================================================================================
+9. SCOPE
+================================================================================
+
+  DONE  : builder fix; signature guard + negative control; world minted and
+          registered; coarse zone + cost proof verified on both faces; key
+          question answered; r5 run against the pinned world; 27 answers triaged
+          into three piles; demo pre-flight asked and reported.
+
+  NOT DONE, deliberately (out of scope per the errand): no failure was fixed;
+  the bank was not recalibrated; the cockpit was untouched; no best-of-K; no a=2
+  pin. The coarse zone's defaulted rho was left as it is (see section 1).
+
+  ONE ORDERING CONSTRAINT CARRIED OUT OF THIS ERRAND, because getting it wrong
+  destroys evidence: A1 must get a guard BEFORE B5's stale premises are
+  corrected. Refresh the bank first and the false-placement defect becomes
+  invisible again.
+
+================================================================================

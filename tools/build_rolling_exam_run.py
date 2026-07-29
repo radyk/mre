@@ -68,6 +68,16 @@ FROZEN_DAYS = 3
 # was its old stage-1 share (2.0) plus the deleted fixed stage-2 2.0.
 DET_TOTAL = 4.0
 
+# The COARSE zone's per-run deterministic budget. A DIFFERENT QUANTITY from
+# DET_TOTAL above, which is why it is a separate constant even though the two
+# happen to hold the same number today: DET_TOTAL is the rolling window solve's
+# budget for BOTH STAGES together (4B.8 CU2's two-stage split), while this is
+# what ONE coarse solve gets — and build_coarse_zone runs TWO of them (the proof
+# run at rho=1.0 and the planning run at the declared derate). Handing the coarse
+# zone the rolling total would be a coincidence, not a decision. 4.0 is
+# build_coarse_zone's own default, preserved here explicitly.
+COARSE_DET_TIME = 4.0
+
 # THE COARSE ZONE (Session 4B.6b item 3). Before this, the pinned exam world
 # carried no coarse zone, so every coarse route in the r5 bank answered "I
 # haven't run the coarse look-ahead" — honest, and a test of nothing. The first
@@ -346,7 +356,7 @@ def main(argv: list[str] | None = None) -> int:
     # is a lottery wearing a determinism label, so it fails the build.
     print("rolling-exam: building the coarse zone (declared coefficients) ...")
     zone = build_coarse_zone(plant, view, deterministic=True, seed=SEED,
-                             det_total=DET_TOTAL,
+                             det_time=COARSE_DET_TIME,
                              safety_ceiling_s=COARSE_SAFETY_CEILING_S)
     if zone.proof.wall_truncated or zone.planning.wall_truncated:
         print("rolling-exam: !! a coarse run hit the WALL ceiling - the zone is "
