@@ -639,9 +639,15 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   **CONCENTRATION IS UNEXERCISED LIVE** — demo density is far below the 85%
   threshold, so it fired on neither measured board and is proven only by unit
   test (the §5a.11 limit again).
-  **NEITHER NEW ROUTE WAS MEASURED AGAINST A LIVE PARSE** — both were driven by
-  route id and against two real boards; whether the model reaches them from a
-  planner's phrasing is the exam sweep's job, still blocked on the key (§5a.7).
+  **BOTH ROUTES ARE NOW MEASURED AGAINST A LIVE PARSE (4B.16a Item 2 — the
+  "blocked on the key" claim here was the rumour):** 9 of 10 planner phrasings
+  reach the intended route on the pinned world. The one that does not is
+  `"why can't it be earlier"` -> **`why-here` at 0.95 with `polarity=negative`**,
+  which is a genuine route-boundary question (the counterfactual is why-here's
+  INVERSE over the same bounds) and NOT fixed — a vocabulary call. Subjectless
+  `"how do i fix that"` after a BRIEFING lands on CLARIFY `no-subject`: honest,
+  and the contrast with the same follow-up after a `why-here` (which resolves
+  from selection) is the finding.
 - 4B.15 findings (docs/07 §5a.39-45 — REPORTED, deliberately NOT fixed):
   **THE SYNTHESIS TOOLBOX CANNOT READ A DECLARED FIELD** — measured as Sonnet's
   single bench failure: the parse sent a field question to tier two, which
@@ -719,8 +725,8 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   explainer / renderers / four AI-voice tests / the exam bank.
   **§5a.22 — the r5 bank's card expectations are invalidated again** and the exam WORLD
   changes with every contract move (now 1.11 and a regenerated sample_data baseline).
-  NOT recalibrated — the bank has never been graded (§5a.7). Re-derive from a fresh
-  world FIRST, then grade.
+  NOT recalibrated — the bank has never been graded. **This, not a key, is the r5
+  bank's only blocker** (4B.16a). Re-derive from a fresh world FIRST, then grade.
 - 4B.6b findings (docs/07 §5a.8, .10, .12-14 — REPORTED, deliberately NOT fixed):
   **§5a.12 is DISCHARGED by 4B.7** — the coefficient left the objective, so the window
   solve and the sandbox baseline now minimize the SAME expression and `reopt_delta_abs`
@@ -734,17 +740,16 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   windows and carries no signal; the pinned exam world's coarse zone runs at
   DEFAULTED rho 1.0 because its submission predates the generator's declaration
   (`--fresh` would fix it and is provably free — measured, not done).
-- **The absent `ANTHROPIC_API_KEY` blocks MORE than the exam bank** (4B.7, §5a.7):
-  FOUR committed SLOW tests fail on it — `test_api_endpoints.py`'s rolling-ask case and
-  the three `test_edit_question_domain.py::TestEditDomainEndToEnd` cases — all landing
-  on the honest could-not-interpret floor, which is CORRECT with no parser. Verified
-  pre-existing against HEAD in a separate worktree, not assumed. So a full `--runslow`
-  run is red for a reason unrelated to whatever is under test, which is how a real
-  regression eventually gets waved through. Fix shape is `skipif` on the key with the
-  reason stated, NOT weaker assertions; it is a suite-wide call, unmade.
-- 4B.6a debts (docs/07 §5a.7, .9, .11): **`regression_founder_r5` is UNRUN AFTER
-  FOUR SESSIONS** — blocked on the same key, and its 27
-  expectations have never been graded (4B.7 invalidates them again, §5a.22); **§5a.9 is DISCHARGED by 4B.7** — the ~7.9%-dearer incumbent is gone, the board
+- **§5a.7 IS CLOSED — IT WAS A RUMOUR FOR THREE SESSIONS. THE KEY WORKS; DO NOT
+  SCOPE OFF A KEY BLOCKER** (4B.16a). The sweep was NEVER blocked (own loader
+  since 4A.5b); pytest was, for one session, fixed 4B.8 (four slow tests pass,
+  re-verified 54.7s); `python -m mre.ask` / `mre.ai_exam` had NO loader, which is
+  what kept it alive — fixed. **`src/mre/env_local.py` is the ONE reader**; a
+  second is a red test (negative control proven). Nothing in the library loads a
+  file, correctly — in a container the key comes from the platform secret store,
+  so each ENTRY POINT populates the env. `regression_founder_r5` is unrun because
+  its expectations are UNCALIBRATED (§5a.22), not for a key.
+- 4B.6a debts (docs/07 §5a.9, .11): **§5a.9 is DISCHARGED by 4B.7** — the ~7.9%-dearer incumbent is gone, the board
   now sits at the proven optimum 16,481.95 / tardiness 0.00; `rolling_coarse_hot/` binds by
   DECLARED derate 0.10, a contrivance for screenshot coverage, not a discharge of the
   demo-density limit.

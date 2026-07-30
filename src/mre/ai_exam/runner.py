@@ -569,6 +569,17 @@ class ExamRunner:
                     selection = {}
                     last_answered = {}
                     card = {}
+                    # Errand 4B.16a — RESET cleared four channels and MISSED the
+                    # fifth. The deafness signal's memory is server-side and keyed
+                    # by session id (a delivered ANSWER cannot be read off the
+                    # history channel, which carries only question and route), so
+                    # it survived every RESET and the rider scolded across the
+                    # boundary, citing a question from a conversation the bank had
+                    # already thrown away. A contaminated instrument reads as a
+                    # product defect on every bank that starts a second
+                    # conversation, which is most of them.
+                    from mre.modules.interpreter import forget_deliveries
+                    forget_deliveries(self.session_id)
                     pending_comments.append("[RESET — conversation cleared]")
                     continue
                 if isinstance(item, Card):

@@ -294,6 +294,11 @@ def run_demo(
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Errand 4B.16a — `--llm` documents that it needs ANTHROPIC_API_KEY; the one
+    # reader is what gets it there from a dev checkout's `.env.local`.
+    from mre.env_local import load_env_local
+    load_env_local()
+
     parser = argparse.ArgumentParser(description="MRE Phase 3 demonstration")
     parser.add_argument("--llm", action="store_true", help="Use LLM renderer")
     parser.add_argument("--out", default="mre_demo_output")

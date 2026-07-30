@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.61 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.62 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.62:** **Errand 4B.16a — the key, and whether the parse reaches the new routes** 2026-07-29 (narrative in `docs/closeouts/4B.16a.md`). **§5a.7 IS CLOSED AND WAS A RUMOUR FOR THREE SESSIONS** — it cost six sessions of "the r5 bank is key-blocked", then 4B.15's discovery that the exam harness always had its own loader, then 4B.16 citing it a third time to explain two unmeasured routes. Read plainly, by code rather than by trying again: **the sweep tool was NEVER blocked** (its own repo-root-anchored loader since 4A.5b, commit `f3bb319` — proven live this errand, parser available, 1319 ms, graded 1/1); **pytest was, for one session**, fixed by 4B.8 and re-verified here (four slow tests, 54.7 s); and **`python -m mre.ask` / `python -m mre.ai_exam` had NO loader at all**, so from a bare shell the harness's own front door built an unavailable parser and answered on the honest could-not-interpret floor — indistinguishable from a missing key, and the reading that kept the entry alive. **THE MECHANISM WAS NEVER THE KEY AND NEVER ONE READER:** nothing in the library loads a file (correctly — in a container the key comes from the platform secret store), so every ENTRY POINT populates the environment itself, and the repo had **four independent implementations** of that step plus two front doors with none, one copy already DRIFTED to `os.environ.setdefault` (which writes an EMPTY value where the others skip it). **`src/mre/env_local.py` is now the ONE reader**, with a guard test that goes red on a second one and a proven negative control. **BOTH 4B.16 ROUTES REACH A PLANNER'S PHRASING (§5a.51)** — nine of ten phrasings live on the pinned world, all four `briefing` cold opens at 0.95; the single miss (`"why can't it be earlier"` → `why-here`, negative polarity) is a genuine route boundary and was NOT fixed. **THE MEASUREMENT FOUND A LEAK IN THE INSTRUMENT:** `RESET` cleared four conversation channels and missed the fifth, so the deafness rider scolded across conversation boundaries for seven consecutive turns, citing discarded questions — `forget_deliveries` is the symmetric clear and the runner now calls it. **THE OPENER'S SCAN IS 4% OF THE TURN (§5a.52)** — 61.0 ms dispatch of which 58.7 ms is the scan, against a 1251 ms parse; precompute measured both ways (0.4 ms cached) and LEFT, with the contract shape and the pilot-scale reason to revisit named. **THE COUNTERFACTUAL'S SPEC CITATIONS DODGE §5a.48 DELIBERATELY (§5a.53)** — `SPEC_OF` is authored constants complying with §5a.48's own prescription, written one commit earlier; the prohibition on refactoring them into a corpus lookup is now recorded where a refactorer reads it, and the spec-citation kind is still owed for the synthesis tier. No solve; the pinned world untouched; no contract change.
 
 **v2.61:** **Session 4B.16 — the counterfactual and the opener** 2026-07-29 (docs/04 session amendment; narrative in `docs/closeouts/4B.16.md`). Two questions a planner asks NEXT, neither of which had a route. **THE COUNTERFACTUAL (§5a.49)** — `what-would-change` joins the vocabulary (parse prompt **v13**) as the INVERSE of 4B.14's blocker analysis over the SAME computed bounds and no new ones: take the family that BINDS and report the change that would move it, with its threshold and the arithmetic. **EVERY THRESHOLD IS VERIFIED BY RE-RUNNING `earliest_fit` UNDER THE HYPOTHETICAL**, and the verification applies R-C3's degenerate-split rule — which is how the session found that the brief's own worked specimen (`min_chunk <= 240`) **does not work**: the computed ceiling is **215 = floor(431/2)**, because at 216 the solver treats the operation as atomic again. **NECESSARY, NEVER SUFFICIENT, ENFORCED BY SHAPE**: every answer names the NEXT BOUND that would apply once the barrier is gone, recomputed through the tail of the ladder rather than assumed to be the runner-up. The B1 lever is COMPUTED — other eligible lanes are scanned from the same upstream floor, and on the pinned board the honest answer is that PAINT-01 is the only one. B7/B8, the objective and a declared closure are NAMED as unpriceable rather than estimated. **THE OPENER (§5a.50)** — `briefing` widens from the 7am triage to the whole-board read: every item the document supports, **ranked by consequence**, each carrying its own number and a pointer to the question that opens it up, as contracted testimony with no synthesis on the path. The ranking rule is STATED (band 1 is money and its two members are comparable because both are currency); **"three things and none of them are on fire" is reachable** because a proved optimum and an empty late list are reported as reassurance; eligibility is what makes a busy machine a concentration rather than an observation; and what the document does not support is REPORTED, never omitted. Measured on two real boards; concentration did not fire on either, because demo density runs far below the threshold. No solve; the pinned world untouched.
 
@@ -1483,6 +1485,54 @@ where the reasoning lives.
    neither a parser nor a synthesizer, so every question lands on the honest
    could-not-interpret floor and the "grade" would measure the absence of a key.
    Not skipped, not marked delivered: unrun.
+
+    **CLOSED 2026-07-29 (Errand 4B.16a) — AND THIS ENTRY IS THE THING THAT WENT
+    WRONG.** §5a.7 has now misled THREE TIMES: six sessions of "the r5 bank is
+    key-blocked"; 4B.15 finding the exam harness had always had its own loader;
+    and 4B.16 citing it a third time to explain why its two new routes were left
+    unmeasured against a live parse. Every session that read this line scoped
+    itself wrongly from it. What was true, stated once and plainly:
+
+    * **THE SWEEP TOOL WAS NEVER BLOCKED.** `tools/run_ai_exam_sweep.py` has
+      carried its own repo-root-anchored loader since **4A.5b** (commit
+      `f3bb319`, 2026-07-26) — it predates every claim above that the bank could
+      not be run. Errand 4B.16a ran it live from its own entry point: parser
+      available, one live parse, **1319 ms**, graded 1/1. `regression_founder_r5`
+      was never gated on a key. Its real blocker is **§5a.22** — the bank's
+      expectations have never been calibrated and the exam world has moved
+      under them again — which is a session's work, not an environment fault.
+    * **PYTEST WAS BLOCKED, FOR ONE SESSION.** 4B.7 observed it, 4B.8 fixed it by
+      copying the loader into `tests/conftest.py`. Re-verified this errand: the
+      four named slow tests pass, **4 passed in 54.7 s**.
+    * **TWO ENTRY POINTS WERE BLOCKED AND NOBODY LOOKED.** `python -m mre.ask`
+      and `python -m mre.ai_exam` — the harness's own module front door — had NO
+      loader at all, so from a bare shell they built an unavailable parser and
+      answered on the honest could-not-interpret floor. That is
+      indistinguishable from a missing key, and it is the reading that kept this
+      entry alive. Fixed here; `python -m mre.ai_exam` now reports `llm mode
+      live`.
+    * **THE MECHANISM WAS NEVER THE KEY AND NEVER ONE READER.** Nothing in the
+      library loads a file — `question_parser`, `renderers`, `synthesizer` and
+      `api/app` all read a bare `os.environ`, which is correct, because in a
+      container the key arrives from the platform secret store. So every ENTRY
+      POINT must populate the environment itself, and the repo had **four
+      independent implementations** of that step (`dev_api.ps1` in PowerShell,
+      the sweep tool, `conftest.py`, and a spike copy that had already DRIFTED to
+      `os.environ.setdefault`, which writes an EMPTY value where the other three
+      skip it) plus the two front doors with none. **`src/mre/env_local.py` is now
+      the ONE reader**; `tests/test_env_local_one_reader.py` fails on the
+      appearance of a second one and has a proven negative control.
+    * **REMAINING TRUTH: none about the key.** The two live carry-forwards in this
+      entry are unrelated to it — `api_key=""` silently consulting the
+      environment (a behaviour change, unmade), and §5a.22's uncalibrated r5
+      expectations.
+
+    **The lesson is about the register, not the bug.** This entry said "blocked on
+    one thing: no `ANTHROPIC_API_KEY`" and then kept saying it after the sentence
+    stopped being true, because a carry-forward is read as a finding and nobody
+    re-tests a finding. A blocker claim must name the CHECK that would falsify it
+    — here, one command and one printed `parser available=` line.
+
 8. **`record_roll_history`'s data-root sweep is a CORRECTNESS debt, not a
    performance one** (re-filed 4B.6b item 4; was filed at 4B.6a CU1 as O(runs)).
    `sweep_data_root` is `root.rglob("coarse_predictions.jsonl")` with exactly one
@@ -3235,6 +3285,121 @@ side. Also: **concentration did not fire on either measured board**, because
 demo density runs far below the 85% threshold — the item is unexercised live and
 proven only by unit test, which is the same demo-density limit §5a.11 recorded
 for the coarse zone.
+
+**§5a.51 — BOTH 4B.16 ROUTES REACH A PLANNER'S PHRASING, AND THE MEASUREMENT
+FOUND A LEAK IN THE INSTRUMENT (Errand 4B.16a Item 2).** Ten phrasings fired live
+against the pinned `rolling-c362baa4-1b0`, each its own conversation, on shipped
+defaults (parse Haiku, contracted routes, template render). **Nine of ten reached
+the intended route.** `what-would-change` took `"what would have to change for
+op20 to run Tuesday"` (0.92), `"how do I get this earlier"` (0.92),
+`"can this move to Tuesday"` (0.92) and `"what if it were splittable"` (0.92,
+binding `concept=splittable` off the utterance); `briefing` took all four cold
+opens — `"what should I be worried about"`, `"how does this schedule look"`,
+`"anything I should know"`, `"what's the state of things"` — at **0.95 each**.
+Route latency median **1462 ms**, p90 2124 ms, zero retries, zero malformed
+parses.
+
+**THE ONE MISS IS A ROUTE BOUNDARY, NOT A GAP, AND IS NOT FIXED.**
+`"why can't it be earlier"` resolved to **`why-here` at 0.95 with
+`polarity=negative`** and answered correctly — the couldn't-verdict with the
+family ladder. That is defensible on its own terms: `what-would-change` is
+DEFINED as why-here's inverse over the same computed bounds (§5a.49), so a
+"why can't" utterance sits exactly on the seam, and the negative polarity is the
+parse doing what it was built to do. Whether the two should merge is the
+vocabulary question **4B.14 already declined to rule on** for `start-reason`
+versus `why-here`; widening either meaning to capture this phrasing was
+explicitly out of scope. The reverse-facing note matters more: the errand's own
+prior evidence had `"how do i change that"` — four words, no subject — reach
+`what-would-change` off board selection, so the prompt is NOT thin on cold opens.
+It is precise on a seam.
+
+**THE ADDED CASE: A PRONOUN AFTER A WHOLE-BOARD READ HAS NOTHING TO BIND TO.**
+`"how do i fix that"` following a `briefing`, nothing selected, parsed as
+`remediation` / `followup=deepen` / **`clarify=no-subject`** at 0.72 and asked
+which order or machine was meant. Honest, and the right floor: the resolution
+ladder is card > selection > last answer > history, and a briefing's "last
+answer" is the whole board — the four ranked items name several orders and no
+single subject. The contrast with the same follow-up after a `why-here` (which
+binds from selection) is the finding: anaphora works where the prior turn had ONE
+subject and correctly refuses where it had many. The mitigation already shipped is
+the opener's own per-item pointers ("-> Ask ..."), which is what a planner should
+click instead.
+
+**THE INSTRUMENT WAS CONTAMINATED, AND IT WOULD HAVE BEEN READ AS A PRODUCT
+DEFECT.** The first run of this bank opened **seven consecutive turns** with
+"I've now given you this same answer for two different questions, which probably
+means I'm not understanding what you're asking" — each citing a question from a
+conversation the bank had already thrown away with `RESET`. Cause: the deafness
+signal's memory (`interpreter._DELIVERED`) is module-level and keyed by session
+id, because a delivered ANSWER cannot be read off the history channel, which
+carries only question and route (§5a.42's whole point). `RESET` cleared history,
+selection, last-answered and the card — four channels — and **missed the fifth**.
+`forget_deliveries(session_id)` is the symmetric clear for `remember_delivery`
+and the exam runner's `RESET` now calls it; re-run, the rider fires zero times
+and the phrasing table above is the uncontaminated one. Pinned in
+`tests/test_route_falsifiability.py`, including an assertion at the runner's own
+call site, because a RESET that clears four of five channels poisons every bank
+that starts a second conversation — which is most of them.
+
+**REPORTED, NOT FIXED — the product half of the same rider.** Four different
+phrasings of the opener inside ONE conversation legitimately trip the rule (same
+answer, different questions) and the second one would open with self-doubt. That
+is §5a.42's known limit ("distinguishing 'one answer because I am confused' from
+'one answer because it IS the answer' needs a signal this session does not have")
+and it now lands on the FIRST THING A STRANGER READS, which raises its severity
+without changing its shape. Two mitigating facts, both verified rather than
+assumed: the REPL passes no `session_id`, so the detector is inert there; and the
+cockpit has no conversation-clear gesture at all (`#ask-clear` clears the board
+highlight), so no product surface currently leaks across a boundary.
+
+**§5a.52 — THE OPENER'S SCAN IS 4% OF THE TURN; THE PARSE IS THE REST (Errand
+4B.16a Item 3).** Measured on the pinned world, dispatch only (assemble +
+template render, parse excluded, 12 samples after a warm call):
+**`what-would-change` 7.3 ms** median, **`briefing` 61.0 ms**. Of the opener's
+61 ms, **58.7 ms is the scan** and effectively all of that is `_opener_load`
+(59.0 ms) — which walks `_open_windows` for all 15 machines across the whole
+horizon; every other extractor is under 4 ms and `_opener_late` /
+`_opener_certificate` are under 0.1 ms.
+
+**PRECOMPUTE, ANSWERED BOTH WAYS AND LEFT.** With the opener cached, the same
+dispatch is **0.4 ms** — precompute removes 99% of the dispatch and **4.6% of a
+parse+dispatch turn**, because the parse is one live model call at a 1251 ms
+median. So it is not worth a contract change at this density, and no contract
+change was made. **The shape it would need, named for whoever revisits it:** an
+Optional block on the schedule document (the `RollingBlock`/annotations pattern
+the coarse zone already uses — absent on an older document, present with its own
+provenance), minted at registration where the document is assembled. **The reason
+to revisit it is scale, not this number:** `_opener_load` scales in machines x
+horizon days, and the pilot volume named in CLAUDE.md is 174 workcenters against
+the 15 measured here — at ~12x the machines the scan plausibly becomes the
+dominant term rather than 4% of it, and pilot-volume latency is UNMEASURED for
+every figure in this repo.
+
+**§5a.53 — THE COUNTERFACTUAL'S SPEC CITATIONS DODGE §5a.48 DELIBERATELY, AND
+THAT IS NOW STATED WHERE A REFACTORER WILL READ IT (Errand 4B.16a Item 3 A3).**
+Confirmed: `counterfactual.SPEC_OF` is a dict of AUTHORED CONSTANTS
+(`"docs/06 §5.3 routing_lines.csv splittable / min_chunk_minutes"` and five
+siblings) rendered by the template as part of each lever line, so the reference
+never passes through synthesis and never takes a claim label at all. The dodge
+complies with §5a.48's own closing prescription — "an answer whose strongest
+evidence is a spec passage should route that reference through authored copy
+rather than let synthesis carry it under the interpretive label" — which was
+written by Errand 4B.15a, **one commit before** the route existed.
+
+**But it was deliberate at the RULING level and incidental at the ROUTE:**
+4B.16's close-out does not mention §5a.48, and nothing in `counterfactual.py`
+said why those strings are hardcoded. Reading them out of the 4B.15 corpus index
+instead would look like a tidy-up — the index ships with the build, sha256 per
+document — and would silently re-open §5a.48 for this route by turning each
+reference into a corpus-grounded claim wearing the weakest label the surface has.
+The prohibition is now recorded on `SPEC_OF` itself, which is a comment and not a
+behaviour change. **THE SPEC-CITATION KIND IS STILL OWED**, unchanged in scope:
+it is owed for the SYNTHESIS tier, where §5a.48's measured specimen lives (four
+correct claims quoting docs/05, all four `[synthesis — my reading, no record
+states this]`), and therefore for every answer whose ground is
+`constraint_catalog` or `spec_lookup` rather than a placement. Contracted routes
+carrying authored copy are the exception that works around it, not a discharge of
+it.
 
 
 ## 6. Open rulings queue

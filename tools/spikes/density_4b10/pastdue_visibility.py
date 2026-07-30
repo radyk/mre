@@ -29,18 +29,11 @@ REF = datetime(2026, 1, 5, tzinfo=UTC)
 SCRATCH = REPO / "_4b10_scratch"
 
 
-def _load_env():
-    """Same loader shape as tests/conftest.py (4B.8 pre-flight)."""
-    p = REPO / ".env.local"
-    if not p.exists():
-        return False
-    for line in p.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        k, v = line.split("=", 1)
-        os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
-    return True
+# Errand 4B.16a — this spike's own copy of the loader had DRIFTED: it used
+# `os.environ.setdefault`, which writes an EMPTY value where the other three
+# copies skip it, so a commented-out key here could shadow a real one from the
+# environment. It calls `mre.env_local`, the one reader, like everything else.
+from mre.env_local import load_env_local as _load_env  # noqa: E402
 
 
 def main():

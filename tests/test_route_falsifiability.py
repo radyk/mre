@@ -13,7 +13,8 @@ from mre.contracts.parse import (
     Intent, ParsedQuestion, SubjectKind, SubjectRef,
 )
 from mre.modules.interpreter import (
-    _answer_fingerprint, _same_question, bundle_repeat, remember_delivery,
+    _answer_fingerprint, _same_question, bundle_repeat, forget_deliveries,
+    remember_delivery,
 )
 from mre.modules.route_falsifiability import EXEMPT_ROUTES, _disjunction, falsify
 
@@ -229,3 +230,50 @@ class TestRepeatReversal:
         b = _Bundle()
         bundle_repeat(b, {"history": []}, _parsed("q"), "text", None)
         assert not b.key_facts
+
+    def test_clearing_the_conversation_expires_the_deafness_evidence(self):
+        """Errand 4B.16a — the leak this found. ``deaf`` is evidence about a
+        CONVERSATION, so it must expire when the conversation is thrown away.
+
+        The delivery store is module-level and keyed by session id, while every
+        "start over" gesture cleared only the history channel — so the exam
+        harness's RESET cleared history, selection, last-answered and the card,
+        and the rider went on citing a question from a conversation that no
+        longer existed. Measured before the fix: seven consecutive turns of one
+        sweep opened with "I've now given you this same answer for two different
+        questions", each naming a discarded conversation's question.
+        """
+        answer = "26 orders on 15 machines. 4 things worth your attention."
+        remember_delivery("sess-reset", "briefing",
+                          "what should I be worried about", answer)
+
+        # Same session, different question, same answer -> deaf, as designed.
+        b = _Bundle()
+        bundle_repeat(b, {"history": []}, _parsed("how does this schedule look"),
+                      answer, "sess-reset")
+        assert b.key_facts.get("deaf") == 1
+
+        # Now the conversation is cleared. The same pair must be silent.
+        forget_deliveries("sess-reset")
+        b2 = _Bundle()
+        bundle_repeat(b2, {"history": []}, _parsed("how does this schedule look"),
+                      answer, "sess-reset")
+        assert not b2.key_facts, (
+            "the deafness evidence outlived the conversation it was about")
+
+    def test_forget_deliveries_is_safe_on_an_unknown_session(self):
+        forget_deliveries("sess-never-seen")
+        forget_deliveries(None)
+
+    def test_the_exam_runner_clears_deliveries_on_reset(self):
+        """The instrument fix is pinned at its call site: a RESET that clears
+        four channels and misses the fifth contaminates every bank that starts a
+        second conversation, which is most of them."""
+        from pathlib import Path
+        src = (Path(__file__).resolve().parents[1] / "src" / "mre" / "ai_exam"
+               / "runner.py").read_text(encoding="utf-8")
+        head, _, tail = src.partition("isinstance(item, Reset)")
+        assert tail, "the runner no longer handles Reset"
+        block = tail.split("continue")[0]
+        assert "forget_deliveries" in block, (
+            "RESET must expire the delivery memory along with the history")

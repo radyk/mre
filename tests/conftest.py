@@ -7,39 +7,19 @@ It also loads the gitignored ``.env.local`` (Session 4B.8 pre-flight). Before
 that, ``tools/run_ai_exam_sweep.py`` carried the ONLY loader in the repo, so a
 key that was present on disk was invisible to the test process: four committed
 slow tests landed on the honest no-parser floor and read as failures for a
-reason unrelated to whatever was under test. The loader is copied from the exam
-harness deliberately — same semantics, same repo-root anchoring — because
-``python-dotenv`` is not a dependency of this project.
-"""
-import os
-from pathlib import Path
+reason unrelated to whatever was under test.
 
+Errand 4B.16a: the loader was COPIED here in 4B.8 and the repo then held four
+copies, one already drifted. It now calls ``mre.env_local`` — the one reader —
+whose docstring records why the library itself never loads a file. Semantics are
+unchanged: repo-root anchoring, an already-set variable (or a monkeypatch) always
+wins, nothing printed.
+"""
 import pytest
 
+from mre.env_local import load_env_local
 
-def _load_env_local() -> None:
-    """Load the gitignored .env.local into this process's environment, without
-    printing anything from it. An already-set variable always wins, so an
-    explicit shell export or a monkeypatch still overrides the file.
-
-    The path is anchored to THIS FILE's repo root, never to the CWD — pytest is
-    run from the repo root, from tests/, and from tools/ spikes, and a
-    CWD-relative path would load in some of those and silently not in others.
-    """
-    path = Path(__file__).resolve().parents[1] / ".env.local"
-    if not path.exists():
-        return
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, _, value = line.partition("=")
-        key, value = key.strip(), value.strip().strip('"').strip("'")
-        if key and value and not os.environ.get(key):
-            os.environ[key] = value
-
-
-_load_env_local()
+load_env_local()
 
 
 def pytest_addoption(parser):

@@ -248,6 +248,13 @@ def _render_repl_turn(
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Errand 4B.16a — the REPL had NO loader either. `.env.local` is the only place
+    # the key lives in a dev checkout, and `dev_api.ps1` (a PowerShell loader) is
+    # what supplies it to the API; a bare `python -m mre.ask` got nothing and said
+    # so honestly, which read as a missing key rather than a missing populate step.
+    from mre.env_local import load_env_local
+    load_env_local()
+
     # Windows consoles (and redirected stdout) default to cp1252, which
     # cannot encode characters the renderers legitimately emit (e.g. the
     # '→' in assignment Decision messages) — a REPL turn would die with

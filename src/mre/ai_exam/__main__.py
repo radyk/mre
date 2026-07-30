@@ -70,6 +70,14 @@ def _env(name: str) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Errand 4B.16a — this front door had NO loader, so from a bare shell it built
+    # an unavailable parser and every answer landed on the honest
+    # could-not-interpret floor: indistinguishable from a key that is missing, and
+    # one of the readings behind docs/07 §5a.7's three-session-old rumour. An
+    # already-set variable still wins; a missing file is a no-op.
+    from mre.env_local import load_env_local
+    load_env_local()
+
     args = build_parser().parse_args(argv)
     target = _resolve_target(args)
 

@@ -12698,3 +12698,139 @@ other side). Concentration did NOT fire on either measured board: demo density
 runs far below the 85% threshold, so the item is unexercised live and proven only
 by unit test, the same limit §5a.11 recorded for the coarse zone. Full detail in
 `docs/closeouts/4B.16.md`; carry-forwards in docs/07 §5a.49-50.
+
+---
+
+### 2026-07-29 — Errand 4B.16a: the key, and whether the parse reaches the new routes
+
+An errand, not a session: one blocker to end and one coverage check to run. No
+solve, no contract change, all reads from the persisted pinned world
+`rolling-c362baa4-1b0` (R-AI4).
+
+**THE ONE-SENTENCE DIFFERENCE.** There was never a difference in the READER —
+the ask path and the sweep tool both read a bare `os.environ`, and so does every
+other consumer — the difference is that every ENTRY POINT has to populate that
+environment itself, and `python -m mre.ask` / `python -m mre.ai_exam` were the
+entry points that supplied nothing, while the sweep tool had supplied its own
+since 4A.5b and was never blocked at all.
+
+Stated the four ways the errand asked for:
+
+* **(a) the ask path** reads `os.environ.get("ANTHROPIC_API_KEY", "")` at
+  construction in `question_parser.py:591`, `renderers.py:2773` and
+  `synthesizer.py`, plus `api/app.py` at three sites. None of them loads a file,
+  and that is CORRECT — in a container the key arrives from the platform secret
+  store and there is no `.env.local` (docs/08 says so). What populates the
+  environment on the dev cockpit path is `src/cockpit/dev_api.ps1:39-51`, a
+  PowerShell loader that runs before uvicorn starts. Repo-root anchored (it
+  resolves `$PSScriptRoot/../..`), not CWD-relative.
+* **(b) the sweep tool** carried its own Python loader at
+  `tools/run_ai_exam_sweep.py:42`, added by **4A.5b (commit `f3bb319`,
+  2026-07-26)** and called at import. Anchored to `Path(__file__).parents[1]`,
+  i.e. the repo root, not the CWD. `tools/model_tier_bench.py` imports that
+  function by name, which is how errand 4B.15a made four live calls.
+* **(c) the difference:** above.
+* **(d) `dev_api.ps1` does load it, and that does NOT help a tool invoked as
+  `python -m ...`** — the loader lives inside the script's own process, so a
+  separate shell running `python -m mre.ai_exam` inherits nothing from it.
+
+**PROVEN, NOT ARGUED.** The sweep was run from its own entry point before any
+change: `parser available=True prompt_version=13`, one live parse in **1319 ms**,
+`graded 1/1`. The four slow tests §5a.7 named were re-run: **4 passed in
+54.7 s**. And `python -m mre.ai_exam` — the front door that had no loader — now
+reports `llm mode live` with 15 live calls.
+
+**THE FIX IS ONE READER, BECAUSE FOUR IS WHAT DRIFTED.** `src/mre/env_local.py`
+is the single implementation; `tests/conftest.py`, `tools/run_ai_exam_sweep.py`
+(which re-exports the name for `model_tier_bench`), the 4B.10 spike, and the
+`mre.ask` / `mre.demo` / `mre.ai_exam` mains all call it. The library still never
+loads on import, which the guard asserts: a package that mutates the environment
+on import is a surprise the API server does not need. One copy had already
+DRIFTED — the spike used `os.environ.setdefault`, which writes an EMPTY value
+where the other three skip it, so a blanked key there could shadow a real one
+from the environment. `tests/test_env_local_one_reader.py` fails on the
+appearance of a second Python loader (matched on the pair "names `.env.local` as
+a whole string literal" AND "writes to `os.environ`", so prose is not a false
+positive) and its negative control was run: a planted second loader turns it red,
+removing it turns it green. `dev_api.ps1` stays exempt and the exemption is
+stated — it is the shell, running before any Python exists.
+
+**SECTION 5a.7 IS THE THING THAT WENT WRONG, NOT THE KEY.** The entry said
+"blocked on one thing: no `ANTHROPIC_API_KEY`" and kept saying it after that
+stopped being true, because a carry-forward is read as a finding and nobody
+re-tests a finding. Three sessions scoped themselves off it. The corrected entry
+states what was blocked (pytest, one session, fixed 4B.8), what never was (the
+sweep, since 4A.5b), what was blocked and unlooked-at (the two module front doors,
+fixed here), and that nothing about the key remains open — `regression_founder_r5`
+is unrun because its expectations are UNCALIBRATED (§5a.22). **The
+transferable rule: a blocker claim must name the CHECK that would falsify it.**
+Here it was one command and one printed `parser available=` line.
+
+**COVERAGE: NINE OF TEN PHRASINGS REACH THE INTENDED ROUTE** (§5a.51). All
+four `briefing` cold opens at 0.95; four of five `what-would-change` phrasings at
+0.92, including "what if it were splittable" binding `concept=splittable` off the
+utterance. The one miss, "why can't it be earlier" resolving to `why-here` at 0.95
+with `polarity=negative`, is a genuine route boundary rather than a gap — the
+counterfactual is DEFINED as why-here's inverse over the same bounds (section
+5a.49), so a "why can't" utterance sits on the seam, and the answer it gave was
+correct. NOT fixed: widening a meaning to capture a phrasing is the vocabulary
+decision 4B.14 already declined to make for `start-reason` vs `why-here`, and it
+was out of this errand's scope. The interesting reverse case did not appear: the
+prompt is not thin on cold opens, since a four-word subjectless follow-up had
+already reached `what-would-change` off board selection.
+
+**THE ADDED CASE.** "how do i fix that" after a `briefing`, nothing selected,
+parsed as `remediation` / `followup=deepen` / `clarify=no-subject` at 0.72 and
+asked which order was meant. That is the right floor: the ladder is card >
+selection > last answer > history, and a briefing's last answer is the whole
+board — several named orders and no single subject. Anaphora binds where the
+prior turn had ONE subject and refuses where it had many.
+
+**THE MEASUREMENT FOUND A LEAK IN THE INSTRUMENT, AND IT LOOKED LIKE A PRODUCT
+DEFECT.** The first run opened SEVEN consecutive turns with "I've now given you
+this same answer for two different questions", each citing a question from a
+conversation `RESET` had already discarded. The deafness memory
+(`interpreter._DELIVERED`) is module-level and keyed by session id — deliberately,
+because a delivered ANSWER cannot be read off the history channel, which carries
+only question and route (§5a.42's point). `RESET` cleared history,
+selection, last-answered and the card, and **missed the fifth channel**.
+`forget_deliveries(session_id)` is the symmetric clear for `remember_delivery`;
+the exam runner's `RESET` calls it, and re-run the rider fires zero times. A
+RESET that clears four of five channels contaminates every bank that starts a
+second conversation, which is most of them, so the guard asserts the call site
+itself and not only the function.
+
+**REPORTED, NOT FIXED — the product half.** Four phrasings of the opener inside
+ONE conversation legitimately trip the rule, so the second would open with
+self-doubt on the first thing a stranger reads. That is §5a.42's stated
+limit, now at higher severity and unchanged in shape. Two mitigations were
+VERIFIED rather than assumed: the REPL passes no `session_id`, so the detector is
+inert there, and the cockpit has no conversation-clear gesture at all
+(`#ask-clear` clears the board highlight), so no product surface leaks across a
+boundary today.
+
+**LATENCY, MEASURED (§5a.52).** Dispatch only, parse excluded, 12 samples
+after a warm call: `what-would-change` **7.3 ms**, `briefing` **61.0 ms**, of
+which **58.7 ms is the scan** and effectively all of that is `_opener_load`
+walking `_open_windows` for 15 machines across the horizon. Precompute answered
+BOTH WAYS and left: the cached dispatch is **0.4 ms**, so precompute removes 99%
+of the dispatch and **4.6% of a parse+dispatch turn** against a 1251 ms parse. The
+contract shape it would need is named (an Optional document block minted at
+registration, the pattern the coarse zone already uses) and the reason to revisit
+is SCALE — the scan grows in machines x horizon days, and pilot volume is 174
+workcenters against the 15 measured. The opener did exceed ~2 s end-to-end once,
+on "what's the state of things", and the cause was a 2633 ms PARSE, not the route.
+
+**SECTION 5a.48's DODGE IS DELIBERATE, AND WAS UNSTATED WHERE IT MATTERED
+(§5a.53).** `counterfactual.SPEC_OF` is a dict of authored docs/06
+constants rendered by the template, so a spec reference never passes through
+synthesis and never takes a claim label. That complies with §5a.48's own
+closing prescription, written by errand 4B.15a **one commit before the route
+existed** — but 4B.16's close-out never mentions §5a.48 and the module said
+nothing, so the compliance was unprotected. Reading those strings out of the 4B.15
+corpus index would look like a tidy-up and would silently re-open §5a.48
+for this route. The prohibition is now a comment on `SPEC_OF`. The spec-citation
+KIND is still owed, for the synthesis tier where the measured specimen lives.
+
+Full narrative in `docs/closeouts/4B.16a.md`; carry-forwards in docs/07
+§§5a.51-53, and §5a.7 is closed.

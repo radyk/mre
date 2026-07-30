@@ -597,6 +597,26 @@ def remember_delivery(session_id: Optional[str], route: str, question: str,
     del seq[:-_DELIVERED_KEEP]
 
 
+def forget_deliveries(session_id: Optional[str]) -> None:
+    """Drop a session's delivery memory — the SYMMETRIC clear for
+    ``remember_delivery`` (Errand 4B.16a).
+
+    ``deaf`` is evidence about a CONVERSATION: different questions inside one
+    exchange collapsing onto one answer. When the conversation is cleared, that
+    evidence expires with it. It did not, because this store is module-level and
+    keyed by session id while every "start over" gesture cleared only the history
+    channel — so the exam harness's ``RESET`` cleared history, selection,
+    last-answered and the card, and the rider went on scolding across the
+    boundary. Measured: seven consecutive turns in Item 2's sweep opened with
+    "I've now given you this same answer for two different questions" naming a
+    question from a conversation that had already been thrown away.
+
+    Every gesture that means "forget what we were talking about" must call this.
+    """
+    if session_id:
+        _DELIVERED.pop(session_id, None)
+
+
 def bundle_repeat(bundle: Any, context: Optional[dict],
                   parsed: ParsedQuestion, text: str = "",
                   session_id: Optional[str] = None) -> None:

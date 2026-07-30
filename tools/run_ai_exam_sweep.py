@@ -26,35 +26,24 @@ so the residue that R-AI5(5) exists to rank was being computed and discarded 300
 times a run.
 
 The key is read from the gitignored ``.env.local`` at the repo root (the same
-source every prior sweep used) when it is not already in the environment.
+source every prior sweep used) when it is not already in the environment — via
+``mre.env_local``, the ONE reader, since Errand 4B.16a.
 """
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from mre.env_local import load_env_local  # noqa: E402  (re-exported: see below)
 
-def load_env_local() -> None:
-    """Load the gitignored .env.local into this process's environment, without
-    printing anything from it. An already-set variable always wins."""
-    path = Path(__file__).resolve().parents[1] / ".env.local"
-    if not path.exists():
-        return
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, _, value = line.partition("=")
-        key, value = key.strip(), value.strip().strip('"').strip("'")
-        if key and value and not os.environ.get(key):
-            os.environ[key] = value
-
-
+# Errand 4B.16a — this tool CARRIED the repo's first loader (4A.5b) and it worked
+# all along; what it no longer carries is its own COPY. `mre.env_local` is the one
+# reader, and the name stays importable from here because tools/model_tier_bench.py
+# imports it from this module.
 load_env_local()
 
 from mre.ai_exam.report import render_sidecar, render_transcript  # noqa: E402

@@ -77,6 +77,22 @@ from mre.modules.blocker_analysis import (
 #: docs/06 sections where each family's INPUT is declared — the submission column
 #: a planner would actually have to change. A lever that names a docs/05 family
 #: without naming where the field lives is advice nobody can act on.
+#:
+#: THESE ARE AUTHORED CONSTANTS ON PURPOSE, NOT A MISSED REFACTOR (Errand 4B.16a
+#: A3). docs/07 §5a.48 is the standing prescription: until a CITATION KIND for
+#: spec passages exists — a contract change, therefore a reviewed vocabulary-class
+#: change — "an answer whose strongest evidence is a spec passage should route that
+#: reference through authored copy rather than let synthesis carry it under the
+#: interpretive label." Measured there: four claims quoting docs/05 correctly all
+#: landed `[synthesis — my reading, no record states this]`, because the corpus and
+#: catalog tools return SPEC TEXT and `claim_verifier` has nothing to re-fetch. So
+#: a verbatim quote of the constitution reads WEAKER than an inference over
+#: placements, which inverts the evidence hierarchy §5a.43 rules on.
+#:
+#: Reading these out of the 4B.15 corpus index instead would look like an
+#: improvement and would re-open §5a.48 for this route: the reference would become
+#: a corpus-grounded claim and take the weakest label the surface has. Do not do it
+#: before the citation kind lands.
 SPEC_OF: dict[str, str] = {
     "release": "docs/06 §5.1 orders.csv release_date",
     "precedence": "docs/06 §5.3 routing_lines.csv sequence",
