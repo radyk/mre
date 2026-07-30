@@ -28,11 +28,45 @@ NEAR_MISS_OFFER = "Here's what I can do that's closest:"
 # `{customer}` are filled from the interpreter's partially-resolved params where
 # present, else a generic noun. Keep these in planner vocabulary — never a route
 # id, never an id-shape.
+#
+# ---------------------------------------------------------------------------
+# SESSION 4B.19 — AN OFFER LABEL NAMES THE QUESTION IT WOULD ANSWER, NEVER THE
+# ANSWER (docs/04 2026-07-30 ruling).
+#
+# A door label is composed BEFORE any read of the board has happened — the slots
+# above are filled from the interpreter's partially-resolved params, and nothing
+# else enters. So a label that states a board fact states it without evidence, by
+# construction, in the product's own voice, at the moment a planner is deciding
+# what to trust.
+#
+# 4B.17 measured two of these. The census that produced this rewrite found
+# fourteen HERE plus one more in `explainer._planner_routes()` — and it found
+# that the ENTITY SLOT IS NOT THE MECHANISM: `advice` ("explain why each order is
+# late…") carries no slot and was a member all the same. What makes a label a
+# defect is the ASSERTION, not the interpolation.
+#
+# The rewrites below keep every door's usefulness — each still tells a planner
+# what asking would get them — and drop the claim. Guarded by
+# `tests/test_offer_labels_do_not_assert.py`; the guard's mechanism and its
+# stated limit are documented there.
+#
+#   was                                          | now
+#   "show why {order} is late"                   | check whether … and what drove it
+#   "explain why {machine} carries no work"      | check how much work … carries
+#   "explain why {order} is on {machine}"        | check which machine … is on
+#   "explain the gap before {order}…"            | check what sits before …
+#   "explain why {order} isn't scheduled yet"    | check whether … is scheduled yet
+#   "name the binding constraint on {order}…"    | check what is holding … or whether
+#                                                |   nothing was  (the COULDN'T /
+#                                                |   CHOSE distinction, 4B.14)
+# ---------------------------------------------------------------------------
 ROUTE_OFFERS = {
-    "late-order": "show why {order} is late",
+    "late-order": "check whether {order} is late, and what drove it",
     "late-orders": "show every late order at a glance",
-    "lateness-cause": "explain what is driving the lateness across the plan",
-    "why-on-machine": "explain why {order} is on {machine}",
+    "lateness-cause": "check how much of the plan is running late, and what is "
+                      "driving it",
+    "why-on-machine": "check which machine {order} is on, and how that machine "
+                      "was chosen",
     "machine-schedule": "show what's running on {machine}",
     "order-schedule": "show when {order} starts and finishes",
     "customer-schedule": "show the schedule for {customer}",
@@ -40,27 +74,31 @@ ROUTE_OFFERS = {
     "downtime": "show {machine}'s downtime (calendar closures)",
     "data-problems": "list the data-quality problems",
     "version-diff": "show what changed between two versions",
-    "remediation": "show how to fix the submission's problems",
+    "remediation": "show how to fix anything the intake review flagged",
     "triage": "show what to fix first",
-    "certificate-testimony": "explain what's wrong with the submission",
-    "edit-summary": "summarize the edits you made and what they cost",
-    "edit-cost": "break down what your last move cost",
-    "open-card": "read back the move you have priced on the board",
+    "certificate-testimony": "go through what the intake review found in the "
+                             "submission",
+    "edit-summary": "summarize any edits made in this session and what they cost",
+    "edit-cost": "break down what the most recent move cost, if one was made",
+    "open-card": "read back a priced move if one is open on the board",
     "ledger-refusals": "list the questions I couldn't answer recently",
-    "advice": "explain why each order is late and price a what-if move",
+    "advice": "check what, if anything, is running late and price a what-if move",
     "coaching": "show how to enable that capability in the submission",
     "solve-time": "tell you how long the solve took",
     "machine-count": "list the machines in the plan",
     "solve-optimality": "say whether this schedule's cost is proven optimal",
     "maintenance": "show one machine's downtime (calendar closures)",
     "swap-move": "weigh swapping {order} with another order and how to price it",
-    "gap-between": "explain the gap before {order} on its machine",
-    "machine-idle": "explain why {machine} carries no work",
+    "gap-between": "check what sits before {order} on its machine, and whether "
+                   "it leaves a gap",
+    "machine-idle": "check how much work {machine} carries, and what it is "
+                    "eligible to run",
     "order-attributes": "show {order}'s details (product, quantity, customer, due)",
     "inventory": "count the orders and operations in the plan",
     "integrity-check": "check whether anything is double-booked",
     "start-reason": "explain why {order} starts when it does",
-    "why-here": "name the binding constraint on {order} starting earlier",
+    "why-here": "check what is holding {order} where it sits, or whether nothing "
+                "was",
     "what-would-change": "say what would have to change for {order} to start "
                          "earlier, and by how much",
     "excluded-orders": "list the orders excluded from the plan and why",
@@ -70,11 +108,12 @@ ROUTE_OFFERS = {
     "confirm-take": "name the board gesture that makes that move",
     "prove-it": "open the record behind what I just told you",
     "beyond-horizon": "show what lies beyond the planning horizon",
-    "why-not-scheduled-yet": "explain why {order} isn't scheduled yet",
+    "why-not-scheduled-yet": "check whether {order} is scheduled yet, and when "
+                             "it will be",
     "frozen": "show what is frozen",
     # Session 4B.6 — the coarse zone (R-SC2 amendment).
     "coarse-fit": "check whether the work beyond the horizon fits",
-    "bucket-load": "show what is filling up a week beyond the horizon",
+    "bucket-load": "show how loaded a week beyond the horizon is",
 }
 
 # Generic planner nouns when a param slot has nothing resolved to fill it.

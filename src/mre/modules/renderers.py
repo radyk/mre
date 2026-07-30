@@ -120,6 +120,17 @@ def _resolve_name(entity_id: str, entity_type: str, identity_map: Any) -> str:
     return refs[0].value if refs else entity_id[:12]
 
 
+def _did_you_mean(names: list[str]) -> str:
+    """The near-match offer for an unknown entity (Session 4B.19 Item 3(c)).
+
+    Authored copy, one seam, so the machine and order branches cannot phrase the
+    same correction two ways. The caller has already decided these are CLOSE
+    (explainer._nearest_names); this only words them."""
+    if len(names) == 1:
+        return f"Did you mean {names[0]}?"
+    return "Did you mean " + ", ".join(names[:-1]) + f" or {names[-1]}?"
+
+
 # ---------------------------------------------------------------------------
 # TemplateRenderer
 # ---------------------------------------------------------------------------
@@ -892,6 +903,13 @@ class TemplateRenderer:
                             why = f"blocked on a busy machine until {(r.get('until') or '')[:16]}"
                         lines.append(f"  - op {m.get('operation_ref', '')[:8]} "
                                      f"(+{m.get('start_delta_min', 0)}min): {why}")
+                    # Session 4B.19 Item 3(b): the head slice above is fine; the
+                    # SILENCE about it was not. A planner reading five rows under
+                    # "Why the surroundings moved" reads them as the surroundings.
+                    if len(reasoned) > 5:
+                        lines.append(f"  …and {len(reasoned) - 5} more operation(s) "
+                                     f"moved for a recorded reason "
+                                     f"({len(reasoned)} in all).")
             lines.append("")
 
         elif bundle.subject_type == "unsupported":
@@ -2328,16 +2346,37 @@ class TemplateRenderer:
             # 4B.13: name the right vocabulary. Calling an unknown MACHINE an
             # unknown order, and then listing orders, tells the planner their
             # machine name is an order id.
+            #
+            # Session 4B.19 Item 3. This block used to read "The machines here
+            # are: " over a HEAD SLICE of eight — a sentence that claims to be
+            # the plant while naming barely half of it, and on the measured
+            # specimen it dropped both the machine the asked order runs on and
+            # the two the planner most plausibly meant. Now: near matches where
+            # there are any, the TOTAL always, and a pointer at the route that
+            # does enumerate. No truncated list is presented as complete.
             lines.append(f"There's no machine called {token} in this plant.")
-            known = kf.get("known_machines") or []
-            if known:
-                lines.append(f"The machines here are: {', '.join(known)}.")
+            near = kf.get("known_machines") or []
+            total = kf.get("machine_total") or 0
+            if near:
+                lines.append(_did_you_mean(near))
+            if total:
+                lines.append(f"There are {total} machines here — ask \"list the "
+                             f"machines\" for all of them.")
         else:
             lines.append(f"{token} isn't in this schedule — I don't see it among "
                          "the planned orders.")
-            known = kf.get("known_orders") or []
-            if known:
-                lines.append(f"Orders I do have include: {', '.join(known)}.")
+            near = kf.get("known_orders") or []
+            total = kf.get("order_total") or 0
+            if near:
+                lines.append(_did_you_mean(near))
+            if total:
+                # Session 4B.19 Item 3(b). "Orders I do have include: …" over a
+                # [:6] head slice never claimed completeness, but it never gave
+                # the total either, so a planner had no way to tell six from six
+                # hundred. The count is the cheap half of the floor.
+                lines.append(f"There are {total} orders in this plan — ask "
+                             f"\"how many orders are in the plan?\" for the count "
+                             f"and \"show the full schedule\" for the list.")
         lines.append("")
 
     def _render_briefing(self, lines: list[str], bundle: ExplanationBundle) -> None:
@@ -2691,10 +2730,17 @@ class TemplateRenderer:
                 lines.append(f"    Driver: {driver}  - estimated benefit: {float(benefit):.1f}")
             else:
                 lines.append(f"    Driver: {driver}")
-            for alt in (rec.get("alternatives") or [])[:3]:
+            alts = rec.get("alternatives") or []
+            for alt in alts[:3]:
                 lines.append(
                     f"    Alternative: {alt.get('option','?')}  - {alt.get('consequence','?')}"
                 )
+            # Session 4B.19 Item 3(b): the decision record weighed more options
+            # than the chain shows. Say how many, or the chain understates what
+            # was considered without saying it did.
+            if len(alts) > 3:
+                lines.append(f"    …and {len(alts) - 3} further alternative(s) "
+                             f"recorded ({len(alts)} in all).")
 
         elif dt == "ASSIGNMENT":
             chosen = rec.get("chosen") or {}
@@ -2707,12 +2753,17 @@ class TemplateRenderer:
                 lines.append(
                     "    Note: This is a reconstruction from the solved schedule."
                 )
-            for alt in (rec.get("alternatives") or [])[:4]:
+            alts = rec.get("alternatives") or []
+            for alt in alts[:4]:
                 opt = alt.get("option", "")
                 alt_id = opt.replace("resource:", "")
                 alt_name = _resolve_name(alt_id, "resource", identity_map) if alt_id else opt
                 consequence = alt.get("consequence", "")
                 lines.append(f"    Alternative: {alt_name}  - {consequence}")
+            # Session 4B.19 Item 3(b) — same floor on the eligible-machine list.
+            if len(alts) > 4:
+                lines.append(f"    …and {len(alts) - 4} further eligible "
+                             f"machine(s) recorded ({len(alts)} in all).")
 
         else:
             phrase = driver_phrase(driver)

@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.63 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.65 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.65:** **Session 4B.19 — authored copy that asserts board facts** 2026-07-30 (ruling verbatim in docs/04 2026-07-30; narrative in `docs/closeouts/4B.19.md`). 4B.17's **A1 and A2, both DISCHARGED**; A3 and A5 named and LEFT. Item 1 enumerated the class before fixing anything, per 4B.18's method, and **the class has FIFTEEN members, not the two 4B.17 found by accident** — and the census had to widen its own population, because **the entity slot is NOT the mechanism**: `ROUTE_OFFERS["advice"]` carries no slot and is a member on identical grounds, so **the assertion is the mechanism and the interpolation only makes it vivid**. THE RULING: *an offer label names the question it would answer, never the answer* — a door label is composed before any board read, so a label that asserts is a claim made without evidence by construction, in the product's own voice. Gating each door on a board read was considered and REJECTED with its reason. Fifteen labels rewritten with their usefulness intact; four surfaces enumerated and cleared (`INVITATIONS`, `ROUTE_TAXONOMY.canonical`, the cockpit, `planner_language`). THE SECOND FLOOR: **no truncated list of board entities is presented as complete** — *"The machines here are: "* listed **8 of 15** silently, dropping the machine the asked order was actually on, on the correction path FOR A TYPO. Now nearest-matches + the total, with **pilot density (174 workcenters) the reason for the shape**. Six truncations censused: four already correct, two the defect, three further silent cuts closed. Two guards (12 + 10 tests), each with a premise test and a **negative control proven red out-of-process**. §5a.64-66; the last is Item 4's read-only rider — **nothing reads either of 4B.18's two unverified casualty classes**.
 
 **v2.64:** **Session 4B.18 — the cost proof does not survive being written to disk** 2026-07-30 (ruling verbatim in docs/04 2026-07-30; narrative in `docs/closeouts/4B.18.md`). 4B.17's A4, taken alone; A1/A2/A3/A5 named and LEFT. **§5a.55 IS DISCHARGED and §5a.23's discharge is re-closed after being re-opened on the monolithic path (§5a.63).** Item 1's enumeration over the EMITTERS found the loss is **25 records across FOUR classes, not one**: `record_event` and `register_input`/`register_output` hardcode `subjects=[]`, so **every Event and Artifact the system emits is subject-less**, and `load()` rebuilt `_all_evidence` from `entity_records` alone — 236 built -> 211 loaded on a real monolithic run, taking the entire input manifest and the four M0 conformance rate Metrics with the solver report. A subject-less Finding survived in `finding_index` but not `_all_evidence`, so **one loaded index gave two answers about itself**. Fixed at the ROOT: **schema 2 persists `_all_evidence` and DERIVES the indices on load** through `build`'s own `_index_record` (and is 0.94x the size). The invariant: **a persisted index is a faithful reconstruction of the index it was saved from, or the load reports itself INCOMPLETE and names what is missing — silence is forbidden.** `CostProof` gains a fourth state, `unreadable`, so a claim about the PLANT can never be manufactured from a fact about our STORAGE. Old indexes load and declare themselves; forward compatibility is NOT provided and is named. The round-trip guard asserts by **kind and count**, emits through the real Reporter, runs over all 14 real runs, and its **negative control is proven red (19 failed / 7 passed)**. Verified on the re-minted pinned world (**both clean items returned**), a migrated monolithic board (**the 29,390.52 gap item, ranked second**), an unmigrated artifact, and the money rider on both. One defect, one fix.
 
@@ -3694,6 +3696,62 @@ correct — the defect was the persistence assumption, not the records; and **a
 schema-2 file that is lossy for some future reason is not self-detecting**
 (`incomplete` covers schema 1 only), with the round-trip guard standing in that
 gap because a file cannot audit itself and a test can.
+
+**§5a.64 — AN OFFER LABEL NAMES THE QUESTION IT WOULD ANSWER, NEVER THE ANSWER
+(4B.19 Items 1-2; ruling verbatim in docs/04 2026-07-30). A1 IS DISCHARGED, AND
+THE CLASS HAD FIFTEEN MEMBERS, NOT TWO.** 4B.17 found two by accident; the census
+enumerated BY MECHANISM over every authored string that takes an entity slot, and
+then had to widen its own population, because **the entity slot is not the
+mechanism**: `ROUTE_OFFERS["advice"]` carries no slot and is a member on identical
+grounds. Fourteen members in `ROUTE_OFFERS` (of 47) plus one in
+`explainer._planner_routes()`, which interpolates a REAL order picked by `min()`
+of the external refs into *"why is {order} late"* — on a board where **nothing is
+late**. Four surfaces enumerated and CLEARED: `INVITATIONS` (all five rendered
+from the answer's own computed facts — they read the board, and that cost is the
+reason they are allowed to name a fact), `ROUTE_TAXONOMY.canonical` (restates the
+planner's own question), the cockpit's three interpolating templates (composed
+from a live board selection), and `planner_language`'s three phrasing dicts.
+**GATING EACH DOOR ON A BOARD READ WAS CONSIDERED AND REJECTED:** it is expensive
+on the near-miss path and it drifts, and the census found no door needing a gate
+for another reason. Guard: `tests/test_offer_labels_do_not_assert.py`, 12 tests,
+premise test + negative control proven red out-of-process. **THE GUARD'S REGISTER
+HALF IS FRAGILE AND SAYS SO** — a phrase list catches the phrasings we have seen;
+the shape half (why-over-a-presupposed-predicate) is general; a third check makes
+a NEW slot-bearing table in `ask_fallback_copy` red until it is classified.
+
+**§5a.65 — NO TRUNCATED LIST OF BOARD ENTITIES IS PRESENTED AS COMPLETE (4B.19
+Item 3). A2 IS DISCHARGED.** *"The machines here are: "* listed **eight of
+fifteen**, alphabetically, silently — dropping **PRESS-FAST, the machine the asked
+order is actually on**, and MILL-01/MILL-02, the two a planner typing MILL-99
+most plausibly meant. Now: **nearest matches** (`Did you mean MILL-01 or
+MILL-02?`), the **total always**, and a pointer at the route that enumerates.
+Below a similarity floor **nothing** is proposed — a guess dressed as a correction
+is what this route exists to avoid. **PILOT DENSITY IS THE REASON FOR THE SHAPE,
+NOT AN AFTERTHOUGHT:** 174 workcenters (§5a) makes any capped enumeration useless
+copy, while nearest-first has an output that does not grow with the plant. Census
+of six silent truncations: **four were already correct** (the opener's three
+lists and the beyond-horizon tray name their remainder AND their total — the
+pattern this floor generalizes); two were the defect (machines, orders); three
+further silent cuts on adjacent surfaces were closed (edit-summary moves,
+prove-it subjects, decision-chain alternatives). Guard:
+`tests/test_no_silent_truncation.py`, 10 tests, negative control proven red.
+
+**§5a.66 — THE RIDER, REPORTED AND NOT FIXED: NOBODY READS EITHER OF 4B.18'S TWO
+UNVERIFIED CASUALTY CLASSES (4B.19 Item 4).** Measured live on
+`_data/runs/7f97d9d1`, an UNMIGRATED schema-1 index. **(a) No answer surface
+quotes a conformance RATE.** Asked for one, the synthesis tier answered correctly
+that *"no tool exposes that computed percentage directly"* — so the four lost M0
+metrics under-report nothing, but **for the wrong reason**: the toolbox has no
+metric reader at all, on any schema. Its added clause *"it did not appear as a
+gate finding, which is the only place it would be reported"* is false — the rates
+are Metric records and they exist in the BUILT index. **(b) Nothing answers "what
+was this run built from".** *"which input files was this schedule built from"*
+returned the honest unanswerable floor with ZERO tool calls; *"what was this run
+built from"* landed on CLARIFY `no-subject` and asked which ORDER was meant. **The
+eight Artifact records are declared-but-never-consumed at the evidence level**:
+none of the 13 synthesis tools reads them, no route reads them, and the only
+`record_type == "artifact"` read in the source is a **dead assignment**
+(`dq_report.py:39`, `all_prov_records`, never used). Both feed the next brief.
 
 ## 6. Open rulings queue
 

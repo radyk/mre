@@ -13310,3 +13310,127 @@ file cannot audit itself, and a test can.
 Narrative in `docs/closeouts/4B.18.md`; carry-forwards in docs/07 §5a.63, with
 §5a.23 amended to record that its discharge was re-opened on the monolithic path
 and by what.
+
+## 2026-07-30 — Session 4B.19: authored copy that asserts board facts
+
+4B.17 measured five reproducible truth failures on the pinned exam world. Two of
+them, A1 and A2, are the same kind of thing: **authored copy on the answer
+surface stating a fact about the plant that no read of the plant supports.** Both
+were hit by a cold stranger in the first minute. This session fixed the CLASS,
+not the two specimens — the enumeration came first, and it found thirteen more
+members.
+
+### THE RULING
+
+> **AN OFFER LABEL NAMES THE QUESTION IT WOULD ANSWER, NEVER THE ANSWER.**
+> Authored copy that takes an entity slot may describe what asking would tell the
+> planner. It may not state a fact about the board. A door label is offered
+> before any board read has happened, so a label that asserts is a claim made
+> without evidence by construction — and it is made in the product's own voice,
+> at the moment a planner is deciding what to trust.
+
+**AMENDED IN ONE RESPECT, BY THE CENSUS.** The proposed ruling scoped the class
+to copy that "takes an entity slot", because both measured specimens interpolated
+one. The enumeration refutes that. `ROUTE_OFFERS["advice"]` — *"explain why each
+order is late and price a what-if move"* — carries **no slot at all** and is a
+member on identical grounds: it is offerable on a board where nothing is late.
+So the ruling reads, and is guarded as:
+
+> **AN OFFER LABEL NAMES THE QUESTION IT WOULD ANSWER, NEVER THE ANSWER.**
+> Authored copy composed before a board read may describe what asking would tell
+> the planner. It may not state a fact about the board — **whether or not it
+> interpolates an entity.** A door label is offered before any board read has
+> happened, so a label that asserts is a claim made without evidence by
+> construction, in the product's own voice, at the moment a planner is deciding
+> what to trust. **The assertion is the mechanism; the interpolation only makes
+> it vivid.**
+
+**WHY THIS SHAPE RATHER THAN GATING EACH DOOR ON A BOARD READ.** A rule that
+labels never assert makes the class structurally impossible and costs nothing at
+runtime. Gating requires every door to read the board before it can be offered,
+which is expensive on the near-miss path (two doors per refusal, chosen from the
+model's `nearest` list) and drifts: a door added later without the gate
+reintroduces the defect silently. The census found **no door that needs to be
+board-gated for another reason**, so this is ruled one way and not both.
+
+### What the census found (full table in `docs/closeouts/4B.19.md`)
+
+**Fifteen members.** Fourteen in `ask_fallback_copy.ROUTE_OFFERS` (of 47 labels)
+and one in `explainer._planner_routes()`, which interpolates a REAL order name
+picked by `min()` of the external refs into *"why is {order} late"* — on a board
+where **nothing is late**, telling a planner an arbitrary on-time order is late.
+Four surfaces were enumerated and cleared: `INVITATIONS` (all five rendered from
+the answer's own computed facts — they READ THE BOARD, and the cost is noted),
+`ROUTE_TAXONOMY.canonical` (restates the planner's own question, not an
+unprompted claim), the cockpit's three interpolating templates (all composed from
+a live board selection), and `planner_language`'s three phrasing dictionaries
+(code → clause, subject supplied by a board read).
+
+### THE SECOND FLOOR: no truncated list is presented as complete
+
+A2 is a different defect wearing the same clothes. Asked *"why is ORD-000023 on
+MILL-99"* the product answered *"The machines here are: "* and listed **eight of
+fifteen**, alphabetically, with no ellipsis, no count and no "and 7 more" — so
+the sentence claimed to be the plant. The seven it dropped included **PRESS-FAST,
+the machine ORD-000023 is actually on**, and **MILL-01/MILL-02**, the two names a
+planner typing MILL-99 most plausibly meant. This is the correction path FOR A
+TYPO and it misdirected exactly the person using it.
+
+> **NO TRUNCATED LIST OF BOARD ENTITIES IS EVER PRESENTED AS COMPLETE.** If a
+> rendered list is cut, the answer says so and gives the total.
+
+And, ruled as a design call with its reason: **for a no-such-entity correction,
+NEAREST MATCHES beat a list.** *"Did you mean MILL-01 or MILL-02?"* is more useful
+at 15 machines and it is the only shape that survives pilot volume — docs/07 §5a
+records **174 workcenters** across the real book, where enumerating the plant is
+useless copy at any cut-off. The count travels with it either way. Below a
+similarity floor **nothing** is offered as a near match: a guess dressed as a
+correction is the defect this route exists to avoid.
+
+Six silent truncations were found; **four were already correct** (the opener's
+late/at-risk/closure lists and the beyond-horizon tray all name their remainder
+and their total — the pattern this floor generalizes). Two were the defect, and
+three further silent cuts were found and closed on adjacent surfaces (the
+edit-summary move list, the prove-it subject list, the decision chain's
+alternatives).
+
+### The guards, and their negative controls
+
+`tests/test_offer_labels_do_not_assert.py` (12 tests) and
+`tests/test_no_silent_truncation.py` (10 tests). Both follow 4B.18's pattern:
+a premise test asserting the fixture can produce the condition, and a negative
+control proven red out-of-process (the asserting label replanted in the live
+table; the old renderer shape restored) and green again on revert.
+
+**THE OFFER GUARD'S MECHANISM IS PART SHAPE AND PART REGISTER, AND ITS LIMIT IS
+STATED IN THE FILE.** The shape half is general — a label of the form "why X
+IS/ARE/CARRIES/HAS …" presupposes the predicate it asks about. The register half
+is **a list of the definite-article phrases the census actually found, and it is
+fragile**: a new label asserting in words nobody has written yet passes it. It is
+kept because it costs nothing and it pins the specimens. What actually makes the
+class impossible is the ruling; what stops the guarded set growing unwatched is a
+third check — every slot-bearing authored table in `ask_fallback_copy` must be
+registered as either an offer surface or a post-read answer body, so a new table
+turns the test red until someone classifies it.
+
+### What was tempting and left
+
+A3 (the merged-span fourth seam) and A5 (the evidence chain) are untouched, per
+the brief. So are the four drifts and ten conversational misses from 4B.17,
+`dark-evidence`'s premise-correction false positive, the coaching invitation's
+inability to decline to fire (§5a.61 — it is in the census as a surface and was
+not redesigned), and CLAUDE.md compression.
+
+Named and left, found while enumerating: **`triage` and `certificate-testimony`
+sit on the boundary** — "show what to fix first" presupposes something to fix,
+but the question form is well-posed and the routes answer the null case honestly,
+so `triage` was left and `certificate-testimony` was rewritten. That line is a
+judgment, not a derivation, and a future session may move it.
+
+Item 4's read-only rider on 4B.18's two unverified casualties is reported in
+§5a.65: **nothing quotes a conformance rate and nothing consumes the input
+manifest** — the eight Artifact records are declared-but-never-consumed, and the
+only artifact read in the source is a dead assignment (`dq_report.py:39`).
+
+Narrative and the full census in `docs/closeouts/4B.19.md`; carry-forwards in
+docs/07 §5a.64-66.

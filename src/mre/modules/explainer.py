@@ -39,10 +39,14 @@ from mre.modules.planner_language import (
 # id-shapes (WO-XXXX / M-YYYY / snap-a vs snap-b). Router capabilities are
 # unchanged; this is wording only (CU4). _planner_routes() below substitutes a
 # real order / machine from the loaded schedule where one is cheaply available.
+# Session 4B.19 — these are OFFER LABELS, and an offer label names the question it
+# would answer, never the answer (docs/04 2026-07-30). Generic nouns ("an order")
+# make no claim about any particular job, but the WHY-shape still presupposes the
+# fact it asks about, so the first and third are phrased as the question.
 _SUPPORTED_ROUTES = [
-    'why is an order late — the lateness cause chain',
+    'is an order late, and why — the lateness cause chain',
     'are there any late orders — every late order at a glance',
-    'why is an order on a machine — the assignment reason',
+    'which machine an order is on, and why — the assignment reason',
     "what's running on a machine — that machine's schedule",
     "what's next on a machine — its upcoming jobs",
     'when does an order start or finish — one order\'s schedule',
@@ -95,6 +99,36 @@ def _swap_move_kind(q: str) -> str:
 def _remediation_limit(q: str) -> "Optional[int]":
     ql = (q or "").lower()
     return 1 if ("worst" in ql or "top " in ql or "the one" in ql) else None
+
+
+# Session 4B.19 Item 3(c) — NEAREST MATCHES, not a list of the plant.
+#
+# The correction path for an unknown entity is almost always a TYPO path: the
+# planner typed MILL-99 and meant MILL-01. Ranking the known names by similarity
+# to what they typed puts the answer they need first, and it is the only shape
+# that survives pilot volume — docs/07 §5a records 174 workcenters on the real
+# book, where any full enumeration is useless copy however honestly it is capped.
+#
+# Deterministic by construction: SequenceMatcher over case-folded names, ties
+# broken alphabetically. Below the threshold NOTHING is offered as a near match —
+# a guess dressed as a correction is the defect this route exists to avoid, and
+# the caller then says only the true TOTAL and where the full list lives, which
+# is a better answer than a wrong name.
+_NEAR_MATCH_FLOOR = 0.55
+
+
+def _nearest_names(typed: str, names: list[str], limit: int) -> list[str]:
+    """The `limit` known names closest to what the planner typed, best first, or
+    [] when none is close enough to propose. Never a silent head slice."""
+    from difflib import SequenceMatcher
+    t = (typed or "").strip().upper()
+    if not t or not names:
+        return []
+    scored = sorted(
+        ((SequenceMatcher(None, t, n.upper()).ratio(), n) for n in names),
+        key=lambda p: (-p[0], p[1]))
+    near = [n for ratio, n in scored if ratio >= _NEAR_MATCH_FLOOR]
+    return near[:limit]
 
 
 # The route taxonomy — the closed set of route ids classify()/route() dispatch
@@ -3081,12 +3115,19 @@ class Explainer:
                 if upper in labels:
                     excluded_finding = f
                     break
-        known_orders = sorted(self._order_refs.values())[:6]
+        # Session 4B.19 Item 3 — NO TRUNCATED LIST IS PRESENTED AS COMPLETE. Both
+        # of these used to be a bare head slice ([:6] / [:8]) handed to a renderer
+        # that read them as the whole plant. The TOTAL travels with the sample now,
+        # and the sample is chosen by NEARNESS to what the planner typed rather
+        # than alphabetically, because this is the correction path for a TYPO.
+        all_orders = sorted(self._order_refs.values())
+        known_orders = _nearest_names(token, all_orders, 6)
         # Session 4B.13 — a MACHINE that is not here is not an unknown ORDER.
         # A mistyped machine name off the board ("MILL-99") was answered "I don't
         # see it among the planned orders", offering orders back, which names the
         # wrong vocabulary at the one moment the planner needs the right one. The
         # kind comes from the parse; this route never infers it from the string.
+        all_machines: list[str] = []
         known_machines: list[str] = []
         if kind == "machine":
             try:
@@ -3096,8 +3137,20 @@ class Explainer:
                         if ref.get("value"):
                             names.add(ref["value"])
                             break
-                known_machines = sorted(names)[:8]
+                all_machines = sorted(names)
+                # Session 4B.19 Item 3(a). MEASURED, 6/6 runs of 4B.17's bank:
+                # "why is ORD-000023 on MILL-99" answered "The machines here are:"
+                # and listed EIGHT of fifteen, alphabetically, with no ellipsis and
+                # no count — so the sentence claimed to be the plant. The seven it
+                # dropped included PRESS-FAST, the machine ORD-000023 is actually
+                # on, and MILL-01/MILL-02, the two a planner typing MILL-99 most
+                # plausibly meant. The correction path for a typo misdirected
+                # exactly the person using it. Nearest-first is also what scales:
+                # docs/07 §5a records 174 workcenters on the real book, where
+                # enumerating the plant is useless copy at any cut-off.
+                known_machines = _nearest_names(token, all_machines, 4)
             except Exception:  # noqa: BLE001
+                all_machines = []
                 known_machines = []
         return ExplanationBundle(
             question=f"Is {token} in this schedule?",
@@ -3112,8 +3165,10 @@ class Explainer:
                     excluded_finding, self._identity_map, _load_catalog_safe())
                     if excluded_finding else None),
                 "known_orders": known_orders,
+                "order_total": len(all_orders),
                 "mention_kind": kind,
                 "known_machines": known_machines,
+                "machine_total": len(all_machines),
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
@@ -3830,7 +3885,12 @@ class Explainer:
             refs = self._identity_map.external_refs(eid)
             if refs and refs[0].value not in names:
                 names.append(refs[0].value)
+        # Session 4B.19 Item 3(b) — a record touching eight orders used to print
+        # three of them and stop, so the prove-it line understated the record's
+        # own scope with no sign that it had.
         who = ", ".join(names[:3])
+        if len(names) > 3:
+            who += f" and {len(names) - 3} more ({len(names)} in all)"
         if rt == "metric":
             val = rec.get("value")
             unit = " min" if "minutes" in (rec.get("name") or "") else ""
@@ -3918,7 +3978,12 @@ class Explainer:
         machine = min(self._machine_refs.values()) if self._machine_refs else None
         examples: list[str] = []
         if order:
-            examples.append(f'why is {order} late — the lateness cause chain')
+            # Session 4B.19 — this used to read "why is {order} late", over an
+            # order picked by min() of the external refs. No read of lateness
+            # enters here, so on a board with nothing late (the pinned exam
+            # world) the menu asserted that an arbitrary on-time order was late.
+            # An offer label names the question, never the answer.
+            examples.append(f'is {order} late, and why — the lateness cause chain')
             examples.append(f'when does {order} finish — one order\'s schedule')
         if machine:
             examples.append(f"what's running on {machine} — that machine's schedule")
