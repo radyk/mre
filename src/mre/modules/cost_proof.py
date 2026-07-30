@@ -75,11 +75,26 @@ class CostProof:
     objective: Optional[float] = None
     tiebreak_status: Optional[str] = None
     tiebreak_skipped_reason: Optional[str] = None
+    # WHY the proof could not be read, when that is the reason there is none —
+    # as opposed to a solve that genuinely never happened. Session 4B.18: a
+    # schema-1 evidence index dropped the M6 ``solve_complete`` event on save, so
+    # every consumer saw ``no_solve`` and said "nothing was admitted" about a
+    # board whose own document stated a 56.9% gap.
+    unavailable_reason: Optional[str] = None
 
     # -- verdicts -----------------------------------------------------------
     @property
+    def unreadable(self) -> bool:
+        """The proof could not be READ. This is a fourth state, not a flavour of
+        the other three: the run may have proved its optimum, may have failed to,
+        may not have solved at all, and this object cannot tell you which. It
+        takes priority over all three so that no surface can accidentally make a
+        claim about the plant out of a fact about our storage."""
+        return self.unavailable_reason is not None
+
+    @property
     def no_solve(self) -> bool:
-        return (self.status or None) in _NO_SOLVE
+        return not self.unreadable and (self.status or None) in _NO_SOLVE
 
     @property
     def proved(self) -> bool:
@@ -88,8 +103,9 @@ class CostProof:
     @property
     def unproved(self) -> bool:
         """A solve ran and did NOT close the bound. Note this is not simply
-        ``not proved``: a run with no solve at all is neither."""
-        return not self.no_solve and not self.proved
+        ``not proved``: a run with no solve at all is neither, and neither is a
+        run whose proof we failed to persist."""
+        return not self.unreadable and not self.no_solve and not self.proved
 
     @property
     def gap_pct(self) -> Optional[float]:
@@ -121,6 +137,13 @@ class CostProof:
         #   cost | proof not attempted
         #   cost | optimum proved
         #   cost | optimum not proved · gap 11.5%
+        if self.unreadable:
+            return {"state": "unreadable", "label": "proof not readable",
+                    "title": "This schedule's solver report was not saved with "
+                             "its evidence, so whether the cost optimum was "
+                             "proved cannot be read here. That is a gap in what "
+                             "we stored, not a statement about the schedule. "
+                             f"({self.unavailable_reason})"}
         if self.no_solve:
             return {"state": "none", "label": "proof not attempted",
                     "title": "Nothing was admitted to this window, so no cost "
@@ -168,7 +191,19 @@ class CostProof:
         Deliberately silent when the cost optimum IS proved: a rider on every
         answer is noise, and the strip already states the proof. The asymmetry is
         the point — the surface volunteers the thing that WEAKENS its own number.
+
+        AND THEREFORE IT CANNOT BE SILENT WHEN THE PROOF IS UNREADABLE (Session
+        4B.18). Silence here is not neutral: on this surface it MEANS "proved",
+        because proved is the only other state that says nothing. A board whose
+        proof we failed to persist would state money under the same silence a
+        proved board does. So an unreadable proof gets its own rider — which
+        claims no gap, because we do not have one.
         """
+        if self.unreadable:
+            return ("Note: I can't tell you whether these cost figures are "
+                    "proven optimal — this schedule's solver report was not "
+                    "saved with its evidence. Read that as unknown, not as "
+                    "proved.")
         if not self.unproved:
             return None
         g = self.gap_text()
@@ -208,6 +243,13 @@ def from_evidence(index: Any) -> CostProof:
     agree because they read one record, not because they were kept in step.
 
     Never raises — an index without a solve event yields an honest ``unknown``.
+
+    Session 4B.18: when the event is absent AND the index declares itself
+    incomplete (a schema-1 artifact, which dropped every subject-less record on
+    save), the result is ``unreadable`` rather than ``no_solve``. The difference
+    is the whole point — ``no_solve`` is a claim about the plant ("nothing was
+    admitted"), and making it out of a storage gap is how the opener came to
+    drop a band-1 money item on every monolithic board the API served.
     """
     payload = None
     try:
@@ -224,6 +266,14 @@ def from_evidence(index: Any) -> CostProof:
     except Exception:  # noqa: BLE001 — a missing proof never breaks an answer
         payload = None
     if payload is None:
+        incomplete = tuple(getattr(index, "incomplete", ()) or ())
+        if incomplete:
+            return CostProof(
+                status=None,
+                unavailable_reason=(
+                    "this run's evidence index was saved in an older format "
+                    "that did not persist run-level records; missing classes: "
+                    + ", ".join(incomplete)))
         return CostProof(status=None)
     return CostProof(
         status=payload.get("status"),

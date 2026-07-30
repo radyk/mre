@@ -6,6 +6,31 @@ Builds an in-memory index from JSONL run streams, then serves three primitives:
   lineage_walk(entity_id)      → entity + transitive graph, ordered by pipeline stage
 
 JSON persistence via save() / load().
+
+THE FAITHFULNESS INVARIANT (Session 4B.18, docs/04 2026-07-30)
+--------------------------------------------------------------
+A PERSISTED EVIDENCE INDEX IS A FAITHFUL RECONSTRUCTION OF THE INDEX IT WAS
+SAVED FROM. Any record class the builder places in ``_all_evidence`` is
+recoverable after a round trip, or the load reports the index as INCOMPLETE and
+names what is missing. Silence is forbidden: an answer surface may not be unable
+to distinguish "this never happened" from "this was not persisted".
+
+Schema 1 (through Session 4B.17) violated it. ``save()`` wrote three derived
+indices and ``load()`` rebuilt ``_all_evidence`` from ``entity_records`` alone,
+so **every record with no entity subject was silently dropped** — measured on a
+real monolithic run, 25 of 236 records: all 12 Events (``record_event`` hardcodes
+``subjects=[]``), all 8 Artifacts (so the input manifest — orders.csv, the cost
+model, the identity map — vanished), the 4 M0 conformance rate Metrics that
+``contracts/ids_rules.py`` names as what the C0–C3 rules MEASURE, and one
+subject-less M6 Finding. That last one produced a contradiction INSIDE one loaded
+index: ``finding_occurrences("SOLVER_NONOPTIMAL")`` returned it while
+``all_findings()`` did not, because the former reads the persisted
+``finding_index`` and the latter filters ``_all_evidence``.
+
+Schema 2 fixes it at the root rather than per-class: ``_all_evidence`` is the
+PRIMARY persisted structure and the three indices are DERIVED on load through
+``_index_record`` — the same code path ``build`` uses, so they cannot diverge and
+a future record class cannot go missing by being forgotten here.
 """
 from __future__ import annotations
 
@@ -18,6 +43,18 @@ _MODULE_STAGE: dict[str, int] = {
     "M5": 5, "M6": 6, "M7": 7, "M9": 9, "M10": 10,
 }
 
+SCHEMA_VERSION = 2
+
+# What a schema-1 file cannot be trusted to carry. Named as CLASSES rather than
+# counted, because a v1 file gives no way to know how many were dropped — only
+# which shapes could not have survived. Consumers name these to the planner.
+_V1_LOST_CLASSES: tuple[str, ...] = (
+    "event",                  # every Event: record_event() emits subjects=[]
+    "artifact",               # every Artifact: register_input/_output emit subjects=[]
+    "metric (subject-less)",  # e.g. M0's conformance rate metrics
+    "finding (subject-less)",
+)
+
 
 class EvidenceIndex:
     """L4 evidence index.  Read-only after build().  Thread-safe for reads."""
@@ -27,6 +64,10 @@ class EvidenceIndex:
         self._finding_index: dict[str, list[dict]] = {}    # code → findings
         self._run_registry: dict[str, dict] = {}           # run_id → run meta
         self._all_evidence: list[dict] = []                # flat, deduped
+        # Record classes this index cannot vouch for. Empty on a built index and
+        # on a schema-2 load; populated when loading a schema-1 artifact, which
+        # dropped every subject-less record. See the module docstring.
+        self.incomplete: tuple[str, ...] = ()
 
     # ------------------------------------------------------------------
     # Build
@@ -73,21 +114,36 @@ class EvidenceIndex:
                     seen_record_ids.add(rid)
                     self._all_evidence.append(rec)
 
-                for subject in rec.get("subjects", []):
-                    eid = subject.get("entity_id", "")
-                    if eid:
-                        bucket = self._entity_records.setdefault(eid, [])
-                        if not any(r.get("record_id") == rid for r in bucket):
-                            bucket.append(rec)
-
-                if rt == "finding":
-                    code = rec.get("code", "")
-                    if code:
-                        bucket = self._finding_index.setdefault(code, [])
-                        if not any(r.get("record_id") == rid for r in bucket):
-                            bucket.append(rec)
+                self._index_record(rec)
 
         return self
+
+    def _index_record(self, rec: dict) -> None:
+        """Place ONE evidence record into the derived indices.
+
+        The single definition of what ``entity_records`` and ``finding_index``
+        mean, so ``build`` (from JSONL) and ``load`` (from a schema-2 file)
+        produce identical indices by construction rather than by two
+        implementations agreeing. Note what it deliberately does NOT do: it does
+        not touch ``_all_evidence``, whose dedup is the caller's, and it does not
+        drop a record for lacking subjects — a subject-less record is simply in
+        no entity bucket, which is correct, and was the whole schema-1 defect
+        only because ``_all_evidence`` was reconstructed FROM those buckets.
+        """
+        rid = rec.get("record_id", "")
+        for subject in rec.get("subjects", []) or []:
+            eid = subject.get("entity_id", "")
+            if eid:
+                bucket = self._entity_records.setdefault(eid, [])
+                if not any(r.get("record_id") == rid for r in bucket):
+                    bucket.append(rec)
+
+        if rec.get("record_type", "") == "finding":
+            code = rec.get("code", "")
+            if code:
+                bucket = self._finding_index.setdefault(code, [])
+                if not any(r.get("record_id") == rid for r in bucket):
+                    bucket.append(rec)
 
     # ------------------------------------------------------------------
     # Query primitives
@@ -201,21 +257,48 @@ class EvidenceIndex:
     # ------------------------------------------------------------------
 
     def save(self, path: Path) -> None:
+        """Persist as schema 2: ``_all_evidence`` is the primary structure.
+
+        ``entity_records`` and ``finding_index`` are NOT written — they are
+        derived from these same records on load, which is what makes the round
+        trip faithful. It is also smaller: schema 1 stored each record once per
+        subject entity, so a record naming three entities was written three
+        times.
+
+        ``run_registry`` IS written, because it is not derivable from evidence
+        records: it is folded from ``run_context_open``/``run_context_close``
+        lines, which ``build`` consumes and never places in ``_all_evidence``.
+        """
         with open(path, "w", encoding="utf-8") as f:
             json.dump({
-                "entity_records": self._entity_records,
-                "finding_index": self._finding_index,
+                "schema_version": SCHEMA_VERSION,
+                "all_evidence": self._all_evidence,
                 "run_registry": self._run_registry,
             }, f, indent=None)
 
     @classmethod
     def load(cls, path: Path) -> "EvidenceIndex":
+        """Load either schema. A schema-1 file loads and SAYS it is incomplete.
+
+        Reading an old artifact silently was the defect: it answered "there is no
+        solver report" about a solve that happened and was recorded. An old index
+        still loads — nothing on disk is invalidated — but ``incomplete`` names
+        the classes it cannot vouch for, and every consumer that can answer
+        "absent" must consult it before doing so.
+        """
         data = json.loads(Path(path).read_text(encoding="utf-8"))
         idx = cls()
+        idx._run_registry = data.get("run_registry", {})
+
+        if int(data.get("schema_version", 1)) >= 2:
+            idx._all_evidence = data.get("all_evidence", [])
+            for rec in idx._all_evidence:
+                idx._index_record(rec)
+            return idx
+
+        # ---- schema 1: derived indices only, subject-less records already gone.
         idx._entity_records = data.get("entity_records", {})
         idx._finding_index = data.get("finding_index", {})
-        idx._run_registry = data.get("run_registry", {})
-        # Rebuild _all_evidence from entity_records (dedup by record_id)
         seen: set[str] = set()
         for recs in idx._entity_records.values():
             for r in recs:
@@ -223,4 +306,14 @@ class EvidenceIndex:
                 if rid and rid not in seen:
                     seen.add(rid)
                     idx._all_evidence.append(r)
+        # A subject-less finding survives in finding_index but never reached
+        # _all_evidence, which is how one loaded index gave two answers about
+        # itself. Recover what IS there; the marker below covers the rest.
+        for recs in idx._finding_index.values():
+            for r in recs:
+                rid = r.get("record_id", "")
+                if rid and rid not in seen:
+                    seen.add(rid)
+                    idx._all_evidence.append(r)
+        idx.incomplete = _V1_LOST_CLASSES
         return idx

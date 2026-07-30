@@ -4176,6 +4176,10 @@ class Explainer:
         unknown = proof.status is None
         return self._authored_bundle("optimality", question, {
             "unknown": unknown,
+            # Session 4B.18: when we know WHY it is unreadable, say so. "I can't
+            # read it" and "I can't read it because we didn't save it" are
+            # different answers to a planner — the second one is actionable.
+            "unavailable_reason": proof.unavailable_reason,
             "no_solve": proof.no_solve and not unknown,
             "proved": proof.proved,
             "unproved": proof.unproved,

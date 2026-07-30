@@ -181,8 +181,32 @@ def _proof_items(proof: Any, cost: dict) -> list[OpenerItem]:
     4B.12 measured 13% of the ledger swinging on the seed alone at real density,
     which is why an open gap is a first-class item and not a footnote. Proved is
     the other side of the same coin: reassurance no competitor can offer, so it
-    is REPORTED (band 4) rather than left silent."""
-    if proof is None or getattr(proof, "no_solve", False):
+    is REPORTED (band 4) rather than left silent.
+
+    AN UNREADABLE PROOF IS ITSELF AN ITEM (Session 4B.18). It was not, and that
+    is how this route silently dropped its most consequential member: a
+    schema-1 evidence index yielded ``no_solve``, the guard below returned [],
+    and a board carrying a 56.9% gap worth up to 29,390.52 against a 51,637.18
+    ledger opened with three items and no mention of it — not even under "Not
+    covered by this read". The route's contract is that it does not drop a
+    category quietly, so the one thing it must never do is stay silent about a
+    category it cannot see."""
+    if proof is None:
+        return []
+    if getattr(proof, "unreadable", False):
+        return [OpenerItem(
+            key="proof", band=BAND_STRUCTURE, amount=None,
+            headline="Whether the cost optimum was proved CANNOT BE READ for "
+                     "this board — its solver report was not saved with its "
+                     "evidence.",
+            detail=("This is a gap in what we stored, not a finding about the "
+                    "schedule. Re-running the solve records it; the board's own "
+                    "strip still shows what the solver reported at the time.",),
+            pointer="Ask \"is this schedule optimal?\" for the same caveat in "
+                    "full.",
+            figures={"unavailable_reason":
+                     getattr(proof, "unavailable_reason", None)})]
+    if getattr(proof, "no_solve", False):
         return []
     if getattr(proof, "proved", False):
         return [OpenerItem(

@@ -2,6 +2,8 @@
 
 **Document 7** · Status: v2.63 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
 
+**v2.64:** **Session 4B.18 — the cost proof does not survive being written to disk** 2026-07-30 (ruling verbatim in docs/04 2026-07-30; narrative in `docs/closeouts/4B.18.md`). 4B.17's A4, taken alone; A1/A2/A3/A5 named and LEFT. **§5a.55 IS DISCHARGED and §5a.23's discharge is re-closed after being re-opened on the monolithic path (§5a.63).** Item 1's enumeration over the EMITTERS found the loss is **25 records across FOUR classes, not one**: `record_event` and `register_input`/`register_output` hardcode `subjects=[]`, so **every Event and Artifact the system emits is subject-less**, and `load()` rebuilt `_all_evidence` from `entity_records` alone — 236 built -> 211 loaded on a real monolithic run, taking the entire input manifest and the four M0 conformance rate Metrics with the solver report. A subject-less Finding survived in `finding_index` but not `_all_evidence`, so **one loaded index gave two answers about itself**. Fixed at the ROOT: **schema 2 persists `_all_evidence` and DERIVES the indices on load** through `build`'s own `_index_record` (and is 0.94x the size). The invariant: **a persisted index is a faithful reconstruction of the index it was saved from, or the load reports itself INCOMPLETE and names what is missing — silence is forbidden.** `CostProof` gains a fourth state, `unreadable`, so a claim about the PLANT can never be manufactured from a fact about our STORAGE. Old indexes load and declare themselves; forward compatibility is NOT provided and is named. The round-trip guard asserts by **kind and count**, emits through the real Reporter, runs over all 14 real runs, and its **negative control is proven red (19 failed / 7 passed)**. Verified on the re-minted pinned world (**both clean items returned**), a migrated monolithic board (**the 29,390.52 gap item, ranked second**), an unmigrated artifact, and the money rider on both. One defect, one fix.
+
 **v2.63:** **Session 4B.17 — run the bank** 2026-07-30 (docs/04 session amendment; narrative in `docs/closeouts/4B.17.md`). A measurement session: recalibrate, grade, triage, **fix nothing**. **§5a.22 IS DISCHARGED (§5a.54)** — `regression_founder_r5`, committed 4B.5 and carried unrun for six sessions, is calibrated against the pinned world's PERSISTED document, extended 27 → 33 questions with six unbanked specimens added verbatim, and run **six times** (three on shipped defaults, three on Haiku-everywhere; 198 answers). Every expectation change is logged in `tests/ai_exam/RUBRIC.md`'s append-only RECALIBRATION LOG with its cause and its old text; the question text of all 27 originals is untouched; the bank was calibrated BEFORE its first run so there was no output to fit to. **NOTHING IS LATE ON THIS BOARD**, which turned nine lateness questions into false-premise specimens — and **the card specimen DEGENERATED**, because 4B.7 made `reopt_delta_abs` 0.00 by construction (§5a.12) so move equals total and "which half did you quote" can no longer discriminate. **FIVE TRUTH FAILURES, ALL REPRODUCIBLE:** two authored door labels assert facts about the board without reading it — the product offers to *"explain why CUT-01 carries no work"* about the **busiest machine in the plant** (§5a.60); the no-such-machine correction lists **8 of 15** machines as "the machines here are", omitting the one the asked order is actually on (§5a.54, and visible verbatim in 4B.13's own close-out); **the synthesis toolbox reports the merged elapsed SPAN as `duration_minutes` and as `busy_minutes`** — 5821 where the truth is 1501 working minutes, 3.9x the machine's total open time in that span, the **fourth seam** of a class fixed three times (§5a.56); **the pinned exam world cannot state its own cost proof** because `EvidenceIndex.save()` drops run-level records, so the strip says PROVED and the answer says "no solver report I can read" (§5a.55); and the evidence chain under `why-on-machine`'s only-eligible lead **contradicts it and still carries the founder's original vacuous driver phrase** (§5a.54). **THE TIER QUESTION IS NOT RESOLVED, AND NOW THE REASON IS STRUCTURAL: 31 of 33 questions never reach the layer the split changes** (§5a.57) — across 198 answers the two configurations differ in ONE routing decision, which is the parse's, and the parse is Haiku in both. Cost $0.0105 vs $0.0110 per question, with **Sonnet the cheaper of the two here**. Also: the `repeat`/`deaf` boundary is keyed on string identity so a rephrased re-ask gets self-doubt and the terseness specimen never fires (§5a.58); §5a.51's "off board selection" claim does not reproduce (§5a.59); the coaching invitation **cannot decline to fire, by shape** (§5a.61); the binding-family census is empty on this board and not derivable from the document (§5a.62). No solve, no contract change, no product module touched.
 
 **v2.62:** **Errand 4B.16a — the key, and whether the parse reaches the new routes** 2026-07-29 (narrative in `docs/closeouts/4B.16a.md`). **§5a.7 IS CLOSED AND WAS A RUMOUR FOR THREE SESSIONS** — it cost six sessions of "the r5 bank is key-blocked", then 4B.15's discovery that the exam harness always had its own loader, then 4B.16 citing it a third time to explain two unmeasured routes. Read plainly, by code rather than by trying again: **the sweep tool was NEVER blocked** (its own repo-root-anchored loader since 4A.5b, commit `f3bb319` — proven live this errand, parser available, 1319 ms, graded 1/1); **pytest was, for one session**, fixed by 4B.8 and re-verified here (four slow tests, 54.7 s); and **`python -m mre.ask` / `python -m mre.ai_exam` had NO loader at all**, so from a bare shell the harness's own front door built an unavailable parser and answered on the honest could-not-interpret floor — indistinguishable from a missing key, and the reading that kept the entry alive. **THE MECHANISM WAS NEVER THE KEY AND NEVER ONE READER:** nothing in the library loads a file (correctly — in a container the key comes from the platform secret store), so every ENTRY POINT populates the environment itself, and the repo had **four independent implementations** of that step plus two front doors with none, one copy already DRIFTED to `os.environ.setdefault` (which writes an EMPTY value where the others skip it). **`src/mre/env_local.py` is now the ONE reader**, with a guard test that goes red on a second one and a proven negative control. **BOTH 4B.16 ROUTES REACH A PLANNER'S PHRASING (§5a.51)** — nine of ten phrasings live on the pinned world, all four `briefing` cold opens at 0.95; the single miss (`"why can't it be earlier"` → `why-here`, negative polarity) is a genuine route boundary and was NOT fixed. **THE MEASUREMENT FOUND A LEAK IN THE INSTRUMENT:** `RESET` cleared four conversation channels and missed the fifth, so the deafness rider scolded across conversation boundaries for seven consecutive turns, citing discarded questions — `forget_deliveries` is the symmetric clear and the runner now calls it. **THE OPENER'S SCAN IS 4% OF THE TURN (§5a.52)** — 61.0 ms dispatch of which 58.7 ms is the scan, against a 1251 ms parse; precompute measured both ways (0.4 ms cached) and LEFT, with the contract shape and the pilot-scale reason to revisit named. **THE COUNTERFACTUAL'S SPEC CITATIONS DODGE §5a.48 DELIBERATELY (§5a.53)** — `SPEC_OF` is authored constants complying with §5a.48's own prescription, written one commit earlier; the prohibition on refactoring them into a corpus lookup is now recorded where a refactorer reads it, and the spec-citation kind is still owed for the synthesis tier. No solve; the pinned world untouched; no contract change.
@@ -26,7 +28,7 @@
 
 **THE TARDINESS SPLIT — contract 1.10 → 1.11.** `cost_summary.tardiness_floor` + `tardiness_controllable`, present TOGETHER or not at all, summing to `tardiness` to the cent, and **ABSENT on any book with no past-due work** (so on-time monolithic documents are byte-identical to their 1.10 selves). **It does not change the model; it makes a decomposition the pipeline already contained legible** — `solver_builder` has always clamped `due_min = max(0, due − horizon_start)`, so the floor was never in the objective. **The brief's stated test for this was the WRONG test and the data said so:** at 60 orders both arms returned FEASIBLE and 237/240 placements differed, which measures two truncated searches, not an argmin. At 12 orders **both arms prove OPTIMAL** and `B − A = 6,999,840 = Σ (weight × floor)` **exactly**; placements still differ (34/48) because that is a **TIE**, not a refutation — `argmin f_B == argmin f_A` as SETS. **Placement identity would have been sufficient but is not necessary.**
 
-**§5a.23 DISCHARGED — the cost proof is rendered and voiced.** `src/mre/modules/cost_proof.py` is the single definition; the cockpit's top strip carries a chip (label + title composed SERVER-SIDE, arriving on `/meta`, so the JS composes no wording) and the answer surface carries an unprompted rider fired by the ONE delivery seam **only when the board is UNPROVED and the text states money** — the asymmetry is the point: the surface volunteers the thing that weakens its own number. Every bundle leaving `Explainer.route` carries the proof, stamped at the one dispatch. **The rolling path could not state a gap at all** until now (`SolverBlock(gap=None)` unconditionally); `RollingView` now carries stage 1's `objective` and `gap`. **No new route was built** — that is a vocabulary-class change, named as §5a.29.
+**§5a.23 DISCHARGED — the cost proof is rendered and voiced.** `src/mre/modules/cost_proof.py` is the single definition; the cockpit's top strip carries a chip (label + title composed SERVER-SIDE, arriving on `/meta`, so the JS composes no wording) and the answer surface carries an unprompted rider fired by the ONE delivery seam **only when the board is UNPROVED and the text states money** — the asymmetry is the point: the surface volunteers the thing that weakens its own number. Every bundle leaving `Explainer.route` carries the proof, stamped at the one dispatch. **The rolling path could not state a gap at all** until now (`SolverBlock(gap=None)` unconditionally); `RollingView` now carries stage 1's `objective` and `gap`. **No new route was built** — that is a vocabulary-class change, named as §5a.29. **AMENDED 4B.18 — THIS DISCHARGE WAS RE-OPENED ON THE MONOLITHIC PATH AND IS NOW RE-CLOSED (§5a.63).** The discharge was measured on a REBUILT evidence index. Every monolithic board the API serves loads a PERSISTED one (`__main__.py:585` saves it, `api/app.py:1482` prefers it), and schema 1 dropped the M6 `solve_complete` Event on save — so `from_evidence` returned `no_solve`, the rider's `unproved` gate was False, `_proof_items` returned `[]`, and the strip said PROVED beside an answer saying "no solver report I can read". The chip was unaffected because it reads the DOCUMENT via `from_solver_block`, which is exactly why the two surfaces could disagree. Fixed by schema 2; the rider, the opener item and the route each gained an `unreadable` branch, and none of them may be silent.
 
 **THE 42, RECONCILED (§5a.26's undiagnosed observation, closed).** Two compounding errors in `_excluded_summary`: the COUNT came from a **token set** holding both the UUID and the `ORD-` id of every excluded demand (21 × 2 = 42), and `scheduled` counted **every** demand in the snapshot with `total` = that + the exclusions (60 + 42 = 102 in a 60-order world). Display and counting now key on the **resolved ORDER**, because the same order is excluded in two id-spaces by two layers. Invariant asserted: `scheduled + count == total` and `total == demands in the snapshot`. **Proved on a purpose-built world that still HAS exclusions** — R-PD1 dissolves the note on the specimen itself, so covering it was not assumed. A third defect fixed at its own site: `finding_subject_label` appended the evidence's raw `demand_id` even when the subject had already resolved.
 
@@ -3619,6 +3621,79 @@ is a bare bool). So A1/A2, A4 and C3 — the families that bound this bank's own
 specimens — are uncomputable for committed work from the document, and a census
 needs the SNAPSHOT. The blocker analysis is already the one reader that
 assembles it. NOT BUILT.
+
+**§5a.63 — A PERSISTED EVIDENCE INDEX WAS NOT A FAITHFUL COPY OF THE INDEX IT
+WAS SAVED FROM, AND THE LOSS WAS 25 RECORDS ACROSS FOUR CLASSES, NOT ONE (4B.18
+— §5a.55 DISCHARGED, ruling verbatim in docs/04 2026-07-30).** 4B.17 measured
+the defect as a single missing M6 `solve_complete` Event. **Item 1's enumeration
+over the EMITTERS — not a grep for that string, which would have found 1 of 25 —
+showed the cause is in the Reporter and is structural:** `record_event` and
+`register_input`/`register_output` hardcode `subjects=[]`, and `record_metric`
+defaults to it, so **every Event and every Artifact the system has ever emitted
+is subject-less by construction**. `save()` wrote three DERIVED indices and
+`load()` rebuilt `_all_evidence` from `entity_records` alone, so every such
+record vanished on the round trip. Measured on a real monolithic run, **236 built
+-> 211 loaded**: all 12 Events, all 8 Artifacts (**the entire input manifest** —
+orders.csv, cost_model.json, the identity map), the **4 M0 conformance rate
+Metrics** that `contracts/ids_rules.py` names as what the C0–C3 rules MEASURE,
+and one subject-less Finding. On the pinned exam world, 163 -> 148.
+
+**THE FINDING DID NOT MERELY GO MISSING — IT MADE ONE INDEX CONTRADICT ITSELF.**
+A subject-less `SOLVER_NONOPTIMAL` was persisted in `finding_index` and absent
+from `_all_evidence`, and those back different queries:
+`finding_occurrences(...)` returned 1 while `all_findings()` returned 0. Ten
+`all_findings()` call sites in `explainer.py` plus `evidence_tools.py:492` read
+the side that says zero, and `planner_language.py:75`'s phrase for that code was
+unreachable from a loaded index independently of the cost proof.
+
+**FIXED AT THE ROOT RATHER THAN PER-CLASS.** Candidate (ii) — dropping the
+load-if-exists preference — was rejected: it leaves an artifact that silently is
+not what it was saved from, and the next consumer inherits the hole untold.
+Candidate (i) was taken, but NOT as "also persist the run-level records", which
+would have been an enumeration and enumerations are what this defect is made of.
+**Schema 2 makes `_all_evidence` the PRIMARY persisted structure and DERIVES
+`entity_records` / `finding_index` on load through `_index_record`, the same code
+path `build` uses** — so they cannot diverge and a record class invented next
+year is carried without anyone remembering. It is also smaller (192,767 ->
+181,644 bytes, 0.94x): schema 1 stored each record once per subject entity.
+
+**THE INVARIANT, which outlives either fix:** *a persisted evidence index is a
+faithful reconstruction of the index it was saved from; any record class the
+builder places in `_all_evidence` is recoverable after a round trip, or the load
+reports the index as INCOMPLETE and names what is missing.* **Silence is
+forbidden: an answer surface may not be unable to distinguish "this never
+happened" from "this was not persisted".** `CostProof` gains a fourth state,
+`unreadable`, taking priority over the other three so that `no_solve` — a claim
+about the PLANT — can never be manufactured out of a fact about our STORAGE.
+All three surfaces get an authored branch and **none may stay silent**, including
+the money rider, where silence is not neutral because proved is the only other
+state that says nothing.
+
+**OLD ARTIFACTS LOAD AND DECLARE THEMSELVES.** A schema-1 file is detected by the
+missing `schema_version`; `EvidenceIndex.incomplete` names the CLASSES it cannot
+vouch for (classes not counts — a v1 file gives no way to know how many were
+dropped, only which shapes could not have survived), and subject-less Findings
+are recovered out of `finding_index` so the self-contradiction is repaired even
+unmigrated. **FORWARD compatibility is NOT provided and is named rather than
+discovered:** a schema-2 file read by pre-4B.18 code yields an EMPTY index —
+loud, not subtly wrong, and this repo ships one commit per image.
+
+**THE GUARD ASSERTS BY KIND AND COUNT** (`tests/test_evidence_index_roundtrip.py`
+— (record_type, module) census plus the record-id set, never a string search),
+its fixture **emits through the real Reporter**, all eight verbs, and it is
+parametrized over every real run in `_data/runs/` (14 here). **NEGATIVE CONTROL
+PROVEN RED: 19 failed / 7 passed** with the run-level persistence stubbed.
+Note the pre-existing `test_load_populates_all_evidence` compared the same two
+lengths and passed throughout the defect's life, because its fixture's records
+all carry subjects — **a guard that could never have failed.**
+
+**NOT DONE, NAMED:** the seven schema-1 indexes in `_data/runs/` are deliberately
+left unmigrated as the live specimens for the incomplete path (a re-solve
+migrates any of them free); the Reporter's subject-less verbs are unchanged and
+correct — the defect was the persistence assumption, not the records; and **a
+schema-2 file that is lossy for some future reason is not self-detecting**
+(`incomplete` covers schema 1 only), with the round-trip guard standing in that
+gap because a file cannot audit itself and a test can.
 
 ## 6. Open rulings queue
 

@@ -1282,7 +1282,23 @@ class TemplateRenderer:
             # Every figure here comes from cost_proof; nothing is recomputed.
             kf = bundle.key_facts
             tb = kf.get("tiebreak_clause") or ""
-            if kf.get("unknown"):
+            if kf.get("unknown") and kf.get("unavailable_reason"):
+                # Session 4B.18. The bare "no solver report I can read" above is
+                # true but leaves the planner unable to act; when the reason is
+                # our storage rather than the run, saying so is what separates
+                # "this never happened" from "this was not persisted".
+                lines.append(
+                    "I can't tell you, and the reason is on our side: this "
+                    "schedule's solver report was not saved with its evidence, "
+                    "so I can't read whether its cost was proved optimal. I "
+                    "won't guess either way — and note this says nothing about "
+                    "the schedule itself.")
+                lines.append("")
+                lines.append(
+                    "Re-running the solve records it. The board's own strip "
+                    "still shows what the solver reported at the time, so if it "
+                    "states a status there, trust that over my silence here.")
+            elif kf.get("unknown"):
                 lines.append(
                     "I can't tell you — this schedule carries no solver report "
                     "I can read, so I don't know whether its cost was proved "

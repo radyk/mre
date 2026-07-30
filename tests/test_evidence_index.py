@@ -331,8 +331,14 @@ class TestPersistence:
         assert len(loaded._all_evidence) == len(index_simple._all_evidence)
 
     def test_save_is_valid_json(self, index_simple, tmp_path):
+        """Session 4B.18: the persisted shape is schema 2 — ``all_evidence`` is
+        primary and ``entity_records``/``finding_index`` are DERIVED on load.
+        This test asserted the schema-1 keys, which is why it kept passing while
+        every subject-less record was being dropped. The faithfulness guard is
+        `tests/test_evidence_index_roundtrip.py`."""
         p = tmp_path / "idx.json"
         index_simple.save(p)
         data = json.loads(p.read_text(encoding="utf-8"))
-        assert "entity_records" in data
+        assert data["schema_version"] == 2
+        assert "all_evidence" in data
         assert "run_registry" in data

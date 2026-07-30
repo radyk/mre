@@ -13086,3 +13086,227 @@ session.**
 Full narrative, every truth failure verbatim, the stable-vs-flipped table and the
 tier columns in `docs/closeouts/4B.17.md`; carry-forwards in docs/07 §5a.54-62,
 and §5a.22 is discharged.
+
+---
+
+## 2026-07-30 — Session 4B.18: the faithfulness of a persisted evidence index
+
+**A4 from 4B.17's triage, taken alone.** One defect, diagnosed whole, fixed once.
+A1, A2, A3 and A5 are named in that close-out and are LEFT — several are a
+one-line diff, and the point of the sequence is that each fix is attributable.
+
+### What Item 1 found, and why it changed the ruling's shape
+
+4B.17 measured the defect as a missing M6 `solve_complete` Event: `save()`
+persisted `entity_records` / `finding_index` / `run_registry`, `load()` rebuilt
+`_all_evidence` from `entity_records` alone, and a run-level record with no
+entity subject was therefore present when the index was built and absent after a
+round trip. `cost_proof.from_evidence` returned `no_solve=True` on any loaded
+index.
+
+The brief asked, first, whether `solve_complete` was the ONLY such record, by
+ENUMERATION over the emitters rather than by grepping for the string — and
+required the session to stop and report if anything else was lost.
+
+**It was not the only one. It was 1 of 25 on a real run.** The cause is not in
+M6; it is in the Reporter, and it is structural:
+
+  * `Reporter.record_event` hardcodes `subjects=[]` (reporter.py:302). **Every
+    Event the system has ever emitted is subject-less.**
+  * `Reporter.register_input` / `register_output` hardcode `subjects=[]`
+    (:167, :332). **Every Artifact record likewise.**
+  * `Reporter.record_metric` defaults `subjects` to `[]`, so any caller that
+    omits them — M0's conformance rates do — emits a subject-less Metric.
+  * `record_decision` / `record_finding` require `subjects`, but a caller may
+    legitimately pass `[]` for a run-level fact, and `solve_runner` does.
+
+Measured, build then save then load, diffing `_all_evidence` by
+`(record_type, module)`:
+
+    _data/runs/7f97d9d1 (monolithic)   236 built -> 211 loaded, 25 LOST
+        artifact  M1     8 -> 0     the whole input manifest: orders.csv,
+                                    routings.csv, products.csv, resources.csv,
+                                    calendars.csv, cost_model.json, identity_map
+        event     M6    11 -> 0     10 improving_solution + solve_complete
+        event     M7     1 -> 0     schedule_csv_written
+        finding   M6     1 -> 0     SOLVER_NONOPTIMAL
+        metric    M0     4 -> 0     order_product_resolution_rate,
+                                    order_route_resolution_rate,
+                                    route_line_resolution_rate,
+                                    duration_computability_rate
+
+    _data/runs/c362baa4 (the pinned exam world)   163 -> 148, 15 LOST
+        artifact M1 10 -> 0 ; event M6 1 -> 0 ; metric M0 4 -> 0
+
+Grepping for `solve_complete` would have found 1 of those 25, and a fix written
+to that specimen would have left the input manifest, the C0–C3 evidence and the
+finding lost while making the seam look closed. **That is why the enumeration
+came first.**
+
+**The sharpest of the four is the Finding, because it did not merely go missing —
+it made one index contradict itself.** A subject-less Finding was persisted in
+`finding_index` and absent from `_all_evidence`, and those two structures back
+two different queries:
+
+    ONE LOADED INDEX, TWO ANSWERS
+      finding_occurrences('SOLVER_NONOPTIMAL')  -> 1
+      all_findings() containing it              -> 0
+
+Ten `all_findings()` call sites in `explainer.py`, plus `evidence_tools.py:492`,
+read the side that says zero. `planner_language.py:75` maps that code to "was
+scheduled before the solver could prove the best plan" — a phrase unreachable
+from a loaded index, independently of the cost proof.
+
+### THE RULING
+
+Two candidates were named in 4B.17: **(i)** persist run-level records in
+`EvidenceIndex.save()`; **(ii)** drop the load-if-exists preference at
+`api/app.py:1482` so the answer surface always builds from records.
+
+**(i) IS TAKEN, AND IN A SHAPE ITEM 1 CHOSE RATHER THAN THE ONE THE BRIEF
+ANTICIPATED.** (ii) is rejected on the reasoning the brief set out: it leaves a
+persisted artifact that is silently NOT a faithful copy of what it was saved
+from, and the next consumer to load it inherits the hole without being told. A
+persisted artifact that lies is worse than one nobody reads.
+
+But (i) as written — "also persist the run-level records" — would have been an
+enumeration, and enumerations are what this defect is made of. **The fix is at
+the root: `_all_evidence` becomes the PRIMARY persisted structure and the derived
+indices are rebuilt on load through `_index_record`, the same code path `build`
+uses.** Schema 2:
+
+    save()   {"schema_version": 2, "all_evidence": [...], "run_registry": {...}}
+    load()   _all_evidence read directly; entity_records and finding_index
+             DERIVED from it via _index_record
+
+`run_registry` is still written because it is not derivable from evidence
+records — it is folded from `run_context_open` / `run_context_close` lines, which
+`build` consumes and never places in `_all_evidence`. `entity_records` and
+`finding_index` are no longer written at all: deriving them is what makes the
+round trip faithful, and it is also SMALLER, because schema 1 stored each record
+once per subject entity. Measured on the specimen: **192,767 -> 181,644 bytes,
+0.94x.** A record class invented next year is carried without anyone remembering
+to add it here.
+
+**COMPATIBILITY, STATED EXPLICITLY.** An old index still loads — nothing on disk
+is invalidated. A schema-1 file is detected by the absence of `schema_version`,
+its subject-bearing records are recovered as before, and subject-less Findings
+are additionally recovered out of `finding_index` so that at least the
+self-contradiction above is repaired even on an unmigrated artifact. What cannot
+be recovered is declared: `EvidenceIndex.incomplete` names the CLASSES the file
+cannot vouch for (`event`, `artifact`, `metric (subject-less)`,
+`finding (subject-less)`) — classes rather than counts, because a schema-1 file
+gives no way to know how many were dropped, only which shapes could not have
+survived.
+
+**FORWARD compatibility is NOT provided and is named here rather than
+discovered later:** a schema-2 file read by pre-4B.18 code yields an EMPTY index,
+because that code reads `entity_records` and the key is gone. That failure is
+loud (nothing answers at all) rather than subtly wrong, and this repo ships one
+commit per image, so mixed readers over one data root are not a live scenario.
+A future session that changes that deployment model must revisit this paragraph.
+
+### THE INVARIANT
+
+> **A PERSISTED EVIDENCE INDEX IS A FAITHFUL RECONSTRUCTION OF THE INDEX IT WAS
+> SAVED FROM.** Any record class the builder places in `_all_evidence` is
+> recoverable after a round trip, or the load reports the index as INCOMPLETE and
+> names what is missing. **Silence is forbidden: an answer surface may not be
+> unable to distinguish "this never happened" from "this was not persisted".**
+
+The second sentence is the durable part and it outlives either fix. The defect's
+whole cost was paid in that confusion: `no_solve` is a claim about the PLANT
+("nothing was admitted to this window"), and the system manufactured it out of a
+fact about our STORAGE. Three surfaces then acted on the false claim —
+`_proof_items` returned `[]` and the opener dropped a band-1 money item worth up
+to 29,390.52 against a 51,637.18 ledger without listing it even under "Not
+covered by this read"; §5a.23's money rider is gated on `unproved`, which is
+False on a `no_solve` proof, so the disclosure was off wherever an index had been
+written to disk; and the `solve-optimality` route said "no solver report I can
+read" beside a strip that said PROVED.
+
+**`CostProof` therefore gains a FOURTH state, `unreadable`, which takes priority
+over the other three.** It is not a flavour of `no_solve`: the run may have
+proved its optimum, may have failed to, may not have solved at all, and the
+object cannot tell you which. `no_solve` and `unproved` are both False under it,
+so no surface can make a claim about the plant out of a gap in storage. Each of
+the three surfaces gets an authored `unreadable` branch, and **none of them is
+permitted to stay silent** — including the money rider, where silence is not
+neutral: on that surface silence MEANS proved, because proved is the only other
+state that says nothing.
+
+### The guard, and its negative control
+
+`tests/test_evidence_index_roundtrip.py` builds an index, round-trips it, and
+asserts `_all_evidence` equivalent **by (record_type, module) census and by
+record-id set** — never by searching for a string. A guard written to this
+session's specimen would check for `solve_complete` and pass while three other
+classes stayed lost, which is precisely what schema 1 also did.
+
+Its fixture emits through the **real Reporter**, all eight verbs, rather than
+hand-written dicts — that is what makes it a guard on the system rather than on
+the fixture, since the subject-less records are produced the way production
+produces them and not the way a test author remembered to. A premise test asserts
+the fixture actually contains all four subject-less classes. It is parametrized
+over every real run in `_data/runs/` when the working copy has any (14 here) and
+skips otherwise.
+
+**NEGATIVE CONTROL, PROVEN.** Stubbing the run-level persistence — `save()`
+writing only subject-bearing records while still declaring schema 2 — turns the
+guard **RED: 19 failed, 7 passed**, including all 14 real runs. Restored, 26 pass.
+
+**Note what the pre-existing test did.** `test_load_populates_all_evidence`
+asserted `len(loaded._all_evidence) == len(built._all_evidence)` and passed
+throughout the defect's entire life, because its fixture's records all carry
+subjects. It was a guard that could never have failed. `test_save_is_valid_json`
+asserted `"entity_records" in data` — it pinned the shape that WAS the defect.
+Both are updated.
+
+### Verified on both paths and on an old artifact
+
+(a) **The pinned exam world**, re-minted (`tools/build_rolling_exam_run.py`,
+deterministic, seed 42, det budget 4.0s, determinism verified by its own second
+spine + window-0 solve). `is this schedule optimal?` gives *"Yes — and this is
+proved, not asserted."* The opener returns **4 items and BOTH clean members** —
+"Nothing in this window is late" AND "The cost optimum is PROVED". 4B.16's
+close-out documented two; 4B.17's sweep saw one. **The second is back.**
+
+(b) **A monolithic board** (`_data/runs/7f97d9d1`, FEASIBLE, gap 0.5692, ledger
+51,637.18), migrated to schema 2 on a copy. LOADED output is now identical to
+REBUILT: the opener carries **4 items with the gap item ranked SECOND** and the
+**29,390.52** figure, exactly as the rebuilt index produced it in 4B.17.
+
+(c) **An old unmigrated index**, left as it is on disk. It loads, reports
+`incomplete=('event', 'artifact', 'metric (subject-less)', 'finding
+(subject-less)')`, and never says `no_solve`. Verbatim: *"I can't tell you, and
+the reason is on our side: this schedule's solver report was not saved with its
+evidence... and note this says nothing about the schedule itself."* The opener
+raises it as an item rather than dropping it.
+
+(d) **The §5a.23 rider.** On the migrated board the gap disclosure fires again
+("...gap of 56.9% still open"). On the unmigrated one it fires in its new
+`unreadable` form ("Read that as unknown, not as proved") rather than going
+quiet.
+
+**The seven existing schema-1 indexes in `_data/runs/` are deliberately NOT
+migrated.** They are the live specimens for the incomplete path, and a re-solve
+migrates any of them for free.
+
+### What was tempting and left
+
+A1 (door labels asserting board facts), A2 (the 8-of-15 machine list), A3 (the
+merged-span fourth seam) and A5 (the evidence chain) are untouched. So is the
+`dark-evidence` premise-correction false positive, and CLAUDE.md compression.
+
+Two things this session's own diagnosis surfaced and deliberately did not chase:
+**the Reporter's subject-less-by-construction verbs are not themselves changed** —
+`record_event` emitting `subjects=[]` is correct for a run-level fact, and the
+defect was never that the records lack subjects but that persistence was built on
+the assumption that none does. And **a schema-2 file that is lossy for some
+future reason is not self-detecting** — `incomplete` covers schema 1 only. The
+round-trip guard is what stands in that gap, which is the honest place for it: a
+file cannot audit itself, and a test can.
+
+Narrative in `docs/closeouts/4B.18.md`; carry-forwards in docs/07 §5a.63, with
+§5a.23 amended to record that its discharge was re-opened on the monolithic path
+and by what.

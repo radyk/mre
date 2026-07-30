@@ -43,3 +43,5 @@ _4b11_scratch/
 # committed, including the quarantined wall-truncated rows (.bak)
 _4b12_scratch/
 _4b12_logs/
+# Session 4B.18 scratch (round-trip measurement, the migrated monolithic copy)
+_4b18_scratch/

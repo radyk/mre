@@ -158,10 +158,37 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.17 — run the bank**, 2026-07-30 (docs/07 v2.63, §5a.54-62; docs/04
-session amendment; narrative in `docs/closeouts/4B.17.md`). Before it:
-4B.16 (v2.61, §5a.49-50), 4B.15 (v2.59, §5a.39-45), 4B.14 (v2.58, §5a.34-38),
-4B.13 (v2.57), 4B.12 (v2.56, a MEASUREMENT session), 4B.11 (v2.55, **R-PD1 verbatim**).
+**Session 4B.18 — the persisted evidence index**, 2026-07-30 (docs/07 v2.64,
+§5a.63; docs/04 ruling; narrative in `docs/closeouts/4B.18.md`). Before it:
+4B.17 (v2.63, §5a.54-62), 4B.16 (v2.61, §5a.49-50), 4B.15 (v2.59, §5a.39-45),
+4B.14 (v2.58, §5a.34-38), 4B.13 (v2.57), 4B.12 (v2.56, a MEASUREMENT session),
+4B.11 (v2.55, **R-PD1 verbatim**).
+
+**A PERSISTED EVIDENCE INDEX IS A FAITHFUL RECONSTRUCTION OF THE INDEX IT WAS
+SAVED FROM (4B.18, §5a.63 — §5a.55 DISCHARGED).** Any record class the builder
+puts in `_all_evidence` survives a round trip, or the load reports itself
+INCOMPLETE and names what is missing. **Silence is forbidden: an answer surface
+may not be unable to distinguish "this never happened" from "this was not
+persisted".** Schema 1 lost **25 records across FOUR classes** on a real run
+(236 → 211), not the one 4B.17 measured: `record_event` and
+`register_input`/`register_output` hardcode `subjects=[]`, so **every Event and
+Artifact is subject-less**, and `load()` rebuilt from `entity_records` alone —
+taking the entire input manifest and the four M0 conformance rate metrics with
+the solver report. A subject-less Finding survived in `finding_index` but not
+`_all_evidence`, so **one loaded index gave two answers about itself**. Schema 2
+persists `_all_evidence` and DERIVES the indices on load through `build`'s own
+`_index_record`. `CostProof` has a fourth state, **`unreadable`**, priority over
+the other three, so a claim about the PLANT is never manufactured from a fact
+about our STORAGE; the rider, the opener item and the route each have an
+authored branch and **none may be silent**. Old indexes load and declare
+themselves; **forward compatibility is NOT provided** (a schema-2 file read by
+older code yields an EMPTY index — loud, not subtly wrong). The guard asserts by
+**kind and count**, emits through the real Reporter, runs over every real run,
+and its **negative control is proven red**. NOT DONE, named: the seven schema-1
+indexes in `_data/runs/` are left unmigrated as the live incomplete-path
+specimens; **a schema-2 file that is lossy for a future reason is not
+self-detecting** (`incomplete` covers schema 1 only) — the round-trip guard
+stands in that gap, because a file cannot audit itself and a test can.
 
 **§5a.22 IS DISCHARGED — THE r5 BANK IS CALIBRATED, RUN AND GRADED (4B.17).**
 27 → 33 questions, six runs, 198 answers; every expectation change logged in
@@ -175,11 +202,10 @@ door OPENS); the no-such-machine correction lists **8 of 15** machines and drops
 the one the asked order is on (§5a.54, verbatim in 4B.13's own close-out);
 **the synthesis toolbox reports the merged SPAN as `duration_minutes` and
 `busy_minutes`** — 5821 against 1501 working minutes, 3.9x the machine's open
-time, the **FOURTH SEAM** of a class fixed three times (§5a.56); **the pinned exam
-world cannot state its own cost proof** because `EvidenceIndex.save()` drops
-run-level records, so the strip says PROVED and the answer says "no solver report
-I can read" (§5a.55 — production unaffected, the exam world is not, and it
-silently costs the opener its second CLEAN item); and `why-on-machine`'s evidence
+time, the **FOURTH SEAM** of a class fixed three times (§5a.56); the pinned exam
+world could not state its own cost proof because `EvidenceIndex.save()` dropped
+run-level records (§5a.55 — **FIXED 4B.18, §5a.63**, where the loss turned out to
+be four classes and 25 records, not one); and `why-on-machine`'s evidence
 chain **contradicts its own only-eligible lead and still carries the founder's
 original vacuous driver phrase** (§5a.54). **THE TIER QUESTION IS STILL
 UNRESOLVED AND THE REASON IS NOW STRUCTURAL: 31 of 33 questions never reach the
