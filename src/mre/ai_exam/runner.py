@@ -301,42 +301,49 @@ def resolved_subject(subject_type: str, subject_external_name: str) -> dict:
     return {}
 
 
-# The SHIPPED card, verbatim (Session 4B.6b item 3b). Read off
-# ``tests/cockpit/fixtures/rolling/sandbox.json`` — the two-beat the fixture
-# builder captured from a real ``sandbox_pin_resolve`` — so a card bank feeds the
-# ask path exactly what ``drag/controller.js::cardContextFrom`` sends it.
+# The SHIPPED card, verbatim. Read off ``tests/cockpit/fixtures/rolling/sandbox.json``
+# — the two-beat the fixture builder captured from a real ``sandbox_pin_resolve`` —
+# so a card bank feeds the ask path exactly what
+# ``drag/controller.js::cardContextFrom`` sends it. Test-realism law: a context
+# test feeds ONLY what the shipped surface sends, in the shapes it sends them.
 #
-# WHY IT WAS REPLACED. The synthesized pair was -11,975.83 = -11,600.00 +
-# -375.83: a move that SAVES inside a re-optimization that SAVES. The real card
-# is -11,953.08 = -11,975.83 + 22.75 — a move that COSTS $22.75 inside a
-# re-optimization that saves $11,975.83 — and that sign disagreement is the whole
-# point of the CU1 split. A bank whose card cannot express it grades the easy
-# half. Test-realism law: a context test feeds ONLY what the shipped surface
-# sends, in the shapes it sends them.
-_SHIPPED_CARD_COST_DELTA = -11953.08
-_SHIPPED_CARD_REOPT_DELTA = -11975.83
-_SHIPPED_CARD_MOVE_DELTA = 22.75
+# RECALIBRATED SESSION 4B.17 (docs/07 §5a.22, the entry this discharges). The
+# figures below are the CURRENT committed fixture's, re-read this session; the
+# previous constants were 4B.6b's capture and 4B.7 moved the card under them.
+#
+#   was (4B.6b): total -11,953.08 = reopt -11,975.83 + move +22.75
+#   now (4B.7 ):  total     +32.20 = reopt       0.00 + move  +32.20
+#
+# AND THE SPECIMEN DEGENERATED, WHICH IS THE THING TO KNOW. The old pair was a
+# move that COSTS inside a re-optimization that SAVES, and that sign
+# disagreement is what 4B.5 CU1's split exists to express. R-SC3(2)'s retirement
+# (4B.7) took the earliness coefficient out of the objective, so the window
+# solve and the sandbox baseline now minimize the SAME expression and
+# ``reopt_delta_abs`` is **0.00 by construction** (docs/07 §5a.12's discharge).
+# The product can no longer produce a card whose halves disagree, so the bank's
+# "which half did you quote" question can no longer discriminate: move == total.
+# It still grades the SIGN (a cost stated as a cost) and it is reported as
+# unexercisable rather than quietly counted as a pass.
+#
+# CARRIED, NOT FIXED: the fixture predates 4B.8 CU4, which made
+# ``EARLINESS_PREFERENCE`` dormant in the extractor (docs/07 §5a.20). The
+# ``dominant_driver`` below is therefore a shape the current sandbox would not
+# emit. Regenerating the fixture needs a solve, which R-AI4 puts out of this
+# session's scope; no bank question grades this field.
+_SHIPPED_CARD_COST_DELTA = 32.20
+_SHIPPED_CARD_REOPT_DELTA = 0.0
+_SHIPPED_CARD_MOVE_DELTA = 32.20
 _SHIPPED_CARD_COST_LINES = [
-    {"line": "tardiness", "delta": -11975.83},
+    {"line": "tardiness", "delta": 0.0},
     {"line": "setup", "delta": 0.0},
-    {"line": "production (regular)", "delta": 22.75},
+    {"line": "production (regular)", "delta": 32.20},
     {"line": "production (overtime)", "delta": 0.0},
     {"line": "other placement changes", "delta": 0.0},
 ]
-_SHIPPED_CARD_AFFECTED = [
-    {"demand_ref": "a5e2ba83-dca5-5d86-95ce-af8f558e21ed",
-     "work_order": "ORD-000011", "tardiness_delta": -9800.42,
-     "lateness_delta_min": -24479},
-    {"demand_ref": "a11593de-eeb8-5dc6-9553-1369b380b411",
-     "work_order": "ORD-000003", "tardiness_delta": -2175.42,
-     "lateness_delta_min": -14338},
-    {"demand_ref": "eeb98ca1-0786-5090-af8f-67b2a65fc13f",
-     "work_order": "ORD-000022", "tardiness_delta": 0.0,
-     "lateness_delta_min": 10080},
-    {"demand_ref": "03570922-92a1-5544-bc00-9cc1dca64833",
-     "work_order": "ORD-000028", "tardiness_delta": 0.0,
-     "lateness_delta_min": 10080},
-]
+# EMPTY on the current card, and that is the fixture's own value — the pinned
+# world's tardiness is 0.00, so no demand's service outcome moves. A route that
+# names orders here is fabricating them.
+_SHIPPED_CARD_AFFECTED: list = []
 _SHIPPED_CARD_DRIVER = {
     "code": "EARLINESS_PREFERENCE",
     "phrase": "a declared earliness preference paid a little more to start it "
@@ -368,10 +375,10 @@ def _exam_card(order: Optional[str], machine: Optional[str]) -> dict:
         "open": True,
         "operation_ref": f"exam-op-{(order or 'x').lower()}",
         "order": order, "machine": machine,
-        "when": "Jan 8, 08:30",
+        "when": "Jan 8, 08:23",
         "outcome": "verdict", "feasible": True,
         "message": "optimal delta proven",
-        "correlation_id": "corr-656ad68c26b888ee",
+        "correlation_id": "corr-53211846731604b5",
         "cost_delta_abs": _SHIPPED_CARD_COST_DELTA,
         "attribution": "split",
         "reopt_delta_abs": _SHIPPED_CARD_REOPT_DELTA,
@@ -379,7 +386,7 @@ def _exam_card(order: Optional[str], machine: Optional[str]) -> dict:
         "attribution_note": "",
         "cost_lines": [dict(l) for l in _SHIPPED_CARD_COST_LINES],
         "affected_orders": [dict(a) for a in _SHIPPED_CARD_AFFECTED],
-        "lateness_delta_min": -28742, "moves": 7,
+        "lateness_delta_min": 0, "moves": 1,
         "no_committed_work_changes": True,
         "dominant_driver": dict(_SHIPPED_CARD_DRIVER),
     }

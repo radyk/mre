@@ -12834,3 +12834,255 @@ KIND is still owed, for the synthesis tier where the measured specimen lives.
 
 Full narrative in `docs/closeouts/4B.16a.md`; carry-forwards in docs/07
 §§5a.51-53, and §5a.7 is closed.
+
+---
+
+### 2026-07-30 — Session 4B.17: run the bank
+
+A measurement session against the pinned world `rolling-c362baa4-1b0`. All reads
+from the PERSISTED run (R-AI4); no solve, no contract change, and **no product
+module was touched**. `PYTHONHASHSEED=0`. The product of the session is a graded
+corpus and a triaged failure list; the instruction was to fix nothing, and
+nothing was fixed.
+
+**THE ENTRY THIS CLOSES.** `regression_founder_r5` was committed 4B.5 with 27
+graded expectations and had **never been graded**. It was carried for six
+sessions as "blocked on the key"; errand 4B.16a proved the sweep tool had had its
+own loader since 4A.5b and was never blocked at all, and named the real blocker:
+docs/07 §5a.22, expectations invalidated three times and never recalibrated.
+That is what this session cleared.
+
+**THE ORDERING WAS LOAD-BEARING AND IS NOW SPENT.** 4B.13 declined to recalibrate
+because the premise-echo defect was visible ONLY because stale bank questions
+carried false premises; fixing the bank first would have hidden it. The guard
+shipped, so recalibration was safe — and the first thing it found is that the
+guard's own specimens now grade the guard rather than the defect.
+
+**HOW THE RECALIBRATION WAS DISCIPLINED.** Four rules, all held. The question
+TEXT of all 27 originals is untouched — a question is a specimen, and where a
+premise was false and the product now corrects it the EXPECTATION moved and the
+specimen stayed wrong on purpose. Every change is logged in
+`tests/ai_exam/RUBRIC.md`'s new append-only RECALIBRATION LOG with the session
+that caused it and its old text; nothing above that log was rewritten. No
+expectation was copied from output — the bank was recalibrated BEFORE its first
+run, so there was none to fit to, which is the one circumstance in which rule (c)
+holds by construction rather than by discipline. And what could not be derived was
+marked UNGRADED with a reason: one question fully (the no-card "whats the delta",
+whose expectation is a NEGATIVE that `EXPECT` cannot express and whose correct
+destination is not derivable), two partially (the downtime predicate, whose owning
+route 4B.14 explicitly declined to rule; and the overtime question, unanswerable
+by any contracted route today).
+
+**THE ONE WORLD FACT THAT MOVED THE MOST EXPECTATIONS: nothing is late on this
+board.** All 26 placed demands finish early (worst slack ORD-000011, 502
+minutes), tardiness is $0.00, `tardiness_floor` is absent and the bound is closed
+at 16,481.95. Nine of the bank's questions are about lateness, so every one became
+a false-premise specimen graded on 4B.13's premise correction and its region note.
+
+**THE CARD WAS RE-DERIVED AND THE SPECIMEN DEGENERATED.** `runner.py`'s
+`_SHIPPED_CARD_*` constants are now the committed fixture's — total **+$32.20** =
+reopt **$0.00** + move **+$32.20**, affected set **EMPTY** — against 4B.6b's
+-11,953.08 = -11,975.83 + 22.75. **4B.7's own retirement of R-SC3(2) made
+`reopt_delta_abs` 0.00 BY CONSTRUCTION** (§5a.12's discharge), so the product can
+no longer produce a card whose halves disagree, and the 4B.6a specimen "what did
+the move itself cost, not the re-solve" **cannot discriminate**: move equals
+total. It is reported as unexercisable, never counted as a pass. What it still
+grades is the SIGN, and the sign is right.
+
+**A BANK AUTHORING BUG FELL OUT OF THE RECALIBRATION.** The no-card turn carried
+`EXPECT route=open-card` directly beneath a comment reading "must reach a plan
+route (or the reasoning tier) — never `open-card`". The machine expectation
+asserted the defect the comment forbids, so a run would have graded the failure as
+the pass. It had been in the file since 4B.5 and no run had ever exercised it.
+
+**SIX RUNS, 198 ANSWERS, AND THE INSTRUMENT IS STEADY.** Three runs on shipped
+defaults (parse Haiku / synthesis Sonnet 5) and three on Haiku-everywhere; 33
+questions each. **32 of 33 questions STABLE across three runs on shipped
+defaults, 33 of 33 on Haiku**, with identical mechanical counts in all six
+(`dark-evidence 2, expect-miss 5, validator 1`, graded 27/32). The one flip is a
+routing flip on "would splitting the jobs help", named as variance.
+
+**FIVE TRUTH FAILURES, VERBATIM IN THE CLOSE-OUT, EACH WITH A SEVERITY. NONE IS A
+MODEL ARTIFACT.** Three are authored template copy, one is a persistence gap, one
+comes out of a tool.
+
+**(1) A DOOR LABEL IS NOT A QUESTION, IT IS A CLAIM.** Asked "would overtime on
+CUT-01 help", the near-miss copy offers, three lines apart, to *"show what's
+running on CUT-01"* and to *"explain why CUT-01 carries no work"* — and CUT-01
+carries **18 of the 56 bars** and is the busiest machine in the plant. The
+mechanism is `ROUTE_OFFERS["machine-idle"] = "explain why {machine} carries no
+work"` (`ask_fallback_copy.py:58`), whose slot is filled — the table's own header
+says so — "from the interpreter's partially-resolved params where present, else a
+generic noun", with no read of the board. The registry's reverse-guard proves each
+probe PARSES to a live route — a door that opens — and never that the room behind
+it is furnished. Same table, same class, unfired here:
+`"advice": "explain why each order is late …"` on a board where nothing is late.
+
+**(2) "THE MACHINES HERE ARE" LISTS EIGHT OF FIFTEEN, AND DROPS THE ONE THE ORDER
+IS ON.** The no-such-machine correction for MILL-99 enumerates eight machines
+alphabetically with no ellipsis and no count, omitting HEAT-02, MILL-01, MILL-02,
+PAINT-01, PAINT-02, PRESS-FAST and PRESS-SLOW — including **PRESS-FAST, which is
+where ORD-000023 actually runs**. A planner who mistyped MILL-01 looks for
+MILL-01, does not find it, and learns that MILL-01 does not exist either.
+**4B.13's close-out records this exact 8-name output verbatim and reads it as the
+fix working**, while transcribing the neighbouring `machine-count` answer as
+"[15 names listed]" — the truncation was invisible because the transcript did not
+enumerate.
+
+**(3) THE MERGED SPAN IS THE SYNTHESIS TOOLBOX'S DURATION — THE FOURTH SEAM.**
+`placements_for_order` and `placements_for_machine` report ORD-000011 op10 as
+`"duration_minutes": 5821.0`; `machine_occupancy` reports
+`"busy_minutes": 5821.0, "gap_before_minutes": 0.0`. The truth is **1501 working
+minutes in three chunks across a 5821-minute span**, 4320 minutes of which are
+nights and a weekend when CUT-01 is closed. CUT-01's total OPEN time between
+those timestamps is 1501 minutes, so `busy_minutes` **exceeds the machine's
+entire capacity in that span by 3.9x**, and `gap_before_minutes: 0.0` denies a
+pause the operation contains. **The model is not the fault** — there is no
+run-time figure anywhere in those rows, so a reasoner has nothing truer to quote;
+the answer that carried it cited a real record and the verifier passed it
+VERIFIED, correctly. This is the figure 4B.13 Item 0 diagnosed and the reason
+4B.14 split the job card into RUN TIME and ELAPSED SPAN. **A defect class fixed
+at one seam is not fixed:** 4B.13 fixed two, 4B.14 found a third at
+`_load_enriched_assignments`, and this is the fourth, unchecked because it is not
+on the board.
+
+**(4) THE PINNED EXAM WORLD CANNOT STATE ITS OWN COST PROOF, AND SIX SESSIONS OF
+AI MEASUREMENT RAN ON IT.** Same world, same `runs/` directory, same route: a
+LOADED evidence index answers *"I can't tell you — this schedule carries no solver
+report I can read"*, a REBUILT one answers *"Yes — and this is proved, not
+asserted."* The document beside both says `OPTIMAL`, `gap 0.0`, and the strip
+reads that record and says PROVED — **so the strip and the answer surface
+disagree, which is precisely the failure §5a.23 was discharged to prevent**,
+re-opened underneath it. `EvidenceIndex.save()` persists `entity_records`,
+`finding_index` and `run_registry` only, and `load()` rebuilds `_all_evidence`
+from `entity_records` alone; the M6 `solve_complete` Event is RUN-level and has no
+entity subject, so it does not survive the round-trip. Measured: the pinned
+target's 114 KB index contains "solve_complete" **zero** times while its own
+`runs/58d67288-….jsonl` contains it twice.
+
+**PRODUCTION IS AFFECTED, ON THE MONOLITHIC PATH, AND THE FIRST READING OF THIS
+BLAST RADIUS WAS WRONG.** It first looked as though a normal API solve left no
+persisted index. It leaves one: `_execute_solve` (`api/app.py:877`) runs the
+monolithic pipeline by calling `mre.__main__.main`, whose M9 step saves the index
+at `__main__.py:585` on the SUCCESS path, as does `demo.py:244`; and
+`api/app.py:1482` prefers a persisted index when one exists. **Seven of the
+fourteen solved runs in this repo's own `_data/runs/` carry one, and all seven
+are monolithic.** The rolling path is the exception — `_execute_rolling_solve`
+never goes through `__main__` — which is why the four `snap-rolling` runs have
+none and why 4B.13 measured the right answer through `/ask`. The pinned exam
+world is rolling but its BUILDER saves one, which is how the sweep met this at
+all.
+
+**THE WORST CONSEQUENCE IS THE OPENER'S BAND 1, WHICH IS MONEY.** Measured on
+the real monolithic run `_data/runs/7f97d9d1-…`, whose document states
+`FEASIBLE`, gap **0.5692**, ledger 51,637.18: loaded, the briefing offers
+**3 things worth your attention**; rebuilt from the same records it offers
+**4**, and the new one ranks **SECOND** — *"The cost optimum is NOT proved — the
+solver stopped with a gap of 56.9% still open. Against a ledger of 51,637.18,
+that bound leaves up to **29,390.52** on the table."* So on every monolithic
+board the API serves, band 1's money member is **silently absent**, and the
+"Not covered by this read" section does not name it either: `_proof_items`
+returns `[]` on `no_solve`, so neither the unproved nor the proved branch can
+fire. On the pinned rolling exam world the same gap removes the CLEAN band's
+second member, which is why this sweep sees one reassurance where 4B.16's
+close-out documents two. **AND §5a.23'S MONEY RIDER CANNOT FIRE EITHER** — it is
+gated on `unproved`, which is False on a `no_solve` proof, so a money answer on
+a 56.9%-gap board volunteers nothing about the gap. The asymmetry that discharge
+was built for is off wherever the index was written to disk. **No bank question
+asked for any of this; it was found while deriving the briefing's expectation.**
+
+**(5) THE EVIDENCE CHAIN CONTRADICTS THE LEAD IT SITS UNDER, AND STILL CARRIES
+THE FOUNDER'S ORIGINAL SPECIMEN.** "why is ORD-000012 on PAINT-01" leads
+correctly with 4B.13's only-eligible sentence — *"that is the only machine
+qualified to run this step — there was no alternative to weigh"* — and then prints
+a three-record chain whose first entry reads *"Assigned to: PAINT-01 … Why: the
+machine was busy with other work"*. Those are two incompatible reasons for one
+placement; one of them is false. **The bare CAPACITY_BLOCKED driver phrase — the
+founder's round-five specimen, the sentence this whole bank exists for — is one
+line under the sentence that replaced it.** 4B.13's fix landed on the LEAD, not on
+the chain. The other two chain entries are about CUT-01 and MILL-01, operations
+the question did not name, and they carry the only two dollar figures in the
+answer. Every record quoted is real and every field is transcribed correctly, so a
+per-record audit passes it — which is exactly what the founder's original specimen
+did.
+
+**THE TIER QUESTION IS STILL NOT RESOLVED, AND THE REASON IS NOW STRUCTURAL
+RATHER THAN STATISTICAL.** §5a.44 recommended a tier from ONE run of fifteen
+questions; §5a.46 recorded that its quality ranking did not reproduce and named a
+bigger bank as the instrument. This bank is bigger and it is **the wrong kind of
+bigger**: 31 of its 33 questions route to contracted templates whose render is
+byte-identical under both configurations, so the tier's entire surface here is two
+questions, one of which is the unanswerable floor in both — a measurable surface
+of **one question, six times**. Across all 198 answers the two configurations
+differ in exactly ONE routing decision, and that decision is the PARSE's, which
+is Haiku in both. Columns, three runs each: truth failures 3 distinct / 9 firings
+against 4 / 11; asked fact reached 31/31/31 against 31/31/30; multi-hop 8/8/8
+against 8/8/7; median latency over all turns 1441 ms against 1477 ms and p90 3586
+against 3135; synthesis median/p90 6189/23108 ms (n=5) against 10269/15353 (n=6);
+**cost per question $0.0105 against $0.0110, with Sonnet the CHEAPER of the two**
+— because Haiku-everywhere spent 21% more input tokens over 12 more calls, which
+is §5a.46's shape with the sign flipped: the second tier taking MORE steps rather
+than the same steps faster. **The honest statement is that a founder-regression
+bank cannot resolve a tier decision by construction. The instrument for that is a
+bank whose questions are UNMATCHED by design.** No tier change is recommended;
+the numbers are recorded and the decision is Daryn's.
+
+**FOUR EXPECTATION DRIFTS, one of which is mine and one of which corrects a
+docs/07 note.** "what should i do" now reaches `briefing` rather than `advice`,
+because 4B.16 widened `briefing` to the whole-board read and that question is one
+— I moved the substance of that specimen and left its intent slot, which is the
+class rule (a) does not protect against: I checked whether the expectation was
+still TRUE and not whether the route was still the right one. "would splitting the
+jobs help" reaches synthesis rather than coaching, which is 4B.15's
+`route_falsifiability` (§5a.40) correctly rejecting a subject-silent render. The
+parse does not bind `machine=MILL-99` — a parse that refuses to bind a nonexistent
+entity is defensible and my `EXPECT` guessed where rule (d) told me to mark it
+ungraded. And **§5a.51's claim that "how do i change that" reaches
+`what-would-change` off a board selection does not reproduce**: in a cold
+conversation carrying only a selection it parses `unmatched` at all six runs and
+falls to a synthesis floor whose offered doors are unrelated to the order the
+planner had selected — which RUBRIC entry 6's RESOLVED ruling makes a C5 failure
+by name, on a board with no late orders.
+
+**TEN CONVERSATIONAL MISSES, grouped and not ranked (Daryn arbitrates).** The
+loudest two: **the card route answers five different questions with one
+byte-identical recital** — "what orders are affected" leads with the price, and
+"what did the move itself cost, NOT the re-solve" states the re-solve first, in
+the same sentence; CU2 made `open-card` read the card back and nothing made it
+answer the question. And **the `repeat`/`deaf` boundary is keyed on string
+identity**: the same string twice gets the correct lead *"Same answer as a moment
+ago —"* over an identical body, while the same QUESTION reworded gets *"I've now
+given you this same answer for two different questions, which probably means I'm
+not understanding what you're asking"* plus the full recitation again. Two
+firings, zero true positives — the same score §5a.42 recorded for the detector it
+replaced, on the other side of the split — and the bank's terseness specimen never
+gets to fire at all.
+
+**TWO INSTRUMENT FAULTS, both reported.** The cost-proof gap above, which
+contaminates every cost-proof answer on the exam target and nothing else. And
+`dark-evidence` fires twice per run on the premise CORRECTIONS: `why-on-machine`
+is an evidence-shaped route and a correction cites zero records because there is
+nothing to cite. The signal predates the guard; a correction is not a dark answer.
+
+**A METHOD NOTE WORTH KEEPING.** My first deterministic tripwire for
+"asserts lateness on a board with none" fired on three CORRECT answers — an offer
+("explain why any order is late"), and two true statements ("Nothing in this
+window is late", "none of the 26 scheduled orders are late"). Narrowed to an order
+NAMED and called late, or a QUANTIFIED lateness. **A tripwire that fires on the
+right answer teaches its reader to skip it, which is worse than not having one.**
+
+**WHAT WAS TEMPTING AND LEFT.** Every truth failure above is a one-line or
+few-line change and every one was left: the door label's "carries no work", the
+8-name truncation, a working-minutes field beside `duration_minutes`, persisting
+run-level records in `EvidenceIndex.save()`, the evidence chain under
+`why-on-machine`, the validator diagnostic leaking to the planner surface, keying
+`repeat` on meaning, and chasing §5a.51's non-reproducing note. Also left:
+regenerating the rolling sandbox fixture so the exam card stops carrying a dormant
+`EARLINESS_PREFERENCE` driver (that needs a solve), and the `dark-evidence` false
+positive. **A fix bundled into the session that discovered it cannot be
+attributed, and R-AI4 gives the felt-bar call to Daryn rather than to the
+session.**
+
+Full narrative, every truth failure verbatim, the stable-vs-flipped table and the
+tier columns in `docs/closeouts/4B.17.md`; carry-forwards in docs/07 §5a.54-62,
+and §5a.22 is discharged.

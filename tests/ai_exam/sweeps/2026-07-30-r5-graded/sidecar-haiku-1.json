@@ -1,0 +1,132 @@
+{
+  "target": "rolling-c362baa4-1b0",
+  "snapshot": "snap-rolling",
+  "started_at": "2026-07-30T10:23:56Z",
+  "llm_mode": "live",
+  "questions": 33,
+  "llm_calls": 52,
+  "parser_stats": {
+    "calls": 40,
+    "parses": 40,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 3,
+    "unavailable": 0,
+    "median_latency_ms": 1357.1998500046902,
+    "malformed_samples": []
+  },
+  "synth_stats": {
+    "syntheses": 2,
+    "calls": 8,
+    "tool_calls": 6,
+    "malformed": 0,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 1,
+    "median_latency_ms": 7625.831749999634,
+    "p90_latency_ms": 12931.483199994545
+  },
+  "synthesis": {
+    "answers": 2,
+    "claims": 5,
+    "verified": 1,
+    "interpretive": 4,
+    "failed_and_cut": 0,
+    "ungrounded_load_bearing": 0,
+    "unanswerable": 1,
+    "budget_exhausted": 0,
+    "tool_calls": 6,
+    "tool_histogram": {
+      "constraint_catalog": 1,
+      "entity_vocabulary": 1,
+      "lateness_set": 1,
+      "machine_occupancy": 1,
+      "placements_for_order": 1,
+      "placements_in_window": 1
+    },
+    "calls_per_answer": {
+      "0": 1,
+      "6": 1
+    }
+  },
+  "shadow": {
+    "shadowed": 0,
+    "clean": 0,
+    "diverged": 0,
+    "unchecked": 0,
+    "provenance_strengthened": 0,
+    "by_intent": {}
+  },
+  "latency": {
+    "route": {
+      "n": 31,
+      "median_ms": 1523.4,
+      "p90_ms": 2886.1
+    },
+    "synthesis": {
+      "n": 2,
+      "median_ms": 9985.2,
+      "p90_ms": 15353.4
+    }
+  },
+  "graded_expectations": {
+    "graded": 32,
+    "met": 27
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "dark-evidence": 2,
+    "expect-miss": 5,
+    "validator": 1
+  },
+  "findings": [
+    {
+      "kind": "dark-evidence",
+      "lineno": 221,
+      "question": "why is ORD-000023 on MILL-01",
+      "detail": "route 'why-on-machine' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 231,
+      "question": "why did ORD-000009 end up on CUT-01",
+      "detail": "route 'why-on-machine' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "expect-miss",
+      "lineno": 242,
+      "question": "why is ORD-000023 on MILL-99",
+      "detail": "machine: expected 'MILL-99', got None"
+    },
+    {
+      "kind": "validator",
+      "lineno": 256,
+      "question": "why is ORD-000012 on PAINT-01",
+      "detail": "LLM testimony failed validation; fell back to template"
+    },
+    {
+      "kind": "expect-miss",
+      "lineno": 288,
+      "question": "would splitting the jobs help",
+      "detail": "route: expected 'coaching', got 'synthesis'"
+    },
+    {
+      "kind": "expect-miss",
+      "lineno": 301,
+      "question": "what should i do",
+      "detail": "intent: expected 'advice', got 'briefing'"
+    },
+    {
+      "kind": "expect-miss",
+      "lineno": 303,
+      "question": "what should i do",
+      "detail": "intent: expected 'advice', got 'briefing'"
+    },
+    {
+      "kind": "expect-miss",
+      "lineno": 401,
+      "question": "how do i change that",
+      "detail": "intent: expected 'what-would-change', got 'unmatched'; order: expected 'ORD-000013', got None"
+    }
+  ]
+}

@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.62 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.63 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.63:** **Session 4B.17 — run the bank** 2026-07-30 (docs/04 session amendment; narrative in `docs/closeouts/4B.17.md`). A measurement session: recalibrate, grade, triage, **fix nothing**. **§5a.22 IS DISCHARGED (§5a.54)** — `regression_founder_r5`, committed 4B.5 and carried unrun for six sessions, is calibrated against the pinned world's PERSISTED document, extended 27 → 33 questions with six unbanked specimens added verbatim, and run **six times** (three on shipped defaults, three on Haiku-everywhere; 198 answers). Every expectation change is logged in `tests/ai_exam/RUBRIC.md`'s append-only RECALIBRATION LOG with its cause and its old text; the question text of all 27 originals is untouched; the bank was calibrated BEFORE its first run so there was no output to fit to. **NOTHING IS LATE ON THIS BOARD**, which turned nine lateness questions into false-premise specimens — and **the card specimen DEGENERATED**, because 4B.7 made `reopt_delta_abs` 0.00 by construction (§5a.12) so move equals total and "which half did you quote" can no longer discriminate. **FIVE TRUTH FAILURES, ALL REPRODUCIBLE:** two authored door labels assert facts about the board without reading it — the product offers to *"explain why CUT-01 carries no work"* about the **busiest machine in the plant** (§5a.60); the no-such-machine correction lists **8 of 15** machines as "the machines here are", omitting the one the asked order is actually on (§5a.54, and visible verbatim in 4B.13's own close-out); **the synthesis toolbox reports the merged elapsed SPAN as `duration_minutes` and as `busy_minutes`** — 5821 where the truth is 1501 working minutes, 3.9x the machine's total open time in that span, the **fourth seam** of a class fixed three times (§5a.56); **the pinned exam world cannot state its own cost proof** because `EvidenceIndex.save()` drops run-level records, so the strip says PROVED and the answer says "no solver report I can read" (§5a.55); and the evidence chain under `why-on-machine`'s only-eligible lead **contradicts it and still carries the founder's original vacuous driver phrase** (§5a.54). **THE TIER QUESTION IS NOT RESOLVED, AND NOW THE REASON IS STRUCTURAL: 31 of 33 questions never reach the layer the split changes** (§5a.57) — across 198 answers the two configurations differ in ONE routing decision, which is the parse's, and the parse is Haiku in both. Cost $0.0105 vs $0.0110 per question, with **Sonnet the cheaper of the two here**. Also: the `repeat`/`deaf` boundary is keyed on string identity so a rephrased re-ask gets self-doubt and the terseness specimen never fires (§5a.58); §5a.51's "off board selection" claim does not reproduce (§5a.59); the coaching invitation **cannot decline to fire, by shape** (§5a.61); the binding-family census is empty on this board and not derivable from the document (§5a.62). No solve, no contract change, no product module touched.
 
 **v2.62:** **Errand 4B.16a — the key, and whether the parse reaches the new routes** 2026-07-29 (narrative in `docs/closeouts/4B.16a.md`). **§5a.7 IS CLOSED AND WAS A RUMOUR FOR THREE SESSIONS** — it cost six sessions of "the r5 bank is key-blocked", then 4B.15's discovery that the exam harness always had its own loader, then 4B.16 citing it a third time to explain two unmeasured routes. Read plainly, by code rather than by trying again: **the sweep tool was NEVER blocked** (its own repo-root-anchored loader since 4A.5b, commit `f3bb319` — proven live this errand, parser available, 1319 ms, graded 1/1); **pytest was, for one session**, fixed by 4B.8 and re-verified here (four slow tests, 54.7 s); and **`python -m mre.ask` / `python -m mre.ai_exam` had NO loader at all**, so from a bare shell the harness's own front door built an unavailable parser and answered on the honest could-not-interpret floor — indistinguishable from a missing key, and the reading that kept the entry alive. **THE MECHANISM WAS NEVER THE KEY AND NEVER ONE READER:** nothing in the library loads a file (correctly — in a container the key comes from the platform secret store), so every ENTRY POINT populates the environment itself, and the repo had **four independent implementations** of that step plus two front doors with none, one copy already DRIFTED to `os.environ.setdefault` (which writes an EMPTY value where the others skip it). **`src/mre/env_local.py` is now the ONE reader**, with a guard test that goes red on a second one and a proven negative control. **BOTH 4B.16 ROUTES REACH A PLANNER'S PHRASING (§5a.51)** — nine of ten phrasings live on the pinned world, all four `briefing` cold opens at 0.95; the single miss (`"why can't it be earlier"` → `why-here`, negative polarity) is a genuine route boundary and was NOT fixed. **THE MEASUREMENT FOUND A LEAK IN THE INSTRUMENT:** `RESET` cleared four conversation channels and missed the fifth, so the deafness rider scolded across conversation boundaries for seven consecutive turns, citing discarded questions — `forget_deliveries` is the symmetric clear and the runner now calls it. **THE OPENER'S SCAN IS 4% OF THE TURN (§5a.52)** — 61.0 ms dispatch of which 58.7 ms is the scan, against a 1251 ms parse; precompute measured both ways (0.4 ms cached) and LEFT, with the contract shape and the pilot-scale reason to revisit named. **THE COUNTERFACTUAL'S SPEC CITATIONS DODGE §5a.48 DELIBERATELY (§5a.53)** — `SPEC_OF` is authored constants complying with §5a.48's own prescription, written one commit earlier; the prohibition on refactoring them into a corpus lookup is now recorded where a refactorer reads it, and the spec-citation kind is still owed for the synthesis tier. No solve; the pinned world untouched; no contract change.
 
@@ -1920,7 +1922,19 @@ where the reasoning lives.
     moot: at 120 orders and above stage 2 still exhausts whatever it is given.
     Ruling verbatim in docs/04 2026-07-28. See §5a.23 for what still cannot say
     it.
-22. **The r5 exam bank's card expectations are invalidated AGAIN** (4B.7,
+22. **The r5 exam bank's card expectations are invalidated AGAIN** — **DISCHARGED
+    2026-07-30 (Session 4B.17).** The bank is recalibrated against the pinned
+    world's persisted document, extended 27 → 33 questions, and GRADED over six
+    runs; the card constants are re-derived from the committed fixture
+    (+$32.20 = reopt $0.00 + move +$32.20). The ordering this entry demanded was
+    honoured — re-derive from the world FIRST, then grade — and the derivation
+    needed no fresh world, because the exam target was verified byte-identical to
+    the registry's `rolling-c362baa4-1b0` apart from ids. **What the discharge
+    also found: the specimen this entry was protecting has degenerated.** 4B.7's
+    own change made `reopt_delta_abs` 0.00 BY CONSTRUCTION (§5a.12), so move
+    equals total and "what did the move itself cost, not the re-solve" can no
+    longer discriminate; it is reported as unexercisable rather than counted as a
+    pass. See §5a.54 and `docs/closeouts/4B.17.md`. *Original entry:* (4B.7,
     NAMED not fixed, per the session's own out-of-scope list).
     `ai_exam/runner.py:317-320,377` hard-codes `_SHIPPED_CARD_REOPT_DELTA =
     -11975.83` and a `tardiness` delta of the same figure; 4B.6b corrected those
@@ -3401,6 +3415,210 @@ states this]`), and therefore for every answer whose ground is
 carrying authored copy are the exception that works around it, not a discharge of
 it.
 
+
+**§5a.54 — THE r5 BANK IS CALIBRATED, RUN AND GRADED; §5a.22 IS DISCHARGED
+(Session 4B.17).** Committed 4B.5, carried unrun for six sessions, expectations
+invalidated three times. Recalibrated against the pinned world's PERSISTED
+document under four rules — the question text of all 27 original specimens
+UNCHANGED, every expectation change logged in `tests/ai_exam/RUBRIC.md`'s
+append-only RECALIBRATION LOG with its cause and its old text, no expectation
+copied from output (the bank was recalibrated BEFORE its first run, so there was
+none to fit to), and anything underivable marked UNGRADED with a reason. Six
+specimens added verbatim (two of the brief's eight were already banked); 27 → 33
+questions. Ran **six times** — three on shipped defaults (parse Haiku /
+synthesis Sonnet 5) and three on Haiku-everywhere — 198 answers.
+**THE ONE WORLD FACT THAT MOVED THE MOST EXPECTATIONS: nothing is late on this
+board** (all 26 placed demands early, worst slack ORD-000011 at 502 min,
+tardiness $0.00, bound closed). Nine of the bank's questions are about lateness,
+so every one became a false-premise specimen graded on 4B.13's premise
+correction. **THE CARD WAS RE-DERIVED AND THE SPECIMEN DEGENERATED:**
+`runner.py`'s constants are now the committed fixture's (+$32.20 = reopt $0.00 +
+move +$32.20, affected set EMPTY), and because 4B.7 made `reopt_delta_abs` 0.00
+BY CONSTRUCTION (§5a.12) the 4B.6a specimen "what did the move itself cost, not
+the re-solve" **CANNOT DISCRIMINATE** — move equals total on every card the
+product can produce. Reported as unexercisable, never counted as a pass.
+**A BANK AUTHORING BUG FELL OUT:** the no-card turn carried
+`EXPECT route=open-card` directly beneath a comment forbidding exactly that, so
+a run would have graded the defect as the pass; removed, and that turn is
+hand-graded because EXPECT cannot express a negative. **RESULT: 5 truth
+failures, 4 expectation drifts, 10 conversational misses; 32 of 33 questions
+STABLE across three runs on shipped defaults, 33 of 33 on Haiku.** Narrative and
+every verbatim answer in `docs/closeouts/4B.17.md`. **NOTHING WAS FIXED** — a fix
+bundled into the session that found it cannot be attributed, and R-AI4 gives the
+felt-bar call to Daryn.
+
+**§5a.55 — THE PINNED EXAM WORLD CANNOT STATE ITS OWN COST PROOF, AND SIX
+SESSIONS OF AI MEASUREMENT RAN ON IT (4B.17, TRUTH FAILURE A4).** Same world,
+same `runs/` directory, same route, two answers: a LOADED evidence index gives
+"I can't tell you — this schedule carries no solver report I can read", a
+REBUILT one gives "Yes — and this is proved, not asserted." The document beside
+both says `OPTIMAL`, `gap 0.0`, and the strip reads that record and says PROVED —
+so **the strip and the answer surface disagree, which is the precise failure
+§5a.23 was discharged to prevent**, re-opened underneath it.
+**MECHANISM: `EvidenceIndex.save()` persists `entity_records`, `finding_index`
+and `run_registry` only, and `load()` rebuilds `_all_evidence` from
+`entity_records` alone** — so the M6 `solve_complete` Event, which is RUN-level
+and has no entity subject, does not survive a save/load round-trip and
+`cost_proof.from_evidence` returns `no_solve` on any loaded index. Measured: the
+pinned target's 114 KB index contains "solve_complete" **zero** times while its
+own `runs/58d67288-….jsonl` contains it twice. **BLAST RADIUS — AND PRODUCTION
+IS AFFECTED, ON THE MONOLITHIC PATH.** `_execute_solve` (`api/app.py:877`) runs
+the monolithic pipeline by calling `mre.__main__.main`, whose M9 step saves the
+index at `__main__.py:585` on the SUCCESS path — as does `demo.py:244` — and
+`api/app.py:1482` prefers a persisted index when one exists. **Seven of the
+fourteen solved runs in this repo's `_data/runs/` carry one, and all seven are
+monolithic.** The ROLLING path is the exception (`_execute_rolling_solve` never
+goes through `__main__`), which is why the four `snap-rolling` runs have no index
+and why 4B.13 measured the right answer through `/ask`. The pinned exam world is
+rolling but its BUILDER saves one (`build_rolling_exam_run.py:384`), so six
+sessions of AI measurement ran on a board that cannot state its own cost proof.
+**THE WORST CONSEQUENCE IS THE OPENER'S BAND 1.** Measured on the real monolithic
+run `_data/runs/7f97d9d1-…` (document: `FEASIBLE`, gap **0.5692**, ledger
+51,637.18): loaded, the briefing offers **3 things**; rebuilt, it offers **4**,
+and the new one ranks **SECOND, in band 1** — *"The cost optimum is NOT proved …
+that bound leaves up to **29,390.52** on the table"*. So on every monolithic
+board the API serves, the money member of band 1 is **silently absent**, the
+"Not covered by this read" section does not mention it, and `_proof_items`
+returns `[]` on `no_solve` so neither the unproved nor the proved branch can
+fire. **AND §5a.23'S MONEY RIDER CANNOT FIRE EITHER** — it is gated on
+`unproved`, which is False on a `no_solve` proof, so a money answer on a
+56.9%-gap board volunteers nothing about the gap. **NOT FIXED:** persisting
+run-level records changes a persisted format and dropping the load-if-exists
+preference changes API behaviour; either is a ruling. No bank question asked for
+this — it was found while deriving the briefing's expectation, and the first
+reading of its blast radius (that production was unaffected) was WRONG and is
+corrected here.
+
+**§5a.56 — THE MERGED SPAN IS THE SYNTHESIS TOOLBOX'S `duration_minutes`, AND
+ITS `busy_minutes`: THE FOURTH SEAM OF A DEFECT CLASS FIXED THREE TIMES (4B.17,
+TRUTH FAILURE A3).** Queried directly against the pinned snapshot:
+`placements_for_order` and `placements_for_machine` report ORD-000011 op10 as
+`"duration_minutes": 5821.0`, and `machine_occupancy` reports
+`"busy_minutes": 5821.0, "gap_before_minutes": 0.0`. The truth is **1501 working
+minutes in three chunks across a 5821-minute span**, 4320 minutes of which are
+nights and a weekend when CUT-01 is closed and the operation is paused — the
+exact figure 4B.13 Item 0 fixed and the reason 4B.14 split the job card into
+separate RUN TIME and ELAPSED SPAN rows. **`busy_minutes` is the worse half:
+CUT-01's total OPEN time between those timestamps is 1501 minutes, so 5821
+exceeds the machine's entire capacity in that span by 3.9x**, and
+`gap_before_minutes: 0.0` denies a pause the operation contains. **THE MODEL IS
+NOT THE FAULT** — there is no run-time figure anywhere in those rows, so a
+reasoner has nothing truer to quote; the answer that carried it cited a real
+record and the verifier passed it VERIFIED, correctly. Observed live in 2 of 3
+Haiku-everywhere runs and absent from the Sonnet runs only because those turns
+did not call the tool. CLAUDE.md's own rule names the class: **a defect class
+fixed at one seam is not fixed** — 4B.13 fixed two, 4B.14 found a third at
+`_load_enriched_assignments`, and the synthesis toolbox is the fourth, unchecked
+because it is not on the board. **NOT FIXED:** the tool surface is a governed
+artifact and this wants the session that closes the class, not a patch.
+
+**§5a.57 — 33 QUESTIONS x 3 RUNS STILL CANNOT RESOLVE THE TIER, AND THIS TIME
+THE REASON IS STRUCTURAL (4B.17 Item 4).** Both configurations, same bank, same
+world: truth failures 3 distinct / 9 firings (shipped) against 4 / 11 (Haiku,
+the extra being §5a.56's, which is the tool's); asked fact reached 31/31/31
+against 31/31/30; multi-hop 8/8/8 against 8/8/7; median latency over all turns
+**1441 ms** against **1477 ms**, p90 **3586** against **3135**; contracted median
+1415/p90 3012 against 1444/2777; synthesis median/p90 **6189 / 23108 ms (n=5)**
+against **10269 / 15353 ms (n=6)**; cost per question **$0.0105** against
+**$0.0110**. **THE VERDICT: THE BANK CANNOT RESOLVE IT, AND THE REASON IS THAT
+31 OF 33 QUESTIONS NEVER REACH THE LAYER THE SPLIT CHANGES.** Everything else
+routes to contracted templates whose render is byte-identical under both
+configurations; the tier's whole surface here is two questions, one of which is
+the unanswerable floor in both — so the measurable surface is **one question,
+six times**, and across all 198 answers the two configurations differ in exactly
+**one** routing decision, which is the PARSE's, and the parse is Haiku in both.
+**§5a.46 named a bigger bank as the instrument for the quality column; this bank
+is bigger and it is the WRONG KIND of bigger** — a founder-regression bank is
+contracted-route regressions by design and is therefore nearly blind to the
+second tier. The instrument for a tier decision is a bank whose questions are
+UNMATCHED by design. **What did reproduce:** cost is a coin flip at 5% apart and
+**Sonnet is the cheaper of the two here**, because Haiku-everywhere spent 21%
+more input tokens (1.01M vs 0.83M) over 12 more calls — §5a.46's shape with the
+sign flipped, the second tier taking MORE steps rather than the same steps
+faster. **NO TIER CHANGE IS RECOMMENDED; the numbers are recorded and the
+decision is Daryn's.**
+
+**§5a.58 — THE `repeat` / `deaf` BOUNDARY IS KEYED ON STRING IDENTITY, SO A
+REPHRASED RE-ASK GETS SELF-DOUBT (4B.17, C2/C3).** Measured 6/6 on two turns.
+"how many are late again" after "how many orders are late", and "how many
+machines" after "how many machines are there", both get *"I've now given you
+this same answer for two different questions, which probably means I'm not
+understanding what you're asking"* plus the FULL recitation again plus an offer
+to name a field. Two firings, zero true positives — the same score §5a.42
+recorded for the pre-split detector, on the other side of the split. **THE
+CONTRAST IS THE FINDING:** the same string twice (`what should i do`, twice
+running) gets the CORRECT lead, "Same answer as a moment ago —", over a
+byte-identical body. So `repeat` fires on identical text and `deaf` claims every
+rewording, which means the bank's C(c) terseness specimen — a count re-asked
+answers tersely — **never gets to fire at all**. §5a.42's named limit
+("distinguishing 'one answer because I am confused' from 'one answer because it
+IS the answer'") is now measured live rather than anticipated. NOT FIXED: keying
+`repeat` on the question's MEANING needs the signal §5a.42 already said this
+work does not have.
+
+**§5a.59 — §5a.51's "off board selection" CLAIM DOES NOT REPRODUCE (4B.17, drift
+B4).** §5a.51 records `"how do i change that"` — four words, no subject —
+reaching `what-would-change` off a board selection. In a cold conversation
+carrying ONLY `SELECT order=ORD-000013 machine=PAINT-01` and no prior turn, it
+parses **`unmatched` at all six runs** and falls to the synthesis floor with the
+subject unbound, whose offered doors are then "show every late order" and "list
+the data-quality problems" — unrelated to the order the planner had selected,
+which RUBRIC entry 6's RESOLVED ruling makes a C5 failure by name, on a board
+with no late orders. Either the errand's turn carried a prior answer its note
+does not mention, or a bare selection does not carry an anaphor. **Reported, not
+chased — the note as written is wrong and correcting it is a fix.**
+
+**§5a.60 — TWO AUTHORED DOOR LABELS ASSERT FACTS ABOUT THE BOARD WITHOUT READING
+IT (4B.17, TRUTH FAILURE A1).** `ask_fallback_copy.ROUTE_OFFERS["machine-idle"]`
+(`ask_fallback_copy.py:58`) is the string *"explain why {machine} carries no
+work"*, and the table's own header says the slot is "filled from the
+interpreter's partially-resolved params where present, else a generic noun" —
+no read of the board enters it. Asked "would overtime on CUT-01 help", the product offers, three lines
+apart, to *"show what's running on CUT-01"* and to *"explain why CUT-01 carries
+no work"* — **CUT-01 carries 18 of the 56 bars and is the busiest machine in the
+plant.** Same table, same class, not fired in this sweep:
+`"advice": "explain why each order is late and price a what-if move"` on a board
+where nothing is late. **A door label is not a question, it is a claim**, and the
+registry's reverse-guard (`tests/ai_exam/test_real_doors.py`) proves each probe
+PARSES to a live route — a door that opens — and never that the room behind it is
+furnished. The same gap is why §5a.61's trailing offer routes to a null answer.
+NOT FIXED.
+
+**§5a.61 — THE COACHING INVITATION CANNOT DECLINE TO FIRE, BY SHAPE (4B.17 Item
+5(a)).** `INVITE_COACHING` (`ask_fallback_copy.py:532`) is registered with
+`slots=()`. `invitation_line()` returns None only when a required slot is
+missing, so **a pattern with no slots can never withhold itself and can never
+vary** — and it is fired from both coaching branches (`renderers.py:1405` and
+`:1419`), so every coaching answer carries *"Want to check what the submission
+already declares? Ask 'what data problems exist?'"* whatever the subject.
+Confirmed live 6/6 on the overtime turn. On the pinned board that question
+returns a clean submission, so the offer sends a planner who asked about
+overtime to a null answer about something else. **A COMPUTED OFFER NEEDS THREE
+THINGS the machinery does not have:** a slot (so there is something to fill or
+withhold on), a read of whether the door has anything behind it (§5a.60's gap),
+and a per-capability target — the useful follow-up after "how do I declare
+overtime" is what THIS submission declares for it (`calendars.csv` exception
+rows, `overtime_premium_multiplier`), which is `attribute-lookup`-shaped and
+therefore vocabulary-adjacent. REPORTED, NOT BUILT.
+
+**§5a.62 — THE BINDING-FAMILY CENSUS IS NOT DERIVABLE FROM THE PERSISTED
+DOCUMENT, AND IS EMPTY ON THIS BOARD ANYWAY (4B.17 Item 5(b)).** "How often does
+each resource appear as the BINDING family across late orders" has **zero rows on
+the pinned world** — nothing is late — the same demo-density limit §5a.11
+recorded for the coarse zone and 4B.16 for concentration. And it is not
+derivable from the document alone: of the seven reads
+`Explainer._blocker_inputs` assembles, contract 1.11's document carries open
+windows and closures (`resources[].calendar_windows` with a `kind`) and chunk
+occupancy on the primary lane (since 4B.13), but **NOT splittability or
+min_chunk** (`AssignmentBlock.splittable` / `min_chunk_min` are contract **1.12**
+and Optional; this board is 1.11), **NOT precedence or release for committed
+work** (`interaction.precedence_edges` holds THREE edges and
+`interaction.operations[].earliest_start` covers only the 11 ACTIVE-window ops,
+so the 45 committed bars have neither), and **NOT a pin's start** (`standing_pin`
+is a bare bool). So A1/A2, A4 and C3 — the families that bound this bank's own
+specimens — are uncomputable for committed work from the document, and a census
+needs the SNAPSHOT. The blocker analysis is already the one reader that
+assembles it. NOT BUILT.
 
 ## 6. Open rulings queue
 

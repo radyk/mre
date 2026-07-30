@@ -158,10 +158,35 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.16 — the counterfactual and the opener**, 2026-07-29 (docs/07 v2.61,
-§5a.49-50; docs/04 session amendment; narrative in `docs/closeouts/4B.16.md`).
-Before it: 4B.15 (v2.59, §5a.39-45), 4B.14 (v2.58, §5a.34-38), 4B.13 (v2.57),
-4B.12 (v2.56, a MEASUREMENT session), 4B.11 (v2.55, **R-PD1 verbatim**).
+**Session 4B.17 — run the bank**, 2026-07-30 (docs/07 v2.63, §5a.54-62; docs/04
+session amendment; narrative in `docs/closeouts/4B.17.md`). Before it:
+4B.16 (v2.61, §5a.49-50), 4B.15 (v2.59, §5a.39-45), 4B.14 (v2.58, §5a.34-38),
+4B.13 (v2.57), 4B.12 (v2.56, a MEASUREMENT session), 4B.11 (v2.55, **R-PD1 verbatim**).
+
+**§5a.22 IS DISCHARGED — THE r5 BANK IS CALIBRATED, RUN AND GRADED (4B.17).**
+27 → 33 questions, six runs, 198 answers; every expectation change logged in
+`tests/ai_exam/RUBRIC.md`'s append-only RECALIBRATION LOG with its cause and old
+text; the 27 original question TEXTS untouched. **NOTHING IS LATE ON THE PINNED
+BOARD**, so nine lateness questions are false-premise specimens now. **FIVE
+REPRODUCIBLE TRUTH FAILURES, NONE A MODEL ARTIFACT, ALL REPORTED AND NOT FIXED:**
+a door label offers to *"explain why CUT-01 carries no work"* about the BUSIEST
+machine (§5a.60 — a door label is a claim, and the reverse-guard only proves the
+door OPENS); the no-such-machine correction lists **8 of 15** machines and drops
+the one the asked order is on (§5a.54, verbatim in 4B.13's own close-out);
+**the synthesis toolbox reports the merged SPAN as `duration_minutes` and
+`busy_minutes`** — 5821 against 1501 working minutes, 3.9x the machine's open
+time, the **FOURTH SEAM** of a class fixed three times (§5a.56); **the pinned exam
+world cannot state its own cost proof** because `EvidenceIndex.save()` drops
+run-level records, so the strip says PROVED and the answer says "no solver report
+I can read" (§5a.55 — production unaffected, the exam world is not, and it
+silently costs the opener its second CLEAN item); and `why-on-machine`'s evidence
+chain **contradicts its own only-eligible lead and still carries the founder's
+original vacuous driver phrase** (§5a.54). **THE TIER QUESTION IS STILL
+UNRESOLVED AND THE REASON IS NOW STRUCTURAL: 31 of 33 questions never reach the
+layer the split changes** (§5a.57) — one differing routing decision in 198
+answers, and it is the parse's, which is Haiku in both configurations. Cost
+$0.0105 vs $0.0110/question, **Sonnet the cheaper here**. A founder-regression
+bank cannot resolve a tier decision; that needs a bank UNMATCHED by design.
 
 **THE COUNTERFACTUAL — `what-would-change` (4B.16, §5a.49, parse prompt v13).**
 The INVERSE of `why-here` over the SAME computed bounds and NO new ones: take
@@ -631,6 +656,26 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
 
 **Small carry-forwards (do not lose):**
 
+- 4B.17 findings beyond the five truth failures (docs/07 §5a.54-62 — REPORTED,
+  deliberately NOT fixed): **THE `repeat`/`deaf` BOUNDARY IS KEYED ON STRING
+  IDENTITY** (§5a.58) — the same string twice gets the correct lead; the same
+  QUESTION reworded gets self-doubt plus the full recitation, so the C(c)
+  terseness specimen never fires. Two firings, zero true positives — §5a.42's
+  score on the other side of its own split. **§5a.51's "off board selection"
+  CLAIM DOES NOT REPRODUCE** (§5a.59): `"how do i change that"` with only a
+  selection parses `unmatched` at all six runs. **THE COACHING INVITATION CANNOT
+  DECLINE TO FIRE, BY SHAPE** (§5a.61) — `slots=()`, so
+  `invitation_line()` can never withhold it; it routes a planner to a null
+  answer. **THE CARD ROUTE ANSWERS FIVE QUESTIONS WITH ONE BYTE-IDENTICAL
+  RECITAL** (RUBRIC entry 10's question, answered by six runs: it is a recital).
+  **THE BINDING-FAMILY CENSUS IS EMPTY HERE AND NOT DERIVABLE FROM THE DOCUMENT**
+  (§5a.62): contract 1.11 carries calendars and chunks but not splittability
+  (1.12), nor precedence/release for COMMITTED work.
+  **`dark-evidence` FIRES ON A PREMISE CORRECTION**, 2 per run — the sidecar
+  signal predates the guard, and a correction cites nothing because there is
+  nothing to cite. **THE r5 CARD SPECIMEN IS UNEXERCISABLE**: 4B.7 made
+  `reopt_delta_abs` 0.00 by construction, so move == total and "which half"
+  cannot discriminate — reported, never counted as a pass.
 - 4B.16 findings (docs/07 §5a.49-50 — REPORTED, deliberately NOT fixed):
   **THE OPENER CANNOT STATE THE CERTIFICATE GRADE** — it is a submission fact
   the API joins on `/meta` and the schedule document does not carry it, so the
@@ -659,7 +704,7 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   of one question) — humble rather than wrong, but distinguishing "one answer
   because I am confused" from "one answer because it IS the answer" needs a
   signal this session does not have.
-  **CLAUDE.md IS 55k AGAINST ITS 40k CEILING** — 47k before 4B.15 (+5.6k), 53k before 4B.16 (+2k). Compression was out of scope for both; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, ~60k after it. Compression was out of scope for all three; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
   **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
   day-shift restriction answered as C1/C2 "proven end to end" when the item is
   C4 (model-proven, §8 doorway). Caught and pinned; the class stands.
@@ -723,10 +768,9 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   survives while the extractor no longer emits it (4B.8 CU4 made it dormant, interim
   only). Correcting it is a **vocabulary-class change** reaching planner_language /
   explainer / renderers / four AI-voice tests / the exam bank.
-  **§5a.22 — the r5 bank's card expectations are invalidated again** and the exam WORLD
-  changes with every contract move (now 1.11 and a regenerated sample_data baseline).
-  NOT recalibrated — the bank has never been graded. **This, not a key, is the r5
-  bank's only blocker** (4B.16a). Re-derive from a fresh world FIRST, then grade.
+  **§5a.22 is DISCHARGED by 4B.17** — recalibrated (from the committed fixture, no
+  fresh world needed: the exam target was verified byte-identical to
+  `rolling-c362baa4-1b0`), run six times and graded. See the status section.
 - 4B.6b findings (docs/07 §5a.8, .10, .12-14 — REPORTED, deliberately NOT fixed):
   **§5a.12 is DISCHARGED by 4B.7** — the coefficient left the objective, so the window
   solve and the sandbox baseline now minimize the SAME expression and `reopt_delta_abs`
@@ -747,8 +791,8 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   what kept it alive — fixed. **`src/mre/env_local.py` is the ONE reader**; a
   second is a red test (negative control proven). Nothing in the library loads a
   file, correctly — in a container the key comes from the platform secret store,
-  so each ENTRY POINT populates the env. `regression_founder_r5` is unrun because
-  its expectations are UNCALIBRATED (§5a.22), not for a key.
+  so each ENTRY POINT populates the env. `regression_founder_r5` was unrun because
+  its expectations were UNCALIBRATED (§5a.22), not for a key — **4B.17 ran it**.
 - 4B.6a debts (docs/07 §5a.9, .11): **§5a.9 is DISCHARGED by 4B.7** — the ~7.9%-dearer incumbent is gone, the board
   now sits at the proven optimum 16,481.95 / tardiness 0.00; `rolling_coarse_hot/` binds by
   DECLARED derate 0.10, a contrivance for screenshot coverage, not a discharge of the

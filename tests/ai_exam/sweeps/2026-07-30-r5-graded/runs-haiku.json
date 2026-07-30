@@ -1,0 +1,4688 @@
+[
+ {
+  "label": "haiku",
+  "run": 1,
+  "config": {
+   "parse_model": "claude-haiku-4-5-20251001",
+   "synthesis_model": "claude-haiku-4-5-20251001",
+   "voice_model": "claude-haiku-4-5-20251001"
+  },
+  "target": "rolling-c362baa4-1b0",
+  "snapshot": "snap-rolling",
+  "llm_mode": "live",
+  "wall_s": 85.1,
+  "questions": 33,
+  "graded": 32,
+  "met": 27,
+  "findings": {
+   "dark-evidence": 2,
+   "expect-miss": 5,
+   "validator": 1
+  },
+  "latency": {
+   "route": {
+    "n": 31,
+    "median_ms": 1523.4,
+    "p90_ms": 2886.1
+   },
+   "synthesis": {
+    "n": 2,
+    "median_ms": 9985.2,
+    "p90_ms": 15353.4
+   }
+  },
+  "synthesis_totals": {
+   "answers": 2,
+   "claims": 5,
+   "verified": 1,
+   "interpretive": 4,
+   "failed_and_cut": 0,
+   "ungrounded_load_bearing": 0,
+   "unanswerable": 1,
+   "budget_exhausted": 0,
+   "tool_calls": 6,
+   "tool_histogram": {
+    "constraint_catalog": 1,
+    "entity_vocabulary": 1,
+    "lateness_set": 1,
+    "machine_occupancy": 1,
+    "placements_for_order": 1,
+    "placements_in_window": 1
+   },
+   "calls_per_answer": {
+    "0": 1,
+    "6": 1
+   }
+  },
+  "shadow": {
+   "shadowed": 0,
+   "clean": 0,
+   "diverged": 0,
+   "unchecked": 0,
+   "provenance_strengthened": 0,
+   "by_intent": {}
+  },
+  "parser_stats": {
+   "calls": 40,
+   "parses": 40,
+   "retries": 0,
+   "malformed": 0,
+   "clarifies": 3,
+   "unavailable": 0,
+   "median_latency_ms": 1357.1998500046902,
+   "malformed_samples": []
+  },
+  "synth_stats": {
+   "syntheses": 2,
+   "calls": 8,
+   "tool_calls": 6,
+   "malformed": 0,
+   "budget_exhausted": 0,
+   "timed_out": 0,
+   "unanswerable": 1,
+   "median_latency_ms": 7625.831749999634,
+   "p90_latency_ms": 12931.483199994545
+  },
+  "tokens": {
+   "claude-haiku-4-5-20251001": {
+    "calls": 52,
+    "in": 341971,
+    "out": 5519
+   }
+  },
+  "cost_usd": 0.3696,
+  "rows": [
+   {
+    "lineno": 105,
+    "question": "what orders are affected in this move",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.95,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1683.1,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1292.3415000041132,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "open-card",
+     "route": "open-card"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "The move you have open:\nORD-000023 lands on MILL-01 at Jan 8, 08:23.\nIt prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.\n\nNo order's lateness or tardiness changes because of it.\nNothing's lateness changes across the plan.\nNothing else has to move.\nNo committed work changes.\n\nWhy it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)\n\nNothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 128,
+    "question": "what did the move itself cost, not the re-solve",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.95,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1245.6,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1216.5936000019428,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "open-card",
+     "route": "open-card"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "The move you have open:\nORD-000023 lands on MILL-01 at Jan 8, 08:23.\nIt prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.\n\nNo order's lateness or tardiness changes because of it.\nNothing's lateness changes across the plan.\nNothing else has to move.\nNo committed work changes.\n\nWhy it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)\n\nNothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 137,
+    "question": "what does this move cost",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.95,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1122.4,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1090.690999997605,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "open-card",
+     "route": "open-card"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "The move you have open:\nORD-000023 lands on MILL-01 at Jan 8, 08:23.\nIt prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.\n\nNo order's lateness or tardiness changes because of it.\nNothing's lateness changes across the plan.\nNothing else has to move.\nNo committed work changes.\n\nWhy it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)\n\nNothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 139,
+    "question": "these orders — which ones are they",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.95,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 2031.5,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.95,
+     "followup_of": "list-expand",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 2004.3561999991653,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "open-card",
+     "route": "open-card"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "The move you have open:\nORD-000023 lands on MILL-01 at Jan 8, 08:23.\nIt prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.\n\nNo order's lateness or tardiness changes because of it.\nNothing's lateness changes across the plan.\nNothing else has to move.\nNo committed work changes.\n\nWhy it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)\n\nNothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 141,
+    "question": "whats the delta",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.95,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1107.7,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1080.0040000031004,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "open-card",
+     "route": "open-card"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "The move you have open:\nORD-000023 lands on MILL-01 at Jan 8, 08:23.\nIt prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.\n\nNo order's lateness or tardiness changes because of it.\nNothing's lateness changes across the plan.\nNothing else has to move.\nNo committed work changes.\n\nWhy it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)\n\nNothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 161,
+    "question": "whats the delta",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.15,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1263.9,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.15,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": "no-subject",
+     "retries": 0,
+     "latency_ms": 1236.8027999982587,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {},
+    "expect_met": false,
+    "findings": [],
+    "error": null,
+    "answer": "There's no priced move open on the board right now, so I have nothing to read back. Make the move again and I'll answer from the card it prices.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 174,
+    "question": "which orders are late",
+    "selection": {},
+    "intent": "late-orders",
+    "confidence": 0.95,
+    "route": "late-orders",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "late_orders",
+    "subject": "all demands",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1093.9,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "late-orders",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1062.174499995308,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "late-orders"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "No late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 176,
+    "question": "whats running on CUT-01",
+    "selection": {},
+    "intent": "machine-schedule",
+    "confidence": 0.95,
+    "route": "machine-schedule",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "schedule",
+    "subject": "CUT-01",
+    "records": 18,
+    "lit_bars": 19,
+    "latency_ms": 1254.4,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "machine-schedule",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "machine",
+       "raw": "CUT-01",
+       "ref": "CUT-01",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1142.0963000055053,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "machine-schedule",
+     "machine": "CUT-01"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "CUT-01: 18 operation(s):\n\n  [CUT-01]\n    seq= 10  2026-01-05 07:00 -> 2026-01-05 08:18  ORD-000016  -13817min early\n    seq= 10  2026-01-05 08:18 -> 2026-01-05 10:18  ORD-000001  -24867min early\n    seq= 10  2026-01-05 10:18 -> 2026-01-05 11:30  ORD-000004  -19061min early\n    seq= 10  2026-01-05 11:30 -> 2026-01-05 12:24  ORD-000021  -30875min early\n    seq= 10  2026-01-05 12:24 -> 2026-01-05 13:45  ORD-000039  -12047min early\n    seq= 10  2026-01-05 13:45 -> 2026-01-05 16:41  ORD-000038  -16722min early\n    seq= 10  2026-01-05 16:41 -> 2026-01-05 17:45  ORD-000012  -16595min early\n    seq= 10  2026-01-05 17:45 -> 2026-01-05 18:54  ORD-000002  -20968min early\n    seq= 10  2026-01-06 07:00 -> 2026-01-06 08:24  ORD-000008  -20691min early\n    seq= 10  2026-01-06 08:24 -> 2026-01-06 13:00  ORD-000029  -9447min early\n    seq= 10  2026-01-06 13:00 -> 2026-01-06 16:15  ORD-000027  -7677min early\n    seq= 10  2026-01-07 07:00 -> 2026-01-07 10:15  ORD-000037  -9529min early\n    seq= 10  2026-01-07 10:15 -> 2026-01-07 18:54  ORD-000028  -20606min early\n    seq= 10  2026-01-08 07:00 -> 2026-01-08 14:36  ORD-000019  -12078min early\n    seq= 10  2026-01-08 14:36 -> 2026-01-12 15:37  ORD-000011  -502min early\n    seq= 10  2026-01-13 07:00 -> 2026-01-13 14:06  ORD-000013  -588min early\n    seq= 10  2026-01-15 07:00 -> 2026-01-15 13:54  ORD-000022  -7800min early\n    seq= 10  2026-01-15 13:54 -> 2026-01-19 09:55  ORD-000003  -844min early\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 193,
+    "question": "why is this one late",
+    "selection": {
+     "order": "ORD-000009",
+     "machine": "CUT-01"
+    },
+    "intent": "late-order",
+    "confidence": 0.95,
+    "route": "late-order",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "LLM (claude-haiku-4-5-20251001)",
+    "subject_type": "demand",
+    "subject": "ORD-000023",
+    "records": 4,
+    "lit_bars": 3,
+    "latency_ms": 3988.5,
+    "llm_calls": 2,
+    "parse": {
+     "intent": "late-order",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": "positive",
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "this one",
+       "ref": "ORD-000023",
+       "source": "card"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1254.9460000009276,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "order": "ORD-000023"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "ORD-000023 is not late. It finished with a lateness of -13388 min (-223.1h), meaning it completed 9.3 days early relative to its due date of 2026-01-14T23:59:59Z [record: bca1dfe4...]. The order was assigned to PRESS-FAST and projected to complete at 2026-01-05 16:51 UTC [record: 1351e7e3...].\n[rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]"
+   },
+   {
+    "lineno": 221,
+    "question": "why is ORD-000023 on MILL-01",
+    "selection": {},
+    "intent": "why-on-machine",
+    "confidence": 0.95,
+    "route": "why-on-machine",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "premise_correction",
+    "subject": "ORD-000023",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 2023.1,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "why-on-machine",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000023",
+       "ref": "ORD-000023",
+       "source": "utterance"
+      },
+      {
+       "kind": "machine",
+       "raw": "MILL-01",
+       "ref": "MILL-01",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1941.098699993745,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "why-on-machine",
+     "route": "why-on-machine",
+     "order": "ORD-000023",
+     "machine": "MILL-01"
+    },
+    "expect_met": true,
+    "findings": [
+     {
+      "kind": "dark-evidence",
+      "detail": "route 'why-on-machine' cited 0 records and lit 0 bars"
+     }
+    ],
+    "error": null,
+    "answer": "ORD-000023 isn't on MILL-01 — it runs on PRESS-FAST.\n\n  - PRESS-FAST  (op 10)  2026-01-05T12:51:00Z -> 2026-01-05T16:51:00Z\n\nDid you mean one of those? Ask \"why is ORD-000023 on PRESS-FAST?\" and I'll give you the cause.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 231,
+    "question": "why did ORD-000009 end up on CUT-01",
+    "selection": {},
+    "intent": "why-on-machine",
+    "confidence": 0.95,
+    "route": "why-on-machine",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "premise_correction",
+    "subject": "ORD-000009",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1479.4,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "why-on-machine",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000009",
+       "ref": "ORD-000009",
+       "source": "utterance"
+      },
+      {
+       "kind": "machine",
+       "raw": "CUT-01",
+       "ref": "CUT-01",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1399.5682999957353,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "why-on-machine",
+     "order": "ORD-000009",
+     "machine": "CUT-01"
+    },
+    "expect_met": true,
+    "findings": [
+     {
+      "kind": "dark-evidence",
+      "detail": "route 'why-on-machine' cited 0 records and lit 0 bars"
+     }
+    ],
+    "error": null,
+    "answer": "ORD-000009 isn't on CUT-01 — it runs MILL-02, ASM-01 and FINISH-01.\n\n  - MILL-02  (op 10)  2026-01-05T07:00:00Z -> 2026-01-05T12:56:00Z\n  - ASM-01  (op 20)  2026-01-06T07:00:00Z -> 2026-01-06T14:30:00Z\n  - FINISH-01  (op 30)  2026-01-06T14:31:00Z -> 2026-01-06T18:53:00Z\n\nDid you mean one of those? Ask \"why is ORD-000009 on MILL-02?\" and I'll give you the cause.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 242,
+    "question": "why is ORD-000023 on MILL-99",
+    "selection": {},
+    "intent": "why-on-machine",
+    "confidence": 0.95,
+    "route": "unknown-entity",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "unknown_entity",
+    "subject": "MILL-99",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1523.4,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "why-on-machine",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000023",
+       "ref": "ORD-000023",
+       "source": "utterance"
+      },
+      {
+       "kind": "machine",
+       "raw": "MILL-99",
+       "ref": null,
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1462.357600001269,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "why-on-machine",
+     "order": "ORD-000023",
+     "machine": "MILL-99"
+    },
+    "expect_met": false,
+    "findings": [
+     {
+      "kind": "expect-miss",
+      "detail": "machine: expected 'MILL-99', got None"
+     }
+    ],
+    "error": null,
+    "answer": "There's no machine called MILL-99 in this plant.\nThe machines here are: ASM-01, CUT-01, CUT-02, CUT-03, FINISH-01, FINISH-02, FINISH-03, HEAT-01.\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 256,
+    "question": "why is ORD-000012 on PAINT-01",
+    "selection": {},
+    "intent": "why-on-machine",
+    "confidence": 0.95,
+    "route": "why-on-machine",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template (LLM validated)",
+    "subject_type": "demand",
+    "subject": "ORD-000012",
+    "records": 3,
+    "lit_bars": 7,
+    "latency_ms": 5182.3,
+    "llm_calls": 3,
+    "parse": {
+     "intent": "why-on-machine",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000012",
+       "ref": "ORD-000012",
+       "source": "utterance"
+      },
+      {
+       "kind": "machine",
+       "raw": "PAINT-01",
+       "ref": "PAINT-01",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 2050.656600004004,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "why-on-machine",
+     "order": "ORD-000012",
+     "machine": "PAINT-01"
+    },
+    "expect_met": true,
+    "findings": [
+     {
+      "kind": "validator",
+      "detail": "LLM testimony failed validation; fell back to template"
+     }
+    ],
+    "error": null,
+    "answer": "ORD-000012 is on PAINT-01 because that is the only machine qualified to run this step — there was no alternative to weigh.\n\nEvidence chain (3 record(s)):\n\n[1] DECISION  | ASSIGNMENT  (scheduling)\n    Assigned to: PAINT-01\n    Why: the machine was busy with other work\n    Note: This is a reconstruction from the solved schedule.\n    [record: 11df66e5...]\n\n[2] DECISION  | ASSIGNMENT  (scheduling)\n    Assigned to: CUT-01\n    Why: it was the cheaper option once every cost was weighed\n    Note: This is a reconstruction from the solved schedule.\n    Alternative: CUT-02  - Would cost $3.20 more.\n    Alternative: CUT-03  - Would cost $7.47 more.\n    [record: a5a16acf...]\n\n[3] DECISION  | ASSIGNMENT  (scheduling)\n    Assigned to: MILL-01\n    Why: the machine was busy with other work\n    Note: This is a reconstruction from the solved schedule.\n    [record: 871c1ef5...]\n\n[LLM validation failed: no [record:] footnotes on factual sentences; fell back to template]\n[rendered by: template (LLM validated) | register: testimony]"
+   },
+   {
+    "lineno": 262,
+    "question": "but why",
+    "selection": {},
+    "intent": "late-order",
+    "confidence": 0.95,
+    "route": "late-order",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "LLM (claude-haiku-4-5-20251001)",
+    "subject_type": "demand",
+    "subject": "ORD-000012",
+    "records": 6,
+    "lit_bars": 7,
+    "latency_ms": 2886.1,
+    "llm_calls": 2,
+    "parse": {
+     "intent": "late-order",
+     "confidence": 0.95,
+     "followup_of": "deepen",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000012",
+       "ref": "ORD-000012",
+       "source": "last-answer"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1365.993500003242,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "order": "ORD-000012",
+     "followup": "deepen"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "ORD-000012 is not late. The projected_completion is 2026-01-06 11:24 UTC with a lateness of -16595 min, indicating the order finished 11.5 days early relative to its due date of 2026-01-17T23:59:59Z [record: fbd6c041...]. The due date was driving the schedule [record: a8bbdaca...].\n[rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]"
+   },
+   {
+    "lineno": 280,
+    "question": "what should i do about the late orders",
+    "selection": {},
+    "intent": "advice",
+    "confidence": 0.92,
+    "route": "advice",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "advice",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1747.8,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "advice",
+     "confidence": 0.92,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "concept",
+       "raw": "late orders",
+       "ref": null,
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1409.199499998067,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "advice"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.\n\nHere's what I can do to help you decide:\n  - explain why any order is late (\"why is <order> late?\")\n  - show what an order is waiting on (\"why can't <order> start earlier?\")\n  - price a what-if on the board: drag a job and I'll cost the move exactly.\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 282,
+    "question": "so you cant tell me if overtime will help",
+    "selection": {},
+    "intent": "advice",
+    "confidence": 0.92,
+    "route": "coaching",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "coaching",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1590.6,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "advice",
+     "confidence": 0.92,
+     "followup_of": "deepen",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "concept",
+       "raw": "overtime",
+       "ref": "overtime",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1368.2470999992802,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "concept": "overtime",
+     "route": "coaching"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "Yes — extra working hours beyond the regular shift — an overtime window a job can run in when the regular calendar is closed, priced at a premium so the schedule only buys those hours when they pay for themselves (e.g. a Saturday shift that rescues a tight order).\n\nTo enable it: add an added exception row with reason overtime on that resource's calendar in calendars.csv (the window it opens), and set an overtime_premium_multiplier in cost_model.json (the premium its hours bill at). See the incoming-data spec §5.6.\n\nWant to check what the submission already declares? Ask \"what data problems exist?\"\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 286,
+    "question": "can i get these done faster",
+    "selection": {},
+    "intent": "advice",
+    "confidence": 0.72,
+    "route": "CLARIFY",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "clarify",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 2801.8,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "advice",
+     "confidence": 0.72,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "concept",
+       "raw": "faster",
+       "ref": null,
+       "source": "utterance"
+      }
+     ],
+     "clarify": "no-subject",
+     "retries": 0,
+     "latency_ms": 2786.4434000002802,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "advice"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I need one more detail to answer \"can i get these done faster\".\nWhich order, machine, or customer do you mean? Ask it again naming one, e.g. \"why is that order late?\" becomes \"why is <order> late?\".\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 288,
+    "question": "would splitting the jobs help",
+    "selection": {},
+    "intent": "what-would-change",
+    "confidence": 0.92,
+    "route": "synthesis",
+    "source": "parse",
+    "register": "synthesis",
+    "renderer": "synthesis (claude-haiku-4-5-20251001) — 6 tool call(s)",
+    "subject_type": "synthesis",
+    "subject": "?",
+    "records": 1,
+    "lit_bars": 2,
+    "latency_ms": 15353.4,
+    "llm_calls": 8,
+    "parse": {
+     "intent": "what-would-change",
+     "confidence": 0.92,
+     "followup_of": "deepen",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "concept",
+       "raw": "splitting",
+       "ref": "splittable",
+       "source": "utterance"
+      }
+     ],
+     "clarify": "no-subject",
+     "retries": 0,
+     "latency_ms": 2351.667599999928,
+     "prompt_version": "13"
+    },
+    "synthesis": {
+     "claims": 5,
+     "verified": 1,
+     "interpretive": 4,
+     "failed_and_cut": 0,
+     "ungrounded_load_bearing": 0,
+     "tool_calls": 6,
+     "budget_exhausted": false,
+     "timed_out": false,
+     "unanswerable": false,
+     "tools": [
+      "entity_vocabulary",
+      "lateness_set",
+      "constraint_catalog",
+      "placements_in_window",
+      "placements_for_order",
+      "machine_occupancy"
+     ],
+     "claims_detail": [
+      {
+       "status": "verified",
+       "kind": "fact",
+       "records": 4
+      },
+      {
+       "status": "interpretive",
+       "kind": "fact",
+       "records": 0
+      },
+      {
+       "status": "interpretive",
+       "kind": "conclusion",
+       "records": 0
+      },
+      {
+       "status": "interpretive",
+       "kind": "conclusion",
+       "records": 0
+      },
+      {
+       "status": "interpretive",
+       "kind": "fact",
+       "records": 0
+      }
+     ],
+     "latency_ms": 12931.483199994545,
+     "model": "claude-haiku-4-5-20251001"
+    },
+    "shadow": {},
+    "expect": {
+     "concept": "splittable",
+     "route": "coaching"
+    },
+    "expect_met": false,
+    "findings": [
+     {
+      "kind": "expect-miss",
+      "detail": "route: expected 'coaching', got 'synthesis'"
+     }
+    ],
+    "error": null,
+    "answer": "No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.\n\nORD-000011 is a single 5821-minute operation on CUT-01 running from 2026-01-08 14:36 through 2026-01-12 15:37, spanning nearly four calendar days.  [record: 73ce8f86...]\nThe system models interruptibility and chunking in-core, with three classes per phase: resumable (pauses only at calendar boundaries), non-resumable (must fit one contiguous window), and calendar-indifferent (runs through breaks unattended).  [synthesis — read from: 5348876d, 12b5e06c, 01d65946]\nSplitting ORD-000011 into smaller chunks could free CUT-01 capacity between chunks if those chunks are declared resumable, allowing other orders to run on the machine during calendar breaks or between pauses.  [synthesis — read from: 5348876d, 12b5e06c, 01d65946]\nHowever, whether splitting would help you finish faster depends on what is blocking completion now: if CUT-01 is the bottleneck and other machines downstream are idle waiting for ORD-000011 to finish, splitting it would not accelerate the overall finish time unless you can run those downstream operations in parallel on other orders.  [synthesis — read from: 5348876d, 12b5e06c, 01d65946]\nAll 26 scheduled orders are currently on time or early; no order is late, so the schedule is not under pressure from missed due dates. (based on the 51 row(s) placements_in_window returned, not the whole plan)  [synthesis — read from: 5348876d, 12b5e06c, 01d65946]\n[rendered by: synthesis (claude-haiku-4-5-20251001) — 6 tool call(s) | register: synthesis]"
+   },
+   {
+    "lineno": 301,
+    "question": "what should i do",
+    "selection": {},
+    "intent": "briefing",
+    "confidence": 0.92,
+    "route": "briefing",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "briefing",
+    "subject": "today",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1908.2,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "briefing",
+     "confidence": 0.92,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1694.502400001511,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "advice"
+    },
+    "expect_met": false,
+    "findings": [
+     {
+      "kind": "expect-miss",
+      "detail": "intent: expected 'advice', got 'briefing'"
+     }
+    ],
+    "error": null,
+    "answer": "26 orders on 15 machines over 2026-01-05 to 2026-02-09. 4 things worth your attention, worst first:\n\n1. 2 order(s) finish on time with less slack than one of their own operations takes.\n     ORD-000011 — 8h22m of slack against a longest step of 25h01m of work\n     ORD-000003 — 14h04m of slack against a longest step of 20h01m of work\n     -> Ask \"when does <order> finish?\" for the timeline, or \"what would have to change for <order> to start earlier?\".\n\n2. planned maintenance on Wednesday 2026-01-14 takes out ASM-01, CUT-01, FINISH-01, FINISH-02 and 5 more.\n     -> Ask \"is any maintenance scheduled?\" for the calendar.\n\n3. 14 known order(s) sit beyond the planning horizon with no placement yet.\n     The earliest of them is due 2026-01-20.\n     -> Ask \"what's beyond the horizon?\" for the list, or \"will it fit?\" for the capacity read.\n\n4. No capacity margin is declared for this plant, so every capacity figure here assumes 100% of open time is usable.\n     Declare refinements.coarse_horizon.capacity_derate in cost_model.json (docs/06 §5.9) and the coarse figures derate with it.\n     -> Ask \"how do I declare a capacity margin?\".\n\nAnd what is going right:\n  · Nothing in this window is late.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 303,
+    "question": "what should i do",
+    "selection": {},
+    "intent": "briefing",
+    "confidence": 0.95,
+    "route": "briefing",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "briefing",
+    "subject": "today",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1595.6,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "briefing",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1280.5745000005118,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "advice"
+    },
+    "expect_met": false,
+    "findings": [
+     {
+      "kind": "expect-miss",
+      "detail": "intent: expected 'advice', got 'briefing'"
+     }
+    ],
+    "error": null,
+    "answer": "Same answer as a moment ago —\n26 orders on 15 machines over 2026-01-05 to 2026-02-09. 4 things worth your attention, worst first:\n\n1. 2 order(s) finish on time with less slack than one of their own operations takes.\n     ORD-000011 — 8h22m of slack against a longest step of 25h01m of work\n     ORD-000003 — 14h04m of slack against a longest step of 20h01m of work\n     -> Ask \"when does <order> finish?\" for the timeline, or \"what would have to change for <order> to start earlier?\".\n\n2. planned maintenance on Wednesday 2026-01-14 takes out ASM-01, CUT-01, FINISH-01, FINISH-02 and 5 more.\n     -> Ask \"is any maintenance scheduled?\" for the calendar.\n\n3. 14 known order(s) sit beyond the planning horizon with no placement yet.\n     The earliest of them is due 2026-01-20.\n     -> Ask \"what's beyond the horizon?\" for the list, or \"will it fit?\" for the capacity read.\n\n4. No capacity margin is declared for this plant, so every capacity figure here assumes 100% of open time is usable.\n     Declare refinements.coarse_horizon.capacity_derate in cost_model.json (docs/06 §5.9) and the coarse figures derate with it.\n     -> Ask \"how do I declare a capacity margin?\".\n\nAnd what is going right:\n  · Nothing in this window is late.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 314,
+    "question": "how many orders are late",
+    "selection": {},
+    "intent": "late-orders",
+    "confidence": 0.98,
+    "route": "late-orders",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "late_orders",
+    "subject": "all demands",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 3004.0,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "late-orders",
+     "confidence": 0.98,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 2966.149600004428,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "late-orders"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "No late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 316,
+    "question": "how many are late again",
+    "selection": {},
+    "intent": "late-orders",
+    "confidence": 0.95,
+    "route": "late-orders",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "late_orders",
+    "subject": "all demands",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1374.0,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "late-orders",
+     "confidence": 0.95,
+     "followup_of": "list-expand",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1335.7811000023503,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "late-orders"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I've now given you this same answer for two different questions, which probably means I'm not understanding what you're asking. Last time you asked: \"how many orders are late\".\n\nNo late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.\n\nIf you're after a specific field on a specific job — whether an operation is splittable, how long it takes, its due date, which machines can run it — name the order and the field and I'll read it straight off the record.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 325,
+    "question": "how many machines are there",
+    "selection": {},
+    "intent": "machine-count",
+    "confidence": 0.95,
+    "route": "machine-count",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "machine_count",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1532.9,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "machine-count",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1475.3228000045056,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "machine-count"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "15 machine(s) in this plant; 10 of them carry work in this plan.\n\n  - ASM-01\n  - CUT-01\n  - CUT-02\n  - CUT-03\n  - FINISH-01\n  - FINISH-02\n  - FINISH-03\n  - HEAT-01\n  - HEAT-02\n  - MILL-01\n  - MILL-02\n  - PAINT-01\n  - PAINT-02\n  - PRESS-FAST\n  - PRESS-SLOW\n\nCarrying no work in this window: CUT-02, CUT-03, FINISH-03, HEAT-02, PRESS-SLOW.\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 327,
+    "question": "how many machines",
+    "selection": {},
+    "intent": "machine-count",
+    "confidence": 0.95,
+    "route": "machine-count",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "machine_count",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1086.5,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "machine-count",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1036.4483000012115,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "machine-count"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I've now given you this same answer for two different questions, which probably means I'm not understanding what you're asking. Last time you asked: \"how many machines are there\".\n\n15 machine(s) in this plant; 10 of them carry work in this plan.\n\n  - ASM-01\n  - CUT-01\n  - CUT-02\n  - CUT-03\n  - FINISH-01\n  - FINISH-02\n  - FINISH-03\n  - HEAT-01\n  - HEAT-02\n  - MILL-01\n  - MILL-02\n  - PAINT-01\n  - PAINT-02\n  - PRESS-FAST\n  - PRESS-SLOW\n\nCarrying no work in this window: CUT-02, CUT-03, FINISH-03, HEAT-02, PRESS-SLOW.\n\nIf you're after a specific field on a specific job — whether an operation is splittable, how long it takes, its due date, which machines can run it — name the order and the field and I'll read it straight off the record.\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 336,
+    "question": "which orders are late",
+    "selection": {},
+    "intent": "late-orders",
+    "confidence": 0.98,
+    "route": "late-orders",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "late_orders",
+    "subject": "all demands",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1073.8,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "late-orders",
+     "confidence": 0.98,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1045.451400001184,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "late-orders"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "No late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 338,
+    "question": "what should i do about it",
+    "selection": {},
+    "intent": "advice",
+    "confidence": 0.92,
+    "route": "advice",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "advice",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1255.1,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "advice",
+     "confidence": 0.92,
+     "followup_of": "deepen",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1186.1464999965392,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "advice"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.\n\nHere's what I can do to help you decide:\n  - explain why any order is late (\"why is <order> late?\")\n  - show what an order is waiting on (\"why can't <order> start earlier?\")\n  - price a what-if on the board: drag a job and I'll cost the move exactly.\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 340,
+    "question": "how many machines are there",
+    "selection": {},
+    "intent": "machine-count",
+    "confidence": 0.95,
+    "route": "machine-count",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "machine_count",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1220.0,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "machine-count",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1129.5045000006212,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "machine-count"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "15 machine(s) in this plant; 10 of them carry work in this plan.\n\n  - ASM-01\n  - CUT-01\n  - CUT-02\n  - CUT-03\n  - FINISH-01\n  - FINISH-02\n  - FINISH-03\n  - HEAT-01\n  - HEAT-02\n  - MILL-01\n  - MILL-02\n  - PAINT-01\n  - PAINT-02\n  - PRESS-FAST\n  - PRESS-SLOW\n\nCarrying no work in this window: CUT-02, CUT-03, FINISH-03, HEAT-02, PRESS-SLOW.\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 342,
+    "question": "which orders are late",
+    "selection": {},
+    "intent": "late-orders",
+    "confidence": 0.95,
+    "route": "late-orders",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "late_orders",
+    "subject": "all demands",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1383.6,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "late-orders",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1348.4062000061385,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "late-orders"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "No late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 367,
+    "question": "why does ORD-000011 go through downtime",
+    "selection": {},
+    "intent": "why-here",
+    "confidence": 0.92,
+    "route": "why-here",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "why_here",
+    "subject": "ORD-000011",
+    "records": 1,
+    "lit_bars": 2,
+    "latency_ms": 1351.4,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "why-here",
+     "confidence": 0.92,
+     "followup_of": "none",
+     "polarity": "negative",
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000011",
+       "ref": "ORD-000011",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1273.1602999992901,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "order": "ORD-000011"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "Nothing prevented ORD-000011 op10 from starting earlier. Holding every other placement where it is, CUT-01 had open, unheld time from 2026-01-06 16:15 — the solver chose Thursday 2026-01-08 14:36 rather than being forced into it.\nThe assignment decision records its driver as CALENDAR_WINDOW.\nIt runs in 3 pieces between 2026-01-08 14:36 and 2026-01-12 15:37, 25h01m of actual work — it pauses when CUT-01 closes and resumes when it reopens, which is what it means for this operation to be splittable.\n\nWhat pushed it, in order:\n  2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00\n  2026-01-05 07:00  the machine's calendar [docs/05 C1/C2] — CUT-01 is closed until 2026-01-05 07:00\n  2026-01-06 16:15  no window long enough [docs/05 C3] — the open stretches before 2026-01-06 16:15 were shorter than its 1h minimum piece\n\nNot weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 385,
+    "question": "it seems it should be able to start on tuesday after op10 finishes",
+    "selection": {
+     "order": "ORD-000013",
+     "machine": "PAINT-01"
+    },
+    "intent": "why-here",
+    "confidence": 0.92,
+    "route": "why-here",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "why_here",
+    "subject": "ORD-000013",
+    "records": 1,
+    "lit_bars": 2,
+    "latency_ms": 1564.8,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "why-here",
+     "confidence": 0.92,
+     "followup_of": "none",
+     "polarity": "negative",
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "it",
+       "ref": "ORD-000013",
+       "source": "selection"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1479.4443999999203,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "why-here",
+     "order": "ORD-000013"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "You're right about the machine: PAINT-01 wasn't busy — it was free from 2026-01-13 14:06. That isn't what held this up.\nORD-000013 op20 couldn't start before Thursday 2026-01-15 07:00: it needs 7h11m in one piece and PAINT-01 had only 4h54m left when it came free at 2026-01-13 14:06, and it can't be split.\nBefore that: op10 finishes at 2026-01-13 14:06.\nThe wait spans planned maintenance on PAINT-01, 2026-01-14 00:00 to 2026-01-14 23:59.\n\nWhat pushed it, in order:\n  2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00\n  2026-01-13 14:06  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 14:06\n  2026-01-15 07:00  no window long enough [docs/05 C3] — it needs 7h11m in one piece and PAINT-01 had only 4h54m left when it came free at 2026-01-13 14:06\n\nNot weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 401,
+    "question": "how do i change that",
+    "selection": {
+     "order": "ORD-000013",
+     "machine": "PAINT-01"
+    },
+    "intent": "unmatched",
+    "confidence": 0.25,
+    "route": "synthesis",
+    "source": "parse",
+    "register": "synthesis",
+    "renderer": "synthesis (claude-haiku-4-5-20251001) — 0 tool call(s)",
+    "subject_type": "synthesis",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 4616.9,
+    "llm_calls": 2,
+    "parse": {
+     "intent": "unmatched",
+     "confidence": 0.25,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 2270.2676999979303,
+     "prompt_version": "13"
+    },
+    "synthesis": {
+     "claims": 0,
+     "verified": 0,
+     "interpretive": 0,
+     "failed_and_cut": 0,
+     "ungrounded_load_bearing": 0,
+     "tool_calls": 0,
+     "budget_exhausted": false,
+     "timed_out": false,
+     "unanswerable": true,
+     "tools": [],
+     "claims_detail": [],
+     "latency_ms": 2320.180300004722,
+     "model": "claude-haiku-4-5-20251001"
+    },
+    "shadow": {},
+    "expect": {
+     "intent": "what-would-change",
+     "order": "ORD-000013"
+    },
+    "expect_met": false,
+    "findings": [
+     {
+      "kind": "expect-miss",
+      "detail": "intent: expected 'what-would-change', got 'unmatched'; order: expected 'ORD-000013', got None"
+     }
+    ],
+    "error": null,
+    "answer": "I couldn't answer that one from the evidence. I read what I could and none of it grounds an answer I'd stand behind, so I'd rather say so than guess.\n\nHere's what I can do that's closest:\n  - show every late order at a glance\n  - list the data-quality problems\n[rendered by: synthesis (claude-haiku-4-5-20251001) — 0 tool call(s) | register: synthesis]"
+   },
+   {
+    "lineno": 418,
+    "question": "what should I be worried about",
+    "selection": {},
+    "intent": "briefing",
+    "confidence": 0.95,
+    "route": "briefing",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "briefing",
+    "subject": "today",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1862.5,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "briefing",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1692.4093999987235,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "briefing",
+     "route": "briefing"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "26 orders on 15 machines over 2026-01-05 to 2026-02-09. 4 things worth your attention, worst first:\n\n1. 2 order(s) finish on time with less slack than one of their own operations takes.\n     ORD-000011 — 8h22m of slack against a longest step of 25h01m of work\n     ORD-000003 — 14h04m of slack against a longest step of 20h01m of work\n     -> Ask \"when does <order> finish?\" for the timeline, or \"what would have to change for <order> to start earlier?\".\n\n2. planned maintenance on Wednesday 2026-01-14 takes out ASM-01, CUT-01, FINISH-01, FINISH-02 and 5 more.\n     -> Ask \"is any maintenance scheduled?\" for the calendar.\n\n3. 14 known order(s) sit beyond the planning horizon with no placement yet.\n     The earliest of them is due 2026-01-20.\n     -> Ask \"what's beyond the horizon?\" for the list, or \"will it fit?\" for the capacity read.\n\n4. No capacity margin is declared for this plant, so every capacity figure here assumes 100% of open time is usable.\n     Declare refinements.coarse_horizon.capacity_derate in cost_model.json (docs/06 §5.9) and the coarse figures derate with it.\n     -> Ask \"how do I declare a capacity margin?\".\n\nAnd what is going right:\n  · Nothing in this window is late.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 439,
+    "question": "would overtime on CUT-01 help",
+    "selection": {},
+    "intent": "what-would-change",
+    "confidence": 0.92,
+    "route": "NEAR_MISS",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "near_miss",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1467.8,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "what-would-change",
+     "confidence": 0.92,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "machine",
+       "raw": "CUT-01",
+       "ref": "CUT-01",
+       "source": "utterance"
+      },
+      {
+       "kind": "concept",
+       "raw": "overtime",
+       "ref": "overtime",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1449.29289999709,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "machine": "CUT-01"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I can't answer that one exactly — \"would overtime on CUT-01 help\".\n\nHere's what I can do that's closest:\n  - show what's running on CUT-01\n  - explain why CUT-01 carries no work\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   }
+  ]
+ },
+ {
+  "label": "haiku",
+  "run": 2,
+  "config": {
+   "parse_model": "claude-haiku-4-5-20251001",
+   "synthesis_model": "claude-haiku-4-5-20251001",
+   "voice_model": "claude-haiku-4-5-20251001"
+  },
+  "target": "rolling-c362baa4-1b0",
+  "snapshot": "snap-rolling",
+  "llm_mode": "live",
+  "wall_s": 80.6,
+  "questions": 33,
+  "graded": 32,
+  "met": 27,
+  "findings": {
+   "dark-evidence": 2,
+   "expect-miss": 5,
+   "validator": 1
+  },
+  "latency": {
+   "route": {
+    "n": 31,
+    "median_ms": 1401.5,
+    "p90_ms": 2386.4
+   },
+   "synthesis": {
+    "n": 2,
+    "median_ms": 10557.6,
+    "p90_ms": 15814.7
+   }
+  },
+  "synthesis_totals": {
+   "answers": 2,
+   "claims": 5,
+   "verified": 2,
+   "interpretive": 2,
+   "failed_and_cut": 1,
+   "ungrounded_load_bearing": 0,
+   "unanswerable": 1,
+   "budget_exhausted": 0,
+   "tool_calls": 6,
+   "tool_histogram": {
+    "constraint_catalog": 1,
+    "entity_vocabulary": 1,
+    "lateness_set": 1,
+    "machine_occupancy": 1,
+    "placements_for_order": 1,
+    "placements_in_window": 1
+   },
+   "calls_per_answer": {
+    "0": 1,
+    "6": 1
+   }
+  },
+  "shadow": {
+   "shadowed": 0,
+   "clean": 0,
+   "diverged": 0,
+   "unchecked": 0,
+   "provenance_strengthened": 0,
+   "by_intent": {}
+  },
+  "parser_stats": {
+   "calls": 40,
+   "parses": 40,
+   "retries": 0,
+   "malformed": 0,
+   "clarifies": 3,
+   "unavailable": 0,
+   "median_latency_ms": 1356.0758500025258,
+   "malformed_samples": []
+  },
+  "synth_stats": {
+   "syntheses": 2,
+   "calls": 8,
+   "tool_calls": 6,
+   "malformed": 0,
+   "budget_exhausted": 0,
+   "timed_out": 0,
+   "unanswerable": 1,
+   "median_latency_ms": 8794.336000002659,
+   "p90_latency_ms": 14057.197100002668
+  },
+  "tokens": {
+   "claude-haiku-4-5-20251001": {
+    "calls": 52,
+    "in": 341971,
+    "out": 5603
+   }
+  },
+  "cost_usd": 0.37,
+  "rows": [
+   {
+    "lineno": 105,
+    "question": "what orders are affected in this move",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.95,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1481.5,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1465.5796000006376,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "open-card",
+     "route": "open-card"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "The move you have open:\nORD-000023 lands on MILL-01 at Jan 8, 08:23.\nIt prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.\n\nNo order's lateness or tardiness changes because of it.\nNothing's lateness changes across the plan.\nNothing else has to move.\nNo committed work changes.\n\nWhy it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)\n\nNothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 128,
+    "question": "what did the move itself cost, not the re-solve",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.95,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1141.3,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1113.2651000007172,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "open-card",
+     "route": "open-card"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "The move you have open:\nORD-000023 lands on MILL-01 at Jan 8, 08:23.\nIt prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.\n\nNo order's lateness or tardiness changes because of it.\nNothing's lateness changes across the plan.\nNothing else has to move.\nNo committed work changes.\n\nWhy it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)\n\nNothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 137,
+    "question": "what does this move cost",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.95,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1244.8,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1212.3028999994858,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "open-card",
+     "route": "open-card"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "The move you have open:\nORD-000023 lands on MILL-01 at Jan 8, 08:23.\nIt prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.\n\nNo order's lateness or tardiness changes because of it.\nNothing's lateness changes across the plan.\nNothing else has to move.\nNo committed work changes.\n\nWhy it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)\n\nNothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 139,
+    "question": "these orders — which ones are they",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.95,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1303.8,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.95,
+     "followup_of": "list-expand",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1274.998399996548,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "open-card",
+     "route": "open-card"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "The move you have open:\nORD-000023 lands on MILL-01 at Jan 8, 08:23.\nIt prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.\n\nNo order's lateness or tardiness changes because of it.\nNothing's lateness changes across the plan.\nNothing else has to move.\nNo committed work changes.\n\nWhy it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)\n\nNothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 141,
+    "question": "whats the delta",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.95,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1174.7,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1143.4745000005933,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "open-card",
+     "route": "open-card"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "The move you have open:\nORD-000023 lands on MILL-01 at Jan 8, 08:23.\nIt prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.\n\nNo order's lateness or tardiness changes because of it.\nNothing's lateness changes across the plan.\nNothing else has to move.\nNo committed work changes.\n\nWhy it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)\n\nNothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 161,
+    "question": "whats the delta",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.15,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1354.8,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.15,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": "no-subject",
+     "retries": 0,
+     "latency_ms": 1288.0559999975958,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {},
+    "expect_met": false,
+    "findings": [],
+    "error": null,
+    "answer": "There's no priced move open on the board right now, so I have nothing to read back. Make the move again and I'll answer from the card it prices.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 174,
+    "question": "which orders are late",
+    "selection": {},
+    "intent": "late-orders",
+    "confidence": 0.95,
+    "route": "late-orders",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "late_orders",
+    "subject": "all demands",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1084.3,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "late-orders",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1031.82519999973,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "late-orders"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "No late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 176,
+    "question": "whats running on CUT-01",
+    "selection": {},
+    "intent": "machine-schedule",
+    "confidence": 0.98,
+    "route": "machine-schedule",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "schedule",
+    "subject": "CUT-01",
+    "records": 18,
+    "lit_bars": 19,
+    "latency_ms": 1314.2,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "machine-schedule",
+     "confidence": 0.98,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "machine",
+       "raw": "CUT-01",
+       "ref": "CUT-01",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1164.3011999985902,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "machine-schedule",
+     "machine": "CUT-01"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "CUT-01: 18 operation(s):\n\n  [CUT-01]\n    seq= 10  2026-01-05 07:00 -> 2026-01-05 08:18  ORD-000016  -13817min early\n    seq= 10  2026-01-05 08:18 -> 2026-01-05 10:18  ORD-000001  -24867min early\n    seq= 10  2026-01-05 10:18 -> 2026-01-05 11:30  ORD-000004  -19061min early\n    seq= 10  2026-01-05 11:30 -> 2026-01-05 12:24  ORD-000021  -30875min early\n    seq= 10  2026-01-05 12:24 -> 2026-01-05 13:45  ORD-000039  -12047min early\n    seq= 10  2026-01-05 13:45 -> 2026-01-05 16:41  ORD-000038  -16722min early\n    seq= 10  2026-01-05 16:41 -> 2026-01-05 17:45  ORD-000012  -16595min early\n    seq= 10  2026-01-05 17:45 -> 2026-01-05 18:54  ORD-000002  -20968min early\n    seq= 10  2026-01-06 07:00 -> 2026-01-06 08:24  ORD-000008  -20691min early\n    seq= 10  2026-01-06 08:24 -> 2026-01-06 13:00  ORD-000029  -9447min early\n    seq= 10  2026-01-06 13:00 -> 2026-01-06 16:15  ORD-000027  -7677min early\n    seq= 10  2026-01-07 07:00 -> 2026-01-07 10:15  ORD-000037  -9529min early\n    seq= 10  2026-01-07 10:15 -> 2026-01-07 18:54  ORD-000028  -20606min early\n    seq= 10  2026-01-08 07:00 -> 2026-01-08 14:36  ORD-000019  -12078min early\n    seq= 10  2026-01-08 14:36 -> 2026-01-12 15:37  ORD-000011  -502min early\n    seq= 10  2026-01-13 07:00 -> 2026-01-13 14:06  ORD-000013  -588min early\n    seq= 10  2026-01-15 07:00 -> 2026-01-15 13:54  ORD-000022  -7800min early\n    seq= 10  2026-01-15 13:54 -> 2026-01-19 09:55  ORD-000003  -844min early\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 193,
+    "question": "why is this one late",
+    "selection": {
+     "order": "ORD-000009",
+     "machine": "CUT-01"
+    },
+    "intent": "late-order",
+    "confidence": 0.95,
+    "route": "late-order",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "LLM (claude-haiku-4-5-20251001)",
+    "subject_type": "demand",
+    "subject": "ORD-000023",
+    "records": 4,
+    "lit_bars": 3,
+    "latency_ms": 2662.3,
+    "llm_calls": 2,
+    "parse": {
+     "intent": "late-order",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": "positive",
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "this one",
+       "ref": "ORD-000023",
+       "source": "card"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1213.9374000034877,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "order": "ORD-000023"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "ORD-000023 is not late—it is on time, finishing 9.3 days early with a projected completion of 2026-01-05 16:51 UTC against a due date of 2026-01-14T23:59:59Z [record: bca1dfe4...]. The order was assigned to PRESS-FAST, which was selected as the scheduling solution despite the machine being busy with other work [record: 1351e7e3...].\n[rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]"
+   },
+   {
+    "lineno": 221,
+    "question": "why is ORD-000023 on MILL-01",
+    "selection": {},
+    "intent": "why-on-machine",
+    "confidence": 0.95,
+    "route": "why-on-machine",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "premise_correction",
+    "subject": "ORD-000023",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1652.0,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "why-on-machine",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000023",
+       "ref": "ORD-000023",
+       "source": "utterance"
+      },
+      {
+       "kind": "machine",
+       "raw": "MILL-01",
+       "ref": "MILL-01",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1565.62689999555,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "why-on-machine",
+     "route": "why-on-machine",
+     "order": "ORD-000023",
+     "machine": "MILL-01"
+    },
+    "expect_met": true,
+    "findings": [
+     {
+      "kind": "dark-evidence",
+      "detail": "route 'why-on-machine' cited 0 records and lit 0 bars"
+     }
+    ],
+    "error": null,
+    "answer": "ORD-000023 isn't on MILL-01 — it runs on PRESS-FAST.\n\n  - PRESS-FAST  (op 10)  2026-01-05T12:51:00Z -> 2026-01-05T16:51:00Z\n\nDid you mean one of those? Ask \"why is ORD-000023 on PRESS-FAST?\" and I'll give you the cause.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 231,
+    "question": "why did ORD-000009 end up on CUT-01",
+    "selection": {},
+    "intent": "why-on-machine",
+    "confidence": 0.95,
+    "route": "why-on-machine",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "premise_correction",
+    "subject": "ORD-000009",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 2241.8,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "why-on-machine",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000009",
+       "ref": "ORD-000009",
+       "source": "utterance"
+      },
+      {
+       "kind": "machine",
+       "raw": "CUT-01",
+       "ref": "CUT-01",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 2148.490799998399,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "why-on-machine",
+     "order": "ORD-000009",
+     "machine": "CUT-01"
+    },
+    "expect_met": true,
+    "findings": [
+     {
+      "kind": "dark-evidence",
+      "detail": "route 'why-on-machine' cited 0 records and lit 0 bars"
+     }
+    ],
+    "error": null,
+    "answer": "ORD-000009 isn't on CUT-01 — it runs MILL-02, ASM-01 and FINISH-01.\n\n  - MILL-02  (op 10)  2026-01-05T07:00:00Z -> 2026-01-05T12:56:00Z\n  - ASM-01  (op 20)  2026-01-06T07:00:00Z -> 2026-01-06T14:30:00Z\n  - FINISH-01  (op 30)  2026-01-06T14:31:00Z -> 2026-01-06T18:53:00Z\n\nDid you mean one of those? Ask \"why is ORD-000009 on MILL-02?\" and I'll give you the cause.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 242,
+    "question": "why is ORD-000023 on MILL-99",
+    "selection": {},
+    "intent": "why-on-machine",
+    "confidence": 0.95,
+    "route": "unknown-entity",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "unknown_entity",
+    "subject": "MILL-99",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1546.5,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "why-on-machine",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000023",
+       "ref": "ORD-000023",
+       "source": "utterance"
+      },
+      {
+       "kind": "machine",
+       "raw": "MILL-99",
+       "ref": null,
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1474.2659000039566,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "why-on-machine",
+     "order": "ORD-000023",
+     "machine": "MILL-99"
+    },
+    "expect_met": false,
+    "findings": [
+     {
+      "kind": "expect-miss",
+      "detail": "machine: expected 'MILL-99', got None"
+     }
+    ],
+    "error": null,
+    "answer": "There's no machine called MILL-99 in this plant.\nThe machines here are: ASM-01, CUT-01, CUT-02, CUT-03, FINISH-01, FINISH-02, FINISH-03, HEAT-01.\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 256,
+    "question": "why is ORD-000012 on PAINT-01",
+    "selection": {},
+    "intent": "why-on-machine",
+    "confidence": 0.95,
+    "route": "why-on-machine",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template (LLM validated)",
+    "subject_type": "demand",
+    "subject": "ORD-000012",
+    "records": 3,
+    "lit_bars": 7,
+    "latency_ms": 3294.2,
+    "llm_calls": 3,
+    "parse": {
+     "intent": "why-on-machine",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000012",
+       "ref": "ORD-000012",
+       "source": "utterance"
+      },
+      {
+       "kind": "machine",
+       "raw": "PAINT-01",
+       "ref": "PAINT-01",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1443.2702000049176,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "why-on-machine",
+     "order": "ORD-000012",
+     "machine": "PAINT-01"
+    },
+    "expect_met": true,
+    "findings": [
+     {
+      "kind": "validator",
+      "detail": "LLM testimony failed validation; fell back to template"
+     }
+    ],
+    "error": null,
+    "answer": "ORD-000012 is on PAINT-01 because that is the only machine qualified to run this step — there was no alternative to weigh.\n\nEvidence chain (3 record(s)):\n\n[1] DECISION  | ASSIGNMENT  (scheduling)\n    Assigned to: PAINT-01\n    Why: the machine was busy with other work\n    Note: This is a reconstruction from the solved schedule.\n    [record: 11df66e5...]\n\n[2] DECISION  | ASSIGNMENT  (scheduling)\n    Assigned to: CUT-01\n    Why: it was the cheaper option once every cost was weighed\n    Note: This is a reconstruction from the solved schedule.\n    Alternative: CUT-02  - Would cost $3.20 more.\n    Alternative: CUT-03  - Would cost $7.47 more.\n    [record: a5a16acf...]\n\n[3] DECISION  | ASSIGNMENT  (scheduling)\n    Assigned to: MILL-01\n    Why: the machine was busy with other work\n    Note: This is a reconstruction from the solved schedule.\n    [record: 871c1ef5...]\n\n[LLM validation failed: no [record:] footnotes on factual sentences; fabricated record citation '(stated in preamble)'; fell back to template]\n[rendered by: template (LLM validated) | register: testimony]"
+   },
+   {
+    "lineno": 262,
+    "question": "but why",
+    "selection": {},
+    "intent": "late-order",
+    "confidence": 0.95,
+    "route": "late-order",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "LLM (claude-haiku-4-5-20251001)",
+    "subject_type": "demand",
+    "subject": "ORD-000012",
+    "records": 6,
+    "lit_bars": 7,
+    "latency_ms": 2776.9,
+    "llm_calls": 2,
+    "parse": {
+     "intent": "late-order",
+     "confidence": 0.95,
+     "followup_of": "deepen",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000012",
+       "ref": "ORD-000012",
+       "source": "last-answer"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1348.7967000037315,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "order": "ORD-000012",
+     "followup": "deepen"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "ORD-000012 is not late. It finished 11.5 days early with a projected_completion of 2026-01-06 11:24 UTC against a due_date of 2026-01-17T23:59:59Z [record: a8bbdaca...]. The lateness metric is -16595 min (-276.6h), indicating early completion [record: fbd6c041...].\n[rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]"
+   },
+   {
+    "lineno": 280,
+    "question": "what should i do about the late orders",
+    "selection": {},
+    "intent": "advice",
+    "confidence": 0.92,
+    "route": "advice",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "advice",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1457.1,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "advice",
+     "confidence": 0.92,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "concept",
+       "raw": "late orders",
+       "ref": null,
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1363.3550000013201,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "advice"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.\n\nHere's what I can do to help you decide:\n  - explain why any order is late (\"why is <order> late?\")\n  - show what an order is waiting on (\"why can't <order> start earlier?\")\n  - price a what-if on the board: drag a job and I'll cost the move exactly.\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 282,
+    "question": "so you cant tell me if overtime will help",
+    "selection": {},
+    "intent": "advice",
+    "confidence": 0.92,
+    "route": "coaching",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "coaching",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1068.7,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "advice",
+     "confidence": 0.92,
+     "followup_of": "deepen",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "concept",
+       "raw": "overtime",
+       "ref": "overtime",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1039.790599999833,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "concept": "overtime",
+     "route": "coaching"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "Yes — extra working hours beyond the regular shift — an overtime window a job can run in when the regular calendar is closed, priced at a premium so the schedule only buys those hours when they pay for themselves (e.g. a Saturday shift that rescues a tight order).\n\nTo enable it: add an added exception row with reason overtime on that resource's calendar in calendars.csv (the window it opens), and set an overtime_premium_multiplier in cost_model.json (the premium its hours bill at). See the incoming-data spec §5.6.\n\nWant to check what the submission already declares? Ask \"what data problems exist?\"\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 286,
+    "question": "can i get these done faster",
+    "selection": {},
+    "intent": "advice",
+    "confidence": 0.72,
+    "route": "CLARIFY",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "clarify",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1392.1,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "advice",
+     "confidence": 0.72,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "concept",
+       "raw": "faster",
+       "ref": null,
+       "source": "utterance"
+      }
+     ],
+     "clarify": "no-subject",
+     "retries": 0,
+     "latency_ms": 1369.2332999999053,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "advice"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I need one more detail to answer \"can i get these done faster\".\nWhich order, machine, or customer do you mean? Ask it again naming one, e.g. \"why is that order late?\" becomes \"why is <order> late?\".\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 288,
+    "question": "would splitting the jobs help",
+    "selection": {},
+    "intent": "what-would-change",
+    "confidence": 0.92,
+    "route": "synthesis",
+    "source": "parse",
+    "register": "synthesis",
+    "renderer": "synthesis (claude-haiku-4-5-20251001) — 6 tool call(s)",
+    "subject_type": "synthesis",
+    "subject": "?",
+    "records": 1,
+    "lit_bars": 2,
+    "latency_ms": 15814.7,
+    "llm_calls": 8,
+    "parse": {
+     "intent": "what-would-change",
+     "confidence": 0.92,
+     "followup_of": "deepen",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "concept",
+       "raw": "splitting",
+       "ref": "splittable",
+       "source": "utterance"
+      }
+     ],
+     "clarify": "no-subject",
+     "retries": 0,
+     "latency_ms": 1699.2089999985183,
+     "prompt_version": "13"
+    },
+    "synthesis": {
+     "claims": 5,
+     "verified": 2,
+     "interpretive": 2,
+     "failed_and_cut": 1,
+     "ungrounded_load_bearing": 0,
+     "tool_calls": 6,
+     "budget_exhausted": false,
+     "timed_out": false,
+     "unanswerable": false,
+     "tools": [
+      "entity_vocabulary",
+      "lateness_set",
+      "constraint_catalog",
+      "placements_in_window",
+      "placements_for_order",
+      "machine_occupancy"
+     ],
+     "claims_detail": [
+      {
+       "status": "verified",
+       "kind": "fact",
+       "records": 4
+      },
+      {
+       "status": "verified",
+       "kind": "fact",
+       "records": 4
+      },
+      {
+       "status": "interpretive",
+       "kind": "fact",
+       "records": 0
+      },
+      {
+       "status": "interpretive",
+       "kind": "conclusion",
+       "records": 0
+      }
+     ],
+     "latency_ms": 14057.197100002668,
+     "model": "claude-haiku-4-5-20251001"
+    },
+    "shadow": {},
+    "expect": {
+     "concept": "splittable",
+     "route": "coaching"
+    },
+    "expect_met": false,
+    "findings": [
+     {
+      "kind": "expect-miss",
+      "detail": "route: expected 'coaching', got 'synthesis'"
+     }
+    ],
+    "error": null,
+    "answer": "No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.\n\nORD-000011 is scheduled as a single 5821-minute operation on CUT-01 from 2026-01-08 14:36 through 2026-01-12 15:37, spanning nearly four calendar days.  [record: 73ce8f86...]\nCUT-01 has no idle gaps between 2026-01-08 14:36 and 2026-01-12 15:37; ORD-000011 occupies the machine continuously across that span with no breaks for other work.  [record: 73ce8f86...]\nAll 26 scheduled orders are on time or early; no lateness pressure exists that would motivate splitting ORD-000011 to free capacity for other work. (based on the 51 row(s) placements_in_window returned, not the whole plan)  [synthesis — read from: 5348876d, 12b5e06c, 01d65946]\nSplitting ORD-000011 could reduce its finish time only if the split chunks run in parallel on different machines—but CUT-01 is the only machine in the schedule that performs its operation type, so parallelism is not available. If split chunks run sequentially on the same machine, total elapsed time does not improve.  [synthesis — read from: 5348876d, 12b5e06c, 01d65946]\n[rendered by: synthesis (claude-haiku-4-5-20251001) — 6 tool call(s) | register: synthesis]"
+   },
+   {
+    "lineno": 301,
+    "question": "what should i do",
+    "selection": {},
+    "intent": "briefing",
+    "confidence": 0.92,
+    "route": "briefing",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "briefing",
+    "subject": "today",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1236.3,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "briefing",
+     "confidence": 0.92,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1015.3368999963277,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "advice"
+    },
+    "expect_met": false,
+    "findings": [
+     {
+      "kind": "expect-miss",
+      "detail": "intent: expected 'advice', got 'briefing'"
+     }
+    ],
+    "error": null,
+    "answer": "26 orders on 15 machines over 2026-01-05 to 2026-02-09. 4 things worth your attention, worst first:\n\n1. 2 order(s) finish on time with less slack than one of their own operations takes.\n     ORD-000011 — 8h22m of slack against a longest step of 25h01m of work\n     ORD-000003 — 14h04m of slack against a longest step of 20h01m of work\n     -> Ask \"when does <order> finish?\" for the timeline, or \"what would have to change for <order> to start earlier?\".\n\n2. planned maintenance on Wednesday 2026-01-14 takes out ASM-01, CUT-01, FINISH-01, FINISH-02 and 5 more.\n     -> Ask \"is any maintenance scheduled?\" for the calendar.\n\n3. 14 known order(s) sit beyond the planning horizon with no placement yet.\n     The earliest of them is due 2026-01-20.\n     -> Ask \"what's beyond the horizon?\" for the list, or \"will it fit?\" for the capacity read.\n\n4. No capacity margin is declared for this plant, so every capacity figure here assumes 100% of open time is usable.\n     Declare refinements.coarse_horizon.capacity_derate in cost_model.json (docs/06 §5.9) and the coarse figures derate with it.\n     -> Ask \"how do I declare a capacity margin?\".\n\nAnd what is going right:\n  · Nothing in this window is late.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 303,
+    "question": "what should i do",
+    "selection": {},
+    "intent": "briefing",
+    "confidence": 0.95,
+    "route": "briefing",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "briefing",
+    "subject": "today",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1170.7,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "briefing",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1010.3004999982659,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "advice"
+    },
+    "expect_met": false,
+    "findings": [
+     {
+      "kind": "expect-miss",
+      "detail": "intent: expected 'advice', got 'briefing'"
+     }
+    ],
+    "error": null,
+    "answer": "Same answer as a moment ago —\n26 orders on 15 machines over 2026-01-05 to 2026-02-09. 4 things worth your attention, worst first:\n\n1. 2 order(s) finish on time with less slack than one of their own operations takes.\n     ORD-000011 — 8h22m of slack against a longest step of 25h01m of work\n     ORD-000003 — 14h04m of slack against a longest step of 20h01m of work\n     -> Ask \"when does <order> finish?\" for the timeline, or \"what would have to change for <order> to start earlier?\".\n\n2. planned maintenance on Wednesday 2026-01-14 takes out ASM-01, CUT-01, FINISH-01, FINISH-02 and 5 more.\n     -> Ask \"is any maintenance scheduled?\" for the calendar.\n\n3. 14 known order(s) sit beyond the planning horizon with no placement yet.\n     The earliest of them is due 2026-01-20.\n     -> Ask \"what's beyond the horizon?\" for the list, or \"will it fit?\" for the capacity read.\n\n4. No capacity margin is declared for this plant, so every capacity figure here assumes 100% of open time is usable.\n     Declare refinements.coarse_horizon.capacity_derate in cost_model.json (docs/06 §5.9) and the coarse figures derate with it.\n     -> Ask \"how do I declare a capacity margin?\".\n\nAnd what is going right:\n  · Nothing in this window is late.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 314,
+    "question": "how many orders are late",
+    "selection": {},
+    "intent": "late-orders",
+    "confidence": 0.98,
+    "route": "late-orders",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "late_orders",
+    "subject": "all demands",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1056.3,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "late-orders",
+     "confidence": 0.98,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1023.9736000003177,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "late-orders"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "No late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 316,
+    "question": "how many are late again",
+    "selection": {},
+    "intent": "late-orders",
+    "confidence": 0.95,
+    "route": "late-orders",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "late_orders",
+    "subject": "all demands",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1769.0,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "late-orders",
+     "confidence": 0.95,
+     "followup_of": "list-expand",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1738.3966999987024,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "late-orders"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I've now given you this same answer for two different questions, which probably means I'm not understanding what you're asking. Last time you asked: \"how many orders are late\".\n\nNo late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.\n\nIf you're after a specific field on a specific job — whether an operation is splittable, how long it takes, its due date, which machines can run it — name the order and the field and I'll read it straight off the record.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 325,
+    "question": "how many machines are there",
+    "selection": {},
+    "intent": "machine-count",
+    "confidence": 0.95,
+    "route": "machine-count",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "machine_count",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1401.5,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "machine-count",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1293.6072000011336,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "machine-count"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "15 machine(s) in this plant; 10 of them carry work in this plan.\n\n  - ASM-01\n  - CUT-01\n  - CUT-02\n  - CUT-03\n  - FINISH-01\n  - FINISH-02\n  - FINISH-03\n  - HEAT-01\n  - HEAT-02\n  - MILL-01\n  - MILL-02\n  - PAINT-01\n  - PAINT-02\n  - PRESS-FAST\n  - PRESS-SLOW\n\nCarrying no work in this window: CUT-02, CUT-03, FINISH-03, HEAT-02, PRESS-SLOW.\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 327,
+    "question": "how many machines",
+    "selection": {},
+    "intent": "machine-count",
+    "confidence": 0.95,
+    "route": "machine-count",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "machine_count",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1145.0,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "machine-count",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1050.731800001813,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "machine-count"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I've now given you this same answer for two different questions, which probably means I'm not understanding what you're asking. Last time you asked: \"how many machines are there\".\n\n15 machine(s) in this plant; 10 of them carry work in this plan.\n\n  - ASM-01\n  - CUT-01\n  - CUT-02\n  - CUT-03\n  - FINISH-01\n  - FINISH-02\n  - FINISH-03\n  - HEAT-01\n  - HEAT-02\n  - MILL-01\n  - MILL-02\n  - PAINT-01\n  - PAINT-02\n  - PRESS-FAST\n  - PRESS-SLOW\n\nCarrying no work in this window: CUT-02, CUT-03, FINISH-03, HEAT-02, PRESS-SLOW.\n\nIf you're after a specific field on a specific job — whether an operation is splittable, how long it takes, its due date, which machines can run it — name the order and the field and I'll read it straight off the record.\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 336,
+    "question": "which orders are late",
+    "selection": {},
+    "intent": "late-orders",
+    "confidence": 0.95,
+    "route": "late-orders",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "late_orders",
+    "subject": "all demands",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1476.9,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "late-orders",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1444.31220000115,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "late-orders"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "No late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 338,
+    "question": "what should i do about it",
+    "selection": {},
+    "intent": "advice",
+    "confidence": 0.92,
+    "route": "advice",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "advice",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1175.5,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "advice",
+     "confidence": 0.92,
+     "followup_of": "deepen",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1088.4201000008034,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "advice"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.\n\nHere's what I can do to help you decide:\n  - explain why any order is late (\"why is <order> late?\")\n  - show what an order is waiting on (\"why can't <order> start earlier?\")\n  - price a what-if on the board: drag a job and I'll cost the move exactly.\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 340,
+    "question": "how many machines are there",
+    "selection": {},
+    "intent": "machine-count",
+    "confidence": 0.95,
+    "route": "machine-count",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "machine_count",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1142.8,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "machine-count",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1058.119599998463,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "machine-count"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "15 machine(s) in this plant; 10 of them carry work in this plan.\n\n  - ASM-01\n  - CUT-01\n  - CUT-02\n  - CUT-03\n  - FINISH-01\n  - FINISH-02\n  - FINISH-03\n  - HEAT-01\n  - HEAT-02\n  - MILL-01\n  - MILL-02\n  - PAINT-01\n  - PAINT-02\n  - PRESS-FAST\n  - PRESS-SLOW\n\nCarrying no work in this window: CUT-02, CUT-03, FINISH-03, HEAT-02, PRESS-SLOW.\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 342,
+    "question": "which orders are late",
+    "selection": {},
+    "intent": "late-orders",
+    "confidence": 0.95,
+    "route": "late-orders",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "late_orders",
+    "subject": "all demands",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1442.0,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "late-orders",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1407.0118999952683,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "late-orders"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "No late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 367,
+    "question": "why does ORD-000011 go through downtime",
+    "selection": {},
+    "intent": "why-here",
+    "confidence": 0.92,
+    "route": "why-here",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "why_here",
+    "subject": "ORD-000011",
+    "records": 1,
+    "lit_bars": 2,
+    "latency_ms": 2386.4,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "why-here",
+     "confidence": 0.92,
+     "followup_of": "none",
+     "polarity": "negative",
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000011",
+       "ref": "ORD-000011",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 2295.757299994875,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "order": "ORD-000011"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "Nothing prevented ORD-000011 op10 from starting earlier. Holding every other placement where it is, CUT-01 had open, unheld time from 2026-01-06 16:15 — the solver chose Thursday 2026-01-08 14:36 rather than being forced into it.\nThe assignment decision records its driver as CALENDAR_WINDOW.\nIt runs in 3 pieces between 2026-01-08 14:36 and 2026-01-12 15:37, 25h01m of actual work — it pauses when CUT-01 closes and resumes when it reopens, which is what it means for this operation to be splittable.\n\nWhat pushed it, in order:\n  2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00\n  2026-01-05 07:00  the machine's calendar [docs/05 C1/C2] — CUT-01 is closed until 2026-01-05 07:00\n  2026-01-06 16:15  no window long enough [docs/05 C3] — the open stretches before 2026-01-06 16:15 were shorter than its 1h minimum piece\n\nNot weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 385,
+    "question": "it seems it should be able to start on tuesday after op10 finishes",
+    "selection": {
+     "order": "ORD-000013",
+     "machine": "PAINT-01"
+    },
+    "intent": "why-here",
+    "confidence": 0.92,
+    "route": "why-here",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "why_here",
+    "subject": "ORD-000013",
+    "records": 1,
+    "lit_bars": 2,
+    "latency_ms": 1482.6,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "why-here",
+     "confidence": 0.92,
+     "followup_of": "none",
+     "polarity": "negative",
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "it",
+       "ref": "ORD-000013",
+       "source": "selection"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1400.8143000028213,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "why-here",
+     "order": "ORD-000013"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "You're right about the machine: PAINT-01 wasn't busy — it was free from 2026-01-13 14:06. That isn't what held this up.\nORD-000013 op20 couldn't start before Thursday 2026-01-15 07:00: it needs 7h11m in one piece and PAINT-01 had only 4h54m left when it came free at 2026-01-13 14:06, and it can't be split.\nBefore that: op10 finishes at 2026-01-13 14:06.\nThe wait spans planned maintenance on PAINT-01, 2026-01-14 00:00 to 2026-01-14 23:59.\n\nWhat pushed it, in order:\n  2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00\n  2026-01-13 14:06  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 14:06\n  2026-01-15 07:00  no window long enough [docs/05 C3] — it needs 7h11m in one piece and PAINT-01 had only 4h54m left when it came free at 2026-01-13 14:06\n\nNot weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 401,
+    "question": "how do i change that",
+    "selection": {
+     "order": "ORD-000013",
+     "machine": "PAINT-01"
+    },
+    "intent": "unmatched",
+    "confidence": 0.25,
+    "route": "synthesis",
+    "source": "parse",
+    "register": "synthesis",
+    "renderer": "synthesis (claude-haiku-4-5-20251001) — 0 tool call(s)",
+    "subject_type": "synthesis",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 5300.6,
+    "llm_calls": 2,
+    "parse": {
+     "intent": "unmatched",
+     "confidence": 0.25,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1735.9701000023051,
+     "prompt_version": "13"
+    },
+    "synthesis": {
+     "claims": 0,
+     "verified": 0,
+     "interpretive": 0,
+     "failed_and_cut": 0,
+     "ungrounded_load_bearing": 0,
+     "tool_calls": 0,
+     "budget_exhausted": false,
+     "timed_out": false,
+     "unanswerable": true,
+     "tools": [],
+     "claims_detail": [],
+     "latency_ms": 3531.4749000026495,
+     "model": "claude-haiku-4-5-20251001"
+    },
+    "shadow": {},
+    "expect": {
+     "intent": "what-would-change",
+     "order": "ORD-000013"
+    },
+    "expect_met": false,
+    "findings": [
+     {
+      "kind": "expect-miss",
+      "detail": "intent: expected 'what-would-change', got 'unmatched'; order: expected 'ORD-000013', got None"
+     }
+    ],
+    "error": null,
+    "answer": "I couldn't answer that one from the evidence. I read what I could and none of it grounds an answer I'd stand behind, so I'd rather say so than guess.\n\nHere's what I can do that's closest:\n  - show every late order at a glance\n  - list the data-quality problems\n[rendered by: synthesis (claude-haiku-4-5-20251001) — 0 tool call(s) | register: synthesis]"
+   },
+   {
+    "lineno": 418,
+    "question": "what should I be worried about",
+    "selection": {},
+    "intent": "briefing",
+    "confidence": 0.95,
+    "route": "briefing",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "briefing",
+    "subject": "today",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1500.7,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "briefing",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1372.9553000011947,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "briefing",
+     "route": "briefing"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "26 orders on 15 machines over 2026-01-05 to 2026-02-09. 4 things worth your attention, worst first:\n\n1. 2 order(s) finish on time with less slack than one of their own operations takes.\n     ORD-000011 — 8h22m of slack against a longest step of 25h01m of work\n     ORD-000003 — 14h04m of slack against a longest step of 20h01m of work\n     -> Ask \"when does <order> finish?\" for the timeline, or \"what would have to change for <order> to start earlier?\".\n\n2. planned maintenance on Wednesday 2026-01-14 takes out ASM-01, CUT-01, FINISH-01, FINISH-02 and 5 more.\n     -> Ask \"is any maintenance scheduled?\" for the calendar.\n\n3. 14 known order(s) sit beyond the planning horizon with no placement yet.\n     The earliest of them is due 2026-01-20.\n     -> Ask \"what's beyond the horizon?\" for the list, or \"will it fit?\" for the capacity read.\n\n4. No capacity margin is declared for this plant, so every capacity figure here assumes 100% of open time is usable.\n     Declare refinements.coarse_horizon.capacity_derate in cost_model.json (docs/06 §5.9) and the coarse figures derate with it.\n     -> Ask \"how do I declare a capacity margin?\".\n\nAnd what is going right:\n  · Nothing in this window is late.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 439,
+    "question": "would overtime on CUT-01 help",
+    "selection": {},
+    "intent": "what-would-change",
+    "confidence": 0.92,
+    "route": "NEAR_MISS",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "near_miss",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 2128.0,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "what-would-change",
+     "confidence": 0.92,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "machine",
+       "raw": "CUT-01",
+       "ref": "CUT-01",
+       "source": "utterance"
+      },
+      {
+       "kind": "concept",
+       "raw": "overtime",
+       "ref": "overtime",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 2107.0804000046337,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "machine": "CUT-01"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I can't answer that one exactly — \"would overtime on CUT-01 help\".\n\nHere's what I can do that's closest:\n  - show what's running on CUT-01\n  - explain why CUT-01 carries no work\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   }
+  ]
+ },
+ {
+  "label": "haiku",
+  "run": 3,
+  "config": {
+   "parse_model": "claude-haiku-4-5-20251001",
+   "synthesis_model": "claude-haiku-4-5-20251001",
+   "voice_model": "claude-haiku-4-5-20251001"
+  },
+  "target": "rolling-c362baa4-1b0",
+  "snapshot": "snap-rolling",
+  "llm_mode": "live",
+  "wall_s": 81.3,
+  "questions": 33,
+  "graded": 32,
+  "met": 27,
+  "findings": {
+   "dark-evidence": 2,
+   "expect-miss": 5,
+   "validator": 1
+  },
+  "latency": {
+   "route": {
+    "n": 31,
+    "median_ms": 1398.5,
+    "p90_ms": 2532.4
+   },
+   "synthesis": {
+    "n": 2,
+    "median_ms": 9489.5,
+    "p90_ms": 15238.3
+   }
+  },
+  "synthesis_totals": {
+   "answers": 2,
+   "claims": 0,
+   "verified": 0,
+   "interpretive": 0,
+   "failed_and_cut": 0,
+   "ungrounded_load_bearing": 0,
+   "unanswerable": 2,
+   "budget_exhausted": 0,
+   "tool_calls": 5,
+   "tool_histogram": {
+    "constraint_catalog": 1,
+    "cost_ledger": 1,
+    "entity_vocabulary": 1,
+    "lateness_set": 1,
+    "placements_in_window": 1
+   },
+   "calls_per_answer": {
+    "0": 1,
+    "5": 1
+   }
+  },
+  "shadow": {
+   "shadowed": 0,
+   "clean": 0,
+   "diverged": 0,
+   "unchecked": 0,
+   "provenance_strengthened": 0,
+   "by_intent": {}
+  },
+  "parser_stats": {
+   "calls": 40,
+   "parses": 40,
+   "retries": 0,
+   "malformed": 0,
+   "clarifies": 3,
+   "unavailable": 0,
+   "median_latency_ms": 1347.6905000025,
+   "malformed_samples": []
+  },
+  "synth_stats": {
+   "syntheses": 2,
+   "calls": 7,
+   "tool_calls": 5,
+   "malformed": 0,
+   "budget_exhausted": 0,
+   "timed_out": 0,
+   "unanswerable": 2,
+   "median_latency_ms": 6367.662100001326,
+   "p90_latency_ms": 10847.922000000835
+  },
+  "tokens": {
+   "claude-haiku-4-5-20251001": {
+    "calls": 51,
+    "in": 322577,
+    "out": 5076
+   }
+  },
+  "cost_usd": 0.348,
+  "rows": [
+   {
+    "lineno": 105,
+    "question": "what orders are affected in this move",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.95,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1176.1,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1155.7583999965573,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "open-card",
+     "route": "open-card"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "The move you have open:\nORD-000023 lands on MILL-01 at Jan 8, 08:23.\nIt prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.\n\nNo order's lateness or tardiness changes because of it.\nNothing's lateness changes across the plan.\nNothing else has to move.\nNo committed work changes.\n\nWhy it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)\n\nNothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 128,
+    "question": "what did the move itself cost, not the re-solve",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.95,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1141.7,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1101.7356000011205,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "open-card",
+     "route": "open-card"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "The move you have open:\nORD-000023 lands on MILL-01 at Jan 8, 08:23.\nIt prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.\n\nNo order's lateness or tardiness changes because of it.\nNothing's lateness changes across the plan.\nNothing else has to move.\nNo committed work changes.\n\nWhy it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)\n\nNothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 137,
+    "question": "what does this move cost",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.95,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1188.2,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1147.3031999994419,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "open-card",
+     "route": "open-card"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "The move you have open:\nORD-000023 lands on MILL-01 at Jan 8, 08:23.\nIt prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.\n\nNo order's lateness or tardiness changes because of it.\nNothing's lateness changes across the plan.\nNothing else has to move.\nNo committed work changes.\n\nWhy it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)\n\nNothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 139,
+    "question": "these orders — which ones are they",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.95,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 2479.5,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.95,
+     "followup_of": "list-expand",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 2439.765000002808,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "open-card",
+     "route": "open-card"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "The move you have open:\nORD-000023 lands on MILL-01 at Jan 8, 08:23.\nIt prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.\n\nNo order's lateness or tardiness changes because of it.\nNothing's lateness changes across the plan.\nNothing else has to move.\nNo committed work changes.\n\nWhy it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)\n\nNothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 141,
+    "question": "whats the delta",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.95,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1328.2,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1293.3579999953508,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "open-card",
+     "route": "open-card"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "The move you have open:\nORD-000023 lands on MILL-01 at Jan 8, 08:23.\nIt prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.\n\nNo order's lateness or tardiness changes because of it.\nNothing's lateness changes across the plan.\nNothing else has to move.\nNo committed work changes.\n\nWhy it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)\n\nNothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 161,
+    "question": "whats the delta",
+    "selection": {},
+    "intent": "open-card",
+    "confidence": 0.15,
+    "route": "open-card",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "open_card",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1191.8,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "open-card",
+     "confidence": 0.15,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": "no-subject",
+     "retries": 0,
+     "latency_ms": 1154.0867000003345,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {},
+    "expect_met": false,
+    "findings": [],
+    "error": null,
+    "answer": "There's no priced move open on the board right now, so I have nothing to read back. Make the move again and I'll answer from the card it prices.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 174,
+    "question": "which orders are late",
+    "selection": {},
+    "intent": "late-orders",
+    "confidence": 0.95,
+    "route": "late-orders",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "late_orders",
+    "subject": "all demands",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1030.2,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "late-orders",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 989.5287999970606,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "late-orders"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "No late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 176,
+    "question": "whats running on CUT-01",
+    "selection": {},
+    "intent": "machine-schedule",
+    "confidence": 0.98,
+    "route": "machine-schedule",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "schedule",
+    "subject": "CUT-01",
+    "records": 18,
+    "lit_bars": 19,
+    "latency_ms": 1219.5,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "machine-schedule",
+     "confidence": 0.98,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "machine",
+       "raw": "CUT-01",
+       "ref": "CUT-01",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1074.768900005438,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "machine-schedule",
+     "machine": "CUT-01"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "CUT-01: 18 operation(s):\n\n  [CUT-01]\n    seq= 10  2026-01-05 07:00 -> 2026-01-05 08:18  ORD-000016  -13817min early\n    seq= 10  2026-01-05 08:18 -> 2026-01-05 10:18  ORD-000001  -24867min early\n    seq= 10  2026-01-05 10:18 -> 2026-01-05 11:30  ORD-000004  -19061min early\n    seq= 10  2026-01-05 11:30 -> 2026-01-05 12:24  ORD-000021  -30875min early\n    seq= 10  2026-01-05 12:24 -> 2026-01-05 13:45  ORD-000039  -12047min early\n    seq= 10  2026-01-05 13:45 -> 2026-01-05 16:41  ORD-000038  -16722min early\n    seq= 10  2026-01-05 16:41 -> 2026-01-05 17:45  ORD-000012  -16595min early\n    seq= 10  2026-01-05 17:45 -> 2026-01-05 18:54  ORD-000002  -20968min early\n    seq= 10  2026-01-06 07:00 -> 2026-01-06 08:24  ORD-000008  -20691min early\n    seq= 10  2026-01-06 08:24 -> 2026-01-06 13:00  ORD-000029  -9447min early\n    seq= 10  2026-01-06 13:00 -> 2026-01-06 16:15  ORD-000027  -7677min early\n    seq= 10  2026-01-07 07:00 -> 2026-01-07 10:15  ORD-000037  -9529min early\n    seq= 10  2026-01-07 10:15 -> 2026-01-07 18:54  ORD-000028  -20606min early\n    seq= 10  2026-01-08 07:00 -> 2026-01-08 14:36  ORD-000019  -12078min early\n    seq= 10  2026-01-08 14:36 -> 2026-01-12 15:37  ORD-000011  -502min early\n    seq= 10  2026-01-13 07:00 -> 2026-01-13 14:06  ORD-000013  -588min early\n    seq= 10  2026-01-15 07:00 -> 2026-01-15 13:54  ORD-000022  -7800min early\n    seq= 10  2026-01-15 13:54 -> 2026-01-19 09:55  ORD-000003  -844min early\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 193,
+    "question": "why is this one late",
+    "selection": {
+     "order": "ORD-000009",
+     "machine": "CUT-01"
+    },
+    "intent": "late-order",
+    "confidence": 0.95,
+    "route": "late-order",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "LLM (claude-haiku-4-5-20251001)",
+    "subject_type": "demand",
+    "subject": "ORD-000023",
+    "records": 4,
+    "lit_bars": 3,
+    "latency_ms": 2791.1,
+    "llm_calls": 2,
+    "parse": {
+     "intent": "late-order",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": "positive",
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "this one",
+       "ref": "ORD-000023",
+       "source": "card"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1416.4655999993556,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "order": "ORD-000023"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "ORD-000023 is not late. It finished with a lateness of -13388 min (-223.1h), meaning it completed 9.3 days early relative to its due date of 2026-01-14T23:59:59Z [record: b88dcc78...]. The order was assigned to PRESS-FAST, which was selected over the alternative PRESS-SLOW to optimize the schedule [record: 1351e7e3...].\n[rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]"
+   },
+   {
+    "lineno": 221,
+    "question": "why is ORD-000023 on MILL-01",
+    "selection": {},
+    "intent": "why-on-machine",
+    "confidence": 0.95,
+    "route": "why-on-machine",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "premise_correction",
+    "subject": "ORD-000023",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1789.8,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "why-on-machine",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000023",
+       "ref": "ORD-000023",
+       "source": "utterance"
+      },
+      {
+       "kind": "machine",
+       "raw": "MILL-01",
+       "ref": "MILL-01",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1666.7421000020113,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "why-on-machine",
+     "route": "why-on-machine",
+     "order": "ORD-000023",
+     "machine": "MILL-01"
+    },
+    "expect_met": true,
+    "findings": [
+     {
+      "kind": "dark-evidence",
+      "detail": "route 'why-on-machine' cited 0 records and lit 0 bars"
+     }
+    ],
+    "error": null,
+    "answer": "ORD-000023 isn't on MILL-01 — it runs on PRESS-FAST.\n\n  - PRESS-FAST  (op 10)  2026-01-05T12:51:00Z -> 2026-01-05T16:51:00Z\n\nDid you mean one of those? Ask \"why is ORD-000023 on PRESS-FAST?\" and I'll give you the cause.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 231,
+    "question": "why did ORD-000009 end up on CUT-01",
+    "selection": {},
+    "intent": "why-on-machine",
+    "confidence": 0.95,
+    "route": "why-on-machine",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "premise_correction",
+    "subject": "ORD-000009",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1699.2,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "why-on-machine",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000009",
+       "ref": "ORD-000009",
+       "source": "utterance"
+      },
+      {
+       "kind": "machine",
+       "raw": "CUT-01",
+       "ref": "CUT-01",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1529.8498999982257,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "why-on-machine",
+     "order": "ORD-000009",
+     "machine": "CUT-01"
+    },
+    "expect_met": true,
+    "findings": [
+     {
+      "kind": "dark-evidence",
+      "detail": "route 'why-on-machine' cited 0 records and lit 0 bars"
+     }
+    ],
+    "error": null,
+    "answer": "ORD-000009 isn't on CUT-01 — it runs MILL-02, ASM-01 and FINISH-01.\n\n  - MILL-02  (op 10)  2026-01-05T07:00:00Z -> 2026-01-05T12:56:00Z\n  - ASM-01  (op 20)  2026-01-06T07:00:00Z -> 2026-01-06T14:30:00Z\n  - FINISH-01  (op 30)  2026-01-06T14:31:00Z -> 2026-01-06T18:53:00Z\n\nDid you mean one of those? Ask \"why is ORD-000009 on MILL-02?\" and I'll give you the cause.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 242,
+    "question": "why is ORD-000023 on MILL-99",
+    "selection": {},
+    "intent": "why-on-machine",
+    "confidence": 0.95,
+    "route": "unknown-entity",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "unknown_entity",
+    "subject": "MILL-99",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 2118.7,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "why-on-machine",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000023",
+       "ref": "ORD-000023",
+       "source": "utterance"
+      },
+      {
+       "kind": "machine",
+       "raw": "MILL-99",
+       "ref": null,
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 2059.4698999993852,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "why-on-machine",
+     "order": "ORD-000023",
+     "machine": "MILL-99"
+    },
+    "expect_met": false,
+    "findings": [
+     {
+      "kind": "expect-miss",
+      "detail": "machine: expected 'MILL-99', got None"
+     }
+    ],
+    "error": null,
+    "answer": "There's no machine called MILL-99 in this plant.\nThe machines here are: ASM-01, CUT-01, CUT-02, CUT-03, FINISH-01, FINISH-02, FINISH-03, HEAT-01.\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 256,
+    "question": "why is ORD-000012 on PAINT-01",
+    "selection": {},
+    "intent": "why-on-machine",
+    "confidence": 0.95,
+    "route": "why-on-machine",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template (LLM validated)",
+    "subject_type": "demand",
+    "subject": "ORD-000012",
+    "records": 3,
+    "lit_bars": 7,
+    "latency_ms": 3550.8,
+    "llm_calls": 3,
+    "parse": {
+     "intent": "why-on-machine",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000012",
+       "ref": "ORD-000012",
+       "source": "utterance"
+      },
+      {
+       "kind": "machine",
+       "raw": "PAINT-01",
+       "ref": "PAINT-01",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1508.210700005293,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "why-on-machine",
+     "order": "ORD-000012",
+     "machine": "PAINT-01"
+    },
+    "expect_met": true,
+    "findings": [
+     {
+      "kind": "validator",
+      "detail": "LLM testimony failed validation; fell back to template"
+     }
+    ],
+    "error": null,
+    "answer": "ORD-000012 is on PAINT-01 because that is the only machine qualified to run this step — there was no alternative to weigh.\n\nEvidence chain (3 record(s)):\n\n[1] DECISION  | ASSIGNMENT  (scheduling)\n    Assigned to: PAINT-01\n    Why: the machine was busy with other work\n    Note: This is a reconstruction from the solved schedule.\n    [record: 11df66e5...]\n\n[2] DECISION  | ASSIGNMENT  (scheduling)\n    Assigned to: CUT-01\n    Why: it was the cheaper option once every cost was weighed\n    Note: This is a reconstruction from the solved schedule.\n    Alternative: CUT-02  - Would cost $3.20 more.\n    Alternative: CUT-03  - Would cost $7.47 more.\n    [record: a5a16acf...]\n\n[3] DECISION  | ASSIGNMENT  (scheduling)\n    Assigned to: MILL-01\n    Why: the machine was busy with other work\n    Note: This is a reconstruction from the solved schedule.\n    [record: 871c1ef5...]\n\n[LLM validation failed: fabricated record citation '(stated in preamble, no single record ID provided)'; fell back to template]\n[rendered by: template (LLM validated) | register: testimony]"
+   },
+   {
+    "lineno": 262,
+    "question": "but why",
+    "selection": {},
+    "intent": "late-order",
+    "confidence": 0.95,
+    "route": "late-order",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "LLM (claude-haiku-4-5-20251001)",
+    "subject_type": "demand",
+    "subject": "ORD-000012",
+    "records": 6,
+    "lit_bars": 7,
+    "latency_ms": 3135.0,
+    "llm_calls": 2,
+    "parse": {
+     "intent": "late-order",
+     "confidence": 0.95,
+     "followup_of": "deepen",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000012",
+       "ref": "ORD-000012",
+       "source": "last-answer"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1538.6379999981727,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "order": "ORD-000012",
+     "followup": "deepen"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "ORD-000012 is not late. The projected_completion is 2026-01-06 11:24 UTC and the due_date is 2026-01-17T23:59:59Z, with a lateness of -16595 min (-276.6h), indicating the order finished 11.5 days early [record: fbd6c041...]. The due date was driving the schedule [record: a8bbdaca...].\n[rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]"
+   },
+   {
+    "lineno": 280,
+    "question": "what should i do about the late orders",
+    "selection": {},
+    "intent": "advice",
+    "confidence": 0.92,
+    "route": "advice",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "advice",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 2343.2,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "advice",
+     "confidence": 0.92,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "concept",
+       "raw": "late orders",
+       "ref": null,
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 2206.596099997114,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "advice"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.\n\nHere's what I can do to help you decide:\n  - explain why any order is late (\"why is <order> late?\")\n  - show what an order is waiting on (\"why can't <order> start earlier?\")\n  - price a what-if on the board: drag a job and I'll cost the move exactly.\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 282,
+    "question": "so you cant tell me if overtime will help",
+    "selection": {},
+    "intent": "advice",
+    "confidence": 0.92,
+    "route": "coaching",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "coaching",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 2099.7,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "advice",
+     "confidence": 0.92,
+     "followup_of": "deepen",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "concept",
+       "raw": "overtime",
+       "ref": "overtime",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 2046.4765000069747,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "concept": "overtime",
+     "route": "coaching"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "Yes — extra working hours beyond the regular shift — an overtime window a job can run in when the regular calendar is closed, priced at a premium so the schedule only buys those hours when they pay for themselves (e.g. a Saturday shift that rescues a tight order).\n\nTo enable it: add an added exception row with reason overtime on that resource's calendar in calendars.csv (the window it opens), and set an overtime_premium_multiplier in cost_model.json (the premium its hours bill at). See the incoming-data spec §5.6.\n\nWant to check what the submission already declares? Ask \"what data problems exist?\"\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 286,
+    "question": "can i get these done faster",
+    "selection": {},
+    "intent": "advice",
+    "confidence": 0.72,
+    "route": "CLARIFY",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "clarify",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 2069.7,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "advice",
+     "confidence": 0.72,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "concept",
+       "raw": "faster",
+       "ref": null,
+       "source": "utterance"
+      }
+     ],
+     "clarify": "no-subject",
+     "retries": 0,
+     "latency_ms": 1430.9795000008307,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "advice"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I need one more detail to answer \"can i get these done faster\".\nWhich order, machine, or customer do you mean? Ask it again naming one, e.g. \"why is that order late?\" becomes \"why is <order> late?\".\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 288,
+    "question": "would splitting the jobs help",
+    "selection": {},
+    "intent": "what-would-change",
+    "confidence": 0.92,
+    "route": "synthesis",
+    "source": "parse",
+    "register": "synthesis",
+    "renderer": "synthesis (claude-haiku-4-5-20251001) — 5 tool call(s)",
+    "subject_type": "synthesis",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 15238.3,
+    "llm_calls": 7,
+    "parse": {
+     "intent": "what-would-change",
+     "confidence": 0.92,
+     "followup_of": "deepen",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "concept",
+       "raw": "splitting",
+       "ref": "splittable",
+       "source": "utterance"
+      }
+     ],
+     "clarify": "no-subject",
+     "retries": 0,
+     "latency_ms": 1745.7912000027136,
+     "prompt_version": "13"
+    },
+    "synthesis": {
+     "claims": 0,
+     "verified": 0,
+     "interpretive": 0,
+     "failed_and_cut": 0,
+     "ungrounded_load_bearing": 0,
+     "tool_calls": 5,
+     "budget_exhausted": false,
+     "timed_out": false,
+     "unanswerable": true,
+     "tools": [
+      "entity_vocabulary",
+      "lateness_set",
+      "constraint_catalog",
+      "placements_in_window",
+      "cost_ledger"
+     ],
+     "claims_detail": [],
+     "latency_ms": 10847.922000000835,
+     "model": "claude-haiku-4-5-20251001"
+    },
+    "shadow": {},
+    "expect": {
+     "concept": "splittable",
+     "route": "coaching"
+    },
+    "expect_met": false,
+    "findings": [
+     {
+      "kind": "expect-miss",
+      "detail": "route: expected 'coaching', got 'synthesis'"
+     }
+    ],
+    "error": null,
+    "answer": "I couldn't answer that one from the evidence. I read what I could and none of it grounds an answer I'd stand behind, so I'd rather say so than guess.\nI looked at: constraint_catalog, cost_ledger, entity_vocabulary, lateness_set, placements_in_window.\n\nHere's what I can do that's closest:\n  - show every late order at a glance\n  - list the data-quality problems\n[rendered by: synthesis (claude-haiku-4-5-20251001) — 5 tool call(s) | register: synthesis]"
+   },
+   {
+    "lineno": 301,
+    "question": "what should i do",
+    "selection": {},
+    "intent": "briefing",
+    "confidence": 0.92,
+    "route": "briefing",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "briefing",
+    "subject": "today",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1272.9,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "briefing",
+     "confidence": 0.92,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1045.4395999986446,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "advice"
+    },
+    "expect_met": false,
+    "findings": [
+     {
+      "kind": "expect-miss",
+      "detail": "intent: expected 'advice', got 'briefing'"
+     }
+    ],
+    "error": null,
+    "answer": "26 orders on 15 machines over 2026-01-05 to 2026-02-09. 4 things worth your attention, worst first:\n\n1. 2 order(s) finish on time with less slack than one of their own operations takes.\n     ORD-000011 — 8h22m of slack against a longest step of 25h01m of work\n     ORD-000003 — 14h04m of slack against a longest step of 20h01m of work\n     -> Ask \"when does <order> finish?\" for the timeline, or \"what would have to change for <order> to start earlier?\".\n\n2. planned maintenance on Wednesday 2026-01-14 takes out ASM-01, CUT-01, FINISH-01, FINISH-02 and 5 more.\n     -> Ask \"is any maintenance scheduled?\" for the calendar.\n\n3. 14 known order(s) sit beyond the planning horizon with no placement yet.\n     The earliest of them is due 2026-01-20.\n     -> Ask \"what's beyond the horizon?\" for the list, or \"will it fit?\" for the capacity read.\n\n4. No capacity margin is declared for this plant, so every capacity figure here assumes 100% of open time is usable.\n     Declare refinements.coarse_horizon.capacity_derate in cost_model.json (docs/06 §5.9) and the coarse figures derate with it.\n     -> Ask \"how do I declare a capacity margin?\".\n\nAnd what is going right:\n  · Nothing in this window is late.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 303,
+    "question": "what should i do",
+    "selection": {},
+    "intent": "briefing",
+    "confidence": 0.95,
+    "route": "briefing",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "briefing",
+    "subject": "today",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1366.4,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "briefing",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1132.2915000055218,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "advice"
+    },
+    "expect_met": false,
+    "findings": [
+     {
+      "kind": "expect-miss",
+      "detail": "intent: expected 'advice', got 'briefing'"
+     }
+    ],
+    "error": null,
+    "answer": "Same answer as a moment ago —\n26 orders on 15 machines over 2026-01-05 to 2026-02-09. 4 things worth your attention, worst first:\n\n1. 2 order(s) finish on time with less slack than one of their own operations takes.\n     ORD-000011 — 8h22m of slack against a longest step of 25h01m of work\n     ORD-000003 — 14h04m of slack against a longest step of 20h01m of work\n     -> Ask \"when does <order> finish?\" for the timeline, or \"what would have to change for <order> to start earlier?\".\n\n2. planned maintenance on Wednesday 2026-01-14 takes out ASM-01, CUT-01, FINISH-01, FINISH-02 and 5 more.\n     -> Ask \"is any maintenance scheduled?\" for the calendar.\n\n3. 14 known order(s) sit beyond the planning horizon with no placement yet.\n     The earliest of them is due 2026-01-20.\n     -> Ask \"what's beyond the horizon?\" for the list, or \"will it fit?\" for the capacity read.\n\n4. No capacity margin is declared for this plant, so every capacity figure here assumes 100% of open time is usable.\n     Declare refinements.coarse_horizon.capacity_derate in cost_model.json (docs/06 §5.9) and the coarse figures derate with it.\n     -> Ask \"how do I declare a capacity margin?\".\n\nAnd what is going right:\n  · Nothing in this window is late.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 314,
+    "question": "how many orders are late",
+    "selection": {},
+    "intent": "late-orders",
+    "confidence": 0.98,
+    "route": "late-orders",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "late_orders",
+    "subject": "all demands",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1847.3,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "late-orders",
+     "confidence": 0.98,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1784.8989999984042,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "late-orders"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "No late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 316,
+    "question": "how many are late again",
+    "selection": {},
+    "intent": "late-orders",
+    "confidence": 0.95,
+    "route": "late-orders",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "late_orders",
+    "subject": "all demands",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1398.5,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "late-orders",
+     "confidence": 0.95,
+     "followup_of": "list-expand",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1340.6970000069123,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "late-orders"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I've now given you this same answer for two different questions, which probably means I'm not understanding what you're asking. Last time you asked: \"how many orders are late\".\n\nNo late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.\n\nIf you're after a specific field on a specific job — whether an operation is splittable, how long it takes, its due date, which machines can run it — name the order and the field and I'll read it straight off the record.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 325,
+    "question": "how many machines are there",
+    "selection": {},
+    "intent": "machine-count",
+    "confidence": 0.95,
+    "route": "machine-count",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "machine_count",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1142.5,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "machine-count",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1065.8468000037828,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "machine-count"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "15 machine(s) in this plant; 10 of them carry work in this plan.\n\n  - ASM-01\n  - CUT-01\n  - CUT-02\n  - CUT-03\n  - FINISH-01\n  - FINISH-02\n  - FINISH-03\n  - HEAT-01\n  - HEAT-02\n  - MILL-01\n  - MILL-02\n  - PAINT-01\n  - PAINT-02\n  - PRESS-FAST\n  - PRESS-SLOW\n\nCarrying no work in this window: CUT-02, CUT-03, FINISH-03, HEAT-02, PRESS-SLOW.\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 327,
+    "question": "how many machines",
+    "selection": {},
+    "intent": "machine-count",
+    "confidence": 0.95,
+    "route": "machine-count",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "machine_count",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1312.9,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "machine-count",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1082.9412000020966,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "machine-count"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I've now given you this same answer for two different questions, which probably means I'm not understanding what you're asking. Last time you asked: \"how many machines are there\".\n\n15 machine(s) in this plant; 10 of them carry work in this plan.\n\n  - ASM-01\n  - CUT-01\n  - CUT-02\n  - CUT-03\n  - FINISH-01\n  - FINISH-02\n  - FINISH-03\n  - HEAT-01\n  - HEAT-02\n  - MILL-01\n  - MILL-02\n  - PAINT-01\n  - PAINT-02\n  - PRESS-FAST\n  - PRESS-SLOW\n\nCarrying no work in this window: CUT-02, CUT-03, FINISH-03, HEAT-02, PRESS-SLOW.\n\nIf you're after a specific field on a specific job — whether an operation is splittable, how long it takes, its due date, which machines can run it — name the order and the field and I'll read it straight off the record.\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 336,
+    "question": "which orders are late",
+    "selection": {},
+    "intent": "late-orders",
+    "confidence": 0.95,
+    "route": "late-orders",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "late_orders",
+    "subject": "all demands",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 2532.4,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "late-orders",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 2491.1214000021573,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "late-orders"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "No late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 338,
+    "question": "what should i do about it",
+    "selection": {},
+    "intent": "advice",
+    "confidence": 0.92,
+    "route": "advice",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "advice",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1014.8,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "advice",
+     "confidence": 0.92,
+     "followup_of": "deepen",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 914.835800002038,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "advice"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.\n\nHere's what I can do to help you decide:\n  - explain why any order is late (\"why is <order> late?\")\n  - show what an order is waiting on (\"why can't <order> start earlier?\")\n  - price a what-if on the board: drag a job and I'll cost the move exactly.\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 340,
+    "question": "how many machines are there",
+    "selection": {},
+    "intent": "machine-count",
+    "confidence": 0.95,
+    "route": "machine-count",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "machine_count",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1089.7,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "machine-count",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1006.7166999942856,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "machine-count"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "15 machine(s) in this plant; 10 of them carry work in this plan.\n\n  - ASM-01\n  - CUT-01\n  - CUT-02\n  - CUT-03\n  - FINISH-01\n  - FINISH-02\n  - FINISH-03\n  - HEAT-01\n  - HEAT-02\n  - MILL-01\n  - MILL-02\n  - PAINT-01\n  - PAINT-02\n  - PRESS-FAST\n  - PRESS-SLOW\n\nCarrying no work in this window: CUT-02, CUT-03, FINISH-03, HEAT-02, PRESS-SLOW.\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 342,
+    "question": "which orders are late",
+    "selection": {},
+    "intent": "late-orders",
+    "confidence": 0.95,
+    "route": "late-orders",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — no evidence chain — rendered verbatim",
+    "subject_type": "late_orders",
+    "subject": "all demands",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1243.7,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "late-orders",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1196.8169000028865,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "late-orders"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "No late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.\n\n[rendered by: template — no evidence chain — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 367,
+    "question": "why does ORD-000011 go through downtime",
+    "selection": {},
+    "intent": "why-here",
+    "confidence": 0.92,
+    "route": "why-here",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "why_here",
+    "subject": "ORD-000011",
+    "records": 1,
+    "lit_bars": 2,
+    "latency_ms": 1485.6,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "why-here",
+     "confidence": 0.92,
+     "followup_of": "none",
+     "polarity": "negative",
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "ORD-000011",
+       "ref": "ORD-000011",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1354.6839999980875,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "order": "ORD-000011"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "Nothing prevented ORD-000011 op10 from starting earlier. Holding every other placement where it is, CUT-01 had open, unheld time from 2026-01-06 16:15 — the solver chose Thursday 2026-01-08 14:36 rather than being forced into it.\nThe assignment decision records its driver as CALENDAR_WINDOW.\nIt runs in 3 pieces between 2026-01-08 14:36 and 2026-01-12 15:37, 25h01m of actual work — it pauses when CUT-01 closes and resumes when it reopens, which is what it means for this operation to be splittable.\n\nWhat pushed it, in order:\n  2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00\n  2026-01-05 07:00  the machine's calendar [docs/05 C1/C2] — CUT-01 is closed until 2026-01-05 07:00\n  2026-01-06 16:15  no window long enough [docs/05 C3] — the open stretches before 2026-01-06 16:15 were shorter than its 1h minimum piece\n\nNot weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 385,
+    "question": "it seems it should be able to start on tuesday after op10 finishes",
+    "selection": {
+     "order": "ORD-000013",
+     "machine": "PAINT-01"
+    },
+    "intent": "why-here",
+    "confidence": 0.92,
+    "route": "why-here",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "why_here",
+    "subject": "ORD-000013",
+    "records": 1,
+    "lit_bars": 2,
+    "latency_ms": 1443.5,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "why-here",
+     "confidence": 0.92,
+     "followup_of": "none",
+     "polarity": "negative",
+     "subjects": [
+      {
+       "kind": "order",
+       "raw": "it",
+       "ref": "ORD-000013",
+       "source": "selection"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1284.415699999954,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "why-here",
+     "order": "ORD-000013"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "You're right about the machine: PAINT-01 wasn't busy — it was free from 2026-01-13 14:06. That isn't what held this up.\nORD-000013 op20 couldn't start before Thursday 2026-01-15 07:00: it needs 7h11m in one piece and PAINT-01 had only 4h54m left when it came free at 2026-01-13 14:06, and it can't be split.\nBefore that: op10 finishes at 2026-01-13 14:06.\nThe wait spans planned maintenance on PAINT-01, 2026-01-14 00:00 to 2026-01-14 23:59.\n\nWhat pushed it, in order:\n  2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00\n  2026-01-13 14:06  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 14:06\n  2026-01-15 07:00  no window long enough [docs/05 C3] — it needs 7h11m in one piece and PAINT-01 had only 4h54m left when it came free at 2026-01-13 14:06\n\nNot weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 401,
+    "question": "how do i change that",
+    "selection": {
+     "order": "ORD-000013",
+     "machine": "PAINT-01"
+    },
+    "intent": "unmatched",
+    "confidence": 0.25,
+    "route": "synthesis",
+    "source": "parse",
+    "register": "synthesis",
+    "renderer": "synthesis (claude-haiku-4-5-20251001) — 0 tool call(s)",
+    "subject_type": "synthesis",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 3740.7,
+    "llm_calls": 2,
+    "parse": {
+     "intent": "unmatched",
+     "confidence": 0.25,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1767.3234000030789,
+     "prompt_version": "13"
+    },
+    "synthesis": {
+     "claims": 0,
+     "verified": 0,
+     "interpretive": 0,
+     "failed_and_cut": 0,
+     "ungrounded_load_bearing": 0,
+     "tool_calls": 0,
+     "budget_exhausted": false,
+     "timed_out": false,
+     "unanswerable": true,
+     "tools": [],
+     "claims_detail": [],
+     "latency_ms": 1887.4022000018158,
+     "model": "claude-haiku-4-5-20251001"
+    },
+    "shadow": {},
+    "expect": {
+     "intent": "what-would-change",
+     "order": "ORD-000013"
+    },
+    "expect_met": false,
+    "findings": [
+     {
+      "kind": "expect-miss",
+      "detail": "intent: expected 'what-would-change', got 'unmatched'; order: expected 'ORD-000013', got None"
+     }
+    ],
+    "error": null,
+    "answer": "I couldn't answer that one from the evidence. I read what I could and none of it grounds an answer I'd stand behind, so I'd rather say so than guess.\n\nHere's what I can do that's closest:\n  - show every late order at a glance\n  - list the data-quality problems\n[rendered by: synthesis (claude-haiku-4-5-20251001) — 0 tool call(s) | register: synthesis]"
+   },
+   {
+    "lineno": 418,
+    "question": "what should I be worried about",
+    "selection": {},
+    "intent": "briefing",
+    "confidence": 0.95,
+    "route": "briefing",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "briefing",
+    "subject": "today",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1281.3,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "briefing",
+     "confidence": 0.95,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 962.7824999988661,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "intent": "briefing",
+     "route": "briefing"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "26 orders on 15 machines over 2026-01-05 to 2026-02-09. 4 things worth your attention, worst first:\n\n1. 2 order(s) finish on time with less slack than one of their own operations takes.\n     ORD-000011 — 8h22m of slack against a longest step of 25h01m of work\n     ORD-000003 — 14h04m of slack against a longest step of 20h01m of work\n     -> Ask \"when does <order> finish?\" for the timeline, or \"what would have to change for <order> to start earlier?\".\n\n2. planned maintenance on Wednesday 2026-01-14 takes out ASM-01, CUT-01, FINISH-01, FINISH-02 and 5 more.\n     -> Ask \"is any maintenance scheduled?\" for the calendar.\n\n3. 14 known order(s) sit beyond the planning horizon with no placement yet.\n     The earliest of them is due 2026-01-20.\n     -> Ask \"what's beyond the horizon?\" for the list, or \"will it fit?\" for the capacity read.\n\n4. No capacity margin is declared for this plant, so every capacity figure here assumes 100% of open time is usable.\n     Declare refinements.coarse_horizon.capacity_derate in cost_model.json (docs/06 §5.9) and the coarse figures derate with it.\n     -> Ask \"how do I declare a capacity margin?\".\n\nAnd what is going right:\n  · Nothing in this window is late.\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   },
+   {
+    "lineno": 439,
+    "question": "would overtime on CUT-01 help",
+    "selection": {},
+    "intent": "what-would-change",
+    "confidence": 0.92,
+    "route": "NEAR_MISS",
+    "source": "parse",
+    "register": "testimony",
+    "renderer": "template — authored copy — rendered verbatim",
+    "subject_type": "near_miss",
+    "subject": "?",
+    "records": 0,
+    "lit_bars": 0,
+    "latency_ms": 1482.3,
+    "llm_calls": 1,
+    "parse": {
+     "intent": "what-would-change",
+     "confidence": 0.92,
+     "followup_of": "none",
+     "polarity": null,
+     "subjects": [
+      {
+       "kind": "machine",
+       "raw": "CUT-01",
+       "ref": "CUT-01",
+       "source": "utterance"
+      },
+      {
+       "kind": "concept",
+       "raw": "overtime",
+       "ref": "overtime",
+       "source": "utterance"
+      }
+     ],
+     "clarify": null,
+     "retries": 0,
+     "latency_ms": 1466.2884999997914,
+     "prompt_version": "13"
+    },
+    "synthesis": {},
+    "shadow": {},
+    "expect": {
+     "machine": "CUT-01"
+    },
+    "expect_met": true,
+    "findings": [],
+    "error": null,
+    "answer": "I can't answer that one exactly — \"would overtime on CUT-01 help\".\n\nHere's what I can do that's closest:\n  - show what's running on CUT-01\n  - explain why CUT-01 carries no work\n\n[rendered by: template — authored copy — rendered verbatim | register: testimony]"
+   }
+  ]
+ }
+]

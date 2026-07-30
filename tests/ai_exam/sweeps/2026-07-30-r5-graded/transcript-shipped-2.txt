@@ -1,0 +1,1001 @@
+AI EXAM TRANSCRIPT
+target      : rolling-c362baa4-1b0
+snapshot    : snap-rolling
+started     : 2026-07-30T10:21:07Z
+llm mode    : live
+questions   : 33
+llm calls   : 49
+door check  : live
+parse       : parses=40 calls=40 retries=0 malformed=0 clarifies=3 unavailable=0 median=1406ms
+synthesis   : answers=2 calls=5 tools=3 malformed=0 budget-out=0 unanswerable=1 median=12504ms p90=21586ms
+claims      : 4 total  verified=1 interpretive=3 failed-and-cut=0  ungrounded-load-bearing=0
+latency     : route n=31 median=1412ms p90=2903ms | synthesis n=2 median=14649ms p90=23108ms
+graded      : 27/32 expectations met
+sidecar     : dark-evidence=2, expect-miss=5, validator=1
+------------------------------------------------------------------------
+# AI EXAM BANK — founder ROUND-FIVE regression (Session 4B.5)
+# generated   : 2026-07-26
+# recalibrated: 2026-07-30 (Session 4B.17 — the first session to GRADE it)
+# taxonomy : R-AI5 intent vocabulary + `open-card` (parse prompt v13)
+# target   : THE PINNED ROLLING RUN (tools/build_rolling_exam_run.py) — the same
+# world sweep_rolling asks. The founder's round-five session ran on a
+# rolling board (schedule rolling-279dec02-411), and three of the five
+# specimens are only askable there: a delta card exists because a
+# gesture was priced against a sliced window.
+# 
+# ---------------------------------------------------------------------------
+# RECALIBRATION NOTE (Session 4B.17). READ THIS BEFORE GRADING.
+# ---------------------------------------------------------------------------
+# This bank was committed 4B.5 and never graded. Six sessions changed the
+# product under it (4B.6b/4B.7, 4B.11, 4B.13, 4B.14, 4B.15, 4B.16) and the exam
+# WORLD was re-minted. Every expectation below was re-derived from the pinned
+# world's PERSISTED document (R-AI4 — no re-solve anywhere in the derivation),
+# under four rules:
+# (a) QUESTION TEXT NEVER CHANGES. A question is a specimen. Where a premise
+# was false and the product now CORRECTS it, the expectation became
+# "corrects the premise" — the specimen stays wrong on purpose.
+# (b) every change is logged in RUBRIC.md's precedent log with its cause and
+# its old text.
+# (c) no expectation is copied from what the product says today.
+# (d) where the right expectation could not be derived, the slot is marked
+# UNGRADED with its reason rather than guessed.
+# 
+# THE ONE FACT THAT MOVED THE MOST EXPECTATIONS: **NOTHING IS LATE ON THIS
+# BOARD.** All 26 placed demands finish before their due date (worst slack is
+# ORD-000011 at 502 minutes), tardiness is $0.00 and the solver closed the bound
+# (OPTIMAL, gap 0.0, ledger 16,481.95). Every lateness question in this bank is
+# therefore a FALSE-PREMISE specimen now, and the graded thing is 4B.13's
+# premise correction plus 4B.13 Item 3's region note.
+# 
+# WORLD VOCABULARY, re-derived 2026-07-30 from the persisted document
+# (the old header listed the 279dec02 world and was wrong on both lines):
+# reference date / window : ref 2026-01-05, window 2026-01-05..2026-01-19,
+# frozen until 2026-01-08; horizon ends 2026-02-09.
+# Jan 13 is a Tuesday; Jan 15 is a Thursday.
+# 40 demands              : 26 placed (45 committed bars + 11 active), 14 tray
+# tray (beyond horizon)   : ORD-000018, ORD-000010, ORD-000017, ORD-000032,
+# ORD-000007, ORD-000020, ORD-000033, ORD-000006,
+# ORD-000035, ORD-000014, ORD-000005, ORD-000026,
+# ORD-000031, ORD-000036 (14 total)
+# machines DECLARED (15)  : ASM-01, CUT-01, CUT-02, CUT-03, FINISH-01,
+# FINISH-02, FINISH-03, HEAT-01, HEAT-02, MILL-01,
+# MILL-02, PAINT-01, PAINT-02, PRESS-FAST, PRESS-SLOW
+# machines CARRYING WORK  : 10 — CUT-01 (18 ops, the busiest), PAINT-01 (10),
+# PAINT-02 (7), PRESS-FAST (6), MILL-01 (5),
+# ASM-01 / FINISH-01 / FINISH-02 / HEAT-01 /
+# MILL-02 (2 each)
+# IDLE (carry no work)    : CUT-02, CUT-03, FINISH-03, HEAT-02, PRESS-SLOW
+# placements that matter below:
+# ORD-000023 -> PRESS-FAST op10 ONLY (NOT MILL-01)
+# ORD-000009 -> MILL-02, ASM-01, FINISH-01
+# (NOT CUT-01)
+# ORD-000012 -> CUT-01, MILL-01, PAINT-01 (op30);
+# PAINT-01 is its only eligible lane
+# ORD-000013 -> CUT-01 op10 Tue Jan 13 07:00-14:06;
+# PAINT-01 op20 Thu Jan 15 07:00-14:11
+# (431 working min, setup 20, PAINT-01
+# the only eligible lane)
+# ORD-000011 -> CUT-01 op10, THREE chunks
+# Jan 8 14:36 -> Jan 12 15:37
+# (1501 working min, 4320 min of pauses)
+# coarse zone             : bucket_days 7 DEFAULTED, derate 1.0 DEFAULTED
+# 
+# ADAPTATION, stated: the founder's own ids (ORD-38, ORD-000008, PAINT-02, MILL-01
+# on their live data root) are mapped onto this world's vocabulary, exactly as the
+# round-four bank mapped pilot ids onto glass_box. The PHRASING is preserved
+# verbatim — that is what a regression bank is for.
+# 
+# EXPECT lines grade ROUTING only (R-AI4(2)): which intent the parse named, which
+# typed subjects it bound, where the dispatch sent it. Whether the ANSWER is good
+# is Claude's and the founder's, and the substantive expectation is written into
+# the comment above each turn so a reader grades the same thing twice running.
+# =================================================================================
+# A — THE OPEN DELTA CARD (CU2). The founder's exact failing exchange.
+# 
+# A priced card is on the board showing the placement, the cost split, and the
+# orders the move affects. Asked what orders are affected, the system parsed
+# `swap-move` — a route that weighs two orders' slack against each other and has
+# never heard of the card — and answered a question nobody asked, while the
+# answer sat on screen.
+# 
+# THE CARD THE RUNNER STANDS UP WAS RECALIBRATED 4B.17 from the committed
+# fixture tests/cockpit/fixtures/rolling/sandbox.json (the shipped capture):
+# total +$32.20 = window re-optimization $0.00 + your move +$32.20
+# cost lines: production (regular) +32.20, everything else 0.00
+# affected_orders: EMPTY   lateness_delta_min: 0   moves: 1
+# no_committed_work_changes: true
+# It was -11,953.08 = -11,975.83 + 22.75 until 4B.7 took the earliness
+# coefficient out of the objective; reopt is now 0.00 BY CONSTRUCTION
+# (docs/07 §5a.12), so move == total and the two halves can no longer disagree.
+# 
+# SUBSTANTIVE EXPECTATION (recalibrated): the answer reads the card back and says
+# plainly that NO order's service outcome changes — no committed work moves and
+# nothing's lateness shifts. Naming an affected order here is FABRICATION (the
+# card's affected set is empty), and re-deriving instead of reading the card back
+# is the CU2 defect.
+# =================================================================================
+# [CARD open — order=ORD-000023 machine=MILL-01]
+# [EXPECT intent=open-card route=open-card]
+Q[105]: what orders are affected in this move
+  route=open-card  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=open-card  conf=0.95  1287ms
+  expect: intent=open-card route=open-card  -> MET
+  A:
+    The move you have open:
+    ORD-000023 lands on MILL-01 at Jan 8, 08:23.
+    It prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.
+
+    No order's lateness or tardiness changes because of it.
+    Nothing's lateness changes across the plan.
+    Nothing else has to move.
+    No committed work changes.
+
+    Why it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)
+
+    Nothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# THE SPLIT, ASKED FOR DIRECTLY (added Session 4B.6a CU5(a)). This is the
+# untested intersection of 4B.5's CU1 and CU2. CU1 split the card's verdict
+# because `cost_delta_abs` measures the RE-SOLVE, not the move: the card now
+# shows *window re-optimization* beside *your move*, and a planner's move is
+# judged against the baseline, never the stale incumbent. CU2 made `open-card`
+# READ THE CARD BACK rather than re-derive it.
+# 
+# 4B.17 — THIS QUESTION NO LONGER DISCRIMINATES, AND THAT IS REPORTED RATHER
+# THAN GRADED AS A PASS. The move half (+$32.20) and the total (+$32.20) are the
+# same number on every card the shipped product can now produce, so an answer
+# quoting the total is indistinguishable from one quoting the move. What is
+# still graded, and still worth grading:
+# * the SIGN — $32.20 is what the move COST. Reported as a saving, the exact
+# defect 4B.5 CU1 fixed on the card is alive in the conversational channel.
+# * the question's own exclusion ("not the re-solve") is honoured: the window
+# re-optimization contributed $0.00 / nothing, and saying so is the answer.
+# * no figure appears that is not on the card (the two surfaces cannot state
+# different numbers — that is what CU2 exists to prevent).
+# [CARD open — order=ORD-000023 machine=MILL-01]
+# [EXPECT intent=open-card route=open-card]
+Q[128]: what did the move itself cost, not the re-solve
+  route=open-card  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=open-card  conf=0.95  1146ms
+  expect: intent=open-card route=open-card  -> MET
+  A:
+    The move you have open:
+    ORD-000023 lands on MILL-01 at Jan 8, 08:23.
+    It prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.
+
+    No order's lateness or tardiness changes because of it.
+    Nothing's lateness changes across the plan.
+    Nothing else has to move.
+    No committed work changes.
+
+    Why it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)
+
+    Nothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# The same channel, the other three phrasings the founder used for it.
+# SUBSTANTIVE EXPECTATION: $32.20 as a COST, read off the card, on all three.
+# "these orders — which ones are they" is an ELLIPSIS: it must resolve to the
+# card and answer that the affected set is empty, never invent one.
+# [CARD open — order=ORD-000023 machine=MILL-01]
+# [EXPECT intent=open-card route=open-card]
+Q[137]: what does this move cost
+  route=open-card  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=open-card  conf=0.95  1129ms
+  expect: intent=open-card route=open-card  -> MET
+  A:
+    The move you have open:
+    ORD-000023 lands on MILL-01 at Jan 8, 08:23.
+    It prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.
+
+    No order's lateness or tardiness changes because of it.
+    Nothing's lateness changes across the plan.
+    Nothing else has to move.
+    No committed work changes.
+
+    Why it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)
+
+    Nothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=open-card route=open-card]
+Q[139]: these orders — which ones are they
+  route=open-card  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=open-card  conf=0.95  followup=list-expand  5127ms
+  expect: intent=open-card route=open-card  -> MET
+  A:
+    The move you have open:
+    ORD-000023 lands on MILL-01 at Jan 8, 08:23.
+    It prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.
+
+    No order's lateness or tardiness changes because of it.
+    Nothing's lateness changes across the plan.
+    Nothing else has to move.
+    No committed work changes.
+
+    Why it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)
+
+    Nothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=open-card route=open-card]
+Q[141]: whats the delta
+  route=open-card  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=open-card  conf=0.95  1244ms
+  expect: intent=open-card route=open-card  -> MET
+  A:
+    The move you have open:
+    ORD-000023 lands on MILL-01 at Jan 8, 08:23.
+    It prices at +$32.20 in total, and that total is two different things: $0 is the window re-optimizing under a fresh budget — the solver would have found that with or without you — and +$32.20 is what your move itself adds.
+
+    No order's lateness or tardiness changes because of it.
+    Nothing's lateness changes across the plan.
+    Nothing else has to move.
+    No committed work changes.
+
+    Why it lands there: a declared earliness preference paid a little more to start it sooner on a machine that was free earlier — though I'm attributing this by price alone, so I can't be certain the earlier start was the real reason rather than the cheaper machine simply being busy at the time (capacity pressure can bind here too)
+
+    Nothing here is committed — this is the sandbox's price for the move, and the plan of record is unchanged until you accept it.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# THE OTHER SIDE OF THE PIN. With no card open the same words are about the PLAN,
+# and must reach a plan route (or the reasoning tier) — never `open-card`, which
+# would answer about a move that is not on screen.
+# SUBSTANTIVE EXPECTATION: no card is invented, and no stale card is remembered.
+# No figure from the closed card ($32.20) appears.
+# 
+# UNGRADED BY MACHINE (4B.17, rule (d)), two reasons, both structural:
+# 1. EXPECT can only assert equality. The expectation here is a NEGATIVE
+# ("never open-card") and the directive has no way to say it. The bank
+# carried `EXPECT route=open-card` under this very comment since 4B.5 —
+# an authoring bug that would have graded the defect as the pass.
+# 2. Which route SHOULD take a subjectless "whats the delta" with no card is
+# not derivable from the document: clarify, version-diff, edit-summary and
+# the second tier are all defensible. Guessing one would fit an
+# expectation to a coin flip.
+# GRADED BY HAND on the two substantive clauses above.
+# [CARD closed]
+Q[161]: whats the delta
+  route=open-card  source=parse  conf=0.15  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=open-card  conf=0.15  clarify=no-subject  1212ms
+  A:
+    There's no priced move open on the board right now, so I have nothing to read back. Make the move again and I'll answer from the card it prices.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# A card open does not turn every question into a card question. The card is a
+# channel, not a mode.
+# SUBSTANTIVE EXPECTATION (recalibrated 4B.17): "which orders are late" is a
+# FALSE-PREMISE question on this board — NOTHING IS LATE. The answer must say so
+# and name the region it speaks about (26 placed in this window, 14 beyond the
+# horizon that are neither late nor on time), per 4B.13 Item 3. It must not
+# offer a list of an empty set and must not reach for the card.
+# "whats running on CUT-01" is the busiest machine on the board (18 ops).
+# [CARD open — order=ORD-000023 machine=MILL-01]
+# [EXPECT intent=late-orders]
+Q[174]: which orders are late
+  route=late-orders  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=late-orders  conf=0.95  945ms
+  expect: intent=late-orders  -> MET
+  A:
+    No late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=machine-schedule machine=CUT-01]
+Q[176]: whats running on CUT-01
+  route=machine-schedule  source=parse  conf=0.98  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=19  records=18  refs=18/1/0
+  parse: intent=machine-schedule  conf=0.98  machine=CUT-01<-utterance("CUT-01")  1135ms
+  expect: intent=machine-schedule machine=CUT-01  -> MET
+  A:
+    CUT-01: 18 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 08:18  ORD-000016  -13817min early
+        seq= 10  2026-01-05 08:18 -> 2026-01-05 10:18  ORD-000001  -24867min early
+        seq= 10  2026-01-05 10:18 -> 2026-01-05 11:30  ORD-000004  -19061min early
+        seq= 10  2026-01-05 11:30 -> 2026-01-05 12:24  ORD-000021  -30875min early
+        seq= 10  2026-01-05 12:24 -> 2026-01-05 13:45  ORD-000039  -12047min early
+        seq= 10  2026-01-05 13:45 -> 2026-01-05 16:41  ORD-000038  -16722min early
+        seq= 10  2026-01-05 16:41 -> 2026-01-05 17:45  ORD-000012  -16595min early
+        seq= 10  2026-01-05 17:45 -> 2026-01-05 18:54  ORD-000002  -20968min early
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 08:24  ORD-000008  -20691min early
+        seq= 10  2026-01-06 08:24 -> 2026-01-06 13:00  ORD-000029  -9447min early
+        seq= 10  2026-01-06 13:00 -> 2026-01-06 16:15  ORD-000027  -7677min early
+        seq= 10  2026-01-07 07:00 -> 2026-01-07 10:15  ORD-000037  -9529min early
+        seq= 10  2026-01-07 10:15 -> 2026-01-07 18:54  ORD-000028  -20606min early
+        seq= 10  2026-01-08 07:00 -> 2026-01-08 14:36  ORD-000019  -12078min early
+        seq= 10  2026-01-08 14:36 -> 2026-01-12 15:37  ORD-000011  -502min early
+        seq= 10  2026-01-13 07:00 -> 2026-01-13 14:06  ORD-000013  -588min early
+        seq= 10  2026-01-15 07:00 -> 2026-01-15 13:54  ORD-000022  -7800min early
+        seq= 10  2026-01-15 13:54 -> 2026-01-19 09:55  ORD-000003  -844min early
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# THE RESOLUTION LADDER (CU2). A card outranks a live board selection: the
+# selection persists after the planner has stopped thinking about it; a card is
+# open because a move is being weighed right now.
+# SUBSTANTIVE EXPECTATION: the answer resolves against the CARD's order
+# (ORD-000023) and says so ("from the move you have open"), not against the stale
+# selection (ORD-000009).
+# RECALIBRATED 4B.17: ORD-000023 IS NOT LATE — it finishes 2026-01-05 16:51
+# against a due date of 2026-01-14, 13,388 minutes early. So the second clause is
+# a premise correction: the answer must say ORD-000023 is not late rather than
+# manufacture a cause for a lateness that does not exist. Binding the CARD's
+# order and then inventing lateness for it is a truth failure, not a context win.
+# [SELECT order=ORD-000009 machine=CUT-01]
+# [CARD open — order=ORD-000023 machine=MILL-01]
+# [EXPECT order=ORD-000023]
+Q[193]: why is this one late
+  selection: order=ORD-000009, machine=CUT-01
+  interpreted as: why is ORD-000023 late  (resolved against ORD-000023 (from the move you have open))
+  route=late-order  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=4  refs=1/1/1
+  parse: intent=late-order  conf=0.95  polarity=positive  order=ORD-000023<-card("this one")  1537ms
+  expect: order=ORD-000023  -> MET
+  A:
+    ORD-000023 is not late — it is early [record: bca1dfe4...]. The order finished on 2026-01-05 16:51 UTC with a lateness of -13388 min (-223.1h), completing 9.3 days ahead of its due date of 2026-01-14T23:59:59Z [record: b88dcc78...]. The order was assigned to PRESS-FAST [record: 1351e7e3...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [CARD closed]
+# [SELECT cleared]
+# =================================================================================
+# B — THE VACUOUS CAUSAL ANSWER (CU3). The founder's second specimen.
+# 
+# "why is ORD-000008 on PAINT-02?" -> "because the machine was busy with other
+# work [record: bafa03f1…]". The record was real and the clause was the authored
+# CAPACITY_BLOCKED driver phrase, carried verbatim — so nothing was fabricated and
+# every fabrication check passed it. It named no machine, no alternative and no
+# quantity, and the machine it referred to is one the order is not even on.
+# 
+# 4B.13 shipped the PREMISE GUARD for exactly this, and the two questions below
+# are its specimens — banked here since 4B.5 with expectations that predate it.
+# =================================================================================
+# SPECIMEN 1 of the eight (4B.17): FALSE PREMISE, the machine exists.
+# ORD-000023 runs on PRESS-FAST (op10, Jan 5 12:51-16:51) and touches MILL-01
+# nowhere on this board.
+# SUBSTANTIVE EXPECTATION (recalibrated): the answer CORRECTS the premise in its
+# first clause — ORD-000023 is not on MILL-01, it runs on PRESS-FAST — lists the
+# real placement as evidence, and offers the question that would get the cause.
+# It must NOT answer as if the premise held, and must NOT silently substitute
+# PRESS-FAST and answer about that instead: a correction the planner cannot see
+# is the premise ECHO wearing a right answer.
+# [EXPECT intent=why-on-machine route=why-on-machine order=ORD-000023 machine=MILL-01]
+Q[221]: why is ORD-000023 on MILL-01
+  route=why-on-machine  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=why-on-machine  conf=0.95  order=ORD-000023<-utterance("ORD-000023")  machine=MILL-01<-utterance("MILL-01")  1514ms
+  expect: intent=why-on-machine route=why-on-machine order=ORD-000023 machine=MILL-01  -> MET
+  A:
+    ORD-000023 isn't on MILL-01 — it runs on PRESS-FAST.
+
+      - PRESS-FAST  (op 10)  2026-01-05T12:51:00Z -> 2026-01-05T16:51:00Z
+
+    Did you mean one of those? Ask "why is ORD-000023 on PRESS-FAST?" and I'll give you the cause.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+  >> sidecar[dark-evidence]: route 'why-on-machine' cited 0 records and lit 0 bars
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# SPECIMEN 2 of the eight (4B.17): FALSE TWICE — the order is on THREE machines
+# and none of them is CUT-01 (MILL-02 op10, ASM-01 op20, FINISH-01 op30), and
+# CUT-01 is the busiest machine on the board, so a plausible-sounding capacity
+# answer here would be entirely fictional.
+# SUBSTANTIVE EXPECTATION: corrects the premise and lists all three real
+# placements with their op sequence.
+# [EXPECT intent=why-on-machine order=ORD-000009 machine=CUT-01]
+Q[231]: why did ORD-000009 end up on CUT-01
+  route=why-on-machine  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=why-on-machine  conf=0.95  order=ORD-000009<-utterance("ORD-000009")  machine=CUT-01<-utterance("CUT-01")  1428ms
+  expect: intent=why-on-machine order=ORD-000009 machine=CUT-01  -> MET
+  A:
+    ORD-000009 isn't on CUT-01 — it runs MILL-02, ASM-01 and FINISH-01.
+
+      - MILL-02  (op 10)  2026-01-05T07:00:00Z -> 2026-01-05T12:56:00Z
+      - ASM-01  (op 20)  2026-01-06T07:00:00Z -> 2026-01-06T14:30:00Z
+      - FINISH-01  (op 30)  2026-01-06T14:31:00Z -> 2026-01-06T18:53:00Z
+
+    Did you mean one of those? Ask "why is ORD-000009 on MILL-02?" and I'll give you the cause.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+  >> sidecar[dark-evidence]: route 'why-on-machine' cited 0 records and lit 0 bars
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# SPECIMEN 3 of the eight (4B.17): THE MISTYPED MACHINE. MILL-99 does not exist
+# in this plant. This is how a stranger triggers premise echo, and it must get a
+# DIFFERENT correction from a machine that exists but is the wrong one (4B.13
+# Item 1(i)).
+# SUBSTANTIVE EXPECTATION: says there is no machine called MILL-99 in this plant
+# and names the machines there are. It must NOT answer about PRESS-FAST as though
+# MILL-99 had been a typo it silently repaired, and must NOT invent a placement.
+# [EXPECT intent=why-on-machine order=ORD-000023 machine=MILL-99]
+Q[242]: why is ORD-000023 on MILL-99
+  route=unknown-entity  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=why-on-machine  conf=0.95  order=ORD-000023<-utterance("ORD-000023")  machine=UNRESOLVED<-utterance("MILL-99")  1956ms
+  expect: intent=why-on-machine order=ORD-000023 machine=MILL-99  -> MISSED
+  A:
+    There's no machine called MILL-99 in this plant.
+    The machines here are: ASM-01, CUT-01, CUT-02, CUT-03, FINISH-01, FINISH-02, FINISH-03, HEAT-01.
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+  >> sidecar[expect-miss]: machine: expected 'MILL-99', got None
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# THE CONTROL — a TRUE premise. ORD-000012's op30 is on PAINT-01, and PAINT-01 is
+# the ONLY machine qualified to run that step.
+# SUBSTANTIVE EXPECTATION (recalibrated 4B.17): the only-eligible-machine LEAD —
+# "that is the only machine qualified to run this step, there was no alternative
+# to weigh" — as a CAPABILITY fact, with the evidence chain for the decision
+# about THIS operation (4B.13 Item 1 fixed a multi-op order being answered from a
+# different operation's decision). The ORIGINAL expectation here demanded the
+# blocked alternatives be named; on this board there are none, and a capacity
+# story would be a fabrication. No causal answer may consist of a driver phrase
+# and nothing else.
+# [EXPECT intent=why-on-machine order=ORD-000012 machine=PAINT-01]
+Q[256]: why is ORD-000012 on PAINT-01
+  route=why-on-machine  source=parse  conf=0.95  register=testimony  renderer=template (LLM validated)
+  lit-bars=7  records=3  refs=3/3/1
+  parse: intent=why-on-machine  conf=0.95  order=ORD-000012<-utterance("ORD-000012")  machine=PAINT-01<-utterance("PAINT-01")  2037ms
+  expect: intent=why-on-machine order=ORD-000012 machine=PAINT-01  -> MET
+  A:
+    ORD-000012 is on PAINT-01 because that is the only machine qualified to run this step — there was no alternative to weigh.
+
+    Evidence chain (3 record(s)):
+
+    [1] DECISION  | ASSIGNMENT  (scheduling)
+        Assigned to: PAINT-01
+        Why: the machine was busy with other work
+        Note: This is a reconstruction from the solved schedule.
+        [record: 11df66e5...]
+
+    [2] DECISION  | ASSIGNMENT  (scheduling)
+        Assigned to: CUT-01
+        Why: it was the cheaper option once every cost was weighed
+        Note: This is a reconstruction from the solved schedule.
+        Alternative: CUT-02  - Would cost $3.20 more.
+        Alternative: CUT-03  - Would cost $7.47 more.
+        [record: a5a16acf...]
+
+    [3] DECISION  | ASSIGNMENT  (scheduling)
+        Assigned to: MILL-01
+        Why: the machine was busy with other work
+        Note: This is a reconstruction from the solved schedule.
+        [record: 871c1ef5...]
+
+    [LLM validation failed: no [record:] footnotes on factual sentences; fabricated record citation '(stated in prompt)'; fell back to template]
+    [rendered by: template (LLM validated) | register: testimony]
+  >> sidecar[validator]: LLM testimony failed validation; fell back to template
+------------------------------------------------------------------------
+# The deepen after it: having been told the machine was the only one qualified,
+# "but why" is about THAT chain — why is PAINT-01 the only qualified lane — and
+# NOT about the plan's aggregate lateness. On this board aggregate lateness is
+# ZERO, so an aggregate answer here is both non-responsive and false.
+# [EXPECT order=ORD-000012 followup=deepen]
+Q[262]: but why
+  route=late-order  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=7  records=6  refs=3/3/1
+  parse: intent=late-order  conf=0.95  followup=deepen  order=ORD-000012<-last-answer("ORD-000012")  1996ms
+  expect: order=ORD-000012 followup=deepen  -> MET
+  A:
+    ORD-000012 is not late. It finished 11.5 days early with a projected_completion of 2026-01-06 11:24 UTC against a due_date of 2026-01-17T23:59:59Z, resulting in a lateness of -16595 min (-276.6h) [record: fbd6c041...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# C — THE CONVERSATIONAL RIDERS (CU5). Each founder-caught, each small.
+# =================================================================================
+# (a) An advice push-back that NAMES a capability is a coaching question. Answering
+# it with the advice template that prompted the push-back is the assistant reading
+# its own last answer back to someone who has just said it was insufficient.
+# SUBSTANTIVE EXPECTATION, first turn (recalibrated 4B.17): "the late orders" is a
+# FALSE PREMISE — none are late. Scoped advice on this board must say so before
+# scoping, the way the `lateness-cause` promotion's premise-check condition
+# requires, and must not recite a lateness list it does not have.
+# SUBSTANTIVE EXPECTATION, second turn: how overtime is DECLARED and what it
+# would let the solver do — not the scoping answer again — and it must read as
+# having heard the objection rather than changing the subject.
+# [EXPECT intent=advice]
+Q[280]: what should i do about the late orders
+  route=advice  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.92  concept=UNRESOLVED<-utterance("late orders")  1448ms
+  expect: intent=advice  -> MET
+  A:
+    I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT concept=overtime route=coaching]
+Q[282]: so you cant tell me if overtime will help
+  route=coaching  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.92  followup=deepen  concept=overtime<-utterance("overtime")  1383ms
+  expect: concept=overtime route=coaching  -> MET
+  A:
+    Yes — extra working hours beyond the regular shift — an overtime window a job can run in when the regular calendar is closed, priced at a premium so the schedule only buys those hours when they pay for themselves (e.g. a Saturday shift that rescues a tight order).
+
+    To enable it: add an added exception row with reason overtime on that resource's calendar in calendars.csv (the window it opens), and set an overtime_premium_multiplier in cost_model.json (the premium its hours bill at). See the incoming-data spec §5.6.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT intent=advice]
+Q[286]: can i get these done faster
+  route=CLARIFY  source=parse  conf=0.72  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.72  concept=UNRESOLVED<-utterance("faster")  clarify=no-subject  1926ms
+  expect: intent=advice  -> MET
+  A:
+    I need one more detail to answer "can i get these done faster".
+    Which order, machine, or customer do you mean? Ask it again naming one, e.g. "why is that order late?" becomes "why is <order> late?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT concept=splittable route=coaching]
+Q[288]: would splitting the jobs help
+  route=synthesis  source=parse  conf=0.92  register=synthesis  renderer=synthesis (claude-sonnet-5) — 3 tool call(s)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=what-would-change  conf=0.92  followup=deepen  concept=splittable<-utterance("splitting")  clarify=no-subject  1461ms
+  synthesis: claims=4  verified=1  interpretive=3  cut=0  tools=3(constraint_catalog,fetch_record,lateness_set)  21586ms
+  expect: concept=splittable route=coaching  -> MISSED
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    The scheduler does support splitting/interruptible work: 'Interruptibility & chunking' is in-core and its proof status shows it productionized (chunk-boundary-interval encoding, spike verdicted YELLOW).  [synthesis — read from: 5348876d, 12b5e06c, 01d65946]
+    Splitting is governed by a locked ruling with three classes per phase: resumable (pauses only at calendar boundaries, never for other jobs), non-resumable (must fit one contiguous window), and calendar-indifferent (runs through breaks unattended) — setup/teardown default resumable, run defaults non-resumable, and restart cost on resume is excluded from the model.  [synthesis — read from: 5348876d, 12b5e06c, 01d65946]
+    Of the 40 orders in this run, 26 are scheduled and none of them are late — all 26 are on time or early — while 14 have no placement at all and so have no service outcome to improve.  [record: 5348876d...]
+    Since no jobs in the placed set are late, splitting them wouldn't recover any lateness — the problem for those 26 is not schedule-fit, it's the 14 orders that never got a placement at all, and splitting a non-resumable run into chunks won't put an unscheduled order onto the board by itself. (based on the 40 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: 5348876d, 12b5e06c, 01d65946]
+    [rendered by: synthesis (claude-sonnet-5) — 3 tool call(s) | register: synthesis]
+  >> sidecar[expect-miss]: route: expected 'coaching', got 'synthesis'
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# (b) A route re-fired within two turns varies its LEAD. The facts are the same
+# facts and must stay so; what changes is the first line.
+# SUBSTANTIVE EXPECTATION (recalibrated 4B.17 for §5a.42): the second answer is
+# not the first answer verbatim, and the varied lead is ACKNOWLEDGEMENT OR
+# SELF-DOUBT — never a scold. 4B.15 found the repeat detector inverted (four
+# firings, zero true positives, escalating to "Still the same; nothing has
+# changed since you asked") and deleted the scold. This IS the same question
+# twice, so the `repeat` signal is the correct one to fire here; the `deaf`
+# signal (same delivered ANSWER to a DIFFERENT question) is not.
+# [EXPECT intent=advice]
+Q[301]: what should i do
+  route=briefing  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=briefing  conf=0.92  2407ms
+  expect: intent=advice  -> MISSED
+  A:
+    26 orders on 15 machines over 2026-01-05 to 2026-02-09. 4 things worth your attention, worst first:
+
+    1. 2 order(s) finish on time with less slack than one of their own operations takes.
+         ORD-000011 — 8h22m of slack against a longest step of 25h01m of work
+         ORD-000003 — 14h04m of slack against a longest step of 20h01m of work
+         -> Ask "when does <order> finish?" for the timeline, or "what would have to change for <order> to start earlier?".
+
+    2. planned maintenance on Wednesday 2026-01-14 takes out ASM-01, CUT-01, FINISH-01, FINISH-02 and 5 more.
+         -> Ask "is any maintenance scheduled?" for the calendar.
+
+    3. 14 known order(s) sit beyond the planning horizon with no placement yet.
+         The earliest of them is due 2026-01-20.
+         -> Ask "what's beyond the horizon?" for the list, or "will it fit?" for the capacity read.
+
+    4. No capacity margin is declared for this plant, so every capacity figure here assumes 100% of open time is usable.
+         Declare refinements.coarse_horizon.capacity_derate in cost_model.json (docs/06 §5.9) and the coarse figures derate with it.
+         -> Ask "how do I declare a capacity margin?".
+
+    And what is going right:
+      · Nothing in this window is late.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+  >> sidecar[expect-miss]: intent: expected 'advice', got 'briefing'
+------------------------------------------------------------------------
+# [EXPECT intent=advice]
+Q[303]: what should i do
+  route=briefing  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=briefing  conf=0.95  1145ms
+  expect: intent=advice  -> MISSED
+  A:
+    Same answer as a moment ago —
+    26 orders on 15 machines over 2026-01-05 to 2026-02-09. 4 things worth your attention, worst first:
+
+    1. 2 order(s) finish on time with less slack than one of their own operations takes.
+         ORD-000011 — 8h22m of slack against a longest step of 25h01m of work
+         ORD-000003 — 14h04m of slack against a longest step of 20h01m of work
+         -> Ask "when does <order> finish?" for the timeline, or "what would have to change for <order> to start earlier?".
+
+    2. planned maintenance on Wednesday 2026-01-14 takes out ASM-01, CUT-01, FINISH-01, FINISH-02 and 5 more.
+         -> Ask "is any maintenance scheduled?" for the calendar.
+
+    3. 14 known order(s) sit beyond the planning horizon with no placement yet.
+         The earliest of them is due 2026-01-20.
+         -> Ask "what's beyond the horizon?" for the list, or "will it fit?" for the capacity read.
+
+    4. No capacity margin is declared for this plant, so every capacity figure here assumes 100% of open time is usable.
+         Declare refinements.coarse_horizon.capacity_derate in cost_model.json (docs/06 §5.9) and the coarse figures derate with it.
+         -> Ask "how do I declare a capacity margin?".
+
+    And what is going right:
+      · Nothing in this window is late.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+  >> sidecar[expect-miss]: intent: expected 'advice', got 'briefing'
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# (c) A COUNT answered in the previous turn answers TERSELY on re-ask. The planner
+# already has the list.
+# SUBSTANTIVE EXPECTATION (recalibrated 4B.17): the count is ZERO. The original
+# expectation was "13 — want the list?"; on this board an offer to list an empty
+# set is a defect, not attentiveness. The answer must state that none are late
+# and name its region; the re-ask must be terser than the first and must not
+# recite the region a second time as though it were new.
+# [EXPECT intent=late-orders]
+Q[314]: how many orders are late
+  route=late-orders  source=parse  conf=0.98  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=late-orders  conf=0.98  978ms
+  expect: intent=late-orders  -> MET
+  A:
+    No late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=late-orders]
+Q[316]: how many are late again
+  interpreted as: which orders are late?  (listing the previous answer)
+  route=late-orders  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=late-orders  conf=0.95  followup=list-expand  1048ms
+  expect: intent=late-orders  -> MET
+  A:
+    I've now given you this same answer for two different questions, which probably means I'm not understanding what you're asking. Last time you asked: "how many orders are late".
+
+    No late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.
+
+    If you're after a specific field on a specific job — whether an operation is splittable, how long it takes, its due date, which machines can run it — name the order and the field and I'll read it straight off the record.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# SUBSTANTIVE EXPECTATION (recalibrated 4B.17 for 4B.13 Item 4): BOTH facts, both
+# labelled — 15 machines declared in this plant, 10 of them carrying work in this
+# plan — and the 5 idle ones NAMED (CUT-02, CUT-03, FINISH-03, HEAT-02,
+# PRESS-SLOW). A bare "15" is a true number that misleads a planner reading a
+# board with ten lanes on it; a bare "10" hides five machines they own.
+# [EXPECT intent=machine-count]
+Q[325]: how many machines are there
+  route=machine-count  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=machine-count  conf=0.95  1247ms
+  expect: intent=machine-count  -> MET
+  A:
+    15 machine(s) in this plant; 10 of them carry work in this plan.
+
+      - ASM-01
+      - CUT-01
+      - CUT-02
+      - CUT-03
+      - FINISH-01
+      - FINISH-02
+      - FINISH-03
+      - HEAT-01
+      - HEAT-02
+      - MILL-01
+      - MILL-02
+      - PAINT-01
+      - PAINT-02
+      - PRESS-FAST
+      - PRESS-SLOW
+
+    Carrying no work in this window: CUT-02, CUT-03, FINISH-03, HEAT-02, PRESS-SLOW.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=machine-count]
+Q[327]: how many machines
+  route=machine-count  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=machine-count  conf=0.95  1012ms
+  expect: intent=machine-count  -> MET
+  A:
+    I've now given you this same answer for two different questions, which probably means I'm not understanding what you're asking. Last time you asked: "how many machines are there".
+
+    15 machine(s) in this plant; 10 of them carry work in this plan.
+
+      - ASM-01
+      - CUT-01
+      - CUT-02
+      - CUT-03
+      - FINISH-01
+      - FINISH-02
+      - FINISH-03
+      - HEAT-01
+      - HEAT-02
+      - MILL-01
+      - MILL-02
+      - PAINT-01
+      - PAINT-02
+      - PRESS-FAST
+      - PRESS-SLOW
+
+    Carrying no work in this window: CUT-02, CUT-03, FINISH-03, HEAT-02, PRESS-SLOW.
+
+    If you're after a specific field on a specific job — whether an operation is splittable, how long it takes, its due date, which machines can run it — name the order and the field and I'll read it straight off the record.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# The seal: a genuine return to a question after a detour is a FRESH ask, not a
+# nag. Three unrelated turns is outside the two-turn repeat window.
+# SUBSTANTIVE EXPECTATION: turn 4 answers as though asked for the first time —
+# no "you asked this already", no terse count. And every lateness answer in the
+# sequence corrects the premise (nothing is late) rather than reciting a list.
+# [EXPECT intent=late-orders]
+Q[336]: which orders are late
+  route=late-orders  source=parse  conf=0.98  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=late-orders  conf=0.98  1030ms
+  expect: intent=late-orders  -> MET
+  A:
+    No late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=advice]
+Q[338]: what should i do about it
+  route=advice  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.92  followup=deepen  1195ms
+  expect: intent=advice  -> MET
+  A:
+    I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=machine-count]
+Q[340]: how many machines are there
+  route=machine-count  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=machine-count  conf=0.95  1017ms
+  expect: intent=machine-count  -> MET
+  A:
+    15 machine(s) in this plant; 10 of them carry work in this plan.
+
+      - ASM-01
+      - CUT-01
+      - CUT-02
+      - CUT-03
+      - FINISH-01
+      - FINISH-02
+      - FINISH-03
+      - HEAT-01
+      - HEAT-02
+      - MILL-01
+      - MILL-02
+      - PAINT-01
+      - PAINT-02
+      - PRESS-FAST
+      - PRESS-SLOW
+
+    Carrying no work in this window: CUT-02, CUT-03, FINISH-03, HEAT-02, PRESS-SLOW.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=late-orders]
+Q[342]: which orders are late
+  route=late-orders  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=late-orders  conf=0.95  1570ms
+  expect: intent=late-orders  -> MET
+  A:
+    No late orders found in this schedule. Of the 40 orders on this plan, that covers the 26 scheduled in this window — the other 14 sit beyond the horizon with no placement yet, so they are neither late nor on time.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# =================================================================================
+# D — THE UNBANKED SPECIMENS (added Session 4B.17, verbatim).
+# 
+# Five specimens the sessions after 4B.5 produced and nobody banked. They are the
+# reason this bank was recalibrated rather than merely re-run: three of the
+# product's four newest routes had no regression coverage at all.
+# =================================================================================
+# SPECIMEN 4 of the eight: PREDICATE COVERAGE (4B.13 Item 1(ii)). ORD-000011's
+# op10 on CUT-01 runs in THREE chunks from Jan 8 14:36 to Jan 12 15:37 — 1501
+# working minutes across 4320 minutes of pauses (nights plus a weekend). The
+# question asks about DOWNTIME; the routes available answer about START TIME.
+# SUBSTANTIVE EXPECTATION: the answer must not answer a different question
+# silently. Either it addresses the traversal of non-working time, or it ADMITS
+# it has not answered the downtime part and points at a question that would
+# ("how much downtime does CUT-01 have?"). A true-but-irrelevant start-time
+# paragraph with no admission is the failure this floor exists to catch.
+# UNGRADED SLOTS (4B.17, rule (d)): intent and route. Which route owns "why does
+# X go through downtime" was never ruled — 4B.14 explicitly declined to rule
+# whether `start-reason` and `why-here` should merge, and `downtime` is a
+# machine-scoped route. Subject binding IS graded.
+# [EXPECT order=ORD-000011]
+Q[367]: why does ORD-000011 go through downtime
+  route=why-here  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.92  polarity=negative  order=ORD-000011<-utterance("ORD-000011")  1665ms
+  expect: order=ORD-000011  -> MET
+  A:
+    Nothing prevented ORD-000011 op10 from starting earlier. Holding every other placement where it is, CUT-01 had open, unheld time from 2026-01-06 16:15 — the solver chose Thursday 2026-01-08 14:36 rather than being forced into it.
+    The assignment decision records its driver as CALENDAR_WINDOW.
+    It runs in 3 pieces between 2026-01-08 14:36 and 2026-01-12 15:37, 25h01m of actual work — it pauses when CUT-01 closes and resumes when it reopens, which is what it means for this operation to be splittable.
+
+    What pushed it, in order:
+      2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00
+      2026-01-05 07:00  the machine's calendar [docs/05 C1/C2] — CUT-01 is closed until 2026-01-05 07:00
+      2026-01-06 16:15  no window long enough [docs/05 C3] — the open stretches before 2026-01-06 16:15 were shorter than its 1h minimum piece
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# SPECIMEN 5 of the eight: DISAGREEMENT (4B.14 §5a.37). The planner contests the
+# schedule. ORD-000013's op10 finishes Tue 2026-01-13 14:06 and its op20 starts
+# Thu 2026-01-15 07:00 — so the planner is RIGHT that op10 finished Tuesday and
+# right that PAINT-01 was free from 14:06, and WRONG that the operation could
+# therefore start: it needs 431 working minutes in one piece, PAINT-01 had 294
+# minutes of window left (14:06-19:00), and it is not splittable.
+# SUBSTANTIVE EXPECTATION: the challenge is answered ON ITS OWN TERMS. Where the
+# planner is right, plainly, FIRST — the machine was not busy, that is not what
+# held this up — then the part that was wrong, with the arithmetic that decides
+# it. It must NOT be reparsed into a question the assembler already has an answer
+# for ("is ORD-000013 really on time? Yes — the record agrees"), which is the
+# disagreement-laundering defect: worse than a wrong number, because the planner
+# cannot tell they were ignored.
+# [SELECT order=ORD-000013 machine=PAINT-01]
+# [EXPECT intent=why-here order=ORD-000013]
+Q[385]: it seems it should be able to start on tuesday after op10 finishes
+  selection: order=ORD-000013, machine=PAINT-01
+  interpreted as: ORD-000013 seems it should be able to start on tuesday after op10 finishes  (resolved against ORD-000013 (from board selection))
+  route=why-here  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.92  polarity=negative  order=ORD-000013<-selection("it")  1469ms
+  expect: intent=why-here order=ORD-000013  -> MET
+  A:
+    You're right about the machine: PAINT-01 wasn't busy — it was free from 2026-01-13 14:06. That isn't what held this up.
+    ORD-000013 op20 couldn't start before Thursday 2026-01-15 07:00: it needs 7h11m in one piece and PAINT-01 had only 4h54m left when it came free at 2026-01-13 14:06, and it can't be split.
+    Before that: op10 finishes at 2026-01-13 14:06.
+    The wait spans planned maintenance on PAINT-01, 2026-01-14 00:00 to 2026-01-14 23:59.
+
+    What pushed it, in order:
+      2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00
+      2026-01-13 14:06  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 14:06
+      2026-01-15 07:00  no window long enough [docs/05 C3] — it needs 7h11m in one piece and PAINT-01 had only 4h54m left when it came free at 2026-01-13 14:06
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [SELECT cleared]
+# SPECIMEN 6 of the eight: THE BARE ANAPHOR (4B.16 §5a.49, 4B.16a §5a.51). Four
+# words, no subject; the resolution ladder must bind it off the board selection.
+# SUBSTANTIVE EXPECTATION: the counterfactual over ORD-000013's op20 — the levers
+# that would move the bound that BINDS, each with its threshold and arithmetic:
+# a minimum piece of 215 minutes or less (NOT 240 — R-C3 caps it at floor(431/2)),
+# op10 finishing 2h17m earlier, or PAINT-01's Tuesday window extended by 2h17m.
+# It must name the NEXT bound and say the change removes a barrier rather than
+# placing anything, must name PAINT-01 as the only eligible lane rather than
+# offering a door already shut, and must refuse to price the Jan 14 maintenance
+# closure while naming it.
+# [SELECT order=ORD-000013 machine=PAINT-01]
+# [EXPECT intent=what-would-change order=ORD-000013]
+Q[401]: how do i change that
+  selection: order=ORD-000013, machine=PAINT-01
+  route=synthesis  source=parse  conf=0.25  register=synthesis  renderer=synthesis (claude-sonnet-5) — 0 tool call(s)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=unmatched  conf=0.25  2716ms
+  synthesis: claims=0  verified=0  interpretive=0  cut=0  tools=0  unanswerable  3421ms
+  expect: intent=what-would-change order=ORD-000013  -> MISSED
+  A:
+    I couldn't answer that one from the evidence. I read what I could and none of it grounds an answer I'd stand behind, so I'd rather say so than guess.
+
+    Here's what I can do that's closest:
+      - show every late order at a glance
+      - list the data-quality problems
+    [rendered by: synthesis (claude-sonnet-5) — 0 tool call(s) | register: synthesis]
+  >> sidecar[expect-miss]: intent: expected 'what-would-change', got 'unmatched'; order: expected 'ORD-000013', got None
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [SELECT cleared]
+# SPECIMEN 7 of the eight: THE OPENER, COLD (4B.16 §5a.50). No selection, no
+# history — a stranger's first question.
+# SUBSTANTIVE EXPECTATION: every item the document supports, RANKED BY
+# CONSEQUENCE, each carrying its own number and a pointer to the question that
+# opens it. On THIS board the worries are 2 at-risk orders (ORD-000011 at 502
+# minutes of slack, ORD-000013 at 588), the Jan 14 planned-maintenance day across
+# the machines carrying work, 14 orders beyond the horizon, and a coarse derate
+# that is DEFAULTED rather than declared — over two CLEAN items reported as
+# reassurance: nothing late, and the cost optimum PROVED (gap 0.0). It must not
+# drop a category quietly, and it CANNOT state the certificate grade (a carried
+# 4B.16 limit — the grade is a submission fact the document does not hold, so an
+# answer that states "ACCEPTED" here is a fabrication, not a fix).
+# [EXPECT intent=briefing route=briefing]
+Q[418]: what should I be worried about
+  route=briefing  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=briefing  conf=0.95  1328ms
+  expect: intent=briefing route=briefing  -> MET
+  A:
+    26 orders on 15 machines over 2026-01-05 to 2026-02-09. 4 things worth your attention, worst first:
+
+    1. 2 order(s) finish on time with less slack than one of their own operations takes.
+         ORD-000011 — 8h22m of slack against a longest step of 25h01m of work
+         ORD-000003 — 14h04m of slack against a longest step of 20h01m of work
+         -> Ask "when does <order> finish?" for the timeline, or "what would have to change for <order> to start earlier?".
+
+    2. planned maintenance on Wednesday 2026-01-14 takes out ASM-01, CUT-01, FINISH-01, FINISH-02 and 5 more.
+         -> Ask "is any maintenance scheduled?" for the calendar.
+
+    3. 14 known order(s) sit beyond the planning horizon with no placement yet.
+         The earliest of them is due 2026-01-20.
+         -> Ask "what's beyond the horizon?" for the list, or "will it fit?" for the capacity read.
+
+    4. No capacity margin is declared for this plant, so every capacity figure here assumes 100% of open time is usable.
+         Declare refinements.coarse_horizon.capacity_derate in cost_model.json (docs/06 §5.9) and the coarse figures derate with it.
+         -> Ask "how do I declare a capacity margin?".
+
+    And what is going right:
+      · Nothing in this window is late.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# SPECIMEN 8 of the eight: THE MEASURED MISS (4B.17 brief, Item 5(b)). 4B.15
+# measured this reaching `coaching`, which explained what overtime IS and never
+# addressed CUT-01 or the word "help".
+# SUBSTANTIVE EXPECTATION: the answer must engage BOTH of the question's own
+# terms. CUT-01 is the busiest machine on this board (18 of 56 ops) — and on this
+# board NOTHING IS LATE and the cost optimum is PROVED, so the honest answer to
+# "would it help" is very likely NO, and saying so is the answer. Naming what it
+# cannot do (pricing overtime on a named machine needs a re-solve) is acceptable;
+# explaining the overtime FEATURE without ever mentioning CUT-01 or answering
+# "help" is the failure. BUSIEST IS NOT BINDING: an answer that treats CUT-01's
+# op count as proof that overtime there would help has substituted a correlate
+# for a cause.
+# UNGRADED SLOTS (4B.17, rule (d)): intent and route. This question is
+# unanswerable by any contracted route today; which of coaching, the second tier
+# or a route that does not exist SHOULD take it is a vocabulary call, and the
+# brief that commissioned this bank run put it out of scope. What a correct parse
+# MUST do either way is bind the machine the planner named.
+# [EXPECT machine=CUT-01]
+Q[439]: would overtime on CUT-01 help
+  route=NEAR_MISS  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=what-would-change  conf=0.92  machine=CUT-01<-utterance("CUT-01")  concept=overtime<-utterance("overtime")  2180ms
+  expect: machine=CUT-01  -> MET
+  A:
+    I can't answer that one exactly — "would overtime on CUT-01 help".
+
+    Here's what I can do that's closest:
+      - show what's running on CUT-01
+      - explain why CUT-01 carries no work
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------

@@ -1,19 +1,69 @@
 # AI EXAM BANK — founder ROUND-FIVE regression (Session 4B.5)
-# generated: 2026-07-26
-# taxonomy : R-AI5 intent vocabulary + `open-card` (parse prompt v8)
+# generated   : 2026-07-26
+# recalibrated: 2026-07-30 (Session 4B.17 — the first session to GRADE it)
+# taxonomy : R-AI5 intent vocabulary + `open-card` (parse prompt v13)
 # target   : THE PINNED ROLLING RUN (tools/build_rolling_exam_run.py) — the same
 #            world sweep_rolling asks. The founder's round-five session ran on a
 #            rolling board (schedule rolling-279dec02-411), and three of the five
 #            specimens are only askable there: a delta card exists because a
 #            gesture was priced against a sliced window.
 #
-# WORLD VOCABULARY, for reading the expectations (see sweep_rolling's header):
-#   tray (beyond horizon) : ORD-000018, ORD-000010, ORD-000017, ORD-000032,
-#                           ORD-000007, ORD-000020, ... (14 total)
-#   committed / active    : ORD-000023, ORD-000009, ORD-000030, ORD-000039,
-#                           ORD-000012, ORD-000025, ORD-000016, ORD-000024, ...
-#   machines              : CUT-01, MILL-01, MILL-02, ASM-01, HEAT-01, PAINT-01,
-#                           FINISH-01, FINISH-02
+# ---------------------------------------------------------------------------
+# RECALIBRATION NOTE (Session 4B.17). READ THIS BEFORE GRADING.
+# ---------------------------------------------------------------------------
+# This bank was committed 4B.5 and never graded. Six sessions changed the
+# product under it (4B.6b/4B.7, 4B.11, 4B.13, 4B.14, 4B.15, 4B.16) and the exam
+# WORLD was re-minted. Every expectation below was re-derived from the pinned
+# world's PERSISTED document (R-AI4 — no re-solve anywhere in the derivation),
+# under four rules:
+#   (a) QUESTION TEXT NEVER CHANGES. A question is a specimen. Where a premise
+#       was false and the product now CORRECTS it, the expectation became
+#       "corrects the premise" — the specimen stays wrong on purpose.
+#   (b) every change is logged in RUBRIC.md's precedent log with its cause and
+#       its old text.
+#   (c) no expectation is copied from what the product says today.
+#   (d) where the right expectation could not be derived, the slot is marked
+#       UNGRADED with its reason rather than guessed.
+#
+# THE ONE FACT THAT MOVED THE MOST EXPECTATIONS: **NOTHING IS LATE ON THIS
+# BOARD.** All 26 placed demands finish before their due date (worst slack is
+# ORD-000011 at 502 minutes), tardiness is $0.00 and the solver closed the bound
+# (OPTIMAL, gap 0.0, ledger 16,481.95). Every lateness question in this bank is
+# therefore a FALSE-PREMISE specimen now, and the graded thing is 4B.13's
+# premise correction plus 4B.13 Item 3's region note.
+#
+# WORLD VOCABULARY, re-derived 2026-07-30 from the persisted document
+# (the old header listed the 279dec02 world and was wrong on both lines):
+#   reference date / window : ref 2026-01-05, window 2026-01-05..2026-01-19,
+#                             frozen until 2026-01-08; horizon ends 2026-02-09.
+#                             Jan 13 is a Tuesday; Jan 15 is a Thursday.
+#   40 demands              : 26 placed (45 committed bars + 11 active), 14 tray
+#   tray (beyond horizon)   : ORD-000018, ORD-000010, ORD-000017, ORD-000032,
+#                             ORD-000007, ORD-000020, ORD-000033, ORD-000006,
+#                             ORD-000035, ORD-000014, ORD-000005, ORD-000026,
+#                             ORD-000031, ORD-000036 (14 total)
+#   machines DECLARED (15)  : ASM-01, CUT-01, CUT-02, CUT-03, FINISH-01,
+#                             FINISH-02, FINISH-03, HEAT-01, HEAT-02, MILL-01,
+#                             MILL-02, PAINT-01, PAINT-02, PRESS-FAST, PRESS-SLOW
+#   machines CARRYING WORK  : 10 — CUT-01 (18 ops, the busiest), PAINT-01 (10),
+#                             PAINT-02 (7), PRESS-FAST (6), MILL-01 (5),
+#                             ASM-01 / FINISH-01 / FINISH-02 / HEAT-01 /
+#                             MILL-02 (2 each)
+#   IDLE (carry no work)    : CUT-02, CUT-03, FINISH-03, HEAT-02, PRESS-SLOW
+#   placements that matter below:
+#                             ORD-000023 -> PRESS-FAST op10 ONLY (NOT MILL-01)
+#                             ORD-000009 -> MILL-02, ASM-01, FINISH-01
+#                                           (NOT CUT-01)
+#                             ORD-000012 -> CUT-01, MILL-01, PAINT-01 (op30);
+#                                           PAINT-01 is its only eligible lane
+#                             ORD-000013 -> CUT-01 op10 Tue Jan 13 07:00-14:06;
+#                                           PAINT-01 op20 Thu Jan 15 07:00-14:11
+#                                           (431 working min, setup 20, PAINT-01
+#                                           the only eligible lane)
+#                             ORD-000011 -> CUT-01 op10, THREE chunks
+#                                           Jan 8 14:36 -> Jan 12 15:37
+#                                           (1501 working min, 4320 min of pauses)
+#   coarse zone             : bucket_days 7 DEFAULTED, derate 1.0 DEFAULTED
 #
 # ADAPTATION, stated: the founder's own ids (ORD-38, ORD-000008, PAINT-02, MILL-01
 # on their live data root) are mapped onto this world's vocabulary, exactly as the
@@ -34,8 +84,21 @@
 # never heard of the card — and answered a question nobody asked, while the
 # answer sat on screen.
 #
-# SUBSTANTIVE EXPECTATION: the affected orders BY NAME, with what happens to each,
-# read back from the card. No reasoning about a move that has not been made.
+# THE CARD THE RUNNER STANDS UP WAS RECALIBRATED 4B.17 from the committed
+# fixture tests/cockpit/fixtures/rolling/sandbox.json (the shipped capture):
+#   total +$32.20 = window re-optimization $0.00 + your move +$32.20
+#   cost lines: production (regular) +32.20, everything else 0.00
+#   affected_orders: EMPTY   lateness_delta_min: 0   moves: 1
+#   no_committed_work_changes: true
+# It was -11,953.08 = -11,975.83 + 22.75 until 4B.7 took the earliness
+# coefficient out of the objective; reopt is now 0.00 BY CONSTRUCTION
+# (docs/07 §5a.12), so move == total and the two halves can no longer disagree.
+#
+# SUBSTANTIVE EXPECTATION (recalibrated): the answer reads the card back and says
+# plainly that NO order's service outcome changes — no committed work moves and
+# nothing's lateness shifts. Naming an affected order here is FABRICATION (the
+# card's affected set is empty), and re-deriving instead of reading the card back
+# is the CU2 defect.
 # =================================================================================
 CARD order=ORD-000023 machine=MILL-01
 EXPECT intent=open-card route=open-card
@@ -47,29 +110,28 @@ RESET
 # because `cost_delta_abs` measures the RE-SOLVE, not the move: the card now
 # shows *window re-optimization* beside *your move*, and a planner's move is
 # judged against the baseline, never the stale incumbent. CU2 made `open-card`
-# READ THE CARD BACK rather than re-derive it. Nothing proved the ASK PANEL
-# voices the MOVE part when the planner asks specifically about the move.
+# READ THE CARD BACK rather than re-derive it.
 #
-# The runner stands up the SHIPPED card, figure for figure (Session 4B.6b item
-# 3b): total -11,953.08 = reopt -11,975.83 + move +22.75. Note the SIGNS. The
-# move COSTS $22.75; the window re-optimization SAVES $11,975.83; the total is a
-# saving that the move made slightly smaller. The previously synthesized card
-# (-11,600.00 + -375.83) had both parts saving, and could not express the case
-# the split exists for.
-#
-# SUBSTANTIVE EXPECTATION: the answer voices the MOVE figure (+$22.75) as what
-# the move cost — as a COST, not a saving — and names the window
-# re-optimization (-$11,975.83) as the part the planner did not cause. If it
-# answers the TOTAL (-$11,953.08) as the cost of the move, or reports the move
-# as a saving, the exact defect 4B.5 CU1 fixed on the card is alive in the
-# conversational channel — the two surfaces would be stating different things
-# about one move, which is what CU2 exists to prevent.
+# 4B.17 — THIS QUESTION NO LONGER DISCRIMINATES, AND THAT IS REPORTED RATHER
+# THAN GRADED AS A PASS. The move half (+$32.20) and the total (+$32.20) are the
+# same number on every card the shipped product can now produce, so an answer
+# quoting the total is indistinguishable from one quoting the move. What is
+# still graded, and still worth grading:
+#   * the SIGN — $32.20 is what the move COST. Reported as a saving, the exact
+#     defect 4B.5 CU1 fixed on the card is alive in the conversational channel.
+#   * the question's own exclusion ("not the re-solve") is honoured: the window
+#     re-optimization contributed $0.00 / nothing, and saying so is the answer.
+#   * no figure appears that is not on the card (the two surfaces cannot state
+#     different numbers — that is what CU2 exists to prevent).
 CARD order=ORD-000023 machine=MILL-01
 EXPECT intent=open-card route=open-card
 what did the move itself cost, not the re-solve
 RESET
 
 # The same channel, the other three phrasings the founder used for it.
+# SUBSTANTIVE EXPECTATION: $32.20 as a COST, read off the card, on all three.
+# "these orders — which ones are they" is an ELLIPSIS: it must resolve to the
+# card and answer that the affected set is empty, never invent one.
 CARD order=ORD-000023 machine=MILL-01
 EXPECT intent=open-card route=open-card
 what does this move cost
@@ -83,13 +145,30 @@ RESET
 # and must reach a plan route (or the reasoning tier) — never `open-card`, which
 # would answer about a move that is not on screen.
 # SUBSTANTIVE EXPECTATION: no card is invented, and no stale card is remembered.
+# No figure from the closed card ($32.20) appears.
+#
+# UNGRADED BY MACHINE (4B.17, rule (d)), two reasons, both structural:
+#   1. EXPECT can only assert equality. The expectation here is a NEGATIVE
+#      ("never open-card") and the directive has no way to say it. The bank
+#      carried `EXPECT route=open-card` under this very comment since 4B.5 —
+#      an authoring bug that would have graded the defect as the pass.
+#   2. Which route SHOULD take a subjectless "whats the delta" with no card is
+#      not derivable from the document: clarify, version-diff, edit-summary and
+#      the second tier are all defensible. Guessing one would fit an
+#      expectation to a coin flip.
+# GRADED BY HAND on the two substantive clauses above.
 CARD clear
-EXPECT route=open-card
 whats the delta
 RESET
 
 # A card open does not turn every question into a card question. The card is a
 # channel, not a mode.
+# SUBSTANTIVE EXPECTATION (recalibrated 4B.17): "which orders are late" is a
+# FALSE-PREMISE question on this board — NOTHING IS LATE. The answer must say so
+# and name the region it speaks about (26 placed in this window, 14 beyond the
+# horizon that are neither late nor on time), per 4B.13 Item 3. It must not
+# offer a list of an empty set and must not reach for the card.
+# "whats running on CUT-01" is the busiest machine on the board (18 ops).
 CARD order=ORD-000023 machine=MILL-01
 EXPECT intent=late-orders
 which orders are late
@@ -100,8 +179,14 @@ RESET
 # THE RESOLUTION LADDER (CU2). A card outranks a live board selection: the
 # selection persists after the planner has stopped thinking about it; a card is
 # open because a move is being weighed right now.
-# SUBSTANTIVE EXPECTATION: the answer resolves against the CARD's order and says
-# so ("from the move you have open"), not against the stale selection.
+# SUBSTANTIVE EXPECTATION: the answer resolves against the CARD's order
+# (ORD-000023) and says so ("from the move you have open"), not against the stale
+# selection (ORD-000009).
+# RECALIBRATED 4B.17: ORD-000023 IS NOT LATE — it finishes 2026-01-05 16:51
+# against a due date of 2026-01-14, 13,388 minutes early. So the second clause is
+# a premise correction: the answer must say ORD-000023 is not late rather than
+# manufacture a cause for a lateness that does not exist. Binding the CARD's
+# order and then inventing lateness for it is a truth failure, not a context win.
 SELECT order=ORD-000009 machine=CUT-01
 CARD order=ORD-000023 machine=MILL-01
 EXPECT order=ORD-000023
@@ -119,22 +204,60 @@ SELECT clear
 # every fabrication check passed it. It named no machine, no alternative and no
 # quantity, and the machine it referred to is one the order is not even on.
 #
-# SUBSTANTIVE EXPECTATION: the answer names the eligible machines that were
-# occupied and WHAT held them — or says plainly that the occupancy does not
-# attribute it. Never the bare driver phrase as the whole causal clause.
+# 4B.13 shipped the PREMISE GUARD for exactly this, and the two questions below
+# are its specimens — banked here since 4B.5 with expectations that predate it.
 # =================================================================================
+
+# SPECIMEN 1 of the eight (4B.17): FALSE PREMISE, the machine exists.
+# ORD-000023 runs on PRESS-FAST (op10, Jan 5 12:51-16:51) and touches MILL-01
+# nowhere on this board.
+# SUBSTANTIVE EXPECTATION (recalibrated): the answer CORRECTS the premise in its
+# first clause — ORD-000023 is not on MILL-01, it runs on PRESS-FAST — lists the
+# real placement as evidence, and offers the question that would get the cause.
+# It must NOT answer as if the premise held, and must NOT silently substitute
+# PRESS-FAST and answer about that instead: a correction the planner cannot see
+# is the premise ECHO wearing a right answer.
 EXPECT intent=why-on-machine route=why-on-machine order=ORD-000023 machine=MILL-01
 why is ORD-000023 on MILL-01
 RESET
 
+# SPECIMEN 2 of the eight (4B.17): FALSE TWICE — the order is on THREE machines
+# and none of them is CUT-01 (MILL-02 op10, ASM-01 op20, FINISH-01 op30), and
+# CUT-01 is the busiest machine on the board, so a plausible-sounding capacity
+# answer here would be entirely fictional.
+# SUBSTANTIVE EXPECTATION: corrects the premise and lists all three real
+# placements with their op sequence.
 EXPECT intent=why-on-machine order=ORD-000009 machine=CUT-01
 why did ORD-000009 end up on CUT-01
 RESET
 
-# The deepen after it: having been told which alternatives were blocked, "but why"
-# is about THAT chain, not about the plan's aggregate lateness.
+# SPECIMEN 3 of the eight (4B.17): THE MISTYPED MACHINE. MILL-99 does not exist
+# in this plant. This is how a stranger triggers premise echo, and it must get a
+# DIFFERENT correction from a machine that exists but is the wrong one (4B.13
+# Item 1(i)).
+# SUBSTANTIVE EXPECTATION: says there is no machine called MILL-99 in this plant
+# and names the machines there are. It must NOT answer about PRESS-FAST as though
+# MILL-99 had been a typo it silently repaired, and must NOT invent a placement.
+EXPECT intent=why-on-machine order=ORD-000023 machine=MILL-99
+why is ORD-000023 on MILL-99
+RESET
+
+# THE CONTROL — a TRUE premise. ORD-000012's op30 is on PAINT-01, and PAINT-01 is
+# the ONLY machine qualified to run that step.
+# SUBSTANTIVE EXPECTATION (recalibrated 4B.17): the only-eligible-machine LEAD —
+# "that is the only machine qualified to run this step, there was no alternative
+# to weigh" — as a CAPABILITY fact, with the evidence chain for the decision
+# about THIS operation (4B.13 Item 1 fixed a multi-op order being answered from a
+# different operation's decision). The ORIGINAL expectation here demanded the
+# blocked alternatives be named; on this board there are none, and a capacity
+# story would be a fabrication. No causal answer may consist of a driver phrase
+# and nothing else.
 EXPECT intent=why-on-machine order=ORD-000012 machine=PAINT-01
 why is ORD-000012 on PAINT-01
+# The deepen after it: having been told the machine was the only one qualified,
+# "but why" is about THAT chain — why is PAINT-01 the only qualified lane — and
+# NOT about the plan's aggregate lateness. On this board aggregate lateness is
+# ZERO, so an aggregate answer here is both non-responsive and false.
 EXPECT order=ORD-000012 followup=deepen
 but why
 RESET
@@ -146,8 +269,13 @@ RESET
 # (a) An advice push-back that NAMES a capability is a coaching question. Answering
 # it with the advice template that prompted the push-back is the assistant reading
 # its own last answer back to someone who has just said it was insufficient.
-# SUBSTANTIVE EXPECTATION: how to declare overtime, and what it would let the
-# solver do — not the scoping answer again.
+# SUBSTANTIVE EXPECTATION, first turn (recalibrated 4B.17): "the late orders" is a
+# FALSE PREMISE — none are late. Scoped advice on this board must say so before
+# scoping, the way the `lateness-cause` promotion's premise-check condition
+# requires, and must not recite a lateness list it does not have.
+# SUBSTANTIVE EXPECTATION, second turn: how overtime is DECLARED and what it
+# would let the solver do — not the scoping answer again — and it must read as
+# having heard the objection rather than changing the subject.
 EXPECT intent=advice
 what should i do about the late orders
 EXPECT concept=overtime route=coaching
@@ -162,7 +290,13 @@ RESET
 
 # (b) A route re-fired within two turns varies its LEAD. The facts are the same
 # facts and must stay so; what changes is the first line.
-# SUBSTANTIVE EXPECTATION: the second answer is not the first answer verbatim.
+# SUBSTANTIVE EXPECTATION (recalibrated 4B.17 for §5a.42): the second answer is
+# not the first answer verbatim, and the varied lead is ACKNOWLEDGEMENT OR
+# SELF-DOUBT — never a scold. 4B.15 found the repeat detector inverted (four
+# firings, zero true positives, escalating to "Still the same; nothing has
+# changed since you asked") and deleted the scold. This IS the same question
+# twice, so the `repeat` signal is the correct one to fire here; the `deaf`
+# signal (same delivered ANSWER to a DIFFERENT question) is not.
 EXPECT intent=advice
 what should i do
 EXPECT intent=advice
@@ -171,14 +305,22 @@ RESET
 
 # (c) A COUNT answered in the previous turn answers TERSELY on re-ask. The planner
 # already has the list.
-# SUBSTANTIVE EXPECTATION: the number and an offer ("13 — want the list?"), not
-# the full recitation a second time.
+# SUBSTANTIVE EXPECTATION (recalibrated 4B.17): the count is ZERO. The original
+# expectation was "13 — want the list?"; on this board an offer to list an empty
+# set is a defect, not attentiveness. The answer must state that none are late
+# and name its region; the re-ask must be terser than the first and must not
+# recite the region a second time as though it were new.
 EXPECT intent=late-orders
 how many orders are late
 EXPECT intent=late-orders
 how many are late again
 RESET
 
+# SUBSTANTIVE EXPECTATION (recalibrated 4B.17 for 4B.13 Item 4): BOTH facts, both
+# labelled — 15 machines declared in this plant, 10 of them carrying work in this
+# plan — and the 5 idle ones NAMED (CUT-02, CUT-03, FINISH-03, HEAT-02,
+# PRESS-SLOW). A bare "15" is a true number that misleads a planner reading a
+# board with ten lanes on it; a bare "10" hides five machines they own.
 EXPECT intent=machine-count
 how many machines are there
 EXPECT intent=machine-count
@@ -187,6 +329,9 @@ RESET
 
 # The seal: a genuine return to a question after a detour is a FRESH ask, not a
 # nag. Three unrelated turns is outside the two-turn repeat window.
+# SUBSTANTIVE EXPECTATION: turn 4 answers as though asked for the first time —
+# no "you asked this already", no terse count. And every lateness answer in the
+# sequence corrects the premise (nothing is late) rather than reciting a list.
 EXPECT intent=late-orders
 which orders are late
 EXPECT intent=advice
@@ -195,4 +340,104 @@ EXPECT intent=machine-count
 how many machines are there
 EXPECT intent=late-orders
 which orders are late
+RESET
+
+# =================================================================================
+# D — THE UNBANKED SPECIMENS (added Session 4B.17, verbatim).
+#
+# Five specimens the sessions after 4B.5 produced and nobody banked. They are the
+# reason this bank was recalibrated rather than merely re-run: three of the
+# product's four newest routes had no regression coverage at all.
+# =================================================================================
+
+# SPECIMEN 4 of the eight: PREDICATE COVERAGE (4B.13 Item 1(ii)). ORD-000011's
+# op10 on CUT-01 runs in THREE chunks from Jan 8 14:36 to Jan 12 15:37 — 1501
+# working minutes across 4320 minutes of pauses (nights plus a weekend). The
+# question asks about DOWNTIME; the routes available answer about START TIME.
+# SUBSTANTIVE EXPECTATION: the answer must not answer a different question
+# silently. Either it addresses the traversal of non-working time, or it ADMITS
+# it has not answered the downtime part and points at a question that would
+# ("how much downtime does CUT-01 have?"). A true-but-irrelevant start-time
+# paragraph with no admission is the failure this floor exists to catch.
+# UNGRADED SLOTS (4B.17, rule (d)): intent and route. Which route owns "why does
+# X go through downtime" was never ruled — 4B.14 explicitly declined to rule
+# whether `start-reason` and `why-here` should merge, and `downtime` is a
+# machine-scoped route. Subject binding IS graded.
+EXPECT order=ORD-000011
+why does ORD-000011 go through downtime
+RESET
+
+# SPECIMEN 5 of the eight: DISAGREEMENT (4B.14 §5a.37). The planner contests the
+# schedule. ORD-000013's op10 finishes Tue 2026-01-13 14:06 and its op20 starts
+# Thu 2026-01-15 07:00 — so the planner is RIGHT that op10 finished Tuesday and
+# right that PAINT-01 was free from 14:06, and WRONG that the operation could
+# therefore start: it needs 431 working minutes in one piece, PAINT-01 had 294
+# minutes of window left (14:06-19:00), and it is not splittable.
+# SUBSTANTIVE EXPECTATION: the challenge is answered ON ITS OWN TERMS. Where the
+# planner is right, plainly, FIRST — the machine was not busy, that is not what
+# held this up — then the part that was wrong, with the arithmetic that decides
+# it. It must NOT be reparsed into a question the assembler already has an answer
+# for ("is ORD-000013 really on time? Yes — the record agrees"), which is the
+# disagreement-laundering defect: worse than a wrong number, because the planner
+# cannot tell they were ignored.
+SELECT order=ORD-000013 machine=PAINT-01
+EXPECT intent=why-here order=ORD-000013
+it seems it should be able to start on tuesday after op10 finishes
+RESET
+SELECT clear
+
+# SPECIMEN 6 of the eight: THE BARE ANAPHOR (4B.16 §5a.49, 4B.16a §5a.51). Four
+# words, no subject; the resolution ladder must bind it off the board selection.
+# SUBSTANTIVE EXPECTATION: the counterfactual over ORD-000013's op20 — the levers
+# that would move the bound that BINDS, each with its threshold and arithmetic:
+# a minimum piece of 215 minutes or less (NOT 240 — R-C3 caps it at floor(431/2)),
+# op10 finishing 2h17m earlier, or PAINT-01's Tuesday window extended by 2h17m.
+# It must name the NEXT bound and say the change removes a barrier rather than
+# placing anything, must name PAINT-01 as the only eligible lane rather than
+# offering a door already shut, and must refuse to price the Jan 14 maintenance
+# closure while naming it.
+SELECT order=ORD-000013 machine=PAINT-01
+EXPECT intent=what-would-change order=ORD-000013
+how do i change that
+RESET
+SELECT clear
+
+# SPECIMEN 7 of the eight: THE OPENER, COLD (4B.16 §5a.50). No selection, no
+# history — a stranger's first question.
+# SUBSTANTIVE EXPECTATION: every item the document supports, RANKED BY
+# CONSEQUENCE, each carrying its own number and a pointer to the question that
+# opens it. On THIS board the worries are the 2 AT-RISK orders — computed as
+# slack in calendar minutes against the longest single step in WORKING minutes,
+# which makes it ORD-000011 (8h22m slack against a 25h01m step) and ORD-000003
+# (14h04m against 20h01m), and NOT ORD-000013, whose 9h48m of slack exceeds its
+# 7h11m longest step — the Jan 14 planned-maintenance day across
+# the machines carrying work, 14 orders beyond the horizon, and a coarse derate
+# that is DEFAULTED rather than declared — over two CLEAN items reported as
+# reassurance: nothing late, and the cost optimum PROVED (gap 0.0). It must not
+# drop a category quietly, and it CANNOT state the certificate grade (a carried
+# 4B.16 limit — the grade is a submission fact the document does not hold, so an
+# answer that states "ACCEPTED" here is a fabrication, not a fix).
+EXPECT intent=briefing route=briefing
+what should I be worried about
+RESET
+
+# SPECIMEN 8 of the eight: THE MEASURED MISS (4B.17 brief, Item 5(b)). 4B.15
+# measured this reaching `coaching`, which explained what overtime IS and never
+# addressed CUT-01 or the word "help".
+# SUBSTANTIVE EXPECTATION: the answer must engage BOTH of the question's own
+# terms. CUT-01 is the busiest machine on this board (18 of 56 ops) — and on this
+# board NOTHING IS LATE and the cost optimum is PROVED, so the honest answer to
+# "would it help" is very likely NO, and saying so is the answer. Naming what it
+# cannot do (pricing overtime on a named machine needs a re-solve) is acceptable;
+# explaining the overtime FEATURE without ever mentioning CUT-01 or answering
+# "help" is the failure. BUSIEST IS NOT BINDING: an answer that treats CUT-01's
+# op count as proof that overtime there would help has substituted a correlate
+# for a cause.
+# UNGRADED SLOTS (4B.17, rule (d)): intent and route. This question is
+# unanswerable by any contracted route today; which of coaching, the second tier
+# or a route that does not exist SHOULD take it is a vocabulary call, and the
+# brief that commissioned this bank run put it out of scope. What a correct parse
+# MUST do either way is bind the machine the planner named.
+EXPECT machine=CUT-01
+would overtime on CUT-01 help
 RESET

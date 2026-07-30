@@ -479,3 +479,210 @@ stated so round five grades them rather than re-discovering them):
      repetition better than commenting on it? A system that notes it is being
      asked twice can read as impatient.
      Verdict: OPEN.
+
+------------------------------------------------------------------------------
+RECALIBRATION LOG -- regression_founder_r5 (Session 4B.17, 2026-07-30)
+------------------------------------------------------------------------------
+
+The bank was committed 4B.5 and had never been graded. docs/07 section 5a.22
+named its expectations invalidated three times over. This is the append-only
+record of every expectation that moved, its cause, and its old text. Nothing
+above this line was rewritten.
+
+THE FOUR RULES THIS RECALIBRATION FOLLOWED
+
+  (a) THE QUESTION TEXT DOES NOT CHANGE. Not one of the 27 original question
+      lines was edited. Where a premise was false and the product now corrects
+      it, the EXPECTATION moved and the specimen stayed wrong on purpose.
+  (b) EVERY CHANGE IS LOGGED HERE with the session that caused it and the old
+      text. Nothing was rewritten in place.
+  (c) NO EXPECTATION WAS COPIED FROM CURRENT OUTPUT. Every figure below was
+      re-derived from the pinned world's PERSISTED document (R-AI4, no
+      re-solve) or quoted from the close-out of the session that shipped the
+      behaviour. The bank was recalibrated BEFORE it was run for the first
+      time, so there was no output to fit to.
+  (d) WHERE THE RIGHT EXPECTATION COULD NOT BE DERIVED, the slot is marked
+      UNGRADED with its reason. Counted at the bottom.
+
+THE ONE WORLD FACT THAT MOVED THE MOST EXPECTATIONS
+
+  NOTHING IS LATE ON THE PINNED BOARD. All 26 placed demands finish before
+  their due date (worst slack ORD-000011, 502 minutes), tardiness is $0.00,
+  tardiness_floor is absent, and the solver closed the bound (OPTIMAL, gap
+  0.0, ledger 16,481.95). Nine of the bank's questions are about lateness.
+  Every one of them is now a FALSE-PREMISE specimen, graded on 4B.13's premise
+  correction and its region note rather than on a list.
+
+CHANGES, in bank order
+
+ R1. THE CARD'S FIGURES (section A, all six card turns). Cause: 4B.7 retiring
+     R-SC3(2) -- the earliness coefficient left the objective, so the window
+     solve and the sandbox baseline minimize the same expression and
+     reopt_delta_abs is 0.00 BY CONSTRUCTION (docs/07 section 5a.12's
+     discharge). Re-read from the committed capture
+     tests/cockpit/fixtures/rolling/sandbox.json; the constants live in
+     src/mre/ai_exam/runner.py.
+       WAS: total -11,953.08 = reopt -11,975.83 + move +22.75;
+            four affected orders (ORD-000011 -9,800.42, ORD-000003 -2,175.42,
+            ORD-000022 0.00, ORD-000028 0.00); lateness_delta_min -28,742;
+            moves 7.
+       NOW: total +32.20 = reopt 0.00 + move +32.20; affected_orders EMPTY;
+            lateness_delta_min 0; moves 1.
+     CONSEQUENCE WORTH MORE THAN THE FIGURES: the 4B.6a specimen "what did the
+     move itself cost, not the re-solve" NO LONGER DISCRIMINATES. Move equals
+     total on every card the shipped product can now produce, so an answer
+     quoting the total is indistinguishable from one quoting the move. It is
+     reported as unexercisable rather than counted as a pass; what it still
+     grades is the SIGN (a cost stated as a cost) and the honouring of the
+     question's own exclusion.
+
+ R2. "what orders are affected in this move" (section A). Cause: R1's empty
+     affected set.
+       WAS: the affected orders BY NAME, with what happens to each, read back
+            from the card.
+       NOW: reads the card back and says plainly that NO order's service
+            outcome changes. Naming an order here is FABRICATION.
+
+ R3. "these orders -- which ones are they" (section A). Same cause as R2.
+       WAS: name them.
+       NOW: resolve the ellipsis to the card and answer that the affected set
+            is empty.
+
+ R4. "whats the delta" with NO CARD OPEN (section A). Cause: a bank AUTHORING
+     BUG found during this recalibration, not a product change. The line read
+     EXPECT route=open-card directly beneath a comment reading "must reach a
+     plan route (or the reasoning tier) -- never open-card". The machine
+     expectation asserted the defect the comment forbids, so a run would have
+     graded the failure as the pass.
+       WAS: EXPECT route=open-card
+       NOW: no EXPECT line. UNGRADED BY MACHINE, two reasons: EXPECT can only
+            assert equality and this expectation is a negative; and which route
+            SHOULD take a subjectless "whats the delta" with no card is not
+            derivable from the document (clarify, version-diff, edit-summary
+            and the second tier are all defensible). Hand-graded on two
+            clauses: no card is invented, and no figure from the closed card
+            appears.
+
+ R5. "which orders are late" / "how many orders are late" / "how many are late
+     again" / "what should i do about the late orders" / "what should i do
+     about it" / the four-turn seal (sections A and C). Cause: the pinned world
+     has no late orders, plus 4B.13 Item 3 (lateness_set separates not-late
+     from not-scheduled) and the lateness-cause promotion's premise-check
+     condition.
+       WAS: the number and an offer ("13 -- want the list?"), not the full
+            recitation a second time.
+       NOW: the count is ZERO. The answer says nothing is late and names its
+            region -- 26 placed in this window, 14 beyond the horizon that are
+            neither late nor on time. An offer to list an empty set is a
+            defect, not attentiveness. Advice about "the late orders" corrects
+            the premise before scoping.
+
+ R6. "why is this one late" with a card open over a stale selection (section
+     A). Cause: the same world fact. ORD-000023 finishes 2026-01-05 16:51
+     against a due date of 2026-01-14 -- 13,388 minutes early.
+       WAS: the answer resolves against the CARD's order and says so.
+       NOW: unchanged on the ladder clause, PLUS a premise correction --
+            ORD-000023 is not late. Binding the card's order and then inventing
+            a cause for a lateness that does not exist is a truth failure, not
+            a context win.
+
+ R7. "why is ORD-000023 on MILL-01" and "why did ORD-000009 end up on CUT-01"
+     (section B). Cause: 4B.13 Item 1(i), the premise guard. Both premises are
+     false against the persisted document: ORD-000023 runs PRESS-FAST only;
+     ORD-000009 runs MILL-02, ASM-01 and FINISH-01, and CUT-01 -- the busiest
+     machine on the board -- carries none of it.
+       WAS: the answer names the eligible machines that were occupied and WHAT
+            held them -- or says plainly that the occupancy does not attribute
+            it.
+       NOW: the answer CORRECTS the premise in its first clause, lists the real
+            placements as evidence, and offers the question that would get the
+            cause. A correction the planner cannot see -- silently answering
+            about PRESS-FAST instead -- is the premise ECHO wearing a right
+            answer.
+
+ R8. "why is ORD-000012 on PAINT-01" (section B, the control). Cause: 4B.13
+     Item 1's third fix (the only-eligible-machine case got its own lead
+     instead of a capacity claim the next sentence contradicted). PAINT-01 is
+     the only machine qualified to run that step.
+       WAS: names the eligible machines that were occupied and what held them.
+       NOW: the only-eligible LEAD as a CAPABILITY fact -- no alternative to
+            weigh -- with the evidence chain for the decision about THIS
+            operation. On this board there are no blocked alternatives, so
+            naming any would be fabrication.
+
+ R9. "but why" after it (section B). Cause: R8 changed what the chain is.
+       WAS: about THAT chain, not about the plan's aggregate lateness.
+       NOW: same rule, and now checkable in both directions -- aggregate
+            lateness on this board is ZERO, so an aggregate answer here is
+            non-responsive AND false.
+
+R10. "what should i do" twice running (section C(b)). Cause: 4B.15 section
+     5a.42 -- the repeat detector was INVERTED (four measured firings, zero
+     true positives, escalating to "Still the same; nothing has changed since
+     you asked") and the scold was deleted.
+       WAS: the second answer is not the first answer verbatim.
+       NOW: the same, PLUS the varied lead must read as acknowledgement or
+            self-doubt and never as a scold. This is the same QUESTION twice,
+            so repeat is the correct signal; deaf (the same delivered ANSWER to
+            a DIFFERENT question) is not.
+
+R11. "how many machines are there" / "how many machines" (section C(c)).
+     Cause: 4B.13 Item 4 -- both facts, both labelled, idle machines named.
+       WAS: no substantive expectation was written; the turn carried only
+            EXPECT intent=machine-count.
+       NOW: 15 declared, 10 carrying work, and the 5 idle ones NAMED (CUT-02,
+            CUT-03, FINISH-03, HEAT-02, PRESS-SLOW). A bare "15" misleads a
+            planner reading a board with ten lanes; a bare "10" hides five
+            machines they own.
+
+R12. THE HEADER'S WORLD VOCABULARY. Cause: the bank still described the
+     279dec02 world.
+       WAS: "machines: CUT-01, MILL-01, MILL-02, ASM-01, HEAT-01, PAINT-01,
+            FINISH-01, FINISH-02" (eight) and a committed/active list.
+       NOW: 15 declared / 10 carrying work, enumerated, with the idle five, the
+            14-order tray by name, the reference date and window, the weekday
+            anchors (Jan 13 is a Tuesday, Jan 15 a Thursday), and the four
+            placements the section-B and section-D specimens turn on. The old
+            header would have had a reader grading against a plant that does
+            not exist.
+
+SPECIMENS ADDED (Session 4B.17, verbatim -- eight named by the brief, of which
+two were ALREADY BANKED)
+
+  ALREADY PRESENT, expectations recalibrated (see R7):
+    "why is ORD-000023 on MILL-01"
+    "why did ORD-000009 end up on CUT-01"
+  ADDED:
+    "why is ORD-000023 on MILL-99"                 -> section B (4B.13)
+    "why does ORD-000011 go through downtime"      -> section D (4B.13)
+    "it seems it should be able to start on tuesday
+     after op10 finishes"                          -> section D (4B.14)
+    "how do i change that"                         -> section D (4B.16)
+    "what should I be worried about"               -> section D (4B.16)
+    "would overtime on CUT-01 help"                -> section D (4B.15)
+
+  The bank goes from 27 questions to 33. Three of the product's newest routes
+  (why-here, what-would-change, briefing) had NO regression coverage before
+  this, which is the deeper reason the bank needed recalibration rather than a
+  re-run.
+
+UNGRADED, WITH REASONS (rule (d))
+
+  FULLY UNGRADED BY MACHINE: 1 question.
+    "whats the delta" with no card open -- see R4. The expectation is a
+    negative and EXPECT cannot express one; the correct destination is not
+    derivable. Hand-graded on two clauses.
+
+  PARTIALLY UNGRADED (subject binding graded, intent/route deliberately not):
+  2 questions.
+    "why does ORD-000011 go through downtime" -- which route owns "why does X
+    go through downtime" was never ruled; 4B.14 explicitly declined to rule
+    whether start-reason and why-here should merge, and downtime is
+    machine-scoped. EXPECT order=ORD-000011 only.
+    "would overtime on CUT-01 help" -- unanswerable by any contracted route
+    today; which route should take it is a vocabulary call the commissioning
+    brief put out of scope. EXPECT machine=CUT-01 only, because that is what a
+    correct parse must do whichever route wins.
+
+  So: 33 questions, 32 carrying a machine expectation, 30 of those constrained
+  on intent or route.
