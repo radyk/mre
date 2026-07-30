@@ -77,7 +77,12 @@ def test_injected_auth_failure_degrades_to_template():
     r._call_llm = _auth_raise
     out = r.render(_testimony_bundle())
     assert "[rendered by: template" in out
-    assert "LLM error" in out
+    # Session 4B.21 Item 5(a): a Python exception CLASS NAME is not planner
+    # content. The surface states the fact that bears on the answer they are
+    # reading; the class name goes to `last_diagnostics` and the DEBUG log.
+    assert "the model was unavailable" in out
+    assert "RuntimeError" not in out, "an exception class name reached a planner"
+    assert any("RuntimeError" in d for d in r.last_diagnostics)
 
 
 def test_injected_raised_exception_degrades_to_template():

@@ -243,8 +243,14 @@ def check_turn(turn: Any, vocab: Vocab) -> list[Finding]:
         findings.append(Finding("empty", turn.lineno, q, "answer body is empty"))
 
     # 3 — an LLM testimony that failed validation and fell back / warned.
-    if "LLM validation failed" in (turn.answer or "") or turn.renderer.startswith(
-            "template (LLM validated)"):
+    # Session 4B.21 Item 5(a): the planner-visible verdict string is gone (it
+    # was developer output on the answer surface) and the rendered-by tag was
+    # renamed — "template (LLM validated)" read as though the model had
+    # validated the answer when it meant the opposite. The old forms are kept
+    # here so archived sweeps still parse; the live signal is the new tag.
+    if ("LLM validation failed" in (turn.answer or "")
+            or turn.renderer.startswith("template (model draft rejected)")
+            or turn.renderer.startswith("template (LLM validated)")):
         findings.append(Finding(
             "validator", turn.lineno, q,
             "LLM testimony failed validation; fell back to template"))

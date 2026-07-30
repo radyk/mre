@@ -321,6 +321,35 @@ Answers "why did the schedule change when nothing else did": the weights changed
 
 **ServiceOutcome** — one per Fulfillment: `demand_ref`, projected completion, lateness (may be negative), tardiness cost as charged. The per-customer truth table, materialized so no consumer recomputes lateness ad hoc and disagrees with the solver's own accounting.
 
+### 6.10 Demand disposition in a schedule — *the four states, and the words for them*
+
+**These terms are CONTRACT VOCABULARY and each is also an ordinary English word.
+Their contract meanings are narrower than the everyday ones, and a reader who
+takes the everyday sense will be wrong in a specific, repeatable way.** This
+section exists so that the meaning is written down somewhere a reader — human or
+model — can retrieve it, rather than inferred from the word.
+
+Every schedulable Demand in a snapshot has EXACTLY ONE disposition in a given
+schedule document. The four are exhaustive and mutually exclusive; a Demand in
+none of them is a defect (the completeness invariant, §8).
+
+| Disposition | Meaning | What it is NOT |
+|---|---|---|
+| **committed** | The Demand's work is placed and lies inside the frozen zone: locked, static, and it will not move as the schedule rolls. | Not "confirmed by the customer". Not a commercial commitment of any kind. |
+| **active_window** | Placed, solved in the current window, not yet past the frozen boundary. It may still move on the next roll. | Not "currently running on the floor". Nothing here is a shop-floor status. |
+| **beyond-horizon** | **KNOWN, ADMITTED work with no placement in THIS window.** It sits beyond the current SCHEDULING WINDOW — a fine-grained solve interval, typically 7–14 days — and enters a later window as the plan rolls forward. This is normal, expected behaviour on any rolling plan, not a failure and not an exclusion. | **NOT "left out", "dropped", "missed", or "unscheduled" in the sense of a problem.** NOT beyond the document's date extent: the horizon here is the SOLVE WINDOW, which is shorter than the span of dates the document covers. NOT a statement that the work does not fit — whether it fits is what the coarse look-ahead answers (docs/06 §5.9), and it may not have run. |
+| **excluded** | Removed by the conformance gate for a DATA DEFECT, and visible on the certificate with its reason. | **Never a true statement about the plant's position** (late, past due, beyond horizon, over capacity). R-PD1 clause (2): exclusion is a data-defect category ONLY. |
+
+**The words that mislead, stated plainly.**
+
+* **"horizon"** in this system means the CURRENT SCHEDULING WINDOW, not the plan's date extent. A document whose bars run to 9 February can still have work "beyond the horizon" if the solve window ended on 19 January. These are different quantities and the ordinary reading conflates them.
+* **"scheduled"** means *has a placement in this window*. A beyond-horizon Demand is admitted and planned-for but not scheduled.
+* **"late" / "on time"** are properties of a PLACEMENT. A Demand with no placement has no projected completion, so it is **neither late nor on time** — not "on time by default". Any count or predicate about lateness ranges over the scheduled set alone.
+* **"committed"** and **"frozen"** describe our own solve state, never the customer's or the floor's.
+* **"complete"** in the model means an Operation's work is finished; the *completeness invariant* is a different thing entirely — a statement about the document covering every Demand.
+
+**COUNTS NAME THEIR DISPOSITION.** "40 orders" is not a fact until it says which set: 40 *known*, 26 *scheduled*, 14 *beyond-horizon* are three different true statements about one board. A surface reporting one of them says which, and a predicate asserted over a count must apply to every member of the set counted (docs/04, 2026-07-30).
+
 ## 7. Provenance
 
 ### 7.1 Architecture: clean entity + sidecar

@@ -13599,3 +13599,261 @@ question that most directly asks for it. And *"would splitting the jobs help"*
 no longer produces 4B.17's falsehood, but **not because of this fix**: it now
 parses to `what-would-change` and near-misses. Both are vocabulary calls.
 Details in docs/07 §5a.67-69.
+
+## 2026-07-30 — Session 4B.21: one board, contradictory answers
+
+Sixth session of the truth-failure arc, and the fifth appearance of ONE defect
+class. Taken from 4B.17's remaining five: A5, and the fused count that produced
+it. The census was by MECHANISM, not by the names of the two known specimens —
+the brief warned that three consecutive sessions had been mis-briefed by fusing
+an incidental property of a specimen into the class definition, and this one was
+not.
+
+### THE RULING (verbatim, as transcribed from the brief and amended by the census)
+
+> **A COUNT NAMES THE DISPOSITION IT COUNTS.** "Orders" alone is not a
+> disposition. Known, scheduled, committed, active-window, beyond-horizon and
+> excluded are different sets, and a surface that reports one of them says
+> WHICH.
+>
+> **A PREDICATE ASSERTED OVER A COUNT MUST BE APPLICABLE TO EVERY MEMBER OF THE
+> SET COUNTED.** Where it is not, the set is split and each part is reported
+> with the predicate that applies to it — never fused, and never left to the
+> reader to notice.
+
+Two clauses were ADDED by the census, with their reasons:
+
+> **(3) TWO COUNTS SPOKEN IN ADJACENT SENTENCES SHARE A DENOMINATOR OR NAME
+> THEIR OWN.** The `inventory` answer carried THREE denominators in three
+> consecutive lines — 40 known orders, 56 placed operations (of 88 declared),
+> and 3 splittable operations counted over the 88, one of which has no
+> placement. Each figure was true of its own set. Adjacency asserted a
+> relationship between them that no code computed and no sentence stated.
+>
+> **(4) WHERE THE DISPOSITIONS DO NOT PARTITION THE KNOWN SET, THE SURFACE SAYS
+> SO AND STATES NO TOTAL.** The 4B.3a completeness invariant is enforced at
+> document build; a count surface that finds it violated is looking at a broken
+> document, and picking whichever of its numbers looks plausible converts a
+> defect in our storage into a claim about the plant. Same shape as 4B.18's
+> `CostProof.unreadable`, and it exists for the same reason.
+
+### THE FIFTH INSTANCE — this is a pattern about how the system is built
+
+Category fusion has now been found and fixed five times, in five unrelated
+modules, by five sessions that each believed they were fixing one bug:
+
+| Session | Surface | What was fused |
+|---|---|---|
+| 4B.5 | the delta card | window RE-OPTIMISATION with the planner's MOVE |
+| 4B.13 | `lateness_set` | NOT-LATE with NOT-SCHEDULED |
+| 4B.18 | `CostProof` | UNREADABLE storage with NO-SOLVE |
+| 4B.20 | the synthesis toolbox | WORKING TIME with ELAPSED SPAN |
+| 4B.21 | `inventory` | KNOWN with SCHEDULED |
+
+Five instances is not a run of bad luck. **The common mechanism is that a NAME
+is written once, by whoever needed a number, and never re-read as a claim.**
+Every one of these was a field or a sentence whose author knew exactly which
+quantity they meant; the defect appeared when a second reader — a renderer, a
+tool, a model — took the name at face value. 4B.20 recorded this about DATA
+surfaces specifically ("`duration_minutes` was not a lie anybody told; it was a
+name nobody re-read"); the census here shows it is not confined to data
+surfaces. `inventory`'s was a rendered English sentence, authored by a human,
+and it fused two sets the same way.
+
+**What follows for the next author.** A category is fused whenever one word
+covers two sets that a planner would act on differently. The cheapest place to
+catch it is the FIELD NAME — `order_count` cannot be wrong, and
+`known_order_count` cannot be fused. The cheapest place to catch it LATE is a
+cross-surface test, because a fusion is almost always visible as two surfaces
+disagreeing on one board.
+
+### The census: 542 raw sites, 253 candidates, 8 defects
+
+By mechanism (an AST walk over 93 files in `src/`, six mechanisms: `len`, `sum`,
+aggregate calls, templated strings carrying an entity noun, ratios, count
+templates), then a BINDING pass on what is aggregated and where it lands, then a
+read of every survivor. Full table in `docs/closeouts/4B.21.md`. Separately, a
+UNIVERSAL sweep over every string constant in the 24 surface files — because the
+sharpest specimen, *"Every order finishes on time."*, carries no number at all
+and stage A's templated-string mechanism could not see it: 38 planner-facing
+universals, 15 with a placement-presupposing predicate, 3 defects.
+
+**THE SPECIMEN, MEASURED.** On the pinned world (40 known / 26 scheduled / 14
+beyond-horizon / 56 placed of 88 declared operations) `inventory` said:
+
+    40 order(s) are in the plan, scheduled across 56 operation(s).
+    3 operation(s) can split across a pause (e.g. an overnight closure).
+    Every order finishes on time.
+
+while the opener said "26 orders", the tray said "14 known orders sit beyond the
+planning horizon", and the synthesis toolbox's own `lateness_set` note said
+*"14 of 40 order(s) have NO placement in this schedule and therefore no service
+outcome — they are neither late nor on time"*. **One board, four surfaces, three
+answers to "how many orders", and the one that was right was the tool nobody
+reads.**
+
+### The fix: one definition, and every surface reads it
+
+`src/mre/modules/order_disposition.py` — `census(explainer, document)` returns
+an `OrderDisposition` whose every field NAMES ITS SET (`known_orders`,
+`scheduled_orders`, `beyond_horizon_orders`, `excluded_orders`,
+`declared_operations`, `placed_operations`, `splittable_declared`,
+`splittable_placed`), plus `partitions()` — the 4B.3a completeness invariant
+restated where a sentence is about to be built from it. `beyond_horizon_orders`
+is `None` on a monolithic board, never 0: an absent figure and a zero figure are
+different claims.
+
+Six surfaces changed: `inventory` (three sentences, all three sets now spoken),
+`lateness-cause` (its denominator was the KNOWN set, so *"the other 39 finish on
+time or early"* was asserted of 14 orders with no completion date), the opener's
+scope line ("26 **scheduled** orders"), `unknown-entity` ("40 **known** orders"),
+the pre-opener briefing fallback, and `late-orders`' own total — which the new
+guard caught on its first run: 4B.13 named the two SUBSETS and left their TOTAL
+bare, so the one figure in that sentence matching `inventory`'s headline was the
+one with no disposition on it. The synthesis toolbox's bare `summary["orders"]`
+became `known_orders` in both `lateness_set` and `entity_vocabulary`, and the
+`ENTITY_VOCABULARY` tool meaning now says it is not the number scheduled.
+
+### THE GUARD, and both halves of it
+
+`tests/test_cross_surface_counts.py`. TWO MECHANISMS, because neither alone
+closes the class, proven by two negative controls that fail on opposite halves:
+
+  1. **CROSS-SURFACE AGREEMENT.** Every count surface is registered under the
+     disposition it claims to count; surfaces sharing a disposition must report
+     the same value on one board, and it must be the census's. Every disposition
+     carries at least two independent code paths, asserted — a cross-surface
+     test with one surface per disposition is a tautology.
+  2. **THE PROSE TEST.** A figure that is unambiguously one disposition must
+     appear in a sentence carrying that disposition's word, and no universal
+     over "orders" may stand unscoped. The agreement half cannot see this: every
+     figure can be right while the words fuse them, which is exactly what
+     `inventory` did.
+
+**ITS LIMIT, STATED IN THE MODULE DOCSTRING** (the 4B.19/4B.20 discipline): it
+watches routes through `Explainer.route` and the toolbox summaries. It does NOT
+watch the cockpit's JavaScript (`tray.js` renders its own count — checked by
+hand, correct), nor the conformance gate's rates, which count SUBMISSION ROWS
+and are deliberately out of the register rather than silently passing it.
+
+**THE PREMISE TEST** asserts the fixture board genuinely has known > scheduled >
+0, a non-empty tray, and more declared operations than placed — each separately,
+because a fixture can drift into satisfying three of them. Without it every
+comparison is 40 == 40 and the guard is 4B.18's
+`test_load_populates_all_evidence` again.
+
+**THE NEGATIVE CONTROLS.** (a) the fused inventory sentence restored → 3 failed
+(both prose tests + the named regression), agreement test GREEN. (b) the
+opener's scheduled count registered under KNOWN → 1 failed (agreement), prose
+tests GREEN. Reverted, green.
+
+### A5 CLOSED — the chain was assembled for the ORDER, the lead computed for the OPERATION
+
+4B.13 fixed WHICH decision the lead reads. The chain kept every assignment
+Decision of the whole order, merely REORDERED so the named machine came first —
+so *"why is ORD-000013 op20 on PAINT-01"* led with *"the only machine qualified
+to run this step — there was no alternative to weigh"* above a chain entry for
+**op10 on CUT-01** carrying CUT-02 at $21.30 and CUT-03 at $49.70, and a cockpit
+footer reading *"alternatives weighed: CUT-02, CUT-03"*. Two scopes, one answer,
+and the WIDER one supplied the footer.
+
+**ONE LIST, ONE SCOPE.** The chain, the cited refs, the lit bars and the glowed
+alternative lanes all derive from `bundle.ordered_records`
+(`api/app.py::_cited_refs_from_bundle`), so scoping that one list fixes all four
+and none of them can drift apart again. `why-on-machine` now takes an `op_seq`
+— the taxonomy's params were (order, machine), so a question naming "op20" had
+that word dropped at the dispatch — and reads it from the asked question when
+the parse did not supply one. The order's OTHER steps leave the citation list
+and are named in a sentence instead: narrowing silently is the same defect as
+widening silently.
+
+**THE DRIVER PHRASE AS A WHOLE CAUSAL CLAUSE — its third seam, and the census.**
+Sites that render a driver phrase as a standalone Why: `renderers.py`
+ASSIGNMENT branch (the A5 specimen), `renderers.py` catch-all branch,
+`explainer._explain_why_on_machine`'s lead (fixed for CAPACITY_BLOCKED only,
+4B.5 CU3), `explainer._record_gist`, the opener's `common_cause`, `late-order`'s
+`driver_phrase` key fact, and `sandbox`'s `dominant_driver`. The two RENDERER
+sites are the class: they printed **"Why: the machine was busy with other
+work"** one line under a lead that had just said there was no alternative — two
+incompatible reasons for one placement, each in the product's own voice. The
+label now claims only what is checkable: **"Recorded driver: …"**, a
+transcription of the record's `driver` field. And where the lead was COMPUTED
+from the solved occupancy, the chain says so rather than posing as a competing
+explanation. **A label is a claim (4B.19); "Why:" claimed to be the reason.**
+
+### A CONTRACT TERM THAT IS ALSO AN ORDINARY WORD IS WHERE SYNTHESIS DRIFTS
+
+Measured live: asked *"what's the biggest risk in this plan"*, the second tier
+called the 14 beyond-horizon orders *"all inside this plan's horizon, not beyond
+it … they were left out of the schedule itself"* and made normal rolling
+behaviour the headline risk on the question a GM asks first. `lateness_set` had
+already handed it the word `not_scheduled` and it was overridden.
+
+**THE REASONING WAS NOT CARELESS.** "Horizon" was read as the plan's DATE EXTENT
+(to 9 February), which is what the word means in English, and against that
+reading the conclusion follows. **The contract meaning was in no document this
+tier could reach:** docs/01 said nothing about dispositions, docs/05 nothing at
+all, docs/06 only in the `coarse_horizon` coefficient prose, and docs/04 — which
+does say it — is HISTORICAL tier, admitted for design-rationale and never for a
+capability answer. **The vocabulary that most needed disambiguating was
+documented only in a Python docstring.**
+
+docs/01 gains **§6.10 — Demand disposition in a schedule**: the four states, and
+explicitly the everyday senses that mislead (horizon = the SOLVE WINDOW, not the
+date extent; "scheduled" = has a placement; late/on-time are properties of a
+PLACEMENT, so an unplaced order is neither; "committed"/"frozen" describe OUR
+solve state, never the customer's or the floor's). `synthesis_prompt.md`
+**v4 → v5**, rule 12, makes reaching for it mandatory before reasoning about one
+of those words, and states the standing rule: **when a tool hands you a
+disposition word, that word is the answer** — do not re-derive a status from
+dates you can see.
+
+Adding it was free of code change: docs/01 is already in the CURRENT corpus
+tier, so a section plus `python tools/build_corpus_index.py` made it retrievable.
+`"committed"` retrieved ZERO passages before and one after.
+
+### DEVELOPER OUTPUT ON THE PLANNER'S SURFACE
+
+Five diagnostic strings could reach an answer, all written for whoever maintains
+the check that emitted them. The A5 answer carried this one verbatim:
+
+    [LLM validation failed: vacuous causal answer: names no driver, no entity
+     beyond the question's own subjects, and no quantity; fell back to template]
+
+The tripwire firing is correct and the fallback is correct. **Printing an
+internal check's verdict to a planner is not** — it names mechanisms that mean
+nothing at a plant, and it landed on the one answer that already contradicted
+itself. What a planner needs is ONE fact, which the rendered-by footer already
+states. The detail is now on the renderer's `last_diagnostics` and logged at
+DEBUG: routed, not deleted. **The rendered-by tag changed deliberately** —
+`template (LLM validated)` read as though the model had validated the answer
+when it meant the opposite, and is now `template (model draft rejected)`; the
+exam sidecar keys its `validator` tripwire on that tag and was updated in the
+same commit, keeping the old forms so archived sweeps still parse.
+
+**RAW SIGNED MINUTES.** `machine-schedule` printed `-13817min early` — a
+negative number and the word "early" together, each encoding the same direction,
+at 1,440 of the unit to the day — while the opener said "8h22m of slack" and the
+job card "97h 1m" off a formatter this listing did not use. `_elapsed` moved
+from `board_opener` to `planner_language.elapsed_minutes` (one definition; the
+opener's output is byte-unchanged) and the three tag-shaped sites now use it.
+**Six planner-facing sites print raw minutes; three are prose sentences that
+spell "minutes" and are left**, because R-PD1 clause (4) states the floor and
+the controllable part in the SAME unit for comparability and reformatting one of
+them would break that.
+
+### What was tempting and left
+
+**DRILL-DOWN ANAPHORA IS A CONTEXT-LADDER CHANGE, NAMED AND LEFT.** *"show me
+the evidence for that"*, asked straight after an answer carrying a two-record
+cited chain, answers *"I don't have a claim of my own open to ground."* The
+mechanism: `SynthesisMemory` remembers **synthesis answers only**, so a
+contracted route's `ordered_records` are never in session memory and "that" has
+nothing to resolve to. Making it work means remembering contracted bundles per
+session — a change to the memory contract and the API ask path, which is exactly
+what the brief said to name rather than do.
+
+Also left: the `machine-schedule` route's missing utilisation figure and the
+`repeat`/`deaf` string-identity boundary (both vocabulary calls, §5a.69, §5a.58);
+the metric and input-manifest readers; the verifier's derived-claim limit;
+4B.17's four drifts and ten conversational misses; CLAUDE.md compression.

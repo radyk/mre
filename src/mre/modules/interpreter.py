@@ -964,7 +964,16 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     # on a rolling board the tray has to be named beside it or a stranger reads
     # it as a clean bill of health for the whole book. Rolling intents get this
     # at their own branch above; this is the non-rolling route that needs it too.
-    if parsed.intent is Intent.LATE_ORDERS:
+    # Session 4B.21: INVENTORY and LATENESS_CAUSE join it, and for the same
+    # reason one step further in. Both report counts of orders, and the
+    # BEYOND-HORIZON region exists only in the document — without it `inventory`
+    # can see 40 known and 26 placed and has no way to learn that the other 14
+    # are admitted work waiting for a later window. This was found on the LIVE
+    # ask path while the cross-surface guard, which passes a document
+    # explicitly, stayed green: the allow-list is exactly the kind of seam that
+    # is proven from one side only.
+    if parsed.intent in (Intent.LATE_ORDERS, Intent.INVENTORY,
+                         Intent.LATENESS_CAUSE, Intent.EXCLUDED_ORDERS):
         params["document"] = document
     # Session 4B.14 Item 2: the blocker analysis reads the FROZEN BOUNDARY (R-F1)
     # from the rolling block, so its ladder is missing a family without the

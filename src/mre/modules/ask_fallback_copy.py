@@ -517,11 +517,15 @@ PROVE_IT_READ_FROM = "Read from: {tools}."
 LATENESS_CAUSE_NONE = (
     "Nothing is late in this plan — every order finishes on or before its due "
     "date, so there is no lateness to account for.")
+# Session 4B.21 — both of these carry a DENOMINATOR, and it is the SCHEDULED
+# set. "The other 39 finish on time or early" was asserted on a board where 14
+# of those 39 have no completion date at all.
 LATENESS_CAUSE_PREMISE_ONE = (
     "There aren't many — exactly one order is late: {order}, by {amount}. "
-    "The other {on_time} finish on time or early.")
+    "The other {on_time} scheduled order(s) finish on time or early.")
 LATENESS_CAUSE_LEAD = (
-    "{late} of {total} orders are late. Here is what is driving it.")
+    "{late} of the {total} scheduled order(s) are late. Here is what is "
+    "driving it.")
 LATENESS_CAUSE_LEAD_NO_TOTAL = "{late} orders are late. Here is what is driving it."
 
 # One line per repeated cause — the MIX is the answer, not the list. With ONE late
@@ -691,3 +695,104 @@ def route_offer(route: str, params: dict | None = None) -> str:
         return template.format(**fill)
     except (KeyError, IndexError):
         return template
+
+
+# ---------------------------------------------------------------------------
+# SESSION 4B.21 — A COUNT NAMES THE DISPOSITION IT COUNTS, AND A PREDICATE
+# ASSERTED OVER A COUNT MUST APPLY TO EVERY MEMBER (docs/04 2026-07-30 ruling).
+#
+# The `inventory` route said "40 order(s) are in the plan, scheduled across 56
+# operation(s). … Every order finishes on time." on a board where 26 orders are
+# scheduled, 14 have no placement at all, the 56 operations belong to those 26
+# (of 88 declared), and only the 26 have a projected completion for a universal
+# to range over. Every number was true of its own set; the sentence was true of
+# none, and three other surfaces on the same board said so.
+#
+# These strings exist so that the split is IN THE SENTENCE rather than left for
+# a planner to reconstruct from a second question. Same discipline as the 4B.13
+# late-orders scope clause and the R-PD1 clause (4) tardiness split: where a
+# figure covers part of a set, the part is named where the figure is spoken.
+# ---------------------------------------------------------------------------
+
+# The rolling case: three dispositions, spoken as three.
+INVENTORY_ROLLING = (
+    "{known} order(s) are known to this plan. {scheduled} of them are scheduled "
+    "in this window, across {placed_ops} placed operation(s); the other "
+    "{beyond} sit beyond the horizon with no placement yet.")
+# The monolithic case: no horizon, so the scheduled set IS the admitted set and
+# there is nothing to split. Saying "of them" here would invent a distinction.
+INVENTORY_MONOLITHIC = (
+    "{scheduled} order(s) are scheduled in this plan, across {placed_ops} "
+    "operation(s).")
+# Excluded work is a separate disposition and never folded into either of the
+# two above (R-PD1 clause 2: exclusion is a data-defect category only).
+INVENTORY_EXCLUDED = (
+    "{excluded} further order(s) were excluded by the conformance gate and are "
+    "in neither figure.")
+
+# THE SPLITTABLE LINE'S OWN DENOMINATOR. `splittable_declared` is counted over
+# every DECLARED operation, which on a rolling board is a larger set than the
+# placed operations named one line earlier — so the two are never left adjacent
+# and unqualified.
+INVENTORY_SPLITTABLE = (
+    "{declared_split} of the {declared_ops} declared operation(s) can split "
+    "across a pause (e.g. an overnight closure); {placed_split} of those are "
+    "placed in this window.")
+INVENTORY_SPLITTABLE_MONOLITHIC = (
+    "{declared_split} operation(s) can split across a pause (e.g. an overnight "
+    "closure).")
+INVENTORY_SPLITTABLE_NONE = "No operations are set to split across a pause."
+
+# THE UNIVERSAL, SCOPED TO THE SET THAT CAN SATISFY IT. An order with no
+# placement has no projected completion, so it is neither late nor on time —
+# the distinction `lateness_set` already states and that this sentence used to
+# erase.
+INVENTORY_ON_TIME_ROLLING = (
+    "All {scheduled} scheduled order(s) finish on time. The {beyond} beyond the "
+    "horizon have no completion date yet, so they are neither late nor on time.")
+INVENTORY_ON_TIME_MONOLITHIC = "Every order finishes on time."
+INVENTORY_LATE = "{late} of the {scheduled} scheduled order(s) finish late."
+
+# THE PARTITION FAILED. Scheduled + beyond + excluded did not add up to known,
+# which means an order is in no bucket at all. The assembler raises on this at
+# document build; if a count surface ever sees it, it says so rather than
+# picking whichever number looks plausible.
+INVENTORY_PARTITION_BROKEN = (
+    "I can't give you a reliable total: the orders I can account for "
+    "({scheduled} scheduled, {beyond} beyond the horizon, {excluded} excluded) "
+    "do not add up to the {known} this plan knows about, so at least one order "
+    "is unaccounted for. That is a defect in this schedule document, not a "
+    "fact about the plant.")
+
+# The lateness-cause route's own premise lines, re-scoped. `total` there was the
+# KNOWN set, so "the other 39 finish on time or early" was asserted of 14 orders
+# with no finish.
+LATENESS_CAUSE_NONE_ROLLING = (
+    "Nothing is late in this plan — all {scheduled} scheduled order(s) finish "
+    "on or before their due date, so there is no lateness to account for. The "
+    "{beyond} order(s) beyond the horizon have no completion date yet.")
+
+# NO DOCUMENT REACHED THIS ANSWER, so the beyond-horizon region is UNREADABLE —
+# which is not the same as empty. Found on this session's own live run: the
+# route stated a monolithic total over a rolling board because `rolling` is
+# itself read off the document it did not have. Same distinction as 4B.18's
+# `CostProof.unreadable`: a fact about our reach never becomes a claim about
+# the plant.
+INVENTORY_UNREADABLE = (
+    "{known} order(s) are known to this plan, and {scheduled} of them are "
+    "scheduled across {placed_ops} placed operation(s). I can't tell you what "
+    "became of the rest from here: the schedule document didn't reach this "
+    "answer, and the beyond-horizon list lives on it. Ask \"what's beyond the "
+    "horizon?\" and I'll read it directly.")
+
+# NOTHING WAS EXCLUDED, AND WORK IS STILL ABSENT FROM THE SCHEDULE. Measured
+# live: "why are some orders missing from the schedule entirely" answered "No
+# data-quality problems -- the submission is clean" on a board with 14
+# beyond-horizon orders. True about exclusions; silent about the disposition the
+# question was actually about. Ruling clause (2): where a predicate covers only
+# part of what was asked, the other part is named where the answer is spoken.
+EXCLUDED_NONE_BUT_TRAY = (
+    "That said, {beyond} order(s) have no placement in this window — not "
+    "because anything rejected them, but because they sit beyond the current "
+    "scheduling window and enter a later one as the plan rolls. Ask \"what's "
+    "beyond the horizon?\" for the list.")

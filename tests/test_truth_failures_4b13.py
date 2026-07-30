@@ -166,10 +166,10 @@ def test_lateness_set_never_counts_an_unplaced_order_as_on_time(world):
     s = r.summary
 
     assert s["late"] + s["on_time_or_early"] == s["scheduled"]
-    assert s["scheduled"] + s["not_scheduled"] == s["orders"]
+    assert s["scheduled"] + s["not_scheduled"] == s["known_orders"]
     # the fixture must actually HAVE unplaced orders or this proves nothing
     assert s["not_scheduled"] > 0, "no tray — this guard would be vacuous"
-    assert s["on_time_or_early"] < s["orders"], (
+    assert s["on_time_or_early"] < s["known_orders"], (
         "on_time_or_early still counts the whole set — the fusion is back")
 
     # every row says its own state, so a reader of rows cannot re-fuse by hand

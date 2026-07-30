@@ -438,3 +438,32 @@ def _catalog_fix(finding: dict, catalog: Any) -> Optional[str]:
         if guidance and "generic" not in guidance.lower():
             return guidance
     return None
+
+
+def elapsed_minutes(m) -> str:
+    """CALENDAR minutes as a planner reads them — a lateness, an earliness, a
+    slack. Days are meaningful here: "6d 15h late" is wall-clock, which is the
+    unit a due date is in (contrast ``renderers._dur_min``, which formats
+    WORKING minutes and deliberately never says "day").
+
+    Session 4B.21 Item 5(b). This body lived in ``board_opener._elapsed``, so
+    the opener said "8h22m of slack" while the schedule listing said
+    "-13817min early" — a signed raw minute count carrying the word "early",
+    where the sign and the word encode the same direction twice and 1,440 of
+    the units make a day. One definition now, imported by both.
+
+    The SIGN IS NOT PRINTED for a magnitude the caller has already worded
+    ("early" / "late"); it is printed when the caller passes the raw signed
+    value and lets this function speak.
+    """
+    if m is None:
+        return "?"
+    m = int(round(float(m)))
+    if abs(m) < 60:
+        return f"{m}m"
+    h, r = divmod(abs(m), 60)
+    sign = "-" if m < 0 else ""
+    if h < 48:
+        return sign + (f"{h}h" if not r else f"{h}h{r:02d}m")
+    d, rh = divmod(h, 24)
+    return sign + (f"{d}d" if not rh else f"{d}d {rh}h")

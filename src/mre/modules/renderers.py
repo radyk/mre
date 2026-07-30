@@ -11,6 +11,7 @@ Rendering rules (from CLAUDE.md / docs/03):
 """
 from __future__ import annotations
 
+import logging
 import os
 import re
 from datetime import datetime, timezone
@@ -18,8 +19,41 @@ from typing import Any, Optional
 
 from mre.modules.explainer import ExplanationBundle
 from mre.modules.planner_language import (
-    driver_phrase, has_jargon, stage_name, strip_formatting, strip_jargon,
+    driver_phrase, elapsed_minutes, has_jargon, stage_name, strip_formatting,
+    strip_jargon,
 )
+
+_LOG = logging.getLogger("mre.renderers")
+
+# ---------------------------------------------------------------------------
+# SESSION 4B.21 ITEM 5(a) — WHAT A PLANNER IS TOLD WHEN A RENDER FAILS CLOSED.
+#
+# The census of diagnostic strings that could reach the answer surface found
+# five, all of them written for whoever maintains the check that emitted them:
+#
+#   [LLM validation failed: <the check's own verdict>; fell back to template]
+#   [LLM validation failed: invented a value; fell back to authored text]
+#   [LLM error: <PythonExceptionClassName>; fell back to template]
+#   [LLM error: <PythonExceptionClassName>; fell back to authored text]
+#   [rendered by: template (LLM error) | register: …]
+#
+# Every one of them says the same thing to a planner — the answer you are
+# reading is the deterministic text, not the model's prose — and says it in
+# vocabulary that belongs in a log. These two constants are that fact, phrased
+# once, for the answer surface. The detail is kept on the renderer's
+# `last_diagnostics` and logged at DEBUG.
+#
+# THE RENDERED-BY TAG CHANGED, DELIBERATELY. "template (LLM validated)" read as
+# though the model had validated the answer; it meant the opposite. The exam
+# sidecar keys its `validator` tripwire on this tag and was updated in the same
+# commit — the instrument follows the vocabulary, not the reverse.
+# ---------------------------------------------------------------------------
+
+#: The model drafted an answer and it did not pass verification.
+DRAFT_REJECTED_FOOTER = (
+    "[rendered by: template (model draft rejected) | register: {register}]")
+#: The model could not be reached at all.
+MODEL_UNAVAILABLE = "the model was unavailable"
 
 # Patterns for post-render validation
 # Captures full timestamp: date + optional time + optional timezone
@@ -673,8 +707,15 @@ class TemplateRenderer:
         shown = records[:CITATION_CAP] if capped else records
         lines.append(f"Evidence chain ({len(records)} record(s)):")
         lines.append("")
+        # Session 4B.21 Item 3(b) — when the LEAD replaced the recorded driver
+        # with a computed reading, the chain must not re-assert the bare driver
+        # underneath it as a competing reason. The flag says so once, on the
+        # record it applies to.
+        superseded = (bundle.key_facts.get("driver_code") == "CAPACITY_BLOCKED"
+                      and bundle.key_facts.get("blocked_alternatives") is not None)
         for i, rec in enumerate(shown, 1):
-            self._render_record(lines, i, rec, bundle.identity_map)
+            self._render_record(lines, i, rec, bundle.identity_map,
+                                driver_superseded=superseded)
         if capped:
             lines.append(f"  … and {len(records) - CITATION_CAP} more record(s) "
                          "(ask about a specific order to narrow this).")
@@ -713,6 +754,7 @@ class TemplateRenderer:
                     if not alts and kf.get("only_option"):
                         lines.append(WHY_MACHINE_CAPABILITY_LEAD.format(
                             order=name, machine=kf["machine_ref"]))
+                        self._render_why_machine_scope(lines, kf)
                         lines.append("")
                         return
                     lines.append(WHY_MACHINE_CAPACITY_LEAD.format(
@@ -724,10 +766,12 @@ class TemplateRenderer:
                                 until=a["until"]))
                     else:
                         lines.append(WHY_MACHINE_CAPACITY_UNATTRIBUTED)
+                    self._render_why_machine_scope(lines, kf)
                     lines.append("")
                     return
                 because = f" because {cause}" if cause else ""
                 lines.append(f"{name} is on {kf['machine_ref']}{because}.")
+                self._render_why_machine_scope(lines, kf)
                 lines.append("")
                 return
             lateness = kf.get("lateness_minutes")
@@ -796,9 +840,14 @@ class TemplateRenderer:
             tray_n = kf.get("not_scheduled_order_count")
             scope = ""
             if sched_n is not None and tray_n:
-                scope = (f" Of the {sched_n + tray_n} orders on this plan, that "
-                         f"covers the {sched_n} scheduled in this window — the "
-                         f"other {tray_n} sit beyond the horizon with no "
+                # Session 4B.21 — "known to this plan", not "on this plan".
+                # 4B.13 named the two SUBSETS and left their TOTAL bare, which
+                # the cross-surface guard caught on its first run: the one
+                # figure in this sentence that matches `inventory`'s headline
+                # count was the one with no disposition on it.
+                scope = (f" Of the {sched_n + tray_n} orders known to this plan, "
+                         f"that covers the {sched_n} scheduled in this window — "
+                         f"the other {tray_n} sit beyond the horizon with no "
                          f"placement yet, so they are neither late nor on time.")
             if count == 0:
                 lines.append(
@@ -1035,10 +1084,18 @@ class TemplateRenderer:
                     lateness = row.get("lateness_minutes")
                     lat_str = ""
                     if lateness is not None and _show_row_lat:
+                        # Session 4B.21 Item 5(b) — THE SAME FORMATTER AS EVERY
+                        # OTHER SURFACE. This printed "-13817min early": a
+                        # NEGATIVE number and the word "early" together, each
+                        # encoding the same direction, at 1,440 of the unit to
+                        # the day. The opener has said "8h22m of slack" since
+                        # 4B.16 and the job card "97h 1m" since 4B.14, off a
+                        # formatter this listing did not use. The magnitude is
+                        # passed unsigned because the word does the direction.
                         lat_str = (
-                            f"  +{int(lateness)}min LATE"
+                            f"  {elapsed_minutes(abs(lateness))} LATE"
                             if lateness > 0
-                            else f"  -{int(abs(lateness))}min early"
+                            else f"  {elapsed_minutes(abs(lateness))} early"
                         )
                     lines.append(
                         f"    seq={row['op_seq']:>3}  "
@@ -1108,22 +1165,7 @@ class TemplateRenderer:
             lines.append("")
 
         elif bundle.subject_type == "inventory":
-            kf = bundle.key_facts
-            lines.append(
-                f"{kf.get('order_count', 0)} order(s) are in the plan, "
-                f"scheduled across {kf.get('operation_count', 0)} operation(s)."
-            )
-            sp = kf.get("splittable_op_count", 0)
-            if sp:
-                lines.append(f"{sp} operation(s) can split across a pause "
-                             "(e.g. an overnight closure).")
-            else:
-                lines.append("No operations are set to split across a pause.")
-            late = kf.get("late_count", 0)
-            lines.append(f"{late} order(s) finish late."
-                         if late else "Every order finishes on time.")
-            self._render_excluded_note(lines, bundle)
-            lines.append("")
+            self._render_inventory(lines, bundle)
 
         elif bundle.subject_type == "integrity":
             kf = bundle.key_facts
@@ -1609,7 +1651,8 @@ class TemplateRenderer:
             where = (f" on {p['machine']} (starts {p['start']})"
                      if p.get("machine") else "")
             if f.get("late"):
-                status = f"{int(f['lateness'])} min late"
+                # Item 5(b): same formatter as the listing and the opener.
+                status = f"{elapsed_minutes(abs(f['lateness']))} late"
             elif f.get("slack_days") is not None and f["slack_days"] > 0.05:
                 status = f"{f['slack_days']:g} day(s) early"
             elif f.get("slack_days") is not None:
@@ -1746,14 +1789,26 @@ class TemplateRenderer:
         )
         kf = bundle.key_facts
         late = int(kf.get("late_count", 0) or 0)
-        total = kf.get("total_orders") or 0
+        # Session 4B.21 — THE DENOMINATOR IS THE SCHEDULED SET, not the known
+        # one. An order with no placement has no completion date, so it can be
+        # neither late nor "on time or early"; counting it in either direction
+        # is the category fusion this ruling ends.
+        sched = kf.get("scheduled_order_count")
+        beyond = kf.get("beyond_horizon_order_count")
+        total = int(sched if sched is not None else (kf.get("total_orders") or 0))
         causes = kf.get("causes") or []
 
         # 1 — THE PREMISE, first. "Why are so many late" on a plan with one late
         # order is answered by saying so; the causes still follow, but the planner
         # is not left believing a premise the evidence does not support.
         if late == 0:
-            lines.append(LATENESS_CAUSE_NONE)
+            if beyond:
+                from mre.modules.ask_fallback_copy import (
+                    LATENESS_CAUSE_NONE_ROLLING)
+                lines.append(LATENESS_CAUSE_NONE_ROLLING.format(
+                    scheduled=total, beyond=beyond))
+            else:
+                lines.append(LATENESS_CAUSE_NONE)
             lines.append("")
             return
         if late == 1:
@@ -1854,6 +1909,16 @@ class TemplateRenderer:
                     lines.append(f"No data-quality problems found for {entity}.")
             else:
                 lines.append("No data-quality problems — the submission is clean.")
+                # Session 4B.21, found by this session's own live verification:
+                # "why are some orders missing from the schedule entirely"
+                # answered exactly the line above, on a board where 14 orders
+                # have no placement. True about EXCLUSIONS and silent about the
+                # disposition the question was about. Ruling clause (2).
+                beyond = bundle.key_facts.get("beyond_horizon_order_count")
+                if beyond:
+                    from mre.modules.ask_fallback_copy import (
+                        EXCLUDED_NONE_BUT_TRAY)
+                    lines.append(EXCLUDED_NONE_BUT_TRAY.format(beyond=beyond))
             lines.append("")
             self._render_excluded_note(lines, bundle)
             return
@@ -2374,9 +2439,14 @@ class TemplateRenderer:
                 # [:6] head slice never claimed completeness, but it never gave
                 # the total either, so a planner had no way to tell six from six
                 # hundred. The count is the cheap half of the floor.
-                lines.append(f"There are {total} orders in this plan — ask "
-                             f"\"how many orders are in the plan?\" for the count "
-                             f"and \"show the full schedule\" for the list.")
+                # Session 4B.21 — "known" names the set. This is every demand
+                # the plan carries, placed or not; the opener's count on the
+                # same board is the placed subset, and the two disagree by
+                # design rather than by accident.
+                lines.append(f"There are {total} known orders in this plan — "
+                             f"ask \"how many orders are in the plan?\" for the "
+                             f"breakdown and \"show the full schedule\" for the "
+                             f"list.")
         lines.append("")
 
     def _render_briefing(self, lines: list[str], bundle: ExplanationBundle) -> None:
@@ -2394,14 +2464,20 @@ class TemplateRenderer:
             return
         fires = kf.get("fires", [])
         if not fires:
-            lines.append("Nothing is late today — every order is on track.")
+            # Session 4B.21 — SCOPED. This branch is reached only when the
+            # opener could not be built at all, which does not make a
+            # plan-wide universal any safer: on a rolling board the orders
+            # beyond the horizon have no completion date to be on track for.
+            lines.append("Nothing is late today — every order with a "
+                         "placement is on track.")
         else:
             lines.append(f"{len(fires)} order(s) need attention today, worst first:")
             lines.append("")
             for f in fires:
                 mins = int(f["lateness_minutes"])
                 tag = f" · {f['priority']}" if f.get("priority") and f["priority"] != "standard" else ""
-                line = f"  • {f['order']} — {mins} min late{tag}"
+                # Item 5(b): same formatter.
+                line = f"  • {f['order']} — {elapsed_minutes(mins)} late{tag}"
                 blk = f.get("blocked_by")
                 if blk:
                     line += (f" (held behind {blk['blocker_order']} on "
@@ -2436,8 +2512,12 @@ class TemplateRenderer:
                      f"{scope['window_end']}")
         counts = ""
         if scope.get("orders") and scope.get("machines"):
-            counts = (f"{scope['orders']} orders on {scope['machines']} "
-                      f"machines{where}. ")
+            # Session 4B.21 — the word "scheduled" is load-bearing. This figure
+            # is the PLACED order count; `inventory` states the KNOWN one, and
+            # a planner reading "26 orders" here and "40 orders" there had
+            # nothing on either surface telling them the sets differ.
+            counts = (f"{scope['orders']} scheduled orders on "
+                      f"{scope['machines']} machines{where}. ")
 
         if not worries:
             lines.append(f"{counts}Nothing on this board needs your attention "
@@ -2616,6 +2696,115 @@ class TemplateRenderer:
                     f"Yes — the record agrees: {order} finishes on time{due_clause}.")
         lines.append("")
 
+    @staticmethod
+    def _render_why_machine_scope(lines: list[str], kf: dict) -> None:
+        """WHAT THIS ANSWER IS ABOUT, AND WHAT IT LEFT OUT (Session 4B.21 Item 3).
+
+        The chain under a why-on-machine lead is now scoped to the ONE
+        operation the lead explains. Narrowing silently is the same defect as
+        widening silently — a planner who asked about a two-step order and got
+        one record has no way to tell a scoped answer from a thin one. So the
+        scope is stated, with the question that opens the rest."""
+        if not kf.get("scoped_to_operation"):
+            return
+        seq = kf.get("op_seq")
+        others = int(kf.get("other_step_count") or 0)
+        if seq is not None:
+            lines.append(
+                f"This is about op{seq} on {kf.get('machine_ref', '?')}; the "
+                f"evidence below is that step's own assignment decision.")
+        if others:
+            lines.append(
+                f"{kf.get('order', 'This order')} has {others} other step(s) "
+                f"in this window, each with its own machine and its own reason "
+                f"— ask about one by naming it (e.g. \"why is "
+                f"{kf.get('order', '<order>')} op<seq> on <machine>?\").")
+
+    def _render_inventory(self, lines: list[str],
+                          bundle: ExplanationBundle) -> None:
+        """THE COUNTS, EACH NAMING ITS DISPOSITION (Session 4B.21).
+
+        Three sentences that used to carry three different denominators with
+        none of them named, plus a universal quantified over a set 14 of whose
+        members have no completion date. Each figure now arrives from
+        ``order_disposition.census`` under a field that states its set, and the
+        prose says which set it is speaking about.
+
+        THE MONOLITHIC BRANCH IS NOT A DEGRADED ROLLING BRANCH. With no horizon
+        there is no beyond-horizon region, the scheduled set IS the admitted
+        set, and a plan-wide universal is honest — so it is said plainly rather
+        than hedged with a distinction that does not exist there."""
+        from mre.modules.ask_fallback_copy import (
+            INVENTORY_EXCLUDED, INVENTORY_LATE, INVENTORY_MONOLITHIC,
+            INVENTORY_ON_TIME_MONOLITHIC, INVENTORY_ON_TIME_ROLLING,
+            INVENTORY_PARTITION_BROKEN, INVENTORY_ROLLING,
+            INVENTORY_SPLITTABLE, INVENTORY_SPLITTABLE_MONOLITHIC,
+            INVENTORY_SPLITTABLE_NONE, INVENTORY_UNREADABLE,
+        )
+        kf = bundle.key_facts
+        known = int(kf.get("known_order_count") or 0)
+        sched = int(kf.get("scheduled_order_count") or 0)
+        beyond = kf.get("beyond_horizon_order_count")
+        excluded = int(kf.get("excluded_order_count") or 0)
+        placed_ops = int(kf.get("placed_operation_count") or 0)
+        declared_ops = int(kf.get("declared_operation_count") or 0)
+        d_split = int(kf.get("splittable_declared_count") or 0)
+        p_split = int(kf.get("splittable_placed_count") or 0)
+        rolling = bool(kf.get("rolling")) and beyond is not None
+        # Session 4B.21, found live: a route reached WITHOUT the document
+        # cannot read the beyond-horizon region at all, and "cannot read" is
+        # not "empty". Saying "26 orders are scheduled in this plan" there
+        # would be the same fusion in reverse — a monolithic sentence over a
+        # rolling board, silently dropping 14 admitted orders.
+        if kf.get("dispositions_partition") is None:
+            lines.append(INVENTORY_UNREADABLE.format(
+                scheduled=sched, placed_ops=placed_ops, known=known))
+            lines.append("")
+            return
+
+        # The partition is checked BEFORE any figure is spoken. A total that
+        # does not add up is a fact about this document, and saying it plainly
+        # is the honest floor — picking one of the numbers is not.
+        if kf.get("dispositions_partition") is False:
+            lines.append(INVENTORY_PARTITION_BROKEN.format(
+                scheduled=sched, beyond=beyond or 0, excluded=excluded,
+                known=known))
+            lines.append("")
+            return
+
+        if rolling and beyond:
+            lines.append(INVENTORY_ROLLING.format(
+                known=known, scheduled=sched, placed_ops=placed_ops,
+                beyond=beyond))
+        else:
+            lines.append(INVENTORY_MONOLITHIC.format(
+                scheduled=sched, placed_ops=placed_ops))
+        if excluded:
+            lines.append(INVENTORY_EXCLUDED.format(excluded=excluded))
+
+        if not d_split:
+            lines.append(INVENTORY_SPLITTABLE_NONE)
+        elif declared_ops and declared_ops != placed_ops:
+            # The declared set is larger than the placed set, so the two
+            # denominators are genuinely different and both are named.
+            lines.append(INVENTORY_SPLITTABLE.format(
+                declared_split=d_split, declared_ops=declared_ops,
+                placed_split=p_split))
+        else:
+            lines.append(INVENTORY_SPLITTABLE_MONOLITHIC.format(
+                declared_split=d_split))
+
+        late = int(kf.get("late_count") or 0)
+        if late:
+            lines.append(INVENTORY_LATE.format(late=late, scheduled=sched))
+        elif rolling and beyond:
+            lines.append(INVENTORY_ON_TIME_ROLLING.format(
+                scheduled=sched, beyond=beyond))
+        else:
+            lines.append(INVENTORY_ON_TIME_MONOLITHIC)
+        self._render_excluded_note(lines, bundle)
+        lines.append("")
+
     def _render_excluded_note(self, lines: list[str], bundle: ExplanationBundle) -> None:
         """CU9 — a schedule with exclusions volunteers them in relevant answers
         so the certificate silence is inverted into a trust feature."""
@@ -2686,13 +2875,15 @@ class TemplateRenderer:
         idx: int,
         rec: dict,
         identity_map: Any,
+        driver_superseded: bool = False,
     ) -> None:
         rt = rec.get("record_type", "?")
         module = rec.get("module", "?")
         rid_short = (rec.get("record_id") or "?")[:8]
 
         if rt == "decision":
-            self._render_decision(lines, idx, rec, module, rid_short, identity_map)
+            self._render_decision(lines, idx, rec, module, rid_short, identity_map,
+                                  driver_superseded=driver_superseded)
         elif rt == "metric":
             self._render_metric(lines, idx, rec, module, rid_short, identity_map)
         elif rt == "finding":
@@ -2709,7 +2900,8 @@ class TemplateRenderer:
         lines.append("")
 
     def _render_decision(
-        self, lines, idx, rec, module, rid_short, identity_map
+        self, lines, idx, rec, module, rid_short, identity_map,
+        driver_superseded: bool = False,
     ) -> None:
         dt = (rec.get("decision_type") or "?").upper()
         driver = rec.get("driver", "?")
@@ -2748,7 +2940,28 @@ class TemplateRenderer:
             resource_name = _resolve_name(resource_id, "resource", identity_map)
             lines.append(f"    Assigned to: {resource_name}")
             phrase = driver_phrase(driver)
-            lines.append(f"    Why: {phrase}" if phrase else f"    Driver: {driver}")
+            # SESSION 4B.21 ITEM 3(b) — "Why:" CLAIMED THIS WAS THE REASON.
+            #
+            # It is a transcription of the record's `driver` field, and the
+            # third seam of a class fixed twice already (4B.5 CU3 at the
+            # assembler, 4B.13 at the lead). Under a lead that had just said
+            # "there was no alternative to weigh", the chain read "Why: the
+            # machine was busy with other work" — two incompatible reasons for
+            # one placement, one line apart, each in the product's own voice.
+            #
+            # The label now claims only what is checkable: this is the driver
+            # code the assignment Decision carries. A bare DRIVER_PHRASING
+            # clause is not an explanation and no longer poses as one.
+            lines.append(f"    Recorded driver: {phrase}" if phrase
+                         else f"    Recorded driver: {driver}")
+            if driver_superseded:
+                # The lead was computed from the solved occupancy and the
+                # capability registry; the code above is what the extractor
+                # attributed. Where they disagree the reader is told which is
+                # which rather than left to reconcile two sentences.
+                lines.append(
+                    "    (the sentence above this chain is computed from the "
+                    "solved occupancy and supersedes this code)")
             if basis == "reconstructed":
                 lines.append(
                     "    Note: This is a reconstruction from the solved schedule."
@@ -2766,8 +2979,12 @@ class TemplateRenderer:
                              f"machine(s) recorded ({len(alts)} in all).")
 
         else:
+            # Same relabelling as the ASSIGNMENT branch above, for the same
+            # reason: this is the record's driver field, not an explanation
+            # anyone composed for this question.
             phrase = driver_phrase(driver)
-            lines.append(f"    Reason: {phrase}" if phrase else f"    Driver: {driver}")
+            lines.append(f"    Recorded driver: {phrase}" if phrase
+                         else f"    Recorded driver: {driver}")
             # CU6 — an INTERPRETATION decision's message is internal identity
             # plumbing ("identity_v1: demand <uuid> -> 1 WorkPackage"); it says
             # nothing a planner needs and only leaks jargon. Render a message
@@ -2841,6 +3058,10 @@ class LLMRenderer:
         self._client = None
         self._available = False
         self._fallback_reason = ""
+        #: Item 5(a) — the last fail-closed render's INTERNAL reasons, kept off
+        #: the answer surface. A dev view, the question ledger or a test reads
+        #: them; a planner never does.
+        self.last_diagnostics: list[str] = []
         if _client is not None:
             self._client = _client
             self._available = True
@@ -3055,8 +3276,12 @@ class LLMRenderer:
             return (_append_take(text, bundle)
                     + f"\n[rendered by: LLM ({self._model}) | register: testimony]")
         except Exception as exc:  # noqa: BLE001 — render must never raise
-            return self._template_fallback(
-                bundle, f"LLM error: {type(exc).__name__}", "testimony")
+            # Item 5(a): the exception CLASS NAME was the planner-visible
+            # reason. It is now on `last_diagnostics`; the surface states the
+            # part that bears on the answer they are reading.
+            self.last_diagnostics = [f"LLM error: {type(exc).__name__}"]
+            _LOG.debug("validated render failed", exc_info=True)
+            return self._template_fallback(bundle, MODEL_UNAVAILABLE, "testimony")
 
     def _validated_template_fallback(self, bundle: ExplanationBundle,
                                      issues: list[str]) -> str:
@@ -3065,10 +3290,28 @@ class LLMRenderer:
         One implementation, so a new check can never fall back differently from an
         old one (Session 4B.5 CU3b factored this out of ``render``)."""
         body = TemplateRenderer()._render_body(bundle)
-        warn = "[LLM validation failed: {}; fell back to template]".format(
-            "; ".join(issues[:2]))
-        return (body + "\n" + warn
-                + "\n[rendered by: template (LLM validated) | register: testimony]")
+        # SESSION 4B.21 ITEM 5(a) — THE VERDICT WAS DEVELOPER OUTPUT AND IT
+        # REACHED THE PLANNER. This used to print, verbatim, above the answer:
+        #
+        #     [LLM validation failed: vacuous causal answer: names no driver,
+        #      no entity beyond the question's own subjects, and no quantity;
+        #      fell back to template]
+        #
+        # The tripwire firing is correct and the fallback is correct. Printing
+        # an internal check's reasoning to a planner is not: it is written for
+        # whoever maintains the check, it names mechanisms that mean nothing at
+        # a plant, and it landed on the one answer that already contradicted
+        # itself (4B.17's A5).
+        #
+        # What a planner needs from this line is ONE fact — the answer they are
+        # reading is the deterministic template, not the model's prose — and
+        # the rendered-by footer states it. The verdict is kept on
+        # `last_diagnostics` for the dev surfaces and logged. Routed, not
+        # deleted.
+        self.last_diagnostics = list(issues)
+        _LOG.debug("validated render rejected (%s): %s",
+                   bundle.subject_type, "; ".join(issues[:2]))
+        return body + "\n" + DRAFT_REJECTED_FOOTER.format(register="testimony")
 
     def _render_register(self, bundle: ExplanationBundle) -> str:
         """Remediation / judgment-triage register (handoff §3): the deterministic
@@ -3111,13 +3354,20 @@ class LLMRenderer:
             )
             text = self._call_llm(prompt)
             if unverifiable_numbers(text, allowed):
-                return (body + "\n[LLM validation failed: invented a value; fell "
-                        f"back to authored text]\n[rendered by: template (LLM "
-                        f"validated) | register: {register}]")
+                # Item 5(a), same routing: the planner is told the authored
+                # text is what they are reading; "invented a value" is a note
+                # to whoever maintains the check.
+                self.last_diagnostics = [
+                    "invented a value not present in the authored source"]
+                _LOG.debug("register render rejected: invented a value")
+                return body + "\n" + DRAFT_REJECTED_FOOTER.format(
+                    register=register)
             return text + f"\n[rendered by: LLM ({self._model}) | register: {register}]"
         except Exception as exc:  # noqa: BLE001 — register render must never raise
-            return (body + f"\n[LLM error: {type(exc).__name__}; fell back to "
-                    f"authored text]\n[rendered by: template (LLM error) "
+            # Item 5(a): a Python exception class name is not planner content.
+            self.last_diagnostics = [f"LLM error: {type(exc).__name__}"]
+            _LOG.debug("register render failed", exc_info=True)
+            return (body + f"\n[rendered by: template — {MODEL_UNAVAILABLE} "
                     f"| register: {register}]")
 
     def render_judgment(self, question: str, history: Any, fallback_bundle: ExplanationBundle) -> str:
@@ -3137,8 +3387,11 @@ class LLMRenderer:
             return text + f"\n[rendered by: LLM ({self._model}) | register: judgment]"
         except Exception as exc:  # noqa: BLE001 — judgment render must never raise
             body = TemplateRenderer()._render_body(fallback_bundle)
-            return (body + f"\n[LLM error: {type(exc).__name__}; fell back to "
-                    "template]\n[rendered by: template (LLM error) | register: testimony]")
+            # Item 5(a): routed, not printed.
+            self.last_diagnostics = [f"LLM error: {type(exc).__name__}"]
+            _LOG.debug("judgment render failed", exc_info=True)
+            return (body + f"\n[rendered by: template — {MODEL_UNAVAILABLE} "
+                    "| register: testimony]")
 
     def _build_prompt_material(
         self,

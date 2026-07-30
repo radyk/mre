@@ -690,7 +690,8 @@ class Explainer:
         if route_id == "certificate-testimony":
             return self._explain_data_problems(entity_ref=params.get("order"))
         if route_id == "excluded-orders":
-            return self._explain_excluded_orders(q, params.get("order"))
+            return self._explain_excluded_orders(q, params.get("order"),
+                                                 params.get("document"))
         if route_id == "briefing":
             return self._explain_briefing(q, params.get("document"))
         if route_id == "advice":
@@ -721,7 +722,7 @@ class Explainer:
         if route_id == "maintenance":
             return self._explain_maintenance(q)
         if route_id == "inventory":
-            return self._explain_inventory(q)
+            return self._explain_inventory(q, params.get("document"))
         if route_id == "integrity-check":
             return self._explain_integrity(q, params.get("machine"))
         if route_id == "order-attributes":
@@ -775,9 +776,15 @@ class Explainer:
         if route_id == "late-orders":
             return self._list_late_orders(params.get("document"))
         if route_id == "lateness-cause":
-            return self._explain_lateness_cause(q)
+            return self._explain_lateness_cause(q, params.get("document"))
         if route_id == "why-on-machine":
-            return self._explain_why_on_machine(params["order"], params["machine"])
+            # Session 4B.21 Item 3 — the OPERATION reaches the assembler. The
+            # taxonomy's params are (order, machine); a question that named
+            # "op20" had that word dropped at the dispatch, so the chain could
+            # only ever be assembled for the whole order.
+            return self._explain_why_on_machine(
+                params["order"], params["machine"], params.get("op_seq"),
+                params.get("asked_question") or q)
         if route_id == "data-problems":
             return self._explain_data_problems()
         if route_id == "version-diff":
@@ -1086,7 +1093,8 @@ class Explainer:
             identity_map=self._identity_map,
         )
 
-    def _explain_lateness_cause(self, question: str) -> ExplanationBundle:
+    def _explain_lateness_cause(self, question: str,
+                                document: Any = None) -> ExplanationBundle:
         """THE PROMOTED ROUTE (R-AI5(7), Session 4A.5c) — the cause mix across the
         late set. Authority: docs/promotions/aggregate-lateness-2026-07-26.md.
 
@@ -1114,18 +1122,23 @@ class Explainer:
             not become true by being assembled deterministically — promoting a take
             into testimony would be worse than not promoting at all.
         """
-        late_bundle = self._list_late_orders()
+        late_bundle = self._list_late_orders(document)
         kf = late_bundle.key_facts
         late_count = int(kf.get("late_count", 0) or 0)
         records = list(late_bundle.ordered_records)
 
-        # The whole book, so "N of M" is enumerable rather than sampled.
-        total_orders = 0
-        if self._reader is not None:
-            try:
-                total_orders = sum(1 for _ in self._reader.iter_entities("demand"))
-            except Exception:  # noqa: BLE001 — a count is never worth a raise
-                total_orders = 0
+        # THE DENOMINATOR NAMES ITS SET (Session 4B.21). This was the count of
+        # every KNOWN demand, and the copy built on it said "the other 39
+        # finish on time or early" — asserted of 14 orders that have no
+        # completion date at all. Lateness is a property of a PLACEMENT, so the
+        # denominator for any lateness ratio is the SCHEDULED set; the
+        # unscheduled ones are reported separately and never folded in.
+        from mre.modules.order_disposition import census
+
+        disp = census(self, document)
+        scheduled_orders = disp.scheduled_orders
+        beyond_orders = disp.beyond_horizon_orders
+        total_orders = disp.known_orders
 
         # Per late order: the driver the assignment recorded and the concrete
         # blocked-by fact from the solved occupancy.
@@ -1183,8 +1196,14 @@ class Explainer:
             ordered_records=records,
             key_facts={
                 "late_count": late_count,
+                # `total_orders` keeps its NAME (the exam bank and two AI-voice
+                # tests read it) and keeps meaning the KNOWN set — what changed
+                # is that no sentence is built on it any more. The lateness
+                # ratio is spoken over `scheduled_order_count`.
                 "total_orders": total_orders,
-                "on_time_count": max(0, total_orders - late_count) if total_orders else None,
+                "scheduled_order_count": scheduled_orders,
+                "beyond_horizon_order_count": beyond_orders,
+                "on_time_count": max(0, scheduled_orders - late_count),
                 # The premise check. A route that answers "why are so many late" on
                 # a plan with 0 or 1 late orders must lead with that fact.
                 "premise_holds": late_count > 1,
@@ -1369,7 +1388,9 @@ class Explainer:
             identity_map=self._identity_map,
         )
 
-    def _explain_why_on_machine(self, wo_ref: str, machine_ref: str) -> ExplanationBundle:
+    def _explain_why_on_machine(self, wo_ref: str, machine_ref: str,
+                                op_seq: Optional[int] = None,
+                                asked_question: str = "") -> ExplanationBundle:
         demand_id = self._resolve_wo(wo_ref)
         if demand_id is None:
             return self._unknown(f"Why is {wo_ref} on {machine_ref}?", wo_ref, "demand")
@@ -1418,13 +1439,57 @@ class Explainer:
             refs = self._identity_map.external_refs(rid)
             return (refs[0].value if refs else "").upper()
 
-        ranked = assignment_records
-        if target_machine:
-            on_machine = [r for r in assignment_records
-                          if _decision_machine(r) == target_machine]
-            if on_machine:
-                ranked = on_machine + [r for r in assignment_records
-                                       if r not in on_machine]
+        # ------------------------------------------------------------------
+        # SESSION 4B.21 ITEM 3 — THE CHAIN IS SCOPED TO THE OPERATION THE LEAD
+        # IS ABOUT. 4B.13 fixed WHICH decision the lead reads; the chain kept
+        # every assignment Decision of the whole ORDER, merely REORDERED so the
+        # named machine came first. Measured on the pinned world, asked "why is
+        # ORD-000013 op20 on PAINT-01":
+        #
+        #   LEAD     "...the only machine qualified to run this step — there
+        #             was no alternative to weigh"      (op20, PAINT-01)
+        #   CHAIN[2]  assigned to CUT-01, carrying CUT-02 at $21.30 and CUT-03
+        #             at $49.70                          (op10 — a DIFFERENT op)
+        #   FOOTER   "alternatives weighed: CUT-02, CUT-03"
+        #
+        # Two scopes in one answer, and the wider one supplied the footer (the
+        # cockpit builds it from `ordered_records`, api/app.py
+        # `_cited_refs_from_bundle`). So the lead said there was nothing to
+        # weigh while the answer's own furniture priced two alternatives —
+        # neither of which is eligible for the operation asked about.
+        #
+        # ONE LIST, ONE SCOPE. Everything downstream — chain, cited refs, lit
+        # bars, glowed alternative lanes — derives from `ordered_records`, so
+        # scoping it here fixes all four at once and none of them can drift
+        # apart again.
+        matched = [r for r in assignment_records
+                   if _decision_machine(r) == target_machine] if target_machine \
+            else []
+        # An operation named in the question ("op20") narrows further: an order
+        # can have two steps on the same machine.
+        if op_seq is not None and matched:
+            by_seq = [r for r in matched
+                      if self._decision_op_seq(r) == int(op_seq)]
+            if by_seq:
+                matched = by_seq
+        elif op_seq is None and asked_question and matched:
+            from mre.modules.attribute_lookup import op_seq_in
+            asked_seq = op_seq_in(asked_question)
+            if asked_seq is not None:
+                by_seq = [r for r in matched
+                          if self._decision_op_seq(r) == asked_seq]
+                if by_seq:
+                    matched, op_seq = by_seq, asked_seq
+
+        # The order's OTHER steps are not evidence for this lead. They are not
+        # dropped silently — the count and where to ask about them is stated —
+        # but they leave the citation list entirely.
+        other_steps = [r for r in assignment_records if r not in matched]
+        ranked = matched or assignment_records
+        # `ranked is assignment_records` means nothing matched the named
+        # machine: the fallback is the old order-wide behaviour, and the answer
+        # must not then claim a scope it does not have.
+        scoped_to_operation = bool(matched)
 
         cause = None
         driver_code = None
@@ -1476,7 +1541,19 @@ class Explainer:
             key_facts={"machine_ref": machine_ref, "cause": cause,
                        "order": wo_ref, "driver_code": driver_code,
                        "blocked_alternatives": blocked_alternatives,
-                       "only_option": only_option},
+                       "only_option": only_option,
+                       # Item 3: what this answer is about, and what it left
+                       # out. The renderer states both; a chain that quietly
+                       # narrowed is as misleading as one that quietly widened.
+                       "op_seq": op_seq,
+                       "scoped_to_operation": scoped_to_operation,
+                       "other_step_count": len(other_steps) if scoped_to_operation
+                       else 0,
+                       # Item 3(c): the alternatives THIS operation's own
+                       # decision recorded. The lead may not say "no
+                       # alternative to weigh" while this is non-empty.
+                       "recorded_alternative_count": sum(
+                           len(r.get("alternatives") or []) for r in ranked)},
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )
@@ -1619,7 +1696,8 @@ class Explainer:
         )
 
     def _explain_excluded_orders(self, question: str,
-                                 order: Optional[str] = None) -> ExplanationBundle:
+                                 order: Optional[str] = None,
+                                 document: Any = None) -> ExplanationBundle:
         """The excluded-orders story (Session 4.5 CU4): enumerate every order
         dropped from the plan and why — a finding with disposition ``excluded``
         or ``blocked``, from ANY layer (gate rule, adapter, validator). The
@@ -1642,6 +1720,14 @@ class Explainer:
             f for f in self._index.all_findings()
             if f.get("disposition") in ("excluded", "blocked")
         ]
+        # Session 4B.21: the beyond-horizon count, when a document reached this
+        # route. None (not 0) without one, and None on a monolithic board —
+        # absent and zero are different claims, and the renderer says nothing
+        # rather than guessing which.
+        _beyond_count = None
+        if document is not None:
+            from mre.modules.order_disposition import census
+            _beyond_count = census(self, document).beyond_horizon_orders
         subject_of_interest = None
         if order:
             subject_of_interest = self.resolve_order_value(order) or order
@@ -1714,6 +1800,14 @@ class Explainer:
             key_facts={
                 "excluded_orders": orders,
                 "excluded_count": len(orders),
+                # Session 4B.21 — THE OTHER DISPOSITION, so a clean-submission
+                # answer cannot read as "nothing is missing from the schedule".
+                # Measured live: "why are some orders missing from the schedule
+                # entirely" returned "No data-quality problems — the submission
+                # is clean" on a board where 14 orders have no placement. Both
+                # sentences are true; only one of them is about what was asked,
+                # and the answer named neither set.
+                "beyond_horizon_order_count": _beyond_count,
                 "codes": sorted({o["code"] for o in orders}),
                 # CU4(d): the named order, so the renderer can say "ORD-14 was
                 # NOT excluded" rather than falling through to the clean-submission
@@ -2363,22 +2457,27 @@ class Explainer:
             identity_map=self._identity_map,
         )
 
-    def _explain_inventory(self, question: str) -> ExplanationBundle:
-        """Counts + splits (CU5): how many orders are scheduled, how many
-        operations, how many split across a pause, how many late."""
+    def _explain_inventory(self, question: str,
+                           document: Any = None) -> ExplanationBundle:
+        """Counts + splits (CU5), EACH NAMING THE SET IT COUNTS.
+
+        Session 4B.21. This route used to emit `order_count` (the 40 KNOWN
+        demands) beside `operation_count` (the 56 PLACED operations, of 88
+        declared) and `splittable_op_count` (3 of the 88, one with no
+        placement), and the renderer joined them with the word "scheduled".
+        Three denominators in three adjacent sentences, none of them named,
+        and a fourth set — the 26 with a projected completion — silently
+        quantified over by "Every order finishes on time."
+
+        The counts now come from ONE place (`order_disposition.census`), where
+        each field states its disposition, so this assembler cannot pick a
+        denominator and the renderer cannot fuse two."""
         if self._reader is None:
             return self._unknown_question(question)
-        demands = list(self._reader.iter_entities("demand"))
-        ops = list(self._reader.iter_entities("operation"))
-        split_ops = [o for o in ops if o.get("splittable")]
-        # a split job actually splits when its assignment has >1 run window
-        split_orders: set[str] = set()
-        for r in self._load_enriched_assignments():
-            if len(r.get("service_outcomes", {})) or True:
-                pass
-        # count from schedule rows: an order appearing on >1 row for the same op seq
-        rows = self._load_enriched_assignments()
-        late = self._list_late_orders().key_facts.get("late_count", 0)
+        from mre.modules.order_disposition import census
+
+        d = census(self, document)
+        late = self._list_late_orders(document).key_facts.get("late_count", 0)
         return ExplanationBundle(
             question=question or "How many orders are in the plan?",
             subject_id=self._snap_id,
@@ -2386,9 +2485,23 @@ class Explainer:
             subject_external_name="the plan",
             ordered_records=[],
             key_facts={
-                "order_count": len(demands),
-                "operation_count": len(rows),
-                "splittable_op_count": len(split_ops),
+                # THE DISPOSITIONS, each named. `order_count` and
+                # `operation_count` are kept because four AI-voice tests and
+                # the exam bank read them, but they now carry the figure whose
+                # NAME they always implied: the known set and the placed set.
+                "known_order_count": d.known_orders,
+                "scheduled_order_count": d.scheduled_orders,
+                "beyond_horizon_order_count": d.beyond_horizon_orders,
+                "excluded_order_count": d.excluded_orders,
+                "placed_operation_count": d.placed_operations,
+                "declared_operation_count": d.declared_operations,
+                "splittable_declared_count": d.splittable_declared,
+                "splittable_placed_count": d.splittable_placed,
+                "dispositions_partition": d.partitions(),
+                "rolling": d.rolling,
+                "order_count": d.known_orders,
+                "operation_count": d.placed_operations,
+                "splittable_op_count": d.splittable_declared,
                 "late_count": late,
                 "excluded_summary": self._excluded_summary(),
             },
@@ -2661,6 +2774,32 @@ class Explainer:
             return []
         return [r for r in recs if r.get("record_type") == "decision"
                 and r.get("decision_type") == "assignment"]
+
+    def _decision_op_seq(self, rec: dict) -> Optional[int]:
+        """The op_seq of the operation an assignment Decision is about.
+
+        Session 4B.21 Item 3. The record names its operation by canonical id in
+        `subjects`; the sequence number a planner types ("op20") lives on the
+        Operation entity. Returns None when the record has no operation subject
+        or the snapshot cannot be read — a scope that cannot be established is
+        never guessed at."""
+        if self._reader is None:
+            return None
+        for s in rec.get("subjects", []) or []:
+            if s.get("entity_type") != "operation":
+                continue
+            try:
+                op = self._reader.get_entity(s.get("entity_id")) or {}
+            except Exception:  # noqa: BLE001
+                return None
+            seq = op.get("op_seq") if isinstance(op, dict) else None
+            if seq is None and isinstance(op, dict):
+                seq = op.get("sequence")
+            try:
+                return int(seq) if seq is not None else None
+            except (TypeError, ValueError):
+                return None
+        return None
 
     def _assignment_records_for_ops(self, op_ids: set[str],
                                     demand_ids: set[str]) -> list[dict]:

@@ -377,7 +377,11 @@ class TestTheAnswer:
     def test_it_states_the_scope_of_everything_below_it(self, ex):
         text = TemplateRenderer().render(
             ex.route("briefing", {"question": "q", "document": _document()}))
-        assert "2 orders on 2 machines over 2026-01-05 to 2026-01-19" in text
+        # Session 4B.21: the word "scheduled" is load-bearing. This figure is
+        # the PLACED order count; `inventory` reports the KNOWN one, and a
+        # planner reading both had nothing on either surface naming the sets.
+        assert ("2 scheduled orders on 2 machines over 2026-01-05 to 2026-01-19"
+                in text)
 
     def test_a_clean_board_is_TOLD_it_is_clean(self):
         """"Three things, and none of them are on fire" — rendered. A silence

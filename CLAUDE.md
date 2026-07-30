@@ -158,12 +158,57 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.20 — working time is not elapsed span**, 2026-07-30 (docs/07 v2.66,
-§5a.67-70; docs/04 ruling; narrative in `docs/closeouts/4B.20.md`). Before it:
+**Session 4B.21 — one board, contradictory answers**, 2026-07-30 (docs/07 v2.67,
+§5a.71-78; docs/04 ruling; narrative in `docs/closeouts/4B.21.md`). Before it:
+4B.20 (v2.66, §5a.67-70),
 4B.19 (v2.65, §5a.64-66), 4B.18 (v2.64, §5a.63), 4B.17 (v2.63, §5a.54-62),
 4B.16 (v2.61, §5a.49-50), 4B.15 (v2.59, §5a.39-45), 4B.14 (v2.58, §5a.34-38),
 4B.13 (v2.57), 4B.12 (v2.56, a MEASUREMENT session), 4B.11 (v2.55, **R-PD1
 verbatim**).
+
+**A COUNT NAMES THE DISPOSITION IT COUNTS (4B.21, §5a.71 — 4B.17's A5
+DISCHARGED).** "Orders" alone is not a disposition: known, scheduled, committed,
+active-window, beyond-horizon and excluded are different sets and a surface
+reporting one says WHICH. **A PREDICATE ASSERTED OVER A COUNT MUST APPLY TO
+EVERY MEMBER OF THE SET COUNTED** — where it does not the set is SPLIT and each
+part reported with the predicate that applies. Two clauses added: adjacent
+counts share a denominator or name their own; where the dispositions do not
+partition the known set the surface **says so and states no total** (4B.18's
+`unreadable` again). `inventory` said *"40 order(s) are in the plan, scheduled
+across 56 operation(s) … Every order finishes on time"* on a board of **40
+known / 26 scheduled / 14 beyond-horizon / 56 placed of 88 declared** — three
+denominators in three lines — while the opener said 26, the tray said 14, and
+the toolbox's `lateness_set` note stated the split correctly. **THE SURFACE THAT
+WAS RIGHT IS THE ONE NOBODY READS.** Census: 542 raw sites → 253 candidates → 8
+defects, plus a separate UNIVERSAL sweep (38 planner-facing, 15 with a
+placement-presupposing predicate, 3 defects) because the sharpest specimen
+carries no number. Fix: ONE definition, `order_disposition.census`, every field
+naming its set, read by seven surfaces. Guard: agreement + prose, 10 tests,
+premise test, **two negative controls red on opposite halves**, limit in the
+docstring. **§5a.72: THIS IS THE FIFTH CATEGORY FUSION IN SIX SESSIONS** (delta
+card 4B.5, `lateness_set` 4B.13, `CostProof` 4B.18, working-time 4B.20,
+`inventory` 4B.21) and docs/04 names the mechanism: **a name written once, by
+whoever needed a number, and never re-read as a claim.** **§5a.78: THE GUARD WAS
+GREEN WHILE THE LIVE PATH WAS BROKEN** — every test supplies its own document;
+the ask path injects one from an intent ALLOW-LIST `inventory` was not on. A
+guard that supplies its own arguments proves the assembler, not the path.
+**A5 (§5a.73):** the chain was assembled for the ORDER and the lead computed for
+the OPERATION — *"no alternative to weigh"* over a chain entry for a DIFFERENT
+op pricing two. Scoping ONE list (`ordered_records`) fixes chain, cited refs,
+lit bars and the cockpit footer together; `why-on-machine` now takes an
+`op_seq`. The driver-phrase-as-whole-clause census found seven sites and the two
+RENDERER ones now read **"Recorded driver:"** — *"Why:"* claimed to be the
+reason. **§5a.74: A CONTRACT TERM THAT IS ALSO AN ORDINARY WORD WAS DEFINED IN
+NO REACHABLE DOCUMENT** — synthesis called the 14 beyond-horizon orders *"inside
+this plan's horizon … left out of the schedule itself"* because "horizon" means
+the date extent in English; `"committed"` retrieved ZERO corpus passages.
+docs/01 **§6.10** now states the four dispositions and the everyday senses that
+mislead (free — docs/01 is already CURRENT tier); `synthesis_prompt.md` **v5**
+rule 12. **NOT FIXED, named:** *"what does it mean that work is beyond the
+horizon"* parses to `coaching`, which lists nine submission fields (§5a.75 —
+§5a.69's shape again); drill-down anaphora is a context-ladder change (§5a.77);
+three prose sites still print raw minutes, deliberately, for R-PD1 clause (4)
+comparability (§5a.76).
 
 **WORKING TIME AND ELAPSED SPAN ARE DIFFERENT QUANTITIES AND ARE NEVER
 INTERCHANGEABLE (4B.20, §5a.67 — §5a.56 DISCHARGED).** Any surface reporting one
@@ -712,6 +757,24 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
 
 **Small carry-forwards (do not lose):**
 
+- 4B.21 findings (docs/07 §5a.75-78 — REPORTED, deliberately NOT fixed):
+  **TWO DISPOSITION QUESTIONS ARE CLAIMED BY ROUTES THAT DO NOT ANSWER THEM** —
+  *"are the fourteen orders with no placement a problem I should act on"* goes
+  to `coarse-fit`, and *"what does it mean that work is beyond the horizon"* to
+  `coaching`, which replies *"I don't recognize which capability you mean"* and
+  lists nine submission fields. Both vocabulary calls. (The third of the three,
+  `excluded-orders` answering *"no data-quality problems"* to *"why are some
+  orders missing from the schedule entirely"*, WAS fixed.)
+  **DRILL-DOWN ANAPHORA** — *"show me the evidence for that"* after a contracted
+  answer returns *"I don't have a claim of my own open to ground"*, because
+  `SynthesisMemory` remembers synthesis answers ONLY and a route's
+  `ordered_records` never enter session memory. A context-ladder change.
+  **THREE PROSE SITES STILL PRINT RAW MINUTES** (the challenge route, the swap
+  take, `rolling_questions`' lateness clause) — left because R-PD1 clause (4)
+  states the floor and the controllable part in the SAME unit for comparability.
+  **THE `deaf` RIDER FIRES WHEN SIX QUESTIONS ARE ASKED IN ONE SESSION** and two
+  legitimately share a route — visible in this session's own verification run.
+  §5a.58's boundary, unchanged.
 - 4B.20 findings (docs/07 §5a.68-70 — REPORTED, deliberately NOT fixed):
   **THE `machine-schedule` ROUTE ANSWERS "how busy" WITH AN ENUMERATION** —
   18 placements, no utilisation figure; the number now exists on the toolbox
@@ -775,7 +838,7 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   of one question) — humble rather than wrong, but distinguishing "one answer
   because I am confused" from "one answer because it IS the answer" needs a
   signal this session does not have.
-  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, ~65k after it. Compression was out of scope for all three; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, ~70k after it. Compression was out of scope for all three; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
   **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
   day-shift restriction answered as C1/C2 "proven end to end" when the item is
   C4 (model-proven, §8 doorway). Caught and pinned; the class stands.

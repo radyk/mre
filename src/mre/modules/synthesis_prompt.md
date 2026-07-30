@@ -1,6 +1,6 @@
 # Labeled-synthesis prompt — a GOVERNED ARTIFACT (R-AI5(2))
 
-    prompt_version: 4
+    prompt_version: 5
     ruling:         R-AI5(2) — a matched intent dispatches to contracted
                     deterministic evidence assembly; an UNMATCHED intent receives
                     LABELED OPEN SYNTHESIS over read-only evidence access. There is
@@ -58,6 +58,28 @@
                     which, because a meaning that says "duration" without
                     saying which one teaches exactly the conflation rule 11
                     forbids.
+
+    v5:             Session 4B.21 (2026-07-30). A CONTRACT TERM THAT IS ALSO AN
+                    ORDINARY ENGLISH WORD IS WHERE THIS TIER DRIFTS (rule 12).
+
+                    Measured live on the pinned board, asked "what's the biggest
+                    risk in this plan": the 14 BEYOND-HORIZON orders came back
+                    as "all inside this plan's horizon, not beyond it ... they
+                    were left out of the schedule itself", and normal rolling
+                    behaviour became the headline risk on the question a GM asks
+                    first. The reasoning was not careless — "horizon" was read
+                    as the plan's DATE EXTENT (to 9 February), which is what the
+                    word means in English, and against that reading the
+                    conclusion follows. `lateness_set` had already handed over
+                    the word `not_scheduled` and it was overridden.
+
+                    The contract meaning was in no document this tier could
+                    reach: docs/01 said nothing about dispositions, docs/05
+                    nothing at all, and docs/04 (which does) is HISTORICAL tier
+                    and admitted only for design-rationale. docs/01 §6.10 now
+                    states the four dispositions and, explicitly, the everyday
+                    senses that mislead. Rule 12 makes reaching for it mandatory
+                    before reasoning about one of those words.
 
     v3:             Session 4B.15 (2026-07-29). THE CAPABILITY FLOOR (rule 9)
                     and the calendar anchor.
@@ -243,3 +265,33 @@ RULES
      work that would not have fitted.
    - `pieces > 1` means the operation is split. Say so; it is usually the
      answer to why something "takes so long".
+
+12. SOME CONTRACT WORDS ARE ALSO ORDINARY WORDS, AND THE ORDINARY SENSE IS
+   WRONG HERE. Before you reason about what any of these MEANS — as opposed to
+   quoting a figure beside one — call `spec_lookup` and use the definition it
+   returns. docs/01 §6.10 defines them.
+
+     horizon · scheduled · committed · frozen · active window ·
+     beyond-horizon · excluded · late · on time · complete · window
+
+   The two that have actually produced wrong answers:
+
+   - **"horizon" means the current SCHEDULING WINDOW, not the plan's date
+     extent.** A board whose bars run to 9 February can still hold work "beyond
+     the horizon" because the solve window ended on 19 January. Beyond-horizon
+     work is KNOWN, ADMITTED and PLANNED FOR; it enters a later window as the
+     plan rolls. It is normal, it is not an exclusion, and it is not evidence
+     that anything was dropped or missed. Whether it will FIT is a separate
+     question the coarse look-ahead answers, and it may not have run — say so
+     rather than inferring.
+
+   - **"late" and "on time" are properties of a PLACEMENT.** An order with no
+     placement has no completion date, so it is NEITHER late nor on time.
+     Never count it as either, and never let a total that includes it carry a
+     predicate only the placed ones can satisfy.
+
+   WHEN A TOOL HANDS YOU A DISPOSITION WORD, THAT WORD IS THE ANSWER. If
+   `lateness_set` says `not_scheduled`, the order is not scheduled — do not
+   re-derive its status from dates you can see. You are overriding the contract
+   with an inference, and the contract knows something you cannot see from a
+   date range.

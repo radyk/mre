@@ -1431,7 +1431,7 @@ class TestLLMTestimonyValidation:
         ])
         renderer = LLMRenderer(_client=seq)
         text = renderer.render(bundle)
-        assert "LLM validation failed" in text
+        assert "template (model draft rejected)" in text  # 4B.21 Item 5(a)
         assert "register: testimony" in text
 
     def test_bad_first_good_second_passes(self):
@@ -1445,7 +1445,7 @@ class TestLLMTestimonyValidation:
         ])
         renderer = LLMRenderer(_client=seq)
         text = renderer.render(bundle)
-        assert "LLM validation failed" not in text
+        assert "template (model draft rejected)" not in text  # 4B.21 Item 5(a)
         assert "2026-07-14 14:00 UTC" in text
         assert "register: testimony" in text
 
@@ -1597,7 +1597,7 @@ class TestLLMTestimonyValidation:
         )
         renderer = LLMRenderer(_client=FakeLLMClient(good_response))
         result = renderer.render(bundle)
-        assert "LLM validation failed" not in result
+        assert "template (model draft rejected)" not in result  # 4B.21 Item 5(a)
         assert "register: testimony" in result
 
     # --- integration: single-source-of-truth render path ---
@@ -1618,7 +1618,7 @@ class TestLLMTestimonyValidation:
         )
         renderer = LLMRenderer(_client=fake)
         result = renderer.render(bundle)
-        assert "LLM validation failed" not in result, result
+        assert "template (model draft rejected)" not in result, result  # 4B.21
         assert "register: testimony" in result
 
     def test_timestamp_absent_from_prompt_triggers_fallback(self):
@@ -1632,7 +1632,7 @@ class TestLLMTestimonyValidation:
         ])
         renderer = LLMRenderer(_client=seq)
         result = renderer.render(bundle)
-        assert "LLM validation failed" in result
+        assert "template (model draft rejected)" in result  # 4B.21 Item 5(a)
         assert "register: testimony" in result
 
     def test_build_prompt_material_known_sets_contain_prompt_values(self):

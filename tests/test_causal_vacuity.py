@@ -194,10 +194,18 @@ class _StubLLM(LLMRenderer):
 
 
 def test_a_vacuous_llm_answer_on_a_causal_route_falls_back_to_the_template():
-    out = _StubLLM("It is placed there because of how the schedule worked out."
-                   ).render(_causal_bundle("the machine was busy with other work"))
-    assert "vacuous causal answer" in out
-    assert "rendered by: template (LLM validated)" in out
+    r = _StubLLM("It is placed there because of how the schedule worked out.")
+    out = r.render(_causal_bundle("the machine was busy with other work"))
+    # Session 4B.21 Item 5(a): the tripwire's own verdict left the ANSWER
+    # SURFACE — it was developer output on a planner's screen — and the
+    # rendered-by tag was renamed, because "template (LLM validated)" read as
+    # though the model had validated the answer when it meant the opposite.
+    # The verdict is still produced and still checked; it now lives where a
+    # dev surface reads it.
+    assert "vacuous causal answer" in " ".join(r.last_diagnostics)
+    assert "vacuous causal answer" not in out, (
+        "the check's internal verdict is back on the planner's surface")
+    assert "rendered by: template (model draft rejected)" in out
     # the template body — the thing composed from the evidence — is what ships
     assert "PAINT-02" in out
 

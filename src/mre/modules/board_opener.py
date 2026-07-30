@@ -54,6 +54,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+from mre.modules.planner_language import elapsed_minutes
+
 #: Utilization at or above which a machine is worth naming, and at or below
 #: which an eligible alternative counts as idle. Authored thresholds, stated
 #: here rather than buried: a "concentration" is only a finding when the work
@@ -109,20 +111,9 @@ def _money(x: Optional[float]) -> str:
     return f"{x:,.2f}" if x is not None else "?"
 
 
-def _elapsed(m: Optional[float]) -> str:
-    """CALENDAR minutes — a lateness or a slack. Days are meaningful here: "6d
-    15h late" is wall-clock, which is the unit a due date is in."""
-    if m is None:
-        return "?"
-    m = int(round(float(m)))
-    if abs(m) < 60:
-        return f"{m}m"
-    h, r = divmod(abs(m), 60)
-    sign = "-" if m < 0 else ""
-    if h < 48:
-        return sign + (f"{h}h" if not r else f"{h}h{r:02d}m")
-    d, rh = divmod(h, 24)
-    return sign + (f"{d}d" if not rh else f"{d}d {rh}h")
+#: Session 4B.21 Item 5(b) — this body moved to ``planner_language`` so the
+#: schedule listing can share it. The opener's output is byte-unchanged.
+_elapsed = elapsed_minutes
 
 
 def _work(m: Optional[float]) -> str:

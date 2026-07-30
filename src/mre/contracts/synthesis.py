@@ -151,7 +151,9 @@ TOOL_MEANINGS: dict[ToolName, str] = {
         "registry, with its spec citations)",
     ToolName.ENTITY_VOCABULARY:
         "the orders, machines and customers that exist in THIS run — ask first if "
-        "you are unsure whether something the planner named is here",
+        "you are unsure whether something the planner named is here. "
+        "summary.known_orders is EVERY order this plan knows about, placed or "
+        "not; it is NOT the number scheduled in this window",
     ToolName.FETCH_RECORD:
         "one evidence record or entity by id, in full",
     ToolName.CONSTRAINT_CATALOG:

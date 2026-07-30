@@ -547,7 +547,13 @@ class EvidenceToolbox:
                           truncated=len(rows) > self.max_rows,
                           enumerates_set=len(rows) <= self.max_rows,
                           note=note,
-                          summary={"orders": len(rows),
+                          # Session 4B.21 — `known_orders`, not `orders`. The
+                          # bare key was the whole book (placed and unplaced
+                          # together) sitting beside two figures that are
+                          # subsets of it, and a reasoner quoting "orders: 40"
+                          # beside the opener's 26 had nothing in either name
+                          # telling it the sets differ.
+                          summary={"known_orders": len(rows),
                                    "scheduled": scheduled_n,
                                    "late": late_n,
                                    "on_time_or_early": scheduled_n - late_n,
@@ -765,7 +771,8 @@ class EvidenceToolbox:
                 {"kind": "customer", "names": sorted(customers), "record_ids": []}]
         return ToolResult(tool=ToolName.ENTITY_VOCABULARY, rows=rows,
                           enumerates_set=True,
-                          summary={"orders": len(orders), "machines": len(machines),
+                          summary={"known_orders": len(orders),
+                                   "machines": len(machines),
                                    "customers": len(customers)})
 
     def _fetch_record(self, ident: str) -> ToolResult:

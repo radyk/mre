@@ -93,7 +93,10 @@ def test_the_order_branch_carries_its_total_too():
     orders = [f"ORD-{i:06d}" for i in range(1, 41)]
     near = _nearest_names("ORD-000099", orders, 6)
     text = _render_unknown("ORD-000099", "order", near, "order_total", len(orders))
-    assert "40 orders in this plan" in text
+    # Session 4B.21: "known" names the SET. This is every order the plan
+    # carries, placed or not; the opener's count on the same board is the
+    # placed subset, and neither surface said which before the ruling.
+    assert "40 known orders in this plan" in text
     assert "Orders I do have include:" not in text
 
 
