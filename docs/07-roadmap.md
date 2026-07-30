@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.65 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.66 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.66:** **Session 4B.20 — working time is not elapsed span** 2026-07-30 (ruling verbatim in docs/04 2026-07-30; narrative in `docs/closeouts/4B.20.md`). 4B.17's **A3, DISCHARGED**; A5 named and LEFT. The FOURTH seam of a class fixed three times, and Item 1 enumerated the class before fixing anything: an AST census by ARITHMETIC, not by name — **408 raw sites → 198 time-quantity bindings → 63 OFFSETS → 135 true durations, of which THREE are wrong and one is latent-wrong.** *"Three and no more"* is the result and it is only credible enumerated. THE RULING: **working time and elapsed span are different quantities and are never interchangeable** — any surface reporting one names WHICH, and (end − start) on a chunked operation is a SPAN. Two clauses added with reasons: **a capacity figure names its denominator** (5821 busy minutes against 1501 of open capacity, 3.9x, with nothing on the surface making it checkable), and **a figure the product derives must be quotable by the surface that derives it**. The truer figure **was already on the row** — `run_min`/`span_min` since 4B.14 — and the toolbox discarded it to recompute the subtraction. `board.js` was RIGHT and right **by a property of the data nothing enforces** (§5a.68); the opener was never affected. **MAKING THE ANSWER TRUER MADE IT UNVERIFIABLE**: a correct claim with four real citations was CUT, because working time lives in no single record (§5a.70). Guard: naming register + value property, 19 tests, premise test, **two negative controls proven red**, and it caught an unclassified field on its first run. Governed artifacts: four `TOOL_MEANINGS`, `synthesis_prompt.md` **v3 → v4** rule 11. §5a.67-70.
 
 **v2.65:** **Session 4B.19 — authored copy that asserts board facts** 2026-07-30 (ruling verbatim in docs/04 2026-07-30; narrative in `docs/closeouts/4B.19.md`). 4B.17's **A1 and A2, both DISCHARGED**; A3 and A5 named and LEFT. Item 1 enumerated the class before fixing anything, per 4B.18's method, and **the class has FIFTEEN members, not the two 4B.17 found by accident** — and the census had to widen its own population, because **the entity slot is NOT the mechanism**: `ROUTE_OFFERS["advice"]` carries no slot and is a member on identical grounds, so **the assertion is the mechanism and the interpolation only makes it vivid**. THE RULING: *an offer label names the question it would answer, never the answer* — a door label is composed before any board read, so a label that asserts is a claim made without evidence by construction, in the product's own voice. Gating each door on a board read was considered and REJECTED with its reason. Fifteen labels rewritten with their usefulness intact; four surfaces enumerated and cleared (`INVITATIONS`, `ROUTE_TAXONOMY.canonical`, the cockpit, `planner_language`). THE SECOND FLOOR: **no truncated list of board entities is presented as complete** — *"The machines here are: "* listed **8 of 15** silently, dropping the machine the asked order was actually on, on the correction path FOR A TYPO. Now nearest-matches + the total, with **pilot density (174 workcenters) the reason for the shape**. Six truncations censused: four already correct, two the defect, three further silent cuts closed. Two guards (12 + 10 tests), each with a premise test and a **negative control proven red out-of-process**. §5a.64-66; the last is Item 4's read-only rider — **nothing reads either of 4B.18's two unverified casualty classes**.
 
@@ -3752,6 +3754,85 @@ eight Artifact records are declared-but-never-consumed at the evidence level**:
 none of the 13 synthesis tools reads them, no route reads them, and the only
 `record_type == "artifact"` read in the source is a **dead assignment**
 (`dq_report.py:39`, `all_prov_records`, never used). Both feed the next brief.
+
+**§5a.67 — WORKING TIME IS NOT ELAPSED SPAN, AND THE CLASS HAS FOUR MEMBERS
+(4B.20 Item 1-3; ruling verbatim in docs/04 2026-07-30). §5a.56 IS DISCHARGED.**
+The census was run by MECHANISM, not by name: an AST walk over `src/` for
+`.total_seconds()`, timestamp subtraction, `timedelta` construction, sums over
+windows, division by a time-ish denominator and unit conversion — then a second
+pass binding every hit to what it is ASSIGNED TO, because a subtraction landing
+in a datetime is a boundary computation, not a duration. **408 raw arithmetic
+sites → 198 bind to a time-quantity name → 63 of those are OFFSETS (an instant
+expressed in minutes from the horizon origin — the solver's entire variable
+space) → 135 are true durations.** Of the 135: **THREE WRONG, all in
+`evidence_tools.py`, all the seam 4B.17 measured**
+(`_placement_row.duration_minutes` feeding THREE tools, and
+`_machine_occupancy`'s `busy_minutes` in both the row and the summary), and
+**ONE LATENT-WRONG** (`board.js`). **"Three and no more" is the result, and it
+is only credible enumerated.** Two near-misses are recorded because both are
+correct *by mechanism rather than by name*:
+`rolling_horizon.compute_manned_idle_metrics` builds occupancy from spans and
+then INTERSECTS with the open windows, which recovers working time; and
+`explainer._opener_load` reads `run_min` rather than a subtraction, so **the
+opener was never affected** — confirmed unchanged by Item 4's regression.
+**THE SHARPEST FINDING IS THAT THE TRUER FIGURE WAS ALREADY ON THE ROW:**
+`_load_enriched_assignments` has carried `run_min`, `span_min` and `chunks`
+since 4B.14, and the toolbox threw them away to recompute the subtraction. 4B.17
+recorded "there is no run-time figure anywhere in those rows" — true of the
+EMITTED rows, and the source row had it all along. WHY THE JOB CARD GOT IT RIGHT
+AND THE DATA SURFACES DID NOT: the card is a RENDERED surface where somebody was
+writing prose about the distinction; every seam that got it wrong is a field name
+written once by whoever needed a number and never re-read as a claim.
+
+**§5a.68 — THE COCKPIT BOARD WAS RIGHT, AND RIGHT BY A PROPERTY OF THE DATA THAT
+NOTHING ENFORCES (4B.20 Item 1).** `board.js` built per-resource occupancy as
+`chunks[0].start → chunks[last].end` — the merged span — feeding both the
+row-strip utilization % and the open-idle capacity bands. **MEASURED, NOT
+ASSUMED: on the pinned world it changed nothing**, because every pause there
+falls wholly inside a closure, so intersecting the span with the open windows
+(`rowstats.js`) recovers the work exactly — CUT-01 reads 5981 minutes and 89.9%
+either way. A pause STRADDLING open time (a `min_chunk` split mid-shift, a
+preemption) would have inflated the strip and hidden real idle capacity from the
+bands. **4B.13 recorded this seam as "already correct"; it was correct, and it
+was not safe.** Now per-chunk, so it is right by construction rather than by
+luck. The cross-check that matters: the fixed `machine_occupancy` summary
+independently computes **89.9%**, the same figure the board's own strip shows —
+two surfaces that agree, neither of which could be checked against the other
+before.
+
+**§5a.69 — REPORTED AND NOT FIXED: THE FIXED SURFACE IS NOT REACHED BY THE
+QUESTION THAT MOST DIRECTLY ASKS FOR IT (4B.20 Item 4).** *"how busy is CUT-01"*
+parses to the contracted `machine-schedule` route at 0.92 — which lists all 18
+operations and states **no utilisation figure at all**, so it never touches the
+toolbox this session fixed. The utilisation answer is reachable only by a
+phrasing that falls to tier two (*"how much of CUT-01's open time is booked"* →
+VERIFIED: *"5981 minutes of working time booked against 6655 minutes of open
+capacity … 89.9%"*). **A contracted route that answers a "how busy" question with
+an enumeration is a vocabulary call**, adjacent to §5a.29's shape: the figure now
+exists and nobody can ask a route for it. Separately: *"would splitting the jobs
+help"* — 4B.17's A3 specimen — **no longer produces the falsehood, but not
+because of this fix**: it now parses to `what-would-change` (4B.16's
+counterfactual) and NEAR_MISSES, offering two doors that are unhelpful on a board
+where nothing is late. The A3 answer is gone; the route that used to give it is
+no longer reached. **Both are honest outcomes and neither is the one the session
+was aiming at**, and a future measurement of A3 must ask a phrasing that still
+reaches tier two or it will measure the parse instead.
+
+**§5a.70 — A TRUE FIGURE THE VERIFIER CANNOT REBUILD IS CUT, AND THAT IS THE FIX
+FAILING QUIETLY (4B.20, ruling clause 4).** Reporting working time made the
+figure UNREBUILDABLE from any single evidence record — it is a sum over run
+windows, and no record contains it — so the claim verifier's independent
+re-fetch failed it. **Measured on the pinned world before this was closed: the
+second tier drafted *"puts 1501 minutes of actual work on the machine"* with four
+real citations, and verification cut ALL THREE of its claims.** The product had
+the right answer and refused to say it. Summary figures were already trusted for
+exactly this reason ("our own arithmetic over the pinned run"); derived ROW
+figures now are too, through a **named set** (`_DERIVED_ROW_FIGURES`) rather than
+"every number in a row" — a value copied verbatim from a record must still be
+found in that record, or the re-fetch stops being a check. Pinned by two tests,
+one of which goes red if the trusted set is widened. **THE GENERAL LESSON, AND
+IT OUTLIVES THIS DEFECT: making an answer truer can make it unverifiable, and a
+session that only checks the number would ship the regression.**
 
 ## 6. Open rulings queue
 

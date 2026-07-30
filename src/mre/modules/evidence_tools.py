@@ -38,6 +38,18 @@ from mre.contracts.synthesis import (
 
 _ISO_KEYS = ("start", "end")
 
+#: Row fields this toolbox DERIVES by arithmetic over the pinned run rather
+#: than copying out of a record — a sum over run windows, a span, a difference,
+#: an intersection with a calendar. No single evidence record contains them, so
+#: the verifier's re-fetch cannot rebuild them and must be told they are ours
+#: (see ``_log``). Adding a field here asserts that WE computed it; a field
+#: copied verbatim from a record must NOT be listed, or the re-fetch stops
+#: being a check.
+_DERIVED_ROW_FIGURES = (
+    "working_minutes", "elapsed_span_minutes", "paused_minutes", "pieces",
+    "gap_before_minutes", "idle_open_minutes_before",
+)
+
 
 def _fmt(ts: str) -> str:
     from mre.modules.explainer import _fmt_ts
@@ -157,6 +169,27 @@ class EvidenceToolbox:
             for v in result.summary.values():
                 if isinstance(v, (int, float)) and not isinstance(v, bool):
                     tallies.add(float(v))
+            # DERIVED ROW FIGURES ARE OUR ARITHMETIC TOO (Session 4B.20).
+            # A summary figure is trusted by the verifier because WE computed
+            # it over the pinned run and it lives in no single record. Exactly
+            # the same is true of a row's working_minutes: it is a sum over the
+            # run windows, and no record contains it. Before 4B.20 this did not
+            # bite, because the only row duration was ``end - start`` and the
+            # verifier could rebuild it from the two timestamps in the records.
+            # Reporting working time made the figure UNREBUILDABLE, and a
+            # correct claim quoting it was cut for it — measured on the pinned
+            # world: "puts 1501 minutes of actual work on the machine", with
+            # four real citations, FAILED. Trading a false VERIFIED answer for
+            # a true cut one is an improvement and not the goal.
+            #
+            # Deliberately a NAMED SET, not every number in every row: a row's
+            # verbatim fields still have to be found in a record, which is what
+            # keeps the re-fetch honest.
+            for row in result.rows:
+                for k in _DERIVED_ROW_FIGURES:
+                    v = row.get(k)
+                    if isinstance(v, (int, float)) and not isinstance(v, bool):
+                        tallies.add(float(v))
             self.count_profile |= tallies
             self.call_tallies.append((tool, set(rids), tallies,
                                       dict(result.summary)))
@@ -261,16 +294,43 @@ class EvidenceToolbox:
         return ids
 
     def _placement_row(self, r: dict) -> dict:
-        return {
+        """One placement, with WORKING TIME and ELAPSED SPAN as separate named
+        fields (Session 4B.20, the merged-span ruling).
+
+        Until 4B.20 this row carried a single ``duration_minutes`` computed as
+        ``end - start``. On a chunked operation that is the elapsed span, not
+        the work: ORD-000011 op10 reported 5821 when it runs 1501 working
+        minutes across three pieces, and the second tier quoted the 5821 as
+        "a single 5821-minute operation" with a real record id behind it. The
+        number was in the evidence; the FIELD NAME was the lie.
+
+        The truer figures were already on this very row — ``_load_enriched_
+        assignments`` has carried ``run_min``, ``span_min`` and ``chunks``
+        since 4B.14 — and this reader threw them away and recomputed the
+        subtraction. Nothing new is measured here; the row stops discarding
+        what it was handed. ``duration_minutes`` is GONE rather than kept
+        beside them, because a field that does not say which quantity it is
+        is the defect the ruling names."""
+        working, span, pieces = _work_span_pieces(r)
+        row = {
             "order": "+".join(sorted(r["work_orders"])) or "?",
             "op_seq": r.get("op_seq"),
             "machine": r.get("machine"),
             "start": _fmt(r.get("start", "")),
             "end": _fmt(r.get("end", "")),
-            "duration_minutes": _duration_minutes(r),
+            "working_minutes": working,
+            "elapsed_span_minutes": span,
+            "pieces": pieces,
             "setup_family": r.get("setup_family") or None,
             "record_ids": self._row_sources(r),
         }
+        if pieces > 1 and working is not None and span is not None:
+            # Stated only when it EXISTS. A contiguous operation carrying
+            # "paused_minutes: 0" invites the reader to treat the field as
+            # noise; an absent field on 54 of 56 rows makes the two that have
+            # it legible.
+            row["paused_minutes"] = round(span - working, 1)
+        return row
 
     # ------------------------------------------------------------------
     # The tools
@@ -329,8 +389,9 @@ class EvidenceToolbox:
         rows.sort(key=lambda r: r.get("start") or "")
         s = _parse(str(start)) if start else None
         e = _parse(str(end)) if end else None
+        open_windows = self._open_windows_for(ref)
         spans: list[dict] = []
-        busy_minutes = 0.0
+        working_total = 0.0
         prev_end = None
         for r in rows:
             rs, re_ = _parse(r.get("start", "")), _parse(r.get("end", ""))
@@ -340,20 +401,63 @@ class EvidenceToolbox:
                 continue
             if e is not None and rs >= e:
                 continue
-            gap = None
+            gap = idle_before = None
             if prev_end is not None:
                 gap = round((rs - prev_end).total_seconds() / 60.0, 1)
-            busy_minutes += (re_ - rs).total_seconds() / 60.0
-            spans.append({
+                # THE ACTIONABLE HALF OF A GAP. Wall-clock minutes between two
+                # operations are mostly nights: on this plant a 960-minute gap
+                # can hold zero open capacity. ``idle_open_minutes_before`` is
+                # the machine's OPEN time inside that gap — the only part of it
+                # anything could have been scheduled into. None when the
+                # calendar could not be read; never silently 0.
+                idle_before = _open_minutes_between(open_windows, prev_end, rs)
+            working, span, pieces = _work_span_pieces(r)
+            working_total += working if working is not None else 0.0
+            row = {
                 "order": "+".join(sorted(r["work_orders"])) or "?",
                 "start": _fmt(r.get("start", "")),
                 "end": _fmt(r.get("end", "")),
-                "busy_minutes": round((re_ - rs).total_seconds() / 60.0, 1),
+                "working_minutes": working,
+                "elapsed_span_minutes": span,
+                "pieces": pieces,
                 "gap_before_minutes": gap,
+                "idle_open_minutes_before": idle_before,
                 "record_ids": self._row_sources(r),
-            })
+            }
+            if pieces > 1 and working is not None and span is not None:
+                # WHY A GAP FIELD COULD NEVER HAVE SHOWN THIS (4B.20). 4B.17
+                # read ``gap_before_minutes: 0.0`` on the ORD-000011 row as
+                # denying the pause the operation contains. The gap field was
+                # not lying — the pause is INSIDE this row, not before it, so
+                # no before-gap could ever surface it. The row was flat where
+                # the work is not. ``paused_minutes`` and ``pieces`` are the
+                # fields that can say it, and they exist for that reason.
+                row["paused_minutes"] = round(span - working, 1)
+            spans.append(row)
             prev_end = re_
         note = "" if spans else f"{ref} carries no work in that window"
+        first_start = _parse(rows[0].get("start", "")) if spans else None
+        last_end = prev_end
+        summary = {
+            "machine": ref, "spans": len(spans),
+            # BOTH TOTALS, BOTH NAMED. ``busy_minutes`` is gone: on a chunked
+            # machine it exceeded the machine's entire open capacity in the
+            # same interval by 3.9x, and no reader could tell from the name
+            # that it was a span sum rather than a work sum.
+            "working_minutes": round(working_total, 1),
+            "first_start": spans[0]["start"] if spans else None,
+            "last_end": spans[-1]["end"] if spans else None}
+        if spans and first_start is not None and last_end is not None:
+            summary["elapsed_span_minutes"] = round(
+                (last_end - first_start).total_seconds() / 60.0, 1)
+            # THE DENOMINATOR, SO A UTILISATION IS COMPUTABLE WITHOUT GUESSING.
+            # A reasoner asked "how busy is CUT-01" needs open capacity, and
+            # inferring it from the span is exactly the 3.9x error.
+            oc = _open_minutes_between(open_windows, first_start, last_end)
+            if oc is not None:
+                summary["open_capacity_minutes"] = oc
+                summary["utilization_pct"] = (round(100.0 * working_total / oc, 1)
+                                              if oc > 0 else None)
         return ToolResult(
             tool=ToolName.MACHINE_OCCUPANCY,
             args={k: v for k, v in (("machine", machine), ("start", start),
@@ -361,10 +465,19 @@ class EvidenceToolbox:
             rows=spans[: self.max_rows], note=note,
             truncated=len(spans) > self.max_rows,
             enumerates_set=(s is None and e is None and len(spans) <= self.max_rows),
-            summary={"machine": ref, "spans": len(spans),
-                     "busy_minutes": round(busy_minutes, 1),
-                     "first_start": spans[0]["start"] if spans else None,
-                     "last_end": spans[-1]["end"] if spans else None})
+            summary=summary)
+
+    def _open_windows_for(self, machine: str) -> Optional[list[tuple]]:
+        """The machine's closure-subtracted open windows, or None if the
+        calendar cannot be read. None is propagated, never defaulted to []:
+        an empty window list means "open nowhere", and reporting that as the
+        capacity of a machine we simply could not read is the same class of
+        lie this session exists to close."""
+        try:
+            wins = self._ex._open_windows(machine)
+        except Exception:  # noqa: BLE001
+            return None
+        return wins or None
 
     def _lateness_set(self) -> ToolResult:
         """EVERY order's lateness — the whole set, deliberately unfiltered, so a
@@ -721,11 +834,50 @@ class EvidenceToolbox:
 # helpers
 # ---------------------------------------------------------------------------
 
-def _duration_minutes(r: dict) -> Optional[float]:
+def _open_minutes_between(windows: Optional[list[tuple]], lo, hi) -> Optional[float]:
+    """OPEN minutes of a machine's calendar inside [lo, hi]. None when the
+    calendar was unreadable — the caller must be able to tell "no open time"
+    from "no calendar"."""
+    if windows is None or lo is None or hi is None:
+        return None if windows is None else 0.0
+    # Both sides come from ``_to_dt``, which drops the zone, but the calendar
+    # reader and the placement reader are different call paths — normalising
+    # here means a future aware/naive mismatch degrades to a wrong-by-offset
+    # figure instead of a TypeError swallowed as "read failed".
+    lo, hi = _naive(lo), _naive(hi)
+    if hi <= lo:
+        return 0.0
+    total = 0.0
+    for ws, we in windows:
+        a, b = max(_naive(ws), lo), min(_naive(we), hi)
+        if b > a:
+            total += (b - a).total_seconds() / 60.0
+    return round(total, 1)
+
+
+def _naive(dt):
+    return dt.replace(tzinfo=None) if getattr(dt, "tzinfo", None) else dt
+
+
+def _work_span_pieces(r: dict) -> tuple[Optional[float], Optional[float], int]:
+    """WORKING TIME, ELAPSED SPAN and PIECE COUNT for one enriched row.
+
+    Working time is the sum of the run windows and NOTHING ELSE (the ruling).
+    It is read from ``run_min``/``chunks``, which the row already carries; the
+    span subtraction is only ever the span. When a row predates 4B.14 and has
+    neither, working time is reported as None rather than silently backfilled
+    from the span — an unknown quantity is not the other quantity."""
     s, e = _parse(r.get("start", "")), _parse(r.get("end", ""))
-    if s is None or e is None:
-        return None
-    return round((e - s).total_seconds() / 60.0, 1)
+    span = round((e - s).total_seconds() / 60.0, 1) if (s and e) else None
+    chunks = r.get("chunks") or []
+    pieces = len(chunks)
+    if r.get("run_min") is not None:
+        working = round(float(r["run_min"]), 1)
+    elif chunks:
+        working = round(sum(float(c.get("working_min") or 0.0) for c in chunks), 1)
+    else:
+        working = None
+    return working, span, pieces
 
 
 def _collect_ids(payload: Any, depth: int = 0) -> list[str]:

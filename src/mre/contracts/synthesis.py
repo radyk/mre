@@ -106,15 +106,32 @@ class ToolArg(BaseModel):
 #: The authored meaning of every tool — what the governed synthesis prompt renders.
 #: A tool without a meaning is a parity failure (``tests/test_synthesis_tools.py``).
 TOOL_MEANINGS: dict[ToolName, str] = {
+    # WORKING TIME AND ELAPSED SPAN ARE DIFFERENT QUANTITIES (Session 4B.20).
+    # These three rows carried one unqualified `duration_minutes` that was the
+    # SPAN; on a chunked operation it read 5821 where the work is 1501, and the
+    # second tier reported "a single 5821-minute operation" because the row
+    # gave it no truer number to quote. Every meaning below now names which
+    # quantity is which, because the prompt is built from this text and a
+    # reasoner that cannot tell them apart will pick whichever is larger.
     ToolName.PLACEMENTS_FOR_ORDER:
-        "every scheduled operation of one order: machine, start, end, duration",
+        "every scheduled operation of one order: machine, start, end, and BOTH "
+        "time figures — working_minutes (the work) and elapsed_span_minutes "
+        "(start to end, including any pause). They differ on a SPLIT operation "
+        "(pieces > 1, paused_minutes stated); never use the span as the duration",
     ToolName.PLACEMENTS_FOR_MACHINE:
-        "every scheduled operation on one machine, earliest first",
+        "every scheduled operation on one machine, earliest first, with "
+        "working_minutes and elapsed_span_minutes stated separately",
     ToolName.PLACEMENTS_IN_WINDOW:
-        "every scheduled operation overlapping a time window, across all machines",
+        "every scheduled operation overlapping a time window, across all "
+        "machines, with working_minutes and elapsed_span_minutes stated "
+        "separately",
     ToolName.MACHINE_OCCUPANCY:
-        "one machine's occupancy over a window: the busy spans, the gaps between "
-        "them, and the totals",
+        "how busy one machine is: per operation its working_minutes vs its "
+        "elapsed_span_minutes, the gap before it (gap_before_minutes) and how "
+        "much of that gap was OPEN capacity (idle_open_minutes_before). The "
+        "summary carries working_minutes, open_capacity_minutes and "
+        "utilization_pct — use those for 'how busy', never a sum of spans, "
+        "which can exceed the machine's whole open capacity",
     ToolName.LATENESS_SET:
         "every order's lateness in minutes (positive = late, negative = early) — "
         "the WHOLE set, so counts over it are enumerable. THREE disjoint states, "

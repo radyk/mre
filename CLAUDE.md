@@ -158,11 +158,39 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.18 — the persisted evidence index**, 2026-07-30 (docs/07 v2.64,
-§5a.63; docs/04 ruling; narrative in `docs/closeouts/4B.18.md`). Before it:
-4B.17 (v2.63, §5a.54-62), 4B.16 (v2.61, §5a.49-50), 4B.15 (v2.59, §5a.39-45),
-4B.14 (v2.58, §5a.34-38), 4B.13 (v2.57), 4B.12 (v2.56, a MEASUREMENT session),
-4B.11 (v2.55, **R-PD1 verbatim**).
+**Session 4B.20 — working time is not elapsed span**, 2026-07-30 (docs/07 v2.66,
+§5a.67-70; docs/04 ruling; narrative in `docs/closeouts/4B.20.md`). Before it:
+4B.19 (v2.65, §5a.64-66), 4B.18 (v2.64, §5a.63), 4B.17 (v2.63, §5a.54-62),
+4B.16 (v2.61, §5a.49-50), 4B.15 (v2.59, §5a.39-45), 4B.14 (v2.58, §5a.34-38),
+4B.13 (v2.57), 4B.12 (v2.56, a MEASUREMENT session), 4B.11 (v2.55, **R-PD1
+verbatim**).
+
+**WORKING TIME AND ELAPSED SPAN ARE DIFFERENT QUANTITIES AND ARE NEVER
+INTERCHANGEABLE (4B.20, §5a.67 — §5a.56 DISCHARGED).** Any surface reporting one
+names WHICH, in the field name or the sentence; **(end − start) on a chunked
+operation is a SPAN**, and working time is the sum of the run windows and nothing
+else. Two clauses added: **a capacity figure names its DENOMINATOR** (5821 busy
+minutes against 1501 of open capacity — 3.9x — with nothing on the surface making
+it checkable), and **a figure the product DERIVES must be quotable by the surface
+that derives it** (see below). The census was by ARITHMETIC, not name — an AST
+walk, then a binding pass: **408 raw sites → 198 time-quantity bindings → 63
+OFFSETS (the solver's whole variable space) → 135 true durations, of which THREE
+are wrong and all three are `evidence_tools.py`**; `_duration_minutes` feeds
+THREE tools, so 4B.17's "two seams" was one function. **THE TRUER FIGURE WAS
+ALREADY ON THE ROW** — `run_min`/`span_min`/`chunks` since 4B.14 — and the
+toolbox discarded them to recompute the subtraction. **`board.js` WAS RIGHT AND
+RIGHT BY A PROPERTY OF THE DATA NOTHING ENFORCES** (§5a.68): span occupancy
+saved only by the open-window intersection, measured identical on every machine;
+now per-chunk. The opener was never affected (it reads `run_min`). **MAKING THE
+ANSWER TRUER MADE IT UNVERIFIABLE (§5a.70):** working time lives in no single
+record, so a correct claim with four real citations was CUT — derived row figures
+now enter the toolbox's tallies through a NAMED set. Guard: naming register +
+value property, **its limit stated in the docstring** (the toolbox surface only),
+premise test, **two negative controls proven red**. Governed: four
+`TOOL_MEANINGS`, `synthesis_prompt.md` **v4** rule 11. **NOT FIXED, named:** *"how
+busy is CUT-01"* parses to the contracted `machine-schedule` route, which
+enumerates 18 placements and states **no utilisation figure at all** — the fixed
+surface is unreachable from the question that most directly asks for it (§5a.69).
 
 **A PERSISTED EVIDENCE INDEX IS A FAITHFUL RECONSTRUCTION OF THE INDEX IT WAS
 SAVED FROM (4B.18, §5a.63 — §5a.55 DISCHARGED).** Any record class the builder
@@ -202,7 +230,9 @@ door OPENS); the no-such-machine correction lists **8 of 15** machines and drops
 the one the asked order is on (§5a.54, verbatim in 4B.13's own close-out);
 **the synthesis toolbox reports the merged SPAN as `duration_minutes` and
 `busy_minutes`** — 5821 against 1501 working minutes, 3.9x the machine's open
-time, the **FOURTH SEAM** of a class fixed three times (§5a.56); the pinned exam
+time, the **FOURTH SEAM** of a class fixed three times (§5a.56 — **FIXED 4B.20,
+§5a.67**, where the census proved the class has four members and three are one
+function); the pinned exam
 world could not state its own cost proof because `EvidenceIndex.save()` dropped
 run-level records (§5a.55 — **FIXED 4B.18, §5a.63**, where the loss turned out to
 be four classes and 25 records, not one); and `why-on-machine`'s evidence
@@ -682,6 +712,21 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
 
 **Small carry-forwards (do not lose):**
 
+- 4B.20 findings (docs/07 §5a.68-70 — REPORTED, deliberately NOT fixed):
+  **THE `machine-schedule` ROUTE ANSWERS "how busy" WITH AN ENUMERATION** —
+  18 placements, no utilisation figure; the number now exists on the toolbox
+  and no route can be asked for it (§5a.29's shape again).
+  **`rolling_horizon`'s `busy_minutes` METRIC NAME is under-specified** against
+  the new ruling — the arithmetic is correct (it intersects with the open
+  windows), and renaming an evidence Metric is a vocabulary-class change.
+  **`schedule_csv`'s `duration_min` COLUMN does not say which quantity it is** —
+  harmless today because the row IS a chunk, so summing the column gives working
+  time. **4B.17's A3 SPECIMEN NO LONGER REACHES TIER TWO** — *"would splitting
+  the jobs help"* now parses to `what-would-change` or to synthesis with zero
+  tool calls, so re-measuring A3 needs a phrasing that still lands there or it
+  measures the parse. The declared/placed **1,500 vs 1,501** difference on
+  ORD-000011 op10 is chunk-boundary rounding, labelled correctly on both sides,
+  and was not investigated.
 - 4B.17 findings beyond the five truth failures (docs/07 §5a.54-62 — REPORTED,
   deliberately NOT fixed): **THE `repeat`/`deaf` BOUNDARY IS KEYED ON STRING
   IDENTITY** (§5a.58) — the same string twice gets the correct lead; the same
@@ -730,7 +775,7 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   of one question) — humble rather than wrong, but distinguishing "one answer
   because I am confused" from "one answer because it IS the answer" needs a
   signal this session does not have.
-  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, ~60k after it. Compression was out of scope for all three; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, ~65k after it. Compression was out of scope for all three; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
   **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
   day-shift restriction answered as C1/C2 "proven end to end" when the item is
   C4 (model-proven, §8 doorway). Caught and pinned; the class stands.

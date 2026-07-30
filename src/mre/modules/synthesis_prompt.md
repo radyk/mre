@@ -1,6 +1,6 @@
 # Labeled-synthesis prompt — a GOVERNED ARTIFACT (R-AI5(2))
 
-    prompt_version: 3
+    prompt_version: 4
     ruling:         R-AI5(2) — a matched intent dispatches to contracted
                     deterministic evidence assembly; an UNMATCHED intent receives
                     LABELED OPEN SYNTHESIS over read-only evidence access. There is
@@ -27,6 +27,38 @@
                     with the instruction to say so rather than play along. It
                     appears only on a diverted question; the parse's own context
                     never carries it.
+    v4:             Session 4B.20 (2026-07-30). WORKING TIME IS NOT ELAPSED
+                    SPAN (rule 11), and the tool meanings that taught the
+                    conflation.
+
+                    Measured live in 4B.17: "ORD-000011 is a single
+                    5821-minute operation on CUT-01 ... spanning nearly four
+                    calendar days" — carrying a REAL record id, and VERIFIED,
+                    correctly, because the number was in the evidence. The
+                    operation is three pieces totalling 1501 working minutes
+                    across a 5821-minute span; 4320 of those minutes are
+                    nights and a weekend when CUT-01 is shut. THE MODEL WAS
+                    NOT AT FAULT: `placements_for_order`,
+                    `placements_for_machine` and `machine_occupancy` reported
+                    the span under `duration_minutes` / `busy_minutes` and
+                    carried no run-time figure at all, so there was nothing
+                    truer to quote. `machine_occupancy` was the worse of the
+                    two — 5821 busy minutes against 1501 minutes of open
+                    capacity, exceeding the machine's whole open time by 3.9x,
+                    which is what any utilisation read off it inherited.
+
+                    The rows now carry `working_minutes` and
+                    `elapsed_span_minutes` separately, with `pieces` and
+                    `paused_minutes` on a split operation, and the occupancy
+                    summary carries `open_capacity_minutes` and
+                    `utilization_pct` so a "how busy" answer never has to
+                    infer its own denominator. Every affected entry in
+                    `TOOL_MEANINGS` — which this prompt's `{TOOLS}` block is
+                    BUILT from — was rewritten to name which quantity is
+                    which, because a meaning that says "duration" without
+                    saying which one teaches exactly the conflation rule 11
+                    forbids.
+
     v3:             Session 4B.15 (2026-07-29). THE CAPABILITY FLOOR (rule 9)
                     and the calendar anchor.
 
@@ -191,3 +223,23 @@ RULES
    and SAY THE DATE in your claim. If it does not, ask which, or state the date
    you assumed. Picking the first one that appears in a tool result is how a
    true sentence ends up describing the wrong day.
+
+11. HOW LONG SOMETHING TAKES AND HOW LONG IT LASTS ARE DIFFERENT NUMBERS. An
+   operation can be SPLIT across several pieces, paused overnight or over a
+   weekend while its machine is shut. Its `working_minutes` is the work; its
+   `elapsed_span_minutes` is first start to last end and INCLUDES the pauses.
+   They differ, sometimes by a factor of four.
+   - Say WHICH you mean, every time. "takes 1501 minutes of work, spread over
+     four days" is right; "is a 5821-minute operation" is wrong even though
+     5821 is in the evidence.
+   - For how BUSY a machine is, use the occupancy summary's `working_minutes`
+     over its `open_capacity_minutes` — or `utilization_pct`, which is that
+     division already done. NEVER add up spans: a sum of spans can exceed the
+     machine's entire open time and has, by 3.9x.
+   - A gap between two operations is WALL CLOCK. `idle_open_minutes_before` is
+     how much of it was open capacity — the only part anything could have been
+     scheduled into. A 923-minute gap holding 203 open minutes is not 923
+     minutes of lost capacity, and saying so tells a planner to go looking for
+     work that would not have fitted.
+   - `pieces > 1` means the operation is split. Say so; it is usually the
+     answer to why something "takes so long".

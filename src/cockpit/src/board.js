@@ -112,6 +112,25 @@ export function createBoard(hostEl, initialDoc) {
       + ((a.chunks || []).length > 1 ? ` · ${a.chunks.length} pieces (split)` : "");
   }
 
+  // OCCUPANCY IS PER CHUNK, NEVER THE MERGED SPAN (Session 4B.20, the
+  // merged-span ruling). This used to push one interval per assignment,
+  // chunks[0].start -> chunks[last].end, which on a split operation claims the
+  // machine is busy through its pauses. It fed two surfaces: the row-strip
+  // utilization % and the open-idle capacity bands.
+  //
+  // MEASURED, NOT ASSUMED: on the pinned world this changed NOTHING — every
+  // pause there falls wholly inside a closure, so intersecting the span with
+  // the open windows (rowstats.js) recovered the working minutes exactly
+  // (CUT-01: 5981 either way). The board was RIGHT, and right by a property of
+  // the data that nothing enforces. A pause that straddles open time — a
+  // min_chunk split mid-shift, a preemption — would have inflated the strip
+  // and hidden real idle capacity from the bands. Per-chunk occupancy makes it
+  // right by construction instead.
+  function pushOccupancy(resourceId, chunks) {
+    const list = occByRes.get(resourceId);
+    for (const c of chunks) list.push({ start: ms(c.start), end: ms(c.end) });
+  }
+
   let minT = Infinity, maxT = -Infinity;
   for (const a of doc.assignments) {
     const chunks = a.chunks || [];
@@ -120,7 +139,7 @@ export function createBoard(hostEl, initialDoc) {
     const e = ms(chunks[chunks.length - 1].end);
     minT = Math.min(minT, s); maxT = Math.max(maxT, e);
     if (!occByRes.has(a.resource_id)) occByRes.set(a.resource_id, []);
-    occByRes.get(a.resource_id).push({ start: s, end: e });
+    pushOccupancy(a.resource_id, chunks);
     const wos = a.work_orders || [];
     const lateness = wos.map((w) => latenessByWO.get(w))
       .filter((v) => v != null)
@@ -633,7 +652,7 @@ export function createBoard(hostEl, initialDoc) {
     for (const a of doc.assignments) {
       const ch = a.chunks || []; if (!ch.length) continue;
       if (!occByRes.has(a.resource_id)) occByRes.set(a.resource_id, []);
-      occByRes.get(a.resource_id).push({ start: ms(ch[0].start), end: ms(ch[ch.length - 1].end) });
+      pushOccupancy(a.resource_id, ch);   // per chunk, never the span (4B.20)
     }
     renderCapacityBands(); rebuildBandIndex(); refreshShiftTicks();
 

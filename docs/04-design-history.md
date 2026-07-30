@@ -13434,3 +13434,168 @@ only artifact read in the source is a dead assignment (`dq_report.py:39`).
 
 Narrative and the full census in `docs/closeouts/4B.19.md`; carry-forwards in
 docs/07 §5a.64-66.
+
+## 2026-07-30 — Session 4B.20: working time is not elapsed span
+
+The fourth seam of a defect class that had been "fixed" three times (4B.13 twice,
+4B.14 once). 4B.17 measured it on the synthesis toolbox: *"ORD-000011 is a single
+5821-minute operation on CUT-01 … spanning nearly four calendar days"* — carrying
+a real record id, and labelled VERIFIED, correctly, because the number **was** in
+the evidence. The operation is three pieces totalling **1501 working minutes**
+across a **5821-minute span**; 4320 of those minutes are nights and a weekend when
+CUT-01 is shut.
+
+### THE RULING
+
+> **WORKING TIME AND ELAPSED SPAN ARE DIFFERENT QUANTITIES AND ARE NEVER
+> INTERCHANGEABLE.** Any surface that reports one names WHICH, in the field name
+> or in the sentence, and a surface that reports a duration without saying which
+> is a defect. Where both are meaningful, both are carried — never one standing
+> for the other.
+>
+> **A DURATION DERIVED FROM (end − start) ON A CHUNKED OPERATION IS AN ELAPSED
+> SPAN AND MUST BE LABELLED AS ONE.** Working time is the sum of the run windows
+> and nothing else.
+
+Transcribed verbatim from the session brief. The census did not change its shape;
+it changed what the ruling had to reach, and two clauses are **added** with their
+reasons below.
+
+**4B.14 ALREADY DREW THIS DISTINCTION** — the job card carries RUN TIME and
+ELAPSED SPAN as separate labelled rows — so the ruling generalizes a pattern the
+product already followed in one place. **Why the other places did not follow it:**
+the job card is a RENDERED surface, authored by a human deciding what a planner
+reads, and the distinction was visible there because somebody was writing prose
+about it. Every seam that got it wrong is a DATA surface — a document field, a
+row dict, a tool payload — where the field name is written once, by whoever needed
+a number, and never read again as a claim. *`duration_minutes` was not a lie
+anybody told; it was a name nobody re-read.*
+
+### THE ADDED CLAUSES
+
+> **(3) A CAPACITY OR OCCUPANCY FIGURE NAMES ITS DENOMINATOR.** "How busy" is a
+> ratio, and a surface that reports only a numerator forces its reader to invent
+> one. `machine_occupancy` reported 5821 busy minutes on a machine with 1501
+> minutes of open capacity in the same interval — **3.9x its entire open time** —
+> and nothing on the surface made that checkable.
+>
+> **(4) A FIGURE THE PRODUCT DERIVES MUST BE QUOTABLE BY THE SURFACE THAT
+> DERIVES IT.** Working time is a sum over run windows and lives in no single
+> evidence record, so the claim verifier's re-fetch cannot rebuild it. Reporting
+> it truthfully therefore made a TRUE claim unverifiable: measured on the pinned
+> world, the second tier drafted *"puts 1501 minutes of actual work on the
+> machine"* with four real citations and verification **cut all three of its
+> claims**. Trading a false VERIFIED answer for a true cut one is an improvement
+> and it is not the goal. Derived row figures now enter the toolbox's own
+> tallies, as summary figures already did, through a **named set** — a value
+> copied verbatim from a record must still be found in that record, or the
+> re-fetch stops being a check.
+
+### What the census found (full table in `docs/closeouts/4B.20.md`)
+
+Not grep. An AST walk over `src/` for the ARITHMETIC — `.total_seconds()`,
+timestamp subtraction, `timedelta` construction, sums over windows, division by a
+time-ish denominator, unit conversion — then a second pass binding every hit to
+what it is ASSIGNED TO, because a subtraction landing in a datetime is a boundary
+computation and not a duration at all.
+
+**408 raw arithmetic sites → 198 bind to a time-quantity name → 63 of those are
+OFFSETS (an instant expressed in minutes from the horizon origin; the solver's
+whole variable space) → 135 are true durations.**
+
+Of the 135: **3 WRONG**, all three in `evidence_tools.py`, all three the known
+seam. **1 LATENT-WRONG** (`board.js` occupancy). The rest correct, and the
+distribution is the finding: **the class has four members and no more, and three
+of them are one function.**
+
+**THE ANSWER TO "IS IT JUST THE THREE TOOLBOX ROWS" IS ESSENTIALLY YES — AND
+THAT IS ONLY CREDIBLE ENUMERATED.** Two near-misses are worth recording because
+both are correct *by a mechanism rather than by name*:
+`rolling_horizon.compute_manned_idle_metrics` builds occupancy from spans and
+then **intersects with the open windows**, which recovers working time; and
+`explainer._opener_load` — the opener's concentration item — reads `run_min`,
+not a subtraction, so **the opener was never affected** and Item 4's regression
+confirmed it unchanged.
+
+### THE LATENT MEMBER, AND WHY IT IS REPORTED AS A FINDING
+
+`board.js` built per-resource occupancy as `chunks[0].start → chunks[last].end`
+— the merged span — feeding both the row-strip utilization % and the open-idle
+capacity bands. **MEASURED ON THE PINNED WORLD, IT CHANGED NOTHING**: every pause
+there falls wholly inside a closure, so intersecting the span with the open
+windows recovers the work exactly (CUT-01: 5981 minutes either way, 89.9% either
+way). **The board was right, and right by a property of the data that nothing
+enforces.** A pause straddling open time — a `min_chunk` split mid-shift, a
+preemption — would have inflated the strip and hidden real idle capacity. Now
+per-chunk, so it is right by construction. 4B.13 recorded this seam as "already
+correct"; it was correct, and it was not safe.
+
+### The guard, its mechanism, and its limit
+
+`tests/test_working_time_vs_span.py` (19 tests). Two mechanisms, because neither
+alone closes the class: **a naming register** — every tool is CALLED and every
+numeric field whose key looks like a time quantity must appear in an authored
+register declaring which quantity it is, so a new duration field is red on the
+day it is written whatever it is called — and **a value property**, because
+registering a field as WORKING does not make it working time: every such field
+must equal the sum of the run windows, and no reported duration may exceed the
+resource's open capacity over the same interval (the 3.9x tell).
+
+**ITS LIMIT IS IN THE MODULE DOCSTRING:** it is scoped to the synthesis toolbox
+row and summary surface. It discovers fields by calling the tools, so it cannot
+be evaded within that surface — but a span-as-duration in a renderer, a route's
+key facts, the schedule document or the cockpit's JavaScript is invisible to it.
+That is a narrower claim than "a fifth seam is impossible" and it is the true
+one.
+
+Premise test: the fixture must contain a genuinely chunked operation whose pause
+falls inside a closure — without it every assertion passes over contiguous work
+and the file is 4B.18's `test_load_populates_all_evidence` again. Negative
+controls, both proven red and green on revert: the span restored as working time
+(3 red), and the bare `busy_minutes` name reintroduced while correctly valued
+(2 red — the naming half, which the value half cannot catch).
+
+**THE GUARD CAUGHT SOMETHING ON ITS FIRST RUN**, which is the behaviour being
+bought: `spans` — a count of spans, not a span — was unregistered and had to be
+classified. And the guard's own plumbing is guarded: the first run of the file
+passed five assertions **over an empty set**, because `ToolName` is a `(str,
+Enum)` whose `str()` is the repr, so every call returned "no such tool". A
+generator that yields nothing makes every universal true; `_all_tool_payloads`
+now raises rather than yielding empty.
+
+### The governed artifacts
+
+`TOOL_MEANINGS` for four tools (the synthesis prompt's `{TOOLS}` block is BUILT
+from them, so a meaning saying "duration" without saying which teaches the
+conflation), and `synthesis_prompt.md` **v3 → v4** with rule 11.
+`gap_before_minutes` was **not** the liar 4B.17 took it for: the pause is INSIDE
+the row, so no before-gap could ever have surfaced it — the ROW was flat where
+the work is not. It keeps its meaning and gains `idle_open_minutes_before` (how
+much of the wall gap was open capacity, the only part anything could have used),
+while `pieces` and `paused_minutes` say what the gap field structurally could not.
+
+### Verified live on the pinned world
+
+The three rows now carry `working_minutes: 1501.0` beside
+`elapsed_span_minutes: 5821.0`, `pieces: 3`, `paused_minutes: 4320.0`; the
+occupancy summary carries `open_capacity_minutes: 6655.0` and
+`utilization_pct: 89.9` — **which matches the cockpit's independently computed
+row strip exactly**, two surfaces agreeing that could not both be checked before.
+The second tier now states the inverse of 4B.17's falsehood, VERIFIED: *"The
+actual work it puts on CUT-01 is 1501 minutes, not the 5821-minute span from
+first start to last end."*
+
+### What was tempting and left
+
+A5 (the evidence chain under `why-on-machine`) is untouched, per the brief. So
+are the four drifts and ten conversational misses from 4B.17, the metric and
+input-manifest readers, `dark-evidence`'s false positive, and CLAUDE.md
+compression.
+
+**Reported, not fixed, and both found by Item 4:** *"how busy is CUT-01"* parses
+to the contracted `machine-schedule` route, which lists 18 operations and states
+**no utilisation figure at all** — the fixed surface is never reached by the
+question that most directly asks for it. And *"would splitting the jobs help"*
+no longer produces 4B.17's falsehood, but **not because of this fix**: it now
+parses to `what-would-change` and near-misses. Both are vocabulary calls.
+Details in docs/07 §5a.67-69.
