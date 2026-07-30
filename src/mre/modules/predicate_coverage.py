@@ -178,10 +178,13 @@ COVERED_BY: dict[str, frozenset[str]] = {
     "disagreement": frozenset({
         # The blocker analysis IS the answer to a timing challenge (Item 3), and
         # contested-fact is the route whose whole job is meeting a contest.
-        "why-here", "contested-fact",
+        # Session 4B.16: so is the counterfactual — "surely it could go earlier"
+        # is met head-on by what would have to change for it to.
+        "why-here", "contested-fact", "what-would-change",
     }),
     "temporal_alternative": frozenset({
         "why-here", "contested-fact", "gap-between", "coaching",
+        "what-would-change",
     }),
     "downtime_traversal": frozenset({
         "downtime", "maintenance", "machine-idle", "coaching",

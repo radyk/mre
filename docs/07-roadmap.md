@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.60 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.61 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.61:** **Session 4B.16 — the counterfactual and the opener** 2026-07-29 (docs/04 session amendment; narrative in `docs/closeouts/4B.16.md`). Two questions a planner asks NEXT, neither of which had a route. **THE COUNTERFACTUAL (§5a.49)** — `what-would-change` joins the vocabulary (parse prompt **v13**) as the INVERSE of 4B.14's blocker analysis over the SAME computed bounds and no new ones: take the family that BINDS and report the change that would move it, with its threshold and the arithmetic. **EVERY THRESHOLD IS VERIFIED BY RE-RUNNING `earliest_fit` UNDER THE HYPOTHETICAL**, and the verification applies R-C3's degenerate-split rule — which is how the session found that the brief's own worked specimen (`min_chunk <= 240`) **does not work**: the computed ceiling is **215 = floor(431/2)**, because at 216 the solver treats the operation as atomic again. **NECESSARY, NEVER SUFFICIENT, ENFORCED BY SHAPE**: every answer names the NEXT BOUND that would apply once the barrier is gone, recomputed through the tail of the ladder rather than assumed to be the runner-up. The B1 lever is COMPUTED — other eligible lanes are scanned from the same upstream floor, and on the pinned board the honest answer is that PAINT-01 is the only one. B7/B8, the objective and a declared closure are NAMED as unpriceable rather than estimated. **THE OPENER (§5a.50)** — `briefing` widens from the 7am triage to the whole-board read: every item the document supports, **ranked by consequence**, each carrying its own number and a pointer to the question that opens it up, as contracted testimony with no synthesis on the path. The ranking rule is STATED (band 1 is money and its two members are comparable because both are currency); **"three things and none of them are on fire" is reachable** because a proved optimum and an empty late list are reported as reassurance; eligibility is what makes a busy machine a concentration rather than an observation; and what the document does not support is REPORTED, never omitted. Measured on two real boards; concentration did not fire on either, because demo density runs far below the threshold. No solve; the pinned world untouched.
 
 **v2.60:** **Errand 4B.15a — ship the tier split** 2026-07-29 (narrative in `docs/closeouts/4B.15a.md`). §5a.44's recommendation was RULED and is now the shipped default: **the parse constructs on Haiku, synthesis on Sonnet 5**, resolved at construction time from **THREE SEPARATE CONSTANTS** (`llm_compat.parse_model` / `synthesis_model` / `voice_model`, each with its own env override). A single shared MODEL dial cannot express a split and would un-ship the measurement as a tidy-up — `tests/test_model_tiers.py` forbids it, and also pins that the shipped synthesis default is a model `llm_compat` can build a VALID request for, which is not decoration (§5a.44's `temperature=0` finding is exactly a default nobody could call). **THE THIRD CONSTANT IS THE VOICE** (`LLMRenderer`, which rewords an already-validated answer): it was not in the bench, it did not move, and it is now named so it cannot be swept along by a grep for the old literal. **LATENCY IS THE COLUMN THE BENCH SUMMARY DROPPED (§5a.46)** — the shipped split's p90 is **23.1s** against Haiku-everywhere's **14.6s**, while the median barely moves (2.1 → 2.3s); live, end to end on the shipped defaults, synthesis answered in **9.9 / 16.2 / 18.1s** against **1.7s** for contracted routes. The gap between those two columns is the whole story: a demo on contracted routes feels identical, and a demo asking the open questions waits 10–20s an answer. **THE TAIL IS NOT THE MODEL CLASS** — every tier's p90 is 6–9× its median, which is the second tier's multi-step tool loop; a cheaper model runs the same steps faster, not fewer. **THE QUALITY RANKING DID NOT REPRODUCE ON ANY COLUMN** — two runs of the same 15 questions against the same world (Opus 14/15 → 10/15, Haiku 13/15 → **14/15**, the split 14/15 → **13/15**, below Haiku-everywhere on the second run); only cost reproduced. The honest statement of the case is "the bank can resolve the cost, not the quality difference," and that limit travels with the decision. **A SYNTHESIS ANSWER THAT READ NOTHING DOES NOT SHIP (§5a.47)** — §5a.44's fabricated-machines specimen is closed by three deterministic conditions with no model judgment anywhere, at the one delivery seam, failing OPEN in every direction; the negative control proving an honest no-tools answer STILL SHIPS is the test that matters most, because without it the guard is a mute button and the honest floor is the first thing it eats. **NEW DEBT: §5a.48** — a corpus-grounded claim cannot carry a `[record:]` citation, so an answer quoting a spec VERBATIM is labelled "my reading, no record states this" and reads weaker than an inference over placements. No solve; the pinned world untouched; **no fixture, golden or test pinned a model string** (enumerated exhaustively, not assumed — the recorded exam sweeps carry the old literal as OUTPUT and were deliberately left alone).
 
@@ -3123,6 +3125,116 @@ which is a contract change and therefore a reviewed vocabulary-class change — 
 a relabelling. Until it exists, an answer whose strongest evidence is a spec
 passage should route that reference through authored copy rather than let
 synthesis carry it under the interpretive label.
+
+**§5a.49 — THE COUNTERFACTUAL: WHAT WOULD HAVE TO BE DIFFERENT (4B.16 Item 1).**
+4B.14's blocker analysis answers "what is holding this here" and answers it
+well. The question that follows it — "so what would have to change?" — had no
+route, and would have been swallowed by `swap-move` (which weighs a board move
+between two orders and prices it in the sandbox) or `advice` (which is about the
+plan, not one operation): the adjacent-match failure, both times, answering with
+something a planner cannot act on. `what-would-change` joins the vocabulary
+(parse prompt **v13**, `src/mre/modules/counterfactual.py`) as the INVERSE of the
+blocker analysis **over the same computed bounds and no new ones**: take the
+family that BINDS and report the change that would move it, with its threshold
+and the arithmetic.
+
+  * **EVERY THRESHOLD IS VERIFIED BY RE-RUNNING THE SAME SCAN.** A lever whose
+    hypothetical does not actually move `earliest_fit` is DROPPED, not stated —
+    which is what stops the route from being arithmetic about arithmetic.
+  * **AND THE VERIFICATION APPLIES R-C3.** `earliest_fit` does not know the
+    degenerate-split rule (its caller does), so the min_chunk lever verifies
+    through `resumable_fit`, which does. The measured consequence: the brief's
+    worked specimen proposes `min_chunk <= 240` and **240 does not work** — at
+    216 the solver treats the operation as atomic again. The computed ceiling is
+    **215 = floor(431/2)**, and that number came out of the check, not the copy.
+  * **NECESSARY, NEVER SUFFICIENT — enforced by shape.** Every answer carrying a
+    lever names the NEXT BOUND that would apply once the barrier is gone
+    ("an earlier step [docs/05 A1/A2] at Tuesday 2026-01-13 14:06 — that removes
+    the barrier; it does not place the operation there"). Where the binding
+    family is not chunk-fit, the next bound is RECOMPUTED through the tail of the
+    ladder rather than assumed to be the runner-up: relaxing precedence can
+    expose a chunk-fit the runner-up never mentioned.
+  * **THE B1 LINE IS COMPUTED, NOT STATED.** "431 contiguous minutes free on an
+    eligible machine" is the brief's condition; the route resolves capability
+    eligibility and scans each other lane from the SAME upstream floor (release /
+    precedence / frozen / pin — the bounds a different machine is still subject
+    to). On the pinned board PAINT-01 is the only eligible lane, and the answer
+    says so rather than offering a door that is already shut.
+  * **TWO THINGS IT REFUSES TO PRICE, both named on the answer.** B7/B8
+    changeover (4B.14's precedent: the setup at another position depends on what
+    would precede it there, which is a different schedule) and — on a `chose`
+    verdict — the OBJECTIVE. A DECLARED CLOSURE standing in the way is reported
+    and deliberately not priced: lifting a maintenance day would plainly move the
+    operation, but saying what the machine's open hours would be on a day the
+    calendar declares shut is an invention, not a reading.
+  * Carries the `uncomputed` block verbatim from the blocker analysis. A
+    counterfactual that ignores B3/B5, B7/B8, C4 and F3 is exactly as partial as
+    the explanation was.
+
+**STATED LIMIT: a planner-named DAY is not parsed.** "Can this move to Monday"
+reaches the route, and the route answers about the target it COMPUTES — the
+near-miss window / the next-earliest bound — naming the weekday and the date it
+is testing. Resolving "Monday" to one of five Mondays is exactly the class
+§5a.45 measured, and inventing a resolver for it was out of scope here.
+
+**§5a.50 — THE OPENER: WHAT SHOULD I BE LOOKING AT (4B.16 Item 2).** `briefing`
+was the 7am morning triage — late orders by lateness x priority, one
+data-quality line — and it was a fraction of what the persisted document knows.
+A board can be provably optimal, hold a maintenance day that pauses eleven
+operations, run one machine near saturation beside eligible empty ones, and
+carry fourteen orders beyond the horizon, and none of it reached the answer. The
+other three ways a planner opens a board ("how does this schedule look",
+"anything I should know", "what's the state of things") were shape reads that
+rule 7 correctly sent to `unmatched`, where the second tier reasoned out an
+answer the document could have TESTIFIED to.
+
+`src/mre/modules/board_opener.py` builds every item the document supports,
+**ranked by consequence**, each line carrying its own number and a POINTER to
+the question that opens it up. Entirely contracted testimony; no synthesis on
+the primary path.
+
+  * **THE RANKING RULE IS STATED, because a ranking nobody can check is an
+    opinion.** Band 1 is money at stake and its two members are COMPARABLE
+    because both are currency: controllable tardiness (R-PD1 clause 4 — never
+    the floor) and the unproved gap priced against the ledger (`total x gap`).
+    Band 2 is work that will slip (at-risk, unplaced, closures) and ranks by
+    count, band 3 is structure (concentration, certificate, undeclared derate),
+    band 4 is CLEAN. Within a band the priced item leads — not because it
+    matters more, but because it is the only one whose size is known.
+  * **"THREE THINGS AND NONE OF THEM ARE ON FIRE" IS REACHABLE.** A proved
+    optimum and an empty late list are REPORTED as band-4 reassurance, so a clean
+    board gets a real answer instead of a silence a planner has to interpret.
+  * **ELIGIBILITY IS WHAT MAKES CONCENTRATION A FINDING.** A machine at 88%
+    beside two idle ones is a finding only if those machines could have taken the
+    work; otherwise it is what a specialised cell looks like. Where capability
+    could not be resolved, the read says so rather than reporting no
+    alternatives.
+  * **AT-RISK IS CONSERVATIVE BY CONSTRUCTION.** Slack is calendar minutes and
+    the threshold is the order's own longest step in WORKING minutes, which is
+    never more than the calendar time that step occupies — so every order flagged
+    really does have less room than one of its own operations needs.
+  * **WHAT THE DOCUMENT DOES NOT SUPPORT IS REPORTED, NOT OMITTED.** A monolithic
+    run says it has no tray; a solve without the coarse zone says the coming
+    weeks were not checked; an answer reached without a document says it is
+    reading the evidence store alone. An opener that silently drops a category
+    reads as a clean bill of health for it.
+
+**MEASURED ON TWO REAL BOARDS** (`_data/runs`, unchanged): the pinned rolling
+world returns four worries (2 at-risk, the Jan 14 maintenance day across 9
+machines, 14 beyond the horizon, an undeclared derate) over two clean items; a
+monolithic 40-order run leads with an unproved gap of **56.9% = up to 24,414.97
+of a 42,895.47 ledger**, then 13 late orders at 20,701.25, then two
+proceeded-past findings — ranked by money, largest first, as the rule says.
+
+**CARRIED, NOT FIXED (4B.16):** the opener's certificate item reads the evidence
+store's findings and CANNOT state the GRADE — the grade is a submission fact the
+API joins on `/meta` and the schedule document does not carry it, so the one
+figure a stranger recognizes ("ACCEPTED") is the one this item cannot say. The
+Gatehouse recon (`RECON_GATEHOUSE.txt`, Q1) names the same seam from the other
+side. Also: **concentration did not fire on either measured board**, because
+demo density runs far below the 85% threshold — the item is unexercised live and
+proven only by unit test, which is the same demo-density limit §5a.11 recorded
+for the coarse zone.
 
 
 ## 6. Open rulings queue

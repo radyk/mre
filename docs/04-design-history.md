@@ -12532,3 +12532,169 @@ C4, model-proven with a §8 doorway — the optimistic direction, caught and
 pinned); CLAUDE.md remains over its ceiling. Full detail and the verbatim
 re-asked turns in `docs/closeouts/4B.15.md`; carry-forwards in docs/07
 §5a.39–45.
+
+### 2026-07-29 — Session 4B.16: the counterfactual and the opener
+
+Two questions a planner asks NEXT, neither of which had a route. 4B.14 taught the
+product to say what is holding an operation where it is; the question that
+follows is "so what would have to be different?". 4B.15 taught it to ground a
+capability claim; the question a stranger opens a board with is "what should I be
+looking at?". Both were reachable only as an adjacent match or as open synthesis
+— answers that either address something else with perfect citations, or reason
+out what the document could have testified to.
+
+Every figure below was read from the PERSISTED document and this run's evidence
+store (R-AI4: no re-solve anywhere in the session). No solve ran; the pinned
+world is untouched.
+
+#### THE COUNTERFACTUAL IS THE INVERSE OF THE BLOCKER ANALYSIS, OVER THE SAME BOUNDS
+
+`what-would-change` (parse prompt **v13**, `src/mre/modules/counterfactual.py`)
+computes NO new bounds. It takes the docs/05 family that BINDS — which 4B.14
+already names — and reports the change that would move THAT bound, with its
+threshold and the arithmetic:
+
+    op20 needs 7h11m in one piece. The last stretch before where it sits that
+    was too short ran Tuesday 2026-01-13 14:06-19:00 on PAINT-01 — 4h54m,
+    2h17m short.
+
+    To fit Tuesday, one of these has to change:
+      op20 declared splittable with a minimum piece of 215 minutes or less
+          [docs/05 C3 · docs/06 §5.3 routing_lines.csv splittable / min_chunk_minutes]
+      op10 finishes by 2026-01-13 11:49 instead of 14:06 (2h17m earlier)
+          [docs/05 A1/A2 · docs/06 §5.3 routing_lines.csv sequence]
+      PAINT-01's Tuesday window extended by 2h17m (past 19:00)
+          [docs/05 C1/C2 · docs/06 §5.6 calendars.csv exception rows]
+
+    If any of these changed, the next bound would be an earlier step
+    [docs/05 A1/A2] at Tuesday 2026-01-13 14:06 — that removes the barrier;
+    it does not place the operation there.
+
+It is a DISTINCT INTENT rather than a paragraph appended to `why-here`, for two
+reasons that are not style. A diagnosis and a list of changes are acted on
+differently — one is read, the other is taken to the submission — and appending
+the second to every instance of the first would lengthen the diagnosis for the
+majority of turns that never asked for a remedy. The two MEANINGS are written as
+a pair, exactly as 4B.14 wrote `why-here` against `start-reason`: the boundary is
+diagnosis versus remedy about the same operation, and the meaning names the three
+neighbours it is not (`swap-move`, `advice`, `coaching`).
+
+**EVERY THRESHOLD IS VERIFIED BY RE-RUNNING THE SAME SCAN, AND THE VERIFICATION
+APPLIES R-C3.** A lever whose hypothetical does not move `earliest_fit` is
+DROPPED rather than stated. That check found a real defect in the session brief's
+own worked specimen: it proposes `min_chunk_minutes <= 240`, and **240 does not
+work**. R-C3's degenerate-split rule makes an operation resumable only if its
+duration is at least twice the minimum piece, so at 216 the solver treats a
+431-minute operation as atomic again and Tuesday is out of reach. The computed
+ceiling is **215 = floor(431/2)**, and it is right only because the verification
+goes through `resumable_fit`, which applies the degenerate rule — `earliest_fit`
+itself does not know about it (its caller does). Verifying with a bare
+`splittable=True` would have confirmed 240 happily. The number came out of the
+check, not out of the copy.
+
+**NECESSARY, NEVER SUFFICIENT — ENFORCED BY THE SHAPE OF WHAT IS RETURNED.** Each
+lever removes the bound that binds; whether the solver would then place the
+operation there is a question only a re-solve can answer, and R-AI4 forbids one.
+So every answer carrying a lever NAMES THE NEXT BOUND. Where the binding family
+is not chunk-fit, that next bound is RECOMPUTED through the tail of the ladder
+(resource, then calendar, then fit) rather than assumed to be the runner-up:
+relaxing precedence can expose a chunk-fit the runner-up never mentioned, and
+promising the runner-up would be a claim about a placement nobody checked.
+
+**THE B1 LEVER IS COMPUTED, NOT RESTATED.** "431 contiguous minutes free on an
+eligible machine" is the brief's condition; the route resolves capability
+eligibility and scans every other lane from the SAME upstream floor — release,
+precedence, frozen, pin, the bounds a different machine is still subject to.
+Scanning from the beginning of the alternative's calendar instead would report
+open time before the order was released: a true statement about the machine and a
+false one about the operation. On the pinned board PAINT-01 is the only eligible
+lane, so the answer says there is nowhere else to move it — which is a finding,
+and stronger than the condition it replaces. Where an alternative COULD take it
+earlier the answer says so and immediately says that whether the solver would
+prefer it is a cost question it cannot answer without re-solving.
+
+**THREE THINGS IT REFUSES TO PRICE, ALL NAMED ON THE ANSWER.** B7/B8 changeover
+(4B.14's precedent: the setup at an earlier position depends on what would then
+precede it, which is a different schedule). The OBJECTIVE, on a `chose` verdict —
+where the honest counterfactual is "nothing has to change", and inventing a
+barrier to have something to offer would be the same over-claim `why-here` was
+built to end, wearing a helpful face. And a DECLARED CLOSURE standing between the
+near-miss window and the placement: lifting a maintenance day would plainly move
+the operation, so leaving it unmentioned would be a hole in the disjunction, but
+saying what a machine's open hours would be on a day the calendar declares shut
+is an invention rather than a reading. It is reported, with that reason.
+
+The `uncomputed` block (B3/B5, B7/B8, C4, F3) is carried verbatim from the
+blocker analysis. A counterfactual that ignores them is exactly as partial as the
+explanation was.
+
+**STATED LIMIT: a planner-named DAY is not parsed.** "Can this move to Monday"
+reaches the route and is answered about the target the route COMPUTES, naming the
+weekday and date it is testing. Resolving "Monday" to one of five Mondays is the
+class §5a.45 measured last session, and a resolver for it was out of scope here.
+
+#### THE OPENER: A BOARD READ, RANKED BY CONSEQUENCE
+
+`briefing` widens from the 7am morning triage — late orders by lateness ×
+priority, one data-quality line — to the whole family of first questions a
+planner asks of a board ("how does this schedule look", "anything I should
+know", "what's the state of things"). Those three were shape reads that parse
+rule 7 correctly sent to `unmatched`, where the second tier reasoned out an
+answer the document could have TESTIFIED to.
+
+`src/mre/modules/board_opener.py` builds every item the document supports, each
+carrying its own number and a POINTER to the question that opens it up: proof
+status, late orders, at-risk orders, unplaced work, closures ahead,
+concentration, the certificate, and an undeclared capacity margin.
+
+**THE RANKING RULE IS STATED IN THE MODULE, because a ranking nobody can check is
+an opinion.** Band 1 is money at stake, and its two members are comparable
+because both are currency: controllable tardiness (R-PD1 clause (4) — never the
+floor, which no placement can recover, and ranking on the fused number would put
+a board at the top of the list for work that was already late when it arrived)
+and the unproved optimality gap priced against the ledger. Band 2 is work that
+will slip and ranks by count. Band 3 is structure. Band 4 is CLEAN. Within a band
+the priced item leads — not because it matters more in principle, but because it
+is the only one of the two whose size is known.
+
+**"THREE THINGS, AND NONE OF THEM ARE ON FIRE" IS REACHABLE.** A proved optimum
+and an empty late list are reported as band-4 reassurance rather than left
+silent. A clean board deserves a real answer, not a silence a planner has to
+interpret — and a proved cost optimum is reassurance no competitor can offer.
+
+**ELIGIBILITY IS WHAT MAKES CONCENTRATION A FINDING.** A machine at 88% beside
+two idle ones is a finding only if those machines could have taken the work;
+otherwise the same picture is what a specialised cell looks like. Where
+capability could not be resolved for some of the busy machine's operations, the
+read says so rather than reporting no alternatives.
+
+**AT-RISK IS CONSERVATIVE BY CONSTRUCTION.** The threshold is the order's OWN
+longest step, so the sentence is "one hiccup on the longest step and this is
+late" rather than an arbitrary hours figure. Slack is calendar minutes and the
+step is WORKING minutes, which are never more than the calendar time it occupies
+— so every order flagged really does have less room than one of its own
+operations needs, and the ones the rule misses are ones it was right to be quiet
+about.
+
+**WHAT THE DOCUMENT DOES NOT SUPPORT IS REPORTED, NOT OMITTED.** A monolithic run
+says it has no tray; a solve without the coarse zone says the coming weeks were
+not checked; an answer reached without a document says it is reading the evidence
+store alone. An opener that silently drops a category reads as a clean bill of
+health for that category, which is the failure class this whole arc is about.
+
+Measured on two real boards from the dev data root. The pinned rolling world
+returns four worries — 2 at-risk orders, the Jan 14 maintenance day across 9
+machines, 14 orders beyond the horizon, an undeclared derate — over two clean
+items (nothing late, cost optimum proved). A monolithic 40-order run leads with
+an unproved gap of 56.9% priced at **up to 24,414.97 of a 42,895.47 ledger**,
+then 13 late orders at 20,701.25, then two proceeded-past findings: ranked by
+money, largest first, as the rule says.
+
+**REPORTED, DELIBERATELY NOT FIXED:** the certificate item cannot state the
+GRADE, because the grade is a submission fact the API joins on `/meta` and the
+schedule document does not carry it — so the one word a stranger recognizes is
+the one this item cannot say (the Gatehouse recon names the same seam from the
+other side). Concentration did NOT fire on either measured board: demo density
+runs far below the 85% threshold, so the item is unexercised live and proven only
+by unit test, the same limit §5a.11 recorded for the coarse zone. Full detail in
+`docs/closeouts/4B.16.md`; carry-forwards in docs/07 §5a.49-50.

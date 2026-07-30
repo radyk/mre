@@ -158,10 +158,40 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.15 — give the reasoner the manual**, 2026-07-29 (docs/07 v2.59,
-§5a.39-45; docs/04 session amendment; narrative in `docs/closeouts/4B.15.md`).
-Before it: 4B.14 (v2.58, §5a.34-38), 4B.13 (v2.57), 4B.12 (v2.56, a
-MEASUREMENT session), 4B.11 (v2.55, **R-PD1 verbatim**), 4B.10 (v2.54).
+**Session 4B.16 — the counterfactual and the opener**, 2026-07-29 (docs/07 v2.61,
+§5a.49-50; docs/04 session amendment; narrative in `docs/closeouts/4B.16.md`).
+Before it: 4B.15 (v2.59, §5a.39-45), 4B.14 (v2.58, §5a.34-38), 4B.13 (v2.57),
+4B.12 (v2.56, a MEASUREMENT session), 4B.11 (v2.55, **R-PD1 verbatim**).
+
+**THE COUNTERFACTUAL — `what-would-change` (4B.16, §5a.49, parse prompt v13).**
+The INVERSE of `why-here` over the SAME computed bounds and NO new ones: take
+the docs/05 family that BINDS and report the change that would move it, with
+its threshold and the arithmetic (min_chunk / predecessor finish / another
+eligible lane / a longer window). **EVERY THRESHOLD IS VERIFIED BY RE-RUNNING
+`earliest_fit`, THROUGH `resumable_fit` SO R-C3 APPLIES** — which is how the
+brief's own specimen was caught: `min_chunk <= 240` DOES NOT WORK, the ceiling
+is **215 = floor(431/2)**, because at 216 the solver treats the op as atomic.
+Unverified levers are DROPPED. **NECESSARY, NEVER SUFFICIENT:** every answer
+names the NEXT bound (recomputed through the ladder tail, not assumed to be the
+runner-up) and says it removes a barrier rather than placing anything. B7/B8,
+the objective (on `chose`) and a declared closure are NAMED as unpriceable.
+Alternative lanes are scanned from the UPSTREAM FLOOR, never from the start of
+their calendar. A planner-named DAY is NOT parsed — the target is computed and
+the answer says which day it tested.
+
+**THE OPENER — `briefing`, widened (4B.16, §5a.50).** Every item the document
+supports, RANKED BY CONSEQUENCE, each carrying its number and a pointer;
+contracted testimony, no synthesis on the path. Band 1 is money and its two
+members are comparable because both are currency (controllable tardiness —
+never the floor — and the unproved gap x ledger); band 4 is CLEAN, so **"three
+things and none of them are on fire" is reachable**. ELIGIBILITY is what makes
+a busy machine a concentration; at-risk is conservative by construction (slack
+in calendar minutes vs the longest step in WORKING minutes). **WHAT THE
+DOCUMENT DOES NOT SUPPORT IS REPORTED** — no tray on a monolithic run, no
+coarse zone, no document at all. NOT FIXED: the certificate item cannot state
+the GRADE (a submission fact the document does not carry), and concentration
+did not fire on either measured board (demo density is far below 85%, so it is
+unexercised live).
 
 **A MATCHED ROUTE COULD NOT BE WRONG (4B.15, §5a.40).** Five consecutive
 measured turns were swallowed by `coaching` at 0.92 confidence — including an
@@ -601,6 +631,17 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
 
 **Small carry-forwards (do not lose):**
 
+- 4B.16 findings (docs/07 §5a.49-50 — REPORTED, deliberately NOT fixed):
+  **THE OPENER CANNOT STATE THE CERTIFICATE GRADE** — it is a submission fact
+  the API joins on `/meta` and the schedule document does not carry it, so the
+  one word a stranger recognizes is the one the item cannot say. Same seam
+  `RECON_GATEHOUSE.txt` Q1 names from the other side.
+  **CONCENTRATION IS UNEXERCISED LIVE** — demo density is far below the 85%
+  threshold, so it fired on neither measured board and is proven only by unit
+  test (the §5a.11 limit again).
+  **NEITHER NEW ROUTE WAS MEASURED AGAINST A LIVE PARSE** — both were driven by
+  route id and against two real boards; whether the model reaches them from a
+  planner's phrasing is the exam sweep's job, still blocked on the key (§5a.7).
 - 4B.15 findings (docs/07 §5a.39-45 — REPORTED, deliberately NOT fixed):
   **THE SYNTHESIS TOOLBOX CANNOT READ A DECLARED FIELD** — measured as Sonnet's
   single bench failure: the parse sent a field question to tier two, which
@@ -612,7 +653,7 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   of one question) — humble rather than wrong, but distinguishing "one answer
   because I am confused" from "one answer because it IS the answer" needs a
   signal this session does not have.
-  **CLAUDE.md IS 53k AGAINST ITS 40k CEILING** — 47k before this session, which added ~5.6k of status. Compression was explicitly out of 4B.15's scope; it is now the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **CLAUDE.md IS 55k AGAINST ITS 40k CEILING** — 47k before 4B.15 (+5.6k), 53k before 4B.16 (+2k). Compression was out of scope for both; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
   **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
   day-shift restriction answered as C1/C2 "proven end to end" when the item is
   C4 (model-proven, §8 doorway). Caught and pinned; the class stands.

@@ -163,7 +163,8 @@ _HEADER_ONLY_SUBJECTS = frozenset({
     "unknown_entity", "drill_down", "briefing", "contested_fact",
     # Session 4B.14 Item 2 — the blocker analysis composes its whole answer from
     # pre-computed key_facts (the ladder, the binding family, its arithmetic).
-    "why_here",
+    # Session 4B.16 Item 1 — and its inverse, the counterfactual, likewise.
+    "why_here", "counterfactual",
     # Session 4A.3 — the swap/move bridge + the absence pair compose their whole
     # answer in the header (the R-AI3 ladder in planner language).
     "swap_move", "gap_between", "machine_idle",
@@ -1130,6 +1131,8 @@ class TemplateRenderer:
 
         elif bundle.subject_type == "why_here":
             self._render_why_here(lines, bundle)
+        elif bundle.subject_type == "counterfactual":
+            self._render_counterfactual(lines, bundle)
 
         elif bundle.subject_type == "unknown_entity":
             self._render_unknown_entity(lines, bundle)
@@ -2043,6 +2046,208 @@ class TemplateRenderer:
                                      for u in unc) + ".")
         lines.append("")
 
+    def _render_counterfactual(self, lines: list[str],
+                               bundle: ExplanationBundle) -> None:
+        """THE COUNTERFACTUAL, voiced (Session 4B.16 Item 1).
+
+        The bar, from the session brief:
+
+            op20 needs 431 minutes in one piece and Tuesday had 294 left
+            after op10.
+
+            To fit Tuesday, one of these has to change:
+              min_chunk_minutes <= 215 on this operation      [C3, docs/06 §5.3]
+              op10 finishes by 11:49 instead of 14:06         [A1/A2]
+              431 contiguous minutes free on an eligible machine  [B1]
+              PAINT-01's Tuesday window extended by 137 minutes   [C1/C2]
+
+            If min_chunk changed, the next bound would be B1 resource
+            availability at 2026-01-13 14:06 — so this removes the barrier,
+            it does not place the operation there.
+
+        Authored, not LLM-reworded, for the same reason the blocker analysis is:
+        the last paragraph is the whole discipline of the route, and it is
+        exactly the sentence a "answer in 2-3 sentences" reword drops first.
+        Dropping it turns a necessary condition into a promise."""
+        kf = bundle.key_facts
+        name = bundle.subject_external_name
+        seq = kf.get("op_seq")
+        op = f"op{seq}" if seq is not None else "this operation"
+        machine = kf.get("machine")
+        verdict = kf.get("verdict")
+
+        if verdict == "unplaced":
+            lines.append(f"{name} has no placement in this window, so there is "
+                         "nothing to move earlier yet. Ask \"why isn't "
+                         f"{name} scheduled yet?\" and I'll answer that instead.")
+            lines.append("")
+            return
+
+        if (kf.get("op_count") or 0) > 1 and not kf.get("op_named"):
+            lines.append(f"Answering about {name} {op} on {machine} — the first "
+                         f"of its {kf['op_count']} operations.")
+
+        # NOTHING HAS TO CHANGE. The `chose` verdict's honest counterfactual:
+        # the barrier the planner is asking me to remove does not exist, and
+        # inventing one to have something to offer would be the same over-claim
+        # `why-here` was built to end, wearing a helpful face.
+        if verdict == "chose":
+            binding = kf.get("binding") or {}
+            lines.append(
+                f"Nothing has to change for {name} {op} to start earlier: "
+                f"holding every other placement where it is, {machine} had "
+                f"open, unheld time from {binding.get('at')}"
+                + (f", {_dur_min(kf.get('slack_min'))} before it started"
+                   if kf.get("slack_min") else "")
+                + ". It was not prevented from going earlier — the solver "
+                  "preferred this placement.")
+            driver = kf.get("chosen_driver")
+            if driver:
+                lines.append(f"The assignment decision records its driver as "
+                             f"{driver}.")
+            self._render_unpriceable(lines, kf)
+            self._render_not_weighed(lines, kf)
+            lines.append("")
+            return
+
+        if verdict != "could_not":
+            lines.append(
+                f"I can't tell you what would move {name} {op}: the "
+                "earliest-start estimates I can compute don't line up with "
+                "where it actually sits, so I don't know which of them to "
+                "relax. Rather than pick one and sound certain, I'd rather say "
+                "I don't know.")
+            self._render_not_weighed(lines, kf)
+            lines.append("")
+            return
+
+        # -- the arithmetic the levers are about ---------------------------
+        window = kf.get("window") or {}
+        binding = kf.get("binding") or {}
+        needed = _dur_min(kf.get("needed_min"))
+        if window:
+            avail = window.get("available_min") or 0.0
+            short_by = (kf.get("needed_min") or 0.0) - float(avail)
+            piece = ("in one piece" if not kf.get("splittable")
+                     else "of open time")
+            lines.append(
+                f"{name} {op} needs {needed} {piece}. The last stretch before "
+                f"where it sits that was too short ran "
+                f"{window.get('weekday')} {str(window.get('start'))[:10]} "
+                f"{str(window.get('start'))[11:]}–{str(window.get('end'))[11:]} "
+                f"on {machine} — {_dur_min(avail)}, "
+                f"{_dur_min(short_by)} short.")
+            target = f"fit {window.get('weekday')}"
+        else:
+            lines.append(
+                f"{name} {op} is held at {binding.get('at')} by "
+                f"{binding.get('label')} [docs/05 {binding.get('citation')}].")
+            target = "move it earlier"
+
+        levers = [l for l in (kf.get("levers") or []) if l]
+        if not levers:
+            lines.append(
+                f"I can't name a change that would move it: the bound is real "
+                f"and every relaxation I know how to compute either doesn't "
+                f"apply here or didn't check out when I re-ran the placement "
+                f"under it.")
+        else:
+            lines.append("")
+            lines.append(f"To {target}, one of these has to change:")
+            for lev in levers:
+                cite = f"docs/05 {lev.get('citation')}"
+                if lev.get("spec"):
+                    cite += f" · {lev['spec']}"
+                lines.append(f"  {lev.get('statement')}  [{cite}]")
+                lines.append(f"      {lev.get('effect')}")
+
+            # THE HARD RULE, said out loud on every answer that carries a
+            # lever. A necessary condition is not a sufficient one, and the
+            # next bound is the proof of the difference.
+            nxt = kf.get("next_bound") or {}
+            lines.append("")
+            if nxt.get("at"):
+                lines.append(
+                    f"If any of these changed, the next bound would be "
+                    f"{nxt.get('label')} [docs/05 {nxt.get('citation')}] at "
+                    f"{nxt.get('at_weekday') or ''} {nxt['at']}".rstrip()
+                    + " — that removes the barrier; it does not place the "
+                      "operation there.")
+            else:
+                lines.append(
+                    "Each of these removes the barrier; none of them places "
+                    "the operation earlier. Where it would actually land is a "
+                    "question only a re-solve can answer, and I don't re-solve.")
+
+        # A DECLARED CLOSURE IN THE WAY: reported, deliberately not priced.
+        # Lifting a maintenance day would plainly move this operation, so
+        # saying nothing would leave a hole in the disjunction above — but
+        # pricing it means asserting what the machine's open hours WOULD be on
+        # a day the calendar declares shut, which is an invention.
+        closure = kf.get("closure")
+        if closure:
+            lines.append("")
+            lines.append(
+                f"Between that window and where it sits, {machine} is closed "
+                f"for {str(closure.get('reason', 'a closure')).replace('_', ' ')} "
+                f"from {closure.get('start')} to {closure.get('end')}. Lifting "
+                "it would plainly move this, and I haven't priced it: I can't "
+                "say what the machine's open hours would be on a day the "
+                "calendar declares shut.")
+
+        # The eligibility fact, stated whichever way it falls (a shut door is a
+        # finding; an unknown one is not the same thing as a shut one).
+        if not kf.get("eligibility_known"):
+            lines.append("")
+            lines.append("I couldn't resolve which other machines are capable "
+                         "of this operation, so I can't tell you whether "
+                         "moving it to another lane is even an option.")
+        elif kf.get("only_eligible"):
+            lines.append("")
+            lines.append(f"{machine} is the only machine capable of this "
+                         "operation, so there is no other lane to move it to.")
+        elif kf.get("alternatives") and not any(
+                l.get("key") == "alternate" for l in levers):
+            names = ", ".join(a.get("machine") for a in kf["alternatives"]
+                              if a.get("machine"))
+            lines.append("")
+            lines.append(f"No other eligible machine ({names}) has {needed} of "
+                         "open, unheld time any earlier either.")
+
+        self._render_unpriceable(lines, kf)
+        self._render_not_weighed(lines, kf)
+        lines.append("")
+
+    @staticmethod
+    def _render_unpriceable(lines: list[str], kf: dict) -> None:
+        """What this route will NOT put a number on, and why (Session 4B.16).
+
+        The 4B.14 precedent, applied to relaxations: a change whose effect can
+        only be known by re-solving is NAMED rather than estimated. Saying
+        nothing would let the list of levers read as exhaustive."""
+        unp = kf.get("unpriceable") or []
+        if not unp:
+            return
+        lines.append("")
+        lines.append("Can't be priced as a change (it would take a re-solve): "
+                     + "; ".join(f"{u.get('catalog', '?')} "
+                                 f"{_family_gist(u.get('why', ''))}"
+                                 for u in unp) + ".")
+
+    @staticmethod
+    def _render_not_weighed(lines: list[str], kf: dict) -> None:
+        """R-AI3(1): the families this reading did not weigh. Carried verbatim
+        from the blocker analysis, because a counterfactual that ignores
+        B3/B5, B7/B8, C4 and F3 is exactly as partial as the explanation was."""
+        unc = kf.get("uncomputed") or []
+        if not unc:
+            return
+        lines.append("")
+        lines.append("Not weighed here (docs/05): "
+                     + "; ".join(f"{u.get('catalog', '?')} "
+                                 f"{_family_gist(u.get('why', ''))}"
+                                 for u in unc) + ".")
+
     @staticmethod
     def _challenge_lead(kf: dict, verdict: str, binding: dict) -> str:
         """The opening sentence of an answer to a CHALLENGE (Item 3).
@@ -2120,7 +2325,18 @@ class TemplateRenderer:
         lines.append("")
 
     def _render_briefing(self, lines: list[str], bundle: ExplanationBundle) -> None:
+        """THE OPENER, voiced (Session 4B.16 Item 2).
+
+        Ranked by consequence, every line carrying its number, and the pointer
+        that opens each item up. The clean case is a real answer — "three
+        things, and none of them are on fire" — because a board with nothing
+        wrong deserves to be told so rather than to receive a silence a planner
+        has to interpret."""
         kf = bundle.key_facts
+        opener = kf.get("opener")
+        if opener:
+            self._render_opener(lines, kf, opener)
+            return
         fires = kf.get("fires", [])
         if not fires:
             lines.append("Nothing is late today — every order is on track.")
@@ -2151,6 +2367,54 @@ class TemplateRenderer:
                 lines.append(f"  Fix: {dq['fix']}")
         self._render_excluded_note(lines, bundle)
         lines.append("")
+
+    @staticmethod
+    def _render_opener(lines: list[str], kf: dict, items: list[dict]) -> None:
+        """The ranked board read. Worries first, in rank order; the reassurance
+        after them; then what could not be computed at all."""
+        worries = [i for i in items if not i.get("clean")]
+        clean = [i for i in items if i.get("clean")]
+        scope = kf.get("opener_scope") or {}
+        where = ""
+        if scope.get("window_start") and scope.get("window_end"):
+            where = (f" over {scope['window_start']} to "
+                     f"{scope['window_end']}")
+        counts = ""
+        if scope.get("orders") and scope.get("machines"):
+            counts = (f"{scope['orders']} orders on {scope['machines']} "
+                      f"machines{where}. ")
+
+        if not worries:
+            lines.append(f"{counts}Nothing on this board needs your attention "
+                         "— and that is a real answer, not a silence:")
+        else:
+            n = len(worries)
+            lines.append(f"{counts}{n} thing{'s' if n != 1 else ''} worth your "
+                         f"attention, worst first:")
+        lines.append("")
+        for n, item in enumerate(worries, start=1):
+            lines.append(f"{n}. {item.get('headline')}")
+            for d in item.get("detail") or []:
+                lines.append(f"     {d}")
+            if item.get("pointer"):
+                lines.append(f"     -> {item['pointer']}")
+            lines.append("")
+        if clean:
+            if worries:
+                lines.append("And what is going right:")
+            for item in clean:
+                lines.append(f"  · {item.get('headline')}")
+            lines.append("")
+
+        # WHAT THIS READ COULD NOT SEE. An opener that silently drops a
+        # category reads as a clean bill of health for it, which is the exact
+        # failure this session is about.
+        gaps = kf.get("opener_unavailable") or []
+        if gaps:
+            lines.append("Not covered by this read:")
+            for g in gaps:
+                lines.append(f"  · {g.get('what')} — {g.get('why')}.")
+            lines.append("")
 
     def _render_open_card(self, lines: list[str], card: dict) -> None:
         """Session 4B.5 CU2 — the OPEN DELTA CARD, read back.
@@ -2597,6 +2861,12 @@ class LLMRenderer:
         # route exists to draw, and a reword that softens either into "took the
         # next opening" would put back exactly the failure it was built to end.
         "why_here",
+        # Session 4B.16 Item 1: the counterfactual, for the same two reasons and
+        # a third. Its closing paragraph — "that removes the barrier; it does
+        # not place the operation there" — is the entire discipline of the
+        # route, and it is the first sentence an "answer in 2-3 sentences"
+        # reword drops. Without it a necessary condition reads as a promise.
+        "counterfactual",
         # Session 4A.3: the swap/move bridge + the absence pair are authored — the
         # take + gesture bridge are composed on the evidence, never LLM-improvised.
         "swap_move", "gap_between", "machine_idle",
@@ -2620,6 +2890,12 @@ class LLMRenderer:
         # model to reword would dissolve the very thing that was verified — the
         # words the provenance label is attached to. Rendered verbatim, always.
         "synthesis", "prove_it",
+        # Session 4B.16 Item 2: THE OPENER is a ranked list of composed authored
+        # items, each carrying its own number and its own pointer. The
+        # "answer in 2-3 sentences" reword drops items — and an opener that
+        # drops an item reads as a clean bill of health for it, which is the
+        # failure the route exists to end. Same recurring cure (4A.3c CU3).
+        "briefing",
         # Session 4A.5c: the PROMOTED route's cause mix is composed authored copy
         # over pre-computed facts, and it carries the two hedges the dossier made
         # conditions of promotion — the premise check and the named-unattributed

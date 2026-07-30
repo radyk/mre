@@ -157,6 +157,14 @@ ROUTE_TAXONOMY: dict[str, dict] = {
     # operation (Item 5(d)).
     "why-here":              {"params": ["order"],
                               "canonical": "why is {order} placed where it is?"},
+    # Session 4B.16 Item 1 — THE COUNTERFACTUAL. The INVERSE of `why-here` over
+    # the same computed bounds: not "what is holding this here" but "what would
+    # have to be DIFFERENT for it to go earlier", with the threshold and the
+    # arithmetic. Same subject, different predicate — which is why it is its own
+    # intent rather than a paragraph appended to the blocker analysis.
+    "what-would-change":     {"params": ["order"],
+                              "canonical": "what would have to change for "
+                                           "{order} to start earlier?"},
     "drill-down":            {"params": [],          "canonical": "tell me more about that"},
     "briefing":              {"params": [],          "canonical": "what should I worry about today?"},
     "unknown-entity":        {"params": ["order"],   "canonical": "is {order} in this schedule?"},
@@ -650,7 +658,7 @@ class Explainer:
         if route_id == "excluded-orders":
             return self._explain_excluded_orders(q, params.get("order"))
         if route_id == "briefing":
-            return self._explain_briefing(q)
+            return self._explain_briefing(q, params.get("document"))
         if route_id == "advice":
             return self._explain_advice(q, params.get("order"))
         if route_id == "confirm-take":
@@ -695,6 +703,11 @@ class Explainer:
                                           op_seq=params.get("op_seq"),
                                           document=params.get("document"),
                                           challenge=params.get("challenge"))
+        if route_id == "what-would-change":
+            return self._explain_counterfactual(params.get("order"),
+                                                params.get("machine"), q,
+                                                op_seq=params.get("op_seq"),
+                                                document=params.get("document"))
         if route_id == "contested-fact":
             return self._explain_contested(params.get("order"), q,
                                            claim=params.get("contested_claim"),
@@ -1944,16 +1957,33 @@ class Explainer:
         """Assemble the blocker analysis for ONE placed operation, entirely from
         the persisted document (R-AI4 — never a re-solve).
 
-        Returns ``(analysis, row)`` or ``(None, None)``. Everything the pure
-        module needs is read here, because this is the layer that knows how to
-        resolve an order to its rows, a machine to its calendar and an operation
-        to its spec."""
+        Returns ``(analysis, row)`` or ``(None, None)``."""
+        got = self._blocker_inputs(order_ref, machine_ref, op_seq, document)
+        if got is None:
+            return None, None
+        analysis, row, _inputs = got
+        return analysis, row
+
+    def _blocker_inputs(self, order_ref: str, machine_ref: Optional[str] = None,
+                        op_seq: Optional[int] = None,
+                        document: Any = None):
+        """The blocker analysis AND the raw ladder inputs it was computed from.
+
+        Session 4B.16 Item 1: the counterfactual re-runs the SAME scan under a
+        hypothetical, so it needs the same open windows and occupancy the
+        analysis used — not a second reading of them, which could differ. One
+        reader, two consumers.
+
+        Returns ``(analysis, row, inputs)`` or None. Everything the pure modules
+        need is read here, because this is the layer that knows how to resolve an
+        order to its rows, a machine to its calendar and an operation to its
+        spec."""
         from mre.modules.blocker_analysis import analyze
         from mre.modules.calendar_utils import is_effectively_resumable
 
         row = self._pick_op_row(order_ref, machine_ref, op_seq)
         if row is None:
-            return None, None
+            return None
         machine = row["machine"]
         my_start, my_end = _to_dt(row["start"]), _to_dt(row["end"])
 
@@ -2013,19 +2043,21 @@ class Explainer:
         except Exception:  # noqa: BLE001 — a monolithic run has no rolling block
             frozen_until, frozen_applies = None, False
 
+        open_windows = self._open_windows(machine)
         analysis = analyze(
             order=order_ref, op_seq=row.get("op_seq"), machine=machine,
             actual_start=my_start, actual_end=my_end,
             working_min=working_min, splittable=splittable,
             min_chunk_min=min_chunk,
-            open_windows=self._open_windows(machine),
+            open_windows=open_windows,
             occupied=occupied, predecessors=predecessors,
             release=_to_dt(demand.get("earliest_start")),
             frozen_until=frozen_until, frozen_applies=frozen_applies,
             pin_start=self._pin_start_for(row["operation_ref"]),
             chosen_driver=self._first_assignment_driver(order_ref),
             holder=holder, closures=self._closures(machine))
-        return analysis, row
+        return analysis, row, {"open_windows": open_windows,
+                               "occupied": occupied}
 
     def _explain_why_here(self, order_ref: Optional[str],
                           machine_ref: Optional[str] = None,
@@ -2094,6 +2126,153 @@ class Explainer:
                 "op_count": len(rows),
                 "op_named": bool(op_seq is not None or machine_ref),
                 "challenge": challenge or None,
+            },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _eligible_lanes(self, op_ref: Optional[str],
+                        exclude: str) -> tuple[Optional[list[dict]], bool]:
+        """Every OTHER capability-eligible machine, with its free time.
+
+        Returns ``(lanes, known)``. ``known`` is False when capability
+        resolution could not be read at all — the difference between "there is
+        nowhere else" and "I could not tell", which the answer must not blur.
+
+        Free time is the machine's resolved open calendar minus everything
+        already placed on it, computed through the SAME two helpers the blocker
+        analysis uses, so an alternative lane is measured the way the incumbent
+        lane is."""
+        from mre.modules.blocker_analysis import _subtract
+        names = self._eligible_machine_names(op_ref)
+        if names is None:
+            return None, False
+        rows = self._load_enriched_assignments()
+        lanes: list[dict] = []
+        for name in names:
+            if name == exclude:
+                continue
+            busy: list[tuple] = []
+            for r in rows:
+                if r.get("machine") != name:
+                    continue
+                for c in r.get("chunks") or []:
+                    cs, ce = _to_dt(c.get("start")), _to_dt(c.get("end"))
+                    if cs is not None and ce is not None:
+                        busy.append((cs, ce))
+            lanes.append({"machine": name,
+                          "free": _subtract(self._open_windows(name), busy)})
+        return lanes, True
+
+    def _explain_counterfactual(self, order_ref: Optional[str],
+                                machine_ref: Optional[str] = None,
+                                question: str = "",
+                                op_seq: Optional[int] = None,
+                                document: Any = None) -> ExplanationBundle:
+        """"What would have to change?" — the INVERSE of the blocker analysis
+        over the same computed bounds (Session 4B.16 Item 1).
+
+        No new bounds are computed here and none are needed: `why-here` already
+        knows which docs/05 family binds, and this route reports what would move
+        that bound, with its threshold and the arithmetic. Every threshold is
+        verified by re-running the same scan under the hypothetical.
+
+        THE HARD RULE, enforced by the shape of what is returned: a lever
+        removes a barrier, and ``next_bound`` names what applies once it is
+        gone. Nothing here claims the solver would then place the operation
+        there — that needs a re-solve, which R-AI4 forbids."""
+        from mre.modules.counterfactual import build
+
+        if not order_ref:
+            return self._unknown_question("what would have to change for that "
+                                          "operation to start earlier?")
+        if self._demand_by_order(order_ref) is None:
+            return self._explain_unknown_entity(order_ref)
+        got = self._blocker_inputs(order_ref, machine_ref, op_seq,
+                                   document=document)
+        if got is None:
+            # Its OWN floor, not `why-here`'s. "There is no 'here' to explain"
+            # answers a question about a placement; this one was asked about a
+            # change, and the honest answer is that there is nothing placed to
+            # move — which is a different sentence and a different next step.
+            return ExplanationBundle(
+                question=(f"What would have to change for {order_ref} to start "
+                          "earlier?"),
+                subject_id=(self._demand_by_order(order_ref) or {}).get(
+                    "id", order_ref),
+                subject_type="counterfactual",
+                subject_external_name=order_ref,
+                ordered_records=[],
+                key_facts={"order": order_ref, "verdict": "unplaced"},
+                snapshot_id=self._snap_id,
+                identity_map=self._identity_map,
+            )
+        analysis, row, inputs = got
+        lanes, known = self._eligible_lanes(row.get("operation_ref"),
+                                            analysis.machine)
+        cf = build(analysis,
+                   open_windows=inputs["open_windows"],
+                   occupied=inputs["occupied"],
+                   alternatives=lanes or [],
+                   eligibility_known=known)
+
+        rows = [r for r in self._order_rows(order_ref) if r.get("start")]
+        return ExplanationBundle(
+            question=(f"What would have to change for {order_ref} "
+                      f"op{row.get('op_seq')} to start earlier?"),
+            subject_id=(self._demand_by_order(order_ref) or {}).get("id", order_ref),
+            subject_type="counterfactual",
+            subject_external_name=order_ref,
+            ordered_records=self._assignment_records_for_ops(
+                {row["operation_ref"]}, set(row.get("demand_ids") or [])),
+            key_facts={
+                "order": order_ref,
+                "op_seq": row.get("op_seq"),
+                "machine": analysis.machine,
+                "start": _fmt_ts(row["start"]),
+                "start_weekday": _weekday(row["start"]),
+                "verdict": cf.verdict,
+                "needed_min": cf.needed_min,
+                "splittable": cf.splittable,
+                "min_chunk_min": cf.min_chunk_min,
+                "binding": ({"family": cf.binding_family,
+                             "citation": cf.binding_citation,
+                             "label": cf.binding_label,
+                             "at": _fmt_dt(cf.binding_at)}
+                            if cf.binding_family else None),
+                "window": ({"start": _fmt_dt(cf.window["start"]),
+                            "end": _fmt_dt(cf.window["end"]),
+                            "weekday": cf.window["start"].strftime("%A"),
+                            "available_min": cf.window["available_min"],
+                            "needed_min": cf.window["needed_min"]}
+                           if cf.window else None),
+                "levers": [{"key": l.key, "citation": l.citation,
+                            "spec": l.spec, "statement": l.statement,
+                            "effect": l.effect,
+                            "threshold_min": l.threshold_min}
+                           for l in cf.levers],
+                "next_bound": ({**cf.next_bound,
+                                "at": _fmt_dt(cf.next_bound.get("at")),
+                                "at_weekday": (
+                                    cf.next_bound["at"].strftime("%A")
+                                    if cf.next_bound.get("at") else None)}
+                               if cf.next_bound else None),
+                "closure": (_display_facts(cf.closure) if cf.closure else None),
+                "alternatives": [{"machine": a["machine"],
+                                  "earliest": _fmt_dt(a.get("earliest")),
+                                  "earlier": a.get("earlier")}
+                                 for a in cf.alternatives],
+                "only_eligible": cf.only_eligible,
+                "eligibility_known": cf.eligibility_known,
+                "slack_min": cf.slack_min,
+                "chosen_driver": cf.chosen_driver,
+                "dropped": cf.dropped,
+                "unpriceable": [{"catalog": c, "why": w}
+                                for c, w in cf.unpriceable],
+                "uncomputed": [{"catalog": c, "why": w}
+                               for c, w in cf.uncomputed],
+                "op_count": len(rows),
+                "op_named": bool(op_seq is not None or machine_ref),
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
@@ -2972,11 +3151,275 @@ class Explainer:
             identity_map=self._identity_map,
         )
 
-    def _explain_briefing(self, question: str) -> ExplanationBundle:
-        """The morning briefing (CU7): the question a planner asks at 7am. A
-        TRIAGE, not a list — the fires ranked by lateness × priority, the common
-        cause named if one exists, and the one data-quality item that matters.
-        Composed from the existing late/severity/driver machinery, no new solve."""
+    # ------------------------------------------------------------------
+    # THE OPENER (Session 4B.16 Item 2) — extraction. The board_opener module
+    # decides what is worth saying and in what order; these read the facts.
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _doc(document: Any) -> dict:
+        """A schedule document as a plain dict, whatever arrived. The ask path
+        hands over JSON; a test or the assembler may hand over the model."""
+        if document is None:
+            return {}
+        if isinstance(document, dict):
+            return document
+        if hasattr(document, "model_dump"):
+            try:
+                return document.model_dump(mode="json")
+            except Exception:  # noqa: BLE001
+                return {}
+        return {}
+
+    def _opener_late(self, doc: dict) -> tuple[list[dict], list[tuple[str, str]]]:
+        """Late orders from the document's per-demand service truth (R-PD1:
+        the floor beside the controllable part, never fused).
+
+        Without a document this falls back to the evidence metrics the briefing
+        has always read — the same facts, one field poorer (no due date), which
+        is why at-risk is reported as unavailable in that case rather than
+        guessed at."""
+        outcomes = doc.get("service_outcomes") or []
+        if outcomes:
+            return ([{"order": o.get("work_order"),
+                      "lateness_min": o.get("lateness_min"),
+                      "floor_min": o.get("tardiness_floor_min"),
+                      "cost": o.get("tardiness_cost")}
+                     for o in outcomes if (o.get("lateness_min") or 0) > 0], [])
+        floors: dict[str, float] = {}
+        for r in self._index._all_evidence:
+            if (r.get("record_type") == "metric"
+                    and r.get("name") == "tardiness_floor_minutes"):
+                for s in r.get("subjects", []) or []:
+                    if s.get("entity_id"):
+                        floors[s["entity_id"]] = float(r.get("value") or 0.0)
+        late: list[dict] = []
+        for r in self._index._all_evidence:
+            if (r.get("record_type") != "metric"
+                    or r.get("name") != "lateness_minutes"
+                    or (r.get("value") or 0.0) <= 0):
+                continue
+            for s in r.get("subjects", []) or []:
+                did = s.get("entity_id")
+                if not did:
+                    continue
+                refs = (self._identity_map.external_refs(did)
+                        if self._identity_map else [])
+                total = float(r.get("value") or 0.0)
+                late.append({"order": refs[0].value if refs else did[:8],
+                             "lateness_min": total,
+                             "floor_min": min(floors.get(did, 0.0), total)})
+        return late, [("what those late orders cost and how much slack the "
+                       "on-time ones have",
+                       "the per-demand service record reaches this answer on "
+                       "the schedule document, which this run did not supply")]
+
+    def _opener_at_risk(self, doc: dict) -> list[dict]:
+        """On time, with less slack than one of its own operations takes.
+
+        The threshold is the order's OWN longest operation, read from the
+        assignments' chunk minutes — so the sentence is "one hiccup on the
+        longest step and this is late" rather than an arbitrary hours figure."""
+        longest: dict[str, float] = {}
+        for a in doc.get("assignments") or []:
+            mins = sum(float(c.get("working_min") or 0)
+                       for c in a.get("chunks") or [])
+            for wo in a.get("work_orders") or []:
+                longest[str(wo)] = max(longest.get(str(wo), 0.0), mins)
+        out: list[dict] = []
+        for o in doc.get("service_outcomes") or []:
+            lateness = o.get("lateness_min")
+            wo = str(o.get("work_order") or "")
+            if lateness is None or lateness > 0 or not wo:
+                continue
+            slack = -float(lateness)
+            op = longest.get(wo)
+            if op and slack < op:
+                out.append({"order": wo, "slack_min": slack,
+                            "longest_op_min": op})
+        return out
+
+    def _opener_load(self) -> tuple[Optional[list[dict]], list[tuple[str, str]]]:
+        """Per-machine utilization over its OWN open hours, and — for a machine
+        near saturation — the eligible alternatives and their utilization.
+
+        ELIGIBILITY IS WHAT MAKES IT A FINDING. A busy machine beside an idle
+        one it shares no capability with is what a specialised cell looks like,
+        not a concentration, and calling it one would be an observation dressed
+        as a problem."""
+        rows = [r for r in self._load_enriched_assignments() if r.get("start")]
+        if not rows:
+            return None, [("machine load", "this run has no placements")]
+        busy: dict[str, float] = {}
+        ops_on: dict[str, list[str]] = {}
+        for r in rows:
+            m = r.get("machine")
+            if not m:
+                continue
+            busy[m] = busy.get(m, 0.0) + float(r.get("run_min") or 0.0)
+            ops_on.setdefault(m, []).append(r.get("operation_ref"))
+        # EVERY machine in the plant's vocabulary, not just the ones carrying
+        # work: an IDLE eligible alternative has no rows at all, so building
+        # this over `busy` alone would drop exactly the machines a
+        # concentration finding is about.
+        util: dict[str, float] = {}
+        for m in sorted(set(self._machine_refs.values()) | set(busy)):
+            open_min = sum((e - s).total_seconds() / 60.0
+                           for s, e in self._open_windows(m))
+            util[m] = (busy.get(m, 0.0) / open_min) if open_min > 0 else 0.0
+
+        unknown = 0
+        out: list[dict] = []
+        for m, u in util.items():
+            if u < 0.5:                       # only a busy lane can concentrate
+                continue
+            alts: dict[str, float] = {}
+            for op_ref in ops_on.get(m, []):
+                names = self._eligible_machine_names(op_ref)
+                if names is None:
+                    unknown += 1
+                    continue
+                for nm in names:
+                    if nm != m and nm in util:
+                        alts[nm] = util[nm]
+            out.append({"machine": m, "utilization": u,
+                        "alternatives": [{"machine": k, "utilization": v}
+                                         for k, v in sorted(alts.items())]})
+        notes = ([("whether the busiest machine's work could have gone "
+                   "elsewhere", "capability requirements could not be read for "
+                   f"{unknown} of its operations")] if unknown else [])
+        return out, notes
+
+    def _opener_closures(self, doc: dict) -> list[dict]:
+        """Declared closures inside the window, grouped by (date, reason), with
+        the count of operations that pause across each — "what it displaces",
+        computed rather than asserted."""
+        rows = [r for r in self._load_enriched_assignments() if r.get("start")]
+        machines = sorted({r["machine"] for r in rows if r.get("machine")})
+        if not machines:
+            return []
+        lo = _to_dt(doc.get("reference_date")) or min(
+            (_to_dt(r["start"]) for r in rows), default=None)
+        hi = max((_to_dt(r["end"]) for r in rows if r.get("end")), default=None)
+        grouped: dict[tuple, dict] = {}
+        for m in machines:
+            for c in self._closures(m):
+                s, e = c.get("start"), c.get("end")
+                if s is None or e is None:
+                    continue
+                if (lo is not None and e < lo) or (hi is not None and s > hi):
+                    continue
+                key = (s.date(), c.get("reason") or "closure")
+                g = grouped.setdefault(key, {
+                    "date": s.strftime("%A %Y-%m-%d"),
+                    "reason": (c.get("reason") or "closure").replace("_", " "),
+                    "start": s, "end": e, "machines": [], "spans": 0})
+                g["machines"].append(m)
+                for r in rows:
+                    if r.get("machine") != m or len(r.get("chunks") or []) < 2:
+                        continue
+                    rs, re_ = _to_dt(r["start"]), _to_dt(r.get("end"))
+                    if rs is not None and re_ is not None and rs < s and re_ > e:
+                        g["spans"] += 1
+        for g in grouped.values():
+            g["plant_wide"] = len(g["machines"]) == len(machines)
+        return sorted(grouped.values(),
+                      key=lambda g: (-len(g["machines"]), str(g["start"])))
+
+    def _opener_certificate(self) -> dict:
+        """The grade is not in the document (it is a SUBMISSION fact, joined on
+        /meta), so the opener reports what the evidence carries: how many
+        findings stand and how many the gate PROCEEDED PAST."""
+        findings = sorted(
+            self._index.all_findings(),
+            key=lambda r: ({"blocker": 0, "error": 1, "warning": 2, "info": 3}
+                           .get(r.get("severity", "info"), 9), r.get("seq", 0)))
+        top = None
+        if findings:
+            composed = compose_finding_sentence(findings[0], self._identity_map,
+                                                _load_catalog_safe())
+            top = (composed or {}).get("cause")
+        return {"grade": None, "count": len(findings),
+                "proceeded": sum(1 for f in findings
+                                 if f.get("disposition") == "proceeded_flagged"),
+                "top": top}
+
+    def _build_opener(self, document: Any):
+        """Assemble the opener from the document and this run's evidence."""
+        from mre.modules.board_opener import build
+
+        doc = self._doc(document)
+        unavailable: list[tuple[str, str]] = []
+        if not doc:
+            unavailable.append(
+                ("the money at stake, slack, and everything beyond the horizon",
+                 "no schedule document reached this answer, so I am reading the "
+                 "evidence store alone"))
+        late, notes = self._opener_late(doc)
+        unavailable += notes
+        at_risk = self._opener_at_risk(doc) if doc else []
+        load, notes = self._opener_load()
+        unavailable += notes
+        rolling = doc.get("rolling") or {}
+        tray = rolling.get("beyond_horizon") or []
+        coarse = rolling.get("coarse_zone") or {}
+        unplaced = None
+        if rolling:
+            dues = sorted(str(i.get("due"))[:10] for i in tray if i.get("due"))
+            unplaced = {
+                "count": len(tray),
+                "earliest_due": dues[0] if dues else None,
+                "unmodelable_count": coarse.get("unmodelable_count"),
+                "infeasibility_proven": coarse.get("infeasibility_proven"),
+            }
+        elif doc:
+            unavailable.append(
+                ("work beyond the planning horizon",
+                 "this is a monolithic run — it has one window and no tray"))
+        derate = ({"value": coarse.get("capacity_derate"),
+                   "provenance": coarse.get("capacity_derate_provenance")}
+                  if coarse else None)
+        if doc and not coarse:
+            unavailable.append(
+                ("whether the coming weeks fit",
+                 "the coarse zone did not run on this solve (it is opt-in)"))
+        horizon = doc.get("horizon") or {}
+        return build(
+            proof=self.cost_proof(),
+            cost=doc.get("cost_summary") or {},
+            late=late, at_risk=at_risk, concentration=load,
+            closures=self._opener_closures(doc), unplaced=unplaced,
+            derate=derate, certificate=self._opener_certificate(),
+            scope={"reference_date": _fmt_date(doc.get("reference_date")),
+                   "window_start": _fmt_date(horizon.get("start")
+                                             or rolling.get("window_start")),
+                   "window_end": _fmt_date(horizon.get("end")
+                                           or rolling.get("window_end")),
+                   "orders": len({wo for a in doc.get("assignments") or []
+                                  for wo in a.get("work_orders") or []}) or None,
+                   "machines": len(doc.get("resources") or []) or None},
+            unavailable=unavailable)
+
+    def _explain_briefing(self, question: str,
+                          document: Any = None) -> ExplanationBundle:
+        """THE OPENER (Session 4B.16 Item 2) — what on this board should I be
+        looking at, ranked by consequence, every line carrying its number.
+
+        It began (4A.2 CU7) as the morning briefing: the fires ranked by
+        lateness × priority, the common cause, one data-quality line. That is
+        still in here — it is the `late` item — but it was a fraction of what
+        the persisted document knows. A board can be provably optimal, hold a
+        maintenance day that pauses eleven operations, run one machine at 88%
+        beside two eligible empty ones and carry fourteen orders beyond the
+        horizon, and none of it reached the answer.
+
+        ENTIRELY CONTRACTED TESTIMONY: no synthesis on this path. Each item
+        carries a POINTER — the question that opens it up — which is where the
+        second tier or another route elaborates on one line.
+
+        The pre-4B.16 fire list is still computed and still on ``key_facts``:
+        it is what the older renderers and the exam bank read, and the opener
+        is additive over it rather than a replacement that breaks them."""
         # the fires: late orders ranked by lateness × priority weight
         late_metrics = [
             r for r in self._index._all_evidence
@@ -3024,8 +3467,9 @@ class Explainer:
         if findings:
             top_dq = compose_finding_sentence(findings[0], self._identity_map,
                                               _load_catalog_safe())
+        opener = self._build_opener(document)
         return ExplanationBundle(
-            question=question or "What should I worry about today?",
+            question=question or "What should I be looking at?",
             subject_id=self._snap_id,
             subject_type="briefing",
             subject_external_name="today",
@@ -3037,6 +3481,16 @@ class Explainer:
                 "top_data_quality": top_dq,
                 "finding_count": len(findings),
                 "excluded_summary": self._excluded_summary(),
+                # Session 4B.16 Item 2 — the ranked board read.
+                "opener": [{"key": i.key, "band": i.band, "amount": i.amount,
+                            "headline": i.headline, "detail": list(i.detail),
+                            "pointer": i.pointer, "clean": i.clean,
+                            "figures": i.figures}
+                           for i in opener.items],
+                "opener_clean": opener.clean,
+                "opener_scope": opener.scope,
+                "opener_unavailable": [{"what": w, "why": y}
+                                       for w, y in opener.unavailable],
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
@@ -4401,6 +4855,13 @@ def _display_facts(facts: Optional[dict]) -> dict:
         else:
             out[k] = v
     return out
+
+
+def _fmt_dt(dt: Optional[datetime]) -> Optional[str]:
+    """A real datetime → 'YYYY-MM-DD HH:MM' for copy (Session 4B.16). key_facts
+    are quoted verbatim by the renderers and serialized onto the ask response, so
+    a datetime object here would leak an ISO string into planner text."""
+    return dt.strftime("%Y-%m-%d %H:%M") if isinstance(dt, datetime) else None
 
 
 def _fmt_ts(s: str) -> str:

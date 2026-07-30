@@ -70,6 +70,23 @@ class Intent(str, Enum):
     # and the solver CHOSE this placement. Those are different facts to a
     # planner and the product asserted the first for both.
     WHY_HERE = "why-here"
+    # Session 4B.16 Item 1 — THE COUNTERFACTUAL. `why-here` names the binding
+    # constraint; this names what would have to be DIFFERENT for the operation
+    # to go earlier, with the threshold and the arithmetic, over the SAME
+    # computed bounds and no new ones.
+    #
+    # It is a distinct intent rather than a paragraph on the blocker analysis
+    # because it is a different PREDICATE about the same subject, and the two
+    # answers are acted on differently: one is a diagnosis, the other is a list
+    # of changes a planner could go and make in the submission. Appending it to
+    # every `why-here` would also make the diagnosis longer every time, for the
+    # majority of turns that never asked for a remedy.
+    #
+    # THE HARD RULE it carries: what it reports is NECESSARY, never sufficient.
+    # Each lever removes the bound that binds; whether the solver would then
+    # place the operation there needs a re-solve, which R-AI4 forbids. Every
+    # answer names the NEXT bound that would apply.
+    WHAT_WOULD_CHANGE = "what-would-change"
     # Session 4B.15 Item 3 — ATTRIBUTE LOOKUP. There was no route that reads a
     # declared field off an entity and states it, so "is ORD-000013 op20
     # splittable" returned capability documentation with a scold and "how long
@@ -488,7 +505,25 @@ INTENT_MEANINGS: dict[Intent, str] = {
         "nothing at all. Prefer this over `start-reason` whenever the question "
         "names an earlier time, an alternative day, or asks what prevents "
         "something; prefer `gap-between` only when the planner asks about the "
-        "space between TWO named orders",
+        "space between TWO named orders. It is the DIAGNOSIS — a question "
+        "about what would have to CHANGE, or what it would TAKE, is "
+        "`what-would-change`",
+    # Session 4B.16 Item 1. Written as the PAIR of `why-here`, the way 4B.14
+    # wrote `why-here` as the pair of `start-reason`: the boundary is where a
+    # new vocabulary member costs something, and here the boundary is
+    # diagnosis versus remedy about the same operation.
+    Intent.WHAT_WOULD_CHANGE:
+        "what would have to be DIFFERENT for this operation to start earlier — "
+        "\"what would have to change\", \"how do I get this earlier\", \"what "
+        "would it take to move this up\", \"can this move to Monday\", \"what "
+        "if it were splittable\", \"why can't it be earlier\". It asks for the "
+        "CHANGE and how much of it, where `why-here` asks what is blocking it "
+        "today. Prefer this whenever the question supposes a condition being "
+        "different, asks what the planner could DO about one operation's "
+        "placement, or asks what it would take. It is NOT `swap-move` (a board "
+        "move weighed between two orders and priced in the sandbox), NOT "
+        "`advice` (about the plan or the plant, not one operation), and NOT "
+        "`coaching` (about what the product can model at all)",
     Intent.CONTESTED_FACT:
         "the planner DISPUTES something the assistant just said — a status "
         "(\"isn't ORD-05 on time?\", \"I thought that one was fine\") or, just "
@@ -527,8 +562,18 @@ INTENT_MEANINGS: dict[Intent, str] = {
         "open the full record behind something the assistant JUST said, when the "
         "question adds no subject of its own (\"tell me more\", \"expand that\"). "
         "NOT for \"tell me about <a thing>\" — that is a question about the thing",
+    # Session 4B.16 Item 2 — THE OPENER, widened from "what should I worry
+    # about" to the whole family of first questions a planner asks of a board
+    # they have just opened. The answer is the same either way: everything on
+    # this board worth knowing, ranked by consequence, each line carrying its
+    # number — including "three things, and none of them are on fire".
     Intent.BRIEFING:
-        "what should I worry about today / what needs my attention",
+        "what should I be looking at on this board — \"what should I worry "
+        "about\", \"how does this schedule look\", \"anything I should know\", "
+        "\"what's the state of things\", \"what needs my attention\". A "
+        "whole-board read, ranked by what costs most. It takes no subject; a "
+        "question about ONE order or ONE machine is that order's or that "
+        "machine's route",
     Intent.ADVICE:
         "what should I DO about lateness or capacity — a recommendation, an "
         "intervention, or a hypothesis about changing the plant (\"if we ran "

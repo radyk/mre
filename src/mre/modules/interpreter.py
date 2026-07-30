@@ -87,6 +87,10 @@ _TWO_ORDER_INTENTS = frozenset({Intent.SWAP_MOVE, Intent.GAP_BETWEEN})
 #: `late-orders` would change what a plant-wide question means without saying so.
 _OPERATION_SCOPED_INTENTS = frozenset(
     {Intent.WHY_HERE, Intent.START_REASON, Intent.CONTESTED_FACT,
+     # Session 4B.16 Item 1: the counterfactual is scoped to ONE operation for
+     # exactly the reason the blocker analysis is — asked with a bar selected,
+     # it must answer about THAT bar and not the order's first operation.
+     Intent.WHAT_WOULD_CHANGE,
      # Session 4B.15 Item 3: "is this one splittable" asked with an operation
      # selected must read THAT operation, not the order's first one — the same
      # mis-scoping 4B.14 Item 5(d) fixed for the other three.
@@ -946,7 +950,12 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     # from the rolling block, so its ladder is missing a family without the
     # document. `contested-fact` takes it for the same reason: a `timing` contest
     # is answered BY the blocker analysis.
-    if parsed.intent in (Intent.WHY_HERE, Intent.CONTESTED_FACT):
+    # Session 4B.16: the counterfactual reads the same ladder, so it needs the
+    # same frozen boundary. And the OPENER (Item 2) is a whole-board read whose
+    # proof status, tray, closures and derate provenance live in the document —
+    # without it the route degrades to the pre-4B.16 briefing and says so.
+    if parsed.intent in (Intent.WHY_HERE, Intent.CONTESTED_FACT,
+                         Intent.WHAT_WOULD_CHANGE, Intent.BRIEFING):
         params["document"] = document
     # And the SELECTED OPERATION (Item 5(d)). The board selection carries the
     # operation the planner is pointing at; without it an order-level question

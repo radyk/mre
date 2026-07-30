@@ -1,6 +1,6 @@
 # Question-parse prompt — a GOVERNED ARTIFACT (R-AI5(1))
 
-    prompt_version: 12
+    prompt_version: 13
     ruling:         R-AI5(1) — every question is parsed FIRST by a language model
                     against a CLOSED intent vocabulary, with the conversation
                     history, live board selection, and last-answered subject as
@@ -196,6 +196,40 @@
                     `ROUTE_OFFERS`, the assemblers, their authored copy and this
                     bump, one commit.
 
+    v13:            Session 4B.16 (2026-07-29) — `what-would-change` joins the
+                    vocabulary and `briefing`'s meaning is WIDENED. Two items,
+                    one theme: the questions a planner asks NEXT.
+
+                    (a) THE COUNTERFACTUAL. 4B.14's `why-here` answers "what is
+                    holding this here" and answers it well; the question that
+                    follows it is "so what would have to be different?", and
+                    that had no route. It would have fallen either to
+                    `swap-move` (which weighs a board move between two orders
+                    and prices it in the sandbox) or to `advice` (which is
+                    about the plan, not one operation) — both of them the
+                    adjacent-match failure rule 7 already names, and both of
+                    them answering with something the planner could not act
+                    on. `what-would-change` reports the change that would move
+                    the BINDING bound, with its threshold and the arithmetic,
+                    over the same computed bounds and no new ones. The two
+                    MEANINGS are written as a pair, as 4B.14 wrote `why-here`
+                    against `start-reason`: the boundary is diagnosis versus
+                    remedy about the same operation, and it is where a new
+                    vocabulary member costs something.
+
+                    (b) THE OPENER. `briefing` meant "what should I worry about
+                    today", so the other three ways a planner opens a board —
+                    "how does this schedule look", "anything I should know",
+                    "what's the state of things" — were shape reads that rule 7
+                    correctly sends to `unmatched`, where the second tier
+                    reasons out an answer the document could have testified to.
+                    The route now answers the whole family from the document:
+                    every item it supports, ranked by consequence, each line
+                    carrying its number. A vocabulary-class change: `Intent`,
+                    `INTENT_MEANINGS`, `ROUTE_TAXONOMY`, `ROUTE_OFFERS`, the
+                    two assemblers, their authored copy, the predicate-coverage
+                    map and this bump, one commit.
+
 ## Review discipline
 
 This file is a reviewed artifact, exactly like the driver/finding vocabularies and
@@ -359,18 +393,23 @@ RULES
    the work spread evenly", "whats the busiest day", "is there anything unusual
    about this schedule"), comparisons between two things, cause questions across
    the whole plan ("whats driving the lateness"), money questions beyond a single
-   edit ("where is the money going"), hypotheticals, and optimality ("is there a
-   better schedule", "make it cheaper") are all `unmatched`. Put the closest one
-   or two ids in `nearest` anyway — they are used if the reasoning tier is
-   unavailable.
+   edit ("where is the money going"), and hypotheticals about the PLANT or the
+   plan ("what if we hired a shift", "make it cheaper") are all `unmatched`. Put
+   the closest one or two ids in `nearest` anyway — they are used if the reasoning
+   tier is unavailable.
+
+   Two exceptions worth knowing, because both are contracted now. A hypothetical
+   about ONE OPERATION'S PLACEMENT ("what if it were splittable", "what would it
+   take to get this earlier") is `what-would-change`. A question about the
+   SOLVER'S PROOF ("is this optimal", "did it finish") is `solve-optimality`.
 
    The contracted routes are for the question they NAME, not for the neighbourhood
    they sit in. `late-orders` lists which orders are late or counts them; it is not
    the answer to "why are so many late" — that is `lateness-cause`, its own intent.
-   `briefing` is what needs attention today; it is not the answer to "is this plan
-   front-loaded". `inventory` counts things; it is not the answer to "is the work
-   spread evenly". When in doubt between a route and `unmatched`, choose
-   `unmatched`.
+   `briefing` is the whole-board read a planner opens with; it is not the answer to
+   a SHAPE question about the plan ("is this plan front-loaded", "is the work
+   spread evenly" — those are `unmatched`). `inventory` counts things. When in
+   doubt between a route and `unmatched`, choose `unmatched`.
 
 8. CONFIDENCE is your own read of the intent match, 0.0 to 1.0. Be honest: below
    about 0.45 the system will treat the parse as unmatched rather than answer.

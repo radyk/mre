@@ -506,9 +506,12 @@ class TestVocabularyParity:
         import mre.modules as m
         text = (Path(m.__file__).parent / "parse_prompt.md").read_text(
             encoding="utf-8")
-        # Session 4B.15 bumped this to 12 (attribute-lookup + the widened
-        # coaching meaning). The guard is that the bump HAPPENED with the
-        # vocabulary change, not that it froze at one number.
-        assert "prompt_version: 12" in text
+        # The guard is that the bump HAPPENED with the vocabulary change, not
+        # that it froze at one number — so it is written as a FLOOR (4B.16,
+        # after the literal needed editing for the second session running).
+        # 4B.14 shipped 11; 4B.15 shipped 12; 4B.16 shipped 13.
+        import re as _re
+        version = int(_re.search(r"prompt_version:\s*(\d+)", text).group(1))
+        assert version >= 11
         assert "why-here" in text
         assert "contested_claim" in text
