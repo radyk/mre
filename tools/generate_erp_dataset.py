@@ -152,6 +152,47 @@ SCENARIOS: dict[str, dict[str, Any]] = {
         with_customers=False, cost_profile="C2",
         pilot_scale=True, feel=True,
     ),
+    # THE DEMO BOARD (Errand 4B.22a). pilot_scale's authored physics — 15
+    # machines, capability groups, the splittable P-SPACER, the PAINT changeover
+    # matrix, the second-Wednesday maintenance closure, the Saturday HEAT
+    # overtime window, declared coarse-horizon coefficients — at a density where
+    # a planner's drag has a CONSEQUENCE. The 40-order pilot board it replaces
+    # for demo purposes runs TWELVE of fifteen machines under 15% (measured,
+    # five of them carrying nothing at all) and has nothing late, so a drag
+    # cannot make DISPLACEMENT cost anything: the order it shoves three days
+    # later pays $0.00, because nothing downstream is tight (docs/07 §5a.84).
+    #
+    # Three things differ from `pilot_scale`, and only three:
+    #   * ORDERS — the density lever, measured across candidates before it was
+    #     picked (the candidate table in docs/closeouts/4B.22a.md).
+    #   * pd_share — a share of the book ALREADY PAST DUE at the origin, so
+    #     R-PD1's handling and the tardiness floor/controllable split have a
+    #     specimen on a board someone looks at. created_date is authored BEFORE
+    #     the due date, so this is a true plant fact and not a gate finding.
+    #   * lead_p50 — the due-date median pulled IN from pilot_scale's
+    #     deliberately-wide look-ahead spread, so orders compete for the same
+    #     days and tardiness is a real number.
+    # Everything else, including the seed convention, is pilot_scale's.
+    #
+    # `splittable_weight` IS MEASURED AND REJECTED, and the knob is kept because
+    # the result is worth being able to reproduce. P-SPACER is the only product
+    # whose operation is long enough to CHUNK, at ~4.5% of the book, so a dense
+    # board carries 386 bars and chunks ONE — fewer than the 40-order board it
+    # replaces, which chunks two. Raising the weight 1 -> 4 (42 splittable ops
+    # instead of 9) does not buy chunked bars: it turns a FEASIBLE 386-bar board
+    # into UNKNOWN — an EMPTY board — at BOTH the 7-day and the 10-day window,
+    # 5.5 deterministic units spent for no solution at all. A long splittable
+    # operation is the most expensive admission a window solve can make. So the
+    # demo board declares no weight and the chunked-bar shortfall is REPORTED
+    # rather than engineered away (docs/07 §5a.87).
+    #
+    # feel=True: a demo/measurement substrate, not a truth-bearing gate scenario.
+    "demo_board": dict(
+        orders=280, resources=15, facilities=1, anomalies=[],
+        with_customers=False, cost_profile="C2",
+        pilot_scale=True, feel=True,
+        pd_share=0.12, lead_p50=10,
+    ),
     # The facility_real plant (Session 4B.10): the REAL SHAPE measured in
     # docs/07 §5a.24/.25 — FOUR machines carrying 250-800 ops each, 4-op routes,
     # the book's due-date histogram, and 7.83% PAST-DUE orders (which no fixture
@@ -1105,12 +1146,24 @@ def _pilot_qty(rng: random.Random, profile: dict, splittable: bool,
     return min(q, qty_cap)
 
 
-def _apply_pilot_scale(ds: Dataset, rng: random.Random, n_orders: int) -> dict:
+def _apply_pilot_scale(ds: Dataset, rng: random.Random, n_orders: int,
+                       past_due_share: float = 0.0,
+                       lead_p50_override: Optional[int] = None,
+                       splittable_weight: Optional[int] = None) -> dict:
     """Build the pilot_scale plant: authored physics at the profile's volume.
 
     Returns a descriptive marker (pilot_scale is a FEEL/scale fixture, not a
     truth-bearing gate scenario — it seeds no anomalies and asserts gate
-    behavior only via the ACCEPTED expectation)."""
+    behavior only via the ACCEPTED expectation).
+
+    ``past_due_share``, ``lead_p50_override`` and ``splittable_weight`` exist
+    for the ``demo_board`` preset (Errand 4B.22a) and are the ONLY three knobs
+    that reach this function. All three default to the values that make
+    ``pilot_scale`` itself unchanged, and each is guarded so that at its default
+    it draws NOTHING extra from ``rng`` and changes no weight the draws are made
+    against — the order loop's random stream is byte-identical to the pre-4B.22a
+    one, which is what keeps every ``pilot_scale`` golden valid. Proven, not
+    asserted: ``tools/spikes/demo_board_4b22a/prove_pilot_scale_unchanged.py``."""
     ref = ds.reference_date
     _profile_path = Path(__file__).resolve().parent.parent / "datasets" / "pilot_scale" / "pilot_profile.json"
     profile = json.loads(_profile_path.read_text(encoding="utf-8")) if _profile_path.exists() else {}
@@ -1230,18 +1283,34 @@ def _apply_pilot_scale(ds: Dataset, rng: random.Random, n_orders: int) -> dict:
     # SATURATING the plant (a saturated plant is uniformly late — no knee to
     # measure). Order = widget/bracket/panelR/panelB/shaft/spacer/gear/plate/housing/hub.
     fam_weights = [4, 3, 3, 3, 3, 1, 3, 3, 1, 1]
+    # THE SPLITTABLE SHARE (4B.22a). Index 5 is P-SPACER, the one product whose
+    # single CUT step is a multi-shift "monster" and therefore the ONLY source
+    # of R-C3 chunked bars on this plant. At weight 1 of 22 it is ~4.5% of the
+    # book, which is why a dense demo board can carry three hundred bars and
+    # chunk one of them: a long splittable operation is the most expensive
+    # admission a window solve can make, so most of them land in the tray, where
+    # they draw nothing. Raising this weight is an authored DEMO-COMPOSITION
+    # choice, exactly like the past-due share above — it authors more monster
+    # work, it does not change any operation's physics. None => the list is
+    # untouched, so `rng.choices` draws against identical weights.
+    if splittable_weight is not None:
+        fam_weights = list(fam_weights)
+        fam_weights[5] = splittable_weight
     # Lead-time band (days) from the profile, scaled to a bounded pilot horizon.
     # Spread WIDER than the raw median so the plant is moderately loaded (most
     # orders feasible on time, a tight/late minority) rather than front-loaded
     # and saturated — the regime where a longer look-ahead actually buys cost.
     lt = (profile.get("lead_time_days") or {})
     lead_p50 = max(14, int(lt.get("p50", 7) or 7) * 2)
+    if lead_p50_override is not None:
+        lead_p50 = lead_p50_override
     lead_p90 = int(lt.get("p90", 18) or 18)
     lead_min = 4
     lead_max = max(lead_p90 + 12, 30)
     splittable_products = {"P-SPACER"}
     priority_ladder = (["critical"] * 1 + ["high"] * 2 + ["standard"] * 7)  # 10/20/70
     late_by_design = 0
+    n_past_due = 0
     for i in range(n_orders):
         pid, family, steps = rng.choices(prods, weights=fam_weights, k=1)[0]
         route_id = f"RT-{pid[2:]}"
@@ -1250,15 +1319,33 @@ def _apply_pilot_scale(ds: Dataset, rng: random.Random, n_orders: int) -> dict:
         max_setup = max(s[2] for s in steps)
         qty = _pilot_qty(rng, profile, splittable, max_run, max_setup)
         # Due date: sample a lead in [lead_min, lead_max] biased to the median.
-        lead = min(lead_max, max(lead_min, int(rng.triangular(lead_min, lead_max, lead_p50))))
+        # PAST DUE (4B.22a): a share of the book is ALREADY LATE at the reference
+        # date — R-PD1 work, not a data defect. `past_due_share > 0 and` is load
+        # bearing: at the default it short-circuits, so `rng` is never touched
+        # and pilot_scale's stream is unchanged.
+        lead: int
+        if past_due_share > 0 and rng.random() < past_due_share:
+            lead = -rng.randint(1, 21)          # 1-21 days late at the origin
+            n_past_due += 1
+        else:
+            lead = min(lead_max, max(lead_min,
+                                     int(rng.triangular(lead_min, lead_max, lead_p50))))
         due = ref + timedelta(days=lead)
         pclass = rng.choice(priority_ladder)
         cust = next((cid for cid, _n, pc in _PILOT_CUSTOMERS if pc == pclass), "CUST-CIVIC")
         oid = f"ORD-{i + 1:06d}"
+        # created_date: for a past-due order the order was RAISED BEFORE it came
+        # due, which is the truthful pair. facility_real writes `created = ref`
+        # unconditionally and so emits an inverted pair the M0 gate flags
+        # (docs/07 §5a.30) — that inversion is deliberately left there as the live
+        # proceeded_flagged specimen, and is NOT reproduced here. This board's
+        # past-due work is a true statement about the plant, so it must not wear a
+        # data-defect finding: R-PD1 clause (2) exactly.
+        created = ref if lead >= 0 else (due - timedelta(days=14))
         ds.orders.append({
             "order_id": oid, "product_id": pid, "route_id": route_id,
             "quantity": str(qty), "due_date": due.isoformat(),
-            "created_date": ref.isoformat(), "release_date": "",
+            "created_date": created.isoformat(), "release_date": "",
             "facility_id": fac, "customer_id": cust,
             "priority_class": pclass, "commitment_class": pclass,
         })
@@ -1288,6 +1375,10 @@ def _apply_pilot_scale(ds: Dataset, rng: random.Random, n_orders: int) -> dict:
         "products": [p[0] for p in _PILOT_PRODUCTS],
         "setup_families": ["PAINT_RED", "PAINT_BLUE"],
         "splittable_products": sorted(splittable_products),
+        "past_due_share_declared": past_due_share,
+        "past_due_orders_generated": n_past_due,
+        "lead_p50_effective": lead_p50,
+        "family_weights_effective": list(fam_weights),
         "maintenance_day": maint_day.isoformat(),
         "overtime_saturday": ot_sat.isoformat(),
         "reference_date": ref.isoformat(),
@@ -2309,6 +2400,9 @@ def generate(
     fr_machines: Optional[int] = None,
     fr_alternates: Optional[int] = None,
     fr_past_due: Optional[float] = None,
+    pd_share: Optional[float] = None,
+    lead_p50: Optional[int] = None,
+    splittable_weight: Optional[int] = None,
 ) -> dict[str, Any]:
     """Generate an IDS submission + truth_manifest.json under out_dir.
 
@@ -2359,7 +2453,17 @@ def generate(
     if preset.get("busy_board"):
         truth_extra["busy_board"] = _apply_busy_board(ds, rng)
     if preset.get("pilot_scale"):
-        truth_extra["pilot_scale"] = _apply_pilot_scale(ds, rng, n_orders)
+        # The demo_board preset's knobs (4B.22a). `pilot_scale` itself
+        # declares none of the three, so each resolves to its rng-untouching
+        # default and pilot_scale's output is unchanged.
+        truth_extra["pilot_scale"] = _apply_pilot_scale(
+            ds, rng, n_orders,
+            past_due_share=(pd_share if pd_share is not None
+                            else preset.get("pd_share", 0.0)),
+            lead_p50_override=(lead_p50 if lead_p50 is not None
+                               else preset.get("lead_p50")),
+            splittable_weight=(splittable_weight if splittable_weight is not None
+                               else preset.get("splittable_weight")))
     if preset.get("facility_real"):
         truth_extra["facility_real"] = _apply_facility_real(
             ds, rng, n_orders,
@@ -2439,6 +2543,21 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--fr-past-due", type=float, default=None,
                         help="facility_real only: share of orders already past due "
                              "(book 0.0783; F005 0.252)")
+    parser.add_argument("--pd-share", type=float, default=None,
+                        help="pilot_scale family only: share of orders already "
+                             "past due at the reference date (demo_board: 0.12; "
+                             "pilot_scale itself declares none)")
+    parser.add_argument("--lead-p50", type=int, default=None,
+                        help="pilot_scale family only: median due-date lead in "
+                             "days (demo_board: 10; pilot_scale's own is wider "
+                             "by design)")
+    parser.add_argument("--splittable-weight", type=int, default=None,
+                        help="pilot_scale family only: P-SPACER's weight in the "
+                             "product mix (pilot_scale's own is 1 of 22). "
+                             "Raising it to buy R-C3 chunked bars at density "
+                             "was MEASURED AND REJECTED — see the demo_board "
+                             "preset — so no preset declares a value; the "
+                             "flag exists so the measurement reproduces.")
     parser.add_argument("--out", required=True)
     args = parser.parse_args(argv)
 
@@ -2448,6 +2567,8 @@ def main(argv: list[str] | None = None) -> int:
         facilities=args.facilities, seed=args.seed, scenario=args.scenario,
         anomalies=anomalies, fr_machines=args.fr_machines,
         fr_alternates=args.fr_alternates, fr_past_due=args.fr_past_due,
+        pd_share=args.pd_share, lead_p50=args.lead_p50,
+        splittable_weight=args.splittable_weight,
     )
     print(f"[generate_erp_dataset] wrote submission to {args.out}")
     if truth.get("feel_fixture"):

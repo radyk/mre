@@ -45,3 +45,12 @@ _4b12_scratch/
 _4b12_logs/
 # Session 4B.18 scratch (round-trip measurement, the migrated monolithic copy)
 _4b18_scratch/
+# Sessions 4B.15a / 4B.20 / 4B.21 / 4B.22 scratch (census output, measurement logs)
+_4b15a_scratch/
+_4b20_scratch/
+_4b21_scratch/
+_4b22_scratch/
+# Errand 4B.22a scratch (14 generated candidate worlds + their persisted run dirs,
+# the minted demo_board submission, sweep and verification logs). The SCRIPTS are
+# committed, under tools/spikes/demo_board_4b22a/; their outputs are not.
+_4b22a_scratch/

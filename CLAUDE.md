@@ -158,13 +158,39 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.22 — the second question**, 2026-07-31 (docs/07 v2.68, §5a.79-83;
-docs/04 ruling; narrative in `docs/closeouts/4B.22.md`). Before it:
+**Errand 4B.22a — a demo board worth dragging**, 2026-07-31 (docs/07 v2.69,
+§5a.84-88; docs/04 2026-07-31; narrative in `docs/closeouts/4B.22a.md`). Before
+it: **Session 4B.22 — the second question**, 2026-07-31 (docs/07 v2.68, §5a.79-83;
+docs/04 ruling; narrative in `docs/closeouts/4B.22.md`). Before that:
 4B.21 (v2.67, §5a.71-78), 4B.20 (v2.66, §5a.67-70),
 4B.19 (v2.65, §5a.64-66), 4B.18 (v2.64, §5a.63), 4B.17 (v2.63, §5a.54-62),
 4B.16 (v2.61, §5a.49-50), 4B.15 (v2.59, §5a.39-45), 4B.14 (v2.58, §5a.34-38),
 4B.13 (v2.57), 4B.12 (v2.56, a MEASUREMENT session), 4B.11 (v2.55, **R-PD1
 verbatim**).
+
+**THE DEMO BOARD IS `rolling-c9973708-865` (4B.22a, §5a.84).** `demo_board`
+(`generate_erp_dataset.py`), 280 orders, seed 1, ref 2026-01-05, **window 10 /
+frozen 1**, deterministic, coarse — minted through the API's own two steps.
+386 bars (41 committed / 345 active), 96 late, **47 past-due orders SCHEDULED**,
+tardiness $2,040,146.67 split **$535,800 floor / $1,504,346.67 controllable**, a
+coarse zone binding **8 of 48 cells at 95-99%** of derated capacity, a 122-order
+tray, ACCEPTED / C2 / contract 1.12. Reproduces IDENTICALLY across PYTHONHASHSEED
+0/1/2. Rebuild with ONE command, whose defaults ARE this board:
+`python tools/spikes/demo_board_4b22a/mint_demo_board.py`.
+**`rolling-c362baa4-1b0` IS UNTOUCHED** —
+still the pinned exam world, still resolving, still `proved`; use it when a
+demo wants a proved optimum. **THE PRICE IS THE PROOF: FEASIBLE at gap 92.4%**,
+and **that is DENSITY, not R-PD1** — the controlled pair (same board,
+`pd_share=0.0`) is still FEASIBLE at 84.5% (§5a.85). **The shipped 14-day window
+does not survive this density**: UNKNOWN — an EMPTY board — at 140 and 170 orders,
+INFEASIBLE at 360; and solvability is **NOT MONOTONE** (10-day: UNKNOWN at 200,
+FEASIBLE with 386 bars at 280). A drag now costs **$2,596.67** (split $0.00
+re-optimization / $2,596.67 your move), and **$2,301.67 of it is paid by the
+order it displaced**; the same gesture on the old board costs $354.58 of which
+the displaced order pays **$0.00** — on an empty board displacement is free, so
+the card can only ever charge a planner for their own order. **`pilot_scale` is
+BYTE-IDENTICAL** and proven so at 40 and 400 orders — the three `demo_board`
+knobs draw nothing from `rng` at their defaults. NO `src/mre/` CHANGE.
 
 **A DRILL-DOWN RESOLVES TO THE ANSWER IT FOLLOWS (4B.22, §5a.79 — §5a.77
 DISCHARGED).** The 4B.5 ladder (card > selection > last-subject > history)
@@ -802,6 +828,27 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
 
 **Small carry-forwards (do not lose):**
 
+- 4B.22a findings (docs/07 §5a.86-88 — REPORTED, deliberately NOT fixed; all
+  eight in `docs/closeouts/4B.22a.md` §7). The two a session should take next:
+  **`order-schedule` DOES NOT VOICE THE PAST-DUE DISPOSITION** (R-PD1 clause 6) —
+  *"where is ORD-000040"* returns a four-line itinerary for an order due
+  **2025-12-15**, 21 days before the plan begins, finishing **34.8 days late**
+  with **$20,860** of tardiness of which **$12,000 is floor**, every fact already
+  in the document's own service outcome. **THE CONCENTRATION BAND CANNOT FIRE AT
+  ANY DENSITY** — `_opener_load` divides by the machine's WHOLE RESOLVED CALENDAR
+  (28,080 min against a plan occupying ~25 days), so the busiest lane on a
+  386-bar board reads **39.7%** against `SATURATED = 0.85` and the 50% pre-filter
+  drops it first; **4B.20's denominator class at a FIFTH site**, and 4B.16's
+  "unexercised at demo density" is REFUTED as the explanation. Also:
+  `what-would-change` offered a start of **2025-12-22** on a board whose origin is
+  2026-01-05 (a past-due order's upstream floor is its old release date); **beat
+  one says "this placement isn't possible here" from `status: UNKNOWN`** and beat
+  two then prices the same pin at $2,596.67 (the 2s first-feasible budget was
+  enough at 40 orders, not at 386); a dense board **chunks FEWER** operations than
+  an empty one (1 vs 2) and **forcing more destroys the solve** (splittable weight
+  1 -> 4 turns a FEASIBLE 386-bar board into UNKNOWN at both windows — measured,
+  rejected, knob kept); the gate raises *"CUT-01 is in a workload too dense to
+  schedule cleanly"* as a DATA-QUALITY finding; the at-risk band has ONE member.
 - 4B.22 findings (docs/07 §5a.83 — REPORTED, deliberately NOT fixed):
   **THE RECORD BEHIND THE `why-on-machine` LEAD ANSWERS A DIFFERENT QUESTION** —
   the lead is about WHICH MACHINE (eligibility, "no alternative to weigh") and
@@ -898,7 +945,7 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   of one question) — humble rather than wrong, but distinguishing "one answer
   because I am confused" from "one answer because it IS the answer" needs a
   signal this session does not have.
-  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, ~74k after it. Compression was out of scope for all three; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, **~78k after 4B.22a**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
   **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
   day-shift restriction answered as C1/C2 "proven end to end" when the item is
   C4 (model-proven, §8 doorway). Caught and pinned; the class stands.

@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.68 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.69 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.69:** **Errand 4B.22a — a demo board worth dragging** 2026-07-31 (docs/04 2026-07-31; narrative in `docs/closeouts/4B.22a.md`). A TOOLS AND FIXTURE ERRAND — **nothing under `src/mre/` changed**, so nothing here is a ruling and nothing here is a fix. The demo world was 45 committed operations against 11 active, nothing late, twelve of fifteen machines under 15% loaded, and a planner's drag that could not make displacement cost anything — measured, not asserted: a long backward drag prices at **$0.00** with three affected orders and not a dollar between them, and the short forward collision that replaced it prices at **$354.58** of which the order it shoves three days later pays **$0.00**. Fourteen candidates measured at **the API's own budgets** (`det_total` is not a `SolveRequest` field, so a board measured at any other budget is a board nobody will see); `wall_truncated` False on all fourteen. **THERE IS NO DENSE-AND-PROVED OPTION AND R-PD1 IS NOT WHY**: the controlled pair — the same 280-order board with `pd_share = 0.0` and nothing else changed — is still FEASIBLE at gap 84.5% against 87.0% with 47 past-due orders on it, so **density alone loses the proof** and dropping R-PD1's entire on-board specimen would have bought 2.5 gap points. The shipped 14-day window does not survive this density at all (UNKNOWN — an EMPTY board — at 140 and 170; INFEASIBLE at 360), and solvability is **not monotone**: a 10-day window is UNKNOWN at 200 orders and FEASIBLE with 386 bars at 280. Chosen and minted: **`rolling-c9973708-865`** — 386 bars, 41 committed / 345 active, 96 late, 47 past-due scheduled, tardiness $2,040,146.67 split $535,800 floor / $1,504,346.67 controllable, a coarse zone binding **8 of 48 cells at 95-99%** of derated capacity, a 122-order tray, and an honest **92.4% gap that leads its own opener in money terms**. Reproduces identically across PYTHONHASHSEED 0/1/2. **`rolling-c362baa4-1b0` is UNTOUCHED** and still resolving, which is what keeps this Daryn's choice rather than a fait accompli. A drag now costs **$2,596.67**, split $0.00 re-optimization / $2,596.67 your move, displacing another order by 3.8 days. `pilot_scale` is **byte-identical**, proven at 40 and 400 orders against a baseline from the previous commit. §5a.84-88.
 
 **v2.68:** **Session 4B.22 — the second question** 2026-07-31 (ruling verbatim in docs/04 2026-07-31; narrative in `docs/closeouts/4B.22.md`). **§5a.77 AND §5a.69 BOTH DISCHARGED.** Four measured defects on the pinned board, every one DEAF rather than WRONG — the board no longer lies, and a stranger's second question is always a FOLLOW-UP. **TWO CLASSES, NOT FUSED.** **CLASS A, THE RULING: a drill-down resolves to THE ANSWER IT FOLLOWS.** The 4B.5 ladder resolves WHO a question is about and **has no rung for WHAT WE SAID** — a citation set is not a subject — so *"show me the evidence for that"*, one turn after an answer that cited a record and lit three bars, bound the order correctly and grounded nothing. Three authored cases, none silent: records open; **an answer that cited nothing SAYS SO** (a different fact from having nothing open, and the old copy stated the wrong one for both — it told a planner the citations were "on it" about a CLARIFY); synthesis provenance unchanged. `AnswerMemory` is written at `run_ask`, the ONE seam every live answer passes, and cleared by `forget_deliveries`, which is now the ONE clear for server-side conversation state (4B.16a's fifth-channel defect, refused in advance). **CLASS B: THE ANSWER EXISTED AND NO ROUTE REACHED IT** — 4B.15's attribute-lookup shape, three times. **NO NEW INTENT WAS TAKEN FOR ANY OF THEM**; in each case the parse already reaches the route and the cheaper honest option was to let it carry the figure. B1 `machine-schedule` states the load, from **one shared definition** with the toolbox, naming its quantity and its DENOMINATOR — **and REFUSING the judgment**, because "overloaded" is a threshold no plant here declares and `SATURATED = 0.85` measures a different claim. B2 `advice` leads with the opener's top-ranked item and names which of the two questions it answered; the intervention refusal is right and is kept. B3 `inventory` answers whether an order can be PARTLY placed and **distinguishes measured from invariant** — nothing enforces all-or-nothing, because the admission map keeps one work package per demand. Guard: 35 tests, **every Class A assertion over TWO CONSECUTIVE `run_ask` CALLS on one session id**, five premise tests, **four negative controls each proven red on its own half** — and **the premise fixture's own first version was wrong in exactly the way the session exists to catch** (it chose its subject off `Explainer.route`, which answers about a tray order the live dispatch diverts). §5a.79-83.
 
@@ -4050,6 +4052,98 @@ this session's eight-turn run. **(d) THE B1 FIGURE PRINTS RAW MINUTES** beside a
 percentage, deliberately: two capacity quantities in one sentence are only
 comparable in one unit, the same reason R-PD1 clause (4) keeps the floor and the
 controllable part in minutes (§5a.76).
+
+**§5a.84 — THE DEMO BOARD, AND THE TRADE IT COST (Errand 4B.22a).** The board a
+stranger sees is now `rolling-c9973708-865` (`demo_board`, 280 orders, window 10,
+frozen 1, reference 2026-01-05, seed 1) — 386 bars against 56, six machines
+between 52% and 78% loaded where one was, 96 late orders, 47 scheduled past-due
+orders, and a beyond-horizon tray of 122. **The pinned exam world
+`rolling-c362baa4-1b0` is untouched and still resolves**, ACCEPTED / contract
+1.11 / cost proof `proved`; it remains the regression target for the AI bank and
+the fallback if a proved board is wanted for a demo. **What the density cost is
+the proof**: FEASIBLE at gap **92.4%**, and the controlled pair proves that is
+DENSITY and not R-PD1's past-due work (§5a.85). What it bought is that the
+sandbox has something to say. The same short forward collision prices at
+**$354.58** on the old board and **$2,596.67** on the new one, and the difference
+that matters is not the total: on the old board the DISPLACED order absorbs a
+three-day push for **$0.00** because nothing downstream is tight, while on the
+new one it pays **$2,301.67** of the bill. A card that can only ever charge the
+planner for their own order is not a negotiation surface. `demo_board` is `pilot_scale`'s
+authored physics with three differences and only three — 280 orders, 12% of the
+book past due, a due-date median of 10 days — and `pilot_scale` itself is
+**byte-identical**, checked at 40 and 400 orders rather than claimed.
+
+**§5a.85 — DENSITY LOSES THE PROOF; PAST-DUE WORK IS ALMOST FREE (4B.22a).**
+4B.12 established that R-PD1's admitted past-due work makes tardiness nonzero at
+the lightest density and is what destroys the proof, so a 92% gap on a board
+carrying 47 past-due orders reads as R-PD1's price. **It is not.** The same
+280-order world with `pd_share = 0.0` and nothing else changed is still FEASIBLE
+at gap **84.5%**, against **87.0%** with the past-due work on it — 2.5 points for
+the entire on-board specimen of a capability nobody had ever seen work. Two
+further facts about this plant, both new: **the shipped 14-day window does not
+survive the density at all** (90 orders solve at an 81.9% gap; **140 and 170
+return UNKNOWN — no solution, an EMPTY board**; 360 is proven INFEASIBLE in 2.8
+seconds), and **solvability is not monotone in density** — a 10-day window
+returns UNKNOWN at 200 orders and FEASIBLE with 386 bars at 280. That is 4B.12's
+non-monotonicity appearing in SOLVABILITY rather than in proof cost, and it is
+why the density was measured across a grid rather than bisected. §5a.15 is
+adjacent and still open.
+
+**§5a.86 — REPORTED, NOT FIXED: TWO DEFECTS THAT NEEDED A PAST-DUE ORDER ON A
+BOARD (4B.22a).** **(a) `order-schedule` DOES NOT VOICE THE PAST-DUE
+DISPOSITION**, which R-PD1 clause (6) requires of every per-order route. Asked
+*"where is ORD-000040"* it returns a tidy four-line itinerary — for an order due
+**2025-12-15**, twenty-one days before the plan's origin, finishing **34.8 days
+late**, carrying **$20,860.00** of tardiness of which **$12,000.00 is floor**.
+Every one of those facts is in the document's own service outcome. **(b)
+`what-would-change` OFFERED A START DATE THREE WEEKS BEFORE THE PLAN EXISTS** —
+*"PRESS-FAST had open, unheld time from 2025-12-22 07:00, 864h before it
+started"*, on a board whose reference origin is 2026-01-05. The scan starts at
+the operation's upstream floor and for a past-due order that floor is its old
+release date; the arithmetic is right and the sentence is unusable. Neither was
+reachable before, because no demo board had ever carried a past-due order.
+
+**§5a.87 — REPORTED, NOT FIXED: THE CONCENTRATION BAND'S DENOMINATOR, AND A
+CHUNK COUNT THAT FALLS WITH DENSITY (4B.22a).** **(a) 4B.16 recorded that the
+concentration band never fired and put it down to demo density. It is not
+density.** `Explainer._opener_load` divides run minutes by the machine's **whole
+resolved calendar** — 28,080 minutes on the new board against a plan occupying
+about 25 days — so the busiest lane on a 386-bar board reads **39.7%** against
+`SATURATED = 0.85`, and `_opener_load` filters at 50% before it looks for an
+alternative at all. Measured on both boards at the opener's own denominator:
+CUT-01 **26.8%** on the 40-order board, PAINT-01 **39.7%** on the 386-bar one.
+**This is 4B.20's class at a fifth site** — a capacity figure whose denominator
+is not the one the claim is about. A second gate compounds it: the finding also
+needs an eligible IDLE alternative, and only CUT and PRESS steps carry
+alternates on this plant, so a saturated PAINT or MILL lane could never produce
+it however hot it ran. **(b) A DENSE BOARD CHUNKS FEWER OPERATIONS THAN AN EMPTY
+ONE** — 1 against the current board's 2, the errand's one unmet target. R-C3
+chunking needs a splittable operation too long for one open window; a long
+splittable operation is the most expensive admission a window solve can make, so
+most land in the tray (1 of 9 placed at 280 orders). **Forcing more destroys the
+solve**: raising the splittable product's weight 1 -> 4 turns a FEASIBLE 386-bar
+board into UNKNOWN at BOTH the 7-day and the 10-day window. Measured and
+rejected; the knob is kept so the result reproduces, the preset declares no
+value.
+
+**§5a.88 — REPORTED, NOT FIXED: THREE MORE THE DENSITY MADE VISIBLE (4B.22a).**
+**(a) BEAT ONE SAYS "THIS PLACEMENT ISN'T POSSIBLE HERE" FROM A STATUS THAT
+PROVED NOTHING.** The feasibility ghost returned `status: "UNKNOWN"`,
+`feasible: false` and that message; beat two then found the same pin FEASIBLE
+and priced it at $2,596.67. UNKNOWN means the first-feasible solve could not tell
+inside its 2-second budget — a different fact from impossible — and the cockpit
+draws beat one first, so a planner is told a move is impossible a third of a
+second before being told what it costs. R-T2 anticipates beat two contradicting
+beat one, but about PRICE. At 40 orders 2 seconds sufficed and this never showed.
+**(b) THE GATE SEES THE DENSITY**: the submission grades ACCEPTED with four
+`proceeded_flagged` findings, one of which the opener quotes — *"CUT-01 is in a
+workload too dense to schedule cleanly"*. A statement about CAPACITY arriving
+through the DATA-QUALITY channel is worth a look against R-PD1 clause (2)'s rule
+that the defect vocabulary is never for a true statement about the plant's
+position. Not investigated. **(c) THE AT-RISK BAND HAS ONE MEMBER ON A 386-BAR
+BOARD** — with 96 orders already late there is little left in the
+on-time-but-tight population, and at-risk is conservative by construction
+(4B.16). A limit, now measured at density for the first time.
 
 ## 6. Open rulings queue
 

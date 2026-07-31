@@ -14030,3 +14030,89 @@ else: (a) remove the answer-memory write -> 10 Class A failures, B green;
 (b) drop `machine_load` from the route's key_facts -> 2 B1 failures, A green;
 (c) take `ADVICE` off the document allow-list -> 4 B2 failures; (d) drop the
 partial-placement line -> 2 B3 failures.
+
+### 2026-07-31 — Errand 4B.22a: a demo board worth dragging
+
+An errand, not a session: mint a world, measure it, register it. **No module
+under `src/mre/` changed**, so nothing here is a ruling and nothing here is a
+fix. Full narrative and every figure: `docs/closeouts/4B.22a.md`.
+
+**WHAT WAS WRONG WITH THE BOARD.** The demo world in front of a stranger was 45
+committed operations against 11 active, nothing late, twelve of fifteen machines
+under 15% loaded. Two or three bars could move and nothing they
+displaced ever cost anything — measured, not asserted. A long backward drag on
+`rolling-c362baa4-1b0` returns `cost_delta_abs 0.0`, `move_delta_abs 0.0` and
+three affected orders whose tardiness deltas are each 0.0. That gesture is
+INFEASIBLE on the new board (its predecessor has not finished), so it was
+replaced by a short forward collision and **re-run on the old board too**: there
+it prices at **$354.58**, every cent of it the moved order's own tardiness, with
+the order it shoves three days later paying **$0.00**. On the new board the same
+gesture costs **$2,596.67** and **$2,301.67 of that is paid by the order that got
+pushed**. The total is not the finding; who pays is. The sandbox is the feature the
+negotiation-cockpit thesis rests on and it had nothing to show. The coarse zone,
+the concentration band, R-PD1's past-due handling and the tardiness split had
+never had a specimen on any board anyone looked at.
+
+**THE MEASUREMENT, AND WHY IT WAS TAKEN AT THE API'S BUDGETS.** Fourteen
+candidates, each through the same path the board is minted through, at
+`rolling_horizon._DET_TOTAL_DEFAULT` = 6.0 — because `det_total` is NOT a
+`SolveRequest` field, so every board the cockpit shows gets that and no other.
+Measuring at a budget the registered board cannot have would have measured a
+board nobody will ever see. `wall_truncated` was False on all fourteen.
+
+**THE RESULT THAT MATTERS: THERE IS NO DENSE-AND-PROVED OPTION, AND R-PD1 IS NOT
+WHY.** 4B.12 established that admitted past-due work makes tardiness nonzero at
+the lightest density and is what destroys the proof, so the natural reading of a
+92% gap on the new board is "past-due work costs the proof". The controlled pair
+refutes it: the same 280-order board with `pd_share = 0.0` and nothing else
+changed is **still FEASIBLE at gap 84.5%**, against 87.0% with 47 past-due orders
+on it. **Density alone loses the proof on this plant.** Dropping R-PD1's entire
+on-board specimen would have bought 2.5 gap points, so it was kept.
+
+The shipped 14-day window does not survive this density at all: 90 orders solve
+at an 81.9% gap, **140 and 170 return UNKNOWN — an EMPTY board** — and 360 is
+proven INFEASIBLE in 2.8 seconds. And solvability is **not monotone in density**:
+a 10-day window returns UNKNOWN at 200 orders and FEASIBLE with 386 bars at 280.
+4B.12's non-monotonicity, appearing in solvability rather than in proof cost.
+
+**THE TRADE WAS PUT TO DARYN WITH NUMBERS AND A RECOMMENDATION**, which is the
+errand's actual deliverable: keep a board that proves its optimum and runs twelve
+of fifteen machines under 15%, or take one that fills six machines to 52-78%,
+carries 96 late orders, 47 scheduled past-due orders, a $535,800/$1,504,347
+tardiness split, a coarse zone binding 8 cells at 95-99% of derated capacity, a
+122-order tray — and an honest 92.4% gap that leads its own opener in money
+terms. Recommended the second: `rolling-c9973708-865`, minted, reproducing
+identically across PYTHONHASHSEED 0/1/2. `rolling-c362baa4-1b0` is untouched and
+still resolving, which is what keeps this a choice.
+
+**THE FIXTURE DISCIPLINE.** `pilot_scale` carries every rolling golden the
+programme owns and is **byte-identical** across the change, checked at 40 and 400
+orders against a baseline generated from the previous commit. The risk was never
+the emitted values but the RANDOM STREAM — an unconditional `rng.random()` for
+the past-due draw would have emitted a different book from the same seed with
+every line of authored physics untouched — so the new branch short-circuits and
+a committed script proves it. A past-due order on this board carries
+`created_date` BEFORE its due date: `facility_real`'s inverted pair is left
+alone as the live `proceeded_flagged` specimen (§5a.30) and deliberately not
+reproduced, because this board's past-due work is a true statement about the
+plant and R-PD1 clause (2) says it must not wear a data-defect finding. The
+board grades ACCEPTED.
+
+**A KNOB MEASURED AND REJECTED.** The dense board draws ONE chunked bar against
+the empty board's two — R-C3 chunking needs a splittable operation too long for
+one open window, and a long splittable operation is the most expensive admission
+a window solve can make, so most land in the tray. Raising the splittable
+product's weight 1 -> 4 does not buy chunked bars: it turns a FEASIBLE 386-bar
+board into UNKNOWN at BOTH windows. The knob is kept so the result is
+reproducible; the preset declares no value.
+
+**EIGHT FINDINGS NAMED AND LEFT** (docs/07 §5a.84-88). The two that a session
+should take next: **`order-schedule` does not voice the past-due disposition** —
+R-PD1 clause (6) — answering *"where is ORD-000040"* with a tidy four-line
+itinerary for an order due three weeks before the plan began, 34.8 days late,
+carrying $20,860 of tardiness of which $12,000 is floor; and **the concentration
+band cannot fire at any density**, because `_opener_load` divides by the
+machine's whole resolved calendar (28,080 minutes against a plan occupying 25
+days), so the busiest lane on a 386-bar board reads 39.7% against a 0.85
+threshold — 4B.20's denominator class at a fifth site. Both were invisible until
+a board carried past-due work and real density, which is what the errand was for.
