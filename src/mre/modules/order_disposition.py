@@ -82,6 +82,18 @@ class OrderDisposition:
     #: cover every admitted order and a plan-wide universal is honest.
     rolling: bool
 
+    #: HOW THE PLACEMENT FALLS **WITHIN** AN ORDER (Session 4B.22 Item B3).
+    #: ``scheduled_orders`` says an order has AT LEAST ONE placed operation. It
+    #: does not say whether it has ALL of them, and "are orders all-in or all-out"
+    #: is a different question from "how many are in" — the one 4B.21 answered
+    #: truly and about something else. ALL THREE ARE ``None`` TOGETHER when the
+    #: demand -> fulfillment -> work-package -> operation chain could not be
+    #: walked: unreadable is not zero, and "no order is partly placed" is a claim
+    #: about the plant that must never be manufactured out of a failed read.
+    fully_placed_orders: Optional[int] = None
+    partly_placed_orders: Optional[int] = None
+    unplaced_orders: Optional[int] = None
+
     #: True when a schedule document reached this call at all. WITHOUT ONE THE
     #: BEYOND-HORIZON REGION IS UNREADABLE, and unreadable is not the same as
     #: empty: ``rolling`` is itself read off the document, so a documentless
@@ -105,6 +117,28 @@ class OrderDisposition:
         """Known, not excluded, and not placed in this window."""
         return max(0, self.known_orders - self.scheduled_orders
                    - self.excluded_orders)
+
+    @property
+    def placement_is_all_or_nothing(self) -> Optional[bool]:
+        """Does every order on THIS board have all of its declared operations
+        placed, or none of them? ``None`` when the per-order chain is unreadable.
+
+        THIS IS A MEASUREMENT, NOT AN INVARIANT, and every surface that speaks it
+        must say so. The rolling admission unit is the WORK PACKAGE
+        (``rolling_horizon._derive_maps`` keeps exactly one per demand, last
+        fulfillment wins), and every operation of an admitted package enters the
+        window model as a mandatory interval — so on a board where each order has
+        one work package, all-or-nothing falls out. An order fulfilled by TWO work
+        packages has no such guarantee: only one of them is reachable through that
+        map, and the other's operations would be declared and never admitted. No
+        code enforces the one-package case. So "no order is partly placed" is true
+        of this schedule and is not a rule of the product, and a surface that
+        states the second when it measured the first is making 4B.21's mistake
+        one level down.
+        """
+        if self.partly_placed_orders is None:
+            return None
+        return self.partly_placed_orders == 0
 
     def partitions(self) -> Optional[bool]:
         """The completeness invariant, restated where sentences are built.
@@ -199,6 +233,9 @@ def census(explainer: Any, document: Any = None) -> OrderDisposition:
 
     splittable = {str(o.get("id")) for o in operations if o.get("splittable")}
 
+    full, part, none_ = _placement_completeness(
+        _entities("fulfillment"), demands, operations, placed_ops)
+
     return OrderDisposition(
         known_orders=len(demands),
         scheduled_orders=len(placed_orders),
@@ -209,5 +246,59 @@ def census(explainer: Any, document: Any = None) -> OrderDisposition:
         splittable_declared=len(splittable),
         splittable_placed=len(splittable & placed_ops),
         rolling=rolling,
+        fully_placed_orders=full,
+        partly_placed_orders=part,
+        unplaced_orders=none_,
         document_read=document is not None,
     )
+
+
+def _placement_completeness(fulfillments: list, demands: list, operations: list,
+                            placed_ops: set) -> tuple:
+    """Split the known orders into FULLY / PARTLY / NOT placed (4B.22 Item B3).
+
+    The chain is Demand -> Fulfillment -> WorkPackage -> Operation, which is the
+    canonical one (docs/01 §5): a Demand carries no operations, its Fulfillments
+    name the WorkPackages that serve it, and Operations belong to a WorkPackage.
+    Every Fulfillment of a demand contributes — deliberately NOT the solver's
+    ``wp_of_demand`` map, which keeps one package per demand and would therefore
+    make a genuinely partial order look complete by discarding the half it never
+    admitted.
+
+    Returns ``(None, None, None)`` when the chain cannot be walked at all: three
+    absent figures, never three zeros, because "no order is partly placed" read
+    off an empty fulfillment list is a claim about the plant manufactured from a
+    failed read.
+    """
+    if not fulfillments or not demands or not operations:
+        return None, None, None
+    ops_by_wp: dict = {}
+    for o in operations:
+        wp = o.get("workpackage_ref")
+        if wp:
+            ops_by_wp.setdefault(str(wp), []).append(str(o.get("id")))
+    declared: dict = {}
+    for f in fulfillments:
+        did, wp = f.get("demand_ref"), f.get("workpackage_ref")
+        if not did or not wp:
+            continue
+        declared.setdefault(str(did), set()).update(ops_by_wp.get(str(wp), []))
+    if not declared:
+        return None, None, None
+
+    full = part = none_ = 0
+    for d in demands:
+        mine = declared.get(str(d.get("id")))
+        if not mine:
+            # A demand with no reachable operations at all is not an order that
+            # is "not placed" — it is an order we could not read. Counting it as
+            # unplaced would understate the split and overstate our reach.
+            continue
+        placed = len(mine & placed_ops)
+        if placed == 0:
+            none_ += 1
+        elif placed == len(mine):
+            full += 1
+        else:
+            part += 1
+    return full, part, none_

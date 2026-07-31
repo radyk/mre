@@ -164,6 +164,78 @@ SYNTHESIS_MEMORY = SynthesisMemory()
 
 
 # ---------------------------------------------------------------------------
+# The ANSWER memory — the last answer of ANY register, per ask session
+# (Session 4B.22, docs/04 2026-07-31 drill-down ruling).
+#
+# WHY THIS EXISTS, AND WHY ``SynthesisMemory`` WAS NOT ENOUGH. A stranger's second
+# question is a follow-up, and the most obvious follow-up in an interrogable
+# product is "show me the evidence for that". Measured on the pinned board, one
+# turn after an answer that cited a real record and lit three bars:
+#
+#     planner: why is ORD-000013 op20 on PAINT-01
+#     answer : ... there was no alternative to weigh [record: 47f106af...]
+#     planner: show me the evidence for that
+#     answer : I don't have a claim of my own open to ground.
+#
+# The citation was on the previous turn. Nothing kept it. ``SynthesisMemory``
+# holds the second tier's CLAIMS, and a contracted route has no claims — worse,
+# `run_ask` deliberately FORGETS the synthesis memory the moment a contracted
+# route answers, so after any route turn there is provably nothing to ground.
+# The resolution ladder (4B.5: card > selection > last-subject > history) has no
+# rung for a citation SET either: it resolves WHO the question is about, never
+# WHAT WE SAID. So "that" bound ORD-000013 correctly and still grounded nothing.
+#
+# This is the missing rung. It remembers the last DELIVERED answer's records —
+# not its text, not its claims — so a drill-down can open them. It is read-only
+# derived state about our own output: no write path into the canonical model or
+# the evidence store (M10), bounded, in-process, and cleared by the same gesture
+# that clears every other server-side conversation channel.
+# ---------------------------------------------------------------------------
+
+class AnswerMemory:
+    """The last answer per session — its route, its question and its records.
+
+    Records are kept as the raw evidence dicts the bundle carried, because that
+    is what the prove-it assembler already knows how to summarize. An answer
+    with NO records is remembered too, and that is the point: "this answer was
+    authored copy and cites nothing" is a different, honest answer from "I have
+    no answer of my own open", and the product could not tell them apart.
+    """
+
+    def __init__(self, limit: int = 32) -> None:
+        self._limit = limit
+        self._by_session: dict[str, dict] = {}
+
+    def remember(self, session_id: Optional[str], route: str, question: str,
+                 records: Any) -> None:
+        if not session_id:
+            return
+        rows = [r for r in (records or []) if isinstance(r, dict)]
+        self._by_session.pop(session_id, None)
+        self._by_session[session_id] = {
+            "route": route or "?", "question": question or "",
+            "records": rows, "record_count": len(rows)}
+        while len(self._by_session) > self._limit:
+            self._by_session.pop(next(iter(self._by_session)))
+
+    def last(self, session_id: Optional[str]) -> Optional[dict]:
+        return self._by_session.get(session_id) if session_id else None
+
+    def forget(self, session_id: Optional[str]) -> None:
+        if session_id:
+            self._by_session.pop(session_id, None)
+
+
+#: The process-wide answer memory the API ask path uses. Tests construct their own.
+ANSWER_MEMORY = AnswerMemory()
+
+#: Routes whose answer is ABOUT a previous answer rather than about the plan.
+#: Remembering one would make a second "show me the evidence" drill into the
+#: drill-down instead of into the answer the planner is still looking at.
+_NOT_REMEMBERED = ("prove-it",)
+
+
+# ---------------------------------------------------------------------------
 # The parse memory — what makes the two-phase ask FREE (Session 4A.5c CU3a).
 # ---------------------------------------------------------------------------
 
@@ -612,9 +684,15 @@ def forget_deliveries(session_id: Optional[str]) -> None:
     question from a conversation that had already been thrown away.
 
     Every gesture that means "forget what we were talking about" must call this.
+
+    Session 4B.22: it clears the ANSWER MEMORY too, and this function is
+    deliberately the ONE place that clears server-side conversation state. The
+    4B.16a defect was a RESET that cleared four channels and missed a fifth;
+    adding a sixth store with its own separate clear would reproduce it exactly.
     """
     if session_id:
         _DELIVERED.pop(session_id, None)
+        ANSWER_MEMORY.forget(session_id)
 
 
 def bundle_repeat(bundle: Any, context: Optional[dict],
@@ -772,7 +850,7 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
              ledger: Any = None, synthesizer: Any = None,
              context: Optional[dict] = None, memory: Any = None,
              session_id: Optional[str] = None,
-             document: Any = None) -> Dispatched:
+             document: Any = None, answer_memory: Any = None) -> Dispatched:
     """A parsed question → the assembled answer.
 
     A matched intent goes to the CONTRACTED deterministic evidence assembly — the
@@ -883,11 +961,24 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
         # answered "I don't have a claim of my own open to ground", which is the
         # exact class 4A.5a existed to kill. When the parse named prove-it and
         # nothing else, the no-target copy IS the honest answer and still stands.
+        #
+        # Session 4B.22 — AND THE PRIOR ANSWER IS THE THIRD THING TO REACH FOR.
+        # With no synthesis claim open, a drill-down that named no other intent
+        # used to dead-end on "I don't have a claim of my own open to ground"
+        # even when the immediately previous turn cited records and lit bars.
+        # The prior answer is looked up ONLY on that branch — the fall-through
+        # above (a prove-it gesture that ALSO named a real intent, e.g. "but
+        # why" after a cause chain) is untouched, because what the planner wants
+        # there is the question answered, not our last sentence re-opened.
+        prior = (answer_memory.last(session_id)
+                 if answer_memory is not None else None)
         if claim is not None or parsed.intent in (Intent.PROVE_IT, Intent.UNMATCHED):
             return Dispatched(
                 "prove-it",
                 explainer.route("prove-it", {"question": parsed.question,
-                                             "claim": claim, "answer": last}),
+                                             "claim": claim, "answer": last,
+                                             "prior": None if claim is not None
+                                             else prior}),
                 note, parsed.question)
 
     # 3 — the planner confirmed OUR OWN take back at us. Name the gesture and the
@@ -983,8 +1074,14 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     # same frozen boundary. And the OPENER (Item 2) is a whole-board read whose
     # proof status, tray, closures and derate provenance live in the document —
     # without it the route degrades to the pre-4B.16 briefing and says so.
+    # Session 4B.22 Item B2: ADVICE joins them, and for the opener's reason.
+    # "if I could fix one thing what should it be" lands here, and the answer to
+    # the half of it this product CAN answer is the opener's top-ranked item —
+    # which lives in the document. Without it the route degrades to the bare
+    # intervention refusal it gave before, which is honest but is not the answer.
     if parsed.intent in (Intent.WHY_HERE, Intent.CONTESTED_FACT,
-                         Intent.WHAT_WOULD_CHANGE, Intent.BRIEFING):
+                         Intent.WHAT_WOULD_CHANGE, Intent.BRIEFING,
+                         Intent.ADVICE):
         params["document"] = document
     # And the SELECTED OPERATION (Item 5(d)). The board selection carries the
     # operation the planner is pointing at; without it an order-level question
@@ -1164,7 +1261,7 @@ def run_ask(explainer: Any, question: str, *, context: Optional[dict] = None,
             session_id: Optional[str] = None,
             synthesizer: Any = None, memory: Any = None,
             shadow: Any = None, document: Any = None,
-            parse_memory: Any = None) -> AskResult:
+            parse_memory: Any = None, answer_memory: Any = None) -> AskResult:
     """parse → dispatch → assemble, then log one question-ledger entry.
 
     The single entry point the API ask path calls. With no parser the answer is the
@@ -1199,6 +1296,8 @@ def run_ask(explainer: Any, question: str, *, context: Optional[dict] = None,
                               rolling=rolling)
     if memory is None:
         memory = SYNTHESIS_MEMORY
+    if answer_memory is None:
+        answer_memory = ANSWER_MEMORY
 
     synthesis = None
     if parsed is None:
@@ -1208,7 +1307,7 @@ def run_ask(explainer: Any, question: str, *, context: Optional[dict] = None,
     else:
         d = dispatch(explainer, parsed, ledger=ledger, synthesizer=synthesizer,
                      context=context, memory=memory, session_id=session_id,
-                     document=document)
+                     document=document, answer_memory=answer_memory)
         route_label, bundle, note = d.route, d.bundle, d.note
         resolved_question = d.routed_question
         source, confidence = "parse", parsed.confidence
@@ -1221,6 +1320,17 @@ def run_ask(explainer: Any, question: str, *, context: Optional[dict] = None,
         # answer; prove-it then honestly says it has no claim of its own open.
         if memory is not None and d.route not in ("synthesis", "prove-it"):
             memory.forget(session_id)
+
+    # Session 4B.22 — REMEMBER WHAT WE JUST SAID, at the ONE seam every live
+    # answer passes through. Not in `dispatch`: `remember_delivery` lives on the
+    # matched-route branch only, so a rolling route, a tray answer or a CLARIFY
+    # never reaches it — and a CLARIFY is precisely the specimen that made the
+    # old copy lie ("the records behind it are cited on it", said about an
+    # answer that cites nothing). An UNREADABLE parse is remembered too: the
+    # honest floor is still an answer, and it still has no records.
+    if answer_memory is not None and route_label not in _NOT_REMEMBERED:
+        answer_memory.remember(session_id, route_label, question,
+                               getattr(bundle, "ordered_records", None))
 
     register = register_of(bundle)
 

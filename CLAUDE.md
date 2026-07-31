@@ -158,13 +158,58 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4B.21 — one board, contradictory answers**, 2026-07-30 (docs/07 v2.67,
-§5a.71-78; docs/04 ruling; narrative in `docs/closeouts/4B.21.md`). Before it:
-4B.20 (v2.66, §5a.67-70),
+**Session 4B.22 — the second question**, 2026-07-31 (docs/07 v2.68, §5a.79-83;
+docs/04 ruling; narrative in `docs/closeouts/4B.22.md`). Before it:
+4B.21 (v2.67, §5a.71-78), 4B.20 (v2.66, §5a.67-70),
 4B.19 (v2.65, §5a.64-66), 4B.18 (v2.64, §5a.63), 4B.17 (v2.63, §5a.54-62),
 4B.16 (v2.61, §5a.49-50), 4B.15 (v2.59, §5a.39-45), 4B.14 (v2.58, §5a.34-38),
 4B.13 (v2.57), 4B.12 (v2.56, a MEASUREMENT session), 4B.11 (v2.55, **R-PD1
 verbatim**).
+
+**A DRILL-DOWN RESOLVES TO THE ANSWER IT FOLLOWS (4B.22, §5a.79 — §5a.77
+DISCHARGED).** The 4B.5 ladder (card > selection > last-subject > history)
+resolves WHO a question is about and **has no rung for WHAT WE SAID** — a
+citation set is not a subject — so *"show me the evidence for that"*, one turn
+after an answer citing a record and lighting three bars, bound the order
+correctly and grounded nothing. Three authored cases, **none silent**: records
+open (naming the question they are behind, and saying a contracted route has no
+per-sentence claims); **an answer that cited nothing SAYS SO** — a different
+fact from having nothing open, and `PROVE_IT_NO_TARGET` stated the wrong one for
+both, telling a planner the citations were "on it" about a CLARIFY;
+synthesis provenance unchanged (4B.5 CU5). `AnswerMemory` is written at
+**`run_ask`**, the ONE seam every live answer passes — NOT at `dispatch`'s
+matched-route branch, which a rolling route, a tray answer and a CLARIFY never
+reach. `forget_deliveries` clears it and is now the ONE clear for server-side
+conversation state (4B.16a's fifth-channel defect refused in advance). The
+4A.5a fall-through stands: a prove-it gesture that ALSO names a real intent is
+answered as that intent.
+
+**THREE ANSWERS EXISTED AND NO ROUTE REACHED THEM (4B.22, §5a.80-82 — §5a.69
+DISCHARGED).** 4B.15's attribute-lookup shape, three times. **NO NEW INTENT WAS
+TAKEN**: the parse already reaches each route, so the cheaper honest option was
+to let it carry the figure. **B1** `machine-schedule` states the load from
+`evidence_tools.machine_load`, **the one definition it now shares with the
+toolbox** — naming its QUANTITY (working time, never the span) and its
+DENOMINATOR (open minutes over the same first-to-last interval: 5,981 against
+6,655, 89.9%; the whole calendar is 22,320) — **and REFUSING the judgment**,
+because "overloaded" is a threshold no plant declares and `SATURATED = 0.85`
+measures CONCENTRATION, a different claim. A multi-machine listing states no
+load at all. **B2** `advice` leads with the opener's top-ranked item and names
+which of the two questions it answered; the intervention refusal is right and is
+kept verbatim. `Intent.ADVICE` joins the document allow-list. **B3** `inventory`
+answers whether an order can be PARTLY placed and **distinguishes measured from
+invariant** — nothing enforces all-or-nothing, because
+`rolling_horizon._derive_maps` keeps ONE work package per demand. Guard: 35
+tests, **every Class A assertion over TWO CONSECUTIVE `run_ask` CALLS**, five
+premise tests, **four negative controls each proven red on its own half** — and
+the premise fixture's own first version was wrong in exactly the way the session
+exists to catch. **NOT FIXED, named (§5a.83):** the `why-on-machine` lead is
+about ELIGIBILITY and its record's driver is about OCCUPANCY, so the drill-down
+shows a planner two propositions about one record (the sixth driver-phrase site
+now reads **"recorded driver:"** — 4B.21's remedy, a one-line scope widening
+taken because the drill-down put it on the demo path); *"how do i fix that"*
+after a whole-board read lands on CLARIFY `no-subject`, honest, because the
+BOARD is the subject and the ladder has no rung for it.
 
 **A COUNT NAMES THE DISPOSITION IT COUNTS (4B.21, §5a.71 — 4B.17's A5
 DISCHARGED).** "Orders" alone is not a disposition: known, scheduled, committed,
@@ -757,6 +802,22 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
 
 **Small carry-forwards (do not lose):**
 
+- 4B.22 findings (docs/07 §5a.83 — REPORTED, deliberately NOT fixed):
+  **THE RECORD BEHIND THE `why-on-machine` LEAD ANSWERS A DIFFERENT QUESTION** —
+  the lead is about WHICH MACHINE (eligibility, "no alternative to weigh") and
+  the cited decision's driver is about WHEN (occupancy, "the machine was busy
+  with other work"). Both true of the same record; the drill-down now shows a
+  planner both, one line apart. The **"recorded driver:"** label makes the
+  sentence claim only what is checkable, but whether the chain should carry the
+  eligibility decision instead — or both, with their questions named — is a
+  `why-on-machine` assembler question 4B.22 did not open.
+  **`"how do i fix that"` AFTER A WHOLE-BOARD READ** lands on CLARIFY
+  `no-subject` (parse: `remediation` at 0.72). Honest, and measured for the
+  first time. The BOARD is the subject and the ladder has no rung for it —
+  §5a.79's shape on the other axis.
+  **THE B1 FIGURE PRINTS RAW MINUTES** beside its percentage, deliberately: two
+  capacity quantities in one sentence are comparable only in one unit (§5a.76's
+  reason).
 - 4B.21 findings (docs/07 §5a.75-78 — REPORTED, deliberately NOT fixed):
   **TWO DISPOSITION QUESTIONS ARE CLAIMED BY ROUTES THAT DO NOT ANSWER THEM** —
   *"are the fourteen orders with no placement a problem I should act on"* goes
@@ -765,10 +826,9 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   lists nine submission fields. Both vocabulary calls. (The third of the three,
   `excluded-orders` answering *"no data-quality problems"* to *"why are some
   orders missing from the schedule entirely"*, WAS fixed.)
-  **DRILL-DOWN ANAPHORA** — *"show me the evidence for that"* after a contracted
-  answer returns *"I don't have a claim of my own open to ground"*, because
-  `SynthesisMemory` remembers synthesis answers ONLY and a route's
-  `ordered_records` never enter session memory. A context-ladder change.
+  **DRILL-DOWN ANAPHORA — FIXED 4B.22 (§5a.79).** It was: *"show me the evidence
+  for that"* after a contracted answer returned *"I don't have a claim of my own
+  open to ground"*, because `SynthesisMemory` remembers synthesis answers ONLY.
   **THREE PROSE SITES STILL PRINT RAW MINUTES** (the challenge route, the swap
   take, `rolling_questions`' lateness clause) — left because R-PD1 clause (4)
   states the floor and the controllable part in the SAME unit for comparability.
@@ -776,9 +836,9 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   legitimately share a route — visible in this session's own verification run.
   §5a.58's boundary, unchanged.
 - 4B.20 findings (docs/07 §5a.68-70 — REPORTED, deliberately NOT fixed):
-  **THE `machine-schedule` ROUTE ANSWERS "how busy" WITH AN ENUMERATION** —
-  18 placements, no utilisation figure; the number now exists on the toolbox
-  and no route can be asked for it (§5a.29's shape again).
+  **THE `machine-schedule` ROUTE ANSWERS "how busy" WITH AN ENUMERATION —
+  FIXED 4B.22 (§5a.80)**, from the one definition it now shares with the
+  toolbox, and refusing the judgment for want of a declared threshold.
   **`rolling_horizon`'s `busy_minutes` METRIC NAME is under-specified** against
   the new ruling — the arithmetic is correct (it intersects with the open
   windows), and renaming an evidence Metric is a vocabulary-class change.
@@ -838,7 +898,7 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   of one question) — humble rather than wrong, but distinguishing "one answer
   because I am confused" from "one answer because it IS the answer" needs a
   signal this session does not have.
-  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, ~70k after it. Compression was out of scope for all three; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, ~74k after it. Compression was out of scope for all three; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
   **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
   day-shift restriction answered as C1/C2 "proven end to end" when the item is
   C4 (model-proven, §8 doorway). Caught and pinned; the class stands.

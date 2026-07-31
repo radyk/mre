@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.66 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.68 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.68:** **Session 4B.22 — the second question** 2026-07-31 (ruling verbatim in docs/04 2026-07-31; narrative in `docs/closeouts/4B.22.md`). **§5a.77 AND §5a.69 BOTH DISCHARGED.** Four measured defects on the pinned board, every one DEAF rather than WRONG — the board no longer lies, and a stranger's second question is always a FOLLOW-UP. **TWO CLASSES, NOT FUSED.** **CLASS A, THE RULING: a drill-down resolves to THE ANSWER IT FOLLOWS.** The 4B.5 ladder resolves WHO a question is about and **has no rung for WHAT WE SAID** — a citation set is not a subject — so *"show me the evidence for that"*, one turn after an answer that cited a record and lit three bars, bound the order correctly and grounded nothing. Three authored cases, none silent: records open; **an answer that cited nothing SAYS SO** (a different fact from having nothing open, and the old copy stated the wrong one for both — it told a planner the citations were "on it" about a CLARIFY); synthesis provenance unchanged. `AnswerMemory` is written at `run_ask`, the ONE seam every live answer passes, and cleared by `forget_deliveries`, which is now the ONE clear for server-side conversation state (4B.16a's fifth-channel defect, refused in advance). **CLASS B: THE ANSWER EXISTED AND NO ROUTE REACHED IT** — 4B.15's attribute-lookup shape, three times. **NO NEW INTENT WAS TAKEN FOR ANY OF THEM**; in each case the parse already reaches the route and the cheaper honest option was to let it carry the figure. B1 `machine-schedule` states the load, from **one shared definition** with the toolbox, naming its quantity and its DENOMINATOR — **and REFUSING the judgment**, because "overloaded" is a threshold no plant here declares and `SATURATED = 0.85` measures a different claim. B2 `advice` leads with the opener's top-ranked item and names which of the two questions it answered; the intervention refusal is right and is kept. B3 `inventory` answers whether an order can be PARTLY placed and **distinguishes measured from invariant** — nothing enforces all-or-nothing, because the admission map keeps one work package per demand. Guard: 35 tests, **every Class A assertion over TWO CONSECUTIVE `run_ask` CALLS on one session id**, five premise tests, **four negative controls each proven red on its own half** — and **the premise fixture's own first version was wrong in exactly the way the session exists to catch** (it chose its subject off `Explainer.route`, which answers about a tray order the live dispatch diverts). §5a.79-83.
 
 **v2.67:** **Session 4B.21 — one board, contradictory answers** 2026-07-30 (ruling verbatim in docs/04 2026-07-30; narrative in `docs/closeouts/4B.21.md`). 4B.17's **A5, DISCHARGED**. THE RULING: **a count names the disposition it counts**, and **a predicate asserted over a count must apply to every member of the set counted** — where it does not, the set is SPLIT and each part reported with the predicate that applies. Two clauses added by the census: adjacent counts share a denominator or name their own; where the dispositions do not partition the known set, the surface says so and states no total. Census by MECHANISM: **542 raw aggregation sites → 253 candidates on surface-producing files → 8 defects**, plus a separate UNIVERSAL sweep (38 planner-facing, 15 with a placement-presupposing predicate, 3 defects) because the sharpest specimen — *"Every order finishes on time."* — carries no number for an arithmetic census to see. **THIS IS THE FIFTH INSTANCE OF CATEGORY FUSION IN SIX SESSIONS** (delta card 4B.5, `lateness_set` 4B.13, `CostProof` 4B.18, working-time 4B.20, `inventory` 4B.21) and docs/04 records the common mechanism: **a name written once and never re-read as a claim**. A5 closed by scoping ONE list (`ordered_records`), which fixes chain, cited refs, lit bars and the cockpit footer together. docs/01 gains **§6.10**, the disposition vocabulary — retrievable by nothing before this (`"committed"`: zero passages) — and `synthesis_prompt.md` **v4 → v5** rule 12. Guard: agreement + prose, 10 tests, **two negative controls red on opposite halves**, and **the live run caught a seam the guard could not: it supplies its own document, the ask path does not** (§5a.78). §5a.71-78.
 
@@ -3964,6 +3966,90 @@ It is tri-state now, and `document_read` distinguishes unreadable from empty for
 the same reason `CostProof` does. Both halves are pinned, including an assertion
 over the interpreter's allow-list itself. **A guard that supplies its own
 arguments proves the assembler, not the path.**
+
+**§5a.79 — §5a.77 IS DISCHARGED: A DRILL-DOWN RESOLVES TO THE ANSWER IT FOLLOWS
+(4B.22, ruling verbatim in docs/04 2026-07-31).** The 4B.5 resolution ladder
+(card > selection > last-answer subject > history) resolves WHO a question is
+about and **has no rung for WHAT WE SAID** — a citation set is not a subject. So
+"show me the evidence for that", one turn after an answer that cited a record and
+lit three bars, bound ORD-000013 correctly off the last-answer rung and grounded
+nothing. `AnswerMemory` is the missing rung: the last DELIVERED answer's route,
+question and records, per session, written at **`run_ask`** — the one seam every
+live answer passes — and deliberately NOT at `dispatch`'s matched-route branch
+where `remember_delivery` sits, because a rolling route, a tray answer and a
+CLARIFY never reach that branch. **THREE AUTHORED CASES, NONE SILENT:** records
+open (naming the question they are behind, and saying plainly that a contracted
+route has no per-sentence claims); **an answer that cited nothing SAYS SO** —
+different from having nothing open, and the old copy stated the wrong one for
+both; synthesis provenance unchanged. `PROVE_IT_NO_TARGET` was rewritten: it told
+a planner *"the records behind it are cited on it"* about a CLARIFY, **sending
+them to look for citations that do not exist**. The 4A.5a fall-through is
+preserved — a prove-it gesture that also names a real intent is still answered as
+that intent.
+
+**§5a.80 — §5a.69 IS DISCHARGED: `machine-schedule` STATES THE LOAD (4B.22
+B1).** 4B.20 computed working-time utilisation, proved it correct and put it on
+the synthesis toolbox alone, so *"is CUT-01 overloaded"* reached a route that
+enumerated 18 placements and stated no figure at all. **NO NEW INTENT WAS
+TAKEN** — the parse already sends that phrasing to `machine-schedule` at 0.92, so
+the cheaper honest option was to let the route carry the number.
+`evidence_tools.machine_load` is the ONE definition and the toolbox's summary is
+no longer computed inside `_machine_occupancy`. The figure names its QUANTITY
+(working time, never the span) and its DENOMINATOR (open calendar minutes over
+the same first-to-last interval, on the surface: 5,981 against 6,655, 89.9% — the
+machine's whole calendar is 22,320 and runs weeks past the plan). **AND THE
+JUDGMENT IS REFUSED:** "overloaded" is a business threshold no plant here
+declares, and `board_opener`'s `SATURATED = 0.85` measures CONCENTRATION, a
+different claim — borrowing it would have been an invented threshold wearing a
+citation. A multi-machine listing states no load line at all.
+
+**§5a.81 — `advice` LEADS WITH THE OPENER'S TOP ITEM (4B.22 B2).** *"if I could
+fix one thing what should it be"* returned a bare refusal on a board where the
+opener had, one turn earlier, ranked four things by consequence with numbers and
+pointers — and not even a take, because `_advice_take` needs a late order and
+nothing on this board is late. The intervention refusal is RIGHT and is kept
+verbatim; what changed is that the route no longer answers a question it can
+answer by refusing a different one. It names which of the two it answered: **it
+ranks what is worth attention; it does not recommend an intervention.**
+`Intent.ADVICE` joins the document allow-list — the same seam §5a.78 names, and
+the guard for it asserts through `dispatch`, not through `route`.
+
+**§5a.82 — `inventory` ANSWERS WHETHER AN ORDER CAN BE PARTLY PLACED, AND SAYS
+WHICH KIND OF CLAIM THAT IS (4B.22 B3).** 4B.21 measured this and recorded that
+the answer given was true and about something else. `order_disposition` now walks
+the canonical Demand -> Fulfillment -> WorkPackage -> Operation chain:
+`fully_placed_orders` / `partly_placed_orders` / `unplaced_orders`, all three
+`None` together when the chain is unreadable (three absent figures are not three
+zeros). **THE SENTENCE DISTINGUISHES MEASURED FROM INVARIANT — 4B.21's own ruling
+one level down.** "No order on this board is split" is a fact about this
+schedule; "orders are never partly placed" would be a claim about the product and
+**nothing enforces it**: `rolling_horizon._derive_maps` keeps ONE work package
+per demand (last fulfillment wins), so an order served by two would have one
+unreachable and its operations declared but never admitted. On this board every
+order has exactly one work package. The limit clause is not optional copy.
+
+**§5a.83 — REPORTED, NOT FIXED (4B.22).** **(a) THE RECORD BEHIND THE
+`why-on-machine` LEAD ANSWERS A DIFFERENT QUESTION.** The drill-down now opens
+it, so the demo's second turn reads *"the only machine qualified to run this step
+— there was no alternative to weigh"* followed by *"the assignment decision —
+recorded driver: the machine was busy with other work"*. Both are true of the
+same record: the lead is about WHICH MACHINE (eligibility) and the driver is
+about WHEN (occupancy). The "recorded driver:" label makes the sentence claim
+only what is checkable — this is 4B.21's remedy applied to its Item 3(b)'s sixth
+site, a one-line widening of scope, taken because the drill-down put that site on
+the demo path. **What is NOT fixed is that a planner still has to hold two
+propositions about one record**; whether the chain should carry the eligibility
+decision instead, or both with their questions named, is a `why-on-machine`
+assembler question this session did not open. **(b) `"how do i fix that"` AFTER A
+WHOLE-BOARD READ LANDS ON CLARIFY `no-subject`** — honest, and now measured for
+the first time (the parse read it as `remediation` at 0.72). The board is the
+subject and the ladder has no rung for it, which is §5a.79's shape on the other
+axis: the answer memory knows what we said, and nothing binds a bare anaphor to
+it. **(c) THE `deaf` RIDER'S BOUNDARY IS UNCHANGED** (§5a.58) and did not fire in
+this session's eight-turn run. **(d) THE B1 FIGURE PRINTS RAW MINUTES** beside a
+percentage, deliberately: two capacity quantities in one sentence are only
+comparable in one unit, the same reason R-PD1 clause (4) keeps the floor and the
+controllable part in minutes (§5a.76).
 
 ## 6. Open rulings queue
 

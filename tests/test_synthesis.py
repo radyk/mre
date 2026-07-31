@@ -700,24 +700,47 @@ class TestAnswerSurface:
         a contracted route, the remembered synthesis claims are stale — opening the
         record behind a sentence the planner is not asking about is a wrong-target
         answer, however truthfully it names the sentence it chose (the sweep's
-        specimen: "are you sure about that", two turns downstream)."""
+        specimen: "are you sure about that", two turns downstream).
+
+        SESSION 4B.22: staleness is unchanged and is still the point. What
+        changed is the TARGET that replaces it — the drill-down now opens the
+        contracted answer the planner is actually looking at, instead of
+        dead-ending. The stale claim must not be what opens either way, and both
+        halves are asserted."""
+        from mre.modules.interpreter import AnswerMemory
         memory = SynthesisMemory()
+        answers = AnswerMemory()
         _answer(world, claims(claim("The cutting line is busy.", [])),
                 memory=memory, session="s7")
         assert memory.last("s7") is not None
         run_ask(world, "why is ORD-01 late",
                 parser=ScriptedParser({"why is ORD-01 late": parsed(
                     "", Intent.LATE_ORDER, orders=("ORD-01",))}),
-                memory=memory, session_id="s7")
+                memory=memory, session_id="s7", answer_memory=answers)
         assert memory.last("s7") is None
-        d = self._prove_it(world, memory, session="s7")
+        d = dispatch(world,
+                     parsed("prove it", Intent.UNMATCHED,
+                            followup_of=FollowupKind.PROVE_IT, confidence=0.9),
+                     memory=memory, session_id="s7", answer_memory=answers)
         text = TemplateRenderer().render(d.bundle)
-        assert "don't have a claim of my own open to ground" in text
+        assert "The cutting line is busy" not in text, (
+            "the stale synthesis claim re-opened — the wrong-target answer this "
+            "test exists to forbid")
+        assert "why is ORD-01 late" in text, (
+            "the drill-down did not open the contracted answer the planner is "
+            "looking at (4B.22, docs/04 2026-07-31)")
 
     def test_prove_it_with_nothing_to_prove_says_so(self, world):
+        """THE FLOOR IS STILL REACHABLE, and its copy was rewritten (4B.22).
+
+        It used to read "the records behind it are cited on it — name the part
+        you want walked", which after the drill-down ruling describes a turn
+        that does not exist. This branch is now reached only when there is NO
+        prior answer at all, and it says that."""
         d = self._prove_it(world, SynthesisMemory(), session="empty")
         text = TemplateRenderer().render(d.bundle)
-        assert "don't have a claim of my own open to ground" in text
+        assert "haven't answered anything yet in this conversation" in text
+        assert "cited on it" not in text
 
     # -- the named corpus specimens (CU4) -----------------------------------
 

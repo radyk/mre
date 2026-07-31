@@ -549,6 +549,37 @@ def _dur_min(minutes) -> str:
     return f"{h}h" if r == 0 else f"{h}h{r:02d}m"
 
 
+def _machine_load_lines(load: Any) -> list[str]:
+    """The load clause for a single-machine listing (Session 4B.22 Item B1).
+
+    Returns [] when there is no load to state — an absent figure prints nothing
+    rather than a zero. Two shapes, and the split is the point: WITH a readable
+    calendar the percentage and its denominator are both on the surface; WITHOUT
+    one the working time is still stated and the percentage is REFUSED, because a
+    ratio whose denominator we could not read is not a smaller claim, it is an
+    unfounded one.
+
+    The judgment clause rides on both: "overloaded" needs a declared threshold
+    this plant does not have (the same shape as R-PD1 clause (5)'s age threshold
+    and the undeclared coarse derate), so the figure is stated and not judged.
+    """
+    if not isinstance(load, dict) or load.get("working_minutes") is None:
+        return []
+    from mre.modules.ask_fallback_copy import (
+        MACHINE_LOAD_LINE, MACHINE_LOAD_NO_CALENDAR, MACHINE_LOAD_NO_JUDGMENT,
+    )
+    working = f"{load['working_minutes']:,.0f}"
+    first, last = load.get("first_start") or "?", load.get("last_end") or "?"
+    oc, pct = load.get("open_capacity_minutes"), load.get("utilization_pct")
+    if oc is None or pct is None:
+        return [MACHINE_LOAD_NO_CALENDAR.format(
+            working=working, spans=load.get("spans", "?"),
+            first=first, last=last), MACHINE_LOAD_NO_JUDGMENT]
+    return [MACHINE_LOAD_LINE.format(working=working, open=f"{oc:,.0f}",
+                                     first=first, last=last, pct=f"{pct:g}"),
+            MACHINE_LOAD_NO_JUDGMENT]
+
+
 def _family_gist(why: str) -> str:
     """The short name of an uncomputed docs/05 family, from its own recorded
     reason (Session 4B.14). The full sentence lives in ``blocker_analysis`` and
@@ -1068,6 +1099,13 @@ class TemplateRenderer:
                     lead = (f"{label}: {len(rows)} operation(s)"
                             + (f" across {m} machine(s)" if m > 1 else "") + ":")
                 lines.append(lead)
+                # Session 4B.22 Item B1 — THE LOAD, BEFORE THE LISTING. "is CUT-01
+                # overloaded" asks for a judgment and got eighteen rows; the
+                # figure now leads, names its denominator (4B.20), and DECLINES
+                # THE JUDGMENT rather than inventing a threshold.
+                for ln in _machine_load_lines(kf.get("machine_load")):
+                    lines.append("")
+                    lines.append(ln)
                 lines.append("")
                 # CU6a (Session 4B.4): an order-schedule repeats the SAME order-
                 # completion lateness on every segment ("-13536min early" ×N) — the
@@ -1259,6 +1297,29 @@ class TemplateRenderer:
                              "walk what its start is waiting on.")
                 lines.append("")
                 return
+            # Session 4B.22 Item B2 — THE ANSWER FIRST, THEN THE BOUNDARY.
+            # The opener has already ranked this board by consequence; the top
+            # worry IS "what should I look at first", and refusing it while
+            # holding it computed is the deafness this session exists to end.
+            # The two questions are named apart in the same breath, because
+            # "look at first" and "what should I do" are not the same ask and
+            # answering one as the other is how this route got here.
+            top = kf.get("opener_top")
+            if top:
+                lines.append(
+                    "The first thing worth your attention on this board, ranked "
+                    f"by consequence out of {top.get('rank_of', '?')}:")
+                lines.append("")
+                lines.append(f"  {top.get('headline')}")
+                for d in top.get("detail") or []:
+                    lines.append(f"    {d}")
+                if top.get("pointer"):
+                    lines.append(f"    -> {top['pointer']}")
+                lines.append("")
+                lines.append(
+                    "That is a ranking of what is worth looking at, not a "
+                    "recommendation of what to do about it.")
+                lines.append("")
             late = kf.get("late_count", 0)
             if late:
                 lines.append(
@@ -1600,11 +1661,33 @@ class TemplateRenderer:
         B, here's each"."""
         from mre.modules.ask_fallback_copy import (
             PROVE_IT_INTERPRETIVE, PROVE_IT_INTERPRETIVE_BARE, PROVE_IT_NO_TARGET,
-            PROVE_IT_READ_FROM, PROVE_IT_RECORD_LINE, PROVE_IT_VERIFIED,
+            PROVE_IT_PRIOR_LEAD, PROVE_IT_PRIOR_NO_RECORDS, PROVE_IT_READ_FROM,
+            PROVE_IT_RECORD_LINE, PROVE_IT_VERIFIED,
         )
         kf = bundle.key_facts or {}
         claim = kf.get("claim")
         if not claim:
+            # Session 4B.22 — THE DRILL-DOWN RULING. Three authored branches, none
+            # silent: the prior answer's records open; a prior answer with none
+            # says it was authored copy; only a conversation with no prior answer
+            # at all gets the no-target floor.
+            prior = kf.get("prior_answer")
+            if prior:
+                rows = kf.get("lines") or []
+                if rows:
+                    lines.append(PROVE_IT_PRIOR_LEAD.format(
+                        question=(prior.get("question") or "").strip(),
+                        count=f"{len(rows)} record(s)"))
+                    lines.append("")
+                    for row in rows:
+                        lines.append(PROVE_IT_RECORD_LINE.format(
+                            summary=row.get("summary", "?"),
+                            rid=row.get("rid", "?")))
+                else:
+                    lines.append(PROVE_IT_PRIOR_NO_RECORDS.format(
+                        question=(prior.get("question") or "").strip()))
+                lines.append("")
+                return
             lines.append(PROVE_IT_NO_TARGET)
             lines.append("")
             return
@@ -2802,8 +2885,42 @@ class TemplateRenderer:
                 scheduled=sched, beyond=beyond))
         else:
             lines.append(INVENTORY_ON_TIME_MONOLITHIC)
+        self._render_partial_placement(lines, kf)
         self._render_excluded_note(lines, bundle)
         lines.append("")
+
+    @staticmethod
+    def _render_partial_placement(lines: list[str], kf: dict) -> None:
+        """IS IT ALL-IN OR ALL-OUT PER ORDER (Session 4B.22 Item B3).
+
+        4B.21 measured this question live and recorded that the answer given was
+        true and about something else: the planner asked whether an order can be
+        PARTIALLY placed, and `inventory` answered how many orders are placed. The
+        figures are now computed per order, and the sentence keeps the one
+        distinction that matters — MEASURED ON THIS BOARD is not INVARIANT, and
+        4B.21's whole ruling is that a surface says which.
+
+        Silent when unreadable. Three absent figures are not three zeros, and
+        "no order is partly placed" is exactly the claim that must not be
+        manufactured out of a chain we could not walk."""
+        from mre.modules.ask_fallback_copy import (
+            INVENTORY_ALL_OR_NOTHING, INVENTORY_ALL_OR_NOTHING_LIMIT,
+            INVENTORY_PARTLY_PLACED,
+        )
+        aon = kf.get("placement_all_or_nothing")
+        if aon is None:
+            return
+        full = int(kf.get("fully_placed_order_count") or 0)
+        part = int(kf.get("partly_placed_order_count") or 0)
+        none_ = int(kf.get("unplaced_order_count") or 0)
+        lines.append("")
+        if aon:
+            lines.append(INVENTORY_ALL_OR_NOTHING.format(
+                full=full, unplaced=none_))
+        else:
+            lines.append(INVENTORY_PARTLY_PLACED.format(
+                partly=part, full=full, unplaced=none_))
+        lines.append(INVENTORY_ALL_OR_NOTHING_LIMIT)
 
     def _render_excluded_note(self, lines: list[str], bundle: ExplanationBundle) -> None:
         """CU9 — a schedule with exclusions volunteers them in relevant answers

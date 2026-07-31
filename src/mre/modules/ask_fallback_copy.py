@@ -479,10 +479,52 @@ SYNTHESIS_SCOPE_NOTE = (
 
 # "PROVE IT" (R-AI5(4)) — the planner contests or probes one claim and the grounding
 # pass re-runs on it, conversationally.
+#: Session 4B.22 — REWRITTEN, because after the drill-down ruling this branch is
+#: reachable only when there is NO prior answer at all, and the old second
+#: sentence ("the records behind it are cited on it") then described a turn that
+#: does not exist. Worse, it was the exact sentence a planner got after a CLARIFY,
+#: which cites nothing: the copy sent them to look for citations that were not
+#: there.
 PROVE_IT_NO_TARGET = (
-    "I don't have a claim of my own open to ground. If it's my last answer you're "
-    "asking about, the records behind it are cited on it — name the part you want "
-    "walked and I'll open that one.")
+    "I haven't answered anything yet in this conversation, so there's nothing of "
+    "mine to open. Ask me something first and then say \"show me the evidence for "
+    "that\" — I'll walk what the answer was built from.")
+#: The prior answer was a CONTRACTED route. It carries records but no per-sentence
+#: claims, and the copy says so rather than implying a decomposition it never had.
+PROVE_IT_PRIOR_LEAD = (
+    "That was my answer to \"{question}\". It came from a contracted route, so it "
+    "has no per-sentence claims to pick apart — here is the whole record set it "
+    "was assembled from ({count}):")
+#: The prior answer was AUTHORED COPY. Saying so is the answer. This is the
+#: honest-negative case and it is NOT the same fact as having nothing open.
+PROVE_IT_PRIOR_NO_RECORDS = (
+    "My answer to \"{question}\" was authored copy — it states what this product "
+    "can and can't do, not a fact read off a record — so there is nothing behind "
+    "it to open. Ask me something about the plan itself and the answer will cite "
+    "what it was built from.")
+# Session 4B.22 Item B1 — HOW BUSY ONE MACHINE IS, on the route that lists what it
+# runs. Three clauses, and each is there for a reason a prior session paid for:
+#   the FIGURE names the quantity      — working time, not elapsed span (4B.20)
+#   the DENOMINATOR is on the surface  — open calendar minutes over the SAME
+#                                        interval the working time is measured
+#                                        across, so the percentage is checkable
+#   the JUDGMENT IS DECLINED           — "overloaded" is a business threshold and
+#                                        no plant here declares one. Inventing it
+#                                        silently is the defect class R-PD1
+#                                        clause (5) and the coarse derate are
+#                                        both left open for.
+MACHINE_LOAD_LINE = (
+    "Load: {working} working minute(s) against {open} minute(s) of open calendar "
+    "between its first placement ({first}) and its last ({last}) — {pct}% of the "
+    "open time in that stretch.")
+MACHINE_LOAD_NO_CALENDAR = (
+    "Load: {working} working minute(s) across {spans} placement(s), from {first} "
+    "to {last}. I can't state that as a percentage: this machine's calendar did "
+    "not read, so I have no open-capacity figure to divide by.")
+MACHINE_LOAD_NO_JUDGMENT = (
+    "Whether that counts as overloaded is not mine to say — no utilisation "
+    "threshold is declared for this plant, so the figure is stated, not judged.")
+
 PROVE_IT_VERIFIED = "That one is on the record. Here is what it rests on:"
 PROVE_IT_INTERPRETIVE = (
     "That part is my inference, not a record — here is each thing I read to get "
@@ -752,6 +794,27 @@ INVENTORY_ON_TIME_ROLLING = (
     "horizon have no completion date yet, so they are neither late nor on time.")
 INVENTORY_ON_TIME_MONOLITHIC = "Every order finishes on time."
 INVENTORY_LATE = "{late} of the {scheduled} scheduled order(s) finish late."
+
+# Session 4B.22 Item B3 — ALL-IN OR ALL-OUT, PER ORDER. 4B.21 answered this
+# question truly and about something else: asked whether an order can be
+# PARTIALLY placed, the route said how many orders are placed. The two sentences
+# below state the measurement; the third states its LIMIT, and it is not
+# optional. "No order is partly placed" is a fact about this schedule.
+# "Orders are never partly placed" would be a claim about the product, and
+# nothing enforces it (see `OrderDisposition.placement_is_all_or_nothing`).
+INVENTORY_ALL_OR_NOTHING = (
+    "All in or all out, on this board: each of the {full} scheduled order(s) has "
+    "every one of its declared operations placed in this window, and each of the "
+    "{unplaced} beyond the horizon has none of them. No order is split across "
+    "the boundary.")
+INVENTORY_PARTLY_PLACED = (
+    "Not all in or all out: {partly} order(s) are SPLIT across the boundary — "
+    "some of their declared operations are placed in this window and some are "
+    "not. {full} order(s) have all of theirs placed and {unplaced} have none.")
+INVENTORY_ALL_OR_NOTHING_LIMIT = (
+    "That is measured off this schedule, not a rule the product enforces: work "
+    "is admitted a whole work package at a time, and an order served by more "
+    "than one could in principle be split. None on this board is.")
 
 # THE PARTITION FAILED. Scheduled + beyond + excluded did not add up to known,
 # which means an order is in no bucket at all. The assembler raises on this at

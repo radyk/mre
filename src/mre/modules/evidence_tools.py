@@ -436,28 +436,14 @@ class EvidenceToolbox:
             spans.append(row)
             prev_end = re_
         note = "" if spans else f"{ref} carries no work in that window"
-        first_start = _parse(rows[0].get("start", "")) if spans else None
-        last_end = prev_end
-        summary = {
-            "machine": ref, "spans": len(spans),
-            # BOTH TOTALS, BOTH NAMED. ``busy_minutes`` is gone: on a chunked
-            # machine it exceeded the machine's entire open capacity in the
-            # same interval by 3.9x, and no reader could tell from the name
-            # that it was a span sum rather than a work sum.
-            "working_minutes": round(working_total, 1),
-            "first_start": spans[0]["start"] if spans else None,
-            "last_end": spans[-1]["end"] if spans else None}
-        if spans and first_start is not None and last_end is not None:
-            summary["elapsed_span_minutes"] = round(
-                (last_end - first_start).total_seconds() / 60.0, 1)
-            # THE DENOMINATOR, SO A UTILISATION IS COMPUTABLE WITHOUT GUESSING.
-            # A reasoner asked "how busy is CUT-01" needs open capacity, and
-            # inferring it from the span is exactly the 3.9x error.
-            oc = _open_minutes_between(open_windows, first_start, last_end)
-            if oc is not None:
-                summary["open_capacity_minutes"] = oc
-                summary["utilization_pct"] = (round(100.0 * working_total / oc, 1)
-                                              if oc > 0 else None)
+        # Session 4B.22 B1 — THE SUMMARY IS NO LONGER COMPUTED HERE. It comes
+        # from ``machine_load`` below, which is the ONE definition of this
+        # machine's working time and its denominator, so the contracted
+        # `machine-schedule` route and this toolbox surface cannot state
+        # different numbers for the same machine on the same board.
+        summary = machine_load(self._ex, ref, start=s, end=e) or {
+            "machine": ref, "spans": 0, "working_minutes": 0.0,
+            "first_start": None, "last_end": None}
         return ToolResult(
             tool=ToolName.MACHINE_OCCUPANCY,
             args={k: v for k, v in (("machine", machine), ("start", start),
@@ -840,6 +826,93 @@ class EvidenceToolbox:
 # ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
+
+def machine_load(explainer: Any, machine: str, *, start: Any = None,
+                 end: Any = None) -> Optional[dict]:
+    """ONE MACHINE'S LOAD — the single definition (Session 4B.22 Item B1).
+
+    WHY IT IS A MODULE-LEVEL FUNCTION AND NOT A TOOLBOX METHOD. 4B.20 computed
+    working-time utilisation and proved it correct, and it landed on the
+    SYNTHESIS TOOLBOX only — so "is CUT-01 overloaded" reached `machine-schedule`,
+    which enumerated eighteen placements and stated no utilisation figure at all.
+    The number existed and no route could be asked for it (docs/07 §5a.69). Rather
+    than let the route compute a second one, both surfaces read this.
+
+    EVERY FIELD NAMES ITS QUANTITY, and the two capacity figures name the
+    interval they are measured over (4B.20's ruling: a capacity figure names its
+    DENOMINATOR):
+
+      ``working_minutes``       the sum of the run windows and nothing else
+      ``elapsed_span_minutes``  first placement to last, wall clock
+      ``open_capacity_minutes`` the machine's OPEN calendar minutes inside that
+                                same first-to-last interval — not its whole
+                                calendar, which on this plant runs weeks past
+                                the plan (22,320 minutes against 6,655)
+      ``utilization_pct``       working / open, over that interval
+
+    Returns None when the machine carries no work at all — an absent figure, not
+    a zero one. ``open_capacity_minutes`` and ``utilization_pct`` are ABSENT when
+    the calendar could not be read: a percentage computed against a denominator
+    we could not read is the class of claim this codebase refuses to make.
+    """
+    ref = explainer.resolve_machine_value(machine) or machine
+    try:
+        all_rows = explainer._load_enriched_assignments() or []
+    except Exception:  # noqa: BLE001 — a failed read never invents a load
+        return None
+    rows = [r for r in all_rows
+            if (r.get("machine") or "").upper() == str(ref).upper()]
+    rows.sort(key=lambda r: r.get("start") or "")
+
+    working_total = 0.0
+    kept = 0
+    first_start = last_end = None
+    for r in rows:
+        rs, re_ = _parse(r.get("start", "")), _parse(r.get("end", ""))
+        if rs is None or re_ is None:
+            continue
+        if start is not None and re_ <= start:
+            continue
+        if end is not None and rs >= end:
+            continue
+        working, _span, _pieces = _work_span_pieces(r)
+        working_total += working if working is not None else 0.0
+        if first_start is None:
+            first_start = rs
+        last_end = re_
+        kept += 1
+    if not kept:
+        return None
+
+    out = {"machine": ref, "spans": kept,
+           "working_minutes": round(working_total, 1),
+           "first_start": _fmt_dt(first_start), "last_end": _fmt_dt(last_end)}
+
+    if first_start is not None and last_end is not None:
+        out["elapsed_span_minutes"] = round(
+            (last_end - first_start).total_seconds() / 60.0, 1)
+        # THE DENOMINATOR, SO A UTILISATION IS COMPUTABLE WITHOUT GUESSING.
+        # A reasoner asked "how busy is CUT-01" needs open capacity, and
+        # inferring it from the span is exactly the 3.9x error.
+        # None is PROPAGATED, never defaulted to []: an empty window list means
+        # "open nowhere", and reporting that as the capacity of a machine we
+        # simply could not read manufactures a 0%/None utilisation out of our
+        # own blindness.
+        try:
+            wins = explainer._open_windows(ref) or None
+        except Exception:  # noqa: BLE001
+            wins = None
+        oc = _open_minutes_between(wins, first_start, last_end)
+        if oc is not None:
+            out["open_capacity_minutes"] = oc
+            out["utilization_pct"] = (round(100.0 * working_total / oc, 1)
+                                      if oc > 0 else None)
+    return out
+
+
+def _fmt_dt(dt) -> Optional[str]:
+    return dt.strftime("%Y-%m-%d %H:%M") if dt is not None else None
+
 
 def _open_minutes_between(windows: Optional[list[tuple]], lo, hi) -> Optional[float]:
     """OPEN minutes of a machine's calendar inside [lo, hi]. None when the

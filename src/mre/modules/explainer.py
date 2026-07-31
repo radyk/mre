@@ -695,7 +695,8 @@ class Explainer:
         if route_id == "briefing":
             return self._explain_briefing(q, params.get("document"))
         if route_id == "advice":
-            return self._explain_advice(q, params.get("order"))
+            return self._explain_advice(q, params.get("order"),
+                                        params.get("document"))
         if route_id == "confirm-take":
             return self._explain_confirm_take(q, params.get("order"),
                                               params.get("machine"))
@@ -801,7 +802,8 @@ class Explainer:
                                           params.get("offers"))
         if route_id == "prove-it":
             return self._prove_it_bundle(q, params.get("claim"),
-                                         params.get("answer"))
+                                         params.get("answer"),
+                                         params.get("prior"))
         if route_id in ("beyond-horizon", "why-not-scheduled-yet", "frozen",
                         "coarse-fit", "bucket-load"):
             return self._rolling_bundle(route_id, q, params.get("document"),
@@ -2499,6 +2501,12 @@ class Explainer:
                 "splittable_placed_count": d.splittable_placed,
                 "dispositions_partition": d.partitions(),
                 "rolling": d.rolling,
+                # Session 4B.22 Item B3 — HOW THE PLACEMENT FALLS WITHIN AN
+                # ORDER. All four are None together when the chain is unreadable.
+                "fully_placed_order_count": d.fully_placed_orders,
+                "partly_placed_order_count": d.partly_placed_orders,
+                "unplaced_order_count": d.unplaced_orders,
+                "placement_all_or_nothing": d.placement_is_all_or_nothing,
                 "order_count": d.known_orders,
                 "operation_count": d.placed_operations,
                 "splittable_op_count": d.splittable_declared,
@@ -3985,20 +3993,49 @@ class Explainer:
         )
 
     def _prove_it_bundle(self, question: str, claim: Any,
-                         answer: Any = None) -> ExplanationBundle:
+                         answer: Any = None,
+                         prior: Any = None) -> ExplanationBundle:
         """"Prove it" (R-AI5(4)): the grounding pass re-run on ONE claim,
         conversationally. Either the record, or the honest "that part is my
-        inference from A and B — here's each"."""
+        inference from A and B — here's each".
+
+        Session 4B.22 adds the THIRD and FOURTH cases, and the ruling is that all
+        four are authored, none silent:
+
+          claim   the last answer was SYNTHESIS — its per-claim provenance opens,
+                  unchanged (4B.5 CU5).
+          prior   with records — the last answer was a CONTRACTED route. It has
+                  no per-sentence claims, so what opens is the record set the
+                  whole answer was assembled from, and the copy says exactly
+                  that rather than pretending to a decomposition it never had.
+          prior   with none — the last answer was AUTHORED COPY (a capability
+                  statement, a clarify, a refusal). Saying so plainly is the
+                  answer; it is not the same fact as having nothing open.
+          neither the conversation has no prior answer at all.
+        """
         claim_dict = claim if isinstance(claim, dict) else (
             claim.model_dump(mode="json") if claim is not None else None)
-        rids = list((claim_dict or {}).get("cited_record_ids") or [])
-        if not rids:
-            rids = list((claim_dict or {}).get("consulted_record_ids") or [])
-        records = self._records_by_id(rids)
+        prior_dict = prior if isinstance(prior, dict) else None
+        if claim_dict is not None:
+            rids = list(claim_dict.get("cited_record_ids") or [])
+            if not rids:
+                rids = list(claim_dict.get("consulted_record_ids") or [])
+            records = self._records_by_id(rids)
+        else:
+            # The prior answer's OWN records, carried verbatim from the bundle
+            # that delivered them — never re-derived, so what opens here is what
+            # lit the bars on the turn the planner is pointing at.
+            records = [r for r in ((prior_dict or {}).get("records") or [])
+                       if isinstance(r, dict)]
         lines = []
         for rec in records:
             lines.append({"rid": str(rec.get("record_id") or "")[:8],
                           "summary": self._record_summary(rec)})
+        prior_facts = None
+        if claim_dict is None and prior_dict is not None:
+            prior_facts = {"question": prior_dict.get("question") or "",
+                           "route": prior_dict.get("route") or "?",
+                           "record_count": len(records)}
         return ExplanationBundle(
             question=question,
             subject_id="prove-it",
@@ -4006,7 +4043,8 @@ class Explainer:
             subject_external_name="?",
             ordered_records=records,
             key_facts={"claim": claim_dict, "lines": lines,
-                       "have_claim": claim_dict is not None},
+                       "have_claim": claim_dict is not None,
+                       "prior_answer": prior_facts},
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )
@@ -4038,8 +4076,16 @@ class Explainer:
             dt = (rec.get("decision_type") or "?").replace("_", " ")
             drv = rec.get("driver") or ""
             phrase = driver_phrase(drv) or drv.lower().replace("_", " ")
+            # Session 4B.22 — THE SIXTH DRIVER-PHRASE SITE, and 4B.21's own
+            # remedy applied to it. 4B.21 named this one and left it (its Item
+            # 3b: "the other five are named, not fixed"); 4B.22's drill-down
+            # ruling put it on the SECOND TURN OF THE DEMO, one line under a lead
+            # that says "there was no alternative to weigh", where the bare
+            # appositive read as a rival explanation of the same placement. The
+            # label now claims only what is checkable: the record's driver field
+            # says CAPACITY_BLOCKED, and that is all "recorded driver" asserts.
             return (f"the {dt} decision" + (f" for {who}" if who else "")
-                    + (f" — {phrase}" if phrase else ""))
+                    + (f" — recorded driver: {phrase}" if phrase else ""))
         if rt == "finding":
             return f"finding {rec.get('code')}" + (f" on {who}" if who else "")
         return f"{rt} record" + (f" for {who}" if who else "")
@@ -4218,7 +4264,8 @@ class Explainer:
                 "placement": facts.get("placement")}
 
     def _explain_advice(self, question: str,
-                        order: Optional[str] = None) -> ExplanationBundle:
+                        order: Optional[str] = None,
+                        document: Any = None) -> ExplanationBundle:
         """CU2 — the HONEST SCOPING answer for a recommendation/advice question.
 
         NEVER a status recital and NEVER an invented intervention. States what the
@@ -4237,12 +4284,47 @@ class Explainer:
         sought for one named order that already finishes ahead of its due date, the
         answer leads with that fact and with the release date that is its only
         earlier bound, instead of a plan-wide lateness scope that answers a question
-        the planner did not ask."""
+        the planner did not ask.
+
+        SESSION 4B.22 ITEM B2 — WHAT TO LOOK AT FIRST IS ALREADY COMPUTED, AND THE
+        ROUTE WAS REFUSING IT. Measured on the pinned board, one turn after a
+        `briefing` that had just ranked four things by consequence with numbers
+        and pointers, "if I could fix one thing what should it be" came back as a
+        bare refusal and nothing else — no take either, because ``_advice_take``
+        needs a late order and nothing on that board is late.
+
+        The refusal is RIGHT ABOUT INTERVENTIONS and is kept verbatim: whether to
+        open overtime, add a machine or re-prioritise is not a question this
+        product answers. But "what should I look at first" is a DIFFERENT
+        question, it is the opener's top-ranked item, and it was already
+        computed. The route now leads with that item and says plainly which of
+        the two questions it answered — it ranks what is worth attention; it does
+        not recommend an intervention.
+
+        NO NEW INTENT WAS TAKEN. The parse already sends this phrasing to
+        `advice` at 0.92; the only wiring is the document, which `advice` now
+        joins `briefing` in receiving. A vocabulary-class change would have bought
+        nothing the existing route could not carry.
+        """
         late = self._late_order_count()
+        top = None
+        if document is not None:
+            try:
+                opener = self._build_opener(document)
+                worries = opener.worries
+                if worries:
+                    i = worries[0]
+                    top = {"headline": i.headline, "detail": list(i.detail),
+                           "pointer": i.pointer, "amount": i.amount,
+                           "band": i.band, "key": i.key,
+                           "rank_of": len(worries)}
+            except Exception:  # noqa: BLE001 — the refusal must survive any read
+                top = None
         return self._authored_bundle(
             "advice", question,
             {"late_count": late, "take": self._advice_take(),
-             "order": order, "expedite_early": self._expedite_early_facts(order)})
+             "order": order, "expedite_early": self._expedite_early_facts(order),
+             "opener_top": top})
 
     def _advice_take(self) -> Optional[str]:
         """A grounded lever for the advice route (R-AI3(2)): the worst late order,
@@ -4658,6 +4740,27 @@ class Explainer:
         narrated_demands = {d for r in filtered for d in r.get("demand_ids", [])}
         schedule_records = self._assignment_records_for_ops(narrated_ops, narrated_demands)
 
+        # Session 4B.22 Item B1 — HOW BUSY THIS MACHINE IS, on the route that
+        # lists what it is running. "is CUT-01 overloaded" reaches here and got
+        # eighteen rows and no figure: 4B.20 computed working-time utilisation
+        # and put it on the synthesis toolbox alone, so the number existed and
+        # nothing could be asked for it (docs/07 §5a.69). Read, not recomputed —
+        # ``machine_load`` is the one definition both surfaces share.
+        #
+        # SINGLE MACHINE ONLY, and deliberately so. The load is a property of ONE
+        # machine's calendar against ONE machine's work; there is no honest way
+        # to state it over a mixed listing, and stating it over the first
+        # machine in a filter that matched five would be exactly the fused
+        # denominator 4B.20 and 4B.21 both ruled against. The full schedule and a
+        # pool listing get no load line at all.
+        load = None
+        if flt.get("machine") and len({r["machine"] for r in row_dicts}) == 1:
+            try:
+                from mre.modules.evidence_tools import machine_load
+                load = machine_load(self, row_dicts[0]["machine"])
+            except Exception:  # noqa: BLE001 — a listing must never fail on a figure
+                load = None
+
         return ExplanationBundle(
             question=question,
             subject_id=label,
@@ -4671,6 +4774,7 @@ class Explainer:
                 "machine_count": len({r["machine"] for r in row_dicts}),
                 "direct_answer": direct,
                 "empty_message": empty_msg,
+                "machine_load": load,
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,

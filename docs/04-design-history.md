@@ -13857,3 +13857,176 @@ Also left: the `machine-schedule` route's missing utilisation figure and the
 `repeat`/`deaf` string-identity boundary (both vocabulary calls, §5a.69, §5a.58);
 the metric and input-manifest readers; the verifier's derived-claim limit;
 4B.17's four drifts and ten conversational misses; CLAUDE.md compression.
+
+---
+
+## 2026-07-31 — Session 4B.22: THE SECOND QUESTION
+
+Four measured defects on the pinned board (`rolling-c362baa4-1b0`: 40 known / 26
+scheduled / 14 beyond-horizon / 56 placed of 88 declared, nothing late, cost
+optimum PROVED). Every one of them is DEAF rather than WRONG — the board no
+longer lies. But a stranger's second question is always a FOLLOW-UP, and two
+distinct classes of follow-up failed. They are not the same defect and were not
+fixed the same way.
+
+### THE DRILL-DOWN RULING (Class A)
+
+**A drill-down request resolves to THE ANSWER IT FOLLOWS.** "That", in "show me
+the evidence for that", refers to what we last said — not to the subject of the
+last question, and not to nothing.
+
+Three cases, all AUTHORED, none silent:
+
+1. **The prior answer carried records.** They open, and the answer names the
+   question they are behind. Where the prior answer came from a CONTRACTED
+   route it has no per-sentence claims, and the copy says so rather than
+   implying a decomposition the answer never had.
+2. **The prior answer carried none** — an authored capability statement, a
+   clarify, a refusal. **SAY THAT PLAINLY.** "This answer was rendered from
+   authored copy and cites no records" is a different, honest fact from "I have
+   no answer of my own open to ground", and an answer surface may not be unable
+   to distinguish them (4B.18's silence clause, applied to our own output).
+3. **The prior answer was SYNTHESIS.** Its per-claim provenance opens,
+   unchanged (4B.5 CU5).
+
+Only a conversation with NO prior answer at all reaches the no-target floor,
+and its copy was rewritten: it used to read *"the records behind it are cited on
+it — name the part you want walked"*, which after this ruling describes a turn
+that does not exist, and which a planner previously received after a CLARIFY —
+an answer that cites nothing. **The copy sent them looking for citations that
+were not there.**
+
+**THE MECHANISM, AND WHY THE LADDER HAD NO RUNG FOR IT.** The 4B.5 resolution
+ladder (card > selection > last-answer subject > history) resolves WHO a
+question is about. It has no rung for WHAT WE SAID, because a citation set is
+not a subject. `SynthesisMemory` holds the second tier's claims — and `run_ask`
+deliberately FORGETS it the moment a contracted route answers, so after any
+route turn there is provably nothing to ground. Measured, one turn after an
+answer that cited a record and lit three bars: "that" bound ORD-000013
+correctly, from the last-answer rung, and grounded nothing.
+
+`AnswerMemory` is the missing rung: the last DELIVERED answer's route, question
+and records, per session, in process. It is derived state about our own output —
+no write path into the canonical model or the evidence store (M10). It is
+written at `run_ask`, the ONE seam every live answer passes, deliberately not at
+`dispatch`'s matched-route branch where `remember_delivery` sits: a rolling
+route, a tray answer and a CLARIFY never reach that branch, and a CLARIFY is
+precisely the specimen that made the old copy lie. A prove-it turn is NOT
+remembered, so a second drill-down still opens the answer the planner is looking
+at rather than the drill-down.
+
+`forget_deliveries` clears it, and is now the ONE place that clears server-side
+conversation state. 4B.16a's defect was a RESET that cleared four channels and
+missed a fifth; adding a sixth store with its own separate clear would reproduce
+it exactly.
+
+**THE FALL-THROUGH IS PRESERVED.** A prove-it gesture that ALSO names a real
+intent ("but why", one turn after a cause chain) is still answered as that
+intent. The prior-answer rung is consulted only on the branch that would
+otherwise have emitted the no-target floor. What a planner wants from "but why"
+is the question answered, not our last sentence re-opened — the 4A.5a specimen,
+still pinned.
+
+### THE ANSWER EXISTED AND NO ROUTE REACHED IT (Class B)
+
+Three questions answerable TODAY from machinery a prior session already built.
+The same shape as 4B.15's attribute lookup: the facts were loaded and
+unreachable. **NO NEW INTENT WAS TAKEN FOR ANY OF THEM** — in each case the
+parse already sends the phrasing to an existing route, and the cheaper honest
+option was to let that route carry the figure.
+
+**B1 — `machine-schedule` now states the load.** "is CUT-01 overloaded" reached
+a route that enumerated 18 placements and stated no utilisation figure at all,
+while 4B.20's working-time figure sat on the synthesis toolbox alone
+(docs/07 §5a.69). `evidence_tools.machine_load` is now the ONE definition and
+both surfaces read it; the toolbox's summary is no longer computed inside
+`_machine_occupancy`.
+
+Two clauses of prior rulings bind here and both are honoured. **The figure names
+its quantity** — working time, the sum of the run windows, never the elapsed
+span (4B.20). **The figure names its denominator** — open calendar minutes over
+the same first-placement-to-last-placement interval, on the surface, so the
+percentage is checkable: on the pinned board 5,981 against 6,655, 89.9%. (The
+machine's whole calendar is 22,320 minutes and runs weeks past the plan; a
+percentage against it would be true of nothing anyone asked.)
+
+**AND THE JUDGMENT IS REFUSED.** "Overloaded" is a business threshold and no
+plant here declares one. The answer states the figure and says it is not judging
+it. Inventing a threshold silently is the defect class R-PD1 clause (5) and the
+undeclared coarse derate are both left OPEN for; borrowing `board_opener`'s
+`SATURATED = 0.85` — which exists to detect CONCENTRATION, a busy machine beside
+an idle eligible one — would have been exactly that, wearing a citation.
+
+A listing that spans more than one machine states NO load line. There is no
+honest single denominator over a mixed listing, and stating the first machine's
+would be the fused denominator 4B.20 and 4B.21 both ruled against.
+
+**B2 — `advice` leads with the opener's top-ranked item.** "if I could fix one
+thing what should it be" returned a bare refusal on a board where `board_opener`
+had, one turn earlier, ranked four things by consequence with numbers and
+pointers. (Not even a take: `_advice_take` needs a late order, and nothing on
+this board is late.) The refusal is RIGHT ABOUT INTERVENTIONS — whether to open
+overtime, add a machine or re-prioritise is not a question this product answers
+— and is kept verbatim. But "what should I look at first" is a DIFFERENT
+question, it is the opener's top worry, and it was already computed. The route
+now leads with it and names which of the two questions it answered: **it ranks
+what is worth attention; it does not recommend an intervention.** `Intent.ADVICE`
+joins the document allow-list, for the opener's reason.
+
+**B3 — `inventory` answers whether an order can be PARTLY placed.** 4B.21
+measured this question and recorded that the answer given was true and about
+something else: asked whether an order can be split across the boundary, the
+route said how many orders are placed. `order_disposition` now walks the
+canonical Demand -> Fulfillment -> WorkPackage -> Operation chain and reports
+`fully_placed_orders` / `partly_placed_orders` / `unplaced_orders`.
+
+**AND THE SENTENCE DISTINGUISHES MEASURED FROM INVARIANT, which is 4B.21's own
+ruling one level down.** "No order on this board is split" is a fact about this
+schedule. "Orders are never partly placed" would be a claim about the product,
+and **nothing enforces it**: the rolling admission unit is the WORK PACKAGE
+(`rolling_horizon._derive_maps` keeps exactly one per demand — last fulfillment
+wins), so an order served by two work packages has one of them unreachable
+through that map, and its operations would be declared and never admitted. On
+this board every order has exactly one work package and the question does not
+arise. The copy states the measurement and then states that limit; the limit
+clause is not optional.
+
+The three figures are `None` TOGETHER when the chain cannot be walked. Three
+absent figures are not three zeros: "no order is partly placed" must never be
+manufactured out of a failed read.
+
+### THE SIXTH DRIVER-PHRASE SITE — a one-line scope call, named
+
+4B.21's Item 3(b) censused seven sites rendering a driver phrase as a standalone
+causal clause, fixed the two renderer ones, and named the other five as
+deliberately unfixed. This session's drill-down ruling put one of them —
+`Explainer._record_summary`'s *"the assignment decision — {phrase}"* — on the
+SECOND TURN OF THE DEMO, one line under a lead reading *"there was no
+alternative to weigh"*, where the bare appositive read as a rival explanation of
+the same placement. 4B.21's own remedy is applied: **"recorded driver:"**, which
+claims only what is checkable. This is a widening of the session's stated scope
+by one line and is recorded as one.
+
+### The guards
+
+`tests/test_second_question.py`, 35 tests. **Every Class A assertion drives two
+consecutive `run_ask` calls against one session id** — the live dispatch, the
+history channel carried forward, and NOTHING about the previous answer passed by
+hand. A single-turn test cannot see this feature at all, and a test that handed
+the prior bundle in would prove the assembler, not the path (4B.21 Item 7).
+
+Five premise tests, each asserting one condition separately: a first turn that
+really cites records, a first turn that really cites none, a machine with a
+readable calendar, an opener that really ranks something, a non-trivial
+declared-vs-placed split. **The premise fixture's own first version was wrong in
+exactly the way this session exists to catch** — it chose its order+machine pair
+off `Explainer.route`, which happily answers about a BEYOND-HORIZON order that
+the live dispatch diverts to `why-not-scheduled-yet` before the route is
+reached. True of the assembler, false of the path, inside the test written to
+avoid that.
+
+Four negative controls, each proven red on its own half and green everywhere
+else: (a) remove the answer-memory write -> 10 Class A failures, B green;
+(b) drop `machine_load` from the route's key_facts -> 2 B1 failures, A green;
+(c) take `ADVICE` off the document allow-list -> 4 B2 failures; (d) drop the
+partial-placement line -> 2 B3 failures.
