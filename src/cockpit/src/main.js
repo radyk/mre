@@ -386,10 +386,32 @@ function followedToast(hostEl, prevId) {
 // every `dev_cockpit.ps1` boot mints a busy_board solve into the shared _data
 // root, so the boot-time check found a strictly-newer row and yanked the deep
 // link to it before the board had settled (see CU3 in the closeout).
+// `proposalLive` (Session 4B.23 Item 4) — THE POLL MAY NOT DISCARD A LIVE
+// PROPOSAL. A dropped bar awaiting its verdict, and the delta card that follows
+// it, are OPTIMISTIC CLIENT STATE: they exist nowhere in the persisted document,
+// so there is nothing for a refresh to reconcile them against. Anything this
+// watch does to the page while one is up can only destroy it — auto-follow is a
+// full reload, and even the banner is PREPENDED into #app, which shortens the
+// board host and moves the rows the proposal's absolutely-positioned overlay is
+// pinned to.
+//
+// MECHANISM CHOSEN: SUPPRESS, not reconcile and not layer-above. Reconciling
+// needs two versions of a placement and there is only one — the proposal is not
+// in the document at all. Holding it above the poll means re-projecting overlay
+// geometry after every reflow, which is machinery for a state that lasts
+// seconds. Suppression is exact, and it costs nothing: the watch exists so a
+// planner is not left on a stale board, which is not urgent inside a gesture,
+// and the interval + focus listeners re-fire the moment the card closes — so
+// the newer schedule is DEFERRED, never dropped.
+//
+// This is deliberately NARROWER than `hasUncommittedState`. A panel selection is
+// uncommitted state too, and 4.4 CU2 rules that it gets the BANNER; that is
+// unchanged. Only a live sandbox proposal defers the check entirely.
 function installFreshnessWatch({ app, boundId, hasUncommittedState, pinned,
-                                board }) {
+                                board, proposalLive }) {
   const offered = new Set();   // newer ids this tab has already surfaced, ever
   let inFlight = false;
+  let deferrals = 0;           // how many checks a live proposal held back
   const currentBound = () => (window.__cockpit && window.__cockpit.scheduleId) || boundId;
 
   // CU4(b) — THE CHECK NEVER DISTURBS VIEWPORT STATE.
@@ -428,11 +450,19 @@ function installFreshnessWatch({ app, boundId, hasUncommittedState, pinned,
     });
   }
 
+  const live = () => !!(proposalLive && proposalLive());
+
   async function check() {
     if (inFlight) return;
+    // Item 4: a live proposal defers the WHOLE check — before the request…
+    if (live()) { deferrals++; return; }
     inFlight = true;
     try {
       const { schedules } = await listSchedules();
+      // …and again after it, because a drop can land while the listing is in
+      // flight. The decision must be made against the state that exists NOW,
+      // not the state that existed when the request was sent.
+      if (live()) { deferrals++; return; }
       const id = currentBound();
       const newerId = findNewerSchedule(id, schedules || []);
       if (!newerId || newerId === id) return;
@@ -464,8 +494,14 @@ function installFreshnessWatch({ app, boundId, hasUncommittedState, pinned,
     if (document.visibilityState === "visible") check();
   });
   const timer = setInterval(check, 30000);
-  if (window.__cockpit) window.__cockpit.checkFreshness = check;   // harness seam
-  return { check, stop: () => clearInterval(timer) };
+  if (window.__cockpit) {
+    window.__cockpit.checkFreshness = check;                  // harness seam
+    // Item 4's probe: how many checks a live proposal held back. A test that
+    // asserts "the board did not change" can also assert the watch RAN and
+    // chose not to — otherwise a watch that was simply never called would pass.
+    window.__cockpit.freshnessDeferrals = () => deferrals;
+  }
+  return { check, stop: () => clearInterval(timer), deferrals: () => deferrals };
 }
 
 async function boot() {
@@ -622,11 +658,21 @@ async function boot() {
         const panelBusy = !!(panel && panel.hasUserState && panel.hasUserState());
         return dragBusy || panelBusy;
       };
+      // Session 4B.23 Item 4: a LIVE SANDBOX PROPOSAL — a bar dropped and
+      // awaiting its beats, or the delta card that followed it. The card
+      // outlives the gesture (phase returns to idle while a refusal / failure /
+      // no-verdict card stays up), so both are read.
+      const proposalLive = () => {
+        const drag = window.__cockpit && window.__cockpit.drag;
+        if (!drag || !drag.state) return false;
+        const st = drag.state();
+        return (!!st.phase && st.phase !== "idle") || !!st.cardOpen;
+      };
       const watch = installFreshnessWatch({
         app, boundId: id, hasUncommittedState, pinned,
         // CU4(b): the watch reads the board's window so it can put it back if
         // its own DOM insertion moved it. It never otherwise touches the board.
-        board,
+        board, proposalLive,
       });
       watch.check();   // notice a newer solve at boot too (the return-from-Excel tab)
       // Fetch the Tier-0 interaction payload in the BACKGROUND, after first

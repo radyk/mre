@@ -142,6 +142,13 @@ export function createGestureController(board, geometry, opts) {
     dropToGhostMs: null,    // grab→drop→feasibility ghost latency
     contradiction: null,    // {infeasible, moved} if beat two contradicted beat one
     askWhyContext: null,    // the sandbox context an "ask why" hands off
+    // Session 4B.23: beat one's THREE-state verdict as this gesture saw it —
+    // "possible" | "impossible" | "undetermined" | "failed" | null. And, when a
+    // beat could not be completed at all, the AUTHORED cause plus the raw
+    // technical string (which is for whoever is debugging, never for the card).
+    beatOne: null,
+    beatOneError: null,
+    failure: null,          // {beat, what, technical, status} — a visible failure
   };
 
   // --- the delta card (CU4 + CU1 accept/publish + R-T2 ask-why) --------
@@ -151,6 +158,11 @@ export function createGestureController(board, geometry, opts) {
     onAccept: accept,
     onPublish: publish,
     onAskWhy: (result) => askWhy(result),
+    // Session 4B.23: "Try again" on a FAILURE (a beat we could not complete) or
+    // on beat two's `no_verdict`. Both are statements about our budget, so the
+    // one honest affordance is another attempt at the SAME pin — never a
+    // reinterpretation of the gesture.
+    onRetry: () => retryLastGesture(),
   });
 
   // ---------------------------------------------------------------------
@@ -417,7 +429,19 @@ export function createGestureController(board, geometry, opts) {
   function drop() {
     if (S.phase !== "dragging" && S.phase !== "grabbed") return;
     const t = S.target;
-    if (!t || !t.legal) return returnHome(t?.reason || "not a legal placement");
+    if (!t || !t.legal) {
+      // A TIER-0 REFUSAL — the calendar/eligibility answer, and a PRODUCT
+      // ANSWER: the plant says no and says why. Session 4B.23: this used to snap
+      // home with `reasonTip` hidden by `returnHome` itself, so the reason a
+      // planner saw mid-drag vanished at the exact moment they let go — the
+      // release, which is when they are looking for the answer. The card now
+      // carries it, in the same register as a proven-impossible beat one,
+      // because they are the same kind of statement.
+      const why = REASONS[t?.reason] || t?.reason || "not a legal placement";
+      card.showImpossible({ reason: why });
+      publishCard(null);
+      return returnHome(why, /*keepCard*/ true);
+    }
 
     // R-DP9 (CU2): a drop within snap tolerance of the op's INCUMBENT placement
     // is a NO-OP — nothing to commit. Settle home with an "already here" cue; no
@@ -455,6 +479,11 @@ export function createGestureController(board, geometry, opts) {
     markCarryGhost(true);
     card.showPricing(feel.sandbox.feasibility_budget_s, feel.sandbox.countdown_tick_ms);
     const t0 = performance.now();
+    S.beatOne = null; S.beatOneError = null; S.failure = null;
+    // Session 4B.23: remember the gesture so "Try again" can re-run THIS pin.
+    // `returnHome` clears S.op/S.target on its way out, and a retry that had to
+    // re-read them would silently retry nothing.
+    S.lastGesture = { op: S.op, target: { ...t } };
     if (!api.postFeasibility) return _beatTwo(pin, t, t0, null);   // degrade: skip beat one
     return api.postFeasibility(scheduleId, { ...pin, budget_s: feel.sandbox.feasibility_budget_s })
       .then((ghost) => {
@@ -462,21 +491,86 @@ export function createGestureController(board, geometry, opts) {
         if (ghost === null) return _beatTwo(pin, t, t0, null);   // endpoint absent
         S.ghost = ghost;
         S.correlationId = ghost.correlation_id;
-        if (!ghost.feasible) {
-          // beat one already proves it impossible — snap back (no beat two).
+        const verdict = feasibilityVerdict(ghost);
+        S.beatOne = verdict;
+        if (verdict === "impossible") {
+          // PROVEN impossible — a REFUSAL, and a refusal is a product answer
+          // about the PLANT. Beat two has nothing to price. The card SAYS SO and
+          // STAYS (`keepCard`): the bar snapping home with no card is exactly the
+          // silence Session 4B.23 exists to end.
           markCarryGhost(false);
-          return returnHome(ghost.message || "this placement isn't possible");
+          card.showImpossible({ reason: ghost.message, beat: "one" });
+          publishCard(null);
+          return returnHome(ghost.message || "this placement isn't possible",
+                            /*keepCard*/ true);
         }
+        // POSSIBLE **and** UNDETERMINED both go on to pricing (Session 4B.23,
+        // Item 5(b)). UNDETERMINED means the CHECK ran out of budget — it is a
+        // statement about us, never about the plant — so refusing the gesture on
+        // it would be asserting something we did not compute. Beat two is the
+        // one that decides, and it is given the chance to.
         return _beatTwo(pin, t, t0, ghost);
       }).catch((e) => {
         if (e && e.superseded && handleSuperseded()) return;
-        return _beatTwo(pin, t, t0, null);   // beat one failed → try to price anyway
+        // Beat one FAILED (transport / server). Pricing anyway is right — beat
+        // two is the authority — but it is no longer silent: the pending card
+        // says the feasibility check did not answer.
+        S.beatOne = "failed";
+        S.beatOneError = failureCause(e);
+        return _beatTwo(pin, t, t0, null);
       });
   }
 
+  // "Try again" (Session 4B.23): re-run the LAST gesture's own pin. Offered only
+  // where the failure was OURS — a beat that could not be completed, or beat
+  // two's `no_verdict`. It replays the identical (op, resource, time); it never
+  // re-derives a target, because a retry that quietly moved the bar somewhere
+  // else would be a second gesture wearing the first one's label.
+  function retryLastGesture() {
+    const g = S.lastGesture;
+    if (!g || !g.op || !g.target) return Promise.resolve(null);
+    card.hide(); clearCard();
+    return dropAtGesture(g.op, g.target.resource_id, g.target.time_ms);
+  }
+
+  function dropAtGesture(opRef, resourceId, timeMs) {
+    grab(opRef);
+    dragTo(resourceId, timeMs, /*altKey*/ true);
+    return drop();
+  }
+
+  // Beat one's THREE states (Session 4B.23). The server sends `verdict`
+  // explicitly; an OLDER server sends only `feasible` + `status`, and the status
+  // is what distinguishes the two false cases — so the fallback reads THAT and
+  // never collapses UNKNOWN into "impossible". `feasible` alone is not enough to
+  // author a sentence about the plant, on either side of the wire.
+  function feasibilityVerdict(ghost) {
+    if (ghost.verdict === "possible" || ghost.verdict === "impossible"
+        || ghost.verdict === "undetermined") return ghost.verdict;
+    if (ghost.feasible) return "possible";
+    return ghost.status === "INFEASIBLE" ? "impossible" : "undetermined";
+  }
+
+  // A transport/server failure, mapped to an AUTHORED planner sentence. No raw
+  // error string ever reaches a planner surface (the "Failed to fetch" that once
+  // surfaced as a chat turn); the raw text is kept on `state()` and the console
+  // for whoever is debugging, which is not the planner.
+  function failureCause(e) {
+    const raw = String((e && e.message) || e || "");
+    const status = e && e.status;
+    let what;
+    if (status >= 500) what = "the scheduler hit an error while working on it";
+    else if (status >= 400) what = "the scheduler turned the request down";
+    else what = "the connection to the scheduler dropped";
+    try { console.warn("[sandbox]", raw); } catch { /* no console */ }
+    return { what, technical: raw, status: status || null };
+  }
+
   function _beatTwo(pin, t, t0, ghost) {
-    // BEAT TWO — the priced re-solve. Show the countdown for the (longer) budget.
-    card.showPending(feel.sandbox.budget_s, feel.sandbox.countdown_tick_ms);
+    // BEAT TWO — the priced re-solve. Show the countdown for the (longer) budget,
+    // carrying forward what beat one did or did not manage to say.
+    card.showPending(feel.sandbox.budget_s, feel.sandbox.countdown_tick_ms,
+                     { beatOne: S.beatOne, beatOneError: S.beatOneError });
     const pin2 = { ...pin, budget_s: feel.sandbox.budget_s,
                    correlation_id: S.correlationId || undefined };
     return api.postSandbox(scheduleId, pin2).then((result) => {
@@ -486,7 +580,17 @@ export function createGestureController(board, geometry, opts) {
     }).catch((e) => {
       if (e && e.superseded && handleSuperseded()) return;
       markCarryGhost(false);
-      returnHome(`sandbox error: ${e.message || e}`);
+      // A FAILURE, not a refusal: we could not PRICE this move. The plant said
+      // nothing at all, so nothing may be claimed on its behalf. The card names
+      // WHICH beat failed and offers a retry — and it STAYS while the bar goes
+      // home, because a bar returning with no card is indistinguishable from a
+      // refusal, a timeout and a crash.
+      const cause = failureCause(e);
+      S.failure = { beat: "two", ...cause };
+      card.showFailure({ beat: "two", ...cause });
+      publishCard(null);
+      return returnHome("beat two could not price this placement",
+                        /*keepCard*/ true);
     });
   }
 
@@ -836,6 +940,7 @@ export function createGestureController(board, geometry, opts) {
     if (board.clearMotionClasses) board.clearMotionClasses();  // clear a prior pin-lock (R-M1c)
     S.phase = "idle"; S.op = null; S.tier0 = null; S.target = null;
     S.result = null; S.traces = [];
+    S.beatOne = null; S.beatOneError = null; S.failure = null;
   }
 
   function cancelSilently() {
@@ -1021,6 +1126,7 @@ export function createGestureController(board, geometry, opts) {
       dragTo(resourceId, ms(startIso), altKey);
       return drop();
     },
+    retry: () => retryLastGesture(),   // Session 4B.23: the harness's retry seam
     // probes for the screenshot harness / standing regressions
     state: () => ({
       phase: S.phase, op: S.op, acceptedId: S.acceptedId || null,
@@ -1049,9 +1155,23 @@ export function createGestureController(board, geometry, opts) {
       feasibilityGhost: S.ghost && {
         feasible: !!S.ghost.feasible, correlation_id: S.ghost.correlation_id,
         placement: (S.ghost.placement || []).length,
+        // Session 4B.23: the THREE-state verdict, resolved the way the branch
+        // resolved it (server field, else derived from `status`).
+        verdict: feasibilityVerdict(S.ghost), status: S.ghost.status || null,
       },
       contradiction: S.contradiction,
       askWhyContext: S.askWhyContext,
+      // Session 4B.23: what beat one managed to say, and — when a beat could not
+      // be completed at all — the failure the planner was shown. `technical` is
+      // the raw string; it lives HERE and in the console, never on the card.
+      beatOne: S.beatOne,
+      failure: S.failure && { ...S.failure },
+      // Session 4B.23 Item 4: is a delta card on screen? A refusal / failure /
+      // no-verdict card OUTLIVES the gesture (phase goes back to idle while the
+      // card stays), so "phase !== idle" is no longer the whole answer to "is
+      // there uncommitted state here". Read from the DOM, so it cannot drift
+      // from what the planner is actually looking at.
+      cardOpen: !!(card.el && !card.el.classList.contains("hidden")),
     }),
     tier0For: (opRef) => computeTier0(opRef, ctx, { ghosts: ghostIndex.get(opRef) || [] }),
     ghostsFor: (opRef) => ghostIndex.get(opRef) || [],

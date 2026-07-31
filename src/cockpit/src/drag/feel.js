@@ -48,11 +48,33 @@ export const DEFAULT_FEEL = {
     ghost_of_old_opacity: 0.28,
     dash: "4 3",
   },
-  // --- sandbox (CU4, R-T1c) — a UI mirror of the server-side budget token so
-  // the countdown matches the wait. The server budget is authoritative; this
-  // only paces the countdown animation. ---
+  // --- sandbox (CU4, R-T1c) — the budget the cockpit asks for AND the pace of
+  // its countdown. NOTE (Session 4B.23): the old comment here said the server
+  // budget was authoritative and this only animated a bar. That is not what the
+  // code does — `_beatTwo` SENDS this value as `budget_s`, and the API honours
+  // whatever the request carries, falling back to its own token only when the
+  // field is absent. This number is therefore the real budget of every drag. ---
   sandbox: {
-    budget_s: 15.0,
+    // 15.0 until Session 4B.23. MEASURED on the dense demo board
+    // (rolling-c9973708-865, 386 bars, 345 active), same pin every time:
+    //
+    //     budget 15s -> no_verdict  UNKNOWN   (stops at ~11s, prices nothing)
+    //     budget 25s -> FEASIBLE    +$2,596.67
+    //     budget 40s -> FEASIBLE    +$2,596.67
+    //     budget 60s -> FEASIBLE    +$2,596.67
+    //
+    // 15s was calibrated on boards a seventh this size; at demo density it does
+    // not reach a priceable answer, and the planner's reward for waiting the
+    // full budget was "couldn't verify this placement in time". 4B.22a got its
+    // card at a wall of 15.01s — right at the edge — which is why the same
+    // gesture priced from a quiet script and returned nothing from a browser.
+    //
+    // THE BUDGET IS A CEILING, NOT A SPEND. A solve that PROVES its verdict
+    // returns immediately (1.3s on the 56-bar pinned world, unchanged by this),
+    // so raising it lengthens only the cases that were already failing. What it
+    // costs is the worst case: ~30s to price a drag on a 386-bar board. That is
+    // a real cost and it is named in docs/closeouts/4B.23.md rather than hidden.
+    budget_s: 30.0,
     countdown_tick_ms: 100,
     // R-T2 beat one (Session 4B.3b): the small feasibility budget the ghost
     // paces against (server-authoritative FEASIBILITY_BUDGET_S; this only paces

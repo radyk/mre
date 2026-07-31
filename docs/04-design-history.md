@@ -14116,3 +14116,109 @@ machine's whole resolved calendar (28,080 minutes against a plan occupying 25
 days), so the busiest lane on a 386-bar board reads 39.7% against a 0.85
 threshold — 4B.20's denominator class at a fifth site. Both were invisible until
 a board carried past-due work and real density, which is what the errand was for.
+
+### 2026-07-31 — Session 4B.23: beat two is never called
+
+**THE SANDBOX WAS A ONE-BEAT SANDBOX ON THE COCKPIT PATH, AND THE CHAIN WAS
+NEVER BROKEN.** One drag on the dense demo board produced ONE network request:
+`POST /sandbox/feasibility`, 200, and then a card *hidden* and a bar snapping
+home. No throw, no swallowed rejection, no missing call site. Beat two was
+guarded by a condition and the condition was false:
+
+```js
+        if (!ghost.feasible) {
+          markCarryGhost(false);
+          return returnHome(ghost.message || "this placement isn't possible");
+        }
+```
+
+`feasibility_ghost` computes `feasible = status in ("OPTIMAL", "FEASIBLE")`.
+**So one boolean carried two different propositions.** INFEASIBLE is a fact about
+the plant: no placement exists. UNKNOWN is a fact about us: the check ran out of
+its two-second budget. Both took the branch, both wore the same server-authored
+sentence, and both skipped the priced beat — on a board where beat two, called
+directly on the identical pin, prices the move at $2,596.67.
+
+**THE 56-BAR COMPARISON IS THE FINDING, NOT A FOOTNOTE.** The same gesture class
+on both boards: `rolling-c9973708-865` (386 bars) returns UNKNOWN at 2.036s of a
+2.0s budget and makes ONE request; `rolling-c362baa4-1b0` (56 bars) returns
+OPTIMAL and makes TWO, landing a $354.58 card. The code is identical. A
+board-size-dependent bug that the pinned exam world could not reproduce — and the
+hermetic fixture cans a FEASIBLE beat one, so the entire two-beat spec was green
+over a branch nothing had ever exercised. Sharpened in a real browser: the pinned
+world returns `undetermined` on some runs too. The honest statement is that beat
+one's budget is MARGINAL and density makes the marginal case near-certain.
+
+**RULED, AND IT IS THE THIRD INSTANCE.** `CostProof` gained a fourth state
+(`unreadable`, 4B.18) so a fact about our storage could not be spoken as a fact
+about the plant. `partitions()` went tri-state (4B.21) so an unprovable split
+could not be reported as proven. **A claim about our process must not be rendered
+as a claim about the plant** — and here the fusion sat on a boolean rather than on
+a name, which is why no census would have found it.
+
+`FeasibilityGhost` now carries `verdict`, from one pure classifier:
+`possible` (OPTIMAL/FEASIBLE), `impossible` (INFEASIBLE), `undetermined`
+(UNKNOWN **and anything unrecognised** — the fail-safe direction, deliberately,
+because "I don't know" is always true about our own process while "impossible" is
+a claim about the plant). `feasible` keeps its exact meaning, PROVEN possible,
+and is now **never sufficient on its own to author a sentence about the plant**;
+the client's fallback for an older server reads `status`, never the boolean. The
+authored copy is part of the ruling and tested as such. **Both `possible` and
+`undetermined` proceed to beat two; only a PROVEN refusal stops the chain.**
+
+**A REFUSAL AND A FAILURE ARE DIFFERENT THINGS AND MUST READ DIFFERENTLY.** The
+defect stayed invisible for a reason: the only exit from a beat that produced no
+card was a silent snap-back, so one animation stood for a refusal, a timeout, a
+crash, a dropped connection and a closed calendar. The founder concluded the
+product was broken, and he built it. Four exits now, none silent — Tier-0 refusal
+and proven-infeasible in the REJECTED register (`Can't go here`, reason named);
+a beat that could not be run, and beat two's `no_verdict`, in the JUDGMENT
+register (`Couldn't price this`, WHICH BEAT named, a retry offered), deliberately
+not the rejected colour, because that colour means the plan refused you and
+nothing refused anything. **No raw transport string reaches a planner surface.**
+
+Two more caught on the way, both of the same family. The pending card asserted
+*"this is possible here — pricing it now"* **before the request was sent** — an
+answer nobody had yet, and on the dense board the opposite of the one that
+arrived. And a Tier-0 refusal LOST ITS REASON at the release, because
+`returnHome` hides the reason tip as its first act: the planner saw why mid-drag
+and saw nothing at the moment they let go.
+
+**BEAT ONE'S LATENCY IS THE MODEL BUILD, NOT THE SOLVE.** `SolverBuilder.build`
+is 6.564s — 67% — on the dense board against 0.308s on the pinned one; the solve
+is ~2.1s of both. Beat one's budget token governs 22% of beat one's own latency,
+so R-T2's "instant, no money by construction" beat does not survive 345 active
+operations. Named and priced (cache the built model per incumbent; `apply_pin`
+measures 0.000s), not attempted — a stale cache prices a gesture against the
+wrong model, which is the one failure this area cannot afford.
+
+**AND 15 SECONDS WAS TOO SMALL A BEAT-TWO BUDGET AT DEMO DENSITY.** Measured on
+one pin: 15s → `no_verdict`; 25s, 40s, 60s → FEASIBLE at $2,596.67. 4B.22a got
+its card at a wall of 15.01s, right at the edge, which is exactly why the same
+gesture priced from a quiet script and returned nothing from a browser. The token
+is 30.0s. **A budget is a CEILING, not a spend** — a proved solve returns
+immediately (1.3s on the pinned world, unchanged), so raising it lengthens only
+the cases that were already failing. The cost is named rather than hidden: ~64s
+to price a drag on a 386-bar board with a cold baseline, ~34s after.
+
+**A POLL MAY NOT DISCARD A LIVE PROPOSAL — AND THE MECHANISM IS SUPPRESS.** A
+dropped bar awaiting its verdict exists in no persisted document, so there is
+nothing to reconcile it against, and holding it above the poll means
+re-projecting overlay geometry after every reflow. The freshness watch now defers
+the whole check while a proposal is live, before the listing request and again
+after it. Deliberately narrower than `hasUncommittedState`: a panel selection
+still gets 4.4 CU2's banner. Deferred, never dropped.
+
+**THE GUARD.** 11 tests × 2 themes, with a premise test proving the harness can
+actually produce a bad beat (a suite quietly serving healthy responses would pass
+every assertion while proving nothing), and **three negative controls each proven
+red against physically reverted code** — the old boolean branch (4 red), the old
+beat-two catch (2 red), and Item 4's predicate wired to false (1 red). One of the
+eleven is a control in the other direction: the fix must not have been implemented
+by deleting the check, so a PROVEN refusal must still stop the chain.
+
+Findings reported and not fixed, incl. **R-DP9's no-op tolerance scaling with the
+zoom** (a ~240-minute tolerance at the default 30-day view swallows a 236-minute
+move as "already here" — no card, no request, indistinguishable to a planner from
+the defect this session fixed) and **beat two's wall-clock non-determinism**:
+docs/07 §5a.95. Narrative in `docs/closeouts/4B.23.md`.

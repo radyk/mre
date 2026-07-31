@@ -76,10 +76,19 @@ let _SUCCESSOR = new Map();
 // each resolves as a real schedule (doc/meta served from its `base` fixture dir),
 // so an auto-follow reload actually lands on a coherent board. Cleared per test.
 let _EXTRA = [];
+// Session 4B.23: forced beat behaviour, so the guard can produce a REAL failure
+// rather than assert against a hand-written state object. {beat_one, beat_two}:
+//   beat_one: "undetermined" — a 200 carrying UNKNOWN / feasible:false. THE
+//             DEFECT'S OWN SHAPE: on the dense demo board this is what beat one
+//             actually returned, and the cockpit read it as "impossible".
+//   beat_one: "error" / beat_two: "error" — a 503, i.e. a beat that could not be
+//             completed at all.
+let _FORCE = {};
 function resetState() {
   _PRIMED.clear(); _EDITS.clear();
   _PARENT = new Map(); _SUPERSEDED = new Set(); _SUCCESSOR = new Map();
   _EXTRA = [];
+  _FORCE = {};
 }
 const extraFor = (id) => _EXTRA.find((e) => e.id === id) || null;
 const supersededError = (res, sid) => {
@@ -111,6 +120,10 @@ function _feasibilityFrom(canned, pin, sid) {
   return {
     feasible, within_budget: true, wall_time_s: 0.02, budget_s: 2.0,
     status: feasible ? "FEASIBLE" : "INFEASIBLE",
+    // Session 4B.23: beat one's THREE-state verdict, mirroring
+    // mre.modules.sandbox.classify_feasibility. The synthesized ghost only ever
+    // stands for a PROVEN case; UNDETERMINED is reached through /__test__/force.
+    verdict: feasible ? "possible" : "impossible",
     message: feasible ? "this placement is possible — pricing it now"
                       : "this placement isn't possible here",
     placement,
@@ -184,6 +197,12 @@ const server = createServer(async (req, res) => {
     // the resubmit-while-viewing auto-follow. Body {id, base, created_at?,
     // status?, submission_id?}. `base` names the fixture dir its doc/meta serve
     // from so an auto-follow lands on a coherent board.
+    // Session 4B.23: force a beat to behave badly. Body {beat_one, beat_two}.
+    if (p === "/__test__/force" && req.method === "POST") {
+      _FORCE = JSON.parse((await body(req)) || "{}");
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(envelope({ force: _FORCE }));
+    }
     if (p === "/__test__/add-schedule" && req.method === "POST") {
       const b = JSON.parse((await body(req)) || "{}");
       _EXTRA.push({
@@ -345,6 +364,24 @@ const server = createServer(async (req, res) => {
       if (_SUPERSEDED.has(sid)) return supersededError(res, sid);
       const dir = dirFor(sid);
       const pin = JSON.parse((await body(req)) || "{}");
+      // Session 4B.23: the forced beat-one shapes.
+      if (_FORCE.beat_one === "error") {
+        res.writeHead(503, { "content-type": "application/json" });
+        return res.end(errEnv(503, "feasibility worker unavailable"));
+      }
+      if (_FORCE.beat_one === "undetermined") {
+        res.writeHead(200, { "content-type": "application/json" });
+        return res.end(envelope({
+          correlation_id: _corrId(sid, pin),
+          feasible: false, within_budget: true, wall_time_s: 2.04, budget_s: 2.0,
+          status: "UNKNOWN", verdict: "undetermined",
+          message: "I couldn't finish checking this placement in 2s — that is my "
+                   + "budget running out, not a verdict about the plant",
+          placement: [],
+          pin: { operation_ref: pin.pin_op_id, resource_id: pin.pin_resource_id,
+                 start: pin.pin_start_iso },
+        }));
+      }
       const feas = await loadMaybe("feasibility.json", dir);
       const canned = feas && feas.by_op && feas.by_op[pin.pin_op_id];
       const sb = await loadMaybe("sandbox.json", dir);
@@ -382,6 +419,11 @@ const server = createServer(async (req, res) => {
     const mSandbox = p.match(/^\/schedules\/([^/]+)\/sandbox$/);
     if (mSandbox && req.method === "POST") {
       if (_SUPERSEDED.has(mSandbox[1])) return supersededError(res, mSandbox[1]);
+      // Session 4B.23: beat two could not be completed at all.
+      if (_FORCE.beat_two === "error") {
+        res.writeHead(503, { "content-type": "application/json" });
+        return res.end(errEnv(503, "sandbox worker unavailable"));
+      }
       const sb = await loadMaybe("sandbox.json", dirFor(mSandbox[1]));
       if (!sb) {
         res.writeHead(404, { "content-type": "application/json" });

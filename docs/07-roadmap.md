@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.69 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.70 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.70:** **Session 4B.23 — beat two is never called** 2026-07-31 (docs/04 2026-07-31; narrative in `docs/closeouts/4B.23.md`). **THE SANDBOX WAS A ONE-BEAT SANDBOX ON THE COCKPIT PATH, AND THE CHAIN WAS NEVER BROKEN — IT WAS CONDITIONAL (§5a.89).** One drag on the dense demo board produced ONE request: beat one 200, then a card *hidden* and a bar snapping home. `controller.js` branched on `ghost.feasible`, and `feasibility_ghost` computes that as `status in ("OPTIMAL","FEASIBLE")` — so **UNKNOWN (our budget ran out) and INFEASIBLE (the plant has no room) were the same branch, wearing the same sentence.** Beat two, called directly on the identical pin, priced the move at $2,596.67 (4B.22a §5(e)). Matched gesture, both boards: **dense 386 bars → UNKNOWN → 1 request; pinned 56 bars → OPTIMAL → 2 requests and a $354.58 card.** A board-size-dependent bug the pinned world could not reproduce — and the fixture cans a FEASIBLE beat one, so every green two-beat test stayed green. **THE THIRD INSTANCE OF A RULED SPECIES (§5a.90):** `CostProof`'s fourth state (4B.18) and `partitions()`'s tri-state (4B.21) both exist so a claim about our PROCESS is not rendered as a claim about the PLANT; here the fusion sat on a boolean. `FeasibilityGhost.verdict` is now `possible | impossible | undetermined`, **an unrecognised status fails SAFE to undetermined**, and both `possible` and `undetermined` proceed to pricing — only a PROVEN refusal stops the chain. **A REFUSAL AND A FAILURE NOW READ DIFFERENTLY (§5a.91)**, in different colour registers, and neither is ever a silent snap-back: four exits, all visible, a failure naming WHICH BEAT and offering a retry, **no raw transport string on any planner surface**. Two more caught on the way: the pending card asserted *"this is possible here"* BEFORE the request was sent, and a Tier-0 refusal lost its reason at the release (`returnHome` hides the tip as its first act). **BEAT ONE'S 4.6s IS THE MODEL BUILD, NOT THE SOLVE (§5a.92):** `SolverBuilder.build` is **6.564s / 67%** on the dense board against 0.308s / 13% on the pinned one; the budget token governs 22% of its own latency, so R-T2's instant beat does not survive 345 active operations. Named and priced, not re-architected. **15s WAS TOO SMALL A BEAT-TWO BUDGET AT DEMO DENSITY (§5a.93):** measured 15s → `no_verdict`, 25/40/60s → FEASIBLE at $2,596.67; the token is 30.0s and **a budget is a ceiling, not a spend** (the pinned world still proves in 1.3s). **A POLL CANNOT DISCARD A LIVE PROPOSAL (§5a.94)** — suppress, not reconcile, because the proposal exists in no document to reconcile against; narrower than `hasUncommittedState`, so 4.4 CU2's banner rule and 4B.5's fixes are untouched. Guard: 11 tests × 2 themes, a premise test proving the harness can produce a bad beat, and **three negative controls each proven red against physically reverted code**. §5a.89-95.
 
 **v2.69:** **Errand 4B.22a — a demo board worth dragging** 2026-07-31 (docs/04 2026-07-31; narrative in `docs/closeouts/4B.22a.md`). A TOOLS AND FIXTURE ERRAND — **nothing under `src/mre/` changed**, so nothing here is a ruling and nothing here is a fix. The demo world was 45 committed operations against 11 active, nothing late, twelve of fifteen machines under 15% loaded, and a planner's drag that could not make displacement cost anything — measured, not asserted: a long backward drag prices at **$0.00** with three affected orders and not a dollar between them, and the short forward collision that replaced it prices at **$354.58** of which the order it shoves three days later pays **$0.00**. Fourteen candidates measured at **the API's own budgets** (`det_total` is not a `SolveRequest` field, so a board measured at any other budget is a board nobody will see); `wall_truncated` False on all fourteen. **THERE IS NO DENSE-AND-PROVED OPTION AND R-PD1 IS NOT WHY**: the controlled pair — the same 280-order board with `pd_share = 0.0` and nothing else changed — is still FEASIBLE at gap 84.5% against 87.0% with 47 past-due orders on it, so **density alone loses the proof** and dropping R-PD1's entire on-board specimen would have bought 2.5 gap points. The shipped 14-day window does not survive this density at all (UNKNOWN — an EMPTY board — at 140 and 170; INFEASIBLE at 360), and solvability is **not monotone**: a 10-day window is UNKNOWN at 200 orders and FEASIBLE with 386 bars at 280. Chosen and minted: **`rolling-c9973708-865`** — 386 bars, 41 committed / 345 active, 96 late, 47 past-due scheduled, tardiness $2,040,146.67 split $535,800 floor / $1,504,346.67 controllable, a coarse zone binding **8 of 48 cells at 95-99%** of derated capacity, a 122-order tray, and an honest **92.4% gap that leads its own opener in money terms**. Reproduces identically across PYTHONHASHSEED 0/1/2. **`rolling-c362baa4-1b0` is UNTOUCHED** and still resolving, which is what keeps this Daryn's choice rather than a fait accompli. A drag now costs **$2,596.67**, split $0.00 re-optimization / $2,596.67 your move, displacing another order by 3.8 days. `pilot_scale` is **byte-identical**, proven at 40 and 400 orders against a baseline from the previous commit. §5a.84-88.
 
@@ -4144,6 +4146,122 @@ position. Not investigated. **(c) THE AT-RISK BAND HAS ONE MEMBER ON A 386-BAR
 BOARD** — with 96 orders already late there is little left in the
 on-time-but-tight population, and at-risk is conservative by construction
 (4B.16). A limit, now measured at density for the first time.
+
+**§5a.89 — THE CHAIN WAS CONDITIONAL, NOT BROKEN (4B.23; §5a.88(a) DISCHARGED).**
+`src/cockpit/src/drag/controller.js` fired beat two only under
+`if (!ghost.feasible) return returnHome(...)` — and `feasibility_ghost` sets
+`feasible = status in ("OPTIMAL","FEASIBLE")`, so a check that RAN OUT OF ITS
+BUDGET took the same branch as a proven-infeasible placement, wore the same
+server-authored sentence (*"this placement isn't possible here"*), and skipped
+the priced beat. `returnHome`'s `keepCard` defaults to false, so the card was
+also HIDDEN: the founder saw one 200, a striped ghost, and a bar going home.
+**THE 56-BAR COMPARISON IS THE FINDING.** Same gesture class, both boards:
+`rolling-c9973708-865` (386 bars) beat one UNKNOWN at 2.036s of a 2.0s budget →
+ONE request; `rolling-c362baa4-1b0` (56 bars) beat one OPTIMAL → TWO requests and
+a $354.58 card. Identical code. **The pinned world could not reproduce it, and
+the hermetic fixture cans a FEASIBLE beat one — so the whole
+`rolling.two_beat.spec.mjs` suite was green over a branch nothing exercised.**
+SHARPENED IN A REAL BROWSER: the pinned world returns `undetermined` on some runs
+too, so the honest statement is that **beat one's 2s budget is marginal and
+density makes the marginal case near-certain** — a guard built on the pinned
+world alone would have been flaky rather than absent.
+
+**§5a.90 — UNKNOWN IS NOT IMPOSSIBLE, AND THIS IS THE THIRD TIME (4B.23).**
+`CostProof` gained a fourth state (`unreadable`, 4B.18) so a fact about our
+STORAGE could not be spoken as a fact about the plant; `partitions()` went
+tri-state (4B.21) so an unprovable split could not be reported as proven. Here
+the same fusion sat on a BOOLEAN. `classify_feasibility(status)` is now the one
+pure mapping — `possible` / `impossible` / `undetermined` — and **an unrecognised
+status fails SAFE to `undetermined`**, because "I don't know" is always true about
+our own process while "impossible" is a claim about the plant. `feasible` keeps
+its meaning (PROVEN possible) and is **never sufficient on its own to author a
+sentence**; the client's fallback for an older server reads `status`, not the
+boolean. The authored copy is part of the ruling and tested as such: the
+UNDETERMINED sentence must name its budget and must not contain "impossible";
+the IMPOSSIBLE sentence must do the reverse. **Both `possible` and `undetermined`
+proceed to beat two.**
+
+**§5a.91 — A REFUSAL IS A PRODUCT ANSWER; A FAILURE IS AN APOLOGY (4B.23).**
+The defect hid because the only exit from a beat that produced no card was a
+silent snap-back — one animation standing for a refusal, a timeout, a crash, a
+dropped connection and a closed calendar. Four exits now, none silent: Tier-0
+refusal and proven-infeasible wear the REJECTED register (`Can't go here`, reason
+named, Close); a beat that could not run and beat two's `no_verdict` wear the
+JUDGMENT register (`Couldn't price this`, WHICH BEAT named, **Try again**) —
+deliberately NOT the rejected colour, because that colour means the plan refused
+you and nothing refused anything. **No raw transport string reaches a planner
+surface**; `failureCause` maps by class to an authored sentence and the raw text
+lives on `drag.state().failure.technical`. Two more found on the way: the pending
+card asserted *"this is possible here — pricing it now"* **before the request was
+sent**, and a Tier-0 refusal LOST ITS REASON at the release, because `returnHome`
+hides `reasonTip` as its first act — the planner saw why mid-drag and nothing at
+the moment they let go.
+
+**§5a.92 — BEAT ONE'S LATENCY IS THE MODEL BUILD, NOT THE SOLVE (4B.23).**
+Stage-timed against the real run dir: `SolverBuilder.build` is **6.564s, 67%** of
+beat one on the dense board (345 ops) against **0.308s, 13%** on the pinned world
+(11 ops); the solve is 2.1s of both. **Beat one's budget token therefore governs
+22% of beat one's latency**, and a zero-second budget would still leave ~7.6s.
+R-T2 designed beat one as the instant beat and that premise does not survive 345
+active operations. NOT RE-ARCHITECTED: the fix is a SCOPE change — cache the
+built model per (schedule, incumbent) and re-pin per gesture, since `apply_pin`
+measures 0.000s — priced in the close-out as a session, because a stale cache
+means pricing a gesture against the wrong model.
+
+**§5a.93 — 15 SECONDS WAS TOO SMALL A BEAT-TWO BUDGET AT DEMO DENSITY (4B.23).**
+Same pin every time on `rolling-c9973708-865`: budget 15s → `no_verdict` UNKNOWN
+(stops at ~11s, prices nothing); 25s / 40s / 60s → FEASIBLE at **$2,596.67**.
+4B.22a got its card at a wall of **15.01s, right at the edge**, which is why the
+identical gesture priced from a quiet script and returned nothing from a browser.
+`feel.sandbox.budget_s` is now **30.0**. **A BUDGET IS A CEILING, NOT A SPEND** —
+a solve that proves its verdict returns immediately (1.3s on the pinned world,
+unchanged), so raising it lengthens only the cases already failing. The cost is
+the worst case: ~64s to price a drag on a 386-bar board with a cold baseline
+(the baseline solve gets the same budget and is cached per incumbent), ~34s
+after. Named, not hidden. NB the token's own comment claimed the server budget
+was authoritative and this only paced an animation; the client SENDS it, so the
+number is the real budget of every drag — corrected in the same commit.
+
+**§5a.94 — A POLL MAY NOT DISCARD A LIVE PROPOSAL (4B.23).** A dropped bar
+awaiting its verdict, and the card that follows it, are OPTIMISTIC CLIENT STATE
+existing in no persisted document — so there is nothing to RECONCILE against, and
+HOLDING IT ABOVE means re-projecting overlay geometry after every reflow.
+Mechanism: **SUPPRESS**. `installFreshnessWatch` defers the whole check while a
+proposal is live, **before the listing request and again after it** (a drop can
+land while it is in flight). Deliberately NARROWER than `hasUncommittedState` — a
+panel selection still gets 4.4 CU2's banner, unchanged — because even the banner
+is prepended into `#app`, shortening the board host and moving the rows the
+proposal's absolutely-positioned overlay is pinned to. `proposalLive` reads the
+drag phase AND `cardOpen`, because a refusal / failure / no-verdict card
+**outlives its gesture**. Deferred, never dropped: dismissing the card and
+re-running the same check offers the newer board. 4B.5's sticky dismissal,
+one-offer-per-id idempotence and `preserveViewport` are untouched.
+
+**§5a.95 — REPORTED, NOT FIXED (4B.23).** **(a) R-DP9's NO-OP TOLERANCE SCALES
+WITH THE ZOOM AND SWALLOWS REAL MOVES.** `isNoOpDrop` computes
+`grid_px * pxToMinutes(1)`; on the dense board's default ~30-day view one pixel
+is about half an hour, so the tolerance is **~240 minutes** and the 4B.22a
+collision gesture is **236** — dropped at default zoom it is "already here": no
+card, no sandbox call, phase idle. **Indistinguishable, to a planner, from the
+defect this session fixed**, and it cost an entire verification run before it was
+found. The fix is probably a tolerance in MINUTES with a pixel floor rather than
+a pixel tolerance converted to minutes, but R-DP9 is a ruling and its tolerance
+is a feel token. **(b) BEAT TWO IS A WALL-CLOCK SOLVE AT `workers=1` WITH NO
+DETERMINISTIC BUDGET** (`sandbox_pin_resolve` passes `time_limit_seconds` only),
+which this repo's own hard rule says is not reproducible — and it is why the
+identical pin returned `feasible_unproven` for 4B.22a and `no_verdict` for this
+session's first probe. Giving it a deterministic budget changes what every
+existing gesture returns; that is a ruling. **(c) `cockpit.spec.mjs:111`
+("deictic") IS RED AT HEAD, NOT FROM THIS SESSION** — verified with the session's
+changes stashed, both themes: it expects *"why is ORD-000012 on F001-RES001?"*
+and gets *"why is ORD-000012 placed where it is on F001-RES001?"*, i.e. 4B.21's
+`why-on-machine` rewording arriving without its browser assertion. Correcting it
+means deciding which wording is right. **(d) `no_verdict`'s "Try again" re-runs
+the SAME pin at the SAME budget** — honest, since the limit is wall-clock and a
+retry genuinely can differ, but it does not offer the one thing that reliably
+helps, which is more time. **(e) THE `planner.spec.mjs` DUE-MARKER FLAKE FIRED
+AGAIN** in a full-suite run (dark), passes in isolation — the standing
+parallel-load screenshot-flake class, unchanged.
 
 ## 6. Open rulings queue
 

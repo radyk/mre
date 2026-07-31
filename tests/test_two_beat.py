@@ -27,13 +27,18 @@ import pytest
 from mre.__main__ import main as mre_main
 from mre.modules.sandbox import (
     FEASIBILITY_BUDGET_S,
+    FEASIBILITY_IMPOSSIBLE,
+    FEASIBILITY_POSSIBLE,
+    FEASIBILITY_UNDETERMINED,
     FeasibilityGhost,
     SANDBOX_BUDGET_S,
     SandboxResult,
     _MONEY_FIELD_TOKENS,
     beat_two_contradicts,
+    classify_feasibility,
     correlation_id_for,
     feasibility_ghost,
+    feasibility_message,
     sandbox_pin_resolve,
 )
 from mre.modules.snapshot_store import SnapshotStore
@@ -76,6 +81,82 @@ class TestBeatOneNoMoney:
             pin={"operation_ref": "op"})
         keys = g.summary().keys()
         assert not any(tok in k.lower() for k in keys for tok in _MONEY_FIELD_TOKENS)
+
+
+# ---------------------------------------------------------------------------
+# Session 4B.23 — BEAT ONE HAS THREE STATES, AND ONE OF THEM IS ABOUT US
+#
+# `feasible` is False both when the solver PROVED no placement exists and when
+# it ran out of budget before deciding. The cockpit read the boolean and said
+# "this placement isn't possible here" — a claim about the PLANT built from a
+# fact about our own budget — then skipped the priced beat entirely. Measured on
+# the dense demo board: beat one UNKNOWN at 2.036s of a 2.0s budget; beat two,
+# called directly on the same pin, priced the move.
+#
+# This is the third time the species has been ruled (CostProof's fourth state,
+# 4B.18; partitions() tri-state, 4B.21), so the classifier is pinned the same
+# way theirs are: pure, exhaustive, and with the fail-safe direction asserted.
+# ---------------------------------------------------------------------------
+
+class TestBeatOneTriState:
+    def test_proven_possible(self):
+        assert classify_feasibility("OPTIMAL") == FEASIBILITY_POSSIBLE
+        assert classify_feasibility("FEASIBLE") == FEASIBILITY_POSSIBLE
+
+    def test_proven_impossible(self):
+        assert classify_feasibility("INFEASIBLE") == FEASIBILITY_IMPOSSIBLE
+
+    def test_unknown_is_UNDETERMINED_not_impossible(self):
+        """THE DEFECT, as one assertion. UNKNOWN means the check did not finish."""
+        assert classify_feasibility("UNKNOWN") == FEASIBILITY_UNDETERMINED
+        assert classify_feasibility("UNKNOWN") != FEASIBILITY_IMPOSSIBLE
+
+    def test_an_unrecognised_status_fails_SAFE(self):
+        """"I don't know" is always a true thing to say about our own process;
+        "impossible" is a claim about the plant. An unmapped status takes the
+        first, never the second."""
+        for status in ("MODEL_INVALID", "", "NOT_SOLVED", "banana"):
+            assert classify_feasibility(status) == FEASIBILITY_UNDETERMINED
+
+    def test_the_three_verdicts_are_distinct_and_exhaustive(self):
+        seen = {classify_feasibility(s) for s in
+                ("OPTIMAL", "FEASIBLE", "INFEASIBLE", "UNKNOWN", "")}
+        assert seen == {FEASIBILITY_POSSIBLE, FEASIBILITY_IMPOSSIBLE,
+                        FEASIBILITY_UNDETERMINED}
+
+    def test_the_undetermined_sentence_never_claims_impossibility(self):
+        """The authored copy is part of the ruling: an UNDETERMINED check must
+        not be spoken as a verdict, and it must name the budget as what ran out."""
+        msg = feasibility_message(FEASIBILITY_UNDETERMINED, 2.0)
+        low = msg.lower()
+        assert "2s" in low, msg               # names the budget it had
+        assert "budget" in low, msg
+        for forbidden in ("isn't possible", "not possible", "impossible",
+                          "can't go", "cannot go"):
+            assert forbidden not in low, msg
+
+    def test_the_impossible_sentence_IS_a_verdict(self):
+        """The contrast, so the test above is not vacuous: a PROVEN refusal does
+        say the placement isn't possible, and does not apologise for a budget."""
+        msg = feasibility_message(FEASIBILITY_IMPOSSIBLE, 2.0).lower()
+        assert "isn't possible" in msg
+        assert "budget" not in msg
+
+    def test_the_ghost_carries_its_verdict_on_the_wire(self):
+        g = FeasibilityGhost(
+            correlation_id="c", feasible=False, within_budget=True,
+            wall_time_s=2.04, budget_s=2.0, status="UNKNOWN",
+            verdict=FEASIBILITY_UNDETERMINED,
+            message=feasibility_message(FEASIBILITY_UNDETERMINED, 2.0))
+        payload = g.summary()
+        assert payload["verdict"] == FEASIBILITY_UNDETERMINED
+        assert payload["feasible"] is False
+        # the two fields together are what the client branches on; neither alone
+        assert payload["status"] == "UNKNOWN"
+
+    def test_verdict_carries_no_money_either(self):
+        """The new field must not reopen R-T2(1) (guarded above by construction)."""
+        assert not any(tok in "verdict" for tok in _MONEY_FIELD_TOKENS)
 
 
 # ---------------------------------------------------------------------------

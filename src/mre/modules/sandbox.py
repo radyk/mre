@@ -50,6 +50,55 @@ FEASIBILITY_BUDGET_S = 2.0
 # reproducible run-to-run (workers=1 + fixed seed + max_deterministic_time).
 FEASIBILITY_DET_TIME_S = 1.0
 
+# --- Beat one's THREE states (Session 4B.23, Item 5(b)) --------------------
+# A CLAIM ABOUT OUR PROCESS MUST NOT BE RENDERED AS A CLAIM ABOUT THE PLANT.
+# This is the third instance of a species already ruled twice: ``CostProof``
+# gained a fourth state (``unreadable``, 4B.18) so a fact about our STORAGE
+# could not be spoken as a fact about the plant, and ``partitions()`` went
+# tri-state (4B.21) so an unprovable split could not be reported as a proven
+# one. Beat one had the same fusion on a BOOLEAN: ``feasible`` is False both
+# when the solver PROVED no placement exists (INFEASIBLE — about the plant) and
+# when it ran out of budget before deciding (UNKNOWN — about us). The cockpit
+# read the boolean, said "this placement isn't possible here", and snapped the
+# bar home — on a board where beat two, called directly, priced the same
+# gesture at $2,596.67 (4B.22a §5(e), and Session 4B.23's own measurement).
+#
+# ``verdict`` names which of the three it is. ``feasible`` keeps its exact
+# meaning — PROVEN possible — and is now never sufficient on its own to author
+# a sentence about the plant.
+FEASIBILITY_POSSIBLE = "possible"          # OPTIMAL/FEASIBLE — a placement exists
+FEASIBILITY_IMPOSSIBLE = "impossible"      # INFEASIBLE — proven that none does
+FEASIBILITY_UNDETERMINED = "undetermined"  # UNKNOWN — the CHECK did not finish
+
+
+def classify_feasibility(status: str) -> str:
+    """Map a beat-one solver status to one of the three beat-one verdicts.
+
+    Pure and unit-testable without a solve, exactly like
+    :func:`classify_sandbox_outcome`. An unrecognised status is UNDETERMINED —
+    the fail-safe direction, because "I don't know" is always a true thing to
+    say about our own process, while "impossible" is a claim about the plant.
+    """
+    if status in ("OPTIMAL", "FEASIBLE"):
+        return FEASIBILITY_POSSIBLE
+    if status == "INFEASIBLE":
+        return FEASIBILITY_IMPOSSIBLE
+    return FEASIBILITY_UNDETERMINED
+
+
+def feasibility_message(verdict: str, budget_s: float) -> str:
+    """The authored sentence for each beat-one verdict.
+
+    The UNDETERMINED sentence says what ran out — the budget, not the plant's
+    room — and it never asserts the placement is either possible or not. Beat
+    two is what decides; the caller proceeds to it."""
+    if verdict == FEASIBILITY_POSSIBLE:
+        return "this placement is possible — pricing it now"
+    if verdict == FEASIBILITY_IMPOSSIBLE:
+        return "this placement isn't possible here"
+    return (f"I couldn't finish checking this placement in {budget_s:g}s — "
+            "that is my budget running out, not a verdict about the plant")
+
 # A solve given ``time_limit = budget`` stops AT the budget and reports a hair
 # over it (thread teardown). "Within budget" means it honored the budget, so a
 # small stop-overhead margin is allowed — it is not a second budget.
@@ -186,12 +235,19 @@ class FeasibilityGhost:
 
     Beat one mints NO edits and touches NO persistent state (R-T2(5))."""
     correlation_id: str
-    feasible: bool
+    feasible: bool               # PROVEN possible. False fuses two states — read
+                                 # ``verdict``, never this, to author a sentence.
     within_budget: bool
     wall_time_s: float
     budget_s: float
     status: str                  # OPTIMAL | FEASIBLE | INFEASIBLE | UNKNOWN
     message: str
+    # Session 4B.23: WHICH of the three states this is —
+    # ``possible`` | ``impossible`` | ``undetermined``. ``undetermined`` is a
+    # statement about the CHECK (it ran out of budget), never about the plant,
+    # and the caller proceeds to beat two on it. Defaulted so an older payload
+    # deserialises; every path this module returns sets it explicitly.
+    verdict: str = FEASIBILITY_UNDETERMINED
     # placement of the pinned op AND any op the first-feasible solve moved —
     # resource + start/end ISO only, NO cost. [{operation_ref, resource_id,
     # start, end, pinned}]. The ghost the board draws.
@@ -631,6 +687,7 @@ def feasibility_ghost(
         return FeasibilityGhost(
             correlation_id=corr, feasible=False, within_budget=True,
             wall_time_s=0.0, budget_s=budget_s, status="INFEASIBLE",
+            verdict=FEASIBILITY_IMPOSSIBLE,
             message=f"this placement isn't possible: {exc.reason}",
             placement=[],
             pin={"operation_ref": pin_op_id, "resource_id": pin_resource_id,
@@ -653,6 +710,7 @@ def feasibility_ghost(
     ).solve(model, var_map, r_rep)
     wall = round(time.monotonic() - t0, 3)
     feasible = solve_result.status in ("OPTIMAL", "FEASIBLE")
+    verdict = classify_feasibility(solve_result.status)
     r_rep.end(RunStatus.SUCCESS if feasible else RunStatus.PARTIAL)
 
     placement: list[dict] = []
@@ -663,8 +721,7 @@ def feasibility_ghost(
         correlation_id=corr, feasible=feasible,
         within_budget=wall <= budget_s + _BUDGET_STOP_MARGIN_S,
         wall_time_s=wall, budget_s=budget_s, status=solve_result.status,
-        message=("this placement is possible — pricing it now"
-                 if feasible else "this placement isn't possible here"),
+        verdict=verdict, message=feasibility_message(verdict, budget_s),
         placement=placement,
         pin={"operation_ref": pin_op_id, "resource_id": pin_resource_id,
              "start": pin_start_dt.isoformat()},

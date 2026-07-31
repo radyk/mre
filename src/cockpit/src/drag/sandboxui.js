@@ -48,15 +48,21 @@ export function attributionRows(result) {
   ];
 }
 
-export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPublish, onAskWhy }) {
+export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPublish, onAskWhy, onRetry }) {
   const card = document.createElement("div");
   card.className = "delta-card hidden";
   hostEl.appendChild(card);
   let countdownTimer = null;
 
   // BEAT ONE (R-T2): the feasibility ghost's NON-MONETARY state. R-T2(1): no
-  // figure, no delta — only "possible, pricing it now". The board draws the
-  // placement in the R-M1 ghost class; this card slot reads the same register.
+  // figure, no delta. The board draws the placement in the R-M1 ghost class;
+  // this card slot reads the same register.
+  //
+  // Session 4B.23: the note used to read "this is possible here — pricing it
+  // now" while the check was STILL RUNNING. It is rendered before the request is
+  // sent, so on every drop it asserted an answer nobody had yet — and on the
+  // dense board the answer that arrived four seconds later was the opposite. A
+  // pending state may describe what we are DOING and nothing else.
   function showPricing(feasibilityBudgetS = 2.0, tickMs = 100) {
     _stopCountdown();
     card.className = "delta-card pricing";
@@ -64,7 +70,7 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
       <div class="dc-head"><span class="dc-outcome pricing">checking feasibility…</span>
         <span class="dc-status">beat 1 · placement only, no price yet</span></div>
       <div class="dc-countdown"><div class="dc-countdown-fill" style="width:100%"></div></div>
-      <div class="dc-note">this is possible here — pricing it now</div>`;
+      <div class="dc-note">seeing whether this can go here at all</div>`;
     const fill = card.querySelector(".dc-countdown-fill");
     const t0 = performance.now();
     countdownTimer = setInterval(() => {
@@ -84,15 +90,94 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
   }
 
+  // --- Session 4B.23: A REFUSAL AND A FAILURE ARE DIFFERENT THINGS ---------
+  //
+  // Before this session the only exit from a beat that did not produce a card
+  // was a SILENT SNAP-BACK — `returnHome` with the card hidden. One animation
+  // stood for a refusal, a timeout, a crash, a dropped connection and a closed
+  // calendar, so the founder watched his own product and concluded it was
+  // broken. Both states below keep the card on screen; neither may be silent.
+  //
+  // IMPOSSIBLE is a PRODUCT ANSWER: we asked the plant and the plant said no.
+  // It is stated in the plant's voice, it names the reason, and it does not
+  // apologise — there is nothing to be sorry about and nothing to retry.
+  function showImpossible({ reason, beat } = {}) {
+    _stopCountdown();
+    card.className = "delta-card impossible";
+    card.innerHTML = `
+      <div class="dc-head">
+        <span class="dc-outcome impossible">Can't go here</span>
+        <span class="dc-status">${beat === "one" ? "beat 1 · proven" : "proven"}</span>
+      </div>
+      <div class="dc-reason"></div>
+      <div class="dc-note">the bar is back where it was — nothing changed.</div>
+      <div class="dc-actions"><button class="dc-discard">Close</button></div>`;
+    card.querySelector(".dc-reason").textContent =
+      String(reason || "this placement isn't possible here");
+    card.querySelector(".dc-discard").addEventListener("click", () => onDiscard && onDiscard());
+    return card;
+  }
+
+  // FAILURE is an APOLOGY: WE could not finish, so the plant said nothing and
+  // nothing may be claimed on its behalf. It names WHICH BEAT failed and offers
+  // a retry. The `what` is an AUTHORED sentence — the raw transport string never
+  // reaches this surface (a bare "Failed to fetch" has previously landed in
+  // front of a planner), and lives on `drag.state().failure` for debugging.
+  function showFailure({ beat, what } = {}) {
+    _stopCountdown();
+    card.className = "delta-card failure";
+    const which = beat === "one" ? "feasibility check" : "pricing re-solve";
+    card.innerHTML = `
+      <div class="dc-head">
+        <span class="dc-outcome failure">Couldn't price this</span>
+        <span class="dc-status">beat ${beat === "one" ? "1" : "2"} · ${which} failed</span>
+      </div>
+      <div class="dc-reason">I couldn't run the ${which}, so I don't know what this
+        move would cost. This is not a verdict about the placement — the plan is
+        unchanged and the bar is back where it was.</div>
+      <div class="dc-detail-cause"></div>
+      <div class="dc-actions">
+        <button class="dc-retry">Try again</button>
+        <button class="dc-discard">Close</button>
+      </div>`;
+    card.querySelector(".dc-detail-cause").textContent =
+      String(what || "it could not be completed");
+    card.querySelector(".dc-discard").addEventListener("click", () => onDiscard && onDiscard());
+    card.querySelector(".dc-retry").addEventListener("click", () => onRetry && onRetry());
+    return card;
+  }
+
   // PENDING: the countdown. `budgetS` paces the bar; the real wait is the
   // server's (this only animates the token). `tickMs` from feel.
-  function showPending(budgetS, tickMs = 100) {
+  //
+  // `note.beatOne` (Session 4B.23) carries what beat one managed to say, because
+  // arriving at beat two is no longer proof that beat one succeeded:
+  //   "undetermined" — the feasibility check ran out of ITS budget. Pricing goes
+  //                    ahead; beat two is the authority. Never rendered as
+  //                    "impossible", which is a claim about the plant.
+  //   "failed"       — beat one could not be completed at all. Same: pricing
+  //                    proceeds, and the planner is told, rather than watching a
+  //                    silent extra wait.
+  function showPending(budgetS, tickMs = 100, note = {}) {
     _stopCountdown();
     card.className = "delta-card pending";
+    const beatOne = note.beatOne;
+    const caveat =
+      beatOne === "undetermined"
+        ? `<div class="dc-note beat-one-note undetermined">the quick check ran out of
+             time before it could tell — that's my budget, not a verdict. Pricing
+             it properly now; this beat is the one that decides.</div>`
+      : beatOne === "failed"
+        ? `<div class="dc-note beat-one-note failed">the quick feasibility check
+             didn't answer — ${(note.beatOneError && note.beatOneError.what)
+               || "it could not be completed"}. Pricing it anyway; this beat is
+             the one that decides.</div>`
+        : "";
     card.innerHTML = `
       <div class="dc-head"><span class="dc-outcome pending">re-solving…</span>
         <span class="dc-status">Tier-2 sandbox · budget ${budgetS}s</span></div>
       <div class="dc-countdown"><div class="dc-countdown-fill" style="width:100%"></div></div>
+      ${caveat}
       <div class="dc-note">the board stays live — this never blocks it</div>`;
     const fill = card.querySelector(".dc-countdown-fill");
     const t0 = performance.now();
@@ -120,11 +205,18 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     card.className = `delta-card ${returnHome ? "return-home" : outcome}`
       + (opts.superseded ? " superseded" : "");
 
-    const headline = returnHome ? "Returned home" : _deltaHeadline(result);
+    // Session 4B.23: "Returned home" was ONE headline over two different things.
+    // `no_verdict` means the re-solve ran out of OUR budget — an apology, and
+    // NOT a statement that the placement is impossible; a proven-INFEASIBLE
+    // verdict IS that statement. The bar goes home either way, so the headline
+    // is the only thing that can tell a planner which happened.
+    const unpriced = outcome === "no_verdict";
+    const headline = unpriced ? "Couldn't price this"
+      : returnHome ? "Can't go here" : _deltaHeadline(result);
     const status = {
       verdict: "verdict · proven within budget",
       feasible_unproven: "flagged · bound not proven",
-      no_verdict: "no verdict · returned home",
+      no_verdict: "beat 2 · ran out of budget, not a verdict",
     }[outcome] || outcome;
 
     const lines = returnHome ? [] : (result.moves || []);
@@ -162,18 +254,30 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
 
     card.innerHTML = `
       <div class="dc-head">
-        <span class="dc-outcome ${outcome}">${headline}</span>
+        <span class="dc-outcome ${outcome}${unpriced ? " failure" : returnHome ? " impossible" : ""}">${headline}</span>
         <span class="dc-status">${status}</span>
       </div>
-      ${returnHome ? `<div class="dc-reason">${result.message || "couldn't verify this placement"}</div>` : ""}
+      ${returnHome ? `<div class="dc-reason"></div>` : ""}
+      ${unpriced ? `<div class="dc-note unpriced">nothing is claimed about the
+        placement itself — the re-solve simply did not finish. The plan is
+        unchanged.</div>` : ""}
       ${alwaysVisible}
       ${detail}
       <div class="dc-actions">
+        ${unpriced ? `<button class="dc-retry">Try again</button>` : ""}
         ${returnHome ? "" : `<button class="dc-accept">Accept</button>`}
         ${returnHome ? "" : `<button class="dc-askwhy">Ask why</button>`}
         <button class="dc-discard">Discard</button>
       </div>`;
 
+    // The server's own authored sentence, set as TEXT (never interpolated into
+    // markup): it can carry a solver reason and must not be able to inject any.
+    if (returnHome) {
+      card.querySelector(".dc-reason").textContent =
+        String(result.message || "couldn't verify this placement");
+    }
+    const retryBtn = card.querySelector(".dc-retry");
+    if (retryBtn) retryBtn.addEventListener("click", () => onRetry && onRetry());
     card.querySelector(".dc-discard").addEventListener("click", () => onDiscard && onDiscard());
     const acceptBtn = card.querySelector(".dc-accept");
     if (acceptBtn) {
@@ -413,5 +517,5 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
   }
 
   return { showPending, showPricing, showResult, showAccepted, showPublished,
-           showRefused, hide, el: card };
+           showRefused, showImpossible, showFailure, hide, el: card };
 }

@@ -158,6 +158,8 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Session 4B.23 — beat two is never called**, 2026-07-31 (docs/07 v2.70,
+§5a.89-95; docs/04 2026-07-31; narrative in `docs/closeouts/4B.23.md`). Before it:
 **Errand 4B.22a — a demo board worth dragging**, 2026-07-31 (docs/07 v2.69,
 §5a.84-88; docs/04 2026-07-31; narrative in `docs/closeouts/4B.22a.md`). Before
 it: **Session 4B.22 — the second question**, 2026-07-31 (docs/07 v2.68, §5a.79-83;
@@ -191,6 +193,42 @@ the displaced order pays **$0.00** — on an empty board displacement is free, s
 the card can only ever charge a planner for their own order. **`pilot_scale` is
 BYTE-IDENTICAL** and proven so at 40 and 400 orders — the three `demo_board`
 knobs draw nothing from `rng` at their defaults. NO `src/mre/` CHANGE.
+
+**BEAT TWO WAS NEVER CALLED, AND THE CHAIN WAS NEVER BROKEN — IT WAS
+CONDITIONAL (4B.23, §5a.89 — §5a.88(a) DISCHARGED).** One drag on the demo board
+made ONE request. `controller.js` branched on `ghost.feasible`, which
+`feasibility_ghost` computes as `status in ("OPTIMAL","FEASIBLE")` — so **UNKNOWN
+(our budget ran out) and INFEASIBLE (the plant has no room) were one branch
+wearing one sentence**, and `returnHome`'s `keepCard` default then HID the card.
+Matched gesture: **dense 386 bars → UNKNOWN → 1 request; pinned 56 bars →
+OPTIMAL → 2 requests and a $354.58 card.** Identical code; the fixture cans a
+FEASIBLE beat one, so every two-beat test was green over a branch nothing
+exercised. **THIRD INSTANCE OF A RULED SPECIES** (`CostProof`'s fourth state
+4B.18, `partitions()` tri-state 4B.21): `FeasibilityGhost.verdict` is
+`possible | impossible | undetermined`, an unrecognised status **fails SAFE to
+undetermined**, `feasible` alone is never sufficient to author a sentence about
+the plant, and **both `possible` and `undetermined` proceed to pricing** — only a
+PROVEN refusal stops the chain. **A REFUSAL AND A FAILURE READ DIFFERENTLY**
+(§5a.91), in different registers, four exits and none silent, the failure naming
+WHICH BEAT and offering a retry, **no raw transport string on a planner
+surface**. Two caught on the way: the pending card said *"this is possible
+here"* BEFORE the request was sent, and a Tier-0 refusal lost its reason at the
+release. **BEAT ONE's 4.6s IS THE MODEL BUILD** — `SolverBuilder.build` 6.564s /
+67% dense vs 0.308s / 13% pinned, so its budget governs 22% of its own latency
+(§5a.92; a model cache is named and priced, not built). **15s WAS TOO SMALL A
+BEAT-TWO BUDGET AT DEMO DENSITY** — 15s `no_verdict`, 25/40/60s FEASIBLE at
+$2,596.67; token now **30.0s**, and **a budget is a CEILING not a spend** (the
+pinned world still proves in 1.3s; the cost is ~64s cold / ~34s warm on 386 bars,
+§5a.93). **A POLL CANNOT DISCARD A LIVE PROPOSAL** — SUPPRESS, because the
+proposal is in no document to reconcile against; narrower than
+`hasUncommittedState`, so 4.4 CU2's banner and 4B.5's fixes stand (§5a.94).
+Guard: 11 tests x 2 themes, premise test, **three negative controls proven red
+against physically reverted code**. **NOT FIXED, named (§5a.95):** R-DP9's no-op
+tolerance **scales with the zoom** (~240 min at the default 30-day view swallows
+a 236-min move — no card, no request, indistinguishable to a planner from the
+defect just fixed); beat two is a **wall-clock solve with no deterministic
+budget**; `cockpit.spec.mjs:111` ("deictic") is **red at HEAD**, not from this
+session.
 
 **A DRILL-DOWN RESOLVES TO THE ANSWER IT FOLLOWS (4B.22, §5a.79 — §5a.77
 DISCHARGED).** The 4B.5 ladder (card > selection > last-subject > history)
@@ -945,7 +983,7 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   of one question) — humble rather than wrong, but distinguishing "one answer
   because I am confused" from "one answer because it IS the answer" needs a
   signal this session does not have.
-  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, **~78k after 4B.22a**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, **81k after 4B.23**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
   **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
   day-shift restriction answered as C1/C2 "proven end to end" when the item is
   C4 (model-proven, §8 doorway). Caught and pinned; the class stands.

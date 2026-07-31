@@ -226,6 +226,30 @@
 }
 .dc-outcome.accepted { color: var(--grade-c1); }
 .dc-outcome.published { color: var(--grade-c1); }
+
+/* Session 4B.23 — A REFUSAL AND A FAILURE MUST NOT LOOK ALIKE.
+ *
+ * IMPOSSIBLE is the plant's answer: it wears the rejected register, the same
+ * one Tier-0's dim rows and the refused accept wear, because it belongs to the
+ * family of things the board says no to.
+ *
+ * FAILURE is OURS: it deliberately does NOT wear the rejected register, because
+ * that register means "the plan refused you" and nothing refused anything here.
+ * It takes the judgment register (the same one "bound not proven" wears) — the
+ * colour this cockpit already uses for "true, but we could not prove it". */
+.delta-card.impossible { border-left-color: var(--grade-rejected); }
+.dc-outcome.impossible { color: var(--grade-rejected); }
+.delta-card.failure { border-left-color: var(--reg-judgment); }
+.dc-outcome.failure { color: var(--reg-judgment); }
+/* The authored cause of a failure — a sentence, not a stack trace. It reads as
+ * prose because a planner is meant to read it; the raw transport string is on
+ * `drag.state().failure.technical` and in the console, for whoever is debugging. */
+.dc-detail-cause { margin-top: var(--sp-1); font-size: var(--fs-sm); color: var(--muted); }
+/* Beat one could not answer, and pricing went ahead anyway (Item 5(b)). Marked
+ * as judgment, never as rejection — it is not a verdict about the placement. */
+.dc-note.beat-one-note { color: var(--reg-judgment); }
+.dc-note.unpriced { color: var(--muted); }
+
 .dc-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); }
 .dc-outcome { font: var(--fw-bold) var(--fs-lg)/1.1 var(--font-mono); }
 .dc-outcome.verdict { color: var(--grade-c1); }
