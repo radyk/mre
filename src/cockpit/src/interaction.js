@@ -48,7 +48,7 @@ export function loadInteraction(id, onReady) {
 // until this resolves; drag affordances enable on arrival.
 export function wireInteraction(id, board, hook, opts = {}) {
   const { doc, devMode = false, onVersionChange, onSuperseded, onAskWhy,
-          onCardChange } = opts;
+          onCardChange, searchDeeperScale = null } = opts;
   hook.interactionReady = false;
   hook.dragEnabled = false;
   hook.interaction = null;
@@ -90,6 +90,10 @@ export function wireInteraction(id, board, hook, opts = {}) {
       const geometry = createGeometry(board.timeline);
       const controller = createGestureController(board, geometry, {
         doc, interaction, api, scheduleId: id,
+        // 4B.29 Item 1(d): what "search deeper" costs, composed server-side on
+        // /meta and carried down as data. Null is fine — the card then falls
+        // back to its pre-4B.29 wording rather than inventing a number.
+        searchDeeperScale,
         onVersionChange: (newId, status) => {
           hook.scheduleId = newId;    // subsequent asks target the live version
           hook.versionChanged = { id: newId, status };   // synchronous, race-free

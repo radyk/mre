@@ -222,6 +222,26 @@ Version history:
   unmoved). The absent-by-construction discipline is 4B.24's, on the delta
   card's missing re-optimization row: a block claiming a portfolio nobody ran
   would be a measurement nobody took. MINOR.
+
+1.14 (Session 4B.29, R-CAL1) — ``solver.calibration`` (``CalibrationBlock``):
+  WHETHER THIS PLANT'S SEARCH COEFFICIENTS WERE MEASURED, and if so when, by
+  what, and which of them this solve actually used.
+
+  WHY THE DOCUMENT NEEDS IT. 4B.26 proved the coefficients that decide whether a
+  board publishes at all are PLANT-SPECIFIC: the same budget puts every seed on
+  the demo board at ten units and none of them on a 170-order board at a
+  fourteen-day window. So "6.0 deterministic units" on a certificate means two
+  completely different things depending on whether anyone measured this plant,
+  and before this the document could not tell those apart.
+
+  UNLIKE ``portfolio``, THIS BLOCK IS PRESENT WHEN THE ANSWER IS "NO". An absent
+  profile is a fact about the plant a planner should have — it is the difference
+  between "we measured this" and "nobody has measured this yet" — and stating it
+  is the no-derate-declared precedent (4B.6a CU2(d)), not the absent-by-
+  construction one. What IS absent by construction is the block on a document
+  whose assembler was never given a calibration lookup at all: a module-level
+  assembly has no store to consult and therefore no answer to report, which is
+  why every golden and pinned world is byte-identical across this bump. MINOR.
 """
 from __future__ import annotations
 
@@ -232,7 +252,7 @@ from pydantic import BaseModel, model_validator
 
 from mre.contracts.vocabularies import ScheduleStatus
 
-CONTRACT_VERSION = "1.13"
+CONTRACT_VERSION = "1.14"
 
 # Exact decomposition tolerance: cost components are currency values
 # accumulated in float; "exactly" means to the cent, matching the
@@ -293,6 +313,54 @@ class PortfolioBlock(BaseModel):
     wall_time_s: float = 0.0
 
 
+class CalibrationDriftBlock(BaseModel):
+    """The calibration promised K publishable searches at this budget and fewer
+    arrived (Session 4B.29 Item 4). INFORMATIONAL: the solve completed on the
+    best available member, exactly as R-BK1 says it should — a schedule the
+    planner can use is worth more than a clean certificate. What it changes is
+    what the certificate SAYS, and what it recommends next."""
+    k: int
+    publishable: int
+    missing: int
+    det_total: float
+    unpublished_seeds: list[int] = []
+    profile_id: str = ""
+    calibrated_at: Optional[str] = None
+    sentence: str = ""
+
+
+class CalibrationBlock(BaseModel):
+    """R-CAL1 (contract 1.14) — THIS PLANT'S MEASURED SEARCH CALIBRATION.
+
+    ``state`` is the whole point and has four values, none of them silent:
+
+      ``accepted``   a measured profile exists and a human signed it; ``applied``
+                     names the coefficients this solve actually took from it.
+      ``unaccepted`` a profile was measured and nobody has accepted it, so this
+                     solve ran product defaults (rule 2 — the offer is not the
+                     setting).
+      ``absent``     nobody has measured this plant. Said out loud.
+      ``unreadable`` a profile exists and does not match the digest of its own
+                     grid, so it is REFUSED (rule 1). The 4B.18 discipline: a
+                     claim about our calibration is never manufactured from a
+                     fact about our storage.
+
+    ``window_calibrated`` beside ``window_solved`` because a calibration is
+    measured AT a window and says nothing about another one — mid170 is the
+    specimen, 5 of 5 at ten days and 0 of 5 at fourteen on the same world at the
+    same budget."""
+    state: Literal["accepted", "unaccepted", "absent", "unreadable"] = "absent"
+    sentence: str
+    plant_key: str = ""
+    profile_id: str = ""
+    calibrated_at: Optional[datetime] = None
+    instrument_version: str = ""
+    applied: dict = {}
+    window_calibrated: Optional[int] = None
+    window_solved: Optional[int] = None
+    drift: Optional[CalibrationDriftBlock] = None
+
+
 class SolverBlock(BaseModel):
     """M6 RunContext telemetry for the solve that produced this schedule."""
     # THE COST PROOF (contract 1.10, Session 4B.8 CU3). An R-SC3 solve proves two
@@ -317,6 +385,10 @@ class SolverBlock(BaseModel):
     # and is exactly the pre-1.13 behaviour. Everything above describes the
     # WINNING member; this says how many others there were and what they found.
     portfolio: Optional[PortfolioBlock] = None
+    # THE CALIBRATION (contract 1.14, R-CAL1). Present whenever the assembler
+    # was given a calibration lookup — INCLUDING when the answer is "nobody has
+    # measured this plant". Absent only where there was no store to consult.
+    calibration: Optional[CalibrationBlock] = None
 
 
 class CostSummary(BaseModel):

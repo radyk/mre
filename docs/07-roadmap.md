@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.73 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.74 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.74:** **Session 4B.29 - calibration is the product.** 2026-08-01 (R-CAL1 ruled verbatim in docs/04; contract 1.13 -> 1.14; finding code 20; narrative in `docs/closeouts/4B.29.md`). 4B.26 recommended K=3 AND 10.0 units as one change; this session **shipped the K and refused the budget**, because **10.0 is one board's calibration, not a law** - and the control board in the same sweep does not want a bigger budget at all, it wants a different WINDOW. **`SolveRequest.portfolio_k` DEFAULTS TO 3** as PUBLICATION INSURANCE (~$578 of ledger against a measured 2-in-5 chance of an EMPTY BOARD); the per-member budget is UNCHANGED at 6.0 and rises per plant through the new ceremony. **R-CAL1: a calibration profile is MEASURED (sha256 of its own grid, refused if edited), OFFERED (a human signs it, and the caller always wins), DECLARED (present on the certificate even when the answer is 'nobody has measured this plant') and FACILITY-SCOPED.** The coefficients are PRODUCT-SIDE, not IDS - **no docs/06 doorway is owed**, and docs/06 §5.9 now says so from the other side. **THE KNEE IS A STATED RULE** and **TWO PLANTS GAVE TWO ANSWERS**: the demo board wants 10 units / K=3 (condition (i) binds - the **8.0 bisection says NO**, seeds 44/45 still empty), the 170-order control wants 6 units / K=2 (condition (ii) binds - publication never fails) and **its declared 14-day window is out of reach at every measured budget, 15 of 15 cells empty**, so the 'two regimes' framing is CONFIRMED. `CALIBRATION_DRIFT` reports a portfolio that under-delivered against an accepted profile and **the board still publishes**. 5a.108-111.
 
 **v2.73:** **Errand 4B.26 - what is the main-solve K actually for?** 2026-08-01 (a PARAMETER SWEEP; no product code, no default flipped; narrative in `docs/closeouts/4B.26.md`). **THE COLD PORTFOLIO WAS BUDGET-STARVED, NOT GEOMETRICALLY WEAK (5a.107).** Cold main-solve value against the incumbent at K=5: **$578.16 at 3.0 units, $1,298.60 at 6.0, $460,014.78 (21.6%) at 10.0, the same $460,014.78 at 15.0** - the value switches on **between 6.0 and 10.0**, a 354x step, and the WINNER PLATEAUS AT 10. Cold at 10.0 recovers **84% of the warm audit's $545,549.60**, so 5a.103's cold-vs-warm gap is mostly BUDGET. **THE SPREAD WIDENS BEFORE IT NARROWS** (1.77 / 1.81 / **28.06** / 25.20%): the tight spread at low budget was three starved searches failing in the same place, never agreement. **THE EMPTY-BOARD HAZARD IS A BUDGET THRESHOLD, NOT A BAD SEED** - seeds 44 and 45 are empty at 3.0 and 6.0, **nobody fails at >=10.0, and seed 44 WINS there**. At the shipped default (K=1, 6.0, seed 42) the board DOES publish, at the incumbent's ledger to the cent - but **two of five seeds would publish an empty board**, and which two is a property of (board x budget). **K IS NOT UNIVERSAL INSURANCE:** the 170-order world at w14 is **0 of 5**; the SAME world at w10 is **5 of 5 with the sweep's largest spread, 42.10%** - **the window, not the density, kills it**. **RAISING THE BUDGET AT K=1 MAKES THE BOARD WORSE** (+$7,887.05) while the same spend at K=3 earns $460,014.78. **RECOMMENDED, NOT FLIPPED: K=3 and 10.0 units as ONE change** - K=3 captures the ENTIRE K=5 gain wherever it is material, at 45% of K=5's wall (~12.9 min sequential, 3.9x the shipped solve). Daryn decides. 5a.107.
 
@@ -4502,6 +4504,203 @@ was not pushed past 6.0, so "two regimes" may be one regime with a
 window-dependent threshold; every publishable cell is FEASIBLE, so **"21.6%
 cheaper" means cheaper, never closer to optimal**. Narrative in
 `docs/closeouts/4B.26.md`.
+
+**§5a.108 — R-CAL1: CALIBRATION IS MEASURED, OFFERED, AND DECLARED (Session
+4B.29, docs/04 verbatim).** 4B.26's recommendation was K=3 AND 10.0
+deterministic units as ONE change. This session shipped the K and REFUSED the
+budget, because **10.0 is one board's calibration, not a law** — and the control
+board in the same sweep does not want a bigger budget at all, it wants a
+different WINDOW. What generalizes is the PROCEDURE, so 4B.26 became a ceremony:
+`python -m mre.calibrate <submission>`, resumable, append-only, deterministic per
+cell, **its projected wall printed before it spends anything** and its actual
+wall recorded beside it over the SAME SET of cells.
+
+Four rules, verbatim in docs/04. **(1) MEASURED, NEVER AUTHORED** — the profile
+carries a **sha256 of its own grid**, recomputed on load; a mismatch is
+`unreadable` and REFUSED, at read and at accept. The digest covers the
+MEASUREMENT and deliberately not the bookkeeping, which is what makes RE-USE
+legal: **30 of the 55 committed cells are 4B.26's own rows**, imported with
+`source` naming where each came from. Rule (1) forbids anonymity, not re-use.
+**(2) OFFERED, NEVER AUTO-APPLIED** — `--accept` takes a NAME and refuses a
+blank one (a signature, not a flag), and refuses a profile whose digest does not
+match, because that is the one place a human's authority could launder a
+hand-edited number. **THE CALLER ALWAYS WINS.** **THE WINDOW IS NEVER OFFERED**
+— a window decides which work is on the board, so it is what a planner asked to
+SEE and not a coefficient of how hard we look; `window_calibrated` rides beside
+`window_solved` instead. **(3) DECLARED — INCLUDING WHEN THE ANSWER IS NO:**
+`solver.calibration` is PRESENT on an uncalibrated plant and says so, which is
+the OPPOSITE discipline from `solver.portfolio`'s absent-at-K=1 and deliberately
+so — "nobody has measured this plant" is a fact a planner should have. The block
+is absent only where the assembler was given no lookup at all (every
+module-level assembly, hence every golden). **(4) THE FACILITY IS THE SCOPE** —
+a two-facility submission is REFUSED calibration by name, pointing at the
+partition ruling, rather than given one profile wearing two plants' evidence.
+
+**THE COEFFICIENTS ARE PRODUCT-SIDE, NOT IDS, AND THE DECISION IS ON THE
+RECORD.** K, the per-member budget and the window are facts about OUR SEARCH —
+how long our solver looks and how many times — and a plant cannot declare them
+because a plant does not have them. Contrast rho (docs/06 §5.9), a fact about
+the PLANT, which is why it pays the §8 pipeline-proof chain. Nothing in a profile
+reaches the model, the objective or the ledger. **No docs/06 doorway is owed.**
+
+**THE KNEE IS A STATED RULE:** *the smallest measured budget at which (i) every
+seeded search published a board and (ii) its winning ledger is within a declared
+tolerance (default 1%) of the best winner at any LARGER measured budget.*
+Condition (ii) is vacuously true at the largest measured budget — the rule's own
+limit stated rather than hidden. Where no budget satisfies (i), that is a
+FINDING ("this window is not reliably reachable at any measured budget") and the
+profile recommends the deepest window that IS, naming the one it gave up on. The
+recommended K comes off the same grid — members are consecutive seeds, so the
+K-portfolio of a measured arm IS its first K seeds — and is **floored at 2**,
+with the floor reported in its own field so an argument never wears a
+measurement's clothes. **DRIFT** (`CALIBRATION_DRIFT`, finding code 20, ADDED
+never repurposed, INFO / `proceeded_flagged`): fewer than K publishable under an
+ACCEPTED AND APPLIED profile, on the certificate and as an evidence Finding,
+**and the board still publishes**. It fires ONLY under an accepted profile — a
+plant on product defaults has no promise to drift from, and reporting drift
+there would turn an uncalibrated plant into a broken one.
+**Contract 1.13 → 1.14.** Narrative in `docs/closeouts/4B.29.md`.
+
+**§5a.109 — THE FLIP: K=3 AT THE MAIN SOLVE, THE BUDGET LEFT ALONE (Session
+4B.29 Item 1).** `SolveRequest.portfolio_k` defaults to **3**;
+`DET_TOTAL_DEFAULT` stays **6.0**. **PUBLICATION INSURANCE, NOT OPTIMIZATION** —
+at 6.0 units K=3 buys about **$578** on the demo board (0.027% of ledger,
+nothing a planner would act on); what it buys is that the board publishes at
+all, against 4B.26's measured **two of five seeds returning an EMPTY BOARD** at
+the shipped default with WHICH two a property of (board × budget) rather than of
+the seed. K=1 stays requestable and is what both pinned worlds are minted with.
+
+**THE LIBRARY DEFAULT IS STILL 1, AND THAT IS WHY NO GOLDEN MOVED.**
+`portfolio.DEFAULT_K` and `solve_rolling_portfolio(k=…)` stay at 1; only the
+number a REQUEST gets when it says nothing became 3. Two constants, two
+audiences, asserted as a test. **A PROVENANCE BUG THE FLIP WOULD HAVE
+INTRODUCED, CAUGHT:** `k_declared` was `req.portfolio_k != DEFAULT_K`, which
+after the flip stamps every DEFAULT solve as a customer's choice; it now reads
+`req.model_fields_set` — what the request actually said. Enumerated and
+asserted, not assumed: the rolling golden, every monolithic baseline and both
+pinned worlds are unmoved (placement digests pinned in the guard); the contract
+string moved in 11 assertions across 6 files; `FindingCode` moved 19 → 20 and **THREE completeness guards
+caught it in turn** — the vocabulary count, the remediation catalog's fallback
+set, and `planner_language`'s phrase map, so a code added without a
+planner-facing phrase, a remediation stance and a count is not added; three sliced API
+fixtures and the two minting tools were pinned to K=1 — the tools because they
+exist to REPRODUCE two K=1 artifacts, the fixtures because K=3 would quadruple
+their wall for no coverage. **ON A PROVABLE BOARD THE FLIP CHANGES NOTHING BUT
+THE WALL** (20 orders, three members, all OPTIMAL at $885.58, winner seed 42 by
+the lowest-seed tie-break) and the certificate gains R-BK1 clause (4)'s trust
+sentence free. **THE COUNTDOWN COPY** now states "search deeper"'s SCALE —
+member count and expected minutes, composed server-side on `/meta` and rendered
+as text — plus a real elapsed clock. It deliberately does NOT say "running
+search 2 of 3": the audit is one request with no progress channel, and a member
+counter there would be an animation pretending to be telemetry.
+
+**§5a.110 — TWO PLANTS, TWO ANSWERS, AND A DIFFERENT CLAUSE BINDS ON EACH
+(Session 4B.29 Item 3 — §5a.107's two residual arms EXECUTED).** 55 measured
+cells across two submissions, 30 of them 4B.26's own rows re-used and named.
+Both profiles committed under `docs/calibration/`, neither accepted.
+
+**THE DEMO BOARD** (280 orders, window 10, budgets 3/6/**8**/10/15):
+
+```
+  budget      42          43          44          45          46      pub
+  3      2,127,483   2,164,599     UNKNOWN     UNKNOWN   2,126,904    3/5
+  6      2,127,483   2,164,607     UNKNOWN     UNKNOWN   2,126,184    3/5
+  8      2,135,370   1,801,223     UNKNOWN     UNKNOWN   2,126,184    3/5
+  10     2,135,370   1,801,223   1,667,468   2,018,597   2,087,719    5/5
+  15     1,790,405   1,801,223   1,667,468   2,013,491   2,087,719    5/5
+```
+
+> **window 10, 10.0 units, K=3.**
+
+**THE 8.0 BISECTION SAYS NO** (§5a.107's residual arm (b)). Seeds 44 and 45 are
+STILL EMPTY at 8.0, so the knee stays at 10 and the empty-board hazard clears
+**between 8 and 10**, not between 6 and 10. **BUT THE MONEY AND THE RELIABILITY
+ARRIVE AT DIFFERENT BUDGETS:** seed 43 finds **$1,801,222.70 at 8.0** — 16.8%
+cheaper than any 6.0 member, and exactly its 10.0 and 15.0 figure. A K=3
+portfolio at 8.0 would publish ~$325k cheaper while two of five siblings place
+NOTHING, and **condition (i) is what stops the profile recommending it**.
+
+**THE 170-ORDER CONTROL** (windows 10 and 14, budgets 3/6/10):
+
+```
+  window budget      42          43          44          45          46      pub
+  10     3      1,347,030   1,599,554   1,645,061   1,158,144   1,444,410    5/5
+  10     6      1,194,634   1,015,336   1,442,800   1,253,810   1,106,191    5/5
+  10     10     1,212,297   1,015,289   1,442,800   1,146,257   1,106,191    5/5
+  14     3        UNKNOWN     UNKNOWN     UNKNOWN     UNKNOWN     UNKNOWN    0/5
+  14     6        UNKNOWN     UNKNOWN     UNKNOWN     UNKNOWN     UNKNOWN    0/5
+  14     10       UNKNOWN     UNKNOWN     UNKNOWN     UNKNOWN     UNKNOWN    0/5
+```
+
+> **window 10, 6.0 units, K=2 — and the DECLARED 14-day window is not reliably
+> reachable at any measured budget, so the recommendation is the deepest window
+> that is, with the one it gave up on named.**
+
+**mid170-w14 IS GENUINELY OUT OF REACH** (§5a.107's residual arm (d)):
+**15 of 15 cells empty**, at 3, 6 AND 10 units. **The "two regimes" framing is
+CONFIRMED, not collapsed** — where a window is reachable the hazard is seed-wise
+and K insures; where it is not, no K and no budget helps, and the honest output
+is the profile's own refusal sentence. The SAME world at ten days is the
+healthiest arm measured in either session (5 of 5 at every budget), so 4B.26's
+*"the window, not the density, kills it"* holds at a budget 67% larger than the
+one that first showed it.
+
+**THE TWO PLANTS AGREE ON NOTHING, AND A DIFFERENT CLAUSE OF THE KNEE RULE
+BINDS ON EACH.** Same product, same rule, same seeds, same instrument: one wants
+10 units and three searches, the other 6 units and two, and the second cannot
+use its own declared window. On the demo board **condition (i)** decides —
+publication fails below 10. On mid170-w10 publication NEVER fails (5 of 5 at
+every budget) and **condition (ii)** decides — 3 units publishes everywhere but
+its winner is 14% dearer, while 6 units lands within **$46.75** of what 10 units
+finds for 67% more search. One rule, two plants, two clauses doing the work, and
+neither clause is decoration. **This is the argument against shipping 4B.26's
+numbers as product defaults, made by the only evidence that could make it: a
+second plant.**
+
+**§5a.111 — 4B.29's DEBTS (REPORTED, deliberately NOT fixed).**
+**(a) THE PROFILE HAS NO EXPIRY.** R-CAL1 rule (3) speaks of an "expired"
+profile and nothing computes one. DRIFT is the only staleness signal and it only
+fires when a search actually FAILS — a profile whose knee has quietly moved UP
+while still publishing K boards is stale and SILENT. An age threshold is a
+declared coefficient nobody has: R-PD1 clause (5)'s shape, one domain over.
+**(b) TWO SYNTHETIC WORLDS SHARE ONE PLANT KEY.** `demo_board` and the
+170-order control both declare `facility_scope: ["F001"]` and
+`source_system: "SyntheticERP vGen"`, so rule (4) keys them identically and one
+profile would overwrite the other in a shared data root. For a REAL plant that
+is correct — one facility, one calibration, re-measured over time — but for our
+measurement worlds it is a hazard, worked around here with separate directories
+rather than fixed in the generator.
+**(c) THE AUDIT'S K IS NOT CALIBRATED.** `AUDIT_K` is a constant 3 at 3.0 units.
+A profile calibrates the MAIN solve and says nothing about "search deeper",
+which is the other place K is spent and the one a planner triggers on purpose.
+**(d) A MONOLITHIC SOLVE CARRIES NO CALIBRATION BLOCK AT ALL** — the block is on
+the rolling path only, because a profile is measured over windows and a
+monolithic run has none. Rule (3)'s absence-is-stated guarantee therefore holds
+for sliced solves and is simply not in force for monolithic ones, and nothing on
+a monolithic certificate says so.
+**(e) THE CEREMONY IS A CLI AND NOTHING ELSE** — no Gatehouse surface, no
+scheduling, no cloud execution, no re-calibration trigger. Calibration is
+reachable by whoever has a shell and by nobody else.
+**(f) NEITHER PROFILE WAS `--save`d INTO THE WORKING DATA ROOT.** Both are
+committed as artifacts under `docs/calibration/` where a reader can check them;
+placing either where live solves would find it is an act with consequences and
+belongs to the person who accepts it.
+**(g) EVERY WALL IN BOTH PROFILES IS ONE LAPTOP, AND THE mid170 ARM RAN BESIDE
+THE TEST SUITE.** Ledgers are unaffected (deterministic mode; the imported rows
+reproduce 4B.26 to the cent) but that arm's wall column is contended. 4B.25
+measured ~1.8x for a member with four siblings; this is smaller than that and is
+named rather than assumed away.
+**(h) THE COST FORECAST OVERSHOT BY ~2.1x ON BOTH PLANTS** — demo projected
+2200s / spent 991s, mid170 projected 7150s / spent 3464s, both ~25
+s/deterministic unit, BELOW 4B.24's measured 33.9-77.0 range. The exchange rate
+is a property of the BOARD as well as of the machine, so the ceremony's 55 s/unit
+constant is now known to be conservative on these two. Re-forecasting from the
+first measured cell is a nicer ceremony and a different one.
+**(i) EVERY PUBLISHABLE CELL IN BOTH GRIDS IS FEASIBLE.** No cell proved
+anything. The knee selects by the LEDGER (R-BK1 clause 3), so "10 units is
+better than 6" means cheaper, never closer to optimal — 4B.26 §6(g)'s caveat
+travels unchanged.
+
 
 ## 6. Open rulings queue
 

@@ -60,6 +60,11 @@ def _solve(client, sub_id, ref, *, coarse=True):
     solve = _data(client.post(f"/submissions/{sub_id}/solve", json={
         "time_limit": TIME_LIMIT, "deterministic": True, "sliced": True,
         "window_days": WINDOW_DAYS, "frozen_days": FROZEN_DAYS,
+        # K=1, pinned (4B.29 Item 1(e)): this module measures the CROSS-ROLL
+        # prediction store over four rolls. At the product default of 3 that is
+        # sixteen solves instead of four, and none of the extra ones say
+        # anything about predictions.
+        "portfolio_k": 1,
         "coarse": coarse, "reference_date": ref}), status=202)
     run = _data(client.get(f"/runs/{solve['run_id']}"))
     assert run["status"] == "succeeded", run.get("error")

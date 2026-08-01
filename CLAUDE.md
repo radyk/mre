@@ -124,9 +124,17 @@ zone = build_coarse_zone(plant, view)              # rho/bucket_days from the co
 doc  = assemble_rolling_document(..., coarse_zone=zone)   # 1.9 blocks appear
 ```
 
-Contract is **1.13** since 4B.25 (`solver.portfolio`, R-BK1 — additive and
-ABSENT at K=1, which is the default; 1.11 was the R-PD1 tardiness split, 1.12 the
-R-C3 pair).
+Contract is **1.14** since 4B.29 (`solver.calibration`, R-CAL1 — PRESENT even
+when the answer is "nobody has measured this plant"; absent only where the
+assembler was given no store to consult, which is every module-level assembly and
+therefore every golden). 1.13 was `solver.portfolio` (R-BK1, ABSENT at K=1); 1.11
+the R-PD1 tardiness split, 1.12 the R-C3 pair.
+
+**`SolveRequest.portfolio_k` DEFAULTS TO 3 SINCE 4B.29** — publication insurance,
+not optimization (~$578 of ledger against a measured 2-in-5 chance of an EMPTY
+BOARD at demo density). The per-member budget is UNCHANGED at 6.0: 10.0 units is
+the demo board's knee, and it rises per plant through R-CAL1's ceremony. K=1 is
+still requestable and is what the two pinned worlds are minted with.
 
 `zone.certificate_block()` carries rho + its provenance (acceptance: a hidden default
 is a failure). Declare the coefficients in a submission via `cost_model.json`
@@ -159,6 +167,9 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Session 4B.29 — calibration is the product**, 2026-08-01 (docs/07 v2.74,
+§5a.108-111; docs/04 2026-08-01 R-CAL1 verbatim; narrative in
+`docs/closeouts/4B.29.md`). Before it:
 **Errand 4B.26 — what is the main-solve K actually for?**, 2026-08-01 (docs/07
 v2.73, §5a.107; narrative in `docs/closeouts/4B.26.md`). Before it:
 **Session 4B.25 — the published board is a portfolio, not a draw**, 2026-08-01
@@ -272,8 +283,9 @@ number is not a spread** (None, never 0.00). **(5)** separate PROCESSES, never
 CP-SAT `workers>1`. Live: `src/mre/modules/portfolio.py` (the primitive),
 `rolling_horizon.solve_rolling_portfolio` (K+1 searches at K>1, the winner's
 re-solve CHECKED against the member that won — `PortfolioDrift`), and
-`sandbox.audit_incumbent`. **`AUDIT_K` = 3. `SolveRequest.portfolio_k` = 1 —
-flipping it is Daryn's call with the table below in front of him.**
+`sandbox.audit_incumbent`. **`AUDIT_K` = 3. `SolveRequest.portfolio_k` WAS 1
+and is 3 since 4B.29** (see the contract note above); the audit's K is NOT
+calibrated and is still a constant.
 
 **THE AUDIT PORTFOLIO FOUND 2.3x MORE MONEY THAN THE SINGLE SEED (4B.25,
 §5a.102).** Dense demo board, `POST /audit` at K=5 x 3.0 units, seeds 42-46:
@@ -308,6 +320,53 @@ nothing in the cockpit says it is three searches long; the parallel speedup is a
 LAPTOP number; a parallel member re-runs the WHOLE SPINE; the audit child's
 lineage is in the REGISTRY, not its document; and **the portfolio is not
 reachable from the ask path** (§5a.29's shape, second member).
+
+**R-CAL1 — CALIBRATION IS MEASURED, OFFERED, AND DECLARED (4B.29, §5a.108,
+docs/04 verbatim).** 4B.26 recommended shipping K=3 AND 10.0 units as one
+change; this session shipped the K and REFUSED the budget, because **10.0 is ONE
+BOARD's calibration, not a law** — its own control board wants a different
+WINDOW, not a bigger budget. Four rules. **(1) MEASURED, NEVER AUTHORED** — the
+profile carries a **sha256 of its own grid**, recomputed on load; an edited grid
+is `unreadable` (never `absent`), refused at read AND at accept. The digest
+covers the MEASUREMENT and not the bookkeeping, which is what makes RE-USE legal:
+30 of 55 cells are 4B.26's own rows, imported with `source` naming them. **(2)
+OFFERED, NEVER AUTO-APPLIED** — `--accept` takes a NAME and refuses a blank one;
+**THE CALLER ALWAYS WINS**, and **THE WINDOW IS NEVER OFFERED** (it is what a
+planner asked to SEE, not a coefficient of how hard we look) though
+`window_calibrated` rides beside `window_solved`. **(3) DECLARED — INCLUDING
+WHEN THE ANSWER IS NO**: `solver.calibration` is PRESENT on an uncalibrated
+plant and says so, the OPPOSITE discipline from `solver.portfolio`'s absent-at-
+K=1, deliberately. **(4) THE FACILITY IS THE SCOPE** — a two-facility submission
+is REFUSED calibration by name. **THE COEFFICIENTS ARE PRODUCT-SIDE, NOT IDS,
+AND THAT IS ON THE RECORD:** K, the budget and the window are facts about OUR
+SEARCH; nothing reaches the model, objective or ledger, so **no docs/06 doorway
+is owed**. **THE KNEE IS A STATED RULE:** *the smallest measured budget at which
+(i) every seeded search published a board and (ii) its winner is within a
+declared tolerance (1%) of the best winner at any LARGER measured budget* —
+(ii) is vacuously true at the largest measured budget, the rule's own limit
+stated. Where no budget satisfies (i) that is a FINDING and the profile
+recommends the deepest window that IS reachable. Recommended K comes off the
+same grid (consecutive seeds → the K-portfolio IS the first K) and is **floored
+at 2**, with the floor named separately so an argument never wears a
+measurement's clothes. **DRIFT** (`CALIBRATION_DRIFT`, finding code 20, ADDED
+never repurposed): fewer than K publishable under an ACCEPTED AND APPLIED
+profile → INFO / `proceeded_flagged`, on the certificate, **and the board still
+publishes**. It fires only under an accepted profile — a plant on defaults has
+no promise to drift from. Live: `python -m mre.calibrate`, resumable,
+append-only, cost stated BEFORE it spends.
+
+**THE 8.0 BISECTION SAYS NO, AND THE MONEY AND THE RELIABILITY ARRIVE AT
+DIFFERENT BUDGETS (4B.29, §5a.109 — §5a.107's residual arm).** Demo board, five
+new cells: **seeds 44 and 45 are STILL EMPTY at 8.0 units**, so the knee stays
+at **10.0** and the hazard clears between **8 and 10**, not 6 and 10. But seed
+43 finds **$1,801,222.70 at 8.0** — 16.8% cheaper than any 6.0 member and
+exactly its 10.0 and 15.0 figure. So a K=3 portfolio at 8.0 would publish
+$325k cheaper while two of five siblings still place NOTHING; **condition (i) is
+what stops the profile recommending it**, and this is the grid where (i) bites
+(on 4B.26's own table condition (ii) ruled the starved budgets out alone).
+**ON A PROVABLE BOARD THE FLIP CHANGES NOTHING BUT THE WALL** — 20 orders, three
+members, all OPTIMAL at $885.58, winner seed 42 by tie-break, and the
+certificate gains *"all 3 seeded searches landed on the same total"* free.
 
 **THE COLD PORTFOLIO WAS BUDGET-STARVED, NOT GEOMETRICALLY WEAK (4B.26,
 §5a.107 — §5a.106(a)(b) MEASURED).** A (budget x seed) sweep, demo board, COLD,
@@ -1017,6 +1076,29 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
 
 **Small carry-forwards (do not lose):**
 
+- 4B.29 findings (docs/07 §5a.111 — REPORTED, deliberately NOT fixed; all
+  eight in `docs/closeouts/4B.29.md` §8). The two a session should take next:
+  **THE PROFILE HAS NO EXPIRY** — R-CAL1 rule (3) speaks of an "expired"
+  profile and nothing computes one; DRIFT only fires when a search actually
+  FAILS, so a profile whose knee has quietly moved UP while still publishing K
+  boards is stale and SILENT. An age threshold is a declared coefficient nobody
+  has: R-PD1 clause (5)'s shape again. **TWO SYNTHETIC WORLDS SHARE ONE PLANT
+  KEY** — `demo_board` and the 170-order control both declare `F001` /
+  `SyntheticERP vGen`, so rule (4) keys them identically and one profile would
+  overwrite the other in a shared data root. Correct for REAL plants (one
+  facility, one calibration, re-measured); a hazard for our measurement worlds,
+  worked around here with separate directories rather than fixed in the
+  generator. Also: **the AUDIT's K is NOT calibrated** (`AUDIT_K` is a constant
+  3 at 3.0 units — a profile calibrates the MAIN solve and says nothing about
+  the button a planner presses on purpose); **a MONOLITHIC solve carries no
+  calibration block at all** (the block is on the rolling path only, so rule
+  (3)'s absence-is-stated guarantee is simply not in force there and nothing
+  says so); the ceremony is a CLI and nothing else (no Gatehouse surface, no
+  scheduling, no cloud); neither profile was `--save`d into the WORKING data
+  root; every wall in both profiles is one laptop and the mid170 arm ran beside
+  the test suite; and **every publishable cell in both grids is FEASIBLE**, so
+  "10 units is better than 6" means cheaper, never closer to optimal
+  (4B.26 §6(g)'s caveat, unchanged).
 - 4B.22a findings (docs/07 §5a.86-88 — REPORTED, deliberately NOT fixed; all
   eight in `docs/closeouts/4B.22a.md` §7). The two a session should take next:
   **`order-schedule` DOES NOT VOICE THE PAST-DUE DISPOSITION** (R-PD1 clause 6) —
@@ -1134,7 +1216,7 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   of one question) — humble rather than wrong, but distinguishing "one answer
   because I am confused" from "one answer because it IS the answer" needs a
   signal this session does not have.
-  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, ~88k after 4B.25, **~92k after 4B.26**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, ~88k after 4B.25, ~92k after 4B.26, **~96k after 4B.29**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
   **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
   day-shift restriction answered as C1/C2 "proven end to end" when the item is
   C4 (model-proven, §8 doorway). Caught and pinned; the class stands.

@@ -37,6 +37,7 @@ PLAN_SOLVE_FINDING_CODES = {
     "HORIZON_EXCEEDED",
     "SOLVER_NONOPTIMAL",
     "DENSITY_LIMIT",
+    "CALIBRATION_DRIFT",   # R-CAL1 (2026-08-01)
 }
 
 
@@ -57,15 +58,19 @@ class TestDriverCodes:
 
 
 class TestFindingCodes:
-    def test_exactly_19(self):
-        # 6 adapter + 8 validation + 5 plan/solve = 19 codes (docs/02 §4.3).
+    def test_exactly_20(self):
+        # 6 adapter + 8 validation + 6 plan/solve = 20 codes (docs/02 §4.3).
         # DENSITY_LIMIT added 2026-07-12 — the Rep 2 density guard had been
         # repurposing STATISTICAL_OUTLIER (add-never-repurpose violation).
         # PAST_DUE_AT_INTAKE added 2026-07-28 (R-PD1) — M3 had been repurposing
         # TEMPORAL_IMPOSSIBILITY, the gate's code for a date pair that cannot
         # both be true, to mean "this order is merely late". Same violation,
         # same remedy: add, never repurpose.
-        assert len(FindingCode) == 19
+        # CALIBRATION_DRIFT added 2026-08-01 (R-CAL1) — a claim about OUR OWN
+        # search coefficients going stale, which is neither SOLVER_NONOPTIMAL
+        # (a claim about this board's proof) nor DENSITY_LIMIT (a claim about
+        # the plant). Third instance of the same discipline.
+        assert len(FindingCode) == 20
 
     def test_adapter_layer_codes(self):
         values = {c.value for c in FindingCode}
@@ -81,8 +86,8 @@ class TestFindingCodes:
 
     def test_all_layers_account_for_all_codes(self):
         all_expected = ADAPTER_FINDING_CODES | VALIDATION_FINDING_CODES | PLAN_SOLVE_FINDING_CODES
-        # 6 + 8 + 5 = 19 per the exhaustive enumeration in docs/02 §4.3
-        assert len(all_expected) == 19
+        # 6 + 8 + 6 = 20 per the exhaustive enumeration in docs/02 §4.3
+        assert len(all_expected) == 20
 
 
 class TestProvenanceClass:

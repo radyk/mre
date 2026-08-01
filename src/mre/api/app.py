@@ -37,6 +37,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from mre.api.registry import Registry
 from mre.modules import longpath
+from mre.modules.portfolio import PRODUCT_DEFAULT_K
 
 API_VERSION = "1"
 
@@ -85,13 +86,22 @@ class SolveRequest(BaseModel):
     # THE PORTFOLIO (R-BK1, Session 4B.25), sliced runs only. K independent
     # deterministic searches at seeds 42..42+K-1, best by LEDGER wins.
     #
-    # K=1 IS EXACTLY THE PRE-4B.25 BEHAVIOUR and is the default until Daryn
-    # flips it with Item 3's table in front of him: one search, no extra solve,
-    # no portfolio block in the document. Above 1 the solve costs K+1 searches
-    # (K probes + the winner re-solved so the persisted artifacts belong to the
-    # published board), and the certificate declares K, the per-member budget
-    # and every member's ledger total.
-    portfolio_k: int = 1
+    # THE DEFAULT IS 3 SINCE SESSION 4B.29, and it is PUBLICATION INSURANCE
+    # rather than optimization: at the shipped 6.0-unit budget a third of a
+    # percent of ledger, against a measured 2-in-5 chance that a single seed
+    # returns an EMPTY BOARD at demo density (4B.26 §3). K=1 remains requestable
+    # — it is a declared coefficient (R-BK1 clause 2), not a policy — and is
+    # exactly the pre-4B.25 behaviour: one search, no extra solve, no portfolio
+    # block in the document. Above 1 the solve costs K+1 searches (K probes +
+    # the winner re-solved so the persisted artifacts belong to the published
+    # board), and the certificate declares K, the per-member budget and every
+    # member's ledger total.
+    #
+    # THE PER-MEMBER BUDGET DID NOT MOVE WITH IT. 4B.26's optimization arm
+    # recommended 10.0 units as well, and 10.0 is the DEMO BOARD's knee — one
+    # plant's calibration. It rises per plant through R-CAL1's ceremony, never
+    # by fitting the board in front of us.
+    portfolio_k: int = PRODUCT_DEFAULT_K
     # The per-member deterministic budget (the R-SC3 two-stage TOTAL). None
     # keeps the shipped default and is reported as `defaulted` provenance; a
     # value here is reported as `declared`.
@@ -253,6 +263,34 @@ class WhatIfRequest(BaseModel):
 def _ok(data: Any, status_code: int = 200) -> JSONResponse:
     return JSONResponse({"api_version": API_VERSION, "data": data},
                         status_code=status_code)
+
+
+def _search_deeper_scale() -> dict:
+    """WHAT PRESSING "SEARCH DEEPER" IS ABOUT TO SPEND (4B.29 Item 1(d)).
+
+    Composed here, in words, so the cockpit's JS never authors a claim about how
+    long our own search takes — the same rule the cost-proof chip runs under.
+    The minutes are a FORECAST from 4B.24's measured 33.9-77.0 s/deterministic
+    unit, and the sentence says "about", because 4B.26 §6(f) already found
+    members at the wide end of that range.
+    """
+    from mre.modules.calibration import SECONDS_PER_DET_UNIT
+    from mre.modules.sandbox import AUDIT_DET_TIME_S, AUDIT_K
+
+    minutes = AUDIT_K * AUDIT_DET_TIME_S * SECONDS_PER_DET_UNIT / 60.0
+    if AUDIT_K > 1:
+        sentence = (f"this runs {AUDIT_K} independent seeded searches at "
+                    f"{AUDIT_DET_TIME_S:g} deterministic units each and keeps "
+                    f"the cheapest — about {minutes:.0f} minutes. It changes "
+                    f"nothing on its own; anything it finds comes back as an "
+                    f"offer.")
+    else:
+        sentence = (f"this runs one seeded search at {AUDIT_DET_TIME_S:g} "
+                    f"deterministic units — about {minutes:.0f} minutes. It "
+                    f"changes nothing on its own; anything it finds comes back "
+                    f"as an offer.")
+    return {"k": AUDIT_K, "det_time_s": AUDIT_DET_TIME_S,
+            "expected_minutes": round(minutes, 1), "sentence": sentence}
 
 
 # ---------------------------------------------------------------------------
@@ -477,6 +515,14 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
             except Exception:  # noqa: BLE001 — meta must not 500 on a bad doc
                 logging.getLogger("mre.api").warning(
                     "EVENT meta.cost_proof_unavailable schedule=%s", schedule_id)
+        # 4B.29 Item 1(d) — WHAT "SEARCH DEEPER" ACTUALLY COSTS, composed
+        # server-side for the same reason the cost proof is: the button's scale
+        # is a fact about the search, and 4B.25 §7(c) named it as a thing
+        # nothing in the cockpit said. It is a SCALE, deliberately not a live
+        # "search 2 of 3" — the audit runs as one request with no progress
+        # channel, and a fabricated count would be the one thing worse than
+        # silence here.
+        meta["search_deeper"] = _search_deeper_scale()
         return _ok(meta)
 
     @app.get("/schedules/{schedule_id}/interaction")
@@ -1050,8 +1096,8 @@ def _execute_rolling_solve(registry: Registry, run: dict, files_dir: Path,
     after the schedule is registered, so a store fault can never lose a schedule
     (``record_roll_history`` never raises; its ``error`` is surfaced on the run)."""
     from mre.contracts.schedule_document import CONTRACT_VERSION
+    from mre.modules import calibration as cal
     from mre.modules.coarse_predictions import record_roll_history
-    from mre.modules.portfolio import DEFAULT_K
     from mre.modules.rolling_horizon import (
         DET_TOTAL_DEFAULT, gravity_admitted_demand_ids, prepare_plant,
         solve_rolling_portfolio,
@@ -1063,19 +1109,65 @@ def _execute_rolling_solve(registry: Registry, run: dict, files_dir: Path,
         ref = _parse_reference_date(req.reference_date)
         plant = prepare_plant(files_dir, out_dir, reference_date=ref,
                               policy=req.policy)
-        # R-BK1 (4B.25 Item 3) — the main solve is a DECLARED PORTFOLIO. At the
-        # default k=1 this is `build_rolling_view` called once with seed 42,
-        # returns no Portfolio, and puts no block in the document: exactly the
-        # pre-4B.25 path, which is clause (2)'s compatibility promise.
-        det_total = (DET_TOTAL_DEFAULT if req.portfolio_det_time is None
-                     else req.portfolio_det_time)
+        # R-CAL1 rule (3) — LOOK FOR THIS PLANT'S CALIBRATION, AND SAY WHAT WE
+        # FOUND IN EVERY BRANCH. `resolve` never raises and never returns None:
+        # a plant with no accepted profile is running on product defaults and is
+        # TOLD so on its own certificate. The caller's own declared coefficients
+        # always win (rule 2) — `model_fields_set` is what the request actually
+        # said, as opposed to what pydantic filled in.
+        declared = set(req.model_fields_set)
+        calib = cal.resolve(registry.data_root, files_dir,
+                            window_solved=req.window_days)
+        offered = cal.coefficients(calib, registry.data_root)
+        applied, calib = cal.apply_to(
+            calib, offered,
+            caller_declared={"det_total" if f == "portfolio_det_time" else "k"
+                             for f in declared
+                             if f in ("portfolio_det_time", "portfolio_k")})
+        # R-BK1 (4B.25 Item 3) — the main solve is a DECLARED PORTFOLIO. The
+        # product default is K=3 since 4B.29 (publication insurance, not
+        # optimization); a request naming its own K gets it, and `k_declared`
+        # reports WHO CHOSE, which is what makes the certificate's provenance
+        # line true rather than decorative.
+        det_total = float(applied.get(
+            "det_total",
+            DET_TOTAL_DEFAULT if req.portfolio_det_time is None
+            else req.portfolio_det_time))
+        k = int(applied.get("k", req.portfolio_k))
+        # A PORTFOLIO OF NON-DETERMINISTIC MEMBERS IS A PORTFOLIO OF DRAWS
+        # (R-BK1 clause 1), and `solve_rolling_portfolio` correctly raises on
+        # one. But `deterministic` defaults to False, so the 4B.29 flip would
+        # have turned every previously-working `{"sliced": true}` request into a
+        # failed run — a DEFAULT cannot break a request that was fine before it.
+        # The DEFAULTED K degrades to 1 and the certificate says why; an
+        # EXPLICITLY requested portfolio still raises, because a caller asking
+        # for the best of three draws has asked for a number with no meaning.
+        if k > 1 and not req.deterministic and "portfolio_k" not in declared \
+                and "k" not in applied:
+            k = 1
+            calib = calib.model_copy(update={"sentence": (
+                calib.sentence + " — the portfolio was not run: this solve is "
+                "not deterministic, and the best of K non-deterministic "
+                "searches is a number with no meaning (R-BK1 clause 1)")})
         view, book = solve_rolling_portfolio(
             plant, window_days=req.window_days, frozen_days=req.frozen_days,
             deterministic=req.deterministic, member_time_limit_s=req.time_limit,
-            det_total=det_total, persist=True, k=req.portfolio_k,
+            det_total=det_total, persist=True, k=k,
             portfolio_workers=req.portfolio_workers,
-            k_declared=req.portfolio_k != DEFAULT_K,
-            det_time_declared=req.portfolio_det_time is not None)
+            k_declared=("portfolio_k" in declared or "k" in applied),
+            det_time_declared=("portfolio_det_time" in declared
+                               or "det_total" in applied))
+        # Item 4 — DRIFT. The calibration promised K publishable searches at
+        # this budget; if fewer arrived, the solve still publishes the best
+        # available member (R-BK1) and the certificate says the promise was not
+        # kept. Informational, never a gate verdict change.
+        drift = cal.detect_drift(calib, book)
+        if drift is not None:
+            calib = calib.model_copy(update={"drift": drift})
+            logging.getLogger("mre.api").warning(
+                "calibration drift on run %s: %s", run_id, drift["sentence"])
+            cal.record_drift(drift, snapshot_id=plant.snapshot_id,
+                             runs_dir=out_dir, plant_key=calib.plant_key)
         zone = None
         if req.coarse:
             from mre.modules.coarse_horizon import build_coarse_zone
@@ -1086,7 +1178,7 @@ def _execute_rolling_solve(registry: Registry, run: dict, files_dir: Path,
         document = assemble_rolling_document(
             plant=plant, view=view, schedule_id=schedule_id,
             run_id=run_id, identity_map=idmap, coarse_zone=zone,
-            portfolio=book)
+            portfolio=book, calibration=calib)
         doc_path = _persist_document(document, out_dir)
         registry.register_schedule(
             schedule_id=document.schedule_id, run_id=run_id,
@@ -1129,6 +1221,9 @@ def _execute_rolling_solve(registry: Registry, run: dict, files_dir: Path,
         # caller that never opens the document can still read what the other
         # seeds found. None at k=1 — there was no portfolio.
         "portfolio": book.block() if book is not None else None,
+        # R-CAL1 rule (3): what this solve found when it looked for a profile,
+        # including "nothing" — an absence stated is not a silence.
+        "calibration": calib.model_dump(mode="json"),
     })
 
 

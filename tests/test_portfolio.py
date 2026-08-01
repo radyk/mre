@@ -330,7 +330,7 @@ def test_k_of_one_puts_no_portfolio_block_in_the_document(plant, direct):
                                     run_id="r", identity_map=idmap,
                                     portfolio=None)
     assert doc.solver.portfolio is None
-    assert doc.contract_version == "1.13"
+    assert doc.contract_version == "1.14"
 
     # AND the assembler's own guard, independently: handed a K=1 Portfolio
     # OBJECT it still emits nothing. Two things must both hold for clause (2) —

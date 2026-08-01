@@ -91,10 +91,11 @@ class TestFallbackCompleteness:
         assert note.finding_code == code
 
     def test_fallback_count_matches_the_vocabulary(self):
-        # 19 since 2026-07-28 (PAST_DUE_AT_INTAKE, R-PD1). The equality is the
-        # real assertion: every finding code must have a catalog entry, even
-        # when — as here — that entry's job is to say NO remediation applies.
-        assert len(CATALOG.fallbacks) == len(FindingCode) == 19
+        # 20 since 2026-08-01 (CALIBRATION_DRIFT, R-CAL1); 19 before that
+        # (PAST_DUE_AT_INTAKE, R-PD1). The equality is the real assertion:
+        # every finding code must have a catalog entry, even when — as with
+        # both of those — that entry's job is to say NO remediation applies.
+        assert len(CATALOG.fallbacks) == len(FindingCode) == 20
 
 
 # --------------------------------------------------------------------------

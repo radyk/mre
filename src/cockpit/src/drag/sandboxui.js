@@ -621,18 +621,51 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
 
   // --- Session 4B.24, clause (5): "search deeper" -------------------------
 
-  function showSearching() {
+  // Session 4B.29 Item 1(d). 4B.25 §7(c): "search deeper" now costs several
+  // minutes across SEVERAL searches and nothing on this surface said so — a
+  // planner pressed a button expecting a re-solve and got a portfolio. The
+  // scale (member count, expected minutes, the whole sentence) is composed
+  // SERVER-SIDE on /meta and rendered here as TEXT; the JS never words a claim
+  // about how long our own search takes, exactly as it never words the cost
+  // proof.
+  //
+  // WHAT THIS DELIBERATELY DOES NOT SAY IS "running search 2 of 3". The audit
+  // is one request with no progress channel, so a member counter here would be
+  // an animation pretending to be telemetry. The ELAPSED clock below is real —
+  // it counts this browser's own wall — and it is measured against the declared
+  // expectation rather than against nothing.
+  function showSearching(scale) {
     _stopCountdown();
+    const k = scale && scale.k;
     card.className = "delta-card searching";
     card.innerHTML = `
       <div class="dc-head">
         <span class="dc-outcome">Searching deeper…</span>
-        <span class="dc-status">deterministic · seeded</span>
+        <span class="dc-status">${k > 1 ? `deterministic · ${k} seeded searches`
+                                        : "deterministic · seeded"}</span>
       </div>
-      <div class="dc-note">this runs the same search that produced the plan, at
-        a bigger budget. It changes nothing on its own — anything it finds comes
-        back as an offer.</div>
+      <div class="dc-note dc-search-scale"></div>
+      <div class="dc-note dc-search-elapsed"></div>
       <div class="dc-actions"><button class="dc-discard">Discard</button></div>`;
+    // authored server text, as TEXT — never interpolated into markup
+    card.querySelector(".dc-search-scale").textContent =
+      String((scale && scale.sentence) ||
+             "this runs the same search that produced the plan, at a bigger " +
+             "budget. It changes nothing on its own — anything it finds comes " +
+             "back as an offer.");
+    const expect = scale && scale.expected_minutes;
+    const elapsedEl = card.querySelector(".dc-search-elapsed");
+    const t0 = Date.now();
+    const tick = () => {
+      const s = Math.round((Date.now() - t0) / 1000);
+      const mm = String(Math.floor(s / 60)).padStart(2, "0");
+      const ss = String(s % 60).padStart(2, "0");
+      elapsedEl.textContent = expect
+        ? `${mm}:${ss} elapsed of about ${expect} min expected`
+        : `${mm}:${ss} elapsed`;
+    };
+    tick();
+    countdownTimer = setInterval(tick, 1000);
     card.querySelector(".dc-discard").addEventListener(
       "click", () => onDiscard && onDiscard());
     card.classList.remove("hidden");

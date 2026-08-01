@@ -1,0 +1,24 @@
+CALIBRATION PROFILE  cal-SyntheticERP_vGen__F001-1785616433
+  plant      SyntheticERP vGen::F001  (facility F001)
+  measured   2026-08-01T20:33:53.519768+00:00 by mre.calibrate/1
+  seeds      [42, 43, 44, 45, 46]
+  grid       30 cells, digest 63c3997889619b0b...
+  wall       20 cell(s) measured here: projected 7150s, actual 3464s
+  accepted   NO (rule 2 — offer only)
+
+THE GRID
+  window  budget             42            43            44            45            46   pub
+  -------------------------------------------------------------------------------------------
+      10       3      1,347,030     1,599,554     1,645,061     1,158,144     1,444,410   5/5
+      10       6      1,194,634     1,015,336     1,442,800     1,253,810     1,106,191   5/5
+      10      10      1,212,297     1,015,289     1,442,800     1,146,257     1,106,191   5/5
+      14       3        UNKNOWN       UNKNOWN       UNKNOWN       UNKNOWN       UNKNOWN   0/5
+      14       6        UNKNOWN       UNKNOWN       UNKNOWN       UNKNOWN       UNKNOWN   0/5
+      14      10        UNKNOWN       UNKNOWN       UNKNOWN       UNKNOWN       UNKNOWN   0/5
+
+THE KNEE RULE
+  the smallest measured budget at which (i) every seeded search published a board and (ii) its winning ledger is within 1% of the best winner at any LARGER measured budget
+
+RECOMMENDATION
+  window 10 days, 6 deterministic units per search, K=2; 5 of 5 seeded searches published at this budget; at 3 units 5 of 5 did; window(s) 14d were not reachable at any measured budget
+  the declared window (14 days) is not reliably reachable — window 14 is not reliably reachable at any measured budget — the best any of 3, 6, 10 units managed is 0 of 5 seeded searches on the board — so the recommendation is the deepest window that is: 6 units puts every seeded search on the board and its winner ($1,015,335.60) is within 1% of the best winner at any larger measured budget ($1,015,288.85). K=2 is the smallest prefix of seeds 42..46 whose winner is within 1% of the full set's

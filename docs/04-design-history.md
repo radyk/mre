@@ -14473,3 +14473,127 @@ them came back GREEN — the live-path tests could not see either branch, and a
 negative control that does not go red is the finding. `audit_incumbent` had no
 tests at all before this session. Narrative and the measurement table in
 `docs/closeouts/4B.25.md`.
+
+### 2026-08-01 — R-CAL1: CALIBRATION IS MEASURED, OFFERED, AND DECLARED (Session 4B.29)
+
+4B.26 measured the demo board's knee — cold portfolio value $578 at 6.0
+deterministic units per member and $460,014.78 at 10.0, the empty-board hazard
+clearing between them, K=3 taking the whole of K=5's gain wherever the gain is
+material — and closed with a recommendation to ship K=3 AND 10.0 units as one
+change. Half of that is ruled here and half of it is deliberately not.
+
+**THE HALF THAT SHIPS: K=3 AT THE MAIN SOLVE, AT THE UNCHANGED 6.0-UNIT BUDGET.**
+`SolveRequest.portfolio_k` defaults to 3. This is **PUBLICATION INSURANCE, NOT
+OPTIMIZATION**: at 6.0 units it buys about $578 on the demo board, which is
+0.027% of ledger and nothing a planner would act on. What it buys is that the
+board publishes at all. 4B.26 measured **two of five seeds returning an EMPTY
+BOARD** at the shipped default, and measured that WHICH two is a property of
+(board x budget) rather than of the seed — so there is no good seed to pick in
+advance and K=1 is a single point of failure with a ~40% miss rate at that
+density. K=1 remains fully requestable: it is a declared coefficient (R-BK1
+clause 2), not a policy, and it is what the two pinned worlds are minted with.
+
+**THE HALF THAT DOES NOT: THE BUDGET.** 10.0 units is the DEMO BOARD's knee. The
+control board in the same sweep does not want a bigger budget at all — it wants a
+different window, and no budget rescues its fourteen-day arm. Shipping 10.0
+universally would be fitting one board, which is the seed-44 mistake one level
+up: a number measured once, generalized by hope. **The per-member budget rises
+per plant, when that plant's own calibration says so, and never before.**
+
+**WHAT GENERALIZES IS THE PROCEDURE.** 4B.26 itself, run as a ceremony per plant
+(`python -m mre.calibrate`), producing a `CalibrationProfile` governed by four
+rules:
+
+**(1) A PROFILE IS MEASURED, NEVER AUTHORED.** Every cell in its grid is solver
+output. Hand-editing one is the hidden-weight defect wearing a config file: a
+coefficient with no measurement behind it, presented as though it had one. The
+file carries a **DIGEST OF ITS OWN GRID**, recomputed on load, and a profile
+whose digest does not match is REFUSED rather than used — the discipline the
+provenance sidecar puts on an `observed` attribute. The digest covers the
+MEASUREMENT (coefficients, status, ledger, deterministic time, publishability)
+and deliberately not the bookkeeping (`measured_at`, `source`), so re-importing a
+row measured by an earlier session is allowed and is never anonymous.
+
+**(2) A PROFILE IS OFFERED, NEVER AUTO-APPLIED.** The ceremony emits it; a human
+accepts it, by name. This is the promotion-pipeline precedent (4A.5c): a clean
+dossier still crosses a human signature, because the dossier is the application
+and the review is the decision. Until accepted, solves run product defaults and
+the certificate says an unaccepted profile exists. **THE CALLER ALWAYS WINS** — a
+request that declared its own K or budget gets what it asked for, and the
+certificate says the profile did not override it.
+
+**THE WINDOW IS NEVER OFFERED.** A window decides which work is on the board; it
+is what a planner asked to SEE, not a coefficient of how hard we look. Silently
+re-cutting the horizon to the calibrated one would answer a question nobody
+asked. What the certificate DOES carry is the calibrated window beside the solved
+one, because mid170 is the specimen: same world, same budget, 5 of 5 at ten days
+and 0 of 5 at fourteen.
+
+**(3) AN ACCEPTED PROFILE IS DECLARED.** The certificate names the calibrated
+coefficients, the calibration date and the instrument, on every solve that used
+them. **AN ABSENT OR UNREADABLE PROFILE IS STATED, NOT SILENT** — the
+no-derate-declared precedent (4B.6a CU2(d)). A plant running on product defaults
+is TOLD it is running on product defaults, because "we measured this" and "nobody
+has measured this yet" are different facts and a planner cannot otherwise tell
+them apart. `unreadable` is its own state, never folded into `absent`: a claim
+about our calibration must never be manufactured from a fact about our storage
+(4B.18).
+
+**(4) THE PROFILE'S SCOPE IS THE FACILITY.** The facility is the planning unit
+(the 4B.10 partition ruling); a coefficient calibrated across two facilities is
+calibrated for neither. One submission spanning facilities gets one profile per
+facility — and until the solve itself partitions, a multi-facility submission is
+**REFUSED calibration by name** rather than given one profile wearing two plants'
+evidence.
+
+**THE KNEE IS A STATED RULE, NOT A VIBE.** The recommended budget is *the
+smallest measured budget at which (i) every seeded search published a board and
+(ii) its winning ledger is within a declared tolerance (default 1%) of the best
+winner at any LARGER measured budget.* Condition (ii) is vacuously true at the
+largest measured budget, which is the rule's own limit stated rather than hidden:
+a knee is the smallest budget as good as anything MEASURED above it, never a
+claim about budgets nobody ran. **Where no budget satisfies (i), that is a
+FINDING** — "this window is not reliably reachable at any measured budget" — and
+the profile then recommends the deepest window that IS, naming the one it gave up
+on. The recommended K is derived the same way, off the same grid: members are
+consecutive seeds, so the K-member portfolio of a measured arm IS the first K of
+its seeds, and the rule is the smallest prefix whose winner is within tolerance
+of the full set's. **K is floored at 2** — where one seed captures all the value
+the second member is not buying a cheaper board, it is buying R-BK1 clause (4)'s
+spread sentence, and the profile says so rather than letting an argument wear a
+measurement's clothes.
+
+**THE COEFFICIENTS ARE PRODUCT-SIDE, NOT IDS, AND THAT IS A DECISION.** K, the
+per-member deterministic budget and the window are facts about OUR SEARCH — how
+long our solver looks and how many times. A plant cannot declare them because a
+plant does not have them. Contrast the coarse zone's rho (docs/06 §5.9): a
+capacity derate is a fact about the PLANT, so it is a declared IDS coefficient
+and pays the §8 pipeline-proof chain. **Nothing in a calibration profile reaches
+the model, the objective or the ledger** — a profile changes only how hard we
+look, never what we are looking for. **No docs/06 doorway is owed**, and this
+paragraph is the record of that call rather than an omission.
+
+**DRIFT.** Under an ACCEPTED and APPLIED profile, a solve whose portfolio put
+fewer than K searches on the board raises `CALIBRATION_DRIFT` (finding code 20,
+ADDED never repurposed; INFO / `proceeded_flagged`) and carries it on the
+certificate. The solve still publishes the best available member — a schedule the
+planner can use is worth more than a clean certificate, and the no-derate
+precedent already settled that absence is loud but not a gate verdict change. It
+fires ONLY under an accepted profile: a plant on product defaults has no promise
+to drift from, and reporting drift there would turn an uncalibrated plant into a
+broken one. It is not `SOLVER_NONOPTIMAL` (a claim about the proof of this board)
+and not `DENSITY_LIMIT` (a claim about the plant): it is a claim about OUR OWN
+COEFFICIENTS having gone stale against a book that has moved.
+
+**Contract 1.13 -> 1.14** — `solver.calibration` (`CalibrationBlock`). Unlike
+`portfolio` it is PRESENT when the answer is "no": an absent profile is a fact
+worth stating. What is absent by construction is the block on a document whose
+assembler was given no lookup at all — every module-level assembly, which is why
+no golden moved.
+
+Guard: `tests/test_calibration.py` (76 tests, three premise classes including a
+REAL starved portfolio whose members genuinely come back empty and a REAL solve
+under an accepted profile that drifts, and **two negative controls proven red
+against physically reverted code**: the knee's condition (i) dropped, and
+drift's accepted-state gate dropped). Narrative, both measured
+profiles and the knee tables in `docs/closeouts/4B.29.md`.

@@ -687,6 +687,8 @@ async function boot() {
       // keeps access with `?feel=1` (sticky per tab, `?feel=0` to clear).
       wireInteraction(id, board, window.__cockpit, {
         doc, devMode: !!import.meta.env?.DEV && feelTuningEnabled(), onSuperseded,
+        // 4B.29 Item 1(d): the deeper search's SCALE, worded server-side.
+        searchDeeperScale: (meta && meta.search_deeper) || null,
         // Session 4B.5 CU2: a priced delta card is the TOP of the ask panel's
         // resolution ladder. The controller publishes the card's own content
         // when one lands and null when it is dismissed / accepted / returned

@@ -853,7 +853,7 @@ export function createGestureController(board, geometry, opts) {
   function searchDeeper(opts = {}) {
     if (!api.postAudit) return Promise.resolve(null);
     S.audit = { running: true, result: null, error: null };
-    card.showSearching();
+    card.showSearching(opts.searchDeeperScale || null);
     return api.postAudit(scheduleId, opts).then((res) => {
       S.audit = { running: false, result: res, error: null };
       card.showAudit(res);

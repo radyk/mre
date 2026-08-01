@@ -914,3 +914,13 @@ fallbacks:
       shape, not a data defect — the data may be perfectly accurate about
       a genuinely hard plant.
     note_version: 1
+
+  - finding_code: CALIBRATION_DRIFT
+    remediation_applies: false
+    rationale: >
+      This plant's accepted calibration promised K seeded searches at a
+      measured budget and fewer of them produced a board. It is a fact
+      about OUR search coefficients having gone stale against a book that
+      has moved, not about your files — there is nothing in the submission
+      to fix. The remedy is to re-run the calibration ceremony.
+    note_version: 1

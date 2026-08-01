@@ -118,7 +118,7 @@ finding severity now derives from the DISPOSITION (`finding_severity`). A
 still degrading the grade to CONDITIONALLY ACCEPTED — the two axes agree instead
 of contradicting.
 
-**Finding codes (19), grouped by pipeline layer of origin:**
+**Finding codes (20), grouped by pipeline layer of origin:**
 
 *Adapter (ERP-shape):*
 `MISSING_REFERENCE` · `UNMAPPABLE_VALUE` · `AMBIGUOUS_SOURCE` · `MALFORMED_FIELD` · `DUPLICATE_IDENTITY` · `IDENTITY_CHANGED`
@@ -127,7 +127,25 @@ of contradicting.
 `TEMPORAL_IMPOSSIBILITY` · `PAST_DUE_AT_INTAKE` · `NO_CAPABLE_RESOURCE` · `ORPHAN_ENTITY` · `VALUE_OUT_OF_RANGE` · `STATISTICAL_OUTLIER` · `PROVENANCE_GAP` · `LOW_CONFIDENCE_INPUT`
 
 *Planning / Solve:*
-`BATCH_CONFLICT` · `INFEASIBLE_SUBSET` · `HORIZON_EXCEEDED` · `SOLVER_NONOPTIMAL` · `DENSITY_LIMIT`
+`BATCH_CONFLICT` · `INFEASIBLE_SUBSET` · `HORIZON_EXCEEDED` · `SOLVER_NONOPTIMAL` · `DENSITY_LIMIT` · `CALIBRATION_DRIFT`
+
+`CALIBRATION_DRIFT` (added 2026-08-01, R-CAL1 rule (3)): this plant has an
+**accepted calibration profile** and the solve did not get what that profile
+measured — fewer than K of its K seeded searches produced a publishable board at
+the calibrated per-member budget. **INFO severity, `proceeded_flagged`
+disposition, never an exclusion and never a grade change**: the solve completes
+on the best available member (R-BK1 clause 1) and the finding recommends
+re-running the ceremony.
+
+It exists because the two adjacent codes make different claims. `SOLVER_NONOPTIMAL`
+is about the PROOF of this board — we found a schedule and could not prove it
+optimal. `DENSITY_LIMIT` is about the PLANT — a structural concentration that will
+be hard to solve. `CALIBRATION_DRIFT` is about OUR OWN COEFFICIENTS: the numbers
+were measured against a book that has since moved, and the remedy is a
+re-measurement rather than anything a planner does to the data. It fires only
+under an ACCEPTED profile, because a plant running product defaults has no
+promise to drift from and reporting drift there would turn an uncalibrated plant
+into a broken one.
 
 `PAST_DUE_AT_INTAKE` (added 2026-07-28, R-PD1): a Demand whose declared due
 date is already behind the reference date when planning starts. **INFO severity,

@@ -74,6 +74,12 @@ FINDING_PHRASING: dict[str, str] = {
     "HORIZON_EXCEEDED": "runs past the end of the planning horizon",
     "SOLVER_NONOPTIMAL": "was scheduled before the solver could prove the best plan",
     "DENSITY_LIMIT": "is in a workload too dense to schedule cleanly",
+    # R-CAL1 (4B.29). The subject of this finding is the PLANT, not an order, so
+    # the phrase is about our own search rather than about the thing it names —
+    # "was scheduled by fewer searches than this plant's calibration measured"
+    # would read as a fact about the order. What went stale is our coefficients.
+    "CALIBRATION_DRIFT": ("is on a board whose searches came up short of what "
+                          "this plant's calibration measured"),
 }
 
 

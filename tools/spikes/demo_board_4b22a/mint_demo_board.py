@@ -123,9 +123,16 @@ def main(argv=None) -> int:
         print("REJECTED submissions never solve.", file=sys.stderr)
         return 1
 
+    # K=1, PINNED EXPLICITLY (Session 4B.29 Item 1(b)). The product default
+    # became 3, and `rolling-c9973708-865` is a REGISTERED ARTIFACT minted from
+    # ONE seeded search: a K=3 rebuild would legitimately publish a different
+    # board (best of three, not seed 42's), so this command would stop
+    # reproducing the board its own docstring says it reproduces. The flip
+    # changes FUTURE solves; it does not retroactively re-mint the demo board.
     req = {"policy": "identity_v1", "deterministic": True, "sliced": True,
            "window_days": args.window_days, "frozen_days": args.frozen_days,
            "time_limit": WALL_CEILING_S, "coarse": True,
+           "portfolio_k": 1,
            "reference_date": REF}
     print(f"solving sliced (window={args.window_days}d "
           f"frozen={args.frozen_days}d, deterministic, coarse) ...")

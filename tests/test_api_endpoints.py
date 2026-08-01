@@ -177,7 +177,7 @@ class TestScheduleDocument:
     def test_document_validates_against_contract(self, api):
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
         parsed = ScheduleDocument.model_validate(doc)
-        assert parsed.contract_version == "1.13"
+        assert parsed.contract_version == "1.14"
         assert parsed.schedule_id == api.schedule_id
         assert parsed.run_id == api.run["id"]
         assert parsed.solver.deterministic is True
@@ -227,7 +227,7 @@ class TestScheduleMeta:
     def test_meta_joins_the_certificate_grade(self, api):
         meta = _data(api.client.get(f"/schedules/{api.schedule_id}/meta"))
         assert meta["id"] == api.schedule_id
-        assert meta["contract_version"] == "1.13"
+        assert meta["contract_version"] == "1.14"
         assert meta["grade"] == "ACCEPTED"
         assert meta["costing_grade"] == "C1"
         assert meta["submission_id"] == api.submission["submission_id"]
@@ -283,7 +283,7 @@ class TestScheduleInteraction:
         data = _data(api.client.get(
             f"/schedules/{api.schedule_id}/interaction"))
         assert data["schedule_id"] == api.schedule_id
-        assert data["contract_version"] == "1.13"
+        assert data["contract_version"] == "1.14"
         block = InteractionBlock.model_validate(data["interaction"])
         # one entry per scheduled op, each with its eligible set + the graph
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
@@ -685,8 +685,13 @@ class TestRollingSolve:
 
         solve = _data(client.post(
             f"/submissions/{sub['submission_id']}/solve",
+            # K=1, pinned (4B.29 Item 1(e)): this test is not about the
+            # portfolio, and the product default of 3 would triple its wall for
+            # no coverage. The default itself is exercised by
+            # tests/test_calibration.py and by the Item 5(a) fresh mint.
             json={"sliced": True, "window_days": 10, "frozen_days": 1,
-                  "time_limit": 10, "deterministic": True, "sync": True},
+                  "time_limit": 10, "deterministic": True, "sync": True,
+                  "portfolio_k": 1},
         ), status=202)
         run = _data(client.get(f"/runs/{solve['run_id']}"))
         assert run["status"] == "succeeded", run.get("error")
@@ -694,7 +699,7 @@ class TestRollingSolve:
 
         sid = run["result"]["schedule_id"]
         doc = _data(client.get(f"/schedules/{sid}"))
-        assert doc["contract_version"] == "1.13"
+        assert doc["contract_version"] == "1.14"
         assert doc["rolling"] is not None
         r = doc["rolling"]
         # the sliced world: committed + active bars, and a populated tray.
@@ -774,8 +779,10 @@ def rolling_api(tmp_path_factory):
     assert sub["grade"] in ("ACCEPTED",)
     solve = _data(client.post(
         f"/submissions/{sub['submission_id']}/solve",
+        # K=1, pinned (4B.29 Item 1(e)) — see the note above.
         json={"sliced": True, "window_days": 14, "frozen_days": 3,
-              "time_limit": 10, "deterministic": True, "sync": True},
+              "time_limit": 10, "deterministic": True, "sync": True,
+              "portfolio_k": 1},
     ), status=202)
     run = _data(client.get(f"/runs/{solve['run_id']}"))
     assert run["status"] == "succeeded", run.get("error")
@@ -803,7 +810,7 @@ class TestRollingTwoBeatAPI:
 
     def test_served_document_is_rolling_with_interaction(self, rolling_api):
         doc = _data(rolling_api.client.get(f"/schedules/{rolling_api.schedule_id}"))
-        assert doc["contract_version"] == "1.13"
+        assert doc["contract_version"] == "1.14"
         assert doc["rolling"] is not None
         assert doc["rolling"]["beyond_horizon"], "empty tray"
         # the split-endpoint interaction payload is served for the active window

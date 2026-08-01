@@ -1,0 +1,23 @@
+CALIBRATION PROFILE  cal-SyntheticERP_vGen__F001-1785616433
+  plant      SyntheticERP vGen::F001  (facility F001)
+  measured   2026-08-01T20:33:53.516785+00:00 by mre.calibrate/1
+  seeds      [42, 43, 44, 45, 46]
+  grid       25 cells, digest ec5ffcef9009f423...
+  wall       5 cell(s) measured here: projected 2200s, actual 991s
+  accepted   NO (rule 2 — offer only)
+
+THE GRID
+  window  budget             42            43            44            45            46   pub
+  -------------------------------------------------------------------------------------------
+      10       3      2,127,483     2,164,599       UNKNOWN       UNKNOWN     2,126,904   3/5
+      10       6      2,127,483     2,164,607       UNKNOWN       UNKNOWN     2,126,184   3/5
+      10       8      2,135,370     1,801,223       UNKNOWN       UNKNOWN     2,126,184   3/5
+      10      10      2,135,370     1,801,223     1,667,468     2,018,597     2,087,719   5/5
+      10      15      1,790,405     1,801,223     1,667,468     2,013,491     2,087,719   5/5
+
+THE KNEE RULE
+  the smallest measured budget at which (i) every seeded search published a board and (ii) its winning ledger is within 1% of the best winner at any LARGER measured budget
+
+RECOMMENDATION
+  window 10 days, 10 deterministic units per search, K=3; 5 of 5 seeded searches published at this budget; at 8 units 3 of 5 did
+  10 units puts every seeded search on the board and its winner ($1,667,467.80) is within 1% of the best winner at any larger measured budget ($1,667,467.80). K=3 is the smallest prefix of seeds 42..46 whose winner is within 1% of the full set's

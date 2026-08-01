@@ -138,7 +138,7 @@ class DriverCode(str, Enum):
 
 
 class FindingCode(str, Enum):
-    """Finding codes. 19 total, grouped by pipeline layer of origin per docs/02 §4.3."""
+    """Finding codes. 20 total, grouped by pipeline layer of origin per docs/02 §4.3."""
     # Adapter (ERP-shape)
     MISSING_REFERENCE = "MISSING_REFERENCE"
     UNMAPPABLE_VALUE = "UNMAPPABLE_VALUE"
@@ -175,6 +175,16 @@ class FindingCode(str, Enum):
     HORIZON_EXCEEDED = "HORIZON_EXCEEDED"
     SOLVER_NONOPTIMAL = "SOLVER_NONOPTIMAL"
     DENSITY_LIMIT = "DENSITY_LIMIT"
+    # ADDED, NEVER REPURPOSED (Session 4B.29, R-CAL1 Item 4). This plant's
+    # ACCEPTED calibration promised K publishable seeded searches at the
+    # calibrated budget and fewer arrived. It is not SOLVER_NONOPTIMAL (that is
+    # a claim about the proof of THIS board) and not DENSITY_LIMIT (that is a
+    # claim about the plant's load): it is a claim about our own COEFFICIENTS
+    # having gone stale against a book that has moved. Severity INFO,
+    # disposition PROCEEDED_FLAGGED, never an exclusion and never a grade
+    # change — the solve completes on the best available member (R-BK1) and the
+    # finding recommends re-running the ceremony.
+    CALIBRATION_DRIFT = "CALIBRATION_DRIFT"
 
 
 class FindingSeverity(str, Enum):

@@ -261,6 +261,13 @@ def register(base: str, submission: Path, poll_timeout_s: float) -> int:
         "sliced": True,
         "window_days": WINDOW_DAYS,
         "frozen_days": FROZEN_DAYS,
+        # K=1, PINNED EXPLICITLY (Session 4B.29 Item 1(b)). The product default
+        # became 3; the pinned exam world `rolling-c362baa4-1b0` is a K=1
+        # artifact and this command exists to REPRODUCE it. Under K=3 it would
+        # publish the best of three seeded searches — a legitimate board and a
+        # different one — and the exam bank's expectations are calibrated
+        # against the K=1 board.
+        "portfolio_k": 1,
         # SolveRequest.time_limit becomes build_rolling_view's member_time_limit_s
         # — the WALL ceiling, not the budget. The API's own det_total (6.0) is what
         # stops this solve, so it is the same world and window as the harness

@@ -29,6 +29,8 @@ from mre.contracts.schedule_document import (
     AssignmentBlock,
     BeyondHorizonItem,
     CalendarWindow,
+    CalibrationBlock,
+    CalibrationDriftBlock,
     Chunk,
     CoarseBucket,
     CoarseDensityCell,
@@ -497,6 +499,36 @@ def _coarse_placements_by_demand(zone: Any) -> dict:
     return out
 
 
+def _calibration_block(status: Any) -> Any:
+    """R-CAL1 rule (3) — the certificate's view of this plant's calibration.
+
+    None in and None out: an assembler that was handed no lookup has no answer
+    to report, and inventing an ``absent`` block there would claim a search
+    nobody performed. Every other state — including "nobody has measured this
+    plant" — produces a block, because the whole point of the rule is that a
+    plant running on product defaults is TOLD it is.
+    """
+    if status is None:
+        return None
+    drift = getattr(status, "drift", None)
+    return CalibrationBlock(
+        state=status.state, sentence=status.sentence,
+        plant_key=status.plant_key, profile_id=status.profile_id,
+        calibrated_at=status.calibrated_at,
+        instrument_version=status.instrument_version,
+        applied=dict(status.applied or {}),
+        window_calibrated=status.window_calibrated,
+        window_solved=status.window_solved,
+        drift=(CalibrationDriftBlock(
+            k=drift["k"], publishable=drift["publishable"],
+            missing=drift["missing"], det_total=drift["det_total"],
+            unpublished_seeds=list(drift.get("unpublished_seeds") or []),
+            profile_id=drift.get("profile_id") or "",
+            calibrated_at=drift.get("calibrated_at"),
+            sentence=drift.get("sentence") or "") if drift else None),
+    )
+
+
 def assemble_rolling_document(
     *,
     plant: Any,
@@ -506,6 +538,7 @@ def assemble_rolling_document(
     identity_map: Any = None,
     coarse_zone: Any = None,
     portfolio: Any = None,
+    calibration: Any = None,
 ) -> ScheduleDocument:
     """Assemble a contract-1.9 rolling document from a PreparedPlant + a
     RollingView (rolling_horizon.build_rolling_view). ``plant`` and ``view`` are
@@ -520,7 +553,15 @@ def assemble_rolling_document(
     ``rolling_horizon.solve_rolling_portfolio``. It is None at K=1 — the default
     — and a K=1 portfolio is DELIBERATELY not declared: no block is emitted, so
     a single-seed board is byte-identical to its pre-1.13 self apart from the
-    version string (R-BK1 clause 2)."""
+    version string (R-BK1 clause 2).
+
+    ``calibration`` (contract 1.14, optional) is a
+    ``contracts.calibration.CalibrationStatus`` — what the solve found when it
+    looked for this plant's measured search coefficients. Unlike ``portfolio``
+    it is emitted even when the answer is "nobody has measured this plant":
+    absence there is a fact worth stating (R-CAL1 rule 3). It is None here ONLY
+    when the caller had no store to consult at all, which is every module-level
+    assembly and therefore every golden."""
     ref = view.reference_origin
     horizon = HorizonBlock(start=ref, end=view.window_end + timedelta(days=21))
 
@@ -700,7 +741,8 @@ def assemble_rolling_document(
                          portfolio=(PortfolioBlock(**portfolio.block())
                                     if portfolio is not None
                                     and getattr(portfolio, "k", 1) > 1
-                                    else None))
+                                    else None),
+                         calibration=_calibration_block(calibration))
 
     return ScheduleDocument(
         contract_version=CONTRACT_VERSION,

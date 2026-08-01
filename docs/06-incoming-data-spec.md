@@ -350,6 +350,17 @@ R-PD1 clause (5) rules that **AGE IS NOT LATENESS**: a demand past due beyond a 
 
 Until all six exist, the honest position is that the plant is told nothing about the age of its backlog, and that silence is deliberate. Carried in docs/07 §5a.28.
 
+
+**THE CALIBRATION COEFFICIENTS ARE NOT IDS COEFFICIENTS, AND THIS ENTRY EXISTS SO THAT IS A DECISION RATHER THAN AN OMISSION (R-CAL1, Session 4B.29, 2026-08-01).**
+
+Session 4B.29 introduced a per-plant **calibration profile** carrying three coefficients — the portfolio size **K**, the **per-member deterministic budget**, and the **window** the calibration was measured at. They are declared, they are provenance-bearing, they are printed on the certificate, and they are **not** part of the IDS. No `cost_model.json` key is added and **no §8 pipeline-proof chain is owed**.
+
+The line is the one this section already draws everywhere else. `capacity_derate` (§5.9 above), `earliness_value` (R-SC3(3)) and `past_due_age_threshold_days` are all **facts about the PLANT** — how much capacity it will hold back, what earliness is worth to it, when it considers a record stale. Only a human at the plant can state them, which is exactly why they are declared coefficients and why an undeclared plant is never given an invented value.
+
+K, the per-member budget and the window are **facts about OUR SEARCH**: how many times our solver looks and for how long. A plant cannot declare them because a plant does not have them — it has no opinion on how many seeded CP-SAT runs we should spend, and asking for one would be asking a customer to configure our implementation. They are measured by us, on that plant's own data, and offered back for a human to accept (R-CAL1 rule 2).
+
+The test that keeps this line honest: **nothing in a calibration profile reaches the model, the objective or the ledger.** A profile changes only how hard we look and how many times — never what we are looking for. The moment a calibrated coefficient could change what a schedule COSTS rather than how long it takes to find one, it becomes a business judgment and this entry is wrong. Carried in docs/07 §5a.108; ruled verbatim in docs/04 (2026-08-01).
+
 ### 5.10 customers.csv (optional*, doorway)
 customer_id ✓ · name · priority_class ✓ (→ priority_multipliers) · notes. Order-level priority interacts per manifest `priority_precedence`.
 

@@ -63,11 +63,36 @@ from typing import Callable, Optional, Sequence
 
 # --- declared coefficients (clause 2) --------------------------------------
 
-#: THE DEFAULT IS ONE, AND FLIPPING IT IS DARYN'S CALL. At K=1 not one line of
-#: the solve path behaves differently and no portfolio block is emitted, which
-#: is what makes clause (2)'s compatibility promise provable by digest rather
-#: than argued.
+#: THE LIBRARY'S DEFAULT IS ONE, AND IT STAYS ONE. At K=1 not one line of the
+#: solve path behaves differently and no portfolio block is emitted, which is
+#: what makes clause (2)'s compatibility promise provable by digest rather than
+#: argued. Every module-level caller — every fixture, every golden, every
+#: baseline — gets this unless it asks for a portfolio, which is why flipping
+#: the PRODUCT default below moved no golden.
 DEFAULT_K = 1
+
+#: THE PRODUCT'S DEFAULT IS THREE (Session 4B.29 Item 1). This is the number a
+#: solve arriving through the API gets when the request says nothing.
+#:
+#: IT IS INSURANCE, NOT OPTIMIZATION. At the shipped 6.0-unit budget K=3 buys
+#: about $578 on the demo board — nothing a planner would act on. What it buys
+#: is PUBLICATION: 4B.26 measured two of five seeds returning an EMPTY BOARD at
+#: that budget, and which two is a property of (board x budget) rather than of
+#: the seed, so there is no good seed to pick in advance. K=1 is therefore a
+#: single point of failure with a measured ~40% miss rate at this density; K=3
+#: is three independent draws at the same window.
+#:
+#: THE BUDGET DID NOT MOVE, DELIBERATELY. 4B.26's optimization recommendation
+#: was K=3 AND 10.0 units, and 10.0 is that board's knee — one plant's
+#: calibration, not a law. Shipping it universally would be fitting the demo
+#: board. The budget rises per plant, when that plant's own calibration says so
+#: (R-CAL1), and never before.
+#:
+#: K IS NOT UNIVERSAL INSURANCE and this default does not pretend otherwise:
+#: mid170 at a 14-day window returns nothing at every seed, and no K helps where
+#: the window itself is out of reach. Where the window IS reachable the hazard
+#: is seed-wise, and there K insures.
+PRODUCT_DEFAULT_K = 3
 
 #: The first seed. Members take ``seed0 .. seed0+K-1`` — CONSECUTIVE, so the set
 #: is a function of (seed0, K) and nobody can quietly pick the seed that happens
