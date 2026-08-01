@@ -14597,3 +14597,84 @@ under an accepted profile that drifts, and **two negative controls proven red
 against physically reverted code**: the knee's condition (i) dropped, and
 drift's accepted-state gate dropped). Narrative, both measured
 profiles and the knee tables in `docs/closeouts/4B.29.md`.
+
+
+---
+
+### 2026-08-01 — Session 4B.27: the conversational batch (no new ruling; three
+### meanings widened, and one distinction recorded because it will recur)
+
+Ten measured ask-path defects. Eight fixed, one did not reproduce, one not
+built. No new Intent, no contract change. Narrative in
+`docs/closeouts/4B.27.md`; roadmap §5a.112-113.
+
+**WHY NO RULING.** Every fix here is an instance of a rule already on the books,
+which is itself the finding worth recording: 4B.21's *a count names the
+disposition it counts*, 4B.18's *a fact about our storage is never rendered as a
+fact about the plant*, and R-AI5(8)'s *the parse reports, the dispatch decides*
+between them account for all eight. What this session adds is a distinction
+those rules did not have a name for.
+
+**THE DISTINCTION: A QUANTITY'S SET IS PART OF ITS IDENTITY, AND CLAMPING IS
+PART OF ITS SET.** The delta card's total line and its per-order rows were both
+called "lateness". They are computed as:
+
+    total : sum over EVERY demand of  max(0, l_new) - max(0, l_old)
+    row   : for ONE demand,                l_new  -      l_old
+
+Different sets AND different formulas. The clamp is not a rounding detail: it is
+what makes the total a TARDINESS figure and the row a LATENESS figure, and it is
+why *"no change to lateness"* can sit truthfully beside *"ORD-000040 +1440min"*
+when an order moves a day later and stays inside its slack. 4B.21 ruled that a
+count names the disposition it counts; this is the same rule where the
+disposition is created by an operator (`max(0, ·)`) rather than by a filter, and
+it is the harder case to see because nothing in the code reads like a set
+definition.
+
+The correction matters for the record: this is NOT the floor/controllable split
+(R-PD1 clause 4). A move cannot change the FLOOR at all — the floor is already
+accrued — so a delta card's money is controllable by construction, and anyone
+reaching for R-PD1 to explain this pair will be reaching for the wrong rule.
+
+**A READER GAP AND A RECORDING GAP LOOK IDENTICAL FROM THE ANSWER SURFACE, AND
+THE NAIVE REPAIR IS THE DANGEROUS ONE.** "How long did the solver spend" answered
+*"I don't have the solve's timing recorded"* — true, and for two independent
+reasons. The reader looked for field names the M6 RunContext does not carry;
+AND the rolling `solve_complete` never recorded any timing at all (the
+monolithic path has since `solve_runner` was written). The RunContext beside it
+closes in ~1.4 milliseconds, because it is the REPORTING context and not the
+search. Repairing only the field names — the obvious fix, and the one a reader
+of the old code would make — would have replaced an honest silence with a
+confident 0.0014 seconds for a 400-second search. **Where a surface reports
+nothing, check whether the thing is recorded before fixing how it is read.**
+Third instance of the reader-gap-as-missing-data species (metric rates and the
+input manifest, 4B.18), and the first where the naive repair is worse than the
+gap.
+
+**A CLOSED BOUND OUTRANKS THE SEED.** R-BK1 clause (4) publishes the losing
+members so a planner cannot read the winner as the answer, and this session made
+that reachable from the ask path. Its first version carried the caveat onto a
+board whose cost is PROVED OPTIMAL — telling a planner that another seed "can
+land somewhere quite different" about a schedule nothing can be cheaper than.
+Recorded because the two facts compose in only one direction: a spread is
+evidence about search quality ONLY while the bound is open. On a proved board
+the honest residual claim is about SHAPE (another search might find a
+differently-shaped schedule at the same cost), never about price.
+
+**THREE MEANINGS WIDENED, NO INTENT ADDED (parse prompt v13 -> v14).** `frozen`
+may be asked about one order; `late-order` also owns "tight"; `gap-between` is
+selected by two named orders in a relative-timing question. In all three the
+route existed and its assembler could already answer — the gap was that the
+MEANING named no subject, no synonym, or no cardinality, so the parse never
+handed the route what it needed. A vocabulary-class change would have bought a
+second way to reach an answer we already had. **Widening a meaning is the
+cheaper honest option and should be tried before adding a member.**
+
+**AND THE BOARD'S OWN WORDS ARE A VOCABULARY WE DO NOT CONTROL.** "Tight" is on
+the legend and is drawn by `board.js latenessBand` at `-1440 < lateness <= 0`.
+The obvious route for "why is this tight" was the opener's at-risk analysis
+(slack vs longest step) — a DIFFERENT SET. Answering one for the other would
+have been the category fusion this session exists to fix, committed in the act
+of fixing it. The threshold now lives in one named constant asserted against the
+cockpit source by a guard.
+

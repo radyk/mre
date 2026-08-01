@@ -167,6 +167,9 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Session 4B.27 — the conversational batch**, 2026-08-01 (docs/07 v2.75,
+§5a.112-113; docs/04 2026-08-01; parse prompt **v14**; narrative in
+`docs/closeouts/4B.27.md`). Before it:
 **Session 4B.29 — calibration is the product**, 2026-08-01 (docs/07 v2.74,
 §5a.108-111; docs/04 2026-08-01 R-CAL1 verbatim; narrative in
 `docs/closeouts/4B.29.md`). Before it:
@@ -1046,6 +1049,41 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   append-only. **Read the Amendment log tail before touching any area it covers.**
 - Session close-outs are written to docs/04 and docs/07 — never narrated here.
 
+**THE ASK PATH'S EIGHT, AND NOT ONE NEW INTENT (4B.27, §5a.112).** Ten measured
+defects; **eight fixed, one did not reproduce, one NOT BUILT**. Parse prompt
+**v14** widens three MEANINGS and adds nothing — `frozen` may be asked about ONE
+ORDER, `late-order` also owns "tight", `gap-between` is selected by TWO NAMED
+ORDERS — because in all three the route existed and the assembler could already
+answer. **THE DELTA CARD CALLED TWO QUANTITIES "LATENESS"**: the total is net
+plan tardiness **CLAMPED** (`Σ max(0,l_new)−max(0,l_old)`), the rows are a
+**SIGNED** per-order lateness change, so *"no change to lateness"* beside
+*"ORD-000040 +1440min"* was two true statements in one word — **and it is NOT
+the floor/controllable split, because a move cannot change the floor at all**.
+The bare driver phrase got 4B.21's remedy at its EIGHTH site. **THE SOLVE'S
+TIMING WAS UNRECORDED, NOT UNREAD** — the rolling `solve_complete` never carried
+it (the monolithic one always did) and the M6 RunContext closes in **1.4ms**
+because it is the REPORTING context, so fixing the reader's field names alone
+would have reported 0.0014s for a 400-second search; now two figures, never
+fused (*"10 deterministic units … 416.9 seconds on this machine"*). **R-BK1's
+PORTFOLIO IS REACHABLE FROM THE ASK PATH** (§5a.106(g) discharged) — the seam
+was the dispatch's DOCUMENT ALLOW-LIST, **4B.21 §5a.78's mechanism a second
+time**; live at K=3 it states all three ledgers and the 28.06% spread. **A
+PROVED BOARD GETS A DIFFERENT SENTENCE** — the K=1 caveat's first version told
+the pinned world another seed might find something cheaper, caught in this
+session's own verification. **"TIGHT" IS THE BOARD'S BAND** (`latenessBand`,
+−1440), **NOT the opener's at-risk set** — routing one to the other would have
+been the fusion class committed while fixing it. **11 of 13 order-taking routes
+DROP a second order** and the remedy is DISCLOSURE at one seam, not eleven
+two-subject assemblers; PRESS-FAST/PRESS-SLOW survived because it comes from the
+EVIDENCE, not the parse. **NOT FIXED (§5a.113):** item 1 (the later-direction
+counterfactual) is NOT BUILT — the machinery exists (`local_price`) but on a
+dense board a later drag is usually a REFUSAL, so the honest answer is dominated
+by refusal branches; item 7 **DID NOT REPRODUCE** (4 probes, all correct) and
+its requested keyword-shape remedy would have been a **deterministic
+classifier**; the tray pre-emption still rewrites a two-order question (now
+disclosed, not answered); the winner's wall (416.9s) EXCEEDS the portfolio's
+(399s); Census A's MACHINE axis is unaddressed; `frozen` is rolling-only.
+
 **Carried qualifications (open, owned):**
 
 - Cloud deploy is verified **in-container**, not **in-cloud**: live `az deployment group
@@ -1216,7 +1254,7 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   of one question) — humble rather than wrong, but distinguishing "one answer
   because I am confused" from "one answer because it IS the answer" needs a
   signal this session does not have.
-  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, ~88k after 4B.25, ~92k after 4B.26, **~96k after 4B.29**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, ~88k after 4B.25, ~92k after 4B.26, ~96k after 4B.29, **~102k after 4B.27**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
   **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
   day-shift restriction answered as C1/C2 "proven end to end" when the item is
   C4 (model-proven, §8 doorway). Caught and pinned; the class stands.

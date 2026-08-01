@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.74 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.75 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.75:** **Session 4B.27 - the conversational batch.** 2026-08-01 (parse prompt v14; no contract change; narrative in `docs/closeouts/4B.27.md`). Ten measured ask-path defects: **eight fixed, one did not reproduce, one not built**. **SEVEN OF THE EIGHT COST NO VOCABULARY CHANGE** - the route existed and the assembler could answer; what was missing was a MEANING, a PARAM or a DOCUMENT. The delta card called **two different quantities "lateness"** (clamped plan tardiness vs signed per-order lateness) and the brief's floor/controllable framing is CORRECTED. The solve's timing was **unrecorded, not unread**, and fixing the reader's field names alone would have reported 1.4ms for a 400-second search. **R-BK1's portfolio is now reachable from the ask path** (§5a.106(g) discharged) - and the K=1 sentence's first version told a PROVED board it might have found something cheaper, caught in this session's own verification. "Tight" is the BOARD's band, **not** the opener's at-risk set. Item 1 (the later-direction counterfactual) is NOT BUILT and item 7 DID NOT REPRODUCE - its requested remedy would have been a deterministic classifier. §5a.112-113.
 
 **v2.74:** **Session 4B.29 - calibration is the product.** 2026-08-01 (R-CAL1 ruled verbatim in docs/04; contract 1.13 -> 1.14; finding code 20; narrative in `docs/closeouts/4B.29.md`). 4B.26 recommended K=3 AND 10.0 units as one change; this session **shipped the K and refused the budget**, because **10.0 is one board's calibration, not a law** - and the control board in the same sweep does not want a bigger budget at all, it wants a different WINDOW. **`SolveRequest.portfolio_k` DEFAULTS TO 3** as PUBLICATION INSURANCE (~$578 of ledger against a measured 2-in-5 chance of an EMPTY BOARD); the per-member budget is UNCHANGED at 6.0 and rises per plant through the new ceremony. **R-CAL1: a calibration profile is MEASURED (sha256 of its own grid, refused if edited), OFFERED (a human signs it, and the caller always wins), DECLARED (present on the certificate even when the answer is 'nobody has measured this plant') and FACILITY-SCOPED.** The coefficients are PRODUCT-SIDE, not IDS - **no docs/06 doorway is owed**, and docs/06 §5.9 now says so from the other side. **THE KNEE IS A STATED RULE** and **TWO PLANTS GAVE TWO ANSWERS**: the demo board wants 10 units / K=3 (condition (i) binds - the **8.0 bisection says NO**, seeds 44/45 still empty), the 170-order control wants 6 units / K=2 (condition (ii) binds - publication never fails) and **its declared 14-day window is out of reach at every measured budget, 15 of 15 cells empty**, so the 'two regimes' framing is CONFIRMED. `CALIBRATION_DRIFT` reports a portfolio that under-delivered against an accepted profile and **the board still publishes**. 5a.108-111.
 
@@ -4700,6 +4702,140 @@ first measured cell is a nicer ceremony and a different one.
 anything. The knee selects by the LEDGER (R-BK1 clause 3), so "10 units is
 better than 6" means cheaper, never closer to optimal — 4B.26 §6(g)'s caveat
 travels unchanged.
+
+
+**§5a.112 — THE CONVERSATIONAL BATCH: EIGHT ASK-PATH DEFECTS, AND NOT ONE
+NEW INTENT (Session 4B.27).** Ten measured defects; eight fixed, one did not
+reproduce, one not built. Narrative in `docs/closeouts/4B.27.md`. **THE THEME:
+seven of the eight fixes cost NO vocabulary change, because the route already
+existed and the assembler could already answer — what was missing was a
+MEANING, a PARAM, or a DOCUMENT.** Paying a vocabulary-class change for any of
+them would have bought a second way to reach an answer we already had. Parse
+prompt **v14** widens three meanings and adds nothing: `frozen` may be asked
+about ONE ORDER, `late-order` also owns "tight", `gap-between` is selected by
+TWO NAMED ORDERS in a relative-timing question.
+
+**THE DELTA CARD CALLED TWO DIFFERENT QUANTITIES "LATENESS" (item 2).** The
+total line is net PLAN TARDINESS, **CLAMPED** — `sum over every demand of
+max(0,l_new) - max(0,l_old)` (sandbox.py:2008) — so movement inside an order's
+slack contributes ZERO. The per-order rows are a **SIGNED** lateness change,
+`l_new - l_old`, not clamped. So *"no change to lateness"* beside
+*"ORD-000040 +1440min"* was never a contradiction: it is exactly what those two
+formulas say when an order moves a day later and stays inside its slack.
+**THE BRIEF'S FRAMING IS CORRECTED — it is NOT floor vs controllable**: a move
+cannot change the FLOOR at all, so the card's money is controllable by
+construction. 4B.21's counts-name-their-disposition ruling, on the time axis.
+Both surfaces re-worded together (the card and the `open-card` read-back) so
+they cannot state one fact two ways. The bare driver phrase on the card got
+4B.21's own remedy at its **EIGHTH** site — *"why:"* -> *"recorded driver:"* —
+and no third mechanism was invented.
+
+**THE SOLVE'S TIMING WAS NOT UNREAD, IT WAS UNRECORDED (item 8), AND THE NAIVE
+REPAIR WOULD HAVE BEEN WORSE THAN THE GAP.** `_explain_solve_time` subtracted
+`timestamp_open`/`timestamp_close` off the M6 RunContext — field names that
+record does not carry — so it always answered *"I don't have the solve's timing
+recorded"*. It was right for a second reason nobody had checked: the MONOLITHIC
+path's `solve_complete` has carried `wall_time_s` since `solve_runner` was
+written and the **ROLLING** path — every board a planner sees — never did, while
+the M6 RunContext beside it closes in about **1.4 MILLISECONDS** because it is
+the REPORTING context and not the search. Fixing only the field names would have
+reported 0.0014s for a 400-second search. Now recorded (`wall_time_s`,
+`det_consumed`, `det_budget`, `wall_truncated`) and read by
+`cost_proof.timing_from_evidence`, off the SAME record and run-selection the
+cost proof uses. **TWO TIMES, NEVER FUSED:** deterministic units are the WORK
+and reproduce anywhere; seconds are this machine's speed. Measured live:
+*"10 deterministic units of work, and that took 416.9 seconds on this machine —
+about 41.7s per unit here"*, plus the member count at K>1.
+
+**R-BK1's PORTFOLIO IS REACHABLE FROM THE ASK PATH (item 10 — §5a.106(g)
+DISCHARGED).** `solve-optimality` already owned *"is this the best schedule you
+found"* and could see only the GAP. It now reads `solver.portfolio` — the seam
+was the dispatch's DOCUMENT ALLOW-LIST, **4B.21 §5a.78's mechanism for the
+second time**. The gap and the spread answer different halves: the gap is the
+limit of the PROOF, the spread is what independent searches actually reached.
+Live at K=3: *"the best of 3 seeded searches, the one at seed 44 ... seed 42
+$2,135,369.63, seed 43 $1,801,222.70, seed 44 $1,667,467.80 ... $467,901.83
+apart — 28.06% — which is far from settled"*. Unpublishable members are NAMED
+(clause 4) and a single number is never called agreement. **AT K=1 THE BLOCK IS
+ABSENT BY CONSTRUCTION and gets its own sentence** — and a **defect this session
+introduced and caught in its own verification**: the first version of that
+sentence told a planner another seed *"can land somewhere quite different"*, and
+the PINNED WORLD, whose cost is PROVED OPTIMAL, printed it. Nothing can be
+cheaper than proved. A proved board now gets a sentence about SHAPE, not price.
+
+**A PROCESS CLAIM IS GATED ON THE PROCESS (item 9).** *"I read what I could"*
+shipped at **ZERO tool calls**. The census found NINE first-person process
+claims in the copy set and **EIGHT ARE CORRECT** — two capability statements,
+two backed by the list that follows, two real wall-clock timeouts, one verifier
+reason, and the line **directly below the defect**, which has ALWAYS been gated
+on `consulted_tools`. That neighbour is what makes the ungated sentence wrong
+rather than vague: the code has always KNOWN whether anything was read.
+
+**"TIGHT" IS THE BOARD'S WORD AND IT IS NOT THE OPENER'S AT-RISK ARITHMETIC
+(item 5).** The census corrected the brief: `board.js latenessBand` draws TIGHT
+at `-1440 < lateness_min <= 0` (within one working day of the due date, not past
+it); the opener's at-risk (slack vs longest step) is a **DIFFERENT SET**.
+Routing the question to at-risk would have answered about a set the bar is not a
+member of — **this session's own defect class, committed in the act of fixing
+it**. `late-order` already computed the arithmetic and only lacked the NAME;
+`TIGHT_BAND_MINUTES` is asserted against the cockpit source by a guard so the
+word and the colour cannot drift.
+
+**A SUBJECT WE HEARD AND CANNOT WEIGH IS NAMED (item 4).** Census:
+`route_params` carries `orders[0]` and `parsed.ref(MACHINE)` is first-or-None,
+so of 13 order-taking routes **11 SILENTLY DROP A SECOND ORDER** and **all 5
+machine-taking routes drop a second machine**; `ParsedQuestion.subjects` is
+uncapped, so the loss is at ONE seam and is not in the parse. **THE REMEDY IS
+NOT ELEVEN TWO-SUBJECT ASSEMBLERS** — most of them genuinely answer about one
+thing — it is DISCLOSURE at the one seam every route passes, defaulting to
+disclose so a route added later inherits it. **WHY THE PRESS-FAST/PRESS-SLOW
+COMPARISON SURVIVED, and it is the mechanism to generalize: it was never carried
+by the parse.** `late-order` states it from the ASSIGNMENT decision's own
+alternative record. A route that DERIVES its counterpart from evidence needs
+nothing from `route_params`; a route that must be TOLD its counterpart gets one
+subject and no signal that there was another.
+
+**§5a.113 — 4B.27's DEBTS (REPORTED, deliberately NOT fixed).**
+**(a) ITEM 1, THE LATER-DIRECTION COUNTERFACTUAL, IS NOT BUILT.** *"can i move
+this job later, maintenance wants the machine"* is still answered with three
+ways to move it EARLIER. The machinery to price a delay EXISTS and is the right
+machinery (`local_price.price_local`, 4B.24), and the parse cost is a meaning
+widening rather than a new intent. **What makes it more than an afternoon:** on
+a dense board a later drag is USUALLY A REFUSAL — both first attempts in this
+session's own drag verification were, one C1/C2 calendar closure and one B1
+collision — so the honest answer is dominated by refusal branches, each needing
+authored copy. A version handling only the priceable case would answer the easy
+question and go quiet on the common one.
+**(b) ITEM 7 DID NOT REPRODUCE.** Four probes at HEAD, in one live conversation
+after an answer citing eleven records: *"what colour is the tray"*, *"hmm what
+about that"* and *"and the weather in oslo"* all reach SYNTHESIS; *"walk me
+through that"* reaches the drill-down. The guard the brief asks for is already
+in force and enforced in the ruled way — `dispatch` branch 2 gates on the
+PARSE'S OWN REPORT (`followup_of is PROVE_IT`), which is R-AI5(8)'s discipline.
+**The requested remedy (show/prove/evidence keyword shapes) is a DETERMINISTIC
+CLASSIFIER and the hard rules forbid one**; adding it to guard a hole that does
+not exist would have been the worse error.
+**(c) THE TRAY PRE-EMPTION STILL REWRITES A TWO-ORDER QUESTION.** The parse now
+returns `gap-between` with BOTH orders (measured), and dispatch branch 0
+overrides it because ORD-000011 is in the tray. The planner is now TOLD the
+second order went unweighed, which is honest, but the relation they asked about
+is still unanswered.
+**(d) THE WINNER'S WALL EXCEEDS THE PORTFOLIO'S.** 416.9s for the winning member
+against 399s for "all 3 together" — both read straight off `solver.portfolio`,
+where member walls include per-process setup and `wall_time_s` is measured
+around the pool. True of the record, confusing on a planner surface.
+**(e) THE THIRD CARD TIME QUANTITY IS STILL UNNAMED** (the moved line's
+`+236min` is a START SHIFT), left because it sits in the detail layer beside the
+move it describes, where the other two sat side by side.
+**(f) CENSUS A's MACHINE AXIS IS UNADDRESSED** — no specimen was measured on it,
+so widening the disclosure there would have been speculative.
+**(g) `frozen` IS ROLLING-ONLY** and nothing says so on a monolithic board.
+**(h) THE PARSE'S CHOICE IS MEASURED, NEVER PINNED** — turn 4's move to
+`late-order` and turn 3's to `gap-between` are model decisions under changed
+meanings; the guards assert the DISPATCH and the ASSEMBLERS.
+**(i) A LONG-LIVED DEV SERVER SERVES OLD CONTRACT VERSIONS SILENTLY** — the
+pre-existing API on port 8000 emitted a contract-**1.12** document for a solve
+requested this session. Everything reported was re-measured on a fresh instance.
 
 
 ## 6. Open rulings queue

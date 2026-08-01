@@ -625,6 +625,97 @@ def _signed_money(v) -> str:
     return f"{'+' if v > 0 else '−'}${abs(v):,.2f}"
 
 
+def _portfolio_clause(kf: dict) -> list[str]:
+    """R-BK1's portfolio, in planner language (Session 4B.27 Item 10).
+
+    Three shapes, and none of them silent:
+
+    * NO BLOCK — K=1, absent by construction (clause 2). The honest fact is that
+      this board is ONE seeded search, and 4B.25 measured why that matters: on
+      this very plant two of five seeds returned an EMPTY BOARD at the shipped
+      budget. A single draw is not a portfolio of one and is not described as
+      agreement.
+    * A SPREAD — several members published and they disagree. The number is
+      stated and so is what it means: far from settled. This is the sentence
+      4B.25 wrote to stop a planner reading the winner as the answer.
+    * NO SPREAD — fewer than two publishable members, so `spread_*` is None and
+      never 0.00 (clause 4, 4B.21's tri-state). Saying "they agreed" here would
+      claim an agreement nobody observed.
+
+    The declaration/agreement/unpublished sentences are the assembler's own,
+    composed server-side; they are quoted, not re-worded, so the certificate and
+    the answer cannot state one fact two ways.
+    """
+    out: list[str] = []
+    if not kf.get("portfolio_present"):
+        out.append("")
+        if kf.get("proved"):
+            # A CLOSED BOUND OUTRANKS THE SEED, and saying otherwise here would
+            # be this session's own defect class: caught on the pinned world,
+            # where the first version of this sentence told a planner that
+            # another seed "can land somewhere quite different" about a board
+            # whose cost is PROVED OPTIMAL. Nothing can be cheaper than proved,
+            # so the single-draw caveat is simply false there. What is still
+            # true — and worth saying — is that OTHER equally-cheap schedules
+            # may exist, which is a claim about shape, not about price.
+            out.append(
+                "And on \"found\": this board came from one seeded search, but "
+                "that doesn't limit the answer here — the bound is closed, so "
+                "no other seed could have found anything cheaper. A different "
+                "search might well have found a differently-SHAPED schedule at "
+                "the same cost.")
+        else:
+            out.append(
+                "And on \"found\": this board came from ONE seeded search, so "
+                "there are no others to compare it with. A different seed can "
+                "land somewhere quite different on a board this size — that is "
+                "measured, not hypothetical — so treat this as one draw rather "
+                "than the best of several.")
+        return out
+
+    k = kf.get("portfolio_k")
+    published = kf.get("portfolio_published") or 0
+    winner = kf.get("portfolio_winner_seed")
+    spread_abs, spread_pct = (kf.get("portfolio_spread_abs"),
+                              kf.get("portfolio_spread_pct"))
+    out.append("")
+    lead = (f"On \"found\": this board is the best of {int(k)} seeded searches"
+            if k else "On \"found\": this board is the best of several seeded "
+                      "searches")
+    if winner is not None:
+        lead += f", the one at seed {winner}"
+    out.append(lead + ".")
+
+    members = kf.get("portfolio_members") or []
+    shown = [m for m in members if m.get("ledger_total") is not None]
+    if shown:
+        rows = ", ".join(
+            f"seed {m['seed']} ${float(m['ledger_total']):,.2f}" for m in shown)
+        out.append(f"What each reached: {rows}.")
+    missing = [m for m in members if m.get("ledger_total") is None]
+    if missing:
+        # Clause (4): an unpublishable member is NAMED, never dropped — dropping
+        # it makes the spread look tighter than the evidence supports.
+        out.append(
+            f"{len(missing)} of them published no board at all "
+            f"({', '.join('seed ' + str(m['seed']) for m in missing)}), so they "
+            f"are not in that comparison.")
+
+    if spread_pct is not None and spread_abs is not None:
+        out.append(
+            # The certificate's own words for this ("far from settled") — one
+            # phrase for one fact, so the board and the answer agree.
+            f"They land ${float(spread_abs):,.2f} apart — "
+            f"{float(spread_pct):.2f}% — which is far from settled: the seed "
+            f"decides more here than the budget does, so read this total as a "
+            f"good one we found, not as the answer.")
+    elif published < 2:
+        out.append(
+            "Only one of them produced a board, so there is no spread to quote "
+            "— I won't call that agreement.")
+    return out
+
+
 def _affected_effect(a: dict) -> str:
     """One affected order's effect, in the card's own vocabulary: its per-Demand
     tardiness dollars and/or its lateness minutes. Never a PRODUCTION figure —
@@ -636,9 +727,13 @@ def _affected_effect(a: dict) -> str:
         bits.append(f"{_signed_money(t)} tardiness")
     lm = a.get("lateness_delta_min")
     if lm:
+        # Session 4B.27 Item 2: this is the order's own SIGNED FINISH SHIFT, not
+        # the clamped plan tardiness the card's total line reports. Naming it
+        # here is what lets the two figures sit beside each other honestly.
         lm = int(lm)
-        bits.append(f"{'+' if lm > 0 else '−'}{abs(lm)} min")
-    return " · ".join(bits) if bits else "no lateness change"
+        bits.append(f"finishes {abs(lm)} min "
+                    f"{'later' if lm > 0 else 'earlier'}")
+    return " · ".join(bits) if bits else "finish unchanged"
 
 
 class TemplateRenderer:
@@ -839,9 +934,23 @@ class TemplateRenderer:
                 span = (f"{round(early / 1440, 1)} days" if early >= 1440
                         else f"{round(early / 60, 1)}h" if early >= 60
                         else f"{early} minutes")
-                lines.append(
-                    f"No — {name} is on time. It finished {span} early "
-                    f"(due {due}).")
+                # Session 4B.27 Item 5 — NAME THE BAND THE PLANNER IS POINTING
+                # AT. A bar inside one working day of its due date is drawn
+                # TIGHT, and "on time, finished 5h early" is a true sentence
+                # that does not answer "why is this one tight". The band comes
+                # from the board's own threshold (`_lateness_band_facts`), so
+                # the word here and the colour on screen are one number.
+                if kf.get("board_band") == "tight":
+                    lines.append(
+                        f"{name} is drawn TIGHT rather than late: it finishes "
+                        f"{span} before its due date ({due}), and anything "
+                        f"landing within a working day of its due date gets "
+                        f"that band. It is not late — it has {span} of room and "
+                        f"no more.")
+                else:
+                    lines.append(
+                        f"No — {name} is on time. It finished {span} early "
+                        f"(due {due}).")
             lines.append("")
 
         elif bundle.subject_type == "run":
@@ -1348,13 +1457,72 @@ class TemplateRenderer:
             lines.append("")
 
         elif bundle.subject_type == "solve_time":
+            # Session 4B.27 Item 8 — TWO TIMES, NAMED, NEVER FUSED.
+            #
+            # The deterministic figure is WORK: reproducible, machine-
+            # independent, and the unit our budget is written in. The wall is
+            # what that work cost on the machine that ran it. A planner asking
+            # "how long did the solver spend" is owed both, because only one of
+            # them is a property of the plan.
             kf = bundle.key_facts
-            secs = kf.get("solve_seconds")
-            if secs is None:
-                lines.append("I don't have the solve's timing recorded for this "
-                             "schedule, so I can't give you a number.")
+            wall, det = kf.get("wall_s"), kf.get("det_consumed")
+            if not kf.get("readable"):
+                lines.append(
+                    "I can't tell you, and the reason is on our side: I can't "
+                    "find this schedule's solve record, so there is no timing "
+                    "to read. That says nothing about the schedule itself.")
+            elif not kf.get("recorded"):
+                lines.append(
+                    "This schedule's solve record doesn't carry its timing — "
+                    "boards built before we started recording it don't have the "
+                    "figures, and I won't estimate them from anything else. "
+                    "Re-solving records them.")
             else:
-                lines.append(f"The solve stage took about {secs:.1f} second(s).")
+                if det is not None and wall is not None:
+                    rate = kf.get("seconds_per_unit")
+                    lines.append(
+                        f"The search did {det:.3g} deterministic units of work, "
+                        f"and that took {wall:.1f} seconds on this machine"
+                        + (f" — about {rate:g}s per unit here." if rate
+                           else "."))
+                    lines.append("")
+                    lines.append(
+                        "Those are different quantities on purpose. The "
+                        "deterministic units are the work itself and reproduce "
+                        "anywhere; the seconds are this machine's speed, and "
+                        "the same search on other hardware takes a different "
+                        "number of them.")
+                elif det is not None:
+                    lines.append(f"The search did {det:.3g} deterministic units "
+                                 f"of work. Its wall time wasn't recorded, so I "
+                                 f"can't tell you what that cost in seconds.")
+                else:
+                    lines.append(f"The search took {wall:.1f} seconds on this "
+                                 f"machine. Its deterministic time wasn't "
+                                 f"recorded, so I can't tell you how much WORK "
+                                 f"that was — only how long it ran here.")
+                budget = kf.get("det_budget")
+                if budget:
+                    lines.append("")
+                    lines.append(f"Its budget was {budget:g} units.")
+                if kf.get("wall_truncated"):
+                    lines.append(
+                        "It was stopped by the clock rather than by that "
+                        "budget, so this particular result isn't reproducible.")
+            # R-BK1: the board is the WINNER of a portfolio. The wall a planner
+            # waited is not the winner's alone, and saying only the winner's
+            # would understate it by the member count.
+            k = kf.get("portfolio_k")
+            if k and int(k) > 1:
+                lines.append("")
+                pw = kf.get("portfolio_wall_s")
+                lines.append(
+                    f"That is the WINNING search. This board was published from "
+                    f"{int(k)} seeded searches, and the figures above are the "
+                    f"one that won"
+                    + (f"; all {int(k)} together took {float(pw):.0f} seconds"
+                       f"{' (run side by side)' if kf.get('portfolio_parallel') else ''}."
+                       if pw else "."))
             lines.append("")
 
         elif bundle.subject_type == "premise_correction":
@@ -1460,6 +1628,16 @@ class TemplateRenderer:
                         "That is a statement about the proof, not about the "
                         "schedule's quality — the plan in front of you places "
                         "every operation it admitted.")
+            # Session 4B.27 Item 10 — THE OTHER SEEDS. "the best schedule you
+            # FOUND" is a question about our search, and since R-BK1 the search
+            # may be several. The gap says how far the PROOF got; the spread
+            # says what independent searches actually reached. Both, or the
+            # answer is half of one.
+            #
+            # Skipped where there is no solve to compare against at all — a
+            # portfolio sentence under "there was no solve" would be noise.
+            if not kf.get("unknown") and not kf.get("no_solve"):
+                lines.extend(_portfolio_clause(kf))
             lines.append("")
 
         elif bundle.subject_type == "machine_count":
@@ -1606,15 +1784,21 @@ class TemplateRenderer:
         from mre.modules.ask_fallback_copy import (
             SYNTHESIS_CITE, SYNTHESIS_FLOOR_DOORS, SYNTHESIS_LEAD, SYNTHESIS_MARK,
             SYNTHESIS_MARK_NO_RECORDS, SYNTHESIS_PARTIAL, SYNTHESIS_UNANSWERABLE,
-            SYNTHESIS_UNANSWERABLE_CONSULTED, SYNTHESIS_UNGROUNDED,
+            SYNTHESIS_UNANSWERABLE_CONSULTED, SYNTHESIS_UNANSWERABLE_NO_TOOLS,
+            SYNTHESIS_UNGROUNDED,
         )
         kf = bundle.key_facts or {}
         claims = kf.get("claims") or []
-        tools = ", ".join(kf.get("consulted_tools") or []) or "nothing"
+        consulted = kf.get("consulted_tools") or []
+        tools = ", ".join(consulted) or "nothing"
 
         if kf.get("unanswerable") or not claims:
-            lines.append(SYNTHESIS_UNANSWERABLE)
-            if kf.get("consulted_tools"):
+            # Session 4B.27 Item 9 — the lead sentence is gated on the SAME fact
+            # the line below it has always been gated on. A read that did not
+            # happen is not described as a read.
+            lines.append(SYNTHESIS_UNANSWERABLE if consulted
+                         else SYNTHESIS_UNANSWERABLE_NO_TOOLS)
+            if consulted:
                 lines.append(SYNTHESIS_UNANSWERABLE_CONSULTED.format(tools=tools))
             # CU3(b) — THE WARM FLOOR. The honest non-answer keeps the doors part
             # 1's bridge offered. Absence-tested: when the dispatch could compute

@@ -448,14 +448,32 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     return `<div class="dc-placement"><b>${wo}</b> → ${(nameOf && nameOf(rid)) || rid}${when ? ` · ${when}` : ""}</div>`;
   }
 
-  // Lateness introduced (+) or recovered (−), as one plain statement.
+  // Session 4B.27 Item 2 — THIS LINE AND THE ROWS BELOW IT REPORT DIFFERENT
+  // QUANTITIES OVER DIFFERENT SETS, and both used to be called "lateness".
+  //
+  //   this line : net PLAN TARDINESS minutes, CLAMPED —
+  //               sum over every demand of max(0,l_new) - max(0,l_old).
+  //               Movement inside an order's slack contributes ZERO.
+  //   the rows  : per-order SIGNED LATENESS change, l_new - l_old, NOT clamped.
+  //
+  // So "no change to lateness" beside "ORD-000040 +1440min" was never a
+  // contradiction — it is exactly what those two formulas say when an order
+  // moves a day later and stays inside its slack. It read as one, because the
+  // heading named the number and not the SET (4B.21's ruling on the time axis).
+  // Each surface now names its own quantity, in its own words.
   function _latenessLine(result) {
     const d = result.lateness_delta_min;
-    if (d == null || d === 0) return `<div class="dc-lateness on-time">no change to lateness</div>`;
+    if (d == null || d === 0) {
+      return `<div class="dc-lateness on-time">no change to plan tardiness `
+        + `<span class="dc-qual">(across every order; an order can still shift `
+        + `inside its slack)</span></div>`;
+    }
     const hrs = (Math.abs(d) / 60).toFixed(1);
     return d > 0
-      ? `<div class="dc-lateness worse">introduces ${hrs}h of lateness</div>`
-      : `<div class="dc-lateness better">recovers ${hrs}h of lateness</div>`;
+      ? `<div class="dc-lateness worse">adds ${hrs}h of plan tardiness `
+        + `<span class="dc-qual">(across every order)</span></div>`
+      : `<div class="dc-lateness better">recovers ${hrs}h of plan tardiness `
+        + `<span class="dc-qual">(across every order)</span></div>`;
   }
 
   // Top-N affected orders, each with its own tardiness ($) + lateness (min)
@@ -474,18 +492,29 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
       const lstr = (l != null && l !== 0)
         ? `${l > 0 ? "+" : "−"}${Math.abs(l)}min` : "";
       return `<div class="dc-order"><span class="dc-wo">${wo}</span>
-        <span class="dc-order-delta">${[tstr, lstr].filter(Boolean).join(" · ") || "no lateness change"}</span></div>`;
+        <span class="dc-order-delta">${[tstr, lstr].filter(Boolean).join(" · ") || "finish unchanged"}</span></div>`;
     }).join("");
-    return `<div class="dc-orders"><div class="dc-orders-h">affected orders — lateness / tardiness impact</div>${rows}</div>`;
+    // Item 2: the header names BOTH quantities and says the minutes are the
+    // order's own FINISH shift — signed, and not the plan tardiness above.
+    return `<div class="dc-orders"><div class="dc-orders-h">affected orders — `
+      + `tardiness $ · finish shift (min, earlier −/later +)</div>${rows}</div>`;
   }
 
   // The dominant driver in plain language, HEDGED where the attribution is by
   // price rank alone (docs/02 §4.2 — EARLINESS_PREFERENCE).
+  //
+  // Session 4B.27 Item 3 — "why:" CLAIMED TO BE THE REASON. It is not: it is
+  // the driver code the DECISION RECORD carries, in planner language, and a
+  // driver phrase alone is a vacuous clause ("the machine was busy with other
+  // work"). 4B.21 censused seven sites and settled the remedy — label the
+  // sentence with what it actually is, so it claims only what is checkable —
+  // and 4B.22 widened it to a sixth. This is the same label on the eighth site
+  // and the most visible one in the product; no third mechanism is invented.
   function _driverLine(result) {
     const d = result.dominant_driver;
     if (!d || !d.phrase) return "";
     const hedge = d.hedge ? ` ${d.hedge}` : "";
-    return `<div class="dc-driver">why: ${d.phrase}${hedge}</div>`;
+    return `<div class="dc-driver">recorded driver: ${d.phrase}${hedge}</div>`;
   }
 
   // The DETAIL layer as a native disclosure — cost decomposition by ledger line

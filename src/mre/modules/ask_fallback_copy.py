@@ -310,10 +310,19 @@ OPEN_CARD_NO_PRICE = (
 )
 OPEN_CARD_AFFECTED_LEAD = "Orders it touches ({n}):"
 OPEN_CARD_AFFECTED_ROW = "  {order} — {effect}"
-OPEN_CARD_AFFECTED_NONE = "No order's lateness or tardiness changes because of it."
-OPEN_CARD_LATENESS_WORSE = "Across the plan it introduces {hours}h of lateness."
-OPEN_CARD_LATENESS_BETTER = "Across the plan it recovers {hours}h of lateness."
-OPEN_CARD_LATENESS_NONE = "Nothing's lateness changes across the plan."
+# Session 4B.27 Item 2 — the read-back names the SAME two quantities the card
+# does, in the same words. These three sentences report NET PLAN TARDINESS
+# (clamped across every demand); the per-order rows above them report a signed
+# FINISH SHIFT. Wording them alike is what made the pair read as a
+# contradiction on a card where both were true.
+OPEN_CARD_AFFECTED_NONE = "No order's finish or tardiness changes because of it."
+OPEN_CARD_LATENESS_WORSE = (
+    "Across every order it adds {hours}h of plan tardiness.")
+OPEN_CARD_LATENESS_BETTER = (
+    "Across every order it recovers {hours}h of plan tardiness.")
+OPEN_CARD_LATENESS_NONE = (
+    "Plan tardiness is unchanged across every order — an order can still shift "
+    "inside its slack without adding any.")
 OPEN_CARD_CONSEQUENCES = "{n} other operation(s) shift to make room."
 OPEN_CARD_CONSEQUENCES_NONE = "Nothing else has to move."
 OPEN_CARD_COMMITTED_SAFE = "No committed work changes."
@@ -394,9 +403,28 @@ SYNTHESIS_PARTIAL = (
     "consulted: {tools}.")
 
 # The floor: nothing survived, or the model could not answer from the evidence.
+#
+# Session 4B.27 Item 9 — A PROCESS CLAIM IS A CLAIM, AND IT IS GATED ON THE
+# PROCESS. "I read what I could" asserts that a read happened. At ZERO tool
+# calls none did, and the sentence shipped anyway: the honesty register stating
+# a false fact about itself, which is worse than a wrong number because it is
+# the sentence a planner uses to calibrate how much to trust the rest.
+#
+# The tell was already on the page. `SYNTHESIS_UNANSWERABLE_CONSULTED` right
+# below has ALWAYS been gated on `consulted_tools` being non-empty, so the code
+# has always KNOWN whether anything was read — the lead sentence simply never
+# asked. Two sentences, one fact, one of them checking it.
+#
+# The zero-tool wording claims nothing about effort. It names the shape of the
+# gap ("no tool of mine reaches that"), which is the actionable half, and it is
+# deliberately NOT an apology for being lazy — the tier genuinely has no tool
+# for a question about the cockpit's own colours, and saying so is correct.
 SYNTHESIS_UNANSWERABLE = (
     "I couldn't answer that one from the evidence. I read what I could and none of "
     "it grounds an answer I'd stand behind, so I'd rather say so than guess.")
+SYNTHESIS_UNANSWERABLE_NO_TOOLS = (
+    "I couldn't answer that one: I don't have a tool that reaches it. Nothing I "
+    "can read holds that, so I'd rather say so than guess.")
 SYNTHESIS_UNANSWERABLE_CONSULTED = "I looked at: {tools}."
 
 # Errand 4B.15a, rider — THE ZERO-TOOL-CALL FLOOR.

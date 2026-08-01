@@ -282,3 +282,75 @@ def from_evidence(index: Any) -> CostProof:
         tiebreak_status=payload.get("tiebreak_status"),
         tiebreak_skipped_reason=payload.get("tiebreak_skipped_reason"),
     )
+
+
+# ---------------------------------------------------------------------------
+# Session 4B.27 Item 8 — WHAT THE SEARCH SPENT
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class SolveTiming:
+    """The two times a solve has, never fused, plus whether we could read them.
+
+    THE DISTINCTION IS THE ANSWER. ``det_consumed`` is WORK — CP-SAT's own
+    deterministic meter, reproducible across machines, and the unit our budgets
+    are denominated in. ``wall_s`` is what that work cost in real seconds on the
+    machine that ran it; 4B.24 measured the exchange rate between them at
+    33.9-77.0 s/unit on this laptop, so quoting one as the other reports
+    HARDWARE as though it were SEARCH.
+
+    ``readable`` is False when no ``solve_complete`` event could be found at all
+    — which is a fact about OUR STORAGE and must never be rendered as a fact
+    about the solve (``CostProof``'s fourth-state discipline, 4B.18).
+    ``recorded`` is False when the event was found and simply carries no timing:
+    every rolling board minted before this session is in that state, and it gets
+    its own sentence rather than being fused with "no solve happened".
+    """
+
+    readable: bool = False
+    recorded: bool = False
+    wall_s: Optional[float] = None
+    det_consumed: Optional[float] = None
+    det_budget: Optional[float] = None
+    wall_truncated: bool = False
+
+    @property
+    def seconds_per_unit(self) -> Optional[float]:
+        """The measured exchange rate for THIS solve, or None. Never assumed."""
+        if not self.wall_s or not self.det_consumed:
+            return None
+        return round(self.wall_s / self.det_consumed, 1)
+
+
+def timing_from_evidence(index) -> SolveTiming:
+    """The solve's timing, off the SAME record and the SAME run selection the
+    cost proof uses — so the two answers can never speak about different solves.
+
+    Never raises. Three outcomes, all of them stated by the caller: unreadable
+    (no event), found-but-untimed (an older board), and the figures.
+    """
+    payload = None
+    try:
+        m6 = sorted((r for r in index.runs() if r.get("module") == "M6"),
+                    key=lambda r: r.get("timestamp_open") or "")
+        run_id = m6[-1].get("run_id") if m6 else None
+        for rec in index.events():
+            if (rec.get("status_text") == "solve_complete"
+                    and (run_id is None or rec.get("run_id") == run_id)):
+                payload = rec.get("payload") or {}
+    except Exception:  # noqa: BLE001 — timing never breaks an answer
+        payload = None
+    if payload is None:
+        return SolveTiming(readable=False)
+    wall = payload.get("wall_time_s")
+    det = payload.get("det_consumed")
+    if wall is None and det is None:
+        return SolveTiming(readable=True, recorded=False)
+    return SolveTiming(
+        readable=True, recorded=True,
+        wall_s=(float(wall) if wall is not None else None),
+        det_consumed=(float(det) if det is not None else None),
+        det_budget=(float(payload["det_budget"])
+                    if payload.get("det_budget") is not None else None),
+        wall_truncated=bool(payload.get("wall_truncated")),
+    )

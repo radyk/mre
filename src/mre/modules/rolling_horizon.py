@@ -957,10 +957,30 @@ def build_rolling_view(
                 # payload on the persisted path, so both proofs must reach it —
                 # otherwise the board would still show one proof under the
                 # other's name.
+                # Session 4B.27 Item 8 — THE SOLVE RECORDS HOW LONG IT TOOK.
+                #
+                # "how long did the solver spend" answered "I don't have the
+                # solve's timing recorded", and it was RIGHT: the monolithic
+                # path's `solve_complete` has carried `wall_time_s` since
+                # solve_runner was written, and this one — the rolling path,
+                # which is every board a planner sees — never did. The M6
+                # RunContext beside it closes in ~1.4ms, because that is the
+                # REPORTING context and not the search.
+                #
+                # Both figures, never fused: the DETERMINISTIC time is the work
+                # the search did (reproducible, the thing our budget is
+                # denominated in) and the WALL is what it cost on this laptop.
+                # 4B.24 measured the exchange rate at 33.9-77.0 s/unit and it is
+                # a property of the machine, so a surface reporting one as the
+                # other would be reporting hardware as if it were search.
                 s_rep.record_event(
                     status_text="solve_complete",
                     payload={"status": solve.status, "objective": solve.objective,
                              "gap": solve.gap,
+                             "wall_time_s": solve.wall_time,
+                             "det_consumed": solve.det_consumed,
+                             "det_budget": det_total,
+                             "wall_truncated": solve.wall_truncated,
                              "earliness_tiebreak": tiebreak,
                              "tiebreak_status": solve.tiebreak_status,
                              "tiebreak_skipped_reason": solve.tiebreak_skipped_reason})

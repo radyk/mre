@@ -242,12 +242,19 @@ class TestVoice:
         # per-Demand tardiness + lateness only — never a PRODUCTION figure per
         # order (the ledger does not roll one; the card's own header says so)
         assert "−$370.83 tardiness" in text
-        assert "+45 min" in text
-        assert "no lateness change" in text        # ORD-41 touches nothing
+        # Session 4B.27 Item 2 — the row's minutes are the order's own SIGNED
+        # FINISH SHIFT, and now say so. They were called "lateness", which is
+        # what the CARD TOTAL reports over a different set and a different
+        # formula (clamped plan tardiness): "no change to lateness" beside
+        # "ORD-000040 +1440min" was two true statements wearing one word.
+        assert "finishes 45 min later" in text
+        assert "finish unchanged" in text          # ORD-41 touches nothing
 
     def test_it_states_the_net_lateness_and_what_else_moved(self, explainer):
         text = self._text(explainer)
-        assert "recovers 1.2h of lateness" in text
+        # Session 4B.27 Item 2: this total is NET PLAN TARDINESS across every
+        # demand, clamped at zero — not the per-order lateness above it.
+        assert "recovers 1.2h of plan tardiness" in text
         # 5 moves in the card's moved-set, one of which IS the dropped op
         assert "4 other operation(s) shift" in text
         assert "No committed work changes." in text

@@ -81,6 +81,21 @@ _CLARIFY_COPY: dict[ClarifyReason, str] = {
 # absence pair) — the dispatch hands them the subject list in the planner's order.
 _TWO_ORDER_INTENTS = frozenset({Intent.SWAP_MOVE, Intent.GAP_BETWEEN})
 
+#: Session 4B.27 Item 4 — the intents that must NOT carry the silent-drop note.
+#:
+#: The two-order routes use both subjects, so there is nothing to disclose. The
+#: plan-wide ones (`late-orders`, `inventory`, the opener…) are about the whole
+#: book and a named order is a filter, not a dropped subject. Everything else
+#: gets the note when it hears more orders than it can weigh — the default is
+#: DISCLOSE, so a route added later inherits the honesty rather than having to
+#: remember it.
+_UNUSED_SUBJECT_INTENTS_EXEMPT = _TWO_ORDER_INTENTS | frozenset({
+    Intent.LATE_ORDERS, Intent.INVENTORY, Intent.LATENESS_CAUSE,
+    Intent.EXCLUDED_ORDERS, Intent.BRIEFING, Intent.SCHEDULE,
+    Intent.CUSTOMER_SCHEDULE, Intent.INTEGRITY_CHECK, Intent.DATA_PROBLEMS,
+    Intent.UNKNOWN_ENTITY, Intent.PROVE_IT, Intent.DRILL_DOWN,
+})
+
 #: Session 4B.14 Item 5(d) — the intents whose answer is about ONE OPERATION, and
 #: therefore the only ones that may read the board selection's operation scope.
 #: Kept narrow deliberately: a selection that could re-scope `downtime` or
@@ -393,6 +408,24 @@ def _subject_note(parsed: ParsedQuestion) -> str:
             bits.append(f"resolved against {s.ref} (from earlier in this conversation)")
         elif s.raw and s.raw.upper() != s.ref.upper():
             bits.append(f"assuming {s.ref}")
+    # Session 4B.27 Item 4 — A SUBJECT WE HEARD AND CANNOT USE IS NAMED.
+    #
+    # "why can't ord-11 start right after ord-19" resolved BOTH orders and was
+    # answered about one, with nothing on the surface saying the other had been
+    # dropped. `route_params` carries `orders[0]` and 11 of the 13 order-taking
+    # routes have no second slot (the census), so this is the shape of every
+    # two-subject question outside `gap-between` and `swap-move`.
+    #
+    # The remedy is not to make eleven assemblers two-subject — most of them
+    # genuinely answer about one thing. It is that a planner must never be left
+    # believing we weighed a relation we never looked at. Computed HERE, at the
+    # one seam every route passes, so no assembler can forget it.
+    if len(_UNUSED_SUBJECT_INTENTS_EXEMPT & {parsed.intent}) == 0:
+        extra = [s.ref for s in parsed.of_kind(SubjectKind.ORDER) if s.resolved][1:]
+        if extra:
+            bits.append(
+                f"answered about the first subject only — {', '.join(extra)} "
+                f"was named too and this route weighs one order at a time")
     if parsed.followup_of is FollowupKind.CORRECTION and parsed.subjects:
         refs = ", ".join(s.ref for s in parsed.subjects if s.resolved)
         if refs:
@@ -470,6 +503,13 @@ def route_params(parsed: ParsedQuestion, question_text: str) -> dict:
         if parsed.intent is Intent.WHY_HERE:
             params["challenge"] = {"kind": parsed.contested_claim.value,
                                    "said": parsed.question}
+    # Session 4B.27 Item 4 — EVERY RESOLVED SUBJECT IS CARRIED, not only the
+    # first. `params["order"]` keeps its exact meaning (the primary subject), so
+    # no existing assembler changes behaviour; this is the channel through which
+    # a route that CAN use a counterpart gets one, and the evidence the
+    # dispatch's silent-drop note is computed from.
+    params["orders"] = list(orders)
+    params["machines"] = list(parsed.refs(SubjectKind.MACHINE))
     if parsed.intent in _TWO_ORDER_INTENTS:
         params["order_a"] = orders[0] if orders else None
         params["order_b"] = orders[1] if len(orders) >= 2 else None
@@ -898,10 +938,28 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
         params = route_params(parsed, parsed.question)
         params["order"] = tray[0].ref
         params["document"] = document
+        # Session 4B.27 Item 4 — THE PRE-EMPTION IS ALSO A DROP, AND SAYS SO.
+        #
+        # This branch REWRITES the intent, so a two-order question ("why can't
+        # ord-11 start right after ord-19", which the parse sends to
+        # `gap-between` with both subjects) arrives at a one-order route about
+        # the tray. The exemption list correctly leaves `gap-between` alone —
+        # that route DOES use both — but the exemption is computed from the
+        # parse's intent, and by here the intent is no longer the one being
+        # answered. Without this the planner is told about ORD-000011 and never
+        # learns ORD-000019 went unweighed, which is the whole defect.
+        others = [s.ref for s in parsed.of_kind(SubjectKind.ORDER)
+                  if s.resolved and s.ref != tray[0].ref]
+        tray_note = note
+        if others and parsed.intent in _UNUSED_SUBJECT_INTENTS_EXEMPT:
+            extra = (f"answered about {tray[0].ref} only — {', '.join(others)} "
+                     f"was named too, and there is no placement for "
+                     f"{tray[0].ref} yet to compare it against")
+            tray_note = f"{note}; {extra}" if note else extra
         return Dispatched(
             Intent.WHY_NOT_SCHEDULED_YET.value,
             explainer.route(Intent.WHY_NOT_SCHEDULED_YET.value, params),
-            note, parsed.question)
+            tray_note, parsed.question)
 
     # 0b — THE OPEN DELTA CARD (Session 4B.5 CU2), ahead of the clarify branch.
     #
@@ -1079,9 +1137,16 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     # the half of it this product CAN answer is the opener's top-ranked item —
     # which lives in the document. Without it the route degrades to the bare
     # intervention refusal it gave before, which is honest but is not the answer.
+    # Session 4B.27 Items 8 and 10: SOLVE_TIME and SOLVE_OPTIMALITY join them.
+    # Both answer questions about OUR SEARCH, and since 4B.25 the search may be
+    # a declared PORTFOLIO whose member ledgers, spread and wall live only in
+    # the document's `solver.portfolio`. Without it "is this the best schedule
+    # you found" can speak about the gap and cannot speak about the other seeds
+    # — and with K=3 the default since 4B.29, that is every new board.
     if parsed.intent in (Intent.WHY_HERE, Intent.CONTESTED_FACT,
                          Intent.WHAT_WOULD_CHANGE, Intent.BRIEFING,
-                         Intent.ADVICE):
+                         Intent.ADVICE, Intent.SOLVE_TIME,
+                         Intent.SOLVE_OPTIMALITY):
         params["document"] = document
     # And the SELECTED OPERATION (Item 5(d)). The board selection carries the
     # operation the planner is pointing at; without it an order-level question

@@ -12,6 +12,7 @@ output offered to a human and then declared on every certificate.
                             [--tolerance-pct 1.0] [--no-resume] [--save]
 
     python -m mre.calibrate --show <plant_key> [--data-root DIR]
+    python -m mre.calibrate --install <profile.json> [--data-root DIR]
     python -m mre.calibrate --accept <plant_key> --by "Daryn Radke"
 
 WHAT IT COSTS IS PRINTED BEFORE IT SPENDS ANYTHING, and the profile records
@@ -85,6 +86,48 @@ def cmd_show(plant_key: str, data_root: Path) -> int:
         print("\nREFUSED: this profile does not match the digest of its own "
               "grid — it was edited after it was measured (R-CAL1 rule 1).")
         return 2
+    return 0
+
+
+def cmd_install(profile_path: Path, data_root: Path) -> int:
+    """Place an ALREADY-MEASURED profile where a solve can find it.
+
+    `--save` is reachable only from inside a measuring run, so a profile that
+    was measured elsewhere and committed (docs/calibration/) had no way into a
+    data root but a hand-written script — which is precisely the shape rule (1)
+    exists to refuse. This is that path, and it verifies the seal on the way in:
+    an edited grid is refused HERE as well as at read and at accept.
+
+    Installing is NOT accepting. The profile lands inert, exactly as `--save`
+    leaves it, and `--accept` remains the only signature (rule 2).
+    """
+    from mre.contracts.calibration import CalibrationProfile
+    from mre.modules.calibration import ProfileStore, render_profile
+
+    if not profile_path.exists():
+        print(f"no such profile: {profile_path}")
+        return 1
+    try:
+        prof = CalibrationProfile.model_validate_json(
+            profile_path.read_text("utf-8"))
+    except Exception as exc:  # noqa: BLE001
+        print(f"REFUSED: {profile_path} is not a readable calibration profile "
+              f"({type(exc).__name__}: {exc})")
+        return 2
+    if not prof.digest_ok():
+        print("REFUSED: this profile does not match the digest of its own grid "
+              "— it was edited after it was measured (R-CAL1 rule 1).")
+        return 2
+    # An accepted profile arriving from a file would carry a signature nobody
+    # gave in THIS data root. Strip it: installing is a copy, never a consent.
+    inert = prof.model_copy(update={
+        "accepted": False, "accepted_by": "", "accepted_at": None})
+    p = ProfileStore(data_root).save(inert)
+    print(render_profile(inert))
+    print(f"\ninstalled at {p}")
+    print("THIS IS AN OFFER, NOT A SETTING (R-CAL1 rule 2). To apply it:")
+    print(f'  python -m mre.calibrate --accept "{prof.plant_key}" '
+          f'--by "<your name>"')
     return 0
 
 
@@ -203,6 +246,9 @@ def main(argv=None) -> int:
                          "(still inert until --accept)")
     ap.add_argument("--notes", default="")
     ap.add_argument("--show", metavar="PLANT_KEY")
+    ap.add_argument("--install", metavar="PROFILE_JSON",
+                    help="place an already-measured profile.json into the data "
+                         "root's store (inert until --accept)")
     ap.add_argument("--accept", metavar="PLANT_KEY")
     ap.add_argument("--by", default="", help="who is accepting (rule 2)")
     a = ap.parse_args(argv)
@@ -211,6 +257,8 @@ def main(argv=None) -> int:
     root = Path(a.data_root)
     if a.show:
         return cmd_show(a.show, root)
+    if a.install:
+        return cmd_install(Path(a.install), root)
     if a.accept:
         if not a.by.strip():
             print("--accept needs --by: rule (2) is a signature, not a flag")

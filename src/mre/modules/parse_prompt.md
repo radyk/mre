@@ -1,6 +1,6 @@
 # Question-parse prompt — a GOVERNED ARTIFACT (R-AI5(1))
 
-    prompt_version: 13
+    prompt_version: 14
     ruling:         R-AI5(1) — every question is parsed FIRST by a language model
                     against a CLOSED intent vocabulary, with the conversation
                     history, live board selection, and last-answered subject as
@@ -229,6 +229,41 @@
                     `INTENT_MEANINGS`, `ROUTE_TAXONOMY`, `ROUTE_OFFERS`, the
                     two assemblers, their authored copy, the predicate-coverage
                     map and this bump, one commit.
+
+    v14:            Session 4B.27 (2026-08-01) — three MEANINGS widened, and NOT
+                    ONE NEW INTENT. All three defects were the same shape: the
+                    route existed, the assembler could answer, and the meaning
+                    did not say enough for the parse to hand it what it needed.
+                    Paying a vocabulary-class change for any of them would have
+                    bought a second way to reach an answer we already had.
+
+                    (a) `frozen` MAY BE ASKED ABOUT ONE ORDER. "ord-11 is not in
+                    the frozen zone, why not?" reached the route correctly and
+                    got a whole-board census — 41 committed, 345 active — with
+                    the named order nowhere in it. The route declared no params
+                    and the meaning named no subject, so the parse extracted
+                    none. The boundary comparison is one line off a contract
+                    field that was always there.
+
+                    (b) `late-order` ALSO OWNS "TIGHT". "tight" is a word the
+                    BOARD puts on a bar (within one working day of its due date,
+                    not past it). "Why is this order tight" went to `why-here`,
+                    which answered about placement and never used the word.
+                    `late-order` already computed the arithmetic — it states the
+                    slack in minutes correctly — and only lacked the name.
+
+                    (c) `gap-between` IS SELECTED BY TWO NAMED ORDERS. "why
+                    can't ord-11 start right after ord-19" went to `why-here`,
+                    which has one order slot, and the second order was dropped
+                    with nothing on the surface saying so. `gap-between` has
+                    slots for both; the meaning now says that naming two orders
+                    in a relative-timing question is what selects it.
+
+                    Item 4's general remedy is NOT here and is deliberately not
+                    a parse change: 11 of the 13 order-taking routes have no
+                    second slot, and most of them genuinely answer about one
+                    thing. The dispatch now DISCLOSES a subject it heard and
+                    cannot weigh, at the one seam every route passes.
 
 ## Review discipline
 

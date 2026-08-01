@@ -60,3 +60,8 @@ _4b22a_scratch/
 # plants). The SCRIPTS are committed, under tools/spikes/portfolio_4b25/, and so
 # are their measurement rows.
 _4b25_scratch/
+# Sessions 4B.26 / 4B.27 / 4B.29 scratch (calibration grids + run dirs; the
+# 4B.27 ask-path census output, conversation harness and drag probes)
+_4b26_scratch/
+_4b27_scratch/
+_4b29_scratch/

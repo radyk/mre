@@ -442,10 +442,21 @@ class ParsedQuestion(BaseModel):
 #: vocabulary's DEFINITIONS: the parse prompt is built from them, so a route added
 #: without a meaning is a parity failure, not a silently-unreachable intent.
 INTENT_MEANINGS: dict[Intent, str] = {
+    # Session 4B.27 Item 5 — AND "TIGHT" IS THE SAME QUESTION.
+    # "tight" is a word the BOARD puts on a bar: it means the order lands within
+    # one working day of its due date without passing it. A planner asking "why
+    # is this one tight" is asking about its position against its due date,
+    # which is this route's own arithmetic — it went to `why-here` instead and
+    # got a placement analysis that never used the word.
     Intent.LATE_ORDER:
         "why ONE order is late (its cause chain) — the order the planner named, "
         "or the one the conversation is already about. A follow-up like \"but "
-        "why\" after one order's cause chain is THIS, not a plan-wide question",
+        "why\" after one order's cause chain is THIS, not a plan-wide question. "
+        "It ALSO owns questions about an order being TIGHT, close to its due "
+        "date, or cutting it fine (\"why is this order tight\", \"why is this "
+        "one so close\") — those ask where the order sits against its due date, "
+        "which is this route's own answer. A question about what is BLOCKING an "
+        "operation from starting earlier is still `why-here`",
     Intent.LATE_ORDERS:
         "which orders are late / how many are late (the whole plan) — the LIST or "
         "the COUNT. NOT \"why are so many late\" (that is `lateness-cause`)",
@@ -535,9 +546,19 @@ INTENT_MEANINGS: dict[Intent, str] = {
     Intent.SWAP_MOVE:
         "should/could two orders swap slots, or one order move earlier / to "
         "another machine (the board gesture)",
+    # Session 4B.27 Item 4 — THE BOUNDARY IS THE NUMBER OF ORDERS NAMED.
+    # "why can't ord-11 start right after ord-19" went to `why-here`, a
+    # single-subject route, which answered about ORD-000011 and dropped
+    # ORD-000019 without a word. This is the route that has slots for both, and
+    # the meaning now says plainly that TWO NAMED ORDERS is what selects it.
     Intent.GAP_BETWEEN:
         "why there is a gap or slack between two jobs on a machine, or why one "
-        "does not run right after another",
+        "does not run right after another. WHENEVER THE QUESTION NAMES TWO "
+        "ORDERS and asks about the timing of one RELATIVE TO THE OTHER — "
+        "\"right after\", \"before\", \"straight after\", \"between them\", "
+        "\"why the wait between\" — this is the intent, and BOTH orders are "
+        "named as subjects, the one being asked about first. A question naming "
+        "one order only is never this",
     Intent.MACHINE_IDLE:
         "why a machine carries no work / sits idle",
     Intent.DATA_PROBLEMS:
@@ -637,9 +658,18 @@ INTENT_MEANINGS: dict[Intent, str] = {
         "why ONE NAMED order is not scheduled yet. Only when the planner names a "
         "specific order — a question about the unscheduled work in general is "
         "`beyond-horizon` (rolling runs)",
+    # Session 4B.27 Item 6 — IT TAKES AN ORDER, and always could. The route
+    # answered a whole-board census to "ord-11 is not in the frozen zone, why
+    # not?" because the meaning named no subject, so the parse extracted none
+    # and the assembler had nothing to be about. The vocabulary cost is paid
+    # here and in the prompt version; no new intent was added, because the
+    # intent was never the missing part.
     Intent.FROZEN:
         "what is frozen / committed / locked in and will not move as the plan "
-        "rolls forward (rolling runs)",
+        "rolls forward (rolling runs). It may be asked about ONE ORDER — \"is "
+        "ORD-000142 frozen\", \"why isn't ord-11 in the frozen zone\", \"is this "
+        "one committed\" — in which case NAME THAT ORDER as the subject; asked "
+        "with no order it is the whole board's committed state",
     Intent.COARSE_FIT:
         "whether known future work FITS — \"will it fit\", \"can we take this "
         "on\", \"is there room for this\", \"can the plant absorb the backlog\". "

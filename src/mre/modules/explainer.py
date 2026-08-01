@@ -83,6 +83,42 @@ _MOVE_MARKERS = ("move ", "put ", "shift ", "relocate", "reassign", "reschedule 
                  "give it an earlier", "give it the earlier")
 
 
+#: Session 4B.27 Item 5 — THE BOARD'S TIGHT BAND, in one place.
+#:
+#: `src/cockpit/src/board.js` colours a bar from its demand's lateness with this
+#: single threshold: late above zero, TIGHT within one working day below it,
+#: on-time/early beyond that. The answer surface now names the same three bands
+#: off the same number, so "why is this order tight" and the colour the planner
+#: is pointing at cannot come apart. If the board's threshold moves, this is the
+#: constant that has to move with it — stated here rather than left implicit,
+#: because a duplicated threshold that silently drifts is how two surfaces come
+#: to disagree about one word.
+TIGHT_BAND_MINUTES = -1440
+
+
+def _lateness_band_facts(lateness_min) -> dict:
+    """The board's band for one demand's lateness, or an empty dict.
+
+    Empty when lateness is unknown — a band asserted from a missing number
+    would put a colour on the answer that is not on the board.
+    """
+    if lateness_min is None:
+        return {}
+    v = float(lateness_min)
+    if v > 0:
+        band = "late"
+    elif v > TIGHT_BAND_MINUTES:
+        band = "tight"
+    else:
+        band = "ontime"
+    out = {"board_band": band,
+           "board_band_threshold_min": TIGHT_BAND_MINUTES}
+    if band == "tight":
+        out["slack_minutes"] = int(round(-v))
+        out["slack_hours"] = round(-v / 60.0, 1)
+    return out
+
+
 def _swap_move_kind(q: str) -> str:
     """'swap' when the question proposes exchanging two jobs' slots, 'move' when it
     proposes relocating one. A route-internal parameter read: by the time this runs
@@ -255,7 +291,11 @@ ROUTE_TAXONOMY: dict[str, dict] = {
                               "canonical": "how do you know that?"},
     "beyond-horizon":        {"params": [],          "canonical": "what's beyond the horizon?"},
     "why-not-scheduled-yet": {"params": ["order"],   "canonical": "why isn't {order} scheduled yet?"},
-    "frozen":                {"params": [],          "canonical": "what's frozen?"},
+    # Session 4B.27 Item 6: `order` is OPTIONAL here — the plant-wide census is a
+    # legitimate scope for "what's frozen?", so it must not become a required
+    # slot (see `_required_slots`, which reads this list). Declared so the
+    # taxonomy states what the route can actually receive.
+    "frozen":                {"params": ["order"],   "canonical": "what's frozen?"},
     # Session 4B.6 — the coarse zone (R-SC2 amendment). `coarse-fit` takes no
     # subject: it is about the whole beyond-horizon book against capacity.
     # `bucket-load` takes an optional `bucket` (a week number or a period the
@@ -715,11 +755,11 @@ class Explainer:
                 asked, params.get("order"), params.get("op_seq"),
                 params.get("machine"), params.get("prior_question") or "")
         if route_id == "solve-time":
-            return self._explain_solve_time(q)
+            return self._explain_solve_time(q, params.get("document"))
         if route_id == "machine-count":
             return self._explain_machine_count(q)
         if route_id == "solve-optimality":
-            return self._explain_optimality(q)
+            return self._explain_optimality(q, params.get("document"))
         if route_id == "maintenance":
             return self._explain_maintenance(q)
         if route_id == "inventory":
@@ -1286,6 +1326,20 @@ class Explainer:
                 "driver_phrase": driver_phrase(driver_code),
                 "blocked_by": blocked,
                 "take": take,
+                # Session 4B.27 Item 5 — THE BOARD'S OWN WORD FOR THIS BAR.
+                #
+                # "tight" is on the legend, is computed per bar, and no surface
+                # could explain it: the question went to `why-here`, which
+                # answered about placement and never used the word. The band is
+                # `board.js latenessBand` and NOT the opener's at-risk
+                # arithmetic — a different set, so routing this to at-risk would
+                # have answered about a set the bar is not in.
+                #
+                # This route already owned the arithmetic (it states the -299
+                # minutes correctly); what it lacked was the NAME. Naming it
+                # here, from the one threshold the board draws with, is what
+                # connects the planner's word to the number.
+                **_lateness_band_facts(lateness),
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
@@ -3973,7 +4027,10 @@ class Explainer:
         if route_id == "beyond-horizon":
             body = rq.answer_beyond_horizon(document)
         elif route_id == "frozen":
-            body = rq.answer_frozen(document)
+            # Session 4B.27 Item 6: the subject was ALWAYS on `params` (
+            # `route_params` sets `order` unconditionally) and this call simply
+            # never passed it on. One argument.
+            body = rq.answer_frozen(document, order)
         elif route_id == "coarse-fit":
             body = rq.answer_coarse_fit(document)
         elif route_id == "bucket-load":
@@ -4406,27 +4463,57 @@ class Explainer:
             "unresolved": ans is None,
         })
 
-    def _explain_solve_time(self, question: str) -> ExplanationBundle:
-        """CU3 — how long the solve took. A pure evidence read of the M6 run's
-        open→close wall time (the solve stage). Honest not-yet when unavailable."""
-        def _iso(x):
-            try:
-                return datetime.fromisoformat(str(x).replace("Z", "+00:00"))
-            except (ValueError, TypeError):
-                return None
-        seconds = None
-        try:
-            m6 = [r for r in self._index.runs() if r.get("module") == "M6"]
-            for r in m6:
-                dt_o, dt_c = _iso(r.get("timestamp_open")), _iso(r.get("timestamp_close"))
-                if dt_o and dt_c:
-                    seconds = max(seconds or 0.0, (dt_c - dt_o).total_seconds())
-        except Exception:
-            seconds = None
-        return self._authored_bundle("solve_time", question,
-                                     {"solve_seconds": seconds})
+    def _explain_solve_time(self, question: str,
+                            document: Any = None) -> ExplanationBundle:
+        """How long the solve took — WORK and WALL, named separately.
 
-    def _explain_optimality(self, question: str) -> ExplanationBundle:
+        Session 4B.27 Item 8. This route used to subtract the M6 RunContext's
+        open and close timestamps, under field names (``timestamp_open`` /
+        ``timestamp_close``) that record carries under different spellings — so
+        it always read None and always answered "I don't have the solve's timing
+        recorded". It was RIGHT for a second reason nobody had checked: the
+        rolling path's ``solve_complete`` never recorded any timing at all, and
+        the M6 RunContext beside it closes in about 1.4 MILLISECONDS because it
+        is the REPORTING context, not the search. Subtracting those timestamps
+        would have produced a confidently wrong number the moment the field
+        names were fixed — the third instance of the reader-gap-as-missing-data
+        species (metric rates and the input manifest were the first two, 4B.18),
+        and the only one where the naive repair is worse than the gap.
+
+        So: `rolling_horizon` now records both figures, and this reads them from
+        the SAME event and the SAME run selection the cost proof uses.
+
+        THE TWO TIMES ARE NEVER FUSED. Deterministic units are what the search
+        DID; seconds are what it cost on this machine. Stating only the wall
+        would make a laptop's speed sound like a property of the plan.
+
+        At K>1 the board is the WINNER of a portfolio (R-BK1) and the wall a
+        planner waited is not the winner's alone — the member count is named,
+        because "199 seconds" about one of three searches run three-up is a
+        third of an answer.
+        """
+        from mre.modules import cost_proof as cp
+        t = cp.timing_from_evidence(self._index)
+        facts: dict[str, Any] = {
+            "readable": t.readable, "recorded": t.recorded,
+            "wall_s": t.wall_s, "det_consumed": t.det_consumed,
+            "det_budget": t.det_budget, "wall_truncated": t.wall_truncated,
+            "seconds_per_unit": t.seconds_per_unit,
+        }
+        # THE PORTFOLIO'S OWN WALL, when the document declares one. R-BK1
+        # clause (2) makes the block ABSENT at K=1, so absence here means one
+        # search and the copy says nothing about members at all.
+        book = ((document or {}).get("solver") or {}).get("portfolio") \
+            if isinstance(document, dict) else None
+        if isinstance(book, dict):
+            facts["portfolio_k"] = book.get("k")
+            facts["portfolio_members"] = len(book.get("members") or [])
+            facts["portfolio_wall_s"] = book.get("wall_time_s")
+            facts["portfolio_parallel"] = book.get("parallel")
+        return self._authored_bundle("solve_time", question, facts)
+
+    def _explain_optimality(self, question: str,
+                            document: Any = None) -> ExplanationBundle:
         """"Is this schedule optimal?" — ANSWERED FROM THE SOLVER'S OWN PROOF
         (Session 4B.13 Item 2; discharges docs/07 §5a.29).
 
@@ -4448,6 +4535,21 @@ class Explainer:
         F006 at a 98.8% gap whose ledger spread across seeds was 0.289%, so the
         gap measures our inability to PROVE, not the answer's quality. That
         distinction is authored into the copy rather than left to the reader.
+
+        SESSION 4B.27 Item 10 — AND THE OTHER SEEDS ARE PART OF THE ANSWER.
+        "Is this the best schedule you found" is not only a question about the
+        BOUND. Since R-BK1 the published board may be the winner of a declared
+        portfolio, and since 4B.29 K=3 is the DEFAULT — so on every new board
+        there literally ARE other schedules we found, with their own ledgers and
+        a measured spread, and the route that owns this question could not see
+        any of them. The gap and the spread answer different halves: the gap is
+        the limit of the PROOF, the spread is what independent searches actually
+        reached (4B.12's honest companion, and R-BK1 clause (4) publishes the
+        losers precisely so it can be stated).
+
+        At K=1 the block is ABSENT BY CONSTRUCTION (clause 2), and absence is
+        answered as the single-draw fact it is — never as a portfolio of one,
+        and never silently.
         """
         from mre.modules import cost_proof as cp
         proof = cp.from_evidence(self._index)
@@ -4460,7 +4562,7 @@ class Explainer:
         # here rather than in CostProof, whose chip/rider callers want the
         # existing three-way split.
         unknown = proof.status is None
-        return self._authored_bundle("optimality", question, {
+        facts: dict[str, Any] = {
             "unknown": unknown,
             # Session 4B.18: when we know WHY it is unreadable, say so. "I can't
             # read it" and "I can't read it because we didn't save it" are
@@ -4478,7 +4580,56 @@ class Explainer:
             # answer, the strip chip and the money rider cannot word it
             # differently.
             "tiebreak_clause": proof._tiebreak_clause(),
-        })
+        }
+        facts.update(self._portfolio_facts(document))
+        return self._authored_bundle("optimality", question, facts)
+
+    def _portfolio_facts(self, document: Any) -> dict:
+        """R-BK1's block, read for the answer surface (Session 4B.27 Item 10).
+
+        ONE reader, so `solve-optimality` and any later caller cannot describe
+        the same portfolio differently. Absence is a first-class value here:
+        `portfolio_present=False` means K=1 — a single seeded search — and the
+        copy has its own sentence for it, because "we ran one search" and "we
+        ran three and they agreed" are different answers to the same question
+        and neither may be silent.
+
+        The losing members are carried WHOLE, unpublishable ones included with
+        their reason: clause (4) publishes them precisely so a spread cannot
+        look tighter than the evidence supports, and dropping them here would
+        undo that at the last surface before the planner.
+        """
+        book = ((document or {}).get("solver") or {}).get("portfolio") \
+            if isinstance(document, dict) else None
+        if not isinstance(book, dict):
+            return {"portfolio_present": False}
+        members = [m for m in (book.get("members") or []) if isinstance(m, dict)]
+        published = [m for m in members if m.get("ledger_total") is not None]
+        return {
+            "portfolio_present": True,
+            "portfolio_k": book.get("k"),
+            "portfolio_k_provenance": book.get("k_provenance"),
+            "portfolio_det_time_s": book.get("det_time_s"),
+            "portfolio_seed0": book.get("seed0"),
+            "portfolio_winner_seed": book.get("winner_seed"),
+            "portfolio_winner_ledger": book.get("winner_ledger_total"),
+            # None below two publishable members — NEVER 0.00. A spread of one
+            # number is not a spread (clause 4, and 4B.21's tri-state).
+            "portfolio_spread_abs": book.get("spread_abs"),
+            "portfolio_spread_pct": book.get("spread_pct"),
+            "portfolio_published": len(published),
+            "portfolio_members": [
+                {"seed": m.get("seed"), "ledger_total": m.get("ledger_total"),
+                 "status": m.get("status"), "reason": m.get("reason"),
+                 "selectable": m.get("selectable", True)}
+                for m in members],
+            # The authored sentences the assembler already composed server-side;
+            # re-wording them here would make two surfaces state one fact twice.
+            "portfolio_declaration": book.get("declaration") or "",
+            "portfolio_agreement": book.get("agreement") or "",
+            "portfolio_unpublished": book.get("unpublished") or "",
+            "portfolio_wall_s": book.get("wall_time_s"),
+        }
 
     def _explain_machine_count(self, question: str) -> ExplanationBundle:
         """CU3 — how many machines / list the machines. A pure document read of the

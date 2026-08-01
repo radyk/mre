@@ -170,11 +170,66 @@ def answer_beyond_horizon(doc: Any) -> str:
     return lead + tail
 
 
-def answer_frozen(doc: Any) -> str:
-    """The committed-state facts: how much is frozen and through when."""
+def _frozen_for_order(doc: Any, r: dict, order_ref: str) -> Optional[str]:
+    """Session 4B.27 Item 6 — WHY THIS ORDER IS, OR IS NOT, IN THE FROZEN ZONE.
+
+    "ord-11 is not in the frozen zone. why not?" reached this route correctly
+    (`frozen` at 0.92) and got a whole-board census with the named order nowhere
+    in it — the route declared ``params: []`` and could not receive a subject at
+    all. Census A's mechanism on a rolling route: not a missing route, a route
+    that cannot be told who it is about.
+
+    The answer is ONE COMPARISON, and the frozen boundary is a first-class
+    contract field, so nothing is derived that the document does not carry. The
+    three regions get three different answers because they are three different
+    facts about the plant — a tray order is not "not frozen" in the same sense a
+    placed-but-active order is, and fusing them is the disposition defect
+    (4B.21) on the region axis.
+
+    Returns None when the order cannot be resolved, so the caller falls back to
+    the census rather than asserting something about a name we do not know.
+    """
+    vocab = RollingVocabulary(doc)
+    resolved = vocab.resolve(order_ref) if vocab else None
+    if resolved is None:
+        return None
+    region = vocab.disposition(resolved)
+    frozen_until = _fmt_date(r.get("frozen_until"))
+    window_end = _fmt_date(r.get("window_end"))
+    if region == "committed":
+        return (f"{resolved} IS in the frozen zone — it is committed, locked in "
+                f"through {frozen_until}, and it will not move as the schedule "
+                f"rolls forward.")
+    if region == "beyond-horizon":
+        return (f"{resolved} isn't in the frozen zone because it isn't placed at "
+                f"all yet — it's in the tray, admitted and waiting for a later "
+                f"window. Only work that has been placed AND falls before the "
+                f"frozen boundary ({frozen_until}) is committed, and {resolved} "
+                f"has not reached the first of those.")
+    if region == "in-window":
+        return (f"{resolved} is placed, but after the frozen boundary "
+                f"({frozen_until}) — it sits in the active part of this window"
+                + (f", which runs to {window_end}" if window_end else "")
+                + f". That is the whole difference: work before the boundary is "
+                  f"committed and will not move, work after it is still being "
+                  f"solved and can move as the schedule rolls.")
+    return None
+
+
+def answer_frozen(doc: Any, order_ref: Optional[str] = None) -> str:
+    """The committed-state facts: how much is frozen and through when.
+
+    With an ORDER named (Session 4B.27 Item 6) it answers about that order
+    first — the boundary comparison — and never makes the planner infer their
+    own order's state from a plant-wide count.
+    """
     r = _rolling(doc)
     if r is None:
         return "This isn't a rolling schedule, so nothing is frozen."
+    if order_ref:
+        answer = _frozen_for_order(doc, r, order_ref)
+        if answer is not None:
+            return answer
     committed = int(r.get("committed_count", 0))
     active = int(r.get("active_count", 0))
     frozen_until = _fmt_date(r.get("frozen_until"))
