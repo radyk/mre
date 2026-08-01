@@ -56,6 +56,12 @@ OUT = REPO / "tests" / "cockpit" / "fixtures"
 MEMBER_TIME_LIMIT_S = 300.0
 # 4B.8 CU2: a TOTAL now (old stage-1 2.0 + the deleted fixed stage-2 2.0).
 DET_TOTAL = 4.0
+# What ONE coarse solve gets, and ``build_coarse_zone`` runs two of them. A
+# DIFFERENT quantity from DET_TOTAL above, which is why it is its own constant
+# even though the two hold the same number today — this file passed DET_TOTAL to
+# ``build_coarse_zone(det_time=...)``, the identical rename drift the exam
+# builder's guard was written for in the errand session (4B.25 Item 4b).
+COARSE_DET_TIME = 4.0
 COARSE_SAFETY_CEILING_S = 120.0
 
 # The hot-band fixture's DECLARED derate. At the plant's own declared 0.85 the
@@ -168,7 +174,7 @@ def build(orders: int, window_days: int, frozen_days: int, sid: str,
                 else CoarseCoefficients.from_cost_model(plant.cost_model))
         zone = build_coarse_zone(plant, view, coefficients=coef,
                                  deterministic=True, seed=42,
-                                 det_total=DET_TOTAL,
+                                 det_time=COARSE_DET_TIME,
                                  safety_ceiling_s=COARSE_SAFETY_CEILING_S)
         if zone.proof.wall_truncated or zone.planning.wall_truncated:
             raise RuntimeError("a coarse run hit the WALL ceiling — not a golden")

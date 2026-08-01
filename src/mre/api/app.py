@@ -82,6 +82,24 @@ class SolveRequest(BaseModel):
     # actually rolled. The cross-roll prediction history (clause 7) only accrues
     # when the clock advances, so the clock became a request field.
     reference_date: Optional[str] = None
+    # THE PORTFOLIO (R-BK1, Session 4B.25), sliced runs only. K independent
+    # deterministic searches at seeds 42..42+K-1, best by LEDGER wins.
+    #
+    # K=1 IS EXACTLY THE PRE-4B.25 BEHAVIOUR and is the default until Daryn
+    # flips it with Item 3's table in front of him: one search, no extra solve,
+    # no portfolio block in the document. Above 1 the solve costs K+1 searches
+    # (K probes + the winner re-solved so the persisted artifacts belong to the
+    # published board), and the certificate declares K, the per-member budget
+    # and every member's ledger total.
+    portfolio_k: int = 1
+    # The per-member deterministic budget (the R-SC3 two-stage TOTAL). None
+    # keeps the shipped default and is reported as `defaulted` provenance; a
+    # value here is reported as `declared`.
+    portfolio_det_time: Optional[float] = None
+    # Clause (5): members run as separate PROCESSES, never as CP-SAT search
+    # workers. 1 = sequential, which is what a laptop should do while a session
+    # is measuring. The cloud box is this number, not a session.
+    portfolio_workers: int = 1
 
 
 class PoolRequest(BaseModel):
@@ -158,12 +176,23 @@ class AuditRequest(BaseModel):
     det_time_s: Optional[float] = None   # override AUDIT_DET_TIME_S
     budget_s: Optional[float] = None     # the WALL CEILING, not the budget
     seed: Optional[int] = None
+    # R-BK1 (4B.25 Item 2): "search deeper" is a PORTFOLIO of K seeded
+    # deterministic searches at seeds `seed .. seed+K-1`, best by ledger. None
+    # keeps AUDIT_K and reports `defaulted` provenance.
+    k: Optional[int] = None
+    # Clause (5): separate PROCESSES, never CP-SAT workers. 1 = sequential.
+    workers: int = 1
 
 
 class AuditAcceptRequest(AuditRequest):
     """Clause (4): accepting the window's improvement is its OWN act, with its
     own authority. It is never a side effect of accepting a drag."""
     authority: str = "dev-planner"
+    # The offer's own delta, handed back so the accept can prove the schedule it
+    # mints IS the one on the card — to the cent, or nothing is accepted
+    # (4B.25 Item 4a). Optional: an accept that declines to state what it was
+    # promised simply gets no check.
+    expect_delta_abs: Optional[float] = None
 
 
 class AcceptRequest(BaseModel):
@@ -690,6 +719,7 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
             standing_pins=(registry.schedule_pins(schedule_id) or []) + committed_pins,
             restrict_op_ids=window_op_ids,
             det_time_s=req.det_time_s, budget_s=req.budget_s, seed=req.seed,
+            k=req.k, portfolio_workers=req.workers,
         )
         return _ok(result)
 
@@ -1021,8 +1051,10 @@ def _execute_rolling_solve(registry: Registry, run: dict, files_dir: Path,
     (``record_roll_history`` never raises; its ``error`` is surfaced on the run)."""
     from mre.contracts.schedule_document import CONTRACT_VERSION
     from mre.modules.coarse_predictions import record_roll_history
+    from mre.modules.portfolio import DEFAULT_K
     from mre.modules.rolling_horizon import (
-        gravity_admitted_demand_ids, prepare_plant, build_rolling_view,
+        DET_TOTAL_DEFAULT, gravity_admitted_demand_ids, prepare_plant,
+        solve_rolling_portfolio,
     )
     from mre.modules.schedule_assembler import assemble_rolling_document
 
@@ -1031,10 +1063,19 @@ def _execute_rolling_solve(registry: Registry, run: dict, files_dir: Path,
         ref = _parse_reference_date(req.reference_date)
         plant = prepare_plant(files_dir, out_dir, reference_date=ref,
                               policy=req.policy)
-        view = build_rolling_view(
+        # R-BK1 (4B.25 Item 3) — the main solve is a DECLARED PORTFOLIO. At the
+        # default k=1 this is `build_rolling_view` called once with seed 42,
+        # returns no Portfolio, and puts no block in the document: exactly the
+        # pre-4B.25 path, which is clause (2)'s compatibility promise.
+        det_total = (DET_TOTAL_DEFAULT if req.portfolio_det_time is None
+                     else req.portfolio_det_time)
+        view, book = solve_rolling_portfolio(
             plant, window_days=req.window_days, frozen_days=req.frozen_days,
             deterministic=req.deterministic, member_time_limit_s=req.time_limit,
-            persist=True)
+            det_total=det_total, persist=True, k=req.portfolio_k,
+            portfolio_workers=req.portfolio_workers,
+            k_declared=req.portfolio_k != DEFAULT_K,
+            det_time_declared=req.portfolio_det_time is not None)
         zone = None
         if req.coarse:
             from mre.modules.coarse_horizon import build_coarse_zone
@@ -1044,7 +1085,8 @@ def _execute_rolling_solve(registry: Registry, run: dict, files_dir: Path,
         schedule_id = f"rolling-{run_id[:12]}"
         document = assemble_rolling_document(
             plant=plant, view=view, schedule_id=schedule_id,
-            run_id=run_id, identity_map=idmap, coarse_zone=zone)
+            run_id=run_id, identity_map=idmap, coarse_zone=zone,
+            portfolio=book)
         doc_path = _persist_document(document, out_dir)
         registry.register_schedule(
             schedule_id=document.schedule_id, run_id=run_id,
@@ -1083,6 +1125,10 @@ def _execute_rolling_solve(registry: Registry, run: dict, files_dir: Path,
         "beyond_horizon": len(view.beyond_demand_ids),
         "coarse": bool(zone is not None),
         "coarse_history": hist.to_dict(),
+        # R-BK1 clause (4): the losing members are on the run result too, so a
+        # caller that never opens the document can still read what the other
+        # seeds found. None at k=1 — there was no portfolio.
+        "portfolio": book.block() if book is not None else None,
     })
 
 
@@ -1430,7 +1476,8 @@ def _execute_audit_accept(registry: Registry, base_schedule: dict,
             standing_pins=(registry.schedule_pins(base_schedule["id"]) or [])
                           + committed_pins,
             restrict_op_ids=window_op_ids,
-            det_time_s=req.det_time_s, budget_s=req.budget_s, seed=req.seed)
+            det_time_s=req.det_time_s, budget_s=req.budget_s, seed=req.seed,
+            expect_delta_abs=req.expect_delta_abs)
         document = build_document_from_run(
             out_dir, result["child_snapshot_id"], run_id, runs_subdir="runs",
             parent_schedule_id=base_schedule["id"])

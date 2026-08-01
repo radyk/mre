@@ -49,7 +49,14 @@ REF = datetime(2026, 1, 5, tzinfo=UTC)
 
 ORDERS = 200
 WINDOW_DAYS, FROZEN_DAYS = 7, 2
+# TWO BUDGETS, TWO QUANTITIES, and they are not interchangeable (the 4B.8 CU2
+# rename, re-learned in 4B.25 Item 4b). DET_TIME is what ONE coarse solve gets
+# (``build_coarse_zone(det_time=...)``); DET_TOTAL is the rolling window-0
+# solve's budget for BOTH R-SC3 stages together
+# (``build_rolling_view(det_total=...)``). This file passed ``det_time`` to both
+# for six sessions — invisibly, because its fixtures are ``--runslow``-gated.
 DET_TIME = 4.0
+DET_TOTAL = 6.0                 # = the historical 4.0 stage-1 + the old 2.0 stage-2
 SAFETY_CEILING_S = 300.0        # a CEILING, never the budget
 
 # Thresholds, set well below the measured figures so an ordinary solver tie
@@ -75,7 +82,7 @@ def view200(plant200):
     v = build_rolling_view(plant200, window_days=WINDOW_DAYS,
                            frozen_days=FROZEN_DAYS, gravity=True,
                            deterministic=True, seed=42,
-                           member_time_limit_s=600.0, det_time=DET_TIME)
+                           member_time_limit_s=600.0, det_total=DET_TOTAL)
     assert not v.wall_truncated, (
         "the window solve hit the WALL ceiling — this whole file would be "
         "measuring a lottery")

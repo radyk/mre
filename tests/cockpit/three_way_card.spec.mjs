@@ -8,7 +8,8 @@
 // The arithmetic itself is proven server-side (tests/test_local_price.py).
 import { test, expect } from "@playwright/test";
 import {
-  LOCAL_NOTE, UNSPLIT_NOTE, attributionRows, opportunityBlock, signedMoney,
+  LOCAL_NOTE, UNSPLIT_NOTE, attributionRows, opportunityBlock, portfolioLine,
+  signedMoney,
 } from "../../src/cockpit/src/drag/sandboxui.js";
 
 const local = (over = {}) => ({
@@ -119,4 +120,43 @@ test("a search that found nothing CHEAPER is not an opportunity", () => {
     opportunity: { found: false, delta_abs: 400.0,
                    sentence: "the search found nothing cheaper" },
   }))).toBeNull();
+});
+
+// ---------------------------------------------------------------------------
+// R-BK1 clause (4) — THE LOSING MEMBERS ARE NOT DISCARDED SILENTLY
+// (Session 4B.25). What is pinned here is again the READING RULE: the card
+// decides whether there IS a portfolio line and never words one.
+// ---------------------------------------------------------------------------
+
+const audit = (over = {}) => ({ searched: true, seed: 42, det_time_s: 3.0,
+                                sentence: "s", ...over });
+
+test("K=1 draws no portfolio line — a card never grows an empty heading", () => {
+  expect(portfolioLine(audit({ portfolio: { k: 1, declaration: "one seeded search" } }))).toBe(null);
+  expect(portfolioLine(audit())).toBe(null);
+});
+
+test("a real portfolio draws the declaration and the spread, server-worded", () => {
+  const line = portfolioLine(audit({ portfolio: {
+    k: 5, declaration: "best of 5 seeded searches at 3 deterministic units each",
+    agreement: "the 5 seeded searches landed within 0.20% of each other",
+    unpublished: "" } }));
+  expect(line.k).toBe(5);
+  expect(line.text).toContain("best of 5 seeded searches");
+  expect(line.text).toContain("within 0.20%");
+});
+
+test("what could NOT be published is on the card too", () => {
+  const line = portfolioLine(audit({ portfolio: {
+    k: 5, declaration: "best of 5", agreement: "spread 1.77% apart",
+    unpublished: "2 of 5 member(s) could not be published (seed(s) 44, 45)" } }));
+  // A portfolio reporting the agreement of the members that finished, with no
+  // word about the ones that did not, would read tighter than the evidence.
+  expect(line.text).toContain("2 of 5");
+});
+
+test("the card never words the spread itself", () => {
+  // Every register is composed server-side; with nothing to say the JS has
+  // nothing to fall back on and correctly draws nothing.
+  expect(portfolioLine(audit({ portfolio: { k: 5 } }))).toBe(null);
 });

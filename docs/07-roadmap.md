@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.70 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.72 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.72:** **Session 4B.25 - the published board is a portfolio, not a draw** 2026-08-01 (docs/04 2026-08-01 R-BK1, verbatim; narrative in `docs/closeouts/4B.25.md`). **R-BK1 RULED AND BUILT (5a.101).** 4B.24 measured the largest quality lever in this project and left it on the floor: same board, same budget, five seeds, and the seed decides. A solve may now be a DECLARED PORTFOLIO - K deterministic runs at consecutive seeds, best by LEDGER, ties by lowest seed, so the whole thing is a pure function of a fixed set. **The losing members are published**, because the cross-seed spread is the stability figure 4B.12 named as the honest companion to the gap and it is free here. Parallel members are separate PROCESSES, never CP-SAT workers. **K=1 IS EXACTLY TODAY'S BEHAVIOUR - no extra solve and NO BLOCK IN THE DOCUMENT** (contract 1.12 -> **1.13**, absent at K=1), proven by schedule digest rather than asserted. **THE AUDIT PORTFOLIO FOUND 2.3x MORE MONEY (5a.102):** at K=5 x 3.0 units the five seeds landed at $1.58M-$2.03M; 4B.24's $239,824.80 was seed 42, the FOURTH BEST, and seed 44 finds **$545,549.60**. **Spread $448,655.42 = 28.36%, and the offer sentence says so** - *"far from settled"* - turning a figure a planner would read as the answer into a floor. Seed 42 reproduces 4B.24's number TO THE CENT across sessions; two K=5 audits give **ONE DISTINCT OFFER**. `AUDIT_K` ships at **3**, which finds the same winner for 60% of the wall. **THE MAIN-SOLVE PORTFOLIO IS WORTH $578, NOT $545,549 (5a.103)** - the difference is the WARM START - and **TWO OF FIVE SEEDS RETURN AN EMPTY BOARD**, so 4B.22a's non-monotone solvability is seed-dependent too. Walls: sequential 515.8s vs five processes 298.8s, **1.73x not 5x** (each member ~1.8x slower with siblings), while the ledgers and deterministic times are **identical to ten decimal places across execution modes**. `SolveRequest.portfolio_k` ships at **1**; flipping it is Daryn's call with that table in front of him. **`POST /audit/accept`'s SUCCESS BRANCH WAS BROKEN AND IS NOW EXECUTED (5a.104):** an `AttributeError` on a driver code that is not in the vocabulary sat behind the button 4B.24 reported as never-executed; corrected, and a real child minted whose **ledger equals the offer TO THE CENT**. **THE 4B.8 RENAME DRIFT WAS SIX FILES AND THE GUARD WAS POINTED AT ONE (5a.105)** - five broken call sites hid inside `--runslow`-gated fixtures for six sessions, one of them the very defect the guard was written for; the guard now sweeps all of `tests/` and `tools/`. Guard: 41 new Python tests, a premise test, and **five negative controls proven red against physically reverted code - two of which exist only because the first attempt at them came back GREEN**. 5a.101-106.
 
 **v2.71:** **Session 4B.24 - the incumbent earns its flag** 2026-07-31 (docs/04 2026-07-31 R-T2 AMENDMENT, verbatim; narrative in `docs/closeouts/4B.24.md`). **"YOUR MOVE" IS NOW PRICED LOCALLY, AND THE FOUNDER'S NUDGE COSTS $0.00 (5a.96).** Four hours inside an overtime window the operation already occupied, on a machine carrying nothing else those hours, had been priced at **-$50,784.33** with four unrelated orders relocated by weeks - because beat two re-solved the whole window wall-clock-bounded with no deterministic time over an incumbent at a 92.4% gap, so **the card reported the difference between two lottery draws and labelled it the planner's move**. `local_price.py` holds every placement, moves the one bar, recomputes the ledger from the same code path on both sides and re-validates by pinning all 386 placements into a fresh model and asking CP-SAT (compressor C's discipline, 4B.6c). Live: **$0.00, empty affected list, 0.384s** against 64s, and **five repetitions produce ONE DISTINCT CARD** compared on the full tuple. A refusal names its docs/05 family and carries `holds_others` - **shut is not the same as occupied**, the ruled species a fifth time. **BEAT ONE'S BUDGET WAS MARGINAL IN THE WRONG CURRENCY (5a.97):** the verdict costs **0.0426 deterministic units and 2.5-3.9 SECONDS**, because the meter barely counts presolve, so raising the deterministic budget alone would have changed nothing; the WALL token moved 2.0 -> 12.0 and `wall_ceiling_for()` now makes "wall as safety ceiling only" enforced rather than intended. **THERE IS NO PLATEAU (5a.98):** at one deterministic unit three of five seeds find exactly the incumbent and two find 13-16% cheaper; seed 42 at three units finds 12.4%; improvements run to the budget edge at every budget tested, and `DeterministicTime()` is unreadable per solution. **THE AUDIT SHIPS (5a.99):** `POST /audit` found a schedule **$239,824.80 cheaper, 226 operations moving**, offered with its own affected list and its own accept - **two ceremonies, and one click can never commit both**. Guard: 18 Python tests with a premise test and **three negative controls proven red against physically reverted code**, plus 11 cockpit logic tests. 5a.96-100.
 
@@ -4368,6 +4370,96 @@ able to make room, which is a different question. **(g)
 `tests/test_rolling_two_beat.py` IS RED AT HEAD** (12 errors,
 `build_rolling_view() got an unexpected keyword argument 'det_time'`), verified
 pre-existing by stashing this session's changes. Not from this session, not fixed.
+
+**§5a.101 — R-BK1 IS RULED AND BUILT: THE PUBLISHED BOARD IS A PORTFOLIO, NOT A
+DRAW (4B.25; verbatim in docs/04 2026-08-01).** Five clauses. **(1)** K
+independent deterministic runs at consecutive seeds, best by LEDGER, ties by
+lowest seed — a pure function of a fixed set, so **the portfolio is
+deterministic**; a member the WALL stopped is not reproducible and is therefore
+NOT SELECTABLE. **(2)** K and the per-member budget are DECLARED coefficients
+with provenance, and **K=1 IS EXACTLY TODAY'S BEHAVIOUR** — no extra solve, no
+scratch directory, and NO BLOCK IN THE DOCUMENT, so every golden, digest and
+pinned world is untouched (proven by schedule digest, not asserted). **(3)**
+selection by the ledger, never the raw objective (4B.7). **(4)** the losing
+members' totals are published — **the cross-seed spread is the stability figure
+4B.12 named as the honest companion to the gap, and it is free**. **(5)**
+parallel members are separate PROCESSES, never CP-SAT `workers>1`. **Contract
+1.12 → 1.13** (`solver.portfolio`, Optional, absent at K=1). `AUDIT_K` ships at
+**3**; `SolveRequest.portfolio_k` ships at **1** — flipping it is Daryn's call
+with §5a.102's table in front of him.
+
+**§5a.102 — THE AUDIT PORTFOLIO FOUND 2.3x MORE MONEY THAN THE SINGLE SEED
+(4B.25 Item 2).** Dense demo board, `POST /audit` at K=5 × 3.0 units, seeds
+42-46: **$1,887,657.78 / $2,030,588.40 / $1,581,932.98 / $1,784,070.77 /
+$1,859,103.07**. 4B.24's audit offered **$239,824.80**; that was seed 42, and
+seed 42 is the FOURTH BEST of five. Seed 44 finds **$545,549.60**. **SPREAD
+$448,655.42 = 28.36%**, and the offer sentence says so — *"the 5 seeded searches
+spread 28.36% apart — this window is far from settled"*, which is clause (4)
+turning a number a planner would otherwise read as the answer into a floor.
+**Seed 42 reproduces 4B.24's figure TO THE CENT** across sessions. **K=3 finds
+the same winner** (seed 44 is in the first three) for 60% of the wall, which is
+why 3 is the shipped default. Two K=5 audits → **ONE DISTINCT OFFER** on the full
+tuple; member deterministic times identical to six decimals, member walls up to
+37s apart.
+
+**§5a.103 — THE MAIN-SOLVE PORTFOLIO IS WORTH $578, NOT $545,549 (4B.25 Item 3).**
+Same board, same seeds, same budget, COLD instead of warm-started: **seed 42
+$2,127,482.58 (exactly the incumbent) / 43 $2,164,599.48 / 44 UNKNOWN / 45
+UNKNOWN / 46 $2,126,904.42**. Winner seed 46, **$578.16 cheaper (0.027%)**,
+spread $37,695.06 = 1.77% over the three publishable members. **TWO OF FIVE SEEDS
+RETURN AN EMPTY BOARD** — they spend the whole 2.75-unit stage-1 cap and return
+UNKNOWN, which is 4B.22a's non-monotone solvability now known to be
+SEED-dependent as well as size-dependent; clause (4) is what keeps a portfolio
+that quietly shrank to three from reporting a tighter spread than the evidence.
+**The difference from §5a.102 is the WARM START** and it is the session's most
+useful unexplained result. **WALLS: sequential 416.5s, five processes 298.8s;
+for a persisting solve 515.8s vs 298.8s — 1.73x, not 5x, because each member runs
+~1.8x SLOWER with four siblings on this laptop.** **Ledger totals AND
+deterministic times are IDENTICAL to ten decimal places between sequential and
+parallel execution** (seed 42: `3.0700218750324186` in both) while walls differ by
+80 seconds — clauses (1) and (5) proven together in one table.
+
+**§5a.104 — `POST /audit/accept`'s SUCCESS BRANCH WAS BROKEN, AND IS NOW
+EXECUTED (4B.25 Item 4a — §5a.100(d) DISCHARGED).** The first live accept
+returned `AttributeError: type object 'DriverCode' has no attribute
+'COST_MINIMIZATION'` — a name that is not in the vocabulary and never has been,
+sitting behind a button whose happy path 4B.24 correctly reported as never
+executed. Corrected to `COST_TRADEOFF`. Then, live on a scratch data root: child
+`4b3acdab-…`, parent `rolling-c9973708-865`, status proposed, **386 bars, 333
+operations moved, contract 1.13, 148.1s — and its ledger equals the offer's
+promise TO THE CENT** ($1,581,932.98 promised, $1,581,932.98 minted). The offer
+now carries its WINNING SEED and the accept carries `expect_delta_abs`, so a
+child that re-solved to a different figure is REFUSED rather than handed over —
+`hold_all_placements` (4B.24) one ceremony over.
+
+**§5a.105 — THE 4B.8 RENAME DRIFT WAS SIX FILES AND THE GUARD WAS POINTED AT ONE
+(4B.25 Item 4b — §5a.100(f) DISCHARGED).** `tests/test_rolling_two_beat.py` was
+red at HEAD with 12 errors; fixing it exposed **five more `det_time`/`det_total`
+call sites broken since 4B.8, every one inside a `--runslow`-gated fixture, so
+the default suite collected them, skipped them and reported green**. One of the
+five is `tools/build_rolling_fixture.py` carrying **the exact defect the errand
+session's signature guard was written for** (`build_coarse_zone(det_total=…)`).
+The guard now sweeps EVERY python file in `tests/` and `tools/` and binds each
+call site against the callee's live signature — milliseconds, no solve,
+regardless of whether the containing test would ever run. **A sixth thing was
+stale:** with the fixture running again, an assertion pinning the PRE-4B.11 hedge
+for a placed order failed — the live answer has been correct for three sessions
+and the test had simply never run. `test_rolling_two_beat.py`: **12 passed**.
+
+**§5a.106 — REPORTED, NOT FIXED (4B.25).** **(a)** the cold-vs-warm gap in
+§5a.103 is not explained, and a cold portfolio at a larger per-member budget was
+not measured. **(b)** at K=1 with seed 44 the shipped main solve would publish an
+EMPTY BOARD on this submission; not investigated. **(c)** *"search deeper"* now
+costs **~7 minutes at K=3** against ~2.4 before, and nothing in the cockpit's
+searching state tells a planner it is three searches long. **(d)** the
+process-parallel speedup is **1.73x on a laptop** and the cloud number is
+therefore unknown rather than extrapolated. **(e)** a parallel member re-runs the
+WHOLE SPINE in its own scratch dir (~1.4s here, not 1.4s at pilot scale); sharing
+a read-only prepared plant across processes was not built. **(f)** the audit
+child carries its lineage in the REGISTRY, not its document, so a document read
+in isolation cannot say it came from an audit. **(g)** **the portfolio is not
+reachable from the ask path** — nobody can ask what the other seeds found;
+§5a.29's shape has a second member.
 
 ## 6. Open rulings queue
 

@@ -124,8 +124,9 @@ zone = build_coarse_zone(plant, view)              # rho/bucket_days from the co
 doc  = assemble_rolling_document(..., coarse_zone=zone)   # 1.9 blocks appear
 ```
 
-Contract is **1.11** since 4B.11 (the R-PD1 tardiness split; additive, and
-absent on any book with no past-due work).
+Contract is **1.13** since 4B.25 (`solver.portfolio`, R-BK1 — additive and
+ABSENT at K=1, which is the default; 1.11 was the R-PD1 tardiness split, 1.12 the
+R-C3 pair).
 
 `zone.certificate_block()` carries rho + its provenance (acceptance: a hidden default
 is a failure). Declare the coefficients in a submission via `cost_model.json`
@@ -158,6 +159,9 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Session 4B.25 — the published board is a portfolio, not a draw**, 2026-08-01
+(docs/07 v2.72, §5a.101-106; docs/04 2026-08-01 R-BK1 verbatim; narrative in
+`docs/closeouts/4B.25.md`). Before it:
 **Session 4B.24 — the incumbent earns its flag**, 2026-07-31 (docs/07 v2.71,
 §5a.96-100; docs/04 2026-07-31 R-T2 AMENDMENT verbatim; narrative in
 `docs/closeouts/4B.24.md`). Before it:
@@ -246,9 +250,72 @@ FIXED, named (§5a.100):** beat one is now the whole cost of a gesture (4.8-5.7s
 ~8.2s, mostly presolve); the audit's single seed finds nothing at 1 unit; a
 CHUNKED op cannot be locally priced and declines BY NAME; **a collision drop is
 now a REFUSAL by ruling**, so 4B.22a's displacement card is unreachable from a
-gesture; Item 6 was driven through the API, not a pointer (no browser extension);
-`POST /audit/accept`'s SUCCESS branch is unexecuted; and
-**`tests/test_rolling_two_beat.py` is RED AT HEAD**, pre-existing.
+gesture; and Item 6 was driven through the API, not a pointer (no browser
+extension). **DISCHARGED BY 4B.25:** `POST /audit/accept`'s success branch (it was
+BROKEN — see below) and `tests/test_rolling_two_beat.py`'s 12 errors.
+
+**R-BK1 — THE PUBLISHED BOARD IS A PORTFOLIO, NOT A DRAW (4B.25, §5a.101,
+docs/04 verbatim).** Five clauses. **(1)** A solve may be a DECLARED PORTFOLIO:
+K deterministic runs at CONSECUTIVE seeds `seed0..seed0+K-1`, best by LEDGER,
+ties by lowest seed — a pure function of a fixed set, so **the portfolio is
+deterministic**; a member the WALL stopped is not reproducible and is NOT
+SELECTABLE (4B.24 clause (1), same words). **(2)** K and the per-member budget
+are DECLARED coefficients with provenance, and **K=1 IS EXACTLY TODAY'S
+BEHAVIOUR** — one call, no extra solve, no scratch dir, **NO BLOCK IN THE
+DOCUMENT** (absent by construction, 4B.24's discipline), proven by SCHEDULE
+DIGEST. **(3)** by the LEDGER, never the raw objective (4B.7). **(4)** the losing
+members' totals are PUBLISHED — the cross-seed spread is 4B.12's honest companion
+to the gap and is free here; three authored registers, and **a spread of one
+number is not a spread** (None, never 0.00). **(5)** separate PROCESSES, never
+CP-SAT `workers>1`. Live: `src/mre/modules/portfolio.py` (the primitive),
+`rolling_horizon.solve_rolling_portfolio` (K+1 searches at K>1, the winner's
+re-solve CHECKED against the member that won — `PortfolioDrift`), and
+`sandbox.audit_incumbent`. **`AUDIT_K` = 3. `SolveRequest.portfolio_k` = 1 —
+flipping it is Daryn's call with the table below in front of him.**
+
+**THE AUDIT PORTFOLIO FOUND 2.3x MORE MONEY THAN THE SINGLE SEED (4B.25,
+§5a.102).** Dense demo board, `POST /audit` at K=5 x 3.0 units, seeds 42-46:
+**$1,887,657.78 / $2,030,588.40 / $1,581,932.98 / $1,784,070.77 /
+$1,859,103.07**. 4B.24's $239,824.80 was **seed 42, the FOURTH BEST of five**;
+seed 44 finds **$545,549.60**. **SPREAD $448,655.42 = 28.36%, and the offer
+sentence says so** — *"far from settled"* — which turns a figure a planner would
+read as the answer into a floor. Seed 42 reproduces 4B.24's number **TO THE
+CENT** across sessions. **K=3 finds the same winner** for 60% of the wall. Two
+K=5 audits → **ONE DISTINCT OFFER** on the full tuple. **`POST /audit/accept`'s
+SUCCESS BRANCH WAS BROKEN** (`AttributeError: DriverCode has no attribute
+'COST_MINIMIZATION'` — a name never in the vocabulary, behind the button 4B.24
+reported as never-executed); corrected to `COST_TRADEOFF`, and a real child
+minted: 386 bars, 333 ops moved, **ledger equal to the offer TO THE CENT**
+(§5a.104). The offer now carries its WINNING SEED and the accept carries
+`expect_delta_abs`, so a child that re-solved differently is REFUSED.
+
+**THE MAIN-SOLVE PORTFOLIO IS WORTH $578, NOT $545,549 (4B.25, §5a.103).** Same
+board, seeds and budget, COLD instead of warm-started: **42 $2,127,482.58
+(exactly the incumbent) / 43 $2,164,599.48 / 44 UNKNOWN / 45 UNKNOWN / 46
+$2,126,904.42**. Winner seed 46, **$578.16 (0.027%)**, spread 1.77%. **TWO OF
+FIVE SEEDS RETURN AN EMPTY BOARD** — 4B.22a's non-monotone solvability is
+SEED-dependent as well as size-dependent, and clause (4) is what stops a
+portfolio that shrank to three from reporting a tighter spread than its evidence.
+**WALLS: sequential 515.8s vs five processes 298.8s — 1.73x, not 5x**, because
+each member runs **~1.8x SLOWER with four siblings** on this laptop. **Ledgers
+AND deterministic times are IDENTICAL TO TEN DECIMAL PLACES across execution
+modes** while walls differ by 80s: clauses (1) and (5) in one table. **NOT FIXED,
+named (§5a.106):** the cold-vs-warm gap is unexplained; K=1 at seed 44 would
+publish an EMPTY board here; *"search deeper"* now costs **~7 min at K=3** and
+nothing in the cockpit says it is three searches long; the parallel speedup is a
+LAPTOP number; a parallel member re-runs the WHOLE SPINE; the audit child's
+lineage is in the REGISTRY, not its document; and **the portfolio is not
+reachable from the ask path** (§5a.29's shape, second member).
+
+**THE 4B.8 RENAME DRIFT WAS SIX FILES AND THE GUARD WAS POINTED AT ONE (4B.25,
+§5a.105).** `test_rolling_two_beat.py`'s 12 errors were the visible member; five
+more `det_time`/`det_total` call sites had been broken since 4B.8, **every one
+inside a `--runslow`-gated fixture, so the default suite collected them, skipped
+them and reported green** — and one was `tools/build_rolling_fixture.py` carrying
+**the exact defect the errand session's signature guard was written for**. The
+guard now sweeps EVERY file in `tests/` and `tools/`. A sixth thing was stale: an
+assertion pinning the PRE-4B.11 hedge for a placed order, correct-in-life for
+three sessions, never run. **A GUARD POINTED AT ONE FILE GUARDS ONE FILE.**
 
 **BEAT TWO WAS NEVER CALLED, AND THE CHAIN WAS NEVER BROKEN — IT WAS
 CONDITIONAL (4B.23, §5a.89 — §5a.88(a) DISCHARGED).** One drag on the demo board
@@ -1039,7 +1106,7 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   of one question) — humble rather than wrong, but distinguishing "one answer
   because I am confused" from "one answer because it IS the answer" needs a
   signal this session does not have.
-  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, **~85k after 4B.24**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, **~88k after 4B.25**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
   **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
   day-shift restriction answered as C1/C2 "proven end to end" when the item is
   C4 (model-proven, §8 doorway). Caught and pinned; the class stands.

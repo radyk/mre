@@ -200,6 +200,28 @@ Version history:
   one surface built to answer "what is this bar" — could not say it. The board
   already renders the CONSEQUENCE (a chunked bar, since 4B.13); this states the
   RULE that produced it. MINOR.
+
+1.13 (Session 4B.25, R-BK1) — ``solver.portfolio`` (``PortfolioBlock``): the
+  DECLARATION that this schedule is the best of K seeded deterministic searches,
+  with K, the per-member deterministic budget, their provenance, and EVERY
+  member's ledger total beside the winner's.
+
+  WHY THE DOCUMENT NEEDS IT. A board produced by a portfolio is a different
+  object from a board produced by one search, and the difference is not
+  cosmetic: the losing members' totals are the CROSS-SEED SPREAD, which is the
+  stability figure 4B.12 named as the honest companion to the gap. A 92.4%-gap
+  board whose five searches all landed on the same total and one whose five
+  spread 16% apart are in completely different positions, and before this the
+  document could not tell them apart. Clause (4) of R-BK1 is what makes the
+  spread free: those searches have already run.
+
+  ``portfolio`` is Optional and is ABSENT AT K=1 — not present-and-empty, and
+  not a block declaring a portfolio of one. K=1 IS the pre-1.13 behaviour, so
+  every existing golden, digest and pinned world is byte-identical apart from
+  the version string (the rolling determinism golden hashes PLACEMENTS, and is
+  unmoved). The absent-by-construction discipline is 4B.24's, on the delta
+  card's missing re-optimization row: a block claiming a portfolio nobody ran
+  would be a measurement nobody took. MINOR.
 """
 from __future__ import annotations
 
@@ -210,7 +232,7 @@ from pydantic import BaseModel, model_validator
 
 from mre.contracts.vocabularies import ScheduleStatus
 
-CONTRACT_VERSION = "1.12"
+CONTRACT_VERSION = "1.13"
 
 # Exact decomposition tolerance: cost components are currency values
 # accumulated in float; "exactly" means to the cent, matching the
@@ -222,6 +244,53 @@ class HorizonBlock(BaseModel):
     """The solver builder's planning horizon (recorded in M5 run evidence)."""
     start: datetime
     end: datetime
+
+
+class PortfolioMemberBlock(BaseModel):
+    """One member of a declared portfolio: a seeded deterministic search and the
+    LEDGER total it reached. ``ledger_total`` is None on a member that could not
+    be published (it did not finish, produced no ledger, or was stopped by the
+    wall rather than by its deterministic budget) — and such a member still
+    appears, with ``reason`` saying which, because dropping it silently would
+    make the spread look tighter than the evidence supports (R-BK1 clause 4)."""
+    seed: int
+    ledger_total: Optional[float] = None
+    status: str = ""
+    det_consumed: Optional[float] = None
+    wall_time_s: Optional[float] = None
+    selectable: bool = True
+    reason: str = ""
+
+
+class PortfolioBlock(BaseModel):
+    """R-BK1 (contract 1.13) — THE DECLARED PORTFOLIO.
+
+    Present only when K > 1. ``k`` and ``det_time_s`` are the declared
+    coefficients with their provenance, exactly as the coarse zone declares rho:
+    a defaulted K must never read as a customer's choice. ``winner_seed`` is the
+    member this document was built from — selection is by the LEDGER (never the
+    raw objective, 4B.7's lesson), ties broken by lowest seed, so the whole
+    portfolio is a pure function of a fixed set.
+
+    ``spread_abs`` / ``spread_pct`` are None below two publishable members: a
+    spread of one number is not a spread, and printing 0.00 there would claim an
+    agreement nobody observed (``partitions()``'s tri-state, 4B.21)."""
+    k: int
+    k_provenance: Literal["declared", "defaulted"] = "defaulted"
+    det_time_s: float
+    det_time_s_provenance: Literal["declared", "defaulted"] = "defaulted"
+    seed0: int
+    workers: int = 1
+    execution: Literal["sequential", "processes"] = "sequential"
+    declaration: str = ""
+    agreement: str = ""
+    unpublished: str = ""
+    winner_seed: Optional[int] = None
+    winner_ledger_total: Optional[float] = None
+    spread_abs: Optional[float] = None
+    spread_pct: Optional[float] = None
+    members: list[PortfolioMemberBlock] = []
+    wall_time_s: float = 0.0
 
 
 class SolverBlock(BaseModel):
@@ -244,6 +313,10 @@ class SolverBlock(BaseModel):
     # that silently did not run must not look like one that ran and won nothing.
     tiebreak_status: Optional[str] = None
     tiebreak_skipped_reason: Optional[str] = None
+    # THE PORTFOLIO (contract 1.13, R-BK1). Absent at K=1 — which is the default
+    # and is exactly the pre-1.13 behaviour. Everything above describes the
+    # WINNING member; this says how many others there were and what they found.
+    portfolio: Optional[PortfolioBlock] = None
 
 
 class CostSummary(BaseModel):

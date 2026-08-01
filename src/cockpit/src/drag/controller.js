@@ -879,7 +879,13 @@ export function createGestureController(board, geometry, opts) {
     if (!found || !api.postAuditAccept || !api.getSchedule) {
       return Promise.resolve(null);
     }
-    return api.postAuditAccept(scheduleId, { ...opts, authority })
+    // R-BK1: the audit is a PORTFOLIO, so the accept must re-solve at the seed
+    // that WON — accepting an offer found by seed 44 while re-solving at the
+    // portfolio's seed0 would mint a schedule that is not the one on the card.
+    // `expect_delta_abs` hands the promise back so the server can prove the two
+    // are the same object, to the cent, or refuse.
+    const promise = { seed: found.seed, expect_delta_abs: found.delta_abs };
+    return api.postAuditAccept(scheduleId, { ...promise, ...opts, authority })
       .then((res) => api.getSchedule(res.schedule_id).then((newDoc) => {
         board.rebind(newDoc, { motion: feel.motion });
         return rebindController(res.schedule_id, newDoc).then(() => {

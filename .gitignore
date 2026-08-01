@@ -54,3 +54,9 @@ _4b22_scratch/
 # the minted demo_board submission, sweep and verification logs). The SCRIPTS are
 # committed, under tools/spikes/demo_board_4b22a/; their outputs are not.
 _4b22a_scratch/
+# Session 4B.25 scratch (a COPY of the data root holding only the dense demo
+# board, so the audit-accept success branch could be executed without minting a
+# schedule row in the working root; plus the portfolio measurement's prepared
+# plants). The SCRIPTS are committed, under tools/spikes/portfolio_4b25/, and so
+# are their measurement rows.
+_4b25_scratch/

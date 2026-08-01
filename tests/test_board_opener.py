@@ -258,7 +258,7 @@ class TestCertificate:
 def _document(**over) -> dict:
     """A minimal contract-1.12 document over the why-here world's two orders."""
     doc = {
-        "contract_version": "1.12", "schedule_id": "sch", "snapshot_id": "s",
+        "contract_version": "1.13", "schedule_id": "sch", "snapshot_id": "s",
         "run_id": "r", "reference_date": "2026-01-05T00:00:00",
         "horizon": {"start": "2026-01-05T00:00:00", "end": "2026-01-19T00:00:00"},
         "solver": {"status": "OPTIMAL"},

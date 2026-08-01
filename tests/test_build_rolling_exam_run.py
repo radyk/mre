@@ -1,4 +1,27 @@
-"""The pinned-exam-world BUILDER's call signatures must match their callees.
+"""Cross-module call signatures must match their callees, across the whole repo.
+
+SESSION 4B.25 ITEM 4b WIDENED THIS FILE, because the species it was written for
+turned out to have five more members it could not see. The errand-session guard
+below reads ONE file -- ``tools/build_rolling_exam_run.py``. The same 4B.8 CU2
+rename (``build_rolling_view``: ``det_time -> det_total``) had also been sitting
+un-updated in FOUR test files and one other tool since 4B.8, and nothing was red:
+every one of those call sites lives inside a ``--runslow``-gated fixture, so the
+default suite collected them, skipped them, and reported green.
+``tests/test_rolling_two_beat.py`` was the exception that made it visible -- it
+is not slow-gated, so it errored 12 times at HEAD and 4B.24 reported it.
+
+``tools/build_rolling_fixture.py`` carried the EXACT defect this file's original
+docstring describes: ``build_coarse_zone(det_total=DET_TOTAL)`` against a callee
+whose parameter is ``det_time``. The guard existed, was correct, and was pointed
+at one file.
+
+So the sweep below binds every call site in ``tests/`` and ``tools/`` against the
+live signature of the callee -- in milliseconds, with no solve, and regardless of
+whether the test that contains it would ever run.
+
+--- the original errand-session docstring follows ---
+
+The pinned-exam-world BUILDER's call signatures must match their callees.
 
 Errand session (2026-07-28) CU2. ``tools/build_rolling_exam_run.py`` mints the
 world that every rolling exam bank asks against -- a 300-question sweep and the
@@ -59,9 +82,44 @@ def _callees() -> dict:
     }
 
 
-def _call_sites() -> list:
-    """Every (name, n_positional, keyword-names, lineno) the builder calls."""
-    tree = ast.parse(BUILDER.read_text(encoding="utf-8"), filename=str(BUILDER))
+def _sweep_callees() -> dict:
+    """The callee map for the REPO-WIDE sweep (4B.25 Item 4b).
+
+    Wider than ``_callees()`` above: it adds the other cross-module entry points
+    whose signatures a caller can drift away from silently -- the full roll, the
+    portfolio wrapper, and the audit. A name absent here is simply not checked,
+    which is the same stated gap the builder map carries.
+    """
+    from mre.modules.rolling_horizon import (
+        build_rolling_view, run_rolling_horizon, solve_rolling_portfolio,
+    )
+    from mre.modules.sandbox import audit_incumbent, baseline_window_solve
+
+    out = dict(_callees())
+    out.update({
+        "run_rolling_horizon": run_rolling_horizon,
+        "solve_rolling_portfolio": solve_rolling_portfolio,
+        "build_rolling_view": build_rolling_view,
+        "audit_incumbent": audit_incumbent,
+        "baseline_window_solve": baseline_window_solve,
+    })
+    return out
+
+
+def _swept_files() -> list:
+    """Every python file in ``tests/`` and ``tools/``. Nothing is excluded: a
+    spike script that no longer binds is drift like any other, and the whole
+    point of 4B.25's widening is that ``--runslow``-gated and archival code is
+    exactly where this species survives."""
+    return sorted(
+        [p for p in (REPO / "tests").rglob("*.py")]
+        + [p for p in (REPO / "tools").rglob("*.py")]
+    )
+
+
+def _call_sites(path: Path = BUILDER) -> list:
+    """Every (name, n_positional, keyword-names, lineno) ``path`` calls."""
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     sites = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
@@ -115,6 +173,68 @@ def test_builder_call_signatures_match_their_callees():
         f"{BUILDER.name} no longer calls {missing} -- either the builder changed "
         f"shape or this guard's callee map is stale; fix the map in the same "
         f"commit, do not delete the entry to make this pass.")
+
+
+# A call site that forwards ``**kwargs`` cannot be bound structurally -- the
+# names are not in the source. Unlike the builder-only guard above (one curated
+# file, where such a site is a deliberate change and should fail loudly), a
+# repo-wide sweep meets legitimate forwarding in test helpers and measurement
+# drivers. They are SKIPPED, and the skip is DECLARED here rather than silent:
+# a new unbindable site fails the test until someone writes it down, which keeps
+# "what this guard does not cover" a reviewed list instead of a growing hole.
+# (No silent caps -- 4B.24's rule, applied to a guard's own coverage.)
+UNBINDABLE = {
+    "tests/test_audit_portfolio.py": {"audit_incumbent"},
+    "tests/test_portfolio.py": {"build_rolling_view"},
+    "tools/spikes/portfolio_4b25/measure_main_portfolio.py":
+        {"solve_rolling_portfolio"},
+}
+
+
+def test_no_call_site_in_tests_or_tools_has_drifted_from_its_callee():
+    """4B.25 Item 4b -- the same binding check, over every file in tests/ and
+    tools/. This is the seam the builder-only guard could not see."""
+    callees = _sweep_callees()
+    failures = []
+    skipped: dict = {}
+    for path in _swept_files():
+        try:
+            sites = _call_sites(path)
+        except SyntaxError as exc:                       # noqa: PERF203
+            failures.append(f"{path.relative_to(REPO)}: unparseable ({exc})")
+            continue
+        for (name, n_pos, kwargs, lineno, starred) in sites:
+            target = callees.get(name)
+            if target is None:
+                continue
+            key = path.relative_to(REPO).as_posix()
+            rel = f"{key}:{lineno}"
+            if starred or None in kwargs:
+                skipped.setdefault(key, set()).add(name)
+                continue
+            sig = inspect.signature(target)
+            try:
+                sig.bind(*[_Any()] * n_pos, **{k: _Any() for k in kwargs})
+            except TypeError as exc:
+                failures.append(
+                    f"{rel} {name}({', '.join(kwargs)}) does not match "
+                    f"{target.__module__}.{target.__qualname__}{sig}: {exc}")
+
+    assert not failures, (
+        "a call site no longer matches the function it calls -- a rename or a "
+        "dropped parameter reached only some of its callers:\n  "
+        + "\n  ".join(failures))
+
+    assert skipped == {k: set(v) for k, v in UNBINDABLE.items()}, (
+        "the set of call sites this guard CANNOT check has changed. It is a "
+        "declared list, not a filter: a **kwargs forwarding site is invisible "
+        "to a structural bind, so adding one narrows the guard and must be "
+        "written down in UNBINDABLE in the same commit.\n"
+        f"  found:    {ess(skipped)}\n  declared: {ess(UNBINDABLE)}")
+
+
+def ess(d: dict) -> str:
+    return ", ".join(f"{k}:{sorted(v)}" for k, v in sorted(d.items()))
 
 
 def test_coarse_budget_is_not_the_rolling_total():

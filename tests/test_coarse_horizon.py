@@ -152,7 +152,7 @@ def view(plant):
     from mre.modules.rolling_horizon import build_rolling_view
     return build_rolling_view(plant, window_days=7, frozen_days=2, gravity=True,
                               deterministic=True, seed=42,
-                              member_time_limit_s=8.0, det_time=1.0)
+                              member_time_limit_s=8.0, det_total=3.0)
 
 
 @pytest.fixture(scope="module")
@@ -273,7 +273,7 @@ def test_derated_run_can_declare_a_fine_feasible_instance_infeasible(plant):
 
     v = build_rolling_view(plant, window_days=7, frozen_days=2, gravity=True,
                            deterministic=True, seed=42, member_time_limit_s=8.0,
-                           det_time=1.0)
+                           det_total=3.0)
     # rho = 0.15 on this plant: measured to leave 80 of 83 ops MODELED (so the
     # verdict is a real aggregate-capacity refutation, not an artifact of ops
     # dropping out as unmodelable) while the proof run at rho = 1.0 places the
@@ -429,7 +429,7 @@ class TestCoarseDocument:
             identity_map=identity_map, coarse_zone=zone)
 
     def test_contract_is_1_9_and_the_zone_is_present(self, doc):
-        assert doc.contract_version == "1.12"
+        assert doc.contract_version == "1.13"
         assert doc.rolling is not None and doc.rolling.coarse_zone is not None
 
     def test_completeness_invariant_passes_unchanged(self, plant, view, doc):

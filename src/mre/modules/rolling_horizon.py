@@ -58,6 +58,7 @@ Nothing here imports ortools directly except through SolverBuilder/SolveRunner.
 from __future__ import annotations
 
 import re
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -141,6 +142,11 @@ _STAGE2_RESERVE_FRACTION = 1.0 / 12.0
 #: exactly the review this change needed. Each caller now declares its own
 #: historical total explicitly and nobody's budget moved silently.
 _DET_TOTAL_DEFAULT = 6.0
+#: The same number under a public name, for callers outside this module that
+#: need to say "the shipped default" rather than restate 6.0 (the API's solve
+#: worker, since 4B.25 — a portfolio member's budget is a DECLARED coefficient
+#: and a caller declaring nothing must land on exactly this).
+DET_TOTAL_DEFAULT = _DET_TOTAL_DEFAULT
 
 #: The MONOLITHIC path's two-stage budget. That path declared no deterministic
 #: budget for stage 1 (wall-limited) and a fixed 2.0 for stage 2, so 2.0 IS its
@@ -485,6 +491,12 @@ class PreparedPlant:
     operations: list[dict]
     edges: list[dict]
     excluded_demand_ids: set
+    # Where this plant was prepared FROM (4B.25, R-BK1 clause 5). A portfolio
+    # member running in a separate PROCESS cannot share this object — the
+    # snapshot store is not picklable and two processes must not write one
+    # out_dir — so it re-prepares the plant from the same submission in its own
+    # scratch directory. Optional and unused on every sequential path.
+    submission_dir: Optional[Path] = None
     # derived
     ops_by_wp: dict = field(default_factory=dict)
     wp_of_demand: dict = field(default_factory=dict)
@@ -578,6 +590,7 @@ def prepare_plant(
         constraints=constraints, demands=demands, fulfillments=fuls,
         workpackages=wps, operations=ops, edges=edges,
         excluded_demand_ids=set(v_result.excluded_demand_ids),
+        submission_dir=submission_dir,
     )
     _derive_maps(plant)
     return plant
@@ -723,6 +736,12 @@ class RollingView:
     # ledger. None on a solve that reported neither (never a fabricated 0.0).
     objective: Optional[float] = None
     gap: Optional[float] = None
+    # 4B.25 — what the two-stage solve ACTUALLY SPENT, in deterministic units.
+    # A portfolio member's row is meant to answer "was it the seed or the
+    # budget?" (4B.24 §7(b) says both decide), and it could not: the view
+    # carried the budget it was GIVEN nowhere and the budget it USED nowhere
+    # either. None on a view whose solve did not report one.
+    det_consumed: Optional[float] = None
 
     @property
     def placed(self) -> dict:
@@ -822,6 +841,7 @@ def build_rolling_view(
     # its optimum can state the distance rather than only the fact.
     objective: Optional[float] = None
     gap: Optional[float] = None
+    det_consumed: Optional[float] = None
 
     # CU1 persistence wiring — reporters + snapshot writer are opened only when
     # ``persist`` is set (the API rolling worker). runs_dir mirrors the spine's
@@ -868,6 +888,7 @@ def build_rolling_view(
         # placements, so these describe the COST proof and nothing else.
         objective = solve.objective
         gap = solve.gap
+        det_consumed = solve.det_consumed
         if solve.status in ("OPTIMAL", "FEASIBLE"):
             sv = solve.solve_values
             for op in free_ops:
@@ -972,10 +993,263 @@ def build_rolling_view(
         cost_ledger=ledger, service_outcomes=svc, op_drivers=op_drivers,
         win_horizon_start=win_horizon_start, win_horizon_end=win_horizon_end,
         persisted=persist, wall_truncated=wall_truncated,
+        det_consumed=det_consumed,
         earliness_value=ev_used, status=status, earliness_tiebreak=tiebreak,
         tiebreak_status=tiebreak_status, tiebreak_skipped_reason=tiebreak_skipped,
         objective=objective, gap=gap)
 
+
+# ---------------------------------------------------------------------------
+# R-BK1 — THE PORTFOLIO AT THE MAIN SOLVE (Session 4B.25 Item 3)
+# ---------------------------------------------------------------------------
+# `build_rolling_view` above is ONE deterministic search. 4B.24 measured what
+# that costs: on the dense demo board, one deterministic unit of unpinned search
+# found 0% at seeds 42/43/46, 16.3% cheaper at 44 and 13.2% at 45. The published
+# board is whichever of those the shipped seed happened to be.
+#
+# This wrapper runs K of them and publishes the best by LEDGER. At K=1 — the
+# default, and the default until Daryn flips it — it calls `build_rolling_view`
+# once with the caller's own seed and returns no portfolio at all, so nothing
+# about today's path changes and no block reaches the document. That is clause
+# (2)'s compatibility promise, and `tests/test_portfolio.py` proves it by
+# schedule digest rather than asserting it.
+# ---------------------------------------------------------------------------
+
+def _ledger_total(view: "RollingView") -> Optional[float]:
+    """A view's LEDGER total — the selection key (clause 3). None when the solve
+    produced no ledger, which makes the member unpublishable rather than free."""
+    total = (view.cost_ledger or {}).get("total_cost")
+    return None if total is None else round(float(total), 2)
+
+
+def _member_from_view(seed: int, view: "RollingView", wall_s: float):
+    """One portfolio member, read off a completed window solve."""
+    from mre.modules import portfolio as pf
+
+    if view.wall_truncated:
+        # CLAUSE (1): a search the WALL stopped is not reproducible, so it is
+        # not a member — the same refusal 4B.24 put on the sandbox baseline, for
+        # the same reason. It is still REPORTED (clause 4).
+        return pf.unusable(seed, pf.WALL_STOPPED_REASON, status=view.status,
+                           wall_truncated=True,
+                           det_consumed=getattr(view, "det_consumed", None),
+                           wall_time_s=round(wall_s, 3))
+    total = _ledger_total(view)
+    if total is None or view.status not in ("OPTIMAL", "FEASIBLE"):
+        return pf.unusable(
+            seed, f"the window solve returned {view.status or 'no result'} with "
+                  f"no ledger to compare", status=view.status,
+            det_consumed=getattr(view, "det_consumed", None),
+            wall_time_s=round(wall_s, 3))
+    return pf.PortfolioMember(seed=seed, ledger_total=total, status=view.status,
+                              det_consumed=getattr(view, "det_consumed", None),
+                              wall_time_s=round(wall_s, 3))
+
+
+#: The spec a PARALLEL member carries into its own process. Plain data only —
+#: everything here must survive a pickle and a spawn (Windows), which is why it
+#: is the submission path and the coefficients rather than the PreparedPlant.
+_MEMBER_KEYS = ("submission_dir", "reference_date", "policy", "window_days",
+                "frozen_days", "gravity", "member_time_limit_s", "det_total",
+                "crit_threshold", "earliness_value", "hint_mode")
+
+
+def _portfolio_member_process(spec_and_seed) -> "object":
+    """ONE PORTFOLIO MEMBER, IN ITS OWN PROCESS (clause 5).
+
+    Module-level and plain-data-in so it is picklable under spawn. It re-runs
+    the spine into its OWN scratch directory: two processes must never write one
+    ``out_dir``, and the spine is deterministic, so a plant prepared twice from
+    one submission is the same plant. It returns ONLY a
+    :class:`~mre.modules.portfolio.PortfolioMember` — the placements stay in the
+    process that found them and the winner is re-solved in the parent, which is
+    safe for exactly the reason clause (1) exists.
+    """
+    import tempfile
+    import time as _time
+    from mre.modules import portfolio as pf
+
+    spec, seed = spec_and_seed
+    t0 = _time.monotonic()
+    tmp = tempfile.mkdtemp(prefix=f"mre-portfolio-{seed}-")
+    try:
+        plant = prepare_plant(spec["submission_dir"], tmp,
+                              reference_date=spec["reference_date"],
+                              policy=spec["policy"])
+        view = build_rolling_view(
+            plant, window_days=spec["window_days"],
+            frozen_days=spec["frozen_days"], gravity=spec["gravity"],
+            deterministic=True, seed=seed,
+            member_time_limit_s=spec["member_time_limit_s"],
+            det_total=spec["det_total"], crit_threshold=spec["crit_threshold"],
+            earliness_value=spec["earliness_value"], persist=False,
+            hint_mode=spec["hint_mode"])
+        return _member_from_view(seed, view, _time.monotonic() - t0)
+    except Exception as exc:  # noqa: BLE001 — one dead seed never loses the rest
+        return pf.unusable(seed, f"member failed: {type(exc).__name__}: {exc}",
+                           wall_time_s=round(_time.monotonic() - t0, 3))
+    finally:
+        import shutil
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+class PortfolioDrift(RuntimeError):
+    """The winner re-solved to a DIFFERENT ledger than the member that won.
+
+    That cannot happen under clause (1), so if it does, the portfolio is not
+    deterministic and its selection means nothing. Raising is the only honest
+    response: publishing the re-solve would ship a board whose declaration
+    ("best of K") is a claim about a search that did not produce it."""
+
+
+def solve_rolling_portfolio(
+    plant: PreparedPlant,
+    window_days: int,
+    frozen_days: int,
+    gravity: bool = True,
+    deterministic: bool = True,
+    seed: int = 42,
+    member_time_limit_s: float = 30.0,
+    det_total: float = _DET_TOTAL_DEFAULT,
+    crit_threshold: float = 3.0,
+    earliness_value: Optional[float] = None,
+    persist: bool = False,
+    hint_mode: str = HINT_OFF,
+    *,
+    k: int = 1,
+    portfolio_workers: int = 1,
+    k_declared: bool = False,
+    det_time_declared: bool = False,
+) -> tuple:
+    """Solve the current window as a DECLARED PORTFOLIO (R-BK1). Returns
+    ``(RollingView, Portfolio | None)``.
+
+    ``seed`` is the portfolio's ``seed0``: members take ``seed .. seed+k-1``,
+    consecutive by ruling, so nobody can quietly pick the seed that wins on the
+    board in front of them.
+
+    **K = 1 IS EXACTLY ``build_rolling_view``**, called once, with no extra
+    solve, no scratch directory and no portfolio — the returned Portfolio is
+    None and the assembler therefore emits no block.
+
+    At K > 1 the members run with ``persist=False`` (they are probes; only their
+    ledger totals matter), the winner is chosen by :func:`portfolio.select`, and
+    the winner's seed is then re-solved with the caller's own ``persist`` so the
+    artifacts on disk belong to the schedule being published. That re-solve is
+    ONE extra solve — K+1 in total — and it is not waste: its ledger is checked
+    against the member's, which is the portfolio's determinism asserted rather
+    than assumed.
+
+    ``deterministic=False`` cannot be a portfolio at all: without a
+    deterministic budget the members are not runs, they are draws, and
+    "the best of five draws" is a number with no meaning. K > 1 with
+    ``deterministic=False`` raises.
+    """
+    from mre.modules import portfolio as pf
+
+    if k < 1:
+        raise ValueError(f"a portfolio needs at least one member, got k={k}")
+    if k == 1:
+        return build_rolling_view(
+            plant, window_days=window_days, frozen_days=frozen_days,
+            gravity=gravity, deterministic=deterministic, seed=seed,
+            member_time_limit_s=member_time_limit_s, det_total=det_total,
+            crit_threshold=crit_threshold, earliness_value=earliness_value,
+            persist=persist, hint_mode=hint_mode), None
+    if not deterministic:
+        raise ValueError(
+            "a portfolio of non-deterministic members is a portfolio of draws — "
+            "R-BK1 clause (1) requires every member to be fully deterministic")
+
+    seeds = pf.seeds_for(k, seed)
+    t_start = time.monotonic()
+    views: dict = {}
+
+    if portfolio_workers > 1:
+        if plant.submission_dir is None:
+            raise ValueError(
+                "a process-parallel portfolio re-prepares the plant in each "
+                "worker, so the plant must know the submission it came from; "
+                "this one does not (prepare_plant records it)")
+        spec = {"submission_dir": str(plant.submission_dir),
+                "reference_date": plant.reference_date,
+                "policy": "identity_v1",
+                "window_days": window_days, "frozen_days": frozen_days,
+                "gravity": gravity,
+                "member_time_limit_s": member_time_limit_s,
+                "det_total": det_total, "crit_threshold": crit_threshold,
+                "earliness_value": earliness_value, "hint_mode": hint_mode}
+        members = pf.run_members(
+            _ProcessMember(spec), seeds, workers=portfolio_workers)
+    else:
+        members = []
+        for s in seeds:
+            t0 = time.monotonic()
+            try:
+                v = build_rolling_view(
+                    plant, window_days=window_days, frozen_days=frozen_days,
+                    gravity=gravity, deterministic=True, seed=s,
+                    member_time_limit_s=member_time_limit_s,
+                    det_total=det_total, crit_threshold=crit_threshold,
+                    earliness_value=earliness_value, persist=False,
+                    hint_mode=hint_mode)
+            except Exception as exc:  # noqa: BLE001
+                members.append(pf.unusable(
+                    s, f"member failed: {type(exc).__name__}: {exc}",
+                    wall_time_s=round(time.monotonic() - t0, 3)))
+                continue
+            views[s] = v
+            members.append(_member_from_view(s, v, time.monotonic() - t0))
+
+    book = pf.build(k, seed, det_total, members, workers=portfolio_workers,
+                    wall_time_s=time.monotonic() - t_start,
+                    k_declared=k_declared, det_time_declared=det_time_declared)
+    winner = book.winner
+    if winner is None:
+        # NOT a failure of the plant and not a schedule we refuse to publish:
+        # the portfolio found nothing publishable, so we fall back to the
+        # single-seed path with the declared seed0 and the block says so.
+        view = build_rolling_view(
+            plant, window_days=window_days, frozen_days=frozen_days,
+            gravity=gravity, deterministic=True, seed=seed,
+            member_time_limit_s=member_time_limit_s, det_total=det_total,
+            crit_threshold=crit_threshold, earliness_value=earliness_value,
+            persist=persist, hint_mode=hint_mode)
+        return view, book
+
+    cached = views.get(winner.seed)
+    if cached is not None and not persist:
+        return cached, book
+
+    view = build_rolling_view(
+        plant, window_days=window_days, frozen_days=frozen_days,
+        gravity=gravity, deterministic=True, seed=winner.seed,
+        member_time_limit_s=member_time_limit_s, det_total=det_total,
+        crit_threshold=crit_threshold, earliness_value=earliness_value,
+        persist=persist, hint_mode=hint_mode)
+    final = _ledger_total(view)
+    if final is None or abs(final - winner.ledger_total) > 0.01:
+        raise PortfolioDrift(
+            f"seed {winner.seed} won the portfolio at ${winner.ledger_total:,.2f} "
+            f"and re-solved to {final if final is None else f'${final:,.2f}'} — "
+            "the portfolio is not deterministic and its selection is meaningless")
+    return view, book
+
+
+class _ProcessMember:
+    """A picklable ``seed -> PortfolioMember`` closure-substitute (clause 5).
+
+    ``run_members`` calls ``fn(seed)``; under a process pool that callable must
+    survive a pickle, which a real closure does not. This is the smallest thing
+    that does."""
+
+    __slots__ = ("spec",)
+
+    def __init__(self, spec: dict):
+        self.spec = spec
+
+    def __call__(self, seed: int):
+        return _portfolio_member_process((self.spec, seed))
 
 
 # ---------------------------------------------------------------------------

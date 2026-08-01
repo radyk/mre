@@ -14356,3 +14356,120 @@ NOT about our method, which is the ruling in a single line). Plus
 `tests/cockpit/three_way_card.spec.mjs`, 11 tests, including a control in the
 other direction: the amendment must not have been implemented by deleting 4B.5's
 split. Narrative in `docs/closeouts/4B.24.md`.
+
+### 2026-08-01 — R-BK1: THE PUBLISHED BOARD IS A PORTFOLIO, NOT A DRAW (Session 4B.25)
+
+**Ruled and implemented.** The measured case is 4B.24's own §7(b), and it is the
+largest quality lever this project has measured. Same board, same incumbent, same
+one deterministic unit of unpinned search: **seed 42 found 0%, seed 45 found 13.2%
+cheaper, seed 44 found 16.3% cheaper.** At three units seed 42 found $239,824.80.
+The spread between seeds at a FIXED budget was unharvested, and the machine's
+other cores sat idle by policy — correctly, because CP-SAT `workers > 1` inside
+one solve is not reproducible and the determinism rule forbids it. The published
+board was ONE draw from that distribution and nothing ever checked which one.
+
+**R-BK1 — THE PORTFOLIO. Five clauses, verbatim.**
+
+**(1) A SOLVE MAY BE A DECLARED PORTFOLIO: K independent runs, seeds
+seed0..seed0+K-1, each fully deterministic (deterministic_time, workers=1, wall as
+ceiling only). The result is the member with the lowest LEDGER total; ties break by
+lowest seed. The selection is a pure function of a fixed set, so THE PORTFOLIO IS
+DETERMINISTIC.**
+
+**(2) K AND THE PER-MEMBER BUDGET ARE DECLARED COEFFICIENTS — visible on the
+certificate ("best of K seeded searches at B units each"), customer-tunable, never
+hidden (R-SC3's discipline). K=1 IS EXACTLY TODAY'S BEHAVIOUR and is the default
+until Daryn flips it: every existing golden, digest and pinned world is a K=1
+portfolio.**
+
+**(3) SELECTION IS BY THE LEDGER, never the raw objective (the 4B.7 lesson: the
+objective is not money on every path).**
+
+**(4) THE LOSING MEMBERS ARE NOT DISCARDED SILENTLY. Their ledger totals persist
+alongside the winner — the cross-seed spread IS the stability figure 4B.12
+identified as the honest companion to the gap, and it is free here.**
+
+**(5) MEMBERS RUN AS SEPARATE PROCESSES when parallel, never as CP-SAT
+workers>1. Parallelism between deterministic runs, never inside one.**
+
+---
+
+*Clause (1) and where determinism actually lives.* Not in the members being fast,
+and not in the budget: in the SELECTION being `min` over a FIXED set under a TOTAL
+order. `portfolio.select` is pure, and the tie-break on seed is the whole of the
+claim on a board where several seeds find the same money — which is the common
+case on any board that proves. Without it `min` returns whichever member the list
+held first, and the portfolio's answer becomes a function of completion order,
+which under clause (5) is a function of the machine. **A member the WALL stopped is
+not reproducible and is therefore NOT SELECTABLE** — the identical refusal 4B.24
+clause (1) put on the sandbox baseline, in the same words, for the same reason.
+
+*Clause (2) and the shape of a compatibility promise.* K=1 is not "a portfolio of
+one": it emits **no block at all**, so a K=1 document is byte-identical to its
+pre-1.13 self apart from the version string. The block is ABSENT BY CONSTRUCTION
+rather than present-and-empty — 4B.24's discipline on the delta card's missing
+re-optimization row, and 4B.11's on the tardiness split. `Portfolio.declaration()`
+at K=1 says *"one seeded search at B deterministic units (seed 42)"* and never
+*"best of 1"*, because dressing one search up as a portfolio would make the
+declaration a claim about a search nobody ran. **The promise is proven by SCHEDULE
+DIGEST, not asserted** (`tests/test_portfolio.py`): the K=1 wrapper's placements
+hash identically to a direct `build_rolling_view` call on the same plant.
+
+*Clause (3) and why the ledger.* Two members can carry objectives that are not
+comparable to each other at all — R-SC3's stage 2 minimizes a MINUTE COUNT, and
+4B.7 is the record of what happens when a figure that is not money is read as
+money. The ledger is the only quantity on the solve path that is a price.
+
+*Clause (4) is where the ruling pays for itself twice.* The losers have already
+run; publishing their totals costs nothing and produces the stability figure the
+gap cannot give. Three registers, authored once in
+`portfolio.agreement_sentence()` and never worded in JS: **all landed on the same
+total** (the strongest trust statement a search can make about itself), **landed
+within X% of each other**, and **spread X% apart — this window is far from
+settled**. The third is not a failure to report; it IS the finding. A spread of
+one number is not a spread: below two publishable members `spread_abs` is None,
+never 0.00, because printing zero would claim an agreement nobody observed
+(`partitions()`'s tri-state, 4B.21).
+
+*Clause (5) and what "parallel" is allowed to mean.* `portfolio.run_members` at
+`workers > 1` uses a process pool and restores SEED ORDER regardless of completion
+order, so `select` sees the same sequence either way. Nothing in `portfolio.py`
+names `num_search_workers` — asserted as a test, because the one thing this module
+must never do is reach for the parallelism it exists to route around. On the main
+solve a parallel member re-prepares the plant in its own scratch directory: two
+processes must never write one `out_dir`, and the spine is deterministic, so a
+plant prepared twice from one submission is the same plant.
+
+**WHERE IT IS BUILT, AND THE COST.** `POST /audit` ("search deeper") defaults to
+**K=3** — it applies nothing, has no golden hanging off it, is invoked by a planner
+explicitly asking to look harder, and refusing to look harder in the one place
+whose entire purpose is looking harder would be a strange kind of caution. The
+MAIN solve (`SolveRequest.portfolio_k`) defaults to **K=1**, per clause (2). At
+K > 1 the main solve costs **K+1 searches**: K probes with `persist=False`, then
+the winning seed re-solved with the caller's `persist` so the artifacts on disk
+belong to the published board. That extra solve is not waste — its ledger is
+checked against the member's and a mismatch raises `PortfolioDrift`, which is
+clause (1) asserted rather than assumed.
+
+**THE ACCEPT HAD TO LEARN THE SEED.** An offer found by seed 44 and accepted by
+re-solving at seed 42 would mint a schedule that is not the one on the card. The
+offer carries its winning seed, the cockpit hands it back with
+`expect_delta_abs`, and `materialize_audit_offer` refuses to accept a child whose
+delta does not match the offer **to the cent**. That is the same defect class
+4B.24 closed with `hold_all_placements`, one ceremony over: the promise on the
+card and the schedule that lands must be the same object.
+
+**Contract 1.12 → 1.13** — `solver.portfolio` (`PortfolioBlock`), Optional, absent
+at K=1, carrying K and the per-member budget with their PROVENANCE (declared vs
+defaulted, the coarse zone's rho discipline) and every member's ledger total
+beside the winner's.
+
+Guard: `tests/test_portfolio.py` (28 tests, a premise test, and **three negative
+controls proven red against physically reverted code**: the tie-break dropped,
+clause (1)'s wall refusal removed, and the K=1 block emitted) plus
+`tests/test_audit_portfolio.py` (13 tests, **two more negative controls proven
+red**). Two of those five controls were added ONLY because the first attempt at
+them came back GREEN — the live-path tests could not see either branch, and a
+negative control that does not go red is the finding. `audit_incumbent` had no
+tests at all before this session. Narrative and the measurement table in
+`docs/closeouts/4B.25.md`.

@@ -78,6 +78,22 @@ export function opportunityBlock(result) {
   };
 }
 
+// R-BK1 clause (4) — THE LOSING MEMBERS ARE NOT DISCARDED SILENTLY.
+//
+// The JS DECIDES whether there is a portfolio line and never WORDS it: the
+// three registers (all landed on the same total / within X% / spread X% apart —
+// far from settled) are authored in `portfolio.agreement_sentence` so the card
+// and any other surface cannot state different things about one search. Returns
+// null at K=1, where there is no portfolio and nothing to say about a spread —
+// a card must never grow an empty heading (the 4B.24 rule, one block over).
+export function portfolioLine(result) {
+  const p = result && result.portfolio;
+  if (!p || !(p.k > 1)) return null;
+  const parts = [p.declaration, p.agreement, p.unpublished].filter((s) => s);
+  if (!parts.length) return null;
+  return { k: p.k, text: parts.join(" — ") };
+}
+
 export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPublish, onAskWhy, onRetry, onSearchDeeper, onAcceptSearch }) {
   const card = document.createElement("div");
   card.className = "delta-card hidden";
@@ -631,6 +647,7 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     _stopCountdown();
     const offer = res && res.offer;
     const failed = res && res.searched === false;
+    const pf = portfolioLine(res);
     card.className = `delta-card audit ${offer ? "offer" : failed ? "return-home" : "held"}`;
     const rows = (offer ? offer.affected_orders || [] : []).slice(0, 4).map((a) =>
       `<div class="dc-affected-row"><span class="dc-wo">${a.work_order || ""}</span>
@@ -640,9 +657,12 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
         <span class="dc-outcome${offer ? "" : failed ? " failure" : ""}">${
           offer ? "A cheaper schedule exists" : failed ? "Couldn't search" : "The plan held"}</span>
         <span class="dc-status">${
-          failed ? "no answer" : `searched · seed ${res.seed} · ${res.det_time_s} units`}</span>
+          failed ? "no answer"
+          : pf ? `searched · ${pf.k} seeds · ${res.det_time_s} units each`
+               : `searched · seed ${res.seed} · ${res.det_time_s} units`}</span>
       </div>
       <div class="dc-audit-sentence"></div>
+      ${pf ? `<div class="dc-note portfolio-spread"></div>` : ""}
       ${offer ? `<div class="dc-split"><div class="dc-split-row your-move">
           <span class="dc-split-k">the search's saving</span>
           <span class="dc-split-v">${signedMoney(offer.delta_abs)}</span>
@@ -658,6 +678,11 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     // authored server text, as TEXT — never interpolated into markup
     card.querySelector(".dc-audit-sentence").textContent =
       String((res && res.sentence) || "");
+    // Server-composed, as TEXT. The JS never words the spread: five searches
+    // agreeing and five scattering are different claims about the board, and
+    // which one this is gets decided in `portfolio.agreement_sentence`.
+    const spread = card.querySelector(".portfolio-spread");
+    if (spread) spread.textContent = pf.text;
     const acc = card.querySelector(".dc-accept-search");
     if (acc) acc.addEventListener("click", () => {
       acc.disabled = true; acc.textContent = "accepting…";

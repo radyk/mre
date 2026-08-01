@@ -56,7 +56,7 @@ def rolling(tmp_path_factory):
     plant = prepare_plant(d / "sub", d / "prep", reference_date=REF)
     view = build_rolling_view(
         plant, window_days=WINDOW_DAYS, frozen_days=FROZEN_DAYS, gravity=True,
-        deterministic=True, seed=42, member_time_limit_s=10.0, det_time=1.0,
+        deterministic=True, seed=42, member_time_limit_s=10.0, det_total=1.0,
         persist=True)
     idmap = plant.store.load_snapshot(plant.snapshot_id).read_identity_map()
     doc = assemble_rolling_document(
@@ -355,10 +355,19 @@ def test_a_tray_order_is_never_answered_as_absent(rolling):
 
 
 @pytest.mark.slow
-def test_rolling_ask_why_not_hedges_for_an_already_placed_order(rolling):
-    """The 'must hedge / decline' specimen: asking why a PLACED (committed/active)
-    order 'isn't scheduled yet' gets an honest 'not in the beyond-horizon list —
-    it's already in the current window' answer, never a confident fabrication."""
+def test_rolling_ask_why_not_resolves_an_already_placed_order(rolling):
+    """The false-premise specimen: asking why a PLACED (committed/active) order
+    "isn't scheduled yet" is answered by CORRECTING the premise — the order IS
+    scheduled, and where — never by a confident fabrication about the tray.
+
+    THIS ASSERTION WAS STALE BY THREE SESSIONS and nothing was red, because the
+    file's fixture has not run since 4B.8's ``det_time -> det_total`` rename
+    (4B.25 Item 4b). It asserted the pre-4B.11 HEDGE ("isn't in the
+    beyond-horizon list"); 4B.11 ruled that the same route RESOLVES a placed
+    order instead of offering a disjunction, and the live answer has said so
+    ever since. What is pinned here is the ruled behaviour: the premise is
+    corrected, the disposition is stated, and the answer never says the order is
+    absent from the schedule."""
     from mre.contracts.parse import Intent
     from tests.parse_doubles import parsed
 
@@ -368,7 +377,10 @@ def test_rolling_ask_why_not_hedges_for_an_already_placed_order(rolling):
     a, m = _ask(rolling, q,
                 parsed(q, Intent.WHY_NOT_SCHEDULED_YET, orders=(placed_wo,)))
     assert m["route"] == "why-not-scheduled-yet"
-    assert "isn't in the beyond-horizon list" in a
+    assert "IS scheduled" in a and placed_wo in a
+    for absent in ("not in this schedule", "isn't in this schedule",
+                   "not part of this schedule"):
+        assert absent not in a
 
 
 @pytest.mark.slow

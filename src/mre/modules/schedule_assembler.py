@@ -42,6 +42,7 @@ from mre.contracts.schedule_document import (
     Phases,
     PhaseWindow,
     PoolBlock,
+    PortfolioBlock,
     PrecedenceEdgeBlock,
     ResourceLane,
     RollingBlock,
@@ -504,6 +505,7 @@ def assemble_rolling_document(
     run_id: str,
     identity_map: Any = None,
     coarse_zone: Any = None,
+    portfolio: Any = None,
 ) -> ScheduleDocument:
     """Assemble a contract-1.9 rolling document from a PreparedPlant + a
     RollingView (rolling_horizon.build_rolling_view). ``plant`` and ``view`` are
@@ -512,7 +514,13 @@ def assemble_rolling_document(
     ``coarse_zone`` (contract 1.9, optional) is a
     ``coarse_horizon.CoarseZone``. When given, the tray entries gain their
     coarse placement and the RollingBlock gains the zone's density band. When
-    absent the document is exactly the 1.8 shape it was."""
+    absent the document is exactly the 1.8 shape it was.
+
+    ``portfolio`` (contract 1.13, optional) is a ``portfolio.Portfolio`` from
+    ``rolling_horizon.solve_rolling_portfolio``. It is None at K=1 — the default
+    — and a K=1 portfolio is DELIBERATELY not declared: no block is emitted, so
+    a single-seed board is byte-identical to its pre-1.13 self apart from the
+    version string (R-BK1 clause 2)."""
     ref = view.reference_origin
     horizon = HorizonBlock(start=ref, end=view.window_end + timedelta(days=21))
 
@@ -680,11 +688,19 @@ def assemble_rolling_document(
     # that could not prove its optimum has to be able to say BY HOW MUCH, or the
     # surface can only report "not proved" — and 4B.10 measured that distance at
     # 13.056% of ledger on the real shape.
+    # THE PORTFOLIO (contract 1.13, R-BK1 clause 2/4). Emitted only for a real
+    # portfolio — K > 1. A K=1 solve declares nothing here, because there is
+    # nothing to declare: one seeded search is what every board has always been,
+    # and a block saying "best of 1" would dress it up as something else.
     solver = SolverBlock(status=view.status, deterministic=True,
                          objective=getattr(view, "objective", None),
                          gap=getattr(view, "gap", None),
                          tiebreak_status=view.tiebreak_status,
-                         tiebreak_skipped_reason=view.tiebreak_skipped_reason)
+                         tiebreak_skipped_reason=view.tiebreak_skipped_reason,
+                         portfolio=(PortfolioBlock(**portfolio.block())
+                                    if portfolio is not None
+                                    and getattr(portfolio, "k", 1) > 1
+                                    else None))
 
     return ScheduleDocument(
         contract_version=CONTRACT_VERSION,

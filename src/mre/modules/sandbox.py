@@ -799,6 +799,21 @@ def window_opportunity(baseline: Optional[BaselineSolve],
 AUDIT_DET_TIME_S = 3.0
 AUDIT_BUDGET_S = 600.0
 
+# --- Session 4B.25, R-BK1: "SEARCH DEEPER" IS A PORTFOLIO -------------------
+# This is where the ruling is CHEAPEST to build and most obviously right. The
+# audit is already a deliberate act off the gesture path, already deterministic,
+# already seeded, and already spends what a drag may not — so running K of them
+# and offering the best costs only wall time a planner has already agreed to
+# spend, and it harvests the largest quality lever this project has measured
+# (4B.24 §7(b): at one deterministic unit on the dense board, three of five
+# seeds found nothing and two found 13-16% cheaper schedules).
+#
+# THE DEFAULT IS 3, NOT 1. Unlike the main solve, the audit has no golden, no
+# digest and no pinned world hanging off it: it applies nothing and is invoked
+# by a planner asking to look harder. Refusing to look harder in the one place
+# whose entire purpose is looking harder would be a strange kind of caution.
+AUDIT_K = 3
+
 
 def audit_incumbent(
     out_dir: Path | str,
@@ -810,6 +825,8 @@ def audit_incumbent(
     det_time_s: Optional[float] = None,
     budget_s: Optional[float] = None,
     seed: Optional[int] = None,
+    k: Optional[int] = None,
+    portfolio_workers: int = 1,
 ) -> dict:
     """THE INCUMBENT IS AUDITED, NOT ENSHRINED (clause 5) — the smallest honest
     version of it.
@@ -823,51 +840,150 @@ def audit_incumbent(
     affected list, accepted as its own act (clause 4). And when it finds nothing
     it SAYS SO, in units, because "I searched this hard and your plan held" is
     also a thing a planner is owed — silence would leave them unable to tell it
-    from a search that never ran."""
+    from a search that never ran.
+
+    SESSION 4B.25 (R-BK1): IT IS A PORTFOLIO. ``k`` members run at consecutive
+    seeds ``seed .. seed+k-1``, each a full deterministic search; the best by
+    LEDGER is offered and EVERY member's total is published beside it. The
+    offer's own sentence carries the spread, because five searches agreeing and
+    five scattering are different facts about the board and a planner acting on
+    the offer needs both."""
+    from mre.modules import portfolio as pf
+
     det = AUDIT_DET_TIME_S if det_time_s is None else det_time_s
     wall = AUDIT_BUDGET_S if budget_s is None else budget_s
     sd = SANDBOX_SEED if seed is None else seed
+    kk = AUDIT_K if k is None else int(k)
+    if kk < 1:
+        raise ValueError(f"a portfolio needs at least one member, got k={kk}")
     t0 = time.monotonic()
-    base = baseline_window_solve(
-        out_dir, snapshot_id, budget_s=wall, runs_subdir=runs_subdir,
-        deterministic=True, standing_pins=standing_pins,
-        restrict_op_ids=restrict_op_ids, det_time_s=det, seed=sd,
-        use_cache=False)
+    seeds = pf.seeds_for(kk, sd)
+
+    # Sequential by default (clause 5's worker token is the parallel path, and a
+    # laptop running five window solves at once measures its own thermals). The
+    # member's own BaselineSolve is retained only on the sequential path — under
+    # a process pool it lives and dies in its own process — so the winner is
+    # re-run here when it is missing, which determinism makes free of
+    # consequence (the same argument `materialize_audit_offer` already rests on).
+    runner = _AuditMember({
+        "out_dir": str(out_dir), "snapshot_id": snapshot_id,
+        "budget_s": wall, "runs_subdir": runs_subdir,
+        "standing_pins": standing_pins, "restrict_op_ids": restrict_op_ids,
+        "det_time_s": det})
+    members = pf.run_members(runner, seeds, workers=portfolio_workers)
+    solves = runner.solves
+    book = pf.build(kk, sd, det, members, workers=portfolio_workers,
+                    wall_time_s=time.monotonic() - t0,
+                    k_declared=k is not None,
+                    det_time_declared=det_time_s is not None)
+    winner = book.winner
+
     incumbent_total = _incumbent_total(Path(out_dir), snapshot_id)
-    opp = window_opportunity(base, incumbent_total)
     out = {
         "searched": True,
-        "det_time_s": det, "det_consumed": base.det_consumed,
-        "seed": sd, "wall_time_s": round(time.monotonic() - t0, 3),
-        "status": base.status, "wall_truncated": base.wall_truncated,
+        "det_time_s": det,
+        "seed": sd,
+        "wall_time_s": round(time.monotonic() - t0, 3),
         "incumbent_total": incumbent_total,
-        "opportunity": opp,
+        "portfolio": book.block(),
+        "opportunity": {},
         "offer": None,
         "sentence": "",
     }
-    if not base.available:
-        # NOT an offer and NOT "the incumbent held" — we did not get an answer.
-        # Saying "nothing cheaper" here would report our failure as their plan's
-        # strength, which is the fusion this whole session is about.
+    if winner is None:
+        # No member is publishable. NOT an offer and NOT "the incumbent held" —
+        # we did not get an answer, and saying "nothing cheaper" here would
+        # report our failure as their plan's strength.
+        first = next((m for m in members if m.reason), None)
         out["searched"] = False
+        out["det_consumed"] = None
+        out["status"] = (members[0].status if members else "")
+        out["wall_truncated"] = any(m.wall_truncated for m in members)
         out["sentence"] = (
-            "I could not complete a deeper search of this window, so I have "
-            f"nothing to say about whether the plan can be improved — {base.message}")
+            f"I could not complete a deeper search of this window ({kk} seeded "
+            f"attempt(s), none usable), so I have nothing to say about whether "
+            f"the plan can be improved"
+            + (f" — {first.reason}" if first is not None else ""))
         return out
+
+    base = solves.get(winner.seed)
+    if base is None:
+        base = baseline_window_solve(
+            out_dir, snapshot_id, budget_s=wall, runs_subdir=runs_subdir,
+            deterministic=True, standing_pins=standing_pins,
+            restrict_op_ids=restrict_op_ids, det_time_s=det, seed=winner.seed,
+            use_cache=False)
+    opp = window_opportunity(base, incumbent_total)
+    out.update({"det_consumed": base.det_consumed, "status": base.status,
+                "wall_truncated": base.wall_truncated,
+                "winning_seed": winner.seed, "opportunity": opp})
+    spread = book.agreement_sentence()
     if opp.get("found"):
         out["offer"] = {
             "delta_abs": opp["delta_abs"],
             "affected_orders": opp.get("affected_orders", []),
             "moved_op_count": opp.get("moved_op_count", 0),
             "moves": list(base.moves or []),
+            "seed": winner.seed,
         }
-        out["sentence"] = (f"the search found a schedule "
-                           f"${abs(opp['delta_abs']):,.2f} cheaper — review?")
+        out["sentence"] = (
+            f"the search found a schedule ${abs(opp['delta_abs']):,.2f} cheaper"
+            + (f" ({book.declaration()}; {spread})" if spread else "")
+            + " — review?")
         return out
     spent = base.det_consumed if base.det_consumed is not None else det
-    out["sentence"] = (f"searched {spent:.2f} more deterministic units; "
-                       "the incumbent held")
+    out["sentence"] = (
+        f"searched {spent:.2f} more deterministic units"
+        + (f" x {kk} seeds" if kk > 1 else "")
+        + "; the incumbent held"
+        + (f" — {spread}" if spread else ""))
     return out
+
+
+class _AuditMember:
+    """ONE AUDIT PORTFOLIO MEMBER — a picklable ``seed -> PortfolioMember``.
+
+    Module-level and plain-data-in, so clause (5)'s process pool can carry it
+    (a closure cannot survive a pickle, and on Windows the pool spawns). Its
+    ``solves`` cache is populated in whichever process runs the member, which is
+    the parent on the sequential path and a worker on the parallel one — the
+    caller reads it opportunistically and re-solves the winner when it is not
+    there.
+    """
+
+    __slots__ = ("spec", "solves")
+
+    def __init__(self, spec: dict):
+        self.spec = spec
+        self.solves: dict = {}
+
+    def __call__(self, seed: int):
+        from mre.modules import portfolio as pf
+
+        s = self.spec
+        b = baseline_window_solve(
+            Path(s["out_dir"]), s["snapshot_id"], budget_s=s["budget_s"],
+            runs_subdir=s["runs_subdir"], deterministic=True,
+            standing_pins=s["standing_pins"],
+            restrict_op_ids=s["restrict_op_ids"], det_time_s=s["det_time_s"],
+            seed=seed, use_cache=False)
+        self.solves[seed] = b
+        if b.wall_truncated:
+            # CLAUSE (1). `baseline_window_solve` already refuses to publish a
+            # wall-stopped result; this states the same refusal in the
+            # portfolio's own vocabulary, so the member is VISIBLE rather than
+            # missing and the spread cannot look tighter than the evidence.
+            return pf.unusable(seed, pf.WALL_STOPPED_REASON, status=b.status,
+                               wall_truncated=True, det_consumed=b.det_consumed,
+                               wall_time_s=b.wall_time_s)
+        if not b.available or b.total_cost is None:
+            return pf.unusable(seed, b.message or "no ledger", status=b.status,
+                               det_consumed=b.det_consumed,
+                               wall_time_s=b.wall_time_s)
+        return pf.PortfolioMember(
+            seed=seed, ledger_total=round(float(b.total_cost), 2),
+            status=b.status, det_consumed=b.det_consumed,
+            wall_time_s=b.wall_time_s)
 
 
 def materialize_audit_offer(
@@ -883,6 +999,7 @@ def materialize_audit_offer(
     det_time_s: Optional[float] = None,
     budget_s: Optional[float] = None,
     seed: Optional[int] = None,
+    expect_delta_abs: Optional[float] = None,
 ) -> dict:
     """THE SECOND CEREMONY (clause 4) — accept the WINDOW'S improvement.
 
@@ -895,6 +1012,19 @@ def materialize_audit_offer(
     across a request boundary precisely BECAUSE of clause (1): same model, same
     seed, same deterministic budget, same answer. That is what determinism buys
     beyond honesty — a result that can be recomputed instead of cached.
+
+    SESSION 4B.25: the audit is a PORTFOLIO, so ``seed`` must be the WINNING
+    member's seed and not the portfolio's ``seed0`` — accepting an offer found
+    by seed 44 while re-solving at seed 42 would mint a schedule that is not the
+    one on the card. The offer carries its seed; the accept passes it back.
+
+    ``expect_delta_abs`` is that promise made checkable. When given, the minted
+    child's own delta must equal it TO THE CENT or nothing is accepted. This is
+    the whole point of clause (1) stated as an assertion rather than a hope: if
+    determinism holds, the promise on the card and the schedule that lands are
+    the same object, and if it does not, the planner must not be handed the
+    difference silently (the 4B.24 lesson on ``hold_all_placements``, one
+    ceremony over).
 
     ``out_dir`` must be a fresh run directory whose ``snapshots/`` already holds a
     copy of the base snapshot (the caller mints it, exactly as accept does).
@@ -1004,6 +1134,16 @@ def materialize_audit_offer(
         raise RuntimeError(
             "the deeper search did not beat the incumbent on this run — "
             "nothing accepted")
+    # THE PROMISE, CHECKED (4B.25 Item 4a). To the cent, because the ledger
+    # rounds to the cent and determinism means there is no other tolerance to
+    # argue for.
+    if expect_delta_abs is not None and delta is not None:
+        if abs(delta - float(expect_delta_abs)) > 0.005:
+            raise RuntimeError(
+                f"the accepted search re-solved to ${delta:,.2f} against an "
+                f"offer of ${float(expect_delta_abs):,.2f} — the schedule on "
+                "the card is not the schedule this would commit; nothing "
+                "accepted")
     moves = _moved_set(solve_result.solve_values, incumbent_placement,
                        horizon_start, pin_op_id=None)
 
@@ -1014,7 +1154,13 @@ def materialize_audit_offer(
     decision = d_rep.record_decision(
         decision_type=DecisionType.PLANNER_EDIT,
         basis=DecisionBasis.OBSERVED,
-        driver=DriverCode.COST_MINIMIZATION,
+        # 4B.25 Item 4a: this said `COST_MINIMIZATION`, which is not a member of
+        # the vocabulary and never has been — the accept's SUCCESS branch had
+        # never executed, so an AttributeError sat behind a button. COST_TRADEOFF
+        # is the ruled code for a placement chosen on price (docs/02 §4.2;
+        # `add, never repurpose` — no vocabulary change here, a correction to a
+        # name that was never in it).
+        driver=DriverCode.COST_TRADEOFF,
         chosen={"audit": True, "seed": sd, "deterministic_time": det,
                 "total_cost": round(total, 2), "delta_abs": delta,
                 "moved_count": len(moves)},

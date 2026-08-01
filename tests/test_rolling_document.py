@@ -66,7 +66,7 @@ def plant(tmp_path_factory):
 def view(plant):
     return build_rolling_view(plant, window_days=7, frozen_days=2, gravity=True,
                               deterministic=True, seed=42, member_time_limit_s=8.0,
-                              det_time=1.0)
+                              det_total=3.0)
 
 
 @pytest.fixture(scope="module")
@@ -123,7 +123,7 @@ def test_rolling_document_shape(plant, view, identity_map):
         plant=plant, view=view, schedule_id="sched-rolling-test",
         run_id="run-x", identity_map=identity_map)
 
-    assert doc.contract_version == "1.12"
+    assert doc.contract_version == "1.13"
     assert doc.rolling is not None
     r = doc.rolling
     assert r.reference_origin == REF
@@ -168,4 +168,4 @@ def test_monolithic_document_unaffected(plant):
         cost_summary=CostSummary(total=0, production_regular=0,
                                  production_overtime=0, setup=0, tardiness=0))
     assert doc.rolling is None
-    assert doc.contract_version == "1.12"
+    assert doc.contract_version == "1.13"
