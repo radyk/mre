@@ -126,14 +126,26 @@ class TestBeatOneTriState:
 
     def test_the_undetermined_sentence_never_claims_impossibility(self):
         """The authored copy is part of the ruling: an UNDETERMINED check must
-        not be spoken as a verdict, and it must name the budget as what ran out."""
-        msg = feasibility_message(FEASIBILITY_UNDETERMINED, 2.0)
-        low = msg.lower()
-        assert "2s" in low, msg               # names the budget it had
-        assert "budget" in low, msg
-        for forbidden in ("isn't possible", "not possible", "impossible",
-                          "can't go", "cannot go"):
-            assert forbidden not in low, msg
+        not be spoken as a verdict, and it must name the budget as what ran out.
+
+        Session 4B.24 split the sentence in two. A check stopped by its
+        DETERMINISTIC budget stopped in the same place on every machine, so
+        naming a number of SECONDS would be a false description of what bound it;
+        a check stopped by the WALL did stop at a wall-clock figure, and naming it
+        tells the planner that retrying may well answer. Both branches are
+        asserted, and neither may claim impossibility."""
+        for wall_truncated, must_name in ((False, None), (True, "2s")):
+            msg = feasibility_message(FEASIBILITY_UNDETERMINED, 2.0,
+                                      wall_truncated)
+            low = msg.lower()
+            if must_name:
+                assert must_name in low, msg
+            else:
+                assert "2s" not in low, msg   # nothing was bound by seconds
+            assert "budget" in low or "ceiling" in low, msg
+            for forbidden in ("isn't possible", "not possible", "impossible",
+                              "can't go", "cannot go"):
+                assert forbidden not in low, msg
 
     def test_the_impossible_sentence_IS_a_verdict(self):
         """The contrast, so the test above is not vacuous: a PROVEN refusal does

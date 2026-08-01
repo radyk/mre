@@ -163,6 +163,11 @@ export function createGestureController(board, geometry, opts) {
     // one honest affordance is another attempt at the SAME pin — never a
     // reinterpretation of the gesture.
     onRetry: () => retryLastGesture(),
+    // Session 4B.24 clause (4): TWO CEREMONIES, wired to TWO callbacks. The card
+    // can offer the search's improvement beside the move's price, and clicking
+    // one can never commit the other.
+    onSearchDeeper: () => searchDeeper(),
+    onAcceptSearch: () => acceptSearch(),
   });
 
   // ---------------------------------------------------------------------
@@ -836,6 +841,55 @@ export function createGestureController(board, geometry, opts) {
     return { returned: true, reason };
   }
 
+  // "SEARCH DEEPER" (Session 4B.24, R-T2 amendment clause 5) — THE INCUMBENT IS
+  // AUDITED, NOT ENSHRINED. A deliberate act, off the gesture path, that runs the
+  // deterministic seeded search at a real budget and reports what it found. It
+  // applies nothing: an improvement is an OFFER with its own affected list and
+  // its own accept (clause 4).
+  //
+  // It is deliberately slow — measured at 40 to 77 seconds per deterministic unit
+  // on a 386-bar board — and that is the reason it is a button rather than
+  // something every drag silently pays for.
+  function searchDeeper(opts = {}) {
+    if (!api.postAudit) return Promise.resolve(null);
+    S.audit = { running: true, result: null, error: null };
+    card.showSearching();
+    return api.postAudit(scheduleId, opts).then((res) => {
+      S.audit = { running: false, result: res, error: null };
+      card.showAudit(res);
+      return res;
+    }).catch((e) => {
+      // A failure of OURS. It says nothing about whether the plan can be
+      // improved, and the copy must not let it be read as "the incumbent held".
+      const cause = failureCause(e);
+      S.audit = { running: false, result: null, error: cause };
+      card.showAudit({ searched: false, sentence:
+        `I could not run a deeper search — ${cause.what}. That says nothing `
+        + `about whether this plan can be improved.` });
+      return null;
+    });
+  }
+
+  // Clause (4): ACCEPTING IS TWO CEREMONIES. This one commits the SEARCH's
+  // schedule — work the planner never gestured at — and it is reachable only from
+  // the audit's own offer. `accept()` below commits the planner's move and can
+  // never reach this.
+  function acceptSearch(opts = {}) {
+    const found = S.audit && S.audit.result && S.audit.result.offer;
+    if (!found || !api.postAuditAccept || !api.getSchedule) {
+      return Promise.resolve(null);
+    }
+    return api.postAuditAccept(scheduleId, { ...opts, authority })
+      .then((res) => api.getSchedule(res.schedule_id).then((newDoc) => {
+        board.rebind(newDoc, { motion: feel.motion });
+        return rebindController(res.schedule_id, newDoc).then(() => {
+          S.audit = { running: false, result: null, error: null };
+          card.showAuditAccepted(res);
+          return res;
+        });
+      }));
+  }
+
   // Accept the verdict (CU1, R-DP7): pin the op server-side, minting a NEW
   // proposed schedule version (the base is never mutated) + a planner_edit
   // Decision. On success the board REBINDS to the new version — the traced bars
@@ -1118,6 +1172,7 @@ export function createGestureController(board, geometry, opts) {
   return {
     feel, ctx, redraw, setAlternatives,
     grab, dragTo, drop, discard, returnHome, accept, publish,
+    searchDeeper, acceptSearch,
     scheduleId: () => scheduleId,
     // programmatic drop straight to a target (harness convenience): grab, drag
     // to the target, drop — the full path, no pointer math.

@@ -158,6 +158,9 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Session 4B.24 — the incumbent earns its flag**, 2026-07-31 (docs/07 v2.71,
+§5a.96-100; docs/04 2026-07-31 R-T2 AMENDMENT verbatim; narrative in
+`docs/closeouts/4B.24.md`). Before it:
 **Session 4B.23 — beat two is never called**, 2026-07-31 (docs/07 v2.70,
 §5a.89-95; docs/04 2026-07-31; narrative in `docs/closeouts/4B.23.md`). Before it:
 **Errand 4B.22a — a demo board worth dragging**, 2026-07-31 (docs/07 v2.69,
@@ -193,6 +196,59 @@ the displaced order pays **$0.00** — on an empty board displacement is free, s
 the card can only ever charge a planner for their own order. **`pilot_scale` is
 BYTE-IDENTICAL** and proven so at 40 and 400 orders — the three `demo_board`
 knobs draw nothing from `rng` at their defaults. NO `src/mre/` CHANGE.
+
+**"YOUR MOVE" IS PRICED LOCALLY, AND THE FOUNDER'S NUDGE COSTS $0.00 (4B.24,
+R-T2 AMENDMENT, §5a.96 — §5a.95(b) DISCHARGED).** Five clauses, verbatim in
+docs/04. **(1) EVERY SANDBOX SOLVE IS DETERMINISTIC** — deterministic budget,
+pinned seed, workers=1, **wall as a SAFETY CEILING only**, and a wall-truncated
+solve REFUSES TO PRICE rather than pricing from a lottery draw. **(2) "YOUR MOVE"
+IS PRICED LOCALLY** — everything else held, the bar moved, the ledger recomputed
+and validated. **(3) THE WINDOW'S OPPORTUNITY IS ITS OWN LABELLED THING.**
+**(4) ACCEPTING IS TWO CEREMONIES.** **(5) THE INCUMBENT IS AUDITED, NOT
+ENSHRINED.** The founder nudged ORD-000057 four hours inside an overtime window
+it already occupied, on a machine carrying nothing else those hours; the card
+charged **-$50,784.33**, all to *"your move"*, relocating four unrelated orders by
+weeks. Beat two re-solved the WHOLE WINDOW wall-clock-bounded with no
+deterministic time over an incumbent at a 92.4% gap — **the card reported the
+difference between two lottery draws and labelled it the planner's**.
+`src/mre/modules/local_price.py` is compressor C's validate-and-price (4B.6c)
+pointed at a pin, re-validated by pinning all 386 placements into a fresh model
+and asking CP-SAT. Live: **$0.00, empty affected list, 0.384s** against 64s, and
+**five repetitions give ONE DISTINCT CARD** on the full tuple. A refusal names its
+docs/05 family and carries **`holds_others` — SHUT is not OCCUPIED**, the ruled
+species a FIFTH time (`CostProof` 4B.18, `partitions()` 4B.21,
+`FeasibilityGhost.verdict` 4B.23). Clause (2) reached ACCEPT and had to:
+`hold_all_placements` pins every incumbent placement, so **the promise on the card
+and the schedule that lands are the same object**. `POST /audit` (the deliberate
+search) found **$239,824.80 cheaper, 226 ops moving**, offered with its own
+affected list and its own accept (`POST /audit/accept`) — **one click can never
+commit both**. The card's `attribution: "local"` draws ONE row and never a
+`window re-optimization $0.00` line: the component is **ABSENT by construction,
+not measured as zero**.
+
+**BEAT ONE'S BUDGET WAS MARGINAL IN THE WRONG CURRENCY, AND THERE IS NO PLATEAU
+(4B.24, §5a.97-98).** Beat one's verdict costs **0.0426 deterministic units — the
+same to four decimals at all five seeds — and 2.5-3.9 SECONDS**, because the
+deterministic meter barely counts PRESOLVE; so raising the deterministic budget
+alone would have changed nothing. `FEASIBILITY_BUDGET_S` **2.0 -> 12.0**,
+`FEASIBILITY_DET_TIME_S` **1.0 -> 2.0**, and `wall_ceiling_for()` gives a
+deterministic re-solve `max(caller ceiling, det x 120 s/unit)` so **the clock can
+no longer decide** (`applied_time_limit_s` reports the limit ACTUALLY applied).
+One unit of unpinned search, five seeds: **three find exactly the incumbent, seed
+44 finds 16.3% cheaper, seed 45 13.2%**; seed 42 at THREE units finds 12.4% — the
+SEED decides and so does the BUDGET, because CP-SAT schedules its portfolio around
+the budget it is handed. **"Units to plateau" was NOT measured and could not be**:
+improvements run to the budget edge at every budget tested, and
+`CpSolverSolutionCallback.DeterministicTime()` returns a CONSTANT for every
+solution of a run. Exchange rate **33.9-77.0 s/deterministic unit**. Two runs of
+seed 42: identical det time (1.0328) and trace, wall times 2.4s apart. **NOT
+FIXED, named (§5a.100):** beat one is now the whole cost of a gesture (4.8-5.7s of
+~8.2s, mostly presolve); the audit's single seed finds nothing at 1 unit; a
+CHUNKED op cannot be locally priced and declines BY NAME; **a collision drop is
+now a REFUSAL by ruling**, so 4B.22a's displacement card is unreachable from a
+gesture; Item 6 was driven through the API, not a pointer (no browser extension);
+`POST /audit/accept`'s SUCCESS branch is unexecuted; and
+**`tests/test_rolling_two_beat.py` is RED AT HEAD**, pre-existing.
 
 **BEAT TWO WAS NEVER CALLED, AND THE CHAIN WAS NEVER BROKEN — IT WAS
 CONDITIONAL (4B.23, §5a.89 — §5a.88(a) DISCHARGED).** One drag on the demo board
@@ -983,7 +1039,7 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   of one question) — humble rather than wrong, but distinguishing "one answer
   because I am confused" from "one answer because it IS the answer" needs a
   signal this session does not have.
-  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, **81k after 4B.23**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, **~85k after 4B.24**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
   **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
   day-shift restriction answered as C1/C2 "proven end to end" when the item is
   C4 (model-proven, §8 doorway). Caught and pinned; the class stands.

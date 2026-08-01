@@ -55,31 +55,36 @@ export const DEFAULT_FEEL = {
   // whatever the request carries, falling back to its own token only when the
   // field is absent. This number is therefore the real budget of every drag. ---
   sandbox: {
-    // 15.0 until Session 4B.23. MEASURED on the dense demo board
-    // (rolling-c9973708-865, 386 bars, 345 active), same pin every time:
+    // SESSION 4B.24: THIS IS A WALL CEILING AND NOTHING ELSE.
     //
-    //     budget 15s -> no_verdict  UNKNOWN   (stops at ~11s, prices nothing)
-    //     budget 25s -> FEASIBLE    +$2,596.67
-    //     budget 40s -> FEASIBLE    +$2,596.67
-    //     budget 60s -> FEASIBLE    +$2,596.67
+    // Its history is a history of the number meaning something different from
+    // what its comment said. Until 4B.23 the comment claimed the server budget
+    // was authoritative and this only animated a countdown; in fact `_beatTwo`
+    // SENDS it and the API honours it, so it was the real budget of every drag.
+    // 4B.23 fixed the comment and raised the number to 30.0 because beat two
+    // needed ~25s of wall to price a drag on the dense board.
     //
-    // 15s was calibrated on boards a seventh this size; at demo density it does
-    // not reach a priceable answer, and the planner's reward for waiting the
-    // full budget was "couldn't verify this placement in time". 4B.22a got its
-    // card at a wall of 15.01s — right at the edge — which is why the same
-    // gesture priced from a quiet script and returned nothing from a browser.
+    // Beat two no longer solves the window. Under the R-T2 amendment (clause 2)
+    // it prices LOCALLY: hold every other placement, move the one bar, recompute
+    // the ledger, validate. MEASURED on the same 386-bar board, same gesture,
+    // five repetitions: **0.33 to 1.57 seconds end to end** — 0.024-0.050s of it
+    // the price itself, 0.043-0.096s the validation, the rest the model build.
+    // Five identical cards, to the cent.
     //
-    // THE BUDGET IS A CEILING, NOT A SPEND. A solve that PROVES its verdict
-    // returns immediately (1.3s on the 56-bar pinned world, unchanged by this),
-    // so raising it lengthens only the cases that were already failing. What it
-    // costs is the worst case: ~30s to price a drag on a 386-bar board. That is
-    // a real cost and it is named in docs/closeouts/4B.23.md rather than hidden.
-    budget_s: 30.0,
+    // So 20.0 is a SAFETY CEILING at roughly thirteen times the measured worst
+    // case. It is not a spend and it is not a budget: nothing on this path
+    // searches, so nothing on this path can consume it. If a drag ever
+    // approaches it, something is wrong and the card says so rather than pricing
+    // from wherever the clock stopped it.
+    budget_s: 20.0,
     countdown_tick_ms: 100,
-    // R-T2 beat one (Session 4B.3b): the small feasibility budget the ghost
-    // paces against (server-authoritative FEASIBILITY_BUDGET_S; this only paces
-    // the "pricing…" ghost's animation).
-    feasibility_budget_s: 2.0,
+    // R-T2 beat one: the feasibility check's WALL CEILING (server-authoritative
+    // FEASIBILITY_BUDGET_S; this paces the "pricing…" ghost and is sent with the
+    // request). 2.0 until 4B.24, where it was measured as the thing actually
+    // stopping beat one: the check costs 0.0426 DETERMINISTIC units and 2.5-4.8
+    // SECONDS, because the deterministic meter barely counts presolve. 12.0
+    // clears the measured worst case 2.5x.
+    feasibility_budget_s: 12.0,
     // R-T2 beat-two card: whether the DETAIL layer (cost decomposition +
     // operational consequences) starts expanded. The always-visible layer is
     // decision-sufficient on its own; this is a feel token (Daryn tunes it).

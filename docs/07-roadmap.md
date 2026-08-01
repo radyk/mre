@@ -2,6 +2,8 @@
 
 **Document 7** · Status: v2.70 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
 
+**v2.71:** **Session 4B.24 - the incumbent earns its flag** 2026-07-31 (docs/04 2026-07-31 R-T2 AMENDMENT, verbatim; narrative in `docs/closeouts/4B.24.md`). **"YOUR MOVE" IS NOW PRICED LOCALLY, AND THE FOUNDER'S NUDGE COSTS $0.00 (5a.96).** Four hours inside an overtime window the operation already occupied, on a machine carrying nothing else those hours, had been priced at **-$50,784.33** with four unrelated orders relocated by weeks - because beat two re-solved the whole window wall-clock-bounded with no deterministic time over an incumbent at a 92.4% gap, so **the card reported the difference between two lottery draws and labelled it the planner's move**. `local_price.py` holds every placement, moves the one bar, recomputes the ledger from the same code path on both sides and re-validates by pinning all 386 placements into a fresh model and asking CP-SAT (compressor C's discipline, 4B.6c). Live: **$0.00, empty affected list, 0.384s** against 64s, and **five repetitions produce ONE DISTINCT CARD** compared on the full tuple. A refusal names its docs/05 family and carries `holds_others` - **shut is not the same as occupied**, the ruled species a fifth time. **BEAT ONE'S BUDGET WAS MARGINAL IN THE WRONG CURRENCY (5a.97):** the verdict costs **0.0426 deterministic units and 2.5-3.9 SECONDS**, because the meter barely counts presolve, so raising the deterministic budget alone would have changed nothing; the WALL token moved 2.0 -> 12.0 and `wall_ceiling_for()` now makes "wall as safety ceiling only" enforced rather than intended. **THERE IS NO PLATEAU (5a.98):** at one deterministic unit three of five seeds find exactly the incumbent and two find 13-16% cheaper; seed 42 at three units finds 12.4%; improvements run to the budget edge at every budget tested, and `DeterministicTime()` is unreadable per solution. **THE AUDIT SHIPS (5a.99):** `POST /audit` found a schedule **$239,824.80 cheaper, 226 operations moving**, offered with its own affected list and its own accept - **two ceremonies, and one click can never commit both**. Guard: 18 Python tests with a premise test and **three negative controls proven red against physically reverted code**, plus 11 cockpit logic tests. 5a.96-100.
+
 **v2.70:** **Session 4B.23 — beat two is never called** 2026-07-31 (docs/04 2026-07-31; narrative in `docs/closeouts/4B.23.md`). **THE SANDBOX WAS A ONE-BEAT SANDBOX ON THE COCKPIT PATH, AND THE CHAIN WAS NEVER BROKEN — IT WAS CONDITIONAL (§5a.89).** One drag on the dense demo board produced ONE request: beat one 200, then a card *hidden* and a bar snapping home. `controller.js` branched on `ghost.feasible`, and `feasibility_ghost` computes that as `status in ("OPTIMAL","FEASIBLE")` — so **UNKNOWN (our budget ran out) and INFEASIBLE (the plant has no room) were the same branch, wearing the same sentence.** Beat two, called directly on the identical pin, priced the move at $2,596.67 (4B.22a §5(e)). Matched gesture, both boards: **dense 386 bars → UNKNOWN → 1 request; pinned 56 bars → OPTIMAL → 2 requests and a $354.58 card.** A board-size-dependent bug the pinned world could not reproduce — and the fixture cans a FEASIBLE beat one, so every green two-beat test stayed green. **THE THIRD INSTANCE OF A RULED SPECIES (§5a.90):** `CostProof`'s fourth state (4B.18) and `partitions()`'s tri-state (4B.21) both exist so a claim about our PROCESS is not rendered as a claim about the PLANT; here the fusion sat on a boolean. `FeasibilityGhost.verdict` is now `possible | impossible | undetermined`, **an unrecognised status fails SAFE to undetermined**, and both `possible` and `undetermined` proceed to pricing — only a PROVEN refusal stops the chain. **A REFUSAL AND A FAILURE NOW READ DIFFERENTLY (§5a.91)**, in different colour registers, and neither is ever a silent snap-back: four exits, all visible, a failure naming WHICH BEAT and offering a retry, **no raw transport string on any planner surface**. Two more caught on the way: the pending card asserted *"this is possible here"* BEFORE the request was sent, and a Tier-0 refusal lost its reason at the release (`returnHome` hides the tip as its first act). **BEAT ONE'S 4.6s IS THE MODEL BUILD, NOT THE SOLVE (§5a.92):** `SolverBuilder.build` is **6.564s / 67%** on the dense board against 0.308s / 13% on the pinned one; the budget token governs 22% of its own latency, so R-T2's instant beat does not survive 345 active operations. Named and priced, not re-architected. **15s WAS TOO SMALL A BEAT-TWO BUDGET AT DEMO DENSITY (§5a.93):** measured 15s → `no_verdict`, 25/40/60s → FEASIBLE at $2,596.67; the token is 30.0s and **a budget is a ceiling, not a spend** (the pinned world still proves in 1.3s). **A POLL CANNOT DISCARD A LIVE PROPOSAL (§5a.94)** — suppress, not reconcile, because the proposal exists in no document to reconcile against; narrower than `hasUncommittedState`, so 4.4 CU2's banner rule and 4B.5's fixes are untouched. Guard: 11 tests × 2 themes, a premise test proving the harness can produce a bad beat, and **three negative controls each proven red against physically reverted code**. §5a.89-95.
 
 **v2.69:** **Errand 4B.22a — a demo board worth dragging** 2026-07-31 (docs/04 2026-07-31; narrative in `docs/closeouts/4B.22a.md`). A TOOLS AND FIXTURE ERRAND — **nothing under `src/mre/` changed**, so nothing here is a ruling and nothing here is a fix. The demo world was 45 committed operations against 11 active, nothing late, twelve of fifteen machines under 15% loaded, and a planner's drag that could not make displacement cost anything — measured, not asserted: a long backward drag prices at **$0.00** with three affected orders and not a dollar between them, and the short forward collision that replaced it prices at **$354.58** of which the order it shoves three days later pays **$0.00**. Fourteen candidates measured at **the API's own budgets** (`det_total` is not a `SolveRequest` field, so a board measured at any other budget is a board nobody will see); `wall_truncated` False on all fourteen. **THERE IS NO DENSE-AND-PROVED OPTION AND R-PD1 IS NOT WHY**: the controlled pair — the same 280-order board with `pd_share = 0.0` and nothing else changed — is still FEASIBLE at gap 84.5% against 87.0% with 47 past-due orders on it, so **density alone loses the proof** and dropping R-PD1's entire on-board specimen would have bought 2.5 gap points. The shipped 14-day window does not survive this density at all (UNKNOWN — an EMPTY board — at 140 and 170; INFEASIBLE at 360), and solvability is **not monotone**: a 10-day window is UNKNOWN at 200 orders and FEASIBLE with 386 bars at 280. Chosen and minted: **`rolling-c9973708-865`** — 386 bars, 41 committed / 345 active, 96 late, 47 past-due scheduled, tardiness $2,040,146.67 split $535,800 floor / $1,504,346.67 controllable, a coarse zone binding **8 of 48 cells at 95-99%** of derated capacity, a 122-order tray, and an honest **92.4% gap that leads its own opener in money terms**. Reproduces identically across PYTHONHASHSEED 0/1/2. **`rolling-c362baa4-1b0` is UNTOUCHED** and still resolving, which is what keeps this Daryn's choice rather than a fait accompli. A drag now costs **$2,596.67**, split $0.00 re-optimization / $2,596.67 your move, displacing another order by 3.8 days. `pilot_scale` is **byte-identical**, proven at 40 and 400 orders against a baseline from the previous commit. §5a.84-88.
@@ -4262,6 +4264,110 @@ retry genuinely can differ, but it does not offer the one thing that reliably
 helps, which is more time. **(e) THE `planner.spec.mjs` DUE-MARKER FLAKE FIRED
 AGAIN** in a full-suite run (dark), passes in isolation — the standing
 parallel-load screenshot-flake class, unchanged.
+
+**5a.96 - "YOUR MOVE" IS PRICED LOCALLY, AND THE FOUNDER'S NUDGE COSTS $0.00
+(4B.24, R-T2 amendment clause 2; 5a.95(b) DISCHARGED).** The founder nudged
+ORD-000057 four hours inside an overtime window it already occupied, on a machine
+carrying nothing else those hours, and the card charged **-$50,784.33**, all of it
+to *"your move"*, relocating four unrelated orders by two to three weeks.
+Mechanism, measured: beat two re-solved the WHOLE WINDOW wall-clock-bounded with
+no deterministic time, over an incumbent at a 92.4% gap - so the card reported
+**the difference between two lottery draws** and labelled it the planner's. The
+same pin had already returned three different outcomes across three runs.
+`local_price.py` is compressor C's validate-and-price (4B.6c) pointed at a pin:
+hold every placement, move the one bar, recompute the ledger from the SAME code
+path on both sides, and re-validate by pinning all 386 placements into a fresh
+model and asking CP-SAT. Live, through the API, the founder's gesture: **$0.00,
+empty affected list, one move, 0.384s** - against 64s before. Five repetitions,
+compared on the full tuple (delta, attribution, affected list, moved-set, status):
+**ONE DISTINCT CARD.** A refusal names its docs/05 family and carries
+`holds_others` - **a machine that is SHUT refuses the pin however the plan is
+arranged; a machine merely OCCUPIED refuses it only because this price holds the
+occupant still**, and reporting the second as the first is a fact about our METHOD
+spoken as a fact about the PLANT (the ruled species again: `CostProof` 4B.18,
+`partitions()` 4B.21, `FeasibilityGhost.verdict` 4B.23 - a FIFTH instance).
+Clause (2) reached the ACCEPT path and had to: accept re-solved the window freely,
+so a planner could say yes to one schedule and be handed another;
+`hold_all_placements` now pins every incumbent placement, and **the promise on the
+card and the schedule that lands are the same object.**
+
+**5a.97 - BEAT ONE'S BUDGET WAS MARGINAL IN THE WRONG CURRENCY (4B.24, Item
+1(a)).** Dense board, seeds 42-46: beat one reaches its verdict in **0.0426
+deterministic units - the same figure to four decimals at every seed - and 2.5 to
+3.9 SECONDS of wall**, 4.84s on a colliding pin. The deterministic meter barely
+counts PRESOLVE, which is where that wall goes, so 4B.23's diagnosis was right
+about the symptom and **raising the deterministic budget alone would have changed
+nothing.** `FEASIBILITY_BUDGET_S` 2.0 -> **12.0** (a ceiling at 2.5x the measured
+worst case); `FEASIBILITY_DET_TIME_S` 1.0 -> **2.0** (47x the measured cost), so
+the DETERMINISTIC budget is what stops the search on any board. A
+proven-impossible pin still returns in **0.062s**. The undetermined sentence now
+says WHICH budget ran out, because a deterministic stop is reproducible and a wall
+stop is not. **"WALL AS SAFETY CEILING ONLY" IS NOW ENFORCED, NOT INTENDED:**
+`wall_ceiling_for()` gives a deterministic re-solve the larger of the caller's
+ceiling and `det_budget x 120 s/unit` - 120 being the measured worst case (77.0)
+with half again on top - and `applied_time_limit_s` reports the limit ACTUALLY
+applied. A caller asking for 2.0 units under a 15s wall has asked for two
+incompatible things, and clause (1) says which wins.
+
+**5a.98 - THERE IS NO PLATEAU, AND THE INCUMBENT IS A DRAW FROM A SEARCH THAT
+NEVER FINISHED (4B.24, Item 1(b)).** One deterministic unit of unpinned search,
+five seeds, dense board (incumbent objective 158,243,034): **seeds 42, 43 and 46
+find exactly the incumbent and never improve; seed 44 finds 32 solutions ending
+16.3% cheaper; seed 45 finds 9 ending 13.2% cheaper.** Raise seed 42 to 3.0 units
+and it finds 33 solutions ending **12.4% cheaper**. The SEED decides and the
+BUDGET decides - and not merely by running longer: CP-SAT schedules its search
+portfolio around the budget it is handed, so a bigger budget is a **different
+search**. Item 1 set out to measure "units to plateau" and **could not**: on every
+seed that improves, improvements run to the budget edge (seed 45's last landed at
+76.9s of a 77.0s solve), and `CpSolverSolutionCallback.DeterministicTime()`
+returns a **CONSTANT 0.0306** for every solution of a run, so only the terminal
+reading is meaningful and the trace is readable on the wall axis alone. Both
+stated, not smoothed. Exchange rate: **33.9 to 77.0 seconds per deterministic
+unit**. Two runs of seed 42 returned **identical deterministic time (1.0328) and
+an identical trace with wall times 2.4 seconds apart** - the single clearest
+statement of why the wall was the wrong currency.
+
+**5a.99 - THE WINDOW'S OPPORTUNITY IS ITS OWN THING, AND THE AUDIT SHIPS (4B.24,
+clauses 3-5).** `POST /audit` runs the deterministic seeded search off the gesture
+path at 3.0 units and, on the demo board, **found a schedule $239,824.80 cheaper -
+226 operations moving - with its own affected list and its own accept**
+(`POST /audit/accept`, its own Decision, its own authority). Two ceremonies, two
+endpoints, two callbacks, two buttons: **one click can never commit both.** The
+opportunity search is OFF on the gesture path by measurement, not by taste - at
+33.9-77.0 s/unit it would undo the 150x the local price bought. When it finds
+nothing it SAYS SO in units ("searched N more deterministic units; the incumbent
+held"), and a search that could not COMPLETE is a third outcome that may never be
+read as the second. The card's `attribution: "local"` draws ONE row and never a
+`window re-optimization $0.00` line - **the component is ABSENT by construction,
+not measured as zero**, and a zero row would claim a measurement nobody took.
+**The founder's $50,784 was a fifth of an opportunity, worn as a price.**
+
+**5a.100 - REPORTED, NOT FIXED (4B.24).** **(a) BEAT ONE IS NOW THE WHOLE COST OF
+A GESTURE** - ~8.2s end to end, of which beat two is 0.38s and beat one is
+4.8-5.7s (a ~2.4s model build plus a ~2.4s solve consuming 0.0426 units, almost
+all presolve). Pricing beat one locally too was considered and declined: beat
+one's job is deliberately a RELAXATION, and that is exactly the question the local
+price cannot answer. **(b) THE AUDIT'S SEED FINDS NOTHING AT ONE UNIT AND
+$239,824.80 AT THREE** - multi-seed portfolios are out of scope by the brief and
+are now a follow-on with a measured case behind them. **(c) A CHUNKED OPERATION
+CANNOT BE PRICED LOCALLY** (its pauses are calendar closures a local shift cannot
+re-derive); the pricer declines BY NAME rather than inventing a chunk pattern -
+1 of 386 bars on the demo board, so rare and loud. **(d) `POST /audit/accept` IS
+SMOKE-TESTED, NOT PROVEN** - `materialize_audit_offer` runs end to end on a
+fixture and reaches its clean refusal branch, but the SUCCESS branch (minting a
+child schedule from a real improvement) has not been executed, because running it
+against the demo board mints a schedule row in the working data root. **(e) ITEM 6 WAS DRIVEN THROUGH THE API, NOT A POINTER** - the Chrome
+extension was not connected, so the five gestures used the exact request sequence
+`controller.js` issues (same endpoints, same feel-token budgets, same correlation
+id); the frontend's reading rules are guarded by Playwright instead, and a browser
+pass is owed. **(f) A COLLISION DROP IS NOW A REFUSAL, BY RULING** - 4B.22a's
+"displacement that costs something" card is no longer reachable from a gesture.
+Falling through to the re-solve would be the lottery walking back in through a
+side door; the card instead names the blocking order and says the scheduler may be
+able to make room, which is a different question. **(g)
+`tests/test_rolling_two_beat.py` IS RED AT HEAD** (12 errors,
+`build_rolling_view() got an unexpected keyword argument 'det_time'`), verified
+pre-existing by stashing this session's changes. Not from this session, not fixed.
 
 ## 6. Open rulings queue
 

@@ -15,6 +15,7 @@
 import {
   getScheduleInteraction, getScheduleAlternatives, postSandbox, postFeasibility,
   priceOpAlternatives, getAlternativeMember, postAccept, postPublish,
+  postAudit, postAuditAccept,
   getSchedule,
 } from "./api.js";
 import { createGeometry } from "./drag/geometry.js";
@@ -65,6 +66,11 @@ export function wireInteraction(id, board, hook, opts = {}) {
     // accept/publish (CU1) + the rebind reads the controller needs after an edit
     postAccept,
     postPublish,
+    // Session 4B.24 clause (5)/(4): the deliberate deeper search, and its OWN
+    // accept. Kept distinct from postAccept at the wiring level so a future
+    // refactor cannot quietly route one button into both.
+    postAudit,
+    postAuditAccept,
     getSchedule,
     getInteraction: getScheduleInteraction,
   };

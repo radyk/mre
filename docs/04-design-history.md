@@ -14222,3 +14222,137 @@ zoom** (a ~240-minute tolerance at the default 30-day view swallows a 236-minute
 move as "already here" — no card, no request, indistinguishable to a planner from
 the defect this session fixed) and **beat two's wall-clock non-determinism**:
 docs/07 §5a.95. Narrative in `docs/closeouts/4B.23.md`.
+
+### 2026-07-31 — R-T2 AMENDMENT: THE THREE-WAY CARD, AND DETERMINISTIC SANDBOX LAW (Session 4B.24)
+
+The founder nudged ORD-000057 four hours within an overtime window it already
+occupied, on a machine where nothing else runs in those hours. The correct price
+is ~$0 with an empty affected list. The card said **−$50,784.33**, all of it
+attributed to *"your move"*, $0 to re-optimization, and four orders relocated by
+two to three weeks.
+
+The mechanism is measured, not guessed. Beat two re-solved the whole window under
+a WALL-CLOCK bound with no deterministic time; the incumbent sits at a 92.4% gap;
+so the card reported the difference between TWO LOTTERY DRAWS and labelled it the
+planner's move. The same pin returned three different outcomes across three runs
+(4B.22a `feasible_unproven`; 4B.23's probe `no_verdict`; the founder's
+−$50,784.33). Three defects, one root: no solve on the sandbox path was
+deterministic, *"your move"* was priced globally, and the incumbent was a single
+draw nothing ever audited.
+
+**THE RULING, VERBATIM:**
+
+> R-T2 AMENDMENT — THE THREE-WAY CARD, AND DETERMINISTIC SANDBOX LAW:
+>
+> (1) EVERY SANDBOX SOLVE IS DETERMINISTIC. deterministic_time set from
+>     Item 1, seed pinned, workers=1, wall as SAFETY CEILING only. The
+>     identical gesture returns the identical card, always. A
+>     wall-truncated sandbox solve refuses to price rather than pricing
+>     from a lottery draw.
+> (2) "YOUR MOVE" IS PRICED LOCALLY. Everything else held fixed, the
+>     pinned bar moved, the ledger recomputed and validated (compressor
+>     C's discipline: full transition matrix, calendar, precedence;
+>     reject if any violation). That is the ONLY reading under which the
+>     words "your move" are true. The founder's nudge under this rule:
+>     $0.00, empty affected list, sub-second.
+> (3) THE WINDOW'S OPPORTUNITY IS ITS OWN LABELLED THING. The
+>     deterministic re-solve's improvement over the incumbent, when it
+>     exists, renders as a SEPARATE section: "the search found a
+>     schedule $X cheaper" — the SEARCH's discovery, never the move's.
+>     Its affected list is its own. R-T2's no-fusion discipline, third
+>     application.
+> (4) ACCEPTING IS TWO CEREMONIES. Accepting the move commits the move.
+>     Accepting the window's improvement is a separate act with its own
+>     affected list. One click must never commit both.
+> (5) THE INCUMBENT IS AUDITED, NOT ENSHRINED. A background improvement
+>     pass — deterministic, seeded, off the gesture path — may run when
+>     the board is idle. An improvement it finds is OFFERED with its
+>     delta and affected list, never auto-applied. (This clause names the
+>     capability; Item 5 builds the minimum.)
+
+**IMPLEMENTATION NOTES (not part of the ruling).**
+
+*Clause (1) and the currency.* The measurement inverted the expected explanation.
+Beat one on the dense demo board reaches its verdict in **0.0426 deterministic
+units** — the same figure to four decimal places at all five seeds 42–46 — while
+spending **2.5 to 3.9 seconds of wall**, and 4.84s on a colliding pin. The
+deterministic meter barely counts PRESOLVE, which is where that wall goes. So
+4B.23's "beat one's budget is marginal" was right about the symptom and wrong
+about the currency: raising the deterministic budget alone would have changed
+nothing. `FEASIBILITY_BUDGET_S` is now **12.0s as a safety ceiling** (2.5× the
+measured worst case) and `FEASIBILITY_DET_TIME_S` **2.0 units** (47× the measured
+cost), the second chosen so the DETERMINISTIC budget is what stops the search on
+any board. The undetermined sentence now says WHICH budget ran out, because a
+deterministic stop is reproducible (retrying gets the same non-answer) and a wall
+stop is not (retrying may well answer).
+
+*Clause (2) and `local_price.py`.* The local price is compressor C's
+validate-and-price pointed at a pin: hold every placement, move the one bar,
+recompute the full ledger from the SAME code path on both sides, and re-validate
+by pinning every placement into a fresh model and asking CP-SAT (the 4B.6c
+method — the model's own verdict, not the pricer's opinion of itself). Measured
+on the founder's gesture: **$0.00, empty affected list, 1.46s total — of which
+0.027s is the price and 0.063s the validation**; the rest is the model build.
+The recomputed "before" total agrees with the persisted ledger to the cent
+($2,127,482.58), which is asserted rather than assumed.
+
+A refusal names its docs/05 family (B1 resource, C1/C2 calendar, A1/A2
+precedence, B2 eligibility, R-F1 frozen) and carries `holds_others`. **THAT BIT
+IS LOAD-BEARING AND IS THE SAME SPECIES THE SESSION EXISTS TO END.** A machine
+that is SHUT refuses the pin however the plan is arranged; a machine that is
+merely OCCUPIED refuses it only because this price holds the occupant still.
+Reporting the second as the first would state a fact about our METHOD as a fact
+about the PLANT — `CostProof`'s fourth state (4B.18), `partitions()` tri-state
+(4B.21) and `FeasibilityGhost.verdict` (4B.23) again, in a fifth place.
+
+*Clause (2) reaches the accept path, and had to.* The card now promises "nothing
+else moved". Accept re-solved the window freely, so the planner could say yes to
+one schedule and be handed another. `apply_planner_edit` takes
+`hold_all_placements` (default True from the API) and pins every incumbent
+placement, plus a deterministic budget and a pinned seed. **The promise on the
+card and the schedule that lands are now the same object.**
+
+*Clause (3) and where the search runs.* The opportunity search is OFF on the
+gesture path. Item 1(b) measured the exchange rate at **40.8–77.0 seconds per
+deterministic unit** on the dense board — a search a planner did not ask for must
+not be why their drag took a minute. It is available per-request
+(`SandboxRequest.opportunity`) and is what clause (5)'s deliberate action runs.
+
+*Clause (5) and what the measurement found.* One deterministic unit of unpinned
+search, five seeds, on the demo board: **seeds 42, 43 and 46 find exactly the
+incumbent and never improve; seed 44 finds 32 solutions ending 16.3% cheaper and
+seed 45 finds 9 ending 13.2% cheaper.** Same model, same budget, same warm start —
+the SEED decides. Raise seed 42's budget from 1.0 to 3.0 units and it finds 33
+solutions ending **12.4% cheaper**: the BUDGET decides too, and not merely by
+running longer — CP-SAT schedules its search portfolio around the budget it is
+handed, so a bigger budget is a different search. **The incumbent is not one draw
+from a finished search; it is one draw from a search that was never allowed to
+finish.** Clause (5) measured rather than asserted.
+
+*And Item 1(b) did not measure what it set out to.* The brief asked for units to
+PLATEAU — "the incumbent unchanged for N units". There is no plateau to measure
+here: on every seed that improves at all, improvements run to the budget edge
+(seed 45's last landed at 76.9s of a 77.0s solve; seed 42's at 3.0 units landed at
+101.5s of 101.6s). Worse, the deterministic axis is not readable per solution —
+`CpSolverSolutionCallback.DeterministicTime()` returned a CONSTANT 0.0306 for all
+33 solutions of one run, so only the terminal `ResponseProto().deterministic_time`
+is meaningful and the trace can only be reported on the wall axis. Both facts are
+stated rather than smoothed: N is not measured, and the honest version of the
+claim is that **more budget kept finding money at every budget tested.**
+
+Two runs of seed 42 returned **identical deterministic time (1.0328) and an
+identical trace** while their wall times differed by 2.4 seconds — the single
+clearest statement of why the wall was the wrong currency.
+
+Guard: `tests/test_local_price.py` — 18 tests over a fixture that is the founder's
+gesture's STRUCTURE rather than its coordinates (`overtime_required` puts one
+600-minute operation into a 720-minute Saturday overtime window on a machine
+carrying nothing else that day), with a four-assertion premise test and **three
+negative controls each proven red against physically reverted code**: the 4B.6c
+`_rebuild` lesson removed (2 red), the structural refusal removed (3 red), and the
+two refusal registers re-fused by defaulting `holds_others` to True (1 red — and
+the one that goes red is precisely the assertion that a CLOSED CALENDAR refusal is
+NOT about our method, which is the ruling in a single line). Plus
+`tests/cockpit/three_way_card.spec.mjs`, 11 tests, including a control in the
+other direction: the amendment must not have been implemented by deleting 4B.5's
+split. Narrative in `docs/closeouts/4B.24.md`.

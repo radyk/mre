@@ -40,7 +40,17 @@ export function signedMoney(v) {
 // not (the caller then renders the unsplit note). Never a partial split: an
 // attribution with one part missing is not an attribution.
 export function attributionRows(result) {
-  if (!result || result.attribution !== "split") return null;
+  if (!result) return null;
+  // Session 4B.24 (R-T2 amendment clause 2): a LOCALLY priced move has ONE row.
+  // There is no window-re-optimization component to show — not "we measured it
+  // and it was zero", but "nothing else was allowed to move, so there is nothing
+  // else in this number". Rendering a `window re-optimization $0` line would
+  // claim a measurement nobody took.
+  if (result.attribution === "local") {
+    if (result.move_delta_abs == null) return null;
+    return [{ key: "your move", value: result.move_delta_abs, own: true }];
+  }
+  if (result.attribution !== "split") return null;
   if (result.reopt_delta_abs == null || result.move_delta_abs == null) return null;
   return [
     { key: "window re-optimization", value: result.reopt_delta_abs, own: false },
@@ -48,7 +58,27 @@ export function attributionRows(result) {
   ];
 }
 
-export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPublish, onAskWhy, onRetry }) {
+// The one sentence that makes a locally priced number readable: it says what was
+// held, so "your move" can be read as literally the move.
+export const LOCAL_NOTE =
+  "everything else held where it is — this is the move and nothing else";
+
+// The OPPORTUNITY section (clause 3). The search's discovery about the window is
+// never the planner's move, so it renders in its own block with its own delta,
+// its own affected list and its own accept. Pure: returns null when there is
+// nothing to offer, so a card can never grow an empty heading.
+export function opportunityBlock(result) {
+  const o = result && result.opportunity;
+  if (!o || !o.found || o.delta_abs == null) return null;
+  return {
+    delta_abs: o.delta_abs,
+    sentence: o.sentence || "",
+    affected: o.affected_orders || [],
+    movedOps: o.moved_op_count || 0,
+  };
+}
+
+export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPublish, onAskWhy, onRetry, onSearchDeeper, onAcceptSearch }) {
   const card = document.createElement("div");
   card.className = "delta-card hidden";
   hostEl.appendChild(card);
@@ -237,8 +267,9 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
       ? `<div class="dc-note">equivalent placement — nothing else moved</div>` : "";
 
     // --- always-visible extras (CU2) ------------------------------------
-    const alwaysVisible = returnHome ? "" : [
+    const alwaysVisible = returnHome ? _refusalHtml(result, { nameOf, woOf }) : [
       _attributionHtml(result),
+      _opportunityHtml(result),
       _placementLine(result, { nameOf, woOf }),
       _latenessLine(result),
       _affectedOrdersHtml(result),
@@ -289,6 +320,11 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     }
     const askBtn = card.querySelector(".dc-askwhy");
     if (askBtn) askBtn.addEventListener("click", () => onAskWhy && onAskWhy(result));
+    // Clause (4): the opportunity's review button is a DIFFERENT button from
+    // Accept, wired to a DIFFERENT callback. One click cannot commit both.
+    const reviewBtn = card.querySelector(".dc-review-search");
+    if (reviewBtn) reviewBtn.addEventListener(
+      "click", () => onSearchDeeper && onSearchDeeper());
     for (const b of card.querySelectorAll(".dc-line")) {
       b.addEventListener("click", () => onNavigate && onNavigate(b.dataset.op));
     }
@@ -314,11 +350,14 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
   function _attributionHtml(result) {
     const rows = attributionRows(result);
     if (rows) {
-      return `<div class="dc-split">` + rows.map((r) =>
-        `<div class="dc-split-row${r.own ? " your-move" : ""}">
-          <span class="dc-split-k">${r.key}</span>
-          <span class="dc-split-v">${signedMoney(r.value)}</span>
-        </div>`).join("") + `</div>`;
+      const note = result.attribution === "local"
+        ? `<div class="dc-split-note local">${LOCAL_NOTE}</div>` : "";
+      return `<div class="dc-split${result.attribution === "local" ? " local" : ""}">`
+        + rows.map((r) =>
+          `<div class="dc-split-row${r.own ? " your-move" : ""}">
+            <span class="dc-split-k">${r.key}</span>
+            <span class="dc-split-v">${signedMoney(r.value)}</span>
+          </div>`).join("") + note + `</div>`;
     }
     if (result.cost_delta_abs == null) return "";   // no dollars to attribute
     const why = (result.attribution_note || "").trim();
@@ -332,6 +371,54 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
       el.appendChild(d);
     }
     return el.outerHTML;
+  }
+
+  // A PROVEN refusal from the local pricer (Session 4B.24). The headline and the
+  // `dc-reason` already carry the authored sentence; this adds the two things a
+  // planner acts on — WHICH job is in the way, and whether "no" means "no" or
+  // "not without moving other work". The second is the whole point: a refusal
+  // caused by holding the rest of the plan still is a fact about this PRICE, and
+  // saying it as a fact about the PLANT would be the same fusion in a new place.
+  function _refusalHtml(result, { nameOf, woOf }) {
+    const r = result && result.refusal;
+    if (!r) return "";
+    const el = document.createElement("div");
+    el.className = `dc-refusal ${r.holds_others ? "held" : "plant"}`;
+    const bits = [];
+    const wo = (r.other_work_orders || [])[0]
+      || (r.other_op_ref && (woOf && woOf(r.other_op_ref)));
+    if (wo) bits.push(`${wo} is there`);
+    if (r.resource_id && nameOf) bits.push(`on ${nameOf(r.resource_id)}`);
+    if (r.at) bits.push(`from ${_shortDate(r.at)}`);
+    const who = document.createElement("div");
+    who.className = "dc-refusal-who";
+    who.textContent = bits.join(" ");
+    if (bits.length) el.appendChild(who);
+    const scope = document.createElement("div");
+    scope.className = "dc-refusal-scope";
+    scope.textContent = r.holds_others
+      ? "this price holds every other job still — the scheduler may be able to "
+        + "make room, which is a different question"
+      : "this one does not depend on how the rest of the plan is arranged";
+    el.appendChild(scope);
+    return el.outerHTML;
+  }
+
+  // THE WINDOW'S OPPORTUNITY (clause 3) — its own section, its own delta, its own
+  // affected list, its own accept. It is the SEARCH's discovery about the window,
+  // never the planner's move, and the two must never be added together.
+  function _opportunityHtml(result) {
+    const o = opportunityBlock(result);
+    if (!o) return "";
+    const rows = o.affected.slice(0, 4).map((a) =>
+      `<div class="dc-affected-row"><span class="dc-wo">${a.work_order || ""}</span>
+       <span class="dc-affected-v">${signedMoney(a.tardiness_delta)}</span></div>`).join("");
+    return `<div class="dc-opportunity">
+      <div class="dc-opportunity-head">the search also found</div>
+      <div class="dc-opportunity-line">${o.sentence}</div>
+      ${rows ? `<div class="dc-affected">${rows}</div>` : ""}
+      <button class="dc-review-search">Review that separately</button>
+    </div>`;
   }
 
   // The moved op's FINAL placement (always-visible): where the dropped bar landed.
@@ -516,6 +603,88 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     return `${d > 0 ? "+" : "−"}${Math.abs(d).toFixed(2)}% vs current plan`;
   }
 
+  // --- Session 4B.24, clause (5): "search deeper" -------------------------
+
+  function showSearching() {
+    _stopCountdown();
+    card.className = "delta-card searching";
+    card.innerHTML = `
+      <div class="dc-head">
+        <span class="dc-outcome">Searching deeper…</span>
+        <span class="dc-status">deterministic · seeded</span>
+      </div>
+      <div class="dc-note">this runs the same search that produced the plan, at
+        a bigger budget. It changes nothing on its own — anything it finds comes
+        back as an offer.</div>
+      <div class="dc-actions"><button class="dc-discard">Discard</button></div>`;
+    card.querySelector(".dc-discard").addEventListener(
+      "click", () => onDiscard && onDiscard());
+    card.classList.remove("hidden");
+    return card;
+  }
+
+  // The audit's answer. THREE outcomes and none of them silent: an OFFER, the
+  // incumbent-held sentence, or "I could not search" — and the third must never
+  // be allowed to read as the second, because "we found nothing" and "we could
+  // not look" are different facts and only one of them is about the plan.
+  function showAudit(res) {
+    _stopCountdown();
+    const offer = res && res.offer;
+    const failed = res && res.searched === false;
+    card.className = `delta-card audit ${offer ? "offer" : failed ? "return-home" : "held"}`;
+    const rows = (offer ? offer.affected_orders || [] : []).slice(0, 4).map((a) =>
+      `<div class="dc-affected-row"><span class="dc-wo">${a.work_order || ""}</span>
+       <span class="dc-affected-v">${signedMoney(a.tardiness_delta)}</span></div>`).join("");
+    card.innerHTML = `
+      <div class="dc-head">
+        <span class="dc-outcome${offer ? "" : failed ? " failure" : ""}">${
+          offer ? "A cheaper schedule exists" : failed ? "Couldn't search" : "The plan held"}</span>
+        <span class="dc-status">${
+          failed ? "no answer" : `searched · seed ${res.seed} · ${res.det_time_s} units`}</span>
+      </div>
+      <div class="dc-audit-sentence"></div>
+      ${offer ? `<div class="dc-split"><div class="dc-split-row your-move">
+          <span class="dc-split-k">the search's saving</span>
+          <span class="dc-split-v">${signedMoney(offer.delta_abs)}</span>
+        </div><div class="dc-split-note local">this is the SEARCH's discovery about
+          the window, not a move you made — accepting it is its own decision</div>
+        </div>
+        <div class="dc-note">${offer.moved_op_count} operation(s) would move</div>
+        ${rows ? `<div class="dc-affected">${rows}</div>` : ""}` : ""}
+      <div class="dc-actions">
+        ${offer ? `<button class="dc-accept-search">Accept this schedule</button>` : ""}
+        <button class="dc-discard">Close</button>
+      </div>`;
+    // authored server text, as TEXT — never interpolated into markup
+    card.querySelector(".dc-audit-sentence").textContent =
+      String((res && res.sentence) || "");
+    const acc = card.querySelector(".dc-accept-search");
+    if (acc) acc.addEventListener("click", () => {
+      acc.disabled = true; acc.textContent = "accepting…";
+      onAcceptSearch && onAcceptSearch();
+    });
+    card.querySelector(".dc-discard").addEventListener(
+      "click", () => onDiscard && onDiscard());
+    card.classList.remove("hidden");
+    return card;
+  }
+
+  function showAuditAccepted(res) {
+    card.className = "delta-card accepted";
+    card.innerHTML = `
+      <div class="dc-head">
+        <span class="dc-outcome">Search result accepted</span>
+        <span class="dc-status">new proposed version</span>
+      </div>
+      <div class="dc-note">this committed the SEARCH's schedule. Any move of
+        your own is a separate decision.</div>
+      <div class="dc-actions"><button class="dc-discard">Close</button></div>`;
+    card.querySelector(".dc-discard").addEventListener(
+      "click", () => onDiscard && onDiscard());
+    return card;
+  }
+
   return { showPending, showPricing, showResult, showAccepted, showPublished,
-           showRefused, showImpossible, showFailure, hide, el: card };
+           showRefused, showImpossible, showFailure, showSearching, showAudit,
+           showAuditAccepted, hide, el: card };
 }

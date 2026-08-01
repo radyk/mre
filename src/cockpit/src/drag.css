@@ -385,3 +385,58 @@
 .tp-label { color: var(--muted); }
 .tp-row input[type="range"] { width: 100%; }
 .tp-row output { font: var(--fw-semibold) var(--fs-xs)/1 var(--font-mono); color: var(--cite-bar); text-align: right; }
+
+/* ------------------------------------------------------------------------
+   Session 4B.24 — the three-way card (R-T2 amendment).
+
+   Three registers, and the styling has to keep them apart because the words
+   alone did not: the MOVE's price (what the planner did), the SEARCH's
+   opportunity (what the plan could be, which nobody gestured at), and a
+   REFUSAL (what the plan will not take). Fusing any two of them visually would
+   undo the ruling at the last inch.
+   ------------------------------------------------------------------------ */
+
+/* A locally priced split has one row and a note saying what was held. The note
+   is what makes "your move" readable as literally the move. */
+.dc-split.local .dc-split-note.local { color: var(--muted-2); font-style: italic; }
+
+/* THE OPPORTUNITY — deliberately set apart from the move's money above it: its
+   own rule, its own heading, its own button. A planner must never be able to
+   read the two figures as parts of one total. */
+.dc-opportunity {
+  margin: var(--sp-2) 0 var(--sp-1);
+  padding: var(--sp-1) var(--sp-2);
+  border-top: 1px dashed var(--rule, var(--muted-2));
+  background: transparent;
+}
+.dc-opportunity-head {
+  font: var(--fw-semibold) var(--fs-2xs)/1.4 var(--font-ui);
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-2);
+}
+.dc-opportunity-line { font-size: var(--fs-sm); margin: 2px 0 var(--sp-1); }
+.dc-review-search {
+  font-size: var(--fs-2xs); padding: 2px 8px; cursor: pointer;
+  background: transparent; border: 1px solid var(--muted-2);
+  border-radius: var(--radius-sm, 3px); color: var(--ink);
+}
+
+/* A REFUSAL, with the distinction that carries the ruling: `held` means this
+   PRICE holds other work still and the scheduler might make room; `plant` means
+   the plan will not take it however it is arranged. Same shape, different
+   emphasis, never the same sentence. */
+.dc-refusal { margin: var(--sp-1) 0; font-size: var(--fs-sm); }
+.dc-refusal-who { font-weight: var(--fw-semibold); color: var(--ink); }
+.dc-refusal-scope {
+  font: var(--fw-normal) var(--fs-2xs)/1.4 var(--font-ui);
+  color: var(--muted-2); font-style: italic; margin-top: 2px;
+}
+.dc-refusal.held .dc-refusal-scope { color: var(--muted-2); }
+
+/* The audit's own card. `held` is a GOOD outcome and must not wear the refusal
+   colour — "I searched and your plan stood" is reassurance, not rejection. */
+.delta-card.audit .dc-audit-sentence { font-size: var(--fs-sm); margin: var(--sp-1) 0; }
+.delta-card.searching .dc-outcome { color: var(--muted-2); }
+.dc-accept-search {
+  font-size: var(--fs-xs); padding: 3px 10px; cursor: pointer;
+  border-radius: var(--radius-sm, 3px);
+}

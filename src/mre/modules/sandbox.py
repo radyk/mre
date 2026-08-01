@@ -45,10 +45,79 @@ SANDBOX_BUDGET_S = 15.0
 # it (infeasible, or a materially different placement) — R-T2(4). The budget is
 # a design token, small so grab→ghost stays snappy; measured shape at demo
 # density is first-feasible ~0.3s.
-FEASIBILITY_BUDGET_S = 2.0
+# SESSION 4B.24 ITEM 1(a) RAISED THIS FROM 2.0, AND THE MEASUREMENT INVERTED THE
+# EXPLANATION. Beat one on the dense demo board (386 bars), founder's gesture,
+# seeds 42-46, reaches its verdict in **0.0426 deterministic units** — the same
+# figure to four decimal places at every seed — while spending **2.5 to 3.9
+# SECONDS of wall**, and 4.84s on a colliding pin. The deterministic meter barely
+# counts PRESOLVE, which is where that wall goes; so the 2.0s ceiling was cutting
+# off a check costing four hundredths of a unit, and 4B.23's "beat one's budget
+# is marginal" was right about the symptom and wrong about the currency: raising
+# the DETERMINISTIC budget alone would have changed nothing.
+#
+# 12.0s is a SAFETY CEILING at 2.5x the measured worst case, not a spend: a
+# proven-impossible pin still returns in 0.06s, and the founder's in ~3s.
+FEASIBILITY_BUDGET_S = 12.0
 # The deterministic-time budget for beat one, so a first-feasible verdict is
 # reproducible run-to-run (workers=1 + fixed seed + max_deterministic_time).
-FEASIBILITY_DET_TIME_S = 1.0
+# 2.0 is 47x the measured 0.0426 — deliberately far above it, because what this
+# number must guarantee is that the DETERMINISTIC budget is what stops the search
+# on any board, never the wall.
+FEASIBILITY_DET_TIME_S = 2.0
+
+# --- Session 4B.24: DETERMINISTIC SANDBOX LAW (R-T2 amendment, clause 1) ----
+# EVERY SANDBOX SOLVE IS DETERMINISTIC. Before this session beat two and the
+# baseline ran with workers=1 and a fixed seed but NO deterministic budget —
+# only a wall clock — so where they stopped depended on how fast the machine was
+# that second. On a board whose incumbent sits at a 92.4% gap the card was
+# reporting the difference between two lottery draws and labelling it "your
+# move": the same pin returned feasible_unproven ($2,596.67), no_verdict, and
+# -$50,784.33 across three runs of the same gesture.
+#
+# The seed is pinned here rather than left at 0 so the shipped configuration is
+# the one Item 1 measured across seeds 42-46.
+SANDBOX_SEED = 42
+# The deterministic budget for any WINDOW RE-SOLVE reached from the sandbox — the
+# baseline, the opportunity search, the accept re-solve.
+#
+# ITEM 1(b) SET OUT TO MEASURE A PLATEAU AND FOUND THERE ISN'T ONE. Dense demo
+# board, seeds 42-46, one deterministic unit each: the first solution is the
+# warm-started incumbent at ~4.7s of wall, and on the seeds that improve at all
+# the improvements run right up to the budget edge — seed 45's LAST improvement
+# landed at 76.9s of a 77.0s solve. More budget keeps finding money. So this
+# number cannot be justified as "past the plateau"; it is justified as "as much
+# as a gesture-adjacent solve may spend", and the deliberate audit (clause 5)
+# gets more.
+#
+# THE EXCHANGE RATE IS MEASURED: 40.8 to 77.0 SECONDS PER UNIT on the dense
+# board. A caller enabling the opportunity search must give it a wall ceiling
+# that actually clears this budget, or clause (1) will (correctly) refuse to
+# price from a wall-truncated draw. That is exactly why the opportunity search is
+# OFF on the gesture path.
+SANDBOX_DET_TIME_S = 2.0
+
+# WALL AS SAFETY CEILING ONLY — and that has to be enforced, not merely intended.
+# A caller who asks for 2.0 deterministic units under a 15-second wall has asked
+# for two incompatible things, and clause (1) says which one wins: the
+# deterministic budget decides where the search stops, and the wall exists to stop
+# a pathology. So the wall a re-solve actually gets is the caller's ceiling OR the
+# deterministic budget converted at a rate above anything ever measured —
+# whichever is LARGER. Measured worst case is 77.0 s/unit (Item 1(b), seed 45);
+# 120 is that with half again on top, so only a machine running at half the
+# slowest rate we have ever seen can be stopped by the clock.
+#
+# The consequence is deliberate: `applied_time_limit_s` may exceed the requested
+# `budget_s`, and it reports the limit ACTUALLY applied — which is the question
+# that field exists to answer.
+WALL_PER_DET_UNIT_CEILING_S = 120.0
+
+
+def wall_ceiling_for(budget_s: float, det_time_s: Optional[float],
+                     deterministic: bool = True) -> float:
+    """The wall limit a deterministic re-solve actually gets. Pure; see above."""
+    if not deterministic or det_time_s is None:
+        return budget_s
+    return max(float(budget_s), float(det_time_s) * WALL_PER_DET_UNIT_CEILING_S)
 
 # --- Beat one's THREE states (Session 4B.23, Item 5(b)) --------------------
 # A CLAIM ABOUT OUR PROCESS MUST NOT BE RENDERED AS A CLAIM ABOUT THE PLANT.
@@ -86,18 +155,30 @@ def classify_feasibility(status: str) -> str:
     return FEASIBILITY_UNDETERMINED
 
 
-def feasibility_message(verdict: str, budget_s: float) -> str:
+def feasibility_message(verdict: str, budget_s: float,
+                        wall_truncated: bool = False) -> str:
     """The authored sentence for each beat-one verdict.
 
     The UNDETERMINED sentence says what ran out — the budget, not the plant's
     room — and it never asserts the placement is either possible or not. Beat
-    two is what decides; the caller proceeds to it."""
+    two is what decides; the caller proceeds to it.
+
+    Session 4B.24: WHICH budget ran out is itself two different facts. A search
+    stopped by its DETERMINISTIC budget stopped in the same place on every
+    machine — the answer is reproducible, and asking again gets the same
+    non-answer. A search stopped by the WALL stopped wherever this machine
+    happened to be, and asking again may well answer. A planner deciding whether
+    to retry needs to know which, so the sentence says."""
     if verdict == FEASIBILITY_POSSIBLE:
         return "this placement is possible — pricing it now"
     if verdict == FEASIBILITY_IMPOSSIBLE:
         return "this placement isn't possible here"
-    return (f"I couldn't finish checking this placement in {budget_s:g}s — "
-            "that is my budget running out, not a verdict about the plant")
+    if wall_truncated:
+        return (f"I ran out of time checking this placement — the {budget_s:g}s "
+                "ceiling stopped it, so trying again may well answer. Either "
+                "way it is my clock running out, not a verdict about the plant")
+    return ("I couldn't finish checking this placement inside my budget — that "
+            "is my budget running out, not a verdict about the plant")
 
 # A solve given ``time_limit = budget`` stops AT the budget and reports a hair
 # over it (thread teardown). "Within budget" means it honored the budget, so a
@@ -210,6 +291,36 @@ class SandboxResult:
     # What the attribution cost in wall time (0.0 on a cache hit) — the honest
     # answer to "what did the split add to my wait", inspectable from the payload.
     baseline_wall_time_s: float = 0.0
+    # --- Session 4B.24: the determinism receipt --------------------------------
+    # The deterministic budget this solve was given, and what it actually
+    # consumed. Together with ``wall_truncated`` they are how a reader tells a
+    # reproducible answer from a lottery draw WITHOUT re-running it: a solve that
+    # stopped on its deterministic budget returns the same result on any machine;
+    # one the WALL stopped does not, and this module refuses to price it.
+    det_time_s: Optional[float] = None
+    det_consumed: Optional[float] = None
+    wall_truncated: bool = False
+    # --- Session 4B.24, R-T2 amendment clause (3): THE WINDOW'S OPPORTUNITY ----
+    # The deterministic re-solve's improvement over the incumbent, when there is
+    # one, is the SEARCH's discovery — never the planner's move. It gets its own
+    # labelled section, its own affected list, and its own accept (clause 4).
+    # {found, delta_abs, affected_orders, moved_op_count, sentence}; empty {} when
+    # no baseline was proven or the search found nothing cheaper.
+    opportunity: dict = field(default_factory=dict)
+    # HOW the money on this card was computed. ``local`` (clause 2) means every
+    # other placement was held and the ledger recomputed — the number is the move
+    # and nothing else, and it is exact. ``resolve`` is the legacy whole-window
+    # re-solve, still used by the accept path and by callers that need the
+    # solver's own placements. A reader must never have to guess which they hold.
+    pricing_mode: str = "resolve"
+    # A PROVEN refusal from the local pricer, with the docs/05 family named —
+    # ``LocalRefusal.summary()``. Distinct from ``message`` alone, because the
+    # cockpit needs the ``holds_others`` bit to choose between "no" and "not
+    # without moving other work".
+    refusal: Optional[dict] = None
+    # The model's own verdict on the held world with the pin applied
+    # (``local_price.validate_held_world``), when this card was priced locally.
+    validation: dict = field(default_factory=dict)
 
     def summary(self) -> dict:
         return asdict(self)
@@ -253,6 +364,11 @@ class FeasibilityGhost:
     # start, end, pinned}]. The ghost the board draws.
     placement: list[dict] = field(default_factory=list)
     pin: dict = field(default_factory=dict)
+    # Session 4B.24: the determinism receipt (see SandboxResult). Beat one has
+    # always carried a deterministic budget; these say what it cost.
+    det_time_s: Optional[float] = None
+    det_consumed: Optional[float] = None
+    wall_truncated: bool = False
 
     def summary(self) -> dict:
         return asdict(self)
@@ -341,6 +457,18 @@ class BaselineSolve:
     wall_time_s: float = 0.0
     message: str = ""
     cached: bool = False
+    # Session 4B.24: the determinism receipt. A baseline the WALL stopped is not
+    # reproducible, so it is not `available` — an unsplit card is honest, a card
+    # split against a lottery draw is not.
+    det_time_s: Optional[float] = None
+    det_consumed: Optional[float] = None
+    wall_truncated: bool = False
+    # Clause (3): the opportunity section's affected list is ITS OWN — the moves
+    # and per-order consequences of THIS solve against the incumbent, never the
+    # pinned solve's. Computed here because this is the only place the baseline's
+    # own solve values exist.
+    moves: list[dict] = field(default_factory=list)
+    affected_orders: list[dict] = field(default_factory=list)
 
     def summary(self) -> dict:
         return asdict(self)
@@ -359,7 +487,13 @@ _BASELINE_LOCK = threading.Lock()
 def baseline_cache_key(out_dir: Path | str, snapshot_id: str, budget_s: float,
                        deterministic: bool,
                        standing_pins: Optional[list[dict]],
-                       restrict_op_ids: Optional[set]) -> str:
+                       restrict_op_ids: Optional[set],
+                       det_time_s: Optional[float] = None,
+                       seed: Optional[int] = None) -> str:
+    """Everything that defines the baseline solve, including its BUDGET (the
+    4B.6b finding: a cached result keyed without the budget it was solved under
+    is served to a caller asking for a different one) and, since 4B.24, its
+    DETERMINISTIC budget and seed — which are now what decides where it stops."""
     pins = sorted(
         (str(p.get("operation_ref", "")), str(p.get("resource_id", "")),
          str(p.get("start", "")))
@@ -367,6 +501,8 @@ def baseline_cache_key(out_dir: Path | str, snapshot_id: str, budget_s: float,
     payload = json.dumps({
         "out": str(out_dir), "snap": snapshot_id, "budget": round(budget_s, 3),
         "det": bool(deterministic), "pins": pins,
+        "det_time": None if det_time_s is None else round(det_time_s, 4),
+        "seed": seed,
         "window": sorted(restrict_op_ids) if restrict_op_ids is not None else None,
     }, sort_keys=True, default=str)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:32]
@@ -389,6 +525,8 @@ def baseline_window_solve(
     standing_pins: Optional[list[dict]] = None,
     restrict_op_ids: Optional[set] = None,
     use_cache: bool = True,
+    det_time_s: Optional[float] = SANDBOX_DET_TIME_S,
+    seed: int = SANDBOX_SEED,
 ) -> BaselineSolve:
     """Re-solve the window with NO gesture pin, and return its ledger total.
 
@@ -403,7 +541,7 @@ def baseline_window_solve(
     returns ``available=False`` with a stated reason — a baseline that could not
     be proven must degrade the card honestly, never take it down."""
     key = baseline_cache_key(out_dir, snapshot_id, budget_s, deterministic,
-                             standing_pins, restrict_op_ids)
+                             standing_pins, restrict_op_ids, det_time_s, seed)
     if use_cache:
         with _BASELINE_LOCK:
             hit = _BASELINE_CACHE.get(key)
@@ -413,7 +551,7 @@ def baseline_window_solve(
     result = _baseline_window_solve_uncached(
         out_dir, snapshot_id, budget_s=budget_s, runs_subdir=runs_subdir,
         deterministic=deterministic, standing_pins=standing_pins,
-        restrict_op_ids=restrict_op_ids)
+        restrict_op_ids=restrict_op_ids, det_time_s=det_time_s, seed=seed)
     if use_cache:
         with _BASELINE_LOCK:
             _BASELINE_CACHE.pop(key, None)
@@ -432,6 +570,8 @@ def _baseline_window_solve_uncached(
     deterministic: bool,
     standing_pins: Optional[list[dict]],
     restrict_op_ids: Optional[set],
+    det_time_s: Optional[float] = SANDBOX_DET_TIME_S,
+    seed: int = SANDBOX_SEED,
 ) -> BaselineSolve:
     from mre.contracts.vocabularies import ModuleCode, RunStatus
     from mre.modules.calendar_utils import flatten_all_calendars
@@ -440,7 +580,7 @@ def _baseline_window_solve_uncached(
     from mre.modules.snapshot_store import SnapshotStore
     from mre.modules.solve_runner import SolveRunner
     from mre.modules.solver_builder import SolverBuilder, apply_solution_hints
-    from mre.modules.solution_pool import _m5_horizon, _read_evidence
+    from mre.modules.solution_pool import _m5_horizon, _placements, _read_evidence
     from mre.modules import standing_pins as sp
     from mre.reporter import Reporter
 
@@ -498,25 +638,42 @@ def _baseline_window_solve_uncached(
         r_rep = Reporter.begin(
             module=ModuleCode.M6, purpose="sandbox baseline solve",
             config={"time_limit": budget_s, "num_search_workers": workers,
+                    "deterministic_time": det_time_s if deterministic else None,
+                    "random_seed": seed if deterministic else None,
                     "baseline": True},
             trigger="sandbox_baseline", snapshot_id=snapshot_id,
             sink_dir=sandbox_dir / "runs",
         )
         t0 = time.monotonic()
+        wall_limit = wall_ceiling_for(budget_s, det_time_s, deterministic)
         solve_result = SolveRunner(
-            time_limit_seconds=budget_s, num_search_workers=workers,
-            random_seed=0 if deterministic else None,
+            time_limit_seconds=wall_limit, num_search_workers=workers,
+            random_seed=seed if deterministic else None,
+            deterministic_time=det_time_s if deterministic else None,
         ).solve(model, var_map, r_rep)
         wall = round(time.monotonic() - t0, 3)
         feasible = solve_result.status in ("OPTIMAL", "FEASIBLE")
         r_rep.end(RunStatus.SUCCESS if feasible else RunStatus.PARTIAL)
         outcome = classify_sandbox_outcome(solve_result.status, wall, budget_s)
+        receipt = {"det_time_s": det_time_s if deterministic else None,
+                   "det_consumed": solve_result.det_consumed,
+                   "wall_truncated": bool(solve_result.wall_truncated)}
         if not feasible:
             return BaselineSolve(
                 available=False, status=solve_result.status, outcome=outcome,
-                wall_time_s=wall,
+                wall_time_s=wall, **receipt,
                 message="the window could not be re-solved without your move "
                         "inside the budget")
+        # CLAUSE (1): a solve the WALL stopped is not reproducible, so it is not a
+        # baseline. Refusing to attribute against it is the whole point — the
+        # founder's -$50,784.33 was exactly this: a lottery draw in the reference
+        # position. The card degrades to the honest unsplit shape.
+        if deterministic and det_time_s is not None and solve_result.wall_truncated:
+            return BaselineSolve(
+                available=False, status=solve_result.status, outcome=outcome,
+                wall_time_s=wall, **receipt,
+                message="the reference re-solve ran out of wall time before its "
+                        "deterministic budget, so its result is not reproducible")
 
         er = Extractor().extract(
             solve_values=solve_result.solve_values, snapshot_id="sandbox-baseline",
@@ -531,11 +688,19 @@ def _baseline_window_solve_uncached(
         if total is None:
             return BaselineSolve(
                 available=False, status=solve_result.status, outcome=outcome,
-                wall_time_s=wall,
+                wall_time_s=wall, **receipt,
                 message="the baseline re-solve produced no cost ledger")
+        # CLAUSE (3): this solve's OWN consequences. It is a search result about
+        # the window, not about anybody's gesture, so it carries its own moved-set
+        # and its own affected orders and they are never merged with the pin's.
+        incumbent_placement = _placements(incumbent_assignments)
+        moves = _moved_set(solve_result.solve_values, incumbent_placement,
+                           horizon_start, pin_op_id=None)
+        affected = _affected_orders(reader, er.service_outcomes)
         return BaselineSolve(
             available=True, total_cost=round(float(total), 2),
             status=solve_result.status, outcome=outcome, wall_time_s=wall,
+            moves=moves, affected_orders=affected, **receipt,
             message="baseline proven" if outcome == SANDBOX_VERDICT
                     else "baseline found, bound not proven")
     except Exception as exc:  # noqa: BLE001 — a baseline never takes the card down
@@ -584,6 +749,427 @@ def attribute_delta(cost_delta_abs: Optional[float],
             "attribution_note": "", "baseline_wall_time_s": wall}
 
 
+# The dollar threshold below which an "improvement" is rounding, not an offer.
+# A search result worth a planner's attention has to be worth more than the cent
+# the ledger rounds to.
+OPPORTUNITY_MIN_ABS = 0.01
+
+
+def window_opportunity(baseline: Optional[BaselineSolve],
+                       incumbent_total: Optional[float]) -> dict:
+    """R-T2 amendment clause (3) — THE WINDOW'S OPPORTUNITY IS ITS OWN THING.
+
+    The baseline re-solve holds no gesture. Whatever it finds that the incumbent
+    did not is the SEARCH's discovery about the window, and saying so under the
+    heading "your move" is the defect this session exists to end. Pure: it decides
+    only whether there is something to say and words it.
+
+    An improvement is a baseline CHEAPER than the incumbent (a negative
+    ``reopt``). A baseline DEARER than the incumbent is not an opportunity and is
+    not reported as one — it means the search, under its own budget, did not
+    re-find the incumbent's quality, which is a fact about the search and says
+    nothing a planner can act on."""
+    if (baseline is None or not baseline.available
+            or baseline.total_cost is None or incumbent_total is None):
+        return {}
+    delta = round(float(baseline.total_cost) - float(incumbent_total), 2)
+    if delta >= -OPPORTUNITY_MIN_ABS:
+        return {"found": False, "delta_abs": delta,
+                "sentence": "the search found nothing cheaper than the current "
+                            "plan for this window"}
+    moves = [m for m in (baseline.moves or []) if not m.get("pinned")]
+    return {
+        "found": True,
+        "delta_abs": delta,
+        "affected_orders": list(baseline.affected_orders or []),
+        "moved_op_count": len(moves),
+        "sentence": (f"the search found a schedule ${abs(delta):,.2f} cheaper "
+                     f"for this window — {len(moves)} operation(s) would move"),
+    }
+
+
+# --- Session 4B.24, R-T2 amendment clause (5): THE MINIMUM AUDIT -----------
+# "Search deeper" is a DELIBERATE act, so it may spend what a gesture may not.
+# Measured (Item 1(b), dense demo board): at ONE deterministic unit, seed 42 finds
+# nothing better than the incumbent at all; at THREE it finds a schedule 12.4%
+# cheaper. The budget is not merely a stopping point for CP-SAT — it schedules its
+# own search portfolio around the budget it is given, so a bigger one is a
+# different search, not a longer one. 3.0 units is ~100 seconds of real search on
+# that board, and it is the smallest budget measured to find anything there.
+AUDIT_DET_TIME_S = 3.0
+AUDIT_BUDGET_S = 600.0
+
+
+def audit_incumbent(
+    out_dir: Path | str,
+    snapshot_id: str,
+    *,
+    runs_subdir: str = "runs",
+    standing_pins: Optional[list[dict]] = None,
+    restrict_op_ids: Optional[set] = None,
+    det_time_s: Optional[float] = None,
+    budget_s: Optional[float] = None,
+    seed: Optional[int] = None,
+) -> dict:
+    """THE INCUMBENT IS AUDITED, NOT ENSHRINED (clause 5) — the smallest honest
+    version of it.
+
+    The incumbent on a dense board is ONE draw from a search that ran out of
+    budget, and nothing ever checked whether it was any good. This runs the same
+    deterministic, seeded, unpinned window search the baseline uses, at a budget a
+    gesture could not afford, and reports what it found.
+
+    It APPLIES NOTHING. An improvement is an OFFER, with its own delta and its own
+    affected list, accepted as its own act (clause 4). And when it finds nothing
+    it SAYS SO, in units, because "I searched this hard and your plan held" is
+    also a thing a planner is owed — silence would leave them unable to tell it
+    from a search that never ran."""
+    det = AUDIT_DET_TIME_S if det_time_s is None else det_time_s
+    wall = AUDIT_BUDGET_S if budget_s is None else budget_s
+    sd = SANDBOX_SEED if seed is None else seed
+    t0 = time.monotonic()
+    base = baseline_window_solve(
+        out_dir, snapshot_id, budget_s=wall, runs_subdir=runs_subdir,
+        deterministic=True, standing_pins=standing_pins,
+        restrict_op_ids=restrict_op_ids, det_time_s=det, seed=sd,
+        use_cache=False)
+    incumbent_total = _incumbent_total(Path(out_dir), snapshot_id)
+    opp = window_opportunity(base, incumbent_total)
+    out = {
+        "searched": True,
+        "det_time_s": det, "det_consumed": base.det_consumed,
+        "seed": sd, "wall_time_s": round(time.monotonic() - t0, 3),
+        "status": base.status, "wall_truncated": base.wall_truncated,
+        "incumbent_total": incumbent_total,
+        "opportunity": opp,
+        "offer": None,
+        "sentence": "",
+    }
+    if not base.available:
+        # NOT an offer and NOT "the incumbent held" — we did not get an answer.
+        # Saying "nothing cheaper" here would report our failure as their plan's
+        # strength, which is the fusion this whole session is about.
+        out["searched"] = False
+        out["sentence"] = (
+            "I could not complete a deeper search of this window, so I have "
+            f"nothing to say about whether the plan can be improved — {base.message}")
+        return out
+    if opp.get("found"):
+        out["offer"] = {
+            "delta_abs": opp["delta_abs"],
+            "affected_orders": opp.get("affected_orders", []),
+            "moved_op_count": opp.get("moved_op_count", 0),
+            "moves": list(base.moves or []),
+        }
+        out["sentence"] = (f"the search found a schedule "
+                           f"${abs(opp['delta_abs']):,.2f} cheaper — review?")
+        return out
+    spent = base.det_consumed if base.det_consumed is not None else det
+    out["sentence"] = (f"searched {spent:.2f} more deterministic units; "
+                       "the incumbent held")
+    return out
+
+
+def materialize_audit_offer(
+    out_dir: Path | str,
+    base_snapshot_id: str,
+    *,
+    authority: str,
+    runs_subdir: str = "runs",
+    base_runs_dir: Optional[Path] = None,
+    reference_date_raw: Optional[str] = None,
+    standing_pins: Optional[list[dict]] = None,
+    restrict_op_ids: Optional[set] = None,
+    det_time_s: Optional[float] = None,
+    budget_s: Optional[float] = None,
+    seed: Optional[int] = None,
+) -> dict:
+    """THE SECOND CEREMONY (clause 4) — accept the WINDOW'S improvement.
+
+    Accepting the planner's move commits the move. This commits something else
+    entirely: a schedule the SEARCH found, touching work the planner never
+    gestured at. One click must never do both, so this is its own function behind
+    its own endpoint, and it records its own Decision naming its own authority.
+
+    It is safe to re-run the search rather than carry the earlier one's placements
+    across a request boundary precisely BECAUSE of clause (1): same model, same
+    seed, same deterministic budget, same answer. That is what determinism buys
+    beyond honesty — a result that can be recomputed instead of cached.
+
+    ``out_dir`` must be a fresh run directory whose ``snapshots/`` already holds a
+    copy of the base snapshot (the caller mints it, exactly as accept does).
+    Returns ``{child_snapshot_id, total_cost, delta_abs, moved_count,
+    decision_record_id}``. Raises when the search finds nothing to accept — an
+    empty offer is not a version."""
+    from mre.contracts.entities import EntityRef
+    from mre.contracts.vocabularies import (
+        DecisionBasis, DecisionType, DriverCode, ModuleCode, RecordTier, RunStatus,
+    )
+    from mre.modules.calendar_utils import flatten_all_calendars
+    from mre.modules.extractor import Extractor
+    from mre.modules.snapshot_store import SnapshotStore
+    from mre.modules.solve_runner import SolveRunner
+    from mre.modules.solver_builder import SolverBuilder, apply_solution_hints
+    from mre.modules.solution_pool import _m5_horizon, _placements, _read_evidence
+    from mre.modules import standing_pins as sp
+    from mre.reporter import Reporter
+
+    if not authority:
+        raise ValueError("accepting a search result requires an authority")
+    det = AUDIT_DET_TIME_S if det_time_s is None else det_time_s
+    wall = wall_ceiling_for(AUDIT_BUDGET_S if budget_s is None else budget_s,
+                            det, True)
+    sd = SANDBOX_SEED if seed is None else seed
+
+    out_dir = Path(out_dir)
+    store = SnapshotStore(out_dir / "snapshots")
+    runs_dir = out_dir / runs_subdir
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    child_snap_id = f"{base_snapshot_id}-audit-{sd}-{det:g}".replace(".", "")
+    from mre.modules.planner_edit import _EDIT_COPY_TYPES
+    store.derive_scenario_snapshot(base_snapshot_id, child_snap_id, _EDIT_COPY_TYPES)
+
+    reader = store.load_snapshot(base_snapshot_id)
+    demands = list(reader.iter_entities("demand"))
+    fuls = list(reader.iter_entities("fulfillment"))
+    wps = list(reader.iter_entities("workpackage"))
+    ops = list(reader.iter_entities("operation"))
+    edges = list(reader.iter_entities("precedenceedge"))
+    resources = list(reader.iter_entities("resource"))
+    pools = list(reader.iter_entities("resourcepool"))
+    calendars = list(reader.iter_entities("calendar"))
+    constraints = list(reader.iter_entities("constraint"))
+    costmodels = list(reader.iter_entities("costmodel"))
+    incumbent_assignments = list(reader.iter_entities("assignment"))
+    cost_model = costmodels[0] if costmodels else {}
+    ops, wps, fuls, demands = _restrict_window(
+        ops, wps, fuls, demands, restrict_op_ids)
+
+    evidence = _read_evidence(base_runs_dir or (out_dir / runs_subdir))
+    horizon_start, horizon_end = _m5_horizon(evidence)
+    reference_date = _parse_ref_date(reference_date_raw)
+    flattened = flatten_all_calendars(calendars, horizon_start, horizon_end)
+    incumbent_placement = _placements(incumbent_assignments)
+
+    b_rep = Reporter.begin(
+        module=ModuleCode.M5, purpose="audit offer model build",
+        config={"audit": True, "seed": sd, "deterministic_time": det},
+        trigger="audit_accept", snapshot_id=child_snap_id, sink_dir=runs_dir)
+    model, var_map = SolverBuilder(reference_date=reference_date).build(
+        wps + ops + edges, resources + pools, flattened,
+        fuls + demands, constraints, cost_model)
+    b_rep.end(RunStatus.SUCCESS)
+
+    apply_solution_hints(model, var_map, incumbent_assignments)
+    sp.apply_standing_pins(model, var_map, standing_pins, horizon_start)
+
+    r_rep = Reporter.begin(
+        module=ModuleCode.M6, purpose="audit offer re-solve",
+        config={"time_limit": wall, "num_search_workers": 1,
+                "random_seed": sd, "deterministic_time": det, "audit": True},
+        trigger="audit_accept", snapshot_id=child_snap_id, sink_dir=runs_dir)
+    solve_result = SolveRunner(
+        time_limit_seconds=wall, num_search_workers=1, random_seed=sd,
+        deterministic_time=det).solve(model, var_map, r_rep)
+    feasible = solve_result.status in ("OPTIMAL", "FEASIBLE")
+    r_rep.end(RunStatus.SUCCESS if feasible else RunStatus.PARTIAL)
+    if not feasible:
+        raise RuntimeError(
+            f"the deeper search returned {solve_result.status} — nothing "
+            "accepted; the incumbent stands")
+    if solve_result.wall_truncated:
+        raise RuntimeError(
+            "the deeper search was stopped by the wall, not its deterministic "
+            "budget, so its result is not reproducible — nothing accepted")
+
+    e_rep = Reporter.begin(
+        module=ModuleCode.M7, purpose="audit offer extraction", config={},
+        trigger="audit_accept", snapshot_id=child_snap_id, sink_dir=runs_dir)
+    writer = store.extend_snapshot(child_snap_id)
+    extract = Extractor().extract(
+        solve_values=solve_result.solve_values, snapshot_id=child_snap_id,
+        operations=ops, workpackages=wps, resources=resources,
+        fulfillments=fuls, demands=demands, cost_model=cost_model,
+        reporter=e_rep, cal_windows=var_map.cal_windows,
+        op_eligible=var_map.op_eligible, snapshot_writer=writer,
+        is_scenario=False, overtime_windows=var_map.overtime_windows)
+    writer.finalize()
+    e_rep.end(RunStatus.SUCCESS)
+
+    total = float((extract.cost_ledger or {}).get("total_cost", 0.0))
+    incumbent_total = _incumbent_total_from(reader)
+    delta = (None if incumbent_total is None
+             else round(total - incumbent_total, 2))
+    if delta is not None and delta >= -OPPORTUNITY_MIN_ABS:
+        raise RuntimeError(
+            "the deeper search did not beat the incumbent on this run — "
+            "nothing accepted")
+    moves = _moved_set(solve_result.solve_values, incumbent_placement,
+                       horizon_start, pin_op_id=None)
+
+    d_rep = Reporter.begin(
+        module=ModuleCode.M4, purpose="audit offer accepted",
+        config={"authority": authority, "seed": sd, "deterministic_time": det},
+        trigger="audit_accept", snapshot_id=child_snap_id, sink_dir=runs_dir)
+    decision = d_rep.record_decision(
+        decision_type=DecisionType.PLANNER_EDIT,
+        basis=DecisionBasis.OBSERVED,
+        driver=DriverCode.COST_MINIMIZATION,
+        chosen={"audit": True, "seed": sd, "deterministic_time": det,
+                "total_cost": round(total, 2), "delta_abs": delta,
+                "moved_count": len(moves)},
+        alternatives=[],
+        subjects=[EntityRef(entity_id=child_snap_id, entity_type="schedule")],
+        authority=authority,
+        message=(f"Accepted a deeper-search schedule ${abs(delta):,.2f} cheaper "
+                 f"than the incumbent; {len(moves)} operations move."),
+        tier=RecordTier.HEADLINE,
+    )
+    d_rep.end(RunStatus.SUCCESS)
+    return {"child_snapshot_id": child_snap_id, "total_cost": round(total, 2),
+            "delta_abs": delta, "moved_count": len(moves),
+            "decision_record_id": getattr(decision, "record_id", None)
+            or (decision.get("record_id") if isinstance(decision, dict) else None)}
+
+
+def _incumbent_total_from(reader) -> Optional[float]:
+    try:
+        schedules = list(reader.iter_entities("schedule"))
+        if not schedules:
+            return None
+        return round(float((schedules[-1].get("summary_metrics") or {})
+                           .get("total_cost", 0.0)), 2)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _incumbent_total(out_dir: Path, snapshot_id: str) -> Optional[float]:
+    """The incumbent's own persisted ledger total — the figure any improvement is
+    measured against."""
+    from mre.modules.snapshot_store import SnapshotStore
+    try:
+        reader = SnapshotStore(out_dir / "snapshots").load_snapshot(snapshot_id)
+        schedules = list(reader.iter_entities("schedule"))
+        if not schedules:
+            return None
+        return round(float((schedules[-1].get("summary_metrics") or {})
+                           .get("total_cost", 0.0)), 2)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def local_attribution(delta: Optional[float]) -> dict:
+    """The attribution shape for a LOCALLY priced move (clause 2).
+
+    There is nothing to split. The re-solve's fused total is what needed
+    splitting, and this number was never fused: everything else was held, so the
+    window re-optimization component is not "measured as zero" — it is ABSENT BY
+    CONSTRUCTION. The fields still sum exactly, so every downstream arithmetic
+    check holds, and ``attribution`` says ``local`` so no surface renders a
+    "window re-optimization $0.00" line implying we looked."""
+    return {"attribution": "local", "reopt_delta_abs": 0.0,
+            "move_delta_abs": delta, "baseline_total_cost": None,
+            "attribution_note": "", "baseline_wall_time_s": 0.0}
+
+
+def price_drop(
+    out_dir: Path | str,
+    snapshot_id: str,
+    pin_op_id: Optional[str] = None,
+    pin_resource_id: Optional[str] = None,
+    pin_start_iso: Optional[str] = None,
+    *,
+    runs_subdir: str = "runs",
+    restrict_op_ids: Optional[set] = None,
+    standing_pins: Optional[list[dict]] = None,
+    budget_s: float = SANDBOX_BUDGET_S,
+    deterministic: bool = True,
+    det_time_s: Optional[float] = SANDBOX_DET_TIME_S,
+    seed: int = SANDBOX_SEED,
+    opportunity: bool = False,
+    validate: bool = True,
+) -> SandboxResult:
+    """BEAT TWO, under the R-T2 amendment: price the planner's move LOCALLY.
+
+    This is what ``POST /sandbox`` calls. It replaces the whole-window re-solve
+    on the gesture path with :func:`mre.modules.local_price.price_local_move` —
+    clause (2). The card's money is now the move's own ledger delta, computed
+    with every other placement held exactly where the planner can see it, and
+    validated against a fresh model. It is exact, it is deterministic, and it
+    takes about a second and a half on a 386-bar board where the re-solve took
+    sixty-four.
+
+    ``opportunity`` (clause 3) additionally runs the deterministic UNPINNED
+    window search and, where it beats the incumbent, reports that as its own
+    labelled section with its own affected list. It is OFF by default on the
+    gesture path: the search costs orders of magnitude more than the price, and
+    an improvement the planner did not ask for must not be the reason their drag
+    took a minute. The "search deeper" action is what turns it on.
+
+    :func:`sandbox_pin_resolve` — the re-solve — is unchanged and still reachable;
+    it is now deterministic (clause 1) and is what the accept path and the
+    opportunity search are built from."""
+    from mre.modules.local_price import price_local_move
+
+    lp = price_local_move(
+        out_dir, snapshot_id, pin_op_id=pin_op_id,
+        pin_resource_id=pin_resource_id, pin_start_iso=pin_start_iso,
+        runs_subdir=runs_subdir, restrict_op_ids=restrict_op_ids,
+        standing_pins=standing_pins, validate=validate)
+    # The pricer RESOLVES an omitted pin (the latency floor: the first incumbent
+    # op at its own placement), so the correlation id is derived from what was
+    # actually priced. Deriving it from the request would give beat one and beat
+    # two different ids for the same defaulted gesture.
+    pin = dict(lp.pin)
+    corr = correlation_id_for(snapshot_id, pin.get("operation_ref"),
+                              pin.get("resource_id"), pin.get("start"))
+
+    common = dict(
+        within_budget=True, wall_time_s=lp.wall_time_s, budget_s=budget_s,
+        applied_time_limit_s=budget_s, pin=pin, correlation_id=corr,
+        pricing_mode="local", validation=lp.validation,
+        det_time_s=None, det_consumed=None, wall_truncated=False)
+
+    if lp.error:
+        # OURS, not the plant's. No verdict, and the sentence says whose fault.
+        return SandboxResult(
+            outcome=SANDBOX_NO_VERDICT, status="UNKNOWN", feasible=False,
+            message=lp.error, **common, **attribute_delta(None, None, None))
+
+    if lp.refusal:
+        # A PROVEN refusal about the world as it stands. ``holds_others`` decides
+        # between "no" and "not without moving other work" — and the second must
+        # never be spoken as the first (see LocalRefusal).
+        r = lp.refusal
+        tail = (" — and this price holds every other job exactly where it is, so "
+                "the scheduler might still fit it here by moving other work"
+                if r.get("holds_others") else "")
+        return SandboxResult(
+            outcome=SANDBOX_VERDICT, status="INFEASIBLE", feasible=False,
+            message=r.get("sentence", "this placement isn't possible") + tail,
+            refusal=r, **common, **attribute_delta(None, None, None))
+
+    opp: dict = {}
+    if opportunity:
+        base = baseline_window_solve(
+            out_dir, snapshot_id, budget_s=budget_s, runs_subdir=runs_subdir,
+            deterministic=deterministic, standing_pins=standing_pins,
+            restrict_op_ids=restrict_op_ids, det_time_s=det_time_s, seed=seed)
+        opp = window_opportunity(base, lp.total_before)
+
+    return SandboxResult(
+        outcome=SANDBOX_VERDICT, status=(lp.validation or {}).get("status")
+                                        or "OPTIMAL",
+        feasible=True, objective=None, delta_pct=None, delta_abs=None,
+        cost_delta_abs=lp.cost_delta_abs, cost_delta_pct=lp.cost_delta_pct,
+        message="priced exactly — nothing else moved",
+        moves=list(lp.moves), dominant_driver={},
+        affected_orders=list(lp.affected_orders),
+        lateness_delta_min=lp.lateness_delta_min,
+        no_committed_work_changes=True, cost_lines=lp.cost_lines,
+        opportunity=opp, **common, **local_attribution(lp.cost_delta_abs))
+
+
 def feasibility_ghost(
     out_dir: Path | str,
     snapshot_id: str,
@@ -595,6 +1181,7 @@ def feasibility_ghost(
     runs_subdir: str = "runs",
     deterministic: bool = True,
     restrict_op_ids: Optional[set] = None,
+    seed: int = SANDBOX_SEED,
 ) -> FeasibilityGhost:
     """BEAT ONE (R-T2): a first-feasible feasibility verdict + placement for a
     dropped bar, under a SMALL deterministic budget, carrying NO monetary
@@ -704,7 +1291,7 @@ def feasibility_ghost(
     t0 = time.monotonic()
     solve_result = SolveRunner(
         time_limit_seconds=budget_s, num_search_workers=workers,
-        random_seed=0 if deterministic else None,
+        random_seed=seed if deterministic else None,
         deterministic_time=det_time_s if deterministic else None,
         stop_after_first_solution=True,
     ).solve(model, var_map, r_rep)
@@ -721,10 +1308,15 @@ def feasibility_ghost(
         correlation_id=corr, feasible=feasible,
         within_budget=wall <= budget_s + _BUDGET_STOP_MARGIN_S,
         wall_time_s=wall, budget_s=budget_s, status=solve_result.status,
-        verdict=verdict, message=feasibility_message(verdict, budget_s),
+        verdict=verdict,
+        message=feasibility_message(verdict, budget_s,
+                                    bool(solve_result.wall_truncated)),
         placement=placement,
         pin={"operation_ref": pin_op_id, "resource_id": pin_resource_id,
              "start": pin_start_dt.isoformat()},
+        det_time_s=det_time_s if deterministic else None,
+        det_consumed=solve_result.det_consumed,
+        wall_truncated=bool(solve_result.wall_truncated),
     )
 
 
@@ -778,6 +1370,8 @@ def sandbox_pin_resolve(
     standing_pins: Optional[list[dict]] = None,
     restrict_op_ids: Optional[set] = None,
     baseline: bool = True,
+    det_time_s: Optional[float] = SANDBOX_DET_TIME_S,
+    seed: int = SANDBOX_SEED,
 ) -> SandboxResult:
     """Re-solve with one op pinned to (machine + time), the rest free, under a
     hard `budget_s`. Returns a classified :class:`SandboxResult`.
@@ -910,14 +1504,17 @@ def sandbox_pin_resolve(
     r_rep = Reporter.begin(
         module=ModuleCode.M6, purpose="sandbox pin re-solve",
         config={"time_limit": budget_s, "num_search_workers": workers,
-                "random_seed": 0 if deterministic else None,
+                "random_seed": seed if deterministic else None,
+                "deterministic_time": det_time_s if deterministic else None,
                 "pin_op": pin_op_id},
         trigger="sandbox", snapshot_id=snapshot_id, sink_dir=sandbox_dir / "runs",
     )
     t0 = time.monotonic()
+    wall_limit = wall_ceiling_for(budget_s, det_time_s, deterministic)
     solve_result = SolveRunner(
-        time_limit_seconds=budget_s, num_search_workers=workers,
-        random_seed=0 if deterministic else None,
+        time_limit_seconds=wall_limit, num_search_workers=workers,
+        random_seed=seed if deterministic else None,
+        deterministic_time=det_time_s if deterministic else None,
     ).solve(model, var_map, r_rep)
     wall = round(time.monotonic() - t0, 3)
     r_rep.end(RunStatus.SUCCESS
@@ -926,6 +1523,28 @@ def sandbox_pin_resolve(
 
     outcome = classify_sandbox_outcome(solve_result.status, wall, budget_s)
     feasible = solve_result.status in ("OPTIMAL", "FEASIBLE")
+    receipt = {"det_time_s": det_time_s if deterministic else None,
+               "det_consumed": solve_result.det_consumed,
+               "wall_truncated": bool(solve_result.wall_truncated)}
+    # CLAUSE (1) — A WALL-TRUNCATED SANDBOX SOLVE REFUSES TO PRICE. The wall is a
+    # SAFETY CEILING; when it, rather than the deterministic budget, is what
+    # stopped the search, the answer is whatever this machine happened to reach in
+    # N seconds and the identical gesture would return something else. Pricing
+    # from it is what produced -$50,784.33 for a four-hour nudge into empty time.
+    # This is a statement about OUR process — the same register as beat one's
+    # `undetermined` — so it is a no_verdict, never a claim about the plant.
+    if deterministic and det_time_s is not None and solve_result.wall_truncated:
+        return SandboxResult(
+            outcome=SANDBOX_NO_VERDICT, status=solve_result.status,
+            within_budget=False, wall_time_s=wall, budget_s=budget_s,
+            applied_time_limit_s=wall_limit, feasible=False,
+            message="I ran out of wall time before finishing this price — the "
+                    f"{wall_limit:g}s ceiling stopped it, not the plant. Pricing "
+                    "from where it happened to stop would not be reproducible.",
+            pin={"operation_ref": pin_op_id, "resource_id": pin_resource_id,
+                 "start": pin_start_dt.isoformat()},
+            correlation_id=corr, **receipt, **attribute_delta(None, None, None),
+        )
     # R-DP8: an INFEASIBLE drop may be blocked by a standing commitment. If a
     # standing pin directly overlaps the drop on its resource, say WHICH decision
     # blocks it (an authored reason), rather than a bare "pin infeasible" — the
@@ -993,12 +1612,14 @@ def sandbox_pin_resolve(
     # and split the verdict. Only a feasible, priced result can be attributed;
     # everything else keeps the honest unsplit shape.
     attribution = attribute_delta(None, None, None)
+    opportunity: dict = {}
     if feasible and baseline and cost_delta_abs is not None:
         base = baseline_window_solve(
             out_dir, snapshot_id, budget_s=budget_s, runs_subdir=runs_subdir,
             deterministic=deterministic, standing_pins=standing_pins,
-            restrict_op_ids=restrict_op_ids)
+            restrict_op_ids=restrict_op_ids, det_time_s=det_time_s, seed=seed)
         attribution = attribute_delta(cost_delta_abs, incumbent_total, base)
+        opportunity = window_opportunity(base, incumbent_total)
     # R-T2/R-DP8 standing invariant: a committed/standing-pinned op is structurally
     # excluded from the moved-set (``exclude_ops``), so this is True by
     # construction — but ASSERT it against the actual moves (test pins it).
@@ -1013,8 +1634,9 @@ def sandbox_pin_resolve(
     }[outcome]
     return SandboxResult(
         outcome=outcome, status=solve_result.status,
-        within_budget=wall <= budget_s + _BUDGET_STOP_MARGIN_S,
-        wall_time_s=wall, budget_s=budget_s, applied_time_limit_s=budget_s,
+        within_budget=wall <= wall_limit + _BUDGET_STOP_MARGIN_S,
+        wall_time_s=wall, budget_s=budget_s,
+        applied_time_limit_s=wall_limit,
         feasible=feasible, objective=solve_result.objective,
         delta_pct=delta_pct, delta_abs=delta_abs,
         cost_delta_abs=cost_delta_abs, cost_delta_pct=cost_delta_pct,
@@ -1024,7 +1646,7 @@ def sandbox_pin_resolve(
         correlation_id=corr, dominant_driver=dominant_driver,
         affected_orders=affected_orders, lateness_delta_min=lateness_delta_min,
         no_committed_work_changes=no_committed_changes, cost_lines=cost_lines,
-        **attribution,
+        opportunity=opportunity, **receipt, **attribution,
     )
 
 
@@ -1143,30 +1765,8 @@ def _priced_card_data(reader, solve_values, ops, wps, resources, fuls,
 
         # per-order tardiness/lateness deltas (per-Demand truth from the service
         # outcomes). Resolve work-order names via the identity map.
-        idmap = reader.read_identity_map()
-        wo_of = _order_name_resolver(idmap)
-        base_by_dem = {s.get("demand_ref"): s for s in base_svc}
-        affected: list[dict] = []
-        lateness_delta = 0
-        for s in er.service_outcomes:
-            dem = s.get("demand_ref")
-            b = base_by_dem.get(dem, {})
-            t_new = float(s.get("tardiness_cost", 0.0))
-            t_old = float(b.get("tardiness_cost", 0.0))
-            l_new = _svc_lateness_min(s)
-            l_old = _svc_lateness_min(b)
-            lateness_delta += max(0, l_new) - max(0, l_old)
-            t_d = round(t_new - t_old, 2)
-            l_d = l_new - l_old
-            if abs(t_d) < 0.005 and l_d == 0:
-                continue
-            affected.append({
-                "demand_ref": dem, "work_order": wo_of(dem),
-                "tardiness_delta": t_d, "lateness_delta_min": l_d,
-            })
-        affected.sort(key=lambda a: (-abs(a["tardiness_delta"]),
-                                     -abs(a["lateness_delta_min"])))
-        affected = affected[:_AFFECTED_ORDERS_TOP_N]
+        affected, lateness_delta = _affected_orders(
+            reader, er.service_outcomes, base_svc=base_svc, with_total=True)
 
         # dominant driver = the pinned op's attribution in the re-solve.
         code = None
@@ -1237,6 +1837,38 @@ def _svc_lateness_min(svc: dict) -> int:
         return 0
     from mre.modules.scenario import _parse_duration_minutes
     return int(_parse_duration_minutes(raw) or 0)
+
+
+def _affected_orders(reader, new_svc, base_svc=None, with_total: bool = False):
+    """Per-Demand tardiness ($) + lateness (min) deltas of ``new_svc`` against the
+    incumbent's persisted service outcomes, top-N by |tardiness delta|.
+
+    Factored out of :func:`_priced_card_data` in Session 4B.24 so the OPPORTUNITY
+    section (R-T2 amendment clause 3) can state its OWN affected list from its own
+    solve. Two callers, one definition — the two lists must be computed the same
+    way to be comparable, and they must never be merged."""
+    if base_svc is None:
+        base_svc = list(reader.iter_entities("serviceoutcome"))
+    wo_of = _order_name_resolver(reader.read_identity_map())
+    base_by_dem = {s.get("demand_ref"): s for s in base_svc}
+    affected: list[dict] = []
+    lateness_delta = 0
+    for s in new_svc:
+        dem = s.get("demand_ref")
+        b = base_by_dem.get(dem, {})
+        t_d = round(float(s.get("tardiness_cost", 0.0))
+                    - float(b.get("tardiness_cost", 0.0)), 2)
+        l_new, l_old = _svc_lateness_min(s), _svc_lateness_min(b)
+        lateness_delta += max(0, l_new) - max(0, l_old)
+        l_d = l_new - l_old
+        if abs(t_d) < 0.005 and l_d == 0:
+            continue
+        affected.append({"demand_ref": dem, "work_order": wo_of(dem),
+                         "tardiness_delta": t_d, "lateness_delta_min": l_d})
+    affected.sort(key=lambda a: (-abs(a["tardiness_delta"]),
+                                 -abs(a["lateness_delta_min"])))
+    affected = affected[:_AFFECTED_ORDERS_TOP_N]
+    return (affected, lateness_delta) if with_total else affected
 
 
 def _order_name_resolver(idmap):

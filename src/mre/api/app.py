@@ -141,6 +141,29 @@ class SandboxRequest(BaseModel):
     budget_s: Optional[float] = None    # override the SANDBOX_BUDGET_S token
     deterministic: bool = True
     correlation_id: Optional[str] = None
+    # Session 4B.24 (R-T2 amendment clause 3): also run the deterministic UNPINNED
+    # window search and report any improvement it finds as its OWN section. OFF by
+    # default — measured at 43 seconds per deterministic unit on the demo board,
+    # it is orders of magnitude dearer than the price, and clause (5)'s "search
+    # deeper" is the deliberate act that pays for it.
+    opportunity: bool = False
+
+
+class AuditRequest(BaseModel):
+    """"SEARCH DEEPER" (Session 4B.24, R-T2 amendment clause 5): run the
+    deterministic opportunity search at a real budget and, where it beats the
+    incumbent, OFFER the result — never apply it. The offer is a scenario the
+    planner reviews and accepts separately (clause 4: accepting the window's
+    improvement is its own ceremony)."""
+    det_time_s: Optional[float] = None   # override AUDIT_DET_TIME_S
+    budget_s: Optional[float] = None     # the WALL CEILING, not the budget
+    seed: Optional[int] = None
+
+
+class AuditAcceptRequest(AuditRequest):
+    """Clause (4): accepting the window's improvement is its OWN act, with its
+    own authority. It is never a side effect of accepting a drag."""
+    authority: str = "dev-planner"
 
 
 class AcceptRequest(BaseModel):
@@ -154,6 +177,11 @@ class AcceptRequest(BaseModel):
     pin_start_iso: str
     authority: str = "dev-planner"      # who accepted (identity token)
     budget_s: Optional[float] = None    # override the SANDBOX_BUDGET_S token
+    # Session 4B.24: mint EXACTLY the schedule the card previewed (every other
+    # placement held). Default True, because that is what the local price
+    # promised. False re-opens the window to the search — a different act, and
+    # the caller has to say so.
+    hold_all_placements: bool = True
 
 
 class AskRequest(BaseModel):
@@ -614,29 +642,70 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
 
     @app.post("/schedules/{schedule_id}/sandbox")
     def sandbox(schedule_id: str, req: SandboxRequest):
-        from mre.modules.sandbox import SANDBOX_BUDGET_S, sandbox_pin_resolve
+        """BEAT TWO. Session 4B.24: the money on this card is now the LOCAL price
+        (R-T2 amendment clause 2) — every other placement held exactly where the
+        planner can see it, the one bar moved, the ledger recomputed and the
+        result validated against a fresh model. It is exact and deterministic.
+        Before this it was a whole-window re-solve minus a stale incumbent, which
+        on a 92.4%-gap board charged a four-hour nudge into empty time $50,784."""
+        from mre.modules.sandbox import SANDBOX_BUDGET_S, price_drop
         row = _live_schedule(registry, schedule_id)
         if row["is_scenario"]:
             raise HTTPException(409, "sandbox re-solves run against a base "
                                      "schedule; a what-if scenario is itself one")
         run = registry.get_run(row["run_id"])
-        # CU3: a rolling schedule restricts beat two to the active window AND holds
-        # the frozen front (committed_pins) as standing pins joined with any
-        # accepted-edit lineage pins — so a drop onto a committed slot is refused,
-        # naming the blocking commitment (the R-T2 contradiction, load-bearing on
-        # the rolling substrate).
+        # CU3: a rolling schedule restricts the price to the active window AND
+        # holds the frozen front (committed_pins) as standing commitments — a drop
+        # into committed territory is refused, naming the boundary.
         window_op_ids, committed_pins = _rolling_gesture_context(row)
-        result = sandbox_pin_resolve(
+        result = price_drop(
             out_dir=Path(run["out_dir"]), snapshot_id=row["snapshot_id"],
             pin_op_id=req.pin_op_id, pin_resource_id=req.pin_resource_id,
             pin_start_iso=req.pin_start_iso,
             budget_s=req.budget_s if req.budget_s is not None else SANDBOX_BUDGET_S,
             deterministic=req.deterministic,
-            # R-DP8: hold the lineage's accepted commitments during the re-solve.
             standing_pins=(registry.schedule_pins(schedule_id) or []) + committed_pins,
             restrict_op_ids=window_op_ids,
+            opportunity=req.opportunity,
         )
         return _ok(result.summary())
+
+    @app.post("/schedules/{schedule_id}/audit")
+    def audit_schedule(schedule_id: str, req: AuditRequest):
+        """"SEARCH DEEPER" — R-T2 amendment clause (5): THE INCUMBENT IS AUDITED,
+        NOT ENSHRINED. Runs the deterministic, seeded opportunity search off the
+        gesture path and returns either an OFFER (with its own delta and its own
+        affected list) or the incumbent-held sentence. It applies nothing: the
+        offer is reviewed and accepted as its own act (clause 4)."""
+        from mre.modules.sandbox import audit_incumbent
+        row = _live_schedule(registry, schedule_id)
+        if row["is_scenario"]:
+            raise HTTPException(409, "the audit runs against a base schedule; "
+                                     "a what-if scenario is itself one")
+        run = registry.get_run(row["run_id"])
+        window_op_ids, committed_pins = _rolling_gesture_context(row)
+        result = audit_incumbent(
+            out_dir=Path(run["out_dir"]), snapshot_id=row["snapshot_id"],
+            runs_subdir="runs",
+            standing_pins=(registry.schedule_pins(schedule_id) or []) + committed_pins,
+            restrict_op_ids=window_op_ids,
+            det_time_s=req.det_time_s, budget_s=req.budget_s, seed=req.seed,
+        )
+        return _ok(result)
+
+    @app.post("/schedules/{schedule_id}/audit/accept", status_code=201)
+    def accept_audit(schedule_id: str, req: AuditAcceptRequest):
+        """THE SECOND CEREMONY (R-T2 amendment clause 4). Accepting the planner's
+        MOVE is `POST /accept`; this accepts the SEARCH's improvement, which
+        touches work the planner never gestured at. Two acts, two endpoints, two
+        Decisions — one click can never commit both."""
+        base = _live_schedule(registry, schedule_id)
+        if base["is_scenario"]:
+            raise HTTPException(409, "the audit runs against a base schedule")
+        new_schedule_id, summary = _execute_audit_accept(registry, base, req)
+        return _ok({"schedule_id": new_schedule_id,
+                    "parent_schedule_id": schedule_id,
+                    "status": "proposed", "audit": summary}, status_code=201)
 
     # ------------------------------------------------------------------
     # Accept + publish (docs/07 Phase 3 CU1, R-DP7) — the edit becomes real.
@@ -1231,6 +1300,7 @@ def _execute_accept(registry: Registry, base_schedule: dict, req: "AcceptRequest
     polling a background run."""
     from mre.contracts.schedule_document import CONTRACT_VERSION
     from mre.modules.planner_edit import apply_planner_edit
+    from mre.modules.sandbox import SANDBOX_DET_TIME_S, SANDBOX_SEED
     from mre.modules.scenario import derive_base_context
     from mre.modules.schedule_assembler import build_document_from_run
     from mre.modules import standing_pins as sp
@@ -1278,6 +1348,13 @@ def _execute_accept(registry: Registry, base_schedule: dict, req: "AcceptRequest
             pin_start_iso=req.pin_start_iso, authority=req.authority,
             base_context=base_ctx, budget_s=budget_s,
             standing_pins=base_pins,
+            # Session 4B.24: the card the planner said yes to was a LOCAL price —
+            # "nothing else moved". Accepting it must mint THAT schedule, not
+            # whatever a fresh window search reaches. Held by default; a caller
+            # that wants the window re-optimized asks for it explicitly.
+            hold_all_placements=req.hold_all_placements,
+            det_time_s=SANDBOX_DET_TIME_S,
+            seed=SANDBOX_SEED,
         )
         new_pins = sp.compose_lineage_pins(base_pins, result.pin)
         document = build_document_from_run(
@@ -1312,6 +1389,65 @@ def _execute_accept(registry: Registry, base_schedule: dict, req: "AcceptRequest
         "moved_count": result.moved_count, "pin": result.pin,
     }
     return document.schedule_id, decision
+
+
+def _execute_audit_accept(registry: Registry, base_schedule: dict,
+                          req: "AuditAcceptRequest") -> tuple[str, dict]:
+    """Materialize an accepted AUDIT offer (clause 4/5): mint a run, copy the base
+    snapshot, re-run the deterministic search into a child snapshot, and register
+    it as a proposed child. The base is never mutated and the drag's own accept is
+    untouched — these are two ceremonies, and this is the second one."""
+    from mre.contracts.schedule_document import CONTRACT_VERSION
+    from mre.modules.sandbox import materialize_audit_offer
+    from mre.modules.scenario import derive_base_context
+    from mre.modules.schedule_assembler import build_document_from_run
+
+    base_run = registry.get_run(base_schedule["run_id"])
+    base_out = Path(base_run["out_dir"])
+    base_snap = base_schedule["snapshot_id"]
+    root_run = base_run
+    while root_run.get("base_run_id"):
+        nxt = registry.get_run(root_run["base_run_id"])
+        if nxt is None:
+            break
+        root_run = nxt
+
+    window_op_ids, committed_pins = _rolling_gesture_context(base_schedule)
+    run = registry.create_run(
+        kind="audit", submission_id=base_schedule["submission_id"],
+        base_run_id=base_schedule["run_id"],
+        params={"audit": True, "seed": req.seed, "det_time_s": req.det_time_s,
+                "authority": req.authority})
+    run_id, out_dir = run["id"], Path(run["out_dir"])
+    try:
+        longpath.copytree(base_out / "snapshots" / base_snap,
+                          out_dir / "snapshots" / base_snap)
+        base_ctx = derive_base_context(Path(root_run["out_dir"]) / "runs")
+        result = materialize_audit_offer(
+            out_dir, base_snap, authority=req.authority,
+            base_runs_dir=base_out / "runs",
+            reference_date_raw=base_ctx.get("reference_date"),
+            standing_pins=(registry.schedule_pins(base_schedule["id"]) or [])
+                          + committed_pins,
+            restrict_op_ids=window_op_ids,
+            det_time_s=req.det_time_s, budget_s=req.budget_s, seed=req.seed)
+        document = build_document_from_run(
+            out_dir, result["child_snapshot_id"], run_id, runs_subdir="runs",
+            parent_schedule_id=base_schedule["id"])
+        doc_path = _persist_document(document, out_dir)
+        registry.register_schedule(
+            schedule_id=document.schedule_id, run_id=run_id,
+            snapshot_id=result["child_snapshot_id"], status="proposed",
+            contract_version=CONTRACT_VERSION, document_path=doc_path,
+            submission_id=base_schedule["submission_id"],
+            is_scenario=False, parent_schedule_id=base_schedule["id"],
+            pins=registry.schedule_pins(base_schedule["id"]) or [])
+        registry.finish_run(run_id, "succeeded", result={
+            "schedule_id": document.schedule_id, **result})
+    except Exception as exc:  # noqa: BLE001
+        registry.finish_run(run_id, "failed", error=f"{type(exc).__name__}: {exc}")
+        raise HTTPException(409, f"audit accept failed: {type(exc).__name__}: {exc}")
+    return document.schedule_id, result
 
 
 def _live_schedule(registry: Registry, schedule_id: str) -> dict:

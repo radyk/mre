@@ -176,8 +176,15 @@ def test_single_pin_resolve_returns_a_verdict_within_budget(solved_distinct):
     assert result.wall_time_s <= SANDBOX_BUDGET_S + 1.0
     assert result.feasible is True
     # session 3.3 CU5: the applied time limit is echoed so budget-vs-actual is
-    # inspectable straight from the payload (= the budget in normal operation).
-    assert result.applied_time_limit_s == SANDBOX_BUDGET_S
+    # inspectable straight from the payload. Session 4B.24: it is the limit
+    # ACTUALLY applied, which under the R-T2 amendment is the caller's ceiling OR
+    # the deterministic budget converted at a rate above anything measured,
+    # whichever is larger — because "wall as SAFETY CEILING only" (clause 1) means
+    # the clock may not be what decides where a deterministic search stops.
+    from mre.modules.sandbox import (SANDBOX_DET_TIME_S, wall_ceiling_for)
+    assert result.applied_time_limit_s == wall_ceiling_for(
+        SANDBOX_BUDGET_S, SANDBOX_DET_TIME_S, True)
+    assert result.applied_time_limit_s >= SANDBOX_BUDGET_S
     # pinning at the incumbent placement is the latency floor: a zero-delta
     # confirmation (the surroundings need not move).
     assert result.delta_pct == 0 or result.delta_pct is None

@@ -143,6 +143,31 @@ export function postSandbox(id, pin) {
   });
 }
 
+export function postAudit(id, body = {}) {
+  // "SEARCH DEEPER" (Session 4B.24, R-T2 amendment clause 5): THE INCUMBENT IS
+  // AUDITED, NOT ENSHRINED. Runs the deterministic, seeded opportunity search off
+  // the gesture path and returns either an OFFER (its own delta, its own affected
+  // list) or the incumbent-held sentence. Applies nothing. It is SLOW by design —
+  // measured at 40-77 seconds per deterministic unit — which is exactly why it is
+  // a deliberate act and not something a drag pays for.
+  return envelope(`/schedules/${id}/audit`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+export function postAuditAccept(id, body = {}) {
+  // THE SECOND CEREMONY (clause 4). Accepting the planner's MOVE is postAccept;
+  // this accepts the SEARCH's improvement, which touches work the planner never
+  // gestured at. Separate call, separate Decision — one click never commits both.
+  return envelope(`/schedules/${id}/audit/accept`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
 export function postAccept(id, pin) {
   // Accept a dropped bar's verdict (CU1, R-DP7): pin the op and MINT A NEW
   // proposed schedule version — the base is never mutated. Records one

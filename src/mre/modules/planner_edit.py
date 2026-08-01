@@ -75,6 +75,9 @@ def apply_planner_edit(
     runs_subdir: str = "runs",
     deterministic: bool = True,
     standing_pins: Optional[list[dict]] = None,
+    hold_all_placements: bool = False,
+    det_time_s: Optional[float] = None,
+    seed: Optional[int] = None,
 ) -> PlannerEditResult:
     """Materialize an accepted edit as a child snapshot + a ``planner_edit``
     Decision, under ``out_dir`` (a freshly minted run directory whose
@@ -85,6 +88,16 @@ def apply_planner_edit(
     every earlier decision fixed and can never silently revert one. A new drop
     that is infeasible against a standing commitment raises (nothing accepted, the
     base stands) with the blocking commitment named.
+
+    ``hold_all_placements`` (Session 4B.24) pins EVERY incumbent placement, not
+    just the lineage's commitments, so the accepted version is EXACTLY the one the
+    card previewed. Under the R-T2 amendment the card's money is a LOCAL price —
+    "nothing else moved" — and an accept that then re-solved the window freely
+    would hand the planner a different schedule from the one they said yes to.
+    The promise on the card and the schedule that lands must be the same object.
+
+    ``det_time_s`` gives the re-solve a DETERMINISTIC budget (clause 1). Without
+    one the accept is a wall-clock lottery like every other sandbox solve was.
 
     Returns a :class:`PlannerEditResult`; the caller assembles the document from
     ``child_snapshot_id`` and registers it as a proposed schedule. Raises on an
@@ -200,17 +213,39 @@ def apply_planner_edit(
             "— nothing accepted; the base version stands") from exc
     standing_ops = sp.standing_pin_ops(standing_pins)
 
+    # Session 4B.24: hold every other placement exactly where the card showed it.
+    # These are HARD constraints but NOT lineage commitments — the pin register
+    # is unchanged, so `standing_pin` on a bar still means "the planner committed
+    # this", not "the accept happened to hold it".
+    held_all = 0
+    if hold_all_placements:
+        for oid, (rid, s_dt) in incumbent_placement.items():
+            if oid == pin_op_id:
+                continue
+            try:
+                sp.apply_pin(model, var_map, oid, rid,
+                             int((s_dt - horizon_start).total_seconds() // 60))
+                held_all += 1
+            except sp.PinUnsatisfiable as exc:
+                raise RuntimeError(
+                    f"planner edit: the previewed schedule could not be held — "
+                    f"op {oid} ({exc.reason}); nothing accepted, the base "
+                    "version stands") from exc
+
+    solve_seed = (seed if seed is not None
+                  else (0 if deterministic else base_context.get("solver_seed")))
     r_rep = Reporter.begin(
         module=ModuleCode.M6, purpose="planner-edit re-solve",
         config={"time_limit": budget_s, "num_search_workers": workers,
-                "random_seed": 0 if deterministic else base_context.get("solver_seed"),
-                "pin_op": pin_op_id},
+                "random_seed": solve_seed, "deterministic_time": det_time_s,
+                "held_placements": held_all, "pin_op": pin_op_id},
         trigger="planner_edit", snapshot_id=child_snap_id, sink_dir=runs_dir,
     )
     t0 = time.monotonic()
     solve_result = SolveRunner(
         time_limit_seconds=budget_s, num_search_workers=workers,
-        random_seed=0 if deterministic else base_context.get("solver_seed"),
+        random_seed=solve_seed,
+        deterministic_time=det_time_s if deterministic else None,
     ).solve(model, var_map, r_rep)
     wall = round(time.monotonic() - t0, 3)
     feasible = solve_result.status in ("OPTIMAL", "FEASIBLE")
