@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.72 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.73 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.73:** **Errand 4B.26 - what is the main-solve K actually for?** 2026-08-01 (a PARAMETER SWEEP; no product code, no default flipped; narrative in `docs/closeouts/4B.26.md`). **THE COLD PORTFOLIO WAS BUDGET-STARVED, NOT GEOMETRICALLY WEAK (5a.107).** Cold main-solve value against the incumbent at K=5: **$578.16 at 3.0 units, $1,298.60 at 6.0, $460,014.78 (21.6%) at 10.0, the same $460,014.78 at 15.0** - the value switches on **between 6.0 and 10.0**, a 354x step, and the WINNER PLATEAUS AT 10. Cold at 10.0 recovers **84% of the warm audit's $545,549.60**, so 5a.103's cold-vs-warm gap is mostly BUDGET. **THE SPREAD WIDENS BEFORE IT NARROWS** (1.77 / 1.81 / **28.06** / 25.20%): the tight spread at low budget was three starved searches failing in the same place, never agreement. **THE EMPTY-BOARD HAZARD IS A BUDGET THRESHOLD, NOT A BAD SEED** - seeds 44 and 45 are empty at 3.0 and 6.0, **nobody fails at >=10.0, and seed 44 WINS there**. At the shipped default (K=1, 6.0, seed 42) the board DOES publish, at the incumbent's ledger to the cent - but **two of five seeds would publish an empty board**, and which two is a property of (board x budget). **K IS NOT UNIVERSAL INSURANCE:** the 170-order world at w14 is **0 of 5**; the SAME world at w10 is **5 of 5 with the sweep's largest spread, 42.10%** - **the window, not the density, kills it**. **RAISING THE BUDGET AT K=1 MAKES THE BOARD WORSE** (+$7,887.05) while the same spend at K=3 earns $460,014.78. **RECOMMENDED, NOT FLIPPED: K=3 and 10.0 units as ONE change** - K=3 captures the ENTIRE K=5 gain wherever it is material, at 45% of K=5's wall (~12.9 min sequential, 3.9x the shipped solve). Daryn decides. 5a.107.
 
 **v2.72:** **Session 4B.25 - the published board is a portfolio, not a draw** 2026-08-01 (docs/04 2026-08-01 R-BK1, verbatim; narrative in `docs/closeouts/4B.25.md`). **R-BK1 RULED AND BUILT (5a.101).** 4B.24 measured the largest quality lever in this project and left it on the floor: same board, same budget, five seeds, and the seed decides. A solve may now be a DECLARED PORTFOLIO - K deterministic runs at consecutive seeds, best by LEDGER, ties by lowest seed, so the whole thing is a pure function of a fixed set. **The losing members are published**, because the cross-seed spread is the stability figure 4B.12 named as the honest companion to the gap and it is free here. Parallel members are separate PROCESSES, never CP-SAT workers. **K=1 IS EXACTLY TODAY'S BEHAVIOUR - no extra solve and NO BLOCK IN THE DOCUMENT** (contract 1.12 -> **1.13**, absent at K=1), proven by schedule digest rather than asserted. **THE AUDIT PORTFOLIO FOUND 2.3x MORE MONEY (5a.102):** at K=5 x 3.0 units the five seeds landed at $1.58M-$2.03M; 4B.24's $239,824.80 was seed 42, the FOURTH BEST, and seed 44 finds **$545,549.60**. **Spread $448,655.42 = 28.36%, and the offer sentence says so** - *"far from settled"* - turning a figure a planner would read as the answer into a floor. Seed 42 reproduces 4B.24's number TO THE CENT across sessions; two K=5 audits give **ONE DISTINCT OFFER**. `AUDIT_K` ships at **3**, which finds the same winner for 60% of the wall. **THE MAIN-SOLVE PORTFOLIO IS WORTH $578, NOT $545,549 (5a.103)** - the difference is the WARM START - and **TWO OF FIVE SEEDS RETURN AN EMPTY BOARD**, so 4B.22a's non-monotone solvability is seed-dependent too. Walls: sequential 515.8s vs five processes 298.8s, **1.73x not 5x** (each member ~1.8x slower with siblings), while the ledgers and deterministic times are **identical to ten decimal places across execution modes**. `SolveRequest.portfolio_k` ships at **1**; flipping it is Daryn's call with that table in front of him. **`POST /audit/accept`'s SUCCESS BRANCH WAS BROKEN AND IS NOW EXECUTED (5a.104):** an `AttributeError` on a driver code that is not in the vocabulary sat behind the button 4B.24 reported as never-executed; corrected, and a real child minted whose **ledger equals the offer TO THE CENT**. **THE 4B.8 RENAME DRIFT WAS SIX FILES AND THE GUARD WAS POINTED AT ONE (5a.105)** - five broken call sites hid inside `--runslow`-gated fixtures for six sessions, one of them the very defect the guard was written for; the guard now sweeps all of `tests/` and `tools/`. Guard: 41 new Python tests, a premise test, and **five negative controls proven red against physically reverted code - two of which exist only because the first attempt at them came back GREEN**. 5a.101-106.
 
@@ -4460,6 +4462,46 @@ child carries its lineage in the REGISTRY, not its document, so a document read
 in isolation cannot say it came from an audit. **(g)** **the portfolio is not
 reachable from the ask path** — nobody can ask what the other seeds found;
 §5a.29's shape has a second member.
+
+**§5a.107 — THE COLD PORTFOLIO WAS BUDGET-STARVED, NOT GEOMETRICALLY WEAK
+(Errand 4B.26 — §5a.106(a) and (b) MEASURED).** A (budget × seed) sweep on the
+demo board's own submission, COLD, seeds 42-46, PYTHONHASHSEED=0, workers=1,
+one member at a time. Value against the incumbent at K=5: **$578.16 at 3.0
+units / $1,298.60 at 6.0 / $460,014.78 (21.6%) at 10.0 / the same
+$460,014.78 at 15.0**. **THE VALUE SWITCHES ON BETWEEN 6.0 AND 10.0 UNITS — a
+354x step — and the WINNER PLATEAUS AT 10** (15.0 finds seed 44 at
+$1,667,467.80, the same ledger TO THE CENT, while three of five members return
+ledgers identical to their 10.0 values). Cold at 10.0 recovers **84% of the
+warm audit's 3.0-unit $545,549.60**, so §5a.103's cold-vs-warm gap is **mostly
+BUDGET, not cold-start geometry**. **THE SPREAD WIDENS BEFORE IT NARROWS**
+(1.77% / 1.81% / **28.06%** / 25.20%): the tight spread at low budget was never
+agreement, it was three starved searches failing in the same place.
+**THE EMPTY-BOARD HAZARD IS A BUDGET THRESHOLD, NOT A BAD SEED (§5a.106(b)):**
+seeds 44 and 45 return UNKNOWN at 3.0 AND at 6.0 and **nobody fails at ≥10.0** —
+**and seed 44, which publishes NOTHING at the shipped budget, WINS at 10.0**. At
+the shipped default (K=1, 6.0 units, seed 42) **this board DOES publish**, at
+exactly the incumbent's ledger to the cent — but **two of five seeds would
+publish an empty board**, and which seeds fail is a property of (board ×
+budget), so no fixed seed0 is safe in advance. **K IS NOT UNIVERSAL INSURANCE:**
+the 170-order world at w14 returns **0 of 5** and no K helps. **THE WINDOW, NOT
+THE DENSITY, KILLS IT** — the same 170-order world at the demo board's own w10
+is **5 of 5 with the sweep's largest spread, 42.10%**, so cold portfolios are
+weak only where the board is starved (§5a.15's 14-day window from the seed
+axis). **RAISING THE BUDGET AT K=1 MAKES THE BOARD WORSE** — seed 42 costs
+**+$7,887.05** more at 10.0 than at 6.0 — while the same spend at K=3 earns
+$460,014.78: **the budget lever is unsafe alone and safe with K.**
+**RECOMMENDED, NOT FLIPPED: K=3 and 10.0 units as ONE change** — K=3 captures
+the ENTIRE K=5 gain wherever it is material (identical winner and ledger at
+10.0, at 15.0 and on the mid board; K=5's edge appears only at starved budgets
+and is worth ≤$1,298.60 = 0.06%) at **45% of K=5's wall** — 775.6s ≈ 12.9 min
+sequential for a persisting solve, ~9.3 min on three processes, **3.9x the
+shipped solve**. Daryn decides. NOT FIXED: **more budget is NOT MONOTONE in the
+ledger for a fixed seed** (seed 43 +$7.35 from 3.0 to 6.0; seed 42 +$7,887.05
+from 6.0 to 10.0); the plateau between 6.0 and 10.0 was not bisected; mid170-w14
+was not pushed past 6.0, so "two regimes" may be one regime with a
+window-dependent threshold; every publishable cell is FEASIBLE, so **"21.6%
+cheaper" means cheaper, never closer to optimal**. Narrative in
+`docs/closeouts/4B.26.md`.
 
 ## 6. Open rulings queue
 

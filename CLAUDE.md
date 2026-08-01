@@ -159,6 +159,8 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Errand 4B.26 — what is the main-solve K actually for?**, 2026-08-01 (docs/07
+v2.73, §5a.107; narrative in `docs/closeouts/4B.26.md`). Before it:
 **Session 4B.25 — the published board is a portfolio, not a draw**, 2026-08-01
 (docs/07 v2.72, §5a.101-106; docs/04 2026-08-01 R-BK1 verbatim; narrative in
 `docs/closeouts/4B.25.md`). Before it:
@@ -306,6 +308,32 @@ nothing in the cockpit says it is three searches long; the parallel speedup is a
 LAPTOP number; a parallel member re-runs the WHOLE SPINE; the audit child's
 lineage is in the REGISTRY, not its document; and **the portfolio is not
 reachable from the ask path** (§5a.29's shape, second member).
+
+**THE COLD PORTFOLIO WAS BUDGET-STARVED, NOT GEOMETRICALLY WEAK (4B.26,
+§5a.107 — §5a.106(a)(b) MEASURED).** A (budget x seed) sweep, demo board, COLD,
+seeds 42-46. Value vs the incumbent at K=5: **$578.16 at 3.0 units / $1,298.60
+at 6.0 / $460,014.78 (21.6%) at 10.0 / the SAME $460,014.78 at 15.0** — it
+switches on **between 6.0 and 10.0** (354x) and the WINNER PLATEAUS AT 10. Cold
+at 10.0 recovers **84% of the warm audit's $545,549.60**. **THE SPREAD WIDENS
+BEFORE IT NARROWS** (1.77/1.81/**28.06**/25.20%) — the tight low-budget spread
+was three STARVED searches failing in the same place, never agreement. **THE
+EMPTY-BOARD HAZARD IS A BUDGET THRESHOLD, NOT A BAD SEED:** 44/45 empty at 3.0
+and 6.0, **nobody fails at >=10.0, and seed 44 WINS there**. At the shipped
+default (K=1, 6.0, seed 42) the board DOES publish at the incumbent's ledger to
+the cent — but **2 of 5 seeds would publish an EMPTY BOARD**, and which two is a
+property of (board x budget), so no fixed seed0 is safe in advance. **K IS NOT
+UNIVERSAL INSURANCE:** the 170-order world at w14 is **0 of 5**; the SAME world
+at w10 is **5 of 5, spread 42.10%** — **the window, not the density, kills it**
+(§5a.15 from the seed axis). **RAISING THE BUDGET AT K=1 MAKES THE BOARD WORSE**
+(seed 42 **+$7,887.05** at 10.0 vs 6.0) while the same spend at K=3 earns
+$460,014.78 — the budget lever is unsafe alone and safe with K. **RECOMMENDED,
+NOT FLIPPED: K=3 + 10.0 units as ONE change** (K=3 takes the ENTIRE K=5 gain
+wherever material; K=5's edge is <=$1,298.60 = 0.06% and only at starved
+budgets; 45% of K=5's wall, ~12.9 min sequential, **3.9x the shipped solve**).
+**Daryn decides.** NOT FIXED: more budget is **NOT MONOTONE** in the ledger for
+a fixed seed; the 6.0-10.0 plateau was not bisected; mid170-w14 was not pushed
+past 6.0; every publishable cell is FEASIBLE, so **"cheaper" is never "closer to
+optimal"**.
 
 **THE 4B.8 RENAME DRIFT WAS SIX FILES AND THE GUARD WAS POINTED AT ONE (4B.25,
 §5a.105).** `test_rolling_two_beat.py`'s 12 errors were the visible member; five
@@ -1106,7 +1134,7 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   of one question) — humble rather than wrong, but distinguishing "one answer
   because I am confused" from "one answer because it IS the answer" needs a
   signal this session does not have.
-  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, **~88k after 4B.25**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, ~88k after 4B.25, **~92k after 4B.26**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
   **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
   day-shift restriction answered as C1/C2 "proven end to end" when the item is
   C4 (model-proven, §8 doorway). Caught and pinned; the class stands.
