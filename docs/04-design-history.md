@@ -14678,3 +14678,83 @@ have been the category fusion this session exists to fix, committed in the act
 of fixing it. The threshold now lives in one named constant asserted against the
 cockpit source by a guard.
 
+
+### 2026-08-01 — Session 4B.30: the later direction (no new ruling; one meaning widened, two parse fields added; parse prompt v14 -> v15)
+
+**A DIRECTIONAL QUESTION ANSWERED BACKWARDS, AND THE PRODUCT HAD ALREADY SAID
+SO.** *"Can i move ORD-000057 later, maintenance wants the machine for the day"*
+came back with three ways to move the order EARLIER. The census that opened this
+session measured seven direction-bearing phrasings on the demo board: SIX
+returned one byte-identical paragraph, and the sixth was the question that
+actually asks for earlier — so the two opposite questions were indistinguishable
+in the output. The `deaf` rider (4B.15 §5a.42) fired on four of them, saying in
+so many words *"I've now given you this same answer for two different
+questions"*. **It was built to detect exactly this and it was right every time;
+nothing downstream of it could act on what it saw.** A signal with no consumer is
+a defect that has already been found.
+
+**A LEVER IS A NECESSARY CONDITION; A PLACEMENT IS A MEASUREMENT.** This is why
+the later direction is a different KIND of answer and not a mirror of the
+counterfactual. `what-would-change` (4B.16) inverts earliest-start FLOORS, and
+its whole discipline is that removing a bound does not place an operation —
+where it would land needs a re-solve, which R-AI4 forbids. "Later" is not a bound
+to relax: it is a placement, and a placement can be PRICED by holding every other
+placement still (R-T2 amendment clause 2, 4B.24). So this route may say *"it
+costs +$600.00"* where the counterfactual must say *"that removes the barrier"*.
+The necessary-never-sufficient framing still governs anything said BEYOND the
+priced pin, and only there.
+
+**A SHIFT BOUNDARY IS A SNAP; A DECLARED CLOSURE IS AN ANSWER.** The first
+version of the target resolver resolved a named day against the RESOLVED calendar
+— closures already subtracted — which is what every other consumer of that view
+correctly wants. Asked for the maintenance Wednesday it returned the Thursday
+after, silently, and the closure branch became structurally unreachable: no
+target could land on a closure, so no answer could name one. A planner asking
+about the maintenance day would have been handed a different day with nothing on
+the surface mentioning maintenance. Named days and magnitudes now resolve against
+the SHIFT PATTERN, a closed day is reachable, a night is not, and the target
+carries the closure it landed in so the pricer can refuse it by name. **This is
+4B.23's rule at another seam — empty is not open, and shut-for-a-reason is not
+merely not-a-working-hour.**
+
+**THE PARSE REPORTS THE DIRECTION; THE CALENDAR RESOLVES THE TARGET.**
+`move_direction` and `move_target` join `ParsedQuestion`, and `move_target`
+carries the planner's OWN WORDS, verbatim and unresolved. Which Friday, what time
+of day, and whether the machine is open then are calendar questions; 4B.15 Item 0
+is the measured cost of letting a model answer one (a true fact about the wrong
+Tuesday, in a horizon with five of them). The corollary runs the other way too:
+*"can this move to Friday"* carries no direction in its words, the parse says
+`unstated` and is right to, and the routing decision is made in the assembler
+where the dates are — on a computed fact, failing closed to the 4B.16
+counterfactual. **R-AI5(8) applied to a second decision, and the honest split
+between what a model can see and what only the plant's calendar knows.**
+
+**A REFUSAL ABOUT OUR PROCESS AND A REFUSAL ABOUT THE PLANT ARE DIFFERENT
+SENTENCES.** A chunked operation cannot be locally priced because its pauses are
+placements the solver made; the copy therefore says *"that is a limit of mine,
+not a ruling about your plant — I am not telling you the move is impossible, I am
+telling you I can't price it."* A collision, a closure, a boxed-in successor and
+committed territory are facts about the plant and read as such. This is the ruled
+species a sixth time (`CostProof.unreadable` 4B.18, `partitions()` 4B.21,
+`FeasibilityGhost.verdict` 4B.23, `holds_others` 4B.24 twice), and `holds_others`
+does its job here unchanged: a slot somebody else is in is closed only because
+this price holds them still, so the answer is *"not without moving other work"*,
+never *"no"*.
+
+**THE PRICE WAS BEING ASKED THE WRONG QUESTION, AND A ZERO-DISTANCE MOVE FOUND
+IT.** Pricing a bar into the position it already occupies returned INFEASIBLE. A
+rolling board's snapshot carries every operation the plant knows about (695 on
+the demo board) and its schedule placed 386; pricing against the unrestricted
+snapshot asks CP-SAT whether the other 309 can also be placed inside this
+horizon, which the rolling solve never asked. The API's drag path has restricted
+a gesture to the window's op set since 4B.3c CU3; the ask path now reads the same
+two facts off the same document. **The identity check that costs nothing —
+price the thing where it already is and expect zero — is worth running on any
+pricer before its first real answer.**
+
+**AND A WINDOW IS NOT A HORIZON.** The first version refused a target four days
+inside the placed grid as *"past what this schedule plans"*, because it measured
+against the rolling `window_end` (2026-01-15) while the schedule places work in
+detail out to February. The window bounds what a planner is LOOKING AT; the model
+horizon bounds what there is a variable for, and only the second one bounds a
+price.

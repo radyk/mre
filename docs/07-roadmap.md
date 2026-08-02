@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.75 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.76 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.76:** **Session 4B.30 - the later direction.** 2026-08-01 (parse prompt v14 -> **v15**; two `ParsedQuestion` fields; no contract change, no new intent; narrative in `docs/closeouts/4B.30.md`). **THE CENSUS FOUND SOMETHING SHARPER THAN "ANSWERED IN THE WRONG DIRECTION" (5a.114):** seven direction-bearing phrasings on the demo board, and **SIX RETURNED ONE BYTE-IDENTICAL PARAGRAPH** - including the one that asks for EARLIER, so the two opposite questions were indistinguishable in the output. **The `deaf` rider fired on four of them and was right every time**; nothing downstream could act on what it saw. `swap-move`'s single-order branch was direction-blind too and is fixed in the same commit. **A LEVER IS A NECESSARY CONDITION; A PLACEMENT IS A MEASUREMENT (5a.115)** - which is why this route may say *"it costs +$600.00"* where `what-would-change` must say *"that removes the barrier"*: `local_price` (4B.24) holds every other placement, moves the one bar and re-validates the ledger, so the priced pin is a FACT. Three things every time - cost, displacement (usually EMPTY, and said so), and the due-date verdict with **R-PD1 clause (4)'s floor stated ONCE** as unmovable. **THE REFUSALS ARE THE ROUTE (5a.116):** on this board ONE of seven live turns priced directly. Five branches, each with authored copy, and the governing split is `CHUNKED`/`UNPRICEABLE` = OUR PROCESS vs `COLLISION`/`PRECEDENCE`/`CLOSURE`/`FROZEN` = THE PLANT - the ruled species a SIXTH time. **A SHIFT BOUNDARY IS A SNAP; A DECLARED CLOSURE IS AN ANSWER (5a.117)**: the first resolver slid a planner silently past the maintenance day they were asking about, and made the closure branch structurally unreachable. **THE PRICE WAS BEING ASKED THE WRONG QUESTION AND A ZERO-DISTANCE MOVE FOUND IT** - the ask path now restricts to the window's op set exactly as the DRAG path has since 4B.3c CU3, and **a window is not a horizon**. Guard: 74 tests, a five-part premise class, and **five negative controls proven RED against physically reverted code, one per branch class**; the earlier direction proven **BYTE-IDENTICAL against a HEAD worktree**. Full non-slow suite 2368 passed / 277 skipped. 5a.114-118.
 
 **v2.75:** **Session 4B.27 - the conversational batch.** 2026-08-01 (parse prompt v14; no contract change; narrative in `docs/closeouts/4B.27.md`). Ten measured ask-path defects: **eight fixed, one did not reproduce, one not built**. **SEVEN OF THE EIGHT COST NO VOCABULARY CHANGE** - the route existed and the assembler could answer; what was missing was a MEANING, a PARAM or a DOCUMENT. The delta card called **two different quantities "lateness"** (clamped plan tardiness vs signed per-order lateness) and the brief's floor/controllable framing is CORRECTED. The solve's timing was **unrecorded, not unread**, and fixing the reader's field names alone would have reported 1.4ms for a 400-second search. **R-BK1's portfolio is now reachable from the ask path** (§5a.106(g) discharged) - and the K=1 sentence's first version told a PROVED board it might have found something cheaper, caught in this session's own verification. "Tight" is the BOARD's band, **not** the opener's at-risk set. Item 1 (the later-direction counterfactual) is NOT BUILT and item 7 DID NOT REPRODUCE - its requested remedy would have been a deterministic classifier. §5a.112-113.
 
@@ -4836,6 +4838,130 @@ meanings; the guards assert the DISPATCH and the ASSEMBLERS.
 **(i) A LONG-LIVED DEV SERVER SERVES OLD CONTRACT VERSIONS SILENTLY** — the
 pre-existing API on port 8000 emitted a contract-**1.12** document for a solve
 requested this session. Everything reported was re-measured on a fresh instance.
+
+
+**§5a.114 — THE CENSUS: SIX QUESTIONS, ONE PARAGRAPH (Session 4B.30 Item 1).**
+Seven direction-bearing phrasings, demo board `rolling-c9973708-865`, HEAD, each
+asked with no history carried. **SIX OF THE SEVEN RETURNED ONE BYTE-IDENTICAL
+PARAGRAPH about moving the order EARLIER**, and the sixth was *"how do I get
+ORD-000057 earlier"* — so the question that asks for earlier and the question
+that asks for later produced the same text. The seventh went to `swap-move`,
+whose single-order take reads *"the move worth pricing is the one that gives it
+an EARLIER opening"* and whose bridge says *"drag it to the EARLIER slot you have
+in mind"*, hard-coded, whatever was asked. **THE PRODUCT HAD ALREADY FOUND
+THIS.** The `deaf` rider (4B.15 §5a.42, built to catch one answer serving two
+questions) fired on four of the seven, saying *"I've now given you this same
+answer for two different questions, which probably means I'm not understanding
+what you're asking."* It was right every time and nothing downstream of it could
+act on what it saw — **a signal with no consumer is a defect that has already
+been found**. `what-would-change`'s own MEANING opened *"what would have to be
+DIFFERENT for this operation to start earlier"*; the route obeyed it exactly.
+Cleared by the same census and NOT direction-blind: `why-here` and
+`start-reason` (diagnoses about an existing placement), `gap-between` (a relation
+between two named orders), `advice` (plan-wide), `order-schedule` (an itinerary),
+`confirm-take`. The DRAG path is exempt by construction — it carries a literal
+target instant and infers nothing.
+
+**§5a.115 — A LEVER IS A NECESSARY CONDITION; A PLACEMENT IS A MEASUREMENT
+(Session 4B.30 Items 2-3).** `what-would-change` (4B.16) inverts earliest-start
+FLOORS and its whole discipline is that removing a bound does not place an
+operation — where it would land needs a re-solve, which R-AI4 forbids. "Later"
+is not a bound to relax: it is a PLACEMENT, and a placement can be PRICED
+(`local_price`, R-T2 amendment clause 2). So the later direction may state
+*"it costs +$600.00 (+0.028% of the plan's $2,127,482.58)"* as a fact, and the
+necessary-never-sufficient framing governs only what is said BEYOND the priced
+pin. Three things every time: **WHAT THE DELAY COSTS** (the held-world price,
+re-validated by pinning every placement into a fresh model and asking CP-SAT);
+**WHAT IT DISPLACES** — usually NOTHING under a held-world price, said plainly
+with an honest pointer at the deeper search and no promise about what it would
+find; and **WHETHER THE DUE DATE SURVIVES**, with R-PD1 clause (4)'s split intact
+and **the floor stated ONCE** as unmovable, because reporting it before AND after
+invites a reader to subtract two equal numbers and read a decision into a fact no
+placement can change. New on `LocalPrice`: `subject_outcomes`, populated only
+when a caller names the demands it cares about. **THE PARSE REPORTS THE DIRECTION
+AND THE CALENDAR RESOLVES THE TARGET** — `move_target` carries the planner's OWN
+WORDS, verbatim and unresolved (4B.15 Item 0's cost); and *"can this move to
+Friday"* carries no direction in its words, so the parse says `unstated` and the
+ASSEMBLER decides, on a computed date, failing closed to the counterfactual.
+
+**§5a.116 — THE REFUSALS ARE THE ROUTE (Session 4B.30 Item 4).** 4B.27 declined
+to half-build this because on a real board a later move is usually a refusal, and
+the measurement confirms it: of seven live later-turns **ONE priced directly**,
+two more priced their offered alternative, the rest refused. Five branches, each
+with authored copy, and the governing split is the ruled species a SIXTH time:
+**`CHUNKED` and `UNPRICEABLE` are facts about OUR PROCESS; `COLLISION`,
+`PRECEDENCE`, `CLOSURE` and `FROZEN` are facts about the PLANT.** The chunked
+decline says so out loud — *"a limit of mine, not a ruling about your plant: I am
+not telling you the move is impossible, I am telling you I can't price it"* — and
+is checked from the ROW before the ~6.5 s model build. `holds_others` does its
+4B.24 job unchanged: a slot somebody else is in is closed only because this price
+holds them still, so the answer is *"not without moving other work"*, never
+*"no"*. **PRECEDENCE EARNED ITS OWN BRANCH BECAUSE THE REMEDY INVERTS** — a later
+alternative unblocks a busy slot and makes a boxed-in one worse, so that branch
+offers none and says why. The alternative offer is **COMPUTED, not the minute
+after the obstacle** (which is very often inside the next one), and it is
+**PRICED**. **THE FROZEN BRANCH WAS EXPECTED TO BE UNREACHABLE AND IS NOT**: on
+the demo board every bar starting 2026-01-05 is inside the committed front, so
+ordinary questions about ordinary orders land there.
+
+**§5a.117 — THREE CALIBRATIONS OF "WHERE", ALL WRONG ON THE FIRST TRY (Session
+4B.30).** **(a) A SHIFT BOUNDARY IS A SNAP; A DECLARED CLOSURE IS AN ANSWER.**
+The first resolver resolved a named day against the RESOLVED calendar (closures
+subtracted), which is what every other consumer of that view correctly wants.
+Asked for the maintenance Wednesday it returned the Thursday after, silently, and
+the closure branch became **structurally unreachable** — no target could land on
+a closure, so no answer could name one. Named days and magnitudes now resolve
+against the SHIFT PATTERN; a closed day is reachable, a night is not; the target
+carries the closure it landed in. 4B.23's rule at another seam. **(b) A WINDOW IS
+NOT A HORIZON.** The first version refused a target four days inside the placed
+grid as *"past what this schedule plans"*, measuring against the rolling
+`window_end` (2026-01-15) while the schedule places work in detail out to
+February. The window bounds what a planner is LOOKING AT; the model horizon
+bounds what there is a variable for, and only the second bounds a price.
+**(c) THE PRICE WAS BEING ASKED THE WRONG QUESTION, AND A ZERO-DISTANCE MOVE
+FOUND IT.** Pricing a bar into the position it already occupies returned
+INFEASIBLE: the snapshot carries 695 operations and the schedule placed 386, so
+an unrestricted model asks CP-SAT whether the other 309 fit too — a question the
+rolling solve never asked. The ask path now reads `window_op_ids` and the
+committed pins off the document exactly as `_rolling_gesture_context` has for the
+DRAG path since 4B.3c CU3. **The identity check that costs nothing — price the
+thing where it already is and expect zero — is worth running on any pricer before
+its first real answer.**
+
+**§5a.118 — 4B.30's DEBTS (REPORTED, deliberately NOT fixed).**
+**(a) THE PRICED BRANCH HAS HAD FAR LESS LIVE EXERCISE THAN THE REFUSAL COPY** —
+one of seven turns; the R-PD1 floor/controllable wording was verified live on ONE
+order (ORD-000208).
+**(b) A TWO-OPERATION MOVE CANNOT BE PRICED, AND THAT IS THE SPECIMEN'S OWN
+ANSWER.** Turn 1 refuses on precedence: what the planner needs is to move op10
+AND op20. The pricer holds one bar and there is no gesture, on the board or on
+the ask path, that moves a routing. The most valuable thing this session found
+out.
+**(c) `op_seq` IS NOT PARSEABLE.** "ORD-000208 op30" reaches the route as the
+order alone; the operation comes only from a BOARD SELECTION, so every multi-op
+order answers about its FIRST operation unless a bar is selected. The route says
+which one, which is honest and is not the same as answering the question. A
+parse-contract change (an operation subject kind), out of scope here.
+**(d) THE ALTERNATIVE OFFER CAN COST A SECOND MODEL BUILD** —
+`validate_held_world` consumes the model, so a second price of the same world
+rebuilds it. Measured walls 1.3-6.8 s per turn, amortised across a conversation
+by the Explainer's cached world; a cold first later-question is the slow one.
+**(e) THE MAGNITUDE VOCABULARY IS AUTHORED AND FINITE** (minutes to months,
+digits and number words to ten). "a couple of shifts", "till end of month" fall
+back — and SAY they fell back, which is the ruled behaviour, but it is a
+fallback.
+**(f) THE NAMED-DAY AMBIGUITY NOTE FIRES ON EVERY NAMED DAY**, including when the
+first instance is plainly the one meant. Conservative by construction, noisy in
+the common case.
+**(g) NOTHING SAYS THE ROUTE IS ROLLING-SHAPED.** `_gesture_context` returns
+`(None, [])` on a monolithic document and the pricer's own default is then
+correct, but the committed/frozen branch reads the rolling block and never fires
+there. Untested on a monolithic board — §5a.113(g)'s shape again.
+**(h) THE CHUNKED DRAG IS STILL BROKEN** (out of scope by the brief). The ASK
+path now declines it honestly while the BOARD gesture does not: two surfaces, one
+limit, one of them silent.
+**(i) THE PARSE'S DIRECTION IS MEASURED, NEVER PINNED** — the guards assert the
+DISPATCH and the ASSEMBLERS; the transcript is the evidence for the parse.
 
 
 ## 6. Open rulings queue

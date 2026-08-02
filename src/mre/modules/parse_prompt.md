@@ -1,6 +1,6 @@
 # Question-parse prompt — a GOVERNED ARTIFACT (R-AI5(1))
 
-    prompt_version: 14
+    prompt_version: 15
     ruling:         R-AI5(1) — every question is parsed FIRST by a language model
                     against a CLOSED intent vocabulary, with the conversation
                     history, live board selection, and last-answered subject as
@@ -265,6 +265,39 @@
                     thing. The dispatch now DISCLOSES a subject it heard and
                     cannot weigh, at the one seam every route passes.
 
+    v15:            Session 4B.30 (2026-08-01) — THE LATER DIRECTION. One
+                    meaning WIDENED and two fields ADDED; no new intent, and
+                    for the reason 4B.27 gives: the route exists and, with the
+                    local pricer, the assembler can answer.
+
+                    `what-would-change` said "to start earlier" in its own
+                    meaning and the route obeyed. The census that opens 4B.30
+                    measured seven direction-bearing phrasings on the demo
+                    board: SIX returned a byte-identical paragraph about moving
+                    the operation EARLIER — including the one that asked for
+                    earlier, so the two questions were indistinguishable in the
+                    output. The seventh went to `swap-move`, whose take says
+                    "the move worth pricing is the one that gives it an EARLIER
+                    opening" whatever was asked.
+
+                    The meaning now owns BOTH directions, because both are the
+                    same question about the same operation's placement, and the
+                    parse reports `move_direction` (earlier / later / unstated,
+                    absent reading as earlier) plus `move_target` — the
+                    planner's OWN WORDS for where, verbatim and UNRESOLVED.
+
+                    The unresolved half is the discipline, not an omission. A
+                    model that worked out which Friday would be authoring a date
+                    nobody can check, which is 4B.15 Item 0 exactly (a true fact
+                    about the wrong Tuesday, in a five-Tuesday horizon). The
+                    calendar resolves it, and the answer states the weekday and
+                    date it tested.
+
+                    `swap-move`'s meaning gains the boundary in the same commit:
+                    a LATER move of one operation on the machine it already sits
+                    on is `what-would-change`. It keeps the MACHINE change,
+                    which is the board gesture it was built for.
+
 ## Review discipline
 
 This file is a reviewed artifact, exactly like the driver/finding vocabularies and
@@ -517,6 +550,33 @@ RULES
    timing is not a contest — this field needs the planner to be pushing back on
    something already said.
 
+11. A MOVE QUESTION HAS A DIRECTION, AND SAYING NOTHING MEANS "EARLIER". Set
+   `move_direction` on `what-would-change` and on `swap-move`:
+
+     - `later` — the planner wants it pushed out, delayed, moved back, held, or
+       taken off a machine somebody else needs. "can I move ORD-57 later",
+       "push it out a week", "can we delay this to Friday", "maintenance wants
+       the machine for the day", "what would pushing this out cost", "can it
+       wait until Monday", "bump it".
+     - `earlier` — brought forward. "how do I get this earlier", "what would it
+       take to move this up", "why can't it be earlier".
+     - `unstated` — the question names no direction at all ("what would have to
+       change", "what if it were splittable", "can this move to Monday" where
+       Monday could be either side of where it sits).
+
+   And set `move_target` to the planner's OWN WORDS for where they want it —
+   `"Friday"`, `"a week"`, `"after the maintenance"`, `"the day"`, `"Monday"` —
+   verbatim, exactly as they said it, and `""` when they named no target.
+
+   DO NOT RESOLVE IT. Which Friday, what time of day, whether the machine is
+   even open then, and whether the work fits are calendar questions the system
+   answers against the plant's own calendar and then states out loud in the
+   answer. A date you work out here is a date nobody can check — and Session
+   4B.15 Item 0 is the measured cost of that: a true fact about the wrong
+   Tuesday, in a horizon with five of them.
+
+   Leave both fields alone (null / empty) on every other intent.
+
 OUTPUT — strict JSON, no prose, no code fence. `intent` must be one of the
 vocabulary ids listed at the top; the follow-up names (`deepen`, `list-expand`,
 `menu-select`, `correction`) are values for `followup_of`, never intents.
@@ -534,6 +594,8 @@ is what the planner is doing, name it in both fields.)
   "nearest": ["<id>", "<id>"],
   "dropped_qualifier": "",
   "contested_claim": null | "lateness" | "timing" | "other",
+  "move_direction": null | "earlier" | "later" | "unstated",
+  "move_target": "",
   "clarify": null | {"reason": "no-subject|ambiguous-subject|set-reference|verification|ambiguous-intent",
                      "detail": "<a short phrase, never a sentence>"}
 }

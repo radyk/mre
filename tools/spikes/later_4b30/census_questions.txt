@@ -1,0 +1,10 @@
+# Session 4B.30 Item 1 — the CENSUS probes. Direction-bearing move questions,
+# each asked FRESH (no history), so the measurement is of the question and not
+# of the conversation.
+can i move ORD-000057 later, maintenance wants the machine for the day
+can ORD-000057 move to Friday
+what would pushing ORD-000040 out a week cost
+can we delay ORD-000057 by a day
+push ORD-000057 back until after the maintenance
+what would have to change for ORD-000057 to run later
+how do I get ORD-000057 earlier

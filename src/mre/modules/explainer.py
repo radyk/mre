@@ -23,6 +23,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Optional
 
 from mre.modules.evidence_index import EvidenceIndex
@@ -167,6 +168,25 @@ def _nearest_names(typed: str, names: list[str], limit: int) -> list[str]:
     return near[:limit]
 
 
+#: Session 4B.30 Item 4 — the pricer's docs/05 refusal family -> the branch whose
+#: authored copy explains it. The pricer owns WHICH constraint said no; this
+#: route owns what that MEANS to a planner who asked to push work out, and the
+#: two are kept apart deliberately: a family is a fact about the model, a branch
+#: is a sentence about the plant (or, for the last two, about us).
+_LATER_BRANCH_OF_FAMILY: dict[str, str] = {
+    "B1": "collision",        # the machine is taken then — by whom, and until when
+    "C1/C2": "closure",       # the machine is not open then, or not for long enough
+    # NOT a collision, and it gets its own branch because the REMEDY inverts: a
+    # later alternative helps a blocked slot and makes a boxed-in one worse. The
+    # order's own next step is already scheduled before this would finish, so
+    # every minute of delay is a minute further into it.
+    "A1/A2": "precedence",
+    "R-F1": "frozen",         # committed territory
+    "B2": "unpriceable",      # eligibility — cannot arise on the same machine
+    "model": "model-refused", # CP-SAT refused and no structural check explains it
+}
+
+
 # The route taxonomy — the closed set of route ids classify()/route() dispatch
 # over (docs/07 Phase 4, R-AI1(b)). The interpreter (CU1) maps free-form phrasing
 # ONLY onto these ids; it never invents a route. `params` names the external-ref
@@ -232,9 +252,13 @@ ROUTE_TAXONOMY: dict[str, dict] = {
     # have to be DIFFERENT for it to go earlier", with the threshold and the
     # arithmetic. Same subject, different predicate — which is why it is its own
     # intent rather than a paragraph appended to the blocker analysis.
+    # Session 4B.30 Item 1 — the canonical question no longer says "earlier".
+    # It said so because the route only knew one direction; a canonical that
+    # names one half of a widened meaning is a question the planner did not ask,
+    # printed back at them as the one we heard.
     "what-would-change":     {"params": ["order"],
-                              "canonical": "what would have to change for "
-                                           "{order} to start earlier?"},
+                              "canonical": "what would have to change about "
+                                           "{order}'s placement?"},
     "drill-down":            {"params": [],          "canonical": "tell me more about that"},
     "briefing":              {"params": [],          "canonical": "what should I worry about today?"},
     "unknown-entity":        {"params": ["order"],   "canonical": "is {order} in this schedule?"},
@@ -378,10 +402,33 @@ class Explainer:
         snapshot_store: Any,
         index: EvidenceIndex,
         snapshot_id: str = "snap-run",
+        out_dir: Any = None,
+        runs_subdir: str = "runs",
     ) -> None:
         self._store = snapshot_store
         self._index = index
         self._snap_id = snapshot_id
+        # Session 4B.30 Item 3 — WHERE THE LEDGER LIVES. The later-move route
+        # PRICES a target through `local_price`, which reads the run directory
+        # (the incumbent's evidence, its cost model, its reference date) and not
+        # just the snapshot. Every other route answers from the snapshot alone,
+        # which is why the Explainer never needed this.
+        #
+        # Derived from the store when the caller does not pass it, because a
+        # SnapshotStore is always built as `out_dir / "snapshots"` and rewriting
+        # 54 construction sites to add a parameter most of them cannot use would
+        # be the change, not the fix. A caller that CAN be exact is exact (the
+        # API ask path passes both); one that cannot gets the derivation, and if
+        # the derivation is wrong the route says it cannot price rather than
+        # pricing against the wrong plan.
+        self._runs_subdir = runs_subdir
+        self._out_dir = Path(out_dir) if out_dir is not None else None
+        if self._out_dir is None:
+            base = getattr(snapshot_store, "_base", None)
+            if base is not None and Path(base).name == "snapshots":
+                self._out_dir = Path(base).parent
+        self._priced_world = None       # the held world, loaded at most once
+        self._priced_world_key = None   # …and the op-set restriction it holds
         # A REJECTED submission never reaches the adapter, so no snapshot (and no
         # identity map) exists — but its gate findings are in the evidence store
         # and certificate questions must still answer. Operate in certificate-
@@ -780,6 +827,28 @@ class Explainer:
                                           document=params.get("document"),
                                           challenge=params.get("challenge"))
         if route_id == "what-would-change":
+            # Session 4B.30: ONE intent, TWO directions. The parse reports which
+            # (`move_direction`); absent or anything but `later` keeps the 4B.16
+            # counterfactual byte-for-byte, which is what makes the widening
+            # safe — an older parse, a test that supplies its own params, and
+            # every "unstated" phrasing all land exactly where they landed
+            # before.
+            direction = params.get("move_direction")
+            move_target = params.get("move_target") or ""
+            # A NAMED DAY THAT SITS LATER IS A LATER MOVE, and only the calendar
+            # can say which. "can this move to Friday" carries no direction in
+            # its words — the parse says `unstated` and is right to — so the
+            # decision is made where the dates are, on a computed fact.
+            if direction == "later" or (
+                    direction != "earlier" and move_target
+                    and self._named_target_is_later(
+                        params.get("order"), params.get("machine"),
+                        params.get("op_seq"), move_target)):
+                return self._explain_later_move(
+                    params.get("order"), params.get("machine"), q,
+                    op_seq=params.get("op_seq"),
+                    document=params.get("document"),
+                    move_target=move_target)
             return self._explain_counterfactual(params.get("order"),
                                                 params.get("machine"), q,
                                                 op_seq=params.get("op_seq"),
@@ -793,7 +862,8 @@ class Explainer:
         if route_id == "swap-move":
             return self._explain_swap_move(params.get("order_a") or params.get("order"),
                                            params.get("order_b"),
-                                           params.get("kind") or _swap_move_kind(q), q)
+                                           params.get("kind") or _swap_move_kind(q), q,
+                                           direction=params.get("move_direction"))
         if route_id == "gap-between":
             return self._explain_gap(params.get("order_a") or params.get("order"),
                                      params.get("order_b"), params.get("machine"), q)
@@ -2462,6 +2532,425 @@ class Explainer:
             identity_map=self._identity_map,
         )
 
+    # -----------------------------------------------------------------
+    # Session 4B.30 — THE LATER DIRECTION
+    # -----------------------------------------------------------------
+
+    @staticmethod
+    def _gesture_context(document: Any) -> tuple[Optional[set], list[dict]]:
+        """``(window_op_ids, committed_pins)`` for a ROLLING document — the same
+        two facts the API computes for the board's own drag path
+        (``_rolling_gesture_context``, 4B.3c CU3), read here so the ASK path
+        prices the same world the DRAG path prices.
+
+        THIS IS NOT AN OPTIMIZATION AND SKIPPING IT IS NOT A SMALL ERROR. A
+        rolling board's snapshot carries every operation the plant knows about
+        (695 on the demo board); its schedule placed 386 of them. Price against
+        the unrestricted snapshot and CP-SAT is asked whether the 309 the window
+        never touched can also be placed inside this model — a question the
+        rolling solve never asked and whose answer here is INFEASIBLE. Measured
+        during this session: a ZERO-DISTANCE move, the bar left exactly where it
+        already is, came back "the scheduler refuses this placement". The
+        refusal was real and it was about the wrong question.
+
+        ``(None, [])`` on a monolithic document, where the snapshot IS the
+        window and the pricer's own default is correct."""
+        rb = (document or {}).get("rolling") if isinstance(document, dict) \
+            else getattr(document, "rolling", None)
+        if not rb or not isinstance(document, dict):
+            return None, []
+        window_op_ids: set = set()
+        committed: list[dict] = []
+        for a in document.get("assignments", []) or []:
+            oid = a.get("operation_ref")
+            if not oid:
+                continue
+            window_op_ids.add(oid)
+            chunks = a.get("chunks") or []
+            if a.get("commitment_state") == "committed" and chunks:
+                committed.append({"operation_ref": oid,
+                                  "resource_id": a.get("resource_id"),
+                                  "start": chunks[0].get("start")})
+        return (window_op_ids or None), committed
+
+    def _held_world(self, restrict_op_ids: Optional[set] = None):
+        """The incumbent, loaded at most once per Explainer.
+
+        The model build is ~6.5 s of the ~7 s a price costs on the demo board
+        (4B.23 §5a.92), and a refusal that offers a recomputed alternative
+        prices TWICE. Returns None when this Explainer has no run directory to
+        price against — the route says so rather than pricing against a guess."""
+        # The cache is keyed by the RESTRICTION, not just by "have I loaded
+        # one". A world built over a different op set is a different world, and
+        # handing back the wrong one would price against a model nobody asked
+        # about — the §6 defect in a subtler form. In practice an Explainer is
+        # built per ask request and this never differs; a footgun that costs
+        # three lines to remove is worth removing.
+        key = frozenset(restrict_op_ids) if restrict_op_ids else None
+        if self._priced_world is not None and self._priced_world_key == key:
+            return self._priced_world
+        if self._out_dir is None:
+            return None
+        from mre.modules.local_price import load_held_world
+        self._priced_world = load_held_world(
+            self._out_dir, self._snap_id, runs_subdir=self._runs_subdir,
+            restrict_op_ids=restrict_op_ids)
+        self._priced_world_key = key
+        return self._priced_world
+
+    def _price_at(self, world, op_ref: str, resource_id: str,
+                  at: datetime, demand_refs: list[str],
+                  standing_pins: Optional[list[dict]] = None,
+                  restrict_op_ids: Optional[set] = None):
+        """One local price of one target — every other placement held (R-T2
+        amendment clause 2, 4B.24). The pricer owns the refusal vocabulary; this
+        just points it at an instant."""
+        from mre.modules.local_price import price_local_move
+        return price_local_move(
+            self._out_dir, self._snap_id, op_ref, resource_id,
+            at.isoformat(), runs_subdir=self._runs_subdir, world=world,
+            restrict_op_ids=restrict_op_ids, standing_pins=standing_pins,
+            subject_demand_refs=demand_refs)
+
+    def _explain_later_move(self, order_ref: Optional[str],
+                            machine_ref: Optional[str] = None,
+                            question: str = "",
+                            op_seq: Optional[int] = None,
+                            document: Any = None,
+                            move_target: str = "") -> ExplanationBundle:
+        """"Can I move this later?" — the direction the counterfactual never had.
+
+        Session 4B.30. `what-would-change` computes earliest-start floors and
+        inverts them; there is no later direction anywhere in the ladder, and
+        the census that opens the session measured what that costs: six of seven
+        direction-bearing phrasings, "later" and "earlier" alike, returned one
+        byte-identical paragraph about moving the operation up.
+
+        This is a DIFFERENT KIND OF ANSWER and it is worth naming why. A lever
+        is a necessary condition — remove this bound and the barrier goes, but
+        where the operation lands needs a re-solve (R-AI4). A later move is not
+        a bound to relax: it is a PLACEMENT, and a placement can be PRICED. So
+        this route states a FACT — hold everything else exactly where it is, put
+        the bar here, and the ledger says this — rather than a hypothetical. The
+        4B.16 necessary-never-sufficient framing still applies to anything said
+        BEYOND the priced pin, and only there.
+
+        Three things on a priceable answer, each from machinery that exists:
+        what the delay costs (the local price), what it displaces (the same
+        affected list the delta card reads), and whether the due date survives
+        (the recomputed service outcome, R-PD1 clause 4's split intact).
+
+        And five refusal branches, each with its own authored copy, because on a
+        board of any density a later move is USUALLY a refusal.
+        """
+        from mre.modules import later_move as lm
+
+        if not order_ref:
+            return self._unknown_question("what would moving that operation "
+                                          "later cost?")
+        if self._demand_by_order(order_ref) is None:
+            return self._explain_unknown_entity(order_ref)
+
+        row = self._pick_op_row(order_ref, machine_ref, op_seq)
+        if row is None or not row.get("start"):
+            return self._later_bundle(
+                order_ref, None, {"order": order_ref,
+                                  "branch": lm.BRANCH_UNPLACED})
+
+        machine = row["machine"]
+        cur_start = _to_dt(row["start"])
+        working_min = float(row.get("run_min") or 0.0)
+        rows = [r for r in self._order_rows(order_ref) if r.get("start")]
+        facts: dict = {
+            "order": order_ref, "op_seq": row.get("op_seq"), "machine": machine,
+            "start": _fmt_ts(row["start"]), "start_weekday": _weekday(row["start"]),
+            "end": _fmt_ts(row["end"]),
+            "run_min": row.get("run_min"), "span_min": row.get("span_min"),
+            "chunk_count": len(row.get("chunks") or []),
+            "op_count": len(rows),
+            "op_named": bool(op_seq is not None or machine_ref),
+            "target_raw": move_target or "",
+        }
+
+        # -- (c) A CHUNKED OPERATION — A PROCESS LIMIT, NOT A PLANT FACT ----
+        # The pricer declines a chunked move by name (4B.24 close-out §7): the
+        # pauses are calendar closures the solver placed, and a local shift
+        # cannot re-derive them. Checked HERE, before the ~6.5 s model build,
+        # because paying for a load to be told what the row already says is
+        # waste — and because the sentence must be about OUR limit. Saying "it
+        # can't go there" would be a claim about the plant we have not tested.
+        if len(row.get("chunks") or []) > 1:
+            facts["branch"] = lm.BRANCH_CHUNKED
+            return self._later_bundle(order_ref, row, facts)
+
+        # -- (d) COMMITTED / PINNED (R-F1, A7/F1) --------------------------
+        # This was written expecting to be unreachable for a LATER move of
+        # active work, and asserted anyway because the rule binds whichever way
+        # the planner drags. It is not unreachable: on the demo board every bar
+        # starting 2026-01-05 is inside the committed front, so ordinary
+        # questions about ordinary orders land here (measured, 4B.30 §5(d)).
+        # A route that only enforces what it expects to hit is a route with an
+        # untested door in it.
+        frozen_until = self._frozen_boundary(document)
+        if frozen_until is not None and cur_start is not None \
+                and cur_start < frozen_until:
+            facts["branch"] = lm.BRANCH_FROZEN
+            facts["frozen_until"] = _fmt_dt(frozen_until)
+            facts["frozen_reason"] = "committed"
+            return self._later_bundle(order_ref, row, facts)
+        pin_at = self._pin_start_for(row["operation_ref"])
+        if pin_at is not None:
+            facts["branch"] = lm.BRANCH_FROZEN
+            facts["frozen_until"] = _fmt_dt(pin_at)
+            facts["frozen_reason"] = "pinned"
+            return self._later_bundle(order_ref, row, facts)
+
+        cal = self._later_calendar(row)
+        target = lm.resolve_target(move_target, **cal)
+        free = cal["free"]
+        splittable = cal["splittable"]
+        min_chunk = cal["min_chunk_min"]
+        facts["target"] = self._target_facts(target)
+
+        # -- (e) NOTHING LATER AT ALL ---------------------------------------
+        if target.at is None:
+            facts["branch"] = lm.BRANCH_NO_LATER_FIT
+            return self._later_bundle(order_ref, row, facts)
+
+        # -- the price ------------------------------------------------------
+        from mre.modules.local_price import demands_of_operation
+        window_ops, committed = self._gesture_context(document)
+        try:
+            world = self._held_world(window_ops)
+        except Exception as exc:  # noqa: BLE001
+            world = None
+            facts["price_error"] = str(exc)
+        if world is None:
+            facts["branch"] = lm.BRANCH_UNPRICEABLE
+            return self._later_bundle(order_ref, row, facts)
+
+        # -- (e), the other half: PAST THE END OF THE PLANNED GRID ----------
+        # The line is the MODEL'S OWN HORIZON, not the rolling window. They are
+        # different, and using the window here was wrong when this route was
+        # first written: the demo board's window closes 2026-01-15 while the
+        # schedule places work in detail out to February, so a target four days
+        # past the window is perfectly priceable and was being refused as
+        # "beyond what this schedule plans". A pin past the horizon is a pin the
+        # model has no variable for — that one really cannot be priced.
+        # The two clocks meet here and only here: the pricer's grid is naive
+        # (one run, one timezone) and the document's instants carry UTC. Coerce
+        # rather than compare — a TypeError in this line would take the whole
+        # answer down over a tzinfo attribute.
+        horizon_end = _as_aware(world.horizon_end, target.at)
+        if horizon_end is not None and target.at >= horizon_end:
+            facts["branch"] = lm.BRANCH_BEYOND_GRID
+            facts["horizon_end"] = _fmt_dt(horizon_end)
+            return self._later_bundle(order_ref, row, facts)
+
+        dem_refs = demands_of_operation(world, row["operation_ref"])
+        try:
+            price = self._price_at(world, row["operation_ref"],
+                                   row["resource_id"], target.at, dem_refs,
+                                   standing_pins=committed,
+                                   restrict_op_ids=window_ops)
+        except Exception as exc:  # noqa: BLE001 — a price never takes the answer down
+            facts["branch"] = lm.BRANCH_UNPRICEABLE
+            facts["price_error"] = str(exc)
+            return self._later_bundle(order_ref, row, facts)
+
+        if price.priced:
+            facts["branch"] = lm.BRANCH_PRICED
+            facts.update(self._price_facts(price))
+            return self._later_bundle(order_ref, row, facts)
+
+        refusal = dict(price.refusal or {})
+        if refusal.get("at"):
+            refusal["at"] = _fmt_ts(str(refusal["at"]))
+        facts["refusal"] = refusal
+        facts["branch"] = _LATER_BRANCH_OF_FAMILY.get(
+            refusal.get("family", ""), lm.BRANCH_UNPRICEABLE)
+        if not refusal:
+            facts["price_error"] = price.error or ""
+
+        # (a)/(b) THE RECOMPUTED ALTERNATIVE, PRICED IF IT FITS.
+        # Computed rather than assumed to be "just after the occupant": the
+        # minute past a collision is very often inside the next one, and
+        # offering a slot nobody checked would repeat the mistake the refusal
+        # has just caught. It is PRICED, so the offer is a number and not a
+        # gesture at one.
+        if facts["branch"] in (lm.BRANCH_COLLISION, lm.BRANCH_CLOSURE):
+            nxt = lm.next_opening_after(
+                free, target.at, working_min=working_min,
+                splittable=splittable, min_chunk_min=min_chunk)
+            if nxt is not None and (horizon_end is None or nxt < horizon_end):
+                facts["alternative_at"] = _fmt_dt(nxt)
+                facts["alternative_weekday"] = nxt.strftime("%A")
+                try:
+                    alt = self._price_at(world, row["operation_ref"],
+                                         row["resource_id"], nxt, dem_refs,
+                                         standing_pins=committed,
+                                         restrict_op_ids=window_ops)
+                except Exception as exc:  # noqa: BLE001
+                    alt = None
+                    facts["alternative_error"] = str(exc)
+                if alt is not None and alt.priced:
+                    facts["alternative"] = self._price_facts(alt)
+                elif alt is not None:
+                    facts["alternative_refusal"] = dict(alt.refusal or {})
+                    facts["alternative_error"] = alt.error or ""
+            elif nxt is not None:
+                facts["alternative_beyond_window"] = _fmt_dt(nxt)
+                facts["horizon_end"] = _fmt_dt(horizon_end)
+        return self._later_bundle(order_ref, row, facts)
+
+    def _later_calendar(self, row: dict) -> dict:
+        """Everything ``later_move.resolve_target`` needs about one machine —
+        the three calendar views and the operation's own chunk discipline.
+
+        THREE VIEWS, THREE QUESTIONS. ``pattern_windows`` is where the plant
+        nominally works (the shift pattern, declared closures NOT subtracted);
+        ``open_windows`` is where it actually works; ``free`` is where there is
+        room. A named day resolves against the pattern so that landing on the
+        maintenance Wednesday is a RESULT — the fact the question is usually
+        about — rather than something the resolver quietly corrects."""
+        from mre.modules.blocker_analysis import _subtract
+
+        machine = row["machine"]
+        open_windows = self._open_windows(machine)
+        occupied: list[tuple] = []
+        for r in self._load_enriched_assignments():
+            if r["machine"] != machine or r["assignment_id"] == row["assignment_id"]:
+                continue
+            for c in r.get("chunks") or []:
+                cs, ce = _to_dt(c.get("start")), _to_dt(c.get("end"))
+                if cs is not None and ce is not None:
+                    occupied.append((cs, ce))
+        pattern_windows: list[tuple] = []
+        if open_windows:
+            lo = min(s for s, _e in open_windows)
+            hi = max(e for _s, e in open_windows)
+            pattern_windows = self._machine_working_windows(machine, lo, hi)
+        return {
+            "current_start": _to_dt(row["start"]),
+            "current_end": _to_dt(row["end"]),
+            "open_windows": open_windows,
+            "pattern_windows": pattern_windows,
+            "free": _subtract(open_windows, occupied),
+            "closures": self._closures(machine),
+            "working_min": float(row.get("run_min") or 0.0),
+            "splittable": bool(row.get("splittable")),
+            "min_chunk_min": _parse_iso_duration_minutes(
+                str(row.get("min_chunk") or "")) or None,
+        }
+
+    def _named_target_is_later(self, order_ref: str,
+                               machine_ref: Optional[str],
+                               op_seq: Optional[int],
+                               move_target: str) -> bool:
+        """Does the day the planner NAMED sit after where the operation is?
+
+        Session 4B.30 Item 2(a). The parse reports `unstated` for "can this move
+        to Friday" and it is right to: the words carry no direction, and only
+        the calendar knows whether that Friday is before or after this bar. So
+        the decision is made HERE, where the calendar is, on a computed fact —
+        never in the prompt, which would be asking a model to author a date.
+
+        False on anything it cannot resolve, which keeps every phrasing that
+        reached the 4B.16 counterfactual reaching it still."""
+        from mre.modules import later_move as lm
+
+        if not move_target:
+            return False
+        row = self._pick_op_row(order_ref, machine_ref, op_seq)
+        if row is None or not row.get("start"):
+            return False
+        try:
+            cal = self._later_calendar(row)
+            target = lm.resolve_target(move_target, **cal)
+        except Exception:  # noqa: BLE001 — a routing hint never takes an answer down
+            return False
+        return (target.kind in (lm.KIND_NAMED, lm.KIND_AFTER_CLOSURE)
+                and target.at is not None
+                and cal["current_start"] is not None
+                and target.at > cal["current_start"])
+
+    def _target_facts(self, target) -> dict:
+        return {
+            "kind": target.kind,
+            "at": _fmt_dt(target.at),
+            "at_weekday": target.at.strftime("%A") if target.at else None,
+            "raw": target.raw,
+            "snapped_from": _fmt_dt(target.snapped_from),
+            "snapped_from_weekday": (target.snapped_from.strftime("%A")
+                                     if target.snapped_from else None),
+            "closure": ({"start": _fmt_dt(target.closure["start"]),
+                         "end": _fmt_dt(target.closure["end"]),
+                         "reason": target.closure.get("reason", "closure")}
+                        if target.closure else None),
+            "ambiguous": target.ambiguous,
+            "instances": target.instances,
+            "fell_back": target.fell_back,
+        }
+
+    @staticmethod
+    def _price_facts(price) -> dict:
+        """The three things a priced later move states, and the receipts.
+
+        Instants are formatted HERE, at the assembler boundary, exactly as every
+        other route's key_facts are. The pricer speaks ISO because it speaks to
+        the model; a planner reads "2026-01-22 19:00" and never
+        "2026-01-22T19:00:00+00:00"."""
+        outcomes = []
+        for s in (price.subject_outcomes or []):
+            s = dict(s)
+            for k in ("due", "completion_before", "completion_after"):
+                if s.get(k):
+                    s[k] = _fmt_ts(str(s[k]))
+            outcomes.append(s)
+        return {
+            "cost_delta_abs": price.cost_delta_abs,
+            "cost_delta_pct": price.cost_delta_pct,
+            "total_before": price.total_before,
+            "total_after": price.total_after,
+            "cost_lines": [dict(c) for c in (price.cost_lines or [])],
+            "affected_orders": [dict(a) for a in (price.affected_orders or [])],
+            "lateness_delta_min": price.lateness_delta_min,
+            "subject_outcomes": outcomes,
+            "validation_status": (price.validation or {}).get("status"),
+            "price_wall_time_s": price.price_wall_time_s,
+        }
+
+    def _later_bundle(self, order_ref: str, row: Optional[dict],
+                      facts: dict) -> ExplanationBundle:
+        seq = facts.get("op_seq")
+        op = f"op{seq}" if seq is not None else "that operation"
+        return ExplanationBundle(
+            question=f"What would moving {order_ref} {op} later cost?",
+            subject_id=(self._demand_by_order(order_ref) or {}).get(
+                "id", order_ref),
+            subject_type="later_move",
+            subject_external_name=order_ref,
+            ordered_records=(self._assignment_records_for_ops(
+                {row["operation_ref"]}, set(row.get("demand_ids") or []))
+                if row else []),
+            key_facts=facts,
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _frozen_boundary(self, document: Any) -> Optional[datetime]:
+        try:
+            rb = (document or {}).get("rolling") if isinstance(document, dict) \
+                else getattr(document, "rolling", None)
+            if rb is None:
+                return None
+            fu = rb.get("frozen_until") if isinstance(rb, dict) \
+                else getattr(rb, "frozen_until", None)
+            return _to_dt(fu if isinstance(fu, str)
+                          else (fu.isoformat() if fu else None))
+        except Exception:  # noqa: BLE001 — a monolithic run has no rolling block
+            return None
+
     def _explain_why_not_placed(self, order_ref: str) -> ExplanationBundle:
         """The honest floor for a blocker question about an order with no
         placement in this window — it has no 'here' to explain."""
@@ -2920,7 +3409,8 @@ class Explainer:
                 "records": self._assignment_records(order_ref)}
 
     def _explain_swap_move(self, order_a: Optional[str], order_b: Optional[str],
-                           kind: str, question: str) -> ExplanationBundle:
+                           kind: str, question: str,
+                           direction: Optional[str] = None) -> ExplanationBundle:
         """CU1 — the swap/move bridge (the flagship). The R-AI3 ladder: TESTIMONY
         (both orders' placements + slack/lateness), a grounded TAKE (which slot
         changes hands, who can afford it), then the BRIDGE (the concrete board
@@ -2934,7 +3424,7 @@ class Explainer:
         fb = self._order_slack_facts(order_b) if order_b else None
         if order_b and fb is None:
             return self._explain_unknown_entity(order_b)
-        take, bridge = self._swap_take_and_bridge(fa, fb, kind)
+        take, bridge = self._swap_take_and_bridge(fa, fb, kind, direction)
         records = list(fa.get("records") or [])
         if fb:
             records += list(fb.get("records") or [])
@@ -2949,15 +3439,36 @@ class Explainer:
             snapshot_id=self._snap_id, identity_map=self._identity_map)
 
     def _swap_take_and_bridge(self, fa: dict, fb: Optional[dict],
-                              kind: str) -> tuple[Optional[str], Optional[str]]:
+                              kind: str,
+                              direction: Optional[str] = None
+                              ) -> tuple[Optional[str], Optional[str]]:
         """The grounded take + the board-gesture bridge for a swap/move. The take
         names who can afford the slot (slack) vs who is hurting (late); the bridge
         names the real drag the two-beat sandbox prices. Never an ungrounded opinion
-        (R-AI3(2)): a take only where the evidence supports one."""
+        (R-AI3(2)): a take only where the evidence supports one.
+
+        Session 4B.30 Item 1 — THE SINGLE-ORDER BRANCH WAS DIRECTION-BLIND. The
+        census measured "push ORD-000057 back until after the maintenance"
+        landing here and being told "the move worth pricing is the one that
+        gives it an earlier opening", then "drag it to the earlier slot you have
+        in mind". Every word of that was true of a question nobody asked. The
+        meanings now send a later move of one operation to `what-would-change`,
+        which prices it; this is the belt to that suspenders, because leaving a
+        known-backwards sentence standing beside the fix would be the
+        fixed-at-one-seam failure docs/04 keeps naming."""
         a = fa["order"]
         if not fb:
             slot = fa.get("placement") or {}
             take = None
+            if direction == "later":
+                take = (f"You're asking to push {a} OUT, not to bring it "
+                        "forward. I can price that exactly — ask me what "
+                        "moving it later would cost and I'll hold every other "
+                        "job where it is and tell you.")
+                bridge = (f"Or drag {a}'s operation to the later slot you have "
+                          "in mind and the board will run a sandbox and price "
+                          "the move exactly.")
+                return take, bridge
             if fa["late"]:
                 take = (f"{a} is {int(fa['lateness'])} min late — the move worth "
                         "pricing is the one that gives it an earlier opening.")
@@ -5318,6 +5829,23 @@ def _display_facts(facts: Optional[dict]) -> dict:
         else:
             out[k] = v
     return out
+
+
+def _as_aware(dt: Optional[datetime],
+              like: Optional[datetime]) -> Optional[datetime]:
+    """``dt`` made comparable with ``like`` (Session 4B.30).
+
+    The solver's grid is NAIVE — one run, one plant, one timezone, deliberately
+    — and the document's instants carry UTC. The later-move route is the first
+    place the two meet, and it meets them by coercing the naive side rather than
+    by comparing and hoping: a TypeError in a horizon check would take a whole
+    answer down over a tzinfo attribute nobody asked about."""
+    if dt is None or like is None:
+        return dt
+    if (dt.tzinfo is None) == (like.tzinfo is None):
+        return dt
+    return (dt.replace(tzinfo=like.tzinfo) if dt.tzinfo is None
+            else dt.replace(tzinfo=None))
 
 
 def _fmt_dt(dt: Optional[datetime]) -> Optional[str]:

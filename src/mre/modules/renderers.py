@@ -209,7 +209,9 @@ _HEADER_ONLY_SUBJECTS = frozenset({
     # Session 4B.14 Item 2 — the blocker analysis composes its whole answer from
     # pre-computed key_facts (the ladder, the binding family, its arithmetic).
     # Session 4B.16 Item 1 — and its inverse, the counterfactual, likewise.
-    "why_here", "counterfactual",
+    # Session 4B.30 — and the LATER direction likewise: its whole answer is the
+    # resolved target, the price and the branch, all computed before render.
+    "why_here", "counterfactual", "later_move",
     # Session 4A.3 — the swap/move bridge + the absence pair compose their whole
     # answer in the header (the R-AI3 ladder in planner language).
     "swap_move", "gap_between", "machine_idle",
@@ -547,6 +549,22 @@ def _dur_min(minutes) -> str:
     # invites the reader to ask a day of what — calendar or shift. Hours stay
     # unambiguous however many of them there are.
     return f"{h}h" if r == 0 else f"{h}h{r:02d}m"
+
+
+def _span_min(minutes) -> str:
+    """An ELAPSED amount — lateness, a delay, how far past a due date something
+    lands. Days past 48h, because "475h late" is a number nobody can picture.
+
+    THE COMPANION OF ``_dur_min``, AND THE DISTINCTION IS 4B.20's RULING: working
+    time and elapsed span are different quantities and are never interchangeable.
+    ``_dur_min`` deliberately refuses days because a day of WORK invites the
+    question "a day of what — calendar or shift"; here a day is wall-clock and
+    unambiguous. One definition, reused from the counterfactual rather than
+    written twice, so the two routes cannot drift apart on the same figure."""
+    if minutes is None:
+        return "?"
+    from mre.modules.counterfactual import _span
+    return _span(minutes)
 
 
 def _machine_load_lines(load: Any) -> list[str]:
@@ -1340,6 +1358,8 @@ class TemplateRenderer:
             self._render_why_here(lines, bundle)
         elif bundle.subject_type == "counterfactual":
             self._render_counterfactual(lines, bundle)
+        elif bundle.subject_type == "later_move":
+            self._render_later_move(lines, bundle)
 
         elif bundle.subject_type == "unknown_entity":
             self._render_unknown_entity(lines, bundle)
@@ -2584,6 +2604,370 @@ class TemplateRenderer:
         self._render_not_weighed(lines, kf)
         lines.append("")
 
+    # -----------------------------------------------------------------
+    # Session 4B.30 — THE LATER DIRECTION, voiced
+    # -----------------------------------------------------------------
+
+    def _render_later_move(self, lines: list[str],
+                           bundle: ExplanationBundle) -> None:
+        """"Can I move this later?" — the answer, or the refusal that says which.
+
+        THE BAR — MEASURED, not authored. Live on the demo board, ORD-000208
+        op30 on PAINT-01, a past-due order pushed out a day:
+
+            Pushing ORD-000208 op30 out by "a day" puts it at Thursday
+            2026-01-22 16:49 on PAINT-01.
+
+            It costs +$600.00 (+0.028% of the plan's $2,127,482.58).
+            Nothing else moves — every other job stays exactly where it is,
+            which is the only reading under which this number is about YOUR
+            move. …
+
+            ORD-000208 finishes 2026-01-22 19:00 — 19d 19h past its due date
+            (2026-01-02 23:59). 2d of that was already sunk before this plan
+            opened and no placement can move it [R-PD1]; 17d 19h is what this
+            schedule decides, against 16d 19h today.
+
+        Everything above the fold is a FACT, not a hypothetical: the price holds
+        every other placement exactly where it is, recomputes the whole ledger
+        and re-validates the result by pinning all of it into a fresh model
+        (4B.24). That is why this route may say "it costs" where the
+        counterfactual must say "that removes the barrier" — a lever is a
+        necessary condition, and a priced pin is a measurement.
+
+        Authored, never LLM-reworded, and the reason is the refusal branches: a
+        reword flattens SHUT into OCCUPIED and "we can't compute this" into "the
+        plant won't take it", which are the two confusions this whole route
+        exists to stop making."""
+        kf = bundle.key_facts
+        name = bundle.subject_external_name
+        seq = kf.get("op_seq")
+        op = f"op{seq}" if seq is not None else "this operation"
+        machine = kf.get("machine")
+        branch = kf.get("branch")
+
+        if branch == "unplaced":
+            lines.append(
+                f"{name} has no placement in this window, so there is nothing "
+                f"to push out. Ask \"why isn't {name} scheduled yet?\" and I'll "
+                "answer that instead.")
+            lines.append("")
+            return
+
+        if (kf.get("op_count") or 0) > 1 and not kf.get("op_named"):
+            lines.append(f"Answering about {name} {op} on {machine} — the first "
+                         f"of its {kf['op_count']} operations.")
+
+        # -- (c) A LIMIT OF OURS, SAID AS ONE -------------------------------
+        # The pricer declines a chunked move because the pauses are calendar
+        # closures the solver placed and a local shift cannot re-derive them.
+        # That is a fact about this product, and the sentence says so — a
+        # planner told "it can't go there" would act on a claim about their
+        # plant that nobody has tested (the CostProof `unreadable` species,
+        # 4B.18; FeasibilityGhost `undetermined`, 4B.23).
+        if branch == "chunked":
+            n = kf.get("chunk_count") or 0
+            lines.append(
+                f"{name} {op} runs in {n} pieces on {machine} around calendar "
+                f"closures, and I can't re-place split work as one move yet — "
+                "the pauses are placements the solver made, and shifting the "
+                "bar wouldn't tell me where the new ones go.")
+            lines.append(
+                "That is a limit of mine, not a ruling about your plant: I am "
+                "not telling you the move is impossible, I am telling you I "
+                "can't price it. Dragging the bar on the board runs the full "
+                "re-solve, which can.")
+            lines.append("")
+            return
+
+        # -- (d) COMMITTED / PINNED ----------------------------------------
+        if branch == "frozen":
+            if kf.get("frozen_reason") == "pinned":
+                lines.append(
+                    f"{name} {op} is pinned at {kf.get('frozen_until')} "
+                    "[docs/05 A7/F1]. A pin is a decision somebody made about "
+                    "this operation, and I won't quietly move work that is "
+                    "being held on purpose — lift or move the pin and ask me "
+                    "again.")
+            else:
+                lines.append(
+                    f"{name} {op} starts {kf.get('start')}, inside the "
+                    f"committed front of the plan (frozen until "
+                    f"{kf.get('frozen_until')}) [docs/05 R-F1]. Committed work "
+                    "does not move as the plan rolls — that is what committing "
+                    "it means — so there is no later slot for me to price. "
+                    "Moving the frozen boundary is the gesture that changes "
+                    "this, and it makes standing pins, not free work.")
+            lines.append("")
+            return
+
+        target = kf.get("target") or {}
+        self._render_later_target(lines, kf, target, name, op, machine)
+
+        if branch == "priced":
+            self._render_later_price(lines, kf, name, op)
+        elif branch == "collision":
+            self._render_later_collision(lines, kf, machine)
+        elif branch == "precedence":
+            self._render_later_precedence(lines, kf, name)
+        elif branch == "closure":
+            self._render_later_closure(lines, kf, machine)
+        elif branch == "no-later-fit":
+            lines.append(
+                f"There is no later stretch of open, unheld time on {machine} "
+                f"big enough for {_dur_min(kf.get('run_min'))} of work — not "
+                "between where it sits and the end of what this schedule "
+                "covers. Every opening after it is either shut, already taken, "
+                "or too short.")
+        elif branch == "beyond-grid":
+            lines.append(
+                f"But that is past the end of the grid this plan is laid out on "
+                f"({kf.get('horizon_end')}), which is as far as anything is "
+                "placed to the minute. Beyond that line work is carried in the "
+                "coarse look-ahead a week at a time, so I can tell you the "
+                "operation would sit out there and I cannot price it to the "
+                "cent — the detail a price is made of does not exist there.")
+        elif branch == "model-refused":
+            lines.append(
+                "The scheduler refuses that placement with every other job "
+                "held where it is, and no rule I check explains why. The "
+                "refusal is real; the reason is one I can't name, and I would "
+                "rather say that than invent one.")
+        else:
+            lines.append(
+                "I couldn't price that move: "
+                + (kf.get("price_error") or "the plan I price against could "
+                   "not be loaded")
+                + ". That is a failure of mine, not a verdict on the move.")
+        lines.append("")
+
+    @staticmethod
+    def _render_later_target(lines: list[str], kf: dict, target: dict,
+                             name: str, op: str, machine: str) -> None:
+        """WHICH INSTANT I TESTED, and how I got there from what you said.
+
+        The 4B.16 precedent, and 4B.15 Item 0's cost: a weekday in a five-Monday
+        horizon is not an anchor, so the answer names the weekday AND the date,
+        every time. A snap, an ambiguity and a fallback each say so — there is
+        no shape of this paragraph that resolves silently."""
+        if not target or not target.get("at"):
+            return
+        kind = target.get("kind")
+        when = f"{target.get('at_weekday')} {target.get('at')}"
+        raw = target.get("raw") or ""
+
+        if kind == "after-closure":
+            clo = target.get("closure") or {}
+            reason = str(clo.get("reason", "closure")).replace("_", " ")
+            lines.append(
+                f"Pushing {name} {op} out to {when} — the first time {machine} "
+                f"is open after the {reason} it would be waiting on "
+                f"({clo.get('start')} to {clo.get('end')}).")
+        elif kind == "named-day":
+            lines.append(f"Testing {name} {op} at {when} on {machine}"
+                         + (f" — you said \"{raw}\"." if raw else "."))
+            if target.get("ambiguous"):
+                lines.append(
+                    f"There are {target.get('instances')} of that weekday "
+                    "still ahead of where it sits, and I took the first one. "
+                    "Name a date if you meant a different one.")
+        elif kind == "magnitude":
+            lines.append(f"Pushing {name} {op} out by \"{raw}\" puts it at "
+                         f"{when} on {machine}.")
+        else:
+            lines.append(
+                f"The next place {name} {op} could sit on {machine} is {when} "
+                "— the first opening after where it is now with room for the "
+                "whole operation.")
+            if target.get("fell_back") and raw:
+                lines.append(
+                    f"I could not resolve \"{raw}\" against this machine's "
+                    "calendar, so that is the target I tested — not the one "
+                    "you named.")
+
+        if target.get("snapped_from"):
+            lines.append(
+                f"That is a snap forward: {target.get('snapped_from_weekday')} "
+                f"{target.get('snapped_from')} is the literal reading and "
+                f"{machine} is not open then, so the figures below are about "
+                f"{when}.")
+        lines.append("")
+
+    @staticmethod
+    def _render_later_price(lines: list[str], kf: dict, name: str,
+                            op: str) -> None:
+        """The three things a priceable later move states (Item 3)."""
+        delta = kf.get("cost_delta_abs")
+        lines.append(f"It costs {_signed_money(delta)}"
+                     + (f" ({kf.get('cost_delta_pct'):+.3f}% of the plan's "
+                        f"{_signed_money(kf.get('total_before')).lstrip('+')})"
+                        if kf.get("cost_delta_pct") is not None
+                        and kf.get("total_before") else "")
+                     + ".")
+
+        # WHAT IT DISPLACES. Under a held-world price this is usually empty, and
+        # that is worth a sentence rather than a silence: the slot it leaves is
+        # unused in THIS price because nothing was allowed to move into it, and
+        # a deeper search might well refill it. An honest pointer at "search
+        # deeper", never a promise about what it would find.
+        affected = [a for a in (kf.get("affected_orders") or [])
+                    if a.get("work_order") != name]
+        if affected:
+            lines.append("")
+            lines.append(f"{len(affected)} other order(s) change:")
+            for a in affected[:5]:
+                lines.append(
+                    f"  {a.get('work_order') or a.get('demand_ref')}  "
+                    f"{_signed_money(a.get('tardiness_delta'))} tardiness, "
+                    f"{a.get('lateness_delta_min'):+d} min")
+        else:
+            lines.append(
+                "Nothing else moves — every other job stays exactly where it "
+                "is, which is the only reading under which this number is "
+                "about YOUR move. The slot it leaves behind is simply unused "
+                "in this price; a deeper search might refill it, and that is a "
+                "different question with a different answer.")
+
+        # WHETHER THE DUE DATE SURVIVES — R-PD1 clause (4) vocabulary, and the
+        # floor stated ONCE. A move cannot change what was already sunk when
+        # the plan opened, so reporting the floor before and after would invite
+        # a planner to subtract two equal numbers and read a decision into it.
+        for s in (kf.get("subject_outcomes") or []):
+            lines.append("")
+            late_after = int(s.get("lateness_after_min") or 0)
+            late_before = int(s.get("lateness_before_min") or 0)
+            wo = s.get("work_order") or name
+            if late_after <= 0:
+                lines.append(
+                    f"{wo} still finishes on time: {s.get('completion_after')}, "
+                    f"{_span_min(-late_after)} before its due date "
+                    f"({s.get('due')}).")
+                continue
+            floor = int(s.get("tardiness_floor_min") or 0)
+            controllable_after = max(0, late_after - floor)
+            controllable_before = max(0, late_before - floor)
+            lines.append(
+                f"{wo} finishes {s.get('completion_after')} — "
+                f"{_span_min(late_after)} past its due date ({s.get('due')}).")
+            if floor:
+                lines.append(
+                    f"  {_span_min(floor)} of that was already sunk before this "
+                    "plan opened and no placement can move it [R-PD1]; "
+                    f"{_span_min(controllable_after)} is what this schedule "
+                    f"decides, against {_span_min(controllable_before)} today.")
+            else:
+                lines.append(
+                    f"  All of it is controllable — it was due inside this "
+                    f"plan. Today it is {_span_min(late_before)} late.")
+            lines.append(
+                f"  Tardiness on this order: "
+                f"{_signed_money(round(float(s.get('tardiness_after') or 0.0) - float(s.get('tardiness_before') or 0.0), 2))}"
+                f" (${float(s.get('tardiness_before') or 0.0):,.2f} → "
+                f"${float(s.get('tardiness_after') or 0.0):,.2f}).")
+
+        lines.append("")
+        lines.append(
+            "Held-world price: every other placement pinned where it is, the "
+            "whole ledger recomputed, and the result re-checked against the "
+            f"scheduler ({kf.get('validation_status')}). It is what this move "
+            "costs, not what the best plan containing it would cost.")
+
+    @staticmethod
+    def _render_later_collision(lines: list[str], kf: dict,
+                                machine: str) -> None:
+        """(a) SOMETHING IS ALREADY THERE — with its name, and a real offer."""
+        ref = kf.get("refusal") or {}
+        who = ", ".join(ref.get("other_work_orders") or []) or "another job"
+        lines.append(
+            f"Not there: {machine} is already carrying {who} at that time.")
+        # SHUT IS NOT OCCUPIED (4B.24, R-T2 amendment clause 2's discipline).
+        # This refusal exists only because the price holds the occupant still —
+        # so it is "not without moving other work", never "no".
+        if ref.get("holds_others"):
+            lines.append(
+                "That is a refusal about this price, not about your plant: I "
+                "hold every other job exactly where it is, so a slot somebody "
+                "else is in is closed to me. The full re-solve is free to move "
+                "them, and might.")
+        TemplateRenderer._render_later_alternative(lines, kf, machine)
+
+    @staticmethod
+    def _render_later_precedence(lines: list[str], kf: dict,
+                                 name: str) -> None:
+        """The order's own next step is already booked in front of it."""
+        ref = kf.get("refusal") or {}
+        lines.append(
+            f"Not there: a later start would run {name} straight into the next "
+            f"step of its own routing, which is already scheduled from "
+            f"{ref.get('at')} [docs/05 A1/A2].")
+        lines.append(
+            "Offering you a still-later slot would make that worse, not "
+            "better, so I am not offering one. What moves this is moving the "
+            "downstream step too — a two-operation change I price one bar at a "
+            "time and therefore cannot price as one gesture.")
+
+    @staticmethod
+    def _render_later_closure(lines: list[str], kf: dict,
+                              machine: str) -> None:
+        """(b) THE MACHINE IS SHUT — and shut is a different fact from busy."""
+        ref = kf.get("refusal") or {}
+        target = kf.get("target") or {}
+        clo = target.get("closure") or {}
+        reason = str(clo.get("reason", "")).replace("_", " ")
+        lines.append(
+            f"Not there: {machine} is not open then"
+            + (f" — {reason} from {clo.get('start')} to {clo.get('end')}."
+               if reason else ". " + str(ref.get("sentence", "")).strip() + "."))
+        lines.append(
+            "That is the calendar, not congestion: nobody is in the way, the "
+            "machine simply is not running. Declared overtime or a shift "
+            "extension is what changes it, and I won't guess what hours the "
+            "plant would open on a day it has declared shut.")
+        TemplateRenderer._render_later_alternative(lines, kf, machine)
+
+    @staticmethod
+    def _render_later_alternative(lines: list[str], kf: dict,
+                                  machine: str) -> None:
+        """The RECOMPUTED next opening, priced — or an honest account of why it
+        is not on offer. Computed from the calendar, never assumed to be the
+        minute after the obstacle."""
+        at = kf.get("alternative_at")
+        if not at:
+            beyond = kf.get("alternative_beyond_window")
+            lines.append("")
+            if beyond:
+                lines.append(
+                    f"The next opening that would take it is {beyond}, past "
+                    f"the end of the planned grid ({kf.get('horizon_end')}) — "
+                    "out where the plan is coarse and I can't price to the "
+                    "cent.")
+            else:
+                lines.append(
+                    f"And there is no later opening on {machine} with room "
+                    "for the whole operation, so I have nothing else to offer "
+                    "you here.")
+            return
+        alt = kf.get("alternative") or {}
+        lines.append("")
+        lines.append(
+            f"The next opening that WOULD take it is "
+            f"{kf.get('alternative_weekday')} {at}"
+            + (f", and that one costs "
+               f"{_signed_money(alt.get('cost_delta_abs'))}."
+               if alt else "."))
+        if alt:
+            subject = kf.get("order")
+            others = [a for a in (alt.get("affected_orders") or [])
+                      if a.get("work_order") != subject]
+            lines.append(
+                f"  {len(others)} other order(s) change there."
+                if others else "  Nothing else moves there either.")
+        elif kf.get("alternative_refusal") or kf.get("alternative_error"):
+            lines.append(
+                "  I could not price that one either: "
+                + ((kf.get("alternative_refusal") or {}).get("sentence")
+                   or kf.get("alternative_error") or "no reason given") + ".")
+
     @staticmethod
     def _render_unpriceable(lines: list[str], kf: dict) -> None:
         """What this route will NOT put a number on, and why (Session 4B.16).
@@ -3456,6 +3840,13 @@ class LLMRenderer:
         # route, and it is the first sentence an "answer in 2-3 sentences"
         # reword drops. Without it a necessary condition reads as a promise.
         "counterfactual",
+        # Session 4B.30: the LATER direction, for a fourth reason on top of
+        # those three. Its refusals are the common case on a real board, and
+        # each one draws a distinction a reword flattens: SHUT is not OCCUPIED,
+        # and "I can't re-place split work as one move" is about US while
+        # "that time is taken" is about the PLANT. Flattening either is the
+        # confident-wrong answer this route was built to stop giving.
+        "later_move",
         # Session 4A.3: the swap/move bridge + the absence pair are authored — the
         # take + gesture bridge are composed on the evidence, never LLM-improvised.
         "swap_move", "gap_between", "machine_idle",

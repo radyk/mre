@@ -122,6 +122,14 @@ class LocalPrice:
     # fact a reader is entitled to.
     persisted_total: Optional[float] = None
     agrees_with_persisted: Optional[bool] = None
+    # Session 4B.30 Item 3 — THE SUBJECT'S OWN DUE-DATE VERDICT, before and
+    # after. ``affected_orders`` reports DELTAS across the board and is the right
+    # shape for "what does this displace"; it cannot answer "does the due date
+    # survive", which needs the absolute completion, the declared due date, and
+    # R-PD1 clause (4)'s split of what is already sunk from what this placement
+    # decides. Populated only when the caller names the demands it cares about,
+    # so nothing changes for a caller that does not ask.
+    subject_outcomes: list[dict] = field(default_factory=list)
     # The model's own verdict on the held world with the pin applied.
     # {"method": "cp-sat-pin-all", "status": ..., "wall_time_s": ...} or
     # {"method": "skipped", ...} when the caller did not ask for it.
@@ -175,6 +183,10 @@ class _HeldWorld:
     build_args: tuple = ()
     model_consumed: bool = False
     edges: list = field(default_factory=list)
+    # Session 4B.30: the far end of the model's own grid. A pin past it is not
+    # something the pricer can be asked about, and the difference between "we
+    # can't price that" and "the plant refuses it" is the whole discipline here.
+    horizon_end: Optional[datetime] = None
 
 
 def _load_held_world(out_dir: Path, snapshot_id: str, runs_subdir: str,
@@ -254,9 +266,77 @@ def _load_held_world(out_dir: Path, snapshot_id: str, runs_subdir: str,
     return _HeldWorld(
         ops=ops, wps=wps, resources=resources, fuls=fuls, demands=demands,
         cost_model=cost_model, var_map=var_map, model=model,
-        horizon_start=horizon_start, reader=reader, placements=placements,
+        horizon_start=horizon_start, horizon_end=horizon_end,
+        reader=reader, placements=placements,
         chunks=chunks, ops_by_id=ops_by_id, wo_of_op=wo_of_op,
         build_args=build_args, edges=edges)
+
+
+def load_held_world(out_dir: Path | str, snapshot_id: str, *,
+                    runs_subdir: str = "runs",
+                    restrict_op_ids: Optional[set] = None) -> _HeldWorld:
+    """Load the incumbent ONCE so several prices can share it.
+
+    Session 4B.30: the later-move route prices a planner's target and, when the
+    world refuses it, prices the RECOMPUTED alternative it offers. Two prices,
+    and on the demo board the model build is ~6.5 s of the ~7 s each one costs
+    (4B.23 §5a.92 measured it) — so building twice would make the offer cost
+    more than the answer. ``price_local_move`` has always accepted a ``world``;
+    this is the public door to one."""
+    return _load_held_world(Path(out_dir), snapshot_id, runs_subdir,
+                            restrict_op_ids)
+
+
+def demands_of_operation(world: _HeldWorld, op_id: str) -> list[str]:
+    """The demand refs an operation's completion is judged against — the same
+    fulfillment walk the ledger uses, so a due-date verdict and a tardiness
+    figure are about the same demands."""
+    wp = (world.ops_by_id.get(op_id) or {}).get("workpackage_ref", "")
+    return [f.get("demand_ref") for f in world.fuls
+            if f.get("workpackage_ref") == wp and f.get("demand_ref")]
+
+
+def _subject_outcomes(world: _HeldWorld, demand_refs: list[str],
+                      before, after) -> list[dict]:
+    """One row per named demand: the declared due date, the completion before
+    and after, the lateness both sides, and R-PD1 clause (4)'s split.
+
+    THE FLOOR CANNOT MOVE AND THE ROW SAYS SO by carrying it once, not twice: it
+    is ``max(0, t0 − due)`` priced, a fact about when the plan opened against
+    when the order was due, and no placement of any operation can change either.
+    Reporting it as a before/after pair would invite a reader to subtract two
+    equal numbers and conclude something was decided."""
+    from mre.modules.sandbox import _order_name_resolver
+
+    wo_of = _order_name_resolver(world.reader.read_identity_map())
+    dem_by_id = {d["id"]: d for d in world.demands}
+    b_by = {s.get("demand_ref"): s for s in (before.service_outcomes or [])}
+    a_by = {s.get("demand_ref"): s for s in (after.service_outcomes or [])}
+    out: list[dict] = []
+    for dem in demand_refs:
+        b, a = b_by.get(dem), a_by.get(dem)
+        if a is None:
+            continue
+        d = dem_by_id.get(dem, {})
+        floor_min = int(a.get("tardiness_floor_minutes") or 0)
+        out.append({
+            "demand_ref": dem,
+            "work_order": wo_of(dem),
+            "due": d.get("due"),
+            "completion_before": (b or {}).get("projected_completion"),
+            "completion_after": a.get("projected_completion"),
+            "lateness_before_min": int((b or {}).get("lateness_minutes") or 0),
+            "lateness_after_min": int(a.get("lateness_minutes") or 0),
+            "tardiness_before": round(float((b or {}).get("tardiness_cost")
+                                            or 0.0), 2),
+            "tardiness_after": round(float(a.get("tardiness_cost") or 0.0), 2),
+            # UNCHANGEABLE BY ANY MOVE (R-PD1 clause 4): already accrued when
+            # the plan opened. Stated once, on both sides of nothing.
+            "tardiness_floor_min": floor_min,
+            "tardiness_floor_cost": round(
+                float(a.get("tardiness_floor_cost") or 0.0), 2),
+        })
+    return out
 
 
 def _work_orders_by_op(reader, ops, wps, fuls, demands) -> dict:
@@ -505,6 +585,7 @@ def price_local_move(
     standing_pins: Optional[list[dict]] = None,
     validate: bool = True,
     world: Optional[_HeldWorld] = None,
+    subject_demand_refs: Optional[list[str]] = None,
 ) -> LocalPrice:
     """Price ONE move with every other placement held exactly where it is.
 
@@ -608,6 +689,9 @@ def price_local_move(
     affected, lateness_delta = _affected_orders(
         world.reader, after.service_outcomes,
         base_svc=before.service_outcomes, with_total=True)
+    subject_outcomes = (_subject_outcomes(world, subject_demand_refs,
+                                          before, after)
+                        if subject_demand_refs else [])
 
     persisted = _persisted_total(world.reader)
     price_wall = round(time.monotonic() - t_price, 3)
@@ -655,6 +739,7 @@ def price_local_move(
         persisted_total=persisted,
         agrees_with_persisted=(None if persisted is None
                                else abs(persisted - float(tb)) < 0.01),
+        subject_outcomes=subject_outcomes,
         validation=validation,
         build_wall_time_s=t_build, price_wall_time_s=price_wall,
         wall_time_s=round(time.monotonic() - t_all, 3))

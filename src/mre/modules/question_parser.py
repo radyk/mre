@@ -46,6 +46,7 @@ from mre.contracts.parse import (
     Intent,
     INTENT_MEANINGS,
     model_selectable_intents,
+    MoveDirection,
     ParsedQuestion,
     Polarity,
     SubjectDisposition,
@@ -491,12 +492,35 @@ def build_parsed(question: str, emission: dict, explainer: Any,
             except ValueError:
                 contested_claim = None
 
+    # Session 4B.30 Item 1/2 — WHICH WAY, and the planner's raw words for WHERE.
+    # Carried on the two intents that can ACT on a direction, for the same reason
+    # `contested_claim` is carried on two: on every other intent the field is
+    # meaningless, and a stray value would be a routing signal the prompt never
+    # promised. Absent stays None, which every assembler reads as EARLIER — the
+    # behaviour before these fields existed.
+    #
+    # `move_target` is TRUNCATED and never interpreted here. It is the planner's
+    # own words; a model that starts resolving them is authoring a date, and
+    # 4B.15 Item 0 is the measured cost of an authored date (a true fact about
+    # the wrong Tuesday, in a horizon with five of them).
+    move_direction = None
+    move_target = ""
+    if intent in (Intent.WHAT_WOULD_CHANGE, Intent.SWAP_MOVE):
+        raw_md = emission.get("move_direction")
+        if raw_md not in (None, "", "null"):
+            try:
+                move_direction = MoveDirection(str(raw_md))
+            except ValueError:
+                move_direction = None
+        move_target = str(emission.get("move_target") or "").strip()[:80]
+
     try:
         return ParsedQuestion(
             question=question, intent=intent, subjects=subjects,
             polarity=polarity, followup_of=followup, confidence=confidence,
             nearest=nearest, clarify=clarify, dropped_qualifier=dropped,
             contested_claim=contested_claim,
+            move_direction=move_direction, move_target=move_target,
             prompt_version=prompt_version,
             retries=retries, latency_ms=latency_ms)
     except Exception:  # noqa: BLE001 — validation failure is a malformed emission

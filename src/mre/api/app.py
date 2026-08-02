@@ -1766,7 +1766,12 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
         index = EvidenceIndex().build(out_dir / runs_subdir)
 
     store = SnapshotStore(out_dir / "snapshots")
-    explainer = Explainer(store, index, snapshot_id=snapshot_id)
+    # Session 4B.30: the run directory, EXPLICITLY. The later-move route prices
+    # a target through `local_price`, which reads the incumbent's evidence and
+    # cost model and not just the snapshot. The Explainer derives this from the
+    # store when nobody passes it; this caller knows, so it says.
+    explainer = Explainer(store, index, snapshot_id=snapshot_id,
+                          out_dir=out_dir, runs_subdir=runs_subdir)
     _log = logging.getLogger("mre.api")
     ledger = QuestionLedger(ledger_path) if ledger_path is not None else None
 

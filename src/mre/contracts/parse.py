@@ -235,6 +235,41 @@ class Polarity(str, Enum):
     NEGATIVE = "negative"
 
 
+class MoveDirection(str, Enum):
+    """WHICH WAY a move question wants an operation to go (Session 4B.30 Item 1).
+
+    THE MEASURED FAILURE — A DIRECTIONAL QUESTION ANSWERED BACKWARDS. Measured
+    twice on the demo board (4B.22 live, 4B.27 turn 1, re-measured verbatim at
+    the head of 4B.30): "can i move ORD-000057 later, maintenance wants the
+    machine for the day" was answered with three ways to move it EARLIER. The
+    census that opens 4B.30 found the failure is not a near miss — six of seven
+    direction-bearing phrasings, "later" and "earlier" alike, returned a
+    BYTE-IDENTICAL paragraph about starting earlier. The deafness rider fired on
+    the repetition, which is the product noticing what the route could not.
+
+    `what-would-change` was built (4B.16) as the inverse of `why-here` over the
+    SAME computed bounds, and those bounds are all earliest-start floors — so
+    the route had no later direction to reach for. Adding one is a MEANING
+    widening, not a new intent: the question is still "what would have to be
+    different about this one operation's placement".
+
+    EARLIER  — "how do I get this earlier", "what would it take to move this up".
+    LATER    — "can I move this later", "push it out a week", "delay it to
+               Friday", "maintenance wants the machine".
+    UNSTATED — the question supposes a condition being different without naming
+               a direction ("what if it were splittable", "what would have to
+               change"). Treated as EARLIER, which is what the route has always
+               answered and what those phrasings have always meant here.
+
+    THE PARSE REPORTS THE DIRECTION; IT NEVER DECIDES THE ROUTE (R-AI5(8)), and
+    it never resolves the target — see :attr:`ParsedQuestion.move_target`.
+    """
+
+    EARLIER = "earlier"
+    LATER = "later"
+    UNSTATED = "unstated"
+
+
 class ContestedClaim(str, Enum):
     """WHAT a `contested-fact` turn is disputing (Session 4B.14 Item 3).
 
@@ -409,6 +444,20 @@ class ParsedQuestion(BaseModel):
     # non-contest intent, which the assembler treats as LATENESS — the behaviour
     # before this field existed, so no parse becomes unanswerable by upgrading.
     contested_claim: Optional[ContestedClaim] = None
+    # -- Session 4B.30 Item 1/2: WHICH WAY, and TOWARDS WHAT ------------------
+    # Reported on `what-would-change` and `swap-move`. None from an older parse
+    # or a non-move intent, which every assembler treats as EARLIER — the
+    # behaviour before these fields existed, so no parse becomes unanswerable by
+    # upgrading (the `contested_claim` precedent, 4B.14, deliberately followed).
+    move_direction: Optional[MoveDirection] = None
+    # The planner's OWN WORDS for where they want it moved to — "Friday", "a
+    # week", "after the maintenance", "the day". RAW, never resolved: which
+    # Friday, and whether that instant is inside an open window, are calendar
+    # questions this repo answers with the calendar (`later_move.resolve_target`)
+    # and DISCLOSES in the answer. A model that resolved them would be authoring
+    # a date, and 4B.15 Item 0 is what happens when a date is authored from
+    # whichever row appeared first. Empty when the question named no target.
+    move_target: str = ""
     # Instrumentation (the sweep's parse-specific counts; never read by a route).
     prompt_version: str = ""
     retries: int = 0
@@ -523,18 +572,40 @@ INTENT_MEANINGS: dict[Intent, str] = {
     # wrote `why-here` as the pair of `start-reason`: the boundary is where a
     # new vocabulary member costs something, and here the boundary is
     # diagnosis versus remedy about the same operation.
+    #
+    # Session 4B.30 Item 1 — THE LATER DIRECTION, and it is a WIDENING, not a
+    # new member. The meaning below said "to start earlier" and the route
+    # obeyed it: "can i move ORD-000057 later, maintenance wants the machine"
+    # came back with three ways to move it up. Both directions are the same
+    # question about the same operation's placement, so both live here; what
+    # changes is that the parse now REPORTS which way, and the raw words for
+    # where.
     Intent.WHAT_WOULD_CHANGE:
-        "what would have to be DIFFERENT for this operation to start earlier — "
-        "\"what would have to change\", \"how do I get this earlier\", \"what "
-        "would it take to move this up\", \"can this move to Monday\", \"what "
-        "if it were splittable\", \"why can't it be earlier\". It asks for the "
-        "CHANGE and how much of it, where `why-here` asks what is blocking it "
-        "today. Prefer this whenever the question supposes a condition being "
-        "different, asks what the planner could DO about one operation's "
-        "placement, or asks what it would take. It is NOT `swap-move` (a board "
-        "move weighed between two orders and priced in the sandbox), NOT "
+        "what would have to be DIFFERENT about ONE operation's placement — "
+        "EITHER DIRECTION. Earlier: \"what would have to change\", \"how do I "
+        "get this earlier\", \"what would it take to move this up\", \"why "
+        "can't it be earlier\", \"what if it were splittable\". LATER: \"can I "
+        "move ORD-57 later\", \"push it out a week\", \"can we delay this to "
+        "Friday\", \"push it back until after the maintenance\", \"maintenance "
+        "wants the machine\", \"what would pushing this out cost\", \"can it "
+        "wait until Monday\". A named day with no direction (\"can this move "
+        "to Monday\") is also this. It asks for the CHANGE and how much of it, "
+        "where `why-here` asks what is blocking it today. Prefer this whenever "
+        "the question supposes a condition being different, asks what the "
+        "planner could DO about one operation's placement, or asks what it "
+        "would take — INCLUDING when the planner wants it moved OUT of the way "
+        "rather than brought forward. It is NOT `swap-move` (a board move "
+        "weighed between two orders, or a move to another MACHINE), NOT "
         "`advice` (about the plan or the plant, not one operation), and NOT "
-        "`coaching` (about what the product can model at all)",
+        "`coaching` (about what the product can model at all). "
+        "ALWAYS set `move_direction` on this intent — `later` when the planner "
+        "wants it pushed out, delayed, moved back or off a machine someone "
+        "else needs; `earlier` when they want it brought forward; `unstated` "
+        "when the question names no direction. And set `move_target` to the "
+        "planner's OWN WORDS for where they want it — \"Friday\", \"a week\", "
+        "\"after the maintenance\", \"the day\" — verbatim and unresolved; "
+        "leave it empty when they named no target. Never work out which Friday "
+        "or what time: the calendar answers that",
     Intent.CONTESTED_FACT:
         "the planner DISPUTES something the assistant just said — a status "
         "(\"isn't ORD-05 on time?\", \"I thought that one was fine\") or, just "
@@ -543,9 +614,17 @@ INTENT_MEANINGS: dict[Intent, str] = {
         "the machine was free\"). Set `contested_claim` to say WHICH kind: "
         "`lateness` for a status, `timing` for a challenge to when or why "
         "something was placed, `other` when it is neither",
+    # Session 4B.30 Item 1 — the census found this route direction-blind too:
+    # its single-order take reads "the move worth pricing is the one that gives
+    # it an EARLIER opening" whatever was asked. The boundary is stated here so
+    # a LATER move of one operation lands on `what-would-change`, which prices
+    # it; where the parse still sends one here, the take reads `move_direction`.
     Intent.SWAP_MOVE:
-        "should/could two orders swap slots, or one order move earlier / to "
-        "another machine (the board gesture)",
+        "should/could two orders swap slots, or one order move to another "
+        "MACHINE (the board gesture). A question about moving ONE operation "
+        "EARLIER OR LATER IN TIME on the machine it is already on is "
+        "`what-would-change`, not this. Set `move_direction` when the question "
+        "carries one",
     # Session 4B.27 Item 4 — THE BOUNDARY IS THE NUMBER OF ORDERS NAMED.
     # "why can't ord-11 start right after ord-19" went to `why-here`, a
     # single-subject route, which answered about ORD-000011 and dropped

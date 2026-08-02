@@ -492,6 +492,15 @@ def route_params(parsed: ParsedQuestion, question_text: str) -> dict:
         params["concept"] = concept
     if parsed.polarity is not None:
         params["polarity"] = parsed.polarity.value
+    # Session 4B.30 Item 1/2: WHICH WAY, and the planner's raw words for WHERE.
+    # Carried, never interpreted here — the parse reports and the assembler
+    # resolves against the calendar. `unstated` and absent are the same thing
+    # to every assembler, which is what keeps the widening free for the
+    # phrasings that have always meant "earlier".
+    if parsed.move_direction is not None:
+        params["move_direction"] = parsed.move_direction.value
+    if parsed.move_target:
+        params["move_target"] = parsed.move_target
     # Session 4B.14 Item 3: the parse's report of WHICH claim a contest disputes.
     # Carried, never interpreted here — the assembler decides what to do with it.
     if parsed.contested_claim is not None:
