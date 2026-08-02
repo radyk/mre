@@ -432,6 +432,28 @@ def _restrict_window(ops, wps, fuls, demands, restrict_op_ids):
     return ops, wps, fuls, demands
 
 
+def plan_of_record_scope(assignments) -> Optional[set]:
+    """THE SCOPE OF THE PLAN OF RECORD (R-DP11, Session 4B.31): the set of
+    operation ids the published plan actually PLACES.
+
+    This is the same set ``_restrict_window`` has taken since 4B.3c — but
+    DERIVED FROM THE PLAN ITSELF rather than handed in by a caller. A guarantee a
+    caller can forget is not a guarantee: ``_restrict_window`` existed for six
+    sessions and three of the four Tier-2 surfaces were wired to it. The fourth
+    was the ACCEPT, which therefore compiled the whole book — every beyond-horizon
+    tray order the rolling engine had deliberately not admitted — against the
+    window's own horizon, and refused every accept on every rolling board ever
+    minted, including a zero-move one.
+
+    Returns None when the plan places nothing (there is no plan of record to
+    scope to, and a restriction to the empty set would be a different claim).
+    On a plan that places every operation — every monolithic schedule this
+    product has minted — the returned set covers the whole book and the
+    restriction is the identity."""
+    placed = {a.get("operation_ref") for a in assignments if a.get("operation_ref")}
+    return placed or None
+
+
 # ---------------------------------------------------------------------------
 # CU1 (Session 4B.5) — THE BASELINE: what the window costs with NO gesture at all.
 # ---------------------------------------------------------------------------

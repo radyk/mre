@@ -171,6 +171,10 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Session 4B.31 — accept integrity: the incumbent must re-validate**, 2026-08-02
+(docs/07 v2.78, §5a.125-128; docs/04 2026-08-02 **R-DP11 ruled and BUILT**,
+**R-DP10 ruled and NOT built**; contract unchanged **1.15**; narrative in
+`docs/closeouts/4b31-accept-integrity.md`). Before it:
 **Session 4B.28 — the board serves a person using it**, 2026-08-02 (docs/07 v2.77,
 §5a.119-124; docs/04 2026-08-02 R-F1's mechanics verbatim; contract **1.15**;
 parse prompt **v16**; narrative in `docs/closeouts/4B.28.md`). Before it:
@@ -1070,6 +1074,39 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
 - `docs/04-design-history.md` is authoritative for *what happened and why*. It is
   append-only. **Read the Amendment log tail before touching any area it covers.**
 - Session close-outs are written to docs/04 and docs/07 — never narrated here.
+
+**R-DP11 — THE ACCEPT MODEL IS THE PLAN OF RECORD'S OWN SCOPE (4B.31, §5a.126,
+docs/04 2026-08-02 verbatim). NOTHING HAD EVER COMMITTED ON A ROLLING BOARD.**
+A card reading *"PROVEN WITHIN BUDGET"* against an accept answering `INFEASIBLE`
+turned out not to be about the move at all: a **ZERO-MOVE accept** — pinning a bar
+at its own placement — refused on every rolling board (409 in 2.4-2.5s) while the
+same gesture on a MONOLITHIC board returned 201. **THE MECHANISM IS SCOPE.**
+`apply_planner_edit` built over **the WHOLE BOOK** against the **WINDOW's**
+horizon: the Khalil snapshot holds **695 operations and the plan places 386**, so
+the **309 beyond-horizon tray ops the rolling engine declined to admit** re-entered
+as free work that had to fit 31 days around 386 held placements. Two-cell control:
+whole book **INFEASIBLE 0.6s**, plan-of-record scope **OPTIMAL 0.1s**, **zero pin
+refusals in both**. A deletion filter reduced the cause to **ONE tray order,
+ORD-000062**. **THE FIX WAS SIX SESSIONS OLD AND WIRED TO THREE SURFACES OUT OF
+FOUR** — `_restrict_window` (4B.3c CU3) reaches beat one, beat two and the audit;
+the ACCEPT had no such parameter. Five clauses; the load-bearing ones: the scope is
+**DERIVED INSIDE THE ACCEPT, never passed in** (`sandbox.plan_of_record_scope`,
+**None never the empty set**), the published plan is a feasible assignment **BY
+CONSTRUCTION**, and on a plan that places every operation the scope is the
+**IDENTITY** (90/90 on three monolithic boards — goldens untouched). Live: the
+Khalil board commits, ledger **$1,667,467.80 → $1,667,467.80, delta $0.00**, and
+card-vs-accept agree on **18 gestures, 0 disagreements**. **THE GUARD NEEDED TWO
+MEMBERS (§5a.127):** at 40 and 80 orders the whole book FITS and the zero-move
+accept is **GREEN AT HEAD, defect and all** — only `pilot_scale` 200/w7 reproduces
+— so the invariant is asserted as a **PROPERTY** (the ops handed to the live
+`SolverBuilder.build` == the plan's placed set), **RED at HEAD even on the sparse
+fixture**; three negative controls proven red against physically reverted code.
+**R-DP10 (verdict authority) IS RULED AND ITS TWO-BEAT CARD IS NOT BUILT** —
+criterion 5 unmet, by judgement not blocker; the residue is that the accept
+re-solves WITH an objective and can return UNKNOWN where the card's
+objective-cleared validation proved OPTIMAL. **Daryn decides.** CU4 shipped: a
+refused accept names its blocker in the **4B.24 refusal vocabulary, one
+definition** — *"that time is already taken on this machine (ORD-000138) [B1]"*.
 
 **R-F1's MECHANICS, BUILT AT LAST (4B.28, §5a.119, docs/04 2026-08-02
 verbatim).** R-F1 was ruled 2026-07-26 and NOTHING HAD EVER BUILT IT — for six

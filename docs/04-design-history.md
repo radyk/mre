@@ -14848,3 +14848,153 @@ about the board.
 Standing pins DO NOT SURVIVE A SLICE ROLL. Seam 3 is unbuilt, so **the thaw
 gesture now mints exactly the objects seam 3 must learn to preserve.** Within
 one board's life the ceremony is complete; across a re-solve it is not.
+
+---
+
+## Amendment — 2026-08-02: Session 4B.31 — accept integrity: the incumbent must re-validate
+
+**THE DEFECT WAS NOT THE MOVE. NOTHING HAD EVER COMMITTED ON A ROLLING BOARD.**
+The reported specimen was a card that said *"Same cost — PROVEN WITHIN BUDGET"*
+and an accept that answered `RuntimeError: planner edit infeasible with the pin
+held (status=INFEASIBLE)`. The blast-radius probe (CU0) replaced the gesture with
+the most trivial accept there is — **a ZERO-MOVE accept, pinning a bar at its own
+placement** — and it refused too, in 2.5 s, on `rolling-b4dd3010751f` (contract
+1.15) and on `rolling-d10efd24-6f4` (contract 1.14). The same zero-move accept on
+a MONOLITHIC board returned 201 in 2.4 s. **The accept model was rejecting a world
+already on screen**, and had been for every rolling board this product has minted.
+
+**THE MECHANISM, BY A TWO-CELL CONTROLLED EXPERIMENT (Khalil board,
+`rolling-db5395dc-2ae`).** The snapshot holds **695 operations; the plan of record
+places 386**. The other **309 are the beyond-horizon tray** — the 122 orders the
+rolling engine deliberately did not admit. `apply_planner_edit` built its model
+over `wps + ops + edges` — **the whole book** — against the WINDOW's own M5
+horizon (2026-01-05 -> 2026-02-05, 31 days), and every operation the SolverBuilder
+emits is MANDATORY (`new_int_var(wp_earliest_min, horizon_minutes - duration)`,
+no presence literal). So 309 unadmitted operations had to be placed inside the
+window's 31 days around 386 held placements.
+
+    CELL A  whole book, incumbent fully pinned, no edit           -> INFEASIBLE 0.6 s
+    CELL B  restricted to the ops the plan PLACES, same 386 pins  -> OPTIMAL    0.1 s
+
+Both cells held all 386 pins with **zero refusals**, so the incumbent placements
+were never inconsistent with each other. **No start variable had an empty domain**
+(695 of 695 ordinary), so this was a real conflict and not a construction
+artifact.
+
+**THE CORE, VERBATIM.** A deterministic deletion filter over the 122 unadmitted
+demands (binary search to the smallest infeasible prefix, 23, then delete-one-out;
+32 solves, 44 s, workers=1, seed 42) reduced it to **ONE**:
+
+    CORE: 1 unadmitted demand
+      ORD-000062   due=2026-01-25   release=None   ops=3
+
+    These, together with the 386 held placements of the plan of record and the
+    window horizon 2026-01-05..2026-02-05, cannot all hold.
+
+**One tray order the planner cannot see, and never asked to schedule, was enough
+to refuse every accept on the board.** The mechanism is none of the three the
+brief bracketed (freeze-seam transition pairs / committed-bar compilation /
+working-time-vs-span): it is **SCOPE**.
+
+**THE FIX IS SIX SESSIONS OLD AND WAS WIRED TO THREE SURFACES OUT OF FOUR.**
+`sandbox._restrict_window` has existed since **4B.3c CU3** and its docstring
+states this exact requirement — *"the beyond-horizon (future) work never
+re-enters as free ops"*. `_rolling_gesture_context` computes the scope in
+`api/app.py` and hands it to the feasibility ghost (beat one), to `price_drop`
+(beat two) and to `audit_incumbent`. **The fourth Tier-2 surface is the ACCEPT,
+and it was never given one** — `apply_planner_edit` had no such parameter at all.
+This is 4B.21 §5a.78's species from a third side: not a guard pointed at one file,
+but a **guarantee left in a caller's hands, which one caller then forgot.**
+
+### The ruling (R-DP11), transcribed
+
+**R-DP11 — THE ACCEPT MODEL IS THE PLAN OF RECORD'S OWN SCOPE.**
+
+1. **The model an accept compiles is built over exactly the operations the plan
+   of record PLACES** — no more, no fewer. An operation the published plan does
+   not place is not a variable of the model that edits it.
+2. **The published plan is therefore a feasible assignment of the accept model BY
+   CONSTRUCTION.** An accept may fail because of the EDIT. It may never fail
+   because of the plan it edits.
+3. **The scope is DERIVED inside the accept, from the base snapshot's own
+   assignments — never passed in by a caller.** A guarantee a caller can forget
+   is not a guarantee, and this one was forgotten for six sessions at exactly one
+   of four surfaces. `sandbox.plan_of_record_scope` is the one definition; it
+   returns **None, never the empty set**, for a plan that places nothing — "this
+   plan places nothing" and "restrict the model to nothing" are different claims
+   (4B.18's `unreadable` discipline).
+4. **On a plan that places every operation the scope is the IDENTITY** — every
+   monolithic schedule this product has minted places every operation (measured:
+   90 of 90 on three registered monolithic boards), so the monolithic compile is
+   unchanged and its goldens still hold.
+5. **The invariant is guarded by PROPERTY, not by specimen.** The behavioural
+   test does not bite at test density: measured, at 40 orders / w14 and 80 / w10
+   the whole book DOES fit the horizon and a zero-move accept is green at HEAD,
+   defect and all; `pilot_scale` 200 / w7 is the first configuration that
+   reproduces. **A guard written only as behaviour would have been green on every
+   fixture this repo owns** — which is precisely what happened, because every
+   `test_planner_edit` fixture is `clean_small`, monolithic.
+
+**LIVE, ON THE KHALIL BOARD.** The zero-move accept returns **HTTP 201 in 4.1 s**,
+ledger **$1,667,467.80 -> $1,667,467.80, delta $0.00**. A real gesture (ORD-000029
+op10, +24 h on its own machine) runs card -> accept end to end: card
+`cp-sat-pin-all OPTIMAL` in **0.77 s**, accept **201 in 1.51 s**, child **386
+bars**, child ledger **1,667,467.80**. `rolling-d10efd24-6f4` commits too.
+
+**AND THE TWO AUTHORITIES NOW AGREE.** 18 gestures on the Khalil board (6 bars x
+{+4 h, -4 h, +24 h}), each priced by `local_price` and then put through the real
+accept: **0 disagreements**. The card's authority was never a cheap check — it is
+`validate_held_world`, a full model with every placement pinned and the objective
+cleared (`cp-sat-pin-all`). **It was the right method on the wrong model**, which
+is the same one defect, and the specimen's "PROVEN vs INFEASIBLE" contradiction
+was that and nothing else.
+
+### The ruling (R-DP10), transcribed — RULED, IMPLEMENTATION OWED
+
+**R-DP10 — VERDICT AUTHORITY.** A card may not display proof-class language
+("PROVEN", "PROVEN WITHIN BUDGET", any verdict implying full-model validation)
+unless an accept-grade solve — the exact model, pin set, standing pins and
+transition matrix that accept will compile — has returned FEASIBLE/OPTIMAL for
+that placement. The local pricer (4B.24) keeps its role: instant, cheap, may
+refuse (proven-illegal), may ESTIMATE with estimate-class language, may never
+vouch beyond what it compiled. Per R-DP6 the Tier-2 re-solve is the sole
+full-model authority; this ruling closes the gap where Tier-1 evidence could wear
+Tier-2 words.
+
+**WHAT R-DP11 ALREADY DISCHARGES, AND WHAT IT DOES NOT.** After R-DP11 the card
+and the accept compile the SAME model over the SAME scope, and the card's verdict
+comes from a full-model solve — so the premise this ruling was drafted against
+(Tier-1 evidence wearing Tier-2 words) does not describe the shipped path, and the
+measured disagreement rate is 0 of 18. **The residue is narrow and real:** the
+card's validation CLEARS THE OBJECTIVE and asks feasibility only, while the accept
+RE-SOLVES with the objective under a deterministic budget and can therefore return
+**UNKNOWN where the card proved OPTIMAL** — a budget verdict, not a plant fact.
+Measured adjacent to this session: a `demo_board` 120-order rolling world returned
+UNKNOWN after 60.9 s on exactly that path. **The two-beat card (estimate language
+-> accept-grade dry run unlocks Accept) is NOT BUILT in this session** and is
+named as owed; the honest interim is that a refused accept now says what cannot
+hold, in the card's own words.
+
+### CU4 — a refusal names its blockers, in one vocabulary
+
+`planner_edit._named_refusal` asks `local_price.structural_refusal` — the **4B.24
+refusal vocabulary, one definition** — for the sentence the CARD would have shown
+for this same pin, and the accept refuses in those words. Live on the Khalil
+board:
+
+    that time is already taken on this machine (ORD-000138) [B1]
+    the machine is not open at that time [C1/C2]
+    the next step in this order is already scheduled before this one would
+      finish (ORD-000009) [A1/A2]
+
+Best-effort by construction: it runs only on a path that has ALREADY refused, so a
+failure inside it falls back to the solver-status sentence rather than replacing a
+loud refusal with a louder crash. **A core is A sufficient set and never THE
+unique cause**, so the copy says what cannot hold and never "the reason is X".
+
+**WHAT THE SUMMARY WOULD UNDERSELL.** The brief was written against a card/accept
+contradiction and asked for an epistemics ruling. The contradiction was real, the
+epistemics were sound, and the cause was a missing argument at one call site that
+three sibling call sites already passed. **The expensive part was not the fix (one
+derivation, applied through a helper that already existed) — it was proving the
+guard could not have been written as behaviour alone.**

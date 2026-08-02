@@ -110,7 +110,9 @@ def apply_planner_edit(
     )
     from mre.modules.calendar_utils import flatten_all_calendars
     from mre.modules.extractor import Extractor
-    from mre.modules.sandbox import _moved_set, _annotate_move_reasons
+    from mre.modules.sandbox import (
+        _annotate_move_reasons, _moved_set, _restrict_window, plan_of_record_scope,
+    )
     from mre.modules.snapshot_store import SnapshotStore
     from mre.modules.solve_runner import SolveRunner
     from mre.modules.solver_builder import SolverBuilder, apply_solution_hints
@@ -147,6 +149,25 @@ def apply_planner_edit(
     costmodels = list(base_reader.iter_entities("costmodel"))
     incumbent_assignments = list(base_reader.iter_entities("assignment"))
     cost_model = costmodels[0] if costmodels else {}
+
+    # R-DP11 (Session 4B.31) — THE ACCEPT MODEL IS THE PLAN OF RECORD'S OWN SCOPE.
+    # Build over exactly the operations the published plan PLACES, so the published
+    # plan is a feasible assignment of this model BY CONSTRUCTION and an accept can
+    # only ever fail because of the EDIT, never because of the plan it edits.
+    #
+    # Before this the accept compiled the WHOLE BOOK against the WINDOW's horizon.
+    # On a rolling board that meant every beyond-horizon tray order the rolling
+    # engine had deliberately declined to admit re-entered as FREE work that had to
+    # fit the window's 31 days around 386 held placements — and it does not fit.
+    # Measured on the Khalil board (4B.31 CU1): a ZERO-MOVE accept, pinning a bar at
+    # its own placement, refused INFEASIBLE in 2.5s, and a deletion filter reduced
+    # the cause to ONE unadmitted tray order (ORD-000062, 3 operations). Nothing had
+    # ever committed on any rolling board. The scope is DERIVED here, not passed in,
+    # because the identical restriction has existed since 4B.3c and the caller
+    # forgot it at exactly one of the four Tier-2 surfaces.
+    restrict_op_ids = plan_of_record_scope(incumbent_assignments)
+    ops, wps, fuls, demands = _restrict_window(
+        ops, wps, fuls, demands, restrict_op_ids)
 
     reference_date = _parse_ref_date(base_context.get("reference_date"))
     # The horizon must match the base run's M5 horizon exactly, so the pinned
@@ -261,6 +282,17 @@ def apply_planner_edit(
                 f"planner edit: this placement conflicts with a commitment you "
                 f"already made — it overlaps op {conflict.op_id[:8]} on resource "
                 f"{conflict.resource_id[:8]}; nothing accepted, the base stands")
+        # Session 4B.31 CU4: name the blocker in the words the CARD would have
+        # used, from the ONE refusal vocabulary (4B.24). A planner may not be
+        # handed a solver status as an explanation — and the accept and the card
+        # must not describe the same refusal in two registers, which is how
+        # 4B.31's own specimen read as a contradiction rather than as agreement.
+        named = _named_refusal(base_context, base_snapshot_id, restrict_op_ids,
+                               standing_pins, pin_op_id, pin_resource_id,
+                               pin_start_iso)
+        if named:
+            raise RuntimeError(
+                f"planner edit: {named}; nothing accepted, the base version stands")
         raise RuntimeError(
             f"planner edit infeasible with the pin held (status={solve_result.status}) "
             "— nothing accepted; the base version stands")
@@ -370,6 +402,41 @@ def apply_planner_edit(
         pin={"operation_ref": pin_op_id, "resource_id": pin_resource_id,
              "start": pin_start_dt.isoformat()},
     )
+
+
+def _named_refusal(base_context: dict, base_snapshot_id: str,
+                   restrict_op_ids, standing_pins, pin_op_id: str,
+                   pin_resource_id: str, pin_start_iso: str) -> str:
+    """The refusal sentence the CARD would have shown for this same pin, taken
+    from the one refusal vocabulary (``local_price.structural_refusal``, 4B.24).
+
+    Best-effort by design: it runs only on a path that has ALREADY refused, so a
+    failure here must never replace a loud refusal with a louder crash. When it
+    cannot name anything the caller falls back to the solver-status sentence —
+    which is worse copy, but never a wrong claim about the plant.
+
+    R-DP10's residue lives here too: a core is A sufficient set and never THE
+    unique cause, so the sentence says what cannot hold, never "the reason is"."""
+    try:
+        from mre.modules.local_price import price_local_move
+        base_out = Path(base_context["base_runs_dir"]).parent
+        priced = price_local_move(
+            base_out, base_snapshot_id, pin_op_id, pin_resource_id, pin_start_iso,
+            restrict_op_ids=restrict_op_ids, standing_pins=standing_pins,
+            validate=False)
+    except Exception:  # noqa: BLE001
+        return ""
+    refusal = getattr(priced, "refusal", None)
+    if not refusal:
+        return ""
+    sentence = refusal.get("sentence") or ""
+    if not sentence:
+        return ""
+    occupants = refusal.get("other_work_orders") or []
+    if occupants:
+        sentence += f" ({', '.join(str(o) for o in occupants[:3])})"
+    family = refusal.get("family")
+    return f"{sentence}" + (f" [{family}]" if family else "")
 
 
 def _cost_delta(base_reader, extract_result) -> dict:

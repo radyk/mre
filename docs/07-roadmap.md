@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.76 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.78 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.78:** **Session 4B.31 - accept integrity: the incumbent must re-validate.** 2026-08-02 (**R-DP11 ruled and BUILT**, **R-DP10 ruled and NOT built**, both verbatim in docs/04; no contract change, no parse-prompt change; narrative in `docs/closeouts/4b31-accept-integrity.md`). **NOTHING HAD EVER COMMITTED ON A ROLLING BOARD, AND THE MOVE WAS NEVER THE DEFECT.** The reported specimen was a card reading *"PROVEN WITHIN BUDGET"* against an accept answering `INFEASIBLE`; CU0 replaced the gesture with a **ZERO-MOVE ACCEPT** - pinning a bar at its own placement - and it refused too, on both rolling boards, while the same zero-move on a MONOLITHIC board returned 201. **THE ACCEPT MODEL WAS REJECTING A WORLD ALREADY ON SCREEN.** The mechanism is **SCOPE**, none of the three the brief bracketed: `apply_planner_edit` built over **the whole book** (695 operations) against the **window's** horizon, so the **309 beyond-horizon tray operations the rolling engine had deliberately not admitted** re-entered as free work that had to fit 31 days around 386 held placements. Two-cell control: whole book **INFEASIBLE in 0.6s**, plan-of-record scope **OPTIMAL in 0.1s**, **zero pin refusals in both** - the incumbent was never inconsistent with itself. A deterministic deletion filter reduced the cause to **ONE unadmitted tray order, ORD-000062** (5a.125). **THE FIX WAS SIX SESSIONS OLD AND WIRED TO THREE SURFACES OUT OF FOUR:** `_restrict_window` has said so since 4B.3c CU3, and `_rolling_gesture_context` hands the scope to beat one, beat two and the audit - **the ACCEPT was the fourth and had no such parameter at all.** R-DP11 makes the scope **DERIVED INSIDE THE ACCEPT, never passed in**, because a guarantee a caller can forget is not a guarantee; on a plan that places every operation it is the **IDENTITY**, so the monolithic path and its goldens are untouched (5a.126). **THE GUARD NEEDED TWO MEMBERS AND THIS IS THE MEASUREMENT THAT PROVES IT:** at 40 orders and at 80 the whole book FITS the horizon and a zero-move accept is **GREEN AT HEAD, defect and all** - only `pilot_scale` 200/w7 reproduces - so **a behavioural guard would have been green on every fixture this repo owns**, which is exactly what happened (every `test_planner_edit` fixture is `clean_small`, monolithic). The PROPERTY test asserts the scope equality through the live build at ANY density and is **RED at HEAD on the sparse fixture**; **three negative controls proven RED against physically reverted code** (5a.127). **LIVE: THE KHALIL BOARD COMMITS** - zero-move 201 in 4.1s at ledger $1,667,467.80 -> $1,667,467.80 delta $0.00, and a real +24h gesture runs card (`cp-sat-pin-all` OPTIMAL, 0.77s) -> accept (201, 1.51s) -> 386-bar child at the same ledger. **AND THE TWO AUTHORITIES AGREE: 18 gestures, 0 disagreements** - the card's authority was never a cheap check (`validate_held_world` is a full pinned model), it was **the right method on the wrong model**. **R-DP10 IS RULED AND ITS TWO-BEAT CARD IS NOT BUILT** - the premise it was drafted against does not survive R-DP11, and the residue that DOES survive is narrow (the accept re-solves with an objective and can return UNKNOWN where the card proved OPTIMAL); **criterion 5 is not met and Daryn decides.** CU4 shipped instead: a refused accept names its blocker in the **4B.24 refusal vocabulary, one definition** - *"that time is already taken on this machine (ORD-000138) [B1]"*. 5a.125-128.
 
 **v2.77:** **Session 4B.28 - the board serves a person using it.** 2026-08-02 (contract 1.14 -> **1.15**; parse prompt v15 -> **v16**; R-F1's mechanics transcribed and built, verbatim in docs/04; narrative in `docs/closeouts/4B.28.md`). **R-F1 WAS RULED 2026-07-26 AND NOTHING HAD EVER BUILT IT** - for six sessions the frozen boundary rendered as a labelled line nobody could touch. It is a real handle now, and **THE CEREMONY IS COMPLETE END TO END ON THE NEW DEMO BOARD**: thaw 8 placements, ask *"why is ORD-000001 pinned?"* and get the boundary move that pinned it (naming the instant and the planner), re-freeze, absorb all 8, and **the placements are byte-identical to the board we started on** (5a.119). **THAT IS WHY THE MODULE CONTAINS NO SOLVER** - a thaw changes AUTHORITY, never POSITION - and it is why the child shares its parent's RUN AND SNAPSHOT, which is what keeps the ask path working unchanged. **THE CONFIRMATION BEAT'S COUNT IS THE SERVER'S COUNT** and the apply carries the preview's own digest, so a board that changed under the dialog is REFUSED (4B.25's `expect_delta_abs` at a second seam). **THE KHALIL BOARD IS `rolling-db5395dc-2ae`** (5a.120): the same world as `rolling-c9973708-865` under its ACCEPTED calibration - **$1,667,467.80, K=3 declared, seeds 42-44 spread 28.06%, seed 44 wins**, exactly what the profile predicted. **SCREEN ROOM (5a.121):** three collapsible docks whose **BADGES SURVIVE THE COLLAPSE** (a collapsed tray reading 122 is not a hidden tray), and downtime compression built on vis's own `hiddenDates` **BECAUSE THE DROP MAPPING DECIDED THE MECHANISM** - every pixel<->instant conversion already goes through vis, so R-DP9's arithmetic stays exact for free; **a fold has ZERO width, so every seam is MARKED**, or two bars either side of a folded night would read as adjacent. **THE GESTURAL DEBT IS PAID (5a.122):** the chunked drag moves as one and **DECLINES VISIBLY in the ask path's own words** - and the ask path's copy, which promised the board could do what the board could not, was CORRECTED IN THE SAME COMMIT (**one limit, said the same way on both surfaces**; 5a.118(h) discharged); R-DP9's tolerance is a **FIXED 5 WORKING MINUTES** instead of ~240 at the default zoom. **THE JOB PANEL'S BUTTONS CARRY `op_seq`**, discharging 5a.118(c) for board users. Guards: 30 Python + 22 Playwright x 2 themes, **six negative controls proven RED against physically reverted code** - and **a seventh that did NOT fire until the test was rewritten to drive a real pointer** (5a.123). 5a.119-124.
 
@@ -5081,6 +5083,140 @@ subject lands on CLARIFY `no-subject`. The board SELECTION resolves it.
 board under its plant's accepted profile should not require knowing that naming K
 refuses the profile. Documented in the file, still a trap.
 
+
+
+**§5a.125 — NOTHING HAD EVER COMMITTED ON A ROLLING BOARD, AND THE MOVE WAS
+NEVER THE DEFECT (4B.31 CU0/CU1).** The reported specimen was a card reading
+*"Same cost — PROVEN WITHIN BUDGET"* against an accept answering `RuntimeError:
+planner edit infeasible with the pin held (status=INFEASIBLE)`. CU0 replaced the
+gesture with **the most trivial accept there is — a ZERO-MOVE accept, pinning a
+non-committed bar at exactly its own placement** — and it refused too: 409 /
+`INFEASIBLE` in 2.5s on `rolling-b4dd3010751f` (1.15) and 2.4s on
+`rolling-d10efd24-6f4` (1.14), while the same zero-move on a MONOLITHIC board
+returned **201 in 2.4s**. **THE ACCEPT MODEL WAS REJECTING A WORLD ALREADY ON
+SCREEN.** The hypothesis that every prior accept proof ran on monolithic
+fixtures is CONFIRMED — every `test_planner_edit` fixture is `clean_small`, and
+the registry's only `snap-edit-*` children are contract-1.8 monolithic boards.
+**THE MECHANISM IS SCOPE, none of the three the brief bracketed.**
+`apply_planner_edit` built `SolverBuilder().build(wps + ops + edges, …)` over
+**the WHOLE BOOK** against the **WINDOW's** M5 horizon: the Khalil snapshot holds
+**695 operations and the plan of record places 386**, so the **309 beyond-horizon
+tray operations the rolling engine had deliberately declined to admit** re-entered
+as free work that had to fit 2026-01-05..2026-02-05 around 386 placements held
+hard — and every operation the builder emits is MANDATORY
+(`new_int_var(wp_earliest_min, horizon_minutes − duration)`, no presence literal).
+**TWO-CELL CONTROL: whole book INFEASIBLE in 0.6s; restricted to the ops the plan
+PLACES, same 386 pins, OPTIMAL in 0.1s — and ZERO PIN REFUSALS IN BOTH**, so the
+incumbent was never inconsistent with itself. A domain census found **no empty
+start-variable domains** (695 of 695 ordinary), so this was a real conflict, not a
+construction artifact. **THE CORE IS ONE ORDER:** a deterministic deletion filter
+over the 122 unadmitted demands (binary search to the smallest infeasible prefix,
+23, then delete-one-out; 32 solves, 44s, workers=1, seed 42) reduced it to
+**ORD-000062, due 2026-01-25, 3 operations** — *"these, together with the 386 held
+placements of the plan of record and the window horizon, cannot all hold."*
+**One tray order the planner cannot see, and never asked to schedule, was enough
+to refuse every accept on the board.** Assumption-literal instrumentation was NOT
+needed and NOT built: the two-cell control plus the filter answered it with fewer
+moving parts, and `AddNoOverlap` cannot carry `OnlyEnforceIf` anyway.
+
+**§5a.126 — R-DP11: THE ACCEPT MODEL IS THE PLAN OF RECORD'S OWN SCOPE, AND THE
+FIX WAS SIX SESSIONS OLD (4B.31 CU2, docs/04 2026-08-02 verbatim).**
+`sandbox._restrict_window` has existed since **4B.3c CU3** and its docstring
+states this exact requirement — *"the beyond-horizon (future) work never re-enters
+as free ops"*; `api/app.py::_rolling_gesture_context` computes the scope and hands
+it to the feasibility ghost, to `price_drop` and to `audit_incumbent`. **THE
+FOURTH TIER-2 SURFACE IS THE ACCEPT AND IT WAS NEVER GIVEN ONE** — the parameter
+did not exist on `apply_planner_edit` at all. **4B.21 §5a.78's species from a
+third side: not a guard pointed at one file, but a guarantee left in a caller's
+hands, which one caller then forgot.** Five clauses. **(1)** the model an accept
+compiles is built over exactly the operations the plan of record PLACES; **(2)**
+the published plan is therefore a feasible assignment of that model BY
+CONSTRUCTION — an accept may fail because of the EDIT, **never because of the plan
+it edits**; **(3) the scope is DERIVED INSIDE THE ACCEPT, never passed in**, and
+`plan_of_record_scope` returns **None, never the empty set**, for a plan that
+places nothing (4B.18's `unreadable` discipline at a new seam); **(4)** on a plan
+that places every operation the scope is the **IDENTITY** — measured 90/90 on
+three registered monolithic boards — so the monolithic compile and its goldens are
+untouched; **(5)** the invariant is guarded by PROPERTY, not by specimen.
+**LIVE: THE KHALIL BOARD COMMITS** — zero-move **201 in 4.1s**, ledger
+**$1,667,467.80 → $1,667,467.80, delta $0.00**; a real +24h gesture runs card
+(`cp-sat-pin-all` **OPTIMAL, 0.77s**) → accept (**201, 1.51s**) → a **386-bar**
+child at the same ledger. **AND THE TWO AUTHORITIES AGREE — 18 gestures, 0
+disagreements**, refusals matching family for family (B1 / C1-C2 / A1-A2). **The
+card's authority was never a cheap check** (`validate_held_world` is a full model
+with every placement pinned and the objective cleared); **it was the right method
+on the wrong model**, which is the same one defect.
+
+**§5a.127 — A BEHAVIOURAL GUARD WOULD HAVE BEEN GREEN ON EVERY FIXTURE THIS REPO
+OWNS (4B.31, the guard).** Measured at HEAD, defect and all: `pilot_scale` 40 /
+w14 (88 ops, 56 placed) → zero-move accept **OPTIMAL in 1.2s, GREEN**;
+`pilot_scale` 80 / w10 (199 / 50) → **FEASIBLE in 20.4s, GREEN**; only
+`pilot_scale` 200 / w7 (507 / 99) reproduces (**INFEASIBLE in 1.6s**).
+`demo_board` 120 / w7 also fails but as **UNKNOWN after 60.9s** — a budget verdict,
+not a proof — and was rejected as a fixture for that reason. **THE WHOLE BOOK FITS
+THE HORIZON AT TEST DENSITY**, so the invariant had to be written as a PROPERTY:
+`test_accept_compiles_only_the_plan_of_record` watches the real
+`SolverBuilder.build` the live accept performs and asserts the operation set
+equals the plan's placed set, **and it is RED at HEAD on the SPARSE fixture where
+the behavioural test is green.** Nine tests: the property (×2 densities), the
+behaviour (`test_incumbent_revalidates` — accepts and moves the ledger $0.00), two
+premise tests (the dense fixture proven to reproduce INFEASIBLE-whole-book AND
+FEASIBLE-scoped), clause (4)'s identity, clause (3)'s None-vs-empty, and a
+corrupted-plan control. **THREE NEGATIVE CONTROLS PROVEN RED AGAINST PHYSICALLY
+REVERTED CODE** (both property parametrisations + the behaviour), 6 passed
+alongside; fix restored → 9 passed.
+
+**§5a.128 — 4B.31's DEBTS (REPORTED, deliberately NOT fixed).**
+**(a) R-DP10 IS RULED AND ITS TWO-BEAT CARD IS NOT BUILT — acceptance criterion 5
+is NOT MET.** The ruling was drafted against "Tier-1 evidence wearing Tier-2
+words"; after R-DP11 that is not what the shipped path does (same model, same
+scope, full-model verdict, **0 disagreements in 18**), so a dry-run beat would add
+a second essentially identical solve per gesture. **THE RESIDUE IS REAL AND
+NARROW:** the card clears the objective and asks feasibility only, while the
+accept **re-solves with the objective** under a deterministic budget and can
+return **UNKNOWN where the card proved OPTIMAL** — a budget verdict wearing a
+plant verdict's clothes (measured: `demo_board` 120 / w7, UNKNOWN after 60.9s).
+The dry run is now cheap (accept is 0.8–2.2s), so it is unbuilt by JUDGEMENT, not
+by blocker. **Daryn decides.** With it go the R-T2 disclosure line and the
+"verifying…" disabled-Accept state.
+**(b) THE ACCEPT'S `delta_abs` IS NOT COMPARABLE ON A ROLLING BOARD.** The
+zero-move accept reports `delta_abs −7,014,821 / −5.88%` beside a **ledger delta
+of exactly $0.00**: it is the SCALED objective minus `_incumbent_objective`, which
+on a rolling run is the WINDOW solve's objective — a different expression from the
+restricted accept model's. Harmless to a planner (the exit-audit rule already says
+the card shows `cost_delta`), but it selects the Decision's `driver`, so a rolling
+accept records a driver chosen by an incomparable number. **Never observable
+before this session, because no rolling accept had ever succeeded.**
+**(c) CLEARING THE ACCEPT'S OBJECTIVE WOULD CLOSE (a) AND THE RESIDUE IN (a)
+TOGETHER** — with `hold_all_placements` every variable is pinned and there is
+nothing to optimise — and is NOT done, because `solve_result.objective` feeds
+`delta_abs` and the change wants its own measurement.
+**(d) THE PROPERTY GUARD WATCHES THE FIRST BUILD ONLY** (`seen[0]`); an accept
+that later built a second, wider model would pass.
+**(e) THE DENSITY AT WHICH THIS BITES IS BRACKETED, NOT PINNED** — between 80 and
+200 orders on `pilot_scale`; 150 and below were not bisected.
+**(f) SPECIMEN A's EXACT INSTANT WAS NOT REPRODUCIBLE.** "ORD-000134 op10 →
+CUT-03 @ Jan 27, 02:00" lands on a **closed-calendar instant** the local pricer
+refuses by name (*"the machine is not open at that time"* [C1/C2]), so it cannot
+be the instant behind a card reading PROVEN. The zero-move control covers it and
+is stronger.
+**(g) SECTION 7, ANSWERED AND NOT FIXED.** `blocker_analysis.earliest_fit`
+(line 244) scanning `free = _subtract(open_windows, occupied)` (line 454) — voiced
+via `counterfactual.py:642` and `renderers.py:2376` — is a **pure
+calendar-minus-occupancy scan** with no solver. It is **NOT blind to standing pins
+or the frozen boundary** (both are rungs of its `FAMILY_LADDER`); it IS blind to
+B7/B8, B3/B5, C4 and F3, **and `UNCOMPUTED_FAMILIES` names all four on every
+answer**. **CU2 does NOT discharge it** — the counterfactual never compiles an
+accept model. What improved for free: the accept's refusals now speak the same
+docs/05 family vocabulary, so the surfaces are comparable in one language. The
+`CAPACITY_BLOCKED`-driver-vs-nothing-blocked contradiction is **untouched**
+(§5a.83's shape).
+**(h) WHETHER THE DIAGNOSTIC ASSUMPTION-LITERAL BUILD SHOULD GRADUATE** to a
+planner-facing "why not" on any refused placement is an open question, not a
+decision. It was not needed here.
+**(i) THE AUDIT / PORTFOLIO K DOES NOT APPLY TO THE ACCEPT.** The accept is a
+single deterministic solve at `SANDBOX_SEED`, and R-BK1 says nothing about it.
+Recorded as an open question, not a decision.
 
 ## 6. Open rulings queue
 
