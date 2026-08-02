@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.78 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.79 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.79:** **Session 4B.32 - verdict identity, and the honest driver.** 2026-08-03 (**R-DP12 ruled and BUILT**; **R-DP10 DISCHARGED BY IDENTITY**; R-T2's disclosure line recorded STRUCTURALLY MOOT on this path; all three verbatim in docs/04; no contract change, no parse-prompt change, **no new vocabulary**; narrative in `docs/closeouts/4b32-verdict-identity.md`). This closes 4B.31's named tail - findings (a), (c) and (d) - and it is small on purpose. **THE INCOMPARABLE NUMBER WAS NOT ONLY SELECTING A DRIVER, IT WAS BEING PRINTED AS DOLLARS.** Measured live on the Khalil board, twice, identically: a **ZERO-MOVE** accept whose ledger went **$1,667,467.80 -> $1,667,467.80** recorded `driver: NO_ALTERNATIVE` and a Decision message reading **`(-$7,014,821)`** - so the evidence store the ask layer testifies from held a planner-voiced sentence claiming a $7M saving for a move that changed nothing (5a.129). `delta_abs` is the restricted accept model's SCALED objective minus the **WINDOW SOLVE's** objective: different expressions, different op sets, not comparable. **CU1 - VERDICT IDENTITY:** with `hold_all_placements` every variable is pinned, so the objective **cannot change the plan and can only change the WORD**; the accept now **clears it**, exactly as the card's `validate_held_world` always has. That makes the two surfaces **ONE AUTHORITY rather than two that happen to agree**, which is what **discharges R-DP10** - and the discharge conditions (one compiler, one pin seam, one question) are **stated in docs/04 so the obligation REVIVES if any of them lapses**. It also closes 4B.31 (c): the accept **proves OPTIMAL instead of reporting a budget verdict**. **CU2 - THE HONEST DRIVER:** the driver and every dollar derive from the LEDGER; scaled-objective arithmetic survives only as **labelled solver telemetry**, and where the objective was cleared it is **None, never 0.0** ("not asked" and "no change" are different statements). **`NO_ALTERNATIVE` IS RETIRED FROM THE ACCEPT** - it voices as *"there was no other feasible option"*, a claim about the PLANT that under `hold_all_placements` would be manufactured from a property of OUR METHOD. **THE TAXONOMY HAS NO HONEST CODE AND THE GAP IS RECORDED RATHER THAN PAPERED OVER:** `COST_TRADEOFF` is what lands, at every delta including $0.00, where it **over-reads**; the missing member is `PLANNER_DIRECTIVE` and adding it is a reviewed vocabulary-class change this session did not take (5a.130). **CU4:** the R-DP11 property guard asserted `seen[0]` only, so an accept that built a **second, wider** model would have passed the guard written to forbid it - now every build (5a.131). Guards: **14 tests**, and **five negative controls proven RED against physically reverted code** - three for R-DP12, plus one that reverts R-DP11 itself and one that **injects a second whole-book build after the correct one**, which the old assertion would have passed. **HOUSEKEEPING:** 4B.31's four probe children deleted rows-and-dirs with a dangling-reference sweep; both pinned boards verified untouched. 5a.129-132.
 
 **v2.78:** **Session 4B.31 - accept integrity: the incumbent must re-validate.** 2026-08-02 (**R-DP11 ruled and BUILT**, **R-DP10 ruled and NOT built**, both verbatim in docs/04; no contract change, no parse-prompt change; narrative in `docs/closeouts/4b31-accept-integrity.md`). **NOTHING HAD EVER COMMITTED ON A ROLLING BOARD, AND THE MOVE WAS NEVER THE DEFECT.** The reported specimen was a card reading *"PROVEN WITHIN BUDGET"* against an accept answering `INFEASIBLE`; CU0 replaced the gesture with a **ZERO-MOVE ACCEPT** - pinning a bar at its own placement - and it refused too, on both rolling boards, while the same zero-move on a MONOLITHIC board returned 201. **THE ACCEPT MODEL WAS REJECTING A WORLD ALREADY ON SCREEN.** The mechanism is **SCOPE**, none of the three the brief bracketed: `apply_planner_edit` built over **the whole book** (695 operations) against the **window's** horizon, so the **309 beyond-horizon tray operations the rolling engine had deliberately not admitted** re-entered as free work that had to fit 31 days around 386 held placements. Two-cell control: whole book **INFEASIBLE in 0.6s**, plan-of-record scope **OPTIMAL in 0.1s**, **zero pin refusals in both** - the incumbent was never inconsistent with itself. A deterministic deletion filter reduced the cause to **ONE unadmitted tray order, ORD-000062** (5a.125). **THE FIX WAS SIX SESSIONS OLD AND WIRED TO THREE SURFACES OUT OF FOUR:** `_restrict_window` has said so since 4B.3c CU3, and `_rolling_gesture_context` hands the scope to beat one, beat two and the audit - **the ACCEPT was the fourth and had no such parameter at all.** R-DP11 makes the scope **DERIVED INSIDE THE ACCEPT, never passed in**, because a guarantee a caller can forget is not a guarantee; on a plan that places every operation it is the **IDENTITY**, so the monolithic path and its goldens are untouched (5a.126). **THE GUARD NEEDED TWO MEMBERS AND THIS IS THE MEASUREMENT THAT PROVES IT:** at 40 orders and at 80 the whole book FITS the horizon and a zero-move accept is **GREEN AT HEAD, defect and all** - only `pilot_scale` 200/w7 reproduces - so **a behavioural guard would have been green on every fixture this repo owns**, which is exactly what happened (every `test_planner_edit` fixture is `clean_small`, monolithic). The PROPERTY test asserts the scope equality through the live build at ANY density and is **RED at HEAD on the sparse fixture**; **three negative controls proven RED against physically reverted code** (5a.127). **LIVE: THE KHALIL BOARD COMMITS** - zero-move 201 in 4.1s at ledger $1,667,467.80 -> $1,667,467.80 delta $0.00, and a real +24h gesture runs card (`cp-sat-pin-all` OPTIMAL, 0.77s) -> accept (201, 1.51s) -> 386-bar child at the same ledger. **AND THE TWO AUTHORITIES AGREE: 18 gestures, 0 disagreements** - the card's authority was never a cheap check (`validate_held_world` is a full pinned model), it was **the right method on the wrong model**. **R-DP10 IS RULED AND ITS TWO-BEAT CARD IS NOT BUILT** - the premise it was drafted against does not survive R-DP11, and the residue that DOES survive is narrow (the accept re-solves with an objective and can return UNKNOWN where the card proved OPTIMAL); **criterion 5 is not met and Daryn decides.** CU4 shipped instead: a refused accept names its blocker in the **4B.24 refusal vocabulary, one definition** - *"that time is already taken on this machine (ORD-000138) [B1]"*. 5a.125-128.
 
@@ -5217,6 +5219,103 @@ decision. It was not needed here.
 **(i) THE AUDIT / PORTFOLIO K DOES NOT APPLY TO THE ACCEPT.** The accept is a
 single deterministic solve at `SANDBOX_SEED`, and R-BK1 says nothing about it.
 Recorded as an open question, not a decision.
+
+**§5a.129 — AN INCOMPARABLE NUMBER WAS SELECTING A DRIVER *AND* WEARING A DOLLAR
+SIGN (4B.31 §8(a), MEASURED LIVE AND FIXED).** Driven through `POST /accept` on
+`rolling-db5395dc-2ae`, same bar, same instant, HEAD vs after:
+
+| | HEAD (measured twice, identical) | after R-DP12 |
+|---|---|---|
+| HTTP / verdict | 201 · OPTIMAL | 201 · OPTIMAL |
+| ledger delta | **$0.00** | **$0.00** |
+| `driver` | **NO_ALTERNATIVE** | **COST_TRADEOFF** |
+| Decision message | `(−7,014,821 dollars)` | `(+$0)` |
+| `delta_abs` / `delta_pct` | −7,014,821 / −5.8764 % | **None** / None |
+| `objective_cleared` | *(absent)* | **True** |
+
+The brief framed this as an incomparable number selecting a driver. It was also
+being **printed with a dollar sign** in the Decision's own planner-voiced message
+— the record the ask layer testifies from. `delta_abs` is the restricted accept
+model's scaled objective minus `_incumbent_objective(evidence)`, which on a
+rolling run is the **WINDOW SOLVE's** objective: a different expression over a
+different operation set. **Never observable before 4B.31, because no rolling
+accept had ever succeeded** — and it wrote a new instance on every accept from
+the day the accept started working until this one.
+
+**§5a.130 — THE TAXONOMY HAS NO HONEST DRIVER FOR A PLANNER EDIT, AND THAT IS
+RECORDED RATHER THAN PAPERED OVER (R-DP12 clause 5).** A `planner_edit`'s real
+driver is *a human directed this placement*; the missing member is a
+`PLANNER_DIRECTIVE` code and adding one is a reviewed vocabulary-class change
+this session did not take. Of the thirteen that exist, **`NO_ALTERNATIVE` is
+RETIRED from this site** — it voices as *"there was no other feasible option"*, a
+claim about the PLANT that an accept never establishes, and under
+`hold_all_placements` it would be asserting it from a property of OUR METHOD
+(every placement pinned => nothing else was reachable). What is recorded is
+**`COST_TRADEOFF` at every ledger delta including $0.00**, claiming only that the
+cost consequence was priced and weighed — true of every accept, because the card
+prices one before the button exists. **It over-reads at $0.00**, where the phrase
+*"it was the cheaper option once every cost was weighed"* describes a comparison
+that came back level. The driver is therefore a **CONSTANT** here, deliberately:
+the variation `delta_abs` supplied was not information, it was noise with a sign.
+The number rides `chosen.cost_delta`, so the size of the trade-off stays
+checkable.
+
+**§5a.131 — A GUARD THAT WATCHES THE FIRST BUILD GUARDS THE FIRST BUILD (4B.31
+§8(d), CLOSED).** `test_accept_compiles_only_the_plan_of_record` asserted
+`seen[0]`, so **an accept that compiled a second, WIDER model — the exact defect,
+merely moved one call later — would have passed the guard that exists to forbid
+it.** Now every observed build. Proven by a negative control that physically
+injects a second whole-book build AFTER the correct one: the widened assertion
+names *"build #2 of 2 ... 32 of them are work this board never admitted"*, and the
+old assertion would have been green. **4B.21 §5a.78's species at a fourth site,
+and 4B.28 §5a.123's from the other end** — the only way to find out whether a
+guard bites is to break the thing it guards and look.
+
+**§5a.132 — 4B.32's DEBTS (REPORTED, deliberately NOT fixed).**
+**(a) THE LEDGER-MOVED BRANCH IS UNREACHABLE FROM A DRAG ON THE DEMO BOARD, AND
+IT WAS MEASURED, NOT ASSUMED.** 54 gestures (+24 h on 42 bars including 22 on the
+latest orders, then +48/+96/+168 h on the four that priced): **50 refusals and 4
+prices, every price exactly $0.00.** Under R-T2 clause (2) the only drops that
+survive the refusal gate land in genuinely open time on their own machine, which
+moves neither production nor setup, and a successor's precedence refuses any drag
+long enough to move tardiness. So the dearer and cheaper branches of the driver
+and the message are **asserted by unit test, never observed live** — and the
+close-out says so rather than implying the live gesture covered them.
+**(b) OLD ROLLING-ERA DECISIONS ARE NOT REPAIRED, AND THE ONES THIS THREAD
+CONTROLLED WERE DELETED INSTEAD.** Every `planner_edit` Decision minted on a
+rolling board between 4B.31 and this session carries `NO_ALTERNATIVE` and a
+scaled objective wearing a dollar sign. All of them lived in 4B.31's four probe
+children plus this session's two HEAD-measurement children, and **all six were
+deleted (rows and dirs, with a dangling-reference sweep)**. No repair pass and no
+tombstone mechanism exists for any that might survive elsewhere; whether the
+evidence store should carry one is open.
+**(c) `hold_all_placements=False` KEEPS ITS OBJECTIVE, CORRECTLY, AND IS
+UNEXERCISED.** The condition is *"is anything free to move"*, never *"is this
+board rolling"* — but no shipped caller passes False (`AcceptRequest` defaults
+True since 4B.24), so the branch that keeps the objective, and its `delta_abs`,
+has no live coverage.
+**(d) THE AUDIT ACCEPT (`POST /audit/accept`) WAS NOT TOUCHED.** It is a
+different ceremony with its own `expect_delta_abs` check (4B.25), and its
+`delta_abs` there is a LEDGER figure, not a scaled objective — but nobody
+re-derived that in this session, and R-DP12 clause (1) is stated for the accept
+path only.
+**(e) 4B.31 FINDING (g) IS CORRECTED, AND THE FLAKE IS WORSE THAN RECORDED.**
+4B.31 called `test_defaults_reproduce_baseline::test_schedule_csv_identical`
+load-sensitive and said it "passes on a quiet machine on both trees". Measured
+here on an IDLE machine: **this tree pass/FAIL/pass/FAIL over four runs, and a
+clean detached HEAD worktree pass/FAIL/pass over three.** It fails roughly HALF
+THE TIME at HEAD with nothing else running — so it is neither this session's code
+nor mere load, it is genuinely nondeterministic run to run. The diagnosis is
+unchanged and strengthened: `_run_mre` pins `--solver-workers 1 --solver-seed 42`
+and `PYTHONHASHSEED=0`, and the one thing it does not pin is `--time-limit 30`, a
+**WALL** limit. `test_cost_ledger_identical` passed **six for six**, so the
+LEDGER — the modularity gate's substantive claim — is stable and only the
+placement drifts among tied optima. **NOT fixed (a session changes no test but
+its own); the fix shape is a deterministic budget in that fixture.**
+**(f) THE `COST_TRADEOFF` PHRASE ITSELF IS UNCHANGED.** *"it was the cheaper
+option once every cost was weighed"* is false of a DEARER accept, which HEAD also
+recorded as `COST_TRADEOFF` — so this is pre-existing, not introduced, and it is
+the same sentence §5a.130's missing code would replace.
 
 ## 6. Open rulings queue
 

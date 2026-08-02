@@ -171,6 +171,11 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Session 4B.32 — verdict identity + honest driver**, 2026-08-03 (docs/07 v2.79,
+§5a.129-132; docs/04 2026-08-03 **R-DP12 ruled and BUILT**, **R-DP10 DISCHARGED
+BY IDENTITY**, R-T2's disclosure line STRUCTURALLY MOOT on this path; contract
+unchanged **1.15**; narrative in `docs/closeouts/4b32-verdict-identity.md`).
+Before it:
 **Session 4B.31 — accept integrity: the incumbent must re-validate**, 2026-08-02
 (docs/07 v2.78, §5a.125-128; docs/04 2026-08-02 **R-DP11 ruled and BUILT**,
 **R-DP10 ruled and NOT built**; contract unchanged **1.15**; narrative in
@@ -1074,6 +1079,51 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
 - `docs/04-design-history.md` is authoritative for *what happened and why*. It is
   append-only. **Read the Amendment log tail before touching any area it covers.**
 - Session close-outs are written to docs/04 and docs/07 — never narrated here.
+
+**R-DP12 — THE LEDGER IS THE ONLY COMPARABLE NUMBER (4B.32, §5a.129, docs/04
+2026-08-03). THE INCOMPARABLE NUMBER WAS ALSO WEARING A DOLLAR SIGN.** Live on
+the Khalil board, twice, identically: a ZERO-MOVE accept whose ledger went
+**$1,667,467.80 → $1,667,467.80** recorded `driver: NO_ALTERNATIVE` and a
+Decision message reading **`(−$7,014,821)`** — so the store the ask layer
+testifies from held a sentence claiming a $7M saving for a move that changed
+nothing. `delta_abs` is the restricted accept model's SCALED objective minus the
+**WINDOW SOLVE's**: different expressions, different op sets. **CU1 — VERDICT
+IDENTITY:** under `hold_all_placements` every variable is pinned, so the
+objective **cannot change the plan and can only change the WORD**; the accept
+now **clears it**, exactly as the card's `validate_held_world` always has
+(`cp-sat-pin-all`). That makes the two surfaces **ONE AUTHORITY**, which
+**DISCHARGES R-DP10** — and the three discharge conditions (one compiler, one pin
+seam, one question) are in docs/04 so **the obligation REVIVES if any lapses**;
+it also closes 4B.31 §8(c) (the accept PROVES OPTIMAL, never a budget verdict).
+**R-T2's disclosure line is STRUCTURALLY MOOT here, recorded not dropped.**
+**CU2:** driver and every dollar derive from `cost_delta.total_delta`; the scaled
+objective survives only as **labelled solver telemetry** and is **None, never
+0.0**, where the objective was cleared. **`NO_ALTERNATIVE` IS RETIRED FROM THE
+ACCEPT** — *"there was no other feasible option"* is a claim about the PLANT that
+under a full hold would be manufactured from a property of OUR METHOD. **THE
+TAXONOMY HAS NO HONEST CODE AND THE GAP IS RECORDED, NOT PAPERED OVER**
+(§5a.130): `COST_TRADEOFF` lands at every delta including $0.00, where it
+**over-reads**; the missing member is `PLANNER_DIRECTIVE`, a reviewed
+vocabulary-class change NOT taken. The driver is a CONSTANT deliberately — the
+variation `delta_abs` supplied was noise with a sign. **CU4:** the R-DP11
+property guard asserted `seen[0]`, so a second WIDER build would have passed the
+guard written to forbid it — now every build (§5a.131). **NOT FIXED, named
+(§5a.132):** the ledger-MOVED branch is **unreachable from a drag on this board
+and that was MEASURED** — 54 gestures, **50 refusals and 4 prices, every price
+exactly $0.00** — so the dearer/cheaper branches are asserted by unit test, never
+observed live; `hold_all_placements=False` keeps its objective correctly and has
+NO live coverage; `POST /audit/accept` was not touched (its `delta_abs` is a
+LEDGER figure, believed from 4B.25 and not re-derived here); and the
+`COST_TRADEOFF` phrase is false of a DEARER accept, pre-existing.
+**4B.31 FINDING (g) IS CORRECTED (§5a.132(e)):
+`test_defaults_reproduce_baseline::test_schedule_csv_identical` is NOT merely
+load-sensitive — on an IDLE machine it is pass/FAIL/pass/FAIL on this tree and
+pass/FAIL/pass on a clean detached HEAD worktree, i.e. it fails ~HALF THE TIME
+at HEAD with nothing else running.** `_run_mre` pins workers, seed and
+PYTHONHASHSEED; the ONLY unpinned thing is `--time-limit 30`, a **WALL** limit,
+which the hard rules already call irreproducible. `test_cost_ledger_identical`
+passed **six for six** — the LEDGER is stable and only the placement drifts
+among tied optima. The fix shape is a deterministic budget in that fixture.
 
 **R-DP11 — THE ACCEPT MODEL IS THE PLAN OF RECORD'S OWN SCOPE (4B.31, §5a.126,
 docs/04 2026-08-02 verbatim). NOTHING HAD EVER COMMITTED ON A ROLLING BOARD.**

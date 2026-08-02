@@ -4397,7 +4397,13 @@ class Explainer:
             "op_ref8": op_ref[:8] if op_ref else "?",
             "start": pin.get("start"),
             "cost_delta": chosen.get("cost_delta") or {},
-            "delta_abs": chosen.get("delta_abs"),
+            # R-DP12 clause (3) (Session 4B.32): `chosen.delta_abs` is SOLVER
+            # TELEMETRY — the scaled objective of the restricted accept model
+            # minus the window solve's, two different expressions — and nothing
+            # planner-facing may read it. Both renderers of this bundle already
+            # state `cost_delta.total_delta`, the ledger, so the field was
+            # carried and never voiced; it is dropped so the rule holds by SHAPE
+            # rather than by nobody happening to read it (§5a.72's mechanism).
             "moved_count": chosen.get("moved_count", 0),
             "authority": dec.get("authority"),
             "moves": chosen.get("moves") or [],

@@ -106,7 +106,7 @@ def apply_planner_edit(
     from mre.contracts.entities import EntityRef
     from mre.contracts.records import DecisionAlternative
     from mre.contracts.vocabularies import (
-        DecisionBasis, DecisionType, DriverCode, ModuleCode, RecordTier, RunStatus,
+        DecisionBasis, DecisionType, ModuleCode, RecordTier, RunStatus,
     )
     from mre.modules.calendar_utils import flatten_all_calendars
     from mre.modules.extractor import Extractor
@@ -253,13 +253,44 @@ def apply_planner_edit(
                     f"op {oid} ({exc.reason}); nothing accepted, the base "
                     "version stands") from exc
 
+    # R-DP12 CU1 (Session 4B.32) — VERDICT IDENTITY: the card's model and the
+    # accept's model are asked the SAME QUESTION.
+    #
+    # With ``hold_all_placements`` every operation in scope is pinned to a
+    # (resource, start) — the plan of record's own, plus the planner's drop — so
+    # the model has exactly one assignment left and THERE IS NOTHING TO OPTIMISE.
+    # The objective is then pure decoration: it cannot change the plan, and the
+    # only thing it can change is the WORD the solve returns. Left in place it
+    # turns a proof question into a search question under a budget, so the accept
+    # could answer UNKNOWN ("we ran out of time") where the card — which validates
+    # through ``local_price.validate_held_world`` with the objective cleared,
+    # method ``cp-sat-pin-all`` — had proved OPTIMAL. A budget verdict wearing a
+    # plant verdict's clothes, and the residue 4B.31 §8(c) named.
+    #
+    # Clearing it here makes the two surfaces ONE AUTHORITY rather than two that
+    # happen to agree, which is what discharges R-DP10's two-beat obligation
+    # (docs/04 2026-08-03). Guarded on the `pilot_scale` 200/w7 dense fixture by
+    # `test_a_held_accept_proves_rather_than_searches`, which asserts OPTIMAL and
+    # never UNKNOWN. 4B.31's own UNKNOWN-after-60.9s specimen was `demo_board`
+    # 120/w7 and this session did NOT re-run that world.
+    #
+    # WITHOUT the hold this is a genuine window search and the objective is what
+    # makes it meaningful, so it stays. One rule, both board classes: the
+    # condition is "is anything free to move", never "is this board rolling".
+    objective_cleared = False
+    if hold_all_placements:
+        model.clear_objective()
+        objective_cleared = True
+
     solve_seed = (seed if seed is not None
                   else (0 if deterministic else base_context.get("solver_seed")))
     r_rep = Reporter.begin(
         module=ModuleCode.M6, purpose="planner-edit re-solve",
         config={"time_limit": budget_s, "num_search_workers": workers,
                 "random_seed": solve_seed, "deterministic_time": det_time_s,
-                "held_placements": held_all, "pin_op": pin_op_id},
+                "held_placements": held_all, "pin_op": pin_op_id,
+                # which QUESTION this solve was asked (R-DP12 CU1)
+                "objective_cleared": objective_cleared},
         trigger="planner_edit", snapshot_id=child_snap_id, sink_dir=runs_dir,
     )
     t0 = time.monotonic()
@@ -318,8 +349,19 @@ def apply_planner_edit(
             f"{pin_resource_id} @ {pin_start_min}min; nothing accepted, the base "
             "version stands")
 
+    # SOLVER TELEMETRY, and nothing else (R-DP12 clause 3, Session 4B.32). This
+    # is the SCALED objective minus the incumbent's — and on a rolling board the
+    # incumbent's objective is the WINDOW SOLVE's, a different expression over a
+    # different op set from the restricted accept model's. The two are not
+    # comparable, which is why the Khalil board's ZERO-MOVE accept reported
+    # `delta_abs −7,014,821 / −5.88%` beside a ledger delta of exactly $0.00
+    # (4B.31 §8(a)). It is computed only where an objective actually exists, it
+    # never selects a driver, it never reaches a planner surface, and where the
+    # objective was cleared it is None — never 0.0, which would read as "no
+    # change" rather than "not asked" (4B.18's `unreadable` discipline).
     delta_abs = delta_pct = None
-    if incumbent_objective and solve_result.objective is not None:
+    if (not objective_cleared and incumbent_objective
+            and solve_result.objective is not None):
         delta_abs = round(solve_result.objective - incumbent_objective, 4)
         if incumbent_objective > 0:
             delta_pct = round(delta_abs / incumbent_objective * 100.0, 4)
@@ -363,7 +405,12 @@ def apply_planner_edit(
     chosen = {
         "pin": {"operation_ref": pin_op_id, "resource_id": pin_resource_id,
                 "start": pin_start_dt.isoformat()},
+        # SOLVER TELEMETRY (R-DP12 clause 3) — kept because a diagnostic reader
+        # wants it, LABELLED because nothing planner-facing may read it and
+        # nothing may select a driver from it. None where the model was asked a
+        # feasibility question (CU1).
         "delta_abs": delta_abs, "delta_pct": delta_pct,
+        "objective_cleared": objective_cleared,
         "moved_count": len(moves),
         "verdict": "OPTIMAL" if solve_result.status == "OPTIMAL" else solve_result.status,
         # the decomposed cost delta (dollars) + the moved-set with its "why"
@@ -379,8 +426,11 @@ def apply_planner_edit(
     )]
     subjects = [EntityRef(entity_type="operation", entity_id=pin_op_id),
                 EntityRef(entity_type="resource", entity_id=pin_resource_id)]
-    driver = (DriverCode.COST_TRADEOFF if delta_abs and delta_abs > 0
-              else DriverCode.NO_ALTERNATIVE)
+    # R-DP12 (Session 4B.32) — THE LEDGER IS THE ONLY COMPARABLE NUMBER. The
+    # driver and every dollar this Decision states derive from ``cost_delta``,
+    # the same figure the card showed, computed identically on every board class.
+    driver = _edit_driver(cost_delta)
+    ledger_delta = _ledger_total_delta(cost_delta)
     decision = d_rep.record_decision(
         decision_type=DecisionType.PLANNER_EDIT,
         subjects=subjects, chosen=chosen, alternatives=alternatives,
@@ -388,20 +438,79 @@ def apply_planner_edit(
         tier=RecordTier.HEADLINE, authority=authority,
         message=(f"Planner edit: pinned op {pin_op_id[:8]} to "
                  f"{pin_resource_id[:8]} @ {pin_start_dt.isoformat()}"
-                 + (f" ({'+' if (delta_abs or 0) >= 0 else '−'}${abs(delta_abs):,.0f})"
-                    if delta_abs is not None else "")),
+                 # DOLLARS, from the ledger. Until 4B.32 this printed a "$" in
+                 # front of ``delta_abs`` — the SCALED objective — so the Khalil
+                 # board's zero-move accept would have recorded "(−$7,014,821)"
+                 # for a move that changed the ledger by nothing at all.
+                 + (f" ({'+' if ledger_delta >= 0 else '−'}${abs(ledger_delta):,.0f})"
+                    if ledger_delta is not None else "")),
     )
     d_rep.end(RunStatus.SUCCESS)
 
     return PlannerEditResult(
         child_snapshot_id=child_snap_id, feasible=True,
-        status=solve_result.status, objective=solve_result.objective,
+        status=solve_result.status,
+        # A cleared objective has no value to report. CP-SAT answers 0.0 for a
+        # model with no objective, and 0.0 here would read as a real total.
+        objective=None if objective_cleared else solve_result.objective,
         delta_abs=delta_abs, delta_pct=delta_pct, moved_count=len(moves),
         decision_record_id=decision.record_id, wall_time_s=wall,
         message="accepted", moves=moves, cost_delta=cost_delta,
         pin={"operation_ref": pin_op_id, "resource_id": pin_resource_id,
              "start": pin_start_dt.isoformat()},
     )
+
+
+def _ledger_total_delta(cost_delta: dict) -> Optional[float]:
+    """The accept's dollar delta: ``cost_delta.total_delta`` and nothing else.
+
+    R-DP12 (Session 4B.32). Returns None when the ledgers could not be read —
+    "we do not know what this cost" and "this cost nothing" are different
+    statements and a surface may not confuse them."""
+    if not cost_delta:
+        return None
+    total = cost_delta.get("total_delta")
+    return None if total is None else float(total)
+
+
+def _edit_driver(cost_delta: dict):
+    """The driver of a ``planner_edit`` Decision, derived from the LEDGER.
+
+    R-DP12 (Session 4B.32). Until this session the driver was selected by
+    ``delta_abs > 0`` — the SCALED objective of the restricted accept model minus
+    the incumbent objective read from the base run's evidence. On a rolling board
+    those are different expressions over different operation sets, so every
+    rolling accept minted a Decision whose driver was chosen by arithmetic
+    between two incomparable numbers. Measured (4B.31 §8(a)): the Khalil board's
+    ZERO-MOVE accept — a bar pinned at its own placement, ledger unchanged to the
+    cent — scored ``delta_abs −7,014,821`` and therefore recorded
+    ``NO_ALTERNATIVE``, which the ask layer voices as *"there was no other
+    feasible option"*: a claim about the PLANT manufactured from a fact about our
+    ARITHMETIC. Drivers are exactly what the ask layer testifies about.
+
+    THE TAXONOMY HAS NO HONEST CODE FOR THIS DECISION AND THAT IS RECORDED, NOT
+    PAPERED OVER (4B.32 close-out §4; docs/07 §5a.131). A ``planner_edit``'s real
+    driver is *a human directed this placement* — the missing member is a
+    ``PLANNER_DIRECTIVE`` code, and adding one is a reviewed vocabulary-class
+    change this session did not take. Of the thirteen that exist:
+
+      * ``NO_ALTERNATIVE`` is RETIRED from this site. It asserts something about
+        the plant that an accept never establishes, and under
+        ``hold_all_placements`` it would be asserting it from a property of OUR
+        METHOD (every placement pinned ⇒ nothing else was reachable).
+      * ``COST_TRADEOFF`` is what is recorded, for every accept, at every ledger
+        delta including $0.00. It claims only that the cost consequence was
+        priced and weighed — true of every accept, since the card prices one
+        before the planner can press the button. It OVER-READS at $0.00, where
+        ``planner_language``'s phrase *"it was the cheaper option once every cost
+        was weighed"* describes a comparison that came back level.
+
+    So the driver is a CONSTANT here, deliberately: the variation ``delta_abs``
+    supplied was not information, it was noise with a sign. ``cost_delta`` rides
+    on the Decision's own ``chosen`` payload, so the number is self-contained and
+    checkable by anyone who wants the size of the trade-off."""
+    from mre.contracts.vocabularies import DriverCode
+    return DriverCode.COST_TRADEOFF
 
 
 def _named_refusal(base_context: dict, base_snapshot_id: str,

@@ -228,10 +228,16 @@ def test_accept_compiles_only_the_plan_of_record(which, request, tmp_path,
         pass          # the property holds (or does not) regardless of the verdict
     assert seen, "the accept never built a model"
     placed = {a["operation_ref"] for a in world["assignments"]}
-    assert seen[0] == placed, (
-        f"the accept compiled {len(seen[0])} operations for a plan that places "
-        f"{len(placed)}; {len(seen[0] - placed)} of them are work this board "
-        "never admitted (R-DP11)")
+    # EVERY build, not seen[0] (Session 4B.32 CU4, closing 4B.31 §8(d)). The
+    # first version asserted the first build only, so an accept that compiled a
+    # second, WIDER model — the exact defect, merely moved one call later — would
+    # have passed the guard that exists to forbid it.
+    for i, got in enumerate(seen):
+        assert got == placed, (
+            f"build #{i + 1} of {len(seen)} on the accept path compiled "
+            f"{len(got)} operations for a plan that places {len(placed)}; "
+            f"{len(got - placed)} of them are work this board never admitted "
+            "(R-DP11)")
 
 
 def test_the_scope_of_a_plan_that_places_everything_is_the_identity(sparse):
@@ -268,6 +274,200 @@ def test_incumbent_revalidates(dense, tmp_path):
     assert result.status in ("OPTIMAL", "FEASIBLE")
     assert result.cost_delta["total_delta"] == pytest.approx(0.0, abs=0.005), (
         "a zero-move accept changed the ledger")
+
+
+# ---------------------------------------------------------------------------
+# R-DP12 (Session 4B.32) — VERDICT IDENTITY and the HONEST DRIVER
+#
+#   CU1  the card and the accept ask the SAME model the SAME question, so the
+#        accept can no longer answer UNKNOWN where the card proved OPTIMAL.
+#   CU2  the driver and every dollar derive from the LEDGER — never from
+#        arithmetic between two objectives of different expressions.
+# ---------------------------------------------------------------------------
+
+def _decisions(run_out: Path) -> list[dict]:
+    """Every planner_edit Decision the accept wrote, from its own evidence sink
+    — the record as it lands in the store, not the in-memory result object."""
+    out: list[dict] = []
+    for p in sorted((run_out / "runs").rglob("*.jsonl")):
+        for line in p.read_text("utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue
+            if (r.get("record_type") == "decision"
+                    and r.get("decision_type") == "planner_edit"):
+                out.append(r)
+    return out
+
+
+def test_premise_the_two_numbers_disagree_in_sign_on_this_board(dense):
+    """THE PREMISE THE DRIVER TEST NEEDS. On a rolling board the incumbent
+    objective is the WINDOW SOLVE's, over the whole admitted book; the accept
+    model's is the RESTRICTED model's. Different expressions — so their
+    difference is not a cost delta, and here it is a large NEGATIVE number
+    standing beside a ledger delta of exactly $0.00.
+
+    That is 4B.31 §8(a)'s specimen reproduced in a fixture: `delta_abs
+    −7,014,821 / −5.88%` on the Khalil board's ZERO-MOVE accept."""
+    from mre.modules.calendar_utils import flatten_all_calendars
+    from mre.modules.snapshot_store import SnapshotStore
+    from mre.modules.solution_pool import (
+        _incumbent_objective, _m5_horizon, _placements, _read_evidence,
+    )
+    from mre.modules.solve_runner import SolveRunner
+    from mre.modules.solver_builder import SolverBuilder
+    from mre.modules import standing_pins as sp
+    from mre.reporter import Reporter
+    from mre.contracts.vocabularies import ModuleCode, RunStatus
+
+    out = Path(dense["out_dir"])
+    reader = SnapshotStore(out / "snapshots").load_snapshot(dense["snapshot_id"])
+    ent = {k: list(reader.iter_entities(k)) for k in
+           ("demand", "fulfillment", "workpackage", "operation", "precedenceedge",
+            "resource", "resourcepool", "calendar", "constraint", "costmodel")}
+    evidence = _read_evidence(out / "runs")
+    hs, he = _m5_horizon(evidence)
+    incumbent_obj = _incumbent_objective(evidence)
+    assert incumbent_obj, "premise failed: the base run recorded no objective"
+
+    ops, wps, fuls, dems = _restrict_window(
+        ent["operation"], ent["workpackage"], ent["fulfillment"], ent["demand"],
+        plan_of_record_scope(dense["assignments"]))
+    sink = out / "sign_premise_runs"
+    rep = Reporter.begin(module=ModuleCode.M5, purpose="premise", config={},
+                         trigger="test", snapshot_id=dense["snapshot_id"],
+                         sink_dir=sink)
+    model, vm = SolverBuilder(reference_date=hs).build(
+        wps + ops + ent["precedenceedge"], ent["resource"] + ent["resourcepool"],
+        flatten_all_calendars(ent["calendar"], hs, he), fuls + dems,
+        ent["constraint"], ent["costmodel"][0] if ent["costmodel"] else {})
+    rep.end(RunStatus.SUCCESS)
+    # exactly the accept's held world: every placement of the plan of record
+    for oid, (rid, s_dt) in _placements(dense["assignments"]).items():
+        sp.apply_pin(model, vm, oid, rid, int((s_dt - hs).total_seconds() // 60))
+    rr = Reporter.begin(module=ModuleCode.M6, purpose="premise", config={},
+                        trigger="test", snapshot_id=dense["snapshot_id"],
+                        sink_dir=sink)
+    res = SolveRunner(time_limit_seconds=180.0, num_search_workers=1,
+                      random_seed=42, deterministic_time=2.0).solve(model, vm, rr)
+    rr.end(RunStatus.SUCCESS)
+    assert res.status in ("OPTIMAL", "FEASIBLE"), res.status
+
+    scaled_delta = res.objective - incumbent_obj
+    assert scaled_delta < 0, (
+        "premise failed: the scaled-objective delta is not negative here, so a "
+        "zero-move accept (ledger delta $0.00) would not exhibit the sign "
+        f"disagreement this guard is about (got {scaled_delta})")
+
+
+def test_the_held_accept_model_carries_no_objective(dense, tmp_path, monkeypatch):
+    """R-DP12 CU1 — VERDICT IDENTITY. With every placement held there is nothing
+    left to optimise, so the accept asks the model the same FEASIBILITY question
+    the card's ``validate_held_world`` asks (``cp-sat-pin-all``, objective
+    cleared). An objective left on this model cannot change the plan; it can only
+    change the WORD — turning "we ran out of budget" into a claim about the
+    plant.
+
+    Asserted on the model the LIVE accept hands to the solver."""
+    from mre.modules import solve_runner as sr
+
+    seen: list[bool] = []
+    real_solve = sr.SolveRunner.solve
+
+    def spy(self, model, var_map, reporter=None, **kw):
+        p = model.Proto()
+        seen.append(bool(p.has_objective()) or bool(p.has_floating_point_objective()))
+        return real_solve(self, model, var_map, reporter, **kw)
+
+    monkeypatch.setattr(sr.SolveRunner, "solve", spy)
+
+    bar = _active_bar(dense)
+    _accept(dense, tmp_path, op=bar["operation_ref"],
+            resource=bar["resource_id"], start=bar["chunks"][0]["start"])
+    assert seen, "the accept never solved"
+    assert seen == [False] * len(seen), (
+        "a held accept compiled an objective: with hold_all_placements every "
+        "variable is pinned, so the objective cannot change the schedule and can "
+        "only change the verdict word (R-DP12 CU1)")
+
+
+def test_a_held_accept_proves_rather_than_searches(dense, tmp_path):
+    """The residue 4B.31 §8(c) named, closed. The accept's verdict on a fully
+    held model is a PROOF (OPTIMAL), never a budget report (UNKNOWN/FEASIBLE) —
+    and it reports no objective, because it was not asked for one."""
+    bar = _active_bar(dense)
+    result = _accept(dense, tmp_path, op=bar["operation_ref"],
+                     resource=bar["resource_id"], start=bar["chunks"][0]["start"])
+    assert result.status == "OPTIMAL", result.status
+    assert result.objective is None, (
+        "a cleared objective has no value to report; CP-SAT answers 0.0 for a "
+        "model with no objective and 0.0 would read as a real total")
+    assert result.delta_abs is None and result.delta_pct is None, (
+        "the scaled-objective delta must be None — 'not asked', never 0.0")
+
+
+def test_the_driver_follows_the_ledger_not_the_objective(dense, tmp_path):
+    """R-DP12 — THE LEDGER IS THE ONLY COMPARABLE NUMBER.
+
+    A zero-move accept on a rolling board: the ledger is unchanged to the cent,
+    while the scaled-objective difference is a large negative number (see the
+    sign premise above). At HEAD that number selected the driver, so this
+    Decision recorded ``NO_ALTERNATIVE`` — *"there was no other feasible
+    option"* — a claim about the plant manufactured from arithmetic between two
+    different expressions. Drivers are what the ask layer testifies about."""
+    out = Path(tmp_path) / "accept"
+    bar = _active_bar(dense)
+    result = _accept(dense, tmp_path, op=bar["operation_ref"],
+                     resource=bar["resource_id"], start=bar["chunks"][0]["start"])
+    assert result.cost_delta["total_delta"] == pytest.approx(0.0, abs=0.005)
+
+    decs = _decisions(out)
+    assert len(decs) == 1, f"expected one planner_edit Decision, got {len(decs)}"
+    dec = decs[0]
+    assert dec["driver"] == "COST_TRADEOFF", (
+        f"the driver is {dec['driver']}; a planner edit's driver derives from "
+        "the LEDGER (R-DP12), and NO_ALTERNATIVE asserts something about the "
+        "plant that an accept never establishes")
+    # self-contained: the number the driver was derived from rides the record
+    assert dec["chosen"]["cost_delta"]["total_delta"] == pytest.approx(0.0, abs=0.005)
+    assert dec["chosen"]["delta_abs"] is None
+    assert dec["chosen"]["objective_cleared"] is True
+    # and no scaled objective wearing a dollar sign in the planner-voiced message
+    assert "7,0" not in dec.get("message", ""), dec.get("message")
+    assert "$0" in dec.get("message", ""), dec.get("message")
+
+
+def test_the_driver_is_never_the_plant_claim_at_any_ledger_delta():
+    """R-DP12 at the ledger deltas the BOARDS CANNOT REACH.
+
+    Measured live in 4B.32: 54 +24 h/+48 h/+96 h/+168 h gestures on the Khalil
+    board produced 50 refusals and 4 prices, and every price was exactly $0.00 —
+    under R-T2 clause (2) the only drops that survive the refusal gate land in
+    genuinely open time on their own machine, which moves neither production nor
+    setup, and a successor's precedence refuses any drag long enough to move
+    tardiness. So the dearer and cheaper branches are unreachable from a drag on
+    that board and are asserted here instead of measured there.
+
+    ``NO_ALTERNATIVE`` must never come back at ANY delta: it says *"there was no
+    other feasible option"* about the PLANT, and an accept establishes only that
+    a human pinned a bar."""
+    from mre.contracts.vocabularies import DriverCode
+    from mre.modules.planner_edit import _edit_driver, _ledger_total_delta
+
+    for total in (-125_000.5, -0.01, 0.0, 0.01, 125_000.5):
+        d = _edit_driver({"total_delta": total})
+        assert d is not DriverCode.NO_ALTERNATIVE, (
+            f"driver {d} at ledger delta {total}: NO_ALTERNATIVE asserts "
+            "something about the plant an accept never establishes")
+        assert d is DriverCode.COST_TRADEOFF, d
+        assert _ledger_total_delta({"total_delta": total}) == total
+    # "we could not read the ledgers" and "this cost nothing" are different
+    assert _ledger_total_delta({}) is None
+    assert _ledger_total_delta({"total_delta": None}) is None
+    assert _ledger_total_delta({"total_delta": 0.0}) == 0.0
 
 
 def test_negative_control_a_corrupted_plan_is_refused(dense, tmp_path):

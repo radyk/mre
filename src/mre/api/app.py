@@ -1581,6 +1581,11 @@ def _execute_accept(registry: Registry, base_schedule: dict, req: "AcceptRequest
         )
         registry.finish_run(run_id, "succeeded", result={
             "schedule_id": document.schedule_id,
+            # R-DP12 (4B.32): the LEDGER figure is what this accept cost. Under
+            # a held accept the model is asked a feasibility question and there
+            # is no objective, so `delta_abs` is None by construction — it was
+            # never comparable on a rolling board anyway (4B.31 §8(a)).
+            "cost_delta_total": (result.cost_delta or {}).get("total_delta"),
             "delta_abs": result.delta_abs, "moved_count": result.moved_count,
         })
     except Exception as exc:  # noqa: BLE001
@@ -1590,8 +1595,10 @@ def _execute_accept(registry: Registry, base_schedule: dict, req: "AcceptRequest
     decision = {
         "record_id": result.decision_record_id,
         "authority": req.authority,
-        # delta_abs/delta_pct are the SCALED solver objective (never dollars);
-        # cost_delta carries the LEDGER dollars the card shows (exit-audit fix).
+        # SOLVER TELEMETRY ONLY (R-DP12 clause 3, 4B.32): delta_abs/delta_pct are
+        # the SCALED objective, never dollars, never a driver, and None whenever
+        # the held accept cleared the objective. cost_delta carries the LEDGER
+        # dollars the card shows and the Decision's driver derives from.
         "delta_abs": result.delta_abs, "delta_pct": result.delta_pct,
         "cost_delta": result.cost_delta,
         "moved_count": result.moved_count, "pin": result.pin,

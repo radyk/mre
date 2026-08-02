@@ -14998,3 +14998,120 @@ epistemics were sound, and the cause was a missing argument at one call site tha
 three sibling call sites already passed. **The expensive part was not the fix (one
 derivation, applied through a helper that already existed) — it was proving the
 guard could not have been written as behaviour alone.**
+
+---
+
+## 2026-08-03 — Session 4B.32: verdict identity, and the honest driver
+
+**Subject:** 4B.31's named tail — findings (a) the incomparable `delta_abs`,
+(c) the UNKNOWN-vs-OPTIMAL residue, (d) the property guard's `seen[0]`. Contract
+**unchanged at 1.15**; parse prompt **unchanged at v16**; no new vocabulary.
+
+### R-DP10 — DISCHARGED BY IDENTITY (the two-beat card is not built, and now need not be)
+
+R-DP11 made the card and the accept compile the same model over the same scope.
+This session makes them ask that model **the same question**. The accept's
+re-solve, under `hold_all_placements`, now **clears the objective** — exactly as
+`local_price.validate_held_world` has always done (`cp-sat-pin-all`).
+
+**Why the objective was never doing anything there.** With every placement of the
+plan of record pinned and the planner's drop pinned, the model has one assignment
+left. An objective over a fully pinned model cannot change the plan. The only
+thing it can change is the **word the solve returns** — turning a proof question
+into a search question under a budget, so the accept could answer UNKNOWN ("we
+ran out of time") where the card had proved OPTIMAL. That is a budget verdict
+wearing a plant verdict's clothes, and it is the residue 4B.31 §8(c) named.
+
+**THE DISCHARGE CONDITIONS, STATED, BECAUSE THE OBLIGATION REVIVES IF THEY
+LAPSE.** R-DP10's two-beat card (estimate language → accept-grade dry run unlocks
+Accept) is not built because there is no longer a second authority to reconcile:
+
+1. **One compiler.** Both surfaces build through `SolverBuilder` over
+   `plan_of_record_scope(assignments)` — R-DP11 clause (3), derived not passed.
+2. **One pin seam.** Both pin through `standing_pins.apply_pin` over the same
+   incumbent placement map.
+3. **One question.** Both clear the objective and ask feasibility alone.
+
+**If any future change re-introduces a second authority — a differently scoped
+model, a different pin seam, or an objective on either side — R-DP10's original
+two-beat obligation revives in full.** It is discharged by identity, not by
+judgement about how often the two agreed.
+
+### R-T2's disclosure line — STRUCTURALLY MOOT on this path, recorded not dropped
+
+R-T2 requires that a contradiction between beats be SHOWN, never silently
+reconciled; 4B.31 left the disclosure line ("the quick check saw no conflict; the
+full model found…") unbuilt and tied it to the two-beat card. Under the three
+conditions above **there is no second verdict for it to disclose**: the card's
+verdict and the accept's verdict are the same model's answer to the same
+question. The line is therefore **moot on the accept path, not dropped** — and it
+becomes owed again the moment a discharge condition lapses. R-T2 itself is
+unchanged and still binds everywhere two beats do exist.
+
+### The ruling (R-DP12), transcribed
+
+**R-DP12 — THE LEDGER IS THE ONLY COMPARABLE NUMBER.**
+
+1. **A planner-facing figure on the accept path, and the `driver` of the
+   `planner_edit` Decision it mints, derive from the LEDGER** —
+   `cost_delta.total_delta`, the same decomposed dollars the card showed,
+   computed identically on every board class. One definition, no per-class
+   special case (R-DP11's own discipline).
+2. **Scaled-objective arithmetic never selects a driver and never reaches a
+   planner surface.** The motivating measurement, verbatim: a **ZERO-MOVE**
+   accept on the Khalil board `rolling-db5395dc-2ae` — a bar pinned at its own
+   placement, ledger **$1,667,467.80 → $1,667,467.80** — reported
+
+       delta_abs  −7,014,821.0      delta_pct  −5.8764 %
+       driver     NO_ALTERNATIVE
+       message    "Planner edit: pinned op 0947fa39 to 3f032ed0
+                   @ 2026-01-06T07:00:00+00:00 (−$7,014,821)"
+
+   `delta_abs` is the restricted accept model's scaled objective minus
+   `_incumbent_objective(evidence)`, which on a rolling run is the **WINDOW
+   SOLVE's** objective — a different expression over a different operation set.
+   The two are not comparable, and their difference selected the driver *and*
+   was printed **with a dollar sign** in the Decision's own planner-voiced
+   message. **Drivers are exactly what the ask layer testifies about.**
+3. **A scaled objective may survive as LABELLED SOLVER TELEMETRY** — computed
+   only where an objective exists, read by diagnostics, read by nothing else.
+   Where the objective was cleared it is **None, never 0.0**: "not asked" and "no
+   change" are different statements (4B.18's `unreadable` discipline again).
+4. **`NO_ALTERNATIVE` is RETIRED from the accept.** Its planner voicing is *"there
+   was no other feasible option"* — a claim about the PLANT that an accept never
+   establishes, and which under `hold_all_placements` would be asserted from a
+   property of OUR METHOD (every placement pinned ⇒ nothing else was reachable).
+   Manufacturing a plant claim from a method fact is the disease, not the symptom.
+5. **THE TAXONOMY HAS NO HONEST CODE FOR THIS DECISION, AND THAT IS RECORDED
+   RATHER THAN PAPERED OVER.** A `planner_edit`'s real driver is *a human
+   directed this placement*; the missing member is a `PLANNER_DIRECTIVE` code,
+   and adding one is a reviewed vocabulary-class change this session did not
+   take. What is recorded is **`COST_TRADEOFF`, at every ledger delta including
+   $0.00** — it claims only that the cost consequence was priced and weighed,
+   true of every accept because the card prices one before the button exists.
+   **It over-reads at $0.00**, where the phrase *"it was the cheaper option once
+   every cost was weighed"* describes a comparison that came back level. The
+   driver is therefore a CONSTANT here, deliberately: the variation `delta_abs`
+   supplied was not information, it was noise with a sign. The number rides the
+   Decision's own `chosen.cost_delta`, so the size of the trade-off stays
+   checkable by anyone who wants it.
+
+**LIVE, ON THE KHALIL BOARD, BEFORE AND AFTER.** Same board, same bar, same
+instant, driven through `POST /schedules/{id}/accept`:
+
+| | HEAD (measured twice, identical) | after R-DP12 |
+|---|---|---|
+| HTTP / verdict | 201 · OPTIMAL | 201 · OPTIMAL |
+| ledger delta | **$0.00** | **$0.00** |
+| `driver` | **NO_ALTERNATIVE** | **COST_TRADEOFF** |
+| Decision message | `(−$7,014,821)` | `(+$0)` |
+| `delta_abs` / `delta_pct` | −7,014,821 / −5.8764 % | **None** / None |
+| `objective_cleared` | *(absent)* | **True** |
+
+**WHAT THE SUMMARY WOULD UNDERSELL.** The brief framed 4B.31 finding (a) as an
+incomparable number *selecting* a driver. It was also being **printed as
+dollars** in the record the ask layer reads — so the evidence store held a
+planner-voiced sentence claiming a $7 M saving for a move that changed nothing.
+That was never visible before 4B.31, because no rolling accept had ever
+succeeded; it became reachable the day the accept started working, and it wrote a
+new instance on every accept until now.
