@@ -180,6 +180,15 @@ export function mountCoarseBand(hostEl, doc) {
   hostEl.appendChild(el);
   return {
     el,
+    // Session 4B.28 Item 2(a): the collapsed edge's badge. A STATUS, not a
+    // count of rows — the coarse zone's own headline is how many machine-weeks
+    // are at capacity, and "0 binding" is a real answer a planner should be
+    // able to read without expanding anything.
+    badge() {
+      const hot = [...el.querySelectorAll(".cb-cell.cb-hot")].length;
+      const cells = [...el.querySelectorAll(".cb-cell")].length;
+      return hot ? `${hot}/${cells} binding` : `${cells} cells · none binding`;
+    },
     // harness probe: what the band actually rendered, in numbers.
     probe() {
       const cellEls = [...el.querySelectorAll(".cb-cell")];

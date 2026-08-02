@@ -748,7 +748,13 @@ INTENT_MEANINGS: dict[Intent, str] = {
         "rolls forward (rolling runs). It may be asked about ONE ORDER — \"is "
         "ORD-000142 frozen\", \"why isn't ord-11 in the frozen zone\", \"is this "
         "one committed\" — in which case NAME THAT ORDER as the subject; asked "
-        "with no order it is the whole board's committed state",
+        "with no order it is the whole board's committed state. IT ALSO OWNS "
+        "\"PINNED\" AND \"HELD\" — \"why is ORD-000142 pinned\", \"why is this "
+        "bar held\", \"why can't the solver move this one\" — because on a "
+        "rolling board a placement is planner-held for exactly one reason (the "
+        "frozen boundary was pulled back past it, R-F1) and this route is where "
+        "that answer lives. \"Pinned\" is NOT a declared field, so it is never "
+        "`attribute-lookup`",
     Intent.COARSE_FIT:
         "whether known future work FITS — \"will it fit\", \"can we take this "
         "on\", \"is there room for this\", \"can the plant absorb the backlog\". "

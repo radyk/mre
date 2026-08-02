@@ -1,0 +1,127 @@
+{
+  "2026-01-07T12:00:00+00:00": {
+    "refused": false,
+    "direction": "thaw",
+    "from_instant": "2026-01-08T00:00:00+00:00",
+    "to_instant": "2026-01-07T12:00:00+00:00",
+    "count": 3,
+    "changed": [
+      {
+        "operation_ref": "e40f3d1c-08c1-5cf0-891d-53332e50cea9",
+        "work_orders": [
+          "ORD-000004"
+        ],
+        "resource_id": "d9cc6ac1-db81-5f9d-b946-d33e96f60256",
+        "start": "2026-01-07T13:38:00Z",
+        "from_state": "committed",
+        "to_state": "active_window",
+        "becomes_pin": true,
+        "absorbs_pin": false
+      },
+      {
+        "operation_ref": "34f7ddad-0171-5498-bee9-d848f0b7f404",
+        "work_orders": [
+          "ORD-000037"
+        ],
+        "resource_id": "3793479c-d1e7-5f6c-92c0-a1b03309b8a5",
+        "start": "2026-01-07T14:37:00Z",
+        "from_state": "committed",
+        "to_state": "active_window",
+        "becomes_pin": true,
+        "absorbs_pin": false
+      },
+      {
+        "operation_ref": "536aeeed-75f6-520f-8248-2f877072a350",
+        "work_orders": [
+          "ORD-000038"
+        ],
+        "resource_id": "7c78eed8-d762-5640-aeb0-5291be2b161e",
+        "start": "2026-01-07T14:41:00Z",
+        "from_state": "committed",
+        "to_state": "active_window",
+        "becomes_pin": true,
+        "absorbs_pin": false
+      }
+    ],
+    "changed_ops": [
+      "e40f3d1c-08c1-5cf0-891d-53332e50cea9",
+      "34f7ddad-0171-5498-bee9-d848f0b7f404",
+      "536aeeed-75f6-520f-8248-2f877072a350"
+    ],
+    "pinned_ops": [
+      "e40f3d1c-08c1-5cf0-891d-53332e50cea9",
+      "34f7ddad-0171-5498-bee9-d848f0b7f404",
+      "536aeeed-75f6-520f-8248-2f877072a350"
+    ],
+    "absorbed_pins": [],
+    "digest": "c0155c998f2b3dee",
+    "sentence": "Pulling the boundary back to Wed 07 Jan, 12:00 thaws 3 placements. They keep their exact times and machines and become pins you hold, instead of commitments the solver cannot touch."
+  },
+  "2026-01-08T12:00:00+00:00": {
+    "refused": false,
+    "direction": "freeze",
+    "from_instant": "2026-01-08T00:00:00+00:00",
+    "to_instant": "2026-01-08T12:00:00+00:00",
+    "count": 4,
+    "changed": [
+      {
+        "operation_ref": "03d4c321-252b-55c5-964e-c7c2c651ed06",
+        "work_orders": [
+          "ORD-000037"
+        ],
+        "resource_id": "ce249601-8798-576b-88ed-2af0bf016812",
+        "start": "2026-01-08T07:00:00Z",
+        "from_state": "active_window",
+        "to_state": "committed",
+        "becomes_pin": false,
+        "absorbs_pin": false
+      },
+      {
+        "operation_ref": "1ab1fd36-05fa-5532-8c2d-c62f87eb034e",
+        "work_orders": [
+          "ORD-000040"
+        ],
+        "resource_id": "c3459e27-de11-5e09-be75-5ec5e29b1499",
+        "start": "2026-01-08T07:00:00Z",
+        "from_state": "active_window",
+        "to_state": "committed",
+        "becomes_pin": false,
+        "absorbs_pin": false
+      },
+      {
+        "operation_ref": "efffb043-bf8f-5681-a13d-117b687edba8",
+        "work_orders": [
+          "ORD-000028"
+        ],
+        "resource_id": "7c78eed8-d762-5640-aeb0-5291be2b161e",
+        "start": "2026-01-08T07:01:00Z",
+        "from_state": "active_window",
+        "to_state": "committed",
+        "becomes_pin": false,
+        "absorbs_pin": false
+      },
+      {
+        "operation_ref": "898edad8-b2cd-5a84-b99c-cbb7b20cf9d4",
+        "work_orders": [
+          "ORD-000029"
+        ],
+        "resource_id": "440fbc69-bb11-5b15-944c-9f0844e57db6",
+        "start": "2026-01-08T08:23:00Z",
+        "from_state": "active_window",
+        "to_state": "committed",
+        "becomes_pin": false,
+        "absorbs_pin": false
+      }
+    ],
+    "changed_ops": [
+      "03d4c321-252b-55c5-964e-c7c2c651ed06",
+      "1ab1fd36-05fa-5532-8c2d-c62f87eb034e",
+      "efffb043-bf8f-5681-a13d-117b687edba8",
+      "898edad8-b2cd-5a84-b99c-cbb7b20cf9d4"
+    ],
+    "pinned_ops": [],
+    "absorbed_pins": [],
+    "digest": "2d545bc50b961b6c",
+    "sentence": "Pushing the boundary out to Thu 08 Jan, 12:00 commits 4 placements. Committed work does not move as the schedule rolls, and you cannot drag it."
+  }
+}

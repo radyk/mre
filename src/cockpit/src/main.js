@@ -14,6 +14,9 @@ import { mountDevLedger } from "./devledger.js";
 import { findNewerSchedule } from "./freshness.js";
 import { mountTray } from "./tray.js";
 import { mountCoarseBand } from "./coarse.js";
+import { createBoundaryCeremony } from "./boundary.js";
+import { createJobPanel } from "./jobpanel.js";
+import { makeCollapsible } from "./collapse.js";
 
 // Rewrite the address bar to bind the given schedule version WITHOUT a reload
 // (session 3.8 CU1): a live accept/publish stays in the same session, but the
@@ -285,6 +288,31 @@ function mountBoardChrome(boardHost, board) {
   zoom.querySelector(".bz-in").addEventListener("click", () => board.zoomIn());
   zoom.querySelector(".bz-out").addEventListener("click", () => board.zoomOut());
   right.appendChild(zoom);
+
+  // Session 4B.28 Item 2(b): the LINEAR ↔ COMPRESSED toggle. Not optional
+  // chrome — verifying a calendar claim ("is there really nothing between these
+  // two bars?") is unanswerable on a folded ruler, so the planner must be able
+  // to unfold it. The choice persists per browser.
+  const comp = document.createElement("button");
+  comp.type = "button";
+  comp.className = "board-compress";
+  comp.id = "board-compress";
+  function paintCompress() {
+    const on = board.isCompressed();
+    comp.textContent = on ? "⇥ compressed" : "⇤ linear";
+    comp.setAttribute("aria-pressed", on ? "true" : "false");
+    comp.title = on
+      ? "Closed time is folded so working time fills the view. Click for the "
+        + "true linear scale."
+      : "True linear time. Click to fold closed time (nights, weekends, "
+        + "closures) so working time fills the view.";
+  }
+  comp.addEventListener("click", () => {
+    board.setCompressed(!board.isCompressed());
+    paintCompress();
+  });
+  paintCompress();
+  right.appendChild(comp);
 
   chrome.appendChild(right);
   host.appendChild(chrome);
@@ -559,7 +587,21 @@ async function boot() {
     if (doc.rolling && doc.rolling.coarse_zone) {
       boardHost.parentElement.classList.add("has-coarse-band");
     }
-    const board = createBoard(boardHost, doc);
+    // Session 4B.28 Item 1 — THE MOVABLE FROZEN BOUNDARY (R-F1).
+    //
+    // The handle is installed only on a LIVE ROLLING board. A monolithic board
+    // has no frozen zone; a SUPERSEDED one is read-only by the same rule that
+    // withholds the gesture surface from it (session 3.8 CU3), and a boundary
+    // move is an edit. `ceremony` is assigned just after createBoard — the board
+    // has to exist before anything can rebind it — so the handler reaches it
+    // through a closure rather than being handed a board that is not built yet.
+    let ceremony = null;
+    const boardEditable = !!doc.rolling && !(meta && meta.status === "superseded");
+    const board = createBoard(boardHost, doc, {
+      onBoundaryMove: boardEditable
+        ? (iso) => { if (ceremony) ceremony.propose(iso); }
+        : null,
+    });
     const chrome = mountBoardChrome(boardHost, board);
     // Session 4B.3a CU2(d): the beyond-horizon tray — a docked panel of known
     // future work with no bar to draw. Present only on a rolling document; a
@@ -603,6 +645,95 @@ async function boot() {
       useLlm: !!import.meta.env?.DEV, onSuperseded,
     });
 
+    // An accepted/published/boundary-moved edit rebinds the cockpit to the new
+    // version FULLY (session 3.8 CU1): the address bar, the strip (new id + live
+    // status), the ask panel target, the shared selection, and the harness hook
+    // all follow the version the board now IS. No user action may be issued
+    // against a superseded id from a live session. Hoisted out of the gesture
+    // wiring in 4B.28, because a boundary move mints a version by a different
+    // route and must land in exactly the same place.
+    const onVersionChange = async (newId, status) => {
+      setUrlSchedule(newId);
+      panel.setScheduleId(newId);
+      panel.clearSelection();            // a moved op's old scope is stale
+      window.__cockpit.scheduleId = newId;
+      const nextMeta = await getScheduleMeta(newId).catch(() => meta);
+      const nextDoc = board.currentDoc ? board.currentDoc() : doc;
+      paintTopStrip(strip, { ...nextDoc, status }, nextMeta);
+      window.__cockpit.versionChanged = { id: newId, status };
+    };
+
+    // R-F1(e): the confirmation beat lives in the board host, above the bars it
+    // is about to restyle. It is created even on a board where the handle is not
+    // installed — it simply never opens — so nothing downstream has to branch on
+    // whether it exists.
+    ceremony = createBoundaryCeremony(boardHost.parentElement, board, {
+      scheduleId: () => (window.__cockpit && window.__cockpit.scheduleId) || id,
+      onVersionChange,
+    });
+
+    // Session 4B.28 Item 3 — THE JOB PANEL. Selection already lit the lanes;
+    // this states the whole job the clicked bar belongs to. Its two buttons
+    // route to the EXISTING intents with the operation as subject, which is why
+    // they select the bar FIRST: the ask panel reads its subject refs off the
+    // live board selection (including `op_seq` since 4B.14), so a row click
+    // carries the operation exactly — no parse in the way, and 4B.30
+    // §5a.118(c)'s unparseable `op_seq` is discharged for board users.
+    const jobPanel = createJobPanel(boardHost.parentElement, board, {
+      onAsk: (intent, row) => {
+        board.select(row.operation_ref);
+        const wo = jobPanel.probe().order;
+        panel.run(intent === "why-here"
+          ? `why is ${wo} op${row.op_seq} placed where it is on ${row.machine}?`
+          : `what would have to change for ${wo} op${row.op_seq} to start earlier?`);
+      },
+    });
+    board.onSelect((sel) => jobPanel.show(sel));
+
+    // Session 4B.28 Item 2(a) — SCREEN ROOM. Three docks, each collapsing to a
+    // labelled edge that STILL STATES ITS COUNT. A collapsed tray showing "122"
+    // is not a hidden tray: known work stays visible somewhere, which is the
+    // whole reason the tray exists (4B.3a CU2(d), the Glass Box cardinal
+    // danger). The board re-sizes itself to whatever space the docks leave.
+    const relayout = () => {
+      const host = boardHost.parentElement;
+      host.classList.toggle("tray-collapsed", !!(docks.tray && !docks.tray.isOpen()));
+      host.classList.toggle("coarse-collapsed",
+                            !!(docks.coarse && !docks.coarse.isOpen()));
+      requestAnimationFrame(() => {
+        board.timeline.redraw();
+        board.markers.redraw();
+      });
+    };
+    const docks = {};
+    if (tray) {
+      docks.tray = makeCollapsible(tray.el, {
+        key: "tray", label: "BEYOND THE HORIZON",
+        badge: () => String(tray.count),
+        defaultOpen: false, onChange: () => relayout(),
+      });
+    }
+    if (coarseBand) {
+      docks.coarse = makeCollapsible(coarseBand.el, {
+        key: "coarse", label: "COARSE LOOK-AHEAD",
+        // A STATUS, not a count: the coarse zone's own headline is how many
+        // cells are at capacity, and "0 binding" is a real answer.
+        badge: () => coarseBand.badge ? coarseBand.badge() : null,
+        defaultOpen: false, onChange: () => relayout(),
+      });
+    }
+    docks.ask = makeCollapsible(askRoot, {
+      key: "ask", label: "ASK",
+      badge: () => (panel.turnCount ? String(panel.turnCount()) : null),
+      // OPEN by default, deliberately: it is the differentiator, and a stranger
+      // must see that it exists.
+      defaultOpen: true,
+      onChange: (open) => {
+        app.querySelector(".split")?.classList.toggle("ask-collapsed", !open);
+        requestAnimationFrame(() => { board.timeline.redraw(); board.markers.redraw(); });
+      },
+    });
+
     // harness + demo hook (read-only): drive the sixty-second script's first
     // frame from the URL (?ask=...) and expose probes for the screenshot tests.
     window.__cockpit = {
@@ -616,6 +747,9 @@ async function boot() {
       setTheme: applyTheme,
       toggleTheme,
       board, panel, tray, coarseBand,
+      boundary: ceremony,          // R-F1 ceremony (Session 4B.28 Item 1)
+      jobPanel,                    // the whole-job panel (Item 3)
+      docks,                       // the three collapsibles (Item 2(a))
       ask: (q) => panel.run(q),
       select: (opRef) => board.select(opRef),
       highlight: (refs) => board.highlight(refs),
@@ -656,8 +790,15 @@ async function boot() {
         const phase = drag && drag.state ? drag.state().phase : "idle";
         const dragBusy = !!phase && phase !== "idle";
         const panelBusy = !!(panel && panel.hasUserState && panel.hasUserState());
-        return dragBusy || panelBusy;
+        return dragBusy || panelBusy || boundaryLive();
       };
+      // Session 4B.28 Item 1(e): an OPEN CONFIRMATION BEAT is uncommitted state
+      // of the sharpest kind — a planner is mid-decision about forty bars. It
+      // also lives in no document, so 4B.23 Item 4's reasoning applies verbatim:
+      // there is nothing for a refresh to reconcile it against, and the banner's
+      // prepend reflows the very rows it is about to restyle.
+      const boundaryLive = () =>
+        !!(ceremony && ceremony.state && ceremony.state().open);
       // Session 4B.23 Item 4: a LIVE SANDBOX PROPOSAL — a bar dropped and
       // awaiting its beats, or the delta card that followed it. The card
       // outlives the gesture (phase returns to idle while a refusal / failure /
@@ -666,7 +807,8 @@ async function boot() {
         const drag = window.__cockpit && window.__cockpit.drag;
         if (!drag || !drag.state) return false;
         const st = drag.state();
-        return (!!st.phase && st.phase !== "idle") || !!st.cardOpen;
+        return (!!st.phase && st.phase !== "idle") || !!st.cardOpen
+            || boundaryLive();
       };
       const watch = installFreshnessWatch({
         app, boundId: id, hasUncommittedState, pinned,
@@ -714,21 +856,8 @@ async function boot() {
           panel.run(`why is ${wo} on ${mach}?`);
           return true;
         },
-        // An accepted/published edit rebinds the cockpit to the new version FULLY
-        // (session 3.8 CU1): the address bar, the strip (new id + live status),
-        // the ask panel target, the shared selection, and the harness hook all
-        // follow the version the board now IS. No user action may be issued
-        // against a superseded id from a live session.
-        onVersionChange: async (newId, status) => {
-          setUrlSchedule(newId);
-          panel.setScheduleId(newId);
-          panel.clearSelection();            // a moved op's old scope is stale
-          window.__cockpit.scheduleId = newId;
-          const nextMeta = await getScheduleMeta(newId).catch(() => meta);
-          const nextDoc = board.currentDoc ? board.currentDoc() : doc;
-          paintTopStrip(strip, { ...nextDoc, status }, nextMeta);
-          window.__cockpit.versionChanged = { id: newId, status };
-        },
+        // The ONE rebind seam, shared with the boundary ceremony (see above).
+        onVersionChange,
       });
     }
 

@@ -75,6 +75,19 @@ def main(argv=None) -> int:
     ap.add_argument("--out", default="_4b22a_scratch/demo_board/submission")
     ap.add_argument("--api-base", default="http://localhost:8000")
     ap.add_argument("--poll-timeout", type=float, default=1800.0)
+    # Session 4B.28 Item 5 — THE KHALIL BOARD. Same world, different SEARCH.
+    # `--calibrated` omits `portfolio_k` and `portfolio_det_time` from the solve
+    # request entirely, which is the ONLY way the plant's accepted calibration
+    # profile can apply: R-CAL1 rule (2) says the caller always wins, and the API
+    # reads `model_fields_set` to find out what the caller actually said. So a
+    # request that names K=1 "to be explicit" silently refuses the profile.
+    #
+    # The bare command is UNCHANGED and still reproduces `rolling-c9973708-865`'s
+    # world at K=1 — a registered artifact minted from one seeded search.
+    ap.add_argument("--calibrated", action="store_true",
+                    help="let this plant's ACCEPTED calibration profile supply K "
+                         "and the per-member budget (omits both from the request). "
+                         "Mints the Khalil board: w10 / 10.0 units / K=3.")
     ap.add_argument("--reuse", action="store_true",
                     help="reuse the submission already at --out (the generator "
                          "stamps a fresh extract_timestamp on every run, so "
@@ -134,8 +147,18 @@ def main(argv=None) -> int:
            "time_limit": WALL_CEILING_S, "coarse": True,
            "portfolio_k": 1,
            "reference_date": REF}
+    # `--calibrated` REMOVES the field rather than setting a different value:
+    # R-CAL1 rule (2) reads `model_fields_set`, so a request naming ANY K —
+    # including the profile's own — refuses the profile. Written as a deletion so
+    # the K=1 literal above stays in this file, where 4B.29's guard
+    # (`test_the_two_minted_worlds_pin_k_one`) can still see that the bare
+    # command reproduces `rolling-c9973708-865`.
+    if args.calibrated:
+        del req["portfolio_k"]
     print(f"solving sliced (window={args.window_days}d "
-          f"frozen={args.frozen_days}d, deterministic, coarse) ...")
+          f"frozen={args.frozen_days}d, deterministic, coarse"
+          + (", CALIBRATED: K and budget from the accepted profile"
+             if args.calibrated else ", K=1 pinned") + ") ...")
     run = _api(args.api_base, f"/submissions/{sub_id}/solve", req,
                timeout=120.0)["data"]
     run_id = run["run_id"]

@@ -242,6 +242,28 @@ Version history:
   whose assembler was never given a calibration lookup at all: a module-level
   assembly has no store to consult and therefore no answer to report, which is
   why every golden and pinned world is byte-identical across this bump. MINOR.
+
+1.15 (Session 4B.28, R-F1) — ``rolling.boundary_moves``
+  (``list[BoundaryMoveBlock]``): the log of PLANNER-MOVED frozen boundaries on
+  this version's lineage — old instant, new instant, direction, authority, and
+  the operations whose commitment state changed.
+
+  WHY THE DOCUMENT NEEDS IT. R-F1 makes the frozen boundary planner-movable and
+  rules that a THAW converts committed work to STANDING PINS at its exact
+  placement — authority changes, position does not. After that gesture a bar is
+  pinned, and the ONE question a planner asks of a pinned bar is *why*. The
+  answer is not in the pin (a pin records where, never why) and not in the
+  registry (which the ask path does not read); it is the boundary move that
+  minted it. Recording only the CONSEQUENCE and not the ACT would leave the
+  board able to show a pin it could not explain — the silent-state class this
+  product keeps ruling against.
+
+  ``boundary_moves`` is a list with an EMPTY default, so a board nobody has
+  moved the boundary on is byte-unchanged apart from the version string, and a
+  MONOLITHIC document has no ``rolling`` block to carry it at all. Each entry
+  names its ``changed_ops`` explicitly rather than leaving a reader to infer the
+  set from two timestamps: the inference would be wrong the moment a second move
+  crosses the same span. MINOR.
 """
 from __future__ import annotations
 
@@ -252,7 +274,7 @@ from pydantic import BaseModel, model_validator
 
 from mre.contracts.vocabularies import ScheduleStatus
 
-CONTRACT_VERSION = "1.14"
+CONTRACT_VERSION = "1.15"
 
 # Exact decomposition tolerance: cost components are currency values
 # accumulated in float; "exactly" means to the cent, matching the
@@ -775,6 +797,35 @@ class BeyondHorizonItem(BaseModel):
     coarse: Optional[CoarsePlacementBlock] = None
 
 
+class BoundaryMoveBlock(BaseModel):
+    """ONE planner move of the frozen boundary (contract 1.15, R-F1).
+
+    R-F1 rules the boundary PLANNER-MOVABLE and rules what each direction means:
+    pulling it EARLIER (a THAW) converts every committed assignment it uncovers
+    into a STANDING PIN at its exact placement — authority changes hands,
+    position does not — and pushing it LATER (a FREEZE) commits active work,
+    ABSORBING any standing pin it crosses into the commitment.
+
+    This block is the ACT. The consequences live in the fields they belong to
+    (``commitment_state``, ``standing_pin``); recording only those would leave
+    the board showing a pinned bar it could not explain, so the act is recorded
+    beside them and ``changed_ops`` names exactly which operations it touched.
+    A reader must not infer that set from the two instants: a second move across
+    the same span would make the inference wrong.
+    """
+    at: datetime                               # when the planner made the move
+    direction: Literal["thaw", "freeze"]        # earlier = thaw, later = freeze
+    from_instant: datetime                     # the boundary before
+    to_instant: datetime                       # the boundary after
+    authority: str = ""                        # who moved it
+    changed_ops: list[str] = []                # operation_refs whose state changed
+    pinned_ops: list[str] = []                 # thaw: ops that became standing pins
+    absorbed_pins: list[str] = []              # freeze: standing pins commitment took
+    #                                            over — recorded because the pin
+    #                                            LEAVES the register and a reader
+    #                                            would otherwise see it vanish
+
+
 class RollingBlock(BaseModel):
     """The rolling-horizon (sliced) metadata (contract 1.7, R-SC2). Present only
     on a rolling document; None on a monolithic one. The document renders the
@@ -796,6 +847,10 @@ class RollingBlock(BaseModel):
     # not run (it is opt-in per solve), so a 1.8-shaped rolling document remains
     # exactly what it was.
     coarse_zone: Optional[CoarseZoneBlock] = None
+    # Contract 1.15 (R-F1, Session 4B.28): the boundary moves this lineage has
+    # made, oldest first. EMPTY on a board nobody has moved the boundary on —
+    # which is every board a solve mints — so the default document is unchanged.
+    boundary_moves: list[BoundaryMoveBlock] = []
 
 
 class Annotations(BaseModel):

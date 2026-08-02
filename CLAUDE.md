@@ -124,11 +124,15 @@ zone = build_coarse_zone(plant, view)              # rho/bucket_days from the co
 doc  = assemble_rolling_document(..., coarse_zone=zone)   # 1.9 blocks appear
 ```
 
-Contract is **1.14** since 4B.29 (`solver.calibration`, R-CAL1 — PRESENT even
-when the answer is "nobody has measured this plant"; absent only where the
-assembler was given no store to consult, which is every module-level assembly and
-therefore every golden). 1.13 was `solver.portfolio` (R-BK1, ABSENT at K=1); 1.11
-the R-PD1 tardiness split, 1.12 the R-C3 pair.
+Contract is **1.15** since 4B.28 (`rolling.boundary_moves`, R-F1 — the log of
+PLANNER-MOVED frozen boundaries: old instant, new instant, direction, authority
+and the operations whose commitment state changed. EMPTY on a board nobody has
+moved the boundary on, which is every board a solve mints, and absent entirely on
+a monolithic document). 1.14 was `solver.calibration` (R-CAL1 — PRESENT even when
+the answer is "nobody has measured this plant"; absent only where the assembler
+was given no store to consult, which is every module-level assembly and therefore
+every golden). 1.13 was `solver.portfolio` (R-BK1, ABSENT at K=1); 1.11 the R-PD1
+tardiness split, 1.12 the R-C3 pair.
 
 **`SolveRequest.portfolio_k` DEFAULTS TO 3 SINCE 4B.29** — publication insurance,
 not optimization (~$578 of ledger against a measured 2-in-5 chance of an EMPTY
@@ -167,6 +171,9 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Session 4B.28 — the board serves a person using it**, 2026-08-02 (docs/07 v2.77,
+§5a.119-124; docs/04 2026-08-02 R-F1's mechanics verbatim; contract **1.15**;
+parse prompt **v16**; narrative in `docs/closeouts/4B.28.md`). Before it:
 **Session 4B.27 — the conversational batch**, 2026-08-01 (docs/07 v2.75,
 §5a.112-113; docs/04 2026-08-01; parse prompt **v14**; narrative in
 `docs/closeouts/4B.27.md`). Before it:
@@ -193,7 +200,22 @@ docs/04 ruling; narrative in `docs/closeouts/4B.22.md`). Before that:
 4B.13 (v2.57), 4B.12 (v2.56, a MEASUREMENT session), 4B.11 (v2.55, **R-PD1
 verbatim**).
 
-**THE DEMO BOARD IS `rolling-c9973708-865` (4B.22a, §5a.84).** `demo_board`
+**THE DEMO BOARD IS `rolling-db5395dc-2ae` — THE KHALIL BOARD (4B.28, §5a.120).**
+The SAME WORLD as `rolling-c9973708-865` under its plant's **ACCEPTED**
+calibration profile: K=3 at 10.0 deterministic units, seeds 42-44 ->
+**$2,135,369.63 / $1,801,222.70 / $1,667,467.80**, winner **seed 44**, spread
+**$467,901.83 = 28.06%** and the certificate says *"far from settled"*. Ledger
+**$1,667,467.80** (the profile predicted it to the cent), 386 bars (24 committed
+/ 362 active), 122 in the tray, coarse zone present, ACCEPTED / C2, gap 89.6%,
+contract 1.15, 989s. Rebuild:
+`python tools/spikes/demo_board_4b22a/mint_demo_board.py --calibrated --reuse`
+— `--calibrated` **DELETES** `portfolio_k` from the request rather than setting
+it, because R-CAL1 rule (2) reads `model_fields_set` and a request naming ANY K
+(including the profile's own) refuses the profile. **THE OLD BOARD IS UNTOUCHED**
+and still resolvable: this thread's measurements are calibrated against it, and
+everything below about it still holds.
+
+**THE PREVIOUS DEMO BOARD IS `rolling-c9973708-865` (4B.22a, §5a.84).** `demo_board`
 (`generate_erp_dataset.py`), 280 orders, seed 1, ref 2026-01-05, **window 10 /
 frozen 1**, deterministic, coarse — minted through the API's own two steps.
 386 bars (41 committed / 345 active), 96 late, **47 past-due orders SCHEDULED**,
@@ -1049,6 +1071,82 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   append-only. **Read the Amendment log tail before touching any area it covers.**
 - Session close-outs are written to docs/04 and docs/07 — never narrated here.
 
+**R-F1's MECHANICS, BUILT AT LAST (4B.28, §5a.119, docs/04 2026-08-02
+verbatim).** R-F1 was ruled 2026-07-26 and NOTHING HAD EVER BUILT IT — for six
+sessions the frozen boundary rendered as a labelled line nobody could touch. It
+is a real handle now: hover states it, drag moves it, and the instant + delta
+render DURING the drag with the committed boundary still drawn beside the
+provisional one. **A THAW CHANGES AUTHORITY, NEVER POSITION** — every committed
+assignment the boundary uncovers becomes a STANDING PIN at its exact placement,
+**which is why `frozen_boundary.py` contains no solver** and why the child
+version SHARES ITS PARENT'S RUN AND SNAPSHOT (the placements ARE the parent's
+placements, so the ask path keeps reading the same evidence in the same run dir).
+**A FREEZE ABSORBS THE PINS IT CROSSES** — the first release of a standing pin
+this product has performed, deliberately narrow: only pins the frozen front now
+binds anyway, so no placement is ever left unheld; the general `unpin` verb is
+untouched. **THE CEREMONY IS TWO CALLS** — a preview that mutates nothing and an
+apply handed the preview's own digest — so the count on screen is the count that
+applies and a board that changed under the dialog is REFUSED (4B.25's
+`expect_delta_abs` at a second seam). **DEMONSTRATED END TO END on the Khalil
+board:** thaw 8 (committed 24 -> 16, 8 pins, **placements identical**), ask
+*"why is ORD-000001 pinned?"* -> the boundary move naming its instants and its
+planner, re-freeze 8, **absorb all 8**, placements STILL identical. A drag past
+the window end refuses by name. **`frozen` NOW OWNS "PINNED"** (parse prompt
+**v16**, one MEANING widened, no new intent — the route existed and the assembler
+could answer): before it, "why is ORD-000001 pinned?" went to `attribute-lookup`,
+which correctly said it could not find that field, because *pinned* is not a
+field — it is a fact about AUTHORITY. **NAMED LIMIT: STANDING PINS DO NOT SURVIVE
+A SLICE ROLL** — splicing seam 3 is unbuilt, and the thaw gesture now mints
+exactly the objects seam 3 must preserve, which makes it the strongest argument
+yet for seam 3 being NEXT after the demo.
+
+**SCREEN ROOM, AND THE DROP MAPPING CHOSE THE MECHANISM (4B.28, §5a.121).** Three
+docks (tray / coarse / ask) collapse to a labelled edge, persisted per browser,
+tray and coarse collapsed by default and ask OPEN. **THE BADGE SURVIVES THE
+COLLAPSE** — a collapsed tray reading "BEYOND THE HORIZON 122" is not a hidden
+tray, and that is the Glass Box cardinal danger the tray exists to answer.
+DOWNTIME COMPRESSION uses **vis-timeline's own `hiddenDates`, not a custom
+scale**, and the requirement that decided it is the DROP MAPPING: every
+pixel<->instant conversion already goes through `timeline.body.util` and vis
+applies hidden ranges INSIDE those functions, so R-DP9's tolerance, 4B.23's time
+mapping and the drag's pin stay exact with no second coordinate system. Only
+spans where EVERY row is closed fold (hidden dates are an AXIS property). **A
+FOLD HAS ZERO WIDTH, SO EVERY SEAM IS MARKED** — two bars either side of a folded
+night would otherwise read as ADJACENT, a claim about the plant compression would
+be inventing. LINEAR is the default and the toggle persists: verifying a calendar
+claim is unanswerable on a folded ruler.
+
+**THE GESTURAL DEBT IS PAID, AND ONE DEFECT WAS FOUND ON THE WAY (4B.28,
+§5a.122).** **THE CHUNKED DRAG** was inert because `onPointerDown` tested the
+item id against the ASSIGNMENT index and 4B.20 made a chunked bar's items PIECES
+— so the gesture never started and vis's Hammer pan took the drag. Dragging any
+piece now drags the OPERATION, the pieces travel as one, and the drop **DECLINES
+VISIBLY** in a THIRD card register (not proven-impossible red, not failure alarm)
+with **no "try again"**, checked from the row before any request. **THE ASK
+PATH'S OWN COPY WAS CORRECTED IN THE SAME COMMIT** — it promised *"Dragging the
+bar on the board runs the full re-solve, which can"*, which was never true — so
+the two surfaces state ONE LIMIT (§5a.118(h) discharged). **R-DP9's TOLERANCE**
+was `grid_px x pxToMinutes(1)` ≈ **240 minutes at the default 30-day view** and
+is now a **FIXED 5 WORKING MINUTES** (`feel.snap.noop_tol_min`): jitter is a
+property of the hand and does not scale with the zoom. A no-op SAYS SO. **THE JOB
+PANEL** states every operation of the order from the board's OWN derivation (no
+third computation of any quantity, 4B.21's discipline) and its two intent buttons
+carry `op_seq` exactly — **§5a.118(c) discharged for board users**. **FOUND, NOT
+BRIEFED:** `board.rebind` predated per-chunk rendering and `items.update` INSERTS
+on an unknown id, so every accepted edit on a board with a split operation raised
+a **PHANTOM MERGED BAR** over the pieces still there; one builder, one remover,
+removal by prefix. Also fixed: `board.onSelect` held a SINGLE callback and
+overwrote it, so a second subscriber would have silently unsubscribed the ask
+panel's deictic scope.
+
+**A GUARD THAT CALLS PAST THE BROKEN LINE PROVES NOTHING (4B.28, §5a.123).** Six
+negative controls proven RED against physically reverted code. **A SEVENTH DID
+NOT FIRE**: the chunked-drag control's first version drove `drag.grab(op)`
+programmatically and stayed GREEN against the reverted defect, because the defect
+lives in `onPointerDown`. Rewritten to drive a real pointer on a real chunk
+piece, it went red. **The only way to find that out is to revert the fix and
+look** — 4B.21 §5a.78's species from the other side.
+
 **THE ASK PATH'S EIGHT, AND NOT ONE NEW INTENT (4B.27, §5a.112).** Ten measured
 defects; **eight fixed, one did not reproduce, one NOT BUILT**. Parse prompt
 **v14** widens three MEANINGS and adds nothing — `frozen` may be asked about ONE
@@ -1114,6 +1212,25 @@ disclosed, not answered); the winner's wall (416.9s) EXCEEDS the portfolio's
 
 **Small carry-forwards (do not lose):**
 
+- 4B.28 findings (docs/07 §5a.124 — REPORTED, deliberately NOT fixed; all
+  nine in `docs/closeouts/4B.28.md` §7). The two a session should take next:
+  **STANDING PINS DO NOT SURVIVE A SLICE ROLL** (above) and **THE FOLD SET IS
+  PLANT-WIDE, NOT PER ROW** — only spans where EVERY machine is closed fold,
+  which is the only honest choice under an axis-level mechanism, but on a plant
+  with staggered shifts compression will quietly do far less than it appears to
+  promise and **nothing on screen says so**. Also: the compression-tolerance
+  guard proves INVARIANCE, not the demo-board MAGNITUDE (the rolling fixture
+  spans ~5 days, so the control fired at 155.5 vs 175.0 minutes, not 240); the
+  boundary snaps to the HOUR on an authored token nobody has tuned; the
+  confirmation beat states the COUNT but does not NAME the orders (the plan
+  carries them); a monolithic boundary move is untested in the BROWSER beyond
+  "the handle is not offered"; the job panel's TRAY branch is unexercised live
+  (`_derive_maps` keeps one work package per demand, so a part-placed order is
+  not producible — 4B.22 B3); *"why is this bar held?"* with no subject still
+  lands on CLARIFY `no-subject` (§5a.79's ladder, unchanged); and
+  **`--calibrated` is a flag on a SPIKE SCRIPT, not a product path** — minting a
+  board under its plant's accepted profile should not require knowing that
+  naming K refuses the profile.
 - 4B.29 findings (docs/07 §5a.111 — REPORTED, deliberately NOT fixed; all
   eight in `docs/closeouts/4B.29.md` §8). The two a session should take next:
   **THE PROFILE HAS NO EXPIRY** — R-CAL1 rule (3) speaks of an "expired"
@@ -1254,7 +1371,7 @@ disclosed, not answered); the winner's wall (416.9s) EXCEEDS the portfolio's
   of one question) — humble rather than wrong, but distinguishing "one answer
   because I am confused" from "one answer because it IS the answer" needs a
   signal this session does not have.
-  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, ~88k after 4B.25, ~92k after 4B.26, ~96k after 4B.29, **~102k after 4B.27**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, ~88k after 4B.25, ~92k after 4B.26, ~96k after 4B.29, ~102k after 4B.27, **~110k after 4B.28**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
   **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
   day-shift restriction answered as C1/C2 "proven end to end" when the item is
   C4 (model-proven, §8 doorway). Caught and pinned; the class stands.

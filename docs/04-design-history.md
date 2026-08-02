@@ -14758,3 +14758,93 @@ against the rolling `window_end` (2026-01-15) while the schedule places work in
 detail out to February. The window bounds what a planner is LOOKING AT; the model
 horizon bounds what there is a variable for, and only the second one bounds a
 price.
+
+---
+
+## 2026-08-02 — Session 4B.28: R-F1's MECHANICS, transcribed and built
+
+**R-F1 was ruled on 2026-07-26 (Session 4B.5 CU6) and nothing had ever built
+it.** The ruling said the frozen boundary is PLANNER-MOVABLE and said what each
+direction means; for six sessions the boundary rendered as a labelled line
+nobody could touch. This is the OPERATIONAL READING of that ruling, transcribed
+here as the session's amendment, and the shipped mechanics.
+
+**(a) THE BOUNDARY RENDERS AS A REAL HANDLE.** Hover states it; drag moves it;
+the current instant and the delta render DURING the drag, with the committed
+boundary still drawn beside the provisional one — because "where it was" and
+"where it is going" are two facts a planner is comparing, and showing only the
+second makes the delta unverifiable on screen. The grip is the ONLY
+pointer-taking part of the marker overlay: a full-height hit strip would swallow
+clicks on the bars it is a boundary of. The instant handed on is the SNAPPED
+instant that was displayed, never the raw pointer time — R-DP1's literalness on
+a different object.
+
+**(b) PULLING IT EARLIER IS A THAW, AND A THAW CHANGES AUTHORITY, NEVER
+POSITION.** Every committed assignment between the new and old boundary
+converts to a STANDING PIN at its exact placement. Nothing becomes
+free-floating. **That one line is why this module contains no solver:** there is
+nothing to re-solve, because nothing moves. The child version shares its
+parent's run and snapshot — the placements ARE the parent's placements — and
+`tests/test_frozen_boundary.py` asserts the identity as a property rather than
+trusting the comment. The bars restyle from committed to pinned in the same
+repaint that changes who holds them, because a planner holding work they cannot
+see they hold is the silent-state class this product keeps ruling against.
+
+**(c) PUSHING IT LATER IS A FREEZE, AND IT ABSORBS THE PINS IT CROSSES.** Active
+work before the new boundary becomes committed; a standing pin the boundary
+crosses is absorbed into the commitment and RECORDED as absorbed. The pin leaves
+the register rather than co-existing with a commitment that already binds the
+same placement — two claims about one bar, and a constraint applied twice.
+**This is the first release of a standing pin this product has ever performed,
+and it is deliberately narrow:** it releases ONLY pins the frozen front now
+binds anyway, so no placement is ever left unheld. The general `unpin` verb
+remains a named carry-forward and is NOT this.
+
+**(d) EVERY BOUNDARY MOVE IS EVIDENCE — THE ACT, NOT ONLY ITS CONSEQUENCES.**
+One `planner_edit` Decision, driver `FROZEN_COMMITMENT` (an existing code; no
+vocabulary was added), subjects = every operation whose state changed, and the
+alternative NAMED because it is real: the planner could have left the boundary
+where it was. The document carries the act too — contract **1.15**,
+`rolling.boundary_moves` — and that is what makes the ask path able to answer
+*"why is this bar pinned"*. **Recording only the consequence would leave the
+board showing a pin it could not explain.** `changed_ops` is explicit rather
+than inferrable from two timestamps: a second move across the same span would
+make the inference wrong.
+
+**THE ASK PATH REUSES THE FROZEN ROUTE AND BUILDS NO SECOND READER.** "Why is
+this pinned" is a question about the frozen zone, so 4B.27's `frozen` route
+answers it, from `rolling.boundary_moves` — the same document the board renders.
+It fires only when BOTH halves hold: an assignment carrying a standing pin AND a
+recorded thaw that minted it. A pin from an ACCEPTED DRAG is a different act
+with a different explanation, and claiming a boundary move for one would be the
+confident-wrong class. The LATEST thaw wins: a bar thawed, re-frozen and thawed
+again is pinned by the most recent act, and reporting the first would be a true
+fact about the wrong event (4B.15 Item 0's shape).
+
+**(e) A CONFIRMATION BEAT BEFORE COMMIT, AND THE COUNT IT STATES IS THE COUNT
+THAT APPLIES.** An accidental three-day thaw of forty assignments must not
+happen from a slip of the wrist. So the ceremony is TWO CALLS — a preview that
+mutates nothing and an apply handed the preview's own digest — and the sentence
+on screen is composed SERVER-SIDE by the same function the apply runs. The UI
+never counts bars for itself. A board that changed under the dialog is REFUSED
+rather than edited by a confirmation describing a different one: 4B.25's
+`expect_delta_abs` discipline at a second seam.
+
+**(f) THE DOCUMENT ROUND-TRIPS IT.** Commitment states, standing-pin flags, the
+boundary and the move log all persist through the normal save path. The 4B.3a
+completeness invariant is untouched — a boundary move changes no demand's
+disposition, only who may move its placement.
+
+**A REFUSAL IS AN ANSWER AND READS AS ONE.** "This board has no frozen
+boundary", "that is outside this window" and "the board changed under you" are
+three different facts and get three different sentences, in the REFUSAL
+register — never the failure register, which is reserved for a beat we could not
+complete (4B.23 §5a.91). The two window edges refuse SEPARATELY: before the
+window start there is nothing to thaw, past the window end there is nothing
+solved to commit, and reporting one generic "out of range" would fuse two facts
+about the board.
+
+**NAMED LIMIT, AND IT IS THE STRONGEST ARGUMENT YET FOR SPLICING SEAM 3.**
+Standing pins DO NOT SURVIVE A SLICE ROLL. Seam 3 is unbuilt, so **the thaw
+gesture now mints exactly the objects seam 3 must learn to preserve.** Within
+one board's life the ceremony is complete; across a re-solve it is not.

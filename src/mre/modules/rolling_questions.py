@@ -207,12 +207,57 @@ def _frozen_for_order(doc: Any, r: dict, order_ref: str) -> Optional[str]:
                 f"frozen boundary ({frozen_until}) is committed, and {resolved} "
                 f"has not reached the first of those.")
     if region == "in-window":
+        # R-F1(d), Session 4B.28: a bar that is PLANNER-HELD got that way somehow,
+        # and on a rolling board there is exactly one way — the boundary was
+        # pulled back past it. The frozen route is where that question already
+        # lands ("why is this pinned" is a question about the frozen zone), so it
+        # answers here rather than in a second reader.
+        pinned = _thaw_sentence(doc, resolved)
+        if pinned:
+            return pinned
         return (f"{resolved} is placed, but after the frozen boundary "
                 f"({frozen_until}) — it sits in the active part of this window"
                 + (f", which runs to {window_end}" if window_end else "")
                 + f". That is the whole difference: work before the boundary is "
                   f"committed and will not move, work after it is still being "
                   f"solved and can move as the schedule rolls.")
+    return None
+
+
+def _thaw_sentence(doc: Any, order: str) -> Optional[str]:
+    """"Why is this bar pinned?" — answered from the boundary move that pinned it.
+
+    Returns None unless (a) an assignment for this order carries a standing pin
+    AND (b) ``rolling.boundary_moves`` records the thaw that minted it. Both
+    halves matter: a standing pin from an ACCEPTED DRAG is a different act with a
+    different explanation, and claiming a boundary move for one would be the
+    confident-wrong class. With no recorded thaw this says nothing and the caller
+    falls through to the ordinary active-window answer.
+    """
+    from mre.modules.frozen_boundary import thaw_origin
+
+    d = doc if isinstance(doc, dict) else (
+        doc.model_dump(mode="json") if hasattr(doc, "model_dump") else {})
+    key = str(order).upper()
+    for a in d.get("assignments") or []:
+        if not a.get("standing_pin"):
+            continue
+        if key not in {str(w).upper() for w in (a.get("work_orders") or [])}:
+            continue
+        move = thaw_origin(d, a.get("operation_ref"))
+        if move is None:
+            continue
+        when = _fmt_date(move.get("at"))
+        was = _fmt_date(move.get("from_instant"))
+        now = _fmt_date(move.get("to_instant"))
+        who = move.get("authority") or "a planner"
+        return (f"{order} is pinned because the frozen boundary was pulled back "
+                f"past it. It was committed up to {was}; on {when} {who} moved "
+                f"the boundary to {now}, which uncovered this placement and "
+                f"handed it to you as a pin. It did not move — a thaw changes "
+                f"who holds a placement, never where it sits — so it is exactly "
+                f"where the solver put it, and it will stay there until you "
+                f"move it or re-freeze past it.")
     return None
 
 

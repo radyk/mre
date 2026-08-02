@@ -40,9 +40,21 @@ async function boot(page, schedule) {
 const probe = (page) => page.evaluate(() =>
   (window.__cockpit.coarseBand && window.__cockpit.coarseBand.probe()) || null);
 
+// Session 4B.28 Item 2(a): the coarse dock now ships COLLAPSED by default
+// (screen room — a stranger does not need a density grid in their first ten
+// seconds). Its CONTENT is unchanged and its BADGE states the binding count
+// while collapsed, so these specs expand it and then assert exactly what they
+// always asserted. A spec that quietly stopped opening the dock would be
+// testing the collapse, not the band.
+const expand = (page) => page.evaluate(() => {
+  const d = window.__cockpit.docks && window.__cockpit.docks.coarse;
+  if (d && !d.isOpen()) d.set(true);
+});
+
 // --- POPULATED -----------------------------------------------------------
 test("the density band renders LOAD cells, and never a bar", async ({ page }) => {
   await boot(page, ROLLING);
+  await expand(page);
   const band = page.locator("#coarse-band");
   await expect(band, "the band is mounted").toBeVisible();
   const p = await probe(page);
@@ -60,6 +72,7 @@ test("the density band renders LOAD cells, and never a bar", async ({ page }) =>
 
 test("the band states the derate AND its provenance", async ({ page }) => {
   await boot(page, ROLLING);
+  await expand(page);
   const p = await probe(page);
   // CLAUSE (3): a defaulted derate can never read as the plant's own choice.
   expect(["declared", "defaulted"]).toContain(p.derateProvenance);
@@ -76,6 +89,7 @@ test("the band states the derate AND its provenance", async ({ page }) => {
 test("a coarse zone over an empty tray renders an EMPTY band, not a hidden one",
   async ({ page }) => {
     await boot(page, EMPTY);
+    await expand(page);
     const band = page.locator("#coarse-band");
     await expect(band, "the band is still mounted when there is no load").toBeVisible();
     const p = await probe(page);
@@ -90,6 +104,7 @@ test("a coarse zone over an empty tray renders an EMPTY band, not a hidden one",
 test("a binding cell's tooltip states its own arithmetic and its caveat",
   async ({ page }) => {
     await boot(page, HOT);
+    await expand(page);
     const p = await probe(page);
     expect(p.hot, "at least one machine-week is at capacity").toBeGreaterThan(0);
     // the arithmetic, never just the colour
@@ -114,6 +129,7 @@ test("a binding cell's tooltip states its own arithmetic and its caveat",
 
 test("a band with nothing excluded invents no caveat", async ({ page }) => {
   await boot(page, ROLLING);
+  await expand(page);
   const p = await probe(page);
   // The real board's plant excludes nothing at demo density; the caveat must
   // appear only when there is something to caveat (both directions, CU2).

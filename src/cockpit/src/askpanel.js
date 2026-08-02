@@ -377,6 +377,10 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
 
   return {
     run, deictic,
+    // Session 4B.28 Item 2(a): the collapsed ASK edge's badge — how many turns
+    // this conversation holds. Null (no badge) on an untouched panel, because a
+    // "0" beside a label a stranger has not used yet reads as an error count.
+    turnCount() { return askHistory.length || null; },
     setScheduleId(id) { scheduleId = id; },
     // A version change may have MOVED the selected op (its resource/time is now
     // stale): drop the deictic scope so the next "why is this here?" is composed

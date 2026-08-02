@@ -982,8 +982,13 @@ test("R-DP9 (CU2): a drop back on the incumbent is a NO-OP — no sandbox, no ca
   }, [op, inc.resource_id, inc.start]);
   expect(res.noop, "drop() returned a no-op result").toBe(true);
 
-  // the cue is shown; no delta card is raised
-  await expect(page.locator(".drag-noop")).toContainText("already here");
+  // the cue is shown; no delta card is raised. Session 4B.28 Item 4(b): the cue
+  // now NAMES THE TOLERANCE it applied, because the defect it replaces was
+  // invisible precisely because nothing on screen reported the number — a
+  // zoom-scaled threshold silently swallowing a four-hour drag reads to a
+  // planner exactly like the drop never happened.
+  await expect(page.locator(".drag-noop")).toContainText("already sits");
+  await expect(page.locator(".drag-noop")).toContainText("5 minutes");
   expect(await page.locator(".delta-card:not(.hidden)").count(), "no delta card for a no-op").toBe(0);
 
   await page.waitForFunction(() => window.__cockpit.drag.state().phase === "idle", { timeout: 2000 });

@@ -164,6 +164,30 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     return card;
   }
 
+  // A DECLINE is a THIRD register, and the distinction is ruled (4B.30 §5a.116,
+  // this session Item 4(a)): `showImpossible` is a fact about the PLANT, proven;
+  // `showFailure` is something that broke; a DECLINE is a standing limit of ours
+  // that nothing will fix by retrying, so it offers no "try again" — that button
+  // would promise a different answer to the identical gesture. The words are the
+  // ask path's own (renderers.py, branch "chunked"): one limit, one wording.
+  function showDeclined({ what, limit } = {}) {
+    _stopCountdown();
+    card.className = "delta-card declined";
+    card.innerHTML = `
+      <div class="dc-head">
+        <span class="dc-outcome declined">I can't price this move</span>
+        <span class="dc-status">a limit of mine, not a verdict</span>
+      </div>
+      <div class="dc-reason"></div>
+      <div class="dc-detail-cause"></div>
+      <div class="dc-note">the bar is back where it was — nothing changed.</div>
+      <div class="dc-actions"><button class="dc-discard">Close</button></div>`;
+    card.querySelector(".dc-reason").textContent = String(what || "");
+    card.querySelector(".dc-detail-cause").textContent = String(limit || "");
+    card.querySelector(".dc-discard").addEventListener("click", () => onDiscard && onDiscard());
+    return card;
+  }
+
   // FAILURE is an APOLOGY: WE could not finish, so the plant said nothing and
   // nothing may be claimed on its behalf. It names WHICH BEAT failed and offers
   // a retry. The `what` is an AUTHORED sentence — the raw transport string never
@@ -772,6 +796,7 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
   }
 
   return { showPending, showPricing, showResult, showAccepted, showPublished,
-           showRefused, showImpossible, showFailure, showSearching, showAudit,
+           showRefused, showImpossible, showDeclined, showFailure,
+           showSearching, showAudit,
            showAuditAccepted, hide, el: card };
 }

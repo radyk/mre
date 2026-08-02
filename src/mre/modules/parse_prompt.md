@@ -1,6 +1,6 @@
 # Question-parse prompt — a GOVERNED ARTIFACT (R-AI5(1))
 
-    prompt_version: 15
+    prompt_version: 16
     ruling:         R-AI5(1) — every question is parsed FIRST by a language model
                     against a CLOSED intent vocabulary, with the conversation
                     history, live board selection, and last-answered subject as
@@ -297,6 +297,28 @@
                     a LATER move of one operation on the machine it already sits
                     on is `what-would-change`. It keeps the MACHINE change,
                     which is the board gesture it was built for.
+
+    v16:            Session 4B.28 (2026-08-02) — `frozen` ALSO OWNS "PINNED".
+                    One meaning widened, no new intent, and for the third time
+                    the reason 4B.27 gives: the route existed and the assembler
+                    could already answer.
+
+                    R-F1's thaw makes a placement PLANNER-HELD, and the one
+                    question a planner asks of a held bar is *why*. Measured on
+                    the Khalil board immediately after a live thaw, "why is
+                    ORD-000001 pinned?" went to `attribute-lookup`, which
+                    correctly reported that it could not find that field —
+                    because "pinned" is not a declared field. It is a fact about
+                    AUTHORITY, and on a rolling board it has exactly one cause:
+                    the boundary was pulled back past that bar. The same order
+                    asked as "is ORD-000001 in the frozen zone?" got the whole
+                    answer, naming the move, the instant and the planner.
+
+                    So the meaning now says `frozen` owns "pinned" and "held"
+                    and "why can't the solver move this one", and says out loud
+                    that "pinned" is not a field — because the wrong route was
+                    not a wild guess, it was a reasonable reading of a word this
+                    vocabulary had never claimed.
 
 ## Review discipline
 

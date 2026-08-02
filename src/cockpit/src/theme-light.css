@@ -225,4 +225,10 @@
   --hc-ink: var(--ink);
   --hc-edge: var(--grid);
   --hc-shadow: var(--shadow-3);
+
+  /* Downtime compression fold marks (Session 4B.28 Item 2(b)) — a tear in the
+   * paper, not a highlight: it must read as "the ruler is folded here", never
+   * as a band carrying data. */
+  --fold-fill: rgba(28, 30, 40, 0.10);
+  --fold-edge: rgba(28, 30, 40, 0.34);
 }

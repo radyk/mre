@@ -20,6 +20,14 @@ export const DEFAULT_FEEL = {
     grid_px: 8,            // coarse time-grid fallback in open space
     grid_step_min: 30,     // the fallback grid resolution (minutes)
     falloff: 1.6,          // >1 = softer approach, harder final click
+    // R-DP9's no-op threshold, in WORKING MINUTES and NOT in pixels (Session
+    // 4B.28 Item 4(b)). Every other number in this block is a pixel radius,
+    // because every other number describes how close the POINTER has to get to
+    // an anchor — a screen fact. This one describes how small a MOVE has to be
+    // before it is not a move, which is a fact about the plant's clock, and
+    // deriving it from pixels made it ~240 minutes at the default zoom. Five
+    // minutes is jitter; anything more is intent, and intent gets priced.
+    noop_tol_min: 5,
   },
   // --- Tier-0 shading emphasis (CU5) — separate opacity multipliers for the
   // legal (green) zones and the forbidden (dim) wash. On a busy board most rows

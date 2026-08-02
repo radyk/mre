@@ -223,6 +223,22 @@ class AcceptRequest(BaseModel):
     hold_all_placements: bool = True
 
 
+class BoundaryRequest(BaseModel):
+    """MOVE THE FROZEN BOUNDARY (R-F1, Session 4B.28 Item 1).
+
+    ``frozen_until`` is the instant the planner dragged the handle to, exactly as
+    displayed (R-DP1's literalness, on a different object). ``expect_digest`` is
+    the preview's own fingerprint handed back: an apply that describes a board
+    that has since changed is REFUSED rather than applied to whatever is there
+    now — 4B.25's ``expect_delta_abs`` discipline at a second seam. Optional, so
+    a caller that never previewed simply gets no check and is told so by the
+    absence of one.
+    """
+    frozen_until: str
+    authority: str = "dev-planner"
+    expect_digest: Optional[str] = None
+
+
 class AskRequest(BaseModel):
     question: str
     llm: bool = False               # honored only if ANTHROPIC_API_KEY is set
@@ -807,6 +823,57 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
             "status": "proposed",
             "decision": decision,
         }, status_code=201)
+
+    # ------------------------------------------------------------------
+    # THE MOVABLE FROZEN BOUNDARY (R-F1, Session 4B.28 Item 1) — two calls,
+    # deliberately. The preview is what the CONFIRMATION BEAT states, and the
+    # apply is handed the digest of the thing that was confirmed. One call would
+    # mean the count on screen and the count that applied were computed twice.
+    # ------------------------------------------------------------------
+
+    @app.post("/schedules/{schedule_id}/boundary/preview")
+    def preview_boundary(schedule_id: str, req: BoundaryRequest):
+        """What moving the boundary to ``frozen_until`` WOULD do. Mutates
+        nothing, mints nothing, records nothing."""
+        from mre.modules.frozen_boundary import BoundaryRefused, plan_move
+        row = _live_schedule(registry, schedule_id)
+        try:
+            doc = json.loads(
+                Path(row["document_path"]).read_text(encoding="utf-8"))
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(409, f"could not read the schedule document: "
+                                     f"{type(exc).__name__}") from exc
+        try:
+            plan = plan_move(doc, req.frozen_until,
+                             standing_pins=registry.schedule_pins(schedule_id))
+        except BoundaryRefused as ref:
+            return _ok({"refused": True, "code": ref.code,
+                        "sentence": ref.sentence})
+        return _ok({"refused": False, **plan.to_dict()})
+
+    @app.post("/schedules/{schedule_id}/boundary", status_code=201)
+    def move_boundary(schedule_id: str, req: BoundaryRequest):
+        """Apply the boundary move — R-F1's ceremony, committed.
+
+        A THAW converts the commitments it uncovers into standing pins at their
+        exact placements; a FREEZE commits the active work it covers and absorbs
+        any pin it crosses. NOTHING IS RE-SOLVED and nothing moves, so this mints
+        a new version WITHOUT a solver run: the child shares the parent's run and
+        snapshot (the placements are literally the same placements) and differs
+        only in who may touch them."""
+        from mre.modules.frozen_boundary import BoundaryRefused
+        base = _live_schedule(registry, schedule_id)
+        if base["is_scenario"]:
+            raise HTTPException(409, "a what-if scenario has no frozen "
+                                     "boundary of its own; move it on the base "
+                                     "schedule")
+        try:
+            new_id, summary = _execute_boundary_move(registry, base, req)
+        except BoundaryRefused as ref:
+            return _ok({"refused": True, "code": ref.code,
+                        "sentence": ref.sentence}, status_code=409)
+        return _ok({"schedule_id": new_id, "parent_schedule_id": schedule_id,
+                    "status": "proposed", "boundary": summary}, status_code=201)
 
     @app.post("/schedules/{schedule_id}/publish")
     def publish_schedule(schedule_id: str):
@@ -1530,6 +1597,109 @@ def _execute_accept(registry: Registry, base_schedule: dict, req: "AcceptRequest
         "moved_count": result.moved_count, "pin": result.pin,
     }
     return document.schedule_id, decision
+
+
+def _execute_boundary_move(registry: Registry, base_schedule: dict,
+                           req: "BoundaryRequest") -> tuple[str, dict]:
+    """Materialize a frozen-boundary move (R-F1, Session 4B.28 Item 1).
+
+    THE SHAPE OF THIS FUNCTION IS THE RULING. There is no solver call, no
+    snapshot copy and no re-extraction, because a thaw changes AUTHORITY and not
+    POSITION: the child's placements ARE the parent's placements, so it shares
+    the parent's run and snapshot and only its document differs. That is also
+    what makes the ask path work unchanged — the evidence a question is answered
+    from is the same evidence, in the same run dir.
+
+    Every boundary move is EVIDENCE (R-F1(d)): one ``planner_edit`` Decision,
+    driver ``FROZEN_COMMITMENT``, subjects = every operation whose commitment
+    state changed, written into the run's own sink so ``EvidenceIndex`` finds it
+    with nothing new to teach.
+    """
+    import uuid as _uuid
+
+    from mre.contracts.records import DecisionAlternative, EntityRef
+    from mre.contracts.schedule_document import CONTRACT_VERSION
+    from mre.contracts.vocabularies import (
+        DecisionBasis, DecisionType, DriverCode, ModuleCode, RecordTier,
+        RunStatus,
+    )
+    from mre.modules.frozen_boundary import apply_move
+    from mre.reporter import Reporter
+
+    doc_path = Path(base_schedule["document_path"])
+    try:
+        doc = json.loads(doc_path.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(409, f"could not read the schedule document: "
+                                 f"{type(exc).__name__}") from exc
+
+    new_schedule_id = f"rolling-b{_uuid.uuid4().hex[:11]}"
+    result = apply_move(
+        doc, req.frozen_until,
+        standing_pins=registry.schedule_pins(base_schedule["id"]),
+        authority=req.authority, expect_digest=req.expect_digest,
+        schedule_id=new_schedule_id,
+    )
+    plan = result.plan
+
+    # The child document sits BESIDE its parent in the same run dir, under its
+    # own name — never over it. `/interaction` reads `interaction.json` from the
+    # document's own directory, so the child inherits the parent's Tier-0 payload,
+    # which is correct to the letter: identical placements, identical legality.
+    out_dir = doc_path.parent
+    child_path = out_dir / f"schedule_document_{new_schedule_id}.json"
+    longpath.write_text(child_path, json.dumps(result.document, indent=2))
+
+    run = registry.get_run(base_schedule["run_id"])
+    reporter = Reporter.begin(
+        module=ModuleCode.M4, purpose="frozen-boundary move",
+        config={"from": result.move_block["from_instant"],
+                "to": result.move_block["to_instant"],
+                "direction": plan.direction, "authority": req.authority,
+                "parent_schedule_id": base_schedule["id"],
+                "schedule_id": new_schedule_id},
+        trigger="planner_boundary", snapshot_id=base_schedule["snapshot_id"],
+        sink_dir=Path(run["out_dir"]) / "runs",
+    )
+    subjects = [EntityRef(entity_type="operation", entity_id=op)
+                for op in plan.changed_ops]
+    # THE ALTERNATIVE IS REAL AND IT IS THE POINT: the planner could have left
+    # the boundary where it was. Naming it is what makes the record answer "why
+    # is this bar pinned" rather than merely "this bar is pinned".
+    alternatives = [DecisionAlternative(
+        option=f"leave the frozen boundary at {result.move_block['from_instant']}",
+        consequence=(
+            f"{plan.count} placement(s) would stay "
+            + ("committed and untouchable by the planner"
+               if plan.direction == "thaw"
+               else "active and movable by the solver as the schedule rolls")),
+    )]
+    decision = reporter.record_decision(
+        decision_type=DecisionType.PLANNER_EDIT,
+        subjects=subjects, chosen=result.move_block, alternatives=alternatives,
+        driver=DriverCode.FROZEN_COMMITMENT, basis=DecisionBasis.OBSERVED,
+        tier=RecordTier.HEADLINE, authority=req.authority,
+        message=(f"Frozen boundary {plan.direction}: "
+                 f"{result.move_block['from_instant']} -> "
+                 f"{result.move_block['to_instant']}; {plan.count} placement(s) "
+                 f"changed state"),
+    )
+    reporter.end(RunStatus.SUCCESS)
+
+    registry.register_schedule(
+        schedule_id=new_schedule_id, run_id=base_schedule["run_id"],
+        snapshot_id=base_schedule["snapshot_id"], status="proposed",
+        contract_version=CONTRACT_VERSION, document_path=child_path,
+        submission_id=base_schedule["submission_id"], is_scenario=False,
+        parent_schedule_id=base_schedule["id"], pins=result.pins,
+    )
+    summary = {**plan.to_dict(), "decision_record_id": decision.record_id,
+               "authority": req.authority,
+               "committed_count": (result.document.get("rolling") or {})
+                                  .get("committed_count"),
+               "active_count": (result.document.get("rolling") or {})
+                               .get("active_count")}
+    return new_schedule_id, summary
 
 
 def _execute_audit_accept(registry: Registry, base_schedule: dict,

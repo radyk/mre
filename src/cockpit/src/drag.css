@@ -241,6 +241,19 @@
 .dc-outcome.impossible { color: var(--grade-rejected); }
 .delta-card.failure { border-left-color: var(--reg-judgment); }
 .dc-outcome.failure { color: var(--reg-judgment); }
+/* A DECLINE (Session 4B.28 Item 4(a)) is a THIRD register and must not be
+ * mistaken for either neighbour: not the rejected red of a proven-impossible
+ * placement (that is a claim about the plant) and not the alarm of a failure
+ * (that is something that broke). It reads as a note about US — the same hue
+ * the interpretive/synthesis register uses for a qualified claim. */
+.delta-card.declined { border-left-color: var(--reg-synthesis); }
+.dc-outcome.declined { color: var(--reg-synthesis); }
+
+/* Item 4(a): a chunked operation's carry — one ghost per piece, rigidly offset,
+ * so the whole job visibly travels together. The pieces share the carry look;
+ * only the first carries the label, exactly as the board's own chunk pieces do. */
+.carry-bar.carry-piece { pointer-events: none; }
+.carry-bar.carry-piece:not(.carry-first) { opacity: 0.82; }
 /* The authored cause of a failure — a sentence, not a stack trace. It reads as
  * prose because a planner is meant to read it; the raw transport string is on
  * `drag.state().failure.technical` and in the console, for whoever is debugging. */

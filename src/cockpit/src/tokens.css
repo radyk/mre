@@ -131,6 +131,52 @@
   --committed-inset: 1.5px;         /* the locked-edge inset on a committed bar */
   --beyond-tray-h: 116px;           /* the docked beyond-horizon tray height */
 
+  /* --- THE MOVABLE FROZEN BOUNDARY (Session 4B.28 Item 1, R-F1) -------
+   * The grip is the ONLY pointer-taking part of the marker overlay, so its
+   * size is a real affordance decision and not decoration: too small and a
+   * planner cannot find it, too tall and it starts eating bar clicks. */
+  --boundary-grip-w: 13px;          /* grip hit width (centred on the line) */
+  --boundary-grip-h: 30px;          /* grip hit height, from the top of the lanes */
+  --boundary-grip-radius: var(--radius-sm);
+  --boundary-drag-width: 3px;       /* the provisional line while dragging */
+  --boundary-was-opacity: 0.35;     /* the committed boundary, ghosted mid-drag */
+  --boundary-snap-min: 60;          /* drag snap granularity, MINUTES (markers.js) */
+  --boundary-confirm-w: 340px;      /* the confirmation beat's card width */
+
+  /* --- THE JOB PANEL (Session 4B.28 Item 3) ---------------------------
+   * A floating panel over the board, opened by a bar click. Width is the one
+   * real decision: it must hold "op 30  PRESS-02  late" on one line without
+   * wrapping at demo density, and must not cover more than a third of the
+   * board. */
+  --job-panel-w: 268px;
+  --job-panel-max-h: 62%;
+  --job-panel-top: var(--sp-3);
+  --job-row-gap: var(--sp-1);
+  --job-flash-dur: 900ms;          /* the navigate-to-bar flash (row click) */
+
+  /* --- VERTICAL DENSITY (Session 4B.28 Item 2(c)) ---------------------
+   * How many machines fit on screen at demo density. Defaults are deliberately
+   * CONSERVATIVE — the label must stay readable — and these are the knobs for
+   * Daryn's panel pass, not a final answer. `--lane-min-h` is the floor vis is
+   * given per group; `--bar-h` the bar within it. */
+  --lane-min-h: 30px;
+  --lane-pad-y: 4px;
+  --bar-h: 20px;
+  --bar-label-fs: var(--fs-2xs);
+
+  /* --- COLLAPSIBLE DOCKS (Session 4B.28 Item 2(a)) --------------------- */
+  --dock-edge-h: 26px;             /* a collapsed dock's labelled edge */
+  --dock-badge-fs: var(--fs-2xs);
+
+  /* --- DOWNTIME COMPRESSION (Session 4B.28 Item 2(b)) ------------------
+   * `--fold-w` is the on-screen width a compressed closed span collapses to.
+   * It is NOT zero on purpose: a fold that occupied no pixels would make two
+   * non-adjacent bars render as touching, which is the one thing compression
+   * must never say. */
+  --fold-w: 14px;
+  --fold-hatch-px: 4px;
+  --fold-mark-w: 2px;
+
   /* --- the COARSE ZONE's density band (Session 4B.6 CU5) --------------
    * Clause (6): coarse output is LOAD, not placement, so it gets its own
    * geometry — a resource x bucket grid, never the timeline's bar metrics. */

@@ -2,6 +2,8 @@
 
 **Document 7** · Status: v2.76 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
 
+**v2.77:** **Session 4B.28 - the board serves a person using it.** 2026-08-02 (contract 1.14 -> **1.15**; parse prompt v15 -> **v16**; R-F1's mechanics transcribed and built, verbatim in docs/04; narrative in `docs/closeouts/4B.28.md`). **R-F1 WAS RULED 2026-07-26 AND NOTHING HAD EVER BUILT IT** - for six sessions the frozen boundary rendered as a labelled line nobody could touch. It is a real handle now, and **THE CEREMONY IS COMPLETE END TO END ON THE NEW DEMO BOARD**: thaw 8 placements, ask *"why is ORD-000001 pinned?"* and get the boundary move that pinned it (naming the instant and the planner), re-freeze, absorb all 8, and **the placements are byte-identical to the board we started on** (5a.119). **THAT IS WHY THE MODULE CONTAINS NO SOLVER** - a thaw changes AUTHORITY, never POSITION - and it is why the child shares its parent's RUN AND SNAPSHOT, which is what keeps the ask path working unchanged. **THE CONFIRMATION BEAT'S COUNT IS THE SERVER'S COUNT** and the apply carries the preview's own digest, so a board that changed under the dialog is REFUSED (4B.25's `expect_delta_abs` at a second seam). **THE KHALIL BOARD IS `rolling-db5395dc-2ae`** (5a.120): the same world as `rolling-c9973708-865` under its ACCEPTED calibration - **$1,667,467.80, K=3 declared, seeds 42-44 spread 28.06%, seed 44 wins**, exactly what the profile predicted. **SCREEN ROOM (5a.121):** three collapsible docks whose **BADGES SURVIVE THE COLLAPSE** (a collapsed tray reading 122 is not a hidden tray), and downtime compression built on vis's own `hiddenDates` **BECAUSE THE DROP MAPPING DECIDED THE MECHANISM** - every pixel<->instant conversion already goes through vis, so R-DP9's arithmetic stays exact for free; **a fold has ZERO width, so every seam is MARKED**, or two bars either side of a folded night would read as adjacent. **THE GESTURAL DEBT IS PAID (5a.122):** the chunked drag moves as one and **DECLINES VISIBLY in the ask path's own words** - and the ask path's copy, which promised the board could do what the board could not, was CORRECTED IN THE SAME COMMIT (**one limit, said the same way on both surfaces**; 5a.118(h) discharged); R-DP9's tolerance is a **FIXED 5 WORKING MINUTES** instead of ~240 at the default zoom. **THE JOB PANEL'S BUTTONS CARRY `op_seq`**, discharging 5a.118(c) for board users. Guards: 30 Python + 22 Playwright x 2 themes, **six negative controls proven RED against physically reverted code** - and **a seventh that did NOT fire until the test was rewritten to drive a real pointer** (5a.123). 5a.119-124.
+
 **v2.76:** **Session 4B.30 - the later direction.** 2026-08-01 (parse prompt v14 -> **v15**; two `ParsedQuestion` fields; no contract change, no new intent; narrative in `docs/closeouts/4B.30.md`). **THE CENSUS FOUND SOMETHING SHARPER THAN "ANSWERED IN THE WRONG DIRECTION" (5a.114):** seven direction-bearing phrasings on the demo board, and **SIX RETURNED ONE BYTE-IDENTICAL PARAGRAPH** - including the one that asks for EARLIER, so the two opposite questions were indistinguishable in the output. **The `deaf` rider fired on four of them and was right every time**; nothing downstream could act on what it saw. `swap-move`'s single-order branch was direction-blind too and is fixed in the same commit. **A LEVER IS A NECESSARY CONDITION; A PLACEMENT IS A MEASUREMENT (5a.115)** - which is why this route may say *"it costs +$600.00"* where `what-would-change` must say *"that removes the barrier"*: `local_price` (4B.24) holds every other placement, moves the one bar and re-validates the ledger, so the priced pin is a FACT. Three things every time - cost, displacement (usually EMPTY, and said so), and the due-date verdict with **R-PD1 clause (4)'s floor stated ONCE** as unmovable. **THE REFUSALS ARE THE ROUTE (5a.116):** on this board ONE of seven live turns priced directly. Five branches, each with authored copy, and the governing split is `CHUNKED`/`UNPRICEABLE` = OUR PROCESS vs `COLLISION`/`PRECEDENCE`/`CLOSURE`/`FROZEN` = THE PLANT - the ruled species a SIXTH time. **A SHIFT BOUNDARY IS A SNAP; A DECLARED CLOSURE IS AN ANSWER (5a.117)**: the first resolver slid a planner silently past the maintenance day they were asking about, and made the closure branch structurally unreachable. **THE PRICE WAS BEING ASKED THE WRONG QUESTION AND A ZERO-DISTANCE MOVE FOUND IT** - the ask path now restricts to the window's op set exactly as the DRAG path has since 4B.3c CU3, and **a window is not a horizon**. Guard: 74 tests, a five-part premise class, and **five negative controls proven RED against physically reverted code, one per branch class**; the earlier direction proven **BYTE-IDENTICAL against a HEAD worktree**. Full non-slow suite 2368 passed / 277 skipped. 5a.114-118.
 
 **v2.75:** **Session 4B.27 - the conversational batch.** 2026-08-01 (parse prompt v14; no contract change; narrative in `docs/closeouts/4B.27.md`). Ten measured ask-path defects: **eight fixed, one did not reproduce, one not built**. **SEVEN OF THE EIGHT COST NO VOCABULARY CHANGE** - the route existed and the assembler could answer; what was missing was a MEANING, a PARAM or a DOCUMENT. The delta card called **two different quantities "lateness"** (clamped plan tardiness vs signed per-order lateness) and the brief's floor/controllable framing is CORRECTED. The solve's timing was **unrecorded, not unread**, and fixing the reader's field names alone would have reported 1.4ms for a 400-second search. **R-BK1's portfolio is now reachable from the ask path** (§5a.106(g) discharged) - and the K=1 sentence's first version told a PROVED board it might have found something cheaper, caught in this session's own verification. "Tight" is the BOARD's band, **not** the opener's at-risk set. Item 1 (the later-direction counterfactual) is NOT BUILT and item 7 DID NOT REPRODUCE - its requested remedy would have been a deterministic classifier. §5a.112-113.
@@ -4962,6 +4964,122 @@ path now declines it honestly while the BOARD gesture does not: two surfaces, on
 limit, one of them silent.
 **(i) THE PARSE'S DIRECTION IS MEASURED, NEVER PINNED** — the guards assert the
 DISPATCH and the ASSEMBLERS; the transcript is the evidence for the parse.
+
+
+**§5a.119 — R-F1'S MECHANICS, BUILT AND DEMONSTRATED (Session 4B.28 Item 1).**
+The ruling is transcribed verbatim in docs/04 (2026-08-02). What was measured:
+on the Khalil board, a thaw to 2026-01-05T12:00 previews **8 placements** with a
+server-composed sentence and a digest; the apply mints `rolling-b9adc31c560b`
+(committed 24 → 16, active 362 → 370, **8 standing pins**) and **every placement
+is identical**; the ask path answers *"why is ORD-000001 pinned?"* with the move,
+its instants and its authority; the re-freeze commits 8, **ABSORBS all 8 pins**,
+and the placements are **still** identical to the original. A drag past the
+window end refuses by name (`after_window`). **THE CHILD SHARES ITS PARENT'S RUN
+AND SNAPSHOT** — nothing was re-solved, so there is nothing new to point at, and
+the ask path keeps reading the same evidence in the same run dir. Contract
+**1.15** adds `rolling.boundary_moves`: recording only the CONSEQUENCE would
+leave the board showing a pin it could not explain. **THE FREEZE'S ABSORB IS THE
+FIRST RELEASE OF A STANDING PIN THIS PRODUCT HAS PERFORMED**, and it is
+deliberately narrow — only pins the frozen front now binds anyway, so no
+placement is ever left unheld; the general `unpin` verb is untouched.
+
+**§5a.120 — THE KHALIL BOARD (Session 4B.28 Item 5).** `rolling-db5395dc-2ae`,
+contract 1.15, ACCEPTED / C2, **$1,667,467.80**, 386 bars (24 committed / 362
+active), 122 in the tray, coarse zone present, gap 89.6%, 989 s. Minted through
+the API's two steps under the plant's **ACCEPTED** calibration profile: K=3 at
+10.0 deterministic units, seeds 42–44 → **$2,135,369.63 / $1,801,222.70 /
+$1,667,467.80**, winner **seed 44**, spread **$467,901.83 = 28.06%**, and the
+certificate says *"far from settled"*. The profile predicted this ledger to the
+cent. `rolling-c9973708-865` and `rolling-c362baa4-1b0` are UNTOUCHED and still
+resolvable. Rebuild: `mint_demo_board.py --calibrated --reuse`, where
+`--calibrated` **DELETES** `portfolio_k` rather than setting it — R-CAL1 rule (2)
+reads `model_fields_set`, so a request naming ANY K refuses the profile.
+Re-verified on the new mint: a legal drag prices (**$0.00, `local`, nothing else
+moved, 2.49 s**), the opener answers with six ranked items, and the portfolio
+question names all three members and the spread.
+
+**§5a.121 — SCREEN ROOM, AND WHY THE DROP MAPPING CHOSE THE MECHANISM (Session
+4B.28 Item 2).** Three docks collapse to a labelled edge, persisted per browser,
+tray and coarse collapsed by default and the ask panel open. **THE BADGE SURVIVES
+THE COLLAPSE** — a collapsed tray reading "BEYOND THE HORIZON 122" is not a
+hidden tray, and known work staying visible somewhere is the Glass Box cardinal
+danger the tray exists to answer. Compression uses **vis-timeline's own
+`hiddenDates` and not a custom scale**, and the requirement that decided it is
+the drop mapping: every pixel↔instant conversion already goes through
+`timeline.body.util`, and vis applies hidden ranges INSIDE those functions, so
+R-DP9's tolerance, 4B.23's time mapping and the drag's pin stay exact with no
+second coordinate system. Only spans where EVERY row is closed are folded (hidden
+dates are an AXIS property). **A FOLD HAS ZERO WIDTH, SO EVERY SEAM IS MARKED** —
+without a mark two bars either side of a folded night render as touching, and
+"back to back" is a claim about the plant compression would be inventing. The
+toggle persists and **LINEAR IS THE DEFAULT**: verifying a calendar claim is
+unanswerable on a folded ruler.
+
+**§5a.122 — THE GESTURAL DEBT, PAID, AND ONE DEFECT FOUND ON THE WAY (Session
+4B.28 Items 3–4).** **THE CHUNKED DRAG**: `onPointerDown` tested the item id
+against the ASSIGNMENT index, and since 4B.20 a chunked bar's items are PIECES —
+so the gesture never started and vis's Hammer pan took the drag. Dragging any
+piece now drags the OPERATION, the pieces travel as one, and the drop **DECLINES
+VISIBLY** in a THIRD card register (not the proven-impossible red, not the
+failure alarm) with **no "try again"**, checked from the row before any request.
+**THE ASK PATH'S OWN COPY WAS CORRECTED IN THE SAME COMMIT** — it ended *"Dragging
+the bar on the board runs the full re-solve, which can"*, which was never true —
+so the two surfaces state **one limit**; §5a.118(h) discharged. **R-DP9's
+TOLERANCE** was `grid_px × pxToMinutes(1)` ≈ **240 minutes at the default 30-day
+view**, and it is now a **FIXED 5 WORKING MINUTES**: jitter is a property of the
+hand and does not scale with the zoom. A no-op **SAYS SO**. **THE JOB PANEL**
+states every operation of the order from the board's OWN derivation (no third
+computation of any quantity), and its two intent buttons carry `op_seq` exactly —
+**§5a.118(c) discharged for board users**. **FOUND, NOT BRIEFED:** `board.rebind`
+predated per-chunk rendering and `items.update` INSERTS on an unknown id, so every
+accepted edit on a board with a split operation raised a **phantom merged bar**
+over the pieces still there. One builder, one remover, removal by prefix.
+
+**§5a.123 — A GUARD THAT CALLS PAST THE BROKEN LINE PROVES NOTHING (Session
+4B.28).** Six negative controls were proven RED against physically reverted code.
+A **SEVENTH DID NOT FIRE**: the chunked-drag control's first version drove
+`drag.grab(op)` programmatically and stayed GREEN against the reverted defect,
+because the defect lives in `onPointerDown` and a programmatic call steps straight
+over it. Rewritten to drive a real pointer on a real chunk piece, it went red.
+**The only way to find that out is to revert the fix and look** — the species
+4B.21 §5a.78 named from the other side (a guard that supplies its own arguments
+proves the assembler, not the path). **AND THE HARNESS FOUND A REAL DEFECT THE
+SPEC IN ISOLATION COULD NOT:** the boundary grip was rebuilt on every redraw
+(which fires on every pan, zoom and vis `changed`), so a pointer aimed at it
+could press a DETACHED NODE. 44/44 alone; two intermittent failures under the
+full ladder. The frozen marker and its grip are built ONCE and only repositioned
+now — **a planner would have met it as a boundary drag that sometimes does
+nothing**, which is the hardest kind of defect to report.
+
+**§5a.124 — 4B.28's DEBTS (REPORTED, deliberately NOT fixed).**
+**(a) STANDING PINS DO NOT SURVIVE A SLICE ROLL.** Splicing seam 3 is unbuilt,
+and **the thaw gesture now mints exactly the objects seam 3 must learn to
+preserve.** Within one board's life the ceremony is complete; across a re-solve
+it is not. **This is the strongest argument yet for seam 3 being NEXT after the
+demo.**
+**(b) THE COMPRESSION TOLERANCE GUARD PROVES INVARIANCE, NOT MAGNITUDE.** The
+rolling fixture spans ~5 days, so it cannot reproduce the 240-minute swallow the
+30-day demo board produced; the control fired at 155.5 vs 175.0 minutes. The
+property is what is guarded.
+**(c) THE FOLD SET IS PLANT-WIDE, NOT PER ROW.** Only spans where every machine
+is closed fold — the only honest choice under an axis-level mechanism. On a plant
+with staggered shifts it will fold much less, and **nothing on screen says so**.
+**(d) THE BOUNDARY SNAPS TO THE HOUR**, and the snap is an authored token nobody
+has tuned against a real planner.
+**(e) THE CONFIRMATION BEAT DOES NOT NAME THE ORDERS** — it states the count and
+the direction, which is what R-F1(e) asks; the plan carries the work orders and
+the card does not read them.
+**(f) A MONOLITHIC BOUNDARY MOVE IS UNTESTED IN THE BROWSER** beyond "the handle
+is not offered" (guarded in Python). §5a.118(g)'s shape.
+**(g) THE JOB PANEL'S TRAY BRANCH IS UNEXERCISED LIVE** — `_derive_maps` keeps
+one work package per demand, so a part-placed order is not currently producible
+(4B.22 B3).
+**(h) A BARE DEICTIC STILL CANNOT ASK IT:** *"why is this bar held?"* with no
+subject lands on CLARIFY `no-subject`. The board SELECTION resolves it.
+§5a.79's ladder, unchanged.
+**(i) `--calibrated` IS A FLAG ON A SPIKE SCRIPT, NOT A PRODUCT PATH.** Minting a
+board under its plant's accepted profile should not require knowing that naming K
+refuses the profile. Documented in the file, still a trap.
 
 
 ## 6. Open rulings queue

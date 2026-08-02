@@ -2672,11 +2672,17 @@ class TemplateRenderer:
                 f"closures, and I can't re-place split work as one move yet — "
                 "the pauses are placements the solver made, and shifting the "
                 "bar wouldn't tell me where the new ones go.")
+            # Session 4B.28 Item 4(a): this used to end "Dragging the bar on the
+            # board runs the full re-solve, which can." It does not, and it never
+            # has — the board's drag was inert on a chunked bar (it panned), and
+            # since this session it declines in these same words. ONE limit, said
+            # the same way on both surfaces; pointing a planner at a second
+            # surface that shares the limit is a redirection into the same wall.
             lines.append(
                 "That is a limit of mine, not a ruling about your plant: I am "
                 "not telling you the move is impossible, I am telling you I "
-                "can't price it. Dragging the bar on the board runs the full "
-                "re-solve, which can.")
+                "can't price it. Dragging the bar on the board declines for the "
+                "same reason — it is one limit, not two surfaces disagreeing.")
             lines.append("")
             return
 

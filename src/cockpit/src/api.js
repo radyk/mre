@@ -168,6 +168,28 @@ export function postAuditAccept(id, body = {}) {
   });
 }
 
+// THE MOVABLE FROZEN BOUNDARY (R-F1, Session 4B.28 Item 1). Two calls on
+// purpose: the PREVIEW is what the confirmation beat states, and the APPLY is
+// handed back the preview's own digest so a board that changed underneath the
+// dialog is refused rather than edited by a confirmation describing a different
+// one. Both return {refused:true, code, sentence} instead of throwing when the
+// board simply cannot make the move — a refusal is an answer, not a failure.
+export function previewBoundary(id, frozenUntil) {
+  return envelope(`/schedules/${id}/boundary/preview`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ frozen_until: frozenUntil }),
+  });
+}
+
+export function postBoundary(id, body) {
+  return envelope(`/schedules/${id}/boundary`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
 export function postAccept(id, pin) {
   // Accept a dropped bar's verdict (CU1, R-DP7): pin the op and MINT A NEW
   // proposed schedule version — the base is never mutated. Records one

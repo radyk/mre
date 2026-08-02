@@ -55,13 +55,29 @@ export function createGestureController(board, geometry, opts) {
   // --- planner-vocabulary + incumbent indexes --------------------------
   const asgByOp = new Map();          // op -> assignment (incumbent placement)
   const asgById = new Map();          // assignment_id -> assignment
+  // Session 4B.28 Item 4(a) — A CHUNK PIECE IS PART OF ITS OPERATION.
+  //
+  // 4B.20 split a chunked bar into one vis item PER CHUNK (`<id>~c0`, `~c1`, …).
+  // `onPointerDown` tested `asgById.has(itemId)` and a piece id is not an
+  // assignment id, so the gesture never started and vis's own Hammer pan took
+  // the drag instead: pulling a split bar PANNED THE BOARD. Silent, and the one
+  // outcome the ruling forbids by name. Every piece now resolves to its
+  // assignment, so a grab on any piece is a grab on the operation.
+  const asgByItem = new Map();        // item id (whole OR piece) -> assignment
   function rebuildAsgIndex() {
-    asgByOp.clear(); asgById.clear();
+    asgByOp.clear(); asgById.clear(); asgByItem.clear();
     for (const a of doc.assignments || []) {
       asgByOp.set(a.operation_ref, a);
       asgById.set(a.assignment_id, a);
+      asgByItem.set(a.assignment_id, a);
+      const n = (a.chunks || []).length;
+      if (n > 1) {
+        for (let i = 0; i < n; i += 1) asgByItem.set(`${a.assignment_id}~c${i}`, a);
+      }
     }
   }
+  const chunkCountOf = (opRef) => ((asgByOp.get(opRef) || {}).chunks || []).length;
+  const isChunked = (opRef) => chunkCountOf(opRef) > 1;
   rebuildAsgIndex();
   const nameOf = (rid) => board.resourceName(rid);
   const woOf = (opRef) => (asgByOp.get(opRef)?.work_orders || [])[0] || null;
@@ -260,14 +276,42 @@ export function createGestureController(board, geometry, opts) {
 
   function renderCarry() {
     const t = S.target;
+    layers.tentative.replaceChildren();
+    const tentative = S.phase === "tentative" || S.phase === "verdict";
+    const cls = "carry-bar" + (tentative ? " tentative" : t.legal ? " legal" : " dim");
+
+    // Item 4(a): THE PIECES MOVE AS ONE. A chunked operation carries one ghost
+    // per chunk, RIGIDLY OFFSET from the incumbent — the whole job travels
+    // together and the planner sees every piece it would take with it. It is a
+    // preview of the GESTURE, and deliberately not a claim about where the
+    // pauses would land: re-deriving those is the solver's job and is exactly
+    // what this session cannot price. The carry says so in its own label.
+    const a = asgByOp.get(S.op);
+    const chunks = (a && a.chunks) || [];
+    if (chunks.length > 1) {
+      const home = ms(chunks[0].start);
+      const shift = t.time_ms - home;
+      chunks.forEach((c, i) => {
+        const rect = geometry.barRect(t.resource_id, ms(c.start) + shift,
+                                      ms(c.end) + shift);
+        if (!rect) return;
+        const el = document.createElement("div");
+        el.className = `${cls} carry-piece${i === 0 ? " carry-first" : ""}`;
+        Object.assign(el.style, {
+          left: `${rect.x}px`, width: `${rect.width}px`,
+          top: `${rect.top + 3}px`, height: `${rect.height - 6}px`,
+        });
+        el.textContent = i === 0 ? (woOf(S.op) || "") : "";
+        layers.tentative.appendChild(el);
+      });
+      return;
+    }
+
     const dur = durationMinOf(S.op) * MIN;
     const rect = geometry.barRect(t.resource_id, t.time_ms, t.time_ms + dur);
-    layers.tentative.replaceChildren();
     if (!rect) return;
     const el = document.createElement("div");
-    const tentative = S.phase === "tentative" || S.phase === "verdict";
-    el.className = "carry-bar" +
-      (tentative ? " tentative" : t.legal ? " legal" : " dim");
+    el.className = cls;
     Object.assign(el.style, {
       left: `${rect.x}px`, width: `${rect.width}px`,
       top: `${rect.top + 3}px`, height: `${rect.height - 6}px`,
@@ -302,6 +346,7 @@ export function createGestureController(board, geometry, opts) {
     cancelSilently();
     clearCard();                 // CU2: a fresh gesture retires the previous card
     S.lastDropWasNoop = false;   // R-DP9: reset the no-op flag each fresh grab
+    S.lastDropWasDeclined = null;
     const t0 = performance.now();
     S.phase = "grabbed";
     S.op = opRef;
@@ -454,6 +499,19 @@ export function createGestureController(board, geometry, opts) {
     // placement (a commitment that commits nothing still constrains every future
     // solve and pollutes the edit narrative — docs/04 R-DP9).
     if (isNoOpDrop(t)) return noOpReturn();
+
+    // Item 4(a): A CHUNKED OPERATION DECLINES, VISIBLY, AND IN THE ASK PATH'S
+    // OWN WORDS. The pricer holds every other placement and moves one bar; a
+    // split operation's pauses are placements the solver made around calendar
+    // closures, and a local shift cannot re-derive them. So there is no price to
+    // report, and reporting one anyway would be the confident-wrong class.
+    //
+    // It is checked HERE — from the row, before any request — for 4B.30's
+    // reason: a decline that costs a ~6.5s model build first is a decline that
+    // reads as a failure. And it is a DECLINE, not a refusal: the copy says the
+    // limit is ours, because a planner told "it can't go there" would act on a
+    // claim about their plant that nobody has tested.
+    if (isChunked(S.op)) return declineChunked(t);
 
     // dropped ONTO a ghost? (snapped to a ghost anchor, or coincident with a
     // drawn ghost on this row) → near-instant card from the vouching schedule.
@@ -1038,15 +1096,29 @@ export function createGestureController(board, geometry, opts) {
   // ---------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------
-  // R-DP9 (CU2): is the drop target effectively the op's incumbent placement?
-  // Same resource AND within the coarse snap tolerance (the existing snap token,
-  // zoom-independent via the px→minutes factor) of the incumbent start.
+  // R-DP9 — IS THIS DROP THE PLACEMENT IT ALREADY HAS?
+  //
+  // SESSION 4B.28 ITEM 4(b): THE TOLERANCE WAS SCALED BY THE ZOOM AND IT ATE
+  // REAL MOVES. It read `grid_px * pxToMinutes(1)`, which is 8 PIXELS expressed
+  // in minutes — about 240 minutes at the default 30-day view. So a deliberate
+  // four-hour drag on a fully zoomed-out board was classified as "already here",
+  // settled home, and priced nothing. 4B.23 lost three verification gestures to
+  // exactly that, and to a planner it is indistinguishable from the silent-pan
+  // defect Item 4(a) fixes.
+  //
+  // THE TOLERANCE IS FOR CLICK JITTER, NOT FOR INTENT. Jitter is a property of
+  // the hand and the mouse; it does not get larger because the board is zoomed
+  // out. So it is a FIXED constant in WORKING MINUTES (`feel.snap.noop_tol_min`)
+  // and the zoom cannot touch it. A planner who nudges a bar by fifteen minutes
+  // at any zoom now gets a price, which is the whole point of the gesture.
+  function noOpToleranceMin() {
+    const tol = feel.snap && feel.snap.noop_tol_min;
+    return typeof tol === "number" && tol >= 0 ? tol : 5;
+  }
   function isNoOpDrop(t) {
     const inc = incumbentOf(S.op);
     if (!inc || t.resource_id !== inc.resource_id) return false;
-    const pxToMin = geometry.pxToMinutes(1) || 1;
-    const tolMin = (feel.snap.grid_px || 8) * pxToMin;
-    return Math.abs(t.time_ms - inc.start_ms) / MIN <= tolMin;
+    return Math.abs(t.time_ms - inc.start_ms) / MIN <= noOpToleranceMin();
   }
 
   // Settle the carry gently home (no reject-shake — this is "already here", not a
@@ -1069,7 +1141,13 @@ export function createGestureController(board, geometry, opts) {
         bar.style.top = `${home.top + 3}px`;
       }
     }
-    showNoOp();
+    // Item 4(b), second half: A NO-OP SAYS SO. 4B.23 made "nothing on this board
+    // reverts in silence" the law for failures; a drop that changed nothing is
+    // the same promise on a quieter register. It stays a TIP and not a card
+    // because R-DP9 rules this calmer than a refusal — no shake, no card — and
+    // the tolerance is now small enough that only real jitter reaches it.
+    showNoOp(`that's where it already sits — within ${noOpToleranceMin()} `
+             + "minutes of its current start, so there is nothing to price");
     setTimeout(() => {
       root.classList.remove("active", "refusing", "returning");
       clearOverlays();
@@ -1078,10 +1156,31 @@ export function createGestureController(board, geometry, opts) {
     return { returned: true, noop: true, reason: "already here" };
   }
 
-  function showNoOp() {
-    noopTip.textContent = "already here — nothing to change";
+  function showNoOp(text) {
+    noopTip.textContent = text || "already here — nothing to change";
     noopTip.classList.remove("hidden");
-    setTimeout(() => noopTip.classList.add("hidden"), 1600);
+    setTimeout(() => noopTip.classList.add("hidden"), 2400);
+  }
+
+  // Item 4(a): the chunked decline. A card, so it is impossible to miss, and it
+  // STAYS while the bar goes home (`keepCard`) — 4B.23's law: a bar returning
+  // with no card is indistinguishable from a refusal, a timeout and a crash.
+  function declineChunked(t) {
+    const n = chunkCountOf(S.op);
+    const machine = nameOf(t.resource_id);
+    S.lastDropWasDeclined = "chunked";
+    card.showDeclined({
+      what: `${woOf(S.op) || "this operation"} runs in ${n} pieces on ${machine} `
+          + "around calendar closures, and I can't re-place split work as one "
+          + "move yet — the pauses are placements the solver made, and shifting "
+          + "the bar wouldn't tell me where the new ones go.",
+      limit: "That is a limit of mine, not a ruling about your plant: I am not "
+           + "telling you the move is impossible, I am telling you I can't "
+           + "price it.",
+    });
+    publishCard(null);
+    return returnHome("a split operation cannot be priced as one move",
+                      /*keepCard*/ true);
   }
 
   function nearestLegalBoundary(resourceId, timeMs) {
@@ -1136,8 +1235,12 @@ export function createGestureController(board, geometry, opts) {
     const target = geometry.eventToTarget(ev);
     const props = safeProps(ev);
     const itemId = props?.item;
-    if (itemId == null || !asgById.has(itemId)) return;   // not a bar
-    down = { x: ev.clientX, y: ev.clientY, op: asgById.get(itemId).operation_ref, moved: false };
+    // Item 4(a): resolve a CHUNK PIECE to its assignment. Item 4(c): the op
+    // comes from the item under the POINTER and from nothing else — never from
+    // the board's current selection, which may be a different bar entirely.
+    const hit = itemId == null ? null : asgByItem.get(itemId);
+    if (!hit) return;                                     // not a bar
+    down = { x: ev.clientX, y: ev.clientY, op: hit.operation_ref, moved: false };
     // CU4 dial (b): fire on-demand pricing on pointer-DOWN — before the drag
     // threshold is even crossed — so the K per-machine solves are already in
     // flight by the time the bar lifts, buying back reaction time. Eager =
@@ -1192,6 +1295,14 @@ export function createGestureController(board, geometry, opts) {
     state: () => ({
       phase: S.phase, op: S.op, acceptedId: S.acceptedId || null,
       noop: S.lastDropWasNoop || false,   // R-DP9 (CU2): the last drop was a no-op
+      // Session 4B.28 Item 4: the no-op tolerance ACTUALLY IN FORCE (minutes,
+      // zoom-independent since 4(b)) and whether the last drop was DECLINED for
+      // a limit of ours rather than refused by the plant. Both are read by the
+      // harness, and the tolerance is exposed because the defect it replaces was
+      // invisible precisely because nothing reported the number.
+      noopToleranceMin: noOpToleranceMin(),
+      declined: S.lastDropWasDeclined || null,
+      chunked: S.op ? isChunked(S.op) : null,
       grabToShadeMs: S.grabToShadeMs, dropToVerdictMs: S.dropToVerdictMs,
       acceptToDoneMs: S.acceptToDoneMs || null,
       priceToGhostsMs: (S.priceToGhostsMs || {})[S.op] || null,

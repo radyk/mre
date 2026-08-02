@@ -33,7 +33,7 @@ function latenessBand(latenessMin) {
   return "ontime";
 }
 
-export function createBoard(hostEl, initialDoc) {
+export function createBoard(hostEl, initialDoc, boardOpts = {}) {
   // ``doc`` is mutable: an accepted edit REBINDS the board to the new schedule
   // version (rebind() below), with bars animating to their new positions rather
   // than a destroy/recreate (R-DP7 legible settle). Every closure reads the
@@ -88,6 +88,7 @@ export function createBoard(hostEl, initialDoc) {
 
   // --- bars + calendar backgrounds -------------------------------------
   const opToItem = new Map();   // operation_ref -> item id (first piece for splits)
+  const itemToOp = new Map();   // the inverse, kept in step by addAssignmentItems
   const woToItems = new Map();  // work_order    -> [item id,...]
   const items = new DataSet();
   const occByRes = new Map();   // resource_id -> [{start,end} ms] (CU1/CU4 occupancy)
@@ -131,78 +132,126 @@ export function createBoard(hostEl, initialDoc) {
     for (const c of chunks) list.push({ start: ms(c.start), end: ms(c.end) });
   }
 
-  let minT = Infinity, maxT = -Infinity;
-  for (const a of doc.assignments) {
+  // THE ONE PLACE A BAR IS BUILT (Session 4B.28).
+  //
+  // This used to exist TWICE: once here for the first render and once inside
+  // rebind(), which only ever knew about single-chunk bars. 4B.20 made a chunked
+  // operation render as one item PER CHUNK (`<id>~c0`, `~c1`, …) and rebind was
+  // not taught — so an accepted edit on a board with any split operation called
+  // `items.update({id: assignment_id, …})` against an id that is not an item,
+  // which vis-data INSERTS. The result was a phantom merged bar spanning the
+  // pauses, sitting on top of the pieces that were still there. One builder, one
+  // remover, and the shape of the rebuild is the same shape as the build.
+  function itemIdsFor(assignmentId, chunkCount) {
+    if (chunkCount <= 1) return [assignmentId];
+    const out = [];
+    for (let i = 0; i < chunkCount; i += 1) {
+      out.push(`${assignmentId}~c${i}`);
+      if (i > 0) out.push(`${assignmentId}~link${i}`);
+    }
+    return out;
+  }
+
+  function removeAssignmentItems(assignmentId) {
+    // Remove by PREFIX rather than by a remembered chunk count: the count may
+    // have changed (a re-solve can re-chunk), and a stale piece left behind is
+    // exactly the phantom this function exists to prevent.
+    const doomed = [];
+    for (const it of items.get()) {
+      const id = String(it.id);
+      if (id === assignmentId || id.startsWith(`${assignmentId}~`)) doomed.push(it.id);
+    }
+    if (doomed.length) items.remove(doomed);
+    for (const [pieceId] of [...splitPieceToAssignment]) {
+      if (String(pieceId).startsWith(`${assignmentId}~`)) {
+        splitPieceToAssignment.delete(pieceId);
+      }
+    }
+  }
+
+  // Build (or rebuild) every item for one assignment and register its lookups.
+  // `extraCls` carries the transient R-M1 motion classes a rebind adds.
+  function addAssignmentItems(a, extraCls = "") {
     const chunks = a.chunks || [];
-    if (!chunks.length) continue;
+    if (!chunks.length) return;
     const s = ms(chunks[0].start);
     const e = ms(chunks[chunks.length - 1].end);
-    minT = Math.min(minT, s); maxT = Math.max(maxT, e);
-    if (!occByRes.has(a.resource_id)) occByRes.set(a.resource_id, []);
-    pushOccupancy(a.resource_id, chunks);
     const wos = a.work_orders || [];
-    const lateness = wos.map((w) => latenessByWO.get(w))
-      .filter((v) => v != null)
-      .reduce((m, v) => (m == null || v > m ? v : m), null);
-    const band = latenessBand(lateness);
-    const label = wos.join(", ") || nameOf(a.resource_id);
+    const { band, label } = barVisual(a);
     // R-DP8 CU2 + CU5: the pin/lock indicator family — a standing commitment (an
-    // accepted, still-held pin) wears the persistent marker; siblings in the
-    // family (transient pin-lock, reflow) are added later by rebind().
+    // accepted, still-held pin, or a THAWED one since 4B.28) wears the persistent
+    // marker; siblings in the family (transient pin-lock, reflow) come in via
+    // `extraCls`.
     const pinCls = a.standing_pin ? " standing-pin" : "";
     // Session 4B.3a CU2: a rolling bar's commitment_state — a COMMITTED (frozen-
     // front) bar is static/locked (R-M1 committed-drop semantics), an
     // ACTIVE_WINDOW bar renders as today's normal bar. None on a monolithic bar.
+    // R-F1: this is what makes a thaw VISIBLE — the bar restyles from committed
+    // to pinned in the same repaint that changes who holds it.
     const commitCls = a.commitment_state === "committed" ? " committed"
       : a.commitment_state === "active_window" ? " active-window" : "";
+    const suffix = `${pinCls}${commitCls}${extraCls ? ` ${extraCls}` : ""}`;
 
     if (chunks.length <= 1) {
       // the common case: ONE range item, id = assignment_id (identity preserved).
       items.add({
         id: a.assignment_id, group: a.resource_id, start: s, end: e,
-        type: "range", className: `bar late-${band}${pinCls}${commitCls}`, editable: false,
+        type: "range", className: `bar late-${band}${suffix}`, editable: false,
         style: barStyle(a, s, e), content: label, title: barTitle(a, label),
       });
       opToItem.set(a.operation_ref, a.assignment_id);
+      itemToOp.set(a.assignment_id, a.operation_ref);
       for (const w of wos) {
         if (!woToItems.has(w)) woToItems.set(w, []);
         woToItems.get(w).push(a.assignment_id);
       }
-    } else {
-      // split/chunked op (CU5): one piece per chunk, visually linked as ONE job
-      // (kinship styling + a dashed connector across each pause). The first
-      // piece anchors the op for citation/selection; every piece maps back to
-      // the op so a click on any piece scopes the whole job.
-      const firstId = `${a.assignment_id}~c0`;
-      opToItem.set(a.operation_ref, firstId);
-      chunks.forEach((c, i) => {
-        const cs = ms(c.start), ce = ms(c.end);
-        const edge = i === 0 ? "chunk-first" : i === chunks.length - 1 ? "chunk-last" : "chunk-mid";
-        const pieceId = `${a.assignment_id}~c${i}`;
-        items.add({
-          id: pieceId, group: a.resource_id, start: cs, end: ce,
-          type: "range",
-          className: `bar late-${band}${pinCls} chunk-piece ${edge}`, editable: false,
-          style: i === 0 ? barStyle(a, cs, ce) : "",
-          content: i === 0 ? label : "", title: barTitle(a, label),
-        });
-        splitPieceToAssignment.set(pieceId, a);
-        for (const w of wos) {
-          if (!woToItems.has(w)) woToItems.set(w, []);
-          woToItems.get(w).push(pieceId);
-        }
-        // dashed kinship connector across the pause before this piece.
-        if (i > 0) {
-          const prevEnd = ms(chunks[i - 1].end);
-          if (cs > prevEnd) {
-            items.add({
-              id: `${a.assignment_id}~link${i}`, group: a.resource_id,
-              type: "background", start: prevEnd, end: cs, className: "chunk-link",
-            });
-          }
-        }
-      });
+      return;
     }
+    // split/chunked op (CU5): one piece per chunk, visually linked as ONE job
+    // (kinship styling + a dashed connector across each pause). The first
+    // piece anchors the op for citation/selection; every piece maps back to
+    // the op so a click on any piece scopes the whole job.
+    const firstId = `${a.assignment_id}~c0`;
+    opToItem.set(a.operation_ref, firstId);
+    itemToOp.set(firstId, a.operation_ref);
+    chunks.forEach((c, i) => {
+      const cs = ms(c.start), ce = ms(c.end);
+      const edge = i === 0 ? "chunk-first" : i === chunks.length - 1 ? "chunk-last" : "chunk-mid";
+      const pieceId = `${a.assignment_id}~c${i}`;
+      items.add({
+        id: pieceId, group: a.resource_id, start: cs, end: ce,
+        type: "range",
+        className: `bar late-${band}${suffix} chunk-piece ${edge}`, editable: false,
+        style: i === 0 ? barStyle(a, cs, ce) : "",
+        content: i === 0 ? label : "", title: barTitle(a, label),
+      });
+      splitPieceToAssignment.set(pieceId, a);
+      for (const w of wos) {
+        if (!woToItems.has(w)) woToItems.set(w, []);
+        woToItems.get(w).push(pieceId);
+      }
+      // dashed kinship connector across the pause before this piece.
+      if (i > 0) {
+        const prevEnd = ms(chunks[i - 1].end);
+        if (cs > prevEnd) {
+          items.add({
+            id: `${a.assignment_id}~link${i}`, group: a.resource_id,
+            type: "background", start: prevEnd, end: cs, className: "chunk-link",
+          });
+        }
+      }
+    });
+  }
+
+  let minT = Infinity, maxT = -Infinity;
+  for (const a of doc.assignments) {
+    const chunks = a.chunks || [];
+    if (!chunks.length) continue;
+    minT = Math.min(minT, ms(chunks[0].start));
+    maxT = Math.max(maxT, ms(chunks[chunks.length - 1].end));
+    if (!occByRes.has(a.resource_id)) occByRes.set(a.resource_id, []);
+    pushOccupancy(a.resource_id, chunks);
+    addAssignmentItems(a);
   }
 
   const pad = 6 * 3600000;
@@ -259,7 +308,18 @@ export function createBoard(hostEl, initialDoc) {
   timeline.setWindow(win.start, win.end, { animation: false });
 
   // --- time-anchor markers + shift ticks (CU2/CU1) ---------------------
-  const markers = createMarkers(timeline);
+  // Session 4B.28 Item 1(a): the frozen boundary is a real handle when — and
+  // only when — a host installed a mover. A read-only deep link, a superseded
+  // version and a monolithic board all pass nothing and get the 4B.3a marker
+  // exactly as it was.
+  const markers = createMarkers(timeline, {
+    onBoundaryMove: boardOpts.onBoundaryMove || null,
+    // The board must be perfectly still under a boundary drag for the same
+    // reason it is under a bar drag (3.2c): vis's own Hammer pan would slide the
+    // axis out from under the handle being dragged along it.
+    onDragStart: () => setPanZoom(false),
+    onDragEnd: () => setPanZoom(true),
+  });
   // now-line from the run's reference date (the 3.3b epoch) — never wall clock;
   // absent when the run is "now"-anchored (reference_date null).
   markers.setNow(doc.reference_date || null);
@@ -286,6 +346,89 @@ export function createBoard(hostEl, initialDoc) {
       if (w.kind === "regular" || w.kind === "overtime") open.push([ms(w.start), ms(w.end)]);
     openWinsByRes.set(r.resource_id, open);
   }
+  // ---------------------------------------------------------------------
+  // DOWNTIME COMPRESSION (Session 4B.28 Item 2(b)).
+  //
+  // At demo density the board is mostly night. Nights, weekends and plant
+  // closures occupy the majority of the axis while carrying no work, so working
+  // time — the thing a planner is reading — is squeezed into a fraction of the
+  // pixels. Compression collapses spans where NOTHING CAN RUN so working time
+  // dominates the view.
+  //
+  // MECHANISM CHOSEN: vis-timeline's own `hiddenDates`, NOT a custom scale.
+  //
+  // The requirement that decided it is the drop mapping. Every pixel↔instant
+  // conversion in this cockpit goes through `timeline.body.util.toScreen` /
+  // `.toTime` (geometry.js is the ONE place that reads vis's layout), and vis's
+  // DateUtil applies hidden ranges INSIDE those two functions. So R-DP9's
+  // tolerance arithmetic, 4B.23's time mapping and the drag's pin all stay exact
+  // under compression for free, with no second coordinate system to keep in
+  // step. A custom scale would have meant re-deriving that mapping by hand — and
+  // a drop that lands minutes off is a worse defect than an un-compressed board.
+  //
+  // WHAT IS COMPRESSED: only spans where EVERY row is closed. Hidden dates are a
+  // property of the AXIS, not of a row, so compressing a span one machine is
+  // working through would hide real work. The intersection is the only honest
+  // set, and on this plant it is exactly the nights, weekends and plant-wide
+  // closures the feature is about.
+  const COMPRESS_MIN_SPAN_MIN = 120;   // shorter gaps are not worth a fold
+  let compressed = false;
+  let foldRanges = [];
+
+  // Spans inside the data window where no row has an open (regular/overtime)
+  // window. Computed from the SAME `openWinsByRes` the row strips measure
+  // utilization against — one definition of "open", two consumers.
+  function computeFoldRanges() {
+    const open = [];
+    for (const wins of openWinsByRes.values()) {
+      for (const [s, e] of wins) {
+        if (e > bandSpan.start && s < bandSpan.end) {
+          open.push([Math.max(s, bandSpan.start), Math.min(e, bandSpan.end)]);
+        }
+      }
+    }
+    open.sort((a, b) => a[0] - b[0]);
+    const merged = [];
+    for (const iv of open) {
+      const last = merged[merged.length - 1];
+      if (last && iv[0] <= last[1]) last[1] = Math.max(last[1], iv[1]);
+      else merged.push([iv[0], iv[1]]);
+    }
+    const out = [];
+    let cursor = bandSpan.start;
+    for (const [s, e] of merged) {
+      if (s - cursor >= COMPRESS_MIN_SPAN_MIN * MIN_MS) out.push([cursor, s]);
+      cursor = Math.max(cursor, e);
+    }
+    if (bandSpan.end - cursor >= COMPRESS_MIN_SPAN_MIN * MIN_MS) {
+      out.push([cursor, bandSpan.end]);
+    }
+    return out;
+  }
+
+  function setCompressed(on) {
+    const want = !!on;
+    if (want === compressed) return compressed;
+    if (want && !foldRanges.length) foldRanges = computeFoldRanges();
+    compressed = want;
+    timeline.setOptions({
+      hiddenDates: compressed
+        ? foldRanges.map(([s, e]) => ({ start: s, end: e }))
+        : [],
+    });
+    hostEl.classList.toggle("compressed", compressed);
+    // The fold marks are what stop a fold reading as adjacency: two bars either
+    // side of a collapsed night are NOT neighbours, and with the span at zero
+    // width nothing else on screen would say so.
+    markers.setFolds(compressed ? foldRanges : []);
+    requestAnimationFrame(() => {
+      timeline.redraw(); renderOverlay(); markers.redraw(); refreshRowStrips();
+    });
+    try { localStorage.setItem("mre-compress", compressed ? "1" : "0"); }
+    catch { /* private mode — the choice simply does not persist */ }
+    return compressed;
+  }
+
   function refreshRowStrips() {
     const w = timeline.getWindow();
     const lo = w.start.getTime(), hi = w.end.getTime();
@@ -296,6 +439,15 @@ export function createBoard(hostEl, initialDoc) {
     }
   }
   timeline.on("rangechanged", refreshRowStrips);
+
+  // Item 2(b): restore the planner's own linear/compressed choice BEFORE the
+  // chrome paints its toggle, so the button never disagrees with the board for
+  // a frame. LINEAR is the default: compression is a reading aid, and a board
+  // that folded its own ruler before anyone asked would be showing a stranger a
+  // scale they did not choose.
+  try {
+    if (localStorage.getItem("mre-compress") === "1") setCompressed(true);
+  } catch { /* private mode — linear, which is the default anyway */ }
 
   requestAnimationFrame(() => {
     timeline.redraw(); renderOverlay(); markers.redraw(); refreshRowStrips();
@@ -432,9 +584,18 @@ export function createBoard(hostEl, initialDoc) {
   window.addEventListener("resize", renderOverlay);
 
   // --- CU4 surface: selection + highlight ------------------------------
-  let selectCb = null;
+  // SELECTION HAS MORE THAN ONE LISTENER SINCE 4B.28. It was a single `selectCb`
+  // and `onSelect` overwrote it — so the job panel subscribing would have
+  // silently unsubscribed the ask panel's deictic scope, and "why is this one
+  // late?" would have lost its subject with nothing on screen to say so. A list,
+  // and every subscriber is notified.
+  const selectCbs = [];
+  const notifySelect = (payload) => {
+    for (const cb of selectCbs) {
+      try { cb(payload); } catch { /* one listener must never break another */ }
+    }
+  };
   let selectedItem = null;
-  const itemToOp = new Map([...opToItem].map(([op, it]) => [it, op]));
 
   // The shared-selection payload (planner vocabulary — work_order + resource
   // external_name, never canonical ids). One builder so a bar CLICK and a
@@ -482,7 +643,7 @@ export function createBoard(hostEl, initialDoc) {
     setSelected(itemId);
     scopeOrderMarkers(itemId);
     const payload = selectionPayload(itemId);
-    if (payload && selectCb) selectCb(payload);
+    if (payload) notifySelect(payload);
   });
 
   function setSelected(itemId) {
@@ -604,9 +765,11 @@ export function createBoard(hostEl, initialDoc) {
       const oldId = oldIdByOp.get(a.operation_ref);
       if (oldId) a.assignment_id = oldId;   // preserve stable board identity
     }
+    const oldAssignmentIds = doc.assignments.map((a) => a.assignment_id);
     doc = newDoc;
     rebuildDemandLookups();
     opToItem.clear(); woToItems.clear(); itemToOp.clear();
+    for (const id of oldAssignmentIds) removeAssignmentItems(id);
 
     // R-M1b: enable the SIMULTANEOUS reflow transition for the reflow window only
     // (never staggered — one class, every bar moves at once). The pin-locked bar
@@ -614,35 +777,28 @@ export function createBoard(hostEl, initialDoc) {
     // snaps to its committed spot instead of sliding (R-M1c).
     if (!reduce) hostEl.classList.add("reflowing");
 
-    // Bake the motion class into the same update that repositions each bar, so
+    // Bake the motion class into the same build that repositions each bar, so
     // the pin-lock exclusion is in place BEFORE vis moves the pinned bar (else it
     // would start sliding before the class lands). pin-lock = OWN PLACEMENT
     // (static, persists); reflow-moved = a one-shot highlight on a displaced bar.
     const highlightIds = [];
     for (const a of doc.assignments) {
-      const s = ms(a.chunks[0].start);
-      const e = ms(a.chunks[a.chunks.length - 1].end);
-      const { band, label } = barVisual(a);
-      let cn = `bar late-${band}`;
-      if (a.standing_pin) cn += " standing-pin";   // R-DP8 CU2: persistent marker
-      if (pinnedOp && a.operation_ref === pinnedOp) cn += " pin-lock";
-      else if (movedOps && movedOps.has(a.operation_ref)) { cn += " reflow-moved"; highlightIds.push(a.assignment_id); }
-      items.update({
-        id: a.assignment_id, group: a.resource_id, start: s, end: e,
-        type: "range", className: cn, editable: false,
-        content: label,
-        title: `${label} · ${nameOf(a.resource_id)} · op ${a.op_seq}`
-          + (a.standing_pin ? " · committed (accepted edit)" : ""),
-      });
-      opToItem.set(a.operation_ref, a.assignment_id);
-      itemToOp.set(a.assignment_id, a.operation_ref);
-      for (const w of (a.work_orders || [])) {
-        if (!woToItems.has(w)) woToItems.set(w, []);
-        woToItems.get(w).push(a.assignment_id);
+      let extra = "";
+      if (pinnedOp && a.operation_ref === pinnedOp) extra = "pin-lock";
+      else if (movedOps && movedOps.has(a.operation_ref)) {
+        extra = "reflow-moved";
+        highlightIds.push(a.operation_ref);
       }
+      addAssignmentItems(a, extra);
     }
     // the reflow highlight is a one-shot — retire the class once it has faded.
-    for (const id of highlightIds) setTimeout(() => toggleClass(id, "reflow-moved", false), highlightDur + 60);
+    // Keyed by operation_ref, not assignment id, because on a chunked bar the
+    // item that carries the class is a PIECE and the assignment id is not an
+    // item at all (the phantom-bar defect, from the other side).
+    for (const op of highlightIds) {
+      const id = opToItem.get(op);
+      if (id) setTimeout(() => toggleClass(id, "reflow-moved", false), highlightDur + 60);
+    }
 
     // the new version may have moved bars → occupancy changed. Rebuild the row
     // context (bands, band index, strips) from the live doc so the planner
@@ -655,6 +811,10 @@ export function createBoard(hostEl, initialDoc) {
       pushOccupancy(a.resource_id, ch);   // per chunk, never the span (4B.20)
     }
     renderCapacityBands(); rebuildBandIndex(); refreshShiftTicks();
+    // Session 4B.28 Item 1: a boundary move is a rebind whose ONLY change is the
+    // boundary and who holds what. The marker has to follow the document or the
+    // board would show the new authority against the old line.
+    markers.setFrozen(doc.rolling ? doc.rolling.frozen_until : null);
 
     requestAnimationFrame(() => {
       timeline.redraw(); renderOverlay(); markers.redraw(); refreshRowStrips();
@@ -689,7 +849,28 @@ export function createBoard(hostEl, initialDoc) {
     // board stays completely still under the cursor while a bar is being moved.
     setPanZoom,
     isPanZoomEnabled() { return panZoomEnabled; },
-    onSelect(cb) { selectCb = cb; },
+    // Item 2(b): the compression toggle. A planner verifying a calendar claim
+    // needs the LINEAR view — "is there really nothing between these two bars?"
+    // is unanswerable on a folded ruler — so the toggle is not optional chrome.
+    setCompressed,
+    isCompressed() { return compressed; },
+    // Harness probe for the exactness guard: the folds in force, plus a
+    // round-trip of a known instant through vis's own conversion under whatever
+    // mode is active. A drop that lands minutes off surfaces here.
+    compressionProbe(sampleMs) {
+      const t = sampleMs == null ? bandSpan.start : sampleMs;
+      let x = null, back = null;
+      try {
+        x = timeline.body.util.toScreen(new Date(t));
+        back = timeline.body.util.toTime(x).getTime();
+      } catch { /* a vis bump — reported as nulls, never thrown */ }
+      return {
+        compressed, folds: foldRanges.length,
+        x: x == null ? null : +x.toFixed(2),
+        roundTripErrMs: back == null ? null : Math.abs(back - t),
+      };
+    },
+    onSelect(cb) { if (typeof cb === "function") selectCbs.push(cb); },
     select(operationRef) {
       const id = opToItem.get(operationRef);
       if (!id) return;
@@ -700,7 +881,7 @@ export function createBoard(hostEl, initialDoc) {
       // programmatic select must notify the shared-selection callback itself,
       // or the ask panel's deictic scope would silently miss it (CU3).
       const payload = selectionPayload(id);
-      if (payload && selectCb) selectCb(payload);
+      if (payload) notifySelect(payload);
     },
     highlight,
     clearHighlight,
@@ -738,6 +919,89 @@ export function createBoard(hostEl, initialDoc) {
       });
       return { window: this.getWindow(), cited: out };
     },
+    // --- Session 4B.28 Item 3: THE WHOLE JOB, from ONE derivation --------
+    //
+    // The job panel states working time, span, chunk count, status and the
+    // lateness badge for every operation of an order. Every one of those is
+    // ALREADY derived here — `jobFor` for the per-bar facts, `latenessBand` for
+    // the badge, `doc.rolling.beyond_horizon` for the tray. So the panel is
+    // handed those, and does not compute a single quantity of its own. 4B.21's
+    // one-definition discipline: five of the last six category fusions were a
+    // name written once by whoever needed a number.
+    jobOf(itemIdOrOpRef) {
+      const id = opToItem.get(itemIdOrOpRef) || itemIdOrOpRef;
+      return jobFor(id);
+    },
+    // Every operation of an order, document order (op_seq), each with the same
+    // facts the hover card states about a single bar.
+    jobRowsForOrder(workOrder) {
+      if (!workOrder) return [];
+      const key = String(workOrder).toUpperCase();
+      const rows = [];
+      for (const a of doc.assignments || []) {
+        const wos = (a.work_orders || []).map((w) => String(w).toUpperCase());
+        if (!wos.includes(key)) continue;
+        const itemId = opToItem.get(a.operation_ref);
+        const job = itemId ? jobFor(itemId) : null;
+        if (!job) continue;
+        rows.push({
+          operation_ref: a.operation_ref,
+          op_seq: a.op_seq ?? null,
+          machine: nameOf(a.resource_id),
+          resource_id: a.resource_id,
+          start: job.start, end: job.end,
+          runMin: job.runMin, spanMin: job.spanMin,
+          chunkCount: job.chunkCount,
+          band: job.status,
+          latenessMin: job.latenessMin,
+          // The FOUR dispositions a placed bar can wear, never fused: the
+          // rolling commitment state and the planner's own pin are different
+          // facts about who may move it (4B.21, on the authority axis).
+          commitmentState: a.commitment_state || null,
+          standingPin: !!a.standing_pin,
+          splittable: job.splittable, minChunkMin: job.minChunkMin,
+        });
+      }
+      rows.sort((x, y) => (x.op_seq ?? 0) - (y.op_seq ?? 0));
+      return rows;
+    },
+    // Tray entries for the same order — admitted work with no bar to draw. A
+    // part-placed order must read as ONE job, so the panel shows these beside
+    // the placed rows with their disposition named rather than leaving a gap.
+    trayRowsForOrder(workOrder) {
+      const tray = (doc.rolling && doc.rolling.beyond_horizon) || [];
+      if (!workOrder) return [];
+      const key = String(workOrder).toUpperCase();
+      return tray
+        .filter((t) => String(t.work_order || "").toUpperCase() === key)
+        .map((t) => ({
+          work_order: t.work_order, due: t.due || null,
+          demand_ref: t.demand_ref,
+          earliest: t.earliest_window_estimate || null,
+          disposition: "beyond-horizon",
+        }));
+    },
+    serviceOutcomeFor(workOrder) {
+      if (!workOrder) return null;
+      const key = String(workOrder).toUpperCase();
+      return (doc.service_outcomes || []).find(
+        (s) => String(s.work_order || "").toUpperCase() === key) || null;
+    },
+    // Scroll the board to a bar and flash it — the panel's row-click navigation.
+    revealOp(opRef, { flashMs = 900 } = {}) {
+      const id = opToItem.get(opRef);
+      if (!id) return false;
+      const it = items.get(id);
+      if (!it) return false;
+      const w = timeline.getWindow();
+      const span = w.end.getTime() - w.start.getTime();
+      const centre = new Date(it.start).getTime();
+      timeline.setWindow(centre - span / 2, centre + span / 2, { animation: true });
+      toggleClass(id, "row-flash", true);
+      setTimeout(() => toggleClass(id, "row-flash", false), flashMs);
+      return true;
+    },
+
     // --- Session 4.2 planner-surface probes (harness) ------------------
     markers,
     hoverCards,

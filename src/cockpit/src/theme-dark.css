@@ -188,4 +188,8 @@
   --hc-ink: var(--ink);
   --hc-edge: var(--grid);
   --hc-shadow: var(--shadow-3);
+
+  /* Downtime compression fold marks (Session 4B.28 Item 2(b)). */
+  --fold-fill: rgba(255, 255, 255, 0.10);
+  --fold-edge: rgba(255, 255, 255, 0.30);
 }
