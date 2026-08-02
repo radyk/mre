@@ -426,10 +426,12 @@ def apply_planner_edit(
     )]
     subjects = [EntityRef(entity_type="operation", entity_id=pin_op_id),
                 EntityRef(entity_type="resource", entity_id=pin_resource_id)]
-    # R-DP12 (Session 4B.32) — THE LEDGER IS THE ONLY COMPARABLE NUMBER. The
-    # driver and every dollar this Decision states derive from ``cost_delta``,
-    # the same figure the card showed, computed identically on every board class.
-    driver = _edit_driver(cost_delta)
+    # R-DP12 (Session 4B.32) — THE LEDGER IS THE ONLY COMPARABLE NUMBER. Every
+    # dollar this Decision states derives from ``cost_delta``, the same figure
+    # the card showed, computed identically on every board class.
+    # R-DP13 (Session 4B.33) — the DRIVER derives from nothing: an accept's
+    # cause is that a human directed the placement, at every ledger delta.
+    driver = _edit_driver()
     ledger_delta = _ledger_total_delta(cost_delta)
     decision = d_rep.record_decision(
         decision_type=DecisionType.PLANNER_EDIT,
@@ -473,10 +475,18 @@ def _ledger_total_delta(cost_delta: dict) -> Optional[float]:
     return None if total is None else float(total)
 
 
-def _edit_driver(cost_delta: dict):
-    """The driver of a ``planner_edit`` Decision, derived from the LEDGER.
+def _edit_driver():
+    """The driver of a ``planner_edit`` accept Decision: ``PLANNER_DIRECTIVE``.
 
-    R-DP12 (Session 4B.32). Until this session the driver was selected by
+    THE PARAMETER IS GONE, AND ITS ABSENCE IS THE RULING. Until 4B.33 this took
+    ``cost_delta`` — a residue of the era when the driver was *selected by a
+    number*. Under R-DP13 the driver is a property of the DECISION TYPE, not of
+    any quantity, so a signature that accepts a quantity would advertise a
+    derivation that no longer happens. R-DP12's rule is not weakened by this: its
+    point was that the driver must never come from the incomparable scaled
+    objective, and a constant trivially does not.
+
+    R-DP12 (Session 4B.32). Until that session the driver was selected by
     ``delta_abs > 0`` — the SCALED objective of the restricted accept model minus
     the incumbent objective read from the base run's evidence. On a rolling board
     those are different expressions over different operation sets, so every
@@ -488,29 +498,32 @@ def _edit_driver(cost_delta: dict):
     feasible option"*: a claim about the PLANT manufactured from a fact about our
     ARITHMETIC. Drivers are exactly what the ask layer testifies about.
 
-    THE TAXONOMY HAS NO HONEST CODE FOR THIS DECISION AND THAT IS RECORDED, NOT
-    PAPERED OVER (4B.32 close-out §4; docs/07 §5a.131). A ``planner_edit``'s real
-    driver is *a human directed this placement* — the missing member is a
-    ``PLANNER_DIRECTIVE`` code, and adding one is a reviewed vocabulary-class
-    change this session did not take. Of the thirteen that exist:
+    R-DP13 (Session 4B.33) — ``PLANNER_DIRECTIVE``, THE CODE THE TAXONOMY
+    LACKED. 4B.32 recorded the gap rather than stretching a member to fit
+    (close-out §4; docs/07 §5a.130), and this is the member. A ``planner_edit``
+    accept's real driver is *a human directed this placement*, which is what the
+    code now says. The two it displaces, and why neither was honest:
 
-      * ``NO_ALTERNATIVE`` is RETIRED from this site. It asserts something about
-        the plant that an accept never establishes, and under
-        ``hold_all_placements`` it would be asserting it from a property of OUR
-        METHOD (every placement pinned ⇒ nothing else was reachable).
-      * ``COST_TRADEOFF`` is what is recorded, for every accept, at every ledger
-        delta including $0.00. It claims only that the cost consequence was
-        priced and weighed — true of every accept, since the card prices one
-        before the planner can press the button. It OVER-READS at $0.00, where
-        ``planner_language``'s phrase *"it was the cheaper option once every cost
-        was weighed"* describes a comparison that came back level.
+      * ``NO_ALTERNATIVE`` (what HEAD recorded until 4B.32) is RETIRED from this
+        site permanently. It asserts something about the PLANT that an accept
+        never establishes, and under ``hold_all_placements`` it would be
+        asserting it from a property of OUR METHOD (every placement pinned ⇒ of
+        course nothing else was reachable).
+      * ``COST_TRADEOFF`` (4B.32's least-wrong interim) claims a cost decided the
+        matter. Its phrase — *"it was the cheaper option once every cost was
+        weighed"* — is FALSE at a $0.00 delta, where the comparison came back
+        level, and FALSE of a DEARER accept, where the planner knowingly paid
+        (4B.32 §7(e)). A driver is exactly what the ask layer testifies from, so
+        a phrase the ledger can contradict is a defect, not a rounding.
 
-    So the driver is a CONSTANT here, deliberately: the variation ``delta_abs``
-    supplied was not information, it was noise with a sign. ``cost_delta`` rides
-    on the Decision's own ``chosen`` payload, so the number is self-contained and
-    checkable by anyone who wants the size of the trade-off."""
+    The driver remains a CONSTANT here, deliberately, and R-DP13 does not change
+    that: the variation ``delta_abs`` used to supply was not information, it was
+    noise with a sign, and the honest variation — how much the move actually cost
+    — rides ``chosen.cost_delta`` where anyone can check it. ONE RULE ON BOTH
+    BOARD CLASSES (R-DP11's discipline): a directed placement is a directed
+    placement whether the board rolls or not."""
     from mre.contracts.vocabularies import DriverCode
-    return DriverCode.COST_TRADEOFF
+    return DriverCode.PLANNER_DIRECTIVE
 
 
 def _named_refusal(base_context: dict, base_snapshot_id: str,

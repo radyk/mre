@@ -410,14 +410,20 @@ def test_a_held_accept_proves_rather_than_searches(dense, tmp_path):
 
 
 def test_the_driver_follows_the_ledger_not_the_objective(dense, tmp_path):
-    """R-DP12 — THE LEDGER IS THE ONLY COMPARABLE NUMBER.
+    """R-DP12/R-DP13 — THE DRIVER IS NEITHER THE OBJECTIVE NOR A PLANT CLAIM.
 
     A zero-move accept on a rolling board: the ledger is unchanged to the cent,
     while the scaled-objective difference is a large negative number (see the
-    sign premise above). At HEAD that number selected the driver, so this
+    sign premise above). At 4B.31's HEAD that number selected the driver, so this
     Decision recorded ``NO_ALTERNATIVE`` — *"there was no other feasible
     option"* — a claim about the plant manufactured from arithmetic between two
-    different expressions. Drivers are what the ask layer testifies about."""
+    different expressions. Drivers are what the ask layer testifies about.
+
+    4B.33 (R-DP13) replaces 4B.32's least-wrong ``COST_TRADEOFF`` with
+    ``PLANNER_DIRECTIVE``: the accept's real cause is that a human directed the
+    placement, and unlike ``COST_TRADEOFF`` that is true at THIS delta ($0.00),
+    where "the cheaper option once every cost was weighed" describes a comparison
+    that came back level."""
     out = Path(tmp_path) / "accept"
     bar = _active_bar(dense)
     result = _accept(dense, tmp_path, op=bar["operation_ref"],
@@ -427,11 +433,12 @@ def test_the_driver_follows_the_ledger_not_the_objective(dense, tmp_path):
     decs = _decisions(out)
     assert len(decs) == 1, f"expected one planner_edit Decision, got {len(decs)}"
     dec = decs[0]
-    assert dec["driver"] == "COST_TRADEOFF", (
-        f"the driver is {dec['driver']}; a planner edit's driver derives from "
-        "the LEDGER (R-DP12), and NO_ALTERNATIVE asserts something about the "
-        "plant that an accept never establishes")
-    # self-contained: the number the driver was derived from rides the record
+    assert dec["driver"] == "PLANNER_DIRECTIVE", (
+        f"the driver is {dec['driver']}; a planner edit's cause is that a HUMAN "
+        "DIRECTED THE PLACEMENT (R-DP13). NO_ALTERNATIVE asserts something about "
+        "the plant an accept never establishes, and COST_TRADEOFF claims a cost "
+        "decided the matter, which is false at this $0.00 delta")
+    # self-contained: the consequence the planner accepted rides the record
     assert dec["chosen"]["cost_delta"]["total_delta"] == pytest.approx(0.0, abs=0.005)
     assert dec["chosen"]["delta_abs"] is None
     assert dec["chosen"]["objective_cleared"] is True
@@ -441,7 +448,7 @@ def test_the_driver_follows_the_ledger_not_the_objective(dense, tmp_path):
 
 
 def test_the_driver_is_never_the_plant_claim_at_any_ledger_delta():
-    """R-DP12 at the ledger deltas the BOARDS CANNOT REACH.
+    """R-DP12/R-DP13 at the ledger deltas the BOARDS CANNOT REACH.
 
     Measured live in 4B.32: 54 +24 h/+48 h/+96 h/+168 h gestures on the Khalil
     board produced 50 refusals and 4 prices, and every price was exactly $0.00 —
@@ -453,16 +460,25 @@ def test_the_driver_is_never_the_plant_claim_at_any_ledger_delta():
 
     ``NO_ALTERNATIVE`` must never come back at ANY delta: it says *"there was no
     other feasible option"* about the PLANT, and an accept establishes only that
-    a human pinned a bar."""
+    a human pinned a bar. Under R-DP13 ``COST_TRADEOFF`` is barred here too — it
+    claims a cost decided the matter, which is false at $0.00 (the comparison
+    came back level) and false when the planner knowingly paid MORE."""
     from mre.contracts.vocabularies import DriverCode
     from mre.modules.planner_edit import _edit_driver, _ledger_total_delta
 
+    d = _edit_driver()
+    assert d is not DriverCode.NO_ALTERNATIVE, (
+        f"driver {d}: NO_ALTERNATIVE asserts something about the plant an "
+        "accept never establishes")
+    assert d is not DriverCode.COST_TRADEOFF, (
+        f"driver {d}: COST_TRADEOFF claims a cost decided the placement; a "
+        "planner edit's cause is the planner (R-DP13)")
+    assert d is DriverCode.PLANNER_DIRECTIVE, d
+    # THE DRIVER IS A CONSTANT AND THE SIGNATURE SAYS SO. `_edit_driver` takes no
+    # ledger figure at all (R-DP13), so "the driver at delta X" is not a question
+    # that can be asked of it — which is the strongest form the invariant can
+    # take. The ledger reader beside it stays exact at every delta.
     for total in (-125_000.5, -0.01, 0.0, 0.01, 125_000.5):
-        d = _edit_driver({"total_delta": total})
-        assert d is not DriverCode.NO_ALTERNATIVE, (
-            f"driver {d} at ledger delta {total}: NO_ALTERNATIVE asserts "
-            "something about the plant an accept never establishes")
-        assert d is DriverCode.COST_TRADEOFF, d
         assert _ledger_total_delta({"total_delta": total}) == total
     # "we could not read the ledgers" and "this cost nothing" are different
     assert _ledger_total_delta({}) is None

@@ -53,6 +53,80 @@ class TestPlannerLanguage:
             assert driver_phrase(code.value)
             assert not has_jargon(DRIVER_PHRASING[code.value])
 
+    # -------------------------------------------------------------------
+    # R-DP13 (Session 4B.33) — THE PLANNER-EDIT DRIVER MAKES NO CLAIM THE
+    # LEDGER CAN CONTRADICT.
+    #
+    # A planner's accepted move may cost nothing, cost money or save money, and
+    # the driver is a CONSTANT across all three. So the sentence that gets
+    # VOICED for it may not name a direction. Both assertions below run over
+    # RENDERED OUTPUT, not over the template: 4B.32's own lesson is that a rule
+    # which holds because nobody happens to read a field is not a rule, and the
+    # phrase only matters where a planner can see it.
+    # -------------------------------------------------------------------
+
+    #: Words that assert a direction, a comparison or a plant claim. Each is a
+    #: thing the ledger could contradict on some accept: "cheaper"/"saved" are
+    #: false when the planner knowingly paid, "dearer"/"more expensive" are false
+    #: at $0.00, and "no other option" is a claim about the PLANT that an accept
+    #: never establishes (and that under `hold_all_placements` would be
+    #: manufactured from our own pinning).
+    _DIRECTION_WORDS = ("cheaper", "cheapest", "dearer", "costlier", "saved",
+                        "saving", "more expensive", "less expensive",
+                        "no other", "no alternative", "only option",
+                        "the best", "optimal")
+
+    def test_the_planner_directive_phrase_names_no_direction(self):
+        phrase = DRIVER_PHRASING["PLANNER_DIRECTIVE"]
+        low = phrase.lower()
+        for w in self._DIRECTION_WORDS:
+            assert w not in low, (
+                f"the PLANNER_DIRECTIVE phrase says {w!r}: {phrase!r}. A planner "
+                "edit's driver is recorded at EVERY ledger delta, so any word "
+                "asserting a direction is false on some accept")
+        # it must still say the two things it is FOR, or it asserts nothing
+        assert "planner" in low and "directed" in low, phrase
+        assert "cost" in low and "priced" in low, phrase
+
+    def test_a_rendered_planner_edit_chain_voices_no_direction(self):
+        """The renderer's evidence-chain site (renderers._render_decision, the
+        non-ASSIGNMENT branch), over a real planner_edit Decision shape."""
+        from mre.modules.renderers import TemplateRenderer
+        rec = {
+            "record_type": "decision", "decision_type": "planner_edit",
+            "record_id": "dec12345abc", "module": "M4", "basis": "observed",
+            "driver": "PLANNER_DIRECTIVE", "authority": "dev:daryn",
+            "chosen": {"pin": {"operation_ref": "op-1", "resource_id": "res-1",
+                               "start": "2026-01-06T07:00:00+00:00"},
+                       "cost_delta": {"total_delta": 0.0}, "moved_count": 0},
+            "alternatives": [],
+            "message": "Planner edit: pinned op 0947fa39 to 3f032ed0 (+$0)",
+        }
+        lines: list[str] = []
+        TemplateRenderer()._render_record(lines, 1, rec, identity_map=None)
+        text = "\n".join(lines)
+        assert "a planner directed this placement" in text, text
+        low = text.lower()
+        for w in self._DIRECTION_WORDS:
+            assert w not in low, f"rendered chain says {w!r}:\n{text}"
+
+    def test_a_drilled_down_planner_edit_record_voices_no_direction(self):
+        """The drill-down site (explainer._record_summary), which describes ANY
+        cited Decision by its recorded driver — 4B.22's sixth driver-phrase
+        site, and the one a planner reaches by asking for the evidence."""
+        from mre.modules.explainer import Explainer
+
+        class _Stub:
+            _identity_map = None
+
+        rec = {"record_type": "decision", "decision_type": "planner_edit",
+               "driver": "PLANNER_DIRECTIVE", "subjects": []}
+        text = Explainer._record_summary(_Stub(), rec)
+        assert "a planner directed this placement" in text, text
+        low = text.lower()
+        for w in self._DIRECTION_WORDS:
+            assert w not in low, f"drill-down says {w!r}: {text}"
+
     def test_every_finding_code_has_a_phrase(self):
         from mre.contracts.vocabularies import FindingCode
         for code in FindingCode:

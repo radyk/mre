@@ -8,7 +8,7 @@ vocabulary to plain planner language, per R-AI1(c): intelligence accrues in a
 reviewable artifact (this file), never in model state.
 
 Three authored dictionaries + two composers:
-  - ``DRIVER_PHRASING``  — the 13 DriverCodes → plain cause (CU4).
+  - ``DRIVER_PHRASING``  — the 14 DriverCodes → plain cause (CU4).
   - ``FINDING_PHRASING`` — the 18 FindingCodes → plain cause (CU2).
   - ``JARGON`` / ``strip_jargon`` — module/provenance tokens a planner
     should never see in an answer (CU6).
@@ -27,7 +27,7 @@ from typing import Any, Optional
 
 # ---------------------------------------------------------------------------
 # Driver codes → plain cause (CU4). One clause per code, planner-voiced,
-# present tense, no id-shapes. The 12 DriverCodes (vocabularies.DriverCode).
+# present tense, no id-shapes. The 14 DriverCodes (vocabularies.DriverCode).
 # ---------------------------------------------------------------------------
 DRIVER_PHRASING: dict[str, str] = {
     "COST_TRADEOFF": "it was the cheaper option once every cost was weighed",
@@ -44,6 +44,23 @@ DRIVER_PHRASING: dict[str, str] = {
     "NO_ALTERNATIVE": "there was no other feasible option",
     "EARLINESS_PREFERENCE": "a declared earliness preference paid a little more to "
                             "start it sooner on a machine that was free earlier",
+    # R-DP13 (Session 4B.33). THE ONE CLAUSE IN THIS MAP THAT MUST BE TRUE AT
+    # EVERY LEDGER DELTA, because a planner's move can cost nothing, cost money
+    # or save money and the driver is a CONSTANT across all three (4B.32 §4).
+    #
+    # So it states two things and only two, both checkable on the Decision's own
+    # record: a person directed the placement (`authority`), and the cost was
+    # priced before the accept (`chosen.cost_delta`). It names NO direction —
+    # not "cheaper", not "dearer", not "no other option" — because the ledger
+    # would contradict whichever one it chose on some accept. It also makes no
+    # claim about the PLANT: what an accept establishes is a fact about a human
+    # act, never about what the plant could otherwise have done.
+    #
+    # "a planner", not "you": the reader of this sentence is not necessarily the
+    # authority that authored the edit, and the record does not support telling
+    # them they were. `authority` names who; this clause names what.
+    "PLANNER_DIRECTIVE": "a planner directed this placement, and its cost was "
+                         "priced before it was accepted",
 }
 
 # ---------------------------------------------------------------------------

@@ -118,8 +118,9 @@ class DecisionType(str, Enum):
 
 
 class DriverCode(str, Enum):
-    """Primary driver codes for Decisions. Exactly 13 per spec docs/02 §4.2
-    (EARLINESS_PREFERENCE added 2026-07-22, R-SC3; add, never repurpose)."""
+    """Primary driver codes for Decisions. Exactly 14 per spec docs/02 §4.2
+    (EARLINESS_PREFERENCE added 2026-07-22, R-SC3; PLANNER_DIRECTIVE added
+    2026-08-03, R-DP13; add, never repurpose)."""
     COST_TRADEOFF = "COST_TRADEOFF"
     DUE_DATE_PRESSURE = "DUE_DATE_PRESSURE"
     CAPACITY_BLOCKED = "CAPACITY_BLOCKED"
@@ -135,6 +136,28 @@ class DriverCode(str, Enum):
     # A dearer-but-earlier placement purchased by the declared earliness_value
     # coefficient (R-SC3(2), docs/06 §5.9). Fires only when earliness_value > 0.
     EARLINESS_PREFERENCE = "EARLINESS_PREFERENCE"
+    # ADDED, NEVER REPURPOSED (Session 4B.33, R-DP13). A HUMAN DIRECTED THIS
+    # PLACEMENT. Every other member of this vocabulary names something the
+    # PLANT or the MODEL did — capacity, capability, a calendar, a price, a
+    # policy, the solver's own budget. An accepted cockpit gesture has no such
+    # cause: the operation sits where it sits because a person put it there and
+    # then accepted the priced consequence.
+    #
+    # The gap was found by 4B.32 from the wrong end. Until 4B.31 a rolling
+    # accept recorded NO_ALTERNATIVE — voiced as "there was no other feasible
+    # option", a claim about the PLANT manufactured from a property of OUR
+    # METHOD (under `hold_all_placements` every placement is pinned, so of
+    # course nothing else was reachable). 4B.32 moved it to COST_TRADEOFF as
+    # least-wrong and RECORDED that the taxonomy had no honest member rather
+    # than stretching one to fit (close-out §4, docs/07 §5a.130). This is that
+    # member.
+    #
+    # COST_TRADEOFF remains correct wherever a cost genuinely decided — the
+    # planner's merge decisions, the extractor's price-ranked attribution, and
+    # `POST /audit/accept`, where the accepted board IS the cheaper one and the
+    # saving is stated. It is wrong ONLY on the planner_edit accept, where the
+    # ledger delta is whatever the planner's own move happened to cost.
+    PLANNER_DIRECTIVE = "PLANNER_DIRECTIVE"
 
 
 class FindingCode(str, Enum):

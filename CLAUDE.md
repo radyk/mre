@@ -171,6 +171,11 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Session 4B.33 — the honest driver's name + the last wall limit**, 2026-08-03
+(docs/07 v2.80, §5a.133-135; docs/04 2026-08-03 **R-DP13 ruled and BUILT** and the
+golden-CSV flake FIXED; contract unchanged **1.15** and the bump question answered
+either way; **`DriverCode` 13 -> 14**; narrative in
+`docs/closeouts/4b33-honest-driver-and-last-wall.md`). Before it:
 **Session 4B.32 — verdict identity + honest driver**, 2026-08-03 (docs/07 v2.79,
 §5a.129-132; docs/04 2026-08-03 **R-DP12 ruled and BUILT**, **R-DP10 DISCHARGED
 BY IDENTITY**, R-T2's disclosure line STRUCTURALLY MOOT on this path; contract
@@ -1080,6 +1085,62 @@ vocabulary-class change, reviewed, versioned, committed with its doc update.
   append-only. **Read the Amendment log tail before touching any area it covers.**
 - Session close-outs are written to docs/04 and docs/07 — never narrated here.
 
+**R-DP13 — `PLANNER_DIRECTIVE`, THE CODE THE TAXONOMY LACKED (4B.33, §5a.133,
+docs/04 2026-08-03). §5a.130 CLOSED.** `DriverCode` **13 -> 14**, ADDED never
+repurposed, docs/02 §4.2 same commit. A `planner_edit` accept's real driver is
+*a human directed this placement* — every other member names something the PLANT
+or the MODEL did. **THE DRIVER IS A CONSTANT AND THE SIGNATURE NOW SAYS SO:**
+`_edit_driver` takes **NOTHING** (it took `cost_delta`), because a signature
+accepting a quantity advertises a derivation that no longer happens; R-DP12 is
+not weakened, since its rule was *never the incomparable scaled objective* and a
+constant trivially is not. **THE PHRASE MAY NAME NO DIRECTION** — *"a planner
+directed this placement, and its cost was priced before it was accepted"*, true
+at EVERY ledger delta, stating only what is checkable on the record
+(`authority`, `chosen.cost_delta`), and saying **"a planner", not "you"** (the
+reader is not necessarily the authority). **`COST_TRADEOFF` JOINS
+`NO_ALTERNATIVE` IN RETIREMENT FROM THIS SITE** — false at $0.00 AND false of a
+dearer accept — while staying correct wherever a cost genuinely decided
+(planner merges, the extractor's price-ranked attribution, and
+`POST /audit/accept`, where the accepted board IS the cheaper one). **NO CONTRACT
+BUMP AND NO docs/06 DOORWAY ARE OWED, BOTH ANSWERED ON THE RECORD:**
+`CONTRACT_VERSION` versions the schedule DOCUMENT and `driver` lives on Decision
+records the document does not carry; the pipeline-proof rule governs declared
+facts about the PLANT, and this classifies an act performed INSIDE the product
+(R-CAL1's product-side/IDS distinction on another axis). **LIVE on the Khalil
+board:** children `caff8efa` (zero-move, 6.99s) and `e2e18e8c` (+24h, 3.70s),
+ledger $1,667,467.80 unchanged on both, and the drill-down voices the phrase
+verbatim. **NOT FIXED, named (§5a.135):** no exam bank can reach it — neither
+pinned world holds a single `planner_edit` Decision (0 of 32, 0 of 96, measured)
+because an accept mints a CHILD at runtime, so the specimen needs a new pinned
+world; the `edits`/`edit_cost` routes **do not voice the driver at all**
+(`_edit_facts` never carried it and the renderer short-circuits the chain), so
+the drill-down is its ONLY live surface; *"why is this bar here?"* still lands on
+CLARIFY `no-subject`; and the R-F1 boundary move keeps `FROZEN_COMMITMENT`.
+
+**THE GOLDEN-CSV FLAKE IS FIXED, AND THE BUDGET WAS ALREADY THERE (4B.33,
+§5a.134 — §5a.132(e) DISCHARGED).** The per-stage measurement IS the finding:
+stage 1, the **cost proof**, has no deterministic cap and proves **OPTIMAL in
+0.81s**; stage 2, the earliest-start **tiebreak whose placements ARE
+`schedule.csv`**, already carried a **1.953-unit deterministic budget** and
+needed **14.56s** of a 30s wall. **THE WALL WAS OVERRIDING A BUDGET THAT WAS
+ALREADY CORRECT**, by barely 2x — and under load the solve DOUBLES (73s vs ~35s
+measured), putting stage 2 at ~29s against 30s. **That is the coin flip and why
+it failed about HALF the time.** **NO MECHANISM ADDED AND NO CLI FLAG NEEDED**:
+`test_defaults_reproduce_baseline` now passes `--time-limit 600` (a SAFETY
+CEILING ~40x the solve, ~4x the worst case at 77 s/unit), so each stage is
+reproducible **for its own reason** — stage 1 because it PROVES, stage 2 because
+its DETERMINISTIC budget binds. **THE PREMISE IS ASSERTED:** `_run_mre` fails
+loudly if the cost proof stops proving, since then the ceiling becomes
+load-bearing again. **NEITHER GOLDEN MOVED** (`sha256 cc6242b4…`; ledger
+801,930.00 unchanged), nothing re-anchored. **9 FOR 9** byte-identical (6 quiet,
+3 under load). **THE CONTROL IS THE MECHANISM:** the old 30s wall did NOT
+reproduce in 10 quiet runs — recorded, not glossed — while **forcing** it to bind
+(`--time-limit 8`) gave a byte-different schedule 3 for 3. **THE SHAPE
+GENERALISES TO ONE OF THE THREE REMAINING FLAKE MEMBERS:**
+`test_scenario_untouched_moves_bounded` needs the full determinism triple AND the
+wall lifted; the two SCREENSHOT members are render/timing races a deterministic
+budget does nothing for.
+
 **R-DP12 — THE LEDGER IS THE ONLY COMPARABLE NUMBER (4B.32, §5a.129, docs/04
 2026-08-03). THE INCOMPARABLE NUMBER WAS ALSO WEARING A DOLLAR SIGN.** Live on
 the Khalil board, twice, identically: a ZERO-MOVE accept whose ledger went
@@ -1115,7 +1176,8 @@ observed live; `hold_all_placements=False` keeps its objective correctly and has
 NO live coverage; `POST /audit/accept` was not touched (its `delta_abs` is a
 LEDGER figure, believed from 4B.25 and not re-derived here); and the
 `COST_TRADEOFF` phrase is false of a DEARER accept, pre-existing.
-**4B.31 FINDING (g) IS CORRECTED (§5a.132(e)):
+**4B.31 FINDING (g) IS CORRECTED (§5a.132(e) — FIXED 4B.33, §5a.134, where the
+cause turned out to be a deterministic budget the wall was OVERRIDING):
 `test_defaults_reproduce_baseline::test_schedule_csv_identical` is NOT merely
 load-sensitive — on an IDLE machine it is pass/FAIL/pass/FAIL on this tree and
 pass/FAIL/pass on a clean detached HEAD worktree, i.e. it fails ~HALF THE TIME
@@ -1294,7 +1356,15 @@ disclosed, not answered); the winner's wall (416.9s) EXCEEDS the portfolio's
   WALL-CLOCK limit — which the hard rules already say is not reproducible. Under load
   it reaches a different tied-optimal placement and the `moves <= 3` bound breaks.
   The fix is deterministic mode in that fixture, not a wider bound. NOT fixed in 4B.6c
-  (a measurement session changes no test but its own).
+  (a measurement session changes no test but its own). **4B.33 answered the shape
+  question (§5a.135(d)) without fixing them: the deterministic-budget fix
+  generalises to THIS member only — it needs the full determinism triple AND the
+  wall lifted, a strictly larger fix — while the two SCREENSHOT members are
+  render/timing races that a deterministic budget does nothing for.** A SIXTH
+  member observed 4B.33:
+  `test_accept_self_validation.py::test_negative_control_a_corrupted_plan_is_refused`
+  failed once under concurrent load and is green on four consecutive quiet runs
+  of its file and green at HEAD.
 - Product naming is under GTM review — "MRE" is the working repo name, not a brand.
 
 **Small carry-forwards (do not lose):**

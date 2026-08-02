@@ -104,16 +104,70 @@ FIXTURES = Path(__file__).parent / "fixtures" / "baselines"
 SAMPLE_REF_DATE = "2026-07-09"
 
 
+# THE WALL IS A SAFETY CEILING, NOT THE BUDGET (Session 4B.33 Item 2).
+#
+# This fixture ran at `--time-limit 30` from its creation until 4B.33, and that
+# one unpinned WALL limit was the whole of its long-standing flakiness:
+# `test_schedule_csv_identical` failed roughly half the time on an IDLE machine
+# at HEAD (4B.32 §10a measured pass/FAIL/pass/FAIL on this tree and
+# pass/FAIL/pass on a clean detached worktree), while `test_cost_ledger_identical`
+# passed six for six. The repo's own hard rule already said why: a wall limit
+# makes a solve irreproducible.
+#
+# MEASURED, per stage, on sample_data with workers=1 / seed=42 / PYTHONHASHSEED=0:
+#
+#   stage 1 (the COST PROOF)   wall limit 30 s, NO deterministic cap
+#                              -> OPTIMAL in 0.81 s / 0.047 deterministic units
+#   stage 2 (the earliest-start TIEBREAK, whose placements are what schedule.csv
+#            actually contains)
+#                              wall limit 30 s AND a 1.953-unit deterministic
+#                              budget -> FEASIBLE, 1.9534 units consumed,
+#                              14.56 s of wall on a quiet machine
+#
+# That asymmetry is the signature exactly: stage 1 proves, so the LEDGER never
+# moved; stage 2 is where the placement is decided, and its deterministic budget
+# needed ~15 s of a 30 s wall — barely 2x of headroom. Whenever the machine ran
+# slower than that margin the wall cut stage 2 mid-budget and CP-SAT returned a
+# DIFFERENT tied-optimal placement at the SAME cost. The deterministic budget was
+# already plumbed here and doing the right thing; the wall was simply overriding
+# it.
+#
+# So the fix is not a new mechanism, it is getting the wall out of the way. Each
+# stage is now reproducible for its OWN reason:
+#
+#   * stage 1 because it PROVES — nothing is truncated, so nothing can drift;
+#   * stage 2 because its DETERMINISTIC budget binds, and deterministic ticks
+#     truncate at the same node every run by construction.
+#
+# 600 s is a ceiling, deliberately ~40x the measured 15 s solve and ~4x the worst
+# case at the slowest exchange rate this repo has ever measured (77 s per
+# deterministic unit, docs/07 §5a.98 — 1.95 units => ~150 s). It exists to stop a
+# hung solve wedging the suite, never to bound the search. The subprocess timeout
+# sits above it so the CEILING is the outer bound, not the harness.
+WALL_CEILING_S = "600"
+
+
 def _run_mre(args: list[str], out_dir: Path) -> str:
     env = dict(os.environ)
     env["PYTHONHASHSEED"] = "0"
     result = subprocess.run(
         [sys.executable, "-m", "mre", *args, "--out", str(out_dir),
-         "--solver-workers", "1", "--solver-seed", "42"],
-        cwd=REPO, env=env, capture_output=True, text=True, timeout=120,
+         "--solver-workers", "1", "--solver-seed", "42",
+         "--time-limit", WALL_CEILING_S],
+        cwd=REPO, env=env, capture_output=True, text=True, timeout=900,
     )
     assert result.returncode == 0, (
         f"pipeline failed (exit {result.returncode}):\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+    )
+    # THE REPRODUCIBILITY PREMISE, ASSERTED RATHER THAN ASSUMED. Stage 1's half
+    # of the guarantee above is that it PROVES; the reported status is stage 1's
+    # (4B.8 CU3). If this instance ever stops proving, the wall becomes
+    # load-bearing again and these goldens quietly go back to being a property of
+    # the machine. That must fail loudly here rather than resurface as a flake.
+    assert "status=OPTIMAL" in result.stdout, (
+        "the cost proof did not prove; with stage 1 truncated the wall ceiling "
+        "becomes load-bearing and this golden is no longer reproducible.\n"
+        f"STDOUT:\n{result.stdout}"
     )
     return result.stdout
 
@@ -136,7 +190,7 @@ class TestSampleDataReproducesBaseline:
     def test_schedule_csv_identical(self, tmp_path):
         stdout = _run_mre(
             ["--sample-data", str(REPO / "sample_data"), "--snapshot-id", "snap-regress",
-             "--policy", "merge_by_family_v1", "--time-limit", "30",
+             "--policy", "merge_by_family_v1",
              "--reference-date", SAMPLE_REF_DATE],
             tmp_path,
         )
@@ -147,7 +201,7 @@ class TestSampleDataReproducesBaseline:
     def test_cost_ledger_identical(self, tmp_path):
         stdout = _run_mre(
             ["--sample-data", str(REPO / "sample_data"), "--snapshot-id", "snap-regress2",
-             "--policy", "merge_by_family_v1", "--time-limit", "30",
+             "--policy", "merge_by_family_v1",
              "--reference-date", SAMPLE_REF_DATE],
             tmp_path,
         )

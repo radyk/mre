@@ -15115,3 +15115,130 @@ planner-voiced sentence claiming a $7 M saving for a move that changed nothing.
 That was never visible before 4B.31, because no rolling accept had ever
 succeeded; it became reachable the day the accept started working, and it wrote a
 new instance on every accept until now.
+
+---
+
+## 2026-08-03 — R-DP13: PLANNER_DIRECTIVE, the driver code the taxonomy lacked
+
+**Session 4B.33, Item 1.** 4B.32 recorded a gap rather than papering over it
+(close-out §4; docs/07 §5a.130): a `planner_edit` accept's real driver is *a
+human directed this placement*, and no member of the driver vocabulary said so.
+This is that member. **`PLANNER_DIRECTIVE` is ADDED, never repurposed** —
+`DriverCode` goes from 13 members to 14, docs/02 §4.2 in the same commit.
+
+**THE RULING.**
+
+1. **`PLANNER_DIRECTIVE` is the driver of a `planner_edit` accept, at EVERY
+   ledger delta.** Every other member of this vocabulary names something the
+   *plant* or the *model* did — capacity, capability, a calendar, a price, a
+   policy, the solver's own budget. An accepted cockpit gesture has no such
+   cause. The operation sits where it sits because a person put it there and
+   then accepted the priced consequence.
+
+2. **THE DRIVER IS A CONSTANT, AND THE SIGNATURE SAYS SO.** `_edit_driver` no
+   longer takes `cost_delta` — it takes nothing. A signature accepting a quantity
+   would advertise a derivation that no longer happens, and the parameter was a
+   residue of the era when the driver was *selected by a number*. R-DP12 is not
+   weakened: its rule was that the driver must never come from the incomparable
+   scaled objective, and a constant trivially does not. The honest variation —
+   what the move actually cost — rides `chosen.cost_delta`, where it is checkable.
+
+3. **ONE RULE ON BOTH BOARD CLASSES** (R-DP11's discipline). A directed placement
+   is a directed placement whether the board rolls or not.
+
+4. **THE PHRASE MAY NAME NO DIRECTION.** `planner_language.DRIVER_PHRASING`
+   gains *"a planner directed this placement, and its cost was priced before it
+   was accepted"*. It states two things, both checkable on the Decision's own
+   record: a person directed the placement (`authority`) and the cost was priced
+   before the accept (`chosen.cost_delta`). It names no direction, because a
+   planner's move may cost nothing, cost money or save money and any directional
+   word would be false on some accept. **"a planner", not "you"** — the reader of
+   the sentence is not necessarily the authority that authored the edit, and the
+   record does not support telling them they were.
+
+**WHAT IT DISPLACES, AND WHY NEITHER WAS HONEST.** `NO_ALTERNATIVE` (what HEAD
+recorded until 4B.32) voices as *"there was no other feasible option"* — a claim
+about the PLANT that an accept never establishes, and which under
+`hold_all_placements` would be manufactured from a property of OUR OWN PINNING.
+`COST_TRADEOFF` (4B.32's least-wrong interim) claims a cost decided the matter:
+its phrase is FALSE at a $0.00 delta, where the comparison came back level, and
+FALSE of a DEARER accept, where the planner knowingly paid (4B.32 §7(e), now
+closed). **`COST_TRADEOFF` remains correct wherever a cost genuinely decided** —
+the planner's merge decisions, the extractor's price-ranked attribution, and
+`POST /audit/accept`, where the accepted board IS the cheaper one and the saving
+is stated. It is retired from the planner-edit accept alone.
+
+**NO CONTRACT BUMP AND NO docs/06 DOORWAY ARE OWED, AND BOTH ANSWERS ARE ON THE
+RECORD RATHER THAN ASSUMED.** `CONTRACT_VERSION` versions the *schedule
+document*; `driver` lives on Decision records in the evidence store, which the
+document does not carry at any version — so the governing ceremony is
+add-never-repurpose (docs/02 §4.2 + `vocabularies.py` in one commit), not a
+version bump. A bump would be owed if a driver code ever reached a document
+field; none does. The pipeline-proof rule is likewise not triggered: it governs a
+new *declared fact about the plant*, and `PLANNER_DIRECTIVE` classifies an act
+performed inside the product by a person using it, whose whole evidentiary basis
+is already on the Decision. No submission can declare it, no gate can check it,
+no adapter maps it — R-CAL1's product-side/IDS distinction (4B.29) on a different
+axis.
+
+**LIVE ON THE KHALIL BOARD (`rolling-db5395dc-2ae`), TWO ACCEPTS.** A zero-move
+accept (child `caff8efa-…`, 201 in 6.99 s) and a +24 h gesture on the same bar
+(child `e2e18e8c-…`, 201 in 3.70 s); both ledgers $1,667,467.80 → $1,667,467.80,
+both Decisions `driver PLANNER_DIRECTIVE`, `basis observed`, `delta_abs None`,
+`objective_cleared True`. The drill-down voices it verbatim on both children:
+
+```
+the planner edit decision for CUT-03 — recorded driver: a planner directed
+this placement, and its cost was priced before it was accepted  [record: f2460b93...]
+```
+
+**§5a.130 IS CLOSED.**
+
+---
+
+## 2026-08-03 — the schedule-CSV golden is reproducible: the wall was overriding a budget that was already there
+
+**Session 4B.33, Item 2.** `test_defaults_reproduce_baseline::test_schedule_csv_identical`
+failed roughly half the time on an idle machine at HEAD (4B.32 §10a). The
+diagnosis was right and the mechanism turned out to be sharper than "a wall limit
+is irreproducible". Measured per stage on `sample_data`, workers=1 / seed=42 /
+`PYTHONHASHSEED=0`:
+
+| stage | what it is | wall limit | deterministic budget | status | wall (quiet) |
+|---|---|---|---|---|---|
+| 1 | the **cost proof** | 30 s | *none* (`cap_stage1=False`) | **OPTIMAL** | **0.81 s** |
+| 2 | the earliest-start **tiebreak** — whose placements ARE `schedule.csv` | 30 s | **1.953 units** | FEASIBLE | **14.56 s** |
+
+**THE DETERMINISTIC BUDGET WAS ALREADY PLUMBED AND DOING THE RIGHT THING; THE
+WALL WAS OVERRIDING IT.** Stage 1 proves in under a second, which is why the
+LEDGER never moved and `test_cost_ledger_identical` passed six for six. Stage 2
+decides the placement and needed ~15 s of a 30 s wall — barely 2× of headroom.
+Under load the same solve takes ~2× longer (measured: 73 s against ~35 s quiet
+for the pair), which puts stage 2's need at ~29 s against a 30 s wall. **That is
+the coin flip, and it is why the failure rate was about a half.**
+
+**THE FIX IS TO GET THE WALL OUT OF THE WAY, NOT TO ADD A MECHANISM.** The
+fixture now passes `--time-limit 600` — a ceiling ~40× the measured solve and ~4×
+the worst case at the slowest exchange rate this repo has measured (77 s per
+deterministic unit, docs/07 §5a.98). No CLI flag was added, because none was
+needed. Each stage is now reproducible **for its own reason**: stage 1 because it
+PROVES, stage 2 because its DETERMINISTIC budget binds and deterministic ticks
+truncate at the same node every run by construction. **The reproducibility
+premise is asserted, not assumed** — `_run_mre` now fails loudly if the cost proof
+stops proving, since at that point the ceiling would become load-bearing again
+and the golden would quietly revert to being a property of the machine.
+
+**THE GOLDENS DID NOT MOVE AND NEITHER WAS RE-ANCHORED.** The wall-free solve is
+byte-identical to the stored `sample_data_schedule.csv`
+(`sha256 cc6242b4…`), and the ledger is unchanged at
+801,930.00 / 19,759.00 / 4,650.00 / 777,521.00. **9 for 9 byte-identical** — six
+quiet runs and three with the suite running concurrently, the original failure
+condition.
+
+**THE NEGATIVE CONTROL IS THE MECHANISM, NOT A FISHING TRIP.** Re-introducing the
+old 30 s wall did NOT reproduce a difference in 10 quiet runs, and that is
+recorded rather than glossed — absence of reproduction in 10 is not proof of
+determinism. What *was* proven is the causal link: forcing the wall to bind
+(`--time-limit 8`, below stage 2's ~15 s need) produces a **byte-different**
+schedule, three runs for three. A wall that binds changes the placement; a wall
+that does not, does not.
