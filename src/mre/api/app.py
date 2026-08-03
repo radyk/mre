@@ -309,6 +309,54 @@ def _search_deeper_scale() -> dict:
             "expected_minutes": round(minutes, 1), "sentence": sentence}
 
 
+# R-TZ1's fallback clock. Stored instants are UTC, so a board with no declared
+# facility timezone renders UTC — and SAYS it is doing so. The ruling's whole
+# point is that the alternative (silently taking whichever clock the browser
+# happens to be in) produces two surfaces disagreeing by an offset nobody named.
+_FALLBACK_ZONE = "UTC"
+
+
+def _declared_clock(registry, submission_id: Optional[str]) -> dict:
+    """The ONE clock every planner-facing time renders in (R-TZ1, docs/04
+    2026-08-03), read from the submission's IDS manifest (`timezone`, docs/06 §3).
+
+    ``provenance`` is the load-bearing field, and it has THREE values, never two:
+
+      * ``declared``   — the manifest named a timezone; that is the facility's.
+      * ``defaulted``  — no manifest timezone. We render UTC and the board says
+        so. This is a statement about US, not about the plant.
+      * ``unreadable`` — a manifest we could not read. DISTINCT from
+        ``defaulted``, because "nobody declared one" and "we could not tell" are
+        different facts, and a surface that fuses them tells a planner their
+        plant declared nothing when it may well have (4B.18's fourth state, the
+        same discipline).
+
+    Never raises: a clock the API cannot resolve must not 500 the strip.
+    """
+    zone, provenance = _FALLBACK_ZONE, "defaulted"
+    if submission_id:
+        try:
+            sub = registry.get_submission(submission_id)
+            manifest = Path(sub["dir"]) / "files" / "manifest.json"
+            declared = json.loads(
+                manifest.read_text(encoding="utf-8")).get("timezone")
+            if isinstance(declared, str) and declared.strip():
+                zone, provenance = declared.strip(), "declared"
+        except Exception:  # noqa: BLE001 — an unreadable manifest is a THIRD state
+            provenance = "unreadable"
+    # The visible label is COMPACT — it sits in the board chrome beside the
+    # certificate, and a long parenthetical there grows the strip and pushes the
+    # board down (measured: 1.5px of legend-over-bars at 1100px). The word that
+    # must survive the shortening is the one that stops a DEFAULTED clock reading
+    # as a declared one: "assumed". The full explanation is the chip's hover.
+    label = f"All times {zone}"
+    if provenance == "defaulted":
+        label += " · assumed"
+    elif provenance == "unreadable":
+        label += " · manifest unreadable"
+    return {"timezone": zone, "provenance": provenance, "label": label}
+
+
 # ---------------------------------------------------------------------------
 # App factory
 # ---------------------------------------------------------------------------
@@ -539,6 +587,15 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
         # channel, and a fabricated count would be the one thing worse than
         # silence here.
         meta["search_deeper"] = _search_deeper_scale()
+        # R-TZ1 (Session 4B.35) — THE DECLARED CLOCK. Every planner-facing time
+        # renders in ONE clock, and that clock is the FACILITY's, declared in the
+        # IDS manifest (`timezone`, docs/06 §3). It rides on /meta for the same
+        # reason the grade and the cost proof do: it is a SUBMISSION property,
+        # not a derived fact about the schedule, so it has no place in the
+        # document. Its PROVENANCE travels with it, because R-TZ1's fallback
+        # clause turns on exactly this: a board with no declared facility
+        # timezone must DECLARE the one it is using rather than silently pick.
+        meta["clock"] = _declared_clock(registry, meta.get("submission_id"))
         return _ok(meta)
 
     @app.get("/schedules/{schedule_id}/interaction")

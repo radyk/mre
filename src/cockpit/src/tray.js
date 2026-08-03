@@ -7,13 +7,9 @@
 // empty tray reads "nothing is beyond the horizon", not "there is no tray".
 //
 // Read-only: renders from doc.rolling.beyond_horizon; touches no state.
+import { fmtDate } from "./clock.js";
 
-const fmtDue = (iso) => {
-  if (iso == null) return "—";
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "—"
-    : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-};
+const fmtDue = (iso) => fmtDate(iso);             // R-TZ1: the declared clock
 
 // Present only on a rolling document; a monolithic board mounts no tray.
 export function mountTray(hostEl, doc) {

@@ -17,6 +17,8 @@ import { capacityBands, shiftBoundaries } from "../legality/capacity.js";
 import { rowUtilization } from "../legality/rowstats.js";
 import { createMarkers } from "./markers.js";
 import { createHoverCards } from "./hovercards.js";
+import moment from "moment";
+import { fmt, offsetMinutesAt } from "./clock.js";
 
 const ms = (iso) => new Date(iso).getTime();
 const MIN_MS = 60000;
@@ -60,9 +62,10 @@ export function createBoard(hostEl, initialDoc, boardOpts = {}) {
   // booked-through, and next-open-gap. The absolute two come from the document
   // (server-computed via row_intelligence over the solver's own windows); util
   // is recomputed client-side from the SAME arithmetic (rowstats.js), never DOM.
-  const fmtClock = (iso) => (iso == null ? "—" : new Date(iso).toLocaleString(undefined, {
+  // R-TZ1: the DECLARED facility clock, never the browser's (Session 4B.35).
+  const fmtClock = (iso) => fmt(iso, {
     month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false,
-  }));
+  });
   // vis-timeline renders a group's `content` as HTML only when it's a DOM node
   // (a string is escaped to text), so the strip is built as an element.
   function rowStripEl(r, utilPct) {
@@ -295,6 +298,13 @@ export function createBoard(hostEl, initialDoc, boardOpts = {}) {
     // initial range-change completes when start/end are given as options; for a
     // static window that range-change never fires and the board stays blank.
     groupOrder: (a, b) => a.order - b.order,
+    // R-TZ1 (Session 4B.35) — THE AXIS RUNS ON THE DECLARED CLOCK TOO. Without
+    // this, vis renders its labels in the BROWSER's zone: the bars would be
+    // correct, the ruler they sit against would not, and the whole fix would
+    // come apart the moment the laptop travelled. The offset is resolved PER
+    // INSTANT, so a facility zone with DST is exact on both sides of a
+    // transition inside one view.
+    moment: (date) => moment(date).utcOffset(offsetMinutesAt(date)),
     orientation: { axis: "top" },
     margin: { item: 4, axis: 6 },
     format: {

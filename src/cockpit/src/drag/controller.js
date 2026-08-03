@@ -20,6 +20,7 @@
 // consequence is traced; accept is stubbed disabled (no publish workflow yet).
 
 import { buildContext, computeTier0, isLegalStart } from "../../legality/tier0.js";
+import { fmt } from "../clock.js";
 import { renderShade } from "./shade.js";
 import { buildGhostIndex, renderGhosts } from "./ghosts.js";
 import { anchorsForRow, snap } from "./magnets.js";
@@ -238,7 +239,7 @@ export function createGestureController(board, geometry, opts) {
   function _cardWhen(iso) {
     const t = Date.parse(iso);
     if (Number.isNaN(t)) return null;
-    return new Date(t).toLocaleString(undefined,
+    return fmt(t,                                 // R-TZ1: the declared clock
       { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
   }
 

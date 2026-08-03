@@ -171,6 +171,46 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Session 4B.35 — one clock, and the refused nudge**, 2026-08-03 (docs/07 v2.82,
+§5a.143-147; docs/04 2026-08-03 **R-TZ1 ruled and BUILT** + a second ruling putting
+R-DP2 at beat one's checker; contract unchanged **1.15**; narrative in
+`docs/closeouts/4b35-one-clock.md`). **R-TZ1: EVERY PLANNER-FACING TIME RENDERS IN
+ONE DECLARED CLOCK — THE FACILITY'S** (IDS manifest `timezone`, docs/06 §3), on
+`/meta` beside the grade because it is a SUBMISSION property (**no contract bump
+owed**), labelled once on the board chrome, provenance in **THREE states never two**
+(`declared`/`defaulted`/`unreadable` — a defaulted clock reads `· assumed`, because
+one that reads like a declared one is R-CAL1 rule (3)'s failure on another axis).
+Stored instants are UNTOUCHED: this is a RENDERING ruling. Census **12 sites across
+nine files**, all on the browser's clock, now one boundary (`src/cockpit/src/clock.js`);
+**the vis AXIS too**, offset resolved PER INSTANT so a DST zone is exact inside one
+view. **THE DEFECT, MEASURED:** the job panel said ORD-000128 op20 ran
+*"Jan 13, 11:09 → 13:29"* while the testimony said it finished *"18:29"* — five hours,
+every pair, neither labelled; on the axis it made every machine appear to start its
+shift at **2 AM**. **THE §2 VERDICT CHOSE NONE OF THE BRIEF'S THREE BRANCHES AND WAS
+WRITTEN BEFORE ANY FIX: THE DROP INSTANT WAS NEVER SHIFTED** — real pointer, real
+board, Toronto browser: vis round-trip **0 ms** and `pin_start_iso` EQUAL to the carry
+instant on both beats. **Specimen B DOES NOT REPRODUCE** (0 beat-one refusals of 15
+tier-0-legal instants; `op30` is eligible on ONE machine so no cross-row drag exists;
+not a stale `dist`) — recorded unexplained, not closed. **Specimen C's refusal was
+never nameless** (a beat-TWO refusal naming the successor). **BEAT ONE'S CHECKER KNEW
+"NO" AND NOT "WHY"** — CP-SAT's INFEASIBLE is a bare bit, so every beat-one refusal
+ever shown read ONE CONSTANT sentence; fixed AT THE CHECKER
+(`local_price.relaxed_refusal`), **restricted to the families that survive beat one's
+RELAXATION** (eligibility, calendar), because occupancy and precedence are facts about
+the ARRANGEMENT and claiming them for a solve free to move the occupant is the
+over-claim `holds_others` exists to prevent; **an unattributed refusal SAYS SO**.
+`PROVEN` alone is retired from both refusal registers (`proven impossible`, R-DP6's
+term) — a *"Can't go here"* card wearing *verdict · proven within budget* was live on
+the demo board. **20-PROBE RE-MEASURE: 18 refusals / 2 priced, every beat-one refusal
+NAMED (10 of 10, C1/C2), and BOTH prices NON-ZERO at $75.00** — 4B.32 measured four
+prices all exactly $0.00 and recorded the ledger-MOVED branch as unreachable from a
+drag on this board; **it is reachable**. **Python 2416/291/0** (the +1 was RED AT HEAD:
+4B.34 amended docs/04 without rebuilding the corpus index — fixed here); **cockpit 364
+passed / 3 failed of 367**, the 2 known deictic plus a **SEVENTH parallel-load flake**
+(green 11/11 in isolation). **NOT FIXED, NAMED: the Python answer surfaces still render
+stored UTC verbatim** — correct wherever the facility declares UTC, which both pinned
+worlds do, but NOT governed; a plant declaring `Europe/Istanbul` would get a correct
+board and testimony five hours from it. Before it:
 **Session 4B.34 — GUI polish: six items from the interrogation pass**, 2026-08-03
 (docs/07 v2.81, §5a.136-142; docs/04 2026-08-03 **R-GP1 ruled and BUILT**;
 **COCKPIT-ONLY** — no Python, no solver, no schema, contract unchanged **1.15**;

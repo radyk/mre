@@ -408,6 +408,53 @@ def _extract(world: _HeldWorld, sv, tag: str):
 # The structural checks — a refusal that NAMES its constraint
 # ---------------------------------------------------------------------------
 
+def relaxed_refusal(var_map, pin_op: str, rid: str, start_min: int,
+                    end_min: int, chunked: bool = False) -> Optional[LocalRefusal]:
+    """Why a pin is refused WHATEVER ELSE MOVES — the subset of
+    :func:`structural_refusal` that survives a fully relaxed world.
+
+    BEAT ONE relaxes everything but the dragged bar (docs/04 R-T2): every other
+    operation is free to move out of the way. So the only constraints a beat-one
+    INFEASIBLE can be attributed to are the ones no rearrangement can lift —
+    **eligibility** (this machine cannot run this operation) and the
+    **calendar** (it is shut then, or it does not stay open long enough).
+
+    Occupancy, precedence and the frozen front are DELIBERATELY not tested here,
+    even though the held-world checker tests them and they are the commonest
+    real blockers. Under beat one's relaxation each of them is a fact about the
+    incumbent arrangement, not about the plant: reporting "that time is already
+    taken" for a solve that was free to move the occupant would be exactly the
+    over-claim `holds_others` exists to prevent (4B.24), stated by a checker
+    that never even asked. Where none of the surviving families explains the
+    refusal, this returns None and the caller says so rather than inventing one.
+
+    Pure arithmetic over the model's own maps — no solve, no world load, so it
+    is free to call on beat one's already-built ``var_map``.
+    """
+    eligible = (var_map.op_eligible or {}).get(pin_op)
+    if eligible is not None and rid not in eligible:
+        return LocalRefusal(
+            family=FAMILY_ELIGIBILITY, resource_id=rid,
+            sentence="this operation cannot run on that machine")
+
+    windows = (var_map.cal_windows or {}).get(rid) or []
+    if not any(ws <= start_min and end_min <= we for ws, we in windows):
+        # A chunked op may span closures; a whole one may not. Same two facts,
+        # same two sentences as the held-world checker — ONE vocabulary.
+        if not chunked:
+            open_at = next((w for w in windows if w[0] <= start_min < w[1]), None)
+            if open_at is None:
+                return LocalRefusal(
+                    family=FAMILY_CALENDAR, resource_id=rid,
+                    sentence="the machine is not open at that time")
+            return LocalRefusal(
+                family=FAMILY_CALENDAR, resource_id=rid,
+                sentence=f"the machine closes before this would finish — it "
+                         f"needs {end_min - start_min} working minutes and "
+                         f"{open_at[1] - start_min} are left in that window")
+    return None
+
+
 def structural_refusal(world: _HeldWorld, pin_op: str, rid: str,
                        start_min: int, end_min: int,
                        frozen_end_min: Optional[int] = None,

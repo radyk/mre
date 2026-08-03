@@ -47,11 +47,12 @@ export function sortNewestFirst(rows) {
 
 // "Jul 26, 19:13" — date + clock, because the dev data root routinely holds
 // several days of solves and a bare clock reads as "today" when it is not.
+import { fmt } from "./clock.js";
 export function whenLabel(row) {
   if (!row || !row.created_at) return "";
   const t = new Date(row.created_at);
   if (Number.isNaN(t.getTime())) return "";
-  return t.toLocaleString([], {
+  return fmt(t, {                                 // R-TZ1: the declared clock
     month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
   });
 }

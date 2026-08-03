@@ -15325,3 +15325,95 @@ freshly minted authority-only child (`rolling-b12762371b3a`) and offered
 pre-R-GP1 path offered the copy. Badges on the live picker: two ceremony children
 AUTHORITY-ONLY, two zero-move accepts ACCEPTED-EDIT, two movers
 PLACEMENTS-CHANGED, all four identical plans sharing one digest.
+
+---
+
+## 2026-08-03 — R-TZ1: one clock, declared (Session 4B.35)
+
+**Ruled and BUILT.** Found the night before the Khalil demo: the job panel said
+ORD-000128 op20 ran `Jan 13, 11:09 → 13:29` while the ask path's testimony said
+it finished at `2026-01-13 18:29`. Same schedule, same instant, five hours
+apart, neither surface saying which clock it was in. Both were derived correctly
+from the same stored UTC value.
+
+**R-TZ1.** *Every planner-facing time renders in ONE declared clock — the
+FACILITY's, declared in the IDS manifest (`timezone`, docs/06 §3) — labelled
+once on the board chrome. No planner-facing surface may render a different
+clock. The stored representation stays UTC: this is a RENDERING ruling and
+touches no instant, no model and no ledger. Where no facility timezone is
+declared, the board renders UTC and DECLARES that it is doing so, rather than
+silently taking whichever clock the machine it happens to be running on is in.*
+
+**(1) THE CLOCK IS A SUBMISSION PROPERTY, SO IT RIDES ON `/meta`**, beside the
+certificate grade and the cost proof and for the same reason: the schedule
+document is derived-not-invented and the facility's timezone is not a fact about
+the schedule. Nothing in the document changed and no contract bump is owed.
+
+**(2) ITS PROVENANCE TRAVELS WITH IT, IN THREE STATES, NEVER TWO** —
+`declared` / `defaulted` / `unreadable`. "Nobody declared one" and "we could not
+read the manifest" are different facts, and a surface that fuses them tells a
+planner their plant declared nothing when it may well have. The visible label
+carries the distinction in one word (`· assumed`) because a defaulted clock that
+reads identically to a declared one is the R-CAL1 rule (3) failure on another
+axis. (4B.18's fourth state, a fourth time.)
+
+**(3) ONE RENDERING BOUNDARY, AND `toLocaleString` OUTSIDE IT IS THE DEFECT.**
+`src/cockpit/src/clock.js` is the only place a stored instant becomes text. The
+census found **twelve** sites across nine files — board row strip, hover cards
+(×3), job panel (×2), tray, coarse band, boundary marker, drag reason, delta
+card, schedule picker, strip identity — every one of them reading
+`toLocaleString(undefined, …)`, i.e. the browser's zone.
+
+**(4) THE AXIS IS A PLANNER-FACING TIME.** vis-timeline is configured through its
+`moment` hook to the declared clock, resolved PER INSTANT so a facility zone with
+DST is exact on both sides of a transition inside one view. Without this the bars
+would be right and the ruler they sit against would not — and the whole fix would
+come apart the moment the laptop travelled.
+
+**(5) THE GUARD IS AN INVARIANCE, NOT A STRING.** The property is *the browser's
+timezone does not change what the board says*, asserted in a browser pinned to
+`America/Toronto` against a facility on UTC, with the disagreement itself
+asserted as a premise. A guard pinning one expected string would pass on a laptop
+in UTC while the defect was live everywhere else. Three negative controls proven
+red, each on its own half: `fmt` reverted to the browser clock (3 red), the vis
+axis option removed (axis alone red), the label removed (label alone red).
+
+**What this ruling does NOT claim.** The Python answer surfaces still render the
+stored UTC verbatim. That AGREES with R-TZ1 wherever the facility declares UTC —
+which both pinned worlds do — and is simply not yet governed where it does not.
+Named, not fixed.
+
+---
+
+## 2026-08-03 — A refusal names its blocker, at the checker (Session 4B.35)
+
+**R-DP2 at beat one.** Beat one's checker is CP-SAT, and CP-SAT's `INFEASIBLE`
+is a bare bit: it knows *no* and it does not know *why*. So every beat-one
+refusal this product has ever shown read one CONSTANT sentence — *"this
+placement isn't possible here"* — and a planner could not point at anything on
+the board and say *that*. **A validator that knows "no" but not "why" cannot
+satisfy R-DP2, and the fix belongs at the checker.**
+
+`local_price.relaxed_refusal` attributes the refusal in the ONE refusal
+vocabulary (`LocalRefusal`, docs/05 families), from the `var_map` beat one has
+already built — no second solve.
+
+**IT IS RESTRICTED TO THE FAMILIES THAT SURVIVE BEAT ONE'S RELAXATION** —
+eligibility and the calendar. Occupancy, precedence and the frozen front are
+deliberately NOT tested, even though they are the commonest real blockers and
+the held-world checker does test them: beat one relaxes everything but the
+dragged bar, so each of those is a fact about the incumbent ARRANGEMENT and not
+about the plant. Reporting *"that time is already taken"* for a solve that was
+free to move the occupant is exactly the over-claim `holds_others` exists to
+prevent, made by a checker that never asked.
+
+**AN UNATTRIBUTED REFUSAL SAYS SO.** Where no surviving family explains it the
+message states that the plant refused the pin itself and that we could not narrow
+it to one constraint — a true sentence. Inventing a cause would be the
+confident-wrong class.
+
+**"PROVEN" MAY NOT APPEAR ALONE ON A REFUSAL CARD.** A *"Can't go here"* headline
+wearing `verdict · proven within budget` — observed live on the Khalil board —
+says a proof happened and lets it be read as the move being proven fine, the
+label and the headline contradicting each other on one card. Both refusal
+registers now name what was proven: `proven impossible` (R-DP6's term).

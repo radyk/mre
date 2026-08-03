@@ -17,20 +17,19 @@
 // there.
 
 const MIN_LABEL = { committed: "committed", active_window: "active" };
+import { fmt, fmtDate } from "./clock.js";
 
+// R-TZ1 (Session 4B.35): the DECLARED facility clock. This panel is where the
+// two clocks were first seen — it said ORD-000128 op20 ran "11:09 → 13:29"
+// while the testimony about the same instant said it finished at "18:29".
 function fmtClock(iso) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString(undefined, {
+  return fmt(iso, {
     month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
     hour12: false,
   });
 }
 function fmtDay(iso) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "—"
-    : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return fmtDate(iso);
 }
 function fmtMin(m) {
   if (m == null) return "—";

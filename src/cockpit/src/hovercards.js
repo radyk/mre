@@ -9,21 +9,21 @@
 //
 // Everything is PLANNER VOCABULARY — external order + customer names, never a
 // canonical UUID (the identity map resolved those server-side). Read-only.
+import { fmt } from "./clock.js";
 
-const fmtDay = (iso) => {
-  if (iso == null) return "—";
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, {
-    month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false,
-  });
-};
+// R-TZ1 (Session 4B.35): every one of these renders in the DECLARED facility
+// clock. They used to render in the BROWSER's, which put the hover card five
+// hours from the testimony about the same bar.
+const fmtDay = (iso) => fmt(iso, {
+  month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false,
+});
 
 // clock time (CU4): "17:00" — for the closed/idle WINDOW span on a downtime card.
-const fmtHM = (msVal) => new Date(msVal).toLocaleString(undefined, {
+const fmtHM = (msVal) => fmt(msVal, {
   hour: "2-digit", minute: "2-digit", hour12: false,
 });
 // weekday + time (CU4): "Mon 05:00" — for "reopens …".
-const fmtWeekdayTime = (msVal) => new Date(msVal).toLocaleString(undefined, {
+const fmtWeekdayTime = (msVal) => fmt(msVal, {
   weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false,
 });
 

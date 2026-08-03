@@ -19,11 +19,12 @@ const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
 const fmtBucket = (b, bucketDays) => {
   const d = new Date(b.start);
   if (Number.isNaN(d.getTime())) return `#${b.index}`;
-  const label = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const label = fmtDate(d);                       // R-TZ1: the declared clock
   return bucketDays === 7 ? label : `${label}+${bucketDays}d`;
 };
 
 // The provenance sentence. CLAUSE (3): a DEFAULTED derate must never read as
+import { fmtDate } from "./clock.js";
 // the plant's own choice, so the band says which it is, every time.
 //
 // 4B.6a CU2(d): when NOTHING is declared the absence is made LOUD rather than

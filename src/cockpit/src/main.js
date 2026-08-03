@@ -14,6 +14,8 @@ import { mountDevLedger } from "./devledger.js";
 import { findNewerSchedule } from "./freshness.js";
 import { mountTray } from "./tray.js";
 import { mountCoarseBand } from "./coarse.js";
+import { initClock, clockLabel, clockZone, clockProvenance, fmt, fmtTime }
+  from "./clock.js";
 import { createBoundaryCeremony } from "./boundary.js";
 import { createJobPanel } from "./jobpanel.js";
 import { makeCollapsible } from "./collapse.js";
@@ -88,7 +90,7 @@ function scheduleIdentity(doc, meta) {
   if (meta && meta.created_at) {
     const t = new Date(meta.created_at);
     if (!Number.isNaN(t.getTime())) {
-      clock = t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      clock = fmtTime(t);                         // R-TZ1: the declared clock
     }
   }
   if (gen && clock) return { label: `solve #${gen} · ${clock}`, title: shortId };
@@ -143,6 +145,25 @@ function feelTuningEnabled() {
   }
 }
 
+// R-TZ1: WHY the board is in this clock. The three provenances are three
+// different facts and the hover says which — a defaulted clock is a statement
+// about US, and must never read as something the plant declared.
+function clockTitle(meta) {
+  const p = (meta && meta.clock && meta.clock.provenance) || "defaulted";
+  if (p === "declared") {
+    return "Every time on this board and in every answer is the facility's "
+      + "declared timezone (IDS manifest). Stored instants remain UTC.";
+  }
+  if (p === "unreadable") {
+    return "This submission's manifest could not be read, so no facility "
+      + "timezone is known. The board is rendering UTC — the clock the "
+      + "instants are stored in — and saying so rather than picking silently.";
+  }
+  return "This submission declared no facility timezone. The board is "
+    + "rendering UTC — the clock the instants are stored in — and saying so "
+    + "rather than picking silently.";
+}
+
 function paintTopStrip(el, doc, meta) {
   const grade = meta?.grade || "—";
   const costing = meta?.costing_grade ? ` / ${meta.costing_grade}` : "";
@@ -154,6 +175,7 @@ function paintTopStrip(el, doc, meta) {
     <span class="status">${doc.status}</span>
     ${costProofChip(meta)}
     <span class="grade ${gcls}"><span class="lbl">certificate</span> ${grade}${costing}</span>
+    <span class="clock-label" title="${clockTitle(meta)}">${clockLabel()}</span>
     <button class="theme-toggle" id="theme-toggle"></button>`;
   // the toggle is recreated on every repaint (version change too) — (re)bind it.
   const btn = el.querySelector("#theme-toggle");
@@ -640,6 +662,10 @@ async function boot() {
     // later live rebind + reload stay coherent (session 3.8 CU1). On a pinned
     // boot this is a no-op by construction: the id IS the param.
     setUrlSchedule(id);
+    // R-TZ1 (Session 4B.35) — THE CLOCK IS SET BEFORE ANY TIME IS DRAWN. Every
+    // planner-facing instant from here on renders in the DECLARED facility
+    // clock; nothing downstream may reach for the browser's.
+    initClock(meta);
     const picker = paintTopStrip(strip, doc, meta);
     // Session 4B.3a CU2: a rolling document docks a beyond-horizon tray below the
     // board — mark the host BEFORE createBoard so vis sizes the timeline to the
@@ -815,6 +841,10 @@ async function boot() {
       board, panel, tray, coarseBand,
       boundary: ceremony,          // R-F1 ceremony (Session 4B.28 Item 1)
       jobPanel,                    // the whole-job panel (Item 3)
+      // R-TZ1 harness seam (Session 4B.35): the ONE clock, so a guard can
+      // assert the product's own rendering path rather than re-deriving a
+      // format of its own and proving nothing about what a planner reads.
+      clock: { fmt, zone: clockZone, label: clockLabel, provenance: clockProvenance },
       docks,                       // the three collapsibles (Item 2(a))
       ask: (q) => panel.run(q),
       select: (opRef) => board.select(opRef),

@@ -42,6 +42,20 @@ html, body {
 .topstrip .grade.g-rejected { background: var(--grade-rejected); color: var(--ink-inverse); }
 .topstrip .grade .lbl { font-weight: var(--fw-medium); opacity: 0.8; }
 
+/* R-TZ1 (Session 4B.35) — THE DECLARED CLOCK, NAMED ONCE ON THE CHROME.
+ * Quiet by design: it is a standing fact about every time on screen, not an
+ * alert. It must never be the thing a planner has to hunt for, though, so it
+ * sits in the strip beside the certificate rather than in a tooltip. */
+.topstrip .clock-label {
+  font: var(--fw-medium) var(--fs-sm)/1 var(--font-mono); color: var(--muted);
+  border: 1px solid var(--grid); border-radius: var(--radius-sm);
+  padding: 3px 7px; white-space: nowrap; cursor: help;
+  /* It may never grow the strip: a taller strip shortens the board, and the
+   * legend then sits over the bars (measured, 1.5px at 1100px). Capped and
+   * elided — the hover carries the full sentence either way. */
+  max-width: 24ch; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto;
+}
+
 /* THE COST-PROOF CHIP (Session 4B.11 CU1, docs/07 §5a.23) — whether this
  * schedule's cost was PROVEN optimal, in the strip, beside the certificate
  * grade rather than in a diagnostics drawer: it qualifies every number on the

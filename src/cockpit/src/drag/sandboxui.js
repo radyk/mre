@@ -17,6 +17,8 @@
 // verdict → accepted → published, each step honest about what happened. Discard
 // restores everything at any pre-publish step (the controller animates it).
 
+import { fmt } from "../clock.js";
+
 // The authored line the card shows when the total could NOT be split — the exact
 // wording `mre.modules.sandbox.UNSPLIT_NOTE` carries (one sentence, two
 // languages; a `test_delta_attribution` counterpart pins the Python side).
@@ -153,7 +155,7 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     card.innerHTML = `
       <div class="dc-head">
         <span class="dc-outcome impossible">Can't go here</span>
-        <span class="dc-status">${beat === "one" ? "beat 1 · proven" : "proven"}</span>
+        <span class="dc-status">${beat === "one" ? "beat 1 · proven impossible" : "proven impossible"}</span>
       </div>
       <div class="dc-reason"></div>
       <div class="dc-note">the bar is back where it was — nothing changed.</div>
@@ -283,11 +285,19 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
     const unpriced = outcome === "no_verdict";
     const headline = unpriced ? "Couldn't price this"
       : returnHome ? "Can't go here" : _deltaHeadline(result);
-    const status = {
-      verdict: "verdict · proven within budget",
-      feasible_unproven: "flagged · bound not proven",
-      no_verdict: "beat 2 · ran out of budget, not a verdict",
-    }[outcome] || outcome;
+    // R-DP6's term, and Session 4B.35 Item 1(b): "PROVEN" alone may not appear
+    // on a REFUSAL card. A "Can't go here" headline wearing
+    // "verdict · proven within budget" says a proof happened and lets a planner
+    // read it as the move being proven fine — the label and the headline
+    // contradicting each other on one card. What was proven here is that the
+    // placement is IMPOSSIBLE, and the status now says which.
+    const status = returnHome && outcome === "verdict"
+      ? "verdict · proven impossible"
+      : {
+        verdict: "verdict · proven within budget",
+        feasible_unproven: "flagged · bound not proven",
+        no_verdict: "beat 2 · ran out of budget, not a verdict",
+      }[outcome] || outcome;
 
     const lines = returnHome ? [] : (result.moves || []);
     const lineHtml = lines.map((m) => {
@@ -648,7 +658,7 @@ export function createDeltaCard(hostEl, { onDiscard, onNavigate, onAccept, onPub
   function _shortDate(iso) {
     const t = Date.parse(iso);
     if (Number.isNaN(t)) return "";
-    return new Date(t).toLocaleString(undefined,
+    return fmt(t,                                 // R-TZ1: the declared clock
       { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
   }
 

@@ -10,6 +10,7 @@
 //   due       the SELECTED/hovered order's due date (CU2 — only when scoped).
 //   release   the SELECTED/hovered order's release floor (CU2 — only when scoped).
 //   shift     subtle ticks at shift-start/end boundaries (CU1).
+import { fmt } from "./clock.js";
 //
 // Times → x via vis's own body.util.toScreen (the geometry module's timeToX),
 // so a version bump that broke the axis surfaces as marker drift, not a silent
@@ -112,7 +113,7 @@ export function createMarkers(timeline, opts = {}) {
     return `${sign}${a}m`;
   }
   function labelFor(toMs) {
-    const when = new Date(toMs).toLocaleString(undefined, {
+    const when = fmt(toMs, {                      // R-TZ1: the declared clock
       month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
       hour12: false,
     });

@@ -156,7 +156,8 @@ def classify_feasibility(status: str) -> str:
 
 
 def feasibility_message(verdict: str, budget_s: float,
-                        wall_truncated: bool = False) -> str:
+                        wall_truncated: bool = False,
+                        refusal: Optional[dict] = None) -> str:
     """The authored sentence for each beat-one verdict.
 
     The UNDETERMINED sentence says what ran out — the budget, not the plant's
@@ -172,7 +173,17 @@ def feasibility_message(verdict: str, budget_s: float,
     if verdict == FEASIBILITY_POSSIBLE:
         return "this placement is possible — pricing it now"
     if verdict == FEASIBILITY_IMPOSSIBLE:
-        return "this placement isn't possible here"
+        # Item 1(b): the blocker, in the ONE refusal vocabulary
+        # (`local_price.LocalRefusal`), with its docs/05 family — so the beat-one
+        # card and the beat-two card say the same kind of thing about the same
+        # kind of fact. An UNATTRIBUTED refusal says exactly that and no more.
+        if refusal and refusal.get("sentence"):
+            fam = refusal.get("family")
+            return (f"this placement isn't possible here — "
+                    f"{refusal['sentence']}" + (f" [{fam}]" if fam else ""))
+        return ("this placement isn't possible here, and I could not narrow it "
+                "to one constraint — the plant refused the pin itself, not the "
+                "way the rest of the plan happens to be arranged")
     if wall_truncated:
         return (f"I ran out of time checking this placement — the {budget_s:g}s "
                 "ceiling stopped it, so trying again may well answer. Either "
@@ -369,6 +380,12 @@ class FeasibilityGhost:
     det_time_s: Optional[float] = None
     det_consumed: Optional[float] = None
     wall_truncated: bool = False
+    # Session 4B.35 Item 1(b): the BLOCKER behind an `impossible` verdict, in
+    # `local_price.LocalRefusal`'s shape (family / sentence / at / resource).
+    # None on every other verdict, and None on a refusal we could not attribute
+    # — which is a THIRD state, distinct from "not refused", and the message
+    # says which. Carries no money: beat one still cannot represent it.
+    refusal: Optional[dict] = None
 
     def summary(self) -> dict:
         return asdict(self)
@@ -1338,6 +1355,34 @@ def price_drop(
         opportunity=opp, **common, **local_attribution(lp.cost_delta_abs))
 
 
+def _incumbent_duration_min(assignment: Optional[dict]) -> Optional[int]:
+    """The pin's duration, from the incumbent's own run windows — first start to
+    last end. Used only to ask the CALENDAR whether the pin fits, so the SPAN is
+    the right quantity here and 4B.20's ruling is satisfied by saying so: this is
+    an elapsed span, deliberately, because a closure closes on the clock and not
+    on working minutes."""
+    if not assignment:
+        return None
+    wins = (assignment.get("phase_windows") or {}).get("run") or []
+    if not wins:
+        return None
+    try:
+        starts = [_parse_dt(w["start"]) for w in wins]
+        ends = [_parse_dt(w["end"]) for w in wins]
+        return int((max(ends) - min(starts)).total_seconds() // 60)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _is_chunked(assignments: list, op_id: str) -> bool:
+    """Does this operation run in more than one piece? A chunked op is allowed
+    to span closures, so the calendar check must not refuse it for doing so."""
+    a = next((x for x in assignments if x.get("operation_ref") == op_id), None)
+    if not a:
+        return False
+    return len(((a.get("phase_windows") or {}).get("run") or [])) > 1
+
+
 def feasibility_ghost(
     out_dir: Path | str,
     snapshot_id: str,
@@ -1444,6 +1489,8 @@ def feasibility_ghost(
             wall_time_s=0.0, budget_s=budget_s, status="INFEASIBLE",
             verdict=FEASIBILITY_IMPOSSIBLE,
             message=f"this placement isn't possible: {exc.reason}",
+            refusal={"family": None, "sentence": str(exc.reason),
+                     "holds_others": False},
             placement=[],
             pin={"operation_ref": pin_op_id, "resource_id": pin_resource_id,
                  "start": pin_start_dt.isoformat()},
@@ -1472,13 +1519,52 @@ def feasibility_ghost(
     if feasible:
         placement = _placement_list(solve_result.solve_values,
                                     incumbent_placement, horizon_start, pin_op_id)
+
+    # SESSION 4B.35 ITEM 1(b) — A REFUSAL NAMES ITS BLOCKER (R-DP2).
+    #
+    # Beat one's checker is CP-SAT, and CP-SAT's INFEASIBLE is a bare bit: it
+    # knows "no" and it does not know "why". So every beat-one refusal this
+    # product has ever shown read `feasibility_message(IMPOSSIBLE, …)` — the
+    # CONSTANT sentence "this placement isn't possible here" — and a planner
+    # could not point at a single thing on the board and say "that". A validator
+    # that knows "no" but not "why" cannot satisfy R-DP2, and the fix belongs at
+    # the checker, which is here.
+    #
+    # The attribution runs only on a REFUSAL, is pure arithmetic over the
+    # var_map already built above (no second solve, no world load), and is
+    # restricted to the families that survive beat one's relaxation — see
+    # `relaxed_refusal`. When it cannot localise the constraint it returns None
+    # and the message says the plant refused without naming a cause, which is a
+    # true sentence; guessing one would be the confident-wrong class.
+    refusal_dict = None
+    if verdict == FEASIBILITY_IMPOSSIBLE:
+        try:
+            from mre.modules.local_price import relaxed_refusal
+            inc = incumbent_placement.get(pin_op_id)
+            duration = None
+            if inc is not None and len(inc) >= 2:
+                inc_asg = next((a for a in incumbent_assignments
+                                if a.get("operation_ref") == pin_op_id), None)
+                duration = _incumbent_duration_min(inc_asg)
+            if duration:
+                r = relaxed_refusal(
+                    var_map, pin_op_id, pin_resource_id, pin_start_min,
+                    pin_start_min + duration,
+                    chunked=_is_chunked(incumbent_assignments, pin_op_id))
+                if r is not None:
+                    refusal_dict = r.summary()
+        except Exception:  # noqa: BLE001 — an unattributed refusal is still a refusal
+            refusal_dict = None
+
     return FeasibilityGhost(
         correlation_id=corr, feasible=feasible,
         within_budget=wall <= budget_s + _BUDGET_STOP_MARGIN_S,
         wall_time_s=wall, budget_s=budget_s, status=solve_result.status,
         verdict=verdict,
         message=feasibility_message(verdict, budget_s,
-                                    bool(solve_result.wall_truncated)),
+                                    bool(solve_result.wall_truncated),
+                                    refusal=refusal_dict),
+        refusal=refusal_dict,
         placement=placement,
         pin={"operation_ref": pin_op_id, "resource_id": pin_resource_id,
              "start": pin_start_dt.isoformat()},
