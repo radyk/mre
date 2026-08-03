@@ -1,0 +1,388 @@
+AI EXAM TRANSCRIPT
+target      : rolling-db5395dc-2ae
+snapshot    : snap-rolling
+started     : 2026-08-03T17:11:41Z
+llm mode    : live
+questions   : 15
+llm calls   : 18
+door check  : live
+parse       : parses=17 calls=17 retries=0 malformed=0 clarifies=0 unavailable=0 median=1574ms
+synthesis   : answers=0 calls=0 tools=0 malformed=0 budget-out=0 unanswerable=0 median=- p90=-
+claims      : 0 total  verified=0 interpretive=0 failed-and-cut=0  ungrounded-load-bearing=0
+latency     : route n=15 median=1890ms p90=3512ms | synthesis n=0 median=- p90=-
+graded      : 15/15 expectations met
+sidecar     : clean
+------------------------------------------------------------------------
+# AI EXAM BANK — the listening docket: grain, disclosure, premise, direction
+# version  : v1
+# generated: 2026-08-03  (Session 4A.x, the listening docket)
+# world    : any rolling board with multi-operation orders. Calibrated against
+# the DEMO BOARD `rolling-db5395dc-2ae`; the entity ids below are
+# that board's, and a bank run against another world needs its ids
+# substituted (the SHAPES are what is graded, not the ids).
+# 
+# WHAT THIS BANK GRADES, and it is four things that failed together:
+# 
+# 1. THE GRAIN     — a question naming op30 is answered about op30, and a
+# route that answers at order grain SAYS SO.
+# 2. THE DISCLOSURE— every resolution the ladder DEFAULTED appears in the
+# INTERPRETED AS line, not only the subject.
+# 3. THE PREMISE   — "can't be moved" is checked before it is explained, in
+# BOTH directions, and a TRUE premise is left alone.
+# 4. THE SHAPE     — a mobility question gets a two-direction answer with its
+# parts labelled, and the LATER half links to the route
+# that prices it rather than pricing anything itself.
+# 
+# Every group RESETs, so a fan does not accumulate cross-group state.
+# Regenerating this bank is a reviewed change; a NEW VERSION is a new file
+# (docs/closeouts convention: one path per artifact, nothing overwrites).
+# ===========================================================================
+# ITEM 1 — THE GRAIN. S1's own specimen first, verbatim.
+# ===========================================================================
+# [RESET — conversation cleared]
+# S1, as measured at HEAD. Expected then: "Answering about ORD-000126 op10 …
+# the first of its 3 operations." Expected now: the answer is about op30 and
+# there is no fallback sentence, because nothing fell back.
+# [EXPECT intent=why-here route=why-here order=ORD-000126]
+Q[33]: why cant ORD-000126 op30 start earlier
+  route=why-here  source=parse  conf=0.98  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.98  polarity=negative  order=ORD-000126<-utterance("ORD-000126")  1574ms
+  expect: intent=why-here route=why-here order=ORD-000126  -> MET
+  A:
+    ORD-000126 op30 couldn't start before Thursday 2026-01-15 10:29: op20 finishes at 2026-01-15 10:28.
+    Before that: its release date is 2025-12-05 00:00.
+
+    What pushed it, in order:
+      2025-12-05 00:00  release date [docs/05 A4] — its release date is 2025-12-05 00:00
+      2026-01-15 10:28  an earlier step [docs/05 A1/A2] — op20 finishes at 2026-01-15 10:28
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# The same grain, other phrasings — a grain must not depend on word order.
+# [EXPECT route=why-here order=ORD-000126]
+Q[36]: what is blocking operation 30 of ORD-000126
+  route=why-here  source=parse  conf=0.98  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.98  followup=deepen  polarity=negative  order=ORD-000126<-utterance("ORD-000126")  2309ms
+  expect: route=why-here order=ORD-000126  -> MET
+  A:
+    I've now given you this same answer for two different questions, which probably means I'm not understanding what you're asking. Last time you asked: "why cant ORD-000126 op30 start earlier".
+
+    ORD-000126 op30 couldn't start before Thursday 2026-01-15 10:29: op20 finishes at 2026-01-15 10:28.
+    Before that: its release date is 2025-12-05 00:00.
+
+    What pushed it, in order:
+      2025-12-05 00:00  release date [docs/05 A4] — its release date is 2025-12-05 00:00
+      2026-01-15 10:28  an earlier step [docs/05 A1/A2] — op20 finishes at 2026-01-15 10:28
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    If you're after a specific field on a specific job — whether an operation is splittable, how long it takes, its due date, which machines can run it — name the order and the field and I'll read it straight off the record.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT route=why-here order=ORD-000128]
+Q[38]: why is ORD-000128 op 20 placed where it is
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  order=ORD-000128<-utterance("ORD-000128")  1515ms
+  expect: route=why-here order=ORD-000128  -> MET
+  A:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# A grain on a route that CANNOT honour it. The answer must not silently widen
+# to the order: it says it answered at order level and names the step it heard.
+# [EXPECT route=order-schedule order=ORD-000126]
+Q[44]: when does ORD-000126 op30 finish
+  route=order-schedule  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=6  records=3  refs=3/3/0
+  parse: intent=order-schedule  conf=0.99  order=ORD-000126<-utterance("ORD-000126")  2178ms
+  expect: route=order-schedule order=ORD-000126  -> MET
+  A:
+    ORD-000126 completes 2026-01-15 13:00 — 26.5 day(s) late (due 2025-12-19).
+    It starts 2026-01-13 16:08.
+
+    ORD-000126 runs across 3 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-13 16:08 -> 2026-01-13 18:44  ORD-000126
+      [FINISH-01]
+        seq= 30  2026-01-15 10:29 -> 2026-01-15 13:00  ORD-000126
+      [MILL-01]
+        seq= 20  2026-01-15 07:00 -> 2026-01-15 10:28  ORD-000126
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# A grain on a route that CAN honour it (4B.21 Item 3) — no disclosure is owed
+# and none should appear. The other half of the guard.
+# [EXPECT route=why-on-machine order=ORD-000126]
+Q[50]: why is ORD-000126 op30 on FINISH-01
+  route=why-on-machine  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=1  refs=1/1/1
+  parse: intent=why-on-machine  conf=0.95  order=ORD-000126<-utterance("ORD-000126")  machine=FINISH-01<-utterance("FINISH-01")  2319ms
+  expect: route=why-on-machine order=ORD-000126  -> MET
+  A:
+    ORD-000126 op30 is assigned to FINISH-01 because that is the only machine qualified to run this step — there was no alternative to weigh [record: 10119447]. ORD-000126 has 2 other step(s) in this window, each with its own machine and its own reason — ask about one by naming it (e.g. "why is ORD-000126 op<seq> on <machine>?").
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# ===========================================================================
+# ITEM 2 — THE DISCLOSURE. S2's specimen: a bar selected, nothing typed.
+# ===========================================================================
+# [SELECT order=ORD-000128 machine=MILL-01 op_seq=20]
+# At HEAD this disclosed the SUBJECT and stayed silent about the DIRECTION and
+# the GRAIN. All three were resolved; all three are now named.
+# [EXPECT intent=why-here route=why-here order=ORD-000128]
+Q[60]: why cant this be moved
+  selection: order=ORD-000128, machine=MILL-01, op_seq=20
+  interpreted as: why cant ORD-000128 be moved  (resolved against ORD-000128 (from board selection); and about op20, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.92  order=ORD-000128<-selection("this")  1278ms
+  expect: intent=why-here route=why-here order=ORD-000128  -> MET
+  A:
+    It can be moved — ORD-000128 op20 has room LATER: the next opening on MILL-01 long enough for the whole operation is Friday 2026-01-23 16:21. What's blocked is moving it EARLIER, and that is what I've explained below.
+
+    Earlier — what's stopping it:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: there is room. The first opening on MILL-01 where the whole operation fits after where it sits now is Friday 2026-01-23 16:21 — computed from MILL-01's open calendar minus everything already placed on it, under the same minimum-piece rule the solver applies [docs/05 C1/C2, C3].
+    That is WHERE it could go, not what it would cost. Ask "what would pushing ORD-000128 op20 out cost?" and I'll hold every other placement, move that one bar and price the difference — or drag it on the board and the card prices the same move.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [SELECT order=ORD-000128 machine=MILL-01 op_seq=20]
+# A STATED direction is never read back — the line must NOT gain a direction
+# clause here. This is the control on the item above; without it the guard
+# grades a disclosure that fires unconditionally, which discloses nothing.
+# [EXPECT route=why-here order=ORD-000128]
+Q[68]: why cant this be earlier
+  selection: order=ORD-000128, machine=MILL-01, op_seq=20
+  interpreted as: why cant ORD-000128 be earlier  (resolved against ORD-000128 (from board selection); and about op20, the operation selected on the board)
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  polarity=negative  order=ORD-000128<-selection("this")  1488ms
+  expect: route=why-here order=ORD-000128  -> MET
+  A:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [SELECT order=ORD-000128 machine=MILL-01 op_seq=20]
+# A question that ASSUMED NOTHING. "why is this here" is not about moving, so
+# no premise block and no direction clause may appear.
+# [EXPECT route=why-here order=ORD-000128]
+Q[75]: why is this here
+  selection: order=ORD-000128, machine=MILL-01, op_seq=20
+  interpreted as: why is ORD-000128 here  (resolved against ORD-000128 (from board selection); and about op20, the operation selected on the board)
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  order=ORD-000128<-selection("this")  1604ms
+  expect: route=why-here order=ORD-000128  -> MET
+  A:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# ===========================================================================
+# ITEM 3 — THE PREMISE, both directions of the guard.
+# ===========================================================================
+# [RESET — conversation cleared]
+# FALSE PREMISE, active window: ORD-000128 op20 has a later opening on MILL-01
+# (measured 2026-01-23 16:21). The answer must open by saying it can be moved.
+# [EXPECT route=why-here order=ORD-000128]
+Q[85]: why cant ORD-000128 op20 be moved
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  polarity=negative  order=ORD-000128<-utterance("ORD-000128")  1943ms
+  expect: route=why-here order=ORD-000128  -> MET
+  A:
+    It can be moved — ORD-000128 op20 has room LATER: the next opening on MILL-01 long enough for the whole operation is Friday 2026-01-23 16:21. What's blocked is moving it EARLIER, and that is what I've explained below.
+
+    Earlier — what's stopping it:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: there is room. The first opening on MILL-01 where the whole operation fits after where it sits now is Friday 2026-01-23 16:21 — computed from MILL-01's open calendar minus everything already placed on it, under the same minimum-piece rule the solver applies [docs/05 C1/C2, C3].
+    That is WHERE it could go, not what it would cost. Ask "what would pushing ORD-000128 op20 out cost?" and I'll hold every other placement, move that one bar and price the difference — or drag it on the board and the card prices the same move.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# The same claim in the planner's other words.
+# [EXPECT route=why-here order=ORD-000126]
+Q[88]: why is ORD-000126 op30 stuck
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  followup=deepen  polarity=positive  order=ORD-000126<-utterance("ORD-000126")  1450ms
+  expect: route=why-here order=ORD-000126  -> MET
+  A:
+    It can be moved — ORD-000126 op30 has room LATER: the next opening on FINISH-01 long enough for the whole operation is Friday 2026-01-16 07:00. What's blocked is moving it EARLIER, and that is what I've explained below.
+
+    Earlier — what's stopping it:
+    ORD-000126 op30 couldn't start before Thursday 2026-01-15 10:29: op20 finishes at 2026-01-15 10:28.
+    Before that: its release date is 2025-12-05 00:00.
+
+    What pushed it, in order:
+      2025-12-05 00:00  release date [docs/05 A4] — its release date is 2025-12-05 00:00
+      2026-01-15 10:28  an earlier step [docs/05 A1/A2] — op20 finishes at 2026-01-15 10:28
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: there is room. The first opening on FINISH-01 where the whole operation fits after where it sits now is Friday 2026-01-16 07:00 — computed from FINISH-01's open calendar minus everything already placed on it, under the same minimum-piece rule the solver applies [docs/05 C1/C2, C3].
+    That is WHERE it could go, not what it would cost. Ask "what would pushing ORD-000126 op30 out cost?" and I'll hold every other placement, move that one bar and price the difference — or drag it on the board and the card prices the same move.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# TRUE PREMISE, committed work: ORD-000073 op10 sits inside the frozen front.
+# The correction must NOT fire, and the answer must name R-F1 rather than
+# offering a later slot it cannot deliver.
+# [EXPECT route=why-here order=ORD-000073]
+Q[95]: why cant ORD-000073 op10 be moved
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  polarity=negative  order=ORD-000073<-utterance("ORD-000073")  1529ms
+  expect: route=why-here order=ORD-000073  -> MET
+  A:
+    Earlier — what's stopping it:
+    I can't attribute ORD-000073 op10's placement at Monday 2026-01-05 07:00 to a binding constraint: the earliest-start estimates I can compute don't line up with where it actually sits. Rather than pick one and sound certain, I'd rather say I don't know.
+
+    What pushed it, in order:
+      2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00
+      2026-01-06 00:00  the frozen boundary [docs/05 R-F1] — the frozen boundary stands at 2026-01-06 00:00
+      2026-01-06 07:00  the machine's calendar [docs/05 C1/C2] — PRESS-FAST is closed until 2026-01-06 07:00
+      2026-01-23 12:25  no window long enough [docs/05 C3] — it needs 4h05m in one piece and PRESS-FAST had only 2h09m left when it came free at 2026-01-22 16:51
+
+    Later: it can't go there either, and "can't be moved" is fair — ORD-000073 op10 sits inside the committed front (frozen through 2026-01-06 00:00). Committed work is moved by moving the frozen boundary, not by moving the bar [docs/05 R-F1].
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# UNDECIDABLE: ORD-000177 op10 runs in 3 pieces. The answer must decline in
+# both directions BY NAME and must not convert a limit of our method into a
+# claim about the plant.
+# [EXPECT route=why-here order=ORD-000177]
+Q[102]: why wont ORD-000177 op10 budge
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  order=ORD-000177<-utterance("ORD-000177")  1505ms
+  expect: route=why-here order=ORD-000177  -> MET
+  A:
+    Earlier — what's stopping it:
+    Nothing prevented ORD-000177 op10 from starting earlier. Holding every other placement where it is, CUT-01 had open, unheld time from 2026-01-15 14:30 — the solver chose Friday 2026-01-23 16:59 rather than being forced into it.
+    The assignment decision records its driver as CALENDAR_WINDOW.
+    It runs in 3 pieces between 2026-01-23 16:59 and 2026-01-27 08:00, 15h01m of actual work — it pauses when CUT-01 closes and resumes when it reopens, which is what it means for this operation to be splittable.
+
+    What pushed it, in order:
+      2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00
+      2026-01-05 07:00  the machine's calendar [docs/05 C1/C2] — CUT-01 is closed until 2026-01-05 07:00
+      2026-01-15 14:30  no window long enough [docs/05 C3] — the open stretches before 2026-01-15 14:30 were shorter than its 1h minimum piece
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: I can't tell you. ORD-000177 op10 runs in 3 pieces, and a chunked operation can't be priced as a local move in either direction — the pauses are closures the solver placed, and shifting the bar doesn't re-derive them. That is a limit of what I can compute, not a statement that the plant has no room.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# ===========================================================================
+# ITEM 4 — THE TWO-DIRECTION SHAPE and its invitation.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [EXPECT route=why-here order=ORD-000128]
+Q[110]: why cant ORD-000128 op20 be moved
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  polarity=negative  order=ORD-000128<-utterance("ORD-000128")  1648ms
+  expect: route=why-here order=ORD-000128  -> MET
+  A:
+    It can be moved — ORD-000128 op20 has room LATER: the next opening on MILL-01 long enough for the whole operation is Friday 2026-01-23 16:21. What's blocked is moving it EARLIER, and that is what I've explained below.
+
+    Earlier — what's stopping it:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: there is room. The first opening on MILL-01 where the whole operation fits after where it sits now is Friday 2026-01-23 16:21 — computed from MILL-01's open calendar minus everything already placed on it, under the same minimum-piece rule the solver applies [docs/05 C1/C2, C3].
+    That is WHERE it could go, not what it would cost. Ask "what would pushing ORD-000128 op20 out cost?" and I'll hold every other placement, move that one bar and price the difference — or drag it on the board and the card prices the same move.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# The follow-up the LATER half invites. It must reach the route that PRICES a
+# later move (4B.30), not the earlier counterfactual — the invitation is only
+# honest if the door it names opens.
+# [EXPECT intent=what-would-change route=what-would-change order=ORD-000128]
+Q[115]: what would pushing ORD-000128 op20 out cost?
+  route=what-would-change  source=parse  conf=0.98  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=what-would-change  conf=0.98  followup=deepen  order=ORD-000128<-utterance("ORD-000128")  1835ms
+  expect: intent=what-would-change route=what-would-change order=ORD-000128  -> MET
+  A:
+    The next place ORD-000128 op20 could sit on MILL-01 is Friday 2026-01-23 16:21 — the first opening after where it is now with room for the whole operation.
+
+    Not there: a later start would run ORD-000128 straight into the next step of its own routing, which is already scheduled from 2026-01-14 07:00 [docs/05 A1/A2].
+    Offering you a still-later slot would make that worse, not better, so I am not offering one. What moves this is moving the downstream step too — a two-operation change I price one bar at a time and therefore cannot price as one gesture.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# The other door the invitation names, in planner words rather than ours.
+# [EXPECT route=what-would-change order=ORD-000126]
+Q[120]: can i push ORD-000126 op30 out a week
+  route=what-would-change  source=parse  conf=0.98  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=what-would-change  conf=0.98  order=ORD-000126<-utterance("ORD-000126")  1512ms
+  expect: route=what-would-change order=ORD-000126  -> MET
+  A:
+    Pushing ORD-000126 op30 out by "a week" puts it at Thursday 2026-01-22 10:29 on FINISH-01.
+
+    It costs +$33,600.00 (+2.015% of the plan's $1,667,467.80).
+    Nothing else moves — every other job stays exactly where it is, which is the only reading under which this number is about YOUR move. The slot it leaves behind is simply unused in this price; a deeper search might refill it, and that is a different question with a different answer.
+
+    ORD-000126 finishes 2026-01-22 13:00 — 33d 13h past its due date (2025-12-19 23:59).
+      16d of that was already sunk before this plan opened and no placement can move it [R-PD1]; 17d 13h is what this schedule decides, against 10d 13h today.
+      Tardiness on this order: +$33,600.00 ($127,400.00 → $161,000.00).
+
+    Held-world price: every other placement pinned where it is, the whole ledger recomputed, and the result re-checked against the scheduler (OPTIMAL). It is what this move costs, not what the best plan containing it would cost.
+
+    Note: the cost figures above are not proven optimal — the solver ran out of budget with a gap of 89.6% still open, so a cheaper schedule may exist and could be up to that much cheaper.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
