@@ -241,3 +241,71 @@ class**, recorded as such and not as a pass.
   two-direction answer shape) are on the ledger, untouched, per §6 of the brief.
 * **A monolithic board's clock label is unexercised live** — the chip is on
   `/meta`, which every board has, but only rolling boards were driven here.
+
+---
+
+## ADDENDUM (2026-08-03, demo-prep sweep) — THE UNNAMED CHILD
+
+A registry sweep before the Khalil demo found a schedule this close-out does not
+account for: **`6ff7d6da-275e-4867-bd49-1efc2dd91275`**, parent
+**`rolling-b12762371b3a`** (the R-F1 boundary-move child of the Khalil lineage),
+minted `2026-08-03T00:56:40Z` — inside this session's own working window, ~30
+minutes after 4B.34's commit and two hours before 4B.35's.
+
+**What it is.** A real `planner_edit` accept, and the sharpest R-DP13 specimen in
+the data root:
+
+```
+run e6b9c2c6-…  kind=accept  authority=dev-planner
+pin  ORD-000126 op30 -> FINISH-01 @ 2026-01-15T12:30:00.000Z
+     (incumbent 2026-01-15T10:29:00Z; +121 min, one 30-min grid step past a first try)
+Decision (M4, headline, basis=observed):
+     "Planner edit: pinned op 58b160c5 to c3459e27 @ 2026-01-15T12:30:00+00:00 (+$403)"
+     driver = PLANNER_DIRECTIVE       verdict = OPTIMAL      objective_cleared = true
+     moved_count = 1, resource unchanged, start_delta_min = +121
+     ledger 1,667,467.80 -> 1,667,871.13   total_delta +403.33, ALL tardiness
+     (production_delta 0.00, setup_delta 0.00);  delta_abs = null  (R-DP12)
+```
+
+**What gesture minted it.** A live pointer drag in the cockpit, priced twice and
+then accepted — the trail is in the parent run's sandbox, and the *two* beat-one
+model builds are what identify it as a hand rather than a script:
+
+```
+00:52:33Z  beat one, pin_start_min 15120  (Jan 15 12:00Z, +91 min)   1.892 s
+00:52:43Z  beat two, priced
+00:56:25Z  beat one, pin_start_min 15150  (Jan 15 12:30Z, +121 min)  0.889 s
+00:56:33Z  beat two, priced (FEASIBLE, 7.71 s)
+00:56:38Z  ACCEPT  ->  child 6ff7d6da minted in 1.70 s
+```
+
+Dragged, priced, nudged one grid notch further, priced again, accepted. The
+`.000Z` millisecond form of `pin_start_iso` is `Date.prototype.toISOString`'s,
+i.e. it came through `drag/controller.js`, not through Python.
+
+**Why this close-out missed it.** Two reasons, and the second is the one worth
+keeping.
+
+1. **4B.35 has no housekeeping section.** 4B.32 closed with a `§11 Housekeeping`
+   that listed every row and directory it created or deleted and proved the data
+   root clean afterwards; 4B.34 and 4B.35 did not carry one forward. A child that
+   no section owns is a child no reader can find.
+
+2. **Every gesture in this session's narrative is a *measurement*, and this one
+   *committed*.** §2 reports carry instants and beat-one/beat-two verdicts; §5
+   reports 18 refusals and 2 prices. All of those are read-only — pricing mints
+   nothing. Exactly one gesture in the session pressed **Accept**, and pressing
+   Accept is not a measurement: it mints a schedule, a run, a snapshot, a
+   `PLANNER_DIRECTIVE` Decision and (at 00:57:17Z) an `alternatives` pool. The
+   session was watching the *card* and did not look at the *registry*. The board
+   this session was measuring against was `rolling-b12762371b3a`; from 00:56:40Z
+   onward the newest row in the lineage was `6ff7d6da`, and nothing said so.
+
+**The irony worth recording.** 4B.33 §5a.135 named as a limit that *"no exam bank
+can reach `PLANNER_DIRECTIVE` — neither pinned world holds a single `planner_edit`
+Decision, so the specimen needs a new pinned world."* This session produced, by
+accident and without noticing, the first `PLANNER_DIRECTIVE` accept on this board
+with a **non-zero ledger delta and a real move** — 4B.33's own two live children
+(`caff8efa`, `e2e18e8c`) both left the ledger at $1,667,467.80. It is being
+deleted with the rest of the demo-prep sweep; its Decision is transcribed above
+so the specimen survives the row.
