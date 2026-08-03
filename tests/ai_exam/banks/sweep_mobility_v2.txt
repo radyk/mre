@@ -1,0 +1,186 @@
+# AI EXAM BANK — the mobility family: floor scope, grain premise, disclosure
+# version  : v2   (v1 = sweep_mobility_v1.txt, the listening docket's bank —
+#                  kept, not replaced; a new version is a new file)
+# generated: 2026-08-03  (Session 4A.y, the founder listening round)
+# world    : the DEMO BOARD `rolling-db5395dc-2ae`. The entity ids below are
+#            that board's; the SHAPES are what is graded, not the ids.
+#
+# WHAT v2 ADDS TO v1, and every addition is a MEASURED founder specimen:
+#
+#   F1  ROUTE BYPASS. The docket wired the premise check to `why-here`. A
+#       mobility question also reaches `what-would-change` and `frozen`, and on
+#       those two it got an uncorrected, undisclosed answer. Which route a
+#       question reaches is a MODEL's decision and is history-sensitive — so the
+#       groups below that carry history DO NOT RESET between turns. That is
+#       deliberate: the history is part of the specimen.
+#
+#   F2  GRAIN-BLIND PREMISE. "why is ORD-000126 op30 on CUT-01" — op30 is on
+#       FINISH-01 — was answered by CONFIRMING the false placement off op10's
+#       record, under a sentence asserting the record was op30's own.
+#
+#   F4  FLOOR VOCABULARY. "why is this bar trapped here" reached the floor's own
+#       route and got the plain uncorrected chain.
+#
+#   F5  CROSS-SUBJECT REPEAT. The same question asked of three different bars
+#       in sequence: two answers opened "Same answer as a moment ago".
+#
+# RESET DISCIPLINE (v1's carry, taken here): every SAME-GRAIN phrasing group
+# resets, so a fan of rewordings does not accumulate cross-group state. The
+# HISTORY-BEARING groups deliberately do not, and say so at each one.
+
+# ===========================================================================
+# F1 — THE FLOOR IS FAMILY-SCOPED. One conversation per route it can reach.
+# ===========================================================================
+RESET
+SELECT order=ORD-000128 machine=MILL-01 seq=20
+# Turn 1 puts a MOVE question in the history — the shape that preceded the
+# founder's bypass. No RESET after it: the history is the specimen.
+EXPECT intent=what-would-change route=what-would-change order=ORD-000128
+what would it take to move ORD-000128 op20 later
+# Turn 2 is the founder's own question. Whichever route the parse picks, the
+# answer must address the premise: it can be moved, or "can't be moved" is fair,
+# or the chunked case's honest refusal. An earlier-only chain is the defect.
+EXPECT order=ORD-000128
+why cant this be moved
+RESET
+
+SELECT order=ORD-000128 machine=MILL-01 seq=20
+# Phrasings the census measured landing on `frozen` — a family member that
+# returned before the floor AND before the disclosure seam. The answer must
+# carry the premise correction as a lead, naming the OPERATION it assessed
+# (`frozen` itself answers at order grain, so two grains share one answer).
+EXPECT order=ORD-000128
+is this bar immovable
+RESET
+
+SELECT order=ORD-000128 machine=MILL-01 seq=20
+EXPECT order=ORD-000128
+can this not be moved at all
+RESET
+
+SELECT order=ORD-000128 machine=MILL-01 seq=20
+# Measured on `what-would-change` with the live parse reporting
+# move_direction=EARLIER — a direction the planner did not state. The premise
+# check must fire anyway, and the direction must be disclosed as assumed.
+EXPECT order=ORD-000128
+this cant move can it
+RESET
+
+# THE STATED-DIRECTION CONTROL, and it is the most important line in this file.
+# The founder's round produced a CORRECT answer here (a later move, priced).
+# A stated direction assumes nothing: NO premise correction and NO "read as
+# EARLIER" may appear. If this group regresses, Item 1 over-fired.
+SELECT order=ORD-000128 machine=MILL-01 seq=20
+EXPECT intent=what-would-change route=what-would-change order=ORD-000128
+why cant this move later
+RESET
+
+SELECT order=ORD-000073 machine=PRESS-FAST seq=10
+# The FROZEN bar the founder asked about, which got "the estimates don't line
+# up... I don't know". The premise here is TRUE and the answer must say so and
+# name R-F1 — never offer a later slot it cannot deliver.
+EXPECT order=ORD-000073
+why cant this be moved
+RESET
+
+SELECT order=ORD-000177 machine=CUT-01 seq=10
+# The CHUNKED bar, which got the counterfactual's "nothing prevented it" answer.
+# The honest verdict is UNDECIDABLE, declined in both directions by name.
+EXPECT order=ORD-000177
+why cant this be moved
+RESET
+
+# ===========================================================================
+# F2 — THE PREMISE IS VERIFIED AT THE GRAIN IT WAS ASSERTED AT.
+# ===========================================================================
+RESET
+# THE SPECIMEN. op30 runs on FINISH-01. At HEAD this returned "ORD-000126 is on
+# CUT-01 because it was the cheaper option… This is about op30 on CUT-01; the
+# evidence below is that step's own assignment decision" — op10's record wearing
+# op30's name. Expected now: a correction naming op30 and FINISH-01.
+EXPECT intent=why-on-machine route=why-on-machine order=ORD-000126
+why is ORD-000126 op30 on CUT-01
+RESET
+
+# THE TRUE-PREMISE CONTROL at the same grain. A correction that fires here is a
+# worse defect than the one it was built for.
+EXPECT route=why-on-machine order=ORD-000126
+why is ORD-000126 op30 on FINISH-01
+RESET
+
+# THE ORDER-GRAIN CONTROL (4B.13's own shape, unchanged). No step is named, so
+# the correction is about the whole order, in the words it has always used.
+EXPECT route=why-on-machine order=ORD-000126
+why is ORD-000126 on HEAT-02
+RESET
+
+# The other step of the same order, true at its own grain — the pair that proves
+# the check reads the grain rather than the order.
+EXPECT route=why-on-machine order=ORD-000126
+why is ORD-000126 op10 on CUT-01
+RESET
+
+# ===========================================================================
+# F3 — THE DISCLOSURE IS NOT GATED ON A REWRITE.
+# ===========================================================================
+RESET
+# The planner named the order exactly, so nothing is rewritten — and the route
+# answers at ORDER level while they typed op30. The interpreted-as line must
+# appear anyway. (v1 graded the note's CONTENT; this grades that it is SHOWN.)
+EXPECT route=order-schedule order=ORD-000126
+when does ORD-000126 op30 finish
+RESET
+
+# ===========================================================================
+# F4 — THE VOCABULARY, where the census measured it short.
+# ===========================================================================
+RESET
+SELECT order=ORD-000128 machine=MILL-01 seq=20
+EXPECT order=ORD-000128
+why is this bar trapped here
+RESET
+
+SELECT order=ORD-000128 machine=MILL-01 seq=20
+EXPECT order=ORD-000128
+why is this wedged in here
+RESET
+
+SELECT order=ORD-000128 machine=MILL-01 seq=20
+EXPECT order=ORD-000128
+nothing can move this can it
+RESET
+
+# THE TRUE NEGATIVE. "stuck" in a sense that is not about a bar at all. No
+# premise correction may appear — and note the gate that stops it is the
+# INTENT, not the vocabulary: this routes nowhere near the family.
+#
+# Deliberately UNGRADED by EXPECT: what is under test is what must NOT be in
+# the answer, and the expectation vocabulary grades routing, not absence. The
+# unit control for it is
+# `test_family_floor.py::test_a_non_mobility_use_of_stuck_reaches_no_premise_check`.
+the data seems stuck in december
+RESET
+
+# ===========================================================================
+# F5 — A REPEAT IS THE SAME QUESTION ABOUT THE SAME THING.
+#
+# THIS GROUP DELIBERATELY DOES NOT RESET. The sequence IS the specimen: three
+# bars, one question, and at HEAD two of the three answers opened "Same answer
+# as a moment ago". None of the first three may carry a repeat rider.
+# ===========================================================================
+RESET
+SELECT order=ORD-000128 machine=MILL-01 seq=20
+EXPECT order=ORD-000128
+why cant this be moved
+SELECT order=ORD-000073 machine=PRESS-FAST seq=10
+EXPECT order=ORD-000073
+why cant this be moved
+SELECT order=ORD-000177 machine=CUT-01 seq=10
+EXPECT order=ORD-000177
+why cant this be moved
+# AND THE GENUINE RE-ASK, which MUST still get the terse lead: same question,
+# same bar, one turn later. This is the behaviour that was RIGHT at HEAD and
+# the reason Item 5 is a narrowing rather than a deletion.
+EXPECT order=ORD-000177
+why cant this be moved
+RESET

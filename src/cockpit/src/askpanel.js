@@ -144,15 +144,39 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
     logEl.appendChild(el); scrollDown();
   }
 
-  function appendResolved(resolved, note) {
+  // Session 4A.y Item 3 — THE DISCLOSURE IS NOT GATED ON THE REWRITE.
+  //
+  // This block used to render only when the server had REWRITTEN the question,
+  // and the resolution note only ever reached the screen as a hardcoded
+  // "[from board selection]" bracket — a substring test standing in for a
+  // sentence. Since the listening docket the note carries the GRAIN and the
+  // DIRECTION too, and both of those are defaulted on questions that need no
+  // rewrite at all. Measured on the demo board, at HEAD:
+  //
+  //   "when does ORD-000126 op30 finish"
+  //     note: "answered for the whole of ORD-000126 — you named op30 and this
+  //            route answers at order level"
+  //     rewritten: NO   ->  the planner saw none of it
+  //
+  // So the docket's own disclosure was invisible in the product it was built
+  // for. Two changes: the block renders whenever a note EXISTS, and the note is
+  // rendered VERBATIM instead of being reduced to a bracket. CU3 (Session 4A.3)
+  // is not lost — "resolved against ORD-000128 (from board selection)" is the
+  // note's own first clause, so it now says strictly more than the bracket did.
+  //
+  // The resolved question keeps its own <pre>, and keeps it EMPTY when nothing
+  // was rewritten: a planner is never read their own sentence back
+  // (`_with_assumptions`'s rule, honoured on this side of the wire too).
+  function appendResolved(resolved, note, rewritten) {
     clearEmpty();
     const el = document.createElement("div");
     el.className = "msg resolved-note";
-    el.innerHTML = `<div class="who">interpreted as</div><pre></pre>`;
-    // CU3 (Session 4A.3): when a live board selection supplied the referent, show
-    // WHICH context won ("… [from board selection]") so the planner can see it.
-    const src = note && note.includes("board selection") ? "  [from board selection]" : "";
-    el.querySelector("pre").textContent = resolved + src;
+    el.innerHTML = `<div class="who">interpreted as</div><pre></pre>`
+      + `<div class="assumed"></div>`;
+    el.querySelector("pre").textContent = rewritten ? resolved : "";
+    if (!rewritten) el.querySelector("pre").remove();
+    const noteEl = el.querySelector(".assumed");
+    if (note) noteEl.textContent = note; else noteEl.remove();
     logEl.appendChild(el); scrollDown();
   }
 
@@ -235,14 +259,20 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
       // actually answered (the deictic pattern from 3.2d, generalized).
       const resolved = res.bundle && res.bundle.resolved_question;
       const note = res.bundle && res.bundle.resolution_note;
-      if (resolved && resolved !== question) appendResolved(resolved, note);
+      const rewritten = !!(resolved && resolved !== question);
+      if (rewritten || note) appendResolved(resolved, note, rewritten);
       appendAnswer(res.answer, res.bundle);
       // remember this turn (subject refs from the live selection) for follow-ups
       const refs = currentSelectionRefs();
       askHistory.push({
         question, resolved_question: resolved || question,
         route: (res.bundle && res.bundle.route) || null,
-        order: refs.order, machine: refs.machine,
+        // Session 4A.y Item 5: the GRAIN travels with the turn. The repeat rider
+        // compares what a question was ABOUT, and two clicks on two operations of
+        // one order are two subjects, not one asked twice. The key is always
+        // present (null when nothing is selected) — an ABSENT key means "this
+        // client does not report the grain", which the server reads differently.
+        order: refs.order, machine: refs.machine, op_seq: refs.op_seq ?? null,
       });
       // Carry this answer's resolved subject into the next question (CU1).
       lastAnswered = resolvedSubject(res.bundle);

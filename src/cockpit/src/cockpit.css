@@ -712,6 +712,13 @@ html, body {
 .ask .msg.resolved-note pre {
   font: var(--fs-xs)/1.3 var(--font-mono); color: var(--muted); font-style: italic;
 }
+/* Session 4A.y Item 3: the resolution note VERBATIM — every resolution the
+   ladder defaulted (subject, grain, direction), not just the one that rewrote
+   the sentence. Prose, not mono: it is a sentence, and it wraps. */
+.ask .msg.resolved-note .assumed {
+  font: var(--fs-xs)/1.4 var(--font-sans); color: var(--muted);
+  font-style: italic; white-space: normal;
+}
 
 /* CU3: the question-ledger refusal dev panel (DEV build only) — a compact,
    fixed corner overlay, styled like the tuning panel's chrome. */

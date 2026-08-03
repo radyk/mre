@@ -171,6 +171,50 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Session 4A.y — the floor is family-scoped**, 2026-08-03 (docs/07 v2.86,
+§5a.153-158; docs/04 2026-08-03 **R-FF1–R-FF4 ruled and BUILT**; contract
+unchanged **1.15**, no docs/06 doorway owed; parse prompt unchanged **v17**;
+narrative in `docs/closeouts/4a-family-floor.md`). **THE FOUNDER LISTENING ROUND
+WAS HELD** — R1 item 1 is CLOSED except the honest-outage message, which stayed
+queued and is named. Five specimens, one seam: **the docket's machinery works
+where wired, and it was wired to ONE ROUTE while routing is a MODEL's decision.**
+**R-FF1: THE FLOOR ATTACHES TO THE QUESTION FAMILY.** 18-phrasing census, live
+parse, demo board: the family reaches **`why-here` 11 / `frozen` 5 /
+`what-would-change` 2**, and **6 of 18 got a premise check** — six missed on the
+VOCABULARY, six on the ROUTE, **one on both**. Now **17 of 18**. `frozen` is a
+ROLLING intent and the dispatch returns for those **before the floor AND before
+`_with_assumptions`** — 4B.21 §5a.78 a third time, so five phrasings got no check
+and no disclosure of anything, including the grain the docket had just built.
+Barring the other two was REFUSED (it decides a route from words: the classifier
+R-AI5 forbids). Each member renders in its OWN shape and **the lead claims
+nothing about what follows it** — `why-here`'s *"that is what I've explained
+below"* is false of the other two. ONE computation (`mobility_verdict` wraps
+`_mobility_facts`). **R-FF2: THE PARSE INVENTED A DIRECTION** — the docket
+measured 0-of-5 OMISSION; *"this cant move can it"* came back **`EARLIER`**,
+unstated. `states_direction` reads the planner's words; the parse's report is
+untouched and still branches the route, so the founder's correct priced answer
+(*"why cant this move later"*) is unchanged and now GUARDED. **R-FF4: A PREMISE
+IS VERIFIED AT THE GRAIN IT WAS ASSERTED AT** — *"why is ORD-000126 op30 on
+CUT-01"* (op30 is on FINISH-01) returned **op10's record under the sentence
+*"This is about op30 on CUT-01; the evidence below is that step's own assignment
+decision"***: not an implication, an ASSERTION about our own evidence. TWO layers
+(the check, and the binding site with the order-wide fallback closed).
+**THE DOCKET'S DISCLOSURE HAD NEVER BEEN RENDERED IN THE COCKPIT AT ALL** —
+`appendResolved` reduced the note to a hardcoded `[from board selection]`
+substring test, so 4A.x §5's quotations came from the exam-report path; its
+*"nothing is broken in the product"* is CORRECTED. **THE REPEAT RIDER FIRED ON
+THREE DIFFERENT BARS** (measured live, one sequence); `repeat` now needs the
+SUBJECT too, grain compared only where the turn carries it. **Python
+2524/291/0** (HEAD in this tree **2469**, **+55**); **cockpit 363/4 of 367** — 2
+known deictic, 2 flakes green 8/8 in isolation. **8 negative controls proven
+RED**, files restored byte-identical — and **the harness corrupted a file's line
+endings on its first run** (`write_text` translates newlines; caught by its own
+restore assertion). **`sweep_mobility_v2` RUN: 21 questions, 20/20 met.**
+**MINTED NOTHING.** NOT FIXED, named: **`jammed` is the one phrasing of 18 still
+uncovered, BY RULING** (a jam happens to a MACHINE); **`boxed-in`/`earlier-open`
+are still unreachable on both pinned boards** (§5a.152(b) unchanged); the
+honest-outage message; and the founder's EXACT F1 routing did not reproduce in
+four history reconstructions (the CLASS did, deterministically). Before it:
 **Session 4A.x — the listening docket**, 2026-08-03 (docs/07 v2.83, §5a.148-152;
 docs/04 2026-08-03 **R-LD1–R-LD4 ruled and BUILT**; contract unchanged **1.15**,
 no docs/06 doorway owed, both answered on the record; parse prompt **v17**;
@@ -227,8 +271,8 @@ ineffective seam. **Cockpit untouched, not re-run. MINTED NOTHING.**
 **`sweep_mobility_v1`: RUN 2026-08-03 against `rolling-db5395dc-2ae` — 15/15
 expectations met** (`tests/ai_exam/sweeps/2026-08-03-mobility-v1/`; the session
 itself could not run it, the API credit balance having been exhausted partway,
-and every live measurement above completed before that). **THE FOUNDER
-LISTENING ROUND IS STILL OWED.** Before it:
+and every live measurement above completed before that). **THE FOUNDER LISTENING
+ROUND WAS HELD IN 4A.y** — see the top of this section. Before it:
 **Session 4B.35 — one clock, and the refused nudge**, 2026-08-03 (docs/07 v2.82,
 §5a.143-147; docs/04 2026-08-03 **R-TZ1 ruled and BUILT** + a second ruling putting
 R-DP2 at beat one's checker; contract unchanged **1.15**; narrative in

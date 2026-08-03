@@ -107,6 +107,32 @@ from typing import Optional
 # absent: "what's holding it up" and "why the wait", which are ordinary
 # `why-here` cause questions this route has always answered, and "why can't it
 # be earlier", which STATES its direction and therefore has nothing to disclose.
+#
+# SESSION 4A.y (the founder listening round) — THE MEASURED MISSES. An 18-phrasing
+# census on the demo board found six phrasings a planner typed that this
+# vocabulary did not recognise, and the founder's own was one of them:
+#
+#     "why is this bar trapped here"      -> why-here, no premise check
+#     "why is this trapped"               -> why-here, no premise check
+#     "why is this wedged in here"        -> why-here, no premise check
+#     "why is this bar pinned down here"  -> frozen,   no premise check
+#     "nothing can move this can it"      -> why-here, no premise check
+#     "why is this jammed here"           -> why-here, no premise check
+#
+# Five of the six are added below. "jammed" IS NOT, and the exclusion is the
+# interesting one: a jam is a thing that happens to a MACHINE, and "why is
+# CUT-01 jammed" asserts a plant fact rather than a claim about a bar's
+# mobility. The rule this vocabulary is held to — a phrase that can ONLY be
+# asserting immobility — excludes it, and a phrase-shaped workaround
+# ("jammed here", "jammed in") would be fitting the vocabulary to one probe's
+# wording rather than to the language. Named here so it is a decision and not
+# an oversight.
+#
+# "PINNED DOWN" IS ADDED AND "PINNED" IS NOT, for the same reason from the other
+# side: 4B.28 gave `frozen` the word "pinned", where it names an AUTHORITY a
+# planner releases — "why is ORD-000001 pinned?" is a true question with a true
+# answer and nothing to correct. "Pinned down" is the idiom for immobile and
+# asserts something else entirely.
 _MOBILITY_PHRASES: tuple[str, ...] = (
     "be moved", "been moved", "moved at all", "move at all",
     "cant move", "can't move", "cannot move", "wont move", "won't move",
@@ -114,12 +140,18 @@ _MOBILITY_PHRASES: tuple[str, ...] = (
     "cant it move", "can't it move", "cant this move", "can't this move",
     "budge", "immovable", "unmovable",
     "stuck", "locked in place", "locked down", "nailed",
+    # Session 4A.y — the measured misses.
+    "pinned down", "nothing can move", "nothing will move",
+    "nothing moves it", "no way to move",
 )
 
 #: Single words that need word boundaries — "locked" must not fire on
 #: "unlocked" and "fixed" is excluded entirely (a fixed schedule, a fixed
-#: quantity and a fixed bar are three different things).
-_MOBILITY_WORDS: tuple[str, ...] = ("locked", "immobile", "frozen")
+#: quantity and a fixed bar are three different things). "trapped" and "wedged"
+#: joined in 4A.y: both can only be predicated of a thing that cannot move, and
+#: neither has the machine-fault reading that keeps "jammed" out.
+_MOBILITY_WORDS: tuple[str, ...] = ("locked", "immobile", "frozen",
+                                    "trapped", "wedged")
 
 _WORD_RE = re.compile(
     r"(?<![a-z])(" + "|".join(_MOBILITY_WORDS) + r")(?![a-z])", re.IGNORECASE)
@@ -130,11 +162,58 @@ def asks_about_moving(question: str) -> bool:
 
     True only for the closed vocabulary above. False on everything else,
     including every phrasing that names a direction — a stated direction is not
-    an assumption and gets no disclosure."""
+    an assumption and gets no disclosure.
+
+    THIS IS ONE HALF OF THE GATE, NOT THE GATE (stated because it is easy to
+    read as the whole of it). The floor fires only where this is True AND the
+    parse chose an intent in the mobility family AND a placed operation
+    resolved. So "the data seems stuck in December" matches this vocabulary and
+    still gets no premise check anywhere: it is a question about the submission,
+    it routes nowhere near the family, and there is no bar to assess. The
+    vocabulary is deliberately not asked to carry a judgement about what the
+    sentence is ABOUT — that is the parse's job, and a keyword test that tried
+    to do it would be the deterministic classifier R-AI5 forbids."""
     low = (question or "").lower()
     if any(p in low for p in _MOBILITY_PHRASES):
         return True
     return bool(_WORD_RE.search(low))
+
+#: Words that STATE which way. Closed, deterministic, and narrow on purpose:
+#: every entry has to be a direction and nothing else, so "before" (before
+#: WHAT), "back" (back where) and "ahead" (ahead of what) are all excluded.
+#: A question carrying one of these has stated its direction and is owed no
+#: disclosure about which way it was read.
+_DIRECTION_WORDS: tuple[str, ...] = (
+    "earlier", "sooner", "later", "push out", "pushed out", "pushing out",
+    "bring forward", "brought forward", "move up", "moved up",
+    "postpone", "delay", "further out", "sooner than", "ahead of schedule",
+)
+
+
+def states_direction(question: str) -> bool:
+    """Did the planner say WHICH WAY, in their own words?
+
+    SESSION 4A.y ITEM 1 — WHY THIS IS NOT READ OFF THE PARSE. The listening
+    docket measured the model failing to report a direction on 5 of 5 mobility
+    phrasings; this round measured the OPPOSITE failure on the same family:
+
+        "this cant move can it"  ->  what-would-change, move_direction=EARLIER
+
+    The planner named no direction. The model supplied one, and because the
+    dispatch trusted `move_direction` as a report of what was SAID, a stated
+    direction and an invented one were indistinguishable — so the premise check
+    was skipped on a question that had assumed everything.
+
+    Both failures have one cure: the direction the planner STATED is a property
+    of their sentence, and their sentence is right here. The parse's report is
+    still kept verbatim (it is the record of what the model said, and
+    `what-would-change` still branches on it — nothing here overwrites a route's
+    choice); what this decides is only whether a DISCLOSURE and a PREMISE CHECK
+    are owed. R-AI5(8) exactly: the parse reports, the dispatch decides.
+    """
+    low = (question or "").lower()
+    return any(w in low for w in _DIRECTION_WORDS)
+
 
 #: The verdicts. Two say the planner's premise HOLDS, one says we cannot tell,
 #: two REFUTE it — and a refutation names the direction that is open, because

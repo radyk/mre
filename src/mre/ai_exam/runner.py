@@ -682,6 +682,10 @@ class ExamRunner:
                     "route": turn.route or None,
                     "order": selection.get("order"),
                     "machine": selection.get("machine"),
+                    # Session 4A.y Item 5 — in lockstep with askpanel.js, which
+                    # is the whole point of this comment: the harness must send
+                    # what the panel sends or it measures a different product.
+                    "op_seq": selection.get("op_seq"),
                 })
                 # Carry THIS answer's resolved subject into the next question, the
                 # way the panel does — the honest fix for a follow-up after a TYPED

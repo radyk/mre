@@ -92,9 +92,17 @@ def render_transcript(result: ExamResult) -> str:
             lines.append(_RULE)
             continue
         # interpreted-as line WITH the resolution source
+        # Session 4A.y Item 3 — UNGATED FROM THE REWRITE, the same fix as
+        # askpanel.js's and for the same reason: since the listening docket the
+        # note carries the GRAIN and the DIRECTION, and a question that needed no
+        # rewrite ("when does ORD-000126 op30 finish") carries a note saying it
+        # was answered at ORDER level. Gating the disclosure on the rewrite hid
+        # exactly the disclosures the docket added.
         if t.resolved_question and t.resolved_question != t.question:
             note = f"  ({t.resolution_note})" if t.resolution_note else ""
             lines.append(f"  interpreted as: {t.resolved_question}{note}")
+        elif t.resolution_note:
+            lines.append(f"  interpreted as: ({t.resolution_note})")
         lines.append(
             f"  route={t.route}  source={t.source}  conf={_conf(t.confidence)}  "
             f"register={t.register}  renderer={t.renderer}")

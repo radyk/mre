@@ -470,6 +470,105 @@ def _subject_note(parsed: ParsedQuestion) -> str:
 #: worse than the silence it replaces.
 _EARLIER_BY_DEFAULT = frozenset({Intent.WHY_HERE, Intent.WHAT_WOULD_CHANGE})
 
+#: THE MOBILITY FAMILY — every intent a "this can't be moved" question is known
+#: to reach (Session 4A.y Item 1, the founder listening round).
+#:
+#: MEASURED, NOT DESIGNED, and the measurement is the reason the set exists.
+#: The listening docket put the premise check on `why-here` because that is
+#: where its four specimens landed. The founder's round then landed the same
+#: family on `what-would-change` and got an uncorrected earlier-only answer, and
+#: an 18-phrasing census on the demo board (`rolling-db5395dc-2ae`) put numbers
+#: on it:
+#:
+#:     why-here            11   floor runs
+#:     frozen               5   floor never ran
+#:     what-would-change    2   floor never ran
+#:
+#: So the route a mobility question reaches is a MODEL's decision, made per
+#: turn, sensitive to the conversation before it — and a check wired to one
+#: route is a check that fires when the model happens to agree with it. The
+#: family is the invariant; the route is not.
+#:
+#: WHY NOT BAR THE OTHER TWO INSTEAD (the brief's option (b)): barring an intent
+#: on the strength of the question's words is a deterministic classifier
+#: deciding a route, which R-AI5 forbids and which this codebase has deleted
+#: three times. The parse reports; the dispatch decides what to ADD. So every
+#: member runs the floor, and each renders it in its own shape.
+#:
+#: Adding a member is cheap and safe (a premise check and a lead); omitting one
+#: is the defect. `start-reason` and `swap-move` are deliberately ABSENT — the
+#: census never saw the family reach either, and a member added on a hunch would
+#: make this list an argument wearing a measurement's clothes (R-CAL1's rule).
+_MOBILITY_FAMILY_INTENTS = frozenset({
+    Intent.WHY_HERE, Intent.WHAT_WOULD_CHANGE, Intent.FROZEN,
+})
+
+def _apply_mobility_floor(parsed: ParsedQuestion, params: dict,
+                          selection: Optional[dict] = None) -> None:
+    """THE FLOOR, for whichever family route is about to run (4A.y Item 1).
+
+    Called from BOTH dispatch paths — the ordinary matched-intent path and the
+    ROLLING early return, which `frozen` takes. That second call site is the
+    whole point: `frozen` returns before the matched-intent path is reached, so
+    a floor written once, in the obvious place, would have covered two of the
+    family's three members and looked complete.
+    """
+    if parsed.intent not in _MOBILITY_FAMILY_INTENTS:
+        return
+    from mre.modules.mobility_premise import asks_about_moving, states_direction
+    if not asks_about_moving(parsed.question):
+        return
+    # THE PLANNER'S OWN WORDS DECIDE WHETHER ANYTHING WAS ASSUMED — never the
+    # parse's `move_direction`, which this round measured INVENTING a direction
+    # ("this cant move can it" -> EARLIER) as surely as the last one measured it
+    # omitting one. A named target is a stated direction too: the calendar
+    # resolves "can this move to Friday", and the planner did point somewhere.
+    if states_direction(parsed.question) or parsed.move_target:
+        return
+    params["mobility_family"] = True
+    params["move_direction_assumed"] = True
+    # The bar the LEAD is about. `frozen` answers at ORDER grain and is not
+    # selection-re-scopable (`_OPERATION_SCOPED_INTENTS` is narrow for a good
+    # reason), but a premise about mobility is a premise about ONE BAR, and the
+    # bar in question is the one under the pointer. Kept in its own keys so no
+    # route's own scope is touched, and the lead NAMES the operation it assessed
+    # so the two grains in one answer are never ambiguous.
+    sel = selection or {}
+    params["mobility_op_seq"] = params.get("op_seq") if \
+        params.get("op_seq") is not None else sel.get("op_seq")
+    params["mobility_machine"] = params.get("machine") or sel.get("machine")
+    # The EARLIER default is `why-here`'s alone: it is the only member whose
+    # answer IS a direction. Claiming one for the other two would be the
+    # over-disclosure R-LD2 narrowed against.
+    if parsed.intent is Intent.WHY_HERE and not params.get("move_direction"):
+        params["move_direction"] = MoveDirection.UNSTATED.value
+        params["move_direction_source"] = "floor"
+
+
+def _attach_mobility_lead(explainer: Any, bundle: Any, params: dict) -> None:
+    """Hand a family route that did not compute its own verdict the one the
+    dispatch computed, under a key of its own (4A.y Item 1).
+
+    ``"mobility" in key_facts`` is the test rather than its truthiness: a
+    `why-here` bundle that computed None has ANSWERED whether it could assess
+    this bar, and re-asking here would be reaching for a second opinion after
+    the first said "I can't tell"."""
+    if not params.get("mobility_family"):
+        return
+    if not isinstance(getattr(bundle, "key_facts", None), dict):
+        return
+    if "mobility" in bundle.key_facts:
+        return
+    seq = params.get("mobility_op_seq")
+    if seq is None:
+        seq = params.get("op_seq")
+    lead = explainer.mobility_verdict(
+        params.get("order"),
+        params.get("mobility_machine") or params.get("machine"),
+        seq, params.get("document"))
+    if lead is not None:
+        bundle.key_facts["mobility_lead"] = lead
+
 
 def _with_assumptions(note: str, parsed: ParsedQuestion, params: dict) -> str:
     """The resolution note, plus every OTHER resolution the ladder DEFAULTED.
@@ -520,7 +619,16 @@ def _with_assumptions(note: str, parsed: ParsedQuestion, params: dict) -> str:
     # Read from PARAMS, not from the parse: the mobility floor above may have
     # supplied a direction the model did not report, and a disclosure that only
     # covers what the model remembered is the silence this item exists to end.
-    if params.get("move_direction") == MoveDirection.UNSTATED.value \
+    # Session 4A.y Item 1: `unstated` OR the floor's own finding that the
+    # planner's sentence named no direction. The second is needed because the
+    # parse sometimes reports a direction nobody stated, and a disclosure that
+    # only covers what the model admitted to assuming covers the wrong half.
+    # It is still never claimed over a LATER answer — that would state the
+    # wrong direction, which R-LD2 called worse than the silence it replaces.
+    direction = params.get("move_direction")
+    if (direction == MoveDirection.UNSTATED.value
+            or params.get("move_direction_assumed")) \
+            and direction != MoveDirection.LATER.value \
             and parsed.intent in _EARLIER_BY_DEFAULT \
             and not (parsed.intent is Intent.WHAT_WOULD_CHANGE
                      and parsed.move_target):
@@ -873,9 +981,50 @@ def forget_deliveries(session_id: Optional[str]) -> None:
         ANSWER_MEMORY.forget(session_id)
 
 
+def _same_subject(turn: dict, order: Optional[str],
+                  op_seq: Optional[Any]) -> bool:
+    """Is a history turn about the SAME thing as the turn being answered?
+
+    Session 4A.y Item 5 (the founder listening round). ``repeat`` fired on
+    IDENTITY OF THE QUESTION TEXT and never looked at what the question was
+    about, so a planner clicking down a row of bars and asking each one the same
+    thing got told they were repeating themselves. Measured on the demo board,
+    at HEAD, three turns of one sequence:
+
+        "why cant this be moved"  [ORD-000128 op20]  -> answer
+        "why cant this be moved"  [ORD-000073 op10]  -> "Same answer as a
+                                                        moment ago —"
+        "why cant this be moved"  [ORD-000177 op10]  -> "Same answer — nothing
+                                                        in the plan has moved
+                                                        since you asked —"
+
+    Three different bars, three genuinely different answers, and two of them
+    opened by telling the planner nothing had changed. Asking the same question
+    of a different subject is not a repeat; it is the most ordinary thing a
+    planner does with a board.
+
+    THE GRAIN IS COMPARED ONLY WHERE THE TURN CARRIES IT. A client that predates
+    the op_seq key says nothing about the grain, and treating its silence as
+    "op_seq is None" would kill the genuine re-ask this rider exists for. Absent
+    means unknown, and unknown does not refute.
+    """
+    if (turn.get("order") or None) != (order or None):
+        return False
+    if "op_seq" not in turn:
+        return True
+    a, b = turn.get("op_seq"), op_seq
+    if a is None or b is None:
+        return a is None and b is None
+    try:
+        return int(a) == int(b)
+    except (TypeError, ValueError):
+        return str(a) == str(b)
+
+
 def bundle_repeat(bundle: Any, context: Optional[dict],
                   parsed: ParsedQuestion, text: str = "",
-                  session_id: Optional[str] = None) -> None:
+                  session_id: Optional[str] = None,
+                  subject: Optional[dict] = None) -> None:
     """Stamp the repeat signal on a bundle — REVERSED (Session 4B.15 Item 4).
 
     Two different facts were fused into one counter, and the fused counter fired
@@ -892,14 +1041,22 @@ def bundle_repeat(bundle: Any, context: Optional[dict],
     one route and getting two good answers is the route working; the defect is
     two different questions getting one answer. So ``deaf`` requires a matching
     answer FINGERPRINT, which is why deliveries are remembered.
+
+    Session 4A.y Item 5: ``repeat`` additionally requires the same SUBJECT — see
+    :func:`_same_subject`. ``deaf`` is left alone deliberately: it already keys
+    on the delivered answer, and two bars' answers name their own bars, so a
+    changed subject changes the fingerprint without any help from here.
     """
     if not isinstance(getattr(bundle, "key_facts", None), dict):
         return
     route = parsed.intent.value
     history = (context or {}).get("history") or []
+    subj = subject or {}
+    order, op_seq = subj.get("order"), subj.get("op_seq")
     same = sum(1 for t in history[-REPEAT_WINDOW:]
                if (t.get("route") or "") == route
-               and _same_question(t.get("question") or "", parsed.question))
+               and _same_question(t.get("question") or "", parsed.question)
+               and _same_subject(t, order, op_seq))
     if same:
         bundle.key_facts["repeat"] = same
         return
@@ -1227,9 +1384,18 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     if parsed.intent in ROLLING_INTENTS:
         params = route_params(parsed, parsed.question)
         params["document"] = document
-        return Dispatched(parsed.intent.value,
-                          explainer.route(parsed.intent.value, params),
-                          note, parsed.question)
+        # Session 4A.y Item 1 — THIS RETURN IS BEFORE THE FLOOR AND BEFORE THE
+        # DISCLOSURE SEAM, and `frozen` is a mobility-family member that takes
+        # it. Measured at HEAD: five of eighteen census phrasings routed here
+        # and got neither a premise check nor a word about what was assumed —
+        # including the grain, which the listening docket had just built.
+        # 4B.21 §5a.78's mechanism a third time: a seam every route passes,
+        # except the ones that return early.
+        _apply_mobility_floor(parsed, params, (context or {}).get("selection"))
+        note = _with_assumptions(note, parsed, params)
+        bundle = explainer.route(parsed.intent.value, params)
+        _attach_mobility_lead(explainer, bundle, params)
+        return Dispatched(parsed.intent.value, bundle, note, parsed.question)
 
     # 5 — a matched intent. The question the assemblers see is the planner's own
     # text unless the parse rewrote the subject (context bind / near-miss id /
@@ -1391,11 +1557,13 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     # what was said — and the DISPATCH decides, which is R-AI5(8) rather than a
     # departure from it. It can only ever ADD a premise check to a route that
     # was already going to run; it can never route.
-    if parsed.intent is Intent.WHY_HERE and not params.get("move_direction"):
-        from mre.modules.mobility_premise import asks_about_moving
-        if asks_about_moving(parsed.question):
-            params["move_direction"] = MoveDirection.UNSTATED.value
-            params["move_direction_source"] = "floor"
+    #
+    # SESSION 4A.y ITEM 1 — THE FLOOR IS SCOPED TO THE FAMILY, NOT TO A ROUTE.
+    # See `_MOBILITY_FAMILY_INTENTS` for the census that decided the set. The
+    # direction default is still `why-here`'s alone, because it is the only one
+    # of the three whose answer IS a direction (see `_EARLIER_BY_DEFAULT`); the
+    # other two get the premise check and no claim about which way they read.
+    _apply_mobility_floor(parsed, params, (context or {}).get("selection"))
 
     # 4z — EVERY RESOLUTION THE LADDER MADE IS DISCLOSED, NOT ONLY THE SUBJECT
     # (the listening docket, Item 2). Computed HERE, at the one seam every
@@ -1408,6 +1576,11 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
                           note, routed_question)
 
     bundle = explainer.route(parsed.intent.value, params)
+
+    # 4z-bis — THE FLOOR RUNS FOR WHICHEVER ROUTE ANSWERED (Session 4A.y Item 1).
+    # `why-here` computes its own verdict inline (it renders both directions in
+    # its own shape); the other members get it here and render it as a lead.
+    _attach_mobility_lead(explainer, bundle, params)
 
     # 5a-bis — ROUTE FALSIFIABILITY (Session 4B.15 Item 2). A matched route
     # could not be wrong: once the parse named an intent above the confidence
@@ -1443,7 +1616,14 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     # one route is evidence that I AM NOT UNDERSTANDING YOU, not that you are
     # repeating yourself. So the signal is now split by whether the QUESTIONS
     # differ, and only a genuine re-ask keeps the old terse behaviour.
-    bundle_repeat(bundle, context, parsed, draft, session_id)
+    #
+    # Session 4A.y Item 5: and the SUBJECT, read from the params the route was
+    # actually answered with rather than from the parse — the ladder may have
+    # resolved it off the board, and a rider about repetition must compare what
+    # was answered about, not what was typed.
+    bundle_repeat(bundle, context, parsed, draft, session_id,
+                  subject={"order": params.get("order"),
+                           "op_seq": params.get("op_seq")})
     remember_delivery(session_id, parsed.intent.value, parsed.question, draft)
     # Make the resolution visible (RUBRIC C3): the answer shows the question it
     # actually answered, whenever the parse rewrote it.

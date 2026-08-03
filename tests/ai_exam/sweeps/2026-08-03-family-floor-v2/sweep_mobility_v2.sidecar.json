@@ -1,0 +1,84 @@
+{
+  "target": "rolling-db5395dc-2ae",
+  "snapshot": "snap-rolling",
+  "started_at": "2026-08-03T21:26:59Z",
+  "llm_mode": "live",
+  "questions": 21,
+  "llm_calls": 27,
+  "parser_stats": {
+    "calls": 25,
+    "parses": 25,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 0,
+    "unavailable": 0,
+    "median_latency_ms": 1550.0772000086727,
+    "malformed_samples": []
+  },
+  "synth_stats": {
+    "syntheses": 0,
+    "calls": 0,
+    "tool_calls": 0,
+    "malformed": 0,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 0,
+    "median_latency_ms": null,
+    "p90_latency_ms": null
+  },
+  "synthesis": {
+    "answers": 0,
+    "claims": 0,
+    "verified": 0,
+    "interpretive": 0,
+    "failed_and_cut": 0,
+    "ungrounded_load_bearing": 0,
+    "unanswerable": 0,
+    "budget_exhausted": 0,
+    "tool_calls": 0,
+    "tool_histogram": {},
+    "calls_per_answer": {}
+  },
+  "shadow": {
+    "shadowed": 0,
+    "clean": 0,
+    "diverged": 0,
+    "unchecked": 0,
+    "provenance_strengthened": 0,
+    "by_intent": {}
+  },
+  "latency": {
+    "route": {
+      "n": 21,
+      "median_ms": 1720.4,
+      "p90_ms": 3312.5
+    },
+    "synthesis": {
+      "n": 0,
+      "median_ms": null,
+      "p90_ms": null
+    }
+  },
+  "graded_expectations": {
+    "graded": 20,
+    "met": 20
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "dark-evidence": 2
+  },
+  "findings": [
+    {
+      "kind": "dark-evidence",
+      "lineno": 102,
+      "question": "why is ORD-000126 op30 on CUT-01",
+      "detail": "route 'why-on-machine' cited 0 records and lit 0 bars"
+    },
+    {
+      "kind": "dark-evidence",
+      "lineno": 114,
+      "question": "why is ORD-000126 on HEAT-02",
+      "detail": "route 'why-on-machine' cited 0 records and lit 0 bars"
+    }
+  ]
+}

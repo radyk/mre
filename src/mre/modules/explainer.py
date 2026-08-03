@@ -1431,14 +1431,38 @@ class Explainer:
             return False
         return False
 
-    def _verify_placement_premise(self, wo_ref: str,
-                                  machine_ref: str) -> Optional[dict]:
+    def _verify_placement_premise(self, wo_ref: str, machine_ref: str,
+                                  op_seq: Optional[int] = None
+                                  ) -> Optional[dict]:
         """CLAUSE (i) OF THE RELEVANCE GUARD (Session 4B.13 Item 1).
 
         A question of the form "why is X on Y" ASSERTS a fact about the world.
         Verify it before adopting it. Returns None when the premise HOLDS (or
         cannot be checked, which is never treated as a failure); otherwise a dict
         describing how it fails, for the correction bundle.
+
+        THE GRAIN (Session 4A.y Item 2, the founder listening round). The check
+        was written before a typed operation number could reach a route at all,
+        so it verified the relation at ORDER grain and only ever at order grain:
+        *does any step of this order run on that machine*. Once the listening
+        docket carried `op_seq` to the dispatch, that became a hole with a
+        measured specimen behind it, on the demo board, at HEAD:
+
+            Q: why is ORD-000126 op30 on CUT-01
+            A: ORD-000126 is on CUT-01 because it was the cheaper option once
+               every cost was weighed.
+               This is about op30 on CUT-01; the evidence below is that step's
+               own assignment decision.  [record: dd33a21c…]
+
+        op30 is on FINISH-01. op10 is the step on CUT-01, and the answer is
+        op10's decision record wearing op30's name — with a sentence that does
+        not merely imply the grain but ASSERTS it, calling another step's record
+        "that step's own". Two answers earlier the same board had said,
+        correctly, that op30 runs on FINISH-01.
+
+        A PREMISE IS VERIFIED AT THE GRAIN IT WAS ASSERTED AT. When the question
+        names a step, the claim is about that step; the order-grain question is
+        a different question and keeps the order-grain check unchanged.
 
         THE SPECIMENS, both reproduced against the live registered board:
 
@@ -1478,10 +1502,52 @@ class Explainer:
             m = r.get("machine")
             if m and m not in actual:
                 actual.append(m)
-        if machine_ref.strip().upper() in {m.upper() for m in actual}:
+        claimed = machine_ref.strip().upper()
+
+        def _payload(kind: str, machines: list[str], **extra) -> dict:
+            return {
+                "order": wo_ref,
+                "kind": kind,
+                "claimed_machine": machine_ref,
+                "actual_machines": machines,
+                "claimed_machine_exists": self._machine_exists(machine_ref),
+                "rows": rows,
+                **extra,
+            }
+
+        # -- THE ASKED GRAIN, when one was asked ---------------------------
+        if op_seq is not None:
+            try:
+                want = int(op_seq)
+            except (TypeError, ValueError):      # unreadable is not refuted
+                want = None
+            if want is not None:
+                step_rows = [r for r in rows if r.get("op_seq") == want]
+                if not step_rows:
+                    # A DIFFERENT correction, and the difference matters: the
+                    # order is placed, the machine may be right, and the step
+                    # the planner named is not in this window at all. Telling
+                    # them "it isn't on CUT-01" would be false.
+                    return _payload("no_such_step", actual,
+                                    claimed_op_seq=want,
+                                    known_op_seqs=[r.get("op_seq") for r in rows
+                                                   if r.get("op_seq") is not None])
+                step_machines: list[str] = []
+                for r in step_rows:
+                    m = r.get("machine")
+                    if m and m not in step_machines:
+                        step_machines.append(m)
+                if claimed in {m.upper() for m in step_machines}:
+                    return None                  # the premise HOLDS at grain
+                return _payload("wrong_machine_for_step", step_machines,
+                                claimed_op_seq=want,
+                                step_rows=step_rows)
+
+        if claimed in {m.upper() for m in actual}:
             return None                      # the premise HOLDS
         return {
             "order": wo_ref,
+            "kind": "wrong_machine",
             "claimed_machine": machine_ref,
             "actual_machines": actual,
             # A machine that does not exist in the plant at all is a DIFFERENT
@@ -1503,6 +1569,12 @@ class Explainer:
             ordered_records=[],
             key_facts={
                 "order": bad["order"],
+                # Which SHAPE of falsehood (Session 4A.y Item 2). Defaulted for
+                # a payload built before the grain existed, so an older caller
+                # renders exactly as it did.
+                "kind": bad.get("kind") or "wrong_machine",
+                "claimed_op_seq": bad.get("claimed_op_seq"),
+                "known_op_seqs": bad.get("known_op_seqs") or [],
                 "claimed_machine": bad["claimed_machine"],
                 "claimed_machine_exists": bad["claimed_machine_exists"],
                 "actual_machines": bad["actual_machines"],
@@ -1526,10 +1598,21 @@ class Explainer:
         # THE FLOOR, before any cause is assembled: this route's whole question
         # presupposes the placement. If the placement is false the cause is
         # unanswerable, and every sentence built on it inherits the falsehood.
-        bad = self._verify_placement_premise(wo_ref, machine_ref)
+        # THE GRAIN REACHES THE CHECK (Session 4A.y Item 2). The step may be
+        # named in the parse (`op_seq`) or only in the words — 4B.21's A5 gave
+        # this route a text re-scan and it is still the supplier when the parse
+        # carries nothing, so the premise is checked against whichever the
+        # assembler is about to answer at.
+        asked_seq = op_seq
+        if asked_seq is None and asked_question:
+            from mre.modules.attribute_lookup import op_seq_in
+            asked_seq = op_seq_in(asked_question)
+        bad = self._verify_placement_premise(wo_ref, machine_ref, asked_seq)
         if bad is not None:
+            named = f" op{bad['claimed_op_seq']}" if bad.get("claimed_op_seq") \
+                else ""
             return self._premise_correction(
-                f"Why is {wo_ref} on {machine_ref}?", bad)
+                f"Why is {wo_ref}{named} on {machine_ref}?", bad)
 
         records = self._index.lineage_walk(demand_id, snapshot_reader=self._reader)
 
@@ -1595,11 +1678,27 @@ class Explainer:
             else []
         # An operation named in the question ("op20") narrows further: an order
         # can have two steps on the same machine.
-        if op_seq is not None and matched:
-            by_seq = [r for r in matched
-                      if self._decision_op_seq(r) == int(op_seq)]
-            if by_seq:
-                matched = by_seq
+        # LAYER TWO OF THE GRAIN RULE (Session 4A.y Item 2): THE BINDING SITE
+        # NEVER BINDS A RECORD OF ANOTHER GRAIN. `if by_seq: matched = by_seq`
+        # kept the machine-matched record when the named step had none — which
+        # is how op10's decision came to be rendered under the sentence "this is
+        # about op30 … that step's own assignment decision". Two layers, because
+        # the measured specimen shows one layer stitching a name onto a record:
+        # the premise check above stops the false question, and this stops the
+        # false CITATION for any question that gets past it.
+        #
+        # The pool is the machine-matched set where there is one and the whole
+        # order's assignments where there is not — because the order-wide
+        # FALLBACK is the other way a different step's record reaches a
+        # grain-scoped question, and a rule that closed only the machine-matched
+        # path would be a fix pointed at one seam of two (4B.14's own lesson,
+        # and 4B.28 §5a.123's).
+        grain_unmatched = False
+        if op_seq is not None:
+            pool = matched or assignment_records
+            matched = [r for r in pool
+                       if self._decision_op_seq(r) == int(op_seq)]
+            grain_unmatched = not matched
         elif op_seq is None and asked_question and matched:
             from mre.modules.attribute_lookup import op_seq_in
             asked_seq = op_seq_in(asked_question)
@@ -1613,7 +1712,12 @@ class Explainer:
         # dropped silently — the count and where to ask about them is stated —
         # but they leave the citation list entirely.
         other_steps = [r for r in assignment_records if r not in matched]
-        ranked = matched or assignment_records
+        # AND THE FALLBACK IS CLOSED WHERE THE GRAIN WAS NAMED (4A.y Item 2):
+        # citing nothing is the honest answer to "why is op20 on X" when op20's
+        # own decision is not in the evidence. `ordered_records` drives the
+        # chain, the cited refs, the lit bars and the cockpit footer, so this is
+        # the one place all four are held to the asked grain.
+        ranked = matched or ([] if grain_unmatched else assignment_records)
         # `ranked is assignment_records` means nothing matched the named
         # machine: the fallback is the old order-wide behaviour, and the answer
         # must not then claim a scope it does not have.
@@ -1665,7 +1769,7 @@ class Explainer:
             subject_id=demand_id,
             subject_type="demand",
             subject_external_name=wo_ref,
-            ordered_records=ranked or records,
+            ordered_records=ranked if grain_unmatched else (ranked or records),
             key_facts={"machine_ref": machine_ref, "cause": cause,
                        "order": wo_ref, "driver_code": driver_code,
                        "blocked_alternatives": blocked_alternatives,
@@ -1675,6 +1779,10 @@ class Explainer:
                        # narrowed is as misleading as one that quietly widened.
                        "op_seq": op_seq,
                        "scoped_to_operation": scoped_to_operation,
+                       # Item 2 layer two: the named step's own decision is not
+                       # in the evidence. The answer says so rather than
+                       # presenting another step's record as this one's.
+                       "grain_unmatched": grain_unmatched,
                        "other_step_count": len(other_steps) if scoped_to_operation
                        else 0,
                        # Item 3(c): the alternatives THIS operation's own
@@ -2395,6 +2503,50 @@ class Explainer:
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )
+
+    def mobility_verdict(self, order_ref: Optional[str],
+                         machine_ref: Optional[str] = None,
+                         op_seq: Optional[int] = None,
+                         document: Any = None) -> Optional[dict]:
+        """The mobility premise for one bar, computed OUTSIDE any one route.
+
+        SESSION 4A.y ITEM 1 — THE FLOOR IS FAMILY-SCOPED. The listening docket
+        wired the premise check into `why-here` and only into `why-here`, which
+        was correct for the specimen it had and wrong as a rule: a mobility
+        question is a QUESTION FAMILY, and which route it lands on is the
+        parse's decision, made by a model, and history-sensitive. An 18-phrasing
+        census on the demo board found the family reaching THREE routes —
+        `why-here` 11, `frozen` 5, `what-would-change` 2 — so twelve of eighteen
+        phrasings a planner might type got no premise check at all, six because
+        of the vocabulary and six because of the route.
+
+        A CHECK THAT LIVES ON ONE ROUTE PROTECTS ONE ROUTE. This method exists
+        so the DISPATCH can run the floor for whichever route the parse chose,
+        which is the same seam and the same reasoning as 4B.27 Item 4's
+        second-subject disclosure: computed once, where every answered route
+        passes, so no assembler can forget it.
+
+        Returns exactly what ``_mobility_facts`` returns — one definition, so
+        `why-here`'s in-shape rendering and every other route's lead can never
+        state different verdicts about one bar — plus the subject it is about.
+        None when the bar cannot be analysed at all, which reads downstream as
+        no correction and NEVER as "it cannot move".
+        """
+        if not order_ref:
+            return None
+        try:
+            analysis, row = self._blocker_analysis(order_ref, machine_ref,
+                                                   op_seq, document=document)
+        except Exception:  # noqa: BLE001 — a premise check never takes an answer down
+            return None
+        if analysis is None or row is None:
+            return None
+        facts = self._mobility_facts(row, analysis, document)
+        if facts is not None:
+            facts["order"] = order_ref
+            facts["op_seq"] = row.get("op_seq")
+            facts["machine"] = analysis.machine
+        return facts
 
     def _mobility_facts(self, row: dict, analysis: Any,
                         document: Any) -> Optional[dict]:

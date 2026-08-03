@@ -15594,3 +15594,203 @@ carry mobility claims too and are untouched here. No contract bump is owed:
 `CONTRACT_VERSION` versions the schedule DOCUMENT, and everything this session
 changed lives in the parse contract, the dispatch and the rendered prose
 (R-DP13's own answer to the same question, 4B.33).
+
+## 2026-08-03 — The floor is family-scoped; a premise is checked at the grain it was asserted at (Session 4A.y, the founder listening round)
+
+The listening docket (4A.x, above) built the mobility premise check and wired it
+to `why-here`, and its own closing paragraph named the limit: *"The premise check
+is scoped to `why-here`. `swap-move` and `what-would-change` carry mobility
+claims too and are untouched here."* The founder then used the product. Five
+specimens came back, all measured verbatim on the demo board
+`rolling-db5395dc-2ae`; the full transcript and every re-ask are in
+`docs/closeouts/4a-family-floor.md`.
+
+### R-FF1 — THE MOBILITY FLOOR ATTACHES TO THE QUESTION FAMILY, NEVER TO A ROUTE
+
+**THE MEASUREMENT THAT IS THE RULING.** Eighteen phrasings a planner might type,
+run through the live parse against the demo board with one bar selected:
+
+| route | phrasings reaching it | premise check at HEAD | after |
+|---|---|---|---|
+| `why-here` | 11 | 6 | 11 |
+| `frozen` | 5 | **0** | 5 |
+| `what-would-change` | 2 | **0** | 2 |
+
+**Twelve of eighteen mobility questions got no premise check** — six because the
+VOCABULARY did not recognise them (R-FF3) and six because the ROUTE did not run
+the floor; one phrasing failed both, so neither fix alone reaches it. Which route
+a mobility question reaches is a MODEL's decision, made per turn and sensitive to
+the conversation before it. **The family is the invariant; the route is not.**
+
+**WHY NOT BAR THE OTHER TWO INSTEAD.** The alternative — declaring that a
+mobility question may only reach `why-here` — decides a ROUTE from the question's
+words, which is the deterministic classifier R-AI5 forbids and which this
+codebase has deleted three times (`Explainer.classify`, `Explainer.answer`,
+`rolling_questions.classify_rolling`). So every member runs the floor. The parse
+reports; the dispatch decides what to ADD, and can never route.
+
+**EACH MEMBER RENDERS IT IN ITS OWN SHAPE, AND THE LEAD CLAIMS NOTHING ABOUT WHAT
+FOLLOWS IT.** `why-here`'s answer IS a direction, so it keeps the two-direction
+inline shape R-LD4 built. `frozen` answers about AUTHORITY and
+`what-would-change` about LEVERS; both get the correction as a LEAD that states
+the premise and stops. `why-here`'s own closing clause — *"and that is what I've
+explained below"* — is true of `why-here` and false of the other two, and pasting
+it onto them would be this round's disease committed while fixing it.
+
+**ONE COMPUTATION.** `Explainer.mobility_verdict` wraps the same
+`_mobility_facts` `why-here` calls, so the lead and the inline paragraph cannot
+state different verdicts about one bar (4B.21 §5a.72's mechanism, refused in
+advance). `frozen` answers at ORDER grain while a mobility premise is about ONE
+BAR, so the lead is scoped to the SELECTED operation and **names the operation it
+assessed** — which is what keeps two grains in one answer honest rather than
+ambiguous.
+
+**THE SEAM THAT WAS NOT A SEAM.** `frozen` is a ROLLING intent and the dispatch
+returns for those BEFORE the floor and before `_with_assumptions` — so five of
+the eighteen phrasings got neither a premise check nor a word about what was
+assumed, including the grain the listening docket had just built. **4B.21
+§5a.78's mechanism a third time: a seam every route passes, except the ones that
+return early.** Both the floor and the disclosure now run on that branch too.
+
+### R-FF2 — THE DIRECTION A PLANNER STATED IS A PROPERTY OF THEIR SENTENCE
+
+The docket measured the parse failing to report a direction on **5 of 5**
+mobility phrasings. This round measured the **opposite failure on the same
+family**: *"this cant move can it"* came back `move_direction=EARLIER`, a
+direction the planner did not state. Because the dispatch read `move_direction`
+as a report of what was SAID, a stated direction and an invented one were
+indistinguishable, and the premise check was skipped on exactly the question it
+exists for.
+
+**BOTH FAILURES HAVE ONE CURE.** `mobility_premise.states_direction` reads the
+planner's own words against a closed, narrow vocabulary — narrow because every
+entry must be a direction and nothing else, which is why *"before"* (before
+what), *"back"* (back where) and *"ahead"* (ahead of what) are all excluded. A
+NAMED TARGET is a stated direction too: the calendar resolves *"can this move to
+Friday"*, and the planner did point somewhere.
+
+**THE PARSE'S REPORT IS STILL KEPT VERBATIM AND STILL BRANCHES THE ROUTE.**
+Nothing here overwrites `move_direction`; `what-would-change` picks its earlier
+or later branch exactly as before, and the founder's own correct answer — *"why
+cant this move later"*, priced — is unchanged and now guarded. What this decides
+is only whether a DISCLOSURE and a PREMISE CHECK are owed: R-AI5(8) exactly. And
+an assumed direction is never disclosed over a LATER answer, because a disclosure
+that states the wrong direction is worse than the silence it replaces (R-LD2's
+own words).
+
+### R-FF3 — THE VOCABULARY IS WIDENED WHERE IT WAS MEASURED SHORT, AND NOWHERE ELSE
+
+Five measured misses added: **trapped**, **wedged**, **pinned down**, **nothing
+can move**, **no way to move**. Two exclusions, both decisions rather than
+oversights:
+
+- **`jammed` IS NOT ADDED.** A jam is a thing that happens to a MACHINE, so
+  *"why is CUT-01 jammed"* asserts a plant fact and not a claim about a bar's
+  mobility. The rule this vocabulary is held to — a phrase that can ONLY be
+  asserting immobility — excludes it, and a phrase-shaped workaround
+  (*"jammed here"*) would fit the vocabulary to one probe's wording rather than
+  to the language. **It is the one phrasing of the eighteen still uncovered, and
+  that is on the record rather than rounded away.**
+- **`pinned down` IS ADDED AND `pinned` IS NOT.** 4B.28 gave `frozen` the word
+  *pinned*, where it names an AUTHORITY a planner releases; *"why is ORD-000001
+  pinned?"* is a true question with a true answer and nothing to correct.
+
+**THE VOCABULARY IS HALF THE GATE, AND SAYING SO IS PART OF THE RULING.** The
+floor fires where the vocabulary matches AND the parse chose a family intent AND
+a placed operation resolved. *"The data seems stuck in December"* matches the
+vocabulary and gets no premise check anywhere, because it routes nowhere near the
+family (measured: `data-problems`). A keyword test asked to judge what a sentence
+is ABOUT would be the classifier this ruling has just refused to build.
+
+### R-FF4 — A PREMISE IS VERIFIED AT THE GRAIN IT WAS ASSERTED AT
+
+**THE SPECIMEN, MEASURED AT HEAD**, and the round's highest-severity finding:
+
+```
+Q: why is ORD-000126 op30 on CUT-01
+A: ORD-000126 is on CUT-01 because it was the cheaper option once every cost
+   was weighed.
+   This is about op30 on CUT-01; the evidence below is that step's own
+   assignment decision.        [record: dd33a21c…]
+```
+
+op30 is on **FINISH-01**. op10 is the step on CUT-01. The answer is op10's
+decision record wearing op30's name — and the second sentence does not merely
+imply the grain, it **ASSERTS** it, calling another step's record *"that step's
+own"*. Two answers earlier the same board had stated, correctly, that op30 runs
+on FINISH-01. 4B.13's premise machinery did not fire because it was written
+before a typed operation number could reach a route at all, so it asked only
+*does any step of this order run on that machine* — and op10 does.
+
+**TWO LAYERS, BECAUSE THE SPECIMEN SHOWS ONE LAYER STITCHING A NAME ONTO A
+RECORD.**
+
+1. **The check.** `_verify_placement_premise` takes the asked grain and verifies
+   at it. Three shapes of falsehood, never blended: the machine does not exist
+   (unchanged), the named STEP runs elsewhere (new), and the order has no such
+   step (new — a different fact, and telling the planner *"it isn't on CUT-01"*
+   would itself be false). A question naming no step keeps the order-grain check
+   and the order-grain words exactly.
+2. **The binding site.** `if by_seq: matched = by_seq` kept the machine-matched
+   record when the named step had none. The citation set is now the records of
+   the ASKED step or nothing, and **the order-wide fallback is closed where a
+   grain was named** — because that fallback is the other path by which a
+   different step's record reaches a grain-scoped question, and a rule closing
+   one of two seams is the shape 4B.14 and 4B.28 §5a.123 both name. Where nothing
+   binds, the answer SAYS the step's own decision is not in the evidence rather
+   than presenting another's.
+
+`ordered_records` drives the chain, the cited refs, the lit bars and the cockpit
+footer, so this is the one place all four are held to the asked grain (4B.21 Item
+3's discipline, on the grain axis).
+
+### THE DISCLOSURE WAS GATED ON SOMETHING IT SHOULD NOT HAVE BEEN
+
+Both renderers of the interpreted-as block — `askpanel.js` and
+`ai_exam/report.py`, and a census found no third — printed it only when the
+question had been **REWRITTEN**. Since the listening docket the note carries the
+GRAIN and the DIRECTION, and both are defaulted on questions needing no rewrite
+at all: *"when does ORD-000126 op30 finish"* carried *"answered for the whole of
+ORD-000126 — you named op30 and this route answers at order level"* and **showed
+none of it**. The block now renders whenever a note EXISTS.
+
+**AND IN THE COCKPIT THE NOTE HAD NEVER BEEN RENDERED AT ALL.** `appendResolved`
+reduced it to a hardcoded `[from board selection]` bracket via a substring test —
+three words standing in for a sentence. **So the listening docket's disclosure
+was invisible in the product it was built for**, and the docket's §5 quotations
+of it came from the exam report path. The note is now rendered verbatim, in its
+own element; CU3 (Session 4A.3) is not lost, because *"resolved against
+ORD-000128 (from board selection)"* is the note's own first clause and says
+strictly more than the bracket did.
+
+### A REPEAT IS THE SAME QUESTION ABOUT THE SAME THING
+
+`bundle_repeat` compared the question TEXT and the ROUTE and never what the
+question was ABOUT. Measured live at HEAD, three turns of one sequence — the same
+words asked of ORD-000128 op20, ORD-000073 op10 and ORD-000177 op10 — produced
+three genuinely different answers, two of them opening *"Same answer as a moment
+ago"* and *"Same answer — nothing in the plan has moved since you asked"*.
+**Asking the same question of a different bar is not a repeat; it is the most
+ordinary thing a planner does with a board.**
+
+`repeat` now additionally requires the resolved SUBJECT to match, order and
+grain, read from the PARAMS the route was answered with rather than from the
+parse — the ladder may have resolved it off the board, and a rider about
+repetition must compare what was answered about. **The grain is compared only
+where the turn CARRIES it**: a client that predates the key says nothing about
+the grain, and treating its silence as `op_seq is None` would kill the genuine
+re-ask this rider exists for. Absent means unknown, and unknown does not refute
+(4B.23's fail-safe rule at a fifth site). The genuine re-ask still fires, proven
+live. `deaf` is deliberately untouched: it keys on the delivered ANSWER, and two
+bars' answers name their own bars, so the fingerprint already separates them.
+
+### WHAT THIS RULING DOES NOT CLAIM
+
+No contract bump is owed and no docs/06 doorway: everything here lives in the
+parse contract, the dispatch, the premise check and the rendered prose (R-DP13's
+own answer to the same question, 4B.33). **R-LD3's `boxed-in` and `earlier-open`
+are still asserted by unit test and not observed live** — this round did not
+build the specimen world that would change that. The family set is **three
+members because three is what was measured**; `start-reason` and `swap-move` are
+deliberately absent, and a member added on a hunch would make that list an
+argument wearing a measurement's clothes (R-CAL1's rule).

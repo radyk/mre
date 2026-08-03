@@ -245,7 +245,7 @@ class AskRequest(BaseModel):
     # Conversational context (Session 4A.1 CU2): recent turns + the current board
     # selection, so an elliptical follow-up resolves before routing. The server is
     # stateless — the client carries the short history. Each history turn is
-    # {question, resolved_question, route, order, machine}; selection is
+    # {question, resolved_question, route, order, machine, op_seq}; selection is
     # {order, machine}. Omitted → a fresh, self-contained question.
     history: list[dict[str, Any]] = []
     selection: dict[str, Any] = {}

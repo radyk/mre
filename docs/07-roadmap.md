@@ -1,6 +1,14 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.85 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.86 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.86:** **Session 4A.y — the floor is family-scoped** (2026-08-03, the founder
+listening round; §5a.153-158; docs/04 2026-08-03 **R-FF1–R-FF4 ruled and BUILT**;
+contract unchanged **1.15**, no docs/06 doorway owed; parse prompt unchanged
+**v17**; narrative in `docs/closeouts/4a-family-floor.md`). Five founder
+specimens, one seam: the listening docket's machinery works where wired and was
+wired to ONE ROUTE, while routing is a model's decision. **R1 item 1 is CLOSED
+except the honest-outage message**, which stayed queued and is named.
 
 **v2.85:** **§5b axis renamed W→R to end the numbering collision with §5;
 disambiguation note reduced to one line** (2026-08-03, housekeeping). §5's
@@ -1457,14 +1465,17 @@ room orients from **docs/00 + this map**, never from chat memory alone.
 
 Queue, in order:
 
-1. **Close the listening docket.** Founder listening round (**OWED** — the
-   replay was a reconstruction, not the round); exam-report fix
-   (`report.py:95` — print `resolution_note` even when the question needed no
-   rewrite); **bank RESET between same-grain phrasings** (stops §5a.58 firing
-   on the bank's own construction); **honest-outage floor message** — the
-   capability floor must say *"I can't reach my language model — an outage, not
-   a limit of what I can answer"* instead of *"I don't have a tool that reaches
-   it"* (three-screenshot specimen on file, 2026-08-03).
+1. **Close the listening docket — DONE 2026-08-03 (Session 4A.y) EXCEPT the
+   last sub-item.** The founder listening round was held and its five specimens
+   ruled (R-FF1–R-FF4, §5a.153-158); the exam-report fix shipped **and so did
+   the cockpit's, which turned out to be the worse of the two** (`appendResolved`
+   had never rendered the note at all, §5a.156); the bank gained RESET discipline
+   at v2 (`sweep_mobility_v2.txt`, RUN — 21 questions, 20/20 expectations met).
+   **STILL QUEUED: the honest-outage floor message** — the capability floor must
+   say *"I can't reach my language model — an outage, not a limit of what I can
+   answer"* instead of *"I don't have a tool that reaches it"* (three-screenshot
+   specimen on file, 2026-08-03). It was 4A.y's explicit ride-only-if-time item
+   and did not ride.
 2. **Teaching-register graft, four sessions.** (a) general-knowledge claim
    class in synthesis with **unverifiable-by-design labeling**; (b) teaching
    intent + **depth license** (absorbs the Khalil synthesis-brevity finding and
@@ -5777,6 +5788,102 @@ by hand against the live API. **(h) 4B.35's §5a.143-147 HAVE NO BODY ENTRIES in
 this section** — only the v2.82 version line references them. Noted, not
 back-filled: this section is not append-only the way docs/04 is, but rewriting
 another session's record is not this session's call.
+
+**§5a.153 — THE FLOOR WAS ROUTE-SCOPED AND ROUTING IS A MODEL'S DECISION
+(4A.y Item 1, R-FF1).** An 18-phrasing census against the demo board through the
+live parse: the mobility family reaches **`why-here` 11, `frozen` 5,
+`what-would-change` 2**, and at HEAD **6 of 18 got a premise check**. Six of the
+twelve misses were the vocabulary and six the route scope; **one phrasing failed
+both**, so neither fix alone reaches it. After: **17 of 18** (the eighteenth is
+the deliberate `jammed` exclusion). The founder's own F1 reproduced on
+`what-would-change` — *"why cant ORD-000128 op20 be moved"* and *"this cant move
+can it"* — though **the exact history that produced their routing did NOT
+reproduce in four reconstructions**, which is recorded rather than glossed: the
+CLASS reproduces deterministically, the transcript does not.
+**`frozen` IS A ROLLING INTENT AND THE DISPATCH RETURNS FOR THOSE BEFORE THE
+FLOOR AND BEFORE `_with_assumptions`** — 4B.21 §5a.78's mechanism a third time,
+so five phrasings got neither a premise check nor a word about what was assumed,
+including the grain the docket had just built. **§5a.152(c) is DISCHARGED for
+`what-would-change` and NOT for `swap-move`**, which the census never saw the
+family reach and which is deliberately absent from the family set.
+
+**§5a.154 — THE PARSE INVENTED A DIRECTION, WHICH IS THE DOCKET'S FINDING FROM
+THE OTHER SIDE (4A.y Item 1, R-FF2).** §5a.151 measured the model reporting
+`move_direction` in **0 of 5**; this round measured *"this cant move can it"*
+coming back **`EARLIER`**, a direction the planner did not state. The dispatch
+read `move_direction` as a report of what was SAID, so a stated direction and an
+invented one were indistinguishable and the check was skipped on exactly the
+question it exists for. `mobility_premise.states_direction` reads the planner's
+own words instead; the parse's report is untouched and still branches the route,
+so **the founder's correct answer — *"why cant this move later"*, priced — is
+unchanged and now GUARDED**. *"Before"*, *"back"* and *"ahead"* are excluded from
+the direction vocabulary: each needs a complement to mean anything.
+
+**§5a.155 — A PREMISE WAS CHECKED AT ORDER GRAIN AND ASSERTED AT OP GRAIN
+(4A.y Item 2, R-FF4 — the round's highest-severity specimen).** *"why is
+ORD-000126 op30 on CUT-01"* — op30 is on FINISH-01 — returned **op10's decision
+record under the sentence *"This is about op30 on CUT-01; the evidence below is
+that step's own assignment decision"***. Not an implication: an ASSERTION about
+the product's own evidence, two answers after the same board had said op30 runs
+on FINISH-01. 4B.13's check predates a typed op number reaching a route at all,
+so it asked only *does any step of this order run on that machine*, and op10
+does. Fixed at **two layers** — the check verifies at the asked grain (three
+shapes of falsehood, never blended), and the binding site cites the asked step's
+records or nothing, **with the order-wide fallback closed where a grain was
+named**. Both controls stay green live: the order-grain correction (4B.13's own
+shape) and the true-premise op-grain question.
+
+**§5a.156 — THE DOCKET'S DISCLOSURE WAS INVISIBLE IN THE COCKPIT, AND HAD BEEN
+ALL ALONG (4A.y Item 3).** Two renderers, censused (there is no third), both
+gating the interpreted-as block on the question having been **REWRITTEN** — and
+a grain or direction disclosure needs no rewrite. *"When does ORD-000126 op30
+finish"* carried the full order-level note and showed none of it. **Worse in the
+cockpit: `appendResolved` never rendered the note at all**, reducing it to a
+hardcoded `[from board selection]` bracket via a substring test. So §5 of
+`docs/closeouts/4a-listening-docket.md` quotes a disclosure that only ever
+existed on the exam-report path. **The docket's own "nothing is broken in the
+product" is corrected.** Both sites now render whenever a note exists, and the
+cockpit renders it verbatim.
+
+**§5a.157 — THE REPEAT RIDER FIRED ON THREE DIFFERENT BARS (4A.y Item 5).**
+Measured live at HEAD: *"why cant this be moved"* asked of ORD-000128 op20, then
+ORD-000073 op10, then ORD-000177 op10 produced three genuinely different answers,
+two of them opening *"Same answer as a moment ago"* / *"Same answer — nothing in
+the plan has moved since you asked"*. `repeat` now requires the resolved SUBJECT
+(order + grain) to match, read from the params the route was answered with;
+**the grain is compared only where the history turn CARRIES it**, because absent
+is unknown and unknown does not refute (4B.23's fail-safe rule at a fifth site).
+The genuine re-ask still fires, proven in the same live sequence. `deaf` is
+untouched — it keys on the delivered answer, which already names its own bar.
+
+**§5a.158 — 4A.y's CARRY-FORWARDS (REPORTED, deliberately NOT fixed).**
+**(a) `jammed` IS THE ONE PHRASING OF EIGHTEEN STILL UNCOVERED**, by ruling: a
+jam is a thing that happens to a MACHINE, and a phrase-shaped workaround would
+fit the vocabulary to one probe's wording. **(b) §5a.152(b) IS UNCHANGED —
+`boxed-in` and `earlier-open` are still asserted by unit test and never observed
+live**; the specimen world that would change that was not built. **(c) THE
+HONEST-OUTAGE FLOOR MESSAGE STAYED QUEUED** (R1 item 1's last sub-item): it was
+explicitly the ride-only-if-time item and the five items consumed the session.
+**(d) THE FOUNDER'S EXACT F1 ROUTING DID NOT REPRODUCE** in four history
+reconstructions, though the class reproduces deterministically on other
+phrasings — so the specimen is confirmed and the transcript is not, and nothing
+here claims otherwise. **(e) `frozen` STILL ANSWERS AT ORDER GRAIN** while the
+lead beside it speaks about one operation; the lead NAMES its operation, which
+makes two grains in one answer legible rather than ambiguous, but whether
+`frozen` should be selection-re-scopable is a `_OPERATION_SCOPED_INTENTS`
+question this round did not open (§5a.152(f), unchanged). **(f) THE TRUE-NEGATIVE
+CONTROL IS ASSERTED AT THE INTENT GATE, NOT THE VOCABULARY** — *"the data seems
+stuck in December"* matches the mobility vocabulary and is stopped by routing to
+`data-problems`; a keyword test asked to judge what a sentence is ABOUT would be
+the classifier R-AI5 forbids, and saying so is part of R-FF3. **(g) TWO COCKPIT
+CU2 TESTS FAILED IN THE FULL RUN AND PASSED 8/8 IN ISOLATION** — an eighth and
+ninth member of the standing parallel-load flake class, not a regression.
+**(h) THE CONTROL HARNESS CORRUPTED A FILE'S LINE ENDINGS ON ITS FIRST RUN** —
+`Path.write_text` translates newlines on Windows, so "restoring" an LF file wrote
+it back as CRLF. Caught by the harness's own restore assertion, repaired, and the
+harness made byte-faithful; worth naming because a negative-control harness that
+edits source is one bad restore away from committing a rewrite of every line in a
+file it exists to leave alone.
 
 ## 6. Open rulings queue
 

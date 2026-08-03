@@ -436,6 +436,94 @@ def apply_repeat_riders(bundle, text: str) -> str:
     return f"{lead}\n{text}" if text else lead
 
 
+def mobility_lead_line(bundle) -> Optional[str]:
+    """The premise correction as a ROUTE-NEUTRAL lead (Session 4A.y Item 1).
+
+    `why-here` renders the mobility verdict in its own two-direction shape —
+    an "Earlier —" half and a "Later:" half — because its whole answer IS a
+    direction. The other two family members (`what-would-change`, `frozen`)
+    answer something else, and what they owe the planner is narrower: the
+    premise they asserted, addressed, before the answer they asked for.
+
+    SO THIS SAYS WHAT IS TRUE AND STOPS. It never claims what the paragraphs
+    below it are about — `frozen` is answering about authority and
+    `what-would-change` about levers, and a lead that announced "and that is
+    what I've explained below" would be `why-here`'s sentence pasted onto two
+    routes it is false of. That is the disease this whole round is about, and
+    it would be a poor way to fix it.
+
+    Reads `mobility_lead`, which the dispatch attaches ONLY for a family route
+    that did not compute its own. Returns None on every ordinary turn."""
+    from mre.modules import mobility_premise as mp
+
+    kf = getattr(bundle, "key_facts", None)
+    if not isinstance(kf, dict):
+        return None
+    mob = kf.get("mobility_lead")
+    if not isinstance(mob, dict):
+        return None
+    seq = mob.get("op_seq")
+    order = mob.get("order") or "it"
+    name = f"{order} op{seq}" if seq is not None else order
+    machine = mob.get("machine") or "this machine"
+    v = mob.get("verdict")
+
+    if v == mp.VERDICT_HELD:
+        at = mob.get("held_at")
+        if mob.get("held_kind") == mp.HELD_FROZEN:
+            return (f"On the premise first: \"can't be moved\" is fair — {name} "
+                    f"sits inside the committed front (frozen through {at}). "
+                    f"Committed work is moved by moving the frozen boundary, "
+                    f"not by moving the bar [docs/05 R-F1].")
+        return (f"On the premise first: \"can't be moved\" is fair — {name} "
+                f"carries a pin at {at}, so the solver holds it where it is "
+                f"until the pin is released [docs/05 A7/F1].")
+
+    if v == mp.VERDICT_UNDECIDABLE:
+        return (f"On the premise first: I can't tell you whether {name} can be "
+                f"moved. It runs in {mob.get('chunk_count')} pieces, and a "
+                f"chunked operation can't be priced as a local move in either "
+                f"direction. That is a limit of what I can compute, not a "
+                f"statement that the plant has no room.")
+
+    if v == mp.VERDICT_BOXED_IN:
+        return (f"On the premise first: \"can't be moved\" is fair — no opening "
+                f"on {machine} fits the whole of {name} after where it sits "
+                f"now, and nothing shows it could have gone earlier. This "
+                f"counts free time on {machine} only; another machine is a "
+                f"different question, and one I'd answer as a swap.")
+
+    dirs = mob.get("open_directions") or []
+    if "later" in dirs:
+        at, wd = mob.get("later_at"), mob.get("later_weekday")
+        when = f"{wd} {at}" if wd and at else at
+        also = (" It also had open, unheld time earlier."
+                if "earlier" in dirs else "")
+        return (f"On the premise first: it can be moved. {name} has room "
+                f"LATER — the first opening on {machine} long enough for the "
+                f"whole operation is {when}, computed from that machine's open "
+                f"calendar minus everything already placed on it [docs/05 "
+                f"C1/C2, C3].{also} That is where it could go, not what it "
+                f"would cost.")
+    if "earlier" in dirs:
+        return (f"On the premise first: it can be moved. Nothing was holding "
+                f"{name} back — {machine} had open, unheld time before where "
+                f"it sits, so this placement was the solver's choice rather "
+                f"than the only option.")
+    return None
+
+
+def apply_mobility_lead(bundle, text: str) -> str:
+    """Prefix the premise correction, at the ONE seam both renderers share —
+    the same attachment point and the same reason as the repeat riders: the
+    template path and the LLM path must not be able to disagree about whether
+    the planner's premise was addressed."""
+    lead = mobility_lead_line(bundle)
+    if not lead:
+        return text
+    return f"{lead}\n\n{text}" if text else lead
+
+
 #: Session 4B.11 CU1 — the marker that an answer STATES MONEY. Every currency
 #: figure the answer surface emits is formatted with a dollar sign (``$1,234.56``
 #: / ``+$375.83`` / ``$0``), so its presence in the delivered text is the test for
@@ -760,8 +848,10 @@ class TemplateRenderer:
     def render(self, bundle: ExplanationBundle) -> str:
         # CU3 — the single delivery seam: strip markdown/backticks from every
         # register's output here, so no register can leak formatting.
-        text = apply_repeat_riders(bundle, strip_formatting(
-            self._render_body(bundle) + "\n" + _rendered_by(bundle, "template")))
+        text = apply_repeat_riders(bundle, apply_mobility_lead(
+            bundle, strip_formatting(
+                self._render_body(bundle) + "\n"
+                + _rendered_by(bundle, "template"))))
         # 4B.11 CU1 — an unproved board's money claims carry their gap, here,
         # once, for every route (docs/07 §5a.23).
         text = apply_cost_proof_rider(bundle, text) or text
@@ -1554,20 +1644,35 @@ class TemplateRenderer:
             order = kf.get("order", "?")
             claimed = kf.get("claimed_machine", "?")
             actual = kf.get("actual_machines") or []
+            # Session 4A.y Item 2 — THE SUBJECT OF THE CORRECTION IS THE SUBJECT
+            # OF THE CLAIM. A question that named a step is corrected about that
+            # step; correcting it about the whole order would answer a question
+            # the planner did not ask, which is the disease this round is about.
+            kind = kf.get("kind") or "wrong_machine"
+            seq = kf.get("claimed_op_seq")
+            subject = f"{order} op{seq}" if seq is not None else order
             if len(actual) == 1:
                 runs = f"it runs on {actual[0]}"
             elif actual:
                 runs = ("it runs " + ", ".join(actual[:-1]) + f" and {actual[-1]}")
             else:
                 runs = "I can't see any placement for it"
-            if not kf.get("claimed_machine_exists"):
+            if kind == "no_such_step":
+                known = kf.get("known_op_seqs") or []
+                steps = ", ".join(f"op{s}" for s in known)
+                lines.append(
+                    f"{order} has no op{seq} in this window, so I can't answer "
+                    "that as asked"
+                    + (f" — the steps it does run are {steps}." if steps
+                       else "."))
+            elif not kf.get("claimed_machine_exists"):
                 lines.append(
                     f"There's no machine called {claimed} in this plant, so I "
                     f"can't answer that as asked — but {order} is scheduled, and "
                     f"{runs}.")
             else:
                 lines.append(
-                    f"{order} isn't on {claimed} — {runs}.")
+                    f"{subject} isn't on {claimed} — {runs}.")
             placements = kf.get("placements") or []
             if placements:
                 lines.append("")
@@ -1579,10 +1684,10 @@ class TemplateRenderer:
                     lines.append(
                         f"  - {p.get('machine', '?')}"
                         + (f"  (op {seq})" if seq else "") + when)
-            if actual:
+            if actual and kind != "no_such_step":
                 lines.append("")
                 lines.append(
-                    "Did you mean one of those? Ask \"why is " + order + " on "
+                    "Did you mean one of those? Ask \"why is " + subject + " on "
                     + actual[0] + "?\" and I'll give you the cause.")
             lines.append("")
 
@@ -3496,6 +3601,18 @@ class TemplateRenderer:
         widening silently — a planner who asked about a two-step order and got
         one record has no way to tell a scoped answer from a thin one. So the
         scope is stated, with the question that opens the rest."""
+        # Session 4A.y Item 2, layer two. The named step has no assignment
+        # decision in this evidence, so the chain below is NOT that step's. Said
+        # plainly, because the alternative — the sentence beneath, over another
+        # step's record — is the measured falsehood this round exists to end.
+        if kf.get("grain_unmatched"):
+            seq = kf.get("op_seq")
+            lines.append(
+                f"I can't show you op{seq}'s own assignment decision — the "
+                f"evidence I hold for {kf.get('order', 'this order')} on "
+                f"{kf.get('machine_ref', '?')} is recorded against a different "
+                f"step, and I won't present it as this one's.")
+            return
         if not kf.get("scoped_to_operation"):
             return
         seq = kf.get("op_seq")
@@ -4034,8 +4151,10 @@ class LLMRenderer:
         # CU3 — the single delivery seam (mirrors TemplateRenderer.render): every
         # register — testimony, remediation, judgment, the authored fallbacks —
         # returns through _render_inner and is stripped of markdown/backticks here.
-        text = apply_repeat_riders(bundle, strip_formatting(
-            self._render_inner(bundle)))
+        # Session 4A.y Item 1: and the premise correction, same seam, same rule
+        # — a floor one renderer can skip is not a floor.
+        text = apply_repeat_riders(bundle, apply_mobility_lead(
+            bundle, strip_formatting(self._render_inner(bundle))))
         # 4B.11 CU1 — same seam, same rule: a reworded answer that still states
         # money on an unproved board still carries the gap.
         text = apply_cost_proof_rider(bundle, text) or text
