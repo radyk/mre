@@ -6,12 +6,18 @@ test. The format is deliberately spartan (the founder pastes plain text):
   * a blank line                     -> ignored
   * a line beginning ``#``           -> a comment (echoed into the transcript so a
                                         bank reads like prose)
-  * ``SELECT order=ORD-05 machine=CUT-01``
+  * ``SELECT order=ORD-05 machine=CUT-01 seq=20``
                                      -> simulate a board selection feeding the
                                         selection channel the panel sends. Either
                                         slot may be omitted. Selecting an op sets
                                         BOTH (the panel derives work_orders[0] +
-                                        resource_name from one bar).
+                                        resource_name from one bar). ``seq=`` is
+                                        the OPERATION GRAIN the panel has sent
+                                        since 4B.14 and this script could not
+                                        express until the listening docket —
+                                        without it the one channel that supplies
+                                        a grain the planner did not type was
+                                        unreachable from any exam.
   * ``SELECT clear`` / ``SELECT none``
                                      -> drop the board selection
   * ``CARD order=ORD-38 machine=MILL-01``
@@ -72,6 +78,13 @@ class Select:
     machine: Optional[str]
     clear: bool
     lineno: int
+    #: WHICH OPERATION of the order the bar belongs to (the listening docket).
+    #: The cockpit's selection has carried `op_seq` since 4B.14 and the bank
+    #: could not express it, so the one channel that supplies an operation
+    #: grain WITHOUT the planner typing it was unreachable from an exam — which
+    #: is why S2's specimen ("why cant this be moved" with a bar selected) had
+    #: to be measured by hand against the live API. Written `seq=20`.
+    op_seq: Optional[int] = None
 
 
 @dataclass
@@ -109,7 +122,7 @@ class Comment:
 ScriptItem = Union[Question, Select, Card, Reset, Comment, Expect]
 
 
-_SELECT_KV = re.compile(r"(order|machine|op)\s*=\s*(\S+)", re.IGNORECASE)
+_SELECT_KV = re.compile(r"(order|machine|seq|op)\s*=\s*(\S+)", re.IGNORECASE)
 
 # The graded-expectation keys (Session 4A.5a CU3). A closed set: an unknown key is
 # a parse finding, never a silently ignored expectation.
@@ -182,6 +195,7 @@ def parse_script(text: str) -> ParsedScript:
                 out.items.append(Select(order=None, machine=None, clear=True, lineno=i))
                 continue
             order = machine = None
+            op_seq: Optional[int] = None
             found = False
             for m in _SELECT_KV.finditer(rest):
                 found = True
@@ -190,6 +204,16 @@ def parse_script(text: str) -> ParsedScript:
                     order = val
                 elif key == "machine":
                     machine = val
+                elif key == "seq":
+                    # The OPERATION GRAIN (the listening docket). Unreadable is
+                    # None and is reported as a parse error rather than
+                    # silently dropped — a bank that thinks it selected op20
+                    # and did not would grade the wrong bar.
+                    try:
+                        op_seq = int(val)
+                    except ValueError:
+                        out.parse_errors.append(
+                            (i, raw, f"SELECT seq= is not a number: {val!r}"))
                 elif key == "op":
                     # An op selection sets both slots when written ord@machine;
                     # a bare op= with no '@' sets neither honestly (we cannot
@@ -200,9 +224,10 @@ def parse_script(text: str) -> ParsedScript:
                         machine = machine or (mm or None)
             if not found:
                 out.parse_errors.append(
-                    (i, raw, "SELECT with no order=/machine=/op= key"))
+                    (i, raw, "SELECT with no order=/machine=/op=/seq= key"))
                 continue
-            out.items.append(Select(order=order, machine=machine, clear=False, lineno=i))
+            out.items.append(Select(order=order, machine=machine, clear=False,
+                                    lineno=i, op_seq=op_seq))
             continue
         # A plain question line.
         out.items.append(Question(text=stripped, lineno=i))

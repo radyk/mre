@@ -616,6 +616,8 @@ class ExamRunner:
                             selection["order"] = item.order
                         if item.machine:
                             selection["machine"] = item.machine
+                        if item.op_seq is not None:
+                            selection["op_seq"] = item.op_seq
                         pending_comments.append(
                             "[SELECT " + " ".join(
                                 f"{k}={v}" for k, v in selection.items()) + "]")

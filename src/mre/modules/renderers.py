@@ -2347,6 +2347,27 @@ class TemplateRenderer:
         if kf.get("challenge"):
             lines.append(self._challenge_lead(kf, verdict, binding))
 
+        # THE PREMISE, BEFORE THE EXPLANATION (the listening docket, Item 3).
+        # "why can't this be moved" asserts something before it asks anything,
+        # and where that assertion is false the honest answer opens by saying
+        # so — R-AI3(4), where the planner is right say so plainly and FIRST.
+        # It is a LEAD and not a replacement, because unlike 4B.13's placement
+        # premise the explanation that follows is still correct: it is simply
+        # about one direction, and the correction is what makes that visible.
+        mob = kf.get("mobility") or {}
+        if mob.get("refutes"):
+            lines.append(self._mobility_correction(kf, mob))
+        if mob:
+            # Item 4 — the parts are LABELLED. A two-direction answer whose
+            # halves run together reads as one claim about "moving", which is
+            # the ambiguity the whole item exists to remove. The blank line is
+            # a SEPARATOR, so it is written only when there is something above
+            # to separate from — an answer that opens on an empty line reads as
+            # a rendering fault.
+            if lines:
+                lines.append("")
+            lines.append("Earlier — what's stopping it:")
+
         if verdict == "could_not":
             lead = (f"{name} {op} couldn't start before {when}: "
                     f"{binding.get('because', 'a constraint bound it there')}.")
@@ -2430,7 +2451,120 @@ class TemplateRenderer:
                          + "; ".join(f"{u.get('catalog', '?')} "
                                      f"{_family_gist(u.get('why', ''))}"
                                      for u in unc) + ".")
+
+        # THE OTHER DIRECTION (the listening docket, Item 4). "Why can't this
+        # be moved" owes a two-direction answer: everything above is the
+        # EARLIER half, and this is what the product can say about LATER.
+        if mob:
+            self._render_mobility_later(lines, kf, mob)
         lines.append("")
+
+    @staticmethod
+    def _mobility_subject(kf: dict, name: str) -> str:
+        seq = kf.get("op_seq")
+        return f"{name} op{seq}" if seq is not None else name
+
+    def _mobility_correction(self, kf: dict, mob: dict) -> str:
+        """The premise correction, as a LEAD (the listening docket, Item 3).
+
+        Authored, not composed from a template with a slot for "direction",
+        because the two refutations are different facts and read differently to
+        a planner. LATER-OPEN is a statement about the calendar: there is room
+        over there. EARLIER-OPEN is a statement about the SOLVER: nothing was
+        stopping it, and the placement was a choice. Blending them into one
+        sentence about "it can move" would be the category fusion 4B.21 §5a.72
+        named the mechanism of: a name written once, by whoever needed it, and
+        never re-read as a claim."""
+        name = self._mobility_subject(kf, kf.get("order") or "it")
+        machine = kf.get("machine")
+        dirs = mob.get("open_directions") or []
+        if "later" in dirs:
+            at = mob.get("later_at")
+            wd = mob.get("later_weekday")
+            when = f"{wd} {at}" if wd and at else at
+            also = (" It also had open time earlier — see below."
+                    if "earlier" in dirs else "")
+            return (f"It can be moved — {name} has room LATER: the next "
+                    f"opening on {machine} long enough for the whole operation "
+                    f"is {when}. What's blocked is moving it EARLIER, and "
+                    f"that is what I've explained below.{also}")
+        return (f"It can be moved — nothing was holding {name} back. "
+                f"{machine} had open, unheld time before where it sits, so "
+                f"this placement was the solver's choice rather than the only "
+                f"option. Here is what that looks like.")
+
+    def _render_mobility_later(self, lines: list[str], kf: dict,
+                               mob: dict) -> None:
+        """The LATER half of a two-direction mobility answer (Item 4).
+
+        EVERY CLAUSE TRACES TO SOMETHING THAT ALREADY VERIFIES IT. The opening
+        is `later_move.next_opening_after` over free time — the same scan, under
+        the same R-C3 chunk discipline, that the blocker analysis and the
+        SolverBuilder use. The hold is the frozen boundary (R-F1) or the pin
+        (A7/F1). Nothing here re-solves and nothing here PRICES: what a later
+        move costs is `what-would-change`'s answer and the delta card's, and
+        this paragraph links to both rather than becoming a second pricer with
+        no validation behind it. 4B.16's rule, carried: an opening is NECESSARY,
+        never sufficient."""
+        from mre.modules import mobility_premise as mp
+
+        name = self._mobility_subject(kf, kf.get("order") or "it")
+        machine = kf.get("machine")
+        v = mob.get("verdict")
+        lines.append("")
+
+        if v == mp.VERDICT_HELD:
+            kind = mob.get("held_kind")
+            at = mob.get("held_at")
+            if kind == mp.HELD_FROZEN:
+                lines.append(
+                    f"Later: it can't go there either, and \"can't be moved\" "
+                    f"is fair — {name} sits inside the committed front "
+                    f"(frozen through {at}). Committed work is moved by moving "
+                    f"the frozen boundary, not by moving the bar [docs/05 "
+                    f"R-F1].")
+            else:
+                lines.append(
+                    f"Later: it can't go there either, and \"can't be moved\" "
+                    f"is fair — {name} carries a pin at {at}, so the solver "
+                    f"holds it where it is until the pin is released "
+                    f"[docs/05 A7/F1].")
+            return
+
+        if v == mp.VERDICT_UNDECIDABLE:
+            lines.append(
+                f"Later: I can't tell you. {name} runs in "
+                f"{mob.get('chunk_count')} pieces, and a chunked operation "
+                f"can't be priced as a local move in either direction — the "
+                f"pauses are closures the solver placed, and shifting the bar "
+                f"doesn't re-derive them. That is a limit of what I can "
+                f"compute, not a statement that the plant has no room.")
+            return
+
+        if v == mp.VERDICT_LATER_OPEN:
+            at = mob.get("later_at")
+            wd = mob.get("later_weekday")
+            when = f"{wd} {at}" if wd and at else at
+            lines.append(
+                f"Later: there is room. The first opening on {machine} where "
+                f"the whole operation fits after where it sits now is {when} "
+                f"— computed from {machine}'s open calendar minus everything "
+                f"already placed on it, under the same minimum-piece rule the "
+                f"solver applies [docs/05 C1/C2, C3].")
+            lines.append(
+                "That is WHERE it could go, not what it would cost. Ask "
+                f"\"what would pushing {name} out cost?\" and I'll hold every "
+                "other placement, move that one bar and price the difference "
+                "— or drag it on the board and the card prices the same move.")
+            return
+
+        # BOXED_IN — the premise HOLDS in both directions, and says so.
+        lines.append(
+            f"Later: no opening on {machine} fits the whole operation after "
+            f"where it sits now either — so \"can't be moved\" is fair, and "
+            f"the reason above is the whole of it. This counts free time on "
+            f"{machine} only; a move to another machine is a different "
+            "question, and one I'd answer as a swap.")
 
     def _render_counterfactual(self, lines: list[str],
                                bundle: ExplanationBundle) -> None:

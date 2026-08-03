@@ -15417,3 +15417,180 @@ wearing `verdict · proven within budget` — observed live on the Khalil board 
 says a proof happened and lets it be read as the move being proven fine, the
 label and the headline contradicting each other on one card. Both refusal
 registers now name what was proven: `proven impossible` (R-DP6's term).
+
+---
+
+## 2026-08-03 — A question that asserts is checked before it is answered; every resolution the ladder makes is disclosed (Session 4A.x, the listening docket)
+
+Four specimens, measured verbatim on the demo board (`rolling-db5395dc-2ae`)
+before a line was changed. All four are TRUTHFUL — every figure correct against
+the persisted document — and all four fail the planner. This is the
+vacuous-fulfilment law at the ask ladder: **a confident answer to a question
+nobody asked, wearing the full apparatus of correctness.**
+
+### R-LD1 — THE GRAIN TRAVELS WITH THE SUBJECT, OR THE ANSWER SAYS IT DID NOT
+
+**Measured.** *"why cant ORD-000126 op30 start earlier"* →
+*"Answering about ORD-000126 op10 on CUT-01 — the first of its 3 operations.
+Nothing prevented ORD-000126 op10 from starting earlier…"*
+
+**Three seams, and the parse was the least of them.** `SubjectRef` had no field
+for an operation, so the parse — correctly refusing to drop a word it had heard
+— emitted `op30` as a SECOND ORDER subject (measured: it did exactly that),
+which resolved to nothing and was discarded. But the deeper seam is that
+**`route_params` never set `op_seq` at all**: eight assemblers read it, and on
+the LIVE ask path the only channels that ever supplied one were the board
+SELECTION (five intents) and two routes that re-scan the question text for
+themselves. **A typed operation number had never once reached a route.** 4B.21's
+A5 fix is NARROWED, not closed: it gave `why-on-machine` a text re-scan of its
+own, which is why that one route was right; the general carry did not exist.
+
+**AN OPERATION IS NOT A SUBJECT — IT IS THE GRAIN OF AN ORDER SUBJECT.** It does
+not resolve independently, it has no identity a planner would type alone, and a
+`SubjectKind.OPERATION` would let a parse bind an operation with no order. So
+`SubjectRef.op_seq`, and prompt v17's rule 2 says it.
+
+**TWO SOURCES, IN THIS ORDER: THE PARSE, THEN THE TEXT.** The text recovery
+(`op_seq_in`) is a deterministic EXTRACTION of a number the planner typed, run
+AFTER the route is chosen. It is not the return of a deterministic classifier
+(`Explainer.classify` and `rolling_questions.classify_rolling` stay deleted):
+those CHOSE THE ANSWER. Its relatives are `claim_verifier` and
+`predicate_coverage`. **The board SELECTION is deliberately last** — a typed
+`op30` is explicit and cannot be stale; a selection persists after the planner
+has stopped thinking about it.
+
+**A ROUTE THAT CANNOT HONOUR A GRAIN SAYS SO** rather than silently widening to
+the order. The remedy is not to make every assembler operation-scoped — most
+genuinely answer about the whole order — it is 4B.27 Item 4's shape on the grain
+axis: computed at the one seam every answered route passes, so no assembler can
+forget it.
+
+**TWO SETS EXIST AND THEY ARE DIFFERENT QUESTIONS**, which the first version of
+this disclosure got wrong: `_OPERATION_SCOPED_INTENTS` asks *may a BOARD
+SELECTION re-scope this answer* (narrow, deliberately); `_GRAIN_HONOURING_INTENTS`
+asks *can this route answer about one operation when the planner TYPED one*
+(wider). `why-on-machine` is exactly the member that separates them, and reading
+the narrow set as though it answered the wide question made the disclosure accuse
+it of dropping a grain it had honoured.
+
+### R-LD2 — EVERY DEFAULTED RESOLUTION IS DISCLOSED; A STATED ONE NEVER IS
+
+**Measured.** *"why cant this be moved"*, ORD-000128 op20 selected →
+`INTERPRETED AS: "why cant ORD-000128 be moved [from board selection]"`.
+
+**Three resolutions were made and one was disclosed.** The SUBJECT came from the
+board and the line said so. The GRAIN (op20, from the same selection) was silent
+— a planner reading *ORD-000128* has no way to know which of its four operations
+they were told about. The DIRECTION was silent — *"moved"* was read as *"moved
+EARLIER"*, because that is the only direction `why-here` computes, and the answer
+then served the earliest-start chain. **One assumption named, one silent, in the
+same line.**
+
+`move_direction` (4B.30) becomes the MOBILITY FAMILY's direction marker and is
+now reported on `why-here` as well. Nothing about which direction the route
+COMPUTES changes; what changes is that `UNSTATED` makes the assumption visible.
+`None` — the question is not about moving at all — keeps every pre-existing
+phrasing's answer to the character.
+
+**THE RULE THAT KEEPS THE LINE READABLE: a planner is never told back what they
+just said.** Only a DEFAULTED resolution earns a line. That is also what makes
+the line's presence informative rather than decorative.
+
+**THE DISCLOSURE IS NARROWED WHERE IT COULD BE WRONG.** A `what-would-change`
+question carrying a NAMED TARGET resolves its direction against the calendar
+INSIDE the assembler (`_named_target_is_later`), so the dispatch cannot promise
+which way it went and states nothing. **A disclosure that names the wrong
+direction is worse than the silence it replaces.**
+
+### R-LD3 — A MOBILITY PREMISE IS CHECKED IN BOTH DIRECTIONS, AND A TRUE ONE IS LEFT ALONE
+
+*"Why can't this be moved"* asserts something before it asks anything. **At HEAD
+the premise machinery covered exactly one claim shape** — `_verify_placement_premise`
+(4B.13), a stated *X is on Y* — plus `lateness-cause`'s `premise_holds`. Neither
+is about mobility, and nothing checked this one.
+
+**IT IS A LEAD, NOT A REPLACEMENT.** Unlike a false placement — where every
+sentence built on it inherits the falsehood, so the answer is replaced — the
+chain here is still CORRECT. It is simply about one direction. So the correction
+opens the answer (R-AI3(4): where the planner is right, say so plainly and first)
+and the explanation follows it.
+
+**`mobility_premise.assess`'s ORDER OF TESTS IS THE RULING.**
+
+1. **HELD FIRST** (committed front R-F1, or a pin A7/F1). A planner cannot move
+   it whatever the calendar says, so an opening past it is a true fact about an
+   irrelevant question — 4B.14's stale-true-fact rule at this seam. The premise
+   HOLDS and the answer says so, naming the authority and how it is actually
+   moved.
+2. **CHUNKED SECOND**, before any opening is read *and before the earlier
+   direction*. `local_price` declines a chunked move by name, so an opening we
+   could never price is not an answer. It also outranks the EARLIER refutation
+   for an independent reason 4B.14 already named: **a `chose` verdict on a
+   splittable operation is a LOWER BOUND**, and a premise CORRECTION is too
+   strong a thing to build on one. The verdict is `undecidable` — **the ruled
+   species a sixth time** (`CostProof` 4B.18, `partitions()` 4B.21,
+   `FeasibilityGhost` 4B.23, `holds_others` 4B.24, R-CAL1's third state 4B.29):
+   `holds` is False and `refutes` is False, so **a claim about the PLANT is never
+   manufactured from a limit of OUR METHOD.**
+3. **THEN the two open directions**, LATER first because it is what the question
+   is usually about and what the product can price.
+
+**ONLY `chose` REFUTES THE EARLIER DIRECTION.** `could_not`, the blocker
+analysis's own can't-attribute verdict, and `None` all claim nothing — 4B.23's
+fail-safe rule: an unrecognised status fails to the state that claims least.
+
+### R-LD4 — A MOBILITY QUESTION OWES A TWO-DIRECTION ANSWER, COMPOSED NOT BUILT
+
+Earlier is the blocking chain (`why-here`, unchanged). Later is the first opening
+where the whole operation fits, from `later_move.next_opening_after` over free
+time — the same `earliest_fit` scan under the same R-C3 chunk discipline the
+blocker analysis and the SolverBuilder use. **The parts are LABELLED**, because a
+two-direction answer whose halves run together reads as one claim about "moving",
+which is the ambiguity the item exists to remove.
+
+**IT DOES NOT PRICE, AND THAT IS THE COMPOSITION RULE.** Every clause traces to a
+route that already verifies it. An opening is a CALENDAR fact; what a move COSTS
+is `what-would-change`'s answer (4B.30) and the delta card's, and this paragraph
+LINKS to both rather than becoming a second pricer with no validation behind it.
+4B.16's necessary-never-sufficient rule, carried: **an opening a planner reads as
+permission is the failure this clause prevents.** The invitation names the exact
+question to ask and the gesture that prices it (R-AI3(3): the invitation
+completes the thought).
+
+### THE FLOOR UNDER THE PARSE, AND WHY IT IS NOT A CLASSIFIER
+
+Prompt v17 asks the model to report `move_direction` on `why-here`. **Measured
+immediately after the bump: 0 OF 5** mobility phrasings set it — *"why cant this
+be moved"*, *"why can't this bar be moved"*, *"why is this stuck"*, *"why wont it
+budge"*, *"why cant ORD-000128 op20 be moved"* — while `swap-move`, where the
+field has been asked for since 4B.30, set it correctly. The model is not refusing
+the field; it does not reliably read a mobility question as a MOVE question, and
+those are the phrasings a planner actually types.
+
+**A DISCLOSURE THAT DEPENDS ON A MODEL REMEMBERING A FIELD IS A DISCLOSURE THAT
+WILL SILENTLY STOP** — and silence is the entire defect. So the parse's report is
+kept verbatim as the record of what the model said, and
+`mobility_premise.asks_about_moving` decides whether the premise is checked.
+**That is R-AI5(8) rather than a departure from it**: the model's report is INPUT
+to the decision, never the decision. The floor runs after the parse has already
+chosen `why-here`, can only ever ADD a check to a route that was going to run
+anyway, and **can never route**. Its vocabulary is MEASURED, not designed
+(`predicate_coverage`'s rule): every phrase can only be ASSERTING immobility, and
+*"what's holding it up"*, *"why the wait"* and *"why can't it be earlier"* are
+deliberately absent — the first two are ordinary cause questions, and the third
+STATES its direction and therefore has nothing to disclose.
+
+### WHAT THIS RULING DOES NOT CLAIM
+
+Two of the five verdicts — `boxed-in` and `earlier-open` — are **asserted by unit
+test and NOT observed live**. The census over both pinned worlds (386 bars and 56
+bars, every placed operation) returned `held` 24 / `later-open` 361 /
+`undecidable` 1 on the demo board and `held` 45 / `later-open` 9 / `undecidable` 2
+on the exam world: **zero of either, on either board.** 4B.32 §5a.132's
+discipline, stated rather than glossed.
+
+The premise check is scoped to `why-here`. `swap-move` and `what-would-change`
+carry mobility claims too and are untouched here. No contract bump is owed:
+`CONTRACT_VERSION` versions the schedule DOCUMENT, and everything this session
+changed lives in the parse contract, the dispatch and the rendered prose
+(R-DP13's own answer to the same question, 4B.33).

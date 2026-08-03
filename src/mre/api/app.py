@@ -2085,7 +2085,14 @@ def _parse_meta(parsed: Any) -> Optional[dict]:
         "followup_of": parsed.followup_of.value,
         "polarity": parsed.polarity.value if parsed.polarity else None,
         "subjects": [{"kind": s.kind.value, "raw": s.raw, "ref": s.ref,
-                      "source": s.source.value} for s in parsed.subjects],
+                      "source": s.source.value, "op_seq": s.op_seq}
+                     for s in parsed.subjects],
+        # The listening docket, Item 2: the direction is a RESOLUTION the ladder
+        # made, so it belongs in the instrumentation beside the subject's source
+        # — otherwise a sweep can measure which subject won and not which
+        # direction was assumed, which is the asymmetry the item is about.
+        "move_direction": (parsed.move_direction.value
+                           if parsed.move_direction else None),
         "clarify": parsed.clarify.reason.value if parsed.clarify else None,
         "retries": parsed.retries,
         "latency_ms": parsed.latency_ms,

@@ -44,6 +44,27 @@ class TestScript:
         sel = ps.items[0]
         assert sel.order == "ORD-05" and sel.machine == "CUT-01"
 
+    def test_select_carries_the_operation_grain(self):
+        """The listening docket. The cockpit's selection has carried `op_seq`
+        since 4B.14 and this script could not express it, so the ONE channel
+        that supplies an operation grain the planner did not type was
+        unreachable from any exam — which is why S2's specimen had to be
+        measured by hand against the live API."""
+        ps = parse_script("SELECT order=ORD-05 machine=CUT-01 seq=20")
+        sel = ps.items[0]
+        assert sel.op_seq == 20
+
+    def test_a_selection_with_no_seq_carries_no_grain(self):
+        ps = parse_script("SELECT order=ORD-05 machine=CUT-01")
+        assert ps.items[0].op_seq is None
+
+    def test_an_unreadable_seq_is_a_parse_error_not_a_silent_drop(self):
+        """A bank that thinks it selected op20 and did not would grade the
+        wrong bar, and its transcript would say nothing about it."""
+        ps = parse_script("SELECT order=ORD-05 seq=twenty")
+        assert ps.items[0].op_seq is None
+        assert any("seq=" in e[2] for e in ps.parse_errors)
+
     def test_select_clear_and_reset(self):
         ps = parse_script("SELECT clear\nRESET")
         assert isinstance(ps.items[0], Select) and ps.items[0].clear

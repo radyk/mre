@@ -825,7 +825,9 @@ class Explainer:
                                           params.get("machine"), q,
                                           op_seq=params.get("op_seq"),
                                           document=params.get("document"),
-                                          challenge=params.get("challenge"))
+                                          challenge=params.get("challenge"),
+                                          move_direction=params.get(
+                                              "move_direction"))
         if route_id == "what-would-change":
             # Session 4B.30: ONE intent, TWO directions. The parse reports which
             # (`move_direction`); absent or anything but `later` keeps the 4B.16
@@ -2317,7 +2319,9 @@ class Explainer:
                           machine_ref: Optional[str] = None,
                           question: str = "", op_seq: Optional[int] = None,
                           document: Any = None,
-                          challenge: Optional[dict] = None) -> ExplanationBundle:
+                          challenge: Optional[dict] = None,
+                          move_direction: Optional[str] = None
+                          ) -> ExplanationBundle:
         """"Why is this here?" — the binding constraint on this operation
         starting earlier (Item 2), and whether there was one at all.
 
@@ -2380,10 +2384,88 @@ class Explainer:
                 "op_count": len(rows),
                 "op_named": bool(op_seq is not None or machine_ref),
                 "challenge": challenge or None,
+                # The listening docket, Items 3 and 4. Present ONLY when the
+                # parse reported the question was about the bar MOVING; absent
+                # by construction otherwise, so "why is this here?" keeps its
+                # answer to the character (4B.24's discipline: a component that
+                # does not apply is absent, never measured as nothing).
+                "mobility": self._mobility_facts(row, analysis, document)
+                if move_direction else None,
             },
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )
+
+    def _mobility_facts(self, row: dict, analysis: Any,
+                        document: Any) -> Optional[dict]:
+        """Can this bar move AT ALL, and which way — the premise behind "why
+        can't this be moved" (the listening docket, Item 3).
+
+        Every input is read through machinery that already exists and is
+        already verified: the frozen boundary and the pin the LATER route
+        checks, the chunk count off the row, the free-time scan
+        ``later_move.next_opening_after`` (which is ``earliest_fit`` under the
+        same R-C3 chunk discipline the SolverBuilder uses), and the blocker
+        analysis's own verdict for the earlier direction. Nothing here computes
+        a new quantity and nothing here re-solves (R-AI4).
+
+        IT DOES NOT PRICE, DELIBERATELY. `later_move` prices, and it costs a
+        ~6.5 s model build to do it. What this answers is the PREMISE — is
+        there room later at all — which is a calendar question; what it costs
+        is `what-would-change`'s, and the answer says so and links there rather
+        than quietly becoming a second pricer.
+
+        None when the scan cannot be run at all, which reads downstream as "no
+        mobility paragraph" — never as "it cannot move"."""
+        from mre.modules import later_move as lm
+        from mre.modules import mobility_premise as mp
+
+        try:
+            cur_start = _to_dt(row["start"])
+            held_kind, held_at = "", None
+            frozen_until = self._frozen_boundary(document)
+            if frozen_until is not None and cur_start is not None \
+                    and cur_start < frozen_until:
+                held_kind, held_at = mp.HELD_FROZEN, frozen_until
+            else:
+                pin_at = self._pin_start_for(row["operation_ref"])
+                if pin_at is not None:
+                    held_kind, held_at = mp.HELD_PINNED, pin_at
+
+            later_at = None
+            # The calendar scan is skipped when the bar is HELD or CHUNKED —
+            # not merely unused. Both verdicts are decided before any opening
+            # is read (``mobility_premise.assess``'s ordering IS the ruling),
+            # so computing one would be paying for a fact that cannot change
+            # the answer.
+            chunk_count = len(row.get("chunks") or [])
+            if not held_kind and chunk_count <= 1:
+                cal = self._later_calendar(row)
+                later_at = lm.next_opening_after(
+                    cal["free"], cal["current_end"],
+                    working_min=cal["working_min"],
+                    splittable=cal["splittable"],
+                    min_chunk_min=cal["min_chunk_min"])
+
+            verdict = mp.assess(
+                held_kind=held_kind, held_at=held_at,
+                chunk_count=chunk_count, later_at=later_at,
+                earlier_verdict=getattr(analysis, "verdict", None))
+        except Exception:  # noqa: BLE001 — a premise check never takes an answer down
+            return None
+        return {
+            "verdict": verdict.verdict,
+            "holds": verdict.holds,
+            "refutes": verdict.refutes,
+            "later_at": _fmt_dt(verdict.later_at) if verdict.later_at else None,
+            "later_weekday": (verdict.later_at.strftime("%A")
+                              if verdict.later_at else None),
+            "earlier_verdict": verdict.earlier_verdict,
+            "held_kind": verdict.held_kind,
+            "held_at": _fmt_dt(verdict.held_at) if verdict.held_at else None,
+            "chunk_count": verdict.chunk_count,
+            "open_directions": list(verdict.open_directions),
+        }
 
     def _eligible_lanes(self, op_ref: Optional[str],
                         exclude: str) -> tuple[Optional[list[dict]], bool]:

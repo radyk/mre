@@ -1,0 +1,121 @@
+# AI EXAM BANK — the listening docket: grain, disclosure, premise, direction
+# version  : v1
+# generated: 2026-08-03  (Session 4A.x, the listening docket)
+# world    : any rolling board with multi-operation orders. Calibrated against
+#            the DEMO BOARD `rolling-db5395dc-2ae`; the entity ids below are
+#            that board's, and a bank run against another world needs its ids
+#            substituted (the SHAPES are what is graded, not the ids).
+#
+# WHAT THIS BANK GRADES, and it is four things that failed together:
+#
+#   1. THE GRAIN     — a question naming op30 is answered about op30, and a
+#                      route that answers at order grain SAYS SO.
+#   2. THE DISCLOSURE— every resolution the ladder DEFAULTED appears in the
+#                      INTERPRETED AS line, not only the subject.
+#   3. THE PREMISE   — "can't be moved" is checked before it is explained, in
+#                      BOTH directions, and a TRUE premise is left alone.
+#   4. THE SHAPE     — a mobility question gets a two-direction answer with its
+#                      parts labelled, and the LATER half links to the route
+#                      that prices it rather than pricing anything itself.
+#
+# Every group RESETs, so a fan does not accumulate cross-group state.
+# Regenerating this bank is a reviewed change; a NEW VERSION is a new file
+# (docs/closeouts convention: one path per artifact, nothing overwrites).
+
+# ===========================================================================
+# ITEM 1 — THE GRAIN. S1's own specimen first, verbatim.
+# ===========================================================================
+RESET
+# S1, as measured at HEAD. Expected then: "Answering about ORD-000126 op10 …
+# the first of its 3 operations." Expected now: the answer is about op30 and
+# there is no fallback sentence, because nothing fell back.
+EXPECT intent=why-here route=why-here order=ORD-000126
+why cant ORD-000126 op30 start earlier
+# The same grain, other phrasings — a grain must not depend on word order.
+EXPECT route=why-here order=ORD-000126
+what is blocking operation 30 of ORD-000126
+EXPECT route=why-here order=ORD-000128
+why is ORD-000128 op 20 placed where it is
+RESET
+
+# A grain on a route that CANNOT honour it. The answer must not silently widen
+# to the order: it says it answered at order level and names the step it heard.
+EXPECT route=order-schedule order=ORD-000126
+when does ORD-000126 op30 finish
+RESET
+
+# A grain on a route that CAN honour it (4B.21 Item 3) — no disclosure is owed
+# and none should appear. The other half of the guard.
+EXPECT route=why-on-machine order=ORD-000126
+why is ORD-000126 op30 on FINISH-01
+RESET
+
+# ===========================================================================
+# ITEM 2 — THE DISCLOSURE. S2's specimen: a bar selected, nothing typed.
+# ===========================================================================
+SELECT order=ORD-000128 machine=MILL-01 seq=20
+# At HEAD this disclosed the SUBJECT and stayed silent about the DIRECTION and
+# the GRAIN. All three were resolved; all three are now named.
+EXPECT intent=why-here route=why-here order=ORD-000128
+why cant this be moved
+RESET
+
+SELECT order=ORD-000128 machine=MILL-01 seq=20
+# A STATED direction is never read back — the line must NOT gain a direction
+# clause here. This is the control on the item above; without it the guard
+# grades a disclosure that fires unconditionally, which discloses nothing.
+EXPECT route=why-here order=ORD-000128
+why cant this be earlier
+RESET
+
+SELECT order=ORD-000128 machine=MILL-01 seq=20
+# A question that ASSUMED NOTHING. "why is this here" is not about moving, so
+# no premise block and no direction clause may appear.
+EXPECT route=why-here order=ORD-000128
+why is this here
+RESET
+
+# ===========================================================================
+# ITEM 3 — THE PREMISE, both directions of the guard.
+# ===========================================================================
+RESET
+# FALSE PREMISE, active window: ORD-000128 op20 has a later opening on MILL-01
+# (measured 2026-01-23 16:21). The answer must open by saying it can be moved.
+EXPECT route=why-here order=ORD-000128
+why cant ORD-000128 op20 be moved
+# The same claim in the planner's other words.
+EXPECT route=why-here order=ORD-000126
+why is ORD-000126 op30 stuck
+RESET
+
+# TRUE PREMISE, committed work: ORD-000073 op10 sits inside the frozen front.
+# The correction must NOT fire, and the answer must name R-F1 rather than
+# offering a later slot it cannot deliver.
+EXPECT route=why-here order=ORD-000073
+why cant ORD-000073 op10 be moved
+RESET
+
+# UNDECIDABLE: ORD-000177 op10 runs in 3 pieces. The answer must decline in
+# both directions BY NAME and must not convert a limit of our method into a
+# claim about the plant.
+EXPECT route=why-here order=ORD-000177
+why wont ORD-000177 op10 budge
+RESET
+
+# ===========================================================================
+# ITEM 4 — THE TWO-DIRECTION SHAPE and its invitation.
+# ===========================================================================
+RESET
+EXPECT route=why-here order=ORD-000128
+why cant ORD-000128 op20 be moved
+# The follow-up the LATER half invites. It must reach the route that PRICES a
+# later move (4B.30), not the earlier counterfactual — the invitation is only
+# honest if the door it names opens.
+EXPECT intent=what-would-change route=what-would-change order=ORD-000128
+what would pushing ORD-000128 op20 out cost?
+RESET
+
+# The other door the invitation names, in planner words rather than ours.
+EXPECT route=what-would-change order=ORD-000126
+can i push ORD-000126 op30 out a week
+RESET

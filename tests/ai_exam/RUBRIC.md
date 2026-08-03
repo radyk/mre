@@ -51,6 +51,32 @@ Five dimensions:
       schedule") refuses; it never dumps the schedule. An absent entity is named
       as absent, never answered globally.
 
+  C6  PREMISE INTEGRITY -- a question that ASSERTS something before it asks is
+      checked before it is answered, and the check has TWO sides. Added by the
+      listening docket (Session 4A.x); see the amendment at the foot of this
+      file for the four measured specimens.
+
+      C6a  A FALSE premise is CORRECTED, and the correction comes FIRST. Where
+           the planner is right, say so plainly and before the explanation
+           (R-AI3(4)). The correction is a LEAD, not a refusal: the answer they
+           asked for still follows it, because an answer about one direction is
+           not wrong, it is narrow.
+      C6b  A TRUE premise is LEFT ALONE. An answer that "corrects" a premise
+           that holds is the same defect wearing the other sign, and a check
+           that always fires grades nothing. A committed or pinned bar really
+           cannot be moved by a planner; saying so is the right answer.
+      C6c  A premise the product CANNOT decide says which -- never "it can" and
+           never "it can't". A chunked operation cannot be priced as a local
+           move in either direction; that is a limit of our method, and a claim
+           about the plant may not be manufactured from it (the ruled species:
+           CostProof 4B.18, partitions 4B.21, FeasibilityGhost 4B.23).
+      C6d  EVERY ASSUMPTION THE LADDER MADE IS DISCLOSED, not only the subject.
+           Subject, GRAIN (which operation) and DIRECTION (which way) are three
+           resolutions; disclosing one of three and calling it an INTERPRETED AS
+           line is what let a direction assumption ride invisibly. A resolution
+           the planner STATED is never read back to them -- only a DEFAULTED one
+           earns a line, which is what keeps the line short enough to be read.
+
 ------------------------------------------------------------------------------
 OUTPUT BUCKETS (verbatim -- where each triaged turn goes)
 ------------------------------------------------------------------------------
@@ -686,3 +712,54 @@ UNGRADED, WITH REASONS (rule (d))
 
   So: 33 questions, 32 carrying a machine expectation, 30 of those constrained
   on intent or route.
+
+------------------------------------------------------------------------------
+AMENDMENT -- C6 PREMISE INTEGRITY (the listening docket, Session 4A.x, 2026-08-03)
+------------------------------------------------------------------------------
+
+Nothing above this line was rewritten. C6 was ADDED to the CONVERSATION axis
+because the four specimens below are all TRUTHFUL -- every figure in every one
+of them is correct against the persisted document -- and all four fail a planner
+anyway. T1-T3 cannot see them; C1 comes closest and does not reach, because the
+answers ARE responsive to a question, just not the one that was asked.
+
+THE FOUR, MEASURED VERBATIM ON THE DEMO BOARD (rolling-db5395dc-2ae) BEFORE ANY
+FIX. The full transcripts are in docs/closeouts/4a-listening-docket.md section 2.
+
+  S1  Q: "why cant ORD-000126 op30 start earlier"
+      A: "Answering about ORD-000126 op10 on CUT-01 -- the first of its 3
+          operations. Nothing prevented ORD-000126 op10 from starting earlier..."
+      True about op10. The planner asked about op30. -> C6d (the GRAIN).
+
+  S2  Q: "why cant this be moved", with ORD-000128 op20 selected
+      INTERPRETED AS: "why cant ORD-000128 be moved [from board selection]"
+      Three resolutions made, one disclosed. -> C6d (the DIRECTION and the
+      GRAIN both silent, in the same line that named the subject).
+
+  S3  the same question presupposes the bar cannot move; it can. -> C6a.
+
+  S4  the same question owes a TWO-direction answer. -> C1 and C6a together.
+
+HOW A GRADER APPLIES C6 WITHOUT TURNING IT INTO A MACHINE CHECK. C6 is graded
+like every other conversation dimension: by reading (R-AI4(2)). The question to
+ask of a turn is not "did the premise block appear" -- it is:
+
+  * did the question ASSERT anything? (most do not; C6 then does not apply and
+    an answer that carries a premise block would be the defect)
+  * if it did, is the assertion true? and does the answer act on the ANSWER to
+    that, rather than on the shape of the question?
+  * is a resolution the answer relied on visible to the person who did not make
+    it?
+
+A C6 miss where the assertion was FALSE is a DEFECT bucket item, not a
+conversation-failure one: an answer that explains why something cannot be done
+when it can be done is confident-wrong, and confident-wrong ships regardless of
+prose. A C6b miss -- correcting a premise that HOLDS -- is the same bucket for
+the same reason.
+
+WHAT THIS AMENDMENT DOES NOT DO. It adds no expectation to any existing bank and
+changes no question text (rule (a) of the r5 recalibration, carried). The
+specimens live in a NEW versioned bank, tests/ai_exam/banks/sweep_mobility_v1.txt,
+which at the time of writing is UNRUN -- the session's API credit was exhausted
+before the sweep. That is recorded in the close-out as an owed run, not as a
+result.

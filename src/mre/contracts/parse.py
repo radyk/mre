@@ -263,6 +263,36 @@ class MoveDirection(str, Enum):
 
     THE PARSE REPORTS THE DIRECTION; IT NEVER DECIDES THE ROUTE (R-AI5(8)), and
     it never resolves the target — see :attr:`ParsedQuestion.move_target`.
+
+    Session 4A.x (the listening docket) Item 2 — THIS FIELD IS THE MOBILITY
+    FAMILY'S DIRECTION MARKER, AND `why-here` CARRIES IT TOO. It was reported on
+    `what-would-change` and `swap-move` only, so a mobility question that landed
+    on `why-here` — which is every "why can't this be moved" — had its direction
+    decided by the ROUTE'S MEANING and disclosed nowhere. The measured specimen,
+    with ORD-000128 selected on the demo board:
+
+        Q: "why cant this be moved"
+        INTERPRETED AS: "why cant ORD-000128 be moved [from board selection]"
+
+    The SUBJECT resolution was disclosed. The DIRECTION resolution — "moved"
+    read as "moved EARLIER", which is the only direction `why-here` computes —
+    was not, and the answer served the earliest-start chain. One assumption
+    named, one silent, in the same line.
+
+    NOTHING WIDENS HERE EXCEPT WHAT IS REPORTED. `why-here` still answers the
+    earlier direction; what changes is that the answer now SAYS the direction
+    was assumed, and that `unstated` is what makes an assumption visible. Hence
+    the discipline this enum already carries is load-bearing in a second place:
+
+      None      — the question is not about MOVING at all ("why is this here?",
+                  "why is it late"). Nothing is assumed, so nothing is
+                  disclosed, and every pre-existing phrasing keeps its exact
+                  answer.
+      UNSTATED  — about moving, direction not said. DEFAULTED to earlier, and
+                  the disclosure line says so.
+      EARLIER /
+      LATER     — STATED. Disclosure unchanged: a planner is never told back
+                  what they just said.
     """
 
     EARLIER = "earlier"
@@ -377,6 +407,33 @@ class SubjectRef(BaseModel):
     raw: str = ""                       # the planner's own words
     ref: Optional[str] = None           # the external ref it resolved to, or None
     source: SubjectSource = SubjectSource.UTTERANCE
+    # -- Session 4A.x (the listening docket) Item 1: THE GRAIN -----------------
+    # WHICH OPERATION of this order the planner named ("ORD-000126 op30"). An
+    # operation is not a subject of its own: it does not resolve independently,
+    # it has no identity a planner would type on its own, and making it a
+    # `SubjectKind` would let a parse bind an op with no order. It is the GRAIN
+    # of an order subject, so it lives here.
+    #
+    # THE MEASURED FAILURE it exists to end. "why cant ORD-000126 op30 start
+    # earlier", live on the demo board, was answered:
+    #
+    #     "Answering about ORD-000126 op10 on CUT-01 — the first of its 3
+    #      operations. Nothing prevented ORD-000126 op10 from starting earlier…"
+    #
+    # The vocabulary had no way to carry "op30", so the parse — correctly
+    # refusing to drop words it had heard — emitted it as a SECOND ORDER
+    # subject, which resolved to nothing and was discarded. Downstream,
+    # `route_params` never set `op_seq` at all, so on the LIVE ask path the
+    # eight routes that read it saw None from every question ever typed; the
+    # only channels that ever supplied it were the board SELECTION and two
+    # per-route re-scans of the question text. The route then fell back to the
+    # order's first operation and announced the fallback as though nobody had
+    # named one.
+    #
+    # None means the planner named no operation — NOT "operation 0". A route
+    # that can only answer at order grain says so rather than substituting
+    # (the dispatch computes that note; no assembler has to remember it).
+    op_seq: Optional[int] = None
     # True when the planner POINTED instead of naming ("this order", "it", or an
     # intent that plainly applies to whatever is selected). A pointed subject that
     # binds to nothing CLARIFIES; a NAMED one that resolves to nothing is answered
@@ -445,7 +502,8 @@ class ParsedQuestion(BaseModel):
     # before this field existed, so no parse becomes unanswerable by upgrading.
     contested_claim: Optional[ContestedClaim] = None
     # -- Session 4B.30 Item 1/2: WHICH WAY, and TOWARDS WHAT ------------------
-    # Reported on `what-would-change` and `swap-move`. None from an older parse
+    # Reported on `what-would-change`, `swap-move` and — since the listening
+    # docket — `why-here`. None from an older parse
     # or a non-move intent, which every assembler treats as EARLIER — the
     # behaviour before these fields existed, so no parse becomes unanswerable by
     # upgrading (the `contested_claim` precedent, 4B.14, deliberately followed).
@@ -481,6 +539,20 @@ class ParsedQuestion(BaseModel):
 
     def unresolved(self, kind: SubjectKind) -> list[SubjectRef]:
         return [s for s in self.of_kind(kind) if not s.resolved]
+
+    @property
+    def named_op_seq(self) -> Optional[int]:
+        """The operation grain the planner NAMED, or None.
+
+        Read off the order subjects in order, so the grain travels with the
+        PRIMARY subject the way ``ref(SubjectKind.ORDER)`` does. It is
+        deliberately not "the first non-None anywhere": a two-order question
+        naming an op on the second one must not silently re-scope the answer
+        about the first."""
+        for s in self.of_kind(SubjectKind.ORDER):
+            if s.resolved:
+                return s.op_seq
+        return None
 
 
 # ---------------------------------------------------------------------------

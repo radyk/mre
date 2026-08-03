@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.82 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.83 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.83:** **Session 4A.x - the listening docket.** 2026-08-03 (**R-LD1-R-LD4 ruled and BUILT**, verbatim in docs/04; **contract unchanged 1.15** and no docs/06 doorway owed, both answered on the record; parse prompt **v17**; narrative in `docs/closeouts/4a-listening-docket.md`). A 4A-track session on the ask ladder: four specimens, one disease - RELEVANCE UNVALIDATED, a confident answer to a question nobody asked. **ALL FOUR ARE TRUTHFUL AND ALL FOUR FAIL A PLANNER**, which is why the rubric gained an axis rather than a check. **ITEM 1 - A TYPED OPERATION NUMBER HAD NEVER REACHED A ROUTE (5a.148).** *"why cant ORD-000126 op30 start earlier"* was answered about **op10**, with a bridging sentence announcing a fallback nobody fell back to. Three seams: `SubjectRef` had no grain, so the parse emitted `op30` as a SECOND ORDER SUBJECT (measured) that resolved to nothing; **`route_params` never set `op_seq` at all**, so the eight assemblers that read it saw None from every question ever typed; and the only live suppliers were the board SELECTION and two per-route text re-scans. **4B.21's A5 is NARROWED, NOT CLOSED** - it fixed ONE route by giving it a re-scan of its own. Fixed at the contract plus a deterministic EXTRACTION at one seam (not a classifier - it runs after routing and can never choose a route), with the SELECTION deliberately LAST because a typed number cannot be stale. **A route that answers at order grain SAYS SO.** Found on the way: **two intent sets exist and answer different questions**, and the first version of the disclosure accused `why-on-machine` of dropping a grain it had honoured. **ITEM 2 - THREE RESOLUTIONS MADE, ONE DISCLOSED (5a.149).** *"why cant this be moved"* with a bar selected disclosed the SUBJECT and stayed silent on the GRAIN and the DIRECTION - *"moved"* read as *"moved EARLIER"* because that is the only direction `why-here` computes. `move_direction` becomes the mobility family's marker, reported on `why-here` too; **`UNSTATED` is what makes an assumption visible** and `None` keeps every non-move phrasing byte-identical. **A planner is never told back what they just said** - only a DEFAULTED resolution earns a line - and the disclosure is NARROWED where it could be wrong (a NAMED TARGET resolves inside the assembler, so the dispatch promises nothing). **ITEM 3 - THE PREMISE MACHINERY COVERED ONE CLAIM SHAPE AND MOBILITY WAS NOT IT (5a.150).** `mobility_premise.assess`, and **the order of its tests IS the ruling**: HELD first (4B.14's stale-true-fact rule), CHUNKED second *before the earlier direction* (a `chose` verdict on a splittable op is a LOWER BOUND, too weak to build a correction on), then the open directions. `undecidable` is **the ruled species a sixth time** - `holds` False and `refutes` False. **Only `chose` refutes EARLIER**; everything else claims nothing. **The correction is a LEAD, not a replacement** - the chain that follows is still correct, merely one-directional. **ITEM 4** composes rather than builds: earlier chain + the first opening where the whole operation fits (`later_move.next_opening_after`, the same R-C3 scan) + the invitation to the route that PRICES it. **IT DOES NOT PRICE** - an opening a planner reads as permission is the failure that clause prevents (4B.16's rule, carried). **THE PARSE REPORTED THE DIRECTION IN 0 OF 5 AND THE FLOOR IS WHY THE CHECK FIRES (5a.151)** - five phrasings planners actually type all returned null after the v17 bump, while `swap-move` set it correctly. **A disclosure that depends on a model remembering a field is a disclosure that will silently stop.** The parse's report is kept verbatim and the dispatch decides: R-AI5(8) rather than a departure from it. **RUBRIC: C6 PREMISE INTEGRITY added** (four clauses, both sides of the check, amendment logged; a C6a or C6b miss is a DEFECT bucket item, not a conversation failure). **VERIFICATION: Python 2468 passed / 291 skipped / 0 failed** (**HEAD baseline in this tree 2411/291/0, MEASURED** - a detached-worktree run with the real `_data` junctioned in returned 2409/2 failed/291, both failures being the two tests that anchor to a repo root a worktree resolves differently; **+57**. The 4B.35 close-out records 2416 and the 5-test difference predates this session). **Six negative controls proven RED against physically reverted code**, and **two did not fire on their first run** - one calling past the broken line (4B.28 5a.123's species), one reverting an ineffective seam - both rewritten. Cockpit **untouched, not re-run**. **NOT MET, NAMED: the exam sweep was NOT run.** The session's API credit was exhausted partway; every live measurement quoted above completed before it, and the new versioned bank `sweep_mobility_v1.txt` (15 questions, parses clean) is **UNRUN and owed**. **MINTED NOTHING** - no child, no re-mint, both pinned boards untouched. 5a.148-152.
 
 **v2.82:** **Session 4B.35 - one clock, and the refused nudge.** 2026-08-03 (**R-TZ1 ruled and BUILT**, plus a second ruling putting R-DP2 at beat one's checker, both verbatim in docs/04; **contract unchanged 1.15**; no parse-prompt change; narrative in `docs/closeouts/4b35-one-clock.md`). Night before the Khalil cold demo. **THE VERDICT WAS WRITTEN BEFORE ANY FIX AND IT CHOSE NONE OF THE BRIEF'S THREE BRANCHES (5a.143).** Driven through the user's door - a real pointer drag on the real bar, Playwright at `America/Toronto`, against the live Khalil board - the drag path is **EPOCH-CLEAN END TO END**: vis round-trip **0 ms**, the carry tracks the pointer, and `pin_start_iso` on the wire equals the carry instant EXACTLY (`2026-01-14T10:00:00.000Z` on both beats). **The gate evaluates precisely the instant the board drew**, so branch (ii) is KILLED. **SPECIMEN B DOES NOT REPRODUCE:** the same +2h nudge prices cleanly ($0, proven within budget), and a sweep of **every tier-0-legal instant** for that bar across Jan 13-17 found **0 beat-one refusals of 15**; `op30` is eligible on **one** machine, so no cross-row drag exists either. Not a stale `dist`. Recorded as unexplained, not closed. **SPECIMEN C reproduces in shape but its refusal was never nameless** - it is a BEAT-TWO refusal naming the successor, in 4B.31's vocabulary. **SPECIMEN A IS EXACT AND IS THE WHOLE DEFECT (5a.144).** Stored instants are UTC; the ask testimony renders them verbatim; the board and job panel rendered `toLocaleString(undefined, ...)`, the BROWSER's zone. Five hours, every pair, neither surface labelled - and on the axis it means every machine on this plant appeared to start its shift at **2 AM**. **R-TZ1: one declared clock, the FACILITY's** (IDS manifest `timezone`, docs/06 3), on `/meta` beside the grade and cost proof because it is a SUBMISSION property - **no contract bump owed**. Provenance in **THREE states, never two** (`declared`/`defaulted`/`unreadable`), the visible label carrying the distinction in one word (`- assumed`) because a defaulted clock reading as a declared one is R-CAL1 rule (3)'s failure on another axis. **Census: TWELVE sites across nine files**, all browser-clock, now one boundary (`clock.js`). **THE AXIS IS A PLANNER-FACING TIME** - vis's `moment` hook, offset resolved PER INSTANT so a DST zone is exact inside one view. **THE GUARD IS AN INVARIANCE, NOT A STRING** - *the browser's timezone does not change what the board says* - asserted in a Toronto browser with the disagreement itself a PREMISE, because a pinned-string guard passes in a UTC container while the defect is live everywhere. **Three negative controls proven RED, each on its own half**, and **control A's first run was a FALSE GREEN against a stale `dist`** - 4B.34's own lesson from the other side. **ITEM 1b - THE CHECKER KNEW "NO" AND NOT "WHY" (5a.145).** The brief's hypothesis was right: CP-SAT's INFEASIBLE is a bare bit, so every beat-one refusal ever shown read ONE CONSTANT sentence. Fixed AT THE CHECKER (`local_price.relaxed_refusal`), in the ONE refusal vocabulary, and **restricted to the families that survive beat one's relaxation** (eligibility, calendar) - occupancy and precedence are facts about the ARRANGEMENT, and claiming them for a solve free to move the occupant is the over-claim `holds_others` exists to prevent. **An unattributed refusal SAYS SO.** `PROVEN` alone is retired from both refusal registers (`proven impossible`, R-DP6's term) - a "Can't go here" card wearing *verdict - proven within budget* was live on the demo board. **THE 20-PROBE RE-MEASURE (5a.146):** 18 refusals / 2 priced, **every beat-one refusal NAMED (10 of 10, C1/C2)**, beat-two refusals all B1 **with `holds_others`** - and **BOTH prices NON-ZERO at $75.00**, where 4B.32 measured four prices all exactly $0.00 and recorded the ledger-MOVED branch as unreachable from a drag on this board. It is reachable. **VERIFICATION: Python 2416/291/0** (the +1 was RED AT HEAD - 4B.34 amended docs/04 without rebuilding the corpus index); **cockpit 364 passed / 3 failed of 367**, the 2 known deictic plus a **seventh member of the parallel-load flake class** (green 11/11 in isolation). **CARRIED, NAMED: the Python answer surfaces still render stored UTC verbatim** - correct wherever the facility declares UTC, which both pinned worlds do, but NOT governed. 5a.143-147.
 
@@ -5508,6 +5510,105 @@ FOLD SET IS STILL PLANT-WIDE ONLY** (4B.28 debt (c)) — `clean` does not change
 (`rolling-b12762371b3a`, a thaw on `rolling-b4dd3010751f`, the board the brief
 sanctioned for mutation); it is now a useful live R-GP1 specimen. Both pinned
 boards untouched.
+
+**§5a.148 — THE LISTENING DOCKET, ITEM 1: A TYPED OPERATION NUMBER HAD NEVER
+REACHED A ROUTE.** Measured verbatim on the demo board before a line changed:
+*"why cant ORD-000126 op30 start earlier"* → *"Answering about ORD-000126 op10
+on CUT-01 — the first of its 3 operations. Nothing prevented ORD-000126 op10
+from starting earlier…"* **THREE SEAMS, AND THE PARSE WAS THE LEAST OF THEM.**
+`SubjectRef` carried no operation, so the parse — refusing to drop a word it had
+heard — emitted `op30` as a SECOND ORDER SUBJECT (measured: it did exactly that)
+which resolved to nothing. The deeper seam: **`route_params` never set `op_seq`
+at all**. Eight assemblers read it; the only live suppliers were the board
+SELECTION (five intents) and two routes re-scanning the question text for
+themselves. **4B.21's A5 is NARROWED, NOT CLOSED** — it gave `why-on-machine` a
+re-scan of its own, which is why that one route was right; the general carry did
+not exist. Fixed at the contract (`SubjectRef.op_seq`, prompt **v17** rule 2: an
+operation is the GRAIN of an order subject, never a subject) plus a deterministic
+TEXT RECOVERY at the one seam, run AFTER routing — an extraction, not a
+classifier (`claim_verifier`/`predicate_coverage`'s family; `Explainer.classify`
+stays deleted). **THE SELECTION IS LAST DELIBERATELY:** a typed `op30` cannot be
+stale, a clicked bar can. **A ROUTE THAT CANNOT HONOUR A GRAIN SAYS SO** at the
+one seam every answered route passes. **FOUND ON THE WAY: TWO SETS EXIST AND THEY
+ARE DIFFERENT QUESTIONS** — `_OPERATION_SCOPED_INTENTS` (may a SELECTION re-scope
+this?) vs `_GRAIN_HONOURING_INTENTS` (can this route answer about one operation
+the planner TYPED?). `why-on-machine` is the member that separates them, and the
+first version of this disclosure accused it of dropping a grain it had honoured.
+
+**§5a.149 — ITEM 2: THREE RESOLUTIONS WERE MADE AND ONE WAS DISCLOSED.**
+*"why cant this be moved"* with ORD-000128 op20 selected →
+`INTERPRETED AS: "why cant ORD-000128 be moved [from board selection]"`. The
+SUBJECT was named. The GRAIN was silent — a planner reading *ORD-000128* cannot
+know which of its four operations they were told about. The DIRECTION was silent
+— *"moved"* read as *"moved EARLIER"*, the only direction `why-here` computes —
+and the answer served the earliest-start chain. **ONE ASSUMPTION NAMED, ONE
+SILENT, IN THE SAME LINE.** `move_direction` (4B.30) becomes the MOBILITY
+FAMILY's marker and is reported on `why-here` too; `UNSTATED` is what makes an
+assumption visible, `None` keeps every non-move phrasing byte-identical. **A
+PLANNER IS NEVER TOLD BACK WHAT THEY JUST SAID** — only a DEFAULTED resolution
+earns a line, which is what keeps the line short enough to be read. **NARROWED
+WHERE IT COULD BE WRONG:** a `what-would-change` question with a NAMED TARGET
+resolves its direction inside the assembler against the calendar, so the dispatch
+promises nothing — a disclosure naming the wrong direction is worse than silence.
+
+**§5a.150 — ITEM 3: THE PREMISE MACHINERY COVERED ONE CLAIM SHAPE AND MOBILITY
+WAS NOT IT.** Census at HEAD: `_verify_placement_premise` (4B.13, a stated *X is
+on Y*) and `lateness-cause`'s `premise_holds`. Neither is about whether a bar can
+move. `mobility_premise.assess` decides it, and **THE ORDER OF ITS TESTS IS THE
+RULING**: HELD first (an opening past a committed front is a true fact about an
+irrelevant question — 4B.14's stale-true-fact rule), CHUNKED second *before the
+earlier direction* (the pricer declines a chunked move by name, AND a `chose`
+verdict on a splittable op is a LOWER BOUND, too weak to build a CORRECTION on),
+then the two open directions. `undecidable` is **THE RULED SPECIES A SIXTH TIME**
+— `holds` False and `refutes` False, so a claim about the PLANT is never
+manufactured from a limit of OUR METHOD. **ONLY `chose` REFUTES THE EARLIER
+DIRECTION**; every other verdict including `None` claims nothing (4B.23's
+fail-safe rule). **THE CORRECTION IS A LEAD, NOT A REPLACEMENT** — unlike a false
+placement, the chain that follows is still correct, it is merely one-directional.
+
+**§5a.151 — THE PARSE REPORTED THE DIRECTION IN 0 OF 5, AND THE FLOOR IS WHY THE
+CHECK FIRES.** Measured immediately after prompt v17: five mobility phrasings a
+planner actually types — *"why cant this be moved"*, *"why can't this bar be
+moved"*, *"why is this stuck"*, *"why wont it budge"*, *"why cant ORD-000128 op20
+be moved"* — all returned `move_direction: null`, while `swap-move`, where the
+field has been asked for since 4B.30, set it correctly. **A DISCLOSURE THAT
+DEPENDS ON A MODEL REMEMBERING A FIELD IS A DISCLOSURE THAT WILL SILENTLY STOP.**
+The parse's report is kept verbatim as the record of what the model said and
+`mobility_premise.asks_about_moving` decides — **R-AI5(8) rather than a departure
+from it**: the model's report is INPUT, never the decision. It runs after the
+route is chosen, can only ADD a check to a route already running, and can never
+route. Vocabulary MEASURED not designed; *"what's holding it up"* and *"why can't
+it be earlier"* are deliberately absent.
+
+**§5a.152 — THE LISTENING DOCKET'S CARRY-FORWARDS (REPORTED, deliberately NOT
+fixed).** **(a) THE EXAM SWEEP WAS NOT RUN AND THE BANK IS UNRUN.** The session's
+API credit was exhausted partway through; every live measurement quoted above
+completed before it, and `tests/ai_exam/banks/sweep_mobility_v1.txt` (15
+questions, parses clean, 0 parse errors) has never been fired. **It is owed, and
+it is the one acceptance criterion this session did not meet.** **(b) TWO OF THE
+FIVE VERDICTS ARE UNREACHABLE ON BOTH PINNED BOARDS** — a census over every
+placed operation returned `held` 24 / `later-open` 361 / `undecidable` 1 (demo,
+386 bars) and `held` 45 / `later-open` 9 / `undecidable` 2 (exam world, 56):
+**zero `boxed-in` and zero `earlier-open` on either.** Both are asserted by unit
+test only, 4B.32 §5a.132's discipline. **(c) THE PREMISE CHECK IS SCOPED TO
+`why-here`** — `swap-move` and `what-would-change` carry mobility claims too and
+were not touched. **(d) THE LATER HALF NAMES ONE MACHINE'S FREE TIME** and says
+so; a move to another machine is a swap and a different question. **(e) TWO OF
+SIX NEGATIVE CONTROLS DID NOT FIRE ON THEIR FIRST RUN**, both for reasons worth
+keeping: one asserted the answer did not START with the chain and Item 4's own
+"Earlier —" label kept that true with the correction reverted (**4B.28
+§5a.123's calls-past-the-broken-line species**), and one reverted
+`assess`'s HELD branch while the load-bearing half is the calendar-scan SKIP in
+`_mobility_facts`. Both rewritten and proven red. **(f) `_OPERATION_SCOPED_INTENTS`
+STILL GATES THE SELECTION CHANNEL AT FIVE INTENTS** — a bar selected on the board
+cannot re-scope `why-on-machine`, which is defensible and was not re-ruled here.
+**(g) THE EXAM SCRIPT GAINED `SELECT … seq=`** — the cockpit has sent `op_seq`
+since 4B.14 and no bank could express it, so the one channel supplying a grain
+the planner did not type was unreachable from any exam and S2 had to be measured
+by hand against the live API. **(h) 4B.35's §5a.143-147 HAVE NO BODY ENTRIES in
+this section** — only the v2.82 version line references them. Noted, not
+back-filled: this section is not append-only the way docs/04 is, but rewriting
+another session's record is not this session's call.
 
 ## 6. Open rulings queue
 

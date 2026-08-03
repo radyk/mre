@@ -337,8 +337,28 @@ def bind_subjects(explainer: Any, raw_subjects: list[dict],
                 ref = rolling.resolve(raw)
             disposition = _DISPOSITION_BY_NAME.get(rolling.disposition(ref) or "")
         out.append(SubjectRef(kind=kind, raw=raw, ref=ref, source=source,
-                              pointed=pointed, disposition=disposition))
+                              pointed=pointed, disposition=disposition,
+                              op_seq=_coerce_op_seq(raw_subject.get("op_seq"))))
     return out
+
+
+def _coerce_op_seq(value: Any) -> Optional[int]:
+    """The model's operation grain -> an int, or None.
+
+    Fail-closed and silent: a grain we cannot read is a grain the answer will
+    disclose it did not have, which is strictly better than a route scoped to
+    a number nobody typed. "op30", 30, "30" and 30.0 all read as 30; anything
+    else — including a negative, which no `op_seq` ever is — reads as None."""
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, str):
+        digits = "".join(ch for ch in value if ch.isdigit())
+        value = digits or None
+    try:
+        seq = int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+    return seq if seq >= 0 else None
 
 
 def _resolve_named(explainer: Any, kind: SubjectKind, raw: str) -> Optional[str]:

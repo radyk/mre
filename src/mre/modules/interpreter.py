@@ -45,6 +45,7 @@ from mre.contracts.parse import (
     ClarifyReason,
     FollowupKind,
     Intent,
+    MoveDirection,
     ParsedQuestion,
     Polarity,
     SubjectKind,
@@ -110,6 +111,27 @@ _OPERATION_SCOPED_INTENTS = frozenset(
      # selected must read THAT operation, not the order's first one — the same
      # mis-scoping 4B.14 Item 5(d) fixed for the other three.
      Intent.ATTRIBUTE_LOOKUP})
+
+#: Session 4A.x (the listening docket) Item 1 — the intents whose ASSEMBLER
+#: READS ``op_seq`` at all, whatever channel supplied it. This is a DIFFERENT
+#: question from the one above and the difference is deliberate:
+#:
+#:   _OPERATION_SCOPED_INTENTS  — may a BOARD SELECTION re-scope this answer?
+#:                                Narrow, because a selection persists after the
+#:                                planner has stopped thinking about it.
+#:   _GRAIN_HONOURING_INTENTS   — can this route answer about ONE OPERATION when
+#:                                the planner TYPED one? Wider, because a typed
+#:                                "op30" is explicit and can never be stale.
+#:
+#: `why-on-machine` is exactly the member that separates them (4B.21 Item 3 gave
+#: it an `op_seq`; it takes a typed one and is not selection-re-scopable), and
+#: reading the narrow set as though it answered the wide question is what made
+#: the first version of this disclosure tell a planner that `why-on-machine` had
+#: dropped a grain it had in fact honoured. A route OUTSIDE this set discloses
+#: that it answered at order level; a route inside it says nothing, because it
+#: did what was asked.
+_GRAIN_HONOURING_INTENTS = _OPERATION_SCOPED_INTENTS | frozenset(
+    {Intent.WHY_ON_MACHINE})
 
 # The rolling (sliced-world) intents. On a monolithic run these degrade through the
 # normal route table; the rolling document pre-route is upstream in the API.
@@ -439,6 +461,77 @@ def _subject_note(parsed: ParsedQuestion) -> str:
     return "; ".join(dict.fromkeys(bits))
 
 
+#: The intents whose EARLIER default is certain once `move_direction` is
+#: `unstated` — i.e. where the dispatch can promise which way the answer went.
+#: `swap-move` is absent because its take reads the direction itself, and
+#: `what-would-change` is conditional (a NAMED TARGET may resolve LATER against
+#: the calendar, inside the assembler), so it is admitted below only when the
+#: planner named no target. A disclosure that states the wrong direction is
+#: worse than the silence it replaces.
+_EARLIER_BY_DEFAULT = frozenset({Intent.WHY_HERE, Intent.WHAT_WOULD_CHANGE})
+
+
+def _with_assumptions(note: str, parsed: ParsedQuestion, params: dict) -> str:
+    """The resolution note, plus every OTHER resolution the ladder DEFAULTED.
+
+    THE MEASURED FAILURE (the listening docket, Item 2). "why cant this be
+    moved", with ORD-000128 selected on the demo board:
+
+        INTERPRETED AS: "why cant ORD-000128 be moved [from board selection]"
+
+    Two assumptions were made and one was disclosed. The SUBJECT came from the
+    board and the line says so. The DIRECTION — "moved" read as "moved EARLIER",
+    because that is the only direction `why-here` computes — was silent, and the
+    answer then served the earliest-start chain. The GRAIN was silent too: op20
+    came from the same selection, and a planner reading "ORD-000128" has no way
+    to know which of its four operations they were told about.
+
+    THE RULE: A FIELD THE PLANNER STATED IS NEVER READ BACK TO THEM. Only a
+    DEFAULTED resolution earns a line, which is what keeps the disclosure short
+    enough to be read — and what makes its presence informative rather than
+    decorative. `MoveDirection.UNSTATED` and `op_seq_source != "utterance"` are
+    the two markings; both are facts the contract already carries.
+    """
+    bits: list[str] = []
+
+    # -- THE GRAIN ---------------------------------------------------------
+    seq = params.get("op_seq")
+    src = params.get("op_seq_source") or ""
+    if seq is not None and src == "selection":
+        bits.append(f"and about op{seq}, the operation selected on the board")
+    elif seq is not None and src == "utterance" \
+            and parsed.intent not in _GRAIN_HONOURING_INTENTS:
+        # ITEM 1's OTHER HALF: a route that answers at ORDER grain SAYS SO
+        # rather than substituting. The remedy is not to make every assembler
+        # operation-scoped — most of them genuinely answer about the whole
+        # order — it is that a planner must never believe we looked at the step
+        # they named when we looked at all of them. 4B.27 Item 4's shape, on
+        # the grain axis instead of the second-subject axis.
+        # Named rather than composed around a slot that can be empty: a question
+        # can carry a step and no order ("what runs on op20 of CUT-01"), and
+        # "answered for the whole of None" is the template nonsense R-AI3's C4
+        # forbids.
+        whole = f"the whole of {params['order']}" if params.get("order") \
+            else "the whole order"
+        bits.append(f"answered for {whole} — you named op{seq} and this route "
+                    f"answers at order level")
+
+    # -- THE DIRECTION -----------------------------------------------------
+    # Read from PARAMS, not from the parse: the mobility floor above may have
+    # supplied a direction the model did not report, and a disclosure that only
+    # covers what the model remembered is the silence this item exists to end.
+    if params.get("move_direction") == MoveDirection.UNSTATED.value \
+            and parsed.intent in _EARLIER_BY_DEFAULT \
+            and not (parsed.intent is Intent.WHAT_WOULD_CHANGE
+                     and parsed.move_target):
+        bits.append("read as EARLIER — you didn't say which way, and this is "
+                    "the direction I can compute a bound for")
+
+    if not bits:
+        return note
+    return "; ".join([b for b in ([note] if note else []) + bits])
+
+
 def routed_text(parsed: ParsedQuestion, params: dict) -> tuple[str, bool]:
     """The question the assemblers actually see, and whether it was rewritten.
 
@@ -512,6 +605,42 @@ def route_params(parsed: ParsedQuestion, question_text: str) -> dict:
         if parsed.intent is Intent.WHY_HERE:
             params["challenge"] = {"kind": parsed.contested_claim.value,
                                    "said": parsed.question}
+    # Session 4A.x (the listening docket) Item 1 — THE GRAIN REACHES THE ROUTE.
+    #
+    # Eight assemblers read `params["op_seq"]` and NOTHING HERE HAD EVER SET IT.
+    # On the live ask path the value came from exactly two places: the board
+    # SELECTION (filled below, in `dispatch`, for five intents) and two routes
+    # that re-scan the question text for themselves. So a planner who TYPED
+    # "op30" was answered about op10 with a bridging sentence announcing the
+    # fallback — the measured specimen, verbatim.
+    #
+    # Two sources, in this order, and the order is the ruling:
+    #   1. THE PARSE (`subjects[].op_seq`, prompt v17). What the planner said.
+    #   2. THE TEXT (`op_seq_in`). A deterministic EXTRACTION of a number the
+    #      planner typed — never a route decision, so it is not the return of a
+    #      deterministic classifier (R-AI5(2)); the nearest relatives are
+    #      `claim_verifier` and `predicate_coverage`, both of which read an
+    #      utterance after the route is already chosen. It exists because a
+    #      grain silently dropped is the defect, and a model that forgets one
+    #      field must not re-open it.
+    # The board SELECTION is deliberately NOT here: it is the weakest channel,
+    # it belongs to the dispatch (which knows which intents may be re-scoped by
+    # it), and a typed "op30" must outrank a bar the planner clicked earlier.
+    from mre.modules.attribute_lookup import op_seq_in
+    named_seq = parsed.named_op_seq
+    if named_seq is None:
+        named_seq = op_seq_in(question_text)
+        if named_seq is None and question_text != parsed.question:
+            # A REWRITTEN question can lose the words (`routed_text` substitutes
+            # canonical refs, and a canonical question names no step at all), so
+            # the planner's own sentence is the fallback reading.
+            named_seq = op_seq_in(parsed.question)
+    if named_seq is not None:
+        params["op_seq"] = named_seq
+        # WHERE THE GRAIN CAME FROM, carried so the disclosure can tell an
+        # assumption from a statement (Item 2). A planner is never told back
+        # what they just said.
+        params["op_seq_source"] = "utterance"
     # Session 4B.27 Item 4 — EVERY RESOLVED SUBJECT IS CARRIED, not only the
     # first. `params["order"]` keeps its exact meaning (the primary subject), so
     # no existing assembler changes behaviour; this is the channel through which
@@ -1184,6 +1313,7 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
         if params.get("op_seq") is None and sel.get("op_seq") is not None:
             try:
                 params["op_seq"] = int(sel["op_seq"])
+                params["op_seq_source"] = "selection"
             except (TypeError, ValueError):
                 pass
         if not params.get("machine") and sel.get("machine"):
@@ -1254,6 +1384,25 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     # contracted answer for that: how to turn overtime on, and what it would let
     # the solver do. The concept is the parse's, not a keyword's; the dispatch
     # only reads whether one resolved.
+    # 4y — THE MOBILITY FLOOR (the listening docket, Item 3). Prompt v17 asks
+    # the model to report `move_direction` on `why-here`; measured immediately
+    # after the bump it did so 0 times in 5 on the phrasings planners use. The
+    # parse's report is left exactly as the model made it — it is the record of
+    # what was said — and the DISPATCH decides, which is R-AI5(8) rather than a
+    # departure from it. It can only ever ADD a premise check to a route that
+    # was already going to run; it can never route.
+    if parsed.intent is Intent.WHY_HERE and not params.get("move_direction"):
+        from mre.modules.mobility_premise import asks_about_moving
+        if asks_about_moving(parsed.question):
+            params["move_direction"] = MoveDirection.UNSTATED.value
+            params["move_direction_source"] = "floor"
+
+    # 4z — EVERY RESOLUTION THE LADDER MADE IS DISCLOSED, NOT ONLY THE SUBJECT
+    # (the listening docket, Item 2). Computed HERE, at the one seam every
+    # answered route passes, for 4B.27 Item 4's reason: an assembler that has to
+    # remember to disclose is an assembler that will forget.
+    note = _with_assumptions(note, parsed, params)
+
     if parsed.intent is Intent.ADVICE and params.get("concept"):
         return Dispatched("coaching", explainer.route("coaching", params),
                           note, routed_question)

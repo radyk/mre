@@ -66,12 +66,18 @@ class FakeClient:
 def emission(intent: str, subjects: Optional[list[dict]] = None, *,
              polarity: Optional[str] = None, followup_of: str = "none",
              confidence: float = 0.9, nearest: Optional[list[str]] = None,
-             clarify: Optional[dict] = None) -> str:
-    """One model emission as strict JSON — the shape the governed prompt asks for."""
+             clarify: Optional[dict] = None,
+             move_direction: Optional[str] = None) -> str:
+    """One model emission as strict JSON — the shape the governed prompt asks for.
+
+    ``subjects`` entries may carry ``op_seq`` (prompt v17, the listening
+    docket): the GRAIN of an order subject, which is where a named operation
+    belongs — never as a subject of its own."""
     return json.dumps({
         "intent": intent, "subjects": subjects or [], "polarity": polarity,
         "followup_of": followup_of, "confidence": confidence,
         "nearest": nearest or [], "clarify": clarify,
+        "move_direction": move_direction,
     })
 
 
@@ -90,7 +96,10 @@ def parsed(question: str, intent: Intent, *,
            followup_of: FollowupKind = FollowupKind.NONE,
            confidence: float = 0.92, nearest: tuple = (),
            clarify: Optional[ClarifyReason] = None,
-           clarify_detail: str = "") -> ParsedQuestion:
+           clarify_detail: str = "",
+           op_seq: Optional[int] = None,
+           move_direction: Optional[Any] = None,
+           move_target: str = "") -> ParsedQuestion:
     """Build a ParsedQuestion with subjects given as the planner's own words.
 
     ``pointed`` names the kinds the planner POINTED at rather than named ("this
@@ -102,9 +111,17 @@ def parsed(question: str, intent: Intent, *,
                        (SubjectKind.CUSTOMER, customers),
                        (SubjectKind.CONCEPT, concepts)):
         for raw in raws:
-            subjects.append(SubjectRef(kind=kind, raw=raw))
+            # The GRAIN rides on the ORDER subject only (the listening docket,
+            # Item 1) — an operation is not a subject of any other kind, and a
+            # double that let one ride on a machine would be testing a shape
+            # the contract forbids.
+            subjects.append(SubjectRef(
+                kind=kind, raw=raw,
+                op_seq=op_seq if kind is SubjectKind.ORDER else None))
     for kind in pointed:
-        subjects.append(SubjectRef(kind=kind, raw="", pointed=True))
+        subjects.append(SubjectRef(
+            kind=kind, raw="", pointed=True,
+            op_seq=op_seq if kind is SubjectKind.ORDER else None))
     # A pointed subject whose WORDS are in the sentence ("this order", "it") — the
     # dispatch substitutes the bound ref into the planner's own phrasing.
     for kind, raw in pointed_words:
@@ -114,6 +131,7 @@ def parsed(question: str, intent: Intent, *,
         followup_of=followup_of, confidence=confidence, nearest=list(nearest),
         clarify=ClarifyPayload(reason=clarify, detail=clarify_detail)
         if clarify else None,
+        move_direction=move_direction, move_target=move_target,
         prompt_version="test")
 
 
@@ -121,7 +139,8 @@ def resolve(p: ParsedQuestion, explainer: Any,
             context: Optional[dict] = None, rolling: Any = None) -> ParsedQuestion:
     """Run the REAL subject binding over a scripted parse — the same code the live
     parser uses, so a scripted test still proves resolution end to end."""
-    raw = [{"kind": s.kind.value, "raw": s.raw, "from_context": s.pointed}
+    raw = [{"kind": s.kind.value, "raw": s.raw, "from_context": s.pointed,
+            "op_seq": s.op_seq}
            for s in p.subjects]
     return p.model_copy(update={
         "subjects": bind_subjects(explainer, raw, context, rolling=rolling)})

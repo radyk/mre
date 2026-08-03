@@ -1,6 +1,6 @@
 # Question-parse prompt — a GOVERNED ARTIFACT (R-AI5(1))
 
-    prompt_version: 16
+    prompt_version: 17
     ruling:         R-AI5(1) — every question is parsed FIRST by a language model
                     against a CLOSED intent vocabulary, with the conversation
                     history, live board selection, and last-answered subject as
@@ -319,6 +319,32 @@
                     that "pinned" is not a field — because the wrong route was
                     not a wild guess, it was a reasonable reading of a word this
                     vocabulary had never claimed.
+    v17:            Session 4A.x, the listening docket (2026-08-03) — TWO
+                    FIELDS, NO NEW INTENT AND NO WIDENED MEANING. Both are
+                    things the parse HEARD and had nowhere to put, which is why
+                    neither costs a vocabulary member.
+
+                    (a) `subjects[].op_seq` — THE GRAIN. Measured live on the
+                    demo board: "why cant ORD-000126 op30 start earlier" was
+                    answered "Answering about ORD-000126 op10 … the first of
+                    its 3 operations. Nothing prevented ORD-000126 op10 from
+                    starting earlier". The parse did not drop "op30" — it had
+                    no field for it, so it emitted a SECOND ORDER subject with
+                    `raw: "op30"`, which resolved to nothing and was discarded
+                    downstream. An operation is not a subject: it does not
+                    resolve on its own and it is meaningless without its order.
+                    It is the GRAIN of an order subject, and rule 2 now says so.
+
+                    (b) `move_direction` on `why-here`. It was reported on
+                    `what-would-change` and `swap-move` only, so every "why
+                    can't this be moved" — which lands on `why-here` — had its
+                    direction chosen by the ROUTE'S MEANING and disclosed
+                    nowhere. Measured with ORD-000128 selected: INTERPRETED AS
+                    "why cant ORD-000128 be moved [from board selection]", and
+                    the answer served the earliest-start chain. The SUBJECT
+                    assumption was named; the DIRECTION assumption was silent,
+                    in the same line. `unstated` is what makes it visible, so
+                    rule 11 now covers the whole mobility family.
 
 ## Review discipline
 
@@ -380,6 +406,14 @@ RULES
        none, return an empty list. If an intent needs one and neither the question
        nor the context supplies it, use the `clarify` field with reason
        `no-subject`.
+     - AN OPERATION IS NOT A SUBJECT — IT IS THE GRAIN OF AN ORDER SUBJECT. When
+       the planner names a step of an order ("ORD-000126 op30", "op20 of
+       ORD-13", "the second operation on ORD-05", "step 30"), put the NUMBER in
+       `op_seq` ON THAT ORDER'S SUBJECT and leave `raw` as the order alone.
+       Never emit "op30" as a subject of its own — it resolves to nothing, and
+       the answer then falls back to the order's FIRST operation and says so as
+       though you had named none. `op_seq` is the number only (30, not "op30").
+       Omit it, or null, when the planner named no step.
      - A CONCEPT subject is a capability the submission can declare (splitting,
        overtime, alternates, customers, earliness, spanning downtime, WIP). It is
        never bound from the board — a capability is not something you can select.
@@ -573,7 +607,7 @@ RULES
    something already said.
 
 11. A MOVE QUESTION HAS A DIRECTION, AND SAYING NOTHING MEANS "EARLIER". Set
-   `move_direction` on `what-would-change` and on `swap-move`:
+   `move_direction` on `what-would-change`, on `swap-move` and on `why-here`:
 
      - `later` — the planner wants it pushed out, delayed, moved back, held, or
        taken off a machine somebody else needs. "can I move ORD-57 later",
@@ -597,6 +631,21 @@ RULES
    4B.15 Item 0 is the measured cost of that: a true fact about the wrong
    Tuesday, in a horizon with five of them.
 
+   ON `why-here`, SET IT WHENEVER THE QUESTION IS ABOUT THE BAR MOVING AT ALL —
+   "why can't this be moved", "why is this stuck", "can't this go somewhere
+   else", "why won't it budge", "is this one locked". Almost always `unstated`,
+   because those words name no direction; `earlier` when they do ("why can't it
+   be earlier", "why not sooner"). This does NOT change which direction the
+   route computes — it still answers what is blocking the bar from going
+   earlier. It changes what the answer DISCLOSES: `unstated` is how the system
+   learns to say "I read that as: what's stopping it going EARLIER" instead of
+   assuming it in silence, and to check whether the bar can move at all before
+   explaining why it cannot move up.
+
+   Leave it null on a `why-here` question that is not about moving ("why is
+   this here", "what's holding it up", "why the wait") — those ask for the
+   placement's cause and assume nothing that needs disclosing.
+
    Leave both fields alone (null / empty) on every other intent.
 
 OUTPUT — strict JSON, no prose, no code fence. `intent` must be one of the
@@ -609,6 +658,7 @@ is what the planner is doing, name it in both fields.)
   "intent": "<one id from the vocabulary>",
   "subjects": [{"kind": "order|machine|customer|concept",
                 "raw": "<the planner's words>",
+                "op_seq": null | <the operation number, on an ORDER subject>,
                 "from_context": true|false}],
   "polarity": "positive" | "negative" | null,
   "followup_of": "none|deepen|correction|list-expand|menu-select|confirm-take|prove-it",

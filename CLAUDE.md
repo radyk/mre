@@ -171,6 +171,63 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Session 4A.x — the listening docket**, 2026-08-03 (docs/07 v2.83, §5a.148-152;
+docs/04 2026-08-03 **R-LD1–R-LD4 ruled and BUILT**; contract unchanged **1.15**,
+no docs/06 doorway owed, both answered on the record; parse prompt **v17**;
+RUBRIC gains axis **C6 PREMISE INTEGRITY**; narrative in
+`docs/closeouts/4a-listening-docket.md`). Four measured specimens, one disease:
+**RELEVANCE UNVALIDATED — a confident answer to a question nobody asked, and all
+four are TRUTHFUL**. **R-LD1: A TYPED OPERATION NUMBER HAD NEVER REACHED A
+ROUTE.** *"why cant ORD-000126 op30 start earlier"* was answered about **op10**,
+with a bridging sentence announcing a fallback nobody fell back to. Three seams:
+`SubjectRef` had no grain (so the parse emitted `op30` as a SECOND ORDER SUBJECT
+that resolved to nothing — measured); **`route_params` never set `op_seq` at
+all**, so the EIGHT assemblers reading it saw None from every question ever
+typed; the only live suppliers were the board SELECTION (5 intents) and TWO
+per-route text re-scans. **4B.21's A5 is NARROWED, NOT CLOSED** — it fixed ONE
+route with a re-scan of its own. Now: `SubjectRef.op_seq` + a deterministic
+EXTRACTION at one seam (runs AFTER routing, can never route — not the deleted
+classifier), **SELECTION LAST** because a typed number cannot be stale; and **a
+route that answers at order grain SAYS SO**. Found on the way: **two intent sets
+answer different questions** (`_OPERATION_SCOPED_INTENTS` = may a SELECTION
+re-scope this; `_GRAIN_HONOURING_INTENTS` = can it answer a TYPED grain), and the
+disclosure's first version accused `why-on-machine` of dropping a grain it had
+honoured. **R-LD2: THREE RESOLUTIONS MADE, ONE DISCLOSED** — *"why cant this be
+moved"* with a bar selected named the SUBJECT and stayed silent on the GRAIN and
+the DIRECTION (*"moved"* read as EARLIER, the only direction `why-here`
+computes). `move_direction` is now the mobility family's marker, on `why-here`
+too; **`UNSTATED` is what makes an assumption visible**, `None` keeps every
+non-move phrasing byte-identical, and **a planner is never told back what they
+just said**. NARROWED where it could be wrong: a NAMED TARGET resolves inside the
+assembler, so the dispatch promises nothing. **R-LD3: THE PREMISE MACHINERY
+COVERED ONE CLAIM SHAPE AND MOBILITY WAS NOT IT** (census: `_verify_placement_
+premise` and `lateness-cause`'s `premise_holds`, that is all).
+`mobility_premise.assess`, **whose ORDER OF TESTS IS THE RULING**: HELD first
+(4B.14's stale-true-fact rule), CHUNKED second *before the earlier direction* (a
+`chose` verdict on a splittable op is a LOWER BOUND, too weak to build a
+CORRECTION on), then the open directions. `undecidable` is **the ruled species a
+SIXTH time** — `holds` False AND `refutes` False. **Only `chose` refutes
+EARLIER.** **The correction is a LEAD, not a replacement**: the chain that
+follows is still correct, merely one-directional. **R-LD4** composes — earlier
+chain + the first opening where the whole op fits + the invitation to the route
+that PRICES it — and **DOES NOT PRICE** (an opening read as permission is the
+failure the clause prevents). **THE PARSE REPORTED THE DIRECTION IN 0 OF 5** and
+the floor is why the check fires: **a disclosure depending on a model remembering
+a field will silently stop**; the report stays verbatim and the DISPATCH decides
+(R-AI5(8), not a departure from it). **THE PREMISE IS FALSE ON 361 OF 386 BARS**
+— census over both pinned worlds: demo `held` 24 / `later-open` **361** /
+`undecidable` 1; exam 45 / 9 / 2 — so the earlier-only answer was wrong on 94% of
+the demo board. **`boxed-in` AND `earlier-open` ARE ZERO ON BOTH BOARDS** and are
+asserted by unit test only. **Python 2468/291/0** (HEAD in this tree **2411/291/0,
+MEASURED** in a detached worktree — its 2 failures are the two tests that anchor
+to a repo root a worktree resolves differently; **+57**. The 4B.35 close-out
+records 2416; the 5-test difference predates this session). **Six negative controls proven RED**, and **TWO DID NOT FIRE FIRST
+TIME** — one calling past the broken line (4B.28 §5a.123 again), one reverting an
+ineffective seam. **Cockpit untouched, not re-run. MINTED NOTHING.** **NOT MET,
+NAMED: THE EXAM SWEEP WAS NOT RUN** — the API credit balance was exhausted
+partway (every live measurement above completed before it); the new versioned
+bank `tests/ai_exam/banks/sweep_mobility_v1.txt` (15 questions, parses clean) is
+**UNRUN AND OWED**, as is the founder-listening round. Before it:
 **Session 4B.35 — one clock, and the refused nudge**, 2026-08-03 (docs/07 v2.82,
 §5a.143-147; docs/04 2026-08-03 **R-TZ1 ruled and BUILT** + a second ruling putting
 R-DP2 at beat one's checker; contract unchanged **1.15**; narrative in
