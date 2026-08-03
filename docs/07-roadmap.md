@@ -1,6 +1,25 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.83 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.84 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.84:** **The WORKSTREAM MAP is merged (§5b).** 2026-08-03, from
+`docs/handoffs/WORKSTREAM_MAP_HANDOFF.md` (kept for provenance; **§5b is
+authoritative from here**). **Chats are design rooms; the repo is the map** —
+five owner rooms (W1 AI layer / W2 screens / W3 load layer / W4 solver /
+W5 GTM), each with its queue in order, plus a parking lot and four cross-cutting
+standing orders. Three things are worth naming beyond the transcription.
+**(a) THERE WAS NO THREAD-LEDGER SECTION TO ABSORB** — the handoff's
+"replacing/absorbing" clause found nothing in this document; recorded rather
+than glossed, and nothing was deleted to make room. **(b) TWO AXES NOW WEAR
+W-NUMBERS AND NEITHER RENUMBERS THE OTHER** — §5's W1–W4 are the original
+cross-cutting workstreams (gym, docs, GTM, security) and every existing citation
+of "the W2 rule" still means §5's W2; §5b's W1–W5 are the design-room map. A
+disambiguating note sits between them, because silently reusing a live
+identifier is the vocabulary defect this repo rules against everywhere else.
+**(c) THE SOLVER ROOM IS NOW A ROOM** — 4B leaves 4A, which is what the map
+exists to make true. **NO OTHER DOC RESTRUCTURED**; corpus index rebuilt
+(docs/07 carries a sha256, so an edit without the rebuild is a red test);
+**minted nothing** — no run, no schedule, no board.
 
 **v2.83:** **Session 4A.x - the listening docket.** 2026-08-03 (**R-LD1-R-LD4 ruled and BUILT**, verbatim in docs/04; **contract unchanged 1.15** and no docs/06 doorway owed, both answered on the record; parse prompt **v17**; narrative in `docs/closeouts/4a-listening-docket.md`). A 4A-track session on the ask ladder: four specimens, one disease - RELEVANCE UNVALIDATED, a confident answer to a question nobody asked. **ALL FOUR ARE TRUTHFUL AND ALL FOUR FAIL A PLANNER**, which is why the rubric gained an axis rather than a check. **ITEM 1 - A TYPED OPERATION NUMBER HAD NEVER REACHED A ROUTE (5a.148).** *"why cant ORD-000126 op30 start earlier"* was answered about **op10**, with a bridging sentence announcing a fallback nobody fell back to. Three seams: `SubjectRef` had no grain, so the parse emitted `op30` as a SECOND ORDER SUBJECT (measured) that resolved to nothing; **`route_params` never set `op_seq` at all**, so the eight assemblers that read it saw None from every question ever typed; and the only live suppliers were the board SELECTION and two per-route text re-scans. **4B.21's A5 is NARROWED, NOT CLOSED** - it fixed ONE route by giving it a re-scan of its own. Fixed at the contract plus a deterministic EXTRACTION at one seam (not a classifier - it runs after routing and can never choose a route), with the SELECTION deliberately LAST because a typed number cannot be stale. **A route that answers at order grain SAYS SO.** Found on the way: **two intent sets exist and answer different questions**, and the first version of the disclosure accused `why-on-machine` of dropping a grain it had honoured. **ITEM 2 - THREE RESOLUTIONS MADE, ONE DISCLOSED (5a.149).** *"why cant this be moved"* with a bar selected disclosed the SUBJECT and stayed silent on the GRAIN and the DIRECTION - *"moved"* read as *"moved EARLIER"* because that is the only direction `why-here` computes. `move_direction` becomes the mobility family's marker, reported on `why-here` too; **`UNSTATED` is what makes an assumption visible** and `None` keeps every non-move phrasing byte-identical. **A planner is never told back what they just said** - only a DEFAULTED resolution earns a line - and the disclosure is NARROWED where it could be wrong (a NAMED TARGET resolves inside the assembler, so the dispatch promises nothing). **ITEM 3 - THE PREMISE MACHINERY COVERED ONE CLAIM SHAPE AND MOBILITY WAS NOT IT (5a.150).** `mobility_premise.assess`, and **the order of its tests IS the ruling**: HELD first (4B.14's stale-true-fact rule), CHUNKED second *before the earlier direction* (a `chose` verdict on a splittable op is a LOWER BOUND, too weak to build a correction on), then the open directions. `undecidable` is **the ruled species a sixth time** - `holds` False and `refutes` False. **Only `chose` refutes EARLIER**; everything else claims nothing. **The correction is a LEAD, not a replacement** - the chain that follows is still correct, merely one-directional. **ITEM 4** composes rather than builds: earlier chain + the first opening where the whole operation fits (`later_move.next_opening_after`, the same R-C3 scan) + the invitation to the route that PRICES it. **IT DOES NOT PRICE** - an opening a planner reads as permission is the failure that clause prevents (4B.16's rule, carried). **THE PARSE REPORTED THE DIRECTION IN 0 OF 5 AND THE FLOOR IS WHY THE CHECK FIRES (5a.151)** - five phrasings planners actually type all returned null after the v17 bump, while `swap-move` set it correctly. **A disclosure that depends on a model remembering a field is a disclosure that will silently stop.** The parse's report is kept verbatim and the dispatch decides: R-AI5(8) rather than a departure from it. **RUBRIC: C6 PREMISE INTEGRITY added** (four clauses, both sides of the check, amendment logged; a C6a or C6b miss is a DEFECT bucket item, not a conversation failure). **VERIFICATION: Python 2468 passed / 291 skipped / 0 failed** (**HEAD baseline in this tree 2411/291/0, MEASURED** - a detached-worktree run with the real `_data` junctioned in returned 2409/2 failed/291, both failures being the two tests that anchor to a repo root a worktree resolves differently; **+57**. The 4B.35 close-out records 2416 and the 5-test difference predates this session). **Six negative controls proven RED against physically reverted code**, and **two did not fire on their first run** - one calling past the broken line (4B.28 5a.123's species), one reverting an ineffective seam - both rewritten. Cockpit **untouched, not re-run**. **NOT MET, NAMED: the exam sweep was NOT run.** The session's API credit was exhausted partway; every live measurement quoted above completed before it, and the new versioned bank `sweep_mobility_v1.txt` (15 questions, parses clean) is **UNRUN and owed**. **MINTED NOTHING** - no child, no re-mint, both pinned boards untouched. 5a.148-152.
 
@@ -1404,6 +1423,152 @@ The ticketing client. Entry conditions (the no-half-baked rule): Phase 1 exit pa
 **W3 — Go-to-Market surface (real in Phase 3).** The website, the demo script as repeatable asset, the certificate-as-sales-artifact motion, capability matrix = docs/05 with test-status.
 
 **W4 — Security & Compliance.** Encryption + secrets from first cloud deploy; tenant isolation architectural from tenant #2; audit story half-built by the evidence contract; certification on its trigger, post-window.
+
+> **Two different axes wear W-numbers, and they are not the same axis.** §5's
+> W1–W4 above are the ORIGINAL cross-cutting workstreams (gym, docs, GTM,
+> security) and every existing reference to "the W2 rule" means §5's W2.
+> §5b's W1–W5 below are the **design-room map** — which conversation OWNS which
+> queue. Neither renumbers the other; a citation names its section.
+
+## 5b. WORKSTREAM MAP — the design rooms and their queues
+
+*Created 2026-08-03, merged from `docs/handoffs/WORKSTREAM_MAP_HANDOFF.md` (the
+authoring artifact, kept for provenance; THIS SECTION is authoritative from
+here). Placed beside §5 rather than after §5a because the two sections are the
+ones most easily confused — see the note above. There was **no pre-existing
+thread-ledger section to replace**: the handoff's "replacing/absorbing" clause
+found nothing to absorb, and that is recorded rather than glossed.*
+
+### The rule
+
+**Chats are design rooms; the repo is the map.** Every design decision in any
+room lands in **docs/04** (+ a docs/07 queue update) the **SAME DAY** it is
+made. An idea arriving in the wrong room gets **ONE LINE** in the parking lot
+below and is **carried to its owner room** — it does not get designed out of
+place. Every room's session prompts carry the **named-children clause**. Every
+room orients from **docs/00 + this map**, never from chat memory alone.
+
+### W1 — AI LAYER (4A)
+
+**Owner: the 4A design thread** (this map's author room).
+
+Queue, in order:
+
+1. **Close the listening docket.** Founder listening round (**OWED** — the
+   replay was a reconstruction, not the round); exam-report fix
+   (`report.py:95` — print `resolution_note` even when the question needed no
+   rewrite); **bank RESET between same-grain phrasings** (stops §5a.58 firing
+   on the bank's own construction); **honest-outage floor message** — the
+   capability floor must say *"I can't reach my language model — an outage, not
+   a limit of what I can answer"* instead of *"I don't have a tool that reaches
+   it"* (three-screenshot specimen on file, 2026-08-03).
+2. **Teaching-register graft, four sessions.** (a) general-knowledge claim
+   class in synthesis with **unverifiable-by-design labeling**; (b) teaching
+   intent + **depth license** (absorbs the Khalil synthesis-brevity finding and
+   the boss-question answer shape — short default, depth on invitation);
+   (c) exam extension (new families + the *"did the planner's model improve"*
+   axis, listening round budgeted in-session); (d) multi-turn grounding —
+   **RECON FIRST** (measure what conversation state exists before scoping).
+3. **Ask-ladder remainder.** §5a.83 (the `why-on-machine` lead speaks
+   ELIGIBILITY, the cited record speaks OCCUPANCY — two propositions, one
+   drill-down); Specimen C (recorded `CAPACITY_BLOCKED` vs the counterfactual's
+   nothing-prevented-it — evidence semantics); compound questions (measured
+   gap; answer-one-name-the-other is today's acceptable).
+
+**Standing:** the **0-of-5 direction-parse finding** — candidate R-AI ruling
+(*"a disclosure that depends on a model remembering a field will silently
+stop"*); **`boxed-in` / `earlier-open` verdicts unobserved live** (needs the
+fenced specimen world — build it when an exam-world session next opens).
+
+### W2 — SCREENS
+
+**Owner: the "Capacity planning graph by resource phases" thread.** Owns the
+four-screen model (Dashboard / Gatehouse / Cockpit lenses / Scenario Compare)
+and all cockpit presentation polish.
+
+Queue additions from the Khalil demo (2026-08-03), **MUST-tier first**:
+
+1. **Solve-progress ledger + summary screen v1** — CP-SAT incumbent-trail
+   callback recorded per solve (per WINDOW on rolling), rendered as the money
+   story. **HONESTY RULING REQUIRED IN docs/04 BEFORE BUILD:** improvement is
+   over the **solver's own first feasible plan**, NEVER *"savings vs your
+   current process"*; the proof floor renders with the existing gap rider; **no
+   fabricated baselines**. (Khalil explicitly retracted live animation —
+   summary only.)
+2. **"Resources" header** on the machine column; finding phrasings de-jargoned
+   (*"workload too dense"* → plain words).
+3. **Setup-grouping visual v1, DISPLAY-ONLY** — attribute-colored solved
+   sequence per machine; total changeover minutes shown; **NO "minutes saved"
+   without a ruled comparator**.
+4. **Axis-increment affordance** — the capability exists via zoom; the finding
+   is discoverability.
+
+**Later / needs definition:** before-after capacity view (no design yet);
+import-and-price-the-customer's-own-schedule (**PILOT-phase feature** — the
+only honest before/after; belongs on the pilot plan).
+
+### W3 — LOAD LAYER
+
+**Owner: the "Load-execute" thread.** L1–L6 as decomposed; the **commitment
+ledger is the spine**; six design rulings open. Khalil's **ATP affirmation**
+(2026-08-03) is recorded as a **demand signal** — sequencing **unchanged**
+(post-pilot, §4 item 1). The reservation-table hook rides the coarse-zone build
+when W4 gets there.
+
+### W4 — SOLVER (4B)
+
+**Owner: a NEW thread — seed it with a handoff doc.** This room (4A) no longer
+moonlights as the solver room.
+
+Queue:
+
+1. **Rolling-child species** — an accept on a rolling board mints a
+   **monolithic, uncalibrated child**: frozen front, tray and calibration all
+   silently dropped (picker specimen on file 2026-08-03). Design question:
+   **what survives a re-solve.**
+2. **Seam 3** — pins and decisions surviving the slice roll; **committed ahead
+   of post-demo polish pressure**; likely one design conversation with item 1.
+3. **Coarse zone** — the 4B.6 six-CU prompt is drafted but pre-dates the week's
+   detours; **re-review before use**.
+4. **Health/staleness chip** — the API stamps boot time + HEAD commit on
+   `/health`; the cockpit warns when repo HEAD differs. Kills the
+   stale-process class (**three appearances**).
+5. **`prompt_version` false-freshness** — the ledger records the process boot
+   commit alongside.
+6. **Per-machine frozen zones — docs/04 EVALUATION NOTE ONLY.** Khalil aside,
+   self-downgraded; R-F1's single-boundary semantics and seam 3 interact.
+   **No build.**
+
+**Standing:** the **parallel-load flake class** (7 members; fix shape =
+deterministic budgets, **one test per session as scope permits**); the
+**MILL-02 calendar check** (964 open minutes plan-wide — fixture intent or
+generation artifact?).
+
+### W5 — GTM / SITE
+
+**Owner: the existing GTM thread(s).** Khalil demo outcomes to record there:
+*"definitely sellable"*; intro offer to ticketing contacts (Khalil sends,
+**screenshots wanted**); the **pilot-at-lower-cost framing came from Khalil
+unprompted**; next-demo structure (12-min sequence, **money first**, one
+prepared synthesis question, engineering only if asked) is drafted in the 4A
+thread 2026-08-03 — **copy it over**. The W3.1 capability-answer service prompt
+is still **drafted-not-run**.
+
+### Parking lot (route on sight, one line each, then clear)
+
+- *(empty — the items above were routed at map creation, 2026-08-03)*
+
+### Cross-cutting standing orders (all rooms)
+
+- **Named-children clause in every session prompt**; close-outs state
+  *"minted nothing"* when true.
+- **Demo-prep sweep before any external demo:** picker shows only intended
+  rows, no banner over the entry board, health chip fresh, one testimony
+  question answered, one rehearsal drag priced.
+- **No time/effort claims in anything customer-facing unless mechanically
+  true;** the solve-progress story uses the solver's own trail only.
+- **The two pinned worlds (`rolling-db5395dc-2ae`, `rolling-c362baa4-1b0`) are
+  never re-minted, from any room.**
 
 ## 5a. Carry-forwards owned here (named debts, not close-out prose)
 
