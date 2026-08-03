@@ -223,11 +223,12 @@ MEASURED** in a detached worktree — its 2 failures are the two tests that anch
 to a repo root a worktree resolves differently; **+57**. The 4B.35 close-out
 records 2416; the 5-test difference predates this session). **Six negative controls proven RED**, and **TWO DID NOT FIRE FIRST
 TIME** — one calling past the broken line (4B.28 §5a.123 again), one reverting an
-ineffective seam. **Cockpit untouched, not re-run. MINTED NOTHING.** **NOT MET,
-NAMED: THE EXAM SWEEP WAS NOT RUN** — the API credit balance was exhausted
-partway (every live measurement above completed before it); the new versioned
-bank `tests/ai_exam/banks/sweep_mobility_v1.txt` (15 questions, parses clean) is
-**UNRUN AND OWED**, as is the founder-listening round. Before it:
+ineffective seam. **Cockpit untouched, not re-run. MINTED NOTHING.**
+**`sweep_mobility_v1`: RUN 2026-08-03 against `rolling-db5395dc-2ae` — 15/15
+expectations met** (`tests/ai_exam/sweeps/2026-08-03-mobility-v1/`; the session
+itself could not run it, the API credit balance having been exhausted partway,
+and every live measurement above completed before that). **THE FOUNDER
+LISTENING ROUND IS STILL OWED.** Before it:
 **Session 4B.35 — one clock, and the refused nudge**, 2026-08-03 (docs/07 v2.82,
 §5a.143-147; docs/04 2026-08-03 **R-TZ1 ruled and BUILT** + a second ruling putting
 R-DP2 at beat one's checker; contract unchanged **1.15**; narrative in

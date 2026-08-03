@@ -1,6 +1,12 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.84 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.85 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.85:** **§5b axis renamed W→R to end the numbering collision with §5;
+disambiguation note reduced to one line** (2026-08-03, housekeeping). §5's
+W1–W4 are untouched in every document; `docs/handoffs/WORKSTREAM_MAP_HANDOFF.md`
+stays byte-identical and still carries the original W-codes, being provenance
+rather than the authority.
 
 **v2.84:** **The WORKSTREAM MAP is merged (§5b).** 2026-08-03, from
 `docs/handoffs/WORKSTREAM_MAP_HANDOFF.md` (kept for provenance; **§5b is
@@ -1424,20 +1430,17 @@ The ticketing client. Entry conditions (the no-half-baked rule): Phase 1 exit pa
 
 **W4 — Security & Compliance.** Encryption + secrets from first cloud deploy; tenant isolation architectural from tenant #2; audit story half-built by the evidence contract; certification on its trigger, post-window.
 
-> **Two different axes wear W-numbers, and they are not the same axis.** §5's
-> W1–W4 above are the ORIGINAL cross-cutting workstreams (gym, docs, GTM,
-> security) and every existing reference to "the W2 rule" means §5's W2.
-> §5b's W1–W5 below are the **design-room map** — which conversation OWNS which
-> queue. Neither renumbers the other; a citation names its section.
+> **§5b uses R-codes (owner rooms); a bare W-code always means §5.**
 
 ## 5b. WORKSTREAM MAP — the design rooms and their queues
 
 *Created 2026-08-03, merged from `docs/handoffs/WORKSTREAM_MAP_HANDOFF.md` (the
-authoring artifact, kept for provenance; THIS SECTION is authoritative from
-here). Placed beside §5 rather than after §5a because the two sections are the
-ones most easily confused — see the note above. There was **no pre-existing
-thread-ledger section to replace**: the handoff's "replacing/absorbing" clause
-found nothing to absorb, and that is recorded rather than glossed.*
+authoring artifact, kept BYTE-IDENTICAL for provenance — it still carries the
+original W-codes; THIS SECTION is authoritative, and its R-codes are the live
+names). Placed beside §5 rather than after §5a because the two sections were
+the ones most easily confused. There was **no pre-existing thread-ledger section
+to replace**: the handoff's "replacing/absorbing" clause found nothing to
+absorb, and that is recorded rather than glossed.*
 
 ### The rule
 
@@ -1448,7 +1451,7 @@ below and is **carried to its owner room** — it does not get designed out of
 place. Every room's session prompts carry the **named-children clause**. Every
 room orients from **docs/00 + this map**, never from chat memory alone.
 
-### W1 — AI LAYER (4A)
+### R1 — AI LAYER (4A)
 
 **Owner: the 4A design thread** (this map's author room).
 
@@ -1480,7 +1483,7 @@ Queue, in order:
 stop"*); **`boxed-in` / `earlier-open` verdicts unobserved live** (needs the
 fenced specimen world — build it when an exam-world session next opens).
 
-### W2 — SCREENS
+### R2 — SCREENS
 
 **Owner: the "Capacity planning graph by resource phases" thread.** Owns the
 four-screen model (Dashboard / Gatehouse / Cockpit lenses / Scenario Compare)
@@ -1507,15 +1510,15 @@ Queue additions from the Khalil demo (2026-08-03), **MUST-tier first**:
 import-and-price-the-customer's-own-schedule (**PILOT-phase feature** — the
 only honest before/after; belongs on the pilot plan).
 
-### W3 — LOAD LAYER
+### R3 — LOAD LAYER
 
 **Owner: the "Load-execute" thread.** L1–L6 as decomposed; the **commitment
 ledger is the spine**; six design rulings open. Khalil's **ATP affirmation**
 (2026-08-03) is recorded as a **demand signal** — sequencing **unchanged**
 (post-pilot, §4 item 1). The reservation-table hook rides the coarse-zone build
-when W4 gets there.
+when R4 gets there.
 
-### W4 — SOLVER (4B)
+### R4 — SOLVER (4B)
 
 **Owner: a NEW thread — seed it with a handoff doc.** This room (4A) no longer
 moonlights as the solver room.
@@ -1544,7 +1547,7 @@ deterministic budgets, **one test per session as scope permits**); the
 **MILL-02 calendar check** (964 open minutes plan-wide — fixture intent or
 generation artifact?).
 
-### W5 — GTM / SITE
+### R5 — GTM / SITE
 
 **Owner: the existing GTM thread(s).** Khalil demo outcomes to record there:
 *"definitely sellable"*; intro offer to ticketing contacts (Khalil sends,

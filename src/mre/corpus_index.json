@@ -39,7 +39,7 @@
    "tier": "intent",
    "title": "Roadmap",
    "note": "what we INTEND to build; never evidence for what the system does",
-   "sha256": "5d51818d5f800ff75b0c254cd6a12d86c70201f42c8af5280c1aebb0dacb4204"
+   "sha256": "75b3460446dd7242c18e841774127640765b600b1017b57cfaf058e67f3f1e15"
   }
  ],
  "passages": [
@@ -3701,7 +3701,7 @@
    "doc_id": "docs/07",
    "tier": "intent",
    "heading": "Roadmap",
-   "text": "# Product Roadmap\n\n**Document 7** · Status: v2.84 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)\n\n**v2.84:** **The WORKSTREAM MAP is merged (§5b).** 2026-08-03, from\n`docs/handoffs/WORKSTREAM_MAP_HANDOFF.md` (kept for provenance; **§5b is\nauthoritative from here**). **Chats are design rooms; the repo is the map** —\nfive owner rooms (W1 AI layer / W2 screens / W3 load layer / W4 solver /\nW5 GTM), each with its queue in order, plus a parking lot and four cross-cutting\nstanding orders. Three things are worth naming beyond the transcription.\n**(a) THERE WAS NO THREAD-LEDGER SECTION TO ABSORB** — the handoff's\n\"replacing/absorbing\" clause found nothing in this document; recorded rather\nthan glossed, and nothing was deleted to make room. **(b) TWO AXES NOW WEAR\nW-NUMBERS AND NEITHER RENUMBERS THE OTHER** — §5's W1–W4 are the original\ncross-cutting workstreams (gym, docs, GTM, security) and every existing citation\nof \"the W2 rule\" still means §5's W2; §5b's W1–W5 are the design-room map. A\ndisambiguating note sits between them, because silently reusing a live\nidentifier is the vocabulary defect this repo rules against everywhere else.\n**(c) THE SOLVER ROOM IS NOW A ROOM** — 4B leaves 4A, which is what the map\nexists to make true. **NO OTHER DOC RESTRUCTURED**; corpus index rebuilt\n(docs/07 carries a sha256, so an edit without the rebuild is a red test);\n**minted nothing** — no run, no schedule, no board.",
+   "text": "# Product Roadmap\n\n**Document 7** · Status: v2.85 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)\n\n**v2.85:** **§5b axis renamed W→R to end the numbering collision with §5;\ndisambiguation note reduced to one line** (2026-08-03, housekeeping). §5's\nW1–W4 are untouched in every document; `docs/handoffs/WORKSTREAM_MAP_HANDOFF.md`\nstays byte-identical and still carries the original W-codes, being provenance\nrather than the authority.\n\n**v2.84:** **The WORKSTREAM MAP is merged (§5b).** 2026-08-03, from\n`docs/handoffs/WORKSTREAM_MAP_HANDOFF.md` (kept for provenance; **§5b is\nauthoritative from here**). **Chats are design rooms; the repo is the map** —\nfive owner rooms (W1 AI layer / W2 screens / W3 load layer / W4 solver /\nW5 GTM), each with its queue in order, plus a parking lot and four cross-cutting\nstanding orders. Three things are worth naming beyond the transcription.\n**(a) THERE WAS NO THREAD-LEDGER SECTION TO ABSORB** — the handoff's\n\"replacing/absorbing\" clause found nothing in this document; recorded rather\nthan glossed, and nothing was deleted to make room. **(b) TWO AXES NOW WEAR\nW-NUMBERS AND NEITHER RENUMBERS THE OTHER** — §5's W1–W4 are the original\ncross-cutting workstreams (gym, docs, GTM, security) and every existing citation\nof \"the W2 rule\" still means §5's W2; §5b's W1–W5 are the design-room map. A\ndisambiguating note sits between them, because silently reusing a live\nidentifier is the vocabulary defect this repo rules against everywhere else.\n**(c) THE SOLVER ROOM IS NOW A ROOM** — 4B leaves 4A, which is what the map\nexists to make true. **NO OTHER DOC RESTRUCTURED**; corpus index rebuilt\n(docs/07 carries a sha256, so an edit without the rebuild is a red test);\n**minted nothing** — no run, no schedule, no board.",
    "dated": null
   },
   {
@@ -4310,14 +4310,14 @@
    "doc_id": "docs/07",
    "tier": "intent",
    "heading": "5. Cross-cutting workstreams",
-   "text": "**W1 — Scenario & Anomaly Catalog (the gym, permanently open).** No capability is done without its generator scenario and truth assertions (docs/06 §8). Stage exits run on generated scenarios; reality is reserved for pilots.\n\n**W2 — Documentation & Rulings.** docs/05; the remaining open rulings (queue §6 — drop-pin RESOLVED 2026-07-11 → R-DP1–R-DP7, docs/04 amendment); docs/04 amendments same-commit; CLAUDE.md status current at every session end. **CLAUDE.md carries position, qualifications and carry-forwards ONLY** (2026-07-25, session CE1): session close-outs are written to docs/04 and docs/07, never narrated in CLAUDE.md, and CLAUDE.md is checked against a **40k-char ceiling at every phase exit** — it reached 191,692 bytes against Claude Code's 150k delivery limit before extraction, 94% of it a changelog duplicating docs/04.\n\n**W3 — Go-to-Market surface (real in Phase 3).** The website, the demo script as repeatable asset, the certificate-as-sales-artifact motion, capability matrix = docs/05 with test-status.\n\n**W4 — Security & Compliance.** Encryption + secrets from first cloud deploy; tenant isolation architectural from tenant #2; audit story half-built by the evidence contract; certification on its trigger, post-window.\n\n> **Two different axes wear W-numbers, and they are not the same axis.** §5's\n> W1–W4 above are the ORIGINAL cross-cutting workstreams (gym, docs, GTM,\n> security) and every existing reference to \"the W2 rule\" means §5's W2.\n> §5b's W1–W5 below are the **design-room map** — which conversation OWNS which\n> queue. Neither renumbers the other; a citation names its section.",
+   "text": "**W1 — Scenario & Anomaly Catalog (the gym, permanently open).** No capability is done without its generator scenario and truth assertions (docs/06 §8). Stage exits run on generated scenarios; reality is reserved for pilots.\n\n**W2 — Documentation & Rulings.** docs/05; the remaining open rulings (queue §6 — drop-pin RESOLVED 2026-07-11 → R-DP1–R-DP7, docs/04 amendment); docs/04 amendments same-commit; CLAUDE.md status current at every session end. **CLAUDE.md carries position, qualifications and carry-forwards ONLY** (2026-07-25, session CE1): session close-outs are written to docs/04 and docs/07, never narrated in CLAUDE.md, and CLAUDE.md is checked against a **40k-char ceiling at every phase exit** — it reached 191,692 bytes against Claude Code's 150k delivery limit before extraction, 94% of it a changelog duplicating docs/04.\n\n**W3 — Go-to-Market surface (real in Phase 3).** The website, the demo script as repeatable asset, the certificate-as-sales-artifact motion, capability matrix = docs/05 with test-status.\n\n**W4 — Security & Compliance.** Encryption + secrets from first cloud deploy; tenant isolation architectural from tenant #2; audit story half-built by the evidence contract; certification on its trigger, post-window.\n\n> **§5b uses R-codes (owner rooms); a bare W-code always means §5.**",
    "dated": null
   },
   {
    "doc_id": "docs/07",
    "tier": "intent",
    "heading": "5b. WORKSTREAM MAP — the design rooms and their queues",
-   "text": "*Created 2026-08-03, merged from `docs/handoffs/WORKSTREAM_MAP_HANDOFF.md` (the\nauthoring artifact, kept for provenance; THIS SECTION is authoritative from\nhere). Placed beside §5 rather than after §5a because the two sections are the\nones most easily confused — see the note above. There was **no pre-existing\nthread-ledger section to replace**: the handoff's \"replacing/absorbing\" clause\nfound nothing to absorb, and that is recorded rather than glossed.*",
+   "text": "*Created 2026-08-03, merged from `docs/handoffs/WORKSTREAM_MAP_HANDOFF.md` (the\nauthoring artifact, kept BYTE-IDENTICAL for provenance — it still carries the\noriginal W-codes; THIS SECTION is authoritative, and its R-codes are the live\nnames). Placed beside §5 rather than after §5a because the two sections were\nthe ones most easily confused. There was **no pre-existing thread-ledger section\nto replace**: the handoff's \"replacing/absorbing\" clause found nothing to\nabsorb, and that is recorded rather than glossed.*",
    "dated": null
   },
   {
@@ -4330,35 +4330,35 @@
   {
    "doc_id": "docs/07",
    "tier": "intent",
-   "heading": "5b. WORKSTREAM MAP — the design rooms and their queues > W1 — AI LAYER (4A)",
+   "heading": "5b. WORKSTREAM MAP — the design rooms and their queues > R1 — AI LAYER (4A)",
    "text": "**Owner: the 4A design thread** (this map's author room).\n\nQueue, in order:\n\n1. **Close the listening docket.** Founder listening round (**OWED** — the\n   replay was a reconstruction, not the round); exam-report fix\n   (`report.py:95` — print `resolution_note` even when the question needed no\n   rewrite); **bank RESET between same-grain phrasings** (stops §5a.58 firing\n   on the bank's own construction); **honest-outage floor message** — the\n   capability floor must say *\"I can't reach my language model — an outage, not\n   a limit of what I can answer\"* instead of *\"I don't have a tool that reaches\n   it\"* (three-screenshot specimen on file, 2026-08-03).\n2. **Teaching-register graft, four sessions.** (a) general-knowledge claim\n   class in synthesis with **unverifiable-by-design labeling**; (b) teaching\n   intent + **depth license** (absorbs the Khalil synthesis-brevity finding and\n   the boss-question answer shape — short default, depth on invitation);\n   (c) exam extension (new families + the *\"did the planner's model improve\"*\n   axis, listening round budgeted in-session); (d) multi-turn grounding —\n   **RECON FIRST** (measure what conversation state exists before scoping).\n3. **Ask-ladder remainder.** §5a.83 (the `why-on-machine` lead speaks\n   ELIGIBILITY, the cited record speaks OCCUPANCY — two propositions, one\n   drill-down); Specimen C (recorded `CAPACITY_BLOCKED` vs the counterfactual's\n   nothing-prevented-it — evidence semantics); compound questions (measured\n   gap; answer-one-name-the-other is today's acceptable).\n\n**Standing:** the **0-of-5 direction-parse finding** — candidate R-AI ruling\n(*\"a disclosure that depends on a model remembering a field will silently\nstop\"*); **`boxed-in` / `earlier-open` verdicts unobserved live** (needs the\nfenced specimen world — build it when an exam-world session next opens).",
    "dated": null
   },
   {
    "doc_id": "docs/07",
    "tier": "intent",
-   "heading": "5b. WORKSTREAM MAP — the design rooms and their queues > W2 — SCREENS",
+   "heading": "5b. WORKSTREAM MAP — the design rooms and their queues > R2 — SCREENS",
    "text": "**Owner: the \"Capacity planning graph by resource phases\" thread.** Owns the\nfour-screen model (Dashboard / Gatehouse / Cockpit lenses / Scenario Compare)\nand all cockpit presentation polish.\n\nQueue additions from the Khalil demo (2026-08-03), **MUST-tier first**:\n\n1. **Solve-progress ledger + summary screen v1** — CP-SAT incumbent-trail\n   callback recorded per solve (per WINDOW on rolling), rendered as the money\n   story. **HONESTY RULING REQUIRED IN docs/04 BEFORE BUILD:** improvement is\n   over the **solver's own first feasible plan**, NEVER *\"savings vs your\n   current process\"*; the proof floor renders with the existing gap rider; **no\n   fabricated baselines**. (Khalil explicitly retracted live animation —\n   summary only.)\n2. **\"Resources\" header** on the machine column; finding phrasings de-jargoned\n   (*\"workload too dense\"* → plain words).\n3. **Setup-grouping visual v1, DISPLAY-ONLY** — attribute-colored solved\n   sequence per machine; total changeover minutes shown; **NO \"minutes saved\"\n   without a ruled comparator**.\n4. **Axis-increment affordance** — the capability exists via zoom; the finding\n   is discoverability.\n\n**Later / needs definition:** before-after capacity view (no design yet);\nimport-and-price-the-customer's-own-schedule (**PILOT-phase feature** — the\nonly honest before/after; belongs on the pilot plan).",
    "dated": null
   },
   {
    "doc_id": "docs/07",
    "tier": "intent",
-   "heading": "5b. WORKSTREAM MAP — the design rooms and their queues > W3 — LOAD LAYER",
-   "text": "**Owner: the \"Load-execute\" thread.** L1–L6 as decomposed; the **commitment\nledger is the spine**; six design rulings open. Khalil's **ATP affirmation**\n(2026-08-03) is recorded as a **demand signal** — sequencing **unchanged**\n(post-pilot, §4 item 1). The reservation-table hook rides the coarse-zone build\nwhen W4 gets there.",
+   "heading": "5b. WORKSTREAM MAP — the design rooms and their queues > R3 — LOAD LAYER",
+   "text": "**Owner: the \"Load-execute\" thread.** L1–L6 as decomposed; the **commitment\nledger is the spine**; six design rulings open. Khalil's **ATP affirmation**\n(2026-08-03) is recorded as a **demand signal** — sequencing **unchanged**\n(post-pilot, §4 item 1). The reservation-table hook rides the coarse-zone build\nwhen R4 gets there.",
    "dated": null
   },
   {
    "doc_id": "docs/07",
    "tier": "intent",
-   "heading": "5b. WORKSTREAM MAP — the design rooms and their queues > W4 — SOLVER (4B)",
+   "heading": "5b. WORKSTREAM MAP — the design rooms and their queues > R4 — SOLVER (4B)",
    "text": "**Owner: a NEW thread — seed it with a handoff doc.** This room (4A) no longer\nmoonlights as the solver room.\n\nQueue:\n\n1. **Rolling-child species** — an accept on a rolling board mints a\n   **monolithic, uncalibrated child**: frozen front, tray and calibration all\n   silently dropped (picker specimen on file 2026-08-03). Design question:\n   **what survives a re-solve.**\n2. **Seam 3** — pins and decisions surviving the slice roll; **committed ahead\n   of post-demo polish pressure**; likely one design conversation with item 1.\n3. **Coarse zone** — the 4B.6 six-CU prompt is drafted but pre-dates the week's\n   detours; **re-review before use**.\n4. **Health/staleness chip** — the API stamps boot time + HEAD commit on\n   `/health`; the cockpit warns when repo HEAD differs. Kills the\n   stale-process class (**three appearances**).\n5. **`prompt_version` false-freshness** — the ledger records the process boot\n   commit alongside.\n6. **Per-machine frozen zones — docs/04 EVALUATION NOTE ONLY.** Khalil aside,\n   self-downgraded; R-F1's single-boundary semantics and seam 3 interact.\n   **No build.**\n\n**Standing:** the **parallel-load flake class** (7 members; fix shape =\ndeterministic budgets, **one test per session as scope permits**); the\n**MILL-02 calendar check** (964 open minutes plan-wide — fixture intent or\ngeneration artifact?).",
    "dated": null
   },
   {
    "doc_id": "docs/07",
    "tier": "intent",
-   "heading": "5b. WORKSTREAM MAP — the design rooms and their queues > W5 — GTM / SITE",
+   "heading": "5b. WORKSTREAM MAP — the design rooms and their queues > R5 — GTM / SITE",
    "text": "**Owner: the existing GTM thread(s).** Khalil demo outcomes to record there:\n*\"definitely sellable\"*; intro offer to ticketing contacts (Khalil sends,\n**screenshots wanted**); the **pilot-at-lower-cost framing came from Khalil\nunprompted**; next-demo structure (12-min sequence, **money first**, one\nprepared synthesis question, engineering only if asked) is drafted in the 4A\nthread 2026-08-03 — **copy it over**. The W3.1 capability-answer service prompt\nis still **drafted-not-run**.",
    "dated": null
   },
