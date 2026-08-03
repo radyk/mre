@@ -27,14 +27,14 @@ export default defineConfig({
   // pure-JS Tier-0 legality tests have no rendering, so they run once, theme-
   // free. Screenshots are suffixed by theme (shots/ is gitignored).
   projects: [
-    { name: "logic", testMatch: /(legality|rowstats|freshness|schedulepicker|attribution|three_way_card)\.spec\.mjs$/ },
+    { name: "logic", testMatch: /(legality|rowstats|freshness|schedulepicker|attribution|three_way_card|lineage)\.spec\.mjs$/ },
     {
       name: "light", metadata: { theme: "light" },
-      testMatch: /(cockpit|gesture|rehearsal|planner|rolling|rolling\.two_beat|beat_two|deeplink|coarse|boundary)\.spec\.mjs$/,
+      testMatch: /(cockpit|gesture|rehearsal|planner|rolling|rolling\.two_beat|beat_two|deeplink|coarse|boundary|guipolish)\.spec\.mjs$/,
     },
     {
       name: "dark", metadata: { theme: "dark" },
-      testMatch: /(cockpit|gesture|rehearsal|planner|rolling|rolling\.two_beat|beat_two|deeplink|coarse|boundary)\.spec\.mjs$/,
+      testMatch: /(cockpit|gesture|rehearsal|planner|rolling|rolling\.two_beat|beat_two|deeplink|coarse|boundary|guipolish)\.spec\.mjs$/,
     },
   ],
   webServer: {

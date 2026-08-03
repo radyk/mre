@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.80 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.81 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.81:** **Session 4B.34 - GUI polish: six items from the interrogation pass.** 2026-08-03 (**R-GP1 ruled and BUILT**, verbatim in docs/04; **cockpit-only** - no Python, no solver, no schema, **contract unchanged 1.15**; narrative in `docs/closeouts/4b34-gui-polish.md`). Six small independent items plus one measurement. **ITEM 0 - THE FLAGSHIP BUTTON ROUTES AND TESTIFIES (5a.136).** Click the bar, press "Why is this here?" on accepted child `caff8efa`: a full `why-here` chain naming release, calendar and chunk-fit. 4B.33 5a.135(c)'s CLARIFY finding holds for the TYPED question and is closed for the DEMO PATH. The first run returned the capability floor and that was **my own keyless API**, not the product - recorded, because a tooling artifact reported as a defect is worse than no measurement. **ITEM 1 - THE DOCKS RECLAIMED NOTHING (5a.137).** `#tl` stayed **555px** with both docks shut: `.dock.collapsed{height}` loses outright to the `flex: 0 0 <h>` the tray and coarse band carry, so both reserved their full 116/132px while showing an edge. Two more layers had to move before the space could land: `#app`'s `grid-template-rows: auto 1fr` assumed TWO children and every banner is a third (the newer-schedule banner was live on the demo board), and `.split`'s row was auto. After: **483.1 -> 573.1 -> 679.1**, exactly what each dock gave back. ONE mechanism now, `.dock.collapsed` the only state. **FOUND BY THE GUARD, NOT THE BRIEF, AND WORSE THAN THE DEAD SPACE: the collapsed ASK edge was clickable only in a 26x26 corner** - a height collapse is wrong for a dock that folds sideways, and a planner who collapsed the ask panel could not reopen it. **ITEM 2 - THE LEGEND (5a.138).** Rehomed to NORMAL FLOW: the invariant becomes structural instead of arithmetic (five `bottom` calc rules deleted). Daryn reported it over the tray chips; the measurement found it over the **BARS**, at every width. **ITEM 3 (5a.139).** Tooltips flip to the roomier side of their SUBJECT with the no-intersection test deciding; the job panel drags by its header with the position owned outside the rebuilt subtree. **The guard was rewritten twice: only 4 of 366 bars reproduce the occlusion, and a five-bar sample passed against reverted code.** **ITEM 4** - the chevron points along the axis it collapses, `data-dir` semantic. **ITEM 5 (5a.140).** The **3-state cycle** linear -> folded -> clean -> linear ships, the label naming the active view in every state. **THE STATE LOSS DID NOT REPRODUCE** across nine paths incl. reload and rebind - vis keeps `hiddenDates` in `this.options` - reported as measured, no fix invented. **A related real defect WAS found and fixed: the label was a COPY the click handler wrote, not a VIEW**, so compression by any other route left the button asserting a view the board was not in. **ITEM 6 - R-GP1 (5a.141).** CURRENT = the most recent PLACEMENT-BEARING state of a lineage. **THE LEDGER CANNOT DO THIS JOB, MEASURED:** the Khalil board, two ceremony children, a zero-move accept AND the one child that moved an operation all read **$1,667,467.80**; only the placement digest separates them. Live control: pre-R-GP1 offers a copy of the board you are on, R-GP1 skips it and offers the real change. **THE SCOPE IS THE LINEAGE and the existing suite taught me that** - unscoped it swallowed the RESUBMIT case and `deeplink.spec.mjs` went red. **VERIFICATION: 361 passed / 2 failed of 363** (baseline 306/2/308, +55 tests; the 2 are the known deictic pair). **Seven negative controls proven RED** - and **the control harness's own first run was a false green, all seven "passing" in 2-4s because the config reuses a running fixture server serving a stale `dist`**: 4B.28 5a.123's lesson from a third side. 5a.136-142.
 
 **v2.80:** **Session 4B.33 - the honest driver's name, and the last wall limit.** 2026-08-03 (**R-DP13 ruled and BUILT**; the golden-CSV flake FIXED; both verbatim in docs/04; **no contract change** and the bump question answered explicitly either way; no parse-prompt change; narrative in `docs/closeouts/4b33-honest-driver-and-last-wall.md`). Two small independent items, each closing a 4B.32 debt. **ITEM 1 - `PLANNER_DIRECTIVE`, THE CODE THE TAXONOMY LACKED (5a.133, closes 5a.130 and 5a.132(f)).** `DriverCode` **13 -> 14**, ADDED never repurposed. A `planner_edit` accept's real driver is *a human directed this placement* - every other member names something the PLANT or the MODEL did. **THE DRIVER IS A CONSTANT AND THE SIGNATURE NOW SAYS SO:** `_edit_driver` takes **nothing**, because a signature accepting a quantity advertises a derivation that no longer happens. **THE PHRASE MAY NAME NO DIRECTION** - *"a planner directed this placement, and its cost was priced before it was accepted"* - true at EVERY ledger delta, stating only what is checkable on the record, and saying **"a planner", not "you"**. `COST_TRADEOFF` joins `NO_ALTERNATIVE` in retirement from this site (false at $0.00 AND false of a dearer accept) while staying correct wherever a cost genuinely decided, `POST /audit/accept` included. **NO CONTRACT BUMP AND NO docs/06 DOORWAY ARE OWED AND BOTH ANSWERS ARE ON THE RECORD.** LIVE on the Khalil board, two children, drill-down voicing the phrase verbatim on each. **ITEM 2 - THE LAST WALL LIMIT (5a.134, discharges 5a.132(e)).** The per-stage measurement IS the finding: stage 1, the cost proof, proves **OPTIMAL in 0.81 s**; stage 2, the tiebreak whose placements ARE `schedule.csv`, already carried a **1.953-unit deterministic budget** and needed **14.56 s** of a 30 s wall. **THE BUDGET WAS ALREADY THERE AND THE WALL WAS OVERRIDING IT** - barely 2x of headroom, and under load the solve doubles, putting stage 2 at ~29 s against a 30 s wall: the coin flip, and why it failed about half the time. **No mechanism added and no CLI flag needed**; each stage is now reproducible for its own reason, and the premise (stage 1 PROVES) is asserted so it cannot lapse silently. **NEITHER GOLDEN MOVED**, nothing re-anchored, **9 for 9** byte-identical. The control is the mechanism: the old wall did not reproduce in 10 quiet runs (recorded, not glossed) while **forcing** it to bind produced a byte-different schedule 3 for 3. 5a.133-135.
 
@@ -5411,6 +5413,99 @@ solve-heavy test concurrently; **green on four consecutive quiet runs of the
 whole file, and green at HEAD.** Not caused by this session's change (which
 touches the driver code and the phrase, not the refusal path), and a sixth member
 of the flake class rather than a new defect.
+
+**§5a.136 — 4B.34 ITEM 0: THE FLAGSHIP BUTTON ROUTES AND TESTIFIES (measured,
+finding CLOSED for the demo path).** Accepted child `caff8efa`, the moved bar
+clicked and the job panel's "Why is this here?" pressed: a full `why-here` chain
+naming the release date [A4], the machine calendar [C1/C2] and the binding
+chunk-fit [C3], with the four uncomputed families named. 4B.33 §5a.135(c) — the
+TYPED question landing on CLARIFY `no-subject` — is unchanged and remains a
+ladder/parse matter. **The first run returned the capability-list floor, and that
+was MY OWN keyless API, not the product.** Recorded because a tooling artifact
+reported as a product defect is worse than no measurement at all.
+
+**§5a.137 — 4B.34 ITEM 1: A FIXED FLEX-BASIS BEATS `height`, AND THE SHELL
+COUNTED ITS CHILDREN (FIXED).** `#tl` measured **555px whether the tray and
+coarse docks were open or collapsed** — 248px of dead space. Three layers:
+`.dock.collapsed{height}` loses to the `flex: 0 0 <h>` both docks carry;
+`.split`'s row was auto; and `#app`'s `grid-template-rows: auto 1fr` **assumed
+the shell has exactly two children**, so every prepended banner pushed the split
+into an implicit auto row — and the newer-schedule banner was LIVE on the demo
+board, so this was the operative state. After: **483.1 → 573.1 → 679.1**, exactly
+the 90px and 106px each dock returned. **ONE mechanism now, `.dock.collapsed` the
+only state.** **FOUND BY THE GUARD AND WORSE THAN THE DEAD SPACE: the collapsed
+ASK edge was clickable in a 26×26 corner only** — a height collapse is wrong for a
+dock that folds sideways, `.ask` clipped to a square, and its 900px rotated strip
+hit-tested to `.split` everywhere else. Pre-existing; a planner who collapsed the
+ask panel could not reopen it.
+
+**§5a.138 — 4B.34 ITEM 2: THE LEGEND WAS OVER THE BARS, NOT THE TRAY (FIXED).**
+Rehomed from an absolutely-positioned overlay to NORMAL FLOW beneath the board,
+which makes the no-overlap invariant STRUCTURAL rather than arithmetic — five
+hand-maintained `bottom` calc rules deleted with it. The ladder cleared the tray
+by construction and never cleared the bars: measured on the board's last 46px at
+every width tested. The guard asserts zero intersection with the tray body, the
+coarse band, the timeline foreground **and every individual bar**.
+
+**§5a.139 — 4B.34 ITEM 3: TWO POPUP CLASSES, TWO BEHAVIOURS (FIXED).** Transient
+tooltips flip to the roomier side of their SUBJECT (horizontal first, vertical
+fallback) with the **no-intersection test deciding rather than an assumption that
+the flip worked**; subject rectangles are read from vis's own item DOM and
+`toScreen`, so no second coordinate system is kept in step. The persistent job
+panel drags by its header through real pointer events with its position **owned
+outside the subtree `show()` rebuilds**. **THE GUARD WAS REWRITTEN TWICE AND THAT
+IS THE FINDING:** measured against reverted code, only **4 of 366 bars** actually
+sit under their own card (worst 556px²), and a five-bar sample passed cleanly over
+it. A sample that misses a 1% defect certifies it.
+
+**§5a.140 — 4B.34 ITEM 5: THE CYCLE SHIPPED; THE STATE LOSS DID NOT REPRODUCE.**
+`linear → folded → clean → linear`, persisted, with the label naming the active
+view in every state and `clean` carrying the strongest emphasis because it looks
+most like an ordinary board and is least like one. **The briefed state loss did
+not reproduce across NINE paths** — zoom, dock collapse, resize, resize back, pan,
+selection, theme toggle, full reload, `board.rebind` — because vis keeps
+`hiddenDates` in `this.options` and re-applies it on every `setOptions`. Reported
+as measured; no fix invented for a defect that could not be produced. **A RELATED
+REAL DEFECT OF THE SAME SPECIES WAS FOUND AND FIXED:** the label was a COPY the
+click handler wrote, not a VIEW of board state, so `setCompressed(true)` by any
+other route left the button reading `⇤ linear` over a compressed board. The mode
+is now the state and the control subscribes. Negative control proven red.
+
+**§5a.141 — 4B.34 ITEM 6: R-GP1, AND THE LEDGER CANNOT TELL PLANS APART.** Ruled
+verbatim in docs/04 2026-08-03. Measured on the live lineage: the Khalil board,
+both ceremony children, a zero-move accept **and** the one child that moved an
+operation all carry ledger **$1,667,467.80** — five rows, one number, exactly one
+different plan. Only the placement digest separates them. Live control: bound to
+the demo board, the pre-R-GP1 path offers a freshly minted authority-only child (a
+copy of the board you are on); with the ruling in force the watch skips it and
+offers `e2e18e8c`. **THE SCOPE IS THE LINEAGE, AND THE EXISTING SUITE TAUGHT ME
+THAT** — unscoped, the rule swallowed the RESUBMIT case and `deeplink.spec.mjs`'s
+auto-follow guard went red. **A zero-move accepted edit is not a plan change** and
+that consequence was a judgement call, recorded as one.
+
+**§5a.142 — 4B.34's CARRY-FORWARDS (REPORTED, deliberately NOT fixed).**
+**(a) THE RECLAIMED SPACE IS NOT FILLED** — vis renders its lanes at natural
+height and leaves the remainder blank, so on the demo board collapsing both docks
+removes internal scrolling but leaves white space below the last row; making lanes
+stretch is a `--lane-min-h` / vis `height:100%` question that would change every
+bar height and every screenshot. **(b) `has-tray` / `has-coarse-band` ARE NOW DEAD
+CLASSES** — nothing reads them since the `bottom` ladder went; left as host
+markers, to be removed or given a reader. **(c) ITEM 3(b)'s "survives a data
+refresh" IS CLOSE TO A STANDING INVARIANT** — `show()` rebuilds the panel's
+CHILDREN, not the panel element, so the inline position survives even without the
+explicit reapply; the control that IS red removes the drag entirely. **(d) THE
+PLAN DIGEST IS DERIVED PER TAB AND NEVER STORED** — an open picker fetches one
+~400KB document per row (progressive, cached, rows paint first); a registry column
+would make it free and is the schema change this session was walled off from.
+**(e) THE CONTROL HARNESS'S OWN FIRST RUN WAS A FALSE GREEN** — all seven controls
+"passed" in 2-4s because the Playwright config reuses a running fixture server
+serving a stale `dist`, so the patched source was never built. 4B.28 §5a.123's
+lesson from a third side, and it fails by looking exactly like success. **(f) THE
+FOLD SET IS STILL PLANT-WIDE ONLY** (4B.28 debt (c)) — `clean` does not change it.
+**(g) A REAL CEREMONY CHILD WAS MINTED IN THE DEV DATA ROOT**
+(`rolling-b12762371b3a`, a thaw on `rolling-b4dd3010751f`, the board the brief
+sanctioned for mutation); it is now a useful live R-GP1 specimen. Both pinned
+boards untouched.
 
 ## 6. Open rulings queue
 

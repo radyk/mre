@@ -46,10 +46,68 @@ export function createJobPanel(hostEl, board, opts = {}) {
 
   let current = null;     // {order, opRef}
 
+  // Session 4B.34 Item 3(b) — A PERSISTENT PANEL IS DRAGGABLE, A TRANSIENT ONE
+  // IS SMART-POSITIONED. Two classes, two behaviours, and this is the persistent
+  // one: it stays until dismissed, so the planner — not an algorithm — decides
+  // where it lives. It opens anchored top-right and can cover the very bars it
+  // describes; a tooltip solves that by flipping, but a panel that flipped under
+  // the pointer while being read would be worse than the occlusion.
+  //
+  // The position is owned HERE, outside the subtree `show()` rebuilds, and
+  // reapplied on every render — the 4B.28 boundary-grip lesson: state that lives
+  // in a node a redraw recreates is state a redraw destroys.
+  let pos = null;                       // {left, top} in host coords, or null
+
+  function applyPos() {
+    if (pos) {
+      el.style.left = `${pos.left}px`;
+      el.style.top = `${pos.top}px`;
+      el.style.right = "auto";
+    } else {
+      el.style.left = el.style.top = el.style.right = "";
+    }
+  }
+
+  // The drag enters through the USER'S DOOR: a real pointerdown on the header,
+  // exactly where a hand would land. 4B.28 §5a.123 is why this matters — a
+  // control driven past its own entry point is a control nothing proved.
+  function onHeadPointerDown(ev) {
+    if (ev.button !== 0) return;
+    if (ev.target.closest("button")) return;      // ✕ and the row actions win
+    const box = el.getBoundingClientRect();
+    const host = hostEl.getBoundingClientRect();
+    const dx = ev.clientX - box.left, dy = ev.clientY - box.top;
+    pos = { left: box.left - host.left, top: box.top - host.top };
+    applyPos();
+    el.classList.add("dragging");
+    ev.preventDefault();
+    const move = (e) => {
+      const h = hostEl.getBoundingClientRect();
+      // clamped so the panel can never be dragged out of reach of the hand that
+      // dragged it — the header always stays grabbable.
+      pos = {
+        left: Math.min(Math.max(0, e.clientX - h.left - dx), Math.max(0, h.width - box.width)),
+        top: Math.min(Math.max(0, e.clientY - h.top - dy), Math.max(0, h.height - 28)),
+      };
+      applyPos();
+    };
+    const up = () => {
+      el.classList.remove("dragging");
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
   function hide() {
     el.classList.add("hidden");
     el.replaceChildren();
     current = null;
+    // An explicit dismissal retires the placement too: the next selection opens
+    // a fresh panel at the anchor, not wherever the last one was parked.
+    pos = null;
+    applyPos();
   }
 
   // The DISPOSITION of one placed operation, named rather than implied. Who may
@@ -190,6 +248,7 @@ export function createJobPanel(hostEl, board, opts = {}) {
 
     const head = document.createElement("div");
     head.className = "jp-head";
+    head.addEventListener("pointerdown", onHeadPointerDown);
     const title = document.createElement("span");
     title.className = "jp-title";
     title.textContent = order;
@@ -232,6 +291,9 @@ export function createJobPanel(hostEl, board, opts = {}) {
     }
     for (const t of tray) body.appendChild(renderTrayRow(t));
     el.appendChild(body);
+    // reapply AFTER the rebuild — a data refresh re-renders the whole subtree,
+    // and the placement must survive it.
+    applyPos();
     return el;
   }
 
@@ -246,6 +308,10 @@ export function createJobPanel(hostEl, board, opts = {}) {
         open: !el.classList.contains("hidden"),
         order: current.order,
         selectedOp: current.opRef,
+        // Item 3(b): the placement the planner chose, read from the owner rather
+        // than from the style attribute, so a guard proves the STATE survived a
+        // rebuild and not merely that some inline style did.
+        pos: pos ? { ...pos } : null,
         rows: [...el.querySelectorAll(".jp-row:not(.jp-tray)")].map((r) => ({
           op: r.dataset.op,
           seq: r.querySelector(".jp-seq").textContent,

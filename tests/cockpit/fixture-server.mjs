@@ -219,6 +219,14 @@ const server = createServer(async (req, res) => {
         status: b.status || "proposed",
         submission_id: b.submission_id ?? "sub-resubmit",
         generation: b.generation ?? null,
+        // Session 4B.34 (R-GP1): a lineage child needs a PARENT and a SNAPSHOT —
+        // the two facts `lineage.childOrigin` reads to tell a boundary ceremony
+        // (which shares its parent's snapshot) from an accepted planner edit
+        // (which mints `snap-edit-…`). Serving the doc from `base` is what makes
+        // an injected child placement-IDENTICAL to its parent, which is exactly
+        // the authority-only specimen the ruling is about.
+        parent_schedule_id: b.parent_schedule_id ?? null,
+        snapshot_id: b.snapshot_id ?? null,
       });
       res.writeHead(200, { "content-type": "application/json" });
       return res.end(envelope({ added: b.id }));
@@ -300,6 +308,8 @@ const server = createServer(async (req, res) => {
         meta.created_at = ex.created_at; meta.status = ex.status;
         meta.submission_id = ex.submission_id;
         if (ex.generation != null) meta.generation = ex.generation;
+        if (ex.parent_schedule_id != null) meta.parent_schedule_id = ex.parent_schedule_id;
+        if (ex.snapshot_id != null) meta.snapshot_id = ex.snapshot_id;
       }
       const dec = _EDITS.get(sid);
       // an -edit version reads as proposed/published; a superseded one carries

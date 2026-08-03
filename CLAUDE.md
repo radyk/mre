@@ -171,6 +171,27 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Session 4B.34 — GUI polish: six items from the interrogation pass**, 2026-08-03
+(docs/07 v2.81, §5a.136-142; docs/04 2026-08-03 **R-GP1 ruled and BUILT**;
+**COCKPIT-ONLY** — no Python, no solver, no schema, contract unchanged **1.15**;
+narrative in `docs/closeouts/4b34-gui-polish.md`). **R-GP1: CURRENT MEANS THE MOST
+RECENT PLACEMENT-BEARING STATE OF A LINEAGE** — an authority-only child is shown
+in the lineage but never outranks its parent and never fires the newer-schedule
+banner; the comparison is a DERIVED placement digest scoped to DESCENDANTS
+(unscoped it swallows the RESUBMIT case, which `deeplink.spec.mjs` caught).
+**THE LEDGER CANNOT DO THIS JOB, MEASURED:** the Khalil board, two ceremony
+children, a zero-move accept AND the one child that moved an operation all read
+**$1,667,467.80** — only the digest separates them. Also: the docks reclaimed
+NOTHING (a fixed flex-basis beats `height`; `#app` counted its children, and the
+newer-schedule banner was the live third), and **the collapsed ASK edge was
+clickable in a 26x26 corner only**; the legend was over the **BARS**, not the
+tray, and is now in normal flow; tooltips avoid their own subject (**only 4 of 366
+bars reproduce it**) and the job panel drags by its header; the compression
+**3-state cycle** ships — **the briefed state loss did NOT reproduce across nine
+paths**, the real defect being the label as a COPY rather than a VIEW.
+**361 passed / 2 failed of 363** (baseline 306/2/308, **+55**; the 2 are the known
+deictic pair); **seven negative controls proven RED**, after the control harness's
+own first run was a **FALSE GREEN** against a stale `dist`. Before it:
 **Session 4B.33 — the honest driver's name + the last wall limit**, 2026-08-03
 (docs/07 v2.80, §5a.133-135; docs/04 2026-08-03 **R-DP13 ruled and BUILT** and the
 golden-CSV flake FIXED; contract unchanged **1.15** and the bump question answered

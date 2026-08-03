@@ -15242,3 +15242,86 @@ determinism. What *was* proven is the causal link: forcing the wall to bind
 (`--time-limit 8`, below stage 2's ~15 s need) produces a **byte-different**
 schedule, three runs for three. A wall that binds changes the placement; a wall
 that does not, does not.
+
+---
+
+### 2026-08-03 — R-GP1: CURRENT MEANS THE MOST RECENT PLACEMENT-BEARING STATE
+
+**Ruled and BUILT (Session 4B.34, Item 6). Cockpit-side only: no schema change,
+no contract bump, no Python touched.**
+
+**The specimen.** `rolling-b4dd3010751f` is a re-freeze ceremony child of the
+Khalil demo board `rolling-db5395dc-2ae`. Session 4B.28 minted it by thawing
+eight committed operations and freezing them back, and proved at the time that
+every placement was unchanged — a thaw changes AUTHORITY, never position. It is
+nonetheless a newer registry row, so the schedule picker showed it as CURRENT
+above the board it copies, and the freshness watch offered to move the planner
+onto it. **The demo board was outranked by an artifact of a ceremony performed
+on it.** Rows were bare truncated ids, so the two were indistinguishable.
+
+**The rule.** CURRENT means *the most recent PLACEMENT-BEARING state of this
+lineage*. A child whose placements are identical to its parent's is shown in the
+lineage, NEVER outranks its parent as CURRENT, and NEVER fires the
+"newer schedule" banner. The banner fires only when PLACEMENTS differ — it
+exists to interrupt a planner for a DIFFERENT PLAN and for nothing else.
+
+**(1) The comparison is a placement digest, not the ledger.** Measured on this
+lineage: the demo board, both ceremony children, AND a zero-move accepted edit
+all carry ledger **$1,667,467.80** — and so does `e2e18e8c`, which HAS moved an
+operation. Four identical plans and one different one, all wearing the same
+number. The ledger cannot separate them; only the placements can.
+
+**(2) What is placement-bearing.** The operation, the machine, and the run
+windows — order-stable, nothing else. Deliberately EXCLUDED: `assignment_id`
+(which a rebind rewrites while the plan stands still); commitment state and
+standing pins (exactly what an authority-only ceremony changes, so including
+them would defeat the comparison); and every derived figure, which is a
+consequence of the placements and not the placements.
+
+**(3) Equality is decided on the canonical KEY, never on a hash.** A short FNV
+digest is published for display and for guards to assert on; nothing decides
+anything by comparing digests. A collision would report two different plans as
+one plan, and "these boards are identical" is precisely the claim that must not
+be manufactured.
+
+**(4) THE SCOPE IS THE LINEAGE, and this is load-bearing.** A candidate is a
+copy only if it is a DESCENDANT of the bound board AND its placements match.
+Unscoped, the rule swallows the RESUBMIT case — a planner fixes data in Excel
+and re-solves, minting a schedule under a NEW submission that happens to place
+work identically. That is a different plan of record and the tab must still
+follow it. Caught by `deeplink.spec.mjs`'s existing auto-follow guard, which went
+red the moment the comparison was left unscoped.
+
+**(5) A ZERO-MOVE ACCEPTED EDIT IS NOT A PLAN CHANGE, and it earns its own
+badge.** 4B.32 measured accepts whose placements and ledger were both unchanged;
+`caff8efa` on the live board is one, and its placement key is its parent's to the
+character. A decision WAS recorded, so it appears in the lineage under
+ACCEPTED-EDIT rather than AUTHORITY-ONLY — but the plan did not change, and the
+rule is about the plan. Interrupting someone to move them onto an identical board
+is the behaviour this ruling exists to stop, whatever minted it. **This
+consequence was a judgement call, not a corollary; it is recorded because the
+three-badge vocabulary did not settle it.**
+
+**(6) It FAILS OPEN in every direction.** A document that cannot be read yields
+`null` — NOT KNOWN, never "no placements" — and an unknown comparison keeps the
+pre-R-GP1 behaviour, which is to offer the newer row. An unproven copy is treated
+as placement-bearing. Nothing is ever hidden on a guess.
+
+**(7) DERIVED LIVE, NOT STORED.** A durable home for the digest would be a
+registry column and a contract bump; per the brief the client derives it from the
+documents it already fetches and caches per tab (a schedule's placements cannot
+change — a new plan is a new schedule id). Picker rows carry derived facts only:
+short id, minted timestamp, ledger, bar count, calibration marker, plan digest
+and the badge. **No schema names any of them.**
+
+**How the origin is read.** `snap-edit-…` marks an accepted planner edit (a fresh
+snapshot); a boundary ceremony SHARES its parent's run and snapshot (4B.28), which
+is precisely why it can. The same class of structural derivation as
+`scheduleKind`, and for the same reason: the registry has no column for it.
+
+**Live, on the real lineage.** With the ruling in force the watch skipped a
+freshly minted authority-only child (`rolling-b12762371b3a`) and offered
+`e2e18e8c` — a genuinely different plan — while the same listing through the
+pre-R-GP1 path offered the copy. Badges on the live picker: two ceremony children
+AUTHORITY-ONLY, two zero-move accepts ACCEPTED-EDIT, two movers
+PLACEMENTS-CHANGED, all four identical plans sharing one digest.

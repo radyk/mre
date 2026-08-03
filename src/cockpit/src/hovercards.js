@@ -82,16 +82,82 @@ export function createHoverCards(hostEl, timeline, ctx) {
 
   let shown = false;
   function hide() { if (shown) { card.className = "hover-card hidden"; shown = false; } }
-  function place(clientX, clientY) {
+
+  // Session 4B.34 Item 3(a) — A TOOLTIP NEVER COVERS ITS OWN SUBJECT.
+  //
+  // The card used to be placed at pointer + (14, 14) and flipped only when it
+  // would leave the HOST. That keeps it on screen and says nothing about the one
+  // rectangle it must not sit on: the bar it is describing. A planner hovering a
+  // bar to read its dates had the bar disappear under the answer.
+  //
+  // The rule is the brief's: flip to the side of the SUBJECT with the most free
+  // space. Horizontal first (a board is wider than it is tall and the rows are
+  // short), vertical as the fallback when neither side has room — and the
+  // no-intersection test is what decides, not an assumption that the flip worked.
+  const GAP = 12;
+  const hits = (a, b) => !(a.right <= b.left || b.right <= a.left
+                        || a.bottom <= b.top || b.bottom <= a.top);
+
+  function place(clientX, clientY, subject) {
     const host = hostEl.getBoundingClientRect();
+    const cw = card.offsetWidth || 240, ch = card.offsetHeight || 120;
     let x = clientX - host.left + 14;
     let y = clientY - host.top + 14;
-    // keep the card inside the board host
-    const cw = card.offsetWidth || 240, ch = card.offsetHeight || 120;
-    if (x + cw > host.width) x = clientX - host.left - cw - 14;
+
+    if (subject) {
+      const roomLeft = subject.left - host.left;
+      const roomRight = host.right - subject.right;
+      if (roomRight >= cw + GAP) x = subject.right - host.left + GAP;
+      else if (roomLeft >= cw + GAP) x = subject.left - host.left - cw - GAP;
+      else x = roomRight >= roomLeft ? host.width - cw - 4 : 4;
+    }
     if (y + ch > host.height) y = host.height - ch - 8;
-    card.style.left = `${Math.max(4, x)}px`;
-    card.style.top = `${Math.max(4, y)}px`;
+    x = Math.min(Math.max(4, x), Math.max(4, host.width - cw - 4));
+    y = Math.min(Math.max(4, y), Math.max(4, host.height - ch - 4));
+
+    // Neither side had room — so clear the subject VERTICALLY instead. Checked,
+    // never assumed: if the flip still overlaps we take the roomier edge and say
+    // so by moving there, rather than leaving the card on top of the bar.
+    if (subject) {
+      const box = { left: host.left + x, right: host.left + x + cw,
+                    top: host.top + y, bottom: host.top + y + ch };
+      if (hits(box, subject)) {
+        const roomAbove = subject.top - host.top;
+        const roomBelow = host.bottom - subject.bottom;
+        y = roomBelow >= ch + GAP ? subject.bottom - host.top + GAP
+          : roomAbove >= ch + GAP ? subject.top - host.top - ch - GAP
+          : (roomBelow >= roomAbove ? host.height - ch - 4 : 4);
+        y = Math.min(Math.max(4, y), Math.max(4, host.height - ch - 4));
+      }
+    }
+    card.style.left = `${x}px`;
+    card.style.top = `${y}px`;
+  }
+
+  // The subject rectangles, in CLIENT coordinates. Both are read from the
+  // renderer that already owns the geometry — vis's own item DOM for a bar, and
+  // vis's own `toScreen` + group foreground for a capacity band — so nothing here
+  // re-derives a position the board already knows (4B.28's rule about not
+  // keeping a second coordinate system in step).
+  function barRect(itemId) {
+    try {
+      const it = timeline.itemSet.items[itemId];
+      const el = it && it.dom && (it.dom.box || it.dom.point);
+      return el ? el.getBoundingClientRect() : null;
+    } catch { return null; }
+  }
+  function bandRect(resourceId, band) {
+    try {
+      const grp = timeline.itemSet.groups[resourceId];
+      const row = grp && grp.dom && grp.dom.foreground;
+      if (!row) return null;
+      const r = row.getBoundingClientRect();
+      const cc = center.getBoundingClientRect();
+      const x0 = cc.left + timeline.body.util.toScreen(new Date(band.start));
+      const x1 = cc.left + timeline.body.util.toScreen(new Date(band.end));
+      return { left: Math.min(x0, x1), right: Math.max(x0, x1),
+               top: r.top, bottom: r.bottom };
+    } catch { return null; }
   }
 
   function jobCard(job) {
@@ -180,7 +246,7 @@ export function createHoverCards(hostEl, timeline, ctx) {
     // a bar under the pointer?
     if (props.item != null) {
       const job = ctx.jobFor(props.item);
-      if (job) { jobCard(job); place(ev.clientX, ev.clientY); return; }
+      if (job) { jobCard(job); place(ev.clientX, ev.clientY, barRect(props.item)); return; }
     }
     // otherwise a capacity band on the hovered row?
     const rid = props.group ?? null;
@@ -189,7 +255,7 @@ export function createHoverCards(hostEl, timeline, ctx) {
       const band = ctx.bandAt(rid, t);
       if (band && band.kind !== "openidle") {   // openidle: leave the board clean
         downtimeCard(band, ctx.reopenMinutes(rid, band), ctx.resourceName(rid));
-        place(ev.clientX, ev.clientY);
+        place(ev.clientX, ev.clientY, bandRect(rid, band));
         return;
       }
     }
@@ -202,7 +268,19 @@ export function createHoverCards(hostEl, timeline, ctx) {
   return {
     el: card, hide,
     // harness: force a render of a job card by assignment id (no real pointer).
-    _showJob(assignmentId) { const j = ctx.jobFor(assignmentId); if (j) { jobCard(j); return true; } return false; },
+    // It now PLACES as well as renders — a probe that skipped placement would be
+    // testing the card's prose and calling it a test of where the card goes.
+    _showJob(assignmentId) {
+      const j = ctx.jobFor(assignmentId);
+      if (!j) return false;
+      jobCard(j);
+      const r = barRect(assignmentId);
+      if (r) place(r.left + r.width / 2, r.top + r.height / 2, r);
+      return true;
+    },
+    // harness: the subject rectangle the card was placed against, so a guard can
+    // assert the no-overlap invariant on the pair rather than on the card alone.
+    _subjectRect: barRect,
     _showBand(resourceId, timeMs) {
       const b = ctx.bandAt(resourceId, timeMs);
       if (b && b.kind !== "openidle") { downtimeCard(b, ctx.reopenMinutes(resourceId, b), ctx.resourceName(resourceId)); return b.kind; }

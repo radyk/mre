@@ -35,16 +35,38 @@ function writeState(s) {
  *                   states. Called on every repaint, so a dock whose contents
  *                   changed cannot show a stale number.
  *   defaultOpen    what a browser with no stored choice does
+ *   axis           "y" (default) for a dock that folds DOWNWARD to a bottom
+ *                   edge, "x" for one that folds SIDEWAYS to a side edge. It
+ *                   picks the chevron, and the chevron is the only thing on a
+ *                   collapsed edge that says which way the dock went.
  *   onChange(open) optional — hosts that must relayout (the board sizes itself
  *                   to the space its docks leave)
  */
+
+// Session 4B.34 Item 4 — THE CHEVRON POINTS ALONG THE AXIS IT ACTUALLY MOVES.
+//
+// Every dock drew the vertical disclosure pair (▾ open / ▸ collapsed), which is
+// right for the tray and the coarse band and wrong for the ask column: ask
+// collapses SIDEWAYS, so "▾" promised a fold the planner never got. The glyph
+// now names the direction the gesture takes the dock — and `data-dir` carries it
+// semantically, so a guard asserts the DIRECTION rather than a character.
+const CHEV = {
+  y: { open: { glyph: "▾", dir: "down" }, shut: { glyph: "▸", dir: "right" } },
+  x: { open: { glyph: "▸", dir: "right" }, shut: { glyph: "◂", dir: "left" } },
+};
+
 export function makeCollapsible(el, { key, label, badge, defaultOpen = true,
-                                      onChange } = {}) {
+                                      axis = "y", onChange } = {}) {
   if (!el) return null;
   const stored = readState();
   let open = key in stored ? !!stored[key] : !!defaultOpen;
 
   el.classList.add("dock");
+  // The axis is on the ELEMENT, so the CSS that sizes a collapsed dock can be
+  // written once for every dock rather than per dock (Item 1) — and so a dock
+  // that folds sideways is never given a height collapse, which clips its own
+  // edge out of reach (see cockpit.css).
+  el.dataset.collapseAxis = axis;
   const edge = document.createElement("button");
   edge.type = "button";
   edge.className = "dock-edge";
@@ -56,7 +78,9 @@ export function makeCollapsible(el, { key, label, badge, defaultOpen = true,
     edge.replaceChildren();
     const chev = document.createElement("span");
     chev.className = "de-chev";
-    chev.textContent = open ? "▾" : "▸";
+    const c = (CHEV[axis] || CHEV.y)[open ? "open" : "shut"];
+    chev.textContent = c.glyph;
+    chev.dataset.dir = c.dir;
     const name = document.createElement("span");
     name.className = "de-label";
     name.textContent = label;
@@ -93,9 +117,10 @@ export function makeCollapsible(el, { key, label, badge, defaultOpen = true,
     toggle: () => set(!open),
     refresh: paint,
     probe: () => ({
-      key, open,
+      key, open, axis,
       label: edge.querySelector(".de-label").textContent,
       badge: (edge.querySelector(".de-badge") || {}).textContent || null,
+      chevron: edge.querySelector(".de-chev").dataset.dir,
     }),
   };
 }

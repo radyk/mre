@@ -17,6 +17,11 @@ import { mountCoarseBand } from "./coarse.js";
 import { createBoundaryCeremony } from "./boundary.js";
 import { createJobPanel } from "./jobpanel.js";
 import { makeCollapsible } from "./collapse.js";
+// R-GP1 (Session 4B.34 Item 6): the placement digest that separates a newer PLAN
+// from a newer ROW.
+import {
+  placementKeyFor, isDescendantOf, decorate as decorateLineage,
+} from "./lineagestore.js";
 
 // Rewrite the address bar to bind the given schedule version WITHOUT a reload
 // (session 3.8 CU1): a live accept/publish stays in the same session, but the
@@ -167,6 +172,10 @@ function paintTopStrip(el, doc, meta) {
       const bound = (window.__cockpit && window.__cockpit.scheduleId) || doc.schedule_id;
       if (id && id !== bound) jumpToVersion(id);
     },
+    // R-GP1: the derived facts + the lineage badge, resolved behind the open
+    // list. A ceremony child and the board it copies are otherwise two truncated
+    // ids and the same timestamp minute.
+    decorate: decorateLineage,
   });
   if (window.__cockpit) window.__cockpit.picker = picker;
   return picker;
@@ -289,28 +298,53 @@ function mountBoardChrome(boardHost, board) {
   zoom.querySelector(".bz-out").addEventListener("click", () => board.zoomOut());
   right.appendChild(zoom);
 
-  // Session 4B.28 Item 2(b): the LINEAR ↔ COMPRESSED toggle. Not optional
-  // chrome — verifying a calendar claim ("is there really nothing between these
-  // two bars?") is unanswerable on a folded ruler, so the planner must be able
-  // to unfold it. The choice persists per browser.
+  // Session 4B.28 Item 2(b), extended to THREE STATES in 4B.34 Item 5(b). Not
+  // optional chrome — verifying a calendar claim ("is there really nothing
+  // between these two bars?") is unanswerable on a folded ruler, so the planner
+  // must be able to unfold it. The choice persists per browser.
+  //
+  // THE LABEL IS THE DISCLOSURE. A compressed view has removed time from the
+  // shared axis, and in `clean` there is not even a fold mark to say so — so the
+  // label names the active view in every state, including linear, and the title
+  // says what the next click does.
+  const VIEW_COPY = {
+    linear: {
+      label: "⇤ linear",
+      title: "True linear time — every closed hour is drawn at its real width. "
+           + "Click to fold closed time (nights, weekends, closures) and mark "
+           + "each fold.",
+    },
+    folded: {
+      label: "⇥ compressed · folds marked",
+      title: "Closed time is folded away so working time fills the view; each "
+           + "fold carries a mark, because the bars either side of it are NOT "
+           + "neighbours. Click to hide the marks.",
+    },
+    clean: {
+      label: "⇥ compressed · clean",
+      title: "Closed time is folded away and the fold marks are hidden — time "
+           + "IS missing from this axis even though nothing on the ruler shows "
+           + "it. Click for the true linear scale.",
+    },
+  };
   const comp = document.createElement("button");
   comp.type = "button";
   comp.className = "board-compress";
   comp.id = "board-compress";
-  function paintCompress() {
-    const on = board.isCompressed();
-    comp.textContent = on ? "⇥ compressed" : "⇤ linear";
-    comp.setAttribute("aria-pressed", on ? "true" : "false");
-    comp.title = on
-      ? "Closed time is folded so working time fills the view. Click for the "
-        + "true linear scale."
-      : "True linear time. Click to fold closed time (nights, weekends, "
-        + "closures) so working time fills the view.";
+  // A VIEW of the board's state, never a copy written by the click handler. The
+  // handler used to paint the label itself, so compression reached by any other
+  // route — the persisted restore, a programmatic set, a second control — left
+  // the button asserting a view the board was not in.
+  function paintCompress(mode) {
+    const m = mode || board.viewMode();
+    const copy = VIEW_COPY[m] || VIEW_COPY.linear;
+    comp.textContent = copy.label;
+    comp.title = copy.title;
+    comp.dataset.viewMode = m;
+    comp.setAttribute("aria-pressed", m === "linear" ? "false" : "true");
   }
-  comp.addEventListener("click", () => {
-    board.setCompressed(!board.isCompressed());
-    paintCompress();
-  });
+  comp.addEventListener("click", () => board.cycleViewMode());
+  board.onViewMode(paintCompress);
   paintCompress();
   right.appendChild(comp);
 
@@ -492,7 +526,37 @@ function installFreshnessWatch({ app, boundId, hasUncommittedState, pinned,
       // not the state that existed when the request was sent.
       if (live()) { deferrals++; return; }
       const id = currentBound();
-      const newerId = findNewerSchedule(id, schedules || []);
+      // R-GP1 (Item 6): a candidate whose PLACEMENTS match the board we are on
+      // is a newer ROW and not a newer PLAN, and must not interrupt. Resolved
+      // one candidate at a time — the newest is checked, and only if it proves
+      // to be a copy is the next one considered — so the watch fetches a couple
+      // of documents rather than the whole data root every thirty seconds.
+      // FAILS OPEN: a key we could not read is not a proven copy, so it is
+      // offered exactly as before.
+      const boundKey = await placementKeyFor(id);
+      const copies = new Set();
+      let newerId = null;
+      for (;;) {
+        const cand = findNewerSchedule(id, schedules || [], (cid) => copies.has(cid));
+        if (!cand || cand === id) break;
+        // Two conditions, both required: the candidate must be a DESCENDANT of
+        // the board we are on, and its placements must match. A newer schedule
+        // from a resubmit is a different plan of record even if it happens to
+        // place work identically, and the tab must still follow it.
+        //
+        // LINEAGE FIRST, deliberately: it costs a `/meta` per hop, while the
+        // placement key costs the whole ~400 KB document. Most candidates are
+        // not descendants, and this watch runs every thirty seconds.
+        const sameLineage = await isDescendantOf(cand, id);
+        const candKey = sameLineage ? await placementKeyFor(cand) : null;
+        if (sameLineage && boundKey != null && candKey != null && candKey === boundKey) {
+          copies.add(cand);            // a copy of THIS plan — keep looking past it
+          continue;
+        }
+        newerId = cand;
+        break;
+      }
+      if (window.__cockpit) window.__cockpit.freshnessCopies = [...copies];
       if (!newerId || newerId === id) return;
       if (pinned || hasUncommittedState()) {
         // an explicit ?schedule= or uncommitted state → never auto-switch; offer
@@ -695,11 +759,15 @@ async function boot() {
     // is not a hidden tray: known work stays visible somewhere, which is the
     // whole reason the tray exists (4B.3a CU2(d), the Glass Box cardinal
     // danger). The board re-sizes itself to whatever space the docks leave.
+    //
+    // Session 4B.34 Item 1 — ONE RELAYOUT, THREE DOCKS. Each dock used to carry
+    // its own onChange: the tray and the coarse band toggled host classes a
+    // `bottom` ladder read, the ask column toggled a class on `.split`. Three
+    // copies of "a dock changed size, tell the board" is how two of them came to
+    // reclaim no space at all. The SIZE is now derived in CSS from
+    // `.dock.collapsed` alone; the only thing left for JS is telling vis its box
+    // moved, which is the same sentence for every dock — so it is written once.
     const relayout = () => {
-      const host = boardHost.parentElement;
-      host.classList.toggle("tray-collapsed", !!(docks.tray && !docks.tray.isOpen()));
-      host.classList.toggle("coarse-collapsed",
-                            !!(docks.coarse && !docks.coarse.isOpen()));
       requestAnimationFrame(() => {
         board.timeline.redraw();
         board.markers.redraw();
@@ -710,7 +778,7 @@ async function boot() {
       docks.tray = makeCollapsible(tray.el, {
         key: "tray", label: "BEYOND THE HORIZON",
         badge: () => String(tray.count),
-        defaultOpen: false, onChange: () => relayout(),
+        defaultOpen: false, onChange: relayout,
       });
     }
     if (coarseBand) {
@@ -719,7 +787,7 @@ async function boot() {
         // A STATUS, not a count: the coarse zone's own headline is how many
         // cells are at capacity, and "0 binding" is a real answer.
         badge: () => coarseBand.badge ? coarseBand.badge() : null,
-        defaultOpen: false, onChange: () => relayout(),
+        defaultOpen: false, onChange: relayout,
       });
     }
     docks.ask = makeCollapsible(askRoot, {
@@ -728,10 +796,8 @@ async function boot() {
       // OPEN by default, deliberately: it is the differentiator, and a stranger
       // must see that it exists.
       defaultOpen: true,
-      onChange: (open) => {
-        app.querySelector(".split")?.classList.toggle("ask-collapsed", !open);
-        requestAnimationFrame(() => { board.timeline.redraw(); board.markers.redraw(); });
-      },
+      axis: "x",                 // it folds SIDEWAYS (Item 4)
+      onChange: relayout,
     });
 
     // harness + demo hook (read-only): drive the sixty-second script's first

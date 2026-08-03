@@ -9,7 +9,14 @@ html, body {
   background: var(--bg); color: var(--ink);
   font: var(--fs-md)/var(--lh-body) var(--font-ui);
 }
-#app { display: grid; grid-template-rows: auto 1fr; height: 100vh; }
+/* A COLUMN, not a two-row grid (4B.34 Item 1). `grid-template-rows: auto 1fr`
+ * silently assumed the shell had exactly two children — strip + split. Every
+ * banner the app prepends (superseded, newer-schedule, auto-follow) is a THIRD,
+ * which pushed the split into an implicit AUTO row: it then sized to its own
+ * content, so the space a collapsing dock gave back landed nowhere and the board
+ * never grew. A flex column names the flexible child instead of counting rows,
+ * so any number of banners is fine. */
+#app { display: flex; flex-direction: column; height: 100vh; }
 
 /* --- top strip: version + certificate grade ----------------------------- */
 .topstrip {
@@ -65,34 +72,43 @@ html, body {
 .topstrip .theme-toggle:hover { color: var(--ink); border-color: var(--muted-2); }
 
 /* --- main split: board | ask panel -------------------------------------- */
-.split { display: grid; grid-template-columns: 1fr 360px; min-height: 0; }
-.board-host { position: relative; min-width: 0; overflow: hidden; }
-#tl { height: 100%; }
-/* Session 4B.3a CU2: with a beyond-horizon tray the board-host becomes a column —
- * the board takes the remaining height, the tray a fixed strip at the bottom, and
- * the board-chrome (legend/zoom) lifts to clear the tray. Applied only when a tray
- * is present (a monolithic board is untouched). */
-.board-host.has-tray { display: flex; flex-direction: column; }
-.board-host.has-tray #tl { flex: 1 1 auto; min-height: 0; height: auto; }
-.board-host.has-tray .board-chrome { bottom: calc(var(--beyond-tray-h) + var(--sp-3)); }
-/* Session 4B.6 CU5: the coarse density band docks below the tray, so the board
- * chrome clears both. */
-.board-host.has-tray.has-coarse-band .board-chrome {
-  bottom: calc(var(--beyond-tray-h) + var(--coarse-band-h) + var(--sp-3));
+/* `minmax(0, 1fr)` on the ROW, not just `min-height` on the container: with an
+ * auto row the board-host sized to its own content, so it overflowed the split
+ * with every dock open and left dead space under it with every dock shut — the
+ * space a collapse frees has to land somewhere, and the row is what decides. */
+.split {
+  flex: 1 1 auto; min-height: 0;
+  display: grid; grid-template-columns: 1fr 360px;
+  grid-template-rows: minmax(0, 1fr);
 }
+/* Session 4B.34 Item 2: the board-host is ALWAYS a column, monolithic or rolling.
+ * It used to become one only when a tray existed, which is why the chrome row had
+ * to be an absolutely-positioned overlay with a hand-maintained `bottom` ladder —
+ * and an overlay over the board is an overlay over the BARS. In flow there is
+ * nothing to compute and nothing to occlude. */
+.board-host { position: relative; min-width: 0; min-height: 0; overflow: hidden;
+              display: flex; flex-direction: column; }
+#tl { flex: 1 1 auto; min-height: 0; height: auto; }
 
-/* --- board chrome row (Session 4.3 CU1) --------------------------------- *
- * ONE layout row along the board bottom holding the legend (left) and the
- * zoom controls + dev question-ledger dock (right). Structural, so nothing can
- * float over the legend or the ask column at any width (the SECOND occlusion
- * incident): the row wraps UPWARD (wrap-reverse) when narrow — the right cluster
- * lifts over board space, the legend stays put, they never intersect. */
+/* --- board chrome row (Session 4.3 CU1; rehomed 4B.34 Item 2) ------------ *
+ * ONE layout row directly beneath the board, holding the legend (left) and the
+ * zoom / compression controls + dev question-ledger dock (right).
+ *
+ * THE RULE THAT DECIDED THE HOME: the legend may never overlap interactive
+ * content at ANY viewport width the cockpit supports. An absolutely-positioned
+ * row can only ever satisfy that by arithmetic — a `bottom` ladder recomputed
+ * for every combination of docks — and that arithmetic was already wrong for the
+ * bars themselves (it cleared the tray by construction and sat ON the board's
+ * last 46px at every width measured). IN NORMAL FLOW the invariant is
+ * structural: the row occupies its own strip, so there is no width at which it
+ * can intersect a bar, a tray chip or a coarse cell. It costs the board the
+ * row's own height, which is the honest price of not covering the thing the
+ * planner is reading. */
 .board-chrome {
-  position: absolute; left: var(--sp-3); right: var(--sp-3); bottom: var(--sp-3);
-  z-index: 8; display: flex; align-items: flex-end; justify-content: space-between;
-  gap: var(--sp-3); flex-wrap: wrap-reverse; pointer-events: none;
+  flex: 0 0 auto; padding: var(--sp-2) var(--sp-3) 0;
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: var(--sp-3); flex-wrap: wrap-reverse;
 }
-.board-chrome > * { pointer-events: auto; }
 .board-chrome .bc-right { display: flex; align-items: flex-end; gap: var(--sp-2); }
 
 /* --- zoom affordance (Session 4.3 CU5): pointer/keyboard path to zoom, so a
@@ -117,14 +133,14 @@ html, body {
 .board-hint.fade { opacity: 0; }
 
 /* --- legend ------------------------------------------------------------- */
-/* A flex child of .board-chrome (Session 4.3 CU1) — no longer absolutely
- * positioned; visible by default on first load (CU4). */
+/* A flex child of .board-chrome (Session 4.3 CU1), in NORMAL FLOW since 4B.34
+ * Item 2. The scrim, border and blur were there to keep it readable while it
+ * floated OVER the bars; in its own strip it is over nothing, so they go — the
+ * chrome row costs the board only the ink it actually needs. */
 .legend {
-  display: flex; gap: var(--sp-3); flex-wrap: wrap; align-items: center; min-width: 0;
-  background: var(--scrim); border: 1px solid var(--grid);
-  border-radius: var(--radius); padding: var(--sp-2) var(--sp-3);
+  display: flex; gap: var(--sp-2) var(--sp-3); flex-wrap: wrap;
+  align-items: center; min-width: 0;
   color: var(--muted); font-size: var(--fs-sm); pointer-events: none;
-  backdrop-filter: blur(3px);
 }
 .legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: var(--radius-xs); margin-right: 5px; vertical-align: middle; }
 .legend .lg-gap { width: 1px; align-self: stretch; border-left: 1px solid var(--grid); margin: 0 2px; }
@@ -625,6 +641,34 @@ html, body {
 .sched-list .sl-row.current .sl-status { color: var(--ink); }
 .sched-list .sl-empty { padding: var(--sp-3); color: var(--muted-2); font-size: var(--fs-sm); }
 
+/* R-GP1 (Session 4B.34 Item 6): the derived second line. It spans the whole row
+ * under the identity cells, so a badge and a ledger never squeeze the id. */
+.sched-list .sl-facts {
+  grid-column: 1 / -1; display: flex; align-items: center; gap: var(--sp-2);
+  min-height: 0; font-size: var(--fs-xs); color: var(--muted);
+  /* the row is `white-space: nowrap` so a date never wraps into two lines; the
+   * facts line opts back out, because a clipped plan digest is worse than a
+   * second line — the digest is the whole point of the row. */
+  flex-wrap: wrap; white-space: normal;
+}
+/* the row R-GP1 says LEADS the lineage — distinct from `.current`, which is
+ * where the planner is standing. On a board followed only by ceremony children
+ * they are the same row, which is the ruling working. */
+.sched-list .sl-row[data-plan-current="true"] { box-shadow: inset 3px 0 0 var(--reg-testimony); }
+.sched-list .sl-facts:empty { display: none; }
+.sched-list .sl-derived { font-variant-numeric: tabular-nums; }
+.sched-list .sl-badge {
+  border-radius: var(--radius-sm); padding: 1px 6px; font-size: var(--fs-2xs);
+  text-transform: uppercase; letter-spacing: var(--ls-caps);
+  border: 1px solid var(--grid); color: var(--muted-2);
+}
+/* the one badge that means "a different plan" is the one that gets the ink */
+.sched-list .sl-badge.b-placements-changed {
+  color: var(--reg-testimony); border-color: var(--reg-testimony);
+}
+.sched-list .sl-badge.b-authority-only,
+.sched-list .sl-badge.b-accepted-edit { color: var(--muted-2); }
+
 /* CU1 — an explicit ?schedule= naming an id this data root does not have. The id
    is NAMED and the registered schedules are the recovery; nothing is substituted. */
 .err.notfound { font: var(--fs-base)/var(--lh-body) var(--font-ui); color: var(--ink); max-width: 760px; }
@@ -871,11 +915,17 @@ html, body {
   font-size: var(--fs-xs);
 }
 .job-panel.hidden { display: none; }
+/* Item 3(b): dragged by its header. `grab` names the affordance before the hand
+ * commits; while dragging the shadow lifts so the panel reads as picked up. */
 .job-panel .jp-head {
   display: grid; grid-template-columns: 1fr auto; row-gap: 2px;
   align-items: baseline; padding: var(--sp-2) var(--sp-3) var(--sp-1);
   border-bottom: 1px solid var(--grid);
+  cursor: grab; touch-action: none; user-select: none;
 }
+.job-panel.dragging { box-shadow: var(--shadow-3, var(--shadow-2)); }
+.job-panel.dragging .jp-head { cursor: grabbing; }
+.job-panel .jp-head .jp-close { cursor: pointer; }
 .job-panel .jp-title { font: var(--fw-bold) var(--fs-md)/1.2 var(--font-mono); }
 .job-panel .jp-sub {
   grid-column: 1 / 2; font-size: var(--fs-2xs); color: var(--muted-2);
@@ -995,32 +1045,51 @@ html, body {
   text-transform: none;
 }
 /* Collapsed: the dock shrinks to exactly its edge, and everything else in it
- * is hidden. `.dock-edge` is excluded, so the badge survives the collapse. */
+ * is hidden. `.dock-edge` is excluded, so the badge survives the collapse.
+ *
+ * Session 4B.34 Item 1 — ONE MECHANISM, AND `.dock.collapsed` IS THE ONLY STATE.
+ *
+ * `height` alone was the whole defect. The tray and the coarse band are FLEX
+ * CHILDREN carrying `flex: 0 0 <their own height>`, and a fixed flex-basis wins
+ * over `height` outright — so both docks went on reserving their full 116px /
+ * 132px while showing nothing but an edge, and the board never grew. Measured at
+ * HEAD on the Khalil board: #tl stayed 555px tall with both docks shut, 248px of
+ * it dead. The ask column reclaimed correctly only because its size is set by its
+ * PARENT's grid template, a second mechanism — and two mechanisms is exactly how
+ * the other two drifted. Every layout consequence below is now derived from the
+ * one class, so a fourth dock inherits the behaviour by existing. */
 .dock.collapsed > *:not(.dock-edge) { display: none; }
-.dock.collapsed { height: var(--dock-edge-h); min-height: var(--dock-edge-h); }
+.dock.collapsed { overflow: hidden; }
+/* THE AXIS DECIDES WHICH DIMENSION COLLAPSES, and getting that wrong is not
+ * cosmetic. A dock that folds SIDEWAYS given a 26px HEIGHT clips to a 26x26
+ * square — and since the collapsed ask edge is a 900px strip rotated into that
+ * column, everything but one corner of it stops being clickable. Measured:
+ * `document.elementFromPoint` returned `.split`, not the button, at every point
+ * down the strip. A planner who collapsed the ask panel could not reopen it
+ * except by hitting a 26px corner. */
+.dock.collapsed[data-collapse-axis="y"] {
+  flex: 0 0 var(--dock-edge-h);
+  height: var(--dock-edge-h); min-height: var(--dock-edge-h);
+}
+.dock.collapsed[data-collapse-axis="x"] {
+  width: var(--dock-edge-h); min-width: 0;
+}
 
-/* the board reclaims the space a collapsed dock gives back */
-.board-host.has-tray.tray-collapsed .board-chrome {
-  bottom: calc(var(--dock-edge-h) + var(--sp-3));
-}
-.board-host.has-tray.has-coarse-band.tray-collapsed .board-chrome {
-  bottom: calc(var(--dock-edge-h) + var(--coarse-band-h) + var(--sp-3));
-}
-.board-host.has-tray.has-coarse-band.coarse-collapsed .board-chrome {
-  bottom: calc(var(--beyond-tray-h) + var(--dock-edge-h) + var(--sp-3));
-}
-.board-host.has-tray.has-coarse-band.tray-collapsed.coarse-collapsed .board-chrome {
-  bottom: calc(2 * var(--dock-edge-h) + var(--sp-3));
-}
-.beyond-tray.dock.collapsed, .coarse-band.dock.collapsed { overflow: hidden; }
-
-/* the ask column collapses to its own edge, rotated to read vertically */
-.split.ask-collapsed { grid-template-columns: 1fr var(--dock-edge-h); }
-.split.ask-collapsed .ask { padding: 0; overflow: hidden; }
-.split.ask-collapsed .ask .dock-edge {
+/* the ask column collapses to its own edge, rotated to read vertically. Derived
+ * from the dock's own state rather than a class the host also has to remember. */
+.split:has(> .ask.dock.collapsed) { grid-template-columns: 1fr var(--dock-edge-h); }
+.split > .ask.dock.collapsed { padding: 0; overflow: hidden; }
+.split > .ask.dock.collapsed .dock-edge {
   width: 100vh; height: var(--dock-edge-h);
   transform-origin: left top; transform: rotate(90deg) translateY(-100%);
   border-bottom: 0; border-left: 1px solid var(--grid);
+}
+/* Item 4: the collapsed ask edge is rotated 90°, which rotates its glyph with
+ * it. The chevron is counter-rotated so it points where it actually goes ON
+ * SCREEN — a control that claims the wrong direction is a small lie a planner
+ * has to unlearn. */
+.split > .ask.dock.collapsed .dock-edge .de-chev {
+  display: inline-block; transform: rotate(-90deg);
 }
 
 /* --- VERTICAL DENSITY (Session 4B.28 Item 2(c)) ------------------------
@@ -1043,3 +1112,10 @@ html, body {
 }
 .board-compress:hover { color: var(--ink); border-color: var(--muted-2); }
 .board-compress[aria-pressed="true"] { color: var(--marker-frozen); border-color: var(--marker-frozen); }
+/* Item 5(b): `clean` is the state that looks most like an ordinary board and is
+ * least like one — time has been removed and no fold mark says so. The control
+ * carries the strongest emphasis there, because the label is the only
+ * disclosure left. */
+.board-compress[data-view-mode="clean"] {
+  border-style: dashed; border-color: var(--marker-frozen);
+}

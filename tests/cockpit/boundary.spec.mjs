@@ -338,9 +338,26 @@ test("Item 2(b): compression folds closed time, marks every seam, and toggles ba
       .toContain("NOT adjacent");
     await shot(page, "b7_compressed");
 
+    // Session 4B.34 Item 5(b): the toggle became a THREE-state cycle
+    // (linear → folded → clean → linear), so returning to the true scale is now
+    // two more clicks rather than one. Every assertion this test made still
+    // holds and is still made; only the number of clicks changed, because the
+    // ruling put a state between them.
+    //
+    // The middle state is `clean`: still compressed — time is still missing from
+    // the axis — with the marks suppressed. Asserted here so that a future change
+    // which quietly dropped the marks from `folded` could not pass by looking
+    // like `clean`.
+    await page.locator("#board-compress").click();
+    await page.waitForFunction(() => window.__cockpit.board.viewMode() === "clean");
+    expect(await page.evaluate(() => window.__cockpit.board.isCompressed()),
+           "clean is still compressed").toBe(true);
+    expect(await page.locator(".fold-mark").count(), "clean draws no marks").toBe(0);
+
     // …and back. Verifying a calendar claim needs the true linear scale.
     await page.locator("#board-compress").click();
     await page.waitForFunction(() => window.__cockpit.board.isCompressed() === false);
+    expect(await page.evaluate(() => window.__cockpit.board.viewMode())).toBe("linear");
     expect(await page.locator(".fold-mark").count(), "linear has no folds").toBe(0);
   });
 

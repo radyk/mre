@@ -371,9 +371,29 @@ export function createBoard(hostEl, initialDoc, boardOpts = {}) {
   // working through would hide real work. The intersection is the only honest
   // set, and on this plant it is exactly the nights, weekends and plant-wide
   // closures the feature is about.
+  // Session 4B.34 Item 5(b) — THREE VIEWS, ONE CYCLE, AND THE LABEL DISCLOSES
+  // WHICH.
+  //
+  //   linear     the true scale. Nothing is removed; a calendar claim is
+  //              checkable here and only here.
+  //   folded     compressed WITH the fold marks — every removed span is marked,
+  //              so two bars either side of a folded night cannot read as
+  //              adjacent (4B.28's rule, unchanged).
+  //   clean      compressed with the marks suppressed. Found by accident while
+  //              reading a dense board and kept deliberately: at 386 bars the
+  //              marks are themselves visual load, and a planner scanning for
+  //              SHAPE wants the working time uninterrupted.
+  //
+  // `clean` is the state that most needs the label, because it looks like an
+  // ordinary board and is not one: time has been removed from the shared axis
+  // and nothing else on screen says so. The label is therefore not decoration —
+  // it is the disclosure, and it names the view in every state including linear.
+  const VIEW_MODES = ["linear", "folded", "clean"];
   const COMPRESS_MIN_SPAN_MIN = 120;   // shorter gaps are not worth a fold
+  let viewMode = "linear";
   let compressed = false;
   let foldRanges = [];
+  const viewCbs = [];
 
   // Spans inside the data window where no row has an open (regular/overtime)
   // window. Computed from the SAME `openWinsByRes` the row strips measure
@@ -406,26 +426,50 @@ export function createBoard(hostEl, initialDoc, boardOpts = {}) {
     return out;
   }
 
-  function setCompressed(on) {
-    const want = !!on;
-    if (want === compressed) return compressed;
-    if (want && !foldRanges.length) foldRanges = computeFoldRanges();
-    compressed = want;
+  // THE VIEW MODE IS THE STATE; `compressed` is derived from it. Every surface
+  // that shows the mode subscribes here rather than keeping its own copy — the
+  // toggle's label used to be written by the click handler, so any other route
+  // into compression (a restore, a programmatic set, a second control) left the
+  // button asserting a view the board was not in.
+  function setViewMode(mode) {
+    const want = VIEW_MODES.includes(mode) ? mode : "linear";
+    if (want === viewMode) return viewMode;
+    const wantCompressed = want !== "linear";
+    if (wantCompressed && !foldRanges.length) foldRanges = computeFoldRanges();
+    viewMode = want;
+    compressed = wantCompressed;
     timeline.setOptions({
       hiddenDates: compressed
         ? foldRanges.map(([s, e]) => ({ start: s, end: e }))
         : [],
     });
     hostEl.classList.toggle("compressed", compressed);
+    hostEl.classList.toggle("compressed-clean", viewMode === "clean");
     // The fold marks are what stop a fold reading as adjacency: two bars either
     // side of a collapsed night are NOT neighbours, and with the span at zero
-    // width nothing else on screen would say so.
-    markers.setFolds(compressed ? foldRanges : []);
+    // width nothing else on screen would say so. `clean` withholds the MARKS and
+    // never the disclosure — the label carries it there instead, which is why
+    // the label may not be silent in any state.
+    markers.setFolds(viewMode === "folded" ? foldRanges : []);
     requestAnimationFrame(() => {
       timeline.redraw(); renderOverlay(); markers.redraw(); refreshRowStrips();
     });
-    try { localStorage.setItem("mre-compress", compressed ? "1" : "0"); }
+    try { localStorage.setItem("mre-view-mode", viewMode); }
     catch { /* private mode — the choice simply does not persist */ }
+    for (const cb of viewCbs) { try { cb(viewMode); } catch { /* a bad subscriber never breaks the board */ } }
+    return viewMode;
+  }
+
+  // The cycle: linear → folded → clean → linear.
+  function cycleViewMode() {
+    return setViewMode(VIEW_MODES[(VIEW_MODES.indexOf(viewMode) + 1) % VIEW_MODES.length]);
+  }
+
+  // Kept: `setCompressed(bool)` is the older two-state door and several call
+  // sites (and the persisted 4B.28 preference) still speak it. It maps onto the
+  // cycle rather than shadowing it, so there remains ONE state.
+  function setCompressed(on) {
+    setViewMode(on ? (viewMode === "clean" ? "clean" : "folded") : "linear");
     return compressed;
   }
 
@@ -445,8 +489,13 @@ export function createBoard(hostEl, initialDoc, boardOpts = {}) {
   // a frame. LINEAR is the default: compression is a reading aid, and a board
   // that folded its own ruler before anyone asked would be showing a stranger a
   // scale they did not choose.
+  // 4B.34: the persisted key is now the MODE. A browser carrying 4B.28's boolean
+  // is honoured as `folded` — the state that key actually meant — so an existing
+  // planner's choice survives the change rather than being silently reset.
   try {
-    if (localStorage.getItem("mre-compress") === "1") setCompressed(true);
+    const stored = localStorage.getItem("mre-view-mode");
+    if (VIEW_MODES.includes(stored)) setViewMode(stored);
+    else if (localStorage.getItem("mre-compress") === "1") setViewMode("folded");
   } catch { /* private mode — linear, which is the default anyway */ }
 
   requestAnimationFrame(() => {
@@ -854,6 +903,11 @@ export function createBoard(hostEl, initialDoc, boardOpts = {}) {
     // is unanswerable on a folded ruler — so the toggle is not optional chrome.
     setCompressed,
     isCompressed() { return compressed; },
+    // Item 5(b): the three-state view. `onViewMode` is what makes the label a
+    // VIEW of the board's state instead of a copy the click handler writes.
+    setViewMode, cycleViewMode,
+    viewMode() { return viewMode; },
+    onViewMode(cb) { if (typeof cb === "function") viewCbs.push(cb); },
     // Harness probe for the exactness guard: the folds in force, plus a
     // round-trip of a known instant through vis's own conversion under whatever
     // mode is active. A drop that lands minutes off surfaces here.
@@ -865,7 +919,8 @@ export function createBoard(hostEl, initialDoc, boardOpts = {}) {
         back = timeline.body.util.toTime(x).getTime();
       } catch { /* a vis bump — reported as nulls, never thrown */ }
       return {
-        compressed, folds: foldRanges.length,
+        compressed, viewMode, folds: foldRanges.length,
+        foldMarks: viewMode === "folded" ? foldRanges.length : 0,
         x: x == null ? null : +x.toFixed(2),
         roundTripErrMs: back == null ? null : Math.abs(back - t),
       };

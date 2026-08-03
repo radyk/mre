@@ -67,6 +67,40 @@ export function shortId(id) {
   return s.length > 12 ? s.slice(0, 12).replace(/-$/, "") : s;
 }
 
+// R-GP1 (Session 4B.34 Item 6) — WHAT A ROW SAYS.
+//
+// Rows used to be a truncated id and a status, so `rolling-b4dd3010751f` — a
+// re-freeze ceremony child whose placements are the Khalil demo board's to the
+// character — was indistinguishable from the board it copies, and sat above it
+// wearing "current". Every field below is DERIVED from documents the client
+// already fetches; none of them names a new schema column.
+//
+// THE LEDGER IS NOT ENOUGH AND THAT IS MEASURED: on this lineage the demo board,
+// both ceremony children AND a zero-move accept all read $1,667,467.80, and so
+// does the one child that actually moved an operation. The BADGE is what
+// separates them, and it is the placement digest that decides the badge.
+const BADGE_TEXT = {
+  "placements-changed": "placements changed",
+  "authority-only": "authority only",
+  "accepted-edit": "accepted edit · same placements",
+};
+const money = (n) => (n == null ? null
+  : `$${Math.round(n).toLocaleString("en-US")}`);
+
+// One row's derived line, from the facts `lineagestore` resolved. Returns null
+// while nothing is known yet — a row states what it has and never fills a gap
+// with a guess.
+export function factsLine(facts) {
+  if (!facts) return null;
+  const bits = [];
+  if (facts.ledger != null) bits.push(money(facts.ledger));
+  if (facts.bars != null) bits.push(`${facts.bars} bars`);
+  if (facts.calibrated === true) bits.push("calibrated");
+  else if (facts.calibrated === false) bits.push("uncalibrated");
+  if (facts.digest) bits.push(`plan ${facts.digest}`);
+  return bits.length ? bits.join(" · ") : null;
+}
+
 // The list itself. Rows are buttons (keyboard-reachable, no link semantics — a
 // pick is a navigation the app performs). The bound row is marked, not hidden:
 // seeing where you are is half of why the list is open.
@@ -108,10 +142,43 @@ export function renderScheduleList(rows, { currentId = null, onPick, emptyText }
     st.textContent = isCurrent ? "current" : (row.status || "");
 
     b.append(id, k, when, st);
+    // R-GP1: a second line for the derived facts + the lineage badge, filled in
+    // by `applyRowFacts` as each document lands. It starts EMPTY rather than
+    // starting wrong.
+    const facts = document.createElement("span");
+    facts.className = "sl-facts";
+    b.appendChild(facts);
     b.addEventListener("click", () => { if (onPick) onPick(row.id); });
     list.appendChild(b);
   }
   return list;
+}
+
+// Fill one already-rendered row with its derived facts. Separate from the render
+// so the list paints immediately and the 400 KB-per-document reads land behind
+// it — and so a guard can drive the display from hand-built facts.
+export function applyRowFacts(list, id, facts) {
+  const row = list && list.querySelector(`[data-schedule-id="${CSS.escape(id)}"]`);
+  if (!row) return null;
+  const cell = row.querySelector(".sl-facts");
+  if (!cell) return null;
+  cell.replaceChildren();
+  if (facts && facts.badge) {
+    const badge = document.createElement("span");
+    badge.className = `sl-badge b-${facts.badge}`;
+    badge.textContent = BADGE_TEXT[facts.badge] || facts.badge;
+    cell.appendChild(badge);
+    row.dataset.badge = facts.badge;
+  }
+  const line = factsLine(facts);
+  if (line) {
+    const txt = document.createElement("span");
+    txt.className = "sl-derived";
+    txt.textContent = line;
+    cell.appendChild(txt);
+  }
+  if (facts && facts.digest) row.dataset.planDigest = facts.digest;
+  return cell;
 }
 
 // Mount the dropdown on the header chip. `currentId` is a FUNCTION, resolved at
@@ -119,7 +186,7 @@ export function renderScheduleList(rows, { currentId = null, onPick, emptyText }
 // reload, and the picker must mark the version the board IS, not the one it was
 // mounted with. `load` is the listing call; a failure renders the honest empty
 // line rather than an empty box.
-export function mountSchedulePicker(anchor, { currentId, load, onPick } = {}) {
+export function mountSchedulePicker(anchor, { currentId, load, onPick, decorate } = {}) {
   if (!anchor) return null;
   let panel = null;
 
@@ -159,11 +226,29 @@ export function mountSchedulePicker(anchor, { currentId, load, onPick } = {}) {
       rows = (data && data.schedules) || [];
     } catch { rows = []; }
     if (!panel) return null;                 // closed while the listing was in flight
-    panel.appendChild(renderScheduleList(rows, {
+    const list = renderScheduleList(rows, {
       currentId: typeof currentId === "function" ? currentId() : currentId,
       onPick: (id) => { close(); if (onPick) onPick(id); },
       emptyText: "the schedule listing is unavailable",
-    }));
+    });
+    panel.appendChild(list);
+    // R-GP1: decorate progressively. `decorate` is optional so the pure renderer
+    // stays testable without a network, and a panel closed mid-flight simply
+    // stops receiving rows.
+    if (decorate) {
+      decorate(rows, (id, facts) => {
+        if (panel && list.isConnected) applyRowFacts(list, id, facts);
+      }, (planCurrentId) => {
+        // R-GP1: mark the row that LEADS the lineage — the newest
+        // placement-bearing state — which on a board followed only by ceremony
+        // children is the board itself. Distinct from `.current`, which marks
+        // where the planner IS.
+        if (!panel || !list.isConnected || !planCurrentId) return;
+        for (const r of list.querySelectorAll(".sl-row")) delete r.dataset.planCurrent;
+        const lead = list.querySelector(`[data-schedule-id="${CSS.escape(planCurrentId)}"]`);
+        if (lead) lead.dataset.planCurrent = "true";
+      }).catch(() => { /* a facts failure leaves the bare row, never an error box */ });
+    }
     return panel;
   };
 

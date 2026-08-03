@@ -23,9 +23,17 @@
 // minted at the same instant are not a progression of one another, so a tie never
 // yanks the tab (this is what keeps unrelated demo fixtures from cross-following).
 //
+// R-GP1 (Session 4B.34 Item 6): `isCopy` is an optional predicate answering
+// "does this candidate carry the same PLACEMENTS as the board we are on?".
+// A candidate it answers TRUE for is skipped — a re-freeze ceremony child or a
+// zero-move accept is a newer row and not a newer PLAN, and the banner exists to
+// interrupt a planner for a different plan. It FAILS OPEN in both directions: no
+// predicate, or a predicate that does not know yet, behaves exactly as before.
+// See lineage.js for what "the same placements" is measured on.
+//
 // Returns the id of the newest live schedule strictly newer than the bound one,
 // or null (bound is already newest / bound absent / empty listing).
-export function findNewerSchedule(boundId, schedules) {
+export function findNewerSchedule(boundId, schedules, isCopy = null) {
   if (!Array.isArray(schedules) || !schedules.length) return null;
   const boundIdx = schedules.findIndex((s) => s && s.id === boundId);
   if (boundIdx < 0) return null;                  // bound not in the live listing
@@ -40,6 +48,7 @@ export function findNewerSchedule(boundId, schedules) {
     const t = s.created_at ? Date.parse(s.created_at) : null;
     const newer = (boundT != null && t != null) ? t > boundT : i > boundIdx;
     if (!newer) return;
+    if (isCopy && isCopy(s.id) === true) return;        // newer row, same plan
     const key = t != null ? t : i;                      // rank by time, else position
     if (bestKey == null || key >= bestKey) { best = s.id; bestKey = key; }
   });
