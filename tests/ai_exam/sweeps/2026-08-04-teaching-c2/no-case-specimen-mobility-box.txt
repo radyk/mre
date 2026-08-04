@@ -1,0 +1,14 @@
+Q: in general, why does one order running late tend to make other orders late as well
+   route=synthesis register=synthesis intent=teaching conf=0.95
+--------------------------------------------------------------------------
+No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+One order running late tends to make others late because orders share the same machines: if the first order overruns, every order queued behind it on that machine gets pushed later too, and that delay can carry forward again if the following order also feeds a downstream machine.  [general knowledge — how scheduling works in general, not a fact about this plan]
+On this board, PACK-01 runs ORD-PACK and ORD-SPAN back to back with zero gap between them (ORD-PACK ends 2026-01-05 11:01, ORD-SPAN starts the same minute) — a real example of one order's finish time directly setting the next order's start time on a shared machine.  [record: cfeec95d...]
+In that zero-gap arrangement, if ORD-PACK had run over its planned time, ORD-SPAN would have had no cushion to absorb it — its start would have slipped by the same amount, which is the general mechanism showing up concretely here.  [synthesis — read from: cfeec95d, 246403ef, ad84e0ce]
+Right now none of this plant's 9 scheduled orders are actually late, so this board is not currently showing a delay propagating end to end — only the tight, zero-slack coupling that would carry one if it happened.  [record: c1d26f05...]
+
+Where a line is marked general knowledge it draws on how scheduling and plants behave generally — not on this plan's records, so there is nothing here to check it against.
+
+That is how it works in general — you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.
+[rendered by: synthesis (claude-sonnet-5) — 5 tool call(s) | register: synthesis]

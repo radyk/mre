@@ -1,0 +1,110 @@
+{
+  "target": "rolling-db5395dc-2ae",
+  "snapshot": "snap-rolling",
+  "started_at": "2026-08-04T14:34:15Z",
+  "llm_mode": "live",
+  "questions": 16,
+  "llm_calls": 68,
+  "parser_stats": {
+    "calls": 22,
+    "parses": 22,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 2,
+    "unavailable": 0,
+    "unreachable": 0,
+    "median_latency_ms": 1593.8075499998376,
+    "malformed_samples": []
+  },
+  "synth_stats": {
+    "syntheses": 10,
+    "calls": 45,
+    "tool_calls": 34,
+    "malformed": 1,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 0,
+    "median_latency_ms": 29300.932399999965,
+    "p90_latency_ms": 38496.80129999979
+  },
+  "synthesis": {
+    "answers": 9,
+    "claims": 38,
+    "verified": 6,
+    "interpretive": 22,
+    "general_knowledge": 7,
+    "failed_and_cut": 3,
+    "deferred": 0,
+    "ungrounded_load_bearing": 2,
+    "unanswerable": 0,
+    "budget_exhausted": 0,
+    "tool_calls": 28,
+    "tool_histogram": {
+      "capability_registry": 1,
+      "constraint_catalog": 2,
+      "cost_ledger": 3,
+      "entity_vocabulary": 1,
+      "gate_findings": 2,
+      "lateness_set": 6,
+      "machine_occupancy": 7,
+      "placements_for_machine": 1,
+      "placements_for_order": 3,
+      "spec_lookup": 2
+    },
+    "calls_per_answer": {
+      "1": 1,
+      "2": 2,
+      "3": 3,
+      "4": 1,
+      "5": 2
+    }
+  },
+  "shadow": {
+    "shadowed": 1,
+    "clean": 1,
+    "diverged": 0,
+    "unchecked": 0,
+    "provenance_strengthened": 1,
+    "by_intent": {
+      "lateness-cause": {
+        "shadowed": 1,
+        "diverged": 0,
+        "unchecked": 0
+      }
+    }
+  },
+  "latency": {
+    "route": {
+      "n": 7,
+      "median_ms": 2332.3,
+      "p90_ms": 4933.3
+    },
+    "synthesis": {
+      "n": 9,
+      "median_ms": 30499.5,
+      "p90_ms": 33796.8
+    }
+  },
+  "graded_expectations": {
+    "graded": 8,
+    "met": 8
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "ungrounded-load-bearing": 2
+  },
+  "findings": [
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 64,
+      "question": "in general, why does one order running late tend to make other orders late as well",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 75,
+      "question": "how does a scheduler decide which of two orders competing for the same machine goes first",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    }
+  ]
+}

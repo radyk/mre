@@ -16496,3 +16496,97 @@ RUBRIC and the exam banks are test artifacts and version nothing. Contract stays
 **1.15**; both governed prompts are **UNCHANGED** (parse v18, synthesis v7) and
 this session deliberately changed neither, because two of its findings are about
 what those prompts produce and editing them would have measured the edit.
+
+---
+
+## 2026-08-04 — R-TG5: A TEACHING ANSWER READS THE BOARD (Session 4A teaching-graft (c2))
+
+Session (c) measured RUBRIC axis C9 for the first time and the measurement was a
+finding: **M2 0 of 4**. All four transfer-pair teaching answers carried a
+labelled general-knowledge principle and not one carried a single board claim —
+zero verified, zero interpretive, zero lit bars, zero cited records, and two of
+the four made no tool call at all. On one turn the depth licence granted eight
+claims and the answer shipped one. Asked six times, the same teaching question
+came back once on the **unanswerable floor**, because every board-flavoured
+sentence it drafted was cut by R-TG1 direction (ii) for citing nothing and
+nothing was left to render.
+
+Session (c) declined to fix it, deliberately: the remedy is a synthesis-prompt
+change and two of that session's findings were about what that prompt produces,
+so editing it would have measured the edit. This session is the edit, and it
+measures it against (c)'s committed sweeps.
+
+**THE COMPOSITION, NOT THE COMPONENTS.** R-TG1 gives domain knowledge a class and
+drops an uncited board-flavoured sentence. R-TG3 grants `teaching` the long
+budget. Each is correct alone. Together they hand the longest budget to the
+answers with the least to say, because **nothing anywhere makes a teaching answer
+look at the plant**. The three teaching-routed HUNT probes in the same sweep DO
+read the board — they name a figure, a machine or an order — so **the difference
+is the QUESTION, not the route**.
+
+### THE RULING
+
+A teaching-intent answer must **ATTEMPT** to read the board: the loop makes at
+least one evidence read aimed at finding an instance of the principle under
+discussion. Then:
+
+  1. **CASE FOUND — the answer grounds it.** The principle is stated as
+     `general_knowledge` and this board's own instance is stated beside it as an
+     ordinary board claim with its `record_ids`. Two claims, never one; R-TG1's
+     split rule applied on purpose rather than only when the model catches itself
+     writing a mixed sentence.
+
+  2. **NO CASE FOUND — the answer teaches generally AND says so, in one line.**
+     It is a disclosure and not an apology: the principle still holds on general
+     grounds and the answer says that too. **The no-case line CITES THE READ THAT
+     FOUND NOTHING**, and that is load-bearing rather than stylistic —
+     *"nothing on this board is in that position"* is a statement about the
+     planner's plant, so uncited it carries no board content and **R-TG1
+     direction (ii) DROPS IT**. An uncited disclosure is a disclosure the planner
+     never sees. This is the one place where session (a)'s named limit — the
+     taxonomy has no class for a sentence about our own epistemic position —
+     reaches the prompt, and the answer is to GROUND the sentence rather than to
+     open a fourth class.
+
+  3. **THE ATTEMPT IS WHAT IS REQUIRED, NEVER THE GROUNDING.** A board with no
+     instance of the principle is a fact about the board. A forced stretch —
+     citing a record that does not actually show the principle, to satisfy a
+     checkbox — is the inverse defect and is explicitly worse: a planner can
+     check a missing example against nothing and a wrong one against their board.
+     M2's co-occurrence bound must not be gamed into aboutness theatre.
+
+  4. **THE CATALOG IS NOT THE BOARD.** `constraint_catalog` and `spec_lookup`
+     read the product's own documentation and have never seen this plant. Rule 9
+     still makes them mandatory before a capability claim; they do not satisfy
+     this rule. **Measured live: v8's first draft did exactly this** — it went
+     from one tool call to three, all of them the manual, and still shipped no
+     board claim. The clause and the grader's subtraction both come from that
+     observation.
+
+### WHY THIS ONE IS IN THE PROMPT AND R-TG3 IS AT THE SEAM
+
+R-TG3 put the depth licence at the dispatch seam because an instruction a model
+can forget will be forgotten (4A.y's general form). This ruling goes the other
+way, and the reason is the shape of what would be enforced. **A deterministic
+did-it-read gate can only count calls, and a rule that counts calls is satisfied
+by making one.** The cheapest way past such a gate is an empty read followed by
+the same answer; the second cheapest is a citation stretched over a record that
+does not show the principle — which clause 3 says is worse than the defect. So
+the prompt asks, **nothing is enforced**, the sweep measures the rate, and the
+close-out reports it. `tests/test_teaching_reads_board.py` asserts the absence of
+the gate, so a session that adds it has to delete a test that says why.
+
+Implementation: **synthesis prompt v7 -> v8, rule 14**. NO dispatch change, NO
+seam change, NO parse change (parse prompt stays **v18**), no new intent, no new
+claim class, no new status. Contract stays **1.15**; no docs/06 doorway is owed —
+this governs how an answer is composed, not what the plant declares.
+
+### THE INSTRUMENT GAINS ONE CHECK
+
+`grade_c9_sweep.py` gains **M5 THE ATTEMPT** — a teaching answer made at least
+one read OF THIS RUN, the manual subtracted. M2 is unchanged and keeps its
+co-occurrence bound. What separates *"there was no case and the answer said so"*
+from *"the answer never looked"* is M5 and M2 read together, and it separates
+them **because of the ruling's own shape**: a disclosed no-case cites, so it
+lands as a board claim. Every teaching turn carrying no board claim is REPORTED
+verbatim, because whether a sentence reads as a disclosure is a human's call.

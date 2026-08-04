@@ -1,0 +1,61 @@
+{
+  "schedule": "rolling-db5395dc-2ae",
+  "turns": 19,
+  "routing": {
+    "graded": 15,
+    "met": 15
+  },
+  "families": {
+    "e_long": {
+      "met": 12,
+      "of": 12
+    },
+    "f_short": {
+      "met": 3,
+      "of": 3
+    },
+    "g_no_false": {
+      "met": 9,
+      "of": 9
+    },
+    "h_audience": {
+      "met": 9,
+      "of": 10
+    },
+    "i_untouched": {
+      "met": 10,
+      "of": 10
+    }
+  },
+  "synthesis": {
+    "answers": 9,
+    "claims": 42,
+    "verified": 7,
+    "interpretive": 17,
+    "general_knowledge": 14,
+    "failed_and_cut": 4,
+    "deferred": 0,
+    "ungrounded_load_bearing": 4,
+    "unanswerable": 0,
+    "budget_exhausted": 0,
+    "tool_calls": 27,
+    "tool_histogram": {
+      "constraint_catalog": 3,
+      "cost_ledger": 3,
+      "entity_vocabulary": 4,
+      "lateness_set": 5,
+      "machine_occupancy": 10,
+      "spec_lookup": 2
+    },
+    "calls_per_answer": {
+      "1": 2,
+      "2": 1,
+      "3": 3,
+      "4": 2,
+      "6": 1
+    }
+  },
+  "problems": [
+    "[h_audience] line 130: no audience lead \u2014 CLARIFY"
+  ]
+}

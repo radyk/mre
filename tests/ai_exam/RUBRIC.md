@@ -1020,3 +1020,44 @@ WHAT THIS AMENDMENT DOES NOT DO. It adds no expectation to any existing bank and
 changes no question text (rule (a) of the r5 recalibration, carried). The
 specimens live in a NEW versioned bank,
 tests/ai_exam/banks/sweep_teaching_v3.txt.
+
+
+================================================================================
+AMENDMENT -- axis C9 gains M5, THE ATTEMPT (Session 4A teaching-graft (c2),
+2026-08-04, docs/04 R-TG5). APPEND-ONLY: nothing above is rewritten.
+================================================================================
+
+C9's first measurement was M2 0 of 4 -- four teaching answers, four labelled
+principles, not one board claim. R-TG5 rules that a teaching answer must ATTEMPT
+a read aimed at finding an instance of the principle on this board, and either
+show the instance or say it found none. The instrument gains the check that
+matches the ruling:
+
+  M5  THE ATTEMPT. A teaching answer made at least one read OF THIS RUN.
+      `constraint_catalog` and `spec_lookup` DO NOT COUNT: they read the
+      product's own documentation and have never seen this plant. That
+      subtraction is not fastidiousness -- v8's first live draft satisfied
+      itself with three manual lookups and shipped no board claim, which is the
+      exact shape a call-counting check would have passed.
+
+M5 IS THE ATTEMPT AND NOT THE GROUNDING, and that is the ruling's own boundary.
+A board with no instance of the principle is a fact about the board, so an
+answer that looked and found nothing is CORRECT behaviour and must not be graded
+as a miss. The inverse defect -- a citation stretched over a record that does
+not show the principle, to make M2 green -- is explicitly worse than the defect
+M5 exists to catch, because a planner can check a missing example against
+nothing and a wrong one against their board. M2's co-occurrence bound (above,
+unchanged) must never be gamed into aboutness theatre.
+
+DISCLOSURE vs SILENCE, and why counts can separate them here. A no-case
+disclosure has to CITE the read that found nothing -- uncited, R-TG1 direction
+(ii) drops it and the planner never learns that we checked -- so a disclosed
+no-case lands as a board claim. M5 green + M2 green is therefore either an
+instance or a disclosure; M5 red is silence. Which of the two a green pair is
+remains a human's read, and every teaching turn carrying no board claim is
+REPORTED VERBATIM by the grader for exactly that reason.
+
+WHAT THIS AMENDMENT DOES NOT DO. It adds no expectation to any bank, changes no
+question text, and does not touch H1-H3 or the refusal of the LLM judge. The
+founder round (tools/spikes/teaching_graft_c/founder_round_c9.md) is still
+unrun and is still the honest instrument for H2.

@@ -171,6 +171,65 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Micro-session 4A teaching-graft (c2) — the teaching answer reads the board**,
+2026-08-04 (docs/07 v2.91, §5a.177-180; docs/04 2026-08-04 **R-TG5 ruled and
+BUILT**; contract unchanged **1.15**, no docs/06 doorway owed; parse prompt
+UNCHANGED **v18**, synthesis prompt **v7 -> v8**; RUBRIC axis C9 gains **M5 THE
+ATTEMPT**; narrative in `docs/closeouts/4a-teaching-c2-reads-the-board.md`).
+**THE FIX SESSION (c) MEASURED AND DELIBERATELY REFUSED TO MAKE, AND IT IS ONE
+PROMPT RULE.** **R-TG5: a teaching answer must ATTEMPT a read aimed at finding an
+instance of the principle ON THIS BOARD** — case found, it grounds it (principle
+labelled general knowledge, instance cited beside it); no case found, it teaches
+generally AND SAYS SO in one line. **THE ATTEMPT IS WHAT IS REQUIRED, NEVER THE
+GROUNDING**: a board with no instance is a fact about the board, and a stretch
+(citing a record that does not show the principle, to make M2 green) is the
+inverse defect and the more expensive one — *a planner can check a missing
+example against nothing and a wrong one against their board*. **THE NO-CASE LINE
+CITES THE READ THAT FOUND NOTHING**, load-bearing because *"nothing on this board
+is in that position"* is a statement about the PLANT: uncited it carries no board
+content and **R-TG1 direction (ii) DROPS IT**, so an uncited disclosure is a
+disclosure the planner never sees (session (a)'s no-class-for-our-own-epistemic-
+position limit reaching the prompt; the answer is to GROUND the sentence, not
+open a fourth class — both halves asserted against the LIVE verifier). **NOTHING
+IS ENFORCED AT THE SEAM, BY RULING** — R-TG3 is at the seam because a forgettable
+instruction gets forgotten; this one is not, because **a deterministic
+did-it-read gate can only count calls and a rule that counts calls is satisfied
+by making one**, and a guard asserts the ABSENCE of the gate so a session adding
+it must delete a test saying why. **THE FIRST DRAFT FAILED IN THE SHAPE THE
+RULING HAD ALREADY NAMED**: rule 14 as first written said *make at least one
+read*, and the model went from ONE tool call to THREE — `constraint_catalog` and
+`spec_lookup`, twice — and shipped **ZERO board claims**. It had obeyed; the
+catalog reads OUR DOCUMENTATION and has never seen this plant. **THE CATALOG IS
+NOT THE BOARD** is in the prompt because of that measurement, and M5 subtracts
+the two documentation tools. **BEFORE/AFTER, same instrument, same board:
+m2_attached 0/4 -> 4/4**, m5_attempt **4/4** (2-4 board reads each), routing 8/8,
+m1/m3/m4 4/4, controls 2/2, **problems none**; cuts **7 -> 3** and verified
+**4 -> 6**, which is the mechanism visible — the sentences now cite so direction
+(ii) has less to drop. **THE FLOOR TAIL IS CLOSED**: the same question six times
+cold, **floor hits 1/6 -> 0/6**, read 6/6, board claim 6/6, kept claims
+**[2,3,4,4,4,3]** against turn 51's **one**. **NON-REGRESSION IS EXACT** —
+session (b)'s `sweep_teaching_v2` re-swept gives routing 15/15, long 12/12, short
+3/3, no-false-closer 9/9, audience 9/10, untouched 10/10, the same scores and the
+SAME single known miss (line 130 CLARIFY). **NEGATIVE CONTROL**: rule 14
+physically excised → read 4/4 -> **2/4**, board claim 4/4 -> **2/4**, P1/P2
+collapsing to (c)'s exact shape; it fires on TWO pairs of four and not four, and
+that is reported rather than re-rolled (live model, variance established), with
+the COMMITTED before-sweep staying the baseline of record; restore byte-identical
+by sha256. **THE NO-CASE BRANCH HAS A LIVE SPECIMEN**, on the fenced world whose
+tardiness is $0.00: *"Right now none of this plant's 9 scheduled orders are
+actually late, so this board is not currently showing a delay propagating end to
+end — only the tight, zero-slack coupling that would carry one if it happened"*,
+**cited**, beside the labelled principle. **Python 2658/305/0** against (c)'s **2643/305/0**, +15 and the new guard file collects exactly 15 (a FIRST full run read 2657/305/1 — `test_corpus`'s currency guard, RED because the corpus index was rebuilt for the docs amendments WHILE that run was in flight; rebuilt, 22/22, and the clean run is the run of record). **`--runslow` NOT re-run** — (c)'s known red is a live-PARSE routing outcome and this session changed only the SYNTHESIS prompt, so it is not claimed either way. **Cockpit
+UNTOUCHED, not re-run. MINTED NOTHING** (the fenced world is read-only here).
+NOT FIXED, named: **rule 6 and rule 14 disagree about what goes first and the
+model splits 2-2** (P2/P4 lead with the principle, P1/P3 with the board case —
+naming the opener would be a fifth ordering rule, not opened); **the LONG budget
+still does not bind** (deferred 0 across both sweeps, kept 2-4 against a licence
+of 8 — a third measurement of (c) §6.2); **the stretch is unmeasured in the
+wild** (clause 3 is uncatchable mechanically, four answers read is not a rate);
+**M5 counts a read, not a RELEVANT read** (the doc-tool subtraction is its only
+aboutness, deliberately crude); and `SYNTHESIS_UNPLACEABLE` still fires wherever
+one claim is dropped. Before it:
 **Session 4A teaching-graft (c) — the exam learns to grade understanding**,
 2026-08-04 (docs/07 v2.90, §5a.170-176; docs/04 2026-08-04 **R-SW1 and R-EX1
 ruled and BUILT**; contract unchanged **1.15**, no docs/06 doorway owed, both
@@ -1984,7 +2043,7 @@ disclosed, not answered); the winner's wall (416.9s) EXCEEDS the portfolio's
   of one question) — humble rather than wrong, but distinguishing "one answer
   because I am confused" from "one answer because it IS the answer" needs a
   signal this session does not have.
-  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, ~88k after 4B.25, ~92k after 4B.26, ~96k after 4B.29, ~102k after 4B.27, ~110k after 4B.28, **~142k after 4A teaching-graft (a)**, **~155k after 4A teaching-graft (c) — 3.9x the ceiling, and past the 150k limit the 2026-07-25 maintenance note was written about**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, ~88k after 4B.25, ~92k after 4B.26, ~96k after 4B.29, ~102k after 4B.27, ~110k after 4B.28, **~142k after 4A teaching-graft (a)**, **~155k after 4A teaching-graft (c)**, **~160k after 4A teaching-graft (c2) — 4.0x the ceiling, and past the 150k limit the 2026-07-25 maintenance note was written about**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
   **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
   day-shift restriction answered as C1/C2 "proven end to end" when the item is
   C4 (model-proven, §8 doorway). Caught and pinned; the class stands.

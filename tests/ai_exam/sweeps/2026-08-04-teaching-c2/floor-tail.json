@@ -1,0 +1,152 @@
+{
+  "question": "what generally decides whether an operation can be moved earlier on a board like this one",
+  "run": "rolling-db5395dc-2ae",
+  "n": 6,
+  "floor_hits": 0,
+  "read_this_run": 6,
+  "carried_board_claim": 6,
+  "rows": [
+    {
+      "i": 1,
+      "intent": "teaching",
+      "route": "synthesis",
+      "floor": false,
+      "kept": 2,
+      "verified": 1,
+      "interpretive": 0,
+      "general_knowledge": 1,
+      "cut": 2,
+      "deferred": 0,
+      "tools": [
+        "constraint_catalog",
+        "lateness_set",
+        "machine_occupancy"
+      ],
+      "board_reads": [
+        "lateness_set",
+        "machine_occupancy"
+      ],
+      "board_claims": 1
+    },
+    {
+      "i": 2,
+      "intent": "teaching",
+      "route": "synthesis",
+      "floor": false,
+      "kept": 3,
+      "verified": 0,
+      "interpretive": 1,
+      "general_knowledge": 2,
+      "cut": 1,
+      "deferred": 0,
+      "tools": [
+        "constraint_catalog",
+        "lateness_set",
+        "machine_occupancy",
+        "entity_vocabulary",
+        "machine_occupancy"
+      ],
+      "board_reads": [
+        "lateness_set",
+        "machine_occupancy",
+        "entity_vocabulary",
+        "machine_occupancy"
+      ],
+      "board_claims": 1
+    },
+    {
+      "i": 3,
+      "intent": "teaching",
+      "route": "synthesis",
+      "floor": false,
+      "kept": 4,
+      "verified": 1,
+      "interpretive": 2,
+      "general_knowledge": 1,
+      "cut": 0,
+      "deferred": 0,
+      "tools": [
+        "constraint_catalog",
+        "lateness_set",
+        "placements_for_order",
+        "machine_occupancy"
+      ],
+      "board_reads": [
+        "lateness_set",
+        "placements_for_order",
+        "machine_occupancy"
+      ],
+      "board_claims": 3
+    },
+    {
+      "i": 4,
+      "intent": "teaching",
+      "route": "synthesis",
+      "floor": false,
+      "kept": 4,
+      "verified": 0,
+      "interpretive": 3,
+      "general_knowledge": 1,
+      "cut": 0,
+      "deferred": 0,
+      "tools": [
+        "constraint_catalog",
+        "placements_in_window",
+        "placements_for_order",
+        "machine_occupancy"
+      ],
+      "board_reads": [
+        "placements_in_window",
+        "placements_for_order",
+        "machine_occupancy"
+      ],
+      "board_claims": 3
+    },
+    {
+      "i": 5,
+      "intent": "teaching",
+      "route": "synthesis",
+      "floor": false,
+      "kept": 4,
+      "verified": 1,
+      "interpretive": 2,
+      "general_knowledge": 1,
+      "cut": 0,
+      "deferred": 0,
+      "tools": [
+        "constraint_catalog",
+        "lateness_set",
+        "entity_vocabulary",
+        "machine_occupancy"
+      ],
+      "board_reads": [
+        "lateness_set",
+        "entity_vocabulary",
+        "machine_occupancy"
+      ],
+      "board_claims": 3
+    },
+    {
+      "i": 6,
+      "intent": "teaching",
+      "route": "synthesis",
+      "floor": false,
+      "kept": 3,
+      "verified": 1,
+      "interpretive": 1,
+      "general_knowledge": 1,
+      "cut": 1,
+      "deferred": 0,
+      "tools": [
+        "constraint_catalog",
+        "lateness_set",
+        "machine_occupancy"
+      ],
+      "board_reads": [
+        "lateness_set",
+        "machine_occupancy"
+      ],
+      "board_claims": 2
+    }
+  ]
+}

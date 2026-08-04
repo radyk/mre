@@ -1,6 +1,16 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.90 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.91 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.91:** **Micro-session 4A teaching-graft (c2) — the teaching answer reads
+the board** (2026-08-04; §5a.177-180; docs/04 2026-08-04 **R-TG5 ruled and
+BUILT**; contract unchanged **1.15**, no docs/06 doorway owed; parse prompt
+UNCHANGED **v18**, synthesis prompt **v7 -> v8**; RUBRIC axis C9 gains **M5 THE
+ATTEMPT**; narrative in `docs/closeouts/4a-teaching-c2-reads-the-board.md`). The
+fix session (c) measured and deliberately refused to make: **M2 goes 0/4 -> 4/4**
+and the floor tail **1/6 -> 0/6**, on the same instrument and the same board.
+**NO SEAM CHANGE, NO DISPATCH CHANGE, NO NEW INTENT AND NO NEW CLAIM CLASS** —
+one prompt rule, and the rest of the session is the measurement of it.
 
 **v2.90:** **Session 4A teaching-graft (c) — the exam learns to grade
 understanding** (2026-08-04; §5a.170-176; docs/04 2026-08-04 **R-SW1 and R-EX1
@@ -6364,6 +6374,97 @@ promise the answer does not track. **(g) `_open_windows`' FORTNIGHT PAD IS WHAT
 MAKES `later-open` UNIVERSAL** and is unexamined: it is a reasonable scan bound
 and it is also the reason a real plant's last week before a shutdown would read
 as freely movable. Named, not ruled.
+
+**§5a.177 — R-TG5: A TEACHING ANSWER READS THE BOARD** (docs/04 2026-08-04,
+synthesis prompt **v7 -> v8**, rule 14). §5a.176(a) DISCHARGED. A
+teaching-intent answer must **ATTEMPT** a read aimed at finding an instance of
+the principle on this board; case found, it grounds it (the principle labelled
+general knowledge, the instance cited beside it); no case found, it teaches
+generally **and says so in one line**. **THE ATTEMPT IS WHAT IS REQUIRED, NEVER
+THE GROUNDING** — a board with no instance is a fact about the board, and a
+stretch (citing a record that does not show the principle, to make M2 green) is
+the inverse defect and explicitly the more expensive one, *because a planner can
+check a missing example against nothing and a wrong one against their board*.
+**THE NO-CASE LINE CITES THE READ THAT FOUND NOTHING**, and that is load-bearing:
+*"nothing on this board is in that position"* is a statement about the planner's
+plant, so uncited it carries no board content and **R-TG1 direction (ii) DROPS
+IT** — an uncited disclosure is a disclosure the planner never sees. This is
+where session (a)'s named limit (no class for a sentence about our own epistemic
+position) reaches the prompt, and the answer is to GROUND the sentence rather
+than open a fourth class; both halves are asserted against the LIVE verifier in
+`tests/test_teaching_reads_board.py`. **NOTHING IS ENFORCED AT THE SEAM, BY
+RULING** — R-TG3 put the depth licence at the dispatch seam because a forgettable
+instruction gets forgotten; this one goes the other way because **a deterministic
+did-it-read gate can only count calls, and a rule that counts calls is satisfied
+by making one**. A guard asserts the ABSENCE of the gate, so a session that adds
+it must delete a test that says why. **NO seam, dispatch, intent, claim-class or
+parse change; parse prompt UNCHANGED v18; contract 1.15; no docs/06 doorway.**
+
+**§5a.178 — THE FIRST DRAFT OF THE FIX FAILED IN THE SHAPE THE RULING HAD
+ALREADY NAMED.** v8's rule 14 as first written said *make at least one read*.
+Live on the demo board, the same probe went from **one tool call to three** —
+`constraint_catalog` and `spec_lookup`, twice over — and still shipped **ZERO
+board claims**. It had obeyed the rule: the catalog IS a read, and rule 9 makes
+reaching for it mandatory before a capability claim. It reads **the product's own
+documentation and has never seen this plant**. **A CALL-COUNTING RULE IS
+SATISFIED BY A CALL** — the argument that kept the gate out of the seam, arriving
+one layer up in the prompt's own words. Rule 14 now names the distinction (*THE
+CATALOG IS NOT THE BOARD*) and the grader's M5 SUBTRACTS the two documentation
+tools. **The clause exists because of a measurement, not because of foresight.**
+
+**§5a.179 — THE BEFORE AND AFTER, SAME INSTRUMENT, SAME BOARD.**
+`sweep_teaching_v3` on `rolling-db5395dc-2ae`; BEFORE is session (c)'s committed
+run, AFTER is this session's. **m2_attached 0/4 -> 4/4**; **m5_attempt 4/4** (new
+— all four teaching answers read this run, 2-4 board reads each); routing 8/8,
+m1 4/4, m3 4/4, m4 4/4, controls 2/2, **problems: none**. Cut claims across the
+sweep fell **7 -> 3** and verified rose **4 -> 6**: the sentences now cite, so
+direction (ii) has less to drop. **THE FLOOR TAIL IS CLOSED** — the same teaching
+question asked six times cold: **floor hits 1/6 -> 0/6**, read this run **6/6**,
+carried a board claim **6/6**, kept claims **[2,3,4,4,4,3]** against turn 51's
+**one**. RUBRIC axis C9 gains **M5 THE ATTEMPT** (append-only amendment) and the
+grader gains a pure `classify_teaching_turn` so the disclosure-vs-silence branch
+is premise-tested with injected turns; **M2 keeps its co-occurrence bound word
+for word**, and every teaching turn with no board claim is REPORTED VERBATIM
+rather than judged, because whether a sentence reads as a disclosure is a human's
+call. **NON-REGRESSION IS EXACT:** session (b)'s `sweep_teaching_v2` re-swept
+returns **routing 15/15, long 12/12, short 3/3, no-false-closer 9/9, audience
+9/10, untouched 10/10** — the same family scores and the SAME single known miss
+(line 130 CLARIFY, which (b) kept deliberately). **NEGATIVE CONTROL:** rule 14
+physically excised, same four probes — **read this run 4/4 -> 2/4, carried a
+board claim 4/4 -> 2/4**, and P1/P2 collapse to session (c)'s exact shape (zero
+reads, zero board claims). It fires on two pairs of four and not on all four,
+which is the honest result for a live model and is reported as such; the
+COMMITTED before-sweep stays the baseline of record. Restore byte-identical
+(sha256 asserted). **THE NO-CASE BRANCH HAS A LIVE SPECIMEN** and it is on the
+fenced world, whose tardiness is $0.00 so the propagation principle has no
+instance there: *"Right now none of this plant's 9 scheduled orders are actually
+late, so this board is not currently showing a delay propagating end to end —
+only the tight, zero-slack coupling that would carry one if it happened"*, **with
+a record citation**, beside the labelled principle and a real zero-gap pair.
+
+**§5a.180 — 4A-(c2)'s CARRY-FORWARDS (REPORTED, deliberately NOT fixed).**
+**(a) RULE 6 AND RULE 14 DISAGREE ABOUT WHAT GOES FIRST, AND THE MODEL SPLITS
+2-2.** Rule 6 says put the answer in the first claim; on a teaching question the
+principle arguably IS the answer, and rule 14 asks for the board case as well.
+Measured on run 1: P2 and P4 lead with the principle, **P1 and P3 lead with the
+board case**. Both are defensible and nothing chooses. Naming the opener would be
+a fifth rule about ordering and this session did not open it. **(b) THE LONG
+BUDGET STILL DOES NOT BIND** — deferred **0** across both sweeps, kept claims 2-4
+against a licence of 8, so R-TG3's ceiling remains a floor with no load on it
+(4A-(c) §6.2, unchanged, now measured a third time). Rule 14 raised what an
+answer SAYS without raising how MUCH it says. **(c) THE STRETCH IS UNMEASURED IN
+THE WILD.** Clause 3 forbids citing a record that does not really show the
+principle, and nothing mechanical can catch it — M2 is co-occurrence only and
+says so. The four after-answers were read and none stretches, but four read
+answers are not a rate. **(d) M5 COUNTS A READ, NOT A RELEVANT READ.** An answer
+that called `lateness_set` and then talked about something else would pass. The
+subtraction of the two documentation tools is the only aboutness M5 has, and it
+is deliberately crude — a check whose name over-claims is the defect this repo
+has now found seven ways. **(e) `SYNTHESIS_UNPLACEABLE` STILL FIRES ON MOST
+TEACHING ANSWERS** (*"Part of what I drafted was neither..."*): cuts fell 7 -> 3
+but did not reach zero, and the line appears whenever one claim is dropped.
+Pre-existing and correct; noted because it now sits under answers that are
+otherwise fully grounded.
 
 ## 6. Open rulings queue
 

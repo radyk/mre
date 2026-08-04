@@ -1,0 +1,188 @@
+{
+  "schedule": "rolling-db5395dc-2ae",
+  "restore_sha256": "bcfaecdf09e84639191def1d34ce93d3add51a76b165302c679aaa04c935c0bd",
+  "restore_identical": true,
+  "shipped": {
+    "n": 4,
+    "read_this_run": 4,
+    "carried_board_claim": 4,
+    "board_claims": [
+      1,
+      2,
+      1,
+      3
+    ],
+    "reads": [
+      4,
+      3,
+      1,
+      3
+    ]
+  },
+  "control": {
+    "n": 4,
+    "read_this_run": 2,
+    "carried_board_claim": 2,
+    "board_claims": [
+      0,
+      0,
+      1,
+      1
+    ],
+    "reads": [
+      0,
+      0,
+      1,
+      1
+    ]
+  },
+  "rows": [
+    {
+      "arm": "v8 (shipped)",
+      "q": "what generally decides whether an operation can be moved earlier on a board like this one",
+      "route": "synthesis",
+      "tools": [
+        "constraint_catalog",
+        "lateness_set",
+        "machine_occupancy",
+        "entity_vocabulary",
+        "machine_occupancy"
+      ],
+      "board_reads": [
+        "lateness_set",
+        "machine_occupancy",
+        "entity_vocabulary",
+        "machine_occupancy"
+      ],
+      "board_claims": 1,
+      "general_knowledge": 1,
+      "cut": 2,
+      "kept": 2,
+      "text": "No contracted answer covers that one, so this is me reading the evidence directly \u2014 each line below says what backs it.\n\nWhether an operation can move earlier on this board is generally decided by four things together: the operation's own predecessor finishing (finish-start precedence), the target machine or an eligible alternative actually being open at that earlier time (calendar and any downtime), no pin or frozen-operation lock holding it in place, and enough open capacity sitting in the gap for the operation's working minutes to fit \u2014 not just wall-clock gap.  [general knowledge \u2014 how scheduling works in general, not a fact about this plan]\nOn PRESS-FAST, several operations already sit right after a real open gap rather than back-to-back \u2014 for example 90 open minutes before ORD-000232 on 2026-01-15, 100 open minutes before ORD-000149 on 2026-01-20, and 206 open minutes before ORD-000201 on 2026-01-19 \u2014 showing the kind of open-capacity window an earlier operation would need to fit into on this machine.  [synthesis \u2014 read from: f7ebc1fc, 584f5c26, 203b3fd2]\n\nWhere a line is marked general knowledge it draws on how scheduling and plants behave generally \u2014 not on this plan's records, so there is nothing here to check it against.\n\nPart of what I drafted was neither something I could check against your board nor general scheduling knowledge, so I left it out rather than state it with a label that would have been wrong either way.\n\nThat is how it works in general \u2014 you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.\n[rendered by: synthesis (claude-sonnet-5) \u2014 5 tool call(s) | register: synthesis]"
+    },
+    {
+      "arm": "v8 (shipped)",
+      "q": "in general, why does one order running late tend to make other orders late as well",
+      "route": "synthesis",
+      "tools": [
+        "lateness_set",
+        "placements_for_order",
+        "machine_occupancy"
+      ],
+      "board_reads": [
+        "lateness_set",
+        "placements_for_order",
+        "machine_occupancy"
+      ],
+      "board_claims": 2,
+      "general_knowledge": 1,
+      "cut": 1,
+      "kept": 3,
+      "text": "No contracted answer covers that one, so this is me reading the evidence directly \u2014 each line below says what backs it.\n\nOne order's lateness spreads to others because they wait on the same shared, ordered resources: once a machine's queue slips, every order still waiting behind it inherits the delay, not just the order that caused it.  [general knowledge \u2014 how scheduling works in general, not a fact about this plan]\nOn PAINT-02, ORD-000206's paint operation is scheduled for 2026-02-02 17:25-19:00, immediately after ORD-000222 finishes at 17:10 with only a 15-minute gap between them - the two orders are queued back to back on the same machine.  [synthesis \u2014 read from: a3062a95, 93ca0399, a740525e]\nPAINT-02 carries 44 scheduled operations from 2026-01-06 through 2026-02-03 at 57.3% utilization, most placed back-to-back with small gaps (commonly 0-73 minutes) between consecutive orders, so a slip on one operation pushes into the next order's slot rather than into open capacity. (based on the 60 row(s) lateness_set returned, not the whole plan)  [synthesis \u2014 read from: d9cc6ac1]\n\nWhere a line is marked general knowledge it draws on how scheduling and plants behave generally \u2014 not on this plan's records, so there is nothing here to check it against.\n\nPart of what I drafted was neither something I could check against your board nor general scheduling knowledge, so I left it out rather than state it with a label that would have been wrong either way.\n\nThat is how it works in general \u2014 you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.\n[rendered by: synthesis (claude-sonnet-5) \u2014 3 tool call(s) | register: synthesis]"
+    },
+    {
+      "arm": "v8 (shipped)",
+      "q": "how does a scheduler decide which of two orders competing for the same machine goes first",
+      "route": "synthesis",
+      "tools": [
+        "constraint_catalog",
+        "cost_ledger"
+      ],
+      "board_reads": [
+        "cost_ledger"
+      ],
+      "board_claims": 1,
+      "general_knowledge": 1,
+      "cut": 2,
+      "kept": 2,
+      "text": "No contracted answer covers that one, so this is me reading the evidence directly \u2014 each line below says what backs it.\n\nOn this plan, tardiness cost is not uniform across orders: ORD-000091 carries a tardiness cost of 147776.67 against a projected completion of 2026-01-15T18:53:00Z, while ORD-000260 carries only 8092.08 against 2026-01-15T11:41:00Z \u2014 so orders are not interchangeable when a machine conflict has to be broken.  [record: 47a25482...]\nIn general, a scheduler facing two orders that want the same machine slot sequences the one whose delay is more expensive first \u2014 driven by due date proximity, remaining slack, and how steeply its lateness cost accrues \u2014 because that is the sequence that minimizes total tardiness cost across the plan, not a fixed priority list.  [general knowledge \u2014 how scheduling works in general, not a fact about this plan]\n\nWhere a line is marked general knowledge it draws on how scheduling and plants behave generally \u2014 not on this plan's records, so there is nothing here to check it against.\n\nPart of what I drafted was neither something I could check against your board nor general scheduling knowledge, so I left it out rather than state it with a label that would have been wrong either way.\n\nThat is how it works in general \u2014 you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.\n[rendered by: synthesis (claude-sonnet-5) \u2014 2 tool call(s) | register: synthesis]"
+    },
+    {
+      "arm": "v8 (shipped)",
+      "q": "what does an optimality gap actually mean and how should i read one",
+      "route": "synthesis",
+      "tools": [
+        "spec_lookup",
+        "spec_lookup",
+        "spec_lookup",
+        "spec_lookup",
+        "spec_lookup",
+        "gate_findings",
+        "cost_ledger",
+        "capability_registry",
+        "constraint_catalog"
+      ],
+      "board_reads": [
+        "gate_findings",
+        "cost_ledger",
+        "capability_registry"
+      ],
+      "board_claims": 3,
+      "general_knowledge": 1,
+      "cut": 0,
+      "kept": 4,
+      "text": "No contracted answer covers that one, so this is me reading the evidence directly \u2014 each line below says what backs it.\n\nAn optimality gap is the solver's own uncertainty band: the distance between the best schedule it has actually found and the best mathematically possible schedule it can prove exists, expressed as a percentage of cost or objective value.  [general knowledge \u2014 how scheduling works in general, not a fact about this plan]\nA gap of 0% means the solution is proven optimal; a gap of, say, 5% means the true optimum could be as much as 5% better in cost than the schedule you are looking at, but the solver has not found it and cannot rule it out in the time it was given.  [synthesis \u2014 read from: d959ce6a, 0852f8e4, 2259fe61]\nThis plan's ledger reports one total cost of 1,667,467.80, made of production, setup and tardiness cost, with no gap figure, lower bound, or solver-termination stat attached to it.  [synthesis \u2014 read from: 3c67fcfd]\nRead a gap as a ceiling on regret, not as an error: it tells you how much room is left between what you have and perfection, and it shrinks the longer the solver runs \u2014 a small gap on a schedule like this one, where tardiness cost (1,580,665.00) dominates production and setup cost combined, means you can trust the plan is close to the best achievable trade-off between those tardiness penalties and the rest; a large or unreported gap means the schedule is usable but you don't yet know how much better one could exist.  [synthesis \u2014 read from: 3c67fcfd]\n\nWhere a line is marked general knowledge it draws on how scheduling and plants behave generally \u2014 not on this plan's records, so there is nothing here to check it against.\n\nThat is how it works in general \u2014 you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.\n[rendered by: synthesis (claude-sonnet-5) \u2014 9 tool call(s) | register: synthesis]"
+    },
+    {
+      "arm": "no rule 14 (control)",
+      "q": "what generally decides whether an operation can be moved earlier on a board like this one",
+      "route": "synthesis",
+      "tools": [
+        "constraint_catalog"
+      ],
+      "board_reads": [],
+      "board_claims": 0,
+      "general_knowledge": 1,
+      "cut": 3,
+      "kept": 1,
+      "text": "No contracted answer covers that one, so this is me reading the evidence directly \u2014 each line below says what backs it.\n\nWhether an operation can move earlier is generally decided by its precedence links, resource availability, and any pin or lock on it \u2014 not something that can be re-derived by eyeballing the board.  [general knowledge \u2014 how scheduling works in general, not a fact about this plan]\n\nWhere a line is marked general knowledge it draws on how scheduling and plants behave generally \u2014 not on this plan's records, so there is nothing here to check it against.\n\nPart of what I drafted was neither something I could check against your board nor general scheduling knowledge, so I left it out rather than state it with a label that would have been wrong either way.\n\nThat is how it works in general \u2014 you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.\n[rendered by: synthesis (claude-sonnet-5) \u2014 1 tool call(s) | register: synthesis]"
+    },
+    {
+      "arm": "no rule 14 (control)",
+      "q": "in general, why does one order running late tend to make other orders late as well",
+      "route": "synthesis",
+      "tools": [],
+      "board_reads": [],
+      "board_claims": 0,
+      "general_knowledge": 3,
+      "cut": 1,
+      "kept": 3,
+      "text": "No contracted answer covers that one, so this is me reading the evidence directly \u2014 each line below says what backs it.\n\nWhen an order finishes late on a machine, that machine's next scheduled operation often has to start late too, because the machine cannot run two jobs at once \u2014 the delay is passed forward in the queue.  [general knowledge \u2014 how scheduling works in general, not a fact about this plan]\nIf the late job and the next job share any downstream machine, the same push-back repeats there, so the delay can propagate across several machines rather than staying local to one.  [general knowledge \u2014 how scheduling works in general, not a fact about this plan]\nSchedules are usually built with little or no slack between operations to keep utilization high, so there is often no spare open capacity nearby to absorb a delay without bumping the next job.  [general knowledge \u2014 how scheduling works in general, not a fact about this plan]\n\nWhere a line is marked general knowledge it draws on how scheduling and plants behave generally \u2014 not on this plan's records, so there is nothing here to check it against.\n\nPart of what I drafted was neither something I could check against your board nor general scheduling knowledge, so I left it out rather than state it with a label that would have been wrong either way.\n\nThat is how it works in general \u2014 you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.\n[rendered by: synthesis (claude-sonnet-5) \u2014 0 tool call(s) | register: synthesis]"
+    },
+    {
+      "arm": "no rule 14 (control)",
+      "q": "how does a scheduler decide which of two orders competing for the same machine goes first",
+      "route": "synthesis",
+      "tools": [
+        "constraint_catalog",
+        "cost_ledger"
+      ],
+      "board_reads": [
+        "cost_ledger"
+      ],
+      "board_claims": 1,
+      "general_knowledge": 1,
+      "cut": 2,
+      "kept": 2,
+      "text": "No contracted answer covers that one, so this is me reading the evidence directly \u2014 each line below says what backs it.\n\nThe plan's cost ledger shows tardiness cost of 1,580,665 against production cost of 71,362.8 and setup cost of 15,440, out of a total cost of 1,667,467.8 \u2014 so tardiness dominates the objective this schedule was optimized against.  [synthesis \u2014 read from: 3c67fcfd]\nIn general, a cost-based scheduler breaks a machine tie not by a fixed priority rule like 'earliest due date first' but by comparing the total-cost consequence of each ordering \u2014 including downstream tardiness on other orders and setup costs from sequencing \u2014 and picking whichever order of operations produces the lower total cost across the whole plan, not just the two orders in question.  [general knowledge \u2014 how scheduling works in general, not a fact about this plan]\n\nWhere a line is marked general knowledge it draws on how scheduling and plants behave generally \u2014 not on this plan's records, so there is nothing here to check it against.\n\nPart of what I drafted was neither something I could check against your board nor general scheduling knowledge, so I left it out rather than state it with a label that would have been wrong either way.\n\nThat is how it works in general \u2014 you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.\n[rendered by: synthesis (claude-sonnet-5) \u2014 2 tool call(s) | register: synthesis]"
+    },
+    {
+      "arm": "no rule 14 (control)",
+      "q": "what does an optimality gap actually mean and how should i read one",
+      "route": "synthesis",
+      "tools": [
+        "spec_lookup",
+        "spec_lookup",
+        "gate_findings"
+      ],
+      "board_reads": [
+        "gate_findings"
+      ],
+      "board_claims": 1,
+      "general_knowledge": 4,
+      "cut": 1,
+      "kept": 5,
+      "text": "No contracted answer covers that one, so this is me reading the evidence directly \u2014 each line below says what backs it.\n\nAn optimality gap is the percentage difference between the best solution the solver found and the best mathematical proof it has of how good a solution could theoretically be \u2014 it tells you how far the reported plan might be from perfect, not how far it is from perfect.  [general knowledge \u2014 how scheduling works in general, not a fact about this plan]\nConcretely, the solver tracks two numbers as it runs: the best feasible schedule found so far (the incumbent), and a bound on the best any schedule could possibly achieve given the constraints. The gap is (incumbent minus bound) divided by the bound, expressed as a percent.  [general knowledge \u2014 how scheduling works in general, not a fact about this plan]\nA small gap (say under 1-2%) means the solver is confident the plan is near-optimal; a large gap means the plan is merely the best one found in the time allowed, and a meaningfully better one may exist but hasn't been found or ruled out yet.  [general knowledge \u2014 how scheduling works in general, not a fact about this plan]\nTardiness and setup objectives in particular tend to produce weak bounds early in a solve, so a wide gap on those terms often shrinks a lot with more solve time even when the incumbent schedule barely changes.  [general knowledge \u2014 how scheduling works in general, not a fact about this plan]\nI did not find an optimality-gap figure anywhere in this run's tool set \u2014 cost_ledger, lateness_set and gate_findings report actuals and findings on the placed schedule, not solver-progress metrics, so I can't tell you what gap value (if any) applies to this specific plan.  [synthesis \u2014 read from: d959ce6a, 0852f8e4, 2259fe61]\n\nWhere a line is marked general knowledge it draws on how scheduling and plants behave generally \u2014 not on this plan's records, so there is nothing here to check it against.\n\nPart of what I drafted was neither something I could check against your board nor general scheduling knowledge, so I left it out rather than state it with a label that would have been wrong either way.\n\nThat is how it works in general \u2014 you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.\n[rendered by: synthesis (claude-sonnet-5) \u2014 3 tool call(s) | register: synthesis]"
+    }
+  ]
+}

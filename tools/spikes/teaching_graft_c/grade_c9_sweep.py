@@ -24,6 +24,28 @@ a script can honestly make, and REPORTS (never asserts) the two hunts.
                             invalid pair cannot grade transfer and is REPORTED
                             as invalid, never counted as a failure.
 
+  M5  THE ATTEMPT        — R-TG5, added by session (c2). A teaching answer made
+                            at least one read OF THIS RUN. This is the thing the
+                            ruling actually requires: the ATTEMPT, never the
+                            grounding, because a board with no instance of the
+                            principle is a fact about the board and not a defect
+                            in the answer. `constraint_catalog` and `spec_lookup`
+                            DO NOT COUNT — they read the product's own
+                            documentation and have never seen this plant, and
+                            counting them would let an answer satisfy the check
+                            by looking up the manual (measured live at v8's first
+                            draft, which did exactly that).
+
+  DISCLOSURE vs SILENCE. M2 stays a co-occurrence count and its bound is
+  unchanged. What separates "there was no case and the answer said so" from
+  "the answer never looked" is M5 plus M2 read together, and it separates them
+  BECAUSE OF THE RULING'S OWN SHAPE: a no-case sentence has to cite the read
+  that found nothing (uncited, R-TG1(ii) drops it), so a disclosed no-case lands
+  as a board claim and shows M5 green / M2 green, while silence shows M5 red or
+  M2 red. Every teaching turn carrying no board claim is additionally REPORTED
+  verbatim under `no_board_claim_turns`, because whether a sentence reads as a
+  disclosure is a human's call and not a script's.
+
   CONTROLS — a contracted answer renders no teaching invitation, and a
              non-teaching second-tier answer is not required to carry a
              principle (requiring one of every answer would be C8b's failure
@@ -85,6 +107,45 @@ REFUSAL_MARK = "offered as general knowledge and refused the label because"
 #: Answers that mean "I did not answer" — an unanswered half invalidates a pair.
 _UNANSWERED_ROUTES = ("clarify",)
 
+#: The two tools that read the PRODUCT rather than the PLANT. R-TG5's attempt is
+#: a read of this run; these are the manual. Named as a subtraction from the live
+#: enum, so a tool added to the surface counts as a board read the day it lands
+#: and nobody has to remember to update a list here.
+_DOC_TOOLS = frozenset({"constraint_catalog", "spec_lookup"})
+
+
+def board_reads(tools) -> list[str]:
+    """The reads of THIS RUN among ``tools`` — the manual subtracted."""
+    return [t for t in (tools or []) if t not in _DOC_TOOLS]
+
+
+def classify_teaching_turn(s: dict) -> dict:
+    """One teaching turn's mechanical reading, as a pure function of its
+    synthesis block — so the branch that separates a DISCLOSED no-case from
+    SILENCE can be premise-tested with an injected answer instead of being
+    believed because it was written down.
+
+    ``verdict`` is the three-way this session cares about:
+
+      ``grounded``        it read this run AND a board claim landed. Under R-TG5
+                          that is either the instance or a no-case disclosure
+                          carrying the read that found nothing — the ruling makes
+                          the disclosure cite, so both shapes arrive here, and
+                          telling them apart is a human's read of the sentence.
+      ``no-board-claim``  it read this run and nothing survived. Reported
+                          verbatim; this is where a silent cut hides.
+      ``silent``          it never read this run at all. The manual does not
+                          count (see ``_DOC_TOOLS``).
+    """
+    reads = board_reads(s.get("tools"))
+    board = int(s.get("verified") or 0) + int(s.get("interpretive") or 0)
+    return {"board_reads": reads, "board_claims": board,
+            "m1_principle": int(s.get("general_knowledge") or 0) >= 1,
+            "m2_attached": board >= 1,
+            "m5_attempt": bool(reads),
+            "verdict": ("grounded" if reads and board
+                        else "no-board-claim" if reads else "silent")}
+
 
 def _stem(q: str) -> str:
     return (q or "").strip().lower()
@@ -106,10 +167,11 @@ def main() -> int:
         render_sidecar(result), encoding="utf-8")
 
     fams = {"m1_principle": [0, 0], "m2_attached": [0, 0], "m3_real_door": [0, 0],
-            "m4_pair_valid": [0, 0], "controls": [0, 0]}
+            "m4_pair_valid": [0, 0], "m5_attempt": [0, 0], "controls": [0, 0]}
     problems: list[str] = []
     reported: dict = {"direction_i_refusals": [], "closer_firings": [],
-                      "invalid_pairs": []}
+                      "invalid_pairs": [], "no_board_claim_turns": [],
+                      "teaching_turns": []}
 
     def _check(fam: str, ok: bool, note: str) -> None:
         fams[fam][1] += 1
@@ -162,16 +224,31 @@ def main() -> int:
 
         # -- M1/M2/M3 on the TEACHING half of each pair ----------------------
         if intent == "teaching":
-            _check("m1_principle", int(s.get("general_knowledge") or 0) >= 1,
+            c = classify_teaching_turn(s)
+            _check("m1_principle", c["m1_principle"],
                    f"line {t.lineno}: a teaching answer with no labelled "
                    f"general-knowledge claim — a recital wearing the licence")
-            board = int(s.get("verified") or 0) + int(s.get("interpretive") or 0)
-            _check("m2_attached", board >= 1,
+            _check("m2_attached", c["m2_attached"],
                    f"line {t.lineno}: a teaching answer with no board claim "
                    f"beside the principle (co-occurrence only — see the RUBRIC)")
             _check("m3_real_door",
                    not any(f.kind == "dead-door" for f in t.findings),
                    f"line {t.lineno}: the invitation offered a door into a wall")
+            _check("m5_attempt", c["m5_attempt"],
+                   f"line {t.lineno}: a teaching answer that never read this run "
+                   f"(tools={s.get('tools') or []}) — R-TG5's attempt")
+            reported["teaching_turns"].append(
+                {"line": t.lineno, "question": t.question, **c,
+                 "tools": list(s.get("tools") or []),
+                 "general_knowledge": int(s.get("general_knowledge") or 0),
+                 "cut": int(s.get("failed_and_cut") or 0)})
+            if not c["m2_attached"]:
+                # REPORTED, not judged. A no-case answer that disclosed and a
+                # silent one both land here; which is which is read, not counted.
+                reported["no_board_claim_turns"].append(
+                    {"line": t.lineno, "question": t.question,
+                     "verdict": c["verdict"], "board_reads": c["board_reads"],
+                     "answer": answer})
 
     # -- M4: pair validity ---------------------------------------------------
     for tag, q1, q2 in PAIRS:
@@ -205,6 +282,8 @@ def main() -> int:
           f"{len(reported['direction_i_refusals'])}")
     print(f"       HUNT B — closer firings observed:         "
           f"{len(reported['closer_firings'])}")
+    print(f"       teaching turns with NO board claim (read, not counted): "
+          f"{len(reported['no_board_claim_turns'])}")
     for p in problems:
         print("  MISS " + p)
     (out_dir / "GRADE-C9.json").write_text(json.dumps(

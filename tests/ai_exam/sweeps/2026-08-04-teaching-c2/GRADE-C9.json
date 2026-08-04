@@ -1,0 +1,161 @@
+{
+  "schedule": "rolling-db5395dc-2ae",
+  "turns": 16,
+  "routing": {
+    "graded": 8,
+    "met": 8
+  },
+  "families": {
+    "m1_principle": {
+      "met": 4,
+      "of": 4
+    },
+    "m2_attached": {
+      "met": 4,
+      "of": 4
+    },
+    "m3_real_door": {
+      "met": 4,
+      "of": 4
+    },
+    "m4_pair_valid": {
+      "met": 4,
+      "of": 4
+    },
+    "m5_attempt": {
+      "met": 4,
+      "of": 4
+    },
+    "controls": {
+      "met": 2,
+      "of": 2
+    }
+  },
+  "synthesis": {
+    "answers": 9,
+    "claims": 38,
+    "verified": 6,
+    "interpretive": 22,
+    "general_knowledge": 7,
+    "failed_and_cut": 3,
+    "deferred": 0,
+    "ungrounded_load_bearing": 2,
+    "unanswerable": 0,
+    "budget_exhausted": 0,
+    "tool_calls": 28,
+    "tool_histogram": {
+      "capability_registry": 1,
+      "constraint_catalog": 2,
+      "cost_ledger": 3,
+      "entity_vocabulary": 1,
+      "gate_findings": 2,
+      "lateness_set": 6,
+      "machine_occupancy": 7,
+      "placements_for_machine": 1,
+      "placements_for_order": 3,
+      "spec_lookup": 2
+    },
+    "calls_per_answer": {
+      "1": 1,
+      "2": 2,
+      "3": 3,
+      "4": 1,
+      "5": 2
+    }
+  },
+  "reported": {
+    "direction_i_refusals": [],
+    "closer_firings": [],
+    "invalid_pairs": [],
+    "no_board_claim_turns": [],
+    "teaching_turns": [
+      {
+        "line": 51,
+        "question": "what generally decides whether an operation can be moved earlier on a board like this one",
+        "board_reads": [
+          "lateness_set",
+          "placements_for_order",
+          "machine_occupancy"
+        ],
+        "board_claims": 2,
+        "m1_principle": true,
+        "m2_attached": true,
+        "m5_attempt": true,
+        "verdict": "grounded",
+        "tools": [
+          "constraint_catalog",
+          "lateness_set",
+          "placements_for_order",
+          "machine_occupancy"
+        ],
+        "general_knowledge": 2,
+        "cut": 0
+      },
+      {
+        "line": 64,
+        "question": "in general, why does one order running late tend to make other orders late as well",
+        "board_reads": [
+          "lateness_set",
+          "placements_for_order",
+          "machine_occupancy"
+        ],
+        "board_claims": 2,
+        "m1_principle": true,
+        "m2_attached": true,
+        "m5_attempt": true,
+        "verdict": "grounded",
+        "tools": [
+          "lateness_set",
+          "placements_for_order",
+          "machine_occupancy"
+        ],
+        "general_knowledge": 1,
+        "cut": 1
+      },
+      {
+        "line": 75,
+        "question": "how does a scheduler decide which of two orders competing for the same machine goes first",
+        "board_reads": [
+          "lateness_set",
+          "placements_for_machine"
+        ],
+        "board_claims": 1,
+        "m1_principle": true,
+        "m2_attached": true,
+        "m5_attempt": true,
+        "verdict": "grounded",
+        "tools": [
+          "constraint_catalog",
+          "lateness_set",
+          "placements_for_machine"
+        ],
+        "general_knowledge": 1,
+        "cut": 2
+      },
+      {
+        "line": 86,
+        "question": "what does an optimality gap actually mean and how should i read one",
+        "board_reads": [
+          "capability_registry",
+          "cost_ledger",
+          "gate_findings"
+        ],
+        "board_claims": 2,
+        "m1_principle": true,
+        "m2_attached": true,
+        "m5_attempt": true,
+        "verdict": "grounded",
+        "tools": [
+          "spec_lookup",
+          "spec_lookup",
+          "capability_registry",
+          "cost_ledger",
+          "gate_findings"
+        ],
+        "general_knowledge": 2,
+        "cut": 0
+      }
+    ]
+  },
+  "problems": []
+}
