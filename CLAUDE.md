@@ -174,8 +174,8 @@ kept offering to follow it.
 **Micro-session 4A — the floor tells the truth about why it fell**, 2026-08-03
 (docs/07 v2.87, §5a.159-161; docs/04 2026-08-03 **R-OF1 ruled and BUILT**;
 contract unchanged **1.15**, no docs/06 doorway owed, both answered on the
-record; parse prompt unchanged **v17**; no close-out file — the census found
-nothing surprising and the ruling is in docs/04). **R-OF1: AN OUTAGE MAY NEVER
+record; parse prompt unchanged **v17**; narrative in
+`docs/closeouts/4a-outage-floor.md`). **R-OF1: AN OUTAGE MAY NEVER
 WEAR THE CAPABILITY CARD.** With a credit-exhausted key, three different
 questions returned one card — *"I couldn't answer that one: I don't have a tool
 that reaches it… Here's what I can do that's closest"*, `[rendered by:

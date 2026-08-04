@@ -5,7 +5,8 @@
 **v2.87:** **Micro-session 4A — the floor tells the truth about why it fell**
 (2026-08-03; §5a.159-161; docs/04 2026-08-03 **R-OF1 ruled and BUILT**; contract
 unchanged **1.15**, no docs/06 doorway owed, both answered on the record; parse
-prompt unchanged **v17**). An outage was wearing the capability card — *"I don't
+prompt unchanged **v17**; narrative in `docs/closeouts/4a-outage-floor.md`). An
+outage was wearing the capability card — *"I don't
 have a tool that reaches it"* said by a layer that never read the question — and
 the census found **three of seven LLM-dependent paths** rendering an
 infrastructure failure as a capability statement. Two floors now, and they may
