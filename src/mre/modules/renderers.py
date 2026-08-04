@@ -241,7 +241,12 @@ def _rendered_by(bundle: ExplanationBundle, default: str) -> str:
 # Subject types whose whole answer is composed in the header in planner language
 # (Session 4A.2). They never dump the raw evidence chain.
 _HEADER_ONLY_SUBJECTS = frozenset({
-    "findings", "order_attributes", "inventory", "integrity", "start_reason",
+    # Micro-session 4A shared-body census: "certificate" joins "findings" here
+    # for the same reason — its whole answer is composed authored copy (the
+    # grade, the coverage, then the composed findings) and it must never dump a
+    # raw evidence chain under it.
+    "findings", "certificate",
+    "order_attributes", "inventory", "integrity", "start_reason",
     "unknown_entity", "drill_down", "briefing", "contested_fact",
     # Session 4B.14 Item 2 — the blocker analysis composes its whole answer from
     # pre-computed key_facts (the ladder, the binding family, its arithmetic).
@@ -1471,6 +1476,9 @@ class TemplateRenderer:
         elif bundle.subject_type == "findings":
             self._render_findings(lines, bundle)
 
+        elif bundle.subject_type == "certificate":
+            self._render_certificate(lines, bundle)
+
         elif bundle.subject_type == "order_attributes":
             kf = bundle.key_facts
             lines.append(f"{kf.get('order', '?')}:")
@@ -2472,6 +2480,93 @@ class TemplateRenderer:
     # ------------------------------------------------------------------
     # Session 4A.2 composed-answer helpers
     # ------------------------------------------------------------------
+
+    def _render_certificate(self, lines: list[str], bundle: ExplanationBundle) -> None:
+        """THE CERTIFICATE ANSWER — the grade first, the findings as its detail.
+
+        Every stated fact is read from the certificate artifact; nothing here is
+        computed, inferred or defaulted. The four artifact states each get their
+        own sentence, and the three that cannot state a grade SAY SO rather than
+        falling through to the findings list — which is precisely the defect this
+        route was carrying, and a default that asserts would manufacture a claim
+        out of a gap (4B.23's rule, at a fourth site).
+
+        The findings detail is DELEGATED to ``_render_findings``: it is the same
+        set, composed by the same authored machinery, and a second definition of
+        the findings body is the class of defect this session exists to remove.
+        """
+        cert = bundle.key_facts.get("certificate") or {}
+        state = cert.get("state")
+
+        if state == "no_run_dir":
+            lines.append(
+                "I can't tell you the grade: this answer was assembled without a "
+                "run directory, so there was no certificate for me to read. "
+                "Nothing was looked for — that is different from looking and "
+                "finding none.")
+        elif state == "absent":
+            lines.append(
+                "This plan has no certificate. The submission never went through "
+                "the intake gate, so no grade was ever issued — there is nothing "
+                "for me to report and nothing for me to guess.")
+        elif state == "unreadable":
+            why = cert.get("why") or "it could not be read"
+            lines.append(
+                f"There is a certificate on this run, but {why} — so I can state "
+                "nothing about the grade. That is a fact about our storage, not "
+                "about your submission: do not read it as a clean bill of health.")
+        elif state == "present":
+            grade = cert.get("grade")
+            costing = cert.get("costing_grade")
+            if grade:
+                head = f"Intake review: {grade}"
+                if costing:
+                    head += f" — costing completeness {costing}"
+                lines.append(head + ".")
+            else:
+                lines.append(
+                    "The certificate on this run carries no grade, so I can't "
+                    "state one. Everything below is what it does record.")
+
+            checked = cert.get("rules_checked")
+            tally = cert.get("outcome_tally") or {}
+            if checked:
+                parts = [f"{n} {name}" for name, n in sorted(tally.items())]
+                lines.append(
+                    f"{checked} gate check(s) ran against this submission"
+                    + (f": {', '.join(parts)}." if parts else "."))
+
+            defs = cert.get("deficiencies") or []
+            norms = cert.get("normalizations") or []
+            flags = cert.get("flags_disclosed") or []
+            if defs or norms or flags:
+                if defs:
+                    lines.append(f"{len(defs)} deficiency(ies) recorded against "
+                                 "the submission.")
+                if norms:
+                    lines.append(f"{len(norms)} value(s) were normalized on "
+                                 "intake.")
+                if flags:
+                    lines.append("Flagged and disclosed: " + ", ".join(flags) + ".")
+            elif grade:
+                lines.append("No deficiencies, nothing normalized, nothing "
+                             "flagged.")
+
+            when = str(cert.get("generated_at") or "")[:10]
+            lines.append(
+                "This is the gate's own record"
+                + (f", generated {when}" if when else "")
+                + ", and it is unsigned — nobody has countersigned it.")
+        else:
+            lines.append(
+                "I can't tell you what the certificate says: I have no reliable "
+                "reading of it for this run.")
+
+        lines.append("")
+        if bundle.ordered_records:
+            lines.append("Behind that, the problems on the record:")
+            lines.append("")
+        self._render_findings(lines, bundle)
 
     def _render_findings(self, lines: list[str], bundle: ExplanationBundle) -> None:
         """CU2 — every finding as (subject, offending value, plain cause, catalog
@@ -4377,7 +4472,12 @@ class LLMRenderer:
         # citation floor ~11% of live renders and falling back anyway. Render the
         # composed findings verbatim: the same treatment every other composed
         # authored register gets, and a deterministic ~zero validator-fallback rate.
-        "findings",
+        # Micro-session 4A: the certificate answer gets the same treatment for a
+        # stronger reason — the grade is a WORD the gate issued, and a reword
+        # that softens ACCEPTED/CONDITIONAL/REJECTED, or drops the "this is about
+        # our storage, not your submission" clause from a degraded state, turns
+        # the gate's verdict into an impression of it.
+        "findings", "certificate",
         # Session 4A.5b: a SYNTHESIS answer's claims were verified SENTENCE BY
         # SENTENCE before they got here (R-AI5(3)). Handing them to the rendering
         # model to reword would dissolve the very thing that was verified — the

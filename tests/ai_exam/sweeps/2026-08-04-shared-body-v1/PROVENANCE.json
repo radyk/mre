@@ -1,0 +1,28 @@
+{
+  "source": "tests\\ai_exam\\sweeps\\2026-08-04-shared-body-v1\\ledger.jsonl",
+  "tiers": {
+    "questions": 5,
+    "contracted": 5,
+    "synthesis": 0,
+    "floor": 0,
+    "synthesis_unanswerable": 0,
+    "claims_verified": 0,
+    "claims_interpretive": 0,
+    "claims_cut": 0,
+    "load_bearing_cut": 0
+  },
+  "method": {
+    "keys": [
+      "intent_adjacency",
+      "subject_kinds",
+      "tool_pattern"
+    ],
+    "adjacency_depth": 2,
+    "weight": "frequency * verified_share",
+    "verified_share_floor": 0.3333333333333333,
+    "conclusion_share_ceiling": 0.5,
+    "semantic": false,
+    "under_states_frequency": true
+  },
+  "clusters": []
+}

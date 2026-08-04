@@ -171,6 +171,81 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Micro-session 4A — the shared-body census + the certificate route**, 2026-08-04
+(docs/07 v2.93, §5a.187-189; docs/04 2026-08-04 amendment, **NOTHING NEWLY
+RULED** — the fix applies 4B.18's `unreadable` species and 4B.23's
+no-asserting-default at new sites; contract unchanged **1.15**, no docs/06
+doorway owed; **BOTH GOVERNED PROMPTS UNCHANGED** — parse **v18**, synthesis
+**v8**, this being a route body and not a prompt; narrative in
+`docs/closeouts/4a-micro-shared-body-census.md`). R1 docket item from
+(d.0)/(d.1). **`deaf` CAUGHT THE SAME SPECIMEN TWICE AND WAS RIGHT BOTH TIMES:**
+`certificate-testimony` and `data-problems` rendered ONE BODY, so the Conformance
+Gate's own voice could not state the Conformance Gate's grade. **CENSUS FIRST —
+one shared body found twice by accident implies nothing about how many exist.**
+`_route_inner` parsed with the AST (not by eye): **41 routes, 3 assemblers
+reached by more than one route, 17 pairs, and EXACTLY ONE shared body**; 0 of the
+10 `_rolling_bundle` pairs (even its five *"this isn't a rolling schedule"*
+refusals are individually worded), and the one `_schedule_query` collapse
+(`schedule`/`customer-schedule`) is reachable **only from a probe naming no
+customer**, which the parse does not produce — recorded with its caveat, not
+claimed as a defect. **THE FINDING IS THE DISCRIMINATOR COLUMN, NOT THE COUNT:**
+the other two shared assemblers are TOLD which route called them
+(`_rolling_bundle` takes `route_id`; `_schedule_query` branches on a
+subject-derived filter) and `_explain_data_problems` was handed **only
+`entity_ref`**, so it was STRUCTURALLY incapable of knowing which question it was
+answering — which is why the guard is a PROPERTY and not a string assertion.
+**THE GRADE IS IN NO EVIDENCE RECORD:** it is computed by `grade_from_outcomes`,
+written to `certificate.json`, and never emitted to the Reporter — and the gate's
+`record()` **emits nothing on a SATISFIED rule**, so an ACCEPTED submission
+leaves the evidence store *completely silent* about its own certificate
+(`_opener_certificate` has always returned `grade: None`). The brief's STOP
+condition did **not** bind: the artifact is persisted where the route can read
+it, and reading the run dir is precedented (`local_price`, 4B.30 Item 3, the
+reason `_out_dir` exists). **RECOMPUTING THE GRADE WAS REFUSED** though
+`grade_from_outcomes` is pure — a second computation of the verdict is a second
+definition of it; the contract gap is LEDGERED (S-02), not papered over. **FOUR
+STATES, NEVER TWO** (`no_run_dir`/`absent`/`unreadable`/`present`): none of the
+three degraded states falls through to the findings list, and a missing `grade`
+inside a present certificate is its own fact. **`ordered_records` IS DELIBERATELY
+UNCHANGED** — the same set testimony/remediation/triage reason over, because
+narrowing to gate-only findings would restore the contradiction 4A.2b CU2 ended.
+**BEFORE: both routes sha256 `39022447757c0386`. AFTER: the certificate route is
+`c48508b74fc723ae`** and reads *"Intake review: ACCEPTED — costing completeness
+C2. 29 gate check(s) ran against this submission: 29 satisfied."* — **and the fix
+made the 4A.2b specimen visible in one screen** (an ACCEPTED grade beside a
+standing validator advisory, which was always this board's truth and of which a
+planner previously saw only the advisory half). **THE RIDER'S ONE TRUE POSITIVE
+IS NOW EXTINCT BY REPAIR** and the guard asserts its SILENCE with a comment
+saying why silence is right; the fixture supplies `followup_of=DEEPEN`, the value
+the LIVE parse reports (confirmed again in this session's sweep at conf 0.92), so
+the silence proves the BODIES and not the gate. **A COMMITTED BANK COMMENT SAID
+THE OPPOSITE AND WAS CORRECTED** — `sweep_carried_state_v1`'s E-block read *"If
+E2 ever stops firing, the gate has become a suppression"*, true when written and
+false now, and left alone it would have told a future session to restore a firing
+whose defect had been fixed. **Python 2682/309/0 UNCHUNKED in 22m15s** against a
+baseline of **2667/309/0**, **+15 exactly and MEASURED** (collection 2991 vs 2976
+with that one file ignored). **THE UNCHUNKED RUN SUCCEEDED AND I HAD CALLED IT
+KILLED** — its output was empty only because pytest buffers under `-q` and it
+outlived my wait loop, so (d.1)'s "full runs get killed here" is now one session
+for and one against and should be tested rather than inherited. NOT comparable to
+(d.1)'s 2700/305/0: **`_data` is EMPTY in this tree** (the pinned boards are
+gitignored and absent), worth ~29 tests of collection by (d.1)'s own note. **ONE
+RED, PREDICTED AND SELF-INFLICTED:** `test_corpus::TestCurrency` went red from
+amending docs/04 without rebuilding the corpus index — the 4B.33/(c2) shape, a
+THIRD occurrence — rebuilt, 22/22. **3 NEGATIVE CONTROLS PROVEN RED**, every
+restore byte-identical by sha256, each asserting its anchor was FOUND before
+replacing. **Bank `sweep_shared_body_v1` RUN: 5/5, sidecar clean** — **and all
+five would have been MET on the broken product, which IS the Q7 input line: the
+exam grammar cannot express "these two answers must not be the same answer"**,
+the routing having been correct throughout. **MINTED NOTHING in `_data`; neither
+pinned board mutated** (the degraded certificate states are `tmp_path` fixtures).
+**COCKPIT UNTOUCHED, not re-run.** NOT FIXED, named: **S-02, the grade in no
+evidence record** (a Metric/Artifact at the gate — a contract change, the one to
+take next); S-01 the degenerate `schedule`/`customer-schedule` collapse; S-03 the
+certificate has no signature field at all (the answer says it is unsigned;
+whether one is owed is unruled); and **S-04 the census's own bound** — contracted
+routes reached through `_route_inner` only, so synthesis, prove-it and the rolling
+answerers' internal copy were NOT swept for shared prose. Before it:
 **Session 4A teaching-graft (d.1) — carried answer state**, 2026-08-04 (docs/07
 v2.92, §5a.181-186; docs/04 2026-08-04 **R-MT1 and R-LD5 ruled and BUILT**;
 contract unchanged **1.15**, no docs/06 doorway owed; **BOTH GOVERNED PROMPTS

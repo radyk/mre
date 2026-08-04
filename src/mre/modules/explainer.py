@@ -842,7 +842,11 @@ class Explainer:
             return self._explain_how_to_fix(
                 q, limit if limit is not None else _remediation_limit(q))
         if route_id == "certificate-testimony":
-            return self._explain_data_problems(entity_ref=params.get("order"))
+            # Micro-session 4A shared-body census: this was
+            # `_explain_data_problems(...)` — the SAME body `data-problems`
+            # renders, for an intent whose declared meaning is the gate's
+            # VERDICT. Its own assembler now, which states the certificate.
+            return self._explain_certificate(entity_ref=params.get("order"))
         if route_id == "excluded-orders":
             return self._explain_excluded_orders(q, params.get("order"),
                                                  params.get("document"))
@@ -2000,6 +2004,135 @@ class Explainer:
             key_facts={
                 "total_findings": len(findings),
                 "codes": codes,
+                "entity_ref": entity_ref,
+                "excluded_summary": None if entity_ref else self._excluded_summary(),
+            },
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _read_certificate(self) -> dict:
+        """The gate's own certificate, READ from the artifact the pipeline wrote
+        (``out_dir/certificate.json``, written by ``__main__``), never re-derived.
+
+        The grade is a pure function of rule outcomes (``grade_from_outcomes``),
+        so recomputing it here would be a SECOND definition of the verdict — and
+        the handoff rule this module already follows for gate findings is *read
+        from evidence, never by re-running the gate*. Reading the artifact the
+        gate signed off is that rule, not an exception to it. Reading the run
+        directory is precedented: ``local_price`` does it for the ledger, which
+        is why ``self._out_dir`` exists at all (4B.30 Item 3).
+
+        FOUR STATES, NEVER TWO — 4B.18's ``unreadable`` species again, and its
+        priority rule with it. A claim about the SUBMISSION is never manufactured
+        from a fact about our STORAGE:
+
+        - ``no_run_dir``  — this Explainer was built without a run directory, so
+          nothing was looked for. Not the same as looking and finding nothing.
+        - ``absent``      — the run directory is known and carries no
+          certificate: this plan was never gated (the ``raw_data`` path bypasses
+          M0 entirely — owned Phase-4 debt).
+        - ``unreadable``  — the file is there and will not parse, or parses to
+          something that is not a certificate. Takes priority over the others:
+          a corrupt certificate is not an absent one.
+        - ``present``     — with whatever fields the artifact actually carries.
+
+        A missing ``grade`` inside a present certificate is reported as its own
+        fact rather than defaulted to a word, because a default that ASSERTS
+        manufactures a claim out of a gap (4B.23's rule).
+        """
+        import json
+
+        if self._out_dir is None:
+            return {"state": "no_run_dir"}
+        path = Path(self._out_dir) / "certificate.json"
+        if not path.exists():
+            return {"state": "absent", "path": str(path)}
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001 — an unreadable certificate is a STATE
+            return {"state": "unreadable", "path": str(path),
+                    "why": "the file did not parse as JSON"}
+        if not isinstance(raw, dict):
+            return {"state": "unreadable", "path": str(path),
+                    "why": "the file is not a certificate record"}
+        outcomes = raw.get("rule_outcomes")
+        tally: Optional[dict] = None
+        if isinstance(outcomes, dict) and outcomes:
+            tally = {}
+            for value in outcomes.values():
+                key = str(value)
+                tally[key] = tally.get(key, 0) + 1
+        return {
+            "state": "present",
+            "path": str(path),
+            "grade": raw.get("grade"),
+            "costing_grade": raw.get("costing_completeness_grade"),
+            "rules_checked": len(outcomes) if isinstance(outcomes, dict) else None,
+            "outcome_tally": tally,
+            "deficiencies": raw.get("deficiencies") or [],
+            "normalizations": raw.get("normalizations") or [],
+            "flags_disclosed": raw.get("flags_disclosed") or [],
+            "gate_finding_count": (len(raw["findings"])
+                                   if isinstance(raw.get("findings"), list) else None),
+            "generated_at": raw.get("generated_at"),
+            "run_id": raw.get("run_id"),
+            "submission_dir": raw.get("submission_dir"),
+            "counts": raw.get("counts") or {},
+        }
+
+    def _explain_certificate(self, entity_ref: Optional[str] = None) -> ExplanationBundle:
+        """``certificate-testimony`` — THE ROUTE THAT STATES THE CERTIFICATE.
+
+        Until this session it was one line: ``return self._explain_data_problems(
+        ...)``. Its declared meaning is *what is wrong with the submission / why
+        it was rejected or conditional* — a question about the gate's VERDICT —
+        and it answered with the findings list, which is ``data-problems``' own
+        declared meaning and its own body. Two intents, one answer; the
+        Conformance Gate's voice unable to state the Conformance Gate's grade.
+        The ``deaf`` rider caught the pair twice across two sessions ((d.0) P6
+        T7, (d.1) sweep E2) and was RIGHT both times — the first true positive
+        that rider has produced.
+
+        THE SHARED ASSEMBLER COULD NOT HAVE DONE OTHERWISE: it was handed only
+        ``entity_ref``, never the route id, so it had no way to know which of the
+        two questions it was answering. That is the census's real finding — of
+        the three shared assemblers, the other two receive a discriminator
+        (``_rolling_bundle`` takes ``route_id`` and branches five ways;
+        ``_schedule_query`` branches on a subject-derived filter) and this one
+        did not.
+
+        THE CERTIFICATE LEADS; THE FINDINGS FOLLOW AS ITS SUPPORTING DETAIL.
+        ``ordered_records`` stays ``_report_findings()`` — the SAME set
+        testimony, remediation and triage reason over — because 4A.2b CU2 made
+        that one set on purpose: narrowing this route to gate-only findings would
+        put the registers back into the contradiction that ruling ended (an
+        ACCEPTED submission carrying a validator advisory said "1 problem" here
+        and "nothing" there). What changes is what the answer LEADS with, and
+        that the grade is stated at all — never which findings are in evidence.
+        """
+        findings = self._report_findings()
+        if entity_ref:
+            findings = self._findings_for_entity(findings, entity_ref)
+        findings = sorted(
+            findings,
+            key=lambda r: (
+                {"blocker": 0, "error": 1, "warning": 2, "info": 3}.get(
+                    r.get("severity", "info"), 9),
+                r.get("seq", 0),
+            ),
+        )
+        return ExplanationBundle(
+            question=(f"What does the certificate say about {entity_ref}?"
+                      if entity_ref else "What does the certificate say?"),
+            subject_id=entity_ref or self._snap_id,
+            subject_type="certificate",
+            subject_external_name=entity_ref or self._snap_id,
+            ordered_records=findings,
+            key_facts={
+                "certificate": self._read_certificate(),
+                "total_findings": len(findings),
+                "codes": sorted({r.get("code", "") for r in findings}),
                 "entity_ref": entity_ref,
                 "excluded_summary": None if entity_ref else self._excluded_summary(),
             },

@@ -1,6 +1,27 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.92 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.93 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.93:** **Micro-session 4A — the shared-body census + the certificate route**
+(2026-08-04; §5a.187-189; docs/04 2026-08-04 amendment — **NOTHING NEWLY RULED**,
+the fix applies 4B.18's `unreadable` species and 4B.23's no-asserting-default at
+new sites; contract unchanged **1.15**, no docs/06 doorway owed; **BOTH GOVERNED
+PROMPTS UNCHANGED** — parse **v18**, synthesis **v8**; narrative in
+`docs/closeouts/4a-micro-shared-body-census.md`). R1 docket item, routed from
+(d.0)/(d.1). **ONE CENSUS, ONE FIX, ONE GUARD.** `deaf` caught the same specimen
+twice across two sessions and was right both times: `certificate-testimony` and
+`data-problems` rendered ONE BODY, so the Conformance Gate's own voice could not
+state the Conformance Gate's grade. **CENSUS FIRST, BECAUSE ONE SHARED BODY FOUND
+TWICE BY ACCIDENT IMPLIES NOTHING ABOUT HOW MANY EXIST** — 41 routes, 3 shared
+assemblers, 17 pairs, and **exactly ONE shared body**. The finding is not the
+count but the DISCRIMINATOR: the other two shared assemblers are told which route
+called them, and this one was handed only `entity_ref`. **THE GRADE IS IN NO
+EVIDENCE RECORD** — it is written to `certificate.json` and the gate emits nothing
+on a SATISFIED rule, so an ACCEPTED submission is silent in the evidence store;
+the route reads the artifact (precedented by `local_price`) and the contract gap
+is LEDGERED, not papered over. **THE RIDER'S ONE TRUE POSITIVE IS NOW EXTINCT BY
+REPAIR**, and a bank comment saying *"if E2 ever stops firing, the gate has become
+a suppression"* had to be corrected so a future session does not restore it.
 
 **v2.92:** **Session 4A teaching-graft (d.1) — carried answer state** (2026-08-04;
 §5a.181-186; docs/04 2026-08-04 **R-MT1 and R-LD5 ruled and BUILT**; contract
@@ -6588,7 +6609,10 @@ ORD-000128 op20 placed where it is"* — `followup=deepen`, same route, identica
 body, **no rider**; the certificate pair — `followup=deepen`, DIFFERENT route,
 identical body, **rider fires**: *"I've now given you this same answer for two
 different questions…"*. The shared-body route defect it catches is NOT fixed
-here; it is a single-turn finding filed to the census micro-session.
+here; it is a single-turn finding filed to the census micro-session. **[FIXED by
+the shared-body census micro-session, 2026-08-04, §5a.187-189: the bodies now
+differ and this rider is correctly SILENT on the pair — extinct BY REPAIR, not
+by suppression.]**
 
 **§5a.185 — R-LD5 LIVE, AND ITS TRUE NEGATIVES HELD.** The recon's P2b middle arm
 re-run: *"why cant this be moved earlier"* with nothing selected, one turn after
@@ -6634,7 +6658,77 @@ built to carry a typed subject is empty after most answers. Session (d.2), after
 Q7. **(f) THE SHARED-BODY DEFECT `deaf` CAUGHT IS STILL LIVE** —
 `certificate-testimony` and `data-problems` render the same answer, so the
 certificate route does not state the certificate. One line to the census
-micro-session; the rider catching it is what this session pinned.
+micro-session; the rider catching it is what this session pinned. **[DISCHARGED
+by the shared-body census micro-session — §5a.187-189.]**
+
+**§5a.187 — THE SHARED-BODY CENSUS: ONE OF SEVENTEEN, AND THE FINDING IS THE
+DISCRIMINATOR.** `_route_inner`'s dispatch parsed with the AST (not by eye, so a
+route added later cannot hide): **41 routes, 3 assemblers reached by more than
+one route, 17 sharing pairs.** Live on the pinned `glass_box` run, both members
+of every pair rendered and compared byte-for-byte: **exactly ONE shared body**
+(the certificate pair), **0 of the 10 `_rolling_bundle` pairs** — even its five
+*"this isn't a rolling schedule"* refusals are individually worded — and of the 6
+`_schedule_query` pairs, one collapse (`schedule` / `customer-schedule`) that is
+**reachable only from a probe naming no customer at all**, which the parse does
+not produce; re-probed fairly the route discloses (*"Nothing scheduled for
+customer acme."*). **THE COUNT IS NOT THE FINDING; THE DISCRIMINATOR COLUMN IS.**
+`_rolling_bundle` takes `route_id` and branches five ways; `_schedule_query`
+branches on a subject-derived filter; `_explain_data_problems` was handed **only
+`entity_ref`, never the route id**, so it was STRUCTURALLY incapable of knowing
+which of two questions it was answering. That is why the guard is a PROPERTY over
+the pair and not a string assertion. Census bound stated: contracted routes
+reached through `_route_inner` only — synthesis, prove-it and the rolling
+answerers' internal copy were not swept.
+
+**§5a.188 — THE CERTIFICATE ROUTE STATES THE CERTIFICATE, AND THE GRADE IS IN NO
+EVIDENCE RECORD.** The route was one line — `return self._explain_data_problems(
+...)` — for an intent whose declared meaning is the gate's VERDICT. It now leads
+with the certificate and keeps the findings as supporting detail. **THE
+PERSISTENCE FACT THAT DECIDED THE DESIGN:** `grade` is computed by
+`grade_from_outcomes`, written into `certificate.json`, and **never emitted to
+the Reporter** — and the gate's `record()` **emits nothing when a rule is
+SATISFIED**, so an ACCEPTED submission leaves the evidence store *completely
+silent* about its certificate (`_opener_certificate` returns `grade: None` and
+its docstring says why). The brief's STOP condition did NOT bind: the artifact is
+persisted where the route can read it, and reading the run directory is
+precedented (`local_price`, 4B.30 Item 3, the reason `_out_dir` exists).
+Recomputing the grade was REFUSED though `grade_from_outcomes` is pure — it would
+be a SECOND definition of the verdict. **FOUR STATES, NEVER TWO** (`no_run_dir` /
+`absent` / `unreadable` / `present`, 4B.18's species with its priority rule): a
+corrupt certificate is not an absent one, none of the three degraded states falls
+through to the findings list, and a missing `grade` inside a present certificate
+is its own fact rather than a defaulted word (4B.23's rule, fourth site).
+**`ordered_records` IS DELIBERATELY UNCHANGED** — the same set testimony,
+remediation and triage reason over, because narrowing to gate-only findings would
+restore the contradiction 4A.2b CU2 ended. Live: both routes were sha256
+`39022447757c0386`; the certificate route is now `c48508b74fc723ae` and states
+*"Intake review: ACCEPTED — costing completeness C2. 29 gate check(s) ran against
+this submission: 29 satisfied."* **THE FIX MADE THE 4A.2b SPECIMEN VISIBLE IN ONE
+SCREEN** — an ACCEPTED grade beside a standing validator advisory, which was
+always the truth of this board and which a planner previously saw only the
+advisory half of. The certificate carries **no signature field**, so the answer
+says it is unsigned; whether one is owed is unruled.
+
+**§5a.189 — THE RIDER'S TRUE POSITIVE IS EXTINCT BY REPAIR, AND A BANK COMMENT
+HAD TO BE CORRECTED TO SAY SO.** `deaf` is now correctly SILENT on the pair; the
+guard asserts the silence with a comment explaining that the gate is untouched
+and quiet only because its condition no longer holds, and the fixture supplies
+`followup_of=DEEPEN` — **the value the live parse actually reports on that turn**
+— so the silence proves the BODIES and not the gate. **`sweep_carried_state_v1`'s
+E-block said the opposite**: *"If E2 ever stops firing, the gate has become a
+suppression."* True when written, false now, and left alone it would have led a
+future session to restore a firing whose defect had been fixed — corrected in
+place with its reason. **THE Q7 INPUT LINE, AND IT IS THE SHARPEST YET: the exam
+grammar cannot express "these two answers must not be the same answer."** The
+routing was correct throughout — two questions, two intents, two routes — so
+**every EXPECT line passed on the broken product and still passes**, and a 100%
+sweep of the new `sweep_shared_body_v1` bank is fully consistent with the defect
+being fully present. In a repo whose ask layer is mostly AUTHORED BODIES, the
+sharpest regressions live exactly where the format is blind. **LEDGERED, NOT
+FIXED:** the `schedule`/`customer-schedule` degenerate collapse (S-01); **the
+grade being in no evidence record** — a Metric or Artifact at the gate is the fix
+shape and it is a contract change, not a micro-session's (S-02); the missing
+signature concept (S-03); and the census's own bound (S-04).
 
 ## 6. Open rulings queue
 

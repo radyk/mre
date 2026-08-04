@@ -16782,3 +16782,75 @@ bank-format decision Q7. Teaching persistence stays open pending the C9 founder
 round. Contract stays **1.15**; parse prompt **v18** and synthesis prompt **v8**
 are both UNCHANGED — every fix here is deterministic-seam work. No docs/06
 doorway is owed: none of this is a declared fact about a plant.
+
+### 2026-08-04 — the shared-body census, and the certificate route (micro-session 4A)
+
+**NOTHING IS NEWLY RULED HERE.** This entry records a census, one repair, and one
+correction to a committed test comment. The repair applies two existing rules at
+new sites: 4B.18's `unreadable` species (with its priority over `absent`), and
+4B.23's rule that a default which ASSERTS manufactures a claim out of a gap.
+
+**THE SPECIMEN.** The `deaf` rider caught the same pair twice — (d.0) P6 T7 and
+(d.1) sweep block E2: *"what does the certificate say"* and *"are there any data
+quality problems"* rendered the same body. It was right both times, and it is the
+only true positive that rider has produced in this repo's record.
+
+**THE CENSUS CAME FIRST, and the predicate is written down so it can be
+re-applied:** two intents with DIFFERENT DECLARED MEANINGS (the
+`contracts/parse.py` docstrings are the authority) whose rendered bodies are
+identical, or differ only in framing, are one defect — a planner reading the body
+cannot tell which question was answered. Byte-identity is sufficient, not
+necessary. The (d.1) drill-down/prove-it unification is explicitly not a finding:
+those two gestures were RULED one gesture, so their bodies agreeing is the fix
+working.
+
+`_route_inner`'s dispatch was parsed with the AST rather than read by eye, so a
+route added later cannot hide from the map: **41 routes, 3 assemblers reached by
+more than one route, 17 sharing pairs, exactly ONE shared body.**
+
+**THE FINDING IS THE DISCRIMINATOR, NOT THE COUNT.** Sharing plumbing is fine and
+expected. `_rolling_bundle` receives `route_id` and branches five ways;
+`_schedule_query` branches on a subject-derived filter; `_explain_data_problems`
+was handed **only `entity_ref`, never the route id**, so it was structurally
+incapable of knowing which of two questions it was answering. It could not have
+done otherwise. The guard is therefore a PROPERTY over the pair rather than a
+string assertion about one route.
+
+**THE PERSISTENCE FACT.** The gate's `grade` is computed by `grade_from_outcomes`
+and written into `certificate.json`; it is **never emitted to the Reporter**. And
+`record()` emits nothing when a rule is SATISFIED — so an ACCEPTED submission
+leaves the evidence store *completely silent* about its own certificate.
+`_opener_certificate` has always returned `grade: None` and said so in its
+docstring. The route now reads the artifact the gate wrote, which is *read from
+evidence, never re-run the gate* — the same handoff rule `_certificate_findings`
+keeps — and reading the run directory is precedented (`local_price`, 4B.30 Item
+3, the reason `_out_dir` exists at all). **Recomputing the grade was refused**
+although `grade_from_outcomes` is pure and the call would have been cheap: a
+second computation of the verdict is a second definition of it. The underlying
+gap — that no Metric or Artifact record carries the grade, so any surface reading
+evidence alone cannot state it — is LEDGERED as a contract change and deliberately
+not taken in a micro-session.
+
+**WHAT WAS DELIBERATELY NOT CHANGED.** `ordered_records` stays
+`_report_findings()`, the same set testimony, remediation and triage reason over.
+Narrowing this route to gate-only findings would have put the registers back into
+the contradiction 4A.2b CU2 ended. What changed is what the answer LEADS with,
+and that the grade is stated at all — never which findings are in evidence. One
+consequence is worth recording: the answer now shows an ACCEPTED grade beside a
+standing validator advisory in one screen. That was always the truth of the
+board; before, a planner saw only the advisory and had to infer the grade from
+it.
+
+**A COMMITTED COMMENT WAS CORRECTED, AND THE CORRECTION IS THE POINT.**
+`sweep_carried_state_v1`'s E-block read *"If E2 ever stops firing, the gate has
+become a suppression."* That was true when written. It is false now: the rider is
+silent because its condition no longer holds, the gate being untouched. Left
+alone, it would have instructed a future session to restore a firing whose defect
+had been repaired. **A true positive whose defect is fixed SHOULD go quiet**, and
+an assert-silence needs to say so in its own comment or it reads as suppression —
+which is how the guard is written.
+
+Contract stays **1.15**; parse prompt **v18** and synthesis prompt **v8** are both
+UNCHANGED — this was a route body, not a prompt. No docs/06 doorway is owed: the
+certificate is a fact the gate produces about a submission, not a declared fact
+about a plant.

@@ -1,0 +1,52 @@
+PROVENANCE REPORT -- synthesis residue, clustered and ranked
+source      : tests\ai_exam\sweeps\2026-08-04-shared-body-v1\ledger.jsonl
+questions   : 5
+------------------------------------------------------------------------
+R-AI5(6) -- READ THIS BEFORE READING THE PARETO.
+
+  "The target is synthesis rare where a proof exists and honest
+   where it does not -- NEVER ZERO. Interpretive residue (takes,
+   aggregate reads) is first-class conversation, protected, not
+   minimized."
+
+Clusters marked NOT-PROMOTABLE-BY-DESIGN below are exactly that
+residue. They are excluded from the Pareto and are NOT improvement
+backlog. A shape whose sentences the evidence cannot ground is not a
+gap in the route table -- it is a conversation the product is
+supposed to be able to have. Contracting it could only produce a
+route that refuses or one that pretends.
+------------------------------------------------------------------------
+TIERS
+  contracted routes      : 5
+  synthesis (second tier): 0  (unanswerable 0)
+  honest floor           : 0   (REFUSED / NEAR_MISS / CLARIFY)
+  claims                 : verified 0  interpretive 0  cut 0  (load-bearing cut 0)
+------------------------------------------------------------------------
+CLUSTERING METHOD (stated, not implied)
+  Two synthesis answers are the same SHAPE when all three match:
+    1. intent adjacency  -- the <=2 contracted intents the parse
+                            judged closest, sorted
+    2. subject kinds     -- order / machine / customer / concept,
+                            sorted; NOT the refs
+    3. dominant tool     -- the tool the loop called MOST (ties to
+                            the earliest). The whole call set is
+                            reported but is NOT part of the key:
+                            one extra exploratory call would else
+                            split a shape into two clusters of one.
+  This is not semantic clustering. It SPLITS shapes whose parses
+  disagreed, so it UNDER-states frequency; it never invents one.
+  Two clusters with the same exemplar shape side by side is the
+  tell, and a human merges them by naming the shape in a dossier.
+------------------------------------------------------------------------
+RECURRING SHAPES (0 clusters)
+
+------------------------------------------------------------------------
+THE FREQUENCY-WEIGHTED PARETO (promotable clusters only)
+  ordering: frequency x verified share, descending.
+  cumulative runs over PROMOTABLE weight -- never over the whole
+  conversation (R-AI5(6)).
+
+  (nothing promotable -- every cluster is protected residue, or
+   no synthesis answer grounded a claim. This is a legitimate
+   outcome, not an empty result.)
+------------------------------------------------------------------------

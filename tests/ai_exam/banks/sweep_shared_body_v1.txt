@@ -1,0 +1,87 @@
+# AI EXAM BANK — TWO MEANINGS MUST NOT BE ONE ANSWER (the shared-body census)
+# version  : v1
+# generated: 2026-08-04  (Micro-session 4A — shared-body census + the
+#            certificate route)
+# world    : any board that carries a certificate. The probes name no entity, so
+#            the SHAPES are what is graded and the bank is board-portable.
+#
+# ===========================================================================
+# WHAT THIS BANK CAN GRADE, AND WHAT IT CANNOT — READ THIS FIRST
+# ===========================================================================
+#
+# This is a second measured input to Q7 (the bank-format decision, docs/07 §5b),
+# and it is a SHARPER one than (d.1)'s because here the format's limit is the
+# whole subject of the session.
+#
+# THE DEFECT THIS BANK IS ABOUT IS A BODY, AND `EXPECT` CANNOT SEE A BODY.
+# `certificate-testimony` and `data-problems` were ROUTING CORRECTLY THE WHOLE
+# TIME — two questions, two intents, two routes, exactly as the parse should —
+# and the answer was the same text. Every EXPECT line below would have passed on
+# the broken product. That is not a criticism of the probes; it is the format's
+# ceiling, stated at the one place where the ceiling is the point:
+#
+#   * the ROUTING half is graded here, and it is worth grading — the fix must
+#     not be paid for by collapsing two intents into one, and this bank is what
+#     would catch that;
+#   * the BODY half — "the certificate answer states the grade", "the two bodies
+#     differ", "a degraded certificate never reads as a clean bill of health" —
+#     is asserted in `tests/test_certificate_route.py`, over rendered bodies,
+#     with sha256-verified negative controls;
+#   * so a sweep of this bank going 100% is consistent with the defect being
+#     fully present. THAT is the Q7 input line: the exam grammar cannot express
+#     "these two answers must not be the same answer", and a repo whose ask
+#     layer is mostly authored bodies has its sharpest regressions in exactly
+#     that shape.
+#
+# RESET DISCIPLINE. Each BLOCK is one conversation, separated by RESET. Block A
+# is a THREAD on purpose (it is the (d.0)/(d.1) specimen in its original order);
+# blocks B and C are cold single turns.
+# ===========================================================================
+
+
+# ===========================================================================
+# A — THE SPECIMEN, IN ITS ORIGINAL ORDER
+#
+# (d.0) P6 T7 and (d.1) sweep block E2. The findings question first, then the
+# certificate question, in one conversation. `deaf` fired here twice across two
+# sessions and was RIGHT both times: the bodies were byte-identical (sha256
+# 39022447757c0386 for both, on the pinned glass_box run).
+#
+# The live parse marks turn 2 `followup=deepen` — reasonably, since it does
+# follow — which is why the (d.1) deaf gate reads the prior delivery's ROUTE as
+# well. Both turns must keep their own route.
+# ===========================================================================
+RESET
+EXPECT intent=data-problems route=data-problems
+are there any data quality problems
+
+EXPECT intent=certificate-testimony route=certificate-testimony
+what does the certificate say
+
+
+# ===========================================================================
+# B — THE CERTIFICATE QUESTION, COLD AND IN THE PLANNER'S OWN WORDS
+#
+# The certificate route's declared meaning is "what is wrong with the submission
+# / why it was rejected or conditional". A pilot customer interrogates the gate
+# in these words, not in ours. Cold, so nothing in the conversation can be
+# carrying the route.
+# ===========================================================================
+RESET
+EXPECT intent=certificate-testimony route=certificate-testimony
+did our submission pass the intake review
+
+RESET
+EXPECT intent=certificate-testimony route=certificate-testimony
+why was this submission only conditional
+
+
+# ===========================================================================
+# C — THE OTHER HALF KEEPS ITS OWN MEANING
+#
+# The fix must not be paid for by moving `data-problems` onto the certificate.
+# Its meaning is the findings and the findings ARE its body.
+# ===========================================================================
+RESET
+EXPECT intent=data-problems route=data-problems
+what data quality problems does this submission have

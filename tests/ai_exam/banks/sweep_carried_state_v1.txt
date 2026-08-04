@@ -142,13 +142,22 @@ why cant this be moved earlier
 # re-resolves to the same subject and correctly gets the same answer, which the
 # rider used to answer with "I'm not understanding what you're asking".
 #
-# E2 IS THE TRUE POSITIVE AND IT MUST STILL FIRE. (d.0) P6 T7 is the first true
-# positive `deaf` has produced in this repo's record: different question, no
-# followup_of, and the same body — because `certificate-testimony` and
-# `data-problems` render the same answer. The route defect is NOT fixed here
-# (it is filed to the shared-body census micro-session); what this bank pins is
-# that the rider still catches it. If E2 ever stops firing, the gate has become
-# a suppression.
+# E2 WAS THE TRUE POSITIVE, AND IT IS NOW EXTINCT BY REPAIR — READ THIS BEFORE
+# "RESTORING" ANYTHING. (d.0) P6 T7 was the first true positive `deaf` produced
+# in this repo's record: different question, and the same body, because
+# `certificate-testimony` and `data-problems` rendered the same answer.
+#
+# THE SHARED-BODY CENSUS MICRO-SESSION FIXED THE ROUTE. `certificate-testimony`
+# now states the certificate, so the two bodies differ and `deaf` is correctly
+# SILENT on this pair. The earlier version of this comment said "if E2 ever
+# stops firing, the gate has become a suppression" — that reading is now WRONG
+# and is corrected here rather than left to mislead: the gate is untouched, and
+# a true positive whose defect has been repaired SHOULD go quiet.
+#
+# What this bank still pins is the ROUTING — two different questions must keep
+# reaching two different routes. The BODIES are asserted in
+# `tests/test_certificate_route.py`, because no EXPECT key can state body
+# content (see the header's note on what this format cannot say).
 # ===========================================================================
 RESET
 SELECT order=ORD-000128 seq=20
