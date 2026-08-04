@@ -746,6 +746,11 @@ async function boot() {
       setUrlSchedule(newId);
       panel.setScheduleId(newId);
       panel.clearSelection();            // a moved op's old scope is stale
+      // R-MT1 clause 2 (Session 4A teaching-graft (d.1)): and so is everything
+      // else the conversation was carrying. History and the last-answered
+      // subject describe the plan the planner was looking at a moment ago; the
+      // board they are looking at now is a different one.
+      panel.clearConversation();
       window.__cockpit.scheduleId = newId;
       const nextMeta = await getScheduleMeta(newId).catch(() => meta);
       const nextDoc = board.currentDoc ? board.currentDoc() : doc;

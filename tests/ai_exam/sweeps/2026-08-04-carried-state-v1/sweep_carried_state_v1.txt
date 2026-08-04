@@ -1,0 +1,410 @@
+AI EXAM TRANSCRIPT
+target      : rolling-db5395dc-2ae
+snapshot    : snap-rolling
+started     : 2026-08-04T17:58:11Z
+llm mode    : live
+questions   : 16
+llm calls   : 26
+door check  : live
+parse       : parses=18 calls=18 retries=0 malformed=0 clarifies=0 unavailable=0 median=1458ms
+synthesis   : answers=2 calls=7 tools=5 malformed=0 budget-out=0 unanswerable=1 median=22209ms p90=42159ms
+claims      : 4 total  verified=0 interpretive=2 general-knowledge=2 failed-and-cut=0 deferred=0  ungrounded-load-bearing=0
+latency     : route n=14 median=1801ms p90=2152ms | synthesis n=2 median=24537ms p90=45086ms
+graded      : 14/15 expectations met
+sidecar     : expect-miss=1
+------------------------------------------------------------------------
+# AI EXAM BANK — WHAT THE PRODUCT KEEPS FROM THE LAST TURN (R-MT1, R-LD5)
+# version  : v1
+# generated: 2026-08-04  (Session 4A teaching-graft (d.1))
+# world    : the DEMO BOARD `rolling-db5395dc-2ae`. Entity ids below are that
+# board's; the SHAPES are what is graded, not the ids.
+# 
+# ===========================================================================
+# WHAT THIS BANK CAN GRADE, AND WHAT IT CANNOT — READ THIS FIRST
+# ===========================================================================
+# 
+# This is the measured input to Q7 (the bank-format decision, docs/07 §5b), and
+# it is written down here rather than in a design note because the gap is a
+# property of THESE probes, not a hypothesis.
+# 
+# The exam grammar's `EXPECT` grades EIGHT KEYS — intent, route, order, machine,
+# concept, followup, polarity, clarify — and every one of them is a property of
+# ONE TURN'S PARSE. Nothing in the format can say "turn 2 opened turn 1's
+# records", "turn 2's answer names turn 1's question", or "turn 2 did NOT open
+# the board's worst gate finding". So of the five sequences below:
+# 
+# * the ROUTING half of all five is expressible and is graded here. That is
+# not nothing — D-01's specimen (P8 T2) reached `drill-down` correctly and
+# was still wrong, and the shape of the *previous* turn is what decides
+# whether the route can be right, which is why these are sequences and not
+# independent probes;
+# * the GROUNDING half of all five is NOT expressible and is asserted in
+# `tests/test_carried_answer_state.py` over two consecutive `run_ask` calls,
+# plus quoted verbatim from live runs in the close-out;
+# * THE CROSS-VERSION PAIR (recon P4, R-MT1's founding specimen) CANNOT BE
+# ENCODED AT ALL. A run targets ONE schedule — `RunTarget` is resolved once
+# — and the grammar has no directive that rebinds the board mid-conversation.
+# That is not a missing EXPECT key; it is a missing world. It is measured in
+# `tools/spikes/teaching_graft_d1/after.py p4` and pinned in the guard file's
+# `Panel.rebind`, and it is the single strongest argument in this session for
+# whatever Q7 decides.
+# 
+# One more thing the format cannot say, found while writing these: an assertion
+# about what a turn did NOT do. "the drill-down opened nothing" and "the
+# drill-down opened the wrong thing" are the same EXPECT line.
+# 
+# RESET DISCIPLINE. Each BLOCK is one conversation and is separated by RESET;
+# inside a block the turns are a THREAD ON PURPOSE, which is the opposite of
+# every teaching bank's discipline and is why this file is separate from them.
+# ===========================================================================
+# ===========================================================================
+# A — THE DRILL-DOWN, WIRED (D-01)
+# 
+# The recon's P8, verbatim. Turn 1 is a teaching question; turn 2 is the most
+# natural follow-up a planner types. Before this session turn 2 returned the
+# board's most severe DATA-QUALITY finding — a gate warning about CUT-01 — with
+# nothing to do with frozen zones, ORD-000209, or anything turn 1 said.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [EXPECT intent=teaching route=synthesis]
+Q[57]: how does a frozen zone normally work on a board like this
+  route=synthesis  source=parse  conf=0.95  register=synthesis  renderer=synthesis (claude-sonnet-5) — 5 tool call(s)
+  lit-bars=8  records=5  refs=5/3/0
+  parse: intent=teaching  conf=0.95  concept=UNRESOLVED<-utterance("frozen zone")  2119ms
+  synthesis: claims=4  verified=0  interpretive=2  general-knowledge=2  cut=0  tools=5(spec_lookup,constraint_catalog,lateness_set,placements_in_window,gate_findings)  42159ms
+  expect: intent=teaching route=synthesis  -> MET
+  A:
+    No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+    A frozen zone is the near-term slice of the schedule — from the plan's reference date out to a fixed boundary — where placements are locked and will not move on the next roll; contract language calls this disposition 'committed', as opposed to 'active_window' work further out which can still shift.  [general knowledge — how scheduling works in general, not a fact about this plan]
+    Schedulers freeze the near term because the shop floor is already committing resources — material staged, setups run, crews assigned — so replanning those hours on every roll would just create churn without any real chance to improve the outcome.  [general knowledge — how scheduling works in general, not a fact about this plan]
+    On this board, the days right after the plan reference date of 2026-01-05 already carry firm, back-to-back placements — for example CUT-01 runs ORD-000209, ORD-000063 and ORD-000237 one after another starting 2026-01-05 07:00, and CUT-02 and CUT-03 are booked solid through 2026-01-07 — which is the kind of near-term, tightly sequenced work a frozen zone is built to protect from being re-shuffled.  [synthesis — read from: b4119ea4, a07be710, b9d94ba4]
+    I could not read the actual committed/active_window flag on any placement from the tools available, so I can't say exactly where this run's frozen boundary falls or which of these operations are formally 'committed' versus still movable — that would need a field this window-read doesn't return.  [synthesis — read from: b4119ea4]
+
+    Where a line is marked general knowledge it draws on how scheduling and plants behave generally — not on this plan's records, so there is nothing here to check it against.
+
+    That is how it works in general — you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.
+    [rendered by: synthesis (claude-sonnet-5) — 5 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [EXPECT route=drill-down]
+Q[60]: can you show me that on my board
+  route=drill-down  source=parse  conf=0.92  register=synthesis  renderer=synthesis (grounding pass)
+  lit-bars=8  records=5  refs=5/3/0
+  parse: intent=drill-down  conf=0.92  followup=deepen  1349ms
+  expect: route=drill-down  -> MET
+  A:
+    That part is my inference, not a record — here is each thing I read to get there:
+
+    The claim: "On this board, the days right after the plan reference date of 2026-01-05 already carry firm, back-to-back placements — for example CUT-01 runs ORD-000209, ORD-000063 and ORD-000237 one after another starting 2026-01-05 07:00, and CUT-02 and CUT-03 are booked solid through 2026-01-07 — which is the kind of near-term, tightly sequenced work a frozen zone is built to protect from being re-shuffled."
+
+      - the assignment decision — recorded driver: it was the cheaper option once every cost was weighed  [record: b4119ea4...]
+      - the assignment decision — recorded driver: it was the cheaper option once every cost was weighed  [record: a07be710...]
+      - the assignment decision — recorded driver: it was the cheaper option once every cost was weighed  [record: b9d94ba4...]
+      - the assignment decision — recorded driver: the machine was busy with other work  [record: b0659ce8...]
+      - the assignment decision — recorded driver: the machine was busy with other work  [record: 5fefadc0...]
+
+    Read from: placements_in_window.
+    [rendered by: synthesis (grounding pass) | register: synthesis]
+------------------------------------------------------------------------
+# [EXPECT intent=frozen route=frozen]
+Q[63]: why doesn't that apply to ORD-000128
+  route=frozen  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=frozen  conf=0.92  followup=deepen  polarity=negative  order=ORD-000128<-utterance("ORD-000128")  1352ms
+  expect: intent=frozen route=frozen  -> MET
+  A:
+    ORD-000128 is placed, but after the frozen boundary (2026-01-06) — it sits in the active part of this window, which runs to 2026-01-15. That is the whole difference: work before the boundary is committed and will not move, work after it is still being solved and can move as the schedule rolls.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# ===========================================================================
+# B — THE OTHER PHRASING OF THE SAME GESTURE
+# 
+# "show me the evidence for that" and "can you show me that on my board" are one
+# gesture. They were two intents, one wired and one not; they now ground on the
+# same two stores in the same order. The routes still differ — that is the
+# PARSE's reading and this bank does not argue with it — but what opens must be
+# the same object, which is the half only the guard file can state.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [EXPECT intent=why-here route=why-here]
+Q[77]: why is ORD-000128 op20 placed where it is
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  order=ORD-000128<-utterance("ORD-000128")  1389ms
+  expect: intent=why-here route=why-here  -> MET
+  A:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT followup=prove-it]
+Q[80]: show me the evidence for that
+  interpreted as: (resolved against ORD-000128 (read from what you asked earlier — you didn't name it in this question))
+  route=prove-it  source=parse  conf=0.95  register=synthesis  renderer=synthesis (grounding pass)
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=prove-it  conf=0.95  followup=prove-it  order=ORD-000128<-conversation("ORD-000128")  1491ms
+  expect: followup=prove-it  -> MET
+  A:
+    That was my answer to "why is ORD-000128 op20 placed where it is". It came from a contracted route, so it has no per-sentence claims to pick apart — here is the whole record set it was assembled from (1 record(s)):
+
+      - the assignment decision — recorded driver: the machine was busy with other work  [record: a103d8f8...]
+    [rendered by: synthesis (grounding pass) | register: synthesis]
+------------------------------------------------------------------------
+# ===========================================================================
+# C — THE REFUSAL HALF (D-01, and the more important half)
+# 
+# A cold drill-down: nothing has been answered, so there is nothing to open. The
+# answer must SAY SO and offer the door. A default that asserts manufactures a
+# claim out of a gap — and on this board the gap it used to fill was a WARNING.
+# 
+# THIS EXPECTATION IS A KNOWN, UNDERSTOOD MISS AND IT IS KEPT RATHER THAN
+# FITTED. Measured live: with no conversation at all the parse reads these words
+# as `unmatched` at confidence 0.25 and the second tier answers — honestly, with
+# zero tool calls and the capability card. That is a GOOD answer and arguably a
+# better one than the route's own refusal, but it means the cold refusal on the
+# `drill-down` ROUTE is unreachable from a live parse and is proven only where
+# the parse is scripted (`tests/test_carried_answer_state.py::
+# TestDrillDownRefusal`). The probe is kept because what it grades — that a cold
+# "show me that" never opens the board's worst gate finding — is true on both
+# paths, and rewriting the expectation to match the parse would hide the fact
+# that two different mechanisms are keeping it true.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [EXPECT route=drill-down]
+Q[104]: can you show me that on my board
+  route=synthesis  source=parse  conf=0.25  register=synthesis  renderer=synthesis (claude-sonnet-5) — 0 tool call(s)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=unmatched  conf=0.25  1653ms
+  synthesis: claims=0  verified=0  interpretive=0  general-knowledge=0  cut=0  tools=0  unanswerable  2259ms
+  expect: route=drill-down  -> MISSED
+  A:
+    I couldn't answer that one: I don't have a tool that reaches it. Nothing I can read holds that, so I'd rather say so than guess.
+
+    Here's what I can do that's closest:
+      - show every late order at a glance
+      - list the data-quality problems
+    [rendered by: synthesis (claude-sonnet-5) — 0 tool call(s) | register: synthesis]
+  >> sidecar[expect-miss]: route: expected 'drill-down', got 'synthesis'
+------------------------------------------------------------------------
+# ===========================================================================
+# D — THE SUBJECT NOBODY NAMED (R-LD5)
+# 
+# The recon's P2b middle arm. Nothing is selected, so every rung of the
+# resolution ladder is empty; the PARSE recovers ORD-000073 and its op grain
+# from the previous question's TEXT. The routing here is what makes the
+# disclosure necessary — an answer about an order the planner did not name in
+# that sentence — and the disclosure itself is asserted in the guard file and
+# quoted live in the close-out.
+# 
+# THE TRUE NEGATIVE IS THE SECOND BLOCK: the same words with an UNRELATED turn
+# before them must reach CLARIFY, because there is genuinely nothing to bind.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [EXPECT intent=why-here route=why-here]
+Q[122]: why is ORD-000073 op10 placed where it is
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  order=ORD-000073<-utterance("ORD-000073")  1638ms
+  expect: intent=why-here route=why-here  -> MET
+  A:
+    I can't attribute ORD-000073 op10's placement at Monday 2026-01-05 07:00 to a binding constraint: the earliest-start estimates I can compute don't line up with where it actually sits. Rather than pick one and sound certain, I'd rather say I don't know.
+
+    What pushed it, in order:
+      2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00
+      2026-01-06 00:00  the frozen boundary [docs/05 R-F1] — the frozen boundary stands at 2026-01-06 00:00
+      2026-01-06 07:00  the machine's calendar [docs/05 C1/C2] — PRESS-FAST is closed until 2026-01-06 07:00
+      2026-01-23 12:25  no window long enough [docs/05 C3] — it needs 4h05m in one piece and PRESS-FAST had only 2h09m left when it came free at 2026-01-22 16:51
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+Q[124]: why cant this be moved earlier
+  interpreted as: (resolved against ORD-000073 (read from what you asked earlier — you didn't name it in this question); and about op10, read from your earlier question)
+  route=what-would-change  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=what-would-change  conf=0.92  followup=deepen  order=ORD-000073<-conversation("ORD-000073")  1526ms
+  A:
+    I can't tell you what would move ORD-000073 op10: the earliest-start estimates I can compute don't line up with where it actually sits, so I don't know which of them to relax. Rather than pick one and sound certain, I'd rather say I don't know.
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT intent=late-orders route=late-orders]
+Q[128]: how many orders are late
+  route=late-orders  source=parse  conf=0.99  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=102  records=102  refs=0/0/102
+  parse: intent=late-orders  conf=0.99  1510ms
+  expect: intent=late-orders route=late-orders  -> MET
+  A:
+    Yes, there are 102 late orders in this plan [record: 2aafb20c...]. Of the 280 orders known to this plan, 158 are scheduled in this window, and 102 of those scheduled orders are late, with lateness values ranging from +548 min (ORD-000228) to +55860 min (ORD-000206) [record: 06e09705...]. The total lateness added by this schedule is 1477827 minute(s), in addition to 626400 minute(s) of unavoidable lateness that existed at the start [record: 8eccd305...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# NB the expectation is on the ROUTE, not on `clarify=`. Measured: the parse
+# emits `intent=why-here conf=0.92` with the order UNRESOLVED and NO clarify
+# payload; the CLARIFY comes from the dispatch's subject-resolution guard. The
+# `clarify=` key grades the PARSE's own reason, which is correctly None here.
+# [EXPECT route=CLARIFY]
+Q[135]: why cant this be moved earlier
+  route=CLARIFY  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=why-here  conf=0.92  followup=deepen  polarity=negative  order=UNRESOLVED<-utterance("this")  1380ms
+  expect: route=CLARIFY  -> MET
+  A:
+    I need one more detail to answer "why cant this be moved earlier".
+    Which order, machine, or customer do you mean? Ask it again naming one, e.g. "why is that order late?" becomes "why is <order> late?".
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# ===========================================================================
+# E — THE DEAF GATE, BOTH SIDES (D-07)
+# 
+# E1 is the FALSE POSITIVE the gate removes: a deictic follow-up that correctly
+# re-resolves to the same subject and correctly gets the same answer, which the
+# rider used to answer with "I'm not understanding what you're asking".
+# 
+# E2 IS THE TRUE POSITIVE AND IT MUST STILL FIRE. (d.0) P6 T7 is the first true
+# positive `deaf` has produced in this repo's record: different question, no
+# followup_of, and the same body — because `certificate-testimony` and
+# `data-problems` render the same answer. The route defect is NOT fixed here
+# (it is filed to the shared-body census micro-session); what this bank pins is
+# that the rider still catches it. If E2 ever stops firing, the gate has become
+# a suppression.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [SELECT order=ORD-000128 op_seq=20]
+# [EXPECT intent=why-here route=why-here]
+Q[156]: why is ORD-000128 op20 placed where it is
+  selection: order=ORD-000128, op_seq=20
+  interpreted as: (resolved against ORD-000128 (from board selection))
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  order=ORD-000128<-selection("ORD-000128")  1525ms
+  expect: intent=why-here route=why-here  -> MET
+  A:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT route=why-here]
+Q[159]: so why is it there
+  selection: order=ORD-000128, op_seq=20
+  interpreted as: (resolved against ORD-000128 (from board selection))
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  followup=deepen  order=ORD-000128<-selection("ORD-000128")  1428ms
+  expect: route=why-here  -> MET
+  A:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT intent=data-problems route=data-problems]
+Q[163]: are there any data quality problems
+  route=data-problems  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=50  records=4  refs=0/3/47
+  parse: intent=data-problems  conf=0.95  1373ms
+  expect: intent=data-problems route=data-problems  -> MET
+  A:
+    4 data-quality problem(s):
+
+      1. CUT-01 is in a workload too dense to schedule cleanly  [WARNING]
+           Affected: CUT-01
+      2. CUT-02 is in a workload too dense to schedule cleanly  [WARNING]
+           Affected: CUT-02
+      3. CUT-03 is in a workload too dense to schedule cleanly  [WARNING]
+           Affected: CUT-03
+      4. 47 orders was already past its due date before this plan started, and is scheduled late  [INFO]
+           Affected: ORD-000001, ORD-000004, ORD-000009 … 47 in all
+
+    Want the fix-first ordering? Ask "what should I fix first?"
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=certificate-testimony route=certificate-testimony]
+Q[166]: what does the certificate say
+  route=certificate-testimony  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=50  records=4  refs=0/3/47
+  parse: intent=certificate-testimony  conf=0.92  followup=deepen  1538ms
+  expect: intent=certificate-testimony route=certificate-testimony  -> MET
+  A:
+    I've now given you this same answer for two different questions, which probably means I'm not understanding what you're asking. Last time you asked: "are there any data quality problems".
+
+    4 data-quality problem(s):
+
+      1. CUT-01 is in a workload too dense to schedule cleanly  [WARNING]
+           Affected: CUT-01
+      2. CUT-02 is in a workload too dense to schedule cleanly  [WARNING]
+           Affected: CUT-02
+      3. CUT-03 is in a workload too dense to schedule cleanly  [WARNING]
+           Affected: CUT-03
+      4. 47 orders was already past its due date before this plan started, and is scheduled late  [INFO]
+           Affected: ORD-000001, ORD-000004, ORD-000009 … 47 in all
+
+    Want the fix-first ordering? Ask "what should I fix first?"
+
+    If you're after a specific field on a specific job — whether an operation is splittable, how long it takes, its due date, which machines can run it — name the order and the field and I'll read it straight off the record.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# ===========================================================================
+# F — WHICH KIND OF NOTHING (D-06)
+# 
+# `advice` reads the plan (since 4B.22 B2 it leads with the opener's top-ranked
+# item) and attaches no records. A prove-it on it used to say "authored copy —
+# it states what this product can and can't do", which is false of it. The
+# graded half is the routing; the sentence is in the guard file and quoted live.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [EXPECT intent=advice route=advice]
+Q[179]: if i could fix one thing what should it be
+  route=advice  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.92  1130ms
+  expect: intent=advice route=advice  -> MET
+  A:
+    The first thing worth your attention on this board, ranked by consequence out of 6:
+
+      The cost optimum is NOT proved — the solver stopped with a gap of 89.6% still open.
+        Against a ledger of 1,667,467.80, that bound leaves up to 1,494,205.31 on the table — an upper limit on what a cheaper schedule could save, not a saving anyone has found.
+        -> Ask "is this schedule optimal?" for what the solver did and did not prove.
+
+    That is a ranking of what is worth looking at, not a recommendation of what to do about it.
+
+    102 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    My take: ORD-000112's 27060-minute slip traces to ORD-000252 holding CUT-01 until 2026-01-27 19:00 — pulling that earlier is the single biggest lever the board gives you today.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT followup=prove-it]
+Q[182]: show me the evidence for that
+  route=prove-it  source=parse  conf=0.95  register=synthesis  renderer=synthesis (grounding pass)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=prove-it  conf=0.95  followup=prove-it  1138ms
+  expect: followup=prove-it  -> MET
+  A:
+    My answer to "if i could fix one thing what should it be" came from advice, which answers from this plan — but it attached no records of its own, so there is nothing here for me to open. That is a different thing from it being a statement about what this product can do: it read the board and cited nothing. Ask about a particular order or machine and the answer will cite what it was built from.
+    [rendered by: synthesis (grounding pass) | register: synthesis]
+------------------------------------------------------------------------

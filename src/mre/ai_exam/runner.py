@@ -688,21 +688,34 @@ class ExamRunner:
 
                 # Extend history exactly as the cockpit does: subject refs from the
                 # ACTIVE selection, plus this turn's route/resolved question.
-                history.append({
-                    "question": item.text,
-                    "resolved_question": turn.resolved_question or item.text,
-                    "route": turn.route or None,
-                    "order": selection.get("order"),
-                    "machine": selection.get("machine"),
-                    # Session 4A.y Item 5 — in lockstep with askpanel.js, which
-                    # is the whole point of this comment: the harness must send
-                    # what the panel sends or it measures a different product.
-                    "op_seq": selection.get("op_seq"),
-                })
-                # Carry THIS answer's resolved subject into the next question, the
-                # way the panel does — the honest fix for a follow-up after a TYPED
-                # entity question (CU1). An error turn carries nothing forward.
+                #
+                # Session 4A teaching-graft (d.1), D-08 — AND ONLY WHEN THE TURN
+                # SUCCEEDED, WHICH IS WHAT THE PANEL DOES. `askpanel.js`'s
+                # `askHistory.push` sits INSIDE the `try`, after `appendAnswer`,
+                # so a turn that threw is rendered as a transport error and never
+                # recorded (4B.14 Item 5(a): a transport failure is not a
+                # conversational turn). This appended unconditionally, so the
+                # harness could present a failed turn to the next turn's parse
+                # and the product could not — a harness that carries more than
+                # the panel carries measures a product nobody ships, which is
+                # this module's own law. The guard moves with the append rather
+                # than staying on `last_answered` alone.
                 if error is None:
+                    history.append({
+                        "question": item.text,
+                        "resolved_question": turn.resolved_question or item.text,
+                        "route": turn.route or None,
+                        "order": selection.get("order"),
+                        "machine": selection.get("machine"),
+                        # Session 4A.y Item 5 — in lockstep with askpanel.js,
+                        # which is the whole point of this comment: the harness
+                        # must send what the panel sends or it measures a
+                        # different product.
+                        "op_seq": selection.get("op_seq"),
+                    })
+                    # Carry THIS answer's resolved subject into the next
+                    # question, the way the panel does — the honest fix for a
+                    # follow-up after a TYPED entity question (CU1).
                     last_answered = resolved_subject(
                         turn.subject_type, turn.subject_external_name)
             result.total_llm_calls = counter.count

@@ -27,7 +27,8 @@ from mre.contracts.synthesis import (
     VerifiedClaim,
 )
 from mre.modules.explainer import Explainer, ExplanationBundle
-from mre.modules.interpreter import REPEAT_WINDOW, _repeat_depth, dispatch
+from mre.modules import interpreter as _interpreter
+from mre.modules.interpreter import REPEAT_WINDOW, dispatch
 from mre.modules.renderers import (
     COUNT_SUBJECTS, TemplateRenderer, apply_repeat_riders, repeat_lead,
     terse_count_answer,
@@ -96,19 +97,43 @@ class TestAdviceNamingACapability:
 # ===========================================================================
 
 class TestRepeatLead:
-    def test_the_depth_is_read_off_the_history_the_panel_already_sends(self):
-        assert _repeat_depth(_turns("late-orders"), "late-orders") == 1
-        assert _repeat_depth(_turns("late-orders", "late-orders"), "late-orders") == 2
-        assert _repeat_depth(_turns("late-orders", "advice"), "late-orders") == 1
-        assert _repeat_depth(_turns("advice", "advice"), "late-orders") == 0
-        assert _repeat_depth({}, "late-orders") == 0
-        assert _repeat_depth(None, "late-orders") == 0
+    def test_the_depth_is_read_off_the_history_the_panel_already_sends(self, explainer):
+        """Session 4A teaching-graft (d.1), D-10 — ASSERTED THROUGH THE LIVE
+        SIGNAL. This used to call `_repeat_depth` directly, which is the only
+        thing that ever called it: after 4B.15 Item 4 split the signal, the
+        helper had no caller under `src/` and its own docstring said so. The
+        counting is `bundle_repeat`'s, and it is the counting a planner feels.
+        Same table, same window, one route further in."""
+        q = "how many orders are late"
+        one = _dispatch(explainer, parsed(q, Intent.LATE_ORDERS),
+                        _turns("late-orders", question=q))
+        two = _dispatch(explainer, parsed(q, Intent.LATE_ORDERS),
+                        _turns("late-orders", "late-orders", question=q))
+        assert (one.bundle.key_facts or {}).get("repeat") == 1
+        assert (two.bundle.key_facts or {}).get("repeat") == 2
+        mixed = _dispatch(explainer, parsed(q, Intent.LATE_ORDERS),
+                          _turns("late-orders", "advice", question=q))
+        assert (mixed.bundle.key_facts or {}).get("repeat") == 1
+        other = _dispatch(explainer, parsed(q, Intent.LATE_ORDERS),
+                          _turns("advice", "advice", question=q))
+        assert "repeat" not in (other.bundle.key_facts or {})
+        cold = _dispatch(explainer, parsed(q, Intent.LATE_ORDERS))
+        assert "repeat" not in (cold.bundle.key_facts or {})
 
-    def test_the_window_is_two_turns_so_a_genuine_return_reads_as_fresh(self):
+    def test_the_helper_that_lost_its_caller_is_gone(self):
+        """D-10, the other half. A declared-but-never-consumed helper reads as a
+        live signal to whoever finds it next; this asserts the removal so a
+        session restoring it has to delete a test saying why it went."""
+        assert not hasattr(_interpreter, "_repeat_depth")
+
+    def test_the_window_is_two_turns_so_a_genuine_return_reads_as_fresh(self, explainer):
         assert REPEAT_WINDOW == 2
         # asked, then three unrelated turns, then asked again → fresh
-        ctx = _turns("late-orders", "advice", "coaching", "briefing")
-        assert _repeat_depth(ctx, "late-orders") == 0
+        q = "how many orders are late"
+        ctx = _turns("late-orders", "advice", "coaching", "briefing",
+                     question=q)
+        d = _dispatch(explainer, parsed(q, Intent.LATE_ORDERS), ctx)
+        assert "repeat" not in (d.bundle.key_facts or {})
 
     def test_a_fresh_question_carries_no_lead(self, explainer):
         d = _dispatch(explainer, parsed("what should i do", Intent.ADVICE))

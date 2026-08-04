@@ -1,6 +1,41 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.91 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.92 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.92:** **Session 4A teaching-graft (d.1) — carried answer state** (2026-08-04;
+§5a.181-186; docs/04 2026-08-04 **R-MT1 and R-LD5 ruled and BUILT**; contract
+unchanged **1.15**, no docs/06 doorway owed; **BOTH GOVERNED PROMPTS UNCHANGED**
+— parse **v18**, synthesis **v8** — every fix is deterministic-seam work;
+narrative in `docs/closeouts/4a-teaching-d1-carried-state.md`). R1 item 2,
+session (d.1). The (d.0) recon measured and ruled nothing; this session fixes one
+family from its ledger: **what the product KEEPS from the last turn, what it does
+with it, and whether it says so.** **THE RECON'S ONE UNCONFIRMED INFERENCE IS NOW
+AN OBSERVATION** — in a real Chromium, after a real `drag.accept()` rebound the
+board to its child, the very next `/ask` went to the CHILD's url carrying the
+PARENT board's turn verbatim and the same session id. **R-MT1:** the three
+carried-answer stores key on **(session_id, schedule_id)**; an in-place rebind
+clears the client's history and last-answered subject; and where a gesture
+reaches for a carried answer across a board change the answer **names the
+previous version** instead of falling to the never-answered floor. All three
+clauses are separately load-bearing and are separately asserted. **R-LD5:**
+disclosure follows the SUBJECT, not the resolver — a subject the PARSE MODEL
+recovered from the history block now reports `SubjectSource.CONVERSATION` and is
+disclosed, where it used to report `utterance` and be indistinguishable from a
+typed one. **THE SWEEP CAUGHT A DEFECT IN THIS SESSION'S OWN FIX**: the first
+version of the D-07 deaf gate read `followup_of` alone and **swallowed the one
+true positive the rider has ever produced**, because the live parse marks the
+certificate question a `deepen`; the unit test passed the whole time, having
+constructed `followup_of=NONE`. The gate reads the prior delivery's ROUTE as
+well, and both sides are now proven live. Also: D-01's drill-down wire (a
+parameter with a docstring and no caller since the day it was written), D-06's
+which-kind-of-nothing split, and four riders. **Python 2700/305/0** against a
+HEAD baseline of **2658/305/0** (+42, accounted for file by file; collection
+2963 -> 3005 confirms it), **three earlier baseline attempts discarded and
+recorded**, and **both runs CHUNKED** because the environment killed three
+consecutive full runs — identical slices per side, sums equal to each side's
+collection, load profile explicitly not one run's; **cockpit 367/2 of 369**, the 2 known
+deictic; **nine negative controls proven RED**, every restore byte-identical by
+sha256. **MINTED NOTHING** in `_data`; both pinned boards read-only.
 
 **v2.91:** **Micro-session 4A teaching-graft (c2) — the teaching answer reads
 the board** (2026-08-04; §5a.177-180; docs/04 2026-08-04 **R-TG5 ruled and
@@ -1545,6 +1580,18 @@ Queue, in order:
    (c) exam extension (new families + the *"did the planner's model improve"*
    axis, listening round budgeted in-session); (d) multi-turn grounding —
    **RECON FIRST** (measure what conversation state exists before scoping).
+   **(d.0) DONE** — the recon measured and ruled nothing
+   (`docs/closeouts/4a-teaching-d0-multiturn-recon.md`, 11 defects D-01..D-11,
+   seven design questions Q1..Q7). **(d.1) DONE** — R-MT1 + R-LD5, and D-01,
+   D-06..D-11 with them (`docs/closeouts/4a-teaching-d1-carried-state.md`).
+   **(d.2) IS THE LADDER (D-03/D-04) AND IS BLOCKED ON Q7**, the bank-format
+   decision — (d.1) measured the cost of leaving it open: R-MT1's own founding
+   specimen cannot be encoded in a bank at all, because a run targets ONE
+   schedule and the grammar has no mid-conversation rebind (§5a.186(a)).
+   **Teaching persistence stays open pending the C9 founder round**, which is
+   Daryn's and is not simulable: (d.0) §7 measured the teaching register
+   surviving exactly ONE turn, so *"what makes turn N+1 a teaching turn"* is a
+   routing question before it is a depth one.
 3. **Ask-ladder remainder.** §5a.83 (the `why-on-machine` lead speaks
    ELIGIBILITY, the cited record speaks OCCUPANCY — two propositions, one
    drill-down); Specimen C (recorded `CAPACITY_BLOCKED` vs the counterfactual's
@@ -6465,6 +6512,129 @@ TEACHING ANSWERS** (*"Part of what I drafted was neither..."*): cuts fell 7 -> 3
 but did not reach zero, and the line appears whenever one claim is dropped.
 Pre-existing and correct; noted because it now sits under answers that are
 otherwise fully grounded.
+
+**§5a.181 — 4A-(d.1): THE RECON'S INFERENCE IS NOW AN OBSERVATION, AND IT WAS
+CONFIRMED BEFORE ANY CODE CHANGED.** The (d.0) dossier proved D-05's SERVER half
+in-process and labelled the gesture that reaches it an **INFERENCE** from
+`main.js:745-754` + `askpanel.js:419` — no probe drove Chrome, and §12.3 named
+this the single highest-value thing (d.1) should confirm first. It was, first,
+with `tests/cockpit/carriedstate.spec.mjs`: boot the shipped cockpit on a real
+board, ask a question, drive a real `drag.accept()` (the same gesture
+`gesture.spec.mjs` uses; it mints a child version and calls `onVersionChange`),
+and read the next `/ask` request. It goes to
+`POST /schedules/sched-multi-route-distinct-edit/ask` carrying
+`history: [{question: "why is ORD-000003 on F001-RES001?", ...}]` and the parent
+board's `session_id`. **The child's url, the parent's turn.** The recon's scoping
+honesty was correct in the other direction too: the schedule PICKER path is a
+full reload and stays safe, and that is now asserted rather than assumed.
+
+**§5a.182 — R-MT1's THREE CLAUSES ARE SEPARATELY LOAD-BEARING, AND THE GUARD
+PROVES CLAUSE 1 WITHOUT CLAUSE 2's HELP.** Clause 1 alone leaves a conversation
+whose visible turns are about a board that no longer exists. Clause 2 alone is
+safety by discipline — every future rebind path has to remember, and the recon
+already found two rebind paths with different behaviour. Clause 3 is what a
+planner is actually told and is reachable only when one of the first two has been
+missed. `Panel.rebind(clear_client=False)` in the guard file exists for exactly
+this: it reproduces the pre-clause-2 gesture so the STORE KEY can be shown to
+work on its own. **Live, both directions, the recon's own P4 harness:** the
+server-only arm now answers *"The answer you're pointing at was about the
+PREVIOUS VERSION of this plan — the board was replaced between that turn and this
+one…"* with **0 records**, where before it served **102 of board A's record ids
+with board A's lateness figures** onto a board holding none of them. **A GAP THE
+CENSUS FOUND AND NO TEST HAD:** `forget_deliveries`' own docstring has called
+itself *"the ONE place that clears server-side conversation state"* since 4B.22,
+and there were THREE such stores and it cleared TWO — `SYNTHESIS_MEMORY` survived
+every RESET, so a `prove it` on the first synthesis turn of the next conversation
+could ground a claim from a conversation already thrown away. 4B.16a's fifth
+channel, at the store added after it.
+
+**§5a.183 — D-01: THE WIRE THAT WAS NEVER RUN, AND THE ORDERING BUG THIS SESSION
+INTRODUCED AND ITS OWN LIVE RUN CAUGHT.** `_explain_drill_down` took a `history`
+argument, carried a docstring explaining what to put in it, and no caller ever
+passed it, so with no ordinal in the question it fell to `findings[0]` — the
+board's most severe data-quality finding, whatever the conversation was about.
+Measured before: *"can you show me that on my board"*, one turn after a good
+teaching answer about frozen zones, returned *"CUT-01 is in a workload too dense
+to schedule cleanly [WARNING]"*. Measured after: the drill-down route, opening
+the carried answer and naming its question. **THEN THE FIRST FIX WAS WRONG IN A
+WAY ONLY THE LIVE RUN SHOWED.** Wired to the ANSWER memory alone, a drill-down
+onto a SYNTHESIS answer fell to its record set — empty, because an R-TG1
+general-knowledge claim carries no records by design — and told the planner their
+teaching answer had cited nothing. Both gestures now reach for the same two
+stores in the SAME ORDER (the synthesis claim first, the answer memory second):
+two phrasings of one gesture have to reach for the same things in the same order,
+or the phrasing still decides the answer. **THE REFUSAL HALF IS THE IMPORTANT
+ONE** and it holds where the wire has nothing to deliver: with nothing carried and
+no ordinal named the answer says so and offers the door, because a default that
+ASSERTS manufactures a claim out of a gap (4B.23's rule at a third site).
+`drill-down` joins `_NOT_REMEMBERED` and the synthesis-staleness exemption, for
+the same reason `prove-it` has both.
+
+**§5a.184 — THE SWEEP CAUGHT A DEFECT IN THIS SESSION'S OWN GATE, AND THE UNIT
+TEST WAS GREEN THE WHOLE TIME.** D-07's first version gated `deaf` on
+`followup_of in (DEEPEN, LIST_EXPAND)` alone. `sweep_carried_state_v1` block E2 —
+the (d.0) P6 T7 true positive, the FIRST this rider has ever produced (docs/07
+§5a.42 and §5a.58 record six firings with zero) — showed it **suppressed**: the
+live parse marks *"what does the certificate say"*, asked after *"are there any
+data quality problems"*, as `followup=deepen`, reasonably, because it does
+follow. The unit test passed throughout, having constructed `followup_of=NONE`.
+**A guard that supplies its own arguments proves the assembler, not the path**
+(4B.21 §5a.78), here at a seam built in the same session. The discriminator is
+the ROUTE the prior delivery came from, which `_DELIVERED` has always carried:
+same route means the planner deepened and the answer is correctly the same;
+different route means two questions collapsed onto one body, which is what the
+rider is for. **Live, both sides:** *"so why is it there"* after *"why is
+ORD-000128 op20 placed where it is"* — `followup=deepen`, same route, identical
+body, **no rider**; the certificate pair — `followup=deepen`, DIFFERENT route,
+identical body, **rider fires**: *"I've now given you this same answer for two
+different questions…"*. The shared-body route defect it catches is NOT fixed
+here; it is a single-turn finding filed to the census micro-session.
+
+**§5a.185 — R-LD5 LIVE, AND ITS TRUE NEGATIVES HELD.** The recon's P2b middle arm
+re-run: *"why cant this be moved earlier"* with nothing selected, one turn after
+*"why is ORD-000073 op10 placed where it is"*, now reports
+`source: 'conversation'` and discloses *"resolved against ORD-000073 (read from
+what you asked earlier — you didn't name it in this question); and about op10,
+read from your earlier question"*. Before: `source: utterance`, note **empty**.
+**THE GRAIN WAS THE SHARPER HALF** — `op_seq 10` existed nowhere in the planner's
+sentence and nowhere in the payload except inside the PREVIOUS QUESTION'S TEXT,
+and was credited to the planner; `named_op_seq_source` walks the same subject as
+`named_op_seq`, so the grain and the order can never be attributed to different
+channels. The two true-negative arms (cold, and after an unrelated turn) still
+CLARIFY with an EMPTY note, and a typed subject still discloses nothing — a
+planner is never told back what they just said, which is what keeps the
+disclosure short enough to be read.
+
+**§5a.186 — 4A-(d.1)'s CARRY-FORWARDS (REPORTED, deliberately NOT fixed).**
+**(a) THE BANK CANNOT HOLD THE FOUNDING SPECIMEN, AND THAT IS THE Q7 INPUT.** An
+exam run targets ONE schedule (`RunTarget` is resolved once) and the grammar has
+no directive that rebinds the board mid-conversation, so R-MT1's own P4 pair is
+**not encodable at all** — not a missing EXPECT key, a missing world. Of the
+other five sequences the ROUTING half is graded and the GROUNDING half is not:
+`EXPECT`'s eight keys are all properties of one turn's parse, so *"turn 2 opened
+turn 1's records"* and *"turn 2 did not open the board's worst gate finding"* are
+both inexpressible — and so is any assertion about what a turn did NOT do.
+**(b) THE COLD DRILL-DOWN REFUSAL IS UNREACHABLE FROM A LIVE PARSE.** With no
+conversation at all, *"can you show me that on my board"* parses `unmatched` at
+confidence 0.25 and the second tier answers honestly with the capability card.
+That is a good answer, and it means the route's own refusal is proven only where
+the parse is scripted. The bank's expectation is KEPT as a known miss rather than
+rewritten, because rewriting it would hide that two different mechanisms are
+keeping one property true. **(c) `PRODUCT_META_ROUTES` IS A JUDGEMENT ABOUT FOUR
+ROUTE IDS.** Neither `ROUTE_TAXONOMY` nor `REGISTER_BY_SUBJECT` can supply it and
+the docstring says so; a new capability-copy route must be added there by hand.
+**(d) CLAUSE 3 HAS NO LIVE SPECIMEN FROM THE SHIPPED CLIENT**, by construction —
+clause 2 clears the channels, so the sentence is reachable only in the
+server-half-only window or from a rebind path that forgets. It is measured on the
+`clear_client=False` arm and asserted by guard; that is stated rather than
+presented as a field observation. **(e) D-03 AND D-04 ARE UNTOUCHED** — the
+ladder still covers 5 of 33 subject types and `askHistory`'s subject refs still
+come off the board SELECTION rather than the turn's own subject, so the rung
+built to carry a typed subject is empty after most answers. Session (d.2), after
+Q7. **(f) THE SHARED-BODY DEFECT `deaf` CAUGHT IS STILL LIVE** —
+`certificate-testimony` and `data-problems` render the same answer, so the
+certificate route does not state the certificate. One line to the census
+micro-session; the rider catching it is what this session pinned.
 
 ## 6. Open rulings queue
 

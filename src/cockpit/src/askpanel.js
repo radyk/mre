@@ -421,6 +421,26 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
     // stale): drop the deictic scope so the next "why is this here?" is composed
     // from a fresh click on the rebound board (session 3.8 CU1).
     clearSelection() { selection = null; renderScope(); },
+    // R-MT1 clause 2 (Session 4A teaching-graft (d.1)) — AND SO IS THE REST OF
+    // THE CARRIED ANSWER STATE. A CONVERSATION DOES NOT STRADDLE TWO BOARDS.
+    //
+    // `onVersionChange` rebound the schedule id, cleared the selection above,
+    // and touched nothing else — so `askHistory` and `lastAnswered` crossed the
+    // boundary with the planner. Measured in a real browser
+    // (`tests/cockpit/carriedstate.spec.mjs`): after a real accept, the very
+    // next /ask went to the CHILD's url carrying the PARENT board's turn
+    // verbatim. Server-side that turn is what a prove-it grounded on, and the
+    // (d.0) recon watched 102 of board A's record ids get served against a
+    // board on which none of them exists.
+    //
+    // The SESSION ID deliberately SURVIVES. Once the three server stores key on
+    // (session, schedule) — R-MT1 clause 1 — a surviving session id can reach
+    // nothing from the old board; and re-minting one on every accept would
+    // fragment the question ledger's own session thread, which is the unit
+    // R-AI5(5)'s promotion report clusters over. The rendered turns stay on
+    // screen for the same reason `appendSuperseded` leaves the log alone: they
+    // are a record of what was said, and erasing them would be a second lie.
+    clearConversation() { askHistory.length = 0; lastAnswered = {}; },
     // Session 4B.5 CU2 — the open delta card channel. `setOpenCard(payload)` when
     // a priced card lands; `setOpenCard(null)` when it is dismissed, accepted or
     // superseded. Clearing is not optional: a stale card would answer about a

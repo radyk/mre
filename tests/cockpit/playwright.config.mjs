@@ -27,7 +27,11 @@ export default defineConfig({
   // pure-JS Tier-0 legality tests have no rendering, so they run once, theme-
   // free. Screenshots are suffixed by theme (shots/ is gitignored).
   projects: [
-    { name: "logic", testMatch: /(legality|rowstats|freshness|schedulepicker|attribution|three_way_card|lineage)\.spec\.mjs$/ },
+    // `carriedstate` is R-MT1's client half (Session 4A teaching-graft (d.1)).
+    // It asserts what a REQUEST carries across an in-place version rebind —
+    // nothing about it is theme-sensitive, so it runs once like the other
+    // state/logic specs rather than twice like the rendering ones.
+    { name: "logic", testMatch: /(legality|rowstats|freshness|schedulepicker|attribution|three_way_card|lineage|carriedstate)\.spec\.mjs$/ },
     {
       name: "light", metadata: { theme: "light" },
       testMatch: /(cockpit|gesture|rehearsal|planner|rolling|rolling\.two_beat|beat_two|deeplink|coarse|boundary|guipolish|oneclock)\.spec\.mjs$/,

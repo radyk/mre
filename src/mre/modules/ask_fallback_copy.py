@@ -718,6 +718,39 @@ PROVE_IT_PRIOR_NO_RECORDS = (
     "can and can't do, not a fact read off a record — so there is nothing behind "
     "it to open. Ask me something about the plan itself and the answer will cite "
     "what it was built from.")
+#: Session 4A teaching-graft (d.1), D-06 — THE FIFTH CASE, AND THE COPY ABOVE WAS
+#: FALSE OF IT. A CONTRACTED route can answer with no record set: because its read
+#: of the plan came back empty (the pinned exam board has nothing late, so
+#: `late-orders` is a true answer citing nothing), or because it composes its body
+#: from pre-computed facts. Measured in (d.0) — `zero-record-control.json`, one
+#: board, two turns — a real testimony answer was described back to the planner as
+#: "authored copy — it states what this product can and can't do".
+#:
+#: So the split is by the ROUTE THAT ANSWERED, never by the record count, and the
+#: sentence claims only what is checkable on the record: which route, that it
+#: reads the plan, and that it attached nothing to open. It deliberately does NOT
+#: say "the read found nothing" — that is a claim about the board this branch
+#: cannot tell from a route that simply carries no citations.
+PROVE_IT_PRIOR_EMPTY_READ = (
+    "My answer to \"{question}\" came from {route}, which answers from this plan "
+    "— but it attached no records of its own, so there is nothing here for me to "
+    "open. That is a different thing from it being a statement about what this "
+    "product can do: it read the board and cited nothing. Ask about a particular "
+    "order or machine and the answer will cite what it was built from.")
+#: R-MT1 clause 3 (Session 4A teaching-graft (d.1)) — THE BOARD CHANGED UNDER THE
+#: CONVERSATION. A carried answer exists for this session and it is about a
+#: DIFFERENT schedule: an accept, a boundary move or a publish rebound the cockpit
+#: between the two turns. Clause 1 makes that answer unreadable here by
+#: construction; this is what gets SAID instead, and it is deliberately not the
+#: no-prior-answer floor above — "I have never answered you" and "what you are
+#: pointing at was about the plan you were looking at a moment ago" are different
+#: facts, and only one of them tells a planner what happened.
+PROVE_IT_PRIOR_OTHER_VERSION = (
+    "The answer you're pointing at was about the PREVIOUS VERSION of this plan — "
+    "the board was replaced between that turn and this one, so its records "
+    "describe a schedule you are no longer looking at and I won't open them "
+    "against this one. Ask it again here and I'll ground the answer on this "
+    "version.")
 # Session 4B.22 Item B1 — HOW BUSY ONE MACHINE IS, on the route that lists what it
 # runs. Three clauses, and each is there for a reason a prior session paid for:
 #   the FIGURE names the quantity      — working time, not elapsed span (4B.20)

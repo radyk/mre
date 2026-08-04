@@ -16590,3 +16590,195 @@ from *"the answer never looked"* is M5 and M2 read together, and it separates
 them **because of the ruling's own shape**: a disclosed no-case cites, so it
 lands as a board claim. Every teaching turn carrying no board claim is REPORTED
 verbatim, because whether a sentence reads as a disclosure is a human's call.
+
+---
+
+## 2026-08-04 — R-MT1 and R-LD5 (Session 4A teaching-graft (d.1))
+
+The (d.0) recon measured what conversation state exists and ruled nothing; the
+dossier is `docs/closeouts/4a-teaching-d0-multiturn-recon.md`. This session fixes
+one family from it: **what the product KEEPS from the last turn, what it does
+with it, and whether it says so.** Both rulings were arbitrated (Daryn,
+2026-08-04) before the session opened and are recorded here verbatim.
+
+### R-MT1 — CARRIED ANSWER STATE IS SCHEDULE-SCOPED, CLEARED ON REBIND, AND HONEST ABOUT ITS OWN ABSENCE
+
+Any server-side store that carries a prior ANSWER or its records
+(ANSWER_MEMORY, SYNTHESIS_MEMORY, _DELIVERED, and any successor) is
+keyed by (session_id, schedule_id). A read against a different
+schedule id is impossible by construction, not by discipline.
+
+An in-place version rebind clears the client's carried answer state
+(history, last-answered subject, and any successor channel), exactly
+as it already clears the board selection. A conversation does not
+straddle two boards.
+
+Where a gesture reaches for a carried answer and finds none because
+the board changed underneath it, the answer says that the thing it
+was asked to open was about the previous version of this plan — it
+does not fall through to a generic no-record path, and it does not
+open something else instead.
+
+Origin: recon (d.0) P4 — 102 of board A's record ids, with board A's
+lateness figures, served to a planner on board B (D-05).
+
+### R-LD5 — DISCLOSURE FOLLOWS THE SUBJECT, NOT THE RESOLVER
+
+The answer discloses every subject the planner did not supply in the
+current utterance, whichever mechanism supplied it — the resolution
+ladder, the parse model's reading of the conversation, or any future
+resolver. R-LD2's rule ("every resolution the ladder made is
+disclosed") is a special case of this rule, not its boundary.
+
+The deterministic seam decides the label from what the parse already
+emits (from_context), never from the model remembering to disclose
+(the 0-of-5 ruling applies).
+
+Origin: recon (d.0) P2b — a subject recovered by the parse from the
+history block reported source: utterance and was disclosed nowhere,
+while the identical subject recovered by the ladder was disclosed in
+full (D-02).
+
+### WHAT THE BROWSER CONFIRMED BEFORE ANY CODE CHANGED
+
+The recon proved D-05's SERVER half in-process and labelled the gesture that
+reaches it an **INFERENCE** from `main.js:745-754` — no probe drove Chrome. That
+inference is now an observation. `tests/cockpit/carriedstate.spec.mjs` boots the
+shipped cockpit, asks a question, performs a real `drag.accept()` (which mints a
+child version and calls `onVersionChange`), and reads the next `/ask` request:
+
+    POST /schedules/sched-multi-route-distinct-edit/ask
+      session_id: <the parent board's>
+      history:   [{ question: "why is ORD-000003 on F001-RES001?", ... }]
+
+The child's url, the parent's turn. Clause 2 exists because of that request.
+
+### THE THREE CLAUSES, AND WHY EACH IS SEPARATELY LOAD-BEARING
+
+Clause 1 alone would leave a conversation whose visible turns are about a board
+that no longer exists. Clause 2 alone would be safety by discipline — every
+future rebind path would have to remember, and the recon found two rebind paths
+already (the picker, which reloads and was safe, and `onVersionChange`, which did
+not). Clause 3 is what a planner is actually told, and it is only reachable when
+one of the first two has been missed, which is why it is defense in depth and not
+a substitute for either. The guard file asserts the three separately, and its
+`Panel.rebind(clear_client=False)` exists precisely so clause 1 can be proven
+without clause 2 helping it.
+
+### THE CLEAR IS BY SESSION AND TAKES EVERY BOARD WITH IT
+
+The key is composite; `forget` is not. A conversation that straddled two boards
+is the defect the key fixes — it is still ONE conversation, and forgetting it
+must not leave half of it behind. Taken with 4B.16a's ruling that
+`forget_deliveries` is the ONE place server-side conversation state is cleared,
+this also closed a gap that paragraph had been asserting away since 4B.22: there
+were THREE such stores and it cleared two. `SYNTHESIS_MEMORY` survived every
+RESET, so a `prove it` on the first synthesis turn of the next conversation could
+ground a claim from a conversation already thrown away. Found in the census, not
+by a test.
+
+### THE SESSION ID SURVIVES A REBIND, DELIBERATELY
+
+Once the stores key on (session, schedule) a surviving session id can reach
+nothing from the old board, and re-minting one on every accept would fragment the
+question ledger's own session thread — the unit R-AI5(5)'s promotion report
+clusters over. The rendered turns stay on screen for the same reason
+`appendSuperseded` leaves the log alone: they are a record of what was said.
+
+### D-01 — THE WIRE THAT WAS NEVER RUN, AND THE HALF THAT MATTERS MORE
+
+`Intent.DRILL_DOWN`'s declared meaning is *"open the full record behind something
+the assistant JUST said"*. Its assembler took a `history` argument, carried a
+docstring explaining what to put in it, and **no caller ever passed it** — so
+with no ordinal in the question it fell to `findings[0]`, the board's most severe
+data-quality finding, whatever the conversation was about. Meanwhile
+`ANSWER_MEMORY`, built one session earlier for this exact gesture, was read by
+the `prove-it` branch alone.
+
+Both now ground on the same two stores in the same order — the synthesis CLAIM
+first, the answer memory second — and below the ordinal branch the drill-down
+renders through `_prove_it_bundle`, so the two are one assembler and not two that
+agree. **The refusal half is the important one**: with nothing carried and no
+ordinal named, the answer says so and offers the door. A default that ASSERTS
+manufactures a claim out of a gap (4B.23's rule at a third site), and that half
+holds even where the wire has nothing to deliver.
+
+**The ordering fix was found in this session's own live run, after the wire
+landed.** With only the answer memory wired, a drill-down onto a SYNTHESIS answer
+fell to its record set — empty, because an R-TG1 general-knowledge claim carries
+no records by design — and told the planner their teaching answer had cited
+nothing. Two phrasings of one gesture have to reach for the same things in the
+same order, or the phrasing still decides the answer.
+
+### D-06 — WHICH KIND OF NOTHING
+
+A prove-it on an answer with no records said *"authored copy — it states what
+this product can and can't do, not a fact read off a record"*. That is false of
+TESTIMONY: a contracted route can answer truly and cite nothing, either because
+its read of the plan came back empty (the pinned board has nothing late) or
+because it composes from pre-computed facts. The split is by the ROUTE THAT
+ANSWERED (`explainer.PRODUCT_META_ROUTES`), never by the record count, and
+`prove_it_case` is the one definition both the assembler and the guard read.
+
+`PRODUCT_META_ROUTES` is a **judgement about four route ids and its docstring
+says so**. Neither `ROUTE_TAXONOMY` (which holds capability copy and board reads
+alike) nor `REGISTER_BY_SUBJECT` (a coaching card and a testimony answer both
+render `testimony`) can supply it. A new route whose body is a capability
+statement must be added there, and the guard asserts the membership so the
+addition is visible.
+
+### D-07 — A FOLLOW-UP IS NOT DEAFNESS, AND THE GATE IS NOT A SUPPRESSION
+
+`deaf` says *"I'm not understanding what you're asking"* because DIFFERENT
+questions produced one answer. A turn the parse itself marked `followup_of:
+deepen` or `list_expand` is not a different question in that sense — it is the
+planner drilling into the answer they just got, and re-delivering it is correct.
+Read from the parse, which already reports it (R-AI5(8)): the rider does not
+decide what kind of follow-up this is, it only declines to scold one the parse
+has already named.
+
+**CORRECTION is deliberately NOT gated** — a planner re-binding a referent and
+getting the same answer back is the strongest deafness signal there is, and it is
+one of the four firings 4B.15 Item 4 measured.
+
+**The guard that matters is the true positive.** (d.0) P6 T7 is the first true
+positive `deaf` has produced in this repo's record (docs/07 §5a.42 and §5a.58
+record six firings with zero): *"what does the certificate say"* after *"are
+there any data quality problems"* got the identical body, because
+`certificate-testimony` and `data-problems` render the same answer. Different
+question, no `followup_of`, same fingerprint — it must still fire, and it is
+pinned. The shared-body route defect itself is NOT fixed here; it is a
+single-turn finding filed to the census micro-session.
+
+### THE SMALL ONES
+
+**D-09** — an outage turn reached both prompts as `-> answered with intent:
+OUTAGE`, a token outside the closed vocabulary the prompt has just finished
+enumerating. It renders as an in-vocabulary system marker now and the turn is
+KEPT, because the planner can still see it on screen and dropping it would
+silently renumber the four-turn window they read. R-OF1's `ANSWER_MEMORY`
+exclusion is the same rule at the other surface.
+
+**D-08** — `runner.py` appended an ERRORED turn to history; `askpanel.js` does
+not (its push sits inside the `try`, after `appendAnswer`). A harness that
+carries more than the panel carries measures a product nobody ships, which is
+that module's own law. Harness fidelity only; no bank content changed.
+
+**D-10** — `_repeat_depth` deleted. After 4B.15 Item 4 split the repeat signal it
+had no caller under `src/` and its own docstring said *"Callers must use
+`bundle_repeat`"*. Declared-but-never-consumed is a standing bug species here: it
+reads as a live signal to whoever finds it next.
+
+**D-11** — `_DELIVERED` gained the LRU-32 session bound its two siblings already
+had. It kept 4 rows per session and had no cap on the number of sessions, so a
+long-lived API process accumulated an entry per browser tab forever.
+
+### NOT RULED, NOT BUILT
+
+D-03 and D-04 (the resolution ladder: `last_answered_subject` covers 5 of 33
+subject types, and `askHistory`'s subject refs come off the board SELECTION
+rather than the turn's own subject) are session (d.2), blocked on the
+bank-format decision Q7. Teaching persistence stays open pending the C9 founder
+round. Contract stays **1.15**; parse prompt **v18** and synthesis prompt **v8**
+are both UNCHANGED — every fix here is deterministic-seam work. No docs/06
+doorway is owed: none of this is a declared fact about a plant.

@@ -417,7 +417,7 @@ class TestOutageIsNotAnAnswer:
         drill-down."""
         answers = AnswerMemory()
         self._outage_turn(world, answers, "of1-a")
-        assert answers.last("of1-a") is None
+        assert answers.last("of1-a", None) is None
 
     def test_it_does_not_erase_the_last_real_answer(self, world):
         """The sharper half. A drill-down after an outage must open the answer the
@@ -427,10 +427,10 @@ class TestOutageIsNotAnAnswer:
                 parser=ScriptedParser({"why is ORD-01 late": parsed(
                     "", Intent.LATE_ORDER, orders=("ORD-01",))}),
                 session_id="of1-b", answer_memory=answers)
-        before = answers.last("of1-b")
+        before = answers.last("of1-b", None)
         assert before is not None
         self._outage_turn(world, answers, "of1-b")
-        after = answers.last("of1-b")
+        after = answers.last("of1-b", None)
         assert after is not None and after["question"] == before["question"], (
             "the outage card displaced the last real answer — a drill-down would "
             "now ground a card whose content is that nothing was reached")

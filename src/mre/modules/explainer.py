@@ -367,6 +367,63 @@ def register_of(bundle: "ExplanationBundle") -> str:
                                    "testimony")
 
 
+# ---------------------------------------------------------------------------
+# The prove-it / drill-down branch decision (Session 4A teaching-graft (d.1)).
+# ONE definition, read by the assembler and asserted by the guard: which of the
+# authored branches a planner gets is decided here and never in a renderer.
+# ---------------------------------------------------------------------------
+
+#: D-06 — THE ROUTES WHOSE ANSWER IS A STATEMENT ABOUT THIS PRODUCT rather than a
+#: read of this plan. A prove-it on one of them with no records correctly says
+#: "authored copy — it states what this product can and can't do"; on any OTHER
+#: route that sentence is false, and saying it about a real testimony answer is
+#: the defect (d.0)'s `zero-record-control.json` measured on one board.
+#:
+#: ITS LIMIT, STATED: this is a JUDGEMENT about four route ids, not a property
+#: derived from anything. `ROUTE_TAXONOMY` cannot supply it (`coaching` is in the
+#: taxonomy like every contracted route) and `REGISTER_BY_SUBJECT` cannot either
+#: (a capability card and a testimony answer both render `register: testimony`).
+#: A new route whose body is a capability statement must be added here, and the
+#: guard asserts the membership so that addition is a visible one.
+PRODUCT_META_ROUTES = frozenset({
+    "coaching",       # the capability card, composed from docs/05's own columns
+    "CLARIFY",        # a question back to the planner
+    "REFUSED",        # the honest floor when nothing read the question
+    "confirm-take",   # names a gesture and our write boundary (M10 has no write)
+})
+
+
+class ProveItCase:
+    """The six authored branches of a prove-it / drill-down, named. None silent."""
+
+    CLAIM = "claim"                  # a synthesis claim's own provenance opens
+    RECORDS = "records"              # the prior answer's record set opens
+    PRODUCT_META = "product_meta"    # the prior answer was capability copy
+    EMPTY_READ = "empty_read"        # a contracted route that attached nothing
+    OTHER_VERSION = "other_version"  # carried, but about the previous board
+    NONE = "none"                    # nothing of ours is open at all
+
+
+def prove_it_case(claim_dict: Optional[dict], prior_dict: Optional[dict],
+                  record_count: int, prior_elsewhere: bool = False) -> str:
+    """Which branch this prove-it / drill-down is."""
+    if claim_dict is not None:
+        return ProveItCase.CLAIM
+    if prior_dict is not None:
+        if record_count:
+            return ProveItCase.RECORDS
+        if (prior_dict.get("route") or "") in PRODUCT_META_ROUTES:
+            return ProveItCase.PRODUCT_META
+        return ProveItCase.EMPTY_READ
+    # R-MT1 clause 3 — nothing is readable HERE, and the reason may be that the
+    # board changed under the conversation. Checked only once the prior is known
+    # to be absent: a carried answer ABOUT THIS BOARD always outranks a note
+    # about another one.
+    if prior_elsewhere:
+        return ProveItCase.OTHER_VERSION
+    return ProveItCase.NONE
+
+
 def canonical_question(route: str, params: Optional[dict] = None) -> str:
     """The planner-vocabulary question a route + resolved external-ref params
     synthesize into. The interpreter feeds this back through the deterministic
@@ -882,8 +939,13 @@ class Explainer:
         if route_id == "machine-idle":
             return self._explain_machine_idle(params.get("machine"), q)
         if route_id == "drill-down":
-            return self._explain_drill_down(params.get("target", q),
-                                            params.get("history"))
+            # Session 4A teaching-graft (d.1), D-01 — `prior` is the carried
+            # answer from `ANSWER_MEMORY`, the SAME store `prove-it` grounds on.
+            # The dead `params["history"]` this used to read (never set by any
+            # caller) is gone with the argument it fed.
+            return self._explain_drill_down(
+                params.get("target", q), params.get("prior"),
+                bool(params.get("prior_elsewhere")), params.get("claim"))
         if route_id == "unknown-entity":
             return self._explain_unknown_entity(
                 params.get("mention") or params.get("order") or q,
@@ -926,7 +988,8 @@ class Explainer:
         if route_id == "prove-it":
             return self._prove_it_bundle(q, params.get("claim"),
                                          params.get("answer"),
-                                         params.get("prior"))
+                                         params.get("prior"),
+                                         bool(params.get("prior_elsewhere")))
         if route_id in ("beyond-horizon", "why-not-scheduled-yet", "frozen",
                         "coarse-fit", "bucket-load"):
             return self._rolling_bundle(route_id, q, params.get("document"),
@@ -4134,33 +4197,68 @@ class Explainer:
         )
 
     def _explain_drill_down(self, target: str,
-                            history: Optional[list] = None) -> ExplanationBundle:
-        """Open the full finding/record behind a citation (CU3): "tell me more
-        about finding 2 / that". Resolves an ordinal ('finding 2'), else drills
-        into the most severe data-quality finding — so a citation is never a dead
-        end. Context-carried when the caller passes the prior turn's records."""
-        findings = sorted(
-            self._index.all_findings(),
-            key=lambda r: ({"blocker": 0, "error": 1, "warning": 2, "info": 3}
-                           .get(r.get("severity", "info"), 9), r.get("seq", 0)))
+                            prior: Optional[dict] = None,
+                            prior_elsewhere: bool = False,
+                            claim: Any = None) -> ExplanationBundle:
+        """Open what the assistant JUST said — or, where the planner named one,
+        item N of a list it just gave.
+
+        SESSION 4A TEACHING-GRAFT (d.1), D-01 — THE WIRE THAT WAS NEVER RUN.
+        `Intent.DRILL_DOWN`'s declared meaning (`contracts/parse.py`) is *"open
+        the full record behind something the assistant JUST said, when the
+        question adds no subject of its own"*. This assembler took a `history`
+        argument, carried a docstring explaining what to put in it, and **no
+        caller ever passed it** — `route_params` never set `params["history"]`.
+        With no ordinal in the question it therefore fell through to
+        `findings[0]`: the board's most severe DATA-QUALITY finding, whatever
+        the conversation had been about. Measured in (d.0), P8 T2 — one turn
+        after a good teaching answer about frozen zones citing ORD-000209:
+
+            planner: can you show me that on my board
+            answer : CUT-01 is in a workload too dense to schedule cleanly
+                     [WARNING]  Affected: CUT-01
+
+        Meanwhile `ANSWER_MEMORY` — built one session earlier (4B.22) for
+        exactly this gesture — was read by the `prove-it` branch alone. Two
+        phrasings of one gesture: *"show me the evidence for that"* grounded the
+        last answer and *"can you show me that on my board"* opened an unrelated
+        gate warning.
+
+        SO THE TWO GROUND ON ONE STORE AND RENDER THROUGH ONE ASSEMBLER. Below
+        the ordinal branch this delegates to `_prove_it_bundle`, which already
+        has an authored branch for every case — records to open, an answer that
+        cited nothing, a carried answer about a board the planner has since
+        left, and no prior answer at all.
+
+        AND THE DEFAULT THAT ASSERTED IS GONE. With nothing carried and no
+        ordinal named, the answer SAYS SO and offers the door; it does not pick
+        the worst thing on the board and present it as what was meant. A default
+        that asserts manufactures a claim out of a gap — 4B.23's rule at a third
+        site, and the half of this fix that holds even when the wire has nothing
+        to deliver."""
         target = target or ""
         m = re.search(r"(?:finding|item|#|number)\s*#?\s*(\d+)", target.lower())
         pick = None
         if m:
+            findings = sorted(
+                self._index.all_findings(),
+                key=lambda r: ({"blocker": 0, "error": 1, "warning": 2, "info": 3}
+                               .get(r.get("severity", "info"), 9), r.get("seq", 0)))
             idx = int(m.group(1)) - 1
             if 0 <= idx < len(findings):
                 pick = findings[idx]
-        if pick is None and findings:
-            pick = findings[0]
-        detail = (compose_finding_sentence(pick, self._identity_map,
-                                           _load_catalog_safe()) if pick else None)
+        if pick is None:
+            return self._prove_it_bundle(target or "Tell me more.", claim, None,
+                                         prior, prior_elsewhere=prior_elsewhere)
+        detail = compose_finding_sentence(pick, self._identity_map,
+                                          _load_catalog_safe())
         return ExplanationBundle(
             question="Tell me more.",
-            subject_id=(pick.get("record_id", "") if pick else ""),
+            subject_id=pick.get("record_id", ""),
             subject_type="drill_down",
             subject_external_name=(detail["subject"] if detail else "?"),
-            ordered_records=[pick] if pick else [],
-            key_facts={"detail": detail, "has_target": bool(pick)},
+            ordered_records=[pick],
+            key_facts={"detail": detail, "has_target": True},
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )
@@ -4829,24 +4927,33 @@ class Explainer:
 
     def _prove_it_bundle(self, question: str, claim: Any,
                          answer: Any = None,
-                         prior: Any = None) -> ExplanationBundle:
+                         prior: Any = None,
+                         prior_elsewhere: bool = False) -> ExplanationBundle:
         """"Prove it" (R-AI5(4)): the grounding pass re-run on ONE claim,
         conversationally. Either the record, or the honest "that part is my
         inference from A and B — here's each".
 
         Session 4B.22 adds the THIRD and FOURTH cases, and the ruling is that all
-        four are authored, none silent:
+        four are authored, none silent. Session 4A teaching-graft (d.1) SPLITS
+        the third and adds a fifth; :func:`prove_it_case` is the one definition
+        and this is what its six values mean:
 
-          claim   the last answer was SYNTHESIS — its per-claim provenance opens,
-                  unchanged (4B.5 CU5).
-          prior   with records — the last answer was a CONTRACTED route. It has
-                  no per-sentence claims, so what opens is the record set the
-                  whole answer was assembled from, and the copy says exactly
-                  that rather than pretending to a decomposition it never had.
-          prior   with none — the last answer was AUTHORED COPY (a capability
-                  statement, a clarify, a refusal). Saying so plainly is the
-                  answer; it is not the same fact as having nothing open.
-          neither the conversation has no prior answer at all.
+          claim         the last answer was SYNTHESIS — its per-claim provenance
+                        opens, unchanged (4B.5 CU5).
+          records       with records — the last answer was a CONTRACTED route.
+                        It has no per-sentence claims, so what opens is the
+                        record set the whole answer was assembled from, and the
+                        copy says exactly that rather than pretending to a
+                        decomposition it never had.
+          product_meta  no records, and the route STATES A CAPABILITY (a coaching
+                        card, a clarify, a refusal). Saying so plainly is the
+                        answer; it is not the same fact as having nothing open.
+          empty_read    no records, and the route READ THE PLAN. D-06: the old
+                        copy called this "authored copy — it states what this
+                        product can and can't do", which is false of testimony.
+          other_version R-MT1 clause 3 — this session carries an answer and it is
+                        about a schedule the planner has since left.
+          none          the conversation has no prior answer at all.
         """
         claim_dict = claim if isinstance(claim, dict) else (
             claim.model_dump(mode="json") if claim is not None else None)
@@ -4871,6 +4978,8 @@ class Explainer:
             prior_facts = {"question": prior_dict.get("question") or "",
                            "route": prior_dict.get("route") or "?",
                            "record_count": len(records)}
+        case = prove_it_case(claim_dict, prior_dict, len(records),
+                             prior_elsewhere)
         return ExplanationBundle(
             question=question,
             subject_id="prove-it",
@@ -4879,7 +4988,11 @@ class Explainer:
             ordered_records=records,
             key_facts={"claim": claim_dict, "lines": lines,
                        "have_claim": claim_dict is not None,
-                       "prior_answer": prior_facts},
+                       "prior_answer": prior_facts,
+                       # Session 4A teaching-graft (d.1): the branch, decided
+                       # once here so no renderer re-derives it from a record
+                       # count and reaches a different one.
+                       "case": case},
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )

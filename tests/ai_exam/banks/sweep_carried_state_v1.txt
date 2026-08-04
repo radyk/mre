@@ -1,0 +1,182 @@
+# AI EXAM BANK — WHAT THE PRODUCT KEEPS FROM THE LAST TURN (R-MT1, R-LD5)
+# version  : v1
+# generated: 2026-08-04  (Session 4A teaching-graft (d.1))
+# world    : the DEMO BOARD `rolling-db5395dc-2ae`. Entity ids below are that
+#            board's; the SHAPES are what is graded, not the ids.
+#
+# ===========================================================================
+# WHAT THIS BANK CAN GRADE, AND WHAT IT CANNOT — READ THIS FIRST
+# ===========================================================================
+#
+# This is the measured input to Q7 (the bank-format decision, docs/07 §5b), and
+# it is written down here rather than in a design note because the gap is a
+# property of THESE probes, not a hypothesis.
+#
+# The exam grammar's `EXPECT` grades EIGHT KEYS — intent, route, order, machine,
+# concept, followup, polarity, clarify — and every one of them is a property of
+# ONE TURN'S PARSE. Nothing in the format can say "turn 2 opened turn 1's
+# records", "turn 2's answer names turn 1's question", or "turn 2 did NOT open
+# the board's worst gate finding". So of the five sequences below:
+#
+#   * the ROUTING half of all five is expressible and is graded here. That is
+#     not nothing — D-01's specimen (P8 T2) reached `drill-down` correctly and
+#     was still wrong, and the shape of the *previous* turn is what decides
+#     whether the route can be right, which is why these are sequences and not
+#     independent probes;
+#   * the GROUNDING half of all five is NOT expressible and is asserted in
+#     `tests/test_carried_answer_state.py` over two consecutive `run_ask` calls,
+#     plus quoted verbatim from live runs in the close-out;
+#   * THE CROSS-VERSION PAIR (recon P4, R-MT1's founding specimen) CANNOT BE
+#     ENCODED AT ALL. A run targets ONE schedule — `RunTarget` is resolved once
+#     — and the grammar has no directive that rebinds the board mid-conversation.
+#     That is not a missing EXPECT key; it is a missing world. It is measured in
+#     `tools/spikes/teaching_graft_d1/after.py p4` and pinned in the guard file's
+#     `Panel.rebind`, and it is the single strongest argument in this session for
+#     whatever Q7 decides.
+#
+# One more thing the format cannot say, found while writing these: an assertion
+# about what a turn did NOT do. "the drill-down opened nothing" and "the
+# drill-down opened the wrong thing" are the same EXPECT line.
+#
+# RESET DISCIPLINE. Each BLOCK is one conversation and is separated by RESET;
+# inside a block the turns are a THREAD ON PURPOSE, which is the opposite of
+# every teaching bank's discipline and is why this file is separate from them.
+# ===========================================================================
+
+
+# ===========================================================================
+# A — THE DRILL-DOWN, WIRED (D-01)
+#
+# The recon's P8, verbatim. Turn 1 is a teaching question; turn 2 is the most
+# natural follow-up a planner types. Before this session turn 2 returned the
+# board's most severe DATA-QUALITY finding — a gate warning about CUT-01 — with
+# nothing to do with frozen zones, ORD-000209, or anything turn 1 said.
+# ===========================================================================
+RESET
+EXPECT intent=teaching route=synthesis
+how does a frozen zone normally work on a board like this
+
+EXPECT route=drill-down
+can you show me that on my board
+
+EXPECT intent=frozen route=frozen
+why doesn't that apply to ORD-000128
+
+
+# ===========================================================================
+# B — THE OTHER PHRASING OF THE SAME GESTURE
+#
+# "show me the evidence for that" and "can you show me that on my board" are one
+# gesture. They were two intents, one wired and one not; they now ground on the
+# same two stores in the same order. The routes still differ — that is the
+# PARSE's reading and this bank does not argue with it — but what opens must be
+# the same object, which is the half only the guard file can state.
+# ===========================================================================
+RESET
+EXPECT intent=why-here route=why-here
+why is ORD-000128 op20 placed where it is
+
+EXPECT followup=prove-it
+show me the evidence for that
+
+
+# ===========================================================================
+# C — THE REFUSAL HALF (D-01, and the more important half)
+#
+# A cold drill-down: nothing has been answered, so there is nothing to open. The
+# answer must SAY SO and offer the door. A default that asserts manufactures a
+# claim out of a gap — and on this board the gap it used to fill was a WARNING.
+#
+# THIS EXPECTATION IS A KNOWN, UNDERSTOOD MISS AND IT IS KEPT RATHER THAN
+# FITTED. Measured live: with no conversation at all the parse reads these words
+# as `unmatched` at confidence 0.25 and the second tier answers — honestly, with
+# zero tool calls and the capability card. That is a GOOD answer and arguably a
+# better one than the route's own refusal, but it means the cold refusal on the
+# `drill-down` ROUTE is unreachable from a live parse and is proven only where
+# the parse is scripted (`tests/test_carried_answer_state.py::
+# TestDrillDownRefusal`). The probe is kept because what it grades — that a cold
+# "show me that" never opens the board's worst gate finding — is true on both
+# paths, and rewriting the expectation to match the parse would hide the fact
+# that two different mechanisms are keeping it true.
+# ===========================================================================
+RESET
+EXPECT route=drill-down
+can you show me that on my board
+
+
+# ===========================================================================
+# D — THE SUBJECT NOBODY NAMED (R-LD5)
+#
+# The recon's P2b middle arm. Nothing is selected, so every rung of the
+# resolution ladder is empty; the PARSE recovers ORD-000073 and its op grain
+# from the previous question's TEXT. The routing here is what makes the
+# disclosure necessary — an answer about an order the planner did not name in
+# that sentence — and the disclosure itself is asserted in the guard file and
+# quoted live in the close-out.
+#
+# THE TRUE NEGATIVE IS THE SECOND BLOCK: the same words with an UNRELATED turn
+# before them must reach CLARIFY, because there is genuinely nothing to bind.
+# ===========================================================================
+RESET
+EXPECT intent=why-here route=why-here
+why is ORD-000073 op10 placed where it is
+
+why cant this be moved earlier
+
+RESET
+EXPECT intent=late-orders route=late-orders
+how many orders are late
+
+# NB the expectation is on the ROUTE, not on `clarify=`. Measured: the parse
+# emits `intent=why-here conf=0.92` with the order UNRESOLVED and NO clarify
+# payload; the CLARIFY comes from the dispatch's subject-resolution guard. The
+# `clarify=` key grades the PARSE's own reason, which is correctly None here.
+EXPECT route=CLARIFY
+why cant this be moved earlier
+
+
+# ===========================================================================
+# E — THE DEAF GATE, BOTH SIDES (D-07)
+#
+# E1 is the FALSE POSITIVE the gate removes: a deictic follow-up that correctly
+# re-resolves to the same subject and correctly gets the same answer, which the
+# rider used to answer with "I'm not understanding what you're asking".
+#
+# E2 IS THE TRUE POSITIVE AND IT MUST STILL FIRE. (d.0) P6 T7 is the first true
+# positive `deaf` has produced in this repo's record: different question, no
+# followup_of, and the same body — because `certificate-testimony` and
+# `data-problems` render the same answer. The route defect is NOT fixed here
+# (it is filed to the shared-body census micro-session); what this bank pins is
+# that the rider still catches it. If E2 ever stops firing, the gate has become
+# a suppression.
+# ===========================================================================
+RESET
+SELECT order=ORD-000128 seq=20
+EXPECT intent=why-here route=why-here
+why is ORD-000128 op20 placed where it is
+
+EXPECT route=why-here
+so why is it there
+
+RESET
+EXPECT intent=data-problems route=data-problems
+are there any data quality problems
+
+EXPECT intent=certificate-testimony route=certificate-testimony
+what does the certificate say
+
+
+# ===========================================================================
+# F — WHICH KIND OF NOTHING (D-06)
+#
+# `advice` reads the plan (since 4B.22 B2 it leads with the opener's top-ranked
+# item) and attaches no records. A prove-it on it used to say "authored copy —
+# it states what this product can and can't do", which is false of it. The
+# graded half is the routing; the sentence is in the guard file and quoted live.
+# ===========================================================================
+RESET
+EXPECT intent=advice route=advice
+if i could fix one thing what should it be
+
+EXPECT followup=prove-it
+show me the evidence for that

@@ -178,27 +178,106 @@ class AskResult:
 # the durable record and the seed of R-AI5(5)'s telemetry.
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# R-MT1 (Session 4A teaching-graft (d.1), docs/04 2026-08-04) — CARRIED ANSWER
+# STATE IS SCHEDULE-SCOPED.
+#
+# THE MEASURED FAILURE. The (d.0) recon drove one conversation across an
+# in-place version rebind — what `main.js::onVersionChange` does after an
+# accepted edit, a boundary move or a publish: it rebinds the schedule id,
+# clears the board selection, and touches nothing else. Board A (386 bars, 102
+# late orders), then board B (56 bars, nothing late at all):
+#
+#     planner [A]: how many orders are late and what is the total tardiness cost
+#     answer  [A]: 102 late order(s): Of the 280 orders known to this plan ...
+#     -- accept: the cockpit rebinds to board B --
+#     planner [B]: show me the evidence for that
+#     answer  [B]: here is the whole record set it was assembled from
+#                  (102 record(s)):
+#                  - lateness_minutes = 5297.0 min for ORD-000001 [record: 2aafb20c]
+#                  ... 101 more
+#
+# Board A's record ids, with board A's figures, served to a planner looking at
+# board B — on which every one of those ids is absent from the evidence index
+# and no order is late. Confirmed in a real browser in (d.1): after a real
+# `drag.accept()` the next /ask went to the CHILD's url carrying the PARENT's
+# conversation turn verbatim (`tests/cockpit/carriedstate.spec.mjs`).
+#
+# THE CAUSE IS THE KEY. All three answer-bearing stores were keyed by SESSION
+# ID ALONE. `ParseMemory.key` already carried `"sched"` — which is why the parse
+# cache was safe and these three were not.
+#
+# So: every store that carries a prior ANSWER or its records is keyed by
+# (session_id, schedule_id). A read against a different schedule id is
+# impossible BY CONSTRUCTION — the key does not exist — rather than by a caller
+# remembering to check. `forget` still takes a SESSION and clears every schedule
+# under it: "forget what we were talking about" is about the conversation, and a
+# conversation that straddled two boards (the defect above) must still clear
+# whole.
+# ---------------------------------------------------------------------------
+
+#: The key every carried-answer store uses. ``None`` when there is no session to
+#: key on, which every writer treats as "do not remember" and every reader as
+#: "nothing carried" — the pre-R-MT1 behaviour for a session-less caller,
+#: unchanged.
+def _carry_key(session_id: Optional[str],
+               schedule_id: Optional[str]) -> Optional[tuple[str, str]]:
+    if not session_id:
+        return None
+    return (session_id, schedule_id or "")
+
+
+def _forget_session(store: dict, session_id: Optional[str]) -> None:
+    """Drop EVERY schedule's entry for one session. See the clause above."""
+    if not session_id:
+        return
+    for key in [k for k in store if k[0] == session_id]:
+        store.pop(key, None)
+
+
+def _held_elsewhere(store: dict, session_id: Optional[str],
+                    schedule_id: Optional[str]) -> bool:
+    """Does this session carry an answer, but about a DIFFERENT schedule?
+
+    R-MT1 clause 3's input. It is the one question the composite key cannot
+    answer by itself: a miss is a miss, and "there was never an answer" and
+    "the answer was about the plan you were looking at a moment ago" are
+    different things to say to a planner."""
+    if not session_id:
+        return False
+    want = schedule_id or ""
+    return any(k[0] == session_id and k[1] != want for k in store)
+
+
 class SynthesisMemory:
-    """The last synthesis answer per session, bounded and oldest-first-evicted."""
+    """The last synthesis answer per (session, schedule), bounded and
+    oldest-first-evicted. Keyed per R-MT1 clause 1 — see the block above."""
 
     def __init__(self, limit: int = 32) -> None:
         self._limit = limit
-        self._by_session: dict[str, Any] = {}
+        self._by_session: dict[tuple[str, str], Any] = {}
 
-    def remember(self, session_id: Optional[str], answer: Any) -> None:
-        if not session_id or answer is None:
+    def remember(self, session_id: Optional[str], schedule_id: Optional[str],
+                 answer: Any) -> None:
+        key = _carry_key(session_id, schedule_id)
+        if key is None or answer is None:
             return
-        self._by_session.pop(session_id, None)
-        self._by_session[session_id] = answer
+        self._by_session.pop(key, None)
+        self._by_session[key] = answer
         while len(self._by_session) > self._limit:
             self._by_session.pop(next(iter(self._by_session)))
 
-    def last(self, session_id: Optional[str]) -> Any:
-        return self._by_session.get(session_id) if session_id else None
+    def last(self, session_id: Optional[str],
+             schedule_id: Optional[str]) -> Any:
+        key = _carry_key(session_id, schedule_id)
+        return self._by_session.get(key) if key is not None else None
 
     def forget(self, session_id: Optional[str]) -> None:
-        if session_id:
-            self._by_session.pop(session_id, None)
+        _forget_session(self._by_session, session_id)
+
+    def held_elsewhere(self, session_id: Optional[str],
+                       schedule_id: Optional[str]) -> bool:
+        return _held_elsewhere(self._by_session, session_id, schedule_id)
 
 
 #: The process-wide memory the API ask path uses. Tests construct their own.
@@ -246,26 +325,39 @@ class AnswerMemory:
 
     def __init__(self, limit: int = 32) -> None:
         self._limit = limit
-        self._by_session: dict[str, dict] = {}
+        self._by_session: dict[tuple[str, str], dict] = {}
 
-    def remember(self, session_id: Optional[str], route: str, question: str,
-                 records: Any) -> None:
-        if not session_id:
+    def remember(self, session_id: Optional[str], schedule_id: Optional[str],
+                 route: str, question: str, records: Any,
+                 register: str = "") -> None:
+        key = _carry_key(session_id, schedule_id)
+        if key is None:
             return
         rows = [r for r in (records or []) if isinstance(r, dict)]
-        self._by_session.pop(session_id, None)
-        self._by_session[session_id] = {
+        self._by_session.pop(key, None)
+        self._by_session[key] = {
             "route": route or "?", "question": question or "",
+            # Session 4A teaching-graft (d.1), D-06: the REGISTER of the answer
+            # that is being remembered. A prove-it on an answer with no records
+            # has to say which KIND of nothing it is, and record count alone
+            # cannot tell a capability statement from a board read that came
+            # back empty — see `_prove_it_bundle`.
+            "register": register or "",
             "records": rows, "record_count": len(rows)}
         while len(self._by_session) > self._limit:
             self._by_session.pop(next(iter(self._by_session)))
 
-    def last(self, session_id: Optional[str]) -> Optional[dict]:
-        return self._by_session.get(session_id) if session_id else None
+    def last(self, session_id: Optional[str],
+             schedule_id: Optional[str]) -> Optional[dict]:
+        key = _carry_key(session_id, schedule_id)
+        return self._by_session.get(key) if key is not None else None
 
     def forget(self, session_id: Optional[str]) -> None:
-        if session_id:
-            self._by_session.pop(session_id, None)
+        _forget_session(self._by_session, session_id)
+
+    def held_elsewhere(self, session_id: Optional[str],
+                       schedule_id: Optional[str]) -> bool:
+        return _held_elsewhere(self._by_session, session_id, schedule_id)
 
 
 #: The process-wide answer memory the API ask path uses. Tests construct their own.
@@ -274,7 +366,15 @@ ANSWER_MEMORY = AnswerMemory()
 #: Routes whose answer is ABOUT a previous answer rather than about the plan.
 #: Remembering one would make a second "show me the evidence" drill into the
 #: drill-down instead of into the answer the planner is still looking at.
-_NOT_REMEMBERED = ("prove-it",)
+#:
+#: Session 4A teaching-graft (d.1): `drill-down` joins it, now that D-01 has
+#: wired it to the same store. Its declared meaning is *"open the full record
+#: behind something the assistant JUST said"* — it is never a fresh read of the
+#: plan, including on its ordinal branch, where it opens item N of a list a
+#: previous answer gave. Remembering it would make the second "show me that"
+#: drill the drill-down, which is the exact behaviour this tuple exists to
+#: prevent and which 4B.22 already asserts for `prove-it` over two turns.
+_NOT_REMEMBERED = ("prove-it", "drill-down")
 
 
 # ---------------------------------------------------------------------------
@@ -445,6 +545,23 @@ def _subject_note(parsed: ParsedQuestion) -> str:
             bits.append(f"resolved against {s.ref}")
         elif s.source is SubjectSource.HISTORY:
             bits.append(f"resolved against {s.ref} (from earlier in this conversation)")
+        # R-LD5 (Session 4A teaching-graft (d.1)) — DISCLOSURE FOLLOWS THE
+        # SUBJECT, NOT THE RESOLVER. The four rungs above are the LADDER's
+        # resolutions; this one is the PARSE MODEL's, read out of the RECENT
+        # TURNS block when every rung was empty. R-LD2's rule ("every resolution
+        # the ladder made is disclosed") is the special case, not the boundary:
+        # what a planner needs to know is that a subject they did not supply in
+        # this sentence was supplied for them, and by what.
+        #
+        # Same surface, same prominence, different wording — "from what you
+        # asked earlier" is a different claim from "from earlier in this
+        # conversation" (the HISTORY rung reads the turn's SUBJECT REFS, which
+        # come off the board selection; this reads the previous question's
+        # WORDS), and a planner should be able to disagree with each on its own
+        # terms.
+        elif s.source is SubjectSource.CONVERSATION:
+            bits.append(f"resolved against {s.ref} (read from what you asked "
+                        f"earlier — you didn't name it in this question)")
         elif s.raw and s.raw.upper() != s.ref.upper():
             bits.append(f"assuming {s.ref}")
     # Session 4B.27 Item 4 — A SUBJECT WE HEARD AND CANNOT USE IS NAMED.
@@ -670,6 +787,19 @@ def _with_assumptions(note: str, parsed: ParsedQuestion, params: dict) -> str:
             else "the whole order"
         bits.append(f"answered for {whole} — you named op{seq} and this route "
                     f"answers at order level")
+    elif seq is not None and src == "conversation":
+        # R-LD5 on the grain axis. Two shapes, because the honest sentence
+        # differs: a route that HONOURS the grain has to say where the grain
+        # came from, and one that does not has to say both that and that it
+        # answered wider. Neither may say "you named op{seq}" — the planner
+        # did not.
+        if parsed.intent in _GRAIN_HONOURING_INTENTS:
+            bits.append(f"and about op{seq}, read from your earlier question")
+        else:
+            whole = f"the whole of {params['order']}" if params.get("order") \
+                else "the whole order"
+            bits.append(f"answered for {whole} — op{seq} came from your earlier "
+                        f"question and this route answers at order level")
 
     # -- THE DIRECTION -----------------------------------------------------
     # Read from PARAMS, not from the parse: the mobility floor above may have
@@ -792,7 +922,14 @@ def route_params(parsed: ParsedQuestion, question_text: str) -> dict:
     # it), and a typed "op30" must outrank a bar the planner clicked earlier.
     from mre.modules.attribute_lookup import op_seq_in
     named_seq = parsed.named_op_seq
+    # R-LD5 — the grain travels with the subject, INCLUDING where it came from.
+    # A grain the parse read out of an earlier question is not one the planner
+    # typed here, and labelling it `utterance` is D-02 on the grain axis.
+    seq_source = ("conversation"
+                  if parsed.named_op_seq_source is SubjectSource.CONVERSATION
+                  else "utterance")
     if named_seq is None:
+        seq_source = "utterance"
         named_seq = op_seq_in(question_text)
         if named_seq is None and question_text != parsed.question:
             # A REWRITTEN question can lose the words (`routed_text` substitutes
@@ -804,7 +941,7 @@ def route_params(parsed: ParsedQuestion, question_text: str) -> dict:
         # WHERE THE GRAIN CAME FROM, carried so the disclosure can tell an
         # assumption from a statement (Item 2). A planner is never told back
         # what they just said.
-        params["op_seq_source"] = "utterance"
+        params["op_seq_source"] = seq_source
     # Session 4B.27 Item 4 — EVERY RESOLVED SUBJECT IS CARRIED, not only the
     # first. `params["order"]` keeps its exact meaning (the primary subject), so
     # no existing assembler changes behaviour; this is the channel through which
@@ -937,20 +1074,17 @@ def _clarify_bundle(explainer: Any, parsed: ParsedQuestion):
 REPEAT_WINDOW = 2
 
 
-def _repeat_depth(context: Optional[dict], route: str) -> int:
-    """How many of the last :data:`REPEAT_WINDOW` turns this same route answered.
-
-    Read off the history the panel already sends — each turn carries the route
-    that answered it — so this needs no server state and no new channel. 0 means
-    the question is fresh.
-
-    NOTE (Session 4B.15 Item 4): this is a signal about MY OUTPUT, not about the
-    planner's input, and reading it as the latter is the defect Item 4 reverses.
-    Callers must use :func:`bundle_repeat`, which splits it by whether the
-    QUESTIONS differed."""
-    history = (context or {}).get("history") or []
-    return sum(1 for turn in history[-REPEAT_WINDOW:]
-               if (turn.get("route") or "") == route)
+# Session 4A teaching-graft (d.1), D-10 — `_repeat_depth` IS GONE.
+#
+# It counted how many of the last REPEAT_WINDOW turns one route answered, and
+# 4B.15 Item 4 reversed the inference it encoded ("several different questions
+# reaching one route" is evidence about US, not about the planner repeating
+# themselves). Its own docstring then said *"Callers must use `bundle_repeat`"*
+# — and after that split it had NO caller under `src/` at all, only a test
+# exercising the function directly. A declared-but-never-consumed helper with a
+# deprecating docstring is a standing bug species in this repo: it reads as a
+# live signal to whoever finds it next. Removed rather than preserved; the
+# counting `bundle_repeat` actually does is inline and split by question.
 
 
 def _normalize_q(text: str) -> str:
@@ -985,8 +1119,18 @@ def _same_question(a: str, b: str) -> bool:
 #: whole signal. "Several different questions produced ONE ANSWER" cannot be
 #: read off a route id: turns 4 and 5 of the measured transcript share a route
 #: and, once the route works, say completely different things.
-_DELIVERED: dict[str, list[dict]] = {}
+#:
+#: R-MT1 clause 1 (Session 4A teaching-graft (d.1)): keyed by (session,
+#: schedule) like the other two carried-answer stores, so the `deaf` rider can
+#: never compare an answer given about one board with an answer given about
+#: another. D-11, same session: it is BOUNDED now. It kept 4 rows per session
+#: and had no cap on the NUMBER of sessions, so a long-lived API process
+#: accumulated one entry per browser tab forever while `AnswerMemory` and
+#: `SynthesisMemory` beside it were LRU-32. Bounded is not a feature; unbounded
+#: was the bug.
+_DELIVERED: dict[tuple[str, str], list[dict]] = {}
 _DELIVERED_KEEP = 4
+_DELIVERED_SESSIONS = 32
 
 
 def _answer_fingerprint(text: str) -> str:
@@ -998,17 +1142,21 @@ def _answer_fingerprint(text: str) -> str:
     return hashlib.sha1(" ".join(words).encode("utf-8")).hexdigest()
 
 
-def remember_delivery(session_id: Optional[str], route: str, question: str,
-                      text: str) -> None:
+def remember_delivery(session_id: Optional[str], schedule_id: Optional[str],
+                      route: str, question: str, text: str) -> None:
     """Record what was delivered, so the next turn can tell whether it is about
     to say the same thing again."""
-    if not session_id:
+    key = _carry_key(session_id, schedule_id)
+    if key is None:
         return
     row = {"route": route, "question": question,
            "fp": _answer_fingerprint(text)}
-    seq = _DELIVERED.setdefault(session_id, [])
+    seq = _DELIVERED.pop(key, [])
     seq.append(row)
     del seq[:-_DELIVERED_KEEP]
+    _DELIVERED[key] = seq
+    while len(_DELIVERED) > _DELIVERED_SESSIONS:
+        _DELIVERED.pop(next(iter(_DELIVERED)))
 
 
 def forget_deliveries(session_id: Optional[str]) -> None:
@@ -1031,10 +1179,24 @@ def forget_deliveries(session_id: Optional[str]) -> None:
     deliberately the ONE place that clears server-side conversation state. The
     4B.16a defect was a RESET that cleared four channels and missed a fifth;
     adding a sixth store with its own separate clear would reproduce it exactly.
+
+    SESSION 4A TEACHING-GRAFT (d.1) — AND THE SYNTHESIS MEMORY, WHICH THIS
+    FUNCTION HAS CLAIMED TO CLEAR SINCE 4B.22 AND DID NOT. Found while taking
+    the R-MT1 census: the paragraph above says "the ONE place that clears
+    server-side conversation state" and there were three such stores, of which
+    this cleared two. A RESET therefore left the last synthesis answer's CLAIMS
+    live, so a `prove it` on the first synthesis turn of the NEXT conversation
+    could ground a claim from a conversation the bank had already thrown away —
+    4B.16a's fifth channel exactly, at the store that was added after it.
+
+    R-MT1 clause 1: every clear is by SESSION and takes every schedule with it.
+    A conversation that straddled two boards is the defect the key fixes; it is
+    still one conversation, and forgetting it must not leave half of it behind.
     """
     if session_id:
-        _DELIVERED.pop(session_id, None)
+        _forget_session(_DELIVERED, session_id)
         ANSWER_MEMORY.forget(session_id)
+        SYNTHESIS_MEMORY.forget(session_id)
 
 
 def _same_subject(turn: dict, order: Optional[str],
@@ -1080,7 +1242,8 @@ def _same_subject(turn: dict, order: Optional[str],
 def bundle_repeat(bundle: Any, context: Optional[dict],
                   parsed: ParsedQuestion, text: str = "",
                   session_id: Optional[str] = None,
-                  subject: Optional[dict] = None) -> None:
+                  subject: Optional[dict] = None,
+                  schedule_id: Optional[str] = None) -> None:
     """Stamp the repeat signal on a bundle — REVERSED (Session 4B.15 Item 4).
 
     Two different facts were fused into one counter, and the fused counter fired
@@ -1118,10 +1281,48 @@ def bundle_repeat(bundle: Any, context: Optional[dict],
         return
     if not text or not session_id:
         return
+    # Session 4A teaching-graft (d.1), D-07 — A FOLLOW-UP INSIDE ONE ROUTE IS
+    # NOT DEAFNESS.
+    #
+    # `deaf` says "I'm not understanding what you're asking", and it says it
+    # because DIFFERENT questions produced one answer. A turn the parse marked
+    # DEEPEN or LIST_EXPAND *that landed on the route which just answered* is
+    # not a different question in that sense — it is the planner drilling into
+    # the answer they just got, and re-delivering it is the correct response to
+    # "but why" / "say more". Measured cold in (d.0) (`deaf-control.json` T2): a
+    # deictic follow-up that correctly re-resolved to the same subject and
+    # correctly got the same answer was told the product was not understanding
+    # it.
+    #
+    # BOTH HALVES ARE NEEDED AND THE SWEEP IS WHY. The first version of this
+    # gate read `followup_of` ALONE, and `sweep_carried_state_v1` block E2
+    # showed it swallowing the one true positive this rider has ever produced:
+    # the live parse marks "what does the certificate say", asked after "are
+    # there any data quality problems", as `followup=deepen` — reasonably, since
+    # it does follow — and the two are nonetheless DIFFERENT questions reaching
+    # DIFFERENT routes and getting one body. The unit test did not see it
+    # because the unit test constructed `followup_of=NONE`; a guard that
+    # supplies its own arguments proves the assembler, not the path
+    # (4B.21 §5a.78, at a seam that had just been built).
+    #
+    # So the gate is per-row and reads the ROUTE the prior delivery came from,
+    # which `_DELIVERED` has always carried. Same route -> the planner deepened
+    # and the answer is correctly the same. Different route -> two questions
+    # collapsed onto one answer, which is exactly what this rider is for.
+    #
+    # Read from the PARSE, which already reports it (R-AI5(8)): the rider does
+    # not decide what kind of follow-up this is, it only declines to scold one
+    # the parse has already named. CORRECTION is deliberately NOT here — a
+    # correction that gets the same answer back is the strongest deafness
+    # signal there is, and it is one of the four firings 4B.15 Item 4 measured.
+    deepening = parsed.followup_of in (FollowupKind.DEEPEN,
+                                       FollowupKind.LIST_EXPAND)
     fp = _answer_fingerprint(text)
-    prior = [row for row in _DELIVERED.get(session_id, [])[-REPEAT_WINDOW:]
+    key = _carry_key(session_id, schedule_id)
+    prior = [row for row in (_DELIVERED.get(key, []) if key else [])[-REPEAT_WINDOW:]
              if row["fp"] == fp
-             and not _same_question(row["question"], parsed.question)]
+             and not _same_question(row["question"], parsed.question)
+             and not (deepening and (row.get("route") or "") == route)]
     if prior:
         bundle.key_facts["deaf"] = len(prior)
         bundle.key_facts["deaf_prior"] = prior[-1]["question"][:120]
@@ -1172,7 +1373,8 @@ def _synthesis_dispatch(explainer: Any, parsed: ParsedQuestion, note: str,
                         synthesizer: Any, context: Optional[dict],
                         memory: Any, session_id: Optional[str],
                         diverted_qualifier: str = "",
-                        document: Any = None) -> Dispatched:
+                        document: Any = None,
+                        schedule_id: Optional[str] = None) -> Dispatched:
     """The SECOND TIER (R-AI5(2)): labeled open synthesis over read-only evidence,
     hardened by claim-level verification before it renders (R-AI5(3)).
 
@@ -1228,7 +1430,7 @@ def _synthesis_dispatch(explainer: Any, parsed: ParsedQuestion, note: str,
                                        "stage": "synthesis"}),
             note, parsed.question)
     if memory is not None and not answer.unanswerable:
-        memory.remember(session_id, answer)
+        memory.remember(session_id, schedule_id, answer)
     # CU3(b) — the warm floor's doors, computed HERE (the same offers part 1's
     # bridge would have made, chosen by what the planner named) and rendered only
     # if the tier could not ground an answer.
@@ -1267,7 +1469,8 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
              ledger: Any = None, synthesizer: Any = None,
              context: Optional[dict] = None, memory: Any = None,
              session_id: Optional[str] = None,
-             document: Any = None, answer_memory: Any = None) -> Dispatched:
+             document: Any = None, answer_memory: Any = None,
+             schedule_id: Optional[str] = None) -> Dispatched:
     """A parsed question → the assembled answer.
 
     A matched intent goes to the CONTRACTED deterministic evidence assembly — the
@@ -1302,7 +1505,8 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
             return _synthesis_dispatch(explainer, parsed, note, synthesizer,
                                        context, memory, session_id,
                                        diverted_qualifier=diverted,
-                                       document=document)
+                                       document=document,
+                                       schedule_id=schedule_id)
         return _unmatched_bridge(explainer, parsed, note)
 
     # 0 — THE TRAY, before anything else (Session 4A.5c CU4).
@@ -1406,7 +1610,8 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     # sentence, not a status of the plan.
     if parsed.followup_of is FollowupKind.PROVE_IT or \
             parsed.intent is Intent.PROVE_IT:
-        last = memory.last(session_id) if memory is not None else None
+        last = (memory.last(session_id, schedule_id)
+                if memory is not None else None)
         claim = pick_claim(last, parsed.question) if last is not None else None
         # With NOTHING of ours open to ground, a prove-it that also names a real
         # intent is answered AS that intent — the grounding pass has nothing to do,
@@ -1425,15 +1630,26 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
         # above (a prove-it gesture that ALSO named a real intent, e.g. "but
         # why" after a cause chain) is untouched, because what the planner wants
         # there is the question answered, not our last sentence re-opened.
-        prior = (answer_memory.last(session_id)
+        #
+        # R-MT1 clause 3 (Session 4A teaching-graft (d.1)): with nothing carried
+        # for THIS board, ask whether this session carries one for another. A
+        # rebind clears the client channels (clause 2) so this should be
+        # unreachable in the shipped cockpit — it is defense in depth for the
+        # window where a server has clause 1 and a browser has not yet reloaded,
+        # and for any future rebind path that forgets to clear.
+        prior = (answer_memory.last(session_id, schedule_id)
                  if answer_memory is not None else None)
+        elsewhere = bool(
+            prior is None and claim is None and answer_memory is not None
+            and answer_memory.held_elsewhere(session_id, schedule_id))
         if claim is not None or parsed.intent in (Intent.PROVE_IT, Intent.UNMATCHED):
             return Dispatched(
                 "prove-it",
                 explainer.route("prove-it", {"question": parsed.question,
                                              "claim": claim, "answer": last,
                                              "prior": None if claim is not None
-                                             else prior}),
+                                             else prior,
+                                             "prior_elsewhere": elsewhere}),
                 note, parsed.question)
 
     # 3 — the planner confirmed OUR OWN take back at us. Name the gesture and the
@@ -1530,6 +1746,34 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     # start-time causation, and the only place "downtime" still appears is the
     # original utterance. Never used for routing — routing already happened.
     params["asked_question"] = parsed.question
+    # Session 4A teaching-graft (d.1), D-01 — THE CARRIED ANSWER REACHES THE
+    # DRILL-DOWN, from the SAME store `prove-it` grounds on. Wired here rather
+    # than inside `route_params` because the store is the dispatch's to read (it
+    # holds `session_id` and, since R-MT1, `schedule_id`), and because the two
+    # gestures must never be able to ground on two different objects.
+    #
+    # `prior_elsewhere` is R-MT1 clause 3's input on this branch too: a
+    # drill-down after a rebind says the board changed rather than falling to
+    # the never-answered floor.
+    if parsed.intent is Intent.DRILL_DOWN:
+        # THE SYNTHESIS CLAIM FIRST, exactly as the prove-it branch reaches for
+        # it — same store, same order, same `pick_claim`. Found in this
+        # session's own live run: with only the ANSWER memory wired, a
+        # drill-down onto a SYNTHESIS answer fell to the record set (empty,
+        # because a general-knowledge claim carries none by R-TG1) and told the
+        # planner their teaching answer had cited nothing. A gesture that is
+        # "two phrasings of one thing" has to reach for the same things in the
+        # same order, or the phrasing still decides the answer.
+        last_synth = memory.last(session_id, schedule_id) \
+            if memory is not None else None
+        params["claim"] = (pick_claim(last_synth, parsed.question)
+                           if last_synth is not None else None)
+        if answer_memory is not None:
+            params["prior"] = (None if params["claim"] is not None
+                               else answer_memory.last(session_id, schedule_id))
+            params["prior_elsewhere"] = (
+                params["claim"] is None and params["prior"] is None
+                and answer_memory.held_elsewhere(session_id, schedule_id))
     # And the DOCUMENT for the routes whose honesty depends on the sliced world.
     # `late-orders` is one: "no late orders" is true of the SCHEDULED orders, and
     # on a rolling board the tray has to be named beside it or a stranger reads
@@ -1729,7 +1973,8 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
         return _synthesis_dispatch(explainer, parsed, note, synthesizer,
                                    context, memory, session_id,
                                    diverted_qualifier=failure.note,
-                                   document=document)
+                                   document=document,
+                                   schedule_id=schedule_id)
 
     # 5b — CU5(b)/(c) as REVERSED by Session 4B.15 Item 4.
     #
@@ -1752,8 +1997,10 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     # was answered about, not what was typed.
     bundle_repeat(bundle, context, parsed, draft, session_id,
                   subject={"order": params.get("order"),
-                           "op_seq": params.get("op_seq")})
-    remember_delivery(session_id, parsed.intent.value, parsed.question, draft)
+                           "op_seq": params.get("op_seq")},
+                  schedule_id=schedule_id)
+    remember_delivery(session_id, schedule_id, parsed.intent.value,
+                      parsed.question, draft)
     # Make the resolution visible (RUBRIC C3): the answer shows the question it
     # actually answered, whenever the parse rewrote it.
     if rewritten:
@@ -1856,7 +2103,8 @@ def run_ask(explainer: Any, question: str, *, context: Optional[dict] = None,
     else:
         d = dispatch(explainer, parsed, ledger=ledger, synthesizer=synthesizer,
                      context=context, memory=memory, session_id=session_id,
-                     document=document, answer_memory=answer_memory)
+                     document=document, answer_memory=answer_memory,
+                     schedule_id=schedule_id)
         route_label, bundle, note = d.route, d.bundle, d.note
         resolved_question = d.routed_question
         source, confidence = "parse", parsed.confidence
@@ -1867,7 +2115,14 @@ def run_ask(explainer: Any, question: str, *, context: Optional[dict] = None,
         # about. The sweep caught exactly that: "are you sure about that", two turns
         # after a synthesis answer, re-opened the older claim. Forget on any other
         # answer; prove-it then honestly says it has no claim of its own open.
-        if memory is not None and d.route not in ("synthesis", "prove-it"):
+        # Session 4A teaching-graft (d.1): `drill-down` joins the exemption for
+        # the same reason `prove-it` has it. A turn that OPENS our last answer
+        # is not a later answer that makes it stale — and now that D-01 has
+        # wired the drill-down to the same two stores, forgetting here would
+        # mean the first "show me that" opened the claims and the second could
+        # not.
+        if memory is not None and d.route not in ("synthesis", "prove-it",
+                                                  "drill-down"):
             memory.forget(session_id)
 
     register = register_of(bundle)
@@ -1891,8 +2146,9 @@ def run_ask(explainer: Any, question: str, *, context: Optional[dict] = None,
     # that earns it inherits the rule instead of having to remember it.
     if (answer_memory is not None and route_label not in _NOT_REMEMBERED
             and register != "system"):
-        answer_memory.remember(session_id, route_label, question,
-                               getattr(bundle, "ordered_records", None))
+        answer_memory.remember(session_id, schedule_id, route_label, question,
+                               getattr(bundle, "ordered_records", None),
+                               register=register)
 
     # R-AI5(7) — the probation shadow. Runs only when a caller asked for it AND
     # the route that answered is a promotion still on probation (the callable

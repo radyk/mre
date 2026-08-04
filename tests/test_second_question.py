@@ -99,7 +99,8 @@ sys.path.insert(0, str(REPO / "tests"))
 from parse_doubles import ScriptedParser  # noqa: E402
 
 from mre.contracts.parse import (  # noqa: E402
-    FollowupKind, Intent, ParsedQuestion, SubjectKind, SubjectRef,
+    ClarifyPayload, ClarifyReason, FollowupKind, Intent, ParsedQuestion,
+    SubjectKind, SubjectRef,
 )
 
 UTC = timezone.utc
@@ -164,7 +165,8 @@ def disposition(board):
 # ---------------------------------------------------------------------------
 
 def _p(question: str, intent: Intent, *, order=None, machine=None,
-       followup=FollowupKind.NONE, confidence=0.95) -> ParsedQuestion:
+       followup=FollowupKind.NONE, confidence=0.95,
+       clarify: "ClarifyReason | None" = None) -> ParsedQuestion:
     subjects = []
     if order:
         subjects.append(SubjectRef(kind=SubjectKind.ORDER, raw=order, ref=order))
@@ -172,7 +174,9 @@ def _p(question: str, intent: Intent, *, order=None, machine=None,
         subjects.append(SubjectRef(kind=SubjectKind.MACHINE, raw=machine,
                                    ref=machine))
     return ParsedQuestion(question=question, intent=intent, subjects=subjects,
-                          followup_of=followup, confidence=confidence)
+                          followup_of=followup, confidence=confidence,
+                          clarify=(ClarifyPayload(reason=clarify)
+                                   if clarify is not None else None))
 
 
 class Conversation:
@@ -184,11 +188,16 @@ class Conversation:
     resolve by reading state the server kept for itself, this is the only shape
     of test that can prove it."""
 
-    def __init__(self, board, table: dict, session: str):
+    def __init__(self, board, table: dict, session: str,
+                 schedule: str = "sched-sq"):
         from mre.modules.interpreter import AnswerMemory, SynthesisMemory
         self._ex, self._doc = board
         self._parser = ScriptedParser(table)
         self._session = session
+        # Session 4A teaching-graft (d.1), R-MT1: the board a turn is asked
+        # against. `rebind` is what `main.js::onVersionChange` does to the
+        # SERVER's view — the schedule id changes and the session does not.
+        self.schedule = schedule
         self._history: list[dict] = []
         # FRESH per conversation. The live stores are module singletons; sharing
         # them across tests would make one test's last answer another's context.
@@ -203,12 +212,25 @@ class Conversation:
                       context={"history": self._history[-4:], "selection": {},
                                "last_answered_subject": {}, "card": {}},
                       session_id=self._session, document=self._doc,
+                      schedule_id=self.schedule,
                       memory=self._synth, answer_memory=self._answers)
         self._history.append({"question": question, "route": res.route,
                               "order": None, "machine": None})
         res.text = TemplateRenderer().render(res.bundle)  # type: ignore[attr-defined]
         self.results.append(res)
         return res
+
+    def rebind(self, schedule: str, *, clear_client: bool = True) -> None:
+        """R-MT1: the in-place version rebind, both halves independently.
+
+        `clear_client=True` is the SHIPPED gesture after clause 2 — the cockpit
+        clears the ask panel's carried channels alongside the selection.
+        `clear_client=False` is the gesture as it was before clause 2 landed,
+        kept so clause 1 (the store key) can be proven ON ITS OWN: it is the
+        state a server sees from a browser that has not been reloaded."""
+        self.schedule = schedule
+        if clear_client:
+            self._history = []
 
 
 def _why_here_table(order: str, machine: str) -> dict:
@@ -384,6 +406,51 @@ class TestDrillDownOpensThePriorAnswer:
             "answer that does not exist")
 
 
+class TestDrillDownAfterCapabilityCopy:
+    """D-06's OTHER ARM (Session 4A teaching-graft (d.1)): where the prior
+    answer really WAS a statement about this product, the 4B.22 sentence is
+    still the right one and must not have been collateral damage.
+
+    A CLARIFY is the sharpest specimen of it — the one the class below was
+    originally written about — because it cites nothing AND is genuinely not a
+    read of the plan."""
+
+    TABLE = {
+        "what about it": _p("what about it", Intent.ADVICE,
+                            clarify=ClarifyReason.NO_SUBJECT),
+        "show me the evidence for that":
+            _p("show me the evidence for that", Intent.PROVE_IT,
+               followup=FollowupKind.PROVE_IT),
+    }
+
+    def test_a_clarify_is_still_described_as_authored_copy(self, board):
+        c = Conversation(board, self.TABLE, "sess-meta")
+        first = c.ask("what about it")
+        assert first.route == "CLARIFY", "premise: turn 1 was not a clarify"
+        text = c.ask("show me the evidence for that").text.lower()
+        assert "authored copy" in text
+        assert "nothing behind it to open" in text
+        assert "reads this plan directly" not in text
+
+    def test_the_membership_is_named_and_not_derived(self):
+        """`PRODUCT_META_ROUTES` is a judgement about four route ids, and the
+        docstring says so. Asserted here so adding a fifth is a visible change
+        rather than a silent one, and so a session that tries to DERIVE it from
+        the taxonomy or the register map finds out here that neither can
+        supply it."""
+        from mre.modules.explainer import (
+            REGISTER_BY_SUBJECT, ROUTE_TAXONOMY, PRODUCT_META_ROUTES,
+        )
+        assert PRODUCT_META_ROUTES == frozenset(
+            {"coaching", "CLARIFY", "REFUSED", "confirm-take"})
+        assert "coaching" in ROUTE_TAXONOMY and "late-orders" in ROUTE_TAXONOMY, (
+            "the taxonomy holds capability copy and board reads alike, so it "
+            "cannot be the discriminator")
+        assert "coaching" not in REGISTER_BY_SUBJECT, (
+            "a coaching card renders the default register, like testimony — so "
+            "the register map cannot be the discriminator either")
+
+
 class TestDrillDownAfterAnAnswerThatCitesNothing:
     """THE HONEST-NEGATIVE CASE, and it matters as much as the other one. The
     old copy told the planner the records were "cited on it" — about a CLARIFY,
@@ -396,13 +463,27 @@ class TestDrillDownAfterAnAnswerThatCitesNothing:
                followup=FollowupKind.PROVE_IT),
     }
 
-    def test_it_says_the_answer_was_authored_copy(self, board):
+    def test_it_says_the_answer_read_the_plan_and_attached_nothing(self, board):
+        """SESSION 4A TEACHING-GRAFT (d.1), D-06 — THIS TEST STATED THE OLD
+        BEHAVIOUR AND THE UPDATE IS THE RULING.
+
+        It asserted "authored copy — it states what this product can and can't
+        do" about `advice`, which since 4B.22 B2 leads with the OPENER's
+        top-ranked item: a fact read off this plan. The (d.0) recon caught the
+        same sentence said about a real `late-orders` testimony answer that
+        cited nothing because nothing on that board was late
+        (`zero-record-control.json`). The split is by the ROUTE THAT ANSWERED —
+        see `explainer.PRODUCT_META_ROUTES` — and the class below holds the arm
+        where the old sentence is still the right one."""
         c = Conversation(board, self.TABLE, "sess-authored")
         first = c.ask("what should i do")
         assert not first.bundle.ordered_records, "premise: turn 1 cited something"
         text = c.ask("show me the evidence for that").text.lower()
-        assert "authored copy" in text
-        assert "nothing behind it to open" in text
+        assert "authored copy" not in text, (
+            "a route that reads the plan is described as a capability statement")
+        assert "answers from this plan" in text
+        assert "attached no records" in text
+        assert "advice" in text, "the sentence does not name the route it is about"
 
     def test_it_is_not_the_same_answer_as_having_nothing_open(self, board):
         from mre.modules.ask_fallback_copy import PROVE_IT_NO_TARGET
@@ -445,9 +526,9 @@ class TestDrillDownMemoryHygiene:
         parser = ScriptedParser(_why_here_table(order, machine))
         run_ask(ex, "why is that order on that machine", parser=parser,
                 session_id="sess-reset-4b22", document=doc)
-        assert ANSWER_MEMORY.last("sess-reset-4b22") is not None
+        assert ANSWER_MEMORY.last("sess-reset-4b22", None) is not None
         forget_deliveries("sess-reset-4b22")
-        assert ANSWER_MEMORY.last("sess-reset-4b22") is None
+        assert ANSWER_MEMORY.last("sess-reset-4b22", None) is None
 
     def test_the_module_singleton_is_what_the_live_path_uses(self, board,
                                                              a_cited_order):
@@ -461,7 +542,7 @@ class TestDrillDownMemoryHygiene:
         run_ask(ex, "why is that order on that machine",
                 parser=ScriptedParser(_why_here_table(order, machine)),
                 session_id="sess-singleton-4b22", document=doc)
-        last = ANSWER_MEMORY.last("sess-singleton-4b22")
+        last = ANSWER_MEMORY.last("sess-singleton-4b22", None)
         assert last is not None and last["records"]
         ANSWER_MEMORY.forget("sess-singleton-4b22")
 

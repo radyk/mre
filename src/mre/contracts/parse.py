@@ -256,6 +256,25 @@ class SubjectSource(str, Enum):
       SELECTION   — a live board selection.
       LAST_ANSWER — the subject of the previous answer.
       HISTORY     — earlier in the conversation.
+
+    R-LD5 (Session 4A teaching-graft (d.1), docs/04 2026-08-04) — AND ONE MORE,
+    BECAUSE THE LADDER IS NOT THE ONLY RESOLVER.
+
+      CONVERSATION — the PARSE MODEL read the referent out of the RECENT TURNS
+                     block. Every rung of the ladder was empty and the model
+                     still produced usable words, which `bind_subjects` then
+                     resolved.
+
+    Measured in the (d.0) recon (P2b, D-02): *"why cant this be moved earlier"*
+    with nothing selected, one turn after *"why is ORD-000073 op10 placed where
+    it is"*, came back as a full counterfactual **about ORD-000073 op10** — an
+    order the planner had not named in that sentence and a grain that existed
+    nowhere but inside the previous question's text. It reported
+    `source: utterance`, so it was indistinguishable from a subject the planner
+    had typed, and the disclosure line was EMPTY. The same subject recovered by
+    the LADDER is disclosed in full.
+
+    UTTERANCE now means what it says: the planner's own words, this turn.
     """
 
     UTTERANCE = "utterance"
@@ -263,6 +282,7 @@ class SubjectSource(str, Enum):
     SELECTION = "selection"
     LAST_ANSWER = "last-answer"
     HISTORY = "history"
+    CONVERSATION = "conversation"
 
 
 class Polarity(str, Enum):
@@ -632,6 +652,23 @@ class ParsedQuestion(BaseModel):
         for s in self.of_kind(SubjectKind.ORDER):
             if s.resolved:
                 return s.op_seq
+        return None
+
+    @property
+    def named_op_seq_source(self) -> Optional[SubjectSource]:
+        """Where :attr:`named_op_seq` came from — the SAME subject, by the same
+        walk, so the grain and the order can never be attributed to different
+        channels.
+
+        R-LD5 (Session 4A teaching-graft (d.1)). The grain is part of the
+        subject, and the P2b specimen's sharpest half was the grain: `op_seq 10`
+        existed nowhere in the planner's sentence and nowhere in the payload
+        except inside the PREVIOUS QUESTION'S TEXT, and it was reported as the
+        planner's own. `route_params` reads this so the disclosure can tell an
+        assumption from a statement."""
+        for s in self.of_kind(SubjectKind.ORDER):
+            if s.resolved:
+                return s.source if s.op_seq is not None else None
         return None
 
 

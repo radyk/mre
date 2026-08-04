@@ -171,6 +171,97 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Session 4A teaching-graft (d.1) — carried answer state**, 2026-08-04 (docs/07
+v2.92, §5a.181-186; docs/04 2026-08-04 **R-MT1 and R-LD5 ruled and BUILT**;
+contract unchanged **1.15**, no docs/06 doorway owed; **BOTH GOVERNED PROMPTS
+UNCHANGED** — parse **v18**, synthesis **v8**, every fix being
+deterministic-seam work; narrative in
+`docs/closeouts/4a-teaching-d1-carried-state.md`). R1 item 2, session (d.1); the
+(d.0) recon measured and ruled nothing, this session fixes ONE family from its
+ledger. **THE RECON'S ONE UNCONFIRMED INFERENCE WAS CHECKED FIRST AND IS NOW AN
+OBSERVATION**: in a real Chromium, after a real `drag.accept()` rebound the board
+to its child, the very next `/ask` went to the CHILD's url carrying the PARENT
+board's turn verbatim and the same session id. **R-MT1: CARRIED ANSWER STATE IS
+SCHEDULE-SCOPED, CLEARED ON REBIND, AND HONEST ABOUT ITS OWN ABSENCE.**
+`ANSWER_MEMORY`, `SYNTHESIS_MEMORY` and `_DELIVERED` key on **(session_id,
+schedule_id)** — `ParseMemory.key` already carried `"sched"`, which is why the
+parse cache was safe and the three answer-bearing stores were not; **`forget` is
+by SESSION and takes every board with it**, because a conversation that straddled
+two boards is the defect the key fixes and is still one conversation. **ALL THREE
+CLAUSES ARE SEPARATELY LOAD-BEARING** and the guard's
+`Panel.rebind(clear_client=False)` exists so clause 1 is provable without clause
+2 helping. Live, both directions: the cross-board prove-it goes **102 records ->
+0** and says *"The answer you're pointing at was about the PREVIOUS VERSION of
+this plan…"*. **THE SESSION ID SURVIVES A REBIND, DELIBERATELY** (re-minting
+would fragment the ledger's own session thread, R-AI5(5)); the rendered turns
+stay on screen, for the same reason `appendSuperseded` leaves the log alone.
+**A GAP THE CENSUS FOUND AND NO TEST HAD:** `forget_deliveries` has called itself
+*"the ONE place that clears server-side conversation state"* since 4B.22 and
+cleared TWO of THREE — `SYNTHESIS_MEMORY` survived every RESET (4B.16a's fifth
+channel, at the store added after it). **R-LD5: DISCLOSURE FOLLOWS THE SUBJECT,
+NOT THE RESOLVER** — `SubjectSource.CONVERSATION` is added, so a subject the
+PARSE MODEL recovered from the history block is no longer indistinguishable from
+a typed one; live, the P2b arm now reads *"resolved against ORD-000073 (read from
+what you asked earlier — you didn't name it in this question); and about op10,
+read from your earlier question"* against a note that was **empty**, and
+`named_op_seq_source` walks the same subject as `named_op_seq` so the GRAIN and
+the ORDER can never be attributed to different channels. **BOTH TRUE NEGATIVES
+HELD** (a typed subject discloses nothing; the two non-binding arms still CLARIFY
+with an empty note). **D-01: THE WIRE THAT WAS NEVER RUN, AND THE DELETION IS THE
+BIGGER HALF** — `_explain_drill_down` had a `history` argument, a docstring
+explaining it, and no caller since the day it was written, so it fell to
+`findings[0]`; measured before, one turn after a teaching answer about frozen
+zones, it returned *"CUT-01 is in a workload too dense to schedule cleanly
+[WARNING]"*. Now both gestures ground on the SAME two stores in the SAME ORDER
+(synthesis claim, then answer memory) and below the ordinal branch render through
+one assembler; **with nothing carried the answer SAYS SO and offers the door**,
+because a default that ASSERTS manufactures a claim out of a gap (4B.23's rule, a
+third site). **D-06:** a zero-record TESTIMONY answer was called *"authored copy —
+it states what this product can and can't do"*; the split is by ROUTE
+(`PRODUCT_META_ROUTES`, a **judgement about four ids** neither `ROUTE_TAXONOMY`
+nor `REGISTER_BY_SUBJECT` can supply) and `prove_it_case` is the one definition.
+**TWO OF THIS SESSION'S OWN FIXES WERE WRONG ON THEIR FIRST DRAFT AND THE SAME
+INSTRUMENT CAUGHT BOTH — NEITHER BY A UNIT TEST.** The D-07 deaf gate first read
+`followup_of` ALONE and **swallowed the one true positive the rider has ever
+produced**: the live parse marks the certificate question `followup=deepen`, and
+the unit test passed throughout having constructed `followup_of=NONE` (**a guard
+that supplies its own arguments proves the assembler, not the path** — 4B.21
+§5a.78, at a seam built in the same session). The gate reads the prior delivery's
+ROUTE too; live, E1 (same route) gets no rider and E2 (different route) fires.
+And the drill-down wired to the ANSWER memory alone sent a SYNTHESIS answer to
+the empty-read branch. **D-08/09/10/11:** harness history under the success
+guard; the outage turn renders as a system marker and is KEPT in the window;
+`_repeat_depth` deleted; `_DELIVERED` gained its siblings' LRU-32. **Python
+2700/305/0** against a HEAD baseline of **2658/305/0**, **+42 accounted for file
+by file** (the new guard file 39, `test_second_question` 2, the D-10 guard 1;
+collection 2963 -> 3005 confirms it independently) — and **THREE earlier baseline
+attempts were discarded and are recorded, not replaced**: the first overlapped
+this session's edits, the second ran in a worktree that STILL IMPORTED THE EDITED
+SOURCE through the editable install, the third lacked `_data` and collected 29
+fewer tests. **BOTH RUNS ARE CHUNKED** (the environment killed three consecutive
+full runs at 19/19/7%), four identical alphabetical slices per side summing
+exactly to each side's collection count — **so the counts are exact and the load
+profile is NOT one run's**, which matters for the contention-sensitive class and
+is said rather than glossed. **Cockpit 367/2 of 369** (the 2 known deictic;
+baseline 365/2 of 367). **NINE negative controls proven RED**,
+every restore byte-identical by sha256 — and **the control harness found its own
+bug first**: `explainer.py` is CRLF and `interpreter.py` LF, so two LF-joined
+anchors matched nothing and reported ANCHOR NOT FOUND rather than passing falsely
+(4A-(a)'s newline lesson, on the MATCH instead of the write). **Bank
+`sweep_carried_state_v1` RUN: 14/15**, one known miss documented in the bank.
+**MINTED NOTHING in `_data`**; both pinned boards read-only. NOT FIXED, named:
+**the bank CANNOT hold R-MT1's founding specimen at all** — a run targets ONE
+schedule and the grammar has no mid-conversation rebind, so it is a missing WORLD
+and not a missing EXPECT key, which is the concrete cost of Q7; no expectation can
+reference an earlier turn's content or say what a turn did NOT do; the cold
+drill-down refusal is unreachable from a live parse (it parses `unmatched` at
+0.25 and the second tier answers honestly); clause 3 has no specimen from the
+SHIPPED client by construction; **D-03/D-04 are untouched** (the ladder covers 5
+of 33 subject types and `askHistory` fills its refs from the board SELECTION, so
+the rung is empty after most answers) — session (d.2), after Q7; and **the
+shared-body defect `deaf` caught is still live** (`certificate-testimony` and
+`data-problems` render one body, so the certificate route does not state the
+certificate) — the census micro-session's. Before it:
 **Micro-session 4A teaching-graft (c2) — the teaching answer reads the board**,
 2026-08-04 (docs/07 v2.91, §5a.177-180; docs/04 2026-08-04 **R-TG5 ruled and
 BUILT**; contract unchanged **1.15**, no docs/06 doorway owed; parse prompt
@@ -2043,7 +2134,7 @@ disclosed, not answered); the winner's wall (416.9s) EXCEEDS the portfolio's
   of one question) — humble rather than wrong, but distinguishing "one answer
   because I am confused" from "one answer because it IS the answer" needs a
   signal this session does not have.
-  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, ~88k after 4B.25, ~92k after 4B.26, ~96k after 4B.29, ~102k after 4B.27, ~110k after 4B.28, **~142k after 4A teaching-graft (a)**, **~155k after 4A teaching-graft (c)**, **~160k after 4A teaching-graft (c2) — 4.0x the ceiling, and past the 150k limit the 2026-07-25 maintenance note was written about**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, ~88k after 4B.25, ~92k after 4B.26, ~96k after 4B.29, ~102k after 4B.27, ~110k after 4B.28, **~142k after 4A teaching-graft (a)**, **~155k after 4A teaching-graft (c)**, ~160k after 4A teaching-graft (c2), **170k after 4A teaching-graft (d.1) — 4.3x the ceiling, and past the 150k limit the 2026-07-25 maintenance note was written about**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
   **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
   day-shift restriction answered as C1/C2 "proven end to end" when the item is
   C4 (model-proven, §8 doorway). Caught and pinned; the class stands.

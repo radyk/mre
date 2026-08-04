@@ -2099,34 +2099,40 @@ class TemplateRenderer:
         B, here's each"."""
         from mre.modules.ask_fallback_copy import (
             PROVE_IT_GENERAL, PROVE_IT_INTERPRETIVE, PROVE_IT_INTERPRETIVE_BARE,
-            PROVE_IT_NO_TARGET, PROVE_IT_PRIOR_LEAD, PROVE_IT_PRIOR_NO_RECORDS,
+            PROVE_IT_NO_TARGET, PROVE_IT_PRIOR_EMPTY_READ, PROVE_IT_PRIOR_LEAD,
+            PROVE_IT_PRIOR_NO_RECORDS, PROVE_IT_PRIOR_OTHER_VERSION,
             PROVE_IT_READ_FROM, PROVE_IT_RECORD_LINE, PROVE_IT_VERIFIED,
         )
+        from mre.modules.explainer import ProveItCase
         kf = bundle.key_facts or {}
         claim = kf.get("claim")
         if not claim:
-            # Session 4B.22 — THE DRILL-DOWN RULING. Three authored branches, none
-            # silent: the prior answer's records open; a prior answer with none
-            # says it was authored copy; only a conversation with no prior answer
-            # at all gets the no-target floor.
-            prior = kf.get("prior_answer")
-            if prior:
-                rows = kf.get("lines") or []
-                if rows:
-                    lines.append(PROVE_IT_PRIOR_LEAD.format(
-                        question=(prior.get("question") or "").strip(),
-                        count=f"{len(rows)} record(s)"))
-                    lines.append("")
-                    for row in rows:
-                        lines.append(PROVE_IT_RECORD_LINE.format(
-                            summary=row.get("summary", "?"),
-                            rid=row.get("rid", "?")))
-                else:
-                    lines.append(PROVE_IT_PRIOR_NO_RECORDS.format(
-                        question=(prior.get("question") or "").strip()))
+            # Session 4B.22 — THE DRILL-DOWN RULING, as split by Session 4A
+            # teaching-graft (d.1). The BRANCH is decided in the assembler
+            # (`explainer.prove_it_case`) and read here: a renderer that
+            # re-derived it from the record count is exactly how D-06 came to
+            # describe a real testimony answer as capability copy.
+            prior = kf.get("prior_answer") or {}
+            case = kf.get("case") or ProveItCase.NONE
+            rows = kf.get("lines") or []
+            question = (prior.get("question") or "").strip()
+            if case == ProveItCase.RECORDS:
+                lines.append(PROVE_IT_PRIOR_LEAD.format(
+                    question=question, count=f"{len(rows)} record(s)"))
                 lines.append("")
-                return
-            lines.append(PROVE_IT_NO_TARGET)
+                for row in rows:
+                    lines.append(PROVE_IT_RECORD_LINE.format(
+                        summary=row.get("summary", "?"),
+                        rid=row.get("rid", "?")))
+            elif case == ProveItCase.PRODUCT_META:
+                lines.append(PROVE_IT_PRIOR_NO_RECORDS.format(question=question))
+            elif case == ProveItCase.EMPTY_READ:
+                lines.append(PROVE_IT_PRIOR_EMPTY_READ.format(
+                    question=question, route=prior.get("route") or "that route"))
+            elif case == ProveItCase.OTHER_VERSION:
+                lines.append(PROVE_IT_PRIOR_OTHER_VERSION)
+            else:
+                lines.append(PROVE_IT_NO_TARGET)
             lines.append("")
             return
         rows = kf.get("lines") or []

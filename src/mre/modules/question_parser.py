@@ -113,6 +113,18 @@ def describe_card(card: Optional[dict]) -> str:
             f"else moved).")
 
 
+#: Turn labels that are NOT members of the closed intent vocabulary, and what a
+#: prompt should be told instead (Session 4A teaching-graft (d.1), D-09). ADD,
+#: never repurpose: a new non-intent turn label gets a sentence here rather than
+#: being rendered as though it named a route.
+_NON_INTENT_TURNS: dict[str, str] = {
+    "OUTAGE": ("not answered: this product could not reach its language model "
+               "on that turn, so the question was never read"),
+    "REFUSED": ("not answered: nothing could interpret that question, so no "
+                "route was chosen"),
+}
+
+
 def render_calendar(document: Optional[dict]) -> str:
     """THE CALENDAR ANCHOR (Session 4B.15 Item 0). Nothing told the model what
     day it was.
@@ -187,6 +199,25 @@ def render_context(context: Optional[dict]) -> str:
     for turn in history[-4:]:
         q = (turn.get("question") or "").strip()
         route = turn.get("route") or "?"
+        # Session 4A teaching-graft (d.1), D-09 — AN OUTAGE IS NOT AN INTENT.
+        #
+        # `run_ask` labels an outage turn `route: "OUTAGE"`, which the panel then
+        # carries into history, and this line rendered it into BOTH prompts as
+        # `-> answered with intent: OUTAGE` — a token outside the closed intent
+        # vocabulary the prompt has just finished enumerating. Nothing tells a
+        # model what to make of that, and the honest thing to tell it is not an
+        # intent name: nothing was READ on that turn, so the turn contributes no
+        # conversational subject and no route precedent.
+        #
+        # R-OF1's ANSWER_MEMORY exclusion already keeps the outage card from
+        # being grounded; this is its prompt-surface sibling. The turn is KEPT
+        # rather than excluded — the planner did ask it, and dropping it would
+        # silently renumber the four-turn window they can see on screen — and it
+        # renders as a system marker, in-vocabulary by construction because it
+        # is prose rather than an id.
+        if route in _NON_INTENT_TURNS:
+            lines.append(f'    planner asked: "{q}"  -> {_NON_INTENT_TURNS[route]}')
+            continue
         lines.append(f'    planner asked: "{q}"  -> answered with intent: {route}')
     return "\n".join(lines)
 
@@ -325,8 +356,17 @@ def bind_subjects(explainer: Any, raw_subjects: list[dict],
             if ref is None and raw and explainer is not None:
                 # The model flagged it as pointed but also gave usable words —
                 # try them before giving up (a named subject is never worse).
+                #
+                # R-LD5 (Session 4A teaching-graft (d.1)) — AND THIS IS A
+                # RESOLUTION, SO IT IS DISCLOSED. It used to report
+                # `UTTERANCE`, which is the one value that means "the planner
+                # said this", so a subject the MODEL recovered from the RECENT
+                # TURNS block was indistinguishable from a typed one and the
+                # answer disclosed nothing (D-02). `pointed` is exactly the
+                # marking that separates them: the model itself said these
+                # words point at something the planner did not name here.
                 ref = _resolve_named(explainer, kind, raw)
-                source = SubjectSource.UTTERANCE if ref else source
+                source = SubjectSource.CONVERSATION if ref else source
         elif explainer is not None:
             ref = _resolve_named(explainer, kind, raw)
         # The sliced world, second: the window's vocabulary is authoritative for

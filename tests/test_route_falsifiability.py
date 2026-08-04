@@ -180,7 +180,7 @@ class TestRepeatReversal:
         """The reversal. Several DIFFERENT questions producing ONE ANSWER means
         I am not understanding you."""
         answer = "Set splittable=true on the routing line. See §5.3."
-        remember_delivery("sess-b", "coaching",
+        remember_delivery("sess-b", None, "coaching",
                           "can I make just this one job splittable", answer)
         b = _Bundle()
         p = _parsed("no, I mean for ORD-000013 specifically")
@@ -193,7 +193,7 @@ class TestRepeatReversal:
         """THE SIGNAL IS THE OUTPUT, NOT THE ROUTE. Two questions reaching one
         route and getting two good answers is the route WORKING — the case the
         old counter could not distinguish and always got wrong."""
-        remember_delivery("sess-c", "attribute-lookup",
+        remember_delivery("sess-c", None, "attribute-lookup",
                           "is ORD-000013 op20 splittable",
                           "ORD-000013 op20 — splittable: no.")
         b = _Bundle()
@@ -244,7 +244,7 @@ class TestRepeatReversal:
         questions", each naming a discarded conversation's question.
         """
         answer = "26 orders on 15 machines. 4 things worth your attention."
-        remember_delivery("sess-reset", "briefing",
+        remember_delivery("sess-reset", None, "briefing",
                           "what should I be worried about", answer)
 
         # Same session, different question, same answer -> deaf, as designed.

@@ -745,12 +745,12 @@ class TestAnswerSurface:
         _answer(world, claims(claim("ORD-01 is queued on the cutting line.",
                                     _late_ids(world))),
                 memory=memory, session="s7")
-        assert memory.last("s7") is not None
+        assert memory.last("s7", None) is not None
         run_ask(world, "why is ORD-01 late",
                 parser=ScriptedParser({"why is ORD-01 late": parsed(
                     "", Intent.LATE_ORDER, orders=("ORD-01",))}),
                 memory=memory, session_id="s7", answer_memory=answers)
-        assert memory.last("s7") is None
+        assert memory.last("s7", None) is None
         d = dispatch(world,
                      parsed("prove it", Intent.UNMATCHED,
                             followup_of=FollowupKind.PROVE_IT, confidence=0.9),

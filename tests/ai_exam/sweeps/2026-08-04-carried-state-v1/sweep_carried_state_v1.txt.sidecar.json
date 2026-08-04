@@ -1,0 +1,90 @@
+{
+  "target": "rolling-db5395dc-2ae",
+  "snapshot": "snap-rolling",
+  "started_at": "2026-08-04T17:58:11Z",
+  "llm_mode": "live",
+  "questions": 16,
+  "llm_calls": 26,
+  "parser_stats": {
+    "calls": 18,
+    "parses": 18,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 0,
+    "unavailable": 0,
+    "unreachable": 0,
+    "median_latency_ms": 1457.9107999998087,
+    "malformed_samples": []
+  },
+  "synth_stats": {
+    "syntheses": 2,
+    "calls": 7,
+    "tool_calls": 5,
+    "malformed": 0,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 1,
+    "median_latency_ms": 22208.706249999523,
+    "p90_latency_ms": 42158.896599998116
+  },
+  "synthesis": {
+    "answers": 2,
+    "claims": 4,
+    "verified": 0,
+    "interpretive": 2,
+    "general_knowledge": 2,
+    "failed_and_cut": 0,
+    "deferred": 0,
+    "ungrounded_load_bearing": 0,
+    "unanswerable": 1,
+    "budget_exhausted": 0,
+    "tool_calls": 5,
+    "tool_histogram": {
+      "constraint_catalog": 1,
+      "gate_findings": 1,
+      "lateness_set": 1,
+      "placements_in_window": 1,
+      "spec_lookup": 1
+    },
+    "calls_per_answer": {
+      "0": 1,
+      "5": 1
+    }
+  },
+  "shadow": {
+    "shadowed": 0,
+    "clean": 0,
+    "diverged": 0,
+    "unchecked": 0,
+    "provenance_strengthened": 0,
+    "by_intent": {}
+  },
+  "latency": {
+    "route": {
+      "n": 14,
+      "median_ms": 1800.7,
+      "p90_ms": 2151.5
+    },
+    "synthesis": {
+      "n": 2,
+      "median_ms": 24537.0,
+      "p90_ms": 45086.5
+    }
+  },
+  "graded_expectations": {
+    "graded": 15,
+    "met": 14
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "expect-miss": 1
+  },
+  "findings": [
+    {
+      "kind": "expect-miss",
+      "lineno": 104,
+      "question": "can you show me that on my board",
+      "detail": "route: expected 'drill-down', got 'synthesis'"
+    }
+  ]
+}
