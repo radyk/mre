@@ -1,6 +1,6 @@
 # Question-parse prompt — a GOVERNED ARTIFACT (R-AI5(1))
 
-    prompt_version: 17
+    prompt_version: 18
     ruling:         R-AI5(1) — every question is parsed FIRST by a language model
                     against a CLOSED intent vocabulary, with the conversation
                     history, live board selection, and last-answered subject as
@@ -345,6 +345,43 @@
                     assumption was named; the DIRECTION assumption was silent,
                     in the same line. `unstated` is what makes it visible, so
                     rule 11 now covers the whole mobility family.
+    v18:            Session 4A teaching-graft (b) (2026-08-04) — ONE NEW INTENT
+                    AND ONE NEW FIELD, both from measurement.
+
+                    (a) `teaching` JOINS THE VOCABULARY (R-TG2). Census (a), ten
+                    domain probes, live parse against the demo board, at v17:
+                    `coaching` 5 / `unmatched` 4 / `lateness-cause` 1. Half of
+                    them reached `coaching`, whose meaning is what THIS PRODUCT
+                    can model and whose answer is a docs/05 capability lookup —
+                    measured at a median of 3 content lines over 102 turns. "How
+                    does a rolling horizon normally work" got three lines about
+                    what the submission can declare. The other four reached the
+                    second tier and were answered well, under the same short
+                    budget every other question gets.
+
+                    It is a SECOND-TIER intent, not a route
+                    (`contracts.parse.SECOND_TIER_INTENTS`): teaching is
+                    synthesis with a second claim class (R-TG1, session (a)) and
+                    a depth licence (R-TG3), not a new rung. Rule 12 is the
+                    boundary against `coaching`, which is where the new member
+                    costs something and therefore where the prompt spends its
+                    words — the 4B.15 discipline.
+
+                    (b) `audience` — WHO HAS TO BE TOLD (R-TG4). Measured at
+                    HEAD: "there are a lot of orders late what reason can i give
+                    my boss and what will help lessen the impact" was answered
+                    with 134 content lines — a cause mix, ~95 hold-pair lines,
+                    and "Evidence chain (614 record(s)):". The longest answer in
+                    every committed sweep by a factor of three and a half, and
+                    every line of it true. The planner asked for a sentence to
+                    say to a person; they got an inventory.
+
+                    Rule 13 is the field. RAW AND UNRESOLVED, the `move_target`
+                    discipline: who the boss is and what they are owed are not
+                    facts this product holds. It changes the ORDER and the
+                    BUDGET of the answer, never the evidence discipline — and a
+                    deterministic floor stands under the report, because 4A.y
+                    measured a freshly-prompted field reported 0 times in 5.
 
 ## Review discipline
 
@@ -648,6 +685,60 @@ RULES
 
    Leave both fields alone (null / empty) on every other intent.
 
+12. SOMETIMES THEY WANT TO UNDERSTAND SOMETHING, NOT TO BE TOLD A FACT. That is
+   `teaching`, and it is the one intent whose answer is allowed to be long.
+
+     - "in general, what makes a scheduling problem hard to prove optimal"
+     - "how do schedulers normally decide which job to run first"
+     - "explain what the optimality gap means" / "what does infeasible mean"
+     - "what is a bottleneck machine" / "why do setup times matter"
+     - "how does a rolling horizon normally work"
+     - "why do late orders tend to snowball"
+
+   THE BOUNDARY THAT COSTS SOMETHING IS `coaching`, and it is worth reading
+   twice, because half of these used to land there. `coaching` asks what THIS
+   PRODUCT can model and how to declare it — "can it handle shared operators?",
+   "does it support batching?", "how do I turn on overtime?" — and is answered
+   from the constraint catalog. `teaching` asks how the WORLD works: scheduling,
+   solvers, plants, the words the trade uses. "Can this system model setup
+   families" is `coaching`. "Why do setup times matter" is `teaching`. If the
+   answer would be the same at any other plant with any other software, it is
+   `teaching`.
+
+   Two more boundaries. It is not `attribute-lookup` (a declared value on one
+   job) and not `briefing` (a read of THIS board's state).
+
+   A TEACHING QUESTION MAY ALSO NAME SOMETHING ON THE BOARD, and that is still
+   this intent — "explain why PRESS-FAST ends up being the bottleneck here",
+   "why is ORD-000091 late, and how does lateness normally compound". Name the
+   order or machine as a subject as you always would. The answer will ground on
+   the board first and teach second; naming the subject is what makes that
+   possible.
+
+13. IF THE QUESTION NAMES A PERSON WHO HAS TO BE TOLD, SAY SO. Put their own
+   words in `audience`:
+
+     - "what reason can i give my boss"            -> audience: "my boss"
+     - "what should i tell the customer"           -> audience: "the customer"
+     - "what do i say in the production meeting"   -> audience: "the production
+                                                      meeting"
+     - "how do i explain this to the plant manager" -> audience: "the plant
+                                                      manager"
+
+   Leave it "" — which is almost always — when the question names nobody. "What
+   should I do about the lateness" names no audience; "what should I tell the
+   customer about it" does.
+
+   DO NOT RESOLVE IT and do not embellish it. Who the boss is, what they
+   already know, and what they are entitled to hear are not things this system
+   knows. Their words, verbatim, truncated if long.
+
+   This does not change which intent you pick — a boss question about lateness
+   is still whatever it would be without the boss in it. It changes the SHAPE of
+   the answer: the system leads with one sentence a person could say out loud
+   and the single biggest lever, and OFFERS the order-by-order detail instead of
+   printing it.
+
 OUTPUT — strict JSON, no prose, no code fence. `intent` must be one of the
 vocabulary ids listed at the top; the follow-up names (`deepen`, `list-expand`,
 `menu-select`, `correction`) are values for `followup_of`, never intents.
@@ -668,6 +759,7 @@ is what the planner is doing, name it in both fields.)
   "contested_claim": null | "lateness" | "timing" | "other",
   "move_direction": null | "earlier" | "later" | "unstated",
   "move_target": "",
+  "audience": "",
   "clarify": null | {"reason": "no-subject|ambiguous-subject|set-reference|verification|ambiguous-intent",
                      "detail": "<a short phrase, never a sentence>"}
 }

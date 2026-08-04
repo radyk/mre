@@ -534,6 +534,20 @@ def build_parsed(question: str, emission: dict, explainer: Any,
                 move_direction = None
         move_target = str(emission.get("move_target") or "").strip()[:80]
 
+    # Session 4A teaching-graft (b), R-TG4 — WHO HAS TO BE TOLD.
+    #
+    # READ ON EVERY INTENT, unlike `move_target` and `contested_claim`, and the
+    # difference is the point: an audience is a property of the QUESTION, not of
+    # the intent. The census measured four goal probes reaching three different
+    # routes (`lateness-cause`, `advice` twice, `briefing`), so gating this on an
+    # intent list would have carried the field for one third of its own family —
+    # 4A.y Item 1's defect, avoided here rather than repeated.
+    #
+    # RAW AND TRUNCATED, never resolved: it is the planner's own words for a
+    # person, and who that person is and what they are owed are not facts this
+    # product holds (the `move_target` discipline).
+    audience = str(emission.get("audience") or "").strip()[:80]
+
     try:
         return ParsedQuestion(
             question=question, intent=intent, subjects=subjects,
@@ -541,6 +555,7 @@ def build_parsed(question: str, emission: dict, explainer: Any,
             nearest=nearest, clarify=clarify, dropped_qualifier=dropped,
             contested_claim=contested_claim,
             move_direction=move_direction, move_target=move_target,
+            audience=audience,
             prompt_version=prompt_version,
             retries=retries, latency_ms=latency_ms)
     except Exception:  # noqa: BLE001 — validation failure is a malformed emission

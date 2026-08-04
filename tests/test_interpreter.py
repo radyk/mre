@@ -248,8 +248,14 @@ class TestHonestDestinations:
         assert d.route == "NEAR_MISS"
 
     def test_the_taxonomy_is_closed_at_dispatch(self, explainer):
+        """Session 4A teaching-graft (b), R-TG2: the exclusion is now the NAMED
+        second-tier set rather than a bare `unmatched`. The assertion the test
+        exists to make is unchanged — every intent that dispatches to a route has
+        one — and the two intents that do not dispatch to a route are the two the
+        contract declares as doors into the second tier."""
+        from mre.contracts.parse import SECOND_TIER_INTENTS
         for intent in Intent:
-            if intent is Intent.UNMATCHED:
+            if intent in SECOND_TIER_INTENTS:
                 continue
             assert intent.value in ROUTE_TAXONOMY
 

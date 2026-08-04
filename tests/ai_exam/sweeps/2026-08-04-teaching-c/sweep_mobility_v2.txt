@@ -1,0 +1,555 @@
+AI EXAM TRANSCRIPT
+target      : rolling-db5395dc-2ae
+snapshot    : snap-rolling
+started     : 2026-08-04T13:09:48Z
+llm mode    : live
+questions   : 21
+llm calls   : 26
+door check  : live
+parse       : parses=24 calls=24 retries=0 malformed=0 clarifies=1 unavailable=0 median=1986ms
+synthesis   : answers=0 calls=0 tools=0 malformed=0 budget-out=0 unanswerable=0 median=- p90=-
+claims      : 0 total  verified=0 interpretive=0 general-knowledge=0 failed-and-cut=0 deferred=0  ungrounded-load-bearing=0
+latency     : route n=21 median=2766ms p90=3857ms | synthesis n=0 median=- p90=-
+graded      : 20/20 expectations met
+sidecar     : dark-evidence=2
+------------------------------------------------------------------------
+# AI EXAM BANK — the mobility family: floor scope, grain premise, disclosure
+# version  : v2   (v1 = sweep_mobility_v1.txt, the listening docket's bank —
+# kept, not replaced; a new version is a new file)
+# generated: 2026-08-03  (Session 4A.y, the founder listening round)
+# world    : the DEMO BOARD `rolling-db5395dc-2ae`. The entity ids below are
+# that board's; the SHAPES are what is graded, not the ids.
+# 
+# WHAT v2 ADDS TO v1, and every addition is a MEASURED founder specimen:
+# 
+# F1  ROUTE BYPASS. The docket wired the premise check to `why-here`. A
+# mobility question also reaches `what-would-change` and `frozen`, and on
+# those two it got an uncorrected, undisclosed answer. Which route a
+# question reaches is a MODEL's decision and is history-sensitive — so the
+# groups below that carry history DO NOT RESET between turns. That is
+# deliberate: the history is part of the specimen.
+# 
+# F2  GRAIN-BLIND PREMISE. "why is ORD-000126 op30 on CUT-01" — op30 is on
+# FINISH-01 — was answered by CONFIRMING the false placement off op10's
+# record, under a sentence asserting the record was op30's own.
+# 
+# F4  FLOOR VOCABULARY. "why is this bar trapped here" reached the floor's own
+# route and got the plain uncorrected chain.
+# 
+# F5  CROSS-SUBJECT REPEAT. The same question asked of three different bars
+# in sequence: two answers opened "Same answer as a moment ago".
+# 
+# RESET DISCIPLINE (v1's carry, taken here): every SAME-GRAIN phrasing group
+# resets, so a fan of rewordings does not accumulate cross-group state. The
+# HISTORY-BEARING groups deliberately do not, and say so at each one.
+# ===========================================================================
+# F1 — THE FLOOR IS FAMILY-SCOPED. One conversation per route it can reach.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [SELECT order=ORD-000128 machine=MILL-01 op_seq=20]
+# Turn 1 puts a MOVE question in the history — the shape that preceded the
+# founder's bypass. No RESET after it: the history is the specimen.
+# [EXPECT intent=what-would-change route=what-would-change order=ORD-000128]
+Q[39]: what would it take to move ORD-000128 op20 later
+  selection: order=ORD-000128, machine=MILL-01, op_seq=20
+  route=what-would-change  source=parse  conf=0.98  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=what-would-change  conf=0.98  order=ORD-000128<-utterance("ORD-000128")  2197ms
+  expect: intent=what-would-change route=what-would-change order=ORD-000128  -> MET
+  A:
+    The next place ORD-000128 op20 could sit on MILL-01 is Friday 2026-01-23 16:21 — the first opening after where it is now with room for the whole operation.
+
+    Not there: a later start would run ORD-000128 straight into the next step of its own routing, which is already scheduled from 2026-01-14 07:00 [docs/05 A1/A2].
+    Offering you a still-later slot would make that worse, not better, so I am not offering one. What moves this is moving the downstream step too — a two-operation change I price one bar at a time and therefore cannot price as one gesture.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# Turn 2 is the founder's own question. Whichever route the parse picks, the
+# answer must address the premise: it can be moved, or "can't be moved" is fair,
+# or the chunked case's honest refusal. An earlier-only chain is the defect.
+# [EXPECT order=ORD-000128]
+Q[44]: why cant this be moved
+  selection: order=ORD-000128, machine=MILL-01, op_seq=20
+  interpreted as: (resolved against ORD-000128 (from board selection); read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.92  followup=deepen  order=ORD-000128<-selection("ORD-000128")  1845ms
+  expect: order=ORD-000128  -> MET
+  A:
+    It can be moved — ORD-000128 op20 has room LATER: the next opening on MILL-01 long enough for the whole operation is Friday 2026-01-23 16:21. What's blocked is moving it EARLIER, and that is what I've explained below.
+
+    Earlier — what's stopping it:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: there is room. The first opening on MILL-01 where the whole operation fits after where it sits now is Friday 2026-01-23 16:21 — computed from MILL-01's open calendar minus everything already placed on it, under the same minimum-piece rule the solver applies [docs/05 C1/C2, C3].
+    That is WHERE it could go, not what it would cost. Ask "what would pushing ORD-000128 op20 out cost?" and I'll hold every other placement, move that one bar and price the difference — or drag it on the board and the card prices the same move.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [SELECT order=ORD-000128 machine=MILL-01 op_seq=20]
+# Phrasings the census measured landing on `frozen` — a family member that
+# returned before the floor AND before the disclosure seam. The answer must
+# carry the premise correction as a lead, naming the OPERATION it assessed
+# (`frozen` itself answers at order grain, so two grains share one answer).
+# [EXPECT order=ORD-000128]
+Q[53]: is this bar immovable
+  selection: order=ORD-000128, machine=MILL-01, op_seq=20
+  interpreted as: (resolved against ORD-000128 (from board selection))
+  route=frozen  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=frozen  conf=0.92  order=ORD-000128<-selection("this bar")  2395ms
+  expect: order=ORD-000128  -> MET
+  A:
+    On the premise first: it can be moved. ORD-000128 op20 has room LATER — the first opening on MILL-01 long enough for the whole operation is Friday 2026-01-23 16:21, computed from that machine's open calendar minus everything already placed on it [docs/05 C1/C2, C3]. That is where it could go, not what it would cost.
+
+    ORD-000128 is placed, but after the frozen boundary (2026-01-06) — it sits in the active part of this window, which runs to 2026-01-15. That is the whole difference: work before the boundary is committed and will not move, work after it is still being solved and can move as the schedule rolls.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [SELECT order=ORD-000128 machine=MILL-01 op_seq=20]
+# [EXPECT order=ORD-000128]
+Q[58]: can this not be moved at all
+  selection: order=ORD-000128, machine=MILL-01, op_seq=20
+  interpreted as: (resolved against ORD-000128 (from board selection))
+  route=frozen  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=frozen  conf=0.92  polarity=negative  order=ORD-000128<-selection("this order")  1897ms
+  expect: order=ORD-000128  -> MET
+  A:
+    On the premise first: it can be moved. ORD-000128 op20 has room LATER — the first opening on MILL-01 long enough for the whole operation is Friday 2026-01-23 16:21, computed from that machine's open calendar minus everything already placed on it [docs/05 C1/C2, C3]. That is where it could go, not what it would cost.
+
+    ORD-000128 is placed, but after the frozen boundary (2026-01-06) — it sits in the active part of this window, which runs to 2026-01-15. That is the whole difference: work before the boundary is committed and will not move, work after it is still being solved and can move as the schedule rolls.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [SELECT order=ORD-000128 machine=MILL-01 op_seq=20]
+# Measured on `what-would-change` with the live parse reporting
+# move_direction=EARLIER — a direction the planner did not state. The premise
+# check must fire anyway, and the direction must be disclosed as assumed.
+# [EXPECT order=ORD-000128]
+Q[66]: this cant move can it
+  selection: order=ORD-000128, machine=MILL-01, op_seq=20
+  interpreted as: what would have to change about ORD-000128's placement?  (resolved against ORD-000128 (from board selection); and about op20, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=what-would-change  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=what-would-change  conf=0.92  order=ORD-000128<-selection("this order")  2239ms
+  expect: order=ORD-000128  -> MET
+  A:
+    On the premise first: it can be moved. ORD-000128 op20 has room LATER — the first opening on MILL-01 long enough for the whole operation is Friday 2026-01-23 16:21, computed from that machine's open calendar minus everything already placed on it [docs/05 C1/C2, C3]. That is where it could go, not what it would cost.
+
+    ORD-000128 op20 is held at 2026-01-13 16:08 by an earlier step [docs/05 A1/A2].
+
+    To move it earlier, one of these has to change:
+      op10 finishes earlier than 2026-01-13 16:08  [docs/05 A1/A2 · docs/06 §5.3 routing_lines.csv sequence]
+          moves it up to 22d 9h earlier
+
+    If any of these changed, the next bound would be the machine's calendar [docs/05 C1/C2] at Monday 2025-12-22 07:00 — that removes the barrier; it does not place the operation there.
+
+    MILL-01 is the only machine capable of this operation, so there is no other lane to move it to.
+
+    Can't be priced as a change (it would take a re-solve): B7/B8 sequence-dependent changeover.
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# THE STATED-DIRECTION CONTROL, and it is the most important line in this file.
+# The founder's round produced a CORRECT answer here (a later move, priced).
+# A stated direction assumes nothing: NO premise correction and NO "read as
+# EARLIER" may appear. If this group regresses, Item 1 over-fired.
+# [SELECT order=ORD-000128 machine=MILL-01 op_seq=20]
+# [EXPECT intent=what-would-change route=what-would-change order=ORD-000128]
+Q[75]: why cant this move later
+  selection: order=ORD-000128, machine=MILL-01, op_seq=20
+  interpreted as: what would have to change about ORD-000128's placement?  (resolved against ORD-000128 (from board selection); and about op20, the operation selected on the board)
+  route=what-would-change  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=what-would-change  conf=0.92  order=ORD-000128<-selection("this order")  2117ms
+  expect: intent=what-would-change route=what-would-change order=ORD-000128  -> MET
+  A:
+    The next place ORD-000128 op20 could sit on MILL-01 is Friday 2026-01-23 16:21 — the first opening after where it is now with room for the whole operation.
+
+    Not there: a later start would run ORD-000128 straight into the next step of its own routing, which is already scheduled from 2026-01-14 07:00 [docs/05 A1/A2].
+    Offering you a still-later slot would make that worse, not better, so I am not offering one. What moves this is moving the downstream step too — a two-operation change I price one bar at a time and therefore cannot price as one gesture.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [SELECT order=ORD-000073 machine=PRESS-FAST op_seq=10]
+# The FROZEN bar the founder asked about, which got "the estimates don't line
+# up... I don't know". The premise here is TRUE and the answer must say so and
+# name R-F1 — never offer a later slot it cannot deliver.
+# [EXPECT order=ORD-000073]
+Q[83]: why cant this be moved
+  selection: order=ORD-000073, machine=PRESS-FAST, op_seq=10
+  interpreted as: why cant ORD-000073 be moved  (resolved against ORD-000073 (from board selection); and about op10, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.92  order=ORD-000073<-selection("this")  2262ms
+  expect: order=ORD-000073  -> MET
+  A:
+    Earlier — what's stopping it:
+    I can't attribute ORD-000073 op10's placement at Monday 2026-01-05 07:00 to a binding constraint: the earliest-start estimates I can compute don't line up with where it actually sits. Rather than pick one and sound certain, I'd rather say I don't know.
+
+    What pushed it, in order:
+      2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00
+      2026-01-06 00:00  the frozen boundary [docs/05 R-F1] — the frozen boundary stands at 2026-01-06 00:00
+      2026-01-06 07:00  the machine's calendar [docs/05 C1/C2] — PRESS-FAST is closed until 2026-01-06 07:00
+      2026-01-23 12:25  no window long enough [docs/05 C3] — it needs 4h05m in one piece and PRESS-FAST had only 2h09m left when it came free at 2026-01-22 16:51
+
+    Later: it can't go there either, and "can't be moved" is fair — ORD-000073 op10 sits inside the committed front (frozen through 2026-01-06 00:00). Committed work is moved by moving the frozen boundary, not by moving the bar [docs/05 R-F1].
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [SELECT order=ORD-000177 machine=CUT-01 op_seq=10]
+# The CHUNKED bar, which got the counterfactual's "nothing prevented it" answer.
+# The honest verdict is UNDECIDABLE, declined in both directions by name.
+# [EXPECT order=ORD-000177]
+Q[90]: why cant this be moved
+  selection: order=ORD-000177, machine=CUT-01, op_seq=10
+  interpreted as: why cant ORD-000177 be moved  (resolved against ORD-000177 (from board selection); and about op10, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.92  order=ORD-000177<-selection("this")  1706ms
+  expect: order=ORD-000177  -> MET
+  A:
+    Earlier — what's stopping it:
+    Nothing prevented ORD-000177 op10 from starting earlier. Holding every other placement where it is, CUT-01 had open, unheld time from 2026-01-15 14:30 — the solver chose Friday 2026-01-23 16:59 rather than being forced into it.
+    The assignment decision records its driver as CALENDAR_WINDOW.
+    It runs in 3 pieces between 2026-01-23 16:59 and 2026-01-27 08:00, 15h01m of actual work — it pauses when CUT-01 closes and resumes when it reopens, which is what it means for this operation to be splittable.
+
+    What pushed it, in order:
+      2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00
+      2026-01-05 07:00  the machine's calendar [docs/05 C1/C2] — CUT-01 is closed until 2026-01-05 07:00
+      2026-01-15 14:30  no window long enough [docs/05 C3] — the open stretches before 2026-01-15 14:30 were shorter than its 1h minimum piece
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: I can't tell you. ORD-000177 op10 runs in 3 pieces, and a chunked operation can't be priced as a local move in either direction — the pauses are closures the solver placed, and shifting the bar doesn't re-derive them. That is a limit of what I can compute, not a statement that the plant has no room.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# ===========================================================================
+# F2 — THE PREMISE IS VERIFIED AT THE GRAIN IT WAS ASSERTED AT.
+# ===========================================================================
+# [RESET — conversation cleared]
+# THE SPECIMEN. op30 runs on FINISH-01. At HEAD this returned "ORD-000126 is on
+# CUT-01 because it was the cheaper option… This is about op30 on CUT-01; the
+# evidence below is that step's own assignment decision" — op10's record wearing
+# op30's name. Expected now: a correction naming op30 and FINISH-01.
+# [EXPECT intent=why-on-machine route=why-on-machine order=ORD-000126]
+Q[102]: why is ORD-000126 op30 on CUT-01
+  route=why-on-machine  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=why-on-machine  conf=0.95  order=ORD-000126<-utterance("ORD-000126")  machine=CUT-01<-utterance("CUT-01")  1898ms
+  expect: intent=why-on-machine route=why-on-machine order=ORD-000126  -> MET
+  A:
+    ORD-000126 op30 isn't on CUT-01 — it runs on FINISH-01.
+
+      - CUT-01  (op 10)  2026-01-13T16:08:00Z -> 2026-01-13T18:44:00Z
+      - MILL-01  (op 20)  2026-01-15T07:00:00Z -> 2026-01-15T10:28:00Z
+      - FINISH-01  (op 30)  2026-01-15T10:29:00Z -> 2026-01-15T13:00:00Z
+
+    Did you mean one of those? Ask "why is ORD-000126 op30 on FINISH-01?" and I'll give you the cause.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+  >> sidecar[dark-evidence]: route 'why-on-machine' cited 0 records and lit 0 bars
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# THE TRUE-PREMISE CONTROL at the same grain. A correction that fires here is a
+# worse defect than the one it was built for.
+# [EXPECT route=why-on-machine order=ORD-000126]
+Q[108]: why is ORD-000126 op30 on FINISH-01
+  route=why-on-machine  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=1  refs=1/1/1
+  parse: intent=why-on-machine  conf=0.95  order=ORD-000126<-utterance("ORD-000126")  machine=FINISH-01<-utterance("FINISH-01")  2042ms
+  expect: route=why-on-machine order=ORD-000126  -> MET
+  A:
+    ORD-000126 is on FINISH-01 because that is the only machine qualified to run this step — there was no alternative to weigh [record: 10119447]. This is op30 on FINISH-01.
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# THE ORDER-GRAIN CONTROL (4B.13's own shape, unchanged). No step is named, so
+# the correction is about the whole order, in the words it has always used.
+# [EXPECT route=why-on-machine order=ORD-000126]
+Q[114]: why is ORD-000126 on HEAT-02
+  route=why-on-machine  source=parse  conf=0.95  register=testimony  renderer=template — no evidence chain — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=why-on-machine  conf=0.95  order=ORD-000126<-utterance("ORD-000126")  machine=HEAT-02<-utterance("HEAT-02")  2092ms
+  expect: route=why-on-machine order=ORD-000126  -> MET
+  A:
+    ORD-000126 isn't on HEAT-02 — it runs CUT-01, MILL-01 and FINISH-01.
+
+      - CUT-01  (op 10)  2026-01-13T16:08:00Z -> 2026-01-13T18:44:00Z
+      - MILL-01  (op 20)  2026-01-15T07:00:00Z -> 2026-01-15T10:28:00Z
+      - FINISH-01  (op 30)  2026-01-15T10:29:00Z -> 2026-01-15T13:00:00Z
+
+    Did you mean one of those? Ask "why is ORD-000126 on CUT-01?" and I'll give you the cause.
+
+    [rendered by: template — no evidence chain — rendered verbatim | register: testimony]
+  >> sidecar[dark-evidence]: route 'why-on-machine' cited 0 records and lit 0 bars
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# The other step of the same order, true at its own grain — the pair that proves
+# the check reads the grain rather than the order.
+# [EXPECT route=why-on-machine order=ORD-000126]
+Q[120]: why is ORD-000126 op10 on CUT-01
+  route=why-on-machine  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=1  refs=1/1/1
+  parse: intent=why-on-machine  conf=0.95  order=ORD-000126<-utterance("ORD-000126")  machine=CUT-01<-utterance("CUT-01")  1970ms
+  expect: route=why-on-machine order=ORD-000126  -> MET
+  A:
+    ORD-000126 op10 is assigned to CUT-01 because it was the cheaper option once every cost was weighed [record: dd33a21c...]. The alternative assignments would have incurred higher costs: CUT-02 would cost $7.80 more, and CUT-03 would cost $18.20 more [record: dd33a21c...].
+
+    Note: the cost figures above are not proven optimal — the solver ran out of budget with a gap of 89.6% still open, so a cheaper schedule may exist and could be up to that much cheaper.
+
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# ===========================================================================
+# F3 — THE DISCLOSURE IS NOT GATED ON A REWRITE.
+# ===========================================================================
+# [RESET — conversation cleared]
+# The planner named the order exactly, so nothing is rewritten — and the route
+# answers at ORDER level while they typed op30. The interpreted-as line must
+# appear anyway. (v1 graded the note's CONTENT; this grades that it is SHOWN.)
+# [EXPECT route=order-schedule order=ORD-000126]
+Q[131]: when does ORD-000126 op30 finish
+  interpreted as: (answered for the whole of ORD-000126 — you named op30 and this route answers at order level)
+  route=order-schedule  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=6  records=3  refs=3/3/0
+  parse: intent=order-schedule  conf=0.99  order=ORD-000126<-utterance("ORD-000126")  1494ms
+  expect: route=order-schedule order=ORD-000126  -> MET
+  A:
+    ORD-000126 completes 2026-01-15 13:00 — 26.5 day(s) late (due 2025-12-19).
+    It starts 2026-01-13 16:08.
+
+    ORD-000126 runs across 3 operation(s):
+
+      [CUT-01]
+        seq= 10  2026-01-13 16:08 -> 2026-01-13 18:44  ORD-000126
+      [FINISH-01]
+        seq= 30  2026-01-15 10:29 -> 2026-01-15 13:00  ORD-000126
+      [MILL-01]
+        seq= 20  2026-01-15 07:00 -> 2026-01-15 10:28  ORD-000126
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# ===========================================================================
+# F4 — THE VOCABULARY, where the census measured it short.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [SELECT order=ORD-000128 machine=MILL-01 op_seq=20]
+# [EXPECT order=ORD-000128]
+Q[140]: why is this bar trapped here
+  selection: order=ORD-000128, machine=MILL-01, op_seq=20
+  interpreted as: why is ORD-000128 trapped here  (resolved against ORD-000128 (from board selection); and about op20, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.92  order=ORD-000128<-selection("this bar")  1498ms
+  expect: order=ORD-000128  -> MET
+  A:
+    It can be moved — ORD-000128 op20 has room LATER: the next opening on MILL-01 long enough for the whole operation is Friday 2026-01-23 16:21. What's blocked is moving it EARLIER, and that is what I've explained below.
+
+    Earlier — what's stopping it:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: there is room. The first opening on MILL-01 where the whole operation fits after where it sits now is Friday 2026-01-23 16:21 — computed from MILL-01's open calendar minus everything already placed on it, under the same minimum-piece rule the solver applies [docs/05 C1/C2, C3].
+    That is WHERE it could go, not what it would cost. Ask "what would pushing ORD-000128 op20 out cost?" and I'll hold every other placement, move that one bar and price the difference — or drag it on the board and the card prices the same move.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [SELECT order=ORD-000128 machine=MILL-01 op_seq=20]
+# [EXPECT order=ORD-000128]
+Q[145]: why is this wedged in here
+  selection: order=ORD-000128, machine=MILL-01, op_seq=20
+  interpreted as: why is ORD-000128 wedged in here  (resolved against ORD-000128 (from board selection); and about op20, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.92  order=ORD-000128<-selection("this")  1546ms
+  expect: order=ORD-000128  -> MET
+  A:
+    It can be moved — ORD-000128 op20 has room LATER: the next opening on MILL-01 long enough for the whole operation is Friday 2026-01-23 16:21. What's blocked is moving it EARLIER, and that is what I've explained below.
+
+    Earlier — what's stopping it:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: there is room. The first opening on MILL-01 where the whole operation fits after where it sits now is Friday 2026-01-23 16:21 — computed from MILL-01's open calendar minus everything already placed on it, under the same minimum-piece rule the solver applies [docs/05 C1/C2, C3].
+    That is WHERE it could go, not what it would cost. Ask "what would pushing ORD-000128 op20 out cost?" and I'll hold every other placement, move that one bar and price the difference — or drag it on the board and the card prices the same move.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [SELECT order=ORD-000128 machine=MILL-01 op_seq=20]
+# [EXPECT order=ORD-000128]
+Q[150]: nothing can move this can it
+  selection: order=ORD-000128, machine=MILL-01, op_seq=20
+  interpreted as: (resolved against ORD-000128 (from board selection); and about op20, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.92  polarity=negative  order=ORD-000128<-selection("ORD-000128")  2286ms
+  expect: order=ORD-000128  -> MET
+  A:
+    It can be moved — ORD-000128 op20 has room LATER: the next opening on MILL-01 long enough for the whole operation is Friday 2026-01-23 16:21. What's blocked is moving it EARLIER, and that is what I've explained below.
+
+    Earlier — what's stopping it:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: there is room. The first opening on MILL-01 where the whole operation fits after where it sits now is Friday 2026-01-23 16:21 — computed from MILL-01's open calendar minus everything already placed on it, under the same minimum-piece rule the solver applies [docs/05 C1/C2, C3].
+    That is WHERE it could go, not what it would cost. Ask "what would pushing ORD-000128 op20 out cost?" and I'll hold every other placement, move that one bar and price the difference — or drag it on the board and the card prices the same move.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# THE TRUE NEGATIVE. "stuck" in a sense that is not about a bar at all. No
+# premise correction may appear — and note the gate that stops it is the
+# INTENT, not the vocabulary: this routes nowhere near the family.
+# 
+# Deliberately UNGRADED by EXPECT: what is under test is what must NOT be in
+# the answer, and the expectation vocabulary grades routing, not absence. The
+# unit control for it is
+# `test_family_floor.py::test_a_non_mobility_use_of_stuck_reaches_no_premise_check`.
+Q[161]: the data seems stuck in december
+  route=CLARIFY  source=parse  conf=0.72  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=data-problems  conf=0.72  clarify=ambiguous-intent  1717ms
+  A:
+    I need one more detail to answer "the data seems stuck in december".
+    I can read that two ways and the difference matters. Say which you want: the facts as they stand, or what to do about them.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# ===========================================================================
+# F5 — A REPEAT IS THE SAME QUESTION ABOUT THE SAME THING.
+# 
+# THIS GROUP DELIBERATELY DOES NOT RESET. The sequence IS the specimen: three
+# bars, one question, and at HEAD two of the three answers opened "Same answer
+# as a moment ago". None of the first three may carry a repeat rider.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [SELECT order=ORD-000128 machine=MILL-01 op_seq=20]
+# [EXPECT order=ORD-000128]
+Q[174]: why cant this be moved
+  selection: order=ORD-000128, machine=MILL-01, op_seq=20
+  interpreted as: why cant ORD-000128 be moved  (resolved against ORD-000128 (from board selection); and about op20, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.92  order=ORD-000128<-selection("this")  1544ms
+  expect: order=ORD-000128  -> MET
+  A:
+    It can be moved — ORD-000128 op20 has room LATER: the next opening on MILL-01 long enough for the whole operation is Friday 2026-01-23 16:21. What's blocked is moving it EARLIER, and that is what I've explained below.
+
+    Earlier — what's stopping it:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: there is room. The first opening on MILL-01 where the whole operation fits after where it sits now is Friday 2026-01-23 16:21 — computed from MILL-01's open calendar minus everything already placed on it, under the same minimum-piece rule the solver applies [docs/05 C1/C2, C3].
+    That is WHERE it could go, not what it would cost. Ask "what would pushing ORD-000128 op20 out cost?" and I'll hold every other placement, move that one bar and price the difference — or drag it on the board and the card prices the same move.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [SELECT order=ORD-000073 machine=PRESS-FAST op_seq=10]
+# [EXPECT order=ORD-000073]
+Q[177]: why cant this be moved
+  selection: order=ORD-000073, machine=PRESS-FAST, op_seq=10
+  interpreted as: why is ORD-000073 placed where it is?  (resolved against ORD-000073 (from board selection); and about op10, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  followup=deepen  order=ORD-000073<-selection("this order")  2189ms
+  expect: order=ORD-000073  -> MET
+  A:
+    Earlier — what's stopping it:
+    I can't attribute ORD-000073 op10's placement at Monday 2026-01-05 07:00 to a binding constraint: the earliest-start estimates I can compute don't line up with where it actually sits. Rather than pick one and sound certain, I'd rather say I don't know.
+
+    What pushed it, in order:
+      2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00
+      2026-01-06 00:00  the frozen boundary [docs/05 R-F1] — the frozen boundary stands at 2026-01-06 00:00
+      2026-01-06 07:00  the machine's calendar [docs/05 C1/C2] — PRESS-FAST is closed until 2026-01-06 07:00
+      2026-01-23 12:25  no window long enough [docs/05 C3] — it needs 4h05m in one piece and PRESS-FAST had only 2h09m left when it came free at 2026-01-22 16:51
+
+    Later: it can't go there either, and "can't be moved" is fair — ORD-000073 op10 sits inside the committed front (frozen through 2026-01-06 00:00). Committed work is moved by moving the frozen boundary, not by moving the bar [docs/05 R-F1].
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [SELECT order=ORD-000177 machine=CUT-01 op_seq=10]
+# [EXPECT order=ORD-000177]
+Q[180]: why cant this be moved
+  selection: order=ORD-000177, machine=CUT-01, op_seq=10
+  interpreted as: (resolved against ORD-000177 (from board selection); and about op10, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  followup=deepen  order=ORD-000177<-selection("ORD-000177")  1609ms
+  expect: order=ORD-000177  -> MET
+  A:
+    Earlier — what's stopping it:
+    Nothing prevented ORD-000177 op10 from starting earlier. Holding every other placement where it is, CUT-01 had open, unheld time from 2026-01-15 14:30 — the solver chose Friday 2026-01-23 16:59 rather than being forced into it.
+    The assignment decision records its driver as CALENDAR_WINDOW.
+    It runs in 3 pieces between 2026-01-23 16:59 and 2026-01-27 08:00, 15h01m of actual work — it pauses when CUT-01 closes and resumes when it reopens, which is what it means for this operation to be splittable.
+
+    What pushed it, in order:
+      2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00
+      2026-01-05 07:00  the machine's calendar [docs/05 C1/C2] — CUT-01 is closed until 2026-01-05 07:00
+      2026-01-15 14:30  no window long enough [docs/05 C3] — the open stretches before 2026-01-15 14:30 were shorter than its 1h minimum piece
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: I can't tell you. ORD-000177 op10 runs in 3 pieces, and a chunked operation can't be priced as a local move in either direction — the pauses are closures the solver placed, and shifting the bar doesn't re-derive them. That is a limit of what I can compute, not a statement that the plant has no room.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# AND THE GENUINE RE-ASK, which MUST still get the terse lead: same question,
+# same bar, one turn later. This is the behaviour that was RIGHT at HEAD and
+# the reason Item 5 is a narrowing rather than a deletion.
+# [EXPECT order=ORD-000177]
+Q[185]: why cant this be moved
+  selection: order=ORD-000177, machine=CUT-01, op_seq=10
+  interpreted as: why is ORD-000177 placed where it is?  (resolved against ORD-000177 (from board selection); and about op10, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  followup=deepen  order=ORD-000177<-selection("this order")  2101ms
+  expect: order=ORD-000177  -> MET
+  A:
+    Same answer as a moment ago —
+    Earlier — what's stopping it:
+    Nothing prevented ORD-000177 op10 from starting earlier. Holding every other placement where it is, CUT-01 had open, unheld time from 2026-01-15 14:30 — the solver chose Friday 2026-01-23 16:59 rather than being forced into it.
+    The assignment decision records its driver as CALENDAR_WINDOW.
+    It runs in 3 pieces between 2026-01-23 16:59 and 2026-01-27 08:00, 15h01m of actual work — it pauses when CUT-01 closes and resumes when it reopens, which is what it means for this operation to be splittable.
+
+    What pushed it, in order:
+      2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00
+      2026-01-05 07:00  the machine's calendar [docs/05 C1/C2] — CUT-01 is closed until 2026-01-05 07:00
+      2026-01-15 14:30  no window long enough [docs/05 C3] — the open stretches before 2026-01-15 14:30 were shorter than its 1h minimum piece
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: I can't tell you. ORD-000177 op10 runs in 3 pieces, and a chunked operation can't be priced as a local move in either direction — the pauses are closures the solver placed, and shifting the bar doesn't re-derive them. That is a limit of what I can compute, not a statement that the plant has no room.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------

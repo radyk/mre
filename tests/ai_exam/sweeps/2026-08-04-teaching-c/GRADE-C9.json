@@ -1,0 +1,70 @@
+{
+  "schedule": "rolling-db5395dc-2ae",
+  "turns": 16,
+  "routing": {
+    "graded": 8,
+    "met": 8
+  },
+  "families": {
+    "m1_principle": {
+      "met": 4,
+      "of": 4
+    },
+    "m2_attached": {
+      "met": 0,
+      "of": 4
+    },
+    "m3_real_door": {
+      "met": 4,
+      "of": 4
+    },
+    "m4_pair_valid": {
+      "met": 4,
+      "of": 4
+    },
+    "controls": {
+      "met": 2,
+      "of": 2
+    }
+  },
+  "synthesis": {
+    "answers": 9,
+    "claims": 38,
+    "verified": 4,
+    "interpretive": 15,
+    "general_knowledge": 12,
+    "failed_and_cut": 7,
+    "deferred": 0,
+    "ungrounded_load_bearing": 7,
+    "unanswerable": 0,
+    "budget_exhausted": 0,
+    "tool_calls": 14,
+    "tool_histogram": {
+      "constraint_catalog": 1,
+      "cost_ledger": 3,
+      "entity_vocabulary": 1,
+      "gate_findings": 1,
+      "lateness_set": 2,
+      "machine_occupancy": 5,
+      "placements_for_order": 1
+    },
+    "calls_per_answer": {
+      "0": 3,
+      "1": 3,
+      "2": 1,
+      "4": 1,
+      "5": 1
+    }
+  },
+  "reported": {
+    "direction_i_refusals": [],
+    "closer_firings": [],
+    "invalid_pairs": []
+  },
+  "problems": [
+    "[m2_attached] line 51: a teaching answer with no board claim beside the principle (co-occurrence only \u2014 see the RUBRIC)",
+    "[m2_attached] line 64: a teaching answer with no board claim beside the principle (co-occurrence only \u2014 see the RUBRIC)",
+    "[m2_attached] line 75: a teaching answer with no board claim beside the principle (co-occurrence only \u2014 see the RUBRIC)",
+    "[m2_attached] line 86: a teaching answer with no board claim beside the principle (co-occurrence only \u2014 see the RUBRIC)"
+  ]
+}

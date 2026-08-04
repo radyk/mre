@@ -48,6 +48,7 @@ from mre.contracts.parse import (
     MoveDirection,
     ParsedQuestion,
     Polarity,
+    SECOND_TIER_INTENTS,
     SubjectKind,
     SubjectSource,
 )
@@ -376,7 +377,11 @@ def tier_of(parsed: Any, explainer: Any = None) -> str:
     if parsed.followup_of is FollowupKind.PROVE_IT or \
             parsed.intent is Intent.PROVE_IT:
         return "route"
-    if parsed.intent is Intent.UNMATCHED or parsed.confidence < CONF_MATCH:
+    # R-TG2: `teaching` reasons over the evidence exactly as `unmatched` does —
+    # it is the same tier under a longer budget — so the pacing hint must show
+    # the same waiting state. Reading it as `route` would promise an instant
+    # answer for the one intent whose answer is deliberately the longest.
+    if parsed.intent in SECOND_TIER_INTENTS or parsed.confidence < CONF_MATCH:
         return "synthesis"
     if parsed.dropped_qualifier:
         return "synthesis"
@@ -555,6 +560,45 @@ def _apply_mobility_floor(parsed: ParsedQuestion, params: dict,
     if parsed.intent is Intent.WHY_HERE and not params.get("move_direction"):
         params["move_direction"] = MoveDirection.UNSTATED.value
         params["move_direction_source"] = "floor"
+
+
+def _apply_audience_floor(parsed: ParsedQuestion, params: dict) -> None:
+    """R-TG4 — DOES THIS QUESTION NAME A PERSON WHO HAS TO BE TOLD?
+
+    The parse REPORTS ``audience`` (prompt v18); this is the floor under the
+    report, for the reason 4A.y measured and named: a freshly-prompted field was
+    reported 0 times in 5 on the phrasings planners actually use, and a
+    disclosure that depends on a model remembering a field will silently stop.
+    The planner's own words win where the model supplied none.
+
+    Like the mobility floor it can only ever ADD to a route that was already
+    going to run — nothing here can change WHICH route answers (R-AI5(2): no
+    deterministic classifier returns).
+    """
+    from mre.modules.audience_shape import names_an_audience
+    audience = (parsed.audience or "").strip() or names_an_audience(
+        parsed.question)
+    if audience:
+        params["audience"] = audience
+
+
+def _attach_audience_shape(bundle: Any, params: dict) -> None:
+    """Compose the audience shape from what the route ACTUALLY assembled, and
+    hang it on the bundle under a key of its own (R-TG4).
+
+    Composed AFTER the route ran, never before, so the account and the lever are
+    read off the figures that route computed rather than derived a second time
+    (4B.21's discipline). Where nothing composes, nothing is attached and the
+    answer renders exactly as it does today."""
+    if not params.get("audience"):
+        return
+    if not isinstance(getattr(bundle, "key_facts", None), dict):
+        return
+    from mre.modules.audience_shape import compose
+    shape = compose(getattr(bundle, "subject_type", ""), bundle.key_facts,
+                    params["audience"])
+    if shape is not None and shape.usable:
+        bundle.key_facts["audience_shape"] = shape
 
 
 def _attach_mobility_lead(explainer: Any, bundle: Any, params: dict) -> None:
@@ -1158,6 +1202,19 @@ def _synthesis_dispatch(explainer: Any, parsed: ParsedQuestion, note: str,
         toolbox=EvidenceToolbox(explainer))
     if answer is None:
         return _unmatched_bridge(explainer, parsed, note)
+    # R-TG3 — THE DEPTH LICENCE, AT THE DISPATCH SEAM (Session 4A
+    # teaching-graft (b)). AFTER the model drafted and AFTER the verifier
+    # labelled, so a trimmed answer is trimmed from claims that already earned
+    # their status — and so nothing here can affect what a claim is, only how
+    # many of them reach the page. TEACHING gets the long budget; every other
+    # question that reaches this tier gets the short one.
+    #
+    # It runs BEFORE `explainer.route`, which reads `answer.claims`, so the
+    # bundle carries exactly what will render and the citation list is scoped to
+    # the claims a planner can actually see.
+    from mre.modules import answer_budget
+    licence = answer_budget.licence_for(parsed.intent)
+    answer_budget.apply(answer, licence)
     # Micro-session 4A — THE SECOND TIER'S OWN OUTAGE. The parse succeeded, so
     # the question WAS read; what failed is the reach to the model that would
     # have reasoned over the evidence. Without this branch the answer is the
@@ -1181,7 +1238,8 @@ def _synthesis_dispatch(explainer: Any, parsed: ParsedQuestion, note: str,
                                       {"question": parsed.question,
                                        "answer": answer,
                                        "diverted_qualifier": diverted_qualifier,
-                                       "offers": offers}),
+                                       "offers": offers,
+                                       "licence": licence.name}),
                       note, parsed.question, synthesis=answer)
 
 
@@ -1389,7 +1447,18 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     # 4 — no contracted intent fits (or the parse is not confident enough to answer
     # AS one). R-AI5(2): this is where LABELED OPEN SYNTHESIS lives, and it is the
     # ONLY door into it. Part 1's honest bridge stays as the floor beneath it.
-    if parsed.intent is Intent.UNMATCHED or parsed.confidence < CONF_MATCH:
+    #
+    # Session 4A teaching-graft (b), R-TG2: `teaching` comes through the SAME
+    # door, by name. It is a DECLARED second-tier intent (`SECOND_TIER_INTENTS`)
+    # rather than a route, because teaching is synthesis with a second claim
+    # class and a depth licence and not a new rung — and because there is no
+    # contracted evidence assembly for "how does this normally work". What it
+    # changes is the BUDGET, which `_synthesis_dispatch` reads off the intent.
+    #
+    # The seal is untouched: no CONTRACTED route falls here (this intent never
+    # was one), and the tier still never guesses a route.
+    if (parsed.intent in SECOND_TIER_INTENTS
+            or parsed.confidence < CONF_MATCH):
         return _second_tier()
 
     # 4b — THE ADJACENT-MATCH GUARD (Session 4A.5c CU3(c)). The last hiding place.
@@ -1436,9 +1505,14 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
         # 4B.21 §5a.78's mechanism a third time: a seam every route passes,
         # except the ones that return early.
         _apply_mobility_floor(parsed, params, (context or {}).get("selection"))
+        # R-TG4 at the ROLLING early return too — 4A.y Item 1's lesson, which
+        # this branch is the standing specimen of. A floor written once at the
+        # obvious seam covers every route except the ones that return before it.
+        _apply_audience_floor(parsed, params)
         note = _with_assumptions(note, parsed, params)
         bundle = explainer.route(parsed.intent.value, params)
         _attach_mobility_lead(explainer, bundle, params)
+        _attach_audience_shape(bundle, params)
         return Dispatched(parsed.intent.value, bundle, note, parsed.question)
 
     # 5 — a matched intent. The question the assemblers see is the planner's own
@@ -1608,6 +1682,11 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     # of the three whose answer IS a direction (see `_EARLIER_BY_DEFAULT`); the
     # other two get the premise check and no claim about which way they read.
     _apply_mobility_floor(parsed, params, (context or {}).get("selection"))
+    # 4y-bis — R-TG4's FLOOR (Session 4A teaching-graft (b)). Does this question
+    # name a person who has to be told? Same shape as the mobility floor above,
+    # same discipline: it may only reshape a route that was already going to
+    # answer, and it decides no route.
+    _apply_audience_floor(parsed, params)
 
     # 4z — EVERY RESOLUTION THE LADDER MADE IS DISCLOSED, NOT ONLY THE SUBJECT
     # (the listening docket, Item 2). Computed HERE, at the one seam every
@@ -1616,8 +1695,9 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     note = _with_assumptions(note, parsed, params)
 
     if parsed.intent is Intent.ADVICE and params.get("concept"):
-        return Dispatched("coaching", explainer.route("coaching", params),
-                          note, routed_question)
+        coaching = explainer.route("coaching", params)
+        _attach_audience_shape(coaching, params)
+        return Dispatched("coaching", coaching, note, routed_question)
 
     bundle = explainer.route(parsed.intent.value, params)
 
@@ -1625,6 +1705,11 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     # `why-here` computes its own verdict inline (it renders both directions in
     # its own shape); the other members get it here and render it as a lead.
     _attach_mobility_lead(explainer, bundle, params)
+    # R-TG4 — and so does the audience shape, composed from what THIS route
+    # assembled. The census measured the goal family reaching three different
+    # routes, so it attaches to whichever one answered rather than to the one
+    # the founder's question happened to hit.
+    _attach_audience_shape(bundle, params)
 
     # 5a-bis — ROUTE FALSIFIABILITY (Session 4B.15 Item 2). A matched route
     # could not be wrong: once the parse named an intent above the confidence

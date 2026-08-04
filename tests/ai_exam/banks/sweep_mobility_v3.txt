@@ -1,0 +1,123 @@
+# AI EXAM BANK — the two verdicts nobody had ever seen (boxed-in, earlier-open)
+# version  : v3
+# generated: 2026-08-04  (Session 4A teaching-graft (c))
+# world    : THE FENCED SPECIMEN WORLD, NOT the demo board. This bank asks
+#            `datasets/mobility_box` solved to `_ai_exam_scratch/mobility_pinned`
+#            (snapshot `snap-mobility`) — see datasets/mobility_box/README.md.
+#            v1 and v2 ask the DEMO BOARD and are not replaced; a new world is a
+#            new bank, exactly as a new version is a new file.
+#
+# WHY THIS BANK EXISTS. `mobility_premise.assess` returns five verdicts. The
+# listening docket (4A.x) censused both pinned boards and measured:
+#
+#     demo   held 24 / later-open 361 / undecidable 1 / boxed-in 0 / earlier-open 0
+#     exam   held 45 / later-open   9 / undecidable 2 / boxed-in 0 / earlier-open 0
+#
+# Two of the five had never been produced by a solved board and were asserted by
+# unit test only. Both need `later_at` to be None, and `later_at` is computed
+# over a machine's open calendar padded a fortnight past the last placement — so
+# on a plant that keeps working there is ALWAYS room later, and `later-open`
+# absorbs everything. The specimen world is a plant that STOPS: `BOX-01` goes
+# down for a rebuild on 2026-01-14 and does not come back inside anything this
+# plan can see.
+#
+# WHAT THIS BANK GRADES. The EXPECT lines grade ROUTING, which is all the exam
+# grammar grades. The VERDICTS themselves are asserted mechanically and
+# independently by `tests/test_mobility_box.py` (green, with two negative
+# controls that mutate the dataset and prove each specimen collapses) and are
+# printed by `tools/spikes/teaching_graft_c/census_mobility.py`. What the sweep
+# adds is the thing neither of those can show: WHAT A PLANNER IS TOLD.
+#
+# RESET DISCIPLINE: every phrasing group resets. Nothing here is
+# history-bearing — v2's history-bearing groups exist because ROUTE BYPASS was
+# its subject, and it is not this bank's.
+
+# ===========================================================================
+# S1 — BOXED IN. The premise HOLDS, and the answer must AGREE with the planner.
+# ORD-BOX op20 runs 2026-01-13 09:52 -> 18:33 on BOX-01. Earlier is shut by
+# precedence (op10 frees the machine at 09:51); later is shut because BOX-01 has
+# no open window at all after 19:00 that day. "Can't be moved" is FAIR, and the
+# answer must not manufacture a correction for a premise that holds (RUBRIC C6b:
+# correcting a true premise is a DEFECT-bucket item, not a style miss).
+# ===========================================================================
+RESET
+SELECT order=ORD-BOX machine=BOX-01 seq=20
+EXPECT order=ORD-BOX
+why cant this be moved
+RESET
+
+SELECT order=ORD-BOX machine=BOX-01 seq=20
+EXPECT order=ORD-BOX
+is this bar immovable
+RESET
+
+# The floor vocabulary's 4A.y additions, on a bar where the premise is TRUE.
+SELECT order=ORD-BOX machine=BOX-01 seq=20
+EXPECT order=ORD-BOX
+why is this bar trapped here
+RESET
+
+# Named subject, no selection: the same verdict must be reachable by typing.
+EXPECT order=ORD-BOX
+why cant ORD-BOX op20 be moved
+RESET
+
+# ===========================================================================
+# S2 — EARLIER OPEN. The premise is FALSE, and the refutation must name WHICH
+# direction is open — and only that one. ORD-EARLY runs 2026-01-12 07:00 ->
+# 14:01 on BOX-01. There was room on the SATURDAY overtime shift (2026-01-10
+# 07:00, chunk-fit binding, slack 2,880 minutes) and there is nothing later.
+# An answer that says "it can move" without saying WHICH WAY is the silence this
+# whole family exists to end; an answer that offers a LATER move here would be
+# offering room that does not exist.
+# ===========================================================================
+SELECT order=ORD-EARLY machine=BOX-01 seq=10
+EXPECT order=ORD-EARLY
+why cant this be moved
+RESET
+
+SELECT order=ORD-EARLY machine=BOX-01 seq=10
+EXPECT order=ORD-EARLY
+this cant move can it
+RESET
+
+SELECT order=ORD-EARLY machine=BOX-01 seq=10
+EXPECT order=ORD-EARLY
+why is this stuck
+RESET
+
+# The DIRECTED question on the same bar. It states its direction, so it is owed
+# NO disclosure about which way it was read (4A.x R-LD2) — and the answer is the
+# one the planner actually wants: the room was there, and it was overtime.
+EXPECT order=ORD-EARLY
+why cant ORD-EARLY start earlier
+RESET
+
+# ===========================================================================
+# S3 — THE CONTROLS. The two verdicts that already had specimens, on the same
+# board, so "this world answers strangely" is not available as an explanation
+# for S1 and S2.
+# ===========================================================================
+SELECT order=ORD-PACK machine=PACK-01 seq=10
+EXPECT order=ORD-PACK
+why cant this be moved
+RESET
+
+# ORD-SPAN runs in two chunks: UNDECIDABLE. The answer must decline to price the
+# move in either direction and must say that is a limit of what it can compute,
+# never a statement about the plant.
+SELECT order=ORD-SPAN machine=PACK-01 seq=10
+EXPECT order=ORD-SPAN
+why cant this be moved
+RESET
+
+# ===========================================================================
+# S4 — THE TEACHING TURN ON A WORLD WHERE THE ANSWER IS SIMPLE ENOUGH TO CHECK.
+# C9's transfer question with a knowable answer key: the principle a planner
+# needs here is that a bar is immobile when BOTH directions are shut, and this
+# board shows one bar of each kind. Ungraded for routing on purpose — whether
+# "what makes a job impossible to move" is a teaching question or a capability
+# question is exactly the boundary R-TG2 declined to decide by keyword.
+# ===========================================================================
+what makes a job impossible to move at all
+RESET

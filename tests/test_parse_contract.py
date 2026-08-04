@@ -31,6 +31,7 @@ from mre.contracts.parse import (
     MODEL_SELECTABLE_INTENTS,
     ParsedQuestion,
     Polarity,
+    SECOND_TIER_INTENTS,
     SubjectKind,
     SubjectSource,
 )
@@ -55,10 +56,28 @@ from tests.test_interpreter import explainer  # noqa: F401 — the shared fixtur
 
 class TestVocabulary:
     def test_intents_and_routes_name_the_same_set(self):
-        """The intent vocabulary IS the route taxonomy (plus `unmatched`). A route
-        the parse cannot name is unreachable; an intent with no route is a wall."""
-        intents = {i.value for i in Intent} - {Intent.UNMATCHED.value}
+        """The intent vocabulary IS the route taxonomy, plus the SECOND-TIER
+        intents. A route the parse cannot name is unreachable; an intent that is
+        neither a route nor a declared second-tier door is a wall.
+
+        Session 4A teaching-graft (b), R-TG2: the subtracted set is now NAMED
+        (`SECOND_TIER_INTENTS`) rather than being a bare `unmatched` with a
+        comment. `unmatched` was always such a door — a question answered by
+        reasoning over evidence under a stated budget, with no contracted
+        assembler and no business having one. `teaching` is the second member
+        for exactly the same reason: there is no contracted evidence assembly
+        for "how does this normally work", and inventing one would author domain
+        prose as testimony."""
+        intents = {i.value for i in Intent} - {i.value
+                                               for i in SECOND_TIER_INTENTS}
         assert intents == set(ROUTE_TAXONOMY)
+
+    def test_every_second_tier_intent_is_absent_from_the_taxonomy(self):
+        """The subtraction above must be a real property, not a way of hiding a
+        route that was forgotten. A second-tier intent with a taxonomy entry
+        would be reachable two ways and would answer differently in each."""
+        for intent in SECOND_TIER_INTENTS:
+            assert intent.value not in ROUTE_TAXONOMY
 
     def test_every_selectable_intent_has_an_authored_meaning(self):
         missing = [i.value for i in MODEL_SELECTABLE_INTENTS

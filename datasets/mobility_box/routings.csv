@@ -1,0 +1,6 @@
+route_id,facility_id,product_id,status,approved,version,effective_from
+RT-FILL,F001,P-FILL,active,Y,1,2026-01-05
+RT-EARLY,F001,P-EARLY,active,Y,1,2026-01-05
+RT-BOX,F001,P-BOX,active,Y,1,2026-01-05
+RT-PACK,F001,P-PACK,active,Y,1,2026-01-05
+RT-SPAN,F001,P-SPAN,active,Y,1,2026-01-05

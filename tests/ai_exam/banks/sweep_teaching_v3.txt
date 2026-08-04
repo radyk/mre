@@ -1,0 +1,140 @@
+# AI EXAM BANK — the transfer probe: does the answer TEACH? (RUBRIC axis C9)
+# version  : v3
+# generated: 2026-08-04  (Session 4A teaching-graft (c))
+# world    : the DEMO BOARD `rolling-db5395dc-2ae`. Entity ids below are that
+#            board's; the SHAPES are what is graded, not the ids.
+#
+# WHY THIS BANK EXISTS. v1 measured the CLAIM CLASS (C7 — is each sentence in
+# the right class). v2 measured the ANSWER SHAPE (C8 — is it usable by whoever
+# asked). Neither can see an answer that is true, correctly classed, correctly
+# shaped and leaves the planner exactly as unable to predict the next case as
+# they were before. C9 is that axis and this bank is its instrument.
+#
+# THE TRANSFER PROBE. Four PAIRS. Q1 is a teaching question. Q2 asks about a
+# DIFFERENT subject whose answer FOLLOWS from the principle Q1's answer should
+# have stated. There is a RESET between them, which is the design and not an
+# oversight:
+#
+#     Q2 is asked COLD, so its answer is the ground truth about what this system
+#     does in the uncovered case — produced independently of anything Q1 said.
+#     The grading question is then about Q1: would a planner who read only Q1
+#     have PREDICTED the answer Q2 gave?
+#
+# Asked in one conversation instead, a correct Q2 would prove only that the model
+# can carry its own sentence forward. That is a memory property and it is session
+# (d)'s subject, not this one.
+#
+# Q2 IS NOT GRADED. Q2 is the answer key. A Q2 the product cannot answer
+# INVALIDATES its pair (RUBRIC C9 check M4) and is reported as an invalid pair,
+# never as a failure.
+#
+# WHAT THE GRADER (tools/spikes/teaching_graft_c/grade_c9_sweep.py) CHECKS, and
+# it is only the mechanical half of C9 — M1/M2/M3/M4 in the RUBRIC amendment.
+# H1 (is the principle true), H2 (does it predict Q2) and H3 (could the planner
+# predict a third case) are read by a person. The founder round script at
+# tools/spikes/teaching_graft_c/founder_round_c9.md is how they get read.
+#
+# THE HUNT PROBES at the end carry NO EXPECT LINE, deliberately. They exist to
+# find out whether two shipped clauses fire in the wild — R-TG1 direction (i)
+# and R-TG3's closer — and an expectation asserting either outcome would fit the
+# bank to a result the session went looking for. Their outcome is REPORTED by
+# the grader, not asserted by the bank. This is the C7 amendment's precedent for
+# an ungraded-by-design question, applied to a whole family.
+#
+# RESET DISCIPLINE: every turn resets. Nothing in this bank is history-bearing.
+
+# ===========================================================================
+# P1 — MOBILITY. The principle: what decides whether a bar can move at all.
+# ===========================================================================
+RESET
+EXPECT intent=teaching
+what generally decides whether an operation can be moved earlier on a board like this one
+RESET
+
+# The uncovered case. Whatever family binds ORD-000128 op20, a planner who read
+# P1's answer should have been able to name the candidates it was drawn from.
+EXPECT order=ORD-000128
+why cant ORD-000128 op20 start earlier
+RESET
+
+# ===========================================================================
+# P2 — PROPAGATION. The principle: why one late order makes others late.
+# ===========================================================================
+EXPECT intent=teaching
+in general, why does one order running late tend to make other orders late as well
+RESET
+
+EXPECT order=ORD-000112
+why is ORD-000112 late
+RESET
+
+# ===========================================================================
+# P3 — CONTENTION. The principle: how two orders wanting one machine are ranked.
+# ===========================================================================
+EXPECT intent=teaching
+how does a scheduler decide which of two orders competing for the same machine goes first
+RESET
+
+EXPECT order=ORD-000252 machine=CUT-01
+why is ORD-000252 on CUT-01 when it is
+RESET
+
+# ===========================================================================
+# P4 — OPTIMALITY. The principle: how to read a gap.
+# ===========================================================================
+EXPECT intent=teaching
+what does an optimality gap actually mean and how should i read one
+RESET
+
+# The uncovered case: the same idea asked about THIS board's own number.
+is this schedule the cheapest one you could find
+RESET
+
+# ===========================================================================
+# CONTROLS — the axis must not fire where it does not apply.
+# ===========================================================================
+# A contracted testimony answer: no teaching invitation, no cap machinery, and
+# the C9 mechanical checks must not be applied to it at all.
+EXPECT order=ORD-000040
+where is ORD-000040
+RESET
+
+# A second-tier answer that is NOT a teaching question: short budget, no
+# teaching invitation. C9's M1 (a labelled general claim) is NOT required here —
+# requiring a principle of every synthesis answer would be C8b's failure from
+# the other side, depth spent because it was available.
+what is the single biggest cause of lateness on this board
+RESET
+
+# ===========================================================================
+# HUNT A — R-TG1 ENFORCEMENT DIRECTION (i). UNGRADED FOR ROUTING BY DESIGN.
+# Probes that TEMPT the model to offer the general-knowledge label on a sentence
+# carrying a board figure, a named machine or a named order. Session (a) shipped
+# the refusal with no live specimen; these look for one. If none appears, that
+# is the finding and the clause stays guard-proven.
+# ===========================================================================
+in general, is $1,667,467.80 of tardiness a lot for a plant like this
+RESET
+
+explain why machines like CUT-01 usually end up being the bottleneck
+RESET
+
+generally speaking, is it normal for an order like ORD-000112 to slip this far, and why does that happen in job shops
+RESET
+
+# ===========================================================================
+# HUNT B — R-TG3's CLOSER. UNGRADED FOR ROUTING BY DESIGN.
+# Comparisons across several named subjects on several named axes: every claim
+# they invite is legitimately distinct, so this is the shape that should overflow
+# a four-claim budget if anything does. Session (b)'s A/B measured the shipped
+# arm at deferred [0,0,0] — the prompt compresses below the cap on its own — so
+# the shipped arm has no live closer specimen either.
+# ===========================================================================
+compare the three cutting machines on utilization, lateness contribution, and idle time
+RESET
+
+give me a machine by machine breakdown of this board: load, late orders, idle time and setup burden for every lane that carries work
+RESET
+
+list every distinct problem on this board, one line each, and do not merge them
+RESET

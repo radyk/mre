@@ -171,6 +171,168 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Session 4A teaching-graft (c) — the exam learns to grade understanding**,
+2026-08-04 (docs/07 v2.90, §5a.170-176; docs/04 2026-08-04 **R-SW1 and R-EX1
+ruled and BUILT**; contract unchanged **1.15**, no docs/06 doorway owed, both
+answered on the record; **BOTH GOVERNED PROMPTS UNCHANGED** — parse v18,
+synthesis v7; RUBRIC gains axis **C9 DOES THE ANSWER TEACH?**; narrative in
+`docs/closeouts/4a-teaching-c-exam-axis.md`). R1 item 2, session (c) of four.
+**THE SESSION BUILT THE TWO THINGS FOUR PRIOR SESSIONS HAD OWED.** **R-SW1: a
+specimen world is a COMMITTED DATASET WHOSE SPECIMENS ARE MEASURED, NEVER
+ASSUMED.** `boxed-in` and `earlier-open` were **0 of 386 and 0 of 56** on the two
+pinned boards, and **the cause is structural**: both need `later_at` None, and
+`later_at` scans a machine's open calendar **padded a fortnight past the last
+placement** — so on a plant that keeps working `later-open` absorbs everything
+and the two verdicts are not rare but IMPOSSIBLE. `datasets/mobility_box` is a
+plant that **STOPS** (nine orders, three machines, `BOX-01` down for a rebuild
+from 2026-01-14; hand-authored `glass_box`-style, gate ACCEPTED/C2/0, ledger
+$6,160.00, **tardiness $0.00** so lateness is never a second explanation).
+Census: **boxed-in 1 / earlier-open 1 / later-open 7 / undecidable 1**; `held` is
+unreachable monolithically and already has 24 and 45 specimens, named not
+missing. **THE `earlier-open` SPECIMEN'S COST LEVER IS DECLARED AND IS THE
+INTERESTING PART** — stage 2 minimises starts subject to stage 1's cost, so free
+earlier room is ALWAYS taken and the verdict can only exist where the earlier
+room costs MORE: here a **Saturday overtime window at a declared 1.5x premium**,
+binding family chunk-fit at 2026-01-10 07:00, **slack 2,880 min**. **THE PREMISE
+TESTS ASSERT THE MECHANISM, NOT THE VERDICT STRING** (binding family + instants
+on one side, absence of ANY open window on the other, independently), with **two
+negative controls that MUTATE THE DATASET and re-solve**: delete the outage rows
+and boxed-in collapses; delete the ONE overtime row and earlier-open collapses.
+**THE FIRST QUESTION EVER ASKED OF THE WORLD FOUND A DEFECT** — `_render_mobility_
+later` enumerated three verdicts and treated EVERYTHING ELSE as BOXED_IN, so the
+answer said *"It can be moved — nothing was holding ORD-EARLY op10 back"* and
+then *"Later: … so \"can't be moved\" is fair"*, one bar, one screen. **TWO
+RENDERERS BUILT FROM ONE VERDICT AND ONLY ONE ENUMERATED IT** (`mobility_lead_
+line` handles all five and returns None otherwise). Fixed: own branch for
+earlier-open, boxed-in explicit, **an unrecognised verdict says NOTHING** (4B.23's
+fail-safe at the seam violating it). Guard is the PROPERTY over all five —
+*the paragraph may say the premise is fair iff the verdict says it holds*.
+**157 EXISTING MOBILITY TESTS WERE GREEN BEFORE AND AFTER; none covered the
+branch.** Live: **4/4 boxed-in turns say "fair", 0/4 earlier-open**;
+`sweep_mobility_v2` re-swept on the demo board **20/20, unchanged**. **R-EX1:
+RUBRIC C9 grades whether a planner could PREDICT THE NEXT CASE.** The instrument
+is a **TRANSFER PAIR with the conversation CLEARED between halves** — **Q2 IS THE
+ANSWER KEY, NOT THE THING GRADED**, and a Q2 the product cannot answer INVALIDATES
+its pair. Four mechanical checks, each bounded by what it does NOT show (**M2
+checks CO-OCCURRENCE ONLY** and the RUBRIC says twice that a green M2 is never
+evidence the principle is ABOUT the instance); three human-only. **THE LLM JUDGE
+IS WRITTEN DOWN AND REFUSED** — it scores the ENTAILMENT with the weights that
+wrote the answer, so it is the work marking itself; the honest instrument is the
+FOUNDER ROUND, committed **UNRUN** at `tools/spikes/teaching_graft_c/founder_
+round_c9.md` with a blank prediction line under every Q1. **THE FIRST C9
+MEASUREMENT IS A FINDING: the depth licence is granted to the answers with the
+LEAST to say.** Two runs of `sweep_teaching_v3`: routing 8/8, M1 4/4, M3 4/4, M4
+4/4, controls 2/2 — and **M2 0/4**. All four transfer teaching answers carried a
+labelled principle and **NOT ONE carried a board claim** (0 verified, 0
+interpretive, 0 lit bars, 0 records; **two made NO tool call at all**), while the
+three teaching-routed HUNT probes in the same sweep DID — so **the difference is
+the QUESTION, not the route**: those name a figure/machine/order so the loop reads
+the plant. **R-TG3 grants depth by intent and nothing makes a teaching answer look
+at the plant**; on one turn the licence granted 8 and the answer shipped 1. NOT
+FIXED — the remedy is a synthesis-prompt change and two findings are about what
+that prompt produces. **THE TWO HUNTS, REPORTED EITHER WAY. (a) R-TG1 DIRECTION
+(i) HAS TWO LIVE SPECIMENS AT LAST AND THEY DO NOT REPRODUCE** — both refused for
+*"a figure this run computed (90)"* where **the 90 is queueing theory's own
+number**, i.e. the CONSERVATIVE arm session (a) chose on purpose (both landed
+INTERPRETIVE, neither cut); the same probe in two sweep runs refused **0** times.
+**(b) THE CLOSER STILL HAS NO SPECIMEN** — five overflow probes, **deferred 0 on
+every one**, drafting at most 5 and keeping at most 4; with (b)'s A/B that is
+**eight targeted attempts, zero firings**, so **on the shipped prompt the cap is a
+floor with no load on it** and rule 6 does all the compressing. **Cap LEFT ALONE;
+no prompt weakened to manufacture either specimen.** **PLANNER_DIRECTIVE HAS A
+SPECIMEN** (4B.33 §5a.135(a), partly discharged): the REAL accept over the fenced
+world mints `planner_edit | PLANNER_DIRECTIVE | observed`, $0.00, `delta_abs`
+None — **evidence reproduced, REGISTRY BOOKKEEPING NOT**, stated not glossed.
+**Python 2643/305/0** against a **corrected session-(b) baseline of
+2631/291/0** (+12 passed, +14 skipped, and the new guard file collects 25 — one
+skip in the delta is unaccounted for and is recorded, not rounded off) (CLAUDE.md's (b) line records 2629; the two-test difference is
+unexplained and recorded in both close-outs). **`--runslow` is NOT green and NOT
+green AT HEAD** — `test_ai_voice.py::test_cu5_split_jobs`, proven pre-existing by
+reverting this session's only `src/` change (restore byte-identical by sha256).
+**Cockpit UNTOUCHED, not re-run. NOTHING MINTED IN `_data`.** NOT FIXED, named:
+the teaching answer reads nothing; the fenced world is not registered (so `held`
+and R-F1 are unreachable on it); `edit-summary` prints a truncated operation UUID;
+*"why is ORD-PACK pinned"* on the edited world answers about the frozen front and
+is silent about the pin the same run recorded; B5 asked for five things and got
+four without saying so; and **`_open_windows`' fortnight pad is what makes
+`later-open` universal** and is unexamined. Before it:
+**Session 4A teaching-graft (b) — the depth licence and the teaching intent**,
+2026-08-04 (docs/07 v2.89, §5a.165-169; docs/04 2026-08-04 **R-TG2, R-TG3 and
+R-TG4 ruled and BUILT**; contract unchanged **1.15**, no docs/06 doorway owed,
+both answered on the record; parse prompt **v17 -> v18**, synthesis prompt **v6
+-> v7**; RUBRIC gains axis **C8 ANSWER SHAPE**; narrative in
+`docs/closeouts/4a-teaching-b-depth-license.md`). R1 item 2, session (b) of four.
+**THE SESSION'S SUBJECT IS THE GAP C1-C7 CANNOT SEE: AN ANSWER THAT IS TRUE,
+GROUNDED, CORRECTLY ROUTED AND CORRECTLY CLASSED AND STILL UNUSABLE.** Measured
+at HEAD before anything was built, three ways. **(1)** Ten domain probes, live
+parse: **`coaching` 5 / `unmatched` 4 / `lateness-cause` 1** — half the questions
+asking to be TAUGHT something got a docs/05 capability lookup, median **3 content
+lines** over 102 turns. **(2)** 86 synthesis answers across all nine committed
+sweeps: kept claims **2->7 · 3->13 · 4->18 · 5->19 · 6->4** (median 4), while
+synthesis rule 6 has asked for "three to six" since v1 and bounds nothing.
+**(3) THE BOSS QUESTION** — *"there are a lot of orders late what reason can i
+give my boss and what will help lessen the impact"* — came back **134 content
+lines**: a cause mix, **~95 hold-pair lines**, and `Evidence chain (614
+record(s)):`. The longest answer in every committed sweep by 3.5x, **and every
+line of it is TRUE**. The goal was AUDIENCE-SHAPED; the answer was
+COMPLETENESS-SHAPED. **R-TG2: `teaching` IS A SECOND-TIER INTENT, NOT A ROUTE** —
+there is no contracted assembly for *"how does this normally work"* and inventing
+one would author domain prose as TESTIMONY (R-TG1's defect one layer up, where
+the label would be the register). `SECOND_TIER_INTENTS` **NAMES** what the parity
+test used to subtract with a comment; a guard asserts no member has a taxonomy
+entry. **THE TEACHING MARKERS SCORE 8/10 WITH ZERO FALSE POSITIVES AND ARE NOT
+WIRED TO ROUTING — that refusal IS the ruling** (a marker set that routed would
+be the deterministic classifier R-AI5(2) deleted, back under a new name). LIVE
+after v18: **5 of 5** at conf 0.95-0.98, including both v17 sent to `coaching`;
+both `coaching` controls held. **R-TG3: DEPTH IS GRANTED BY INTENT** — LONG **8**
+claims for `teaching` alone, SHORT **4** for everything else, both chosen from
+(2): 4 is the MEDIAN real answer, so it leaves the median untouched and binds the
+upper 38% at testimony's own p75. LONG is a **CEILING NOT A TARGET and does not
+bind today** (never more than 6 drafted in 86 answers), said rather than hidden.
+The bound is at the DISPATCH SEAM, after draft AND after verification, so it can
+change how many claims reach the page and never what a claim IS. **A DEFERRED
+CLAIM IS NOT A CUT CLAIM** (cut = failed verification; deferred = PASSED and
+surplus) — the SIXTH measured category fusion refused. **THE CLOSER IS ABSENT
+WHEN NOTHING WAS WITHHELD**, its own clause and a DEFECT-bucket item if broken.
+**THE A/B IS THE RESULT THAT WAS NOT EXPECTED** (`cap_ab.py`, same probes, rule 6
+swapped back to v6, governed prompt restored byte-identical by sha256): **v7 kept
+[4,4,3] deferred [0,0,0]; v6 kept [4,4,5] deferred [2,4,0]**, closer firing
+twice. **THE PROMPT DID THE WORK AND THE SEAM IS THE FLOOR UNDER IT** — so the
+shipped arm has NO live closer specimen, and that is reported, not hidden.
+**R-TG4: THE BOSS QUESTION IS 8 LINES** — the account, the lever, the OFFER.
+**`ordered_records` IS SUPPRESSED, NOT CLEARED**: 614 records and 460 bars
+survive, so the drill-down opens exactly what the offer offered; **what changed
+is ORDER and BUDGET, never evidence discipline**. **THE LEVER IS THE ROUTE'S OWN
+"My take:", PROMOTED FROM AFTERTHOUGHT TO HEADLINE** — found by reading the
+CONTROL, where `advice` still ends on its TWELFTH line with *"ORD-000112's
+27060-minute slip traces to ORD-000252 holding CUT-01 until 2026-01-27 19:00 —
+pulling that earlier is the single biggest lever the board gives you today."*
+**Nothing was missing from this product except an opinion about what to say
+first.** THE FLOOR IS FAMILY-SCOPED (4A.y paid forward: the four goal probes
+reach **THREE routes**); the parse reports `audience` and a deterministic floor
+stands under it — and **THE FLOOR IS REDUNDANT TODAY, MEASURED**: at v18 the
+model reports the field on **4 of 4** goal questions and 0 of 4 others, every
+value STRING-IDENTICAL to the floor's, so the seam has caught nothing (4A.y
+measured a fresh field reported 0-of-5; this one is followed); the marker matches
+a PERSON not an ask — **3 of 4 goal probes, 0 of the other 20** — and the shape
+FAILS OPEN. `sweep_teaching_v2`, 19 turns: **routing 15/15** (a FIRST run read
+14/15 on one OUTAGE turn, R-OF1's floor working; it did not reproduce and the
+COMMITTED sweep is the re-run against frozen bytes), **long 12/12, short 3/3,
+no-false-closer 9/9, audience 9/10, untouched 10/10**. **Python 2629/291/0** (baseline 2581; **+48**);
+**13 negative controls proven RED**, restores byte-identical, and one is aimed at
+the RENDERER rather than the seam so it cannot call past the broken line.
+**Cockpit UNTOUCHED, not re-run. MINTED NOTHING.** NOT FIXED, named: **the
+`briefing` account is the top-ranked worry and on this board it is the WRONG
+sentence to say in a room** (*"the cost optimum is NOT proved"*, to a production
+meeting about late orders) — R-TG4 deliberately does NOT re-rank, because picking
+an opener item from the question's words is a relevance classifier, so this is a
+finding about the OPENER; *"what should i tell the customer about ORD-000091"*
+CLARIFIES and the shape never runs (the graded miss is KEPT rather than fitted
+away); **two surfaces now rank "the biggest lever" on DIFFERENT AXES** (money vs
+minutes, each self-describing); a synthesis claim is truncated at 600 chars
+mid-sentence (pre-existing); and **the cap counts CLAIMS, not characters** —
+synthesis lines run ~130 chars to testimony's ~94, so the budget governs how many
+things are said and not how long each is. Before it:
 **Session 4A teaching-graft (a) — the general-knowledge claim class**, 2026-08-03
 (docs/07 v2.88, §5a.162-164; docs/04 2026-08-03 **R-TG1 ruled and BUILT** + the
 **R-OF1 rider**; contract unchanged **1.15**, no docs/06 doorway owed, both
@@ -488,6 +650,25 @@ docs/04 ruling; narrative in `docs/closeouts/4B.22.md`). Before that:
 4B.16 (v2.61, §5a.49-50), 4B.15 (v2.59, §5a.39-45), 4B.14 (v2.58, §5a.34-38),
 4B.13 (v2.57), 4B.12 (v2.56, a MEASUREMENT session), 4B.11 (v2.55, **R-PD1
 verbatim**).
+
+**THE FENCED SPECIMEN WORLD IS `datasets/mobility_box` (4A teaching-graft (c),
+R-SW1).** A plant that STOPS — the only shape that can produce the `boxed-in` and
+`earlier-open` mobility verdicts, which are 0 of 386 and 0 of 56 on the two
+pinned boards and IMPOSSIBLE on any plant that keeps working (`later_at` scans a
+fortnight past the last placement). Nine orders, three machines, hand-authored;
+`BOX-01` down for a rebuild from 2026-01-14. Monolithic, deterministic, NOT
+registered in `_data`. Build and read it with:
+
+```
+python -m mre --submission datasets/mobility_box --out _ai_exam_scratch/mobility_pinned     --snapshot-id snap-mobility --solver-workers 1 --solver-seed 0 --time-limit 600
+python tools/spikes/teaching_graft_c/census_mobility.py        # one line per bar, one verdict each
+python tools/spikes/teaching_graft_c/mint_edited_world.py      # + a real planner_edit accept
+```
+
+Its bank is `sweep_mobility_v3` (v1/v2 ask the DEMO board and are not replaced);
+its guard is `tests/test_mobility_box.py`, whose two negative controls mutate the
+dataset and re-solve. `held` is unreachable here by construction (no frozen
+front, no pins) and has 24 and 45 specimens on the rolling boards.
 
 **THE DEMO BOARD IS `rolling-db5395dc-2ae` — THE KHALIL BOARD (4B.28, §5a.120).**
 The SAME WORLD as `rolling-c9973708-865` under its plant's **ACCEPTED**
@@ -1803,7 +1984,7 @@ disclosed, not answered); the winner's wall (416.9s) EXCEEDS the portfolio's
   of one question) — humble rather than wrong, but distinguishing "one answer
   because I am confused" from "one answer because it IS the answer" needs a
   signal this session does not have.
-  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, ~88k after 4B.25, ~92k after 4B.26, ~96k after 4B.29, ~102k after 4B.27, ~110k after 4B.28, **~142k after 4A teaching-graft (a) — 3.5x the ceiling**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, ~88k after 4B.25, ~92k after 4B.26, ~96k after 4B.29, ~102k after 4B.27, ~110k after 4B.28, **~142k after 4A teaching-graft (a)**, **~155k after 4A teaching-graft (c) — 3.9x the ceiling, and past the 150k limit the 2026-07-25 maintenance note was written about**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
   **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
   day-shift restriction answered as C1/C2 "proven end to end" when the item is
   C4 (model-proven, §8 doorway). Caught and pinned; the class stands.

@@ -921,7 +921,8 @@ class Explainer:
         if route_id == "synthesis":
             return self._synthesis_bundle(q, params["answer"],
                                           params.get("diverted_qualifier", ""),
-                                          params.get("offers"))
+                                          params.get("offers"),
+                                          params.get("licence", ""))
         if route_id == "prove-it":
             return self._prove_it_bundle(q, params.get("claim"),
                                          params.get("answer"),
@@ -4728,7 +4729,8 @@ class Explainer:
 
     def _synthesis_bundle(self, question: str, answer: Any,
                           diverted_qualifier: str = "",
-                          offers: Optional[list] = None) -> ExplanationBundle:
+                          offers: Optional[list] = None,
+                          licence: str = "") -> ExplanationBundle:
         """A verified ``SynthesisAnswer`` → the bundle the surface renders (CU4).
 
         ``diverted_qualifier`` is set when the ADJACENT-MATCH GUARD (Session 4A.5c
@@ -4750,6 +4752,19 @@ class Explainer:
             key_facts={
                 "claims": [c.model_dump(mode="json") for c in answer.claims],
                 "cut": [c.model_dump(mode="json") for c in answer.cut],
+                # R-TG3 — what the DEPTH LICENCE withheld. Carried in its own
+                # key beside `cut`, never folded into it: a deferred claim
+                # passed verification and a cut one did not, and one word over
+                # both is the fusion the split exists to prevent. The renderer
+                # reads the COUNT (the closer states it); the texts ride so the
+                # question ledger's durable record is of the whole draft.
+                "deferred": [c.model_dump(mode="json")
+                             for c in getattr(answer, "deferred", [])],
+                # R-TG3 — WHICH BUDGET THIS ANSWER WAS GRANTED ("long" only on a
+                # `teaching` question). The surface reads it for one thing: a
+                # taught answer closes with an invitation to push back, which a
+                # board read does not need and would sound odd carrying.
+                "licence": licence,
                 "tool_calls": [t.model_dump(mode="json") for t in answer.tool_calls],
                 "tool_call_count": len(answer.tool_calls),
                 "consulted_tools": sorted({t.tool for t in answer.tool_calls}),

@@ -1,0 +1,7 @@
+route_id,sequence,resource_id,active,setup_minutes,run_minutes_per_unit,dwell_minutes,setup_family,splittable,min_chunk_minutes
+RT-FILL,10,BOX-01,1,0,700,0,,false,
+RT-EARLY,10,BOX-01,1,0,420,0,,false,
+RT-BOX,10,FEED-01,1,0,170,0,,false,
+RT-BOX,20,BOX-01,1,0,520,0,,false,
+RT-PACK,10,PACK-01,1,0,240,0,,false,
+RT-SPAN,10,PACK-01,1,0,900,0,,true,60

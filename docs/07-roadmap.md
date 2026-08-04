@@ -1,6 +1,33 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.88 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.90 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.90:** **Session 4A teaching-graft (c) — the exam learns to grade
+understanding** (2026-08-04; §5a.170-176; docs/04 2026-08-04 **R-SW1 and R-EX1
+ruled and BUILT**; contract unchanged **1.15**, no docs/06 doorway owed, both
+answered on the record; **both governed prompts UNCHANGED** — parse v18,
+synthesis v7; RUBRIC gains axis **C9 DOES THE ANSWER TEACH?**; narrative in
+`docs/closeouts/4a-teaching-c-exam-axis.md`). The session that built the two
+things four prior sessions had owed: a **world in which the unobserved verdicts
+exist** (`datasets/mobility_box` — a plant that STOPS, which is the only shape
+that can produce `boxed-in` and `earlier-open`), and an **exam axis for the
+thing the graft was for**. The world found a defect with its first question: the
+LATER paragraph told a planner *"can't be moved" is fair* about a bar the same
+answer had just said could be moved. R1 item 2, session (c) of four.
+
+**v2.89:** **Session 4A teaching-graft (b) — the depth licence and the teaching
+intent** (2026-08-04; §5a.165-169; docs/04 2026-08-04 **R-TG2, R-TG3 and R-TG4
+ruled and BUILT**; contract unchanged **1.15**, no docs/06 doorway owed, both
+answered on the record; parse prompt **v17 → v18**, synthesis prompt **v6 → v7**;
+RUBRIC gains axis **C8 ANSWER SHAPE**; narrative in
+`docs/closeouts/4a-teaching-b-depth-license.md`). The session of answer-shape
+judgement calls. Measured at HEAD: **half of the questions asking to be taught
+something were answered as three-line capability lookups**, and the founder's
+boss question came back **134 content lines, every one of them true**. `teaching`
+joins the vocabulary as a SECOND-TIER intent (not a route); depth is granted by
+intent and bounded at the dispatch seam, with what is withheld disclosed and only
+what is withheld; and a question naming a person is answered with the account,
+the lever and an OFFER of the inventory. R1 item 2, session (b) of four.
 
 **v2.88:** **Session 4A teaching-graft (a) — the general-knowledge claim class**
 (2026-08-03; §5a.162-164; docs/04 2026-08-03 **R-TG1 ruled and BUILT** + the
@@ -6065,6 +6092,278 @@ testimony failed validation and fell back to the template. Pre-existing, on the
 contracted path, unrelated to this item, and the fail-closed behaviour working —
 recorded because it was seen, not because it is new. **(e) §5a.161(b) IS
 DISCHARGED** by the R-OF1 rider; §5a.161(a), (c) and (d) are unchanged.
+
+**§5a.165 — THE THREE MEASUREMENTS THAT DECIDED SESSION (b), TAKEN BEFORE
+ANYTHING WAS BUILT.** **(1) TEN DOMAIN PROBES, LIVE PARSE, DEMO BOARD, PROMPT
+v17:** `coaching` **5** / `unmatched` **4** / `lateness-cause` **1**. Half of the
+questions asking to be taught something reached `coaching` — WHAT THIS PRODUCT
+CAN MODEL, answered from docs/05, measured over 102 turns at a **median of 3
+content lines and a maximum of 3**. *"How does a rolling horizon normally work"*
+got three lines about what a submission can declare. The other four reached the
+second tier, were answered WELL, and got the same short budget as everything
+else, because no budget distinguished them. **(2) 86 SYNTHESIS ANSWERS ACROSS ALL
+NINE COMMITTED SWEEPS** (1,567 turns;
+`tools/spikes/teaching_graft_b/census_lengths.py`): kept claims per answer,
+excluding the 25 floor answers that kept none, **2→7 · 3→13 · 4→18 · 5→19 ·
+6→4** (n=61, median 4). Content lines — synthesis med 5 / p75 6 / p90 6;
+testimony med 3 / p75 5 / p90 8 / **max 134**. Synthesis prompt rule 6 has asked
+for "three to six claims" since v1 and **38% of real answers sit at the top of
+that range**: the exhortation is followed loosely and bounds nothing. **(3) THE
+BOSS QUESTION** — *"there are a lot of orders late what reason can i give my boss
+and what will help lessen the impact"* — **134 content lines**: a three-line
+cause mix, **~95 hold-pair lines**, the unattributed list, the money, then
+`Evidence chain (614 record(s)):` and fifty rendered records. **The longest answer
+in every committed sweep by a factor of three and a half, and every line of it is
+TRUE.** C1–C7 pass it. **The goal was AUDIENCE-SHAPED and the answer was
+COMPLETENESS-SHAPED**, which is the gap axis C8 exists to grade.
+
+**§5a.166 — R-TG2: `teaching` IS A SECOND-TIER INTENT, NOT A ROUTE** (docs/04
+2026-08-04, verbatim there; parse prompt **v18** rule 12). There is no contracted
+evidence assembly for *"how does this normally work"* and inventing one would
+author domain prose as TESTIMONY — R-TG1's defect one layer up, where the label
+would be the register itself. So it joins `contracts.parse.SECOND_TIER_INTENTS`,
+a **NAMED set rather than a new one**: `unmatched` was always such a door and the
+parity test subtracted it with a comment where a name should have been. A
+companion guard asserts no member has a `ROUTE_TAXONOMY` entry, because a route
+reachable two ways would answer differently in each. **The seal is untouched in
+both directions** — no contracted route falls to the tier (this intent never was
+one) and the tier never guesses a route. **THE DETERMINISTIC MARKERS DO NOT
+ROUTE, AND REFUSING TO WIRE THEM IS THE RULING**: the census measured the marker
+union (`in general` / `explain` / `what is a` / `why do <plural>`) at **8/10
+teaching, 4/4 mixed, 0/10 across board and goal probes** — specific enough to be
+tempting, and a marker set that SENT a question to `teaching` would be the
+deterministic classifier R-AI5(2) deleted, returning under a new name. **The seam
+may refuse a proposal; it may not manufacture one**, which is (a)'s sentence at
+the routing layer. **LIVE AFTER v18: 5 of 5 teaching probes reach
+`intent=teaching route=synthesis` at conf 0.95–0.98, INCLUDING BOTH that v17 sent
+to `coaching`**, and both `coaching` controls stayed on `coaching`.
+
+**§5a.167 — R-TG3: THE DEPTH LICENCE, AND THE A/B THAT SHOWS WHO IS DOING THE
+WORK** (docs/04 2026-08-04, verbatim there; synthesis prompt **v7** rule 6).
+**LONG = 8 claims, `Intent.TEACHING` and nothing else; SHORT = 4, everything else
+that reaches the tier.** Both chosen from §5a.165(2): SHORT = 4 is the MEDIAN
+real answer, so it leaves the median untouched and binds on the upper 38%,
+landing a capped answer at testimony's own p75 of content lines. **LONG = 8 IS A
+CEILING, NOT A TARGET, AND DOES NOT BIND TODAY** — in 86 measured answers the
+model has never drafted more than six; stated rather than hidden, because the
+licence grants depth and does not manufacture it. The bound lives at the DISPATCH
+SEAM (`modules/answer_budget.py`), after the draft AND after verification, so
+nothing in it can change what a claim IS. **A DEFERRED CLAIM IS NOT A CUT CLAIM**
+— a cut one failed verification, a deferred one PASSED and is surplus to the
+budget, and one word over both would be this repo's SIXTH measured category
+fusion. **THE CLOSER IS ABSENT WHEN NOTHING WAS WITHHELD**, its own clause: a
+closer on an uncut answer is a false statement about our own process and belongs
+in DEFECTS. **MEASURED A/B, LIVE, PROMPT RESTORED BYTE-IDENTICAL BY sha256**
+(`tools/spikes/teaching_graft_b/cap_ab.py`, same probes, rule 6 swapped back to
+v6 and nothing else changed): **v7 kept [4, 4, 3] deferred [0, 0, 0]; v6 kept
+[4, 4, 5] deferred [2, 4, 0]**, the closer firing twice on the control arm. **The
+prompt is doing the work and the seam is the floor under it** — the architecture
+the ruling asks for, and the reason the shipped arm has no live closer specimen.
+The third pair is the licence in one row: that probe parses to `teaching`, so its
+five claims are inside LONG and are correctly untrimmed on both arms.
+
+**§5a.168 — R-TG4: THE BOSS QUESTION, 134 LINES → 8** (docs/04 2026-08-04,
+verbatim there; parse prompt **v18** rule 13). The account, the lever, the OFFER.
+**LIVE ON THE DEMO BOARD, VERBATIM:** *"You asked what to say to my boss… 102 of
+the 158 orders scheduled in this window finish after their due date. For 58 of
+them the recorded driver is the same one: the machine was busy with other work. …
+ORD-000091 carries the largest tardiness cost on the board at $147,776.67 … It
+was held on CUT-02 until 2026-01-08 08:57 by ORD-000219; that is the specific
+hold to attack … The order-by-order breakdown is behind this — 99 orders with a
+concrete hold recorded, plus the full evidence chain. Ask for it and I'll lay it
+out."* **THE EVIDENCE IS SUPPRESSED, NOT CLEARED**: `ordered_records` survives, so
+the same bars light and 4B.22's drill-down opens exactly what the offer offered —
+**what changed is ORDER and BUDGET, never evidence discipline**. **THE LEVER IS
+THE ROUTE'S OWN "My take:", PROMOTED FROM AFTERTHOUGHT TO HEADLINE**, and that
+was found by running the fixed code and reading the CONTROL: *"what should i do
+about all this lateness"*, the same family naming nobody, still ends on its
+TWELFTH line with *"ORD-000112's 27060-minute slip traces to ORD-000252 holding
+CUT-01 until 2026-01-27 19:00 — pulling that earlier is the single biggest lever
+the board gives you today."* **THE FLOOR IS FAMILY-SCOPED, 4A.y's lesson paid
+forward**: the census measured four goal probes reaching **THREE different
+routes**, so a rule wired to one would have covered a third of its own family and
+looked finished. The parse reports `audience` and a deterministic floor stands
+under it (4A.y measured a fresh field reported **0 times in 5**) — and the floor
+is **REDUNDANT TODAY, MEASURED**: at v18 the model reports the field on **4 of 4**
+goal questions and 0 of 4 others, every value STRING-IDENTICAL to the floor's, so
+rule 13 is being followed and the seam has caught nothing; the marker
+matches a PERSON and not an ask — **3 of 4 goal probes, 0 of the other 20** — and
+the whole shape FAILS OPEN.
+
+**§5a.169 — 4A-(b)'s CARRY-FORWARDS (REPORTED, deliberately NOT fixed).**
+**(a) THE `briefing` ACCOUNT IS THE TOP-RANKED WORRY, AND ON THIS BOARD IT IS THE
+WRONG SENTENCE TO SAY IN A ROOM.** Measured live: *"what do i say in the
+production meeting tomorrow about the late orders"* leads with *"The cost optimum
+is NOT proved — the solver stopped with a gap of 89.6% still open."* True,
+ranked #1 by consequence, and not what a planner would open a production meeting
+with. **R-TG4 deliberately does NOT re-rank** — choosing a different opener item
+because the planner said "late orders" is a relevance classifier reading the
+question text — so this is a finding about the OPENER's ranking, not about the
+audience shape, and it is the sharpest thing this session leaves standing.
+**(b) A GOAL QUESTION ABOUT ONE ORDER CLARIFIES.** *"what should i tell the
+customer about ORD-000091"* parses `order-attributes` at 0.72 with
+`clarify=ambiguous-intent` and is answered *"I can read that two ways… the facts
+as they stand, or what to do about them"* — so the shape never runs, correctly
+(there are no assembled facts to compose from) and unhelpfully. The graded miss
+is kept at **h_audience 9/10** rather than being fitted away; re-deciding a
+clarify is a ROUTING change this session did not open. **(c) THE SHIPPED ARM HAS
+NO LIVE CLOSER SPECIMEN** — §5a.167's A/B is why, and it is the honest form of
+4A-(a) carry-forward (b): the mechanism is proven by 45 guards and 13 negative
+controls, and observed in the wild only on the v6 control arm. **(d) TWO SURFACES
+NOW RANK "the biggest lever" ON DIFFERENT AXES** — `lateness-cause` on MONEY (the
+largest tardiness line) and `advice` on MINUTES (the worst slip, via
+`_advice_take`). Both self-describing in their own copy, neither wrong, and a
+session should rule on whether one axis wins. **(e) THE FIRST SWEEP RUN LOST A TURN TO
+AN OUTAGE AND IT DID NOT REPRODUCE** (*"is the work spread evenly across the
+machines"*, route=OUTAGE, register=system) — the provider was unreachable for
+that one call and R-OF1's floor did exactly its job, so that run's routing grade
+read **14/15** for an infrastructure reason and not a routing one; the COMMITTED
+re-run answers it normally at **15/15**. Recorded because a transient nobody
+writes down is a transient the next session re-diagnoses. **(f) A SYNTHESIS CLAIM IS TRUNCATED AT 600
+CHARACTERS MID-SENTENCE** (`_coerce_claims`), seen live on a comparison answer
+whose last claim ends *"…than"*. Pre-existing, unrelated to the budget, recorded
+because it was seen. **(g) THE CAP COUNTS CLAIMS, NOT CHARACTERS.** Synthesis
+lines run ~130 characters against testimony's ~94, so four claims is ~520
+characters against testimony's median of 282; the budget governs HOW MANY things
+are said, not how long each is. The character distribution is in
+`census_lengths.json` for a session that wants to rule on the other axis.
+
+**§5a.170 — THE TWO VERDICTS NOBODY HAD EVER SEEN, AND WHY NO BOARD COULD HAVE
+SHOWN THEM** (docs/04 2026-08-04, **R-SW1**). 4A.x censused both pinned boards
+and measured `boxed-in` and `earlier-open` at **0 of 386** and **0 of 56**. The
+cause is structural: both need `later_at` to be **None**, and `later_at` is
+scanned over a machine's open calendar **padded a fortnight past the last
+placement** — so on a plant that keeps working there is always room later and
+`later-open` absorbs everything. They are not rare; they are impossible on a
+plant that keeps working. `datasets/mobility_box` is a plant that **stops**:
+nine orders, three machines, and `BOX-01` goes down for a rebuild on 2026-01-14
+and does not come back inside the analysis window. Measured at its HEAD:
+**boxed-in 1 / earlier-open 1 / later-open 7 / undecidable 1**; `held` is
+unreachable in a monolithic solve and already has 24 and 45 specimens on the
+rolling boards, so it is named rather than counted as missing. The
+`earlier-open` specimen's cost lever is DECLARED and is the interesting part —
+stage 2 minimises starts subject to stage 1's cost, so free earlier room is
+always taken, and the only way a solver *chooses* later is if the earlier room
+costs more. Here it is a **Saturday overtime window at a declared 1.5x
+premium**, and `ORD-EARLY`'s binding family is chunk-fit at 2026-01-10 07:00
+with **2,880 minutes of slack**.
+
+**§5a.171 — THE FIRST QUESTION EVER ASKED OF THE FENCED WORLD FOUND A DEFECT.**
+`TemplateRenderer._render_mobility_later` enumerated HELD, UNDECIDABLE and
+LATER_OPEN and treated **everything else** as BOXED_IN. `earlier-open` had never
+rendered against a solve, so the first bar that reached it produced an answer
+that contradicted itself on one screen: *"It can be moved — nothing was holding
+ORD-EARLY op10 back"*, and then *"Later: … so **"can't be moved" is fair**, and
+the reason above is the whole of it."* **TWO RENDERERS WERE BUILT FROM ONE
+VERDICT AND ONLY ONE OF THEM ENUMERATED IT** — `mobility_lead_line` (the family
+floor, 4A.y) handles all five and returns None for anything else; the in-shape
+paragraph handled three and defaulted. Fixed: `earlier-open` gets its own branch,
+`boxed-in` becomes explicit, and an **unrecognised verdict says nothing at all**
+(4B.23's fail-safe rule at the seam that was violating it). The guard is the
+PROPERTY over all five verdicts — *the paragraph may say the premise is fair if
+and only if the verdict says the premise holds*. **157 existing mobility tests
+were green before the fix and after it**; none covered the branch. Live after:
+4 of 4 boxed-in turns say "fair", 0 of 4 earlier-open turns do, and
+`sweep_mobility_v2` re-swept against the demo board is **20/20**, unchanged.
+
+**§5a.172 — RUBRIC AXIS C9: DOES THE ANSWER TEACH?** (docs/04 2026-08-04,
+**R-EX1**.) C8's own closing paragraph handed this axis to session (c) and
+declined to reach for it. C9 asks whether a planner could **predict the system's
+behaviour in a case the answer did not cover**. The instrument is a TRANSFER
+PAIR fired with the conversation CLEARED between halves — Q1 a teaching
+question, Q2 a different subject whose answer follows from Q1's principle — so
+**Q2 is the answer key, not the thing graded**, and a Q2 the product cannot
+answer INVALIDATES its pair rather than failing it. Four checks are mechanical
+and each is bounded by what it does not show (**M2 checks CO-OCCURRENCE ONLY**,
+and the amendment says a green M2 is never evidence the principle is ABOUT the
+instance); three are human-only. **THE LLM JUDGE IS WRITTEN DOWN AND REFUSED** —
+a model asked "does A predict B" scores the entailment, not the transfer, and
+scores it with the weights that wrote A. The honest instrument is the founder
+round, committed unrun at
+`tools/spikes/teaching_graft_c/founder_round_c9.md`.
+
+**§5a.173 — THE FIRST C9 MEASUREMENT: THE DEPTH LICENCE IS GRANTED TO THE
+ANSWERS WITH THE LEAST TO SAY.** Two independent runs of `sweep_teaching_v3`,
+demo board: **M1 4/4, M3 4/4, M4 4/4, controls 2/2, routing 8/8 — and M2 0/4**.
+All four transfer-pair teaching answers carried a labelled general-knowledge
+principle and **not one carried a single board claim**: zero verified, zero
+interpretive, zero lit bars, zero cited records, and **two of the four made no
+tool call at all**. The three teaching-routed HUNT probes in the same sweep DID
+carry board claims and lit bars, so **the difference is the QUESTION, not the
+route** — those name a figure, a machine or an order, so the loop reads the
+plant; the transfer probes are phrased purely generally, so it reads nothing, and
+any board-flavoured sentence the model then drafts is cut by R-TG1 direction (ii)
+for citing nothing. **R-TG3 grants depth by intent and nothing makes a teaching
+answer look at the plant.** Each ruling is correct alone; together they hand the
+longest budget to the shortest answers. **AND THE TAIL IS WORSE THAN THE MEAN:**
+asked six times in all, P1's teaching question came back on the **unanswerable
+floor** once — *"I couldn't answer that one from the evidence… I looked at:
+constraint_catalog"* — because every claim it drafted was cut and nothing was
+left to render, so the tier tells a planner it cannot answer a question it
+answers five times in six. NOT FIXED: the remedy is a synthesis
+prompt change, and this session's own findings are about what that prompt
+produces, so editing it would have measured the edit.
+
+**§5a.174 — THE TWO HUNTS, REPORTED EITHER WAY.** **(a) R-TG1 DIRECTION (i) HAS
+A LIVE SPECIMEN AT LAST — TWO — AND IT IS NOT REPRODUCIBLE.** Six adversarial
+probes mixing idiom with named entities produced two refusals, both the
+CONSERVATIVE arm and both on the same token: *"A machine loaded to over 90%
+utilization has almost no slack…"* and *"Utilization near 90%+ is a widely used
+rule-of-thumb threshold in queueing and operations literature…"*, each *"offered
+as general knowledge and refused the label because it states a figure this run
+computed (90)"*. **In both, the 90 is queueing theory's own number, not a board
+reading** — so the first live firings of direction (i) are the over-rejection
+4A-(a) declared it had chosen on purpose, failing toward ordinary verification
+exactly as predicted (both landed INTERPRETIVE; neither was cut). And **the same
+probe in the same session's sweep did not refuse**: two runs of
+`sweep_teaching_v3` observed **0**, because whether the model puts a number in a
+general sentence varies turn to turn. The specimen is real and it is a coin
+flip. **(b) THE CLOSER STILL HAS NO LIVE SPECIMEN.** Five probes engineered to
+overflow SHORT = 4 — per-machine breakdowns on three axes, *"list every distinct
+problem… and do not merge them"*, *"the five separate things going wrong"* —
+produced **deferred 0 on every one**, drafting at most 5 and keeping at most 4
+after cuts. With session (b)'s A/B that is **eight targeted attempts and zero
+firings**: on the shipped prompt **the cap is a floor with no load on it**, and
+the prompt's own rule 6 is doing all of the compressing. The cap is LEFT ALONE,
+per the brief and for the reason the A/B gave: a floor is for the day the model
+changes.
+
+**§5a.175 — PLANNER_DIRECTIVE HAS A SPECIMEN, AND WHAT IT DOES NOT HAVE IS
+NAMED.** 4B.33 §5a.135(a) measured 0 `planner_edit` Decisions across both pinned
+worlds. `mint_edited_world.py` runs the **real accept** over the fenced world —
+`apply_planner_edit`, the function `POST /schedules/{id}/accept` calls — and the
+child carries `planner_edit | PLANNER_DIRECTIVE | observed`, ledger delta
+**$0.00**, `delta_abs` **None** under the full hold (R-DP12). It reproduces the
+accept's EVIDENCE and not its REGISTRY BOOKKEEPING (no run row, no registered
+schedule, no lineage pins, no document) — the fenced world is monolithic and
+outside `_data`, like `gb_pinned`. Two things measured on it and NOT fixed:
+`edit-summary` voices the edit correctly (*"You accepted 1 edit(s) on this
+version (+$0 total): pinned op bae60fca to PACK-01 … by daryn@mre.local"*), and
+**`why-here` on the pinned bar never mentions that a human pinned it** — it
+explains the placement by release date and calendar, which is 4B.33's own named
+limit now visible on a board that has the Decision.
+
+**§5a.176 — 4A-(c)'s CARRY-FORWARDS (REPORTED, deliberately NOT fixed).**
+**(a) THE TEACHING ANSWER READS NOTHING** — §5a.173, the sharpest item this
+session leaves standing and the one a successor should take. **(b) THE FENCED
+WORLD IS NOT REGISTERED**, so it is invisible to the cockpit, the schedule
+picker and every rolling surface; `held` and the R-F1 boundary are therefore
+unreachable on it by construction. **(c) THE `edit-summary` ROUTE PRINTS A
+TRUNCATED OPERATION UUID** (*"pinned op bae60fca"*) where every other planner
+surface prints an order and an op number. Pre-existing; visible now because a
+world finally has an edit. **(d) `why-is-ORD-PACK-pinned` ON THE EDITED WORLD
+ANSWERS "this isn't a rolling schedule, so nothing is frozen"** — true of the
+FROZEN FRONT and silent about the pin the same run recorded; 4B.28 gave `frozen`
+the word "pinned" for the rolling authority and the monolithic pin has no owner.
+**(e) THE HUNT-A SPECIMEN IS A COIN FLIP** — §5a.174(a); a clause proven only by
+a firing that does not reproduce is proven weakly, and the guard remains the real
+evidence. **(f) B5 ASKED FOR FIVE THINGS AND GOT FOUR** — the model drafted five,
+one was cut by direction (ii), and the answer neither delivered five nor said *"you
+asked for five and I can stand up four"*. A count named in the question is a
+promise the answer does not track. **(g) `_open_windows`' FORTNIGHT PAD IS WHAT
+MAKES `later-open` UNIVERSAL** and is unexamined: it is a reasonable scan bound
+and it is also the reason a real plant's last week before a shutdown would read
+as freely movable. Named, not ruled.
 
 ## 6. Open rulings queue
 

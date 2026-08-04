@@ -1,0 +1,6 @@
+product_id,uom,facility_id,product_group,costing_lot_size,setup_minutes,production_minutes,cost_price
+P-FILL,EA,F001,filler,1,0,700,10.0
+P-EARLY,EA,F001,filler,1,0,420,10.0
+P-BOX,EA,F001,boxed,1,0,170,20.0
+P-PACK,EA,F001,pack,1,0,240,8.0
+P-SPAN,EA,F001,pack,1,0,900,8.0

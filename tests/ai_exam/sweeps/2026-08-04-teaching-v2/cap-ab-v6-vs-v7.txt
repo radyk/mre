@@ -1,0 +1,23 @@
+
+##############################################################################
+# ARM v7 (shipped) — synthesis prompt v7
+##############################################################################
+  [v7 (shipped)] kept=4 cut=0 DEFERRED=0 closer=False  'compare how the cutting machines and the press a'
+  [v7 (shipped)] kept=4 cut=1 DEFERRED=0 closer=False  'give me a full picture of where the money is goi'
+  [v7 (shipped)] kept=3 cut=1 DEFERRED=0 closer=False  'why might tardiness cluster on bottleneck machin'
+  [v7 (shipped)] 'what would you say is going wrong with this plan and wh' -> briefing (no synthesis)
+
+##############################################################################
+# ARM v6 (control) — synthesis prompt v7
+##############################################################################
+  [v6 (control)] kept=4 cut=0 DEFERRED=2 closer=True  'compare how the cutting machines and the press a'
+    I've kept this short — there are 2 more points behind it. Ask and I'll walk through the rest.
+  [v6 (control)] kept=4 cut=0 DEFERRED=4 closer=True  'give me a full picture of where the money is goi'
+    I've kept this short — there are 4 more points behind it. Ask and I'll walk through the rest.
+  [v6 (control)] kept=5 cut=1 DEFERRED=0 closer=False  'why might tardiness cluster on bottleneck machin'
+  [v6 (control)] 'what would you say is going wrong with this plan and wh' -> briefing (no synthesis)
+
+==============================================================================
+SUMMARY (restore byte-identical: True)
+  v7 (shipped)   n=3  kept=[4, 4, 3]  deferred=[0, 0, 0]  closers=0
+  v6 (control)   n=3  kept=[4, 4, 5]  deferred=[2, 4, 0]  closers=2

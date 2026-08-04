@@ -177,8 +177,13 @@ class ExamResult:
         # is not a reading of this plan that could not be proven, it is not about
         # this plan at all, and a sweep that reported them together would hide
         # exactly the split the class was built to make.
+        # `deferred` joins in Session 4A teaching-graft (b), R-TG3 — and it is
+        # counted BESIDE `failed_and_cut`, never folded into it: a cut claim
+        # failed verification and a deferred one passed it and was withheld for
+        # length, and a sweep reporting them together would say the tier could
+        # not ground what it simply did not print.
         totals = {"answers": 0, "claims": 0, "verified": 0, "interpretive": 0,
-                  "general_knowledge": 0, "failed_and_cut": 0,
+                  "general_knowledge": 0, "failed_and_cut": 0, "deferred": 0,
                   "ungrounded_load_bearing": 0,
                   "unanswerable": 0, "budget_exhausted": 0, "tool_calls": 0}
         histogram: dict[str, int] = {}
@@ -189,7 +194,8 @@ class ExamResult:
                 continue
             totals["answers"] += 1
             for key in ("claims", "verified", "interpretive", "general_knowledge",
-                        "failed_and_cut", "ungrounded_load_bearing", "tool_calls"):
+                        "failed_and_cut", "deferred", "ungrounded_load_bearing",
+                        "tool_calls"):
                 totals[key] += int(s.get(key) or 0)
             totals["unanswerable"] += 1 if s.get("unanswerable") else 0
             totals["budget_exhausted"] += 1 if s.get("budget_exhausted") else 0

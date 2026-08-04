@@ -1,0 +1,295 @@
+{
+  "schedule": "rolling-db5395dc-2ae",
+  "rows": [
+    {
+      "family": "T",
+      "question": "in general, what makes a scheduling problem hard to prove optimal",
+      "intent": "unmatched",
+      "confidence": 0.92,
+      "subjects": [],
+      "dropped_qualifier": "",
+      "markers": [
+        "in_general"
+      ]
+    },
+    {
+      "family": "T",
+      "question": "how do schedulers normally decide which job to run first",
+      "intent": "unmatched",
+      "confidence": 0.92,
+      "subjects": [],
+      "dropped_qualifier": "",
+      "markers": [
+        "in_general"
+      ]
+    },
+    {
+      "family": "T",
+      "question": "explain what the optimality gap means",
+      "intent": "coaching",
+      "confidence": 0.92,
+      "subjects": [
+        "concept=optimality gap"
+      ],
+      "dropped_qualifier": "",
+      "markers": [
+        "explain_verb"
+      ]
+    },
+    {
+      "family": "T",
+      "question": "why do setup times matter in scheduling",
+      "intent": "coaching",
+      "confidence": 0.92,
+      "subjects": [
+        "concept=setup times"
+      ],
+      "dropped_qualifier": "",
+      "markers": []
+    },
+    {
+      "family": "T",
+      "question": "what does it mean when a schedule is infeasible",
+      "intent": "coaching",
+      "confidence": 0.92,
+      "subjects": [
+        "concept=infeasible"
+      ],
+      "dropped_qualifier": "",
+      "markers": [
+        "explain_verb"
+      ]
+    },
+    {
+      "family": "T",
+      "question": "how does a rolling horizon normally work",
+      "intent": "coaching",
+      "confidence": 0.92,
+      "subjects": [
+        "concept=rolling horizon"
+      ],
+      "dropped_qualifier": "",
+      "markers": [
+        "explain_verb",
+        "in_general"
+      ]
+    },
+    {
+      "family": "T",
+      "question": "what is a bottleneck machine",
+      "intent": "unmatched",
+      "confidence": 0.92,
+      "subjects": [],
+      "dropped_qualifier": "",
+      "markers": [
+        "what_is_a"
+      ]
+    },
+    {
+      "family": "T",
+      "question": "why does splitting a job across shifts help sometimes",
+      "intent": "coaching",
+      "confidence": 0.92,
+      "subjects": [
+        "concept=splittable"
+      ],
+      "dropped_qualifier": "",
+      "markers": []
+    },
+    {
+      "family": "T",
+      "question": "why do late orders tend to snowball on a board like this one",
+      "intent": "lateness-cause",
+      "confidence": 0.92,
+      "subjects": [],
+      "dropped_qualifier": "",
+      "markers": [
+        "in_general"
+      ]
+    },
+    {
+      "family": "T",
+      "question": "what is the difference between a tardy order and a late one",
+      "intent": "unmatched",
+      "confidence": 0.95,
+      "subjects": [],
+      "dropped_qualifier": "",
+      "markers": [
+        "what_is_a"
+      ]
+    },
+    {
+      "family": "M",
+      "question": "why is ORD-000091 late, and how does lateness normally compound",
+      "intent": "late-order",
+      "confidence": 0.92,
+      "subjects": [
+        "order=ORD-000091"
+      ],
+      "dropped_qualifier": "how does lateness normally compound",
+      "markers": [
+        "entity_named",
+        "in_general"
+      ]
+    },
+    {
+      "family": "M",
+      "question": "explain why PRESS-FAST ends up being the bottleneck here",
+      "intent": "unmatched",
+      "confidence": 0.72,
+      "subjects": [
+        "machine=PRESS-FAST"
+      ],
+      "dropped_qualifier": "",
+      "markers": [
+        "explain_verb",
+        "this_board"
+      ]
+    },
+    {
+      "family": "M",
+      "question": "what does the gap on this board mean",
+      "intent": "unmatched",
+      "confidence": 0.72,
+      "subjects": [],
+      "dropped_qualifier": "",
+      "markers": [
+        "explain_verb",
+        "this_board"
+      ]
+    },
+    {
+      "family": "M",
+      "question": "is CUT-01 overloaded, and what does overloaded normally mean",
+      "intent": "unmatched",
+      "confidence": 0.72,
+      "subjects": [
+        "machine=CUT-01"
+      ],
+      "dropped_qualifier": "",
+      "markers": [
+        "entity_named",
+        "explain_verb",
+        "in_general"
+      ]
+    },
+    {
+      "family": "B",
+      "question": "which order carries the largest single tardiness cost line on this board",
+      "intent": "unmatched",
+      "confidence": 0.72,
+      "subjects": [],
+      "dropped_qualifier": "",
+      "markers": [
+        "this_board"
+      ]
+    },
+    {
+      "family": "B",
+      "question": "why is ORD-000128 op20 placed here",
+      "intent": "why-here",
+      "confidence": 0.95,
+      "subjects": [
+        "order=ORD-000128"
+      ],
+      "dropped_qualifier": "",
+      "markers": [
+        "entity_named",
+        "this_board"
+      ]
+    },
+    {
+      "family": "B",
+      "question": "what is running on PRESS-FAST",
+      "intent": "machine-schedule",
+      "confidence": 0.99,
+      "subjects": [
+        "machine=PRESS-FAST"
+      ],
+      "dropped_qualifier": "",
+      "markers": []
+    },
+    {
+      "family": "B",
+      "question": "how many orders are late",
+      "intent": "late-orders",
+      "confidence": 0.99,
+      "subjects": [],
+      "dropped_qualifier": "",
+      "markers": []
+    },
+    {
+      "family": "B",
+      "question": "when does ORD-000091 finish",
+      "intent": "order-schedule",
+      "confidence": 0.99,
+      "subjects": [
+        "order=ORD-000091"
+      ],
+      "dropped_qualifier": "",
+      "markers": [
+        "entity_named"
+      ]
+    },
+    {
+      "family": "B",
+      "question": "is ORD-000013 op20 splittable",
+      "intent": "attribute-lookup",
+      "confidence": 0.98,
+      "subjects": [
+        "order=ORD-000013"
+      ],
+      "dropped_qualifier": "",
+      "markers": [
+        "entity_named"
+      ]
+    },
+    {
+      "family": "G",
+      "question": "there are a lot of orders late what reason can i give my boss and what will help lessen the impact",
+      "intent": "lateness-cause",
+      "confidence": 0.92,
+      "subjects": [],
+      "dropped_qualifier": "",
+      "markers": [
+        "audience"
+      ]
+    },
+    {
+      "family": "G",
+      "question": "what should i tell the customer about ORD-000091",
+      "intent": "advice",
+      "confidence": 0.92,
+      "subjects": [
+        "order=ORD-000091"
+      ],
+      "dropped_qualifier": "",
+      "markers": [
+        "audience",
+        "entity_named"
+      ]
+    },
+    {
+      "family": "G",
+      "question": "what do i say in the production meeting tomorrow about the late orders",
+      "intent": "briefing",
+      "confidence": 0.92,
+      "subjects": [],
+      "dropped_qualifier": "",
+      "markers": [
+        "audience"
+      ]
+    },
+    {
+      "family": "G",
+      "question": "what should i do about all this lateness",
+      "intent": "advice",
+      "confidence": 0.92,
+      "subjects": [
+        "concept=lateness"
+      ],
+      "dropped_qualifier": "",
+      "markers": []
+    }
+  ]
+}

@@ -1,0 +1,592 @@
+{
+  "turns": 1567,
+  "sweeps": [
+    "2026-07-24",
+    "2026-07-24-post-repair",
+    "2026-07-25-llm-parse",
+    "2026-07-26-arc-close",
+    "2026-07-26-synthesis",
+    "2026-07-30-r5-graded",
+    "2026-08-03-family-floor-v2",
+    "2026-08-03-mobility-v1",
+    "2026-08-03-teaching-v1"
+  ],
+  "by_register": {
+    "judgment": {
+      "n": 37,
+      "min": 2,
+      "p25": 2,
+      "median": 3,
+      "p75": 4,
+      "p90": 4,
+      "max": 4
+    },
+    "remediation": {
+      "n": 21,
+      "min": 2,
+      "p25": 2,
+      "median": 2,
+      "p75": 3,
+      "p90": 3,
+      "max": 4
+    },
+    "synthesis": {
+      "n": 98,
+      "min": 1,
+      "p25": 4,
+      "median": 5.0,
+      "p75": 6,
+      "p90": 6,
+      "max": 10
+    },
+    "testimony": {
+      "n": 1411,
+      "min": 1,
+      "p25": 1,
+      "median": 3,
+      "p75": 5,
+      "p90": 8,
+      "max": 134
+    }
+  },
+  "by_register_chars": {
+    "judgment": {
+      "n": 37,
+      "min": 319,
+      "p25": 331,
+      "median": 346,
+      "p75": 355,
+      "p90": 364,
+      "max": 401
+    },
+    "remediation": {
+      "n": 21,
+      "min": 332,
+      "p25": 353,
+      "median": 368,
+      "p75": 384,
+      "p90": 410,
+      "max": 518
+    },
+    "synthesis": {
+      "n": 98,
+      "min": 149,
+      "p25": 274,
+      "median": 656.0,
+      "p75": 983,
+      "p90": 1320,
+      "max": 2305
+    },
+    "testimony": {
+      "n": 1411,
+      "min": 36,
+      "p25": 149,
+      "median": 282,
+      "p75": 424,
+      "p90": 600,
+      "max": 13132
+    }
+  },
+  "by_route": {
+    "CLARIFY": {
+      "n": 59,
+      "min": 2,
+      "p25": 2,
+      "median": 2,
+      "p75": 2,
+      "p90": 2,
+      "max": 2
+    },
+    "NEAR_MISS": {
+      "n": 35,
+      "min": 4,
+      "p25": 4,
+      "median": 4,
+      "p75": 4,
+      "p90": 4,
+      "max": 4
+    },
+    "REFUSED": {
+      "n": 7,
+      "min": 16,
+      "p25": 16,
+      "median": 16,
+      "p75": 16,
+      "p90": 16,
+      "max": 16
+    },
+    "advice": {
+      "n": 79,
+      "min": 3,
+      "p25": 5,
+      "median": 6,
+      "p75": 6,
+      "p90": 6,
+      "max": 6
+    },
+    "beyond-horizon": {
+      "n": 5,
+      "min": 1,
+      "p25": 1,
+      "median": 1,
+      "p75": 16,
+      "p90": 16,
+      "max": 16
+    },
+    "briefing": {
+      "n": 45,
+      "min": 4,
+      "p25": 4,
+      "median": 4,
+      "p75": 15,
+      "p90": 16,
+      "max": 23
+    },
+    "certificate-testimony": {
+      "n": 25,
+      "min": 4,
+      "p25": 4,
+      "median": 4,
+      "p75": 4,
+      "p90": 5,
+      "max": 5
+    },
+    "coaching": {
+      "n": 102,
+      "min": 3,
+      "p25": 3,
+      "median": 3.0,
+      "p75": 3,
+      "p90": 3,
+      "max": 3
+    },
+    "confirm-take": {
+      "n": 6,
+      "min": 3,
+      "p25": 3,
+      "median": 3.0,
+      "p75": 3,
+      "p90": 3,
+      "max": 3
+    },
+    "contested-fact": {
+      "n": 48,
+      "min": 1,
+      "p25": 2,
+      "median": 2.0,
+      "p75": 2,
+      "p90": 2,
+      "max": 2
+    },
+    "customer-schedule": {
+      "n": 9,
+      "min": 1,
+      "p25": 1,
+      "median": 1,
+      "p75": 1,
+      "p90": 1,
+      "max": 1
+    },
+    "data-problems": {
+      "n": 37,
+      "min": 4,
+      "p25": 4,
+      "median": 4,
+      "p75": 4,
+      "p90": 5,
+      "max": 10
+    },
+    "downtime": {
+      "n": 27,
+      "min": 1,
+      "p25": 1,
+      "median": 1,
+      "p75": 1,
+      "p90": 1,
+      "max": 1
+    },
+    "drill-down": {
+      "n": 6,
+      "min": 3,
+      "p25": 3,
+      "median": 3.0,
+      "p75": 3,
+      "p90": 3,
+      "max": 3
+    },
+    "excluded-orders": {
+      "n": 23,
+      "min": 1,
+      "p25": 1,
+      "median": 1,
+      "p75": 1,
+      "p90": 1,
+      "max": 1
+    },
+    "frozen": {
+      "n": 8,
+      "min": 1,
+      "p25": 1,
+      "median": 1.5,
+      "p75": 2,
+      "p90": 16,
+      "max": 16
+    },
+    "gap-between": {
+      "n": 26,
+      "min": 1,
+      "p25": 2,
+      "median": 2.0,
+      "p75": 2,
+      "p90": 2,
+      "max": 2
+    },
+    "integrity-check": {
+      "n": 12,
+      "min": 1,
+      "p25": 1,
+      "median": 1.0,
+      "p75": 1,
+      "p90": 1,
+      "max": 1
+    },
+    "inventory": {
+      "n": 37,
+      "min": 3,
+      "p25": 3,
+      "median": 3,
+      "p75": 3,
+      "p90": 3,
+      "max": 3
+    },
+    "late-order": {
+      "n": 142,
+      "min": 1,
+      "p25": 2,
+      "median": 2.0,
+      "p75": 2,
+      "p90": 2,
+      "max": 2
+    },
+    "late-orders": {
+      "n": 101,
+      "min": 1,
+      "p25": 1,
+      "median": 1,
+      "p75": 1,
+      "p90": 1,
+      "max": 3
+    },
+    "lateness-cause": {
+      "n": 4,
+      "min": 21,
+      "p25": 21,
+      "median": 21.0,
+      "p75": 21,
+      "p90": 134,
+      "max": 134
+    },
+    "machine-count": {
+      "n": 34,
+      "min": 6,
+      "p25": 6,
+      "median": 17.0,
+      "p75": 17,
+      "p90": 19,
+      "max": 19
+    },
+    "machine-idle": {
+      "n": 25,
+      "min": 1,
+      "p25": 1,
+      "median": 1,
+      "p75": 1,
+      "p90": 1,
+      "max": 1
+    },
+    "machine-schedule": {
+      "n": 49,
+      "min": 4,
+      "p25": 6,
+      "median": 8,
+      "p75": 8,
+      "p90": 20,
+      "max": 38
+    },
+    "maintenance": {
+      "n": 15,
+      "min": 2,
+      "p25": 2,
+      "median": 2,
+      "p75": 2,
+      "p90": 2,
+      "max": 2
+    },
+    "open-card": {
+      "n": 36,
+      "min": 1,
+      "p25": 9,
+      "median": 9.0,
+      "p75": 9,
+      "p90": 9,
+      "max": 9
+    },
+    "order-attributes": {
+      "n": 32,
+      "min": 7,
+      "p25": 7,
+      "median": 7.0,
+      "p75": 7,
+      "p90": 7,
+      "max": 7
+    },
+    "order-schedule": {
+      "n": 71,
+      "min": 3,
+      "p25": 3,
+      "median": 3,
+      "p75": 5,
+      "p90": 5,
+      "max": 9
+    },
+    "prove-it": {
+      "n": 12,
+      "min": 1,
+      "p25": 1,
+      "median": 2.0,
+      "p75": 2,
+      "p90": 6,
+      "max": 10
+    },
+    "remediation": {
+      "n": 21,
+      "min": 2,
+      "p25": 2,
+      "median": 2,
+      "p75": 3,
+      "p90": 3,
+      "max": 4
+    },
+    "schedule": {
+      "n": 44,
+      "min": 1,
+      "p25": 1,
+      "median": 3.5,
+      "p75": 7,
+      "p90": 8,
+      "max": 8
+    },
+    "solve-time": {
+      "n": 18,
+      "min": 1,
+      "p25": 1,
+      "median": 1.0,
+      "p75": 1,
+      "p90": 1,
+      "max": 1
+    },
+    "start-reason": {
+      "n": 62,
+      "min": 1,
+      "p25": 1,
+      "median": 1.0,
+      "p75": 1,
+      "p90": 2,
+      "max": 2
+    },
+    "swap-move": {
+      "n": 48,
+      "min": 4,
+      "p25": 5,
+      "median": 5.0,
+      "p75": 5,
+      "p90": 5,
+      "max": 5
+    },
+    "synthesis": {
+      "n": 86,
+      "min": 1,
+      "p25": 4,
+      "median": 5.0,
+      "p75": 6,
+      "p90": 6,
+      "max": 8
+    },
+    "triage": {
+      "n": 37,
+      "min": 2,
+      "p25": 2,
+      "median": 3,
+      "p75": 4,
+      "p90": 4,
+      "max": 4
+    },
+    "unknown-entity": {
+      "n": 25,
+      "min": 2,
+      "p25": 2,
+      "median": 2,
+      "p75": 2,
+      "p90": 2,
+      "max": 2
+    },
+    "what-would-change": {
+      "n": 5,
+      "min": 3,
+      "p25": 3,
+      "median": 3,
+      "p75": 8,
+      "p90": 9,
+      "max": 9
+    },
+    "why-here": {
+      "n": 34,
+      "min": 6,
+      "p25": 8,
+      "median": 9.0,
+      "p75": 10,
+      "p90": 10,
+      "max": 11
+    },
+    "why-not-scheduled-yet": {
+      "n": 8,
+      "min": 1,
+      "p25": 1,
+      "median": 1.0,
+      "p75": 1,
+      "p90": 16,
+      "max": 16
+    },
+    "why-on-machine": {
+      "n": 62,
+      "min": 1,
+      "p25": 1,
+      "median": 1.0,
+      "p75": 3,
+      "p90": 5,
+      "max": 20
+    }
+  },
+  "longest": [
+    {
+      "sweep": "2026-08-03-teaching-v1",
+      "question": "why do late orders tend to snowball on a board like this one",
+      "route": "lateness-cause",
+      "register": "testimony",
+      "lines": 134,
+      "chars": 13132
+    },
+    {
+      "sweep": "2026-08-03-teaching-v1",
+      "question": "what is running on PRESS-FAST",
+      "route": "machine-schedule",
+      "register": "testimony",
+      "lines": 38,
+      "chars": 2772
+    },
+    {
+      "sweep": "2026-08-03-teaching-v1",
+      "question": "what should I look at first",
+      "route": "briefing",
+      "register": "testimony",
+      "lines": 23,
+      "chars": 1978
+    },
+    {
+      "sweep": "2026-07-26-arc-close",
+      "question": "why so many late orders",
+      "route": "lateness-cause",
+      "register": "testimony",
+      "lines": 21,
+      "chars": 853
+    },
+    {
+      "sweep": "2026-07-26-arc-close",
+      "question": "whats actually driving the lateness in this plan",
+      "route": "lateness-cause",
+      "register": "testimony",
+      "lines": 21,
+      "chars": 853
+    },
+    {
+      "sweep": "2026-07-26-arc-close",
+      "question": "why is ORD-05 so late but ORD-13 so early",
+      "route": "lateness-cause",
+      "register": "testimony",
+      "lines": 21,
+      "chars": 853
+    },
+    {
+      "sweep": "2026-07-26-arc-close",
+      "question": "whats running on CUT-01",
+      "route": "machine-schedule",
+      "register": "testimony",
+      "lines": 20,
+      "chars": 1358
+    },
+    {
+      "sweep": "2026-07-30-r5-graded",
+      "question": "whats running on CUT-01",
+      "route": "machine-schedule",
+      "register": "testimony",
+      "lines": 20,
+      "chars": 1354
+    },
+    {
+      "sweep": "2026-07-30-r5-graded",
+      "question": "why is ORD-000012 on PAINT-01",
+      "route": "why-on-machine",
+      "register": "testimony",
+      "lines": 20,
+      "chars": 883
+    },
+    {
+      "sweep": "2026-07-30-r5-graded",
+      "question": "whats running on CUT-01",
+      "route": "machine-schedule",
+      "register": "testimony",
+      "lines": 20,
+      "chars": 1354
+    },
+    {
+      "sweep": "2026-07-30-r5-graded",
+      "question": "why is ORD-000012 on PAINT-01",
+      "route": "why-on-machine",
+      "register": "testimony",
+      "lines": 20,
+      "chars": 934
+    },
+    {
+      "sweep": "2026-07-30-r5-graded",
+      "question": "whats running on CUT-01",
+      "route": "machine-schedule",
+      "register": "testimony",
+      "lines": 20,
+      "chars": 1354
+    },
+    {
+      "sweep": "2026-07-30-r5-graded",
+      "question": "why is ORD-000012 on PAINT-01",
+      "route": "why-on-machine",
+      "register": "testimony",
+      "lines": 20,
+      "chars": 919
+    },
+    {
+      "sweep": "2026-07-30-r5-graded",
+      "question": "whats running on CUT-01",
+      "route": "machine-schedule",
+      "register": "testimony",
+      "lines": 20,
+      "chars": 1354
+    },
+    {
+      "sweep": "2026-07-30-r5-graded",
+      "question": "why is ORD-000012 on PAINT-01",
+      "route": "why-on-machine",
+      "register": "testimony",
+      "lines": 20,
+      "chars": 934
+    }
+  ]
+}

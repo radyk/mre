@@ -933,6 +933,19 @@ class TemplateRenderer:
         if bundle.subject_type in _HEADER_ONLY_SUBJECTS:
             return "\n".join(lines).rstrip()
 
+        # R-TG4 — AN AUDIENCE-SHAPED ANSWER OFFERS THE CHAIN, IT DOES NOT PRINT
+        # IT (Session 4A teaching-graft (b)). The founder's boss question ended
+        # in "Evidence chain (614 record(s)):" and fifty rendered records, under
+        # an answer whose whole point was a sentence to say to a person.
+        #
+        # SUPPRESSED, NOT CLEARED, and the distinction is the ruling.
+        # `bundle.ordered_records` is untouched, so the same bars light, the
+        # same refs are cited on the bundle, and the drill-down (4B.22) opens
+        # exactly the records the offer line just offered. Nothing about the
+        # evidence changed; what changed is whether it is printed unasked.
+        if (bundle.key_facts or {}).get("audience_shape") is not None:
+            return "\n".join(lines).rstrip()
+
         if not bundle.ordered_records:
             if bundle.subject_type == "diff":
                 self._render_diff(lines, bundle.key_facts)
@@ -1558,6 +1571,10 @@ class TemplateRenderer:
             # CU2 (Session 4B.4) — the honest SCOPING answer. Conversational,
             # never a status recital, never an invented intervention.
             kf = bundle.key_facts
+            # R-TG4 — a goal question naming a person gets the account, the
+            # concrete part and the offer, and stops there.
+            if self._render_audience_shape(lines, bundle):
+                return
             # Session 4A.5a CU2 — the EXPEDITE-AN-EARLY-ORDER branch. Asked how to
             # get a specific order done faster when that order already finishes
             # ahead of its due date, lead with THAT, not a plan-wide scope.
@@ -2054,6 +2071,26 @@ class TemplateRenderer:
         if kf.get("budget_exhausted") or kf.get("timed_out"):
             lines.append("")
             lines.append(SYNTHESIS_PARTIAL.format(tools=tools))
+        # R-TG3 — THE CLOSER. Rendered IF AND ONLY IF the depth licence actually
+        # withheld something, and naming the count. It comes LAST, after the cut
+        # and partial lines, because those are facts about what could not be
+        # said and this is an offer of what deliberately was not.
+        deferred = len(kf.get("deferred") or [])
+        if deferred:
+            from mre.modules.ask_fallback_copy import (
+                SYNTHESIS_DEFERRED, SYNTHESIS_DEFERRED_ONE)
+            lines.append("")
+            lines.append(SYNTHESIS_DEFERRED_ONE if deferred == 1
+                         else SYNTHESIS_DEFERRED.format(n=deferred))
+        # R-TG3 — a TAUGHT answer invites push-back (R-AI3: an invitation
+        # completes the thought). Keyed on the LICENCE, not on whether a general
+        # claim happened to be drafted: the planner's standing to disagree comes
+        # from the question they asked, not from what the answer turned out to
+        # contain.
+        if kf.get("licence") == "long":
+            from mre.modules.ask_fallback_copy import TEACHING_INVITATION
+            lines.append("")
+            lines.append(TEACHING_INVITATION)
         lines.append("")
 
     def _render_prove_it(self, lines: list[str], bundle: ExplanationBundle) -> None:
@@ -2264,6 +2301,57 @@ class TemplateRenderer:
                          "where the work went.")
         lines.append("")
 
+    def _render_audience_shape(self, lines: list[str],
+                               bundle: ExplanationBundle) -> bool:
+        """R-TG4 — the three-part answer a GOAL question earns, or False.
+
+        (1) the account a person could say aloud, (2) the single biggest lever
+        this board evidences, labelled for what it ranks on, (3) the inventory
+        OFFERED. Returns True when it rendered, so the caller stops — the whole
+        point is that what follows is not printed.
+
+        Returning False leaves the route's own rendering completely untouched,
+        which is the case for every question that names nobody."""
+        shape = (bundle.key_facts or {}).get("audience_shape")
+        if shape is None or not getattr(shape, "usable", False):
+            return False
+        from mre.modules.ask_fallback_copy import (
+            AUDIENCE_LEAD, AUDIENCE_LEVER_HEADER, AUDIENCE_OFFER_GENERIC)
+        lines.append(AUDIENCE_LEAD.format(audience=shape.audience))
+        lines.append("")
+        lines.append(shape.account)
+        for d in shape.account_detail:
+            lines.append(f"  {d}")
+        lines.append("")
+        if shape.lever:
+            lines.append(AUDIENCE_LEVER_HEADER)
+            lines.append(f"  {shape.lever}")
+            for d in shape.lever_detail:
+                lines.append(f"  {d}")
+            lines.append("")
+        elif shape.lever_detail:
+            # A shape with concrete lines but nothing separately RANKED prints
+            # them plainly. Announcing them under the lever header would be a
+            # ranking assertion over facts nothing ranked (R-AI3), and putting
+            # the ACCOUNT's own detail there was a live defect: an optimality-
+            # bound line rendered as the elaboration of a lever about one order.
+            for d in shape.lever_detail:
+                lines.append(f"  {d}")
+            lines.append("")
+        lines.append(shape.offer or AUDIENCE_OFFER_GENERIC)
+        # SHORTENING AN ANSWER MUST NOT SHORTEN ITS HONESTY. The excluded-orders
+        # note is an UNPROMPTED disclosure (CU9: a schedule with exclusions
+        # volunteers them, inverting the certificate's silence into a trust
+        # feature), and it is not part of the inventory being deferred — an
+        # order dropped from the plan is not a detail behind the answer, it is a
+        # qualification ON it. Same class as the cost-proof rider, which fires
+        # on this shape too and is why the boss answer still says the money is
+        # not proven optimal. A no-op on `advice` and `briefing`, which carry no
+        # `excluded_summary`.
+        self._render_excluded_note(lines, bundle)
+        lines.append("")
+        return True
+
     def _render_lateness_cause(self, lines: list[str],
                                bundle: ExplanationBundle) -> None:
         """THE PROMOTED ROUTE (Session 4A.5c, R-AI5(7)) — the cause mix across the
@@ -2281,6 +2369,14 @@ class TemplateRenderer:
             LATENESS_CAUSE_PREMISE_ONE, LATENESS_CAUSE_UNATTRIBUTED,
         )
         kf = bundle.key_facts
+        # R-TG4 — AUDIENCE SHAPE. When the question named a person who has to be
+        # told, this route answers in a different ORDER and to a different
+        # BUDGET: the account, the lever, then the inventory OFFERED. The
+        # sections below are not deleted — they are deferred, and
+        # `bundle.ordered_records` is untouched, so the bars still light and
+        # "show me the evidence" opens exactly what the offer is offering.
+        if self._render_audience_shape(lines, bundle):
+            return
         late = int(kf.get("late_count", 0) or 0)
         # Session 4B.21 — THE DENOMINATOR IS THE SCHEDULED SET, not the known
         # one. An order with no placement has no completion date, so it can be
@@ -2764,13 +2860,53 @@ class TemplateRenderer:
                 "— or drag it on the board and the card prices the same move.")
             return
 
-        # BOXED_IN — the premise HOLDS in both directions, and says so.
-        lines.append(
-            f"Later: no opening on {machine} fits the whole operation after "
-            f"where it sits now either — so \"can't be moved\" is fair, and "
-            f"the reason above is the whole of it. This counts free time on "
-            f"{machine} only; a move to another machine is a different "
-            "question, and one I'd answer as a swap.")
+        if v == mp.VERDICT_EARLIER_OPEN:
+            # SESSION 4A teaching-graft (c) — MEASURED ON THE FENCED WORLD, AND
+            # THE ONLY BOARD IT COULD BE MEASURED ON. `earlier-open` needs
+            # `later_at` to be None, which no board that keeps working can
+            # produce, so this branch had never rendered against a solve. It
+            # fell through to the BOXED_IN copy below, and the answer then
+            # contradicted its own opening line inside one screen:
+            #
+            #   "It can be moved — nothing was holding ORD-EARLY op10 back."
+            #   ...
+            #   "Later: ... so "can't be moved" is fair, and the reason above
+            #    is the whole of it."
+            #
+            # Both sentences authored, both rendered, both about one bar. The
+            # lead refutes the premise and the closing paragraph re-asserts it.
+            #
+            # No opening later is TRUE here; what is false is reading that as
+            # the premise holding, because the OTHER direction is open and this
+            # answer's own first line says so. So this states the calendar fact
+            # and hands the planner back to the direction that is actually
+            # available.
+            lines.append(
+                f"Later: there is no room that way. No opening on {machine} "
+                f"fits the whole operation after where it sits now — so the "
+                f"only direction open to {name} is the earlier one above. "
+                f"This counts free time on {machine} only; a move to another "
+                "machine is a different question, and one I'd answer as a "
+                "swap.")
+            return
+
+        if v == mp.VERDICT_BOXED_IN:
+            # The premise HOLDS in both directions, and says so.
+            lines.append(
+                f"Later: no opening on {machine} fits the whole operation "
+                f"after where it sits now either — so \"can't be moved\" is "
+                f"fair, and the reason above is the whole of it. This counts "
+                f"free time on {machine} only; a move to another machine is a "
+                "different question, and one I'd answer as a swap.")
+            return
+
+        # An unrecognised verdict SAYS NOTHING (4B.23's fail-safe rule, and the
+        # rule this branch existed in violation of): the paragraph is optional,
+        # and a default that asserted "can't be moved is fair" is exactly how a
+        # claim about the PLANT gets manufactured from a gap in OUR vocabulary.
+        # `mobility_lead_line` has enumerated all five verdicts and returned
+        # None for anything else since 4A.y; this is that discipline, here.
+        lines.pop()                       # the blank separator line
 
     def _render_counterfactual(self, lines: list[str],
                                bundle: ExplanationBundle) -> None:
@@ -3455,6 +3591,12 @@ class TemplateRenderer:
         wrong deserves to be told so rather than to receive a silence a planner
         has to interpret."""
         kf = bundle.key_facts
+        # R-TG4 — "what do i say in the production meeting tomorrow about the
+        # late orders" parses to `briefing` (measured). The opener's ranking is
+        # the right computation and the wrong SHAPE for that question: it is a
+        # list to work through, not a thing to say.
+        if self._render_audience_shape(lines, bundle):
+            return
         opener = kf.get("opener")
         if opener:
             self._render_opener(lines, kf, opener)

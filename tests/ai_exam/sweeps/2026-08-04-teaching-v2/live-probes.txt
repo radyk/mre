@@ -1,0 +1,162 @@
+==============================================================================
+[G1] there are a lot of orders late what reason can i give my boss and what will help lessen the impact
+  route=lateness-cause  register=testimony  intent=lateness-cause  conf=0.92
+------------------------------------------------------------------------------
+You asked what to say to my boss. Here is the one-sentence version, and the one thing that would move it most.
+
+102 of the 158 orders scheduled in this window finish after their due date. For 58 of them the recorded driver is the same one: the machine was busy with other work.
+
+The single biggest lever this board evidences:
+  ORD-000091 carries the largest tardiness cost on the board at $147,776.67 — more than any other single order.
+  It was held on CUT-02 until 2026-01-08 08:57 by ORD-000219; that is the specific hold to attack if you want this number down.
+
+The order-by-order breakdown is behind this — 99 orders with a concrete hold recorded, plus the full evidence chain. Ask for it and I'll lay it out.
+
+Note: the cost figures above are not proven optimal — the solver ran out of budget with a gap of 89.6% still open, so a cheaper schedule may exist and could be up to that much cheaper.
+
+[rendered by: template | register: testimony]
+==============================================================================
+[G2] what do i say in the production meeting tomorrow about the late orders
+  route=briefing  register=testimony  intent=briefing  conf=0.85
+------------------------------------------------------------------------------
+You asked what to say to the production meeting. Here is the one-sentence version, and the one thing that would move it most.
+
+The cost optimum is NOT proved — the solver stopped with a gap of 89.6% still open.
+
+  Against a ledger of 1,667,467.80, that bound leaves up to 1,494,205.31 on the table — an upper limit on what a cheaper schedule could save, not a saving anyone has found.
+
+Ask "is this schedule optimal?" for what the solver did and did not prove.
+[rendered by: template | register: testimony]
+==============================================================================
+[G3] what should i do about all this lateness
+  route=advice  register=testimony  intent=advice  conf=0.92
+------------------------------------------------------------------------------
+The first thing worth your attention on this board, ranked by consequence out of 6:
+
+  The cost optimum is NOT proved — the solver stopped with a gap of 89.6% still open.
+    Against a ledger of 1,667,467.80, that bound leaves up to 1,494,205.31 on the table — an upper limit on what a cheaper schedule could save, not a saving anyone has found.
+    -> Ask "is this schedule optimal?" for what the solver did and did not prove.
+
+That is a ranking of what is worth looking at, not a recommendation of what to do about it.
+
+102 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+Here's what I can do to help you decide:
+  - explain why any order is late ("why is <order> late?")
+  - show what an order is waiting on ("why can't <order> start earlier?")
+  - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+My take: ORD-000112's 27060-minute slip traces to ORD-000252 holding CUT-01 until 2026-01-27 19:00 — pulling that earlier is the single biggest lever the board gives you today.
+
+[rendered by: template | register: testimony]
+==============================================================================
+[T1] in general, what makes a scheduling problem hard to prove optimal
+  route=synthesis  register=synthesis  intent=teaching  conf=0.95
+  claims=4 verified=0 interpretive=0 general=3 cut=1 DEFERRED=0
+------------------------------------------------------------------------------
+No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+Scheduling problems resist proof of optimality mainly because the search space of feasible sequences and timings grows combinatorially with the number of jobs and machines, so no algorithm can check every possibility in reasonable time — proof of optimality then requires a lower bound that provably matches the best schedule found, not just the schedule itself.  [general knowledge — how scheduling works in general, not a fact about this plan]
+Several features common in real plants make that lower bound hard to tighten: sequence-dependent setup times, tardiness or lateness objectives (as opposed to simple makespan), machine-sharing or eligibility constraints, and split or resumable operations each add combinatorial interactions that weaken the relaxations used to bound the true optimum.  [general knowledge — how scheduling works in general, not a fact about this plan]
+Tardiness-based objectives in particular tend to give weak lower bounds compared to makespan objectives, because a schedule's tardiness depends on the interaction of due dates and sequencing decisions across the whole horizon, not on any single machine in isolation — so relaxing the problem to bound it loses most of the structure that determines the real answer.  [general knowledge — how scheduling works in general, not a fact about this plan]
+
+Where a line is marked general knowledge it draws on how scheduling and plants behave generally — not on this plan's records, so there is nothing here to check it against.
+
+Part of what I drafted was neither something I could check against your board nor general scheduling knowledge, so I left it out rather than state it with a label that would have been wrong either way.
+
+That is how it works in general — you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.
+[rendered by: synthesis (claude-sonnet-5) — 0 tool call(s) | register: synthesis]
+==============================================================================
+[S1] what does the overall shape of this schedule look like across the machines and the weeks
+  route=briefing  register=testimony  intent=briefing  conf=0.92
+------------------------------------------------------------------------------
+158 scheduled orders on 15 machines over 2026-01-05 to 2026-02-05. 6 things worth your attention, worst first:
+
+1. The cost optimum is NOT proved — the solver stopped with a gap of 89.6% still open.
+     Against a ledger of 1,667,467.80, that bound leaves up to 1,494,205.31 on the table — an upper limit on what a cheaper schedule could save, not a saving anyone has found.
+     -> Ask "is this schedule optimal?" for what the solver did and did not prove.
+
+2. 102 order(s) finish late in this window, costing 1,044,865.00 that this schedule is answerable for (535,800.00 more was already accrued and no placement can recover it).
+     ORD-000206 — 38d 19h late, of which 10d was already on the clock before this window opened
+     ORD-000056 — 38d 18h late, of which 20d was already on the clock before this window opened
+     ORD-000256 — 38d 14h late, of which 17d was already on the clock before this window opened
+     …and 99 more.
+     -> Ask "why are so many orders late?" for the cause mix, or "why is <order> late?" for one chain.
+
+3. 1 order(s) finish on time with less slack than one of their own operations takes.
+     ORD-000210 — 6h10m of slack against a longest step of 7h59m of work
+     -> Ask "when does <order> finish?" for the timeline, or "what would have to change for <order> to start earlier?".
+
+4. planned maintenance on Wednesday 2026-01-14 takes out ASM-01, CUT-01, CUT-02, CUT-03 and 8 more.
+     -> Ask "is any maintenance scheduled?" for the calendar.
+
+5. 122 known order(s) sit beyond the planning horizon with no placement yet.
+     The earliest of them is due 2026-01-16.
+     7 of them could not be placed even coarsely, so their load is NOT counted in any figure above.
+     -> Ask "what's beyond the horizon?" for the list, or "will it fit?" for the capacity read.
+
+6. 4 data-quality finding(s) stand against this submission.
+     4 of them were PROCEEDED PAST — the plan was built anyway, with the defect disclosed rather than fixed.
+     CUT-01 is in a workload too dense to schedule cleanly
+     -> Ask "what should I fix first?" for the triage.
+[rendered by: template | register: testimony]
+==============================================================================
+[S2] compare how the cutting machines and the press are loaded and what that means for the late orders
+  route=synthesis  register=synthesis  intent=unmatched  conf=0.92
+  claims=4 verified=0 interpretive=4 general=0 cut=0 DEFERRED=0
+------------------------------------------------------------------------------
+No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+CUT-01 is the busiest cutting machine at 91.6% utilization (12,505 working minutes against 13,656 open minutes), CUT-02 runs at 88.6% (7,164 of 8,082), and CUT-03 is lightly loaded at 21.8% (2,640 of 12,087) — while PRESS-FAST carries 85.5% (9,776 of 11,430) and PRESS-SLOW shows only one operation scheduled, at 100% of its own small 285-minute window. (based on the 60 row(s) machine_occupancy returned, not the whole plan)  [synthesis — read from: 440fbc69, df5aa682, 3f032ed0]
+Of the 280 known orders, 158 are scheduled with a lateness outcome and 122 have no placement at all in this schedule, so they are not late or on-time — they simply have no service outcome to compare against machine load. (based on the 60 row(s) machine_occupancy returned, not the whole plan)  [synthesis — read from: b4119ea4, f6afdc6f, 89f01837]
+Of the 158 scheduled orders, 102 are late and 56 are on time or early.  [synthesis — read from: b4119ea4, f6afdc6f, 89f01837]
+The cutting stage is unevenly loaded — CUT-01 and CUT-02 are both running near 90% while CUT-03 sits idle most of the time — which is a pattern of imbalance rather than blanket overload, and it means the cutting stage as a whole still has slack even though two of its three machines are tight; the press stage looks tighter overall since PRESS-FAST alone is absorbing most press work at 85.5% while PRESS-SLOW barely appears in the schedule, so lateness here looks more consistent with orders being routed unevenly across parallel machines — leaving capacity stranded on CUT-03 and PRESS-SLOW — than (based on the 60 row(s) machine_occupancy returned, not the whole plan)  [synthesis — read from: b4119ea4, f6afdc6f, 89f01837]
+[rendered by: synthesis (claude-sonnet-5) — 7 tool call(s) | register: synthesis]
+==============================================================================
+[S3] give me a full picture of where the money is going in this plan
+  route=synthesis  register=synthesis  intent=unmatched  conf=0.92
+  claims=5 verified=0 interpretive=4 general=0 cut=1 DEFERRED=0
+------------------------------------------------------------------------------
+No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+Of the plan's total cost of 1,667,467.80, tardiness (late-order penalties) is 1,580,665.00 — about 95% of every dollar in this plan — while production cost is only 71,362.80 and setup cost is 15,440.00. (based on the 60 row(s) cost_ledger returned, not the whole plan)  [synthesis — read from: 3c67fcfd]
+The tardiness cost splits into a floor of 535,800.00 (a base penalty component) and a controllable portion of 1,044,865.00 that scales with how late each order runs — the controllable piece alone is more than 14 times all production and setup cost combined. (based on the 60 row(s) cost_ledger returned, not the whole plan)  [synthesis — read from: 3c67fcfd]
+Of the 280 orders this plan knows about, 158 are scheduled and 122 have no placement at all; of the 158 scheduled, 102 are late and 56 are on time or early — so most of the money is being driven by a minority of orders running long, not by the volume of work itself. (based on the 60 row(s) cost_ledger returned, not the whole plan)  [synthesis — read from: 3c67fcfd]
+The two largest single tardiness lines are ORD-000091 at 147,776.67 and ORD-000126 at 127,400.00 — together over 275,000, more than 3.5 times the entire plant's production cost.  [synthesis — read from: 47a25482, 70a2f322, 3c67fcfd]
+
+Part of what I drafted was neither something I could check against your board nor general scheduling knowledge, so I left it out rather than state it with a label that would have been wrong either way.
+[rendered by: synthesis (claude-sonnet-5) — 2 tool call(s) | register: synthesis]
+==============================================================================
+[S4] walk me through everything that is unusual about this board
+  route=briefing  register=testimony  intent=briefing  conf=0.92
+------------------------------------------------------------------------------
+158 scheduled orders on 15 machines over 2026-01-05 to 2026-02-05. 6 things worth your attention, worst first:
+
+1. The cost optimum is NOT proved — the solver stopped with a gap of 89.6% still open.
+     Against a ledger of 1,667,467.80, that bound leaves up to 1,494,205.31 on the table — an upper limit on what a cheaper schedule could save, not a saving anyone has found.
+     -> Ask "is this schedule optimal?" for what the solver did and did not prove.
+
+2. 102 order(s) finish late in this window, costing 1,044,865.00 that this schedule is answerable for (535,800.00 more was already accrued and no placement can recover it).
+     ORD-000206 — 38d 19h late, of which 10d was already on the clock before this window opened
+     ORD-000056 — 38d 18h late, of which 20d was already on the clock before this window opened
+     ORD-000256 — 38d 14h late, of which 17d was already on the clock before this window opened
+     …and 99 more.
+     -> Ask "why are so many orders late?" for the cause mix, or "why is <order> late?" for one chain.
+
+3. 1 order(s) finish on time with less slack than one of their own operations takes.
+     ORD-000210 — 6h10m of slack against a longest step of 7h59m of work
+     -> Ask "when does <order> finish?" for the timeline, or "what would have to change for <order> to start earlier?".
+
+4. planned maintenance on Wednesday 2026-01-14 takes out ASM-01, CUT-01, CUT-02, CUT-03 and 8 more.
+     -> Ask "is any maintenance scheduled?" for the calendar.
+
+5. 122 known order(s) sit beyond the planning horizon with no placement yet.
+     The earliest of them is due 2026-01-16.
+     7 of them could not be placed even coarsely, so their load is NOT counted in any figure above.
+     -> Ask "what's beyond the horizon?" for the list, or "will it fit?" for the capacity read.
+
+6. 4 data-quality finding(s) stand against this submission.
+     4 of them were PROCEEDED PAST — the plan was built anyway, with the defect disclosed rather than fixed.
+     CUT-01 is in a workload too dense to schedule cleanly
+     -> Ask "what should I fix first?" for the triage.
+[rendered by: template | register: testimony]

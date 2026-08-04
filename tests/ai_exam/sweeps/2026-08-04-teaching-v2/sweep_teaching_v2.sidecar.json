@@ -1,0 +1,137 @@
+{
+  "target": "rolling-db5395dc-2ae",
+  "snapshot": "snap-rolling",
+  "started_at": "2026-08-04T06:51:04Z",
+  "llm_mode": "live",
+  "questions": 19,
+  "llm_calls": 53,
+  "parser_stats": {
+    "calls": 22,
+    "parses": 22,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 2,
+    "unavailable": 0,
+    "unreachable": 0,
+    "median_latency_ms": 1447.9962000041269,
+    "malformed_samples": []
+  },
+  "synth_stats": {
+    "syntheses": 10,
+    "calls": 29,
+    "tool_calls": 19,
+    "malformed": 0,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 0,
+    "median_latency_ms": 14405.760900001042,
+    "p90_latency_ms": 30172.33249999117
+  },
+  "synthesis": {
+    "answers": 9,
+    "claims": 45,
+    "verified": 3,
+    "interpretive": 10,
+    "general_knowledge": 24,
+    "failed_and_cut": 8,
+    "deferred": 0,
+    "ungrounded_load_bearing": 7,
+    "unanswerable": 0,
+    "budget_exhausted": 0,
+    "tool_calls": 15,
+    "tool_histogram": {
+      "calendars": 1,
+      "constraint_catalog": 1,
+      "cost_ledger": 1,
+      "entity_vocabulary": 3,
+      "lateness_set": 1,
+      "machine_occupancy": 7,
+      "spec_lookup": 1
+    },
+    "calls_per_answer": {
+      "0": 4,
+      "1": 2,
+      "3": 1,
+      "5": 2
+    }
+  },
+  "shadow": {
+    "shadowed": 1,
+    "clean": 1,
+    "diverged": 0,
+    "unchecked": 0,
+    "provenance_strengthened": 1,
+    "by_intent": {
+      "lateness-cause": {
+        "shadowed": 1,
+        "diverged": 0,
+        "unchecked": 0
+      }
+    }
+  },
+  "latency": {
+    "route": {
+      "n": 10,
+      "median_ms": 2475.0,
+      "p90_ms": 8499.0
+    },
+    "synthesis": {
+      "n": 9,
+      "median_ms": 16370.5,
+      "p90_ms": 31630.0
+    }
+  },
+  "graded_expectations": {
+    "graded": 15,
+    "met": 15
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "ungrounded-load-bearing": 6,
+    "validator": 1
+  },
+  "findings": [
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 55,
+      "question": "in general, what makes a scheduling problem hard to prove optimal",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 59,
+      "question": "how do schedulers normally decide which job to run first",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 63,
+      "question": "what is a bottleneck machine",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 69,
+      "question": "why do setup times matter in scheduling",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 73,
+      "question": "how does a rolling horizon normally work",
+      "detail": "2 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 113,
+      "question": "why would the solver leave a machine idle when there is work waiting",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "validator",
+      "lineno": 148,
+      "question": "which orders are late and by how much",
+      "detail": "LLM testimony failed validation; fell back to template"
+    }
+  ]
+}

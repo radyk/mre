@@ -441,6 +441,88 @@ SYNTHESIS_PARTIAL = (
     "I stopped there — that is as far as this question's evidence budget goes. I "
     "consulted: {tools}.")
 
+# ---------------------------------------------------------------------------
+# R-TG3 — THE CLOSER (Session 4A teaching-graft (b)). The depth licence's
+# honest half.
+#
+# The SHORT budget cuts an answer to the four claims that lead it. Brevity that
+# silently discards substance is not brevity, it is loss — so the one thing the
+# planner is never allowed to be left not knowing is that there WAS more.
+#
+# It names the COUNT, because "there's more" without a number is a sentence a
+# planner cannot act on: two further points is a shrug and five is a second
+# answer. And it is rendered IF AND ONLY IF something was actually withheld — a
+# closer on an uncut answer tells a planner there is more when there is not,
+# which is a false disclosure and is asserted against by its own guard.
+#
+# It does NOT say the points were unimportant, and it does not say they were
+# less true. Every deferred claim passed the same verification the printed ones
+# did; what it lost was a place in the first four.
+SYNTHESIS_DEFERRED_ONE = (
+    "I've kept this short — there is 1 more point behind it. Ask and I'll walk "
+    "through the rest.")
+SYNTHESIS_DEFERRED = (
+    "I've kept this short — there are {n} more points behind it. Ask and I'll "
+    "walk through the rest.")
+
+# R-TG3 — THE LONG BUDGET'S OWN CLOSING LINE, on `teaching` answers only.
+#
+# R-AI3: an invitation completes the thought. A taught answer's thought is not
+# complete at the last sentence, because the planner has a plant and I do not:
+# domain knowledge is general BY DESIGN (R-TG1) and the person reading it is the
+# one who knows whether it holds here. So the invitation is to PUSH BACK, not
+# the generic "ask me more" — it names the asymmetry that makes it worth saying.
+#
+# It rides on the LONG licence rather than on the presence of a general claim,
+# because a teaching question answered entirely from the board still asked to be
+# taught, and the standing to disagree is the same either way.
+TEACHING_INVITATION = (
+    "That is how it works in general — you know this plant and I don't, so if "
+    "any of it doesn't match what you see here, say so and I'll look at what "
+    "your board actually does.")
+
+# ---------------------------------------------------------------------------
+# R-TG4 — AUDIENCE SHAPE (Session 4A teaching-graft (b)). The lead a goal
+# question earns, and the offer that replaces the inventory.
+#
+# THE DISCLOSURE FIRST. The floor read the planner's words to decide this
+# question names a person, and 4A.x's ruling is that every resolution the
+# system made is disclosed — so the answer says what it heard rather than
+# quietly serving a different shape.
+AUDIENCE_LEAD = (
+    "You asked what to say to {audience}. Here is the one-sentence version, and "
+    "the one thing that would move it most.")
+
+# (1) THE ACCOUNT — the sentence a person could say out loud. Composed from the
+# route's own assembled figures; nothing here is computed a second time.
+AUDIENCE_ACCOUNT_LATENESS = (
+    "{late} of the {total} orders scheduled in this window finish after their "
+    "due date.")
+AUDIENCE_ACCOUNT_LATENESS_CAUSE = (
+    "For {n} of them the recorded driver is the same one: {cause}.")
+
+# (2) THE LEVER — promoted from afterthought to headline, and LABELLED, because
+# "the biggest lever" is a ranking claim and R-AI3 requires a ranking to say
+# what it ranked on. It ranks on MONEY, which is the axis the audience in the
+# question is asking about.
+AUDIENCE_LEVER_HEADER = "The single biggest lever this board evidences:"
+AUDIENCE_LEVER_WORST = (
+    "{order} carries the largest tardiness cost on the board at {cost} — more "
+    "than any other single order.")
+AUDIENCE_LEVER_HOLD = (
+    "It was held on {machine} until {until} by {blocker}; that is the specific "
+    "hold to attack if you want this number down.")
+
+# (3) THE OFFER — the inventory offered, NEVER delivered. The records are still
+# assembled and still cited on the bundle, so this is one gesture away and not
+# gone: `ordered_records` is untouched and the drill-down opens exactly these.
+AUDIENCE_OFFER_LATENESS = (
+    "The order-by-order breakdown is behind this — {n} orders with a concrete "
+    "hold recorded, plus the full evidence chain. Ask for it and I'll lay it "
+    "out.")
+AUDIENCE_OFFER_GENERIC = (
+    "The detail behind this is available — ask for the full breakdown.")
+
 # The floor: nothing survived, or the model could not answer from the evidence.
 #
 # Session 4B.27 Item 9 — A PROCESS CLAIM IS A CLAIM, AND IT IS GATED ON THE

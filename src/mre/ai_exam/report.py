@@ -57,7 +57,7 @@ def render_transcript(result: ExamResult) -> str:
         lines.append(
             "claims      : {claims} total  verified={verified} "
             "interpretive={interpretive} general-knowledge={general_knowledge} "
-            "failed-and-cut={failed_and_cut}  "
+            "failed-and-cut={failed_and_cut} deferred={deferred}  "
             "ungrounded-load-bearing={ungrounded_load_bearing}".format(**tot))
     sh = result.shadow_totals()
     if sh["shadowed"]:
@@ -164,6 +164,14 @@ def _synth_str(s: dict) -> str:
             # about.
             f"general-knowledge={s.get('general_knowledge', 0)}",
             f"cut={s.get('failed_and_cut', 0)}"]
+    # R-TG3, and it is R-TG1's reason one class later: printed only when it is
+    # NON-ZERO, but printed BESIDE `cut` and never folded into it. Without this
+    # the per-turn counts silently stop summing to `claims` the moment the depth
+    # licence binds — which is exactly how a reader first fails to notice a
+    # class they were not told about. Gated on non-zero because a `deferred=0`
+    # on every line of every sweep is noise that trains a reader to skip it.
+    if s.get("deferred"):
+        bits.append(f"deferred={s['deferred']}")
     if s.get("ungrounded_load_bearing"):
         bits.append(f"ungrounded-load-bearing={s['ungrounded_load_bearing']}")
     tools = s.get("tools") or []

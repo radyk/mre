@@ -1,0 +1,4 @@
+resource_id,facility_id,resource_type,parallel_units,calendar_id,pool_id,cost_rate
+FEED-01,F001,workcenter,1,CAL-STD,,
+BOX-01,F001,workcenter,1,CAL-BOX,,
+PACK-01,F001,workcenter,1,CAL-STD,,

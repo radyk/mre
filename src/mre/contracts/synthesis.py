@@ -53,6 +53,36 @@ MAX_ROWS = 60
 
 
 # ---------------------------------------------------------------------------
+# THE DEPTH LICENCE (Session 4A teaching-graft (b), R-TG3). Two budgets, both
+# CHOSEN FROM MEASUREMENT.
+# ---------------------------------------------------------------------------
+#
+# THE CENSUS (`tools/spikes/teaching_graft_b/census_lengths.py`, 1,567 turns
+# across all nine committed sweeps; 86 of them synthesis answers):
+#
+#   kept claims per synthesis answer   min 0  p25 0  med 3  p75 5  p90 5  max 6
+#   kept claims, EXCLUDING the 25 floor answers that kept none:
+#       2 -> 7    3 -> 13    4 -> 18    5 -> 19    6 -> 4     (n=61, median 4)
+#   content lines   synthesis  med 5  p75 6  p90 6  max 10
+#                   testimony  med 3  p75 5  p90 8  max 134
+#
+# SHORT = 4 is the median real synthesis answer. It therefore leaves the median
+# answer untouched and binds on the upper 38% (the 5s and 6s), landing a capped
+# answer at ~5 content lines — testimony's own p75, which is the band that was
+# praised in the demo the same week the synthesis length was not. A cap that
+# never binds is theatre; a cap below the median would be a rewrite of the tier
+# rather than a budget on it.
+#
+# LONG = 8 is a CEILING, NOT A TARGET, and it does not bind today: under
+# synthesis prompt v6 the model has never drafted more than 6 claims, in 86
+# measured answers. That is deliberate and it is stated rather than hidden — the
+# licence GRANTS depth, it does not manufacture depth, and an UNBOUNDED licence
+# is not a licence at all (`FEASIBILITY_BUDGET_S`'s discipline, 4B.24).
+SHORT_CLAIM_BUDGET = 4
+LONG_CLAIM_BUDGET = 8
+
+
+# ---------------------------------------------------------------------------
 # The closed tool surface
 # ---------------------------------------------------------------------------
 
@@ -398,6 +428,17 @@ class SynthesisAnswer(BaseModel):
     question: str
     claims: list[VerifiedClaim] = Field(default_factory=list)
     cut: list[VerifiedClaim] = Field(default_factory=list)
+    #: R-TG3 — claims the DEPTH LICENCE withheld for length. A SEPARATE list from
+    #: ``cut``, and the separation is the ruling: a cut claim failed verification
+    #: and is false-or-unsupported, a deferred claim SURVIVED verification and is
+    #: merely surplus to the budget. Folding them would put a true sentence and a
+    #: refuted one in one bucket wearing one word — the category fusion this repo
+    #: has now named six times (delta card 4B.5, `lateness_set` 4B.13,
+    #: `CostProof` 4B.18, working-time 4B.20, `inventory` 4B.21, and here).
+    #:
+    #: The planner is TOLD the count (`SYNTHESIS_DEFERRED`), because brevity that
+    #: silently discards substance is not brevity, it is loss.
+    deferred: list[VerifiedClaim] = Field(default_factory=list)
     tool_calls: list[ToolCallLog] = Field(default_factory=list)
     budget_exhausted: bool = False
     timed_out: bool = False
@@ -439,11 +480,16 @@ class SynthesisAnswer(BaseModel):
 
     def counts(self) -> dict[str, int]:
         return {
-            "claims": len(self.claims) + len(self.cut),
+            # R-TG3: a deferred claim was DRAFTED and VERIFIED, so it belongs in
+            # the total. Leaving it out would make the tier look like it drafted
+            # fewer sentences than it did, which is the one thing the count is
+            # read for.
+            "claims": len(self.claims) + len(self.cut) + len(self.deferred),
             "verified": len(self.verified),
             "interpretive": len(self.interpretive),
             "general_knowledge": len(self.general_knowledge),
             "failed_and_cut": len(self.cut),
+            "deferred": len(self.deferred),
             "ungrounded_load_bearing": self.ungrounded_load_bearing,
             "tool_calls": len(self.tool_calls),
         }
@@ -480,8 +526,19 @@ class SynthesisProvenance(BaseModel):
                      # any one sentence rested on.
                      "consulted": c.consulted_record_ids,
                      "read_from": c.read_from,
-                     "load_bearing": c.load_bearing}
-                    for c in (list(answer.claims) + list(answer.cut))],
+                     "load_bearing": c.load_bearing,
+                     # R-TG3: whether the DEPTH LICENCE withheld this sentence.
+                     # The ledger is the durable record of what the tier drafted
+                     # and what it could prove, and a deferred claim was drafted
+                     # AND verified — omitting it would make the record report
+                     # fewer sentences than the tier wrote, which is the one
+                     # thing it exists to be read for. It rides as a FLAG rather
+                     # than as a status, because a deferred claim keeps whatever
+                     # status the verifier gave it (R-AI5(8): only the verifier
+                     # labels), and the promotion loop's clustering reads status.
+                     "deferred": c in answer.deferred}
+                    for c in (list(answer.claims) + list(answer.cut)
+                              + list(answer.deferred))],
             tool_calls=list(answer.tool_calls),
             budget_exhausted=answer.budget_exhausted,
             unanswerable=answer.unanswerable,

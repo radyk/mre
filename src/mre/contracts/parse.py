@@ -177,6 +177,33 @@ class Intent(str, Enum):
     BUCKET_LOAD = "bucket-load"
     # -- dispatch outcomes, not planner intents (never offered to the model) --
     UNKNOWN_ENTITY = "unknown-entity"
+    # -- Session 4A teaching-graft (b), R-TG2: THE TEACHING INTENT ------------
+    # A question whose goal is UNDERSTANDING rather than a fact off this board:
+    # "in general, what makes a scheduling problem hard to prove optimal", "how
+    # does a rolling horizon normally work", "what is a bottleneck machine".
+    #
+    # THE MEASURED SCATTER (census (a), 10 domain probes, live parse, demo
+    # board, prompt v17): `coaching` 5 / `unmatched` 4 / `lateness-cause` 1.
+    # Half of them reached `coaching`, whose meaning is WHAT THE SYSTEM CAN AND
+    # CANNOT MODEL and whose answer is a capability lookup against docs/05 — a
+    # 3-line answer (measured: median 3, max 3 content lines over 102 turns) to
+    # a question that asked to be taught something. The other four reached the
+    # second tier, which answered them WELL, and got the SHORT budget every
+    # other synthesis question gets, because no budget distinguished them.
+    #
+    # IT IS NOT A ROUTE, AND THAT IS THE RULING RATHER THAN AN OMISSION.
+    # Teaching is SYNTHESIS WITH A SECOND CLAIM CLASS AND A DEPTH LICENCE, not
+    # a new rung (R-TG1 built the class in session (a); R-TG3 grants the
+    # licence). There is no contracted evidence assembly for "how does this
+    # normally work" and inventing one would be authoring domain prose as
+    # testimony — the exact failure R-TG1 exists to end, one layer up. So it
+    # joins ``SECOND_TIER_INTENTS``: a DECLARED door to the tier that already
+    # reasons, carrying a budget the door decides.
+    #
+    # The seal (R-AI5(2)) is untouched in both directions. No CONTRACTED route
+    # can fall to synthesis; this intent never was one. And synthesis still
+    # never guesses a route — a teaching parse dispatches to the tier by name.
+    TEACHING = "teaching"
     # -- R-AI5 additions -----------------------------------------------------
     CONFIRM_TAKE = "confirm-take"
     # Session 4A.5b: `prove-it` is BOTH a follow-up kind and an intent, exactly as
@@ -188,6 +215,22 @@ class Intent(str, Enum):
     # answering. A gesture the model can name must be nameable.
     PROVE_IT = "prove-it"
     UNMATCHED = "unmatched"
+
+
+#: THE INTENTS WHOSE DESTINATION IS THE SECOND TIER, NOT A CONTRACTED ROUTE
+#: (Session 4A teaching-graft (b), R-TG2).
+#:
+#: ``unmatched`` was always such a door — the parity test
+#: (``tests/test_parse_contract.py``) subtracted it from the vocabulary before
+#: comparing against ``ROUTE_TAXONOMY``, with a comment where a name should have
+#: been. ``teaching`` is the second member and the reason to name the set: both
+#: mean "this intent is answered by reasoning over evidence under a stated
+#: budget", and neither has — or should have — an entry in the route taxonomy.
+#:
+#: A member here is NOT a wall. It is reachable, by the one door R-AI5(2) opens;
+#: what it lacks is a contracted assembler, which is the whole point.
+SECOND_TIER_INTENTS: frozenset[Intent] = frozenset(
+    {Intent.UNMATCHED, Intent.TEACHING})
 
 
 class SubjectKind(str, Enum):
@@ -526,6 +569,33 @@ class ParsedQuestion(BaseModel):
     # a date, and 4B.15 Item 0 is what happens when a date is authored from
     # whichever row appeared first. Empty when the question named no target.
     move_target: str = ""
+    # -- Session 4A teaching-graft (b), R-TG4: WHO MUST BE TOLD ---------------
+    # The planner's OWN WORDS for the HUMAN AUDIENCE a question names — "my
+    # boss", "the customer", "the production meeting". Empty on the great
+    # majority of questions, which name nobody.
+    #
+    # THE MEASURED FAILURE. "there are a lot of orders late what reason can i
+    # give my boss and what will help lessen the impact" was answered, at HEAD,
+    # with ~95 hold-pair lines, a 614-record evidence chain header and 134
+    # content lines — the longest answer in every committed sweep, by a factor
+    # of three and a half. Every line of it is TRUE. The planner asked for a
+    # sentence they could say to a person and a lever they could pull; they got
+    # an inventory. The goal was audience-shaped and the answer was
+    # completeness-shaped.
+    #
+    # RAW, NEVER RESOLVED — the `move_target` precedent, deliberately followed.
+    # WHO the boss is, what they already know and what they are entitled to hear
+    # are not facts this product holds, and a model that resolved them would be
+    # authoring a business relationship. All this field does is say that a
+    # PERSON is on the other end of the answer.
+    #
+    # THE PARSE REPORTS; THE DISPATCH DECIDES (R-AI5(8)), and a deterministic
+    # floor stands under the report — 4A.y measured a freshly-prompted field
+    # reported 0 times in 5 on the phrasings planners use, and a disclosure that
+    # depends on a model remembering a field will silently stop. See
+    # `modules/audience_shape.py`: the floor can only ever RESHAPE a route that
+    # was already going to run, and can never route.
+    audience: str = ""
     # Instrumentation (the sweep's parse-specific counts; never read by a route).
     prompt_version: str = ""
     retries: int = 0
@@ -856,6 +926,28 @@ INTENT_MEANINGS: dict[Intent, str] = {
         "the planner asks for the GROUNDS of something the assistant just said — "
         "\"prove it\", \"how do you know that?\", \"where does that come from?\", "
         "\"which record says that?\". Set `followup_of` to `prove-it` as well",
+    # Session 4A teaching-graft (b), R-TG2. Written to SEPARATE it from
+    # `coaching` and from `unmatched`, because the census says that is exactly
+    # where the new member costs something: five of ten domain probes reached
+    # `coaching` and four reached `unmatched`, and the two neighbours fail
+    # differently. `coaching` answers a CAPABILITY question from docs/05 in
+    # three lines; `unmatched` answers WELL and under the short budget.
+    Intent.TEACHING:
+        "the planner wants to UNDERSTAND SOMETHING, not to be told a fact off "
+        "this board — \"in general, what makes a scheduling problem hard to "
+        "prove optimal\", \"how do schedulers normally decide which job to run "
+        "first\", \"explain what the optimality gap means\", \"what is a "
+        "bottleneck machine\", \"why do setup times matter\", \"how does a "
+        "rolling horizon normally work\", \"what does it mean when a schedule "
+        "is infeasible\". The answer is an EXPLANATION, and it is allowed to "
+        "be long. It is NOT `coaching` — that asks whether THIS PRODUCT can "
+        "model something and how to declare it (\"can it handle shared "
+        "operators?\", \"how do I turn on overtime?\"), which is a lookup "
+        "against the constraint catalog. It is NOT `attribute-lookup` (a value "
+        "on one job) and NOT `briefing` (a read of this board). A question "
+        "that ALSO names an order, a machine or this plan is still this "
+        "intent — name the subject too, and the answer grounds on the board "
+        "before it teaches",
     Intent.UNMATCHED:
         "no intent above fits this question",
 }

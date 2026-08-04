@@ -1,0 +1,157 @@
+# AI EXAM BANK — the depth licence and the teaching intent (R-TG2/R-TG3/R-TG4)
+# version  : v2
+# generated: 2026-08-04  (Session 4A teaching-graft (b))
+# world    : the DEMO BOARD `rolling-db5395dc-2ae`. Entity ids below are that
+#            board's; the SHAPES are what is graded, not the ids.
+#
+# WHY THIS BANK EXISTS. v1 measured the CLAIM CLASS. This one measures the
+# ANSWER SHAPE — when an answer may go long, when it must stay short, and what
+# a question that names a person is owed. Three measurements at HEAD decided it:
+#
+#   * TEN DOMAIN PROBES, live parse, prompt v17: `coaching` 5 / `unmatched` 4 /
+#     `lateness-cause` 1. Half of the questions asking to be taught something
+#     were answered as capability lookups, whose median answer over 102 measured
+#     turns is THREE content lines.
+#   * 86 SYNTHESIS ANSWERS across nine committed sweeps: kept claims 2:7 3:13
+#     4:18 5:19 6:4. The prompt has asked for "three to six claims" since v1 and
+#     38% of real answers land at the top of that range; nothing bounded them.
+#   * THE BOSS QUESTION, verbatim below, answered at HEAD in 134 content lines —
+#     a cause mix, ~95 hold-pair lines and "Evidence chain (614 record(s)):".
+#     The longest answer in every committed sweep by a factor of three and a
+#     half, and every line of it TRUE. The planner asked for a sentence to say
+#     to a person and got an inventory.
+#
+# FIVE EXPECTATION FAMILIES, graded by
+# `tools/spikes/teaching_graft_b/grade_depth_sweep.py` over this sweep's own
+# transcript and sidecar (the EXPECT lines below grade ROUTING only, which is
+# all the exam grammar grades):
+#
+#   (e) LONG          a `teaching` question is NOT capped, and its answer
+#                     carries the invitation to push back. Depth granted.
+#   (f) SHORT         every other second-tier answer is inside the cap; where
+#                     the cap BOUND, the closer names the count.
+#   (g) NO FALSE      the closer is ABSENT on every answer that was not cut. A
+#                     closer on an uncut answer tells a planner there is more
+#                     when there is not.
+#   (h) AUDIENCE      a question naming a person leads with the account, then
+#                     the lever, then OFFERS the inventory — and prints no
+#                     evidence chain and no hold list.
+#   (i) UNTOUCHED     testimony routes render no cap machinery and no teaching
+#                     invitation. Authored templates are already their own
+#                     budget.
+#
+# RESET DISCIPLINE, per v1's lesson: every probe is its own conversation. These
+# are independent specimens, not a thread, and accumulated history would let one
+# probe's subject leak into the next one's resolution ladder.
+# ===========================================================================
+# T — THE TEACHING PROBES. Each asks to be taught something the board does not
+# hold. Graded (e). The route expectation is `synthesis`: `teaching` is a
+# SECOND-TIER intent and its answers render on the synthesis surface — the
+# intent expectation is what proves the parse reached the new member.
+# ===========================================================================
+# [RESET]
+RESET
+EXPECT intent=teaching route=synthesis
+in general, what makes a scheduling problem hard to prove optimal
+
+RESET
+EXPECT intent=teaching route=synthesis
+how do schedulers normally decide which job to run first
+
+RESET
+EXPECT intent=teaching route=synthesis
+what is a bottleneck machine
+
+# The two v17 sent to `coaching`. They are the ones the new meaning has to
+# earn, and the ones that measure whether rule 12's boundary holds.
+RESET
+EXPECT intent=teaching route=synthesis
+why do setup times matter in scheduling
+
+RESET
+EXPECT intent=teaching route=synthesis
+how does a rolling horizon normally work
+
+# ===========================================================================
+# C — THE `coaching` CONTROL. The boundary that costs something. These ask what
+# THIS PRODUCT can model, and must NOT become teaching questions: a capability
+# claim a planner acts on by authoring data is the one place labeling is not
+# sufficient (4B.15 §5a.43), and it is answered from docs/05 or refused.
+# ===========================================================================
+RESET
+EXPECT intent=coaching route=coaching
+can this system model setup families
+
+RESET
+EXPECT intent=coaching route=coaching
+how do i turn on overtime
+
+# ===========================================================================
+# M — THE MIXED CASE. A board entity AND teaching phrasing in one question.
+# R-TG2's both-ways clause: the depth is granted AND the answer grounds on the
+# board before it teaches. Graded (e) and, on the rendered text, that a board
+# claim precedes the general one.
+# ===========================================================================
+RESET
+EXPECT intent=teaching
+explain why PRESS-FAST ends up being the bottleneck here
+
+RESET
+EXPECT intent=teaching
+is CUT-01 overloaded, and what does overloaded normally mean
+
+# ===========================================================================
+# S — THE SHORT BUDGET. Ordinary second-tier questions. Graded (f) and (g):
+# inside the cap, and the closer present if and only if something was withheld.
+# ===========================================================================
+RESET
+EXPECT route=synthesis
+which order carries the largest single tardiness cost line on this board
+
+RESET
+EXPECT route=synthesis
+why would the solver leave a machine idle when there is work waiting
+
+RESET
+EXPECT route=synthesis
+is the work spread evenly across the machines
+
+# ===========================================================================
+# G — THE GOAL FAMILY (R-TG4). The founder's question VERBATIM, plus the two
+# other phrasings the census measured reaching two OTHER routes — because the
+# floor attaches to the QUESTION FAMILY and a rule wired to one route would
+# cover a third of its own family and look finished (4A.y Item 1).
+# Graded (h).
+# ===========================================================================
+RESET
+there are a lot of orders late what reason can i give my boss and what will help lessen the impact
+
+RESET
+what should i tell the customer about ORD-000091
+
+RESET
+what do i say in the production meeting tomorrow about the late orders
+
+# The CONTROL for the same family: a goal question naming NOBODY. It must be
+# answered exactly as it is today — "what should I do" can be a planner
+# thinking out loud, and reshaping an answer on that guess is the false
+# positive the marker is built to avoid.
+RESET
+what should i do about all this lateness
+
+# ===========================================================================
+# U — THE UNTOUCHED CONTROL (i). Contracted testimony, which has its own
+# budget in its own authored copy and must reach none of this machinery.
+# ===========================================================================
+RESET
+EXPECT route=late-orders
+which orders are late and by how much
+
+RESET
+SELECT order=ORD-000128 machine=PAINT-01 seq=20
+EXPECT route=why-here
+why is ORD-000128 op20 placed here
+
+RESET
+EXPECT route=machine-schedule
+what is running on PRESS-FAST

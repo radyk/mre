@@ -820,3 +820,203 @@ expectation was REMOVED rather than set to either value -- asserting the route
 intended would fit the expectation to the author, and asserting the route
 observed would fit it to the output, which recalibration rule (c) forbids. The
 question text is unchanged and the answer is still graded, as a control.
+
+===============================================================================
+AMENDMENT -- axis C8: ANSWER SHAPE (Session 4A teaching-graft (b), 2026-08-04)
+===============================================================================
+
+R-TG2/R-TG3/R-TG4 decide WHEN an answer may go long and when it must stay short,
+and what a question naming a PERSON is owed. Every axis above this line grades
+whether an answer is TRUE, GROUNDED, RESPONSIVE or CORRECTLY CLASSED. None of
+them can see an answer that is all four and still unusable.
+
+WHY IT IS A NEW AXIS. The measured specimen is what forces it. Asked
+
+  "there are a lot of orders late what reason can i give my boss and what
+   will help lessen the impact"
+
+the demo board returned 134 content lines -- a cause mix, ~95 hold-pair lines,
+the unattributed list, the money, and "Evidence chain (614 record(s)):". It is
+the longest answer in every committed sweep by a factor of three and a half.
+EVERY LINE OF IT IS TRUE, every figure is grounded, the route is the right one,
+and every claim is in the right class. C1-C7 pass it. The planner asked for a
+sentence they could say to a person and a lever they could pull, and received an
+inventory: the goal was AUDIENCE-SHAPED and the answer was
+COMPLETENESS-SHAPED.
+
+Beside it, the founder's demo verdict on synthesis length -- "nobody's going to
+sit there and read all that" -- against testimony's short answers in the same
+session, which were praised. Depth that serves a planner studying a problem is a
+liability in front of a stranger, and until this session one budget served both.
+
+WHAT C8 ASKS
+
+  C8a  LEAD WITH THE ANSWER. The first line is the thing they asked for -- not
+       the setup, not what was consulted, not the context.
+  C8b  DEPTH IS GRANTED, NOT ASSUMED. A question that asked to be TAUGHT
+       something may go long, and an explanation is what it earns. Every other
+       answer stays inside the budget. Length is not a proxy for effort, and an
+       answer is not better for being longer.
+  C8c  WHAT IS WITHHELD IS DISCLOSED, AND ONLY WHAT IS WITHHELD. Brevity that
+       silently discards substance is loss, not brevity: a shortened answer says
+       how many points are behind it and offers them. The other side is graded
+       just as hard -- an answer that was NOT shortened must not carry the
+       closer, because that tells a planner there is more when there is not.
+  C8d  A GOAL QUESTION IS ANSWERED IN ITS OWN SHAPE. Where a HUMAN AUDIENCE is
+       named, the answer leads with the one-sentence account, then the single
+       biggest lever the board evidences (labelled for what it ranks on), then
+       OFFERS the inventory. It never prints it. The evidence is not hidden by
+       this: the records are still assembled and still cited on the bundle, so
+       the drill-down opens exactly what the offer offered -- what changed is
+       ORDER and BUDGET, never evidence discipline.
+
+HOW A GRADER APPLIES C8 WITHOUT TURNING IT INTO A LINE COUNT. The cap is
+enforced deterministically at the dispatch seam and its arithmetic is not a
+judgement (`contracts/synthesis.SHORT_CLAIM_BUDGET`, chosen from the measured
+distribution of 86 synthesis answers). What a HUMAN grades is the part no count
+reaches:
+
+  * did the first sentence answer the question?
+  * was the depth EARNED by what was asked, or spent because it was available?
+  * would the planner have wanted the withheld points, and does the closer make
+    it obvious how to get them?
+  * for a goal question: could the planner say the first sentence out loud to
+    the person they named, without editing it?
+
+A C8 miss is a CONVERSATION FAILURE bucket item, not a DEFECT one -- with one
+exception. A closer on an answer that withheld nothing is a FALSE STATEMENT
+about our own process and belongs in DEFECTS, for the same reason a false
+premise does.
+
+WHAT THIS AMENDMENT DOES NOT DO. It adds no expectation to any existing bank and
+changes no question text (rule (a) of the r5 recalibration, carried). The
+specimens live in a NEW versioned bank, tests/ai_exam/banks/sweep_teaching_v2.txt,
+whose five expectation families are graded by
+tools/spikes/teaching_graft_b/grade_depth_sweep.py.
+
+WHAT REMAINS HUMAN-GRADED AND IS DELIBERATELY NOT BUILT HERE. "Would a planner's
+mental model of their plant be BETTER for having read this" is the exam axis for
+session (c), not this one. C8 grades the SHAPE of an answer, which is
+observable; whether an explanation TAUGHT anything is not, and inventing a
+machine check for it would measure the check.
+
+===============================================================================
+AMENDMENT -- axis C9: DOES THE ANSWER TEACH? (Session 4A teaching-graft (c),
+2026-08-04)
+===============================================================================
+
+C8's closing paragraph handed this axis to this session by name: "would a
+planner's mental model of their plant be BETTER for having read this" is not
+what C8 grades, and C8 said so rather than reaching for it. This is that axis.
+
+WHAT IT ASKS, IN ONE SENTENCE. After reading the answer, could the planner
+predict the system's behaviour in a case the answer did not cover?
+
+WHY IT IS A NEW AXIS AND NOT A CASE OF C1 OR C8. C1 (responsiveness) asks
+whether the question was answered. C8 (answer shape) asks whether the answer was
+usable by the person who asked it. Both are satisfied completely by an answer
+that hands over a correct FACT and leaves the planner exactly as able to predict
+the next case as they were before. That is the whole gap: a product that answers
+every question truthfully and teaches nothing has to be asked every question,
+forever, and a planner who cannot anticipate it cannot trust it either.
+
+  C9a  THE PRINCIPLE IS PRESENT. A teaching answer says how the thing WORKS,
+       not only what it DID here. "ORD-000112 slipped because ORD-000252 held
+       CUT-01 until the 27th" is a fact; "a machine with one eligible lane
+       serialises everything routed to it, so the second order waits for the
+       first regardless of its own due date" is a principle, and only the second
+       one survives contact with a case the answer did not cover.
+  C9b  THE PRINCIPLE IS ATTACHED. A general sentence floating free of this
+       board is a textbook, and a board fact with no principle is a lookup. A
+       teaching answer carries both, and the general half is about the specific
+       half -- the planner should be able to see the principle OPERATING in the
+       instance they asked about.
+  C9c  THE INVITATION NAMES SOMETHING CHECKABLE. "Ask me more" teaches nothing.
+       An invitation that names a subject, a route or a comparison the planner
+       can actually run is the difference between an offer and a pleasantry, and
+       it is also how a planner TESTS the principle they were just given.
+  C9d  IT TRANSFERS. The test case: take the principle the answer stated, apply
+       it to a DIFFERENT machine or order, and ask whether the prediction it
+       licenses is the one the product actually gives. This is graded over a
+       PAIR of turns, and the pair is asked with RESET between them -- see below.
+
+THE TRANSFER PROBE, AND WHY IT IS TWO SINGLE TURNS AND NOT A CONVERSATION
+
+A transfer probe is a pair (Q1, Q2). Q1 is a teaching question. Q2 asks a
+question about a DIFFERENT subject whose answer FOLLOWS from the principle Q1's
+answer should have stated. The pair is fired with RESET between them, so Q2 is
+answered with no memory of Q1 at all.
+
+That is deliberate and it is the whole design. If Q2 were asked in the same
+conversation, a correct Q2 would prove only that the model can carry its own
+sentence forward, which is a memory property and is session (d)'s subject.
+Asked cold, Q2's answer is the GROUND TRUTH about what this system does in the
+uncovered case -- produced by the product, independently of anything Q1 said.
+The grading question is then sharp and it is about Q1: does the principle Q1
+stated PREDICT the answer Q2 gave? A planner reading Q1 alone would have made
+that prediction, or would not have.
+
+Consequence worth stating plainly: Q2 is not the thing being graded. Q2 is the
+answer key. A wrong Q2 invalidates the pair rather than failing it.
+
+WHAT IS MECHANICAL AND WHAT IS HUMAN -- THE BOUNDARY, STATED
+
+Machine-checkable, and these are the ONLY parts a script grades
+(tools/spikes/teaching_graft_c/grade_c9_sweep.py):
+
+  M1  A teaching answer carries at least one LABELLED general-knowledge claim.
+      Reads the per-turn claim counts. A teaching answer made entirely of board
+      facts is a recital wearing the depth licence, and that is visible without
+      reading a word of it.
+  M2  The same answer ALSO carries at least one verified or interpretive board
+      claim. This checks CO-OCCURRENCE and nothing more. C9b's real content --
+      that the general half is ABOUT the specific half -- is not readable from
+      counts, and the check does not pretend otherwise. Named so that a green M2
+      is never quoted as evidence for C9b.
+  M3  Where the answer offers a follow-up, the offer is REAL. This is not a new
+      mechanism: the sweep's existing door check already fires every offered
+      follow-up through the parse layer a planner clicking it would hit
+      (tests/ai_exam/test_real_doors.py). C9c's mechanical half is that check,
+      reused rather than reinvented.
+  M4  Both halves of a transfer pair were ANSWERED -- routed, second-tier or
+      contracted, not a clarify and not the capability card. A pair whose Q2 the
+      product could not answer cannot grade transfer, and it is reported as an
+      INVALID PAIR, never as a failure.
+
+Human-only, and deliberately not automated:
+
+  H1  Is the principle TRUE -- of scheduling, and of THIS product? A plausible
+      general sentence that misdescribes what our solver actually does is worse
+      than no principle at all, and C7 cannot catch it: a general-knowledge
+      claim is unverifiable by design, which is exactly why the class exists.
+  H2  Does the principle PREDICT Q2's answer? (C9d.)
+  H3  Would the planner be able to predict a THIRD case, one neither turn
+      covered? This is the axis's actual subject and no pair can prove it.
+
+THE TEMPTATION, WRITTEN DOWN AND REFUSED. The obvious way to grade H2 is to
+show a language model Q1's answer and Q2's answer and ask whether the first
+predicts the second. It would produce a number this afternoon. It is refused,
+for the reason R-AI4(2) already gives and for one more:
+
+  * this repo grades conversation by READING, and an LLM judge is a metric
+    wearing a reader's clothes -- the RUBRIC's own second paragraph;
+  * and the failure mode is not hypothetical. The thing being graded is whether
+    an explanation transfers to a human. A model asked "does A predict B" scores
+    the ENTAILMENT, which is a different question, and it scores it using the
+    same weights that wrote A. A judge that shares an author with the work is
+    not an independent measurement -- it is the work, marking itself.
+
+If a future session wants H2 mechanised, the honest instrument is the FOUNDER
+ROUND, not a judge: a person reads Q1, writes down their prediction, and only
+then reads Q2. That is what tools/spikes/teaching_graft_c/founder_round_c9.md
+is for, and it is a committed script rather than a simulated result.
+
+A C9 miss is a CONVERSATION FAILURE bucket item, with one exception, and it is
+the same exception C7 carries: a principle that is FALSE of this product (H1)
+is a DEFECT, because a planner who acts on it authors data or gestures against
+behaviour the plant does not have.
+
+WHAT THIS AMENDMENT DOES NOT DO. It adds no expectation to any existing bank and
+changes no question text (rule (a) of the r5 recalibration, carried). The
+specimens live in a NEW versioned bank,
+tests/ai_exam/banks/sweep_teaching_v3.txt.

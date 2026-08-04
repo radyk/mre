@@ -1,0 +1,198 @@
+==============================================================================
+[A1] in general, is $1,667,467.80 of tardiness a lot for a plant like this
+  route=synthesis register=synthesis intent=teaching conf=0.92
+  claims=4 verified=2 interpretive=2 general=0 cut=0 DEFERRED=0
+  REFUSED-GK=0
+------------------------------------------------------------------------------
+No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+Yes — $1,667,467.80 is a very large tardiness figure for this plan: tardiness alone is $1,580,665.00 of the $1,667,467.80 total cost, dwarfing production cost ($71,362.80) and setup cost ($15,440.00) combined.  [record: 3c67fcfd...]
+Of the 280 orders this plan knows about, only 158 have a placement at all; of those 158, 102 are late and just 56 are on time or early, and the other 122 orders are not scheduled in this window at all (neither late nor on time). (based on the 60 row(s) cost_ledger returned, not the whole plan)  [synthesis — read from: 3c67fcfd, 47a25482, 70a2f322]
+The tardiness cost is dominated by a long tail of individually large penalties — the two worst orders alone, ORD-000091 and ORD-000126, account for $147,776.67 and $127,400.00, and many orders are running tens of thousands of minutes late against due dates as far back as mid-December 2025.  [record: 47a25482...]
+This is not a marginal or noise-level number — with tardiness cost roughly 22 times the production cost and nearly two-thirds of the 158 scheduled orders landing late, the schedule is signaling a real capacity or sequencing shortfall rather than a few edge-case slips.  [synthesis — read from: 3c67fcfd, 47a25482, 70a2f322]
+
+That is how it works in general — you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.
+
+Note: the cost figures above are not proven optimal — the solver ran out of budget with a gap of 89.6% still open, so a cheaper schedule may exist and could be up to that much cheaper.
+
+[rendered by: synthesis (claude-sonnet-5) — 2 tool call(s) | register: synthesis]
+==============================================================================
+[A2] explain why machines like CUT-01 usually end up being the bottleneck
+  route=synthesis register=synthesis intent=teaching conf=0.92
+  claims=4 verified=0 interpretive=4 general=0 cut=0 DEFERRED=0
+  REFUSED-GK=1
+    ! A machine loaded to over 90% utilization has almost no slack, so any variability upstream — a late input, a longer-than-planned run, a rush order — ha
+      -> offered as general knowledge and refused the label because it states a figure this run computed (90) — checked as a claim about this plan instead: no assertion this run's records can check
+------------------------------------------------------------------------------
+No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+CUT-01 is running at 91.6% utilization (12505 working minutes against 13656 open capacity minutes) across the plan, which is why it tends to be the bottleneck: almost all of its available time is already committed to work. (based on the 60 row(s) machine_occupancy returned, not the whole plan)  [synthesis — read from: 440fbc69]
+Across the 70 operations scheduled on CUT-01, gaps before an operation are mostly small or zero, and where a larger gap appears (for example 3618 minutes before ORD-000255, or 3632 minutes before ORD-000227) most of it is closed time rather than open capacity — idle_open_minutes_before is only 18 and 32 minutes respectively — so there is very little true open capacity left to absorb new or shifted work. (based on the 60 row(s) machine_occupancy returned, not the whole plan)  [synthesis — read from: 9cf8be36, 66b99df2, 237c835f]
+A machine loaded to over 90% utilization has almost no slack, so any variability upstream — a late input, a longer-than-planned run, a rush order — has nowhere to absorb and instead pushes straight through as delay to everything queued behind it, which is the classic signature of a bottleneck resource.  [synthesis — read from: b4119ea4, f6afdc6f, 89f01837]
+Machines like CUT-01 end up as the bottleneck because their committed workload consumes nearly all of the plant's open capacity for that resource, leaving almost no room to reorder or absorb disruption without pushing lateness onto downstream orders. (based on the 60 row(s) machine_occupancy returned, not the whole plan)  [synthesis — read from: b4119ea4, f6afdc6f, 89f01837]
+
+That is how it works in general — you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.
+[rendered by: synthesis (claude-sonnet-5) — 1 tool call(s) | register: synthesis]
+==============================================================================
+[A3] as a rule of thumb, how bad is a gap of 89.6% — is that normal for a schedule this size
+  route=synthesis register=synthesis intent=teaching conf=0.92
+  claims=4 verified=0 interpretive=1 general=1 cut=2 DEFERRED=0
+  REFUSED-GK=0
+------------------------------------------------------------------------------
+No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+What I can say from this schedule: of 280 known orders, 158 are scheduled and 122 have no placement at all in this horizon; of the 158 scheduled, 102 are late and 56 are on time or early. (based on the 60 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: d959ce6a, 0852f8e4, 2259fe61]
+As a rule of thumb, a gap that large — whether it's a utilization figure, a lateness rate, or a fill rate — is not a normal or healthy number for a production schedule; gaps that size usually signal a capacity shortfall or a data problem (e.g. wrong due dates, missing calendars) rather than routine scheduling noise, which typically shows up as single-digit-to-low-double-digit percentages.  [general knowledge — how scheduling works in general, not a fact about this plan]
+
+Where a line is marked general knowledge it draws on how scheduling and plants behave generally — not on this plan's records, so there is nothing here to check it against.
+
+Part of what I drafted was neither something I could check against your board nor general scheduling knowledge, so I left it out rather than state it with a label that would have been wrong either way.
+
+That is how it works in general — you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.
+[rendered by: synthesis (claude-sonnet-5) — 2 tool call(s) | register: synthesis]
+==============================================================================
+[A4] generally speaking, is it normal for an order like ORD-000112 to slip this far, and why does that happen in job shops
+  route=synthesis register=synthesis intent=teaching conf=0.92
+  claims=4 verified=1 interpretive=2 general=1 cut=0 DEFERRED=0
+  REFUSED-GK=0
+------------------------------------------------------------------------------
+No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+Yes — ORD-000112 is 27060 minutes (about 18.8 days) late against its due date of 2026-01-11, but this is not unusual for the pattern seen on this board: 102 of the 158 scheduled orders are late, and many carry lateness in the tens of thousands of minutes. (based on the 60 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: 9b615266, b707c061, 7ed22bf5]
+ORD-000112 has two operations: CUT-01 on 2026-01-28 (102 minutes of work) and PAINT-01 on 2026-01-30 (107 minutes of work) — both scheduled more than two weeks after its 2026-01-11 due date.  [record: 9b3e342a...]
+CUT-01, the machine that runs ORD-000112's first operation, is booked at 91.6% utilization (12505 working minutes against 13656 open minutes) across the plan, leaving little slack to pull any single order forward.  [synthesis — read from: 440fbc69]
+In a job shop, lateness this large is normal and typically comes from queueing, not from the order itself: when shared machines run near saturation, a modest backlog compounds because every order waits behind whatever was sequenced ahead of it, and a due date that falls in a busy stretch of the schedule can slip by weeks even though each individual operation only takes an hour or two of actual work.  [general knowledge — how scheduling works in general, not a fact about this plan]
+
+Where a line is marked general knowledge it draws on how scheduling and plants behave generally — not on this plan's records, so there is nothing here to check it against.
+
+That is how it works in general — you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.
+[rendered by: synthesis (claude-sonnet-5) — 3 tool call(s) | register: synthesis]
+==============================================================================
+[A5] typically, what does it mean when a plant has 122 orders sitting beyond the horizon — is that a lot
+  route=synthesis register=synthesis intent=teaching conf=0.92
+  claims=4 verified=0 interpretive=3 general=1 cut=0 DEFERRED=0
+  REFUSED-GK=0
+------------------------------------------------------------------------------
+No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+122 orders beyond the horizon is 43.6% of all 280 orders this plan knows about, and it matches the 122 not_scheduled orders in the lateness set — every one of them has no placement in this window. (based on the 60 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: aec9d551, 94d76780, a740525e]
+Per the lateness set, this plant's 280 known orders split into 158 scheduled (102 late, 56 on time or early) and 122 not_scheduled — the not_scheduled group is neither late nor on time, it has no placement at all. (based on the 60 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: aec9d551]
+Beyond-horizon is contract vocabulary for known, admitted work with no placement in the current scheduling window (a fine-grained solve interval, typically 7-14 days); it is expected to enter a later window as the plan rolls, and is not by itself a sign anything was dropped or missed.  [general knowledge — how scheduling works in general, not a fact about this plan]
+Whether 122 is 'a lot' can't be answered from a fixed threshold — it depends on this plant's normal beyond-horizon count run over run, which I have no baseline for here; what I can say is that it is 43.6% of the order book, which is a large share to be sitting with no placement at all, and worth checking against the coarse look-ahead to see whether that work is even expected to fit once its window rolls in. (based on the 60 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: aec9d551, 94d76780, a740525e]
+
+Where a line is marked general knowledge it draws on how scheduling and plants behave generally — not on this plan's records, so there is nothing here to check it against.
+
+That is how it works in general — you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.
+[rendered by: synthesis (claude-sonnet-5) — 2 tool call(s) | register: synthesis]
+==============================================================================
+[A6] in most factories, is running a machine at the load CUT-01 is carrying sustainable
+  route=synthesis register=synthesis intent=teaching conf=0.78
+  claims=4 verified=1 interpretive=2 general=1 cut=0 DEFERRED=0
+  REFUSED-GK=1
+    ! Utilization near 90%+ is a widely used rule-of-thumb threshold in queueing and operations literature beyond which waiting times and schedule fragility
+      -> offered as general knowledge and refused the label because it states a figure this run computed (90) — checked as a claim about this plan instead: no assertion this run's records can check
+------------------------------------------------------------------------------
+No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+CUT-01 is running at 91.6% utilization (12,505 working minutes against 13,656 minutes of open capacity) across the scheduled window from 2026-01-05 to 2026-01-30.  [record: 440fbc69...]
+In most factories, sustained machine utilization in the high-80s to low-90s percent range is considered heavy loading: it leaves little slack to absorb breakdowns, rush orders, or changeover variability without causing queueing delays.  [general knowledge — how scheduling works in general, not a fact about this plan]
+Utilization near 90%+ is a widely used rule-of-thumb threshold in queueing and operations literature beyond which waiting times and schedule fragility grow sharply, because the effective buffer against variability shrinks toward zero.  [synthesis — read from: b4119ea4, f6afdc6f, 89f01837]
+CUT-01's 91.6% load is on the high side of what most factories treat as sustainable for an ongoing run; it is workable short-term but leaves this machine with little cushion for disruption, so it is a candidate to watch rather than a comfortable long-run level. (based on the 60 row(s) machine_occupancy returned, not the whole plan)  [synthesis — read from: b4119ea4, f6afdc6f, 89f01837]
+
+Where a line is marked general knowledge it draws on how scheduling and plants behave generally — not on this plan's records, so there is nothing here to check it against.
+
+That is how it works in general — you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.
+[rendered by: synthesis (claude-sonnet-5) — 1 tool call(s) | register: synthesis]
+==============================================================================
+[B1] compare the three cutting machines on utilization, lateness contribution, and idle time
+  route=synthesis register=synthesis intent=unmatched conf=0.92
+  claims=4 verified=2 interpretive=2 general=0 cut=0 DEFERRED=0
+  REFUSED-GK=0
+------------------------------------------------------------------------------
+No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+CUT-01 is the most heavily used cutting machine at 91.6% utilization (12,505 working minutes against 13,656 open minutes), CUT-02 is close behind at 88.6% (7,164 of 8,082), and CUT-03 is far lighter at 21.8% (2,640 of 12,087). (based on the 60 row(s) machine_occupancy returned, not the whole plan)  [synthesis — read from: 440fbc69, df5aa682, 3f032ed0]
+CUT-03 carries large idle gaps: one order (ORD-000134) waited behind 8,044 minutes of open idle capacity before its 465-minute run on 28 January, and another (ORD-000236) sat behind 946 open idle minutes before running on 9 January.  [record: 45c11655...]
+Two orders that run on CUT-03 and CUT-02 also carry heavy tardiness cost in the ledger — ORD-000056 (on CUT-03, completion projected 2026-01-23T18:51:00Z) costs 69,813.75, and ORD-000250 (on CUT-02, completion projected 2026-01-07T18:48:00Z) costs 28,410 — but the ledger attributes cost to the order, not to a machine, so this is a cross-reference, not a machine-level lateness figure.  [record: 011eca58...]
+CUT-01 and CUT-02 are running near their open capacity while CUT-03 sits mostly idle, which reads as an unbalanced load across the three cutters rather than a shortage of cutting capacity overall.  [synthesis — read from: b4119ea4, f6afdc6f, 89f01837]
+[rendered by: synthesis (claude-sonnet-5) — 5 tool call(s) | register: synthesis]
+==============================================================================
+[B2] for each of CUT-01, MILL-01 and PRESS-FAST tell me how loaded it is, how much lateness it is responsible for, and how much idle time it has
+  route=synthesis register=synthesis intent=unmatched conf=0.92
+  claims=4 verified=0 interpretive=2 general=0 cut=2 DEFERRED=0
+  REFUSED-GK=0
+------------------------------------------------------------------------------
+No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+CUT-01 is the most heavily loaded of the three: 12,505 minutes of work against 13,656 minutes of open capacity, 91.6% utilization, leaving about 1,151 minutes of open idle capacity over the plan. (based on the 60 row(s) machine_occupancy returned, not the whole plan)  [synthesis — read from: 440fbc69]
+MILL-01 has 10,514 minutes of work against 12,823 minutes of open capacity, 82.0% utilization, leaving about 2,309 minutes of open idle capacity.  [synthesis — read from: fd34d391]
+
+One step of my reasoning didn't hold up against the records, so I couldn't ground part of it and I've left that step out rather than state it.
+[rendered by: synthesis (claude-sonnet-5) — 6 tool call(s) | register: synthesis]
+==============================================================================
+[B3] give me a machine by machine breakdown of this board: load, late orders, idle time and setup burden for every lane that carries work
+  route=briefing register=testimony intent=briefing conf=0.92
+------------------------------------------------------------------------------
+158 scheduled orders on 15 machines over 2026-01-05 to 2026-02-05. 6 things worth your attention, worst first:
+
+1. The cost optimum is NOT proved — the solver stopped with a gap of 89.6% still open.
+     Against a ledger of 1,667,467.80, that bound leaves up to 1,494,205.31 on the table — an upper limit on what a cheaper schedule could save, not a saving anyone has found.
+     -> Ask "is this schedule optimal?" for what the solver did and did not prove.
+
+2. 102 order(s) finish late in this window, costing 1,044,865.00 that this schedule is answerable for (535,800.00 more was already accrued and no placement can recover it).
+     ORD-000206 — 38d 19h late, of which 10d was already on the clock before this window opened
+     ORD-000056 — 38d 18h late, of which 20d was already on the clock before this window opened
+     ORD-000256 — 38d 14h late, of which 17d was already on the clock before this window opened
+     …and 99 more.
+     -> Ask "why are so many orders late?" for the cause mix, or "why is <order> late?" for one chain.
+
+3. 1 order(s) finish on time with less slack than one of their own operations takes.
+     ORD-000210 — 6h10m of slack against a longest step of 7h59m of work
+     -> Ask "when does <order> finish?" for the timeline, or "what would have to change for <order> to start earlier?".
+
+4. planned maintenance on Wednesday 2026-01-14 takes out ASM-01, CUT-01, CUT-02, CUT-03 and 8 more.
+     -> Ask "is any maintenance scheduled?" for the calendar.
+
+5. 122 known order(s) sit beyond the planning horizon with no placement yet.
+     The earliest of them is due 2026-01-16.
+     7 of them could not be placed even coarsely, so their load is NOT counted in any figure above.
+     -> Ask "what's beyond the horizon?" for the list, or "will it fit?" for the capacity read.
+
+6. 4 data-quality finding(s) stand against this submission.
+     4 of them were PROCEEDED PAST — the plan was built anyway, with the defect disclosed rather than fixed.
+     CUT-01 is in a workload too dense to schedule cleanly
+     -> Ask "what should I fix first?" for the triage.
+[rendered by: template | register: testimony]
+==============================================================================
+[B4] list every distinct problem on this board, one line each, and do not merge them
+  route=synthesis register=synthesis intent=unmatched conf=0.72
+  claims=4 verified=0 interpretive=3 general=0 cut=1 DEFERRED=0
+  REFUSED-GK=0
+------------------------------------------------------------------------------
+No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+The board has 4 distinct data-quality findings: one PAST_DUE_AT_INTAKE (info) and three separate DENSITY_LIMIT warnings.  [synthesis — read from: d959ce6a, 0852f8e4, 2259fe61]
+PAST_DUE_AT_INTAKE, severity info, disposition proceeded_flagged.  [synthesis — read from: d959ce6a]
+DENSITY_LIMIT, severity warning, disposition proceeded_flagged — this occurs as three separate findings, each its own record and not a repeat of the same one. (based on the 4 row(s) gate_findings returned, not the whole plan)  [synthesis — read from: 0852f8e4, 2259fe61, 1195525f]
+
+Part of what I drafted was neither something I could check against your board nor general scheduling knowledge, so I left it out rather than state it with a label that would have been wrong either way.
+[rendered by: synthesis (claude-sonnet-5) — 1 tool call(s) | register: synthesis]
+==============================================================================
+[B5] what are the five separate things going wrong on this schedule
+  route=synthesis register=synthesis intent=unmatched conf=0.92
+  claims=5 verified=0 interpretive=4 general=0 cut=1 DEFERRED=0
+  REFUSED-GK=0
+------------------------------------------------------------------------------
+No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
+
+122 of 280 known orders have no placement at all in this schedule — they are not scheduled, and so are neither late nor on time. (based on the 60 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: d959ce6a, 0852f8e4, 2259fe61]
+Of the 158 orders that are scheduled, 102 are late and only 56 are on time or early. (based on the 60 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: d959ce6a, 0852f8e4, 2259fe61]
+Tardiness cost dominates the ledger: 1,580,665 out of a total 1,667,467.80, versus 71,362.80 in production cost and 15,440 in setup cost — and 535,800 of that tardiness cost is a floor charge that would apply even under an ideal sequence, with 1,044,865 the controllable remainder.  [synthesis — read from: 3c67fcfd]
+Three separate operations were flagged for exceeding a density limit, and one order was already past its due date at intake, all proceeding into the plan flagged rather than blocked. (based on the 60 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: 0852f8e4, 2259fe61, 1195525f]
+
+Part of what I drafted was neither something I could check against your board nor general scheduling knowledge, so I left it out rather than state it with a label that would have been wrong either way.
+[rendered by: synthesis (claude-sonnet-5) — 4 tool call(s) | register: synthesis]
+==============================================================================
+HUNT A — direction (i) refusals observed: 2
+HUNT B — answers whose closer fired:      0
+records -> tests/ai_exam/sweeps/2026-08-04-teaching-c/hunt-records.json

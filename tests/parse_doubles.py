@@ -135,7 +135,8 @@ def parsed(question: str, intent: Intent, *,
            clarify_detail: str = "",
            op_seq: Optional[int] = None,
            move_direction: Optional[Any] = None,
-           move_target: str = "") -> ParsedQuestion:
+           move_target: str = "",
+           audience: str = "") -> ParsedQuestion:
     """Build a ParsedQuestion with subjects given as the planner's own words.
 
     ``pointed`` names the kinds the planner POINTED at rather than named ("this
@@ -168,6 +169,7 @@ def parsed(question: str, intent: Intent, *,
         clarify=ClarifyPayload(reason=clarify, detail=clarify_detail)
         if clarify else None,
         move_direction=move_direction, move_target=move_target,
+        audience=audience,
         prompt_version="test")
 
 

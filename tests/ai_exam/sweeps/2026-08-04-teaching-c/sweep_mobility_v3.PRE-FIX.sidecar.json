@@ -1,0 +1,86 @@
+{
+  "target": "out-dir:mobility_pinned",
+  "snapshot": "snap-mobility",
+  "started_at": "2026-08-04T12:55:12Z",
+  "llm_mode": "live",
+  "questions": 11,
+  "llm_calls": 16,
+  "parser_stats": {
+    "calls": 12,
+    "parses": 12,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 0,
+    "unavailable": 0,
+    "unreachable": 0,
+    "median_latency_ms": 1559.6504999998615,
+    "malformed_samples": []
+  },
+  "synth_stats": {
+    "syntheses": 1,
+    "calls": 4,
+    "tool_calls": 3,
+    "malformed": 0,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 1,
+    "median_latency_ms": 12634.899799999857,
+    "p90_latency_ms": 12634.899799999857
+  },
+  "synthesis": {
+    "answers": 1,
+    "claims": 4,
+    "verified": 0,
+    "interpretive": 0,
+    "general_knowledge": 0,
+    "failed_and_cut": 4,
+    "deferred": 0,
+    "ungrounded_load_bearing": 4,
+    "unanswerable": 1,
+    "budget_exhausted": 0,
+    "tool_calls": 3,
+    "tool_histogram": {
+      "constraint_catalog": 2,
+      "spec_lookup": 1
+    },
+    "calls_per_answer": {
+      "3": 1
+    }
+  },
+  "shadow": {
+    "shadowed": 0,
+    "clean": 0,
+    "diverged": 0,
+    "unchecked": 0,
+    "provenance_strengthened": 0,
+    "by_intent": {}
+  },
+  "latency": {
+    "route": {
+      "n": 10,
+      "median_ms": 1641.2,
+      "p90_ms": 2239.3
+    },
+    "synthesis": {
+      "n": 1,
+      "median_ms": 13938.6,
+      "p90_ms": 13938.6
+    }
+  },
+  "graded_expectations": {
+    "graded": 10,
+    "met": 10
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "ungrounded-load-bearing": 1
+  },
+  "findings": [
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 122,
+      "question": "what makes a job impossible to move at all",
+      "detail": "4 load-bearing claim(s) could not be grounded and were cut"
+    }
+  ]
+}
