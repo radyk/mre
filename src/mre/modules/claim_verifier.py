@@ -26,15 +26,24 @@ THE OUTCOME TAXONOMY (``ClaimStatus``), and exactly what earns each:
                 First-class conversation (R-AI5(6)), not a failure.
   FAILED        a checkable assertion CONTRADICTS the cited evidence — and nothing
                 else the loop read carries it either — or the claim cites a record
-                that does not exist, or it names an entity this run does not have.
-                The claim is CUT.
+                that does not exist, or it names an entity this run does not have,
+                or (R-TG1 direction (ii)) it cites nothing, grounds nothing and
+                names nothing on this board while not being offered as general
+                knowledge. The claim is CUT.
+  GENERAL_KNOWLEDGE
+                the model OFFERED the claim as domain knowledge and deterministic
+                code confirmed it carries no board content at all. Verification is
+                SKIPPED — not passed, not failed. This is the one outcome in the
+                taxonomy that is not a verdict about grounding; it is a statement
+                about what the sentence is ABOUT, and it is the only one a claim
+                can be refused (see ``gk_disqualifiers``).
 
-The three-way distinction matters and is deliberate. An assertion the records simply
-do not speak to is NOT a contradiction — it is unproven, and unproven means labeled,
-not deleted (R-AI5(3): "remain visibly synthesis or are softened or cut"). A
-contradiction is narrower: the cited records DO carry that kind of quantity and it
-does not match. That is the fabricated-adjacency class the round-three exam found,
-and it is cut.
+The distinction between the first three matters and is deliberate. An assertion
+the records simply do not speak to is NOT a contradiction — it is unproven, and
+unproven means labeled, not deleted (R-AI5(3): "remain visibly synthesis or are
+softened or cut"). A contradiction is narrower: the cited records DO carry that
+kind of quantity and it does not match. That is the fabricated-adjacency class
+the round-three exam found, and it is cut.
 """
 from __future__ import annotations
 
@@ -52,6 +61,19 @@ from mre.contracts.synthesis import (
 from mre.modules.renderers import (
     _TS_FULL_RE, _to_minute_tuple, _ts_matches,
 )
+
+#: The reason a claim is cut by R-TG1 enforcement direction (ii). A CONSTANT
+#: because the surface has to tell this cut apart from a grounding failure: the
+#: two are cut for opposite reasons and the planner is owed the right one. "My
+#: reasoning didn't hold up against the records" is FALSE of a sentence that
+#: never touched the records — measured live on the demo board, where the tier's
+#: own honest limit statement ("whether a large gap here reflects a weak schedule
+#: versus a loose bound is something I cannot check against this run") was cut
+#: here and then reported as a failed grounding.
+UNPLACEABLE_REASON = (
+    "it cites no record, states nothing this run's evidence can check, and names "
+    "nothing on this board — so it is not a reading of this plan, and it was not "
+    "offered as general knowledge")
 
 # Outcomes of checking ONE assertion against a scope of fetched evidence.
 _GROUNDED = "grounded"
@@ -294,6 +316,94 @@ def extract_assertions(text: str, *, order_refs: dict, machine_refs: dict,
     return out
 
 
+# ---------------------------------------------------------------------------
+# R-TG1 — BOARD CONTENT. The one predicate both enforcement directions turn on.
+# ---------------------------------------------------------------------------
+
+#: Every bare figure in a sentence, however it is written: "90%", "1,667,467.80",
+#: "431 minutes", "3". Deliberately WIDER than ``extract_assertions``' bare-number
+#: rule, which only reads a loose number as a count when the claim quantifies.
+#: That narrowness is right for grounding a board claim (the "5" in "5 January" is
+#: not a tally anybody computed, and demoting a true sentence over it teaches
+#: nothing). It is exactly wrong here: the question this predicate answers is not
+#: "does this figure ground" but "does this sentence look like it is about the
+#: board", and for that a bare number IS the signal.
+_BARE_FIGURE_RE = re.compile(r"(?<![\w.-])(\d[\d,]*(?:\.\d+)?)(?![\w.-])")
+
+
+def _bare_figures(text: str) -> list[float]:
+    out: list[float] = []
+    for m in _BARE_FIGURE_RE.finditer(text or ""):
+        value = _figure(m.group(1))
+        if value is not None:
+            out.append(value)
+    return out
+
+
+def gk_disqualifiers(claim: DraftClaim, assertions: list[Assertion],
+                     scope: _Scope, wide: Optional[_Scope] = None) -> list[str]:
+    """Why this claim may NOT wear the general-knowledge label — or [] if it may.
+
+    R-TG1's core, and it is DETERMINISTIC: the model's own classification is a
+    PROPOSAL, and this function is the check that runs BOTH ways over it. A claim
+    is disqualified by any board content at all, because the general-knowledge
+    class is unverifiable by design and a class nobody verifies must not be
+    reachable by a sentence anybody could have checked. That would be the exact
+    inverse abuse — verification escaped by assertion.
+
+    Board content is five things, and each is here for its own reason:
+
+      a CITATION      claiming a record backs the sentence IS claiming the sentence
+                      is about this plan; nothing general needs one.
+      an ENTITY       an order or a machine — known to this run, or entity-SHAPED
+                      and absent from it, which is a fabrication either way.
+      a TIMESTAMP     a placement time is a fact about this schedule.
+      MONEY           a currency figure on this board is a ledger figure.
+      OUR OWN FIGURE  a number this run computed. This is the clause that closes
+                      the escape hatch: "85% utilization is generally healthy" is
+                      a general sentence right up until 85 is what PRESS-FAST
+                      measures, at which point it is an unverified board claim
+                      wearing a label that forbids checking it.
+
+    The last clause is deliberately conservative — it rejects on a MATCH against
+    anything the loop read, so a general sentence quoting an unrelated small
+    integer is sent back to board verification too. Rejection is not a cut: it
+    means the claim is checked the ordinary way, which is what happened to it
+    before this class existed. Over-rejection therefore fails toward today's
+    behaviour, and under-rejection is the escape hatch, so the asymmetry is taken
+    on purpose.
+    """
+    reasons: list[str] = []
+    if [r for r in claim.record_ids if r]:
+        reasons.append("it cites this run's records")
+    named = [a.text for a in assertions if a.kind == "entity"]
+    if named:
+        reasons.append("it names " + ", ".join(named[:3]))
+    if any(a.kind == "timestamp" for a in assertions):
+        reasons.append("it states a time on this schedule")
+    if any(a.kind == "money" for a in assertions):
+        reasons.append("it states a currency figure")
+    known: set[float] = set()
+    for src in (scope, wide):
+        if src is None:
+            continue
+        known |= {abs(n) for n in src.numbers}
+        known |= {abs(n) for n in src.tallies}
+        known |= {abs(n) for n in src.counts}
+        known |= {abs(n) for n in src.duration_minutes}
+    hits = [v for v in _bare_figures(claim.text) if _near(abs(v), known)]
+    if hits:
+        reasons.append("it states a figure this run computed ("
+                       + ", ".join(f"{v:g}" for v in hits[:3]) + ")")
+    return reasons
+
+
+def _has_board_content(claim: DraftClaim, assertions: list[Assertion],
+                       scope: _Scope, wide: Optional[_Scope]) -> bool:
+    """The same predicate, read the other way — for enforcement direction (ii)."""
+    return bool(gk_disqualifiers(claim, assertions, scope, wide))
+
+
 def _figure(text: str) -> Optional[float]:
     try:
         return float(str(text).replace(",", ""))
@@ -411,7 +521,24 @@ def _read_from(toolbox: Any, scope_ids: list[str]) -> list[str]:
 def verify_claim(claim: DraftClaim, *, toolbox: Any,
                  wide: Optional[_Scope] = None) -> VerifiedClaim:
     """One drafted claim → its verdict. The model's citations are INPUT here; the
-    STATUS is this function's, always (R-AI5(8))."""
+    STATUS is this function's, always (R-AI5(8)).
+
+    R-TG1: so is the model's CLASS. A claim offered as general knowledge and
+    refused the label does not fail for it — it is verified the ordinary way, and
+    the record says the offer was made and why it was refused, because a
+    disqualification that leaves no trace is a check nobody can audit."""
+    blocked: list[str] = []
+    out = _verify_one(claim, toolbox=toolbox, wide=wide, gk_blocked_out=blocked)
+    if blocked and out.status is not ClaimStatus.GENERAL_KNOWLEDGE:
+        out.reason = ("offered as general knowledge and refused the label because "
+                      + "; ".join(blocked) + " — checked as a claim about this "
+                      "plan instead: " + out.reason)
+    return out
+
+
+def _verify_one(claim: DraftClaim, *, toolbox: Any,
+                wide: Optional[_Scope] = None,
+                gk_blocked_out: Optional[list] = None) -> VerifiedClaim:
     ex = toolbox._ex
     if wide is None:
         wide = _Scope(toolbox, list(getattr(toolbox, "consulted", []) or []))
@@ -451,6 +578,36 @@ def verify_claim(claim: DraftClaim, *, toolbox: Any,
         machine_refs=getattr(ex, "_machine_refs", {}) or {},
         order_shapes=getattr(ex, "_order_shape_patterns", []) or [])
 
+    # 1b — R-TG1, ENFORCEMENT DIRECTION (i). The model proposed this sentence as
+    # domain knowledge rather than a read of the board. That proposal is INPUT
+    # (R-AI5(8)); the check below is what decides, and it can only ever DEMOTE.
+    #
+    # Clean: the claim carries no board content, so there is nothing here a record
+    # could speak to. Verification is SKIPPED — not passed, not failed — and the
+    # sentence is labeled for what it is. This is the one status in the taxonomy
+    # that is not a verdict about grounding.
+    #
+    # Disqualified: it named an order, a time, a figure we computed, or it cited a
+    # record. It falls straight through to ordinary board-claim verification and
+    # is verified or dropped on the usual terms. It is NEVER shipped labeled —
+    # a class nobody verifies must not be reachable by assertion.
+    if claim.kind is ClaimKind.GENERAL_KNOWLEDGE:
+        gk_blocked = gk_disqualifiers(claim, assertions, scope, wide)
+        if gk_blocked_out is not None:
+            gk_blocked_out.extend(gk_blocked)
+        if not gk_blocked:
+            # NO PROVENANCE FIELDS. `base` would carry the whole consulted set and
+            # every tool the loop called, because an uncited claim is checked
+            # against everything read — but this claim was checked against
+            # NOTHING, and a durable record saying it was read from four tool
+            # calls is the very defect the class exists to end (4B.5 CU5(d)'s
+            # answer-level-provenance-in-per-claim-clothes, one seam further on).
+            return VerifiedClaim(
+                text=claim.text, kind=claim.kind,
+                status=ClaimStatus.GENERAL_KNOWLEDGE, assertions=assertions,
+                reason="domain knowledge — it makes no claim about this plan, so "
+                       "there is nothing in this run's records to check it against")
+
     # A QUANTIFYING claim's figures are checked against the tallies of the single
     # call that enumerated the set — not against every tally the session happens to
     # have produced. "3 of 15 orders are late" must not pass because some unrelated
@@ -478,6 +635,32 @@ def verify_claim(claim: DraftClaim, *, toolbox: Any,
             status=ClaimStatus.FAILED, assertions=assertions,
             reason="contradicted by the cited evidence: " + ", ".join(bad[:3]),
             **base)
+
+    # 2b — R-TG1, ENFORCEMENT DIRECTION (ii). THE THIRD STATE IS CLOSED.
+    #
+    # A claim that cites no record, grounds no checkable assertion, and carries no
+    # board content whatever is not a reading of this plan — there is nothing of
+    # this plan in it to read. Before R-TG1 it shipped anyway, labeled
+    # `[synthesis — read from: <ids>]` or `[synthesis — my reading, no record
+    # states this]`, and both of those assert that the sentence came out of this
+    # board's evidence. Measured on the demo board, seven such sentences shipped
+    # across seven synthesis answers, four of them pure textbook optimization.
+    #
+    # It is DROPPED, not auto-labeled, and that is the hard call. Auto-labeling
+    # would be more generous to a true sentence — but the verifier can only prove
+    # the label's SECOND half ("not a fact about this plan"); the first half
+    # ("this is how scheduling works generally") is a claim about the sentence
+    # that only the author can make. "Things are pretty tight right now" carries
+    # no board content either, and it is a vague assertion about the plant, not
+    # domain knowledge. The verifier may REFUTE a proposal and may not
+    # MANUFACTURE one — the parse layer's discipline (R-AI5(8)) at this seam.
+    # `load_bearing` then tells the planner something was left out.
+    if (claim.kind is not ClaimKind.GENERAL_KNOWLEDGE and not cited
+            and _GROUNDED not in results
+            and not _has_board_content(claim, assertions, scope, wide)):
+        return VerifiedClaim(
+            status=ClaimStatus.FAILED, assertions=assertions,
+            reason=UNPLACEABLE_REASON, **base)
 
     # 3 — nothing checkable at all: an aggregate read, a mechanism, an inference.
     if not checkable or _GROUNDED not in results:

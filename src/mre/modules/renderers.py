@@ -1968,10 +1968,11 @@ class TemplateRenderer:
         are which) is the contract here; the colour/badge treatment ships as cockpit
         tokens for the founder to tune."""
         from mre.modules.ask_fallback_copy import (
-            SYNTHESIS_CITE, SYNTHESIS_FLOOR_DOORS, SYNTHESIS_LEAD, SYNTHESIS_MARK,
+            SYNTHESIS_CITE, SYNTHESIS_FLOOR_DOORS, SYNTHESIS_GENERAL_NOTE,
+            SYNTHESIS_LEAD, SYNTHESIS_MARK, SYNTHESIS_MARK_GENERAL,
             SYNTHESIS_MARK_NO_RECORDS, SYNTHESIS_PARTIAL, SYNTHESIS_UNANSWERABLE,
             SYNTHESIS_UNANSWERABLE_CONSULTED, SYNTHESIS_UNANSWERABLE_NO_TOOLS,
-            SYNTHESIS_UNGROUNDED,
+            SYNTHESIS_UNGROUNDED, SYNTHESIS_UNPLACEABLE,
         )
         kf = bundle.key_facts or {}
         claims = kf.get("claims") or []
@@ -1986,6 +1987,14 @@ class TemplateRenderer:
                          else SYNTHESIS_UNANSWERABLE_NO_TOOLS)
             if consulted:
                 lines.append(SYNTHESIS_UNANSWERABLE_CONSULTED.format(tools=tools))
+            # R-TG1 rider. "None of it grounds an answer" and "I ran out of budget
+            # before I finished looking" are DIFFERENT FACTS, and this branch stated
+            # only the first. It was unreachable while an uncitable sentence always
+            # survived to keep the answer non-empty; enforcement direction (ii) makes
+            # it reachable, so the fact travels with it. 4B.27 Item 9's discipline —
+            # a process claim is gated on the process — at the branch that had none.
+            if kf.get("budget_exhausted") or kf.get("timed_out"):
+                lines.append(SYNTHESIS_PARTIAL.format(tools=tools))
             # CU3(b) — THE WARM FLOOR. The honest non-answer keeps the doors part
             # 1's bridge offered. Absence-tested: when the dispatch could compute
             # no offers, the floor ends here rather than on a dangling header.
@@ -2000,12 +2009,20 @@ class TemplateRenderer:
 
         lines.append(SYNTHESIS_LEAD)
         lines.append("")
+        general = False
         for claim in claims:
             text = (claim.get("text") or "").strip()
             note = claim.get("sample_note") or ""
             if note:
                 text = f"{text} ({note})"
-            if claim.get("status") == "verified":
+            if claim.get("status") == "general_knowledge":
+                # R-TG1. NO record marker and no sample note — a general line rests
+                # on no rows of this plan, and a "based on the 26 row(s)
+                # constraint_catalog returned" beside a sentence about how solvers
+                # behave is the measured defect this class exists to end.
+                general = True
+                lines.append(f"{text}  {SYNTHESIS_MARK_GENERAL}")
+            elif claim.get("status") == "verified":
                 rid = (claim.get("cited_record_ids") or ["?"])[0]
                 lines.append(f"{text}  {SYNTHESIS_CITE.format(rid=str(rid)[:8])}")
             else:
@@ -2017,9 +2034,23 @@ class TemplateRenderer:
                 else:
                     lines.append(f"{text}  {SYNTHESIS_MARK_NO_RECORDS}")
 
-        if any(c.get("load_bearing") for c in (kf.get("cut") or [])):
+        if general:
             lines.append("")
-            lines.append(SYNTHESIS_UNGROUNDED)
+            lines.append(SYNTHESIS_GENERAL_NOTE)
+        # R-TG1 — A CUT NAMES WHY IT WAS CUT. A claim contradicted by the records
+        # and a claim that was never about the records are cut for OPPOSITE
+        # reasons, and the planner is owed the right one. A genuine grounding
+        # failure is the stronger fact and wins a mixed answer; only when every
+        # load-bearing cut is an unplaceable sentence does the other line show.
+        from mre.modules.claim_verifier import UNPLACEABLE_REASON
+        borne = [c for c in (kf.get("cut") or []) if c.get("load_bearing")]
+        if borne:
+            lines.append("")
+            lines.append(
+                SYNTHESIS_UNPLACEABLE
+                if all((c.get("reason") or "") == UNPLACEABLE_REASON
+                       for c in borne)
+                else SYNTHESIS_UNGROUNDED)
         if kf.get("budget_exhausted") or kf.get("timed_out"):
             lines.append("")
             lines.append(SYNTHESIS_PARTIAL.format(tools=tools))
@@ -2030,9 +2061,9 @@ class TemplateRenderer:
         record behind the claim, or the honest "that part is my inference from A and
         B, here's each"."""
         from mre.modules.ask_fallback_copy import (
-            PROVE_IT_INTERPRETIVE, PROVE_IT_INTERPRETIVE_BARE, PROVE_IT_NO_TARGET,
-            PROVE_IT_PRIOR_LEAD, PROVE_IT_PRIOR_NO_RECORDS, PROVE_IT_READ_FROM,
-            PROVE_IT_RECORD_LINE, PROVE_IT_VERIFIED,
+            PROVE_IT_GENERAL, PROVE_IT_INTERPRETIVE, PROVE_IT_INTERPRETIVE_BARE,
+            PROVE_IT_NO_TARGET, PROVE_IT_PRIOR_LEAD, PROVE_IT_PRIOR_NO_RECORDS,
+            PROVE_IT_READ_FROM, PROVE_IT_RECORD_LINE, PROVE_IT_VERIFIED,
         )
         kf = bundle.key_facts or {}
         claim = kf.get("claim")
@@ -2062,6 +2093,15 @@ class TemplateRenderer:
             lines.append("")
             return
         rows = kf.get("lines") or []
+        if claim.get("status") == "general_knowledge":
+            # R-TG1 — the drill-down honours the class. A general line has no
+            # records and no readings, and saying "that's my reading of the plan"
+            # about it would put the sentence back on the board.
+            lines.append(PROVE_IT_GENERAL)
+            lines.append("")
+            lines.append(f'The claim: "{(claim.get("text") or "").strip()}"')
+            lines.append("")
+            return
         verified = claim.get("status") == "verified"
         if verified:
             lines.append(PROVE_IT_VERIFIED)

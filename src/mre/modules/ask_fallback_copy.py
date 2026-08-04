@@ -375,6 +375,28 @@ SYNTHESIS_CITE = "[record: {rid}...]"
 SYNTHESIS_MARK = "[synthesis — read from: {rids}]"
 SYNTHESIS_MARK_NO_RECORDS = "[synthesis — my reading, no record states this]"
 
+# R-TG1 (Session 4A teaching-graft a) — THE GENERAL-KNOWLEDGE MARKER.
+#
+# It must name BOTH halves, and the second half is the one that was missing. Every
+# other marker on this surface implies board grounding: `read from: <ids>` says the
+# sentence came out of these records, and even `my reading, no record states this`
+# says it is a reading OF THIS PLAN. A sentence about how scheduling works in
+# general wore one of those, and it was the honest-looking label that made it
+# unquestionable.
+SYNTHESIS_MARK_GENERAL = (
+    "[general knowledge — how scheduling works in general, not a fact about "
+    "this plan]")
+
+# Said ONCE per answer, after the claims, when any line carried that marker. The
+# per-line label is the contract; this is the reader's orientation, so it states
+# the consequence rather than repeating the label: a general line is not something
+# to check against the board, because there is nothing on the board to check it
+# against.
+SYNTHESIS_GENERAL_NOTE = (
+    "Where a line is marked general knowledge it draws on how scheduling and "
+    "plants behave generally — not on this plan's records, so there is nothing "
+    "here to check it against.")
+
 # Named when a quantifying claim rests on a sample rather than an enumerated set.
 SYNTHESIS_SAMPLE_NOTE = "based on the {n} row(s) {tool} returned, not the whole plan"
 
@@ -395,6 +417,23 @@ SYNTHESIS_LEAD = (
 SYNTHESIS_UNGROUNDED = (
     "One step of my reasoning didn't hold up against the records, so I couldn't "
     "ground part of it and I've left that step out rather than state it.")
+
+# R-TG1. THE OTHER REASON A STEP GETS CUT, AND IT IS NOT A GROUNDING FAILURE.
+#
+# Enforcement direction (ii) drops a sentence that cites nothing, checks against
+# nothing and is not about this board — and the line above is FALSE of it, in its
+# first clause: the reasoning did not fail against the records, it never reached
+# them. Measured live on the demo board within this session: the tier's own honest
+# limit statement — "whether a large gap here reflects a genuinely weak schedule
+# versus a loose bound is something I cannot check against this run" — was cut by
+# (ii) and then reported as reasoning that did not hold up. A sentence about our
+# own epistemic position is neither a board claim nor domain knowledge, and the
+# taxonomy has no third home for it; that gap is REPORTED rather than papered
+# over, and this line is what stops the gap being described dishonestly.
+SYNTHESIS_UNPLACEABLE = (
+    "Part of what I drafted was neither something I could check against your "
+    "board nor general scheduling knowledge, so I left it out rather than state "
+    "it with a label that would have been wrong either way.")
 
 # The budget ran out before the read was complete (CU1: an honest partial, never a
 # stall). `{tools}` names what was consulted.
@@ -627,6 +666,16 @@ PROVE_IT_INTERPRETIVE = (
 PROVE_IT_INTERPRETIVE_BARE = (
     "That part is my reading of the plan, and no single record states it. I have "
     "nothing further to show behind it.")
+# R-TG1. A general-knowledge line drilled into. `PROVE_IT_INTERPRETIVE_BARE` is
+# FALSE of it in its first clause — it is not a reading of the plan, it is not
+# about the plan — and answering a "prove it" with a false account of what the
+# sentence was would reopen, at the drill-down, exactly the confusion the marker
+# closes at the line.
+PROVE_IT_GENERAL = (
+    "That line wasn't about this plan — it's general scheduling knowledge, so "
+    "there is no record of yours behind it and nothing here to check it against. "
+    "If you want the same question answered from this board, say so and I'll "
+    "read it.")
 PROVE_IT_RECORD_LINE = "  - {summary}  [record: {rid}...]"
 # Session 4B.5 CU5(d): WHICH READINGS this one sentence came out of — per claim,
 # derived from the toolbox's own per-call record sets, never a copy of the

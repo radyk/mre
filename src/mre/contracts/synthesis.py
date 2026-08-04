@@ -278,10 +278,23 @@ class ToolCallLog(BaseModel):
 class ClaimKind(str, Enum):
     """The claim's role in the answer. STRUCTURAL only — the model may say which of
     its sentences is the conclusion; it may never say whether one is grounded
-    (R-AI5(8))."""
+    (R-AI5(8)).
+
+    ``GENERAL_KNOWLEDGE`` joins in Session 4A teaching-graft (a), R-TG1. It is a
+    PROPOSAL about the sentence's SUBJECT — "this is about how scheduling works,
+    not about this plan" — in the same family as saying which sentence is the
+    conclusion, and it is checked BOTH WAYS by deterministic code before it can
+    become a label (``claim_verifier.gk_disqualifiers``). A proposal that names an
+    order, a machine, a time or a figure this run computed is REJECTED back to
+    ordinary board-claim verification, so the class can never be an escape hatch
+    from grounding; and a claim carrying no board content that the model did NOT
+    propose as general knowledge is dropped rather than labeled, because the
+    verifier may refute a proposal and may not manufacture one.
+    """
 
     FACT = "fact"
     CONCLUSION = "conclusion"
+    GENERAL_KNOWLEDGE = "general_knowledge"
 
 
 class DraftClaim(BaseModel):
@@ -311,12 +324,25 @@ class ClaimStatus(str, Enum):
                     failure.
     FAILED        — a checkable assertion contradicts the evidence, or the claim
                     cites a record that does not exist, or it names an entity this
-                    run does not have. The claim is CUT.
+                    run does not have, or it cites nothing, grounds nothing and
+                    carries no board content while claiming to be about this plan.
+                    The claim is CUT.
+    GENERAL_KNOWLEDGE
+                  — the model proposed the claim as domain knowledge (how
+                    scheduling, optimization and plants behave in general) and
+                    deterministic code confirmed it carries NO board content:
+                    no order, no machine, no timestamp, no money, no figure this
+                    run computed, and no citation. UNVERIFIABLE BY DESIGN — this
+                    status is never earned by checking and never lost by failing a
+                    check; it is a statement about what the sentence is ABOUT.
+                    Renders with its own label naming both halves (what it is,
+                    what it is not) and never with a record marker.
     """
 
     VERIFIED = "verified"
     INTERPRETIVE = "interpretive"
     FAILED = "failed"
+    GENERAL_KNOWLEDGE = "general_knowledge"
 
 
 class Assertion(BaseModel):
@@ -398,6 +424,16 @@ class SynthesisAnswer(BaseModel):
         return [c for c in self.claims if c.status is ClaimStatus.INTERPRETIVE]
 
     @property
+    def general_knowledge(self) -> list[VerifiedClaim]:
+        """R-TG1 — the claims labeled as domain knowledge rather than board reads.
+        Counted separately from ``interpretive`` and never folded into it: an
+        interpretive claim is a reading OF THIS PLAN that could not be proven, and
+        a general-knowledge claim is not about this plan at all. Folding them
+        would put the two back in the one bucket this class exists to split."""
+        return [c for c in self.claims
+                if c.status is ClaimStatus.GENERAL_KNOWLEDGE]
+
+    @property
     def ungrounded_load_bearing(self) -> int:
         return sum(1 for c in self.cut if c.load_bearing)
 
@@ -406,6 +442,7 @@ class SynthesisAnswer(BaseModel):
             "claims": len(self.claims) + len(self.cut),
             "verified": len(self.verified),
             "interpretive": len(self.interpretive),
+            "general_knowledge": len(self.general_knowledge),
             "failed_and_cut": len(self.cut),
             "ungrounded_load_bearing": self.ungrounded_load_bearing,
             "tool_calls": len(self.tool_calls),

@@ -171,6 +171,70 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Session 4A teaching-graft (a) — the general-knowledge claim class**, 2026-08-03
+(docs/07 v2.88, §5a.162-164; docs/04 2026-08-03 **R-TG1 ruled and BUILT** + the
+**R-OF1 rider**; contract unchanged **1.15**, no docs/06 doorway owed, both
+answered on the record; parse prompt unchanged **v17**, synthesis prompt **v5 ->
+v6**; RUBRIC gains axis **C7 CLAIM CLASS**; narrative in
+`docs/closeouts/4a-teaching-a-claim-class.md`). R1 item 2, session (a) of four.
+**MEASURED AT HEAD BEFORE ANYTHING WAS BUILT: SEVEN SENTENCES OF GENERAL
+SCHEDULING KNOWLEDGE SHIPPED ACROSS SEVEN SYNTHESIS ANSWERS, NONE LABELLED** —
+ten domain-inviting probes on the demo board; five wore `[synthesis — read from:
+<ids>]`, two wore `[synthesis — my reading, no record states this]`, and one of
+those two sat beside the sample note *"(based on the 26 row(s)
+constraint_catalog returned, not the whole plan)"* on a sentence about why exact
+methods scale poorly. **THE MODEL WAS NOT AT FAULT: there was no class for the
+sentence to be**, so it spoke in the only vocabulary the surface offered, and
+that vocabulary means *I read this off your board*. **R-TG1: a
+GENERAL-KNOWLEDGE claim is UNVERIFIABLE BY DESIGN** — verification SKIPPED and
+the claim LABELLED, never failed, never passed unlabelled.
+`ClaimKind.GENERAL_KNOWLEDGE` is the model's PROPOSAL and
+`ClaimStatus.GENERAL_KNOWLEDGE` the verifier's VERDICT — different objects,
+R-AI5(8) at a second seam. **ONE DETERMINISTIC PREDICATE READ BOTH WAYS**
+(`gk_disqualifiers`; two would drift): **(i)** a claim naming an order, a
+machine, a time, money or **a figure this run computed** may not wear the label
+and is refused back to ordinary verification (the escape-hatch clause — *"85%
+utilization is generally healthy"* is general until 85 is what PRESS-FAST
+measures); **(ii)** a claim citing nothing, grounding nothing and naming nothing
+on this board is **DROPPED** unless proposed, **and a CONCLUSION gets no
+exemption** (two of the four pure specimens were conclusions). **(ii) IS A DROP
+AND NOT AN AUTO-LABEL:** the verifier can prove *not a fact about this plan* and
+only the author can assert *this is how scheduling works* — **it may REFUTE a
+proposal and may not MANUFACTURE one**. A general line carries **NO provenance
+fields at all** and its own marker naming BOTH halves, with a footer note once
+per answer; register stays `synthesis` (a claim class, not a rung); the
+drill-down gets an authored branch. **LIVE, same ten probes after: 17 general
+claims labelled, 7 cut, and the probe that got the CAPABILITY CARD now answers**
+(it declined for want of a place to put the answer, not for want of one).
+`sweep_teaching_v1`, 14 turns, demo board: **routing 13/13; labeled 27/27, cited
+9/9, no-hatch 17/17, untouched 5/5**. **TWO THINGS THE RULING BROKE AND FIXED IN
+THE SAME COMMIT:** `_forced_close` asked the model for a claim about OUR OWN
+READ that (ii) now cuts (removed — `SYNTHESIS_PARTIAL` renders that fact from
+the call log, and the unanswerable branch now states it too); and **a cut names
+WHICH KIND of cut it was** — found LIVE after the fix, (ii) cuts the tier's own
+honest limit statements and the answer then said *"one step of my reasoning
+didn't hold up against the records"*, **false in its first clause**
+(`SYNTHESIS_UNPLACEABLE`). **R-OF1 RIDER: a `system`-register card never enters
+`ANSWER_MEMORY`** — nothing was read so nothing may ground a drill-down, and
+remembering it would ERASE the last real answer; keyed on the REGISTER, not a
+route name. §5a.161(b) DISCHARGED. **33 new guards; 7 negative controls proven
+RED**, restores byte-identical — and **the control harness found its own bug
+first: this repo mixes line endings PER FILE** (`claim_verifier.py` pure LF,
+`renderers.py`/`interpreter.py` pure CRLF), so a multi-line byte anchor matched
+in one file and silently not in another (4A.y's newline lesson, on the READ
+instead of the write). **Five pre-existing test bodies UPDATED because they
+state the old behaviour and the update IS the ruling.** **Cockpit UNTOUCHED, not
+re-run. MINTED NOTHING.** NOT FIXED, named: **the taxonomy still has no home for
+a sentence about our own epistemic position** (a fourth class is a
+vocabulary-class change not opened; R-DP12 §5a.130's shape); **direction (i) has
+NO LIVE SPECIMEN from this session** — under v6 the model keeps figures out of
+general sentences, so no proposal was refused in the wild, and it is proven by
+guard and negative control only; **`_sample_note` is still answer-level
+provenance in per-claim clothes** for BOARD claims (it picks the largest call of
+the session regardless of the claim — 4B.5 CU5(d)'s class at a site it did not
+reach); a `validator` finding on a control-family question (pre-existing,
+contracted path, fail-closed working); and the number clause is conservative by
+choice. Before it:
 **Micro-session 4A — the floor tells the truth about why it fell**, 2026-08-03
 (docs/07 v2.87, §5a.159-161; docs/04 2026-08-03 **R-OF1 ruled and BUILT**;
 contract unchanged **1.15**, no docs/06 doorway owed, both answered on the
@@ -1739,7 +1803,7 @@ disclosed, not answered); the winner's wall (416.9s) EXCEEDS the portfolio's
   of one question) — humble rather than wrong, but distinguishing "one answer
   because I am confused" from "one answer because it IS the answer" needs a
   signal this session does not have.
-  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, ~88k after 4B.25, ~92k after 4B.26, ~96k after 4B.29, ~102k after 4B.27, **~110k after 4B.28**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
+  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, ~88k after 4B.25, ~92k after 4B.26, ~96k after 4B.29, ~102k after 4B.27, ~110k after 4B.28, **~142k after 4A teaching-graft (a) — 3.5x the ceiling**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
   **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
   day-shift restriction answered as C1/C2 "proven end to end" when the item is
   C4 (model-proven, §8 doorway). Caught and pinned; the class stands.

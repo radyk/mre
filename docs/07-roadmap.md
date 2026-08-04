@@ -1,6 +1,19 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.87 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.88 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.88:** **Session 4A teaching-graft (a) — the general-knowledge claim class**
+(2026-08-03; §5a.162-164; docs/04 2026-08-03 **R-TG1 ruled and BUILT** + the
+**R-OF1 rider**; contract unchanged **1.15**, no docs/06 doorway owed, both
+answered on the record; parse prompt unchanged **v17**, synthesis prompt **v5 →
+v6**; RUBRIC gains axis **C7 CLAIM CLASS**; narrative in
+`docs/closeouts/4a-teaching-a-claim-class.md`). Measured at HEAD before anything
+was built: **seven sentences of general scheduling knowledge shipped across seven
+synthesis answers, every one wearing a marker that asserts board grounding.**
+Open synthesis now has a second claim class, enforced in BOTH directions by one
+deterministic predicate — the model proposes, the verifier disposes, and it may
+refute a proposal but never manufacture one. R1 item 2, session (a) of four.
+§5a.161(b) is DISCHARGED.
 
 **v2.87:** **Micro-session 4A — the floor tells the truth about why it fell**
 (2026-08-03; §5a.159-161; docs/04 2026-08-03 **R-OF1 ruled and BUILT**; contract
@@ -5977,6 +5990,81 @@ nothing because there is no decision record for a placement that does not exist;
 the order's real placements ARE its evidence, rendered inline. 4B.17 recorded
 this shape and the count is again exactly 2. The detector predates the premise
 machinery and does not know a correction from a silent route.
+
+**§5a.162 — SEVEN GENERAL-KNOWLEDGE SENTENCES WERE SHIPPING WITH A BOARD
+MARKER, AND THE NUMBER IS MEASURED, NOT ESTIMATED.** Ten domain-inviting probes
+against the demo board `rolling-db5395dc-2ae` at HEAD, before any of R-TG1
+existed. Seven reached the second tier; three were taken by contracted routes
+(`advice`, `lateness-cause`, `coaching`) and one synthesis probe declined on the
+capability floor at **0 tool calls** — *"how do schedulers normally decide which
+job to run first"*, the question that most directly invites domain knowledge,
+which the tier had no class for and so refused. Across the seven answers, **26
+claims shipped: 2 VERIFIED, 24 INTERPRETIVE, 0 general** — because there was no
+general. **SEVEN of those sentences carried unbacked domain knowledge**, four of
+them pure (no board content at all) and three mixed into a sentence that also
+quoted a board figure. Two markers, both asserting board grounding: five as
+`[synthesis — read from: <ids>]`, two as `[synthesis — my reading, no record
+states this]`. **THE SHARPEST SPECIMEN IS THE SECOND MARKER'S COMPANION** — a
+sentence reading *"most practical objectives are themselves non-convex and
+discontinuous … this is why exact methods scale poorly"* arrived beside the
+sample note *"(based on the 26 row(s) constraint_catalog returned, not the whole
+plan)"*. It rests on no row of anybody's catalog. **THE MODEL WAS NOT AT FAULT**:
+there was no class for the sentence to be, so it was said in the only vocabulary
+the surface offered, and that vocabulary means *I read this off your board*.
+
+**§5a.163 — THE CLASS, AND WHY BOTH DIRECTIONS ARE ONE PREDICATE (R-TG1, docs/04
+2026-08-03 verbatim).** `ClaimKind.GENERAL_KNOWLEDGE` is the model's PROPOSAL and
+`ClaimStatus.GENERAL_KNOWLEDGE` the verifier's VERDICT — different objects on
+purpose, which is R-AI5(8) at a second seam. One deterministic predicate
+(`gk_disqualifiers`) is read forwards for **(i)** — a claim naming an order, a
+machine, a time, money, or **a figure this run computed** may not wear the label
+and is refused back to ordinary board verification — and backwards for **(ii)** —
+a claim citing nothing, grounding nothing and naming nothing on this board is
+DROPPED unless it was proposed. Two predicates would drift. **THE NUMBER CLAUSE
+IS WHAT CLOSES THE HATCH** (*"85% utilization is generally healthy"* is general
+until 85 is what PRESS-FAST measures) and it is deliberately conservative:
+over-refusal falls back to the behaviour that already shipped, under-refusal is
+the hatch. **(ii) IS A DROP, NOT AN AUTO-LABEL, AND THAT IS THE HARD CALL** — the
+verifier can prove *not a fact about this plan* and only the author can assert
+*this is how scheduling works*; *"things are pretty tight right now"* carries no
+board content either. A CONCLUSION gets no exemption, because two of the four
+pure specimens were conclusions. **LIVE ON THE SAME TEN PROBES AFTER THE CHANGE:
+17 general claims labelled, 7 cut, and the probe that got the capability card now
+answers** — the tier declined not for want of knowledge but for want of a place
+to put it. Bank `sweep_teaching_v1` (14 turns, demo board): **routing 13/13, and
+all four expectation families met — labeled 27/27, cited 9/9, no-hatch 17/17,
+untouched 5/5.** RUBRIC gains axis **C7 CLAIM CLASS**, with one expectation
+UNGRADED FOR ROUTING by design and logged (asserting the route intended fits the
+author, asserting the route observed fits the output — recalibration rule (c)).
+
+**§5a.164 — 4A-(a)'s CARRY-FORWARDS (REPORTED, deliberately NOT fixed).**
+**(a) THE TAXONOMY HAS NO HOME FOR A SENTENCE ABOUT OUR OWN EPISTEMIC POSITION.**
+Found live on the demo board AFTER the fix went in: direction (ii) cuts the
+tier's own honest limit statements (*"whether a large gap here reflects a
+genuinely weak schedule versus a loose bound is something I cannot check against
+this run"*), because such a sentence is neither a board claim nor domain
+knowledge. The immediate harm — the answer then reporting it as *"one step of my
+reasoning didn't hold up against the records"*, false in its first clause — IS
+fixed (`SYNTHESIS_UNPLACEABLE`, a second authored line, with a genuine grounding
+failure winning a mixed answer). The gap itself is not: a fourth class is a
+vocabulary-class change this session did not open. R-DP12 §5a.130's shape on
+another axis. **(b) DIRECTION (i) HAS NO LIVE SPECIMEN FROM THIS SESSION.** Under
+prompt v6 the model keeps figures out of general sentences, which is what rule 13
+asks — so across every post-change probe run, no proposal was refused. It is
+proven by unit guard and by a negative control against physically reverted code,
+never observed in the wild, and a later session should look for one rather than
+assume the clause is exercised. **(c) `_sample_note` IS ANSWER-LEVEL PROVENANCE
+IN PER-CLAIM CLOTHES, STILL.** It picks the LARGEST tool call of the whole
+session regardless of what the claim touched, which is how a sentence about
+non-convex objectives came to read *"based on the 26 row(s) constraint_catalog
+returned"*. R-TG1 removes that specimen from the general path (a general line
+gets no sample note at all) and leaves the defect standing for board claims —
+4B.5 CU5(d)'s class at a site it did not reach. **(d) THE CONTROL FAMILY RAISED
+A `validator` FINDING** on *"which orders are late and by how much"*: LLM
+testimony failed validation and fell back to the template. Pre-existing, on the
+contracted path, unrelated to this item, and the fail-closed behaviour working —
+recorded because it was seen, not because it is new. **(e) §5a.161(b) IS
+DISCHARGED** by the R-OF1 rider; §5a.161(a), (c) and (d) are unchanged.
 
 ## 6. Open rulings queue
 

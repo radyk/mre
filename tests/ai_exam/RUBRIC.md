@@ -763,3 +763,60 @@ specimens live in a NEW versioned bank, tests/ai_exam/banks/sweep_mobility_v1.tx
 which at the time of writing is UNRUN -- the session's API credit was exhausted
 before the sweep. That is recorded in the close-out as an owed run, not as a
 result.
+
+===============================================================================
+AMENDMENT -- axis C7: CLAIM CLASS (Session 4A teaching-graft (a), 2026-08-03)
+===============================================================================
+
+R-TG1 gives open synthesis a second claim class. A sentence of domain knowledge
+-- how scheduling, optimization and plants behave in general -- is not a read of
+this board and must not be dressed as one. The axis grades whether the answer
+puts each sentence in the class it belongs to.
+
+WHY IT IS A NEW AXIS AND NOT A CASE OF C2 (provenance). C2 asks whether a claim's
+provenance is visible and correct. C7 asks a prior question: which KIND of thing
+the sentence is. A general-knowledge sentence can have perfectly visible
+provenance -- "[synthesis -- read from: 0f093432, ff8a63c4]" -- and that
+provenance is a lie about what the sentence is, which C2 cannot see, because the
+records really were read and the marker really is the one the tier uses.
+
+MEASURED AT HEAD, before the class existed, on the demo board `rolling-db5395dc-2ae`:
+ten domain-inviting probes, seven synthesis answers, SEVEN unlabeled
+general-knowledge sentences shipped -- five wearing "[synthesis -- read from:
+<ids>]" and two wearing "[synthesis -- my reading, no record states this]" beside
+a sample note reading "(based on the 26 row(s) constraint_catalog returned, not
+the whole plan)". That note sat beside a sentence about why exact methods scale
+poorly on combinatorial problems.
+
+WHAT C7 ASKS
+
+  * is every general-knowledge line marked, with a marker naming BOTH halves
+    (what it is, and what it is not)?
+  * does any marked line carry an order, a machine, a time, money, or a figure
+    this run computed? (a marked line that does is the ESCAPE HATCH: an
+    unverified board claim wearing a label that forbids checking it)
+  * do the board claims in the same answer keep their citations? (a change that
+    quietly relabeled board claims as general would look tidy and be the worst
+    outcome available)
+  * do contracted answers render no general marker at all?
+
+A C7 miss of the second kind is a DEFECT bucket item, not a conversation-failure
+one, for the same reason a false premise is: it ships an unfalsifiable claim
+about the plant.
+
+WHAT THIS AMENDMENT DOES NOT DO. It adds no expectation to any existing bank and
+changes no question text (rule (a) of the r5 recalibration, carried). The
+specimens live in a NEW versioned bank, tests/ai_exam/banks/sweep_teaching_v1.txt,
+whose four expectation families are graded by
+tools/spikes/teaching_graft_a/grade_gk_sweep.py -- the exam grammar's EXPECT
+lines grade ROUTING only, and C7 is about claim classes, so the grader reads the
+same run's rendered answers and per-turn claim counts.
+
+ONE EXPECTATION IN THAT BANK IS UNGRADED FOR ROUTING, BY DESIGN, and it is
+logged here because it moved: "why do late orders tend to snowball on a board
+like this one" was written as a domain probe and reached `lateness-cause` on the
+live parse. It is a board question as much as a domain one. The route
+expectation was REMOVED rather than set to either value -- asserting the route
+intended would fit the expectation to the author, and asserting the route
+observed would fit it to the output, which recalibration rule (c) forbids. The
+question text is unchanged and the answer is still graded, as a control.

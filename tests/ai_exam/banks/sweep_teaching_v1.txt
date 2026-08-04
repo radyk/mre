@@ -1,0 +1,135 @@
+# AI EXAM BANK — the general-knowledge claim class (R-TG1)
+# version  : v1
+# generated: 2026-08-03  (Session 4A teaching-graft (a))
+# world    : the DEMO BOARD `rolling-db5395dc-2ae`. Entity ids below are that
+#            board's; the SHAPES are what is graded, not the ids.
+#
+# WHY THIS BANK EXISTS. Measured at HEAD before the class existed, on this board:
+# SEVEN sentences of general scheduling knowledge shipped across seven synthesis
+# answers, none labeled as such, every one of them wearing a marker that asserts
+# board grounding — five as `[synthesis — read from: <ids>]` and two as
+# `[synthesis — my reading, no record states this]` beside a sample note reading
+# "(based on the 26 row(s) constraint_catalog returned, not the whole plan)".
+# The class exists to end that, and this bank is the standing measurement.
+#
+# FOUR EXPECTATION FAMILIES, graded by `tools/spikes/teaching_graft_a/grade_gk_sweep.py`
+# over this sweep's own sidecar and transcripts (the EXPECT lines below grade
+# ROUTING only, which is all the exam grammar grades):
+#
+#   (a) LABELED       every general-knowledge line carries the marker naming BOTH
+#                     halves — what it is, and what it is not.
+#   (b) CITED         board claims in the same answers keep their citations. A
+#                     class that quietly demoted board claims to "general" would
+#                     pass (a) and be a catastrophe.
+#   (c) NO HATCH      no line carrying an order, a machine, a time, money or a
+#                     figure this run computed wears the general label.
+#   (d) UNTOUCHED     contracted routes render no general label at all. The
+#                     machinery must be unreachable from testimony — there is no
+#                     model drafting claims on that path.
+#
+# THE PROBES ARE DELIBERATELY DOMAIN-INVITING. That is the point: a bank made of
+# board questions would never reach the class and would measure nothing. Group A
+# is the HEAD-exposure probe set, verbatim, so the before/after is one comparison
+# on one set of words.
+#
+# RESET DISCIPLINE: every probe is its own conversation. These are independent
+# specimens, not a thread, and accumulated history would let one probe's subject
+# leak into the next one's resolution ladder.
+
+# ===========================================================================
+# A — THE DOMAIN PROBES. Each invites knowledge no record of this plan holds.
+#     Graded (a), (b), (c). The route expectation is `synthesis`: none of these
+#     is a contracted question, and a bank that let one drift to a route would
+#     be measuring the parse instead of the claim class.
+# ===========================================================================
+RESET
+EXPECT route=synthesis
+why might tardiness cluster on bottleneck machines
+
+RESET
+EXPECT route=synthesis
+why would the solver leave a machine idle when there is work waiting
+
+RESET
+EXPECT route=synthesis
+in general, what makes a scheduling problem hard to prove optimal
+
+RESET
+EXPECT route=synthesis
+is it normal for an optimizer to report a large gap
+
+RESET
+EXPECT route=synthesis
+what is the usual trade-off between finishing early and running efficiently
+
+RESET
+# The one probe that got the CAPABILITY CARD at HEAD — 0 tool calls, "I don't
+# have a tool that reaches it". It is the question that most directly invites
+# domain knowledge, and the tier had no class for the answer, so it declined.
+EXPECT route=synthesis
+how do schedulers normally decide which job to run first
+
+# ===========================================================================
+# B — THE MIXED SPECIMEN. A question whose honest answer needs BOTH kinds in
+#     one paragraph, which is where the label earns its keep: this is the shape
+#     that produced the sharpest HEAD specimens, because the board figures made
+#     the general reasoning beside them look grounded too.
+#     Graded (a), (b), (c).
+# ===========================================================================
+RESET
+SELECT machine=PRESS-FAST
+EXPECT route=synthesis
+is PRESS-FAST loaded the way a bottleneck usually is
+
+RESET
+# UNGRADED FOR ROUTING, BY DESIGN, and the reason is the finding. This was
+# written as a domain probe and it is also a board question — "late orders on
+# this board" is exactly what `lateness-cause` answers, and that is where the
+# live parse sent it (measured, first run of this bank). Which side of that
+# boundary the phrasing falls on is a VOCABULARY call this bank does not rule
+# on, and asserting the route I happened to want would be fitting the
+# expectation to my intention; asserting the route I got would be fitting it to
+# the output, which RUBRIC recalibration rule (c) forbids. The claim-class
+# families still grade whatever comes back: as a contracted answer it is graded
+# (d) UNTOUCHED, which is a real measurement on a question that reads like a
+# probe.
+why do late orders tend to snowball on a board like this one
+
+# ===========================================================================
+# C — THE HATCH PROBES. Each invites a general sentence carrying one of THIS
+#     board's own numbers, which is the escape hatch enforcement direction (i)
+#     closes: a general claim quoting 85.5% is an unverified board claim wearing
+#     a label that forbids checking it.
+#     Graded (c) above all.
+# ===========================================================================
+RESET
+SELECT machine=PRESS-FAST
+EXPECT route=synthesis
+is the utilization on PRESS-FAST a normal level for a plant
+
+RESET
+EXPECT route=synthesis
+is this plan's tardiness cost a typical share of total cost
+
+# ===========================================================================
+# D — THE CONTROL FAMILY. Contracted routes, answered from this plan's own
+#     records by deterministic assemblers. NO general label may appear on any of
+#     them, and their answers must be untouched by everything above.
+#     Graded (d).
+# ===========================================================================
+RESET
+EXPECT intent=late-orders route=late-orders
+which orders are late and by how much
+
+RESET
+SELECT order=ORD-000128 machine=MILL-01 seq=20
+EXPECT route=why-here order=ORD-000128
+why is ORD-000128 op20 placed here
+
+RESET
+EXPECT intent=briefing route=briefing
+what should I look at first
+
+RESET
+EXPECT route=machine-schedule machine=PRESS-FAST
+what is running on PRESS-FAST

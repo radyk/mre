@@ -443,16 +443,27 @@ class TestClaimVerification:
         assert answer.unanswerable and not answer.claims
 
     def test_counts_report_every_outcome(self, read_box):
+        """R-TG1 UPDATED THIS ASSERTION AND THE UPDATE IS THE RULING.
+
+        The taxonomy has FOUR outcomes now, so a test named "every outcome" has
+        to carry four. The conclusion also had to change: it was "The cutting
+        line is the constraint", which cites nothing, grounds nothing and names
+        nothing on this board — under enforcement direction (ii) that is no
+        longer an interpretive reading of the plan, it is dropped. Giving it the
+        order it is about is what makes it a reading of the plan again."""
         answer = verify_draft("why", [
             DraftClaim(text="ORD-01 finished 890 minutes past its due date.",
                        record_ids=_ids(read_box, "lateness_set")),
-            DraftClaim(text="The cutting line is the constraint.", record_ids=[],
-                       kind=ClaimKind.CONCLUSION),
+            DraftClaim(text="ORD-01 is what the cutting line is queued behind.",
+                       record_ids=[], kind=ClaimKind.CONCLUSION),
+            DraftClaim(text="Tardiness objectives tend to give weak lower bounds.",
+                       record_ids=[], kind=ClaimKind.GENERAL_KNOWLEDGE),
             DraftClaim(text="ORD-01 is 250 minutes late.",
                        record_ids=_ids(read_box, "lateness_set")),
         ], toolbox=read_box)
         c = answer.counts()
-        assert (c["verified"], c["interpretive"], c["failed_and_cut"]) == (1, 1, 1)
+        assert (c["verified"], c["interpretive"], c["general_knowledge"],
+                c["failed_and_cut"]) == (1, 1, 1, 1)
 
 
 # ===========================================================================
@@ -479,18 +490,34 @@ class TestSynthesisLoop:
         assert len(answer.interpretive) == 1
 
     def test_a_malformed_emission_is_nudged_once_then_survives(self, world):
+        # The claim was "The plan looks tight." — cut since R-TG1 (it cites
+        # nothing, grounds nothing and names nothing on the board). This test is
+        # about the NUDGE surviving a malformed emission, so its fixture claim
+        # now carries the board content that makes it a reading of the plan;
+        # asserting the drop here would test the other ruling in the wrong place.
+        ids = _late_ids(world)
         synth = synthesizer_with(["not json at all",
-                                  claims(claim("The plan looks tight.", []))])
+                                  claims(claim("ORD-01 is running tight.", ids))])
         answer = synth.synthesize("how does it look", explainer=world)
         assert synth.stats.malformed == 1
         assert len(answer.claims) == 1
 
     def test_budget_exhaustion_yields_an_honest_partial_never_a_stall(self, world):
+        # R-TG1 CHANGED THE MECHANISM AND THE UPDATE IS THE RULING. The fixture's
+        # closing claim was "I did not get to the calendars." — a statement about
+        # OUR OWN READ, which direction (ii) now cuts, correctly: R-AI1 says the
+        # words about our own process are ours and computed, and `SYNTHESIS_PARTIAL`
+        # already renders that fact from the toolbox's call log. `_forced_close` no
+        # longer asks the model for a second unverified copy of it. What must still
+        # hold is that a budget-exhausted answer is an honest PARTIAL rather than a
+        # stall — so the model's surviving claim is a real read, and the partial
+        # flag rides with it.
         box = EvidenceToolbox(world, max_calls=2)
+        ids = _late_ids(world)
         synth = synthesizer_with([
             tool_call("lateness_set"), tool_call("lateness_set"),
             tool_call("lateness_set"),          # refused: over budget
-            claims(claim("I did not get to the calendars.", [])),
+            claims(claim("ORD-01 finished 890 minutes past its due date.", ids)),
         ])
         answer = synth.synthesize("why", explainer=world, toolbox=box)
         assert answer.budget_exhausted
@@ -710,7 +737,13 @@ class TestAnswerSurface:
         from mre.modules.interpreter import AnswerMemory
         memory = SynthesisMemory()
         answers = AnswerMemory()
-        _answer(world, claims(claim("The cutting line is busy.", [])),
+        # "The cutting line is busy." was cut by R-TG1 direction (ii) (no
+        # citation, nothing grounded, nothing on this board), which left the
+        # memory empty and this test asserting nothing. The claim now names the
+        # order it is about, so there IS a remembered synthesis claim for the
+        # staleness rule to make stale.
+        _answer(world, claims(claim("ORD-01 is queued on the cutting line.",
+                                    _late_ids(world))),
                 memory=memory, session="s7")
         assert memory.last("s7") is not None
         run_ask(world, "why is ORD-01 late",
@@ -723,7 +756,7 @@ class TestAnswerSurface:
                             followup_of=FollowupKind.PROVE_IT, confidence=0.9),
                      memory=memory, session_id="s7", answer_memory=answers)
         text = TemplateRenderer().render(d.bundle)
-        assert "The cutting line is busy" not in text, (
+        assert "ORD-01 is queued on the cutting line" not in text, (
             "the stale synthesis claim re-opened — the wrong-target answer this "
             "test exists to forbid")
         assert "why is ORD-01 late" in text, (
@@ -800,7 +833,11 @@ class TestAnswerSurface:
         """A prove-it turn is about OUR sentence, not a status of the plan, so it
         must not be dispatched as whatever intent the words resemble."""
         memory = SynthesisMemory()
-        _answer(world, claims(claim("The cutting line is busy.", [])), memory=memory)
+        # Board content added for R-TG1 direction (ii) — see the staleness test
+        # above. This test is about prove-it preceding the intent, and it needs a
+        # remembered claim to precede it with.
+        _answer(world, claims(claim("ORD-01 is queued on the cutting line.",
+                                    _late_ids(world))), memory=memory)
         d = dispatch(world, resolve(parsed("how do you know that",
                                            Intent.LATE_ORDER, orders=("ORD-01",),
                                            followup_of=FollowupKind.PROVE_IT),

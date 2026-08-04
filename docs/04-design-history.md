@@ -15915,3 +15915,145 @@ product-side/IDS distinction, on another axis). The parse prompt is UNCHANGED at
 **v17** — `MODEL_UNREACHABLE` is minted locally, like `parse-failed`, and a model
 that cannot be reached emits nothing to be governed. **The no-parser bridge is
 untouched, and that is a boundary rather than an oversight** (row four above).
+
+---
+
+## 2026-08-03 — R-TG1: THE GENERAL-KNOWLEDGE CLAIM CLASS
+
+**Session 4A teaching-graft (a).** R1 item 2, session (a) of four (docs/07 §5b).
+One structural change to open synthesis and one rider on R-OF1. The depth
+licence, the teaching intent, the exam axis and multi-turn grounding are
+sessions (b)–(d) and are NOT here.
+
+### THE MEASUREMENT THAT CAME FIRST
+
+Ten domain-inviting probes against the demo board `rolling-db5395dc-2ae`, at
+HEAD, before a line of this ruling existed. Seven reached the second tier.
+**SEVEN SENTENCES OF GENERAL SCHEDULING KNOWLEDGE SHIPPED ACROSS THOSE SEVEN
+ANSWERS, NOT ONE OF THEM LABELLED AS SUCH** — four carrying no board content at
+all, three mixed into a sentence that also quoted a board figure. Every one of
+them wore a marker that asserts board grounding:
+
+* five as `[synthesis — read from: 0f093432, ff8a63c4, e96a85fc]`;
+* two as `[synthesis — my reading, no record states this]` **beside a sample
+  note reading *"(based on the 26 row(s) constraint_catalog returned, not the
+  whole plan)"*** — attached to a sentence about why exact methods scale poorly
+  on combinatorial problems, which rests on no row of anybody's catalog.
+
+**THE MODEL WAS NOT AT FAULT.** There was no class for the sentence to be, so
+the honest thing it had to say was said in the only vocabulary the surface
+offered, and that vocabulary means *I read this off your board*. The exposure
+was structural and it was live.
+
+### THE RULING
+
+Open synthesis draws three kinds of sentence. **A BOARD CLAIM** is about this
+plan and is verified claim by claim against the evidence store, cited per line —
+unchanged. **A BOARD-DERIVED INFERENCE** reasons from cited reads and is
+labelled as a reading — unchanged. **A GENERAL-KNOWLEDGE CLAIM** is domain
+knowledge, true of scheduling, optimization and manufacturing generally and not
+of this plan, and it is **UNVERIFIABLE BY DESIGN**: the verifier SKIPS
+verification and LABELS it. It may never fail it, and may never let it pass
+unlabelled.
+
+`ClaimKind.GENERAL_KNOWLEDGE` is the model's **PROPOSAL**;
+`ClaimStatus.GENERAL_KNOWLEDGE` is the verifier's **VERDICT**. They are
+deliberately different objects, and R-AI5(8) is exactly why: the model's beliefs
+about its own sentences are input to a check, never the label. Both vocabularies
+are ADD, never repurpose.
+
+**THE PROPOSAL IS CHECKED IN BOTH DIRECTIONS, AND BOTH TURN ON ONE
+DETERMINISTIC PREDICATE** (`claim_verifier.gk_disqualifiers`), read forwards for
+(i) and backwards for (ii), so the two cannot drift apart.
+
+**(i) A CLAIM CARRYING ANY BOARD CONTENT MAY NOT WEAR THE LABEL.** Board content
+is five things: a citation, a named order or machine (known to this run, or
+entity-shaped and absent from it), a timestamp, a currency figure, or **a number
+this run computed**. The last clause is what closes the escape hatch: *"85%
+utilization is generally healthy"* is a general sentence right up until 85 is
+what PRESS-FAST measures, at which point it is an unverified board claim wearing
+a label that forbids checking it. A refused proposal is **not cut** — it falls
+through to ordinary board-claim verification and is verified or dropped on the
+usual terms, and the refusal and its reason are recorded on the claim, because a
+disqualification that leaves no trace is a check nobody can audit. **The number
+clause is deliberately conservative**: it refuses on a match against anything the
+loop read, so a general sentence quoting an unrelated small integer is sent back
+too. Over-refusal fails toward the behaviour that already shipped; under-refusal
+is the hatch. The asymmetry is taken on purpose.
+
+**(ii) THE THIRD STATE IS CLOSED.** A claim that cites no record, grounds no
+checkable assertion and carries no board content is not shippable unless it was
+proposed as general knowledge. It is **DROPPED**, and a CONCLUSION gets no
+exemption — without that, the model calls its general sentence a conclusion and
+ships it unlabelled, which is what two of the four pure-domain specimens did.
+
+**IT IS A DROP AND NOT AN AUTO-LABEL, AND THAT IS THE HARD CALL.** The verifier
+can prove the label's second half (*not a fact about this plan*); only the author
+can make the first (*this is how scheduling works*). *"Things are pretty tight
+right now"* carries no board content either, and it is a vague assertion about
+the plant, not domain knowledge — auto-labelling would call it one. **The
+verifier may REFUTE a proposal and may not MANUFACTURE one**: R-AI5(8)'s
+discipline at a second seam, and the same shape as the parse layer's (the model
+proposes, the deterministic seam disposes, and where nothing was proposed nothing
+is invented).
+
+**THE CLASS IS A CLAIM CLASS, NOT A RUNG.** The register stays `synthesis`. A
+general line carries **NO provenance fields at all** — not the consulted set, not
+the read-from tools, not a sample note — because it was checked against nothing,
+and a durable record saying it was read from four tool calls is 4B.5 CU5(d)'s
+answer-level-provenance-in-per-claim-clothes one seam further on. It renders with
+its own marker naming **BOTH HALVES** — what it is and what it is not — and an
+answer carrying any general line says so once in a footer. A drill-down onto one
+gets its own authored branch: `PROVE_IT_INTERPRETIVE_BARE` opens *"that part is
+my reading of the plan"*, which is false of a general line in its first clause.
+
+### TWO THINGS THE RULING BROKE AND HAD TO FIX IN THE SAME COMMIT
+
+**THE FORCED CLOSE ASKED FOR A SENTENCE (ii) NOW CUTS.** `_forced_close` told the
+model *"Say plainly in one claim what you did not get to look at"* — a claim about
+OUR OWN READ, which cites nothing, grounds nothing and names nothing on the
+board. It should be cut: R-AI1's rule is that the words about our own process are
+ours and computed, and `SYNTHESIS_PARTIAL` already renders that fact from the
+toolbox's own call log. The instruction is removed. The unanswerable branch now
+also states the budget/timeout fact, which it never did — reachable only once an
+uncitable sentence stopped always surviving to keep the answer non-empty, and
+4B.27 Item 9's discipline (a process claim is gated on the process) at the one
+branch that had none.
+
+**A CUT NAMES WHICH KIND OF CUT IT WAS.** Found LIVE on the demo board after the
+fix went in: (ii) cuts the tier's own honest limit statements — *"whether a large
+gap here reflects a genuinely weak schedule versus a loose bound is something I
+cannot check against this run"* — because a sentence about our epistemic position
+is neither a board claim nor domain knowledge. The answer then said *"one step of
+my reasoning didn't hold up against the records"*, **which is false in its first
+clause: the step never reached the records to fail against them.** A second
+authored line (`SYNTHESIS_UNPLACEABLE`) says what actually happened; a genuine
+grounding failure is the stronger fact and wins a mixed answer. **THE TAXONOMY
+STILL HAS NO HOME FOR A SENTENCE ABOUT OUR OWN EPISTEMIC POSITION**, and that gap
+is REPORTED rather than papered over — R-DP12's missing-driver-code shape on
+another axis.
+
+### R-OF1 RIDER — AN OUTAGE CARD IS NOT AN ANSWER
+
+A `system`-register card does not enter `ANSWER_MEMORY`. Nothing was read,
+nothing was reasoned and nothing is advised, so nothing may ground a drill-down —
+and the sharper half is that remembering it would **ERASE the last real answer**,
+which is the one the planner is still looking at and the only one a *"show me the
+evidence"* could mean. **Keyed on the REGISTER, not on a route name**: `system` is
+the vocabulary member that means this, so a card that earns it later inherits the
+rule instead of having to remember it.
+
+### WHAT THIS RULING DOES NOT CLAIM
+
+**No contract bump and no docs/06 doorway are owed, and both are answered on the
+record.** `CONTRACT_VERSION` versions the schedule DOCUMENT; claim classes live
+on a synthesis answer the document does not carry. The pipeline-proof rule
+governs declared facts about the PLANT, and a claim class is a property of how
+OUR ANSWER is composed — R-CAL1's and R-DP13's product-side/IDS distinction on
+another axis. The parse prompt is UNCHANGED at **v17**: routing did not move.
+`synthesis_prompt.md` goes **v5 → v6** (rule 13), and the prompt PROPOSES while
+the deterministic seam ENFORCES.
+
+**Nothing here is a depth licence.** Probe answers may read longer because a
+class exists for sentences that were previously dropped or mislabelled; no
+length policy was written, and answer length is session (b)'s subject.

@@ -1785,6 +1785,8 @@ def run_ask(explainer: Any, question: str, *, context: Optional[dict] = None,
         if memory is not None and d.route not in ("synthesis", "prove-it"):
             memory.forget(session_id)
 
+    register = register_of(bundle)
+
     # Session 4B.22 — REMEMBER WHAT WE JUST SAID, at the ONE seam every live
     # answer passes through. Not in `dispatch`: `remember_delivery` lives on the
     # matched-route branch only, so a rolling route, a tray answer or a CLARIFY
@@ -1792,11 +1794,20 @@ def run_ask(explainer: Any, question: str, *, context: Optional[dict] = None,
     # old copy lie ("the records behind it are cited on it", said about an
     # answer that cites nothing). An UNREADABLE parse is remembered too: the
     # honest floor is still an answer, and it still has no records.
-    if answer_memory is not None and route_label not in _NOT_REMEMBERED:
+    #
+    # R-OF1 RIDER (Session 4A teaching-graft a): AN OUTAGE CARD IS NOT AN ANSWER,
+    # SO IT NEVER BECOMES ONE TO GROUND. The `system` register exists because
+    # nothing was read, nothing was reasoned and nothing is advised — and a
+    # drill-down onto it would open "the records behind" a card whose whole
+    # content is that no record was reached. Worse, it would ERASE the last real
+    # answer, which is the one the planner is still looking at and the only one
+    # a "show me the evidence" could mean. Keyed on the REGISTER, not on a route
+    # name: `system` is the vocabulary member that means this, so a future card
+    # that earns it inherits the rule instead of having to remember it.
+    if (answer_memory is not None and route_label not in _NOT_REMEMBERED
+            and register != "system"):
         answer_memory.remember(session_id, route_label, question,
                                getattr(bundle, "ordered_records", None))
-
-    register = register_of(bundle)
 
     # R-AI5(7) — the probation shadow. Runs only when a caller asked for it AND
     # the route that answered is a promotion still on probation (the callable

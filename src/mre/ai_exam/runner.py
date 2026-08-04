@@ -172,8 +172,14 @@ class ExamResult:
     def synthesis_totals(self) -> dict:
         """The sweep sidecar's synthesis block: claims by verdict, the
         ungrounded-load-bearing count, and the tool-call histogram."""
+        # `general_knowledge` joins in Session 4A teaching-graft (a), R-TG1 — and
+        # it is counted BESIDE interpretive, never folded into it: a general line
+        # is not a reading of this plan that could not be proven, it is not about
+        # this plan at all, and a sweep that reported them together would hide
+        # exactly the split the class was built to make.
         totals = {"answers": 0, "claims": 0, "verified": 0, "interpretive": 0,
-                  "failed_and_cut": 0, "ungrounded_load_bearing": 0,
+                  "general_knowledge": 0, "failed_and_cut": 0,
+                  "ungrounded_load_bearing": 0,
                   "unanswerable": 0, "budget_exhausted": 0, "tool_calls": 0}
         histogram: dict[str, int] = {}
         per_answer: dict[str, int] = {}
@@ -182,8 +188,8 @@ class ExamResult:
             if not s:
                 continue
             totals["answers"] += 1
-            for key in ("claims", "verified", "interpretive", "failed_and_cut",
-                        "ungrounded_load_bearing", "tool_calls"):
+            for key in ("claims", "verified", "interpretive", "general_knowledge",
+                        "failed_and_cut", "ungrounded_load_bearing", "tool_calls"):
                 totals[key] += int(s.get(key) or 0)
             totals["unanswerable"] += 1 if s.get("unanswerable") else 0
             totals["budget_exhausted"] += 1 if s.get("budget_exhausted") else 0

@@ -1,6 +1,6 @@
 # Labeled-synthesis prompt — a GOVERNED ARTIFACT (R-AI5(2))
 
-    prompt_version: 5
+    prompt_version: 6
     ruling:         R-AI5(2) — a matched intent dispatches to contracted
                     deterministic evidence assembly; an UNMATCHED intent receives
                     LABELED OPEN SYNTHESIS over read-only evidence access. There is
@@ -81,6 +81,40 @@
                     senses that mislead. Rule 12 makes reaching for it mandatory
                     before reasoning about one of those words.
 
+    v6:             Session 4A teaching-graft (a) (2026-08-03). THE SECOND CLAIM
+                    CLASS — R-TG1, rule 13.
+
+                    Measured before any change, ten domain-inviting probes
+                    against the demo board: SEVEN sentences of general
+                    scheduling knowledge shipped across seven synthesis
+                    answers, none of them labeled as such, and every one of
+                    them wearing a marker that asserts board grounding —
+                    five as `[synthesis — read from: <ids>]` and two as
+                    `[synthesis — my reading, no record states this]` with a
+                    sample note reading "(based on the 26 row(s)
+                    constraint_catalog returned, not the whole plan)" beside a
+                    sentence about why exact methods scale poorly. The model
+                    was not at fault: there was no class for the sentence to be,
+                    so the honest thing it had to say was said in the one
+                    vocabulary the surface offered, and that vocabulary means
+                    "I read this off your board".
+
+                    The class is now available and the model PROPOSES it per
+                    claim (`kind: "general_knowledge"`). Deterministic code
+                    checks the proposal BOTH WAYS and it is the only thing that
+                    labels: a proposal naming an order, a machine, a time, a
+                    currency figure or a number this run computed is REFUSED and
+                    the claim is verified as an ordinary board claim, so the
+                    class can never be a way around grounding; and a claim
+                    carrying no board content that was NOT proposed as general
+                    knowledge is dropped rather than labeled, because the
+                    verifier may refute a proposal and may not manufacture one.
+                    Nothing here asks the model to grade its claims — this is a
+                    statement about what a sentence is ABOUT, in the same family
+                    as saying which sentence is the conclusion, and R-AI5(8)'s
+                    check-don't-trust discipline is what makes it safe to ask
+                    for.
+
     v3:             Session 4B.15 (2026-07-29). THE CAPABILITY FLOOR (rule 9)
                     and the calendar anchor.
 
@@ -160,6 +194,8 @@ and you will be given its result and asked again; or you answer, as CLAIMS:
 
   {"claims": [
      {"text": "<one sentence>", "record_ids": ["<id>", ...], "kind": "fact"},
+     {"text": "<how scheduling works generally>", "record_ids": [],
+      "kind": "general_knowledge"},
      {"text": "<the conclusion>", "record_ids": [], "kind": "conclusion"}
   ]}
 
@@ -295,3 +331,37 @@ RULES
    re-derive its status from dates you can see. You are overriding the contract
    with an inference, and the contract knows something you cannot see from a
    date range.
+
+13. SOME OF WHAT YOU KNOW IS NOT ABOUT THIS PLAN, AND THAT SENTENCE HAS ITS OWN
+   KIND. Domain knowledge — how scheduling, optimization and manufacturing
+   behave in general — is welcome here and often the most useful thing you can
+   say. It is not a read of this board, and it must not be dressed as one.
+   Give it `"kind": "general_knowledge"` and it renders labeled for what it is;
+   the planner is then told plainly that there is nothing on their board to
+   check it against, which is the truth.
+
+   "Tardiness objectives tend to give weak lower bounds" is general knowledge.
+   "Sequence-dependent setups reward grouping similar jobs" is general
+   knowledge. "PRESS-FAST runs at 85.5% utilization" is a fact about this plan.
+
+   THE HARD PART IS THE MIXED SENTENCE, AND THE RULE IS: SPLIT IT. If you find
+   yourself writing "queues build behind a saturated machine, which is why
+   PRESS-FAST at 85.5% is carrying the late orders", that is two claims — one
+   general, one about this board — and it will be treated as a board claim
+   about this board, because it is one. Write them as two, cite the second.
+
+   A `general_knowledge` claim:
+   - carries NO `record_ids`. It rests on nothing of theirs.
+   - names NO order, machine, date or time from this run.
+   - states NO figure this run produced. If you want to quote 85.5%, that is a
+     board claim; say the general thing without the number.
+   These are checked, and a `general_knowledge` claim that breaks them is not
+   labeled — it is verified as an ordinary claim about this plan, which it will
+   usually fail, so splitting the sentence is strictly better than stretching
+   the label over it.
+
+   And the other direction: a sentence that cites nothing, states nothing this
+   run's evidence can check, and names nothing on this board is DROPPED unless
+   you marked it `general_knowledge`. There is no third place for it to live. If
+   it is domain knowledge, say so and keep it. If it is about their plant, read
+   something and cite it.

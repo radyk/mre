@@ -56,7 +56,8 @@ def render_transcript(result: ExamResult) -> str:
         tot = result.synthesis_totals()
         lines.append(
             "claims      : {claims} total  verified={verified} "
-            "interpretive={interpretive} failed-and-cut={failed_and_cut}  "
+            "interpretive={interpretive} general-knowledge={general_knowledge} "
+            "failed-and-cut={failed_and_cut}  "
             "ungrounded-load-bearing={ungrounded_load_bearing}".format(**tot))
     sh = result.shadow_totals()
     if sh["shadowed"]:
@@ -157,6 +158,11 @@ def _synth_str(s: dict) -> str:
     bits = [f"claims={s.get('claims', 0)}",
             f"verified={s.get('verified', 0)}",
             f"interpretive={s.get('interpretive', 0)}",
+            # R-TG1: printed BESIDE interpretive, never folded into it. Without
+            # this line the per-turn counts silently did not sum to `claims`,
+            # which is how a reader first notices a class they were not told
+            # about.
+            f"general-knowledge={s.get('general_knowledge', 0)}",
             f"cut={s.get('failed_and_cut', 0)}"]
     if s.get("ungrounded_load_bearing"):
         bits.append(f"ungrounded-load-bearing={s['ungrounded_load_bearing']}")

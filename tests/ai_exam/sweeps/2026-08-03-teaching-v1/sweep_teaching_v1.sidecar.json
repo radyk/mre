@@ -1,0 +1,128 @@
+{
+  "target": "rolling-db5395dc-2ae",
+  "snapshot": "snap-rolling",
+  "started_at": "2026-08-04T01:12:58Z",
+  "llm_mode": "live",
+  "questions": 14,
+  "llm_calls": 48,
+  "parser_stats": {
+    "calls": 20,
+    "parses": 20,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 1,
+    "unavailable": 0,
+    "unreachable": 0,
+    "median_latency_ms": 1195.0121999980183,
+    "malformed_samples": []
+  },
+  "synth_stats": {
+    "syntheses": 10,
+    "calls": 27,
+    "tool_calls": 16,
+    "malformed": 1,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 0,
+    "median_latency_ms": 10544.660399995337,
+    "p90_latency_ms": 22550.440199993318
+  },
+  "synthesis": {
+    "answers": 9,
+    "claims": 42,
+    "verified": 4,
+    "interpretive": 14,
+    "general_knowledge": 17,
+    "failed_and_cut": 7,
+    "ungrounded_load_bearing": 7,
+    "unanswerable": 0,
+    "budget_exhausted": 0,
+    "tool_calls": 12,
+    "tool_histogram": {
+      "constraint_catalog": 1,
+      "cost_ledger": 3,
+      "gate_findings": 1,
+      "lateness_set": 2,
+      "machine_occupancy": 3,
+      "placements_for_order": 1,
+      "spec_lookup": 1
+    },
+    "calls_per_answer": {
+      "0": 3,
+      "1": 4,
+      "4": 2
+    }
+  },
+  "shadow": {
+    "shadowed": 1,
+    "clean": 1,
+    "diverged": 0,
+    "unchecked": 0,
+    "provenance_strengthened": 1,
+    "by_intent": {
+      "lateness-cause": {
+        "shadowed": 1,
+        "diverged": 0,
+        "unchecked": 0
+      }
+    }
+  },
+  "latency": {
+    "route": {
+      "n": 5,
+      "median_ms": 3273.2,
+      "p90_ms": 8021.6
+    },
+    "synthesis": {
+      "n": 9,
+      "median_ms": 11624.9,
+      "p90_ms": 25109.0
+    }
+  },
+  "graded_expectations": {
+    "graded": 13,
+    "met": 13
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "ungrounded-load-bearing": 6
+  },
+  "findings": [
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 47,
+      "question": "why might tardiness cluster on bottleneck machines",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 51,
+      "question": "why would the solver leave a machine idle when there is work waiting",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 55,
+      "question": "in general, what makes a scheduling problem hard to prove optimal",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 59,
+      "question": "is it normal for an optimizer to report a large gap",
+      "detail": "2 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 63,
+      "question": "what is the usual trade-off between finishing early and running efficiently",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 112,
+      "question": "is this plan's tardiness cost a typical share of total cost",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    }
+  ]
+}

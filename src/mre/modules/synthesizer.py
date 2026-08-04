@@ -319,9 +319,17 @@ def _forced_close(toolbox: EvidenceToolbox) -> str:
     consulted = ", ".join(sorted({c.tool for c in toolbox.calls})) or "nothing"
     return (
         "BUDGET REACHED — no more tool calls. Answer now with claims built from what "
-        f"you already read (you consulted: {consulted}). Say plainly in one claim "
-        "what you did not get to look at. Reply with a single "
+        f"you already read (you consulted: {consulted}). Reply with a single "
         '{"claims": [...]} object.'
+        # R-TG1. This used to add "Say plainly in one claim what you did not get
+        # to look at" — and that sentence is a claim about OUR OWN READ, which
+        # cites nothing, grounds nothing and names nothing on the board, so under
+        # enforcement direction (ii) it is now cut. It should be: R-AI1's rule is
+        # that the words about our own process are OURS, computed, never the
+        # model's recollection. `SYNTHESIS_PARTIAL` already renders exactly this
+        # fact from the toolbox's own call log, on every partial answer including
+        # one where nothing survived. Asking the model for a second, unverified
+        # copy of a line we render from fact was the mistake.
     )
 
 

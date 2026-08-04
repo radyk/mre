@@ -1,0 +1,53 @@
+{
+  "schedule": "rolling-db5395dc-2ae",
+  "turns": 14,
+  "routing": {
+    "graded": 13,
+    "met": 13
+  },
+  "families": {
+    "a_labeled": {
+      "met": 27,
+      "of": 27
+    },
+    "b_cited": {
+      "met": 9,
+      "of": 9
+    },
+    "c_no_hatch": {
+      "met": 17,
+      "of": 17
+    },
+    "d_untouched": {
+      "met": 5,
+      "of": 5
+    }
+  },
+  "synthesis": {
+    "answers": 9,
+    "claims": 42,
+    "verified": 4,
+    "interpretive": 14,
+    "general_knowledge": 17,
+    "failed_and_cut": 7,
+    "ungrounded_load_bearing": 7,
+    "unanswerable": 0,
+    "budget_exhausted": 0,
+    "tool_calls": 12,
+    "tool_histogram": {
+      "constraint_catalog": 1,
+      "cost_ledger": 3,
+      "gate_findings": 1,
+      "lateness_set": 2,
+      "machine_occupancy": 3,
+      "placements_for_order": 1,
+      "spec_lookup": 1
+    },
+    "calls_per_answer": {
+      "0": 3,
+      "1": 4,
+      "4": 2
+    }
+  },
+  "problems": []
+}
