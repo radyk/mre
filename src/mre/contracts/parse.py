@@ -373,6 +373,16 @@ class ClarifyReason(str, Enum):
     VERIFICATION = "verification"
     AMBIGUOUS_INTENT = "ambiguous-intent"
     PARSE_FAILED = "parse-failed"
+    #: Micro-session 4A — THE OUTAGE, and it is not a question back.
+    #:
+    #: Every other member here is a reason to ASK the planner something. This
+    #: one is a reason there is nothing to ask: the parse layer could not reach
+    #: its language model, so the question was never read at all. It is minted
+    #: LOCALLY (like `parse-failed`, never by the model — a model that cannot be
+    #: reached emits nothing) and the dispatch answers it with the OUTAGE floor
+    #: rather than the clarify bundle, because "which order did you mean?" is a
+    #: capability sentence and this is an infrastructure fact.
+    MODEL_UNREACHABLE = "model-unreachable"
 
 
 class SubjectDisposition(str, Enum):

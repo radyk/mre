@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import os
 import re
+from dataclasses import dataclass
 from typing import Any, Optional
 
 # ---------------------------------------------------------------------------
@@ -128,35 +129,118 @@ def request_kwargs(model: str) -> dict:
     return {}
 
 
-def call_text(client: Any, model: str, max_tokens: int,
-              messages: list[dict], system: Optional[str] = None) -> Optional[str]:
-    """One model call → its first text block, or None.
+# ---------------------------------------------------------------------------
+# WHY A CALL PRODUCED NO TEXT (Micro-session 4A — the two floors).
+#
+# Until this session every failure of a model call arrived at the ask path as
+# one value: None. So "the model was asked and answered something unusable" and
+# "the model could not be reached at all" were the SAME fact downstream, and the
+# ask layer rendered its CAPABILITY floor — "I don't have a tool that reaches
+# it" — for both. On a credit-exhausted key that sentence is false in every
+# clause: the tools are there, the language model is not.
+#
+# So an outcome names WHICH. Two kinds, and the distinction is the ruling:
+#
+#   UNREACHABLE — ``messages.create`` itself failed. Network, auth, rate limit,
+#                 credit exhaustion, a 400, a timeout. NOTHING was read, so
+#                 nothing may be claimed about the question.
+#   NO_TEXT     — the call SUCCEEDED and no text came back out of it. The model
+#                 was reached; what it returned was unusable. That is the
+#                 pre-existing malformed-emission path and it keeps its
+#                 behaviour (retry, then the honest floor).
+#
+# ``detail`` is for logs and telemetry ONLY. It is a transport string; R-DP-era
+# discipline and 4B.23 §5a.91 both say a planner surface never renders one.
+# ---------------------------------------------------------------------------
 
-    FAIL-CLOSED AND FAIL-FORWARD. A model failure is never a crash (both call
-    sites treat None as "unavailable" and fall to an honest floor), and a 400
-    naming a request field we chose is retried once with that field dropped —
-    so a model family released after this file was written degrades to a
-    working call instead of taking the ask path down."""
+UNREACHABLE = "unreachable"
+NO_TEXT = "no-text"
+
+
+@dataclass(frozen=True)
+class LLMFailure:
+    """Why a model call produced no text. ``detail`` is never planner-facing."""
+    kind: str
+    detail: str = ""
+
+    @property
+    def unreachable(self) -> bool:
+        return self.kind == UNREACHABLE
+
+
+@dataclass(frozen=True)
+class LLMOutcome:
+    """One model call's result: the text, or the named reason there is none."""
+    text: Optional[str] = None
+    failure: Optional[LLMFailure] = None
+
+    @property
+    def unreachable(self) -> bool:
+        return self.failure is not None and self.failure.unreachable
+
+
+def _summarize(exc: BaseException) -> str:
+    return f"{type(exc).__name__}: {str(exc)[:200]}"
+
+
+def _create(client: Any, kwargs: dict) -> tuple[Any, Optional[BaseException]]:
+    """The call itself, separated from reading its result so the two failures
+    stay distinguishable. A missing client raises here (AttributeError) and is
+    correctly an UNREACHABLE: there is nothing to reach."""
+    try:
+        return client.messages.create(**kwargs), None
+    except Exception as exc:  # noqa: BLE001 — a model failure is never a crash
+        return None, exc
+
+
+def _first_text(resp: Any) -> Optional[str]:
+    try:
+        return resp.content[0].text
+    except Exception:  # noqa: BLE001 — a shape we cannot read is not a reach failure
+        return None
+
+
+def call_text_outcome(client: Any, model: str, max_tokens: int,
+                      messages: list[dict],
+                      system: Optional[str] = None) -> LLMOutcome:
+    """One model call → its first text block, or a NAMED failure.
+
+    FAIL-CLOSED AND FAIL-FORWARD, unchanged: a model failure is never a crash,
+    and a 400 naming a request field we chose is retried once with that field
+    dropped — so a model family released after this file was written degrades to
+    a working call instead of taking the ask path down. What is new is that the
+    caller can tell an outage from an unusable answer."""
     kwargs: dict = {"model": model, "max_tokens": max_tokens,
                     "messages": messages, **request_kwargs(model)}
     if system:
         kwargs["system"] = system
-    try:
-        resp = client.messages.create(**kwargs)
-        return resp.content[0].text
-    except Exception as exc:  # noqa: BLE001 — a model failure is never a crash
+    resp, exc = _create(client, kwargs)
+    if exc is not None:
         detail = str(exc).lower()
         retryable = any(f in detail for f in ("temperature", "top_p", "top_k",
                                               "thinking", "effort"))
         if not retryable:
-            return None
-    # Retry once with only the universally-accepted fields.
-    try:
+            return LLMOutcome(failure=LLMFailure(UNREACHABLE, _summarize(exc)))
+        # Retry once with only the universally-accepted fields.
         bare: dict = {"model": model, "max_tokens": max_tokens,
                       "messages": messages}
         if system:
             bare["system"] = system
-        resp = client.messages.create(**bare)
-        return resp.content[0].text
-    except Exception:  # noqa: BLE001
-        return None
+        resp, exc = _create(client, bare)
+        if exc is not None:
+            return LLMOutcome(failure=LLMFailure(UNREACHABLE, _summarize(exc)))
+    text = _first_text(resp)
+    if text is None:
+        return LLMOutcome(failure=LLMFailure(NO_TEXT, "no text block in response"))
+    return LLMOutcome(text=text)
+
+
+def call_text(client: Any, model: str, max_tokens: int,
+              messages: list[dict], system: Optional[str] = None) -> Optional[str]:
+    """One model call → its first text block, or None.
+
+    The pre-4A shape, kept for callers that genuinely cannot act on WHY (the
+    LLM voice renderer degrades to the template either way). The two governed
+    tiers use :func:`call_text_outcome`, because for them the difference between
+    "unreachable" and "unusable" is the difference between two answers."""
+    return call_text_outcome(client, model, max_tokens, messages, system).text

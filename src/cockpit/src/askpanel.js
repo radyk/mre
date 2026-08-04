@@ -185,7 +185,12 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
     // Session 4A.5b (R-AI5(4)): `synthesis` joins the register vocabulary — an
     // answer the assistant reasoned to from the evidence because no contracted
     // route covered the question. Anything unrecognized still reads as testimony.
-    const REGISTERS = { judgment: 1, synthesis: 1, testimony: 1 };
+    // Micro-session 4A — `system` joins it: the OUTAGE floor, which is the ask
+    // layer reporting on ITSELF (it could not reach its language model). It is
+    // not testimony, not judgment and not synthesis, and falling back to
+    // "testimony" would put the chip of a register that never ran on the one
+    // card built to stop claiming exactly that.
+    const REGISTERS = { judgment: 1, synthesis: 1, testimony: 1, system: 1 };
     const register = REGISTERS[meta?.register] ? meta.register : "testimony";
     const el = document.createElement("div");
     el.className = `msg answer ${register}`;

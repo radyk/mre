@@ -572,6 +572,22 @@ def clarify_parse_failed(question: str, *, prompt_version: str = "",
         prompt_version=prompt_version, retries=retries, latency_ms=latency_ms)
 
 
+def parse_unreachable(question: str, *, prompt_version: str = "",
+                      retries: int = 0,
+                      latency_ms: Optional[float] = None) -> ParsedQuestion:
+    """THE OTHER FLOOR (micro-session 4A): the model could not be REACHED, so the
+    question was never read.
+
+    Deliberately not `clarify_parse_failed`. That one means a model answered and
+    we could not make a parse out of what it said — a fact about the emission.
+    This one means nothing was asked of anything, and the only honest thing the
+    surface can say is so."""
+    return ParsedQuestion(
+        question=question, intent=Intent.UNMATCHED, confidence=0.0,
+        clarify=ClarifyPayload(reason=ClarifyReason.MODEL_UNREACHABLE),
+        prompt_version=prompt_version, retries=retries, latency_ms=latency_ms)
+
+
 # ---------------------------------------------------------------------------
 # The parser
 # ---------------------------------------------------------------------------
@@ -586,6 +602,7 @@ class ParserStats:
     malformed: int = 0             # emissions that did not validate (each attempt)
     clarifies: int = 0             # parses that emitted a clarify payload
     unavailable: int = 0           # parses attempted with no parser available
+    unreachable: int = 0           # parses whose model call could not be reached
     latencies_ms: list[float] = field(default_factory=list)
     #: The first few malformed emissions, verbatim and truncated (Session 4A.5b).
     #: A `parse-failed` clarify says only THAT the parse could not commit; the
@@ -609,7 +626,7 @@ class ParserStats:
     def as_dict(self) -> dict:
         return {"calls": self.calls, "parses": self.parses, "retries": self.retries,
                 "malformed": self.malformed, "clarifies": self.clarifies,
-                "unavailable": self.unavailable,
+                "unavailable": self.unavailable, "unreachable": self.unreachable,
                 "median_latency_ms": self.median_latency_ms(),
                 "malformed_samples": list(self.malformed_samples)}
 
@@ -660,15 +677,18 @@ class QuestionParser:
 
     # -- one parse ----------------------------------------------------------
 
-    def _call(self, prompt: str) -> Optional[str]:
+    def _call(self, prompt: str) -> Any:
         # Session 4B.15 Item 6 — the request fields are MODEL-DEPENDENT.
         # `temperature=0` is right on Haiku and a 400 on Claude Opus 5 and
         # Sonnet 5, which removed the sampling parameters. Hardcoding it made
         # the two candidate tiers untestable: every request failed at the
         # transport, before any answer existed to grade.
-        from mre.modules.llm_compat import call_text
-        return call_text(self._client, self._model, self._max_tokens,
-                         [{"role": "user", "content": prompt}])
+        #
+        # Micro-session 4A: the OUTCOME, not just the text. A parse that never
+        # reached a model must not be answered with a sentence about tools.
+        from mre.modules.llm_compat import call_text_outcome
+        return call_text_outcome(self._client, self._model, self._max_tokens,
+                                 [{"role": "user", "content": prompt}])
 
     def parse(self, question: str, *, explainer: Any,
               context: Optional[dict] = None,
@@ -683,10 +703,20 @@ class QuestionParser:
         started = time.perf_counter()
         parsed: Optional[ParsedQuestion] = None
         attempts = 0
+        unreachable = False
         for attempt in range(2):          # one call, one retry on a malformed one
             attempts = attempt + 1
             self.stats.calls += 1
-            text = self._call(prompt)
+            outcome = self._call(prompt)
+            # Micro-session 4A — AN OUTAGE IS NOT RETRIED AND IS NOT MALFORMED.
+            # The retry above exists for a model that answered badly; a model
+            # that could not be reached will not be reached better by asking
+            # twice, and counting it as a malformed emission would file an
+            # infrastructure failure as a quality one. Break, and say so.
+            if outcome.unreachable:
+                unreachable = True
+                break
+            text = outcome.text
             emission = extract_json(text or "")
             if emission is not None:
                 parsed = build_parsed(
@@ -701,7 +731,12 @@ class QuestionParser:
         self.stats.latencies_ms.append(latency_ms)
         if attempts > 1:
             self.stats.retries += 1
-        if parsed is None:
+        if unreachable:
+            self.stats.unreachable += 1
+            parsed = parse_unreachable(
+                question, prompt_version=self.prompt_version,
+                retries=attempts - 1, latency_ms=latency_ms)
+        elif parsed is None:
             parsed = clarify_parse_failed(
                 question, prompt_version=self.prompt_version,
                 retries=attempts - 1, latency_ms=latency_ms)

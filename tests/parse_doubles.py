@@ -63,6 +63,42 @@ class FakeClient:
         return _Msg(text)
 
 
+class UnreachableClient:
+    """A client whose every call RAISES — the outage the founder measured.
+
+    Micro-session 4A. The exception text mimics the shape an SDK raises on a
+    credit-exhausted key; nothing in the product reads it, which is the point:
+    the classification is "the call did not complete", never a string match on a
+    provider's wording. ``calls`` counts, so a test can prove the outage was not
+    silently retried."""
+
+    def __init__(self, message: str = "Error code: 400 - credit balance is "
+                                      "too low to access the Anthropic API"
+                 ) -> None:
+        self._message = message
+        self.calls: list[dict] = []
+        self.messages = self
+
+    def create(self, **kw) -> Any:  # noqa: ANN401 — mirrors the SDK's shape
+        self.calls.append(kw)
+        raise RuntimeError(self._message)
+
+
+class UnreachableSynthesizer:
+    """A synthesizer that is AVAILABLE and cannot reach its model (4A).
+
+    Distinct from ``DeadSynthesizer``, which is unavailable and must never be
+    called: this one IS called, runs its loop against a dead transport, and
+    returns an answer flagged ``model_unreachable``."""
+
+    available = True
+
+    def synthesize(self, question: str, **kw) -> Any:  # noqa: ANN401
+        from mre.contracts.synthesis import SynthesisAnswer
+        return SynthesisAnswer(question=question, unanswerable=True,
+                               model_unreachable=True)
+
+
 def emission(intent: str, subjects: Optional[list[dict]] = None, *,
              polarity: Optional[str] = None, followup_of: str = "none",
              confidence: float = 0.9, nearest: Optional[list[str]] = None,
@@ -240,5 +276,6 @@ __all__ = [
     "assemble", "cannot_answer", "claim", "claims",
     "ClarifyReason", "DeadSynthesizer", "FakeClient", "FollowupKind", "Intent",
     "ParsedQuestion", "Polarity", "ScriptedParser", "SubjectKind", "SubjectSource",
+    "UnreachableClient", "UnreachableSynthesizer",
     "emission", "parsed", "parser_with", "resolve", "synthesizer_with", "tool_call",
 ]

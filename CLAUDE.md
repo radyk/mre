@@ -171,6 +171,54 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Micro-session 4A — the floor tells the truth about why it fell**, 2026-08-03
+(docs/07 v2.87, §5a.159-161; docs/04 2026-08-03 **R-OF1 ruled and BUILT**;
+contract unchanged **1.15**, no docs/06 doorway owed, both answered on the
+record; parse prompt unchanged **v17**; no close-out file — the census found
+nothing surprising and the ruling is in docs/04). **R-OF1: AN OUTAGE MAY NEVER
+WEAR THE CAPABILITY CARD.** With a credit-exhausted key, three different
+questions returned one card — *"I couldn't answer that one: I don't have a tool
+that reaches it… Here's what I can do that's closest"*, `[rendered by:
+synthesis — 0 tool call(s)]` — and **every clause is false in that failure
+mode**: the tools were there, the question was never READ. **THE CAUSE IS ONE
+VALUE** — every model failure reached the ask path as `None`, so "answered
+unusably" and "could not be reached" were the same fact by the time a sentence
+was rendered about them. `llm_compat.call_text_outcome` names which
+(`UNREACHABLE` = `messages.create` itself failed; `NO_TEXT` = the call succeeded
+and returned nothing usable) and **nothing string-matches a provider's
+wording**. **CENSUS: SEVEN PATHS** — **three** rendered an infrastructure
+failure as a capability statement (parse call, synthesis call, and
+no-key-with-a-parser, which claimed the QUESTION was unanswerable);
+**three were already honest** (the voice renderer degrades to the template, the
+preflight fails open, the unmatched bridge answers from a real parse); **one is
+a deliberate boundary** (a caller passing NO parser keeps the bridge). **THREE
+STAGES, NOT ONE CARD:** on `parse` the question was never read, on `synthesis`
+it WAS read and no route covered it, on `unconfigured` **there is no retry
+line** because there is nothing to wait for. **NO DOORS** (an offer presupposes
+the question was understood). **`system` JOINS THE REGISTER VOCABULARY** (ADD,
+never repurpose) — the footer reads `[rendered by: authored copy — the language
+model was unreachable | register: system]`, and the browser had already made
+this call for a failed fetch (`appendTransportError`). `tier_of` returns
+`floor`, so beat one never promises a read that cannot happen. **THE LIVE RUN
+FOUND WHAT 21 GUARDS DID NOT (§5a.160): A RIDER QUALIFIED AN ANSWER THAT DOES
+NOT EXIST** — the coverage rider fired on the first outage card served from the
+demo board (*"what I said above is when it does start"*, about a card whose
+content is that nothing was read); withheld at **both** render seams.
+**Python 2548/291/0** (family-floor baseline 2524; **+24**, of which 23 are the
+new guard, and 3 pre-existing assertions were UPDATED because they state the old
+behaviour and the update IS the ruling); **cockpit 365/2 of 367** — the 2 known
+deictic, no new flake. **7 negative controls proven RED**, every restore
+byte-identical (sha256 asserted — 4A.y's harness lesson).
+**LIVE, three ways on the demo board:** unreachable key → the outage card;
+key restored → the same question answers normally (testimony, 1 bar lit);
+out-of-scope question → **the capability card UNCHANGED**, `register:
+synthesis`. **MINTED NOTHING.** NOT FIXED, named: the no-parser bridge (by
+ruling); the ask dock's collapse badge renders the literal word **"null"**
+(pre-existing, cockpit, one line — `main.js` guards the METHOD where it means
+the VALUE); and `sweep_mobility_v2`'s `dark-evidence=2` is **two premise
+corrections and neither is a finding** (a correction cites nothing because
+there is no record for a placement that does not exist — 4B.17's recorded
+shape, same count). Before it:
 **Session 4A.y — the floor is family-scoped**, 2026-08-03 (docs/07 v2.86,
 §5a.153-158; docs/04 2026-08-03 **R-FF1–R-FF4 ruled and BUILT**; contract
 unchanged **1.15**, no docs/06 doorway owed; parse prompt unchanged **v17**;

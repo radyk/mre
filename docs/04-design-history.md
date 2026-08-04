@@ -15794,3 +15794,124 @@ build the specimen world that would change that. The family set is **three
 members because three is what was measured**; `start-reason` and `swap-move` are
 deliberately absent, and a member added on a hunch would make that list an
 argument wearing a measurement's clothes (R-CAL1's rule).
+
+## 2026-08-03 — R-OF1: an outage may never wear the capability card (Micro-session 4A, the two floors)
+
+The founder's key ran out of credit mid-session. Three questions were typed into
+the cockpit — *"find order and highlight 126"*, *"why cant ORD-000126 op30 start
+earlier"*, *"why cant this be moved"* — and all three came back as the same card
+(three screenshots on file in the design thread):
+
+> "I couldn't answer that one: I don't have a tool that reaches it. Nothing I can
+> read holds that, so I'd rather say so than guess.
+> Here's what I can do that's closest: …"
+> `[rendered by: synthesis — 0 tool call(s)]`
+
+**Every clause of that is false in this failure mode.** The tools were there. The
+evidence was there. The board, the schedule and every gesture were untouched.
+What was missing was the language model, so the question was never READ — and the
+product answered a question about ITS OWN REACH with a sentence about the PLANT's
+evidence, in the honesty register, under a footer naming a tier that never ran.
+
+The two facts need two sentences, because a planner acts on them differently. *"I
+can't do that"* is a reason to stop asking; *"I can't think right now"* is a
+reason to ask again in a minute. The founder read the card as grounds to abandon
+the AI layer, which is the exact cost of the confusion and the reason this is a
+ruling rather than a copy edit.
+
+### THE RULING
+
+**(1) TWO FLOORS, AND THEY MAY NEVER WEAR EACH OTHER'S WORDS.** The CAPABILITY
+floor — the language model was reached, and the question is genuinely outside the
+contracted routes and beyond what the evidence grounds — keeps its card,
+unchanged, doors and all. The OUTAGE floor — the ask layer could not reach its
+language model — gets its own authored card, its own register, and its own
+footer.
+
+**(2) THE DISTINCTION IS DRAWN AT THE CALL, NOT INFERRED DOWNSTREAM.** Until this
+session every model failure arrived at the ask path as one value: `None`. So "the
+model answered unusably" and "the model could not be reached" were the SAME fact
+by the time anything could render a sentence about them, and the capability floor
+was the only floor there was. `llm_compat.call_text_outcome` now names which:
+`UNREACHABLE` when `messages.create` itself failed (network, auth, rate limit,
+credit exhaustion, a 400, a timeout — nothing was read), `NO_TEXT` when the call
+succeeded and no usable text came out of it (the model was reached; that is a
+quality failure and it keeps every pre-existing behaviour, retry included).
+**Nothing string-matches a provider's wording** — the classification is "did the
+call complete", a property of our own transport rather than of anyone's error
+text.
+
+**(3) THE CARD CLAIMS ONLY WHAT THE STAGE SUPPORTS.** Three states, deliberately
+not one:
+
+| stage | what is true | what the card says |
+| --- | --- | --- |
+| `parse` | the question was never read | "I can't reach my language model right now, so I couldn't read your question at all" |
+| `synthesis` | the question WAS read; no contracted answer covered it; the reasoning tier could not be reached | "I read your question, but no contracted answer covers it and I couldn't reach my language model to reason it out" |
+| `unconfigured` | no model is available on this deployment | "I have no language model available on this deployment" — and **no retry line**, because there is nothing to wait for |
+
+A single card for all three would have to say the weakest true thing about every
+one of them, which is how a fix for one lie becomes a smaller one.
+
+**(4) NO DOORS.** The capability floor's *"here's what I can do that's closest"*
+presupposes the question was understood well enough to find a neighbour for it.
+On the parse path nothing read it. Offering alternatives here would be a second
+capability claim inside the card built to stop making the first.
+
+**(5) NO SILENT RETRY, NO QUEUE, NO DEGRADED GUESS.** The parse retries once on a
+malformed emission; a transport that is down is not answered by asking it twice,
+and counting an outage as a malformed emission files an infrastructure failure as
+a quality one. The loop breaks at the first unreachable call, in both tiers.
+R-AI5(2) is untouched: there is still no keyword fallback to reach for, and the
+outage floor is an honest non-answer rather than a degraded classifier.
+
+**(6) THE FOOTER NAMES NO TIER THAT DID NOT RUN, AND NO REGISTER THAT DID NOT
+SPEAK.** `[rendered by: authored copy — the language model was unreachable |
+register: system]`. `system` joins the register vocabulary (ADD, never
+repurpose): `testimony` says assembled from this plan's evidence, `synthesis`
+says reasoned from it and labelled claim by claim, `judgment` says this is our
+advice — an outage card is none of the three, because nothing was read, nothing
+was reasoned and nothing is advised. It is the product reporting on itself. **The
+browser side already made this call**: `askpanel.appendTransportError` renders a
+failed fetch in deliberately register-less chrome, on the reasoning that the
+question never reached the server, so there is nothing in any register to read.
+The outage card is that card's server-side sibling and wears the same clothes.
+
+**(7) THE MECHANISM IS NAMED; THE TRANSPORT STRING IS NOT.** No status code, no
+exception class, no provider wording on a planner surface (4B.23 §5a.91's rule,
+at another site). The detail is kept on the failure object, for logs.
+
+### WHAT THE CENSUS FOUND
+
+Every LLM-dependent step in the ask path, and what each rendered at HEAD:
+
+| path | where the failure lands | at HEAD |
+| --- | --- | --- |
+| parse call fails | `call_text` → `None` → two attempts → `parse-failed` clarify → the dispatch's clarify branch → `_clarify_leads_nowhere` (True: the intent is `unmatched`) → the second tier → the synthesis loop against the same dead transport | **the capability card**, `[rendered by: synthesis — 0 tool call(s)]` — the founder's specimen |
+| synthesis call fails, parse OK (a cached preflight parse, or an outage of the synthesis tier alone) | `draft` nudges a dead transport for `_MAX_STEPS`, 0 tool calls, no claims → `unanswerable` | **the same capability card** — the specimen by its second route |
+| no key / no client, parser constructed | `parse` returns `None` → `run_ask`'s unsupported bridge | *"I can't answer this question yet: <question>"* + the supported-routes menu — a claim about the QUESTION, from a layer that never read it |
+| no parser passed at all (the API's degraded re-run; every R-AI5(2) test) | the same bridge | unchanged, and **deliberately left alone**: a caller that passed no parser made a choice, and nothing here can tell whether an AI layer was ever meant to be present |
+| synthesizer unavailable, parse OK | `_unmatched_bridge` | unchanged — the question WAS read, the offers are computed from that real parse, and the bridge claims no tool gap |
+| the LLM VOICE renderer fails | `_render_fail_closed` | **no lie**: degrades to the deterministic template with a logged Event, and the answer is the assembled one |
+| the preflight fails | `_preflight`'s except | **no lie**: fails open to the `route` tier and shows no waiting state |
+
+Three of the seven rendered an infrastructure failure as a capability statement;
+three were already honest; one is a deliberate boundary. The first three are what
+this ruling fixes.
+
+**AND BEAT ONE MUST NOT PROMISE A READ THAT CANNOT HAPPEN.** `tier_of` returned
+`synthesis` for an unreachable parse (the clarify leads nowhere, the intent is
+`unmatched`), so the panel would have shown *"Reading the evidence — I'm working
+it out from the records"* and then a card saying nothing was read. It returns
+`floor`, which is what makes the panel show no waiting state at all.
+
+### WHAT THIS RULING DOES NOT CLAIM
+
+No contract bump and no docs/06 doorway are owed, and both are answered on the
+record: `CONTRACT_VERSION` versions the schedule DOCUMENT and nothing here
+touches it; the pipeline-proof rule governs declared facts about the PLANT, and
+this classifies a failure of OUR OWN infrastructure (R-DP13's and R-CAL1's
+product-side/IDS distinction, on another axis). The parse prompt is UNCHANGED at
+**v17** — `MODEL_UNREACHABLE` is minted locally, like `parse-failed`, and a model
+that cannot be reached emits nothing to be governed. **The no-parser bridge is
+untouched, and that is a boundary rather than an oversight** (row four above).

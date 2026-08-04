@@ -181,7 +181,44 @@ def _register_for(bundle: ExplanationBundle) -> str:
 # count for a synthesis answer. A planner reading "[rendered by: synthesis …]" knows
 # immediately that no contracted route covered their question, and how much evidence
 # the answer actually cost to assemble.
+#
+# (The rider gate below is a separate rule; `_rendered_by` follows it.)
+
+
+# Micro-session 4A — NO RIDER MAY QUALIFY AN ANSWER THAT DOES NOT EXIST.
+#
+# FOUND IN THIS SESSION'S OWN LIVE CONFIRMATION, not by a test. The first outage
+# card served from the demo board carried the predicate-coverage rider:
+#
+#   "I haven't addressed the time you named — what I said above is when it does
+#    start, not whether it could have started then."
+#
+# "What I said above" was a card explaining that nothing had been read. Every
+# rider on this seam is a qualification OF AN ANSWER — the gap rider qualifies a
+# money claim, the sufficiency rider qualifies a cause, the coverage rider
+# qualifies what an answer did and did not address — and on the outage floor
+# there is no answer to qualify. A rider that fires here re-commits the defect
+# the card exists to end, one paragraph below the card.
+#
+# Both renderers, one predicate: a floor one path can skip is not a floor
+# (4B.23's rule, at another site).
+_NO_RIDER_SUBJECTS = frozenset({"outage"})
+
+
+def _no_riders(bundle: ExplanationBundle) -> bool:
+    return getattr(bundle, "subject_type", "") in _NO_RIDER_SUBJECTS
+
+
 def _rendered_by(bundle: ExplanationBundle, default: str) -> str:
+    # Micro-session 4A — THE FOOTER MUST NOT NAME A TIER THAT NEVER RAN. The
+    # founder's specimen footer read "[rendered by: synthesis — 0 tool call(s)]",
+    # which says a tier reasoned over the evidence and found nothing; what
+    # happened is that no tier ran at all. This line names the AUTHORED COPY that
+    # is genuinely what produced the card, and the mechanism — never a status
+    # code, never a transport string.
+    if bundle.subject_type == "outage":
+        return ("[rendered by: authored copy — the language model was "
+                "unreachable | register: system]")
     if bundle.subject_type == "synthesis":
         kf = bundle.key_facts or {}
         model = kf.get("model") or ""
@@ -848,10 +885,11 @@ class TemplateRenderer:
     def render(self, bundle: ExplanationBundle) -> str:
         # CU3 — the single delivery seam: strip markdown/backticks from every
         # register's output here, so no register can leak formatting.
-        text = apply_repeat_riders(bundle, apply_mobility_lead(
-            bundle, strip_formatting(
-                self._render_body(bundle) + "\n"
-                + _rendered_by(bundle, "template"))))
+        body = strip_formatting(self._render_body(bundle) + "\n"
+                                + _rendered_by(bundle, "template"))
+        if _no_riders(bundle):
+            return body
+        text = apply_repeat_riders(bundle, apply_mobility_lead(bundle, body))
         # 4B.11 CU1 — an unproved board's money claims carry their gap, here,
         # once, for every route (docs/07 §5a.23).
         text = apply_cost_proof_rider(bundle, text) or text
@@ -901,6 +939,11 @@ class TemplateRenderer:
             elif bundle.subject_type in (
                 "downtime", "unsupported", "schedule", "scenario_diff",
                 "near_miss", "clarify", "refusals",
+                # Micro-session 4A: the outage floor cites nothing BY
+                # CONSTRUCTION — no evidence was read, and "(no evidence records
+                # found)" under it would read as a failed look-up rather than as
+                # a layer that never ran.
+                "outage",
                 "advice", "solve_time", "machine_count", "maintenance", "coaching",
                 # Item 2: the optimality answer IS the solver's own report; it
                 # cites the M6 solve_complete event rather than a record list.
@@ -1221,6 +1264,24 @@ class TemplateRenderer:
             lines.append("Supported question types:")
             for route in kf.get("supported_routes", []):
                 lines.append(f"  - {route}")
+            lines.append("")
+
+        elif bundle.subject_type == "outage":
+            # Micro-session 4A — THE OUTAGE FLOOR. Authored copy, rendered
+            # verbatim, and deliberately WITHOUT the near-miss doors: offering
+            # "here's what I can do that's closest" presupposes the question was
+            # read, and on this path it was not.
+            from mre.modules.ask_fallback_copy import (
+                OUTAGE_BOARD_STILL_WORKS, OUTAGE_LEADS, OUTAGE_PARSE_LEAD,
+                OUTAGE_RETRY,
+            )
+            stage = bundle.key_facts.get("stage") or "parse"
+            lines.append(OUTAGE_LEADS.get(stage, OUTAGE_PARSE_LEAD))
+            lines.append("")
+            lines.append(OUTAGE_BOARD_STILL_WORKS)
+            # Nothing to wait for when no model was ever configured.
+            if stage != "unconfigured":
+                lines.append(OUTAGE_RETRY)
             lines.append("")
 
         elif bundle.subject_type == "near_miss":
@@ -4030,7 +4091,10 @@ class LLMRenderer:
         and mark WHY the LLM path was not used. Every fail-closed exit routes
         here so an operator always sees an honest ``[rendered by: template …]``."""
         body = TemplateRenderer()._render_body(bundle)
-        if bundle.subject_type in ("synthesis", "prove_it"):
+        # Micro-session 4A: "outage" joins them for the same reason — the footer
+        # this path composes hardcodes `register: testimony` for authored copy,
+        # and an outage card is not testimony. `_rendered_by` owns that line.
+        if bundle.subject_type in ("synthesis", "prove_it", "outage"):
             # The tier line wins: a synthesis answer must never claim to have been
             # "rendered by template" when what a planner needs to know is which TIER
             # answered them (R-AI5(4)).
@@ -4047,6 +4111,10 @@ class LLMRenderer:
     # depth: an unresolvable question must never reach the LLM renderer).
     _AUTHORED_COPY_SUBJECTS = frozenset({
         "unsupported", "near_miss", "clarify", "refusals",
+        # Micro-session 4A: the outage card must never reach the LLM renderer —
+        # the renderer IS the thing that is down, and a card explaining an
+        # outage that then fails to render is the defect twice over.
+        "outage",
         # Session 4B.4: the scoping / meta-read answers are authored copy too — the
         # header IS the answer; nothing to testify from, never the LLM's to rewrite.
         "advice", "solve_time", "machine_count", "maintenance",
@@ -4153,8 +4221,10 @@ class LLMRenderer:
         # returns through _render_inner and is stripped of markdown/backticks here.
         # Session 4A.y Item 1: and the premise correction, same seam, same rule
         # — a floor one renderer can skip is not a floor.
-        text = apply_repeat_riders(bundle, apply_mobility_lead(
-            bundle, strip_formatting(self._render_inner(bundle))))
+        body = strip_formatting(self._render_inner(bundle))
+        if _no_riders(bundle):
+            return body
+        text = apply_repeat_riders(bundle, apply_mobility_lead(bundle, body))
         # 4B.11 CU1 — same seam, same rule: a reworded answer that still states
         # money on an unproved board still carries the gap.
         text = apply_cost_proof_rider(bundle, text) or text

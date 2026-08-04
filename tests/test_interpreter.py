@@ -185,12 +185,29 @@ class TestHonestDestinations:
         assert d.bundle.subject_type == "clarify"
         assert "order, machine, or customer" in d.bundle.key_facts["reason"]
 
-    @pytest.mark.parametrize("reason", list(ClarifyReason))
-    def test_every_clarify_reason_has_authored_words(self, explainer, reason):
+    # Micro-session 4A (R-OF1): `model-unreachable` is the one member of the set
+    # that is NOT a question back. Every other reason asks the planner something;
+    # that one says the question was never read, because the parse layer could
+    # not reach its language model — so it has an OUTAGE card rather than a
+    # clarify one, asserted below and in `tests/test_outage_floor.py`. Excluding
+    # it here is the ruling, not an exemption from it.
+    _ASKING_REASONS = [r for r in ClarifyReason
+                       if r is not ClarifyReason.MODEL_UNREACHABLE]
+
+    @pytest.mark.parametrize("reason", _ASKING_REASONS)
+    def test_every_clarify_reason_that_asks_has_authored_words(self, explainer,
+                                                               reason):
         d = _dispatch(explainer, parsed("q", Intent.LATE_ORDERS, clarify=reason,
                                         clarify_detail="those"))
         assert d.route == "CLARIFY"
         assert d.bundle.key_facts["reason"].strip()
+
+    def test_an_unreachable_model_is_an_outage_never_a_question_back(self,
+                                                                     explainer):
+        d = _dispatch(explainer, parsed("q", Intent.LATE_ORDERS,
+                                        clarify=ClarifyReason.MODEL_UNREACHABLE))
+        assert d.route == "OUTAGE"
+        assert d.bundle.subject_type == "outage"
 
     def test_unmatched_with_nearest_offers_the_nearest_capabilities(self, explainer):
         d = _dispatch(explainer, parsed(
@@ -344,13 +361,19 @@ class TestRunAsk:
         assert result.source == "none"
         assert result.bundle.subject_type == "unsupported"
 
-    def test_an_unavailable_parser_is_the_same_honest_answer(self, explainer,
-                                                             monkeypatch):
+    def test_an_unavailable_parser_is_an_outage_not_a_capability_limit(
+            self, explainer, monkeypatch):
+        """Micro-session 4A (R-OF1) SPLITS what used to be one answer. A parser
+        that EXISTS and has no model to reach is an outage — the question was
+        never read — and the test above keeps the other half: a caller that
+        passed no parser at all still gets the honest bridge, because nothing
+        there can tell whether an AI layer was ever meant to be present."""
         from mre.modules.question_parser import QuestionParser
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         result = run_ask(explainer, "why is WO-2001 late?",
                          parser=QuestionParser())
-        assert result.route == "REFUSED"
+        assert result.route == "OUTAGE"
+        assert result.bundle.subject_type == "outage"
 
     def test_the_resolution_is_visible_on_the_bundle(self, explainer):
         parser = ScriptedParser({"why is this order late":

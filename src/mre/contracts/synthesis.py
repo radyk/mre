@@ -377,6 +377,12 @@ class SynthesisAnswer(BaseModel):
     timed_out: bool = False
     #: The honest floor: the model produced nothing usable, or everything failed.
     unanswerable: bool = False
+    #: Micro-session 4A — the tier could not REACH its language model. A strictly
+    #: different fact from `unanswerable`, which says the evidence did not carry
+    #: an answer: here no evidence was ever read, because no reasoning ran. The
+    #: surface renders the OUTAGE floor for this and the capability floor for the
+    #: other, and they may never wear each other's words.
+    model_unreachable: bool = False
     model: str = ""
     prompt_version: str = ""
     latency_ms: Optional[float] = None

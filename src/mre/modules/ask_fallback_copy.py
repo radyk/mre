@@ -458,6 +458,73 @@ SYNTHESIS_UNREAD = (
 SYNTHESIS_FLOOR_DOORS = "Here's what I can do that's closest:"
 
 # ---------------------------------------------------------------------------
+# MICRO-SESSION 4A — THE OUTAGE FLOOR. TWO FLOORS, AND AN OUTAGE MAY NEVER WEAR
+# THE CAPABILITY CARD (docs/04, 2026-08-03).
+#
+# THE SPECIMEN, measured live with a credit-exhausted key: every question —
+# "find order and highlight 126", "why cant ORD-000126 op30 start earlier",
+# "why cant this be moved" — returned the identical capability card,
+#
+#     "I couldn't answer that one: I don't have a tool that reaches it.
+#      Nothing I can read holds that, so I'd rather say so than guess.
+#      Here's what I can do that's closest: …"
+#     [rendered by: synthesis — 0 tool call(s)]
+#
+# and every clause of it is false in that failure mode. The tools are there. The
+# evidence is there. What was missing was the language model, so the question
+# was never read — and the product answered a question about ITS OWN REACH with
+# a sentence about the PLANT's evidence. A planner reads that as "this product
+# cannot do this"; the founder read it as grounds to abandon the AI layer. That
+# is the price of the lie, and it is why the two floors are separate copy.
+#
+# THREE RULES the wording follows:
+#
+#   1. NAME THE MECHANISM. "outage on my side" / "not configured", never a
+#      transport string and never a status code — 4B.23 §5a.91's register rule.
+#   2. NO DOORS. `SYNTHESIS_FLOOR_DOORS` offers what we could do INSTEAD, which
+#      presupposes the question was understood well enough to find a neighbour
+#      for. Nothing was read. Offering alternatives here would be a second
+#      capability claim in the card built to stop making one.
+#   3. SAY WHAT STILL WORKS. The board, the schedule, the cards and every
+#      gesture are untouched by an ask-layer outage, and a planner who has just
+#      been told the assistant is down needs to know the plan is not.
+# ---------------------------------------------------------------------------
+
+#: The parse layer could not be reached: the question was never read at all.
+OUTAGE_PARSE_LEAD = (
+    "I can't reach my language model right now, so I couldn't read your "
+    "question at all. This is an outage on my side, not a limit of what I can "
+    "answer.")
+
+#: No model is configured for this deployment — the same silence, a different
+#: cause, and "try again in a moment" would be false, so it is not said.
+OUTAGE_UNCONFIGURED_LEAD = (
+    "I have no language model available on this deployment, so I couldn't read "
+    "your question at all. That is a setup gap on my side, not a limit of what "
+    "I can answer.")
+
+#: The parse succeeded and the reasoning tier could not be reached. The question
+#: WAS read, so the card does not claim otherwise.
+OUTAGE_SYNTHESIS_LEAD = (
+    "I read your question, but no contracted answer covers it and I couldn't "
+    "reach my language model to reason it out. This is an outage on my side, "
+    "not a limit of what I can answer.")
+
+OUTAGE_BOARD_STILL_WORKS = (
+    "The board, the schedule and everything you can click still work — nothing "
+    "about the plan depends on me being able to talk.")
+
+OUTAGE_RETRY = "Try me again in a moment."
+
+#: Keyed by the stage that could not reach a model. `unconfigured` gets no retry
+#: line: there is nothing to wait for.
+OUTAGE_LEADS = {
+    "parse": OUTAGE_PARSE_LEAD,
+    "synthesis": OUTAGE_SYNTHESIS_LEAD,
+    "unconfigured": OUTAGE_UNCONFIGURED_LEAD,
+}
+
+# ---------------------------------------------------------------------------
 # Session 4A.5c CU3(a) — THE FIRST BEAT of the two-phase ask.
 #
 # Rider (c) of 4A.5b measured the thing this copy exists for: a contracted answer

@@ -349,6 +349,16 @@ REGISTER_BY_SUBJECT: dict[str, str] = {
     # per-claim markers inside the body say which SENTENCES are proven.
     "synthesis": "synthesis",
     "prove_it": "synthesis",
+    # Micro-session 4A — THE OUTAGE FLOOR IS NOT AN ANSWER ABOUT THE PLANT.
+    #
+    # `testimony` (the default) says: assembled from this plan's evidence.
+    # `synthesis` says: reasoned from the evidence and labelled claim by claim.
+    # `judgment` says: our advice. An outage card is none of the three — nothing
+    # was read, nothing was reasoned, nothing is advised. It is the product
+    # reporting on ITSELF, so it gets its own register rather than borrowing
+    # one, which is the same call `askpanel.appendTransportError` already makes
+    # on the browser side ("it is not testimony, it has no register").
+    "outage": "system",
 }
 
 
@@ -926,6 +936,8 @@ class Explainer:
                                    params.get("routes", []))
         if route_id == "clarify":
             return self._clarify(q, params.get("reason", ""))
+        if route_id == "outage":
+            return self._outage_bundle(q, str(params.get("stage") or "parse"))
         return self._unknown_question(q)
 
     # ------------------------------------------------------------------
@@ -4941,6 +4953,28 @@ class Explainer:
             subject_external_name="the question ledger",
             ordered_records=[],
             key_facts={"refusals": refusals, "count": len(refusals)},
+            snapshot_id=self._snap_id,
+            identity_map=self._identity_map,
+        )
+
+    def _outage_bundle(self, question: str, stage: str) -> ExplanationBundle:
+        """THE OUTAGE FLOOR (micro-session 4A): the ask layer could not reach its
+        language model, and says so instead of blaming its own capabilities.
+
+        ``stage`` is WHERE the reach failed and it is load-bearing, not
+        decoration: on `parse` the question was never read and the card may not
+        pretend otherwise; on `synthesis` it WAS read and no contracted answer
+        covered it, which is a true and different sentence. It carries no
+        offers, no evidence chain and no supported-routes menu — every one of
+        those is a claim about what this question needed, and nothing here knows
+        what it needed."""
+        return ExplanationBundle(
+            question=question,
+            subject_id="",
+            subject_type="outage",
+            subject_external_name="the ask layer",
+            ordered_records=[],
+            key_facts={"parsed": question, "stage": stage},
             snapshot_id=self._snap_id,
             identity_map=self._identity_map,
         )

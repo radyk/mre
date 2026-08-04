@@ -288,15 +288,25 @@ class TestParser:
         out = p.parse("q", explainer=explainer)
         assert out.clarify.reason is ClarifyReason.PARSE_FAILED
 
-    def test_a_raising_client_never_escapes(self, explainer):
+    def test_a_raising_client_never_escapes_and_names_the_outage(self, explainer):
+        """Micro-session 4A (R-OF1) SHARPENS this, it does not relax it: a raising
+        client still never escapes, and the reason is no longer `parse-failed`.
+
+        `parse-failed` means a model ANSWERED and we could not make a parse out
+        of what it said — a fact about the emission, which is what the two tests
+        above assert. A client that raises was never reached, and the two facts
+        get two floors: telling a planner "I don't have a tool that reaches it"
+        because an HTTP call failed is the defect this session exists for."""
         class Boom:
             def __init__(self):
                 self.messages = self
 
             def create(self, **kw):
                 raise RuntimeError("network")
-        out = QuestionParser(_client=Boom()).parse("q", explainer=explainer)
-        assert out.clarify.reason is ClarifyReason.PARSE_FAILED
+        p = QuestionParser(_client=Boom())
+        out = p.parse("q", explainer=explainer)
+        assert out.clarify.reason is ClarifyReason.MODEL_UNREACHABLE
+        assert p.stats.unreachable == 1 and p.stats.malformed == 0
 
     def test_no_key_and_no_client_is_simply_unavailable(self, explainer, monkeypatch):
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)

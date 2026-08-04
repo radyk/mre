@@ -127,6 +127,9 @@ class Draft:
     timed_out: bool = False
     latency_ms: float = 0.0
     steps: int = 0
+    #: Micro-session 4A — the loop could not REACH its model. Not a budget, not a
+    #: timeout, not a malformed emission: no reasoning ran at all.
+    model_unreachable: bool = False
 
 
 class Synthesizer:
@@ -179,13 +182,17 @@ class Synthesizer:
 
     # -- one model step -----------------------------------------------------
 
-    def _call(self, messages: list[dict]) -> Optional[str]:
+    def _call(self, messages: list[dict]) -> Any:
         # Session 4B.15 Item 6 — the request fields are MODEL-DEPENDENT; see
         # `llm_compat`. The tier this loop runs on is the whole subject of the
         # tier measurement, and it could not be measured while the request
         # shape was pinned to one model family's rules.
-        from mre.modules.llm_compat import call_text
-        return call_text(self._client, self._model, self._max_tokens, messages)
+        #
+        # Micro-session 4A: the OUTCOME, so an unreachable model is a different
+        # answer from an unusable one.
+        from mre.modules.llm_compat import call_text_outcome
+        return call_text_outcome(self._client, self._model, self._max_tokens,
+                                 messages)
 
     # -- the loop -----------------------------------------------------------
 
@@ -208,7 +215,18 @@ class Synthesizer:
                 out.timed_out = watch.expired
                 messages.append({"role": "user", "content": _forced_close(toolbox)})
             self.stats.calls += 1
-            text = self._call(messages)
+            outcome = self._call(messages)
+            # Micro-session 4A — AN OUTAGE ENDS THE LOOP AND IS NOT MALFORMED.
+            # Nudging a model we cannot reach to emit stricter JSON burns
+            # `_MAX_STEPS` calls against a transport that is down, and files the
+            # failure as the model's rather than the network's. The founder's
+            # specimen ran this loop to exhaustion and rendered "I don't have a
+            # tool that reaches it" — a claim about capability built out of a
+            # claim about JSON that was itself built out of an HTTP error.
+            if outcome.unreachable:
+                out.model_unreachable = True
+                break
+            text = outcome.text
             emission = extract_json(text or "")
             if emission is None:
                 self.stats.malformed += 1
@@ -266,6 +284,7 @@ class Synthesizer:
         answer.tool_calls = list(box.calls)
         answer.budget_exhausted = draft.budget_exhausted
         answer.timed_out = draft.timed_out
+        answer.model_unreachable = draft.model_unreachable
         answer.model = self._model
         answer.prompt_version = self.prompt_version
         answer.latency_ms = (time.perf_counter() - started) * 1000.0

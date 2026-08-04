@@ -2022,7 +2022,15 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
         ask_meta = {"resolved_question": question, "route": "summarize",
                     "source": "deterministic", "confidence": None}
     else:
-        if parser is None and os.environ.get("ANTHROPIC_API_KEY"):
+        # Micro-session 4A — THE PARSER IS BUILT WHETHER OR NOT A KEY IS SET, and
+        # reports its own availability. Construction is fail-closed and cannot
+        # raise (it reads the governed prompt and, with a key, builds a client),
+        # so this costs nothing on the no-key path — and it is what lets the ask
+        # layer say "I have no language model available" instead of "I can't
+        # answer this question yet", which is a claim about the QUESTION that
+        # nothing read it well enough to make. Before this, a deployment with no
+        # key looked exactly like a question outside our capabilities.
+        if parser is None:
             parser = QuestionParser()
         if synthesizer is None and os.environ.get("ANTHROPIC_API_KEY"):
             from mre.modules.synthesizer import Synthesizer

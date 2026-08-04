@@ -1,6 +1,15 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.86 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.87 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.87:** **Micro-session 4A — the floor tells the truth about why it fell**
+(2026-08-03; §5a.159-161; docs/04 2026-08-03 **R-OF1 ruled and BUILT**; contract
+unchanged **1.15**, no docs/06 doorway owed, both answered on the record; parse
+prompt unchanged **v17**). An outage was wearing the capability card — *"I don't
+have a tool that reaches it"* said by a layer that never read the question — and
+the census found **three of seven LLM-dependent paths** rendering an
+infrastructure failure as a capability statement. Two floors now, and they may
+never wear each other's words. **R1 item 1 is CLOSED.**
 
 **v2.86:** **Session 4A.y — the floor is family-scoped** (2026-08-03, the founder
 listening round; §5a.153-158; docs/04 2026-08-03 **R-FF1–R-FF4 ruled and BUILT**;
@@ -1465,17 +1474,19 @@ room orients from **docs/00 + this map**, never from chat memory alone.
 
 Queue, in order:
 
-1. **Close the listening docket — DONE 2026-08-03 (Session 4A.y) EXCEPT the
-   last sub-item.** The founder listening round was held and its five specimens
-   ruled (R-FF1–R-FF4, §5a.153-158); the exam-report fix shipped **and so did
-   the cockpit's, which turned out to be the worse of the two** (`appendResolved`
+1. **Close the listening docket — DONE 2026-08-03, WHOLE.** The founder
+   listening round was held and its five specimens ruled (R-FF1–R-FF4,
+   §5a.153-158, Session 4A.y); the exam-report fix shipped **and so did the
+   cockpit's, which turned out to be the worse of the two** (`appendResolved`
    had never rendered the note at all, §5a.156); the bank gained RESET discipline
    at v2 (`sweep_mobility_v2.txt`, RUN — 21 questions, 20/20 expectations met).
-   **STILL QUEUED: the honest-outage floor message** — the capability floor must
-   say *"I can't reach my language model — an outage, not a limit of what I can
-   answer"* instead of *"I don't have a tool that reaches it"* (three-screenshot
-   specimen on file, 2026-08-03). It was 4A.y's explicit ride-only-if-time item
-   and did not ride.
+   **THE LAST SUB-ITEM, the honest-outage floor message, LANDED 2026-08-03**
+   (micro-session 4A, **R-OF1**, §5a.159-161): two floors, three outage stages,
+   a `system` register, and a census that found the same lie on three paths
+   rather than one. **NOTHING OF R1 ITEM 1 REMAINS OPEN.** Its residue is
+   carry-forward, named in §5a.161 — the no-parser bridge is unchanged by
+   ruling, and the ask dock's collapse badge renders the literal word "null"
+   (pre-existing, cockpit-only, one line, deliberately not fixed here).
 2. **Teaching-register graft, four sessions.** (a) general-knowledge claim
    class in synthesis with **unverifiable-by-design labeling**; (b) teaching
    intent + **depth license** (absorbs the Khalil synthesis-brevity finding and
@@ -5884,6 +5895,87 @@ it back as CRLF. Caught by the harness's own restore assertion, repaired, and th
 harness made byte-faithful; worth naming because a negative-control harness that
 edits source is one bad restore away from committing a rewrite of every line in a
 file it exists to leave alone.
+
+**§5a.159 — AN OUTAGE WAS WEARING THE CAPABILITY CARD, AND THE CENSUS FOUND
+THREE PATHS TO IT (Micro-session 4A, R-OF1).** With a credit-exhausted key,
+three different questions returned one identical card — *"I couldn't answer that
+one: I don't have a tool that reaches it… Here's what I can do that's
+closest"*, `[rendered by: synthesis — 0 tool call(s)]` — and **every clause is
+false in that failure mode**. The tools were there; what was missing was the
+language model, so the question was never READ. **THE CAUSE IS ONE VALUE:**
+every model failure arrived at the ask path as `None`, so "answered unusably"
+and "could not be reached" were the same fact by the time anything could render
+a sentence about them. `llm_compat.call_text_outcome` names which —
+`UNREACHABLE` when `messages.create` itself failed, `NO_TEXT` when the call
+succeeded and returned nothing usable — and **nothing string-matches a
+provider's wording**: the test is whether the call completed, a property of our
+own transport. **THE CENSUS IS SEVEN PATHS** (table in docs/04): three rendered
+an infrastructure failure as a capability statement (parse-call failure — the
+founder's specimen; synthesis-call failure — the same specimen by its second
+route; and no-key-with-a-parser, which said *"I can't answer this question
+yet: <question>"*, a claim about the question from a layer that never read it);
+**three were already honest** (the LLM voice renderer degrades to the template
+with a logged Event, the preflight fails open, and the unmatched bridge answers
+from a real parse); **one is a deliberate boundary** (a caller that passed NO
+parser at all keeps the pre-existing bridge — the API's degraded re-run and every
+R-AI5(2) test live there, and nothing at that seam can tell whether an AI layer
+was ever meant to be present). **THE CARD CLAIMS ONLY WHAT ITS STAGE SUPPORTS:**
+three states, because on `parse` the question was never read, on `synthesis` it
+WAS read and no contracted answer covered it, and on `unconfigured` there is
+nothing to wait for — **so that one gets no retry line**. No doors: the capability
+floor's *"here's what I can do that's closest"* presupposes the question was
+understood well enough to find a neighbour for it. **`system` JOINS THE REGISTER
+VOCABULARY** (ADD, never repurpose) and the footer reads `[rendered by: authored
+copy — the language model was unreachable | register: system]`; the browser had
+already made this call for a failed fetch (`appendTransportError` — *"it is not
+testimony, it has no register"*), and the outage card is its server-side sibling
+in the same dashed, register-less chrome. **THE PREFLIGHT WOULD HAVE PROMISED A
+READ THAT CANNOT HAPPEN** — `tier_of` returned `synthesis` for an unreachable
+parse, so the panel would have shown *"Reading the evidence"* and then a card
+saying nothing was read; it returns `floor`. **NO CONTRACT BUMP AND NO docs/06
+DOORWAY**, both answered on the record; parse prompt UNCHANGED at **v17**
+(`MODEL_UNREACHABLE` is minted locally, like `parse-failed`).
+
+**§5a.160 — A RIDER QUALIFIED AN ANSWER THAT DOES NOT EXIST, AND ONLY THE LIVE
+RUN FOUND IT (4A).** The first outage card served from the demo board carried
+the predicate-coverage rider: *"I haven't addressed the time you named — what I
+said above is when it does start, not whether it could have started then."*
+**"What I said above" was a card whose entire content is that nothing was
+read.** Twenty-one guards were green; the defect needed a real question against
+a real board. Every rider on the delivery seam is a qualification OF AN ANSWER —
+the gap rider qualifies a money claim, the sufficiency rider a cause, the
+coverage rider what an answer did and did not address — and the outage floor has
+no answer to qualify, so a rider firing there re-commits the defect the card
+exists to end, one paragraph below the card. Withheld at **BOTH** render seams
+(`_no_riders`), because a floor one path can skip is not a floor (4B.23's rule at
+another site), and asserted as a LENGTH: the card is the authored copy plus its
+footer and nothing else.
+
+**§5a.161 — 4A's CARRY-FORWARDS (REPORTED, deliberately NOT fixed).**
+**(a) THE NO-PARSER BRIDGE IS UNCHANGED, BY RULING** — a caller that passes no
+parser still gets *"I can't answer this question yet"*, which is the same class
+of sentence one register quieter. It is defensible (that caller made a choice)
+and it is the one row of the census where an infrastructure fact can still read
+as a capability one. **(b) THE OUTAGE CARD IS NOT REMEMBERED DIFFERENTLY FROM
+AN ANSWER** — `ANSWER_MEMORY` stores it like any other turn, so a drill-down
+immediately after a synthesis-stage outage grounds the outage card (honestly:
+it cites nothing) rather than the last real answer. Unreachable in a full
+outage, since the drill-down needs a parse too. **(c) THE ASK DOCK'S COLLAPSE
+BADGE RENDERS THE LITERAL WORD "null"** on a fresh board — `main.js` guards the
+METHOD (`panel.turnCount ? String(panel.turnCount()) : null`) where it means to
+guard the VALUE, and `turnCount()` returns `askHistory.length || null`. Seen in
+this session's own live screenshots, pre-existing, cockpit-only, one line
+(`const n = panel.turnCount?.(); return n ? String(n) : null`) — **left alone
+because it is unrelated to this item and a session that quietly fixes adjacent
+things makes its own diff unreviewable.** **(d) THE `dark-evidence` SIDECAR
+SIGNAL ON `sweep_mobility_v2` IS TWO PREMISE CORRECTIONS AND NEITHER IS A
+FINDING** — *"why is ORD-000126 op30 on CUT-01"* (R-FF4's own specimen) and
+*"why is ORD-000126 on HEAT-02"* (4B.13's order-grain control). Both are
+`why-on-machine` answers that CORRECT a false premise, and a correction cites
+nothing because there is no decision record for a placement that does not exist;
+the order's real placements ARE its evidence, rendered inline. 4B.17 recorded
+this shape and the count is again exactly 2. The detector predates the premise
+machinery and does not know a correction from a silent route.
 
 ## 6. Open rulings queue
 

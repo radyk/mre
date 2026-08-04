@@ -76,6 +76,10 @@ _CLARIFY_COPY: dict[ClarifyReason, str] = {
     ClarifyReason.VERIFICATION: CLARIFY_VERIFICATION,
     ClarifyReason.AMBIGUOUS_INTENT: CLARIFY_AMBIGUOUS_INTENT,
     ClarifyReason.PARSE_FAILED: CLARIFY_PARSE_FAILED,
+    # `MODEL_UNREACHABLE` is deliberately ABSENT, as `SET_REFERENCE` is: it never
+    # reaches the clarify bundle. The dispatch answers it with the OUTAGE floor
+    # before anything here can run, because it is not a question back — there is
+    # nothing to ask about a question that was never read (micro-session 4A).
 }
 
 # Intents whose assemblers reason over TWO orders (the swap/move bridge and the
@@ -353,6 +357,14 @@ def tier_of(parsed: Any, explainer: Any = None) -> str:
     evaluated and a clarify reads as the floor — the conservative miss, since it
     only means a waiting state is not shown for a turn that turns out to reason."""
     if parsed is None:
+        return "floor"
+    # Micro-session 4A: an unreachable model answers with the OUTAGE floor, and
+    # the floor tier is what makes the panel show NO waiting state. Without this
+    # the preflight reads it as `synthesis` (the clarify leads nowhere, the
+    # intent is unmatched) and a planner watches "Reading the evidence…" for a
+    # read that cannot happen, then gets a card saying nothing was read.
+    if (parsed.clarify is not None
+            and parsed.clarify.reason is ClarifyReason.MODEL_UNREACHABLE):
         return "floor"
     # Session 4B.5 CU2: the open-card route answers from the card, always and
     # instantly — ahead of the clarify test, exactly as the dispatch does it.
@@ -1146,6 +1158,18 @@ def _synthesis_dispatch(explainer: Any, parsed: ParsedQuestion, note: str,
         toolbox=EvidenceToolbox(explainer))
     if answer is None:
         return _unmatched_bridge(explainer, parsed, note)
+    # Micro-session 4A — THE SECOND TIER'S OWN OUTAGE. The parse succeeded, so
+    # the question WAS read; what failed is the reach to the model that would
+    # have reasoned over the evidence. Without this branch the answer is the
+    # capability floor — "I don't have a tool that reaches it" — assembled from
+    # zero tool calls that never happened, which is the founder's specimen
+    # arriving by the second of its two routes.
+    if getattr(answer, "model_unreachable", False):
+        return Dispatched(
+            "OUTAGE",
+            explainer.route("outage", {"question": parsed.question,
+                                       "stage": "synthesis"}),
+            note, parsed.question)
     if memory is not None and not answer.unanswerable:
         memory.remember(session_id, answer)
     # CU3(b) — the warm floor's doors, computed HERE (the same offers part 1's
@@ -1194,6 +1218,26 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
     is no silent path between them in either direction, and nothing here guesses.
     """
     note = _subject_note(parsed)
+
+    # -1 — THE OUTAGE FLOOR, BEFORE EVERYTHING (micro-session 4A).
+    #
+    # The parse layer could not reach its language model, so this question was
+    # never read. There is no subject to resolve, no tray to pre-empt, no card to
+    # read back and no intent to honour — every branch below reasons about a
+    # parse that does not exist. It runs first so that no branch can answer as
+    # though it did, and so that the ONE thing we know (our own reach failed) is
+    # the one thing the planner is told.
+    #
+    # It is deliberately NOT the clarify branch. A clarify asks the planner
+    # something; there is nothing to ask, and "which order did you mean?" would
+    # imply we got far enough to have a question about their words.
+    if (parsed.clarify is not None
+            and parsed.clarify.reason is ClarifyReason.MODEL_UNREACHABLE):
+        return Dispatched(
+            "OUTAGE",
+            explainer.route("outage", {"question": parsed.question,
+                                       "stage": "parse"}),
+            "", parsed.question)
 
     def _second_tier(diverted: str = "") -> Dispatched:
         if synthesizer is not None and getattr(synthesizer, "available", False):
@@ -1703,7 +1747,24 @@ def run_ask(explainer: Any, question: str, *, context: Optional[dict] = None,
         answer_memory = ANSWER_MEMORY
 
     synthesis = None
-    if parsed is None:
+    if parsed is None and parser is not None:
+        # Micro-session 4A — A PARSER THAT EXISTS AND CANNOT REACH A MODEL IS AN
+        # OUTAGE, NOT A CAPABILITY LIMIT. `parse` returns None only when the
+        # layer is UNAVAILABLE: no key, no `anthropic` package, a client that
+        # would not build. Nothing read the question, so the honest card is the
+        # same one a failed call gets, with the mechanism named as a setup gap
+        # rather than a network one — "try again in a moment" would be false.
+        #
+        # The `parser is None` case below is untouched and stays the pre-existing
+        # bridge: a CALLER that passed no parser at all made a deliberate choice
+        # (the API's degraded re-run, and every test that asserts R-AI5(2)'s "no
+        # keyword fallback"), and nothing here can tell whether an AI layer was
+        # ever meant to be there.
+        bundle = explainer.route("outage", {"question": question,
+                                            "stage": "unconfigured"})
+        route_label, source, confidence, note = "OUTAGE", "none", None, ""
+        resolved_question = question
+    elif parsed is None:
         bundle = explainer.route("unsupported", {"question": question})
         route_label, source, confidence, note = "REFUSED", "none", None, ""
         resolved_question = question
