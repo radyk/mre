@@ -77,9 +77,12 @@ tells you the answers.
 - If it hands you a rule, does the rule sound like it is about **our solver**, or
   about scheduling in the abstract? (A plausible sentence that misdescribes what
   this product actually computes is a DEFECT, not a style miss — RUBRIC C9/H1.)
-
+Whether an operation can move earlier is generally decided by four things together: its predecessors finishing in time (precedence and any min/max lag), the machine having open capacity at the earlier time, the operation's eligibility/setup match for that slot, and any pin or frozen constraint holding it in place.  [general knowledge — how scheduling works in general, not a fact about this plan]
+On PAINT-02, ORD-000206's paint operation runs 2026-02-02 17:25 to 19:00 and is preceded by only a 15-minute gap after ORD-000222 ends at 17:10 — that gap is fully open capacity (idle_open_minutes_before 15), so there is no slack there to pull the operation earlier without first opening space upstream on the same machine.  [synthesis — read from: e3dc5dec, dbe7e153, a740525e]
+PAINT-02 overall is at 57.3% utilization (8236 working minutes against 14377 open capacity minutes) across the plan, so the machine has open time elsewhere on its calendar, but the specific slot immediately before ORD-000206's operation is already packed.  [synthesis — read from: d9cc6ac1]
+The real constraint on moving ORD-000206's PAINT-02 operation earlier is not the machine's average load but whether an actual open slot exists before 17:25 on 2026-02-02 that also comes after its CUT-01 operation finishes (2026-01-15 17:00) and satisfies its PAINT_BLUE setup family — the board shows the gap right before it is already open capacity fully used, meaning any earlier move needs a different, further-back slot rather than squeezing this one. (based on the 60 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: 849c0ff5, 5efee06d, a740525e]
 **Your prediction for Q2, written BEFORE you read it:**
-
+there must be time available or another machine in which it can go on. otherwise it must change places with an existing operation
     ______________________________________________________________
 
 ### Q2
@@ -89,7 +92,16 @@ tells you the answers.
 this? If Q1 gave you a list and Q2's reason is on it, that is transfer. If Q2's
 reason is something Q1 never mentioned, Q1 taught you an incomplete model and
 the gap is the finding.
+testimonytestimony
+ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+Before that: its release date is 2025-12-04 00:00.
 
+What pushed it, in order:
+  2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+  2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+[rendered by: template — authored copy — rendered verbatim | register: testimony]
 ---
 
 ## PAIR 2 — propagation (demo board)
@@ -103,14 +115,31 @@ the gap is the finding.
   waits for the first regardless of its own due date" is a mechanism.
 - Is the general sentence **attached** to this board — can you see the mechanism
   operating in something it names?
+ynthesissynthesis
+No contracted answer covers that one, so this is me reading the evidence directly — each line below says what backs it.
 
+One order's lateness pushes into others mainly because they share the same downstream machine: once that machine's calendar fills up, an order arriving late for its slot there has to wait for the next open slot, which is usually already booked by other orders.  [general knowledge — how scheduling works in general, not a fact about this plan]
+On PAINT-02, operations are packed close together — most show only 0 to 15 minutes of open capacity before they start — so there is little slack anywhere on that machine to absorb a late-arriving job without pushing something else back. (based on the 60 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: d9cc6ac1]
+ORD-000206 shows this directly: its cutting operation on CUT-01 finished 15 January, but its paint operation on PAINT-02 is not scheduled until 2 February — a large gap between the two operations that leaves the order 55,860 minutes late against its 25 December due date.  [synthesis — read from: a740525e, 440fbc69, d9cc6ac1]
+
+Where a line is marked general knowledge it draws on how scheduling and plants behave generally — not on this plan's records, so there is nothing here to check it against.
+
+Part of what I drafted was neither something I could check against your board nor general scheduling knowledge, so I left it out rather than state it with a label that would have been wrong either way.
+
+That is how it works in general — you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.
+[rendered by: synthesis (claude-sonnet-5) — 3 tool call(s) | register: synthesis]
 **Your prediction for Q2:**
-
+because of the nature of serial operations
     ______________________________________________________________
 
 ### Q2
 > why is ORD-000112 late
+testimonytestimony
+ORD-000112 finished 27060 minutes (451.0h) past its due date (2026-01-11T23:59:59Z) [record: c34667f1...]. It couldn't start until 2026-01-28 07:00 because CUT-01 was held by ORD-000252 until 2026-01-27 19:00 [record: 22bed92e...].
 
+My take: pull ORD-000252's start earlier on CUT-01, or accept the 27060 minutes late — nothing else frees this slot.
+[rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+lit 2 bar(s) · on: CUT-01, PAINT-01 · alternatives weighed: CUT-02, CUT-03
 ---
 
 ## PAIR 3 — contention (demo board)
@@ -123,14 +152,28 @@ the gap is the finding.
   forbid*? That distinction is the one a planner needs to predict anything, and
   it is the one most easily lost.
 - Does it claim a priority rule this product does not have?
+On this plan a scheduler (the solver) never leaves two orders literally competing for a machine — it resolves the conflict up front into a strict one-after-another sequence, as seen on CUT-01 where ORD-000209 runs 2026-01-05 07:00-08:40 and ORD-000063 starts immediately after at 08:40, with no overlap.  [record: e01f48d8...]
+Generally, when two operations compete for the same machine, a scheduler orders them using a mix of hard constraints (release dates, due dates, precedence, calendars) and objective-driven tie-breaks (which order minimizes total tardiness, setup cost, or keeps the tightest-due order from slipping) — this is a sequencing decision the optimizer makes for every machine, not something worked out order-by-order by a human.  [general knowledge — how scheduling works in general, not a fact about this plan]
+So the practical answer for a planner: the two orders' relative order on a machine is not a free choice you make per pair — it falls out of the whole schedule's optimization given due dates, release dates, precedence and setup costs, and the disjunctive-capacity rule guarantees the machine only ever does one of them at a time, exactly as CUT-01 shows.  [synthesis — read from: 23c8ac93, 150c5ea6, 7ed22bf5]
 
+Where a line is marked general knowledge it draws on how scheduling and plants behave generally — not on this plan's records, so there is nothing here to check it against.
+
+That is how it works in general — you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.
+[rendered by: synthesis (claude-sonnet-5) — 3 tool call(s) | register: synthesis]
 **Your prediction for Q2:**
-
+based on whats more important and more efficient for the entire order population
     ______________________________________________________________
 
 ### Q2
 > why is ORD-000252 on CUT-01 when it is
+synthesissynthesis
+I couldn't answer that one from the evidence. I read what I could and none of it grounds an answer I'd stand behind, so I'd rather say so than guess.
+I looked at: entity_vocabulary, placements_for_order.
 
+Here's what I can do that's closest:
+  - check which machine ORD-000252 is on, and how that machine was chosen
+  - show when ORD-000252 starts and finishes
+[rendered by: synthesis (claude-sonnet-5) — 2 tool call(s) | register: synthesis]
 ---
 
 ## Q7–Q10 — THE FENCED WORLD (`_ai_exam_scratch/mobility_pinned`)
@@ -164,7 +207,7 @@ does not come back.
 
 **Your prediction:** having read Q7 and Q8, write down what you expect this to
 say — then read it.
-
+because there is not ime and it must finish before the next operation
     ______________________________________________________________
 
 **What to listen for**
