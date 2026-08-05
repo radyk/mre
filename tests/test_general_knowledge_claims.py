@@ -45,7 +45,7 @@ from mre.modules.claim_verifier import gk_disqualifiers, verify_claim, verify_dr
 from mre.modules.evidence_index import EvidenceIndex
 from mre.modules.evidence_tools import EvidenceToolbox
 from mre.modules.explainer import Explainer
-from mre.modules.interpreter import AnswerMemory, run_ask
+from mre.modules.interpreter import AnswerMemory, forget_deliveries, run_ask
 from mre.modules.renderers import TemplateRenderer
 from tests.parse_doubles import ScriptedParser, claim, claims, parsed, synthesizer_with
 from tests.test_synthesis import _late_ids, _records, _Store
@@ -283,6 +283,13 @@ class TestDirectionTwo:
 # ===========================================================================
 
 def _render(world, *responses, session="gk"):
+    # EACH RENDER HERE IS A FRESH CONVERSATION, and since W6 that is a claim the
+    # product reads: the general-knowledge footer and the teaching invitation
+    # are orientation and render on a conversation's FIRST synthesis answer
+    # only. These tests share one session id against a process-wide memory, so
+    # without this the second render in the file would be judged a follow-up and
+    # the footer correctly withheld. Clearing is what a new conversation does.
+    forget_deliveries(session)
     synth = synthesizer_with(list(responses))
     parser = ScriptedParser({})            # everything is UNMATCHED here
     res = run_ask(world, "why does this happen", parser=parser,

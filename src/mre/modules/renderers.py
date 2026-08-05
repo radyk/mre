@@ -478,6 +478,55 @@ def apply_repeat_riders(bundle, text: str) -> str:
     return f"{lead}\n{text}" if text else lead
 
 
+#: Driver codes that name a CONSTRAINT — something that stopped the operation —
+#: rather than a PREFERENCE the solver exercised.
+#:
+#: SESSION 4A teaching-graft (e), W4. Specimen C, reproduced on the fenced world
+#: by the C9 founder round (q8.md): two lines apart, one answer said
+#:
+#:    "It can be moved — nothing was holding ORD-EARLY op10 back."
+#:    ...
+#:    "The assignment decision records its driver as CAPACITY_BLOCKED."
+#:
+#: BOTH SENTENCES ARE TRUE IN THEIR OWN TERMS and that is exactly why this is a
+#: defect rather than a bug. The first is OUR counterfactual — holding every
+#: other placement where it is, the machine had open unheld time earlier. The
+#: second is the RECORD's attribution. They are different propositions computed
+#: by different machinery, and on screen, one after the other, they read as a
+#: flat contradiction; a planner has no way to know they are not.
+#:
+#: THE FIX IS NOT TO DELETE EITHER FACT. Suppressing the driver would hide the
+#: record; suppressing the counterfactual would discard the only thing that
+#: answers the question asked. What may not survive is the ASSERTION that
+#: nothing was holding it, because the record says something was. So the copy
+#: states both, names them as different readings, and REFUSES TO RESOLVE THEM —
+#: this product cannot tell which the solver acted on, and 4B.21's remedy
+#: ("Recorded driver:", never "Why:") is the same discipline one clause on.
+#:
+#: The membership is by MEANING, one member at a time. COST_TRADEOFF,
+#: DUE_DATE_PRESSURE, SETUP_AMORTIZATION, EARLINESS_PREFERENCE, POLICY_RULE,
+#: SOLVER_LIMIT and PLANNER_DIRECTIVE are all consistent with "nothing prevented
+#: it, the solver chose" — they name why it PREFERRED the placement, which is
+#: what a `chose` verdict already says. Those are silent here, deliberately.
+CONSTRAINT_NAMING_DRIVERS = frozenset({
+    "CAPACITY_BLOCKED", "CAPABILITY_LIMITED", "CALENDAR_WINDOW",
+    "FROZEN_COMMITMENT", "SEQUENCE_DEPENDENCY", "NO_ALTERNATIVE",
+})
+
+
+def counterfactual_contradicts_driver(driver: Any) -> bool:
+    """True when a "nothing prevented it" sentence would contradict the driver
+    the decision record actually carries.
+
+    An UNRECOGNISED driver returns False — it claims nothing, which is the
+    fail-safe side: a driver we do not know the meaning of must not be read as
+    naming a blocker (4B.23's rule, and the reason this is a named set rather
+    than a "not in the preference list" test)."""
+    if not driver:
+        return False
+    return str(driver).strip().upper() in CONSTRAINT_NAMING_DRIVERS
+
+
 def mobility_lead_line(bundle) -> Optional[str]:
     """The premise correction as a ROUTE-NEUTRAL lead (Session 4A.y Item 1).
 
@@ -1994,10 +2043,10 @@ class TemplateRenderer:
         tokens for the founder to tune."""
         from mre.modules.ask_fallback_copy import (
             SYNTHESIS_CITE, SYNTHESIS_FLOOR_DOORS, SYNTHESIS_GENERAL_NOTE,
-            SYNTHESIS_LEAD, SYNTHESIS_MARK, SYNTHESIS_MARK_GENERAL,
+            SYNTHESIS_MARK, SYNTHESIS_MARK_GENERAL,
             SYNTHESIS_MARK_NO_RECORDS, SYNTHESIS_PARTIAL, SYNTHESIS_UNANSWERABLE,
             SYNTHESIS_UNANSWERABLE_CONSULTED, SYNTHESIS_UNANSWERABLE_NO_TOOLS,
-            SYNTHESIS_UNGROUNDED, SYNTHESIS_UNPLACEABLE,
+            SYNTHESIS_FLOOR_REFUTED, SYNTHESIS_UNGROUNDED, SYNTHESIS_UNPLACEABLE,
         )
         kf = bundle.key_facts or {}
         claims = kf.get("claims") or []
@@ -2032,8 +2081,17 @@ class TemplateRenderer:
             lines.append("")
             return
 
-        lines.append(SYNTHESIS_LEAD)
-        lines.append("")
+        # W6 (the founder's felt-bar ruling, 2026-08-05) — THE PREAMBLE IS
+        # GONE. It read "No contracted answer covers that one, so this is me
+        # reading the evidence directly — each line below says what backs it",
+        # and it opened every synthesis answer with an apology for the route
+        # that answered it. The planner did not ask which tier would serve them
+        # and cannot act on the answer; the per-line labels below already say
+        # what backs each claim, which is the only part of the sentence that was
+        # ever load-bearing, and they say it per claim instead of once in the
+        # abstract. `SYNTHESIS_LEAD` is retained in `ask_fallback_copy` with its
+        # own note rather than deleted, because the OUTAGE lead is built beside
+        # it and the two were easy to confuse.
         general = False
         for claim in claims:
             text = (claim.get("text") or "").strip()
@@ -2060,22 +2118,35 @@ class TemplateRenderer:
                     lines.append(f"{text}  {SYNTHESIS_MARK_NO_RECORDS}")
 
         if general:
-            lines.append("")
-            lines.append(SYNTHESIS_GENERAL_NOTE)
+            # W6 — orientation, not a per-claim fact: the LABELS carry the
+            # per-claim truth on every turn and are untouched. Said once.
+            if kf.get("first_synthesis", True):
+                lines.append("")
+                lines.append(SYNTHESIS_GENERAL_NOTE)
         # R-TG1 — A CUT NAMES WHY IT WAS CUT. A claim contradicted by the records
         # and a claim that was never about the records are cut for OPPOSITE
         # reasons, and the planner is owed the right one. A genuine grounding
         # failure is the stronger fact and wins a mixed answer; only when every
         # load-bearing cut is an unplaceable sentence does the other line show.
-        from mre.modules.claim_verifier import UNPLACEABLE_REASON
+        from mre.modules.claim_verifier import (
+            FLOOR_REFUTED_PREFIX, UNPLACEABLE_REASON,
+        )
         borne = [c for c in (kf.get("cut") or []) if c.get("load_bearing")]
         if borne:
-            lines.append("")
-            lines.append(
-                SYNTHESIS_UNPLACEABLE
-                if all((c.get("reason") or "") == UNPLACEABLE_REASON
-                       for c in borne)
-                else SYNTHESIS_UNGROUNDED)
+            # R-TG6 — THE THIRD KIND, AND IT OUTRANKS BOTH SIBLINGS. Its
+            # presence is a stronger fact than either "I couldn't ground it" or
+            # "it had no home": the step was checked and came back FALSE about
+            # the product itself. Any refuted cut in the set wins the line.
+            reasons = [(c.get("reason") or "") for c in borne]
+            if any(r.startswith(FLOOR_REFUTED_PREFIX) for r in reasons):
+                lines.append("")
+                lines.append(SYNTHESIS_FLOOR_REFUTED)
+            else:
+                lines.append("")
+                lines.append(
+                    SYNTHESIS_UNPLACEABLE
+                    if all(r == UNPLACEABLE_REASON for r in reasons)
+                    else SYNTHESIS_UNGROUNDED)
         if kf.get("budget_exhausted") or kf.get("timed_out"):
             lines.append("")
             lines.append(SYNTHESIS_PARTIAL.format(tools=tools))
@@ -2095,7 +2166,10 @@ class TemplateRenderer:
         # claim happened to be drafted: the planner's standing to disagree comes
         # from the question they asked, not from what the answer turned out to
         # contain.
-        if kf.get("licence") == "long":
+        # W6 — the invitation to push back is an OFFER OF STANDING, and
+        # standing granted once is not withdrawn by not being repeated. Every
+        # turn it read as a tic; on the first it reads as what it is.
+        if kf.get("licence") == "long" and kf.get("first_synthesis", True):
             from mre.modules.ask_fallback_copy import TEACHING_INVITATION
             lines.append("")
             lines.append(TEACHING_INVITATION)
@@ -2795,19 +2869,35 @@ class TemplateRenderer:
                 lines.append(closure)
         elif verdict == "chose":
             at = binding.get("at")
-            lines.append(
-                f"Nothing prevented {name} {op} from starting earlier. Holding "
-                f"every other placement where it is, {machine} had open, unheld "
-                f"time from {at} — the solver chose {when} rather than being "
-                "forced into it.")
             driver = kf.get("chosen_driver")
-            if driver:
-                lines.append(f"The assignment decision records its driver as "
-                             f"{driver}.")
+            # W4 — where the record names a blocker, the counterfactual is
+            # stated as OUR scan and the disagreement is named rather than
+            # resolved. Both facts survive; only the assertion goes.
+            if counterfactual_contradicts_driver(driver):
+                lines.append(
+                    f"Holding every other placement where it is, {machine} had "
+                    f"open, unheld time from {at} — so as far as this scan of "
+                    f"the calendar goes, {name} {op} was not forced into "
+                    f"{when}.")
+                lines.append(
+                    f"But the assignment decision records its driver as "
+                    f"{driver}. Those two readings disagree, and I can't tell "
+                    f"you which the solver acted on — so I won't tell you "
+                    f"nothing was holding it.")
             else:
-                lines.append("No decision record states a cost reason for the "
-                             "later placement, so I can't tell you why it "
-                             "preferred it — only that it was not forced.")
+                lines.append(
+                    f"Nothing prevented {name} {op} from starting earlier. "
+                    f"Holding every other placement where it is, {machine} had "
+                    f"open, unheld time from {at} — the solver chose {when} "
+                    "rather than being forced into it.")
+                if driver:
+                    lines.append(f"The assignment decision records its driver "
+                                 f"as {driver}.")
+                else:
+                    lines.append("No decision record states a cost reason for "
+                                 "the later placement, so I can't tell you why "
+                                 "it preferred it — only that it was not "
+                                 "forced.")
         else:
             lines.append(
                 f"I can't attribute {name} {op}'s placement at {when} to a "
@@ -2891,10 +2981,59 @@ class TemplateRenderer:
                     f"opening on {machine} long enough for the whole operation "
                     f"is {when}. What's blocked is moving it EARLIER, and "
                     f"that is what I've explained below.{also}")
+        # W4 — the counterfactual may not contradict the recorded driver. See
+        # `CONSTRAINT_NAMING_DRIVERS`: where the record names a blocker, this
+        # lead may say the room was there and may NOT say nothing held it.
+        driver = kf.get("chosen_driver")
+        if counterfactual_contradicts_driver(driver):
+            return (f"It may be movable — {machine} had open, unheld time "
+                    f"before where {name} sits. But the assignment decision "
+                    f"records its driver as {driver}, which names a constraint "
+                    f"rather than a preference, so the record and my calendar "
+                    f"scan do not agree about this bar. Here is what each says.")
         return (f"It can be moved — nothing was holding {name} back. "
                 f"{machine} had open, unheld time before where it sits, so "
                 f"this placement was the solver's choice rather than the only "
                 f"option. Here is what that looks like.")
+
+    @staticmethod
+    def _no_later_clause(machine: Optional[str], mob: dict) -> str:
+        """WHY nothing fits later — busy, or the calendar SHUTS (W5).
+
+        THE TWO READ COMPLETELY DIFFERENTLY TO A PLANNER and this product knew
+        the difference all along without saying it. "No opening fits" is what
+        you say about a booked machine, and a booked machine is something a
+        planner can act on — bump something, work an overtime window, move a
+        neighbour. A machine whose calendar closes and does not reopen is not
+        crowded; it is GONE, and nothing the planner does to the queue changes
+        that. On the fenced world, where BOX-01 goes down for a rebuild and does
+        not come back, the second is the whole reason the bar is stuck and the
+        answer said only the first.
+
+        ONE DEFINITION, TWO CALL SITES. `boxed-in` and `earlier-open` both end
+        with nothing later, for the same reason, and 4A teaching-graft (c) is
+        the session that found out what happens when one verdict is rendered
+        from two places: only one of them enumerated it.
+
+        An UNREADABLE calendar falls to the original wording: it says what was
+        scanned and claims nothing about why, which is the honest floor when the
+        reason is exactly what we could not establish.
+        """
+        kind = (mob or {}).get("no_later_kind") or ""
+        closes_at = (mob or {}).get("closes_at")
+        if kind == "calendar_closed" and closes_at:
+            # The bound is stated, not implied. `_open_windows` resolves the
+            # calendar over the solved span padded a fortnight, so "does not
+            # reopen" is a claim about THAT span and says so.
+            body = (f"{machine} is not open at all after {closes_at} — its "
+                    f"calendar closes there and does not reopen anywhere in "
+                    f"the span this plan covers, so the whole operation has "
+                    f"nowhere later to go. This is not a busy machine; there "
+                    f"is no time on it to compete for")
+        else:
+            body = (f"no opening on {machine} fits the whole operation after "
+                    f"where it sits now")
+        return body[0].upper() + body[1:] + "."
 
     def _render_mobility_later(self, lines: list[str], kf: dict,
                                mob: dict) -> None:
@@ -2983,22 +3122,22 @@ class TemplateRenderer:
             # and hands the planner back to the direction that is actually
             # available.
             lines.append(
-                f"Later: there is no room that way. No opening on {machine} "
-                f"fits the whole operation after where it sits now — so the "
-                f"only direction open to {name} is the earlier one above. "
-                f"This counts free time on {machine} only; a move to another "
-                "machine is a different question, and one I'd answer as a "
-                "swap.")
+                f"Later: there is no room that way. "
+                + self._no_later_clause(machine, mob)
+                + f" So the only direction open to {name} is the earlier one "
+                f"above. This counts free time on {machine} only; a move to "
+                "another machine is a different question, and one I'd answer "
+                "as a swap.")
             return
 
         if v == mp.VERDICT_BOXED_IN:
             # The premise HOLDS in both directions, and says so.
             lines.append(
-                f"Later: no opening on {machine} fits the whole operation "
-                f"after where it sits now either — so \"can't be moved\" is "
-                f"fair, and the reason above is the whole of it. This counts "
-                f"free time on {machine} only; a move to another machine is a "
-                "different question, and one I'd answer as a swap.")
+                f"Later: {self._no_later_clause(machine, mob)} So "
+                f"\"can't be moved\" is fair, and the reason above is the whole "
+                f"of it. This counts free time on {machine} only; a move to "
+                "another machine is a different question, and one I'd answer "
+                "as a swap.")
             return
 
         # An unrecognised verdict SAYS NOTHING (4B.23's fail-safe rule, and the

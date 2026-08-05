@@ -1429,6 +1429,20 @@ def _synthesis_dispatch(explainer: Any, parsed: ParsedQuestion, note: str,
             explainer.route("outage", {"question": parsed.question,
                                        "stage": "synthesis"}),
             note, parsed.question)
+    # W6 (the founder's felt-bar ruling, 2026-08-05) — IS THIS THE FIRST
+    # SYNTHESIS ANSWER OF THIS CONVERSATION? Read BEFORE `remember` writes this
+    # one, or the answer would always find itself and never be first. The two
+    # framing lines the ruling scopes — what a general-knowledge label means,
+    # and the invitation to push back — are orientation for a planner meeting
+    # this register, and orientation repeated every turn stops being orientation
+    # and becomes furniture. Per-line labels and the cut disclosures are NOT
+    # scoped by this: those are facts about THIS answer.
+    #
+    # It rides on the SAME (session, schedule) key R-MT1 gave the memory, so a
+    # rebind to another board correctly makes the next answer first again — the
+    # planner is meeting this register on a board they have not seen it on.
+    first_synthesis = (memory is None
+                       or memory.last(session_id, schedule_id) is None)
     if memory is not None and not answer.unanswerable:
         memory.remember(session_id, schedule_id, answer)
     # CU3(b) — the warm floor's doors, computed HERE (the same offers part 1's
@@ -1441,7 +1455,8 @@ def _synthesis_dispatch(explainer: Any, parsed: ParsedQuestion, note: str,
                                        "answer": answer,
                                        "diverted_qualifier": diverted_qualifier,
                                        "offers": offers,
-                                       "licence": licence.name}),
+                                       "licence": licence.name,
+                                       "first_synthesis": first_synthesis}),
                       note, parsed.question, synthesis=answer)
 
 

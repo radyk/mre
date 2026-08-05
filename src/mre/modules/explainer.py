@@ -35,6 +35,17 @@ from mre.modules.planner_language import (
     compose_finding_sentence, driver_phrase, driver_hedge,
 )
 
+#: How far past the solved span every machine's calendar is resolved, each way.
+#:
+#: ONE CONSTANT, TWO READERS, AND THE SECOND READER IS WHY IT EXISTS.
+#: ``_open_windows`` pads the span so a machine carrying no work still resolves
+#: against the same grid as one that does. ``_no_later_reason`` (W5) then asks
+#: whether a machine's calendar REACHES that edge — a machine that shuts is one
+#: whose last open minute falls short of it — and that question is only
+#: answerable against the very same pad. Two copies of 14 would be a defect
+#: waiting for whoever tunes one of them.
+CALENDAR_SCAN_PAD_DAYS = 14
+
 # The fallback menu shown when a question doesn't route. Worded in the PLANNER'S
 # language — "an order", "a machine", "a customer" — never the developer's
 # id-shapes (WO-XXXX / M-YYYY / snap-a vs snap-b). Router capabilities are
@@ -988,7 +999,8 @@ class Explainer:
             return self._synthesis_bundle(q, params["answer"],
                                           params.get("diverted_qualifier", ""),
                                           params.get("offers"),
-                                          params.get("licence", ""))
+                                          params.get("licence", ""),
+                                          params.get("first_synthesis", True))
         if route_id == "prove-it":
             return self._prove_it_bundle(q, params.get("claim"),
                                          params.get("answer"),
@@ -2757,6 +2769,42 @@ class Explainer:
             facts["machine"] = analysis.machine
         return facts
 
+    def order_mobility_verdicts(self, order_ref: str,
+                                document: Any = None) -> list[dict]:
+        """The mobility floor's verdict for EVERY placed operation of one order.
+
+        SESSION 4A teaching-graft (e), R-TG6 (ii). A teaching answer that says
+        an ORDER is "still free to move" is making a claim about the order, and
+        an order is free to move only if its operations are — so checking the
+        first operation and stopping would clear an order whose LAST operation
+        is boxed in, which is exactly the founding specimen (ORD-BOX: op10 has
+        room later, op20 is BOXED_IN, and the answer cited the order as an
+        example of a job that is not stuck).
+
+        THIS RE-USES ``mobility_verdict`` PER OPERATION AND COMPUTES NOTHING NEW
+        — R-FF1's rule, that a floor has one definition, applied to the loop
+        over it rather than to the loop's body. Rows that cannot be analysed are
+        SKIPPED, never defaulted: an operation we could not read contributes no
+        verdict, and a caller reading [] as "nothing holds it" would manufacture
+        a claim about the plant out of our own blindness.
+
+        [] when the order has no placed rows or none of them analyse.
+        """
+        out: list[dict] = []
+        try:
+            rows = self._order_rows(order_ref)
+        except Exception:  # noqa: BLE001 — a premise check never takes an answer down
+            return out
+        for row in rows:
+            seq = row.get("op_seq")
+            if seq is None:
+                continue
+            facts = self.mobility_verdict(order_ref, row.get("machine"), seq,
+                                          document=document)
+            if facts is not None:
+                out.append(facts)
+        return out
+
     def _mobility_facts(self, row: dict, analysis: Any,
                         document: Any) -> Optional[dict]:
         """Can this bar move AT ALL, and which way — the premise behind "why
@@ -2794,6 +2842,7 @@ class Explainer:
                     held_kind, held_at = mp.HELD_PINNED, pin_at
 
             later_at = None
+            no_later_kind, closes_at = "", None
             # The calendar scan is skipped when the bar is HELD or CHUNKED —
             # not merely unused. Both verdicts are decided before any opening
             # is read (``mobility_premise.assess``'s ordering IS the ruling),
@@ -2807,6 +2856,12 @@ class Explainer:
                     working_min=cal["working_min"],
                     splittable=cal["splittable"],
                     min_chunk_min=cal["min_chunk_min"])
+                # SESSION 4A teaching-graft (e), W5. WHY there is no opening
+                # later — the strongest fact this world holds, and the one the
+                # answer never voiced.
+                if later_at is None:
+                    no_later_kind, closes_at = self._no_later_reason(
+                        analysis.machine, cal["current_end"])
 
             verdict = mp.assess(
                 held_kind=held_kind, held_at=held_at,
@@ -2826,7 +2881,70 @@ class Explainer:
             "held_at": _fmt_dt(verdict.held_at) if verdict.held_at else None,
             "chunk_count": verdict.chunk_count,
             "open_directions": list(verdict.open_directions),
+            # W5 — "" (we did not or could not tell), "calendar_closed" or
+            # "no_window_fits". Three states, never two: a scan we could not run
+            # must not read as "the machine is merely busy".
+            "no_later_kind": no_later_kind,
+            "closes_at": _fmt_dt(closes_at) if closes_at else None,
         }
+
+    def _no_later_reason(self, machine: Optional[str],
+                         after: Any) -> tuple[str, Any]:
+        """WHY no opening was found later on this machine — busy, or SHUT.
+
+        SESSION 4A teaching-graft (e), W5. The C9 founder round's third
+        observation: on the fenced world BOX-01 goes down for a rebuild on 14
+        January and never comes back, and the answer about the bar sitting on it
+        said only *"no opening on BOX-01 fits the whole operation after where it
+        sits now"* — a sentence a planner reads as "the machine is booked". The
+        strongest fact in that world, the one that makes the bar genuinely
+        immovable rather than merely crowded, was never voiced.
+
+        The distinction is free: ``_open_windows`` is already walked to build
+        the free-time scan this runs beside, and the question is only whether
+        any OPEN window survives past the operation's end. Open time exists but
+        nothing fits → the machine is busy. No open time at all → the calendar
+        shuts.
+
+        THE BOUND IS NAMED AND IT IS NOT "NEVER". ``_open_windows`` resolves the
+        calendar over the solved span padded a fortnight each way, so this can
+        only ever say the machine does not reopen WITHIN THAT SPAN. The copy
+        says so; "never reopens" would be a claim about a calendar we did not
+        read.
+
+        Returns ``("", None)`` where the calendar cannot be read at all —
+        propagated, never defaulted, because reporting an unreadable calendar as
+        a closure would manufacture the very fact this exists to state.
+        """
+        if not machine or after is None:
+            return "", None
+        try:
+            wins = self._open_windows(machine)
+            rows = [r for r in self._load_enriched_assignments() if r.get("end")]
+        except Exception:  # noqa: BLE001 — a premise check never takes an answer down
+            return "", None
+        ends = [e for (_s, e) in (wins or []) if e is not None]
+        plan_ends = [d for d in (_to_dt(r["end"]) for r in rows) if d is not None]
+        if not ends or not plan_ends:
+            return "", None
+        # THE DISCRIMINATOR IS THE SCAN HORIZON, and getting this wrong once is
+        # what taught it. Every calendar ends somewhere, so "ends at some point"
+        # fires on every machine on every board; and the LAST PLACEMENT is no
+        # better — measured on the fenced world it is 2026-01-13 18:33, while
+        # BOX-01 stays open until 19:00 that evening and then never reopens, so
+        # comparing against it called a machine that is gone for a fortnight
+        # merely busy.
+        #
+        # `_open_windows` resolves every machine over the solved span padded
+        # CALENDAR_SCAN_PAD_DAYS each way. A machine still working reaches that
+        # edge; one that shuts does not. On the fenced world that is exactly the
+        # split — FEED-01 and PACK-01 reach 2026-01-28, BOX-01 stops on the
+        # 13th — and it needs no second calendar read to find out.
+        last_open = max(ends)
+        horizon = max(plan_ends) + timedelta(days=CALENDAR_SCAN_PAD_DAYS)
+        if last_open >= horizon:
+            return "no_window_fits", None
+        return "calendar_closed", last_open
 
     def _eligible_lanes(self, op_ref: Optional[str],
                         exclude: str) -> tuple[Optional[list[dict]], bool]:
@@ -4024,7 +4142,8 @@ class Explainer:
         pts = [p for p in starts + ends if p is not None]
         if not pts:
             return []
-        lo, hi = min(pts) - timedelta(days=14), max(pts) + timedelta(days=14)
+        lo, hi = (min(pts) - timedelta(days=CALENDAR_SCAN_PAD_DAYS),
+                  max(pts) + timedelta(days=CALENDAR_SCAN_PAD_DAYS))
         base = self._machine_working_windows(machine_name, lo, hi)
         if not base:
             return []
@@ -4961,7 +5080,8 @@ class Explainer:
     def _synthesis_bundle(self, question: str, answer: Any,
                           diverted_qualifier: str = "",
                           offers: Optional[list] = None,
-                          licence: str = "") -> ExplanationBundle:
+                          licence: str = "",
+                          first_synthesis: bool = True) -> ExplanationBundle:
         """A verified ``SynthesisAnswer`` → the bundle the surface renders (CU4).
 
         ``diverted_qualifier`` is set when the ADJACENT-MATCH GUARD (Session 4A.5c
@@ -4996,6 +5116,12 @@ class Explainer:
                 # taught answer closes with an invitation to push back, which a
                 # board read does not need and would sound odd carrying.
                 "licence": licence,
+                # W6 — orientation copy renders on the FIRST synthesis answer of
+                # a conversation only. Defaults TRUE: a caller that does not
+                # supply it (every module-level assembly, every golden) gets
+                # today's behaviour unchanged, and a missing signal must not
+                # silently suppress a disclosure.
+                "first_synthesis": bool(first_synthesis),
                 "tool_calls": [t.model_dump(mode="json") for t in answer.tool_calls],
                 "tool_call_count": len(answer.tool_calls),
                 "consulted_tools": sorted({t.tool for t in answer.tool_calls}),

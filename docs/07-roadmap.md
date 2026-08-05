@@ -1,6 +1,104 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.94 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.95 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.95:** **Session 4A teaching-graft (e) — the teaching answer may not
+contradict the floors** (2026-08-05; §5a.190-194; docs/04 2026-08-05 **R-TG6
+ruled and BUILT** plus the founder's felt-bar ruling W6; contract unchanged
+**1.15**, no docs/06 doorway owed; parse prompt unchanged **v18**, synthesis
+prompt **v8 → v9** (rule 15); narrative in
+`docs/closeouts/4a-teaching-e-floor-truth.md`). **THE C9 FOUNDER ROUND FOUND THE
+DEFECT ITS OWN AXIS WAS WRITTEN TO NAME, ON ITS FIRST RUN.** Q7 on the fenced
+world: the mobility floor computes **BOXED_IN** for `ORD-BOX` op20 — bound
+earlier, nothing later, **no lock and no pin anywhere in it**. Q9, minutes
+later, teaching intent, wearing the general-knowledge label: *"In this product, a
+job becomes immovable **only** through a `frozen_assignment` or pinned constraint
+declared in `locks.csv` … nothing else in the catalog removes an operation's
+mobility outright."* Seven tool calls, every one hunting LOCK RECORDS; the
+machinery that had already answered the question was never consulted, and the
+same answer then offered ORD-BOX as an example of a job that is NOT stuck. **THE
+FOUNDER READ IT AND REPORTED HIMSELF SATISFIED** — not a visible error, a
+confident reader carrying a wrong rule out of the room, which is why this
+outranked the persistence question (Q3, still OPEN). **R-TG6, THREE CLAUSES.**
+**(i)** a sentence asserting THIS PRODUCT's behavior is a PRODUCT-BEHAVIOR claim
+and may not wear the general-knowledge label — that label means *there is nothing
+here to check this against*, and for a claim about this product there always is;
+admissible when it CITES (the docs/05 catalog through `constraint_catalog`, the
+one honest path 4B.15 §5a.43 already built), **DROPPED when uncited**. **(ii)** a
+teaching answer naming a board entity in a mobility statement is checked against
+the **mobility floor's own verdict** for that entity — asked, never re-derived
+(R-FF1) — across **EVERY operation of the order**, because an order is free to
+move only if its operations are; **UNDECIDABLE contradicts nothing**, the ruled
+species at a SEVENTH seam. **(iii)** a general rule the floor's verdict
+vocabulary falsifies is refused at the seam. **(i) IS NOT A SIXTH CLAUSE OF
+`gk_disqualifiers` AND THAT WAS THE FIRST THING GOT RIGHT:** that predicate is
+read BOTH ways and direction (ii) drops precisely when there is NO board content
+— a product claim HAS none, so folding it in would have made the founding
+sentence ship as INTERPRETIVE (*"my reading, no record states this"*), **a
+different false label on the same false sentence**. Disjoint axes, two
+predicates, neither defined in terms of the other; it fills the gap neighbouring
+the one R-TG1(a) left open. **(iii) IS A MAP, NOT AN ENTAILMENT CHECKER, AND MUST
+NOT BECOME ONE** — that is the LLM judge R-EX1 wrote down and refused. **IT IS
+FALSIFIED BY THE VOCABULARY, NOT THE BOARD**, which is stronger: `BOXED_IN`
+existing in `mobility_premise` refutes "only a lock immobilizes" on every board,
+including boards holding no specimen. **PRECISION MEASURED, NOT ASSUMED:** the
+product-behavior predicate fires on **2 of 99** unique GK claims across every
+committed sweep and **both are genuine product claims wearing the wrong label**;
+the (iii) map fires on **0 of 485** claim lines of all registers, and on **3 of
+3** measured specimens. **THE MAP MISSED ITS OWN FIX'S FIRST OUTPUT AND WAS
+WIDENED BY MEASUREMENT** — the next live Q9 said the same false thing as *"the
+immovability comes from a lock or the frozen zone, **not from** anything
+intrinsic"*, exclusive by contrast rather than by "only"; the specimen is kept in
+the guard and **a paraphrase outside the map still ships**, said rather than
+glossed. **THE SEAM IS A FLOOR, NOT THE MECHANISM:** measured, an answer whose
+every claim the seam cut collapsed to the capability card — honest and useless —
+so synthesis rule 15 is what stops the false rule being drafted and the seam is
+what stops the rule depending on a model remembering it. **W4 — A COUNTERFACTUAL
+MAY NOT CONTRADICT THE RECORDED DRIVER** (docket item 7 / Specimen C, reproduced
+on the purpose-built bar): *"nothing was holding ORD-EARLY op10 back"* two lines
+from *"records its driver as CAPACITY_BLOCKED"*. **BOTH SENTENCES ARE TRUE IN
+THEIR OWN TERMS** — our counterfactual scan and the record's attribution, different
+propositions reading as a flat contradiction — so **NEITHER FACT IS DELETED**;
+only the ASSERTION goes, and the copy names the disagreement and **refuses to
+resolve it**, because this product cannot tell which the solver acted on.
+`CONSTRAINT_NAMING_DRIVERS` is a set by MEANING (preference drivers are silent),
+an unrecognised driver claims nothing. **W5 — A CLOSED CALENDAR IS NOT A BUSY
+MACHINE:** *"no opening fits"* reads as *booked* when the truth is BOX-01 goes
+down for a rebuild and never returns — **the strongest fact in the world, never
+voiced**. Now stated, with **the bound named, never "never"** (the calendar is
+resolved over the solved span padded a fortnight). **THE DISCRIMINATOR WAS WRONG
+TWICE FIRST** — "no open window after the op" missed (BOX-01 is open that
+afternoon), and "ends before the last placement" missed too (**19:00 against a
+plan ending 18:33, measured**); the right comparator is the SCAN HORIZON, and the
+pad is now ONE constant with two readers. **W6, THE FOUNDER'S FELT-BAR RULING:**
+the synthesis preamble is **REMOVED** (it apologised for the route that answered
+the question); the GK explainer paragraph and the closing invitation render on
+the **FIRST synthesis answer of a conversation only**, on R-MT1's own
+`(session, schedule)` key so a rebind correctly makes the next answer first
+again; **per-line labels and the cut disclosures are UNTOUCHED**. A THIRD cut
+kind joins R-TG1's two (`SYNTHESIS_FLOOR_REFUTED`) and **outranks both** — its
+siblings say *I could not establish this*, this one says the step WAS established
+and established FALSE. **LIVE, three cold runs of the founding question: the
+wrong rule appears 0 times**, and the answer now teaches *"not just a lock"*,
+enumerates boxed-in and the undecidable verdict, and **grounds it on ORD-BOX with
+a record** — R-TG5 and R-TG6 working together. **Q10 is BYTE-IDENTICAL to the
+committed control.** **Python 2735/305/0 UNCHUNKED in 15m01s against a baseline
+MEASURED ON THIS TREE of 2693/305/0** (session work stashed in the same checkout
+— a worktree would be wrong here, the editable install still importing the edited
+source, (d.1)'s recorded mistake): **+42 exactly, and the new guard file collects
+exactly 42** (collection 3040 vs 2998 confirms it independently). **NO RESIDUAL.**
+**5 negative controls proven RED**, each asserting GREEN AT HEAD first, every
+restore byte-identical by sha256, working in BYTES because this repo mixes line
+endings per file. **MINTED NOTHING; both pinned boards untouched and unread;
+COCKPIT UNTOUCHED, not re-run.** NOT FIXED, named: **the map is one floor and one
+sentence shape** (the next entry costs one tuple plus its own census, which is
+the expensive half); **the drop can EMPTY a teaching answer** and no floor was
+built for that; **(ii) is CLAIM-SCOPED** (an assertion in claim N and the entity
+in claim N+1 is uncaught); the (ii) floor read is **unmeasured at demo density**;
+W4 leaves a planner reading two paragraphs where one confident sentence was, and
+which should LEAD is undecided; **the exam bank still cannot grade this** — a
+THIRD Q7-input line for the ladder session's format work; and **the teaching
+sweeps were NOT re-run**, so v9 is unmeasured live beyond the founding pair.
 
 **v2.94:** **Session 4x — pinned-world reconstruction after confirmed loss**
 (2026-08-04; §5b; docs/04 2026-08-04 **R-PW1 ruled and BUILT**; contract
@@ -6786,6 +6884,74 @@ FIXED:** the `schedule`/`customer-schedule` degenerate collapse (S-01); **the
 grade being in no evidence record** — a Metric or Artifact at the gate is the fix
 shape and it is a contract change, not a micro-session's (S-02); the missing
 signature concept (S-03); and the census's own bound (S-04).
+
+**§5a.190 — 4A-(e): THE FOUNDER ROUND FOUND A FALSE RULE THE FLOOR HAD ALREADY
+DISPROVED.** Q7/Q9 on the fenced world, minutes apart: BOXED_IN with no lock,
+then *"in this product, a job becomes immovable ONLY through a
+frozen_assignment or pinned constraint"* wearing the general-knowledge label.
+Seven tool calls, all hunting lock records; the mobility machinery was never
+consulted. The founder was satisfied. R-TG6 (i)/(ii)/(iii) ruled and BUILT —
+see docs/04 2026-08-05 and `docs/closeouts/4a-teaching-e-floor-truth.md`.
+
+**§5a.191 — THE PRECISION IS MEASURED, ON THE COMMITTED SWEEP CORPUS.** The
+product-behavior predicate fires on **2 of 99** unique general-knowledge claims
+across every committed sweep, and both are genuine product claims wearing the
+wrong label (one names `lock_type`, one quotes the catalog's own "in-core and
+proven"). The (iii) floor map fires on **0 of 485** claim lines of all registers
+and on **3 of 3** measured specimens. Both are TRUE claims and both drop only
+because UNCITED — a citation sends them down the path 4B.15 §5a.43 built.
+
+**§5a.192 — THE MAP MISSED ITS OWN FIX'S FIRST OUTPUT.** With W1/W3 in, the next
+live Q9 said the same false thing as *"the immovability comes from a lock or the
+frozen zone, NOT FROM anything intrinsic"* — exclusive by contrast rather than by
+"only". Widened by measurement, precision census re-run (still 0 of 485), the
+specimen kept in the guard. **A pattern map holds the shapes a model has been
+SEEN to use; a paraphrase outside it ships.** That is its honest character and it
+is stated in the ruling rather than implied away.
+
+**§5a.193 — W5's DISCRIMINATOR WAS WRONG TWICE BEFORE IT WAS RIGHT.** "No open
+window after the operation ends" did not fire (BOX-01 is open that afternoon
+before the rebuild). "The calendar ends before the last placement" did not fire
+either — measured, BOX-01 stays open until **19:00** on the evening the plan's
+last bar ends at **18:33**, so a machine gone for a fortnight was called merely
+busy. The right comparator is the SCAN HORIZON — `_open_windows`' own fortnight
+pad — now one named constant with two readers so they cannot drift. Both errors
+were found by running it on the real world, not by reasoning about it.
+
+**§5a.193a — THE CONTROL HARNESS WENT STALE MID-SESSION AND CAUGHT ITSELF.**
+The five R-TG6 negative controls ran 5/5 early. After a `git stash` round-trip —
+taken to measure the HEAD baseline in the same checkout — three reported **ANCHOR
+NOT FOUND**: the stash had renormalized `claim_verifier.py` from LF to CRLF and
+three anchors authored with `
+` matched nothing. **They reported it rather than
+passing falsely, which is the only reason it was noticed.** 4A-(a)'s lesson was
+*work in bytes, not text*; the addition is that **hardcoded bytes are not enough
+either** — the harness now DETECTS the file's line ending and translates, and
+ANCHOR-NOT-FOUND is a FAILURE, never a skip. 5/5 after the fix.
+
+**§5a.194 — 4A-(e)'s CARRY-FORWARDS (REPORTED, deliberately NOT fixed).**
+**(a) THE (iii) MAP IS ONE FLOOR AND ONE SENTENCE SHAPE.** The next floor's entry
+costs one authored tuple plus its own false-positive census, and the census is
+the expensive half — it is what makes the entry honest. **(b) THE DROP CAN EMPTY
+A TEACHING ANSWER**: measured live, one Q9 run had every claim cut and collapsed
+to the capability card, honest and useless. Rule 15 prevents it and rule 15 is a
+prompt, so it will not always hold; no floor was built for "the seam cut
+everything on a teaching question" and whether one is owed is unruled. **(c) W2
+IS CLAIM-SCOPED** — a mobility assertion in claim N with the entity in claim N+1
+is uncaught; widening to answer scope is an authorship question, not a seam one.
+**(d) THE (ii) FLOOR READ IS UNMEASURED AT DEMO DENSITY** (each `mobility_verdict`
+is a blocker analysis; on the fenced world it is milliseconds). **(e) W4 STATES A
+DISAGREEMENT IT CANNOT RESOLVE** — that is the ruling, but a planner now reads two
+paragraphs where one confident sentence was, and whether the counterfactual or
+the record should LEAD is undecided. **(f) THE EXAM BANK STILL CANNOT GRADE THIS**
+— the C9 pair is a regression in a unit test because the grammar cannot say "this
+sentence must not be the same claim as that one"; a THIRD Q7-input line for the
+ladder session's format work (R-EX2), after (d.1)'s missing-world finding and the
+census micro-session's. **(g) THE TEACHING SWEEPS WERE NOT RE-RUN** — non-regression
+rests on the suite and on the 485-line precision census over the committed sweep
+CORPUS, so **v9 is unmeasured live beyond the founding pair**. **(h) Q3 (teaching
+persistence) REMAINS OPEN**, out of scope by the brief's own wall, as were F1/F2,
+the certificate contract (S-02/S-03) and the rolling-child accept defect.
 
 ## 6. Open rulings queue
 

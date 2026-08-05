@@ -435,6 +435,28 @@ SYNTHESIS_UNPLACEABLE = (
     "board nor general scheduling knowledge, so I left it out rather than state "
     "it with a label that would have been wrong either way.")
 
+# R-TG6. THE THIRD REASON A STEP GETS CUT, AND IT IS THE STRONGEST OF THE THREE.
+#
+# The two lines above both say, in different words, "I could not establish this".
+# This one says the opposite: the step WAS established, and it was established
+# FALSE. A general rule about how this product works, refuted by the product's
+# own deterministic floor — the founding specimen being "a job becomes immovable
+# only through a lock", against a mobility floor that computes BOXED_IN for
+# operations carrying no lock at all.
+#
+# "Didn't hold up against the records" is wrong here for the same reason it was
+# wrong for an unplaceable sentence, and wrong in the OTHER direction: this did
+# not fail to reach the records, it collided with something we compute. Saying
+# so plainly matters more than either sibling, because this is the one cut where
+# the planner was about to be told something untrue about the tool they are
+# holding — the C9 founder round's whole finding is that a confident reader
+# carried exactly such a rule out of the room.
+SYNTHESIS_FLOOR_REFUTED = (
+    "I drafted a general rule about how this product decides what can move, and "
+    "it contradicted what this product actually computes — so I cut it. Ask me "
+    "about a specific bar and I'll show you the verdict itself rather than a "
+    "rule of thumb about it.")
+
 # The budget ran out before the read was complete (CU1: an honest partial, never a
 # stall). `{tools}` names what was consulted.
 SYNTHESIS_PARTIAL = (

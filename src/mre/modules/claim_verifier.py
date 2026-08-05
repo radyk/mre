@@ -404,6 +404,236 @@ def _has_board_content(claim: DraftClaim, assertions: list[Assertion],
     return bool(gk_disqualifiers(claim, assertions, scope, wide))
 
 
+# ---------------------------------------------------------------------------
+# R-TG6 — THE PRODUCT-BEHAVIOR CLAIM. A SECOND AXIS, AND DELIBERATELY NOT THE
+# FIRST ONE.
+# ---------------------------------------------------------------------------
+#
+# THE FOUNDING SPECIMEN (C9 founder round, 2026-08-05, fenced world). A teaching
+# answer shipped this, wearing the general-knowledge label:
+#
+#   "In this product, a job becomes immovable only through a frozen_assignment
+#    or pinned constraint declared in locks.csv ... nothing else in the catalog
+#    removes an operation's mobility outright."
+#
+# It is FALSE of this product, and this product had PROVEN it false on the same
+# board three questions earlier: `mobility_premise` computes BOXED_IN — earlier
+# bound, nothing later — with no lock anywhere in it, and the founder had just
+# read exactly that verdict about ORD-BOX op20. The founder read the teaching
+# answer and reported himself satisfied, which is the harm profile: a confident
+# reader carrying a wrong rule out of the room.
+#
+# WHY THIS IS NOT A SIXTH CLAUSE IN `gk_disqualifiers`. That function is the
+# BOARD-CONTENT predicate and BOTH R-TG1 directions read it — direction (ii)
+# drops a claim precisely when it has NO board content. A product-behavior claim
+# has no board content: it names no order, no time, no money, no figure we
+# computed. So folding it in would make direction (ii) see board content where
+# there is none, and the Q9 sentence would stop being dropped and start shipping
+# as INTERPRETIVE — "my reading, no record states this" — which is a DIFFERENT
+# false label on the same false sentence. One predicate read two ways was right
+# for R-TG1 because both directions ask one question. This asks another question
+# ("is this sentence about our PRODUCT") about a disjoint axis, so it is its own
+# predicate and they cannot drift into each other: neither is defined in terms
+# of the other.
+#
+# THE TAXONOMY GAP THIS FILLS, NAMED. R-TG1(a) closed with "the taxonomy still
+# has no home for a sentence about our own epistemic position". This is the
+# neighbouring gap and the same shape: a sentence about our own BEHAVIOR was
+# forced to choose between two labels that both misdescribe it — `synthesis`
+# says "I read this off your board" and `general knowledge` says "this is how
+# scheduling works generally, there is nothing here to check it against". The
+# second is the more dangerous, because it is the label that FORBIDS checking.
+
+#: Phrases that mark a sentence as asserting what THIS PRODUCT does, rather than
+#: how scheduling works. Each is here because it can only be said about us.
+#:
+#: THE PATTERN SET IS DELIBERATELY TIGHT, AND THE ASYMMETRY IS THE OPPOSITE OF
+#: `gk_disqualifiers`'. There, over-rejection was free: a rejected claim fell
+#: through to ordinary verification, which is what happened to it before the
+#: class existed. Here, rejection is a DROP — a true general sentence lost is a
+#: real cost to a teaching answer — so these match self-reference and our own
+#: declared vocabulary, and NOTHING that a sentence about scheduling in general
+#: would reach for. In particular there is no bare "the solver": every board
+#: claim on this surface says "the solver chose", and reading that as a claim
+#: about the product would drop the plainest true sentences we render.
+_PRODUCT_BEHAVIOR_PATTERNS: tuple[tuple[str, str], ...] = (
+    # (a) Naming us. "In this product X" is a claim about X in this product.
+    ("it states what this product does",
+     r"\b(?:in|on|with|for|within)\s+th(?:is|e)\s+product\b"
+     r"|\bth(?:is|e)\s+(?:product|system|engine|scheduler)\s+"
+     r"(?:can|cannot|can't|does|doesn't|will|won't|only|never|always|"
+     r"treats?|models?|supports?)\b"
+     r"|\bwe\s+(?:only|never|always)\s+\w+\b"),
+    # (b) docs/05's own vocabulary. "proven in core" is a STATUS COLUMN value in
+    #     the constraint catalog — a fact about what we have built and verified,
+    #     which no general statement about scheduling has any use for.
+    ("it cites this product's constraint catalog",
+     r"\bdocs?/05\b|\bproven[\s-]in[\s-]core\b|\bin[\s-]core\b"
+     r"|\b(?:the\s+)?constraint\s+catalog\b|\bin\s+the\s+catalog\b"),
+    # (c) Our declared schema. A sentence naming an IDS table or column is
+    #     asserting the shape of the data WE accept, not a fact about plants.
+    ("it names this product's declared schema",
+     r"\b\w+\.csv\b|\bmanifest\.json\b|\block_type\b|\bfrozen_assignment\b"
+     r"|\bpinned_(?:resource|start)\b"),
+)
+
+_PRODUCT_BEHAVIOR_RES = tuple(
+    (why, re.compile(rx, re.IGNORECASE)) for why, rx in _PRODUCT_BEHAVIOR_PATTERNS)
+
+#: The drop reason for R-TG6 (i). It names the SHAPE of the failure, because a
+#: drop whose reason is "it was wrong" teaches nobody anything.
+#: The prefix every R-TG6 floor refutation carries, so the render seam can tell
+#: a REFUTED claim from an UNGROUNDED one without matching prose. A cut that
+#: cannot be told apart from its siblings gets described as one of them, which
+#: is the defect R-TG1 fixed once already at this same seam.
+FLOOR_REFUTED_PREFIX = "contradicted by this product's own floor: "
+
+
+PRODUCT_BEHAVIOR_REASON = (
+    "it asserts what this product does, which is not general knowledge and is "
+    "not something this run's records can speak to either — a claim about our "
+    "own behaviour is checkable against the constraint catalog or a floor's own "
+    "computation, and it was offered with neither")
+
+
+def product_behavior_disqualifiers(claim: DraftClaim) -> list[str]:
+    """Why this claim asserts THIS PRODUCT's behavior — or [] if it does not.
+
+    R-TG6 (i). Deterministic, and it reads the claim TEXT alone: whether a
+    sentence is about our product is a property of the sentence, not of what the
+    loop happened to read.
+    """
+    return [why for why, rx in _PRODUCT_BEHAVIOR_RES if rx.search(claim.text or "")]
+
+
+# --- R-TG6 (iii): the floor contradiction map ------------------------------
+#
+# THE SMALLEST HONEST VERSION, AND WHAT IT DELIBERATELY IS NOT. This is not an
+# entailment checker and must never become one — scoring whether a general
+# sentence follows from a verdict vocabulary is exactly the LLM-judge R-EX1
+# wrote down and refused, because the weights that wrote the answer would be
+# marking it. What it IS: an authored map from a floor's OWN verdict vocabulary
+# to the sentence shape that vocabulary falsifies. One entry today.
+#
+# THE ENTRY IS FALSIFIED BY THE VOCABULARY, NOT BY THE BOARD, AND THAT IS THE
+# STRONGER CLAIM. `VERDICT_BOXED_IN` is a verdict this product computes for an
+# operation that is bound earlier and has no opening later — with no lock in it
+# anywhere. Its mere EXISTENCE in `mobility_premise` refutes "only a lock can
+# make a job immovable", on every board, whether or not today's board happens to
+# hold a specimen. Checking the board instead would make the rule true on a
+# board with no boxed-in bar, which it is not; and it would cost a census.
+_IMMOBILITY_RE = re.compile(
+    r"\bimmovable\b|\bimmobili\w+|\bimpossible\s+to\s+move\b"
+    r"|\b(?:can(?:'t|not)|could\s+not|unable\s+to)\s+(?:be\s+)?move\w*"
+    r"|\bfix(?:ed|ing)\s+(?:it\s+)?(?:in\s+place|to\s+one\s+spot)\b"
+    r"|\bremoves?\s+(?:an?\s+)?\w*\s*mobility\b", re.IGNORECASE)
+
+#: EXCLUSIVITY, IN THE SHAPES THAT HAVE ACTUALLY BEEN MEASURED. The first three
+#: alternations came from the founding specimen ("only ... nothing else"); the
+#: last two were added after the fix's OWN first live run, where the model said
+#: the same wrong thing in a construction the map did not hold —
+#:
+#:   "the immovability comes from a lock or the frozen zone, NOT FROM anything
+#:    intrinsic to a job's lateness or timing"
+#:
+#: — which is the same claim, exclusive by contrast rather than by "only". That
+#: is the honest character of this map and the close-out says so: it holds the
+#: shapes we have seen a model use, it is not an entailment checker, and a
+#: paraphrase outside it ships. A smaller true gate beats a large leaky one.
+_EXCLUSIVITY_RE = re.compile(
+    r"\bonly\b|\bsolely\b|\bexclusively\b|\bnothing\s+else\b"
+    r"|\bthe\s+(?:one\s+)?(?:mechanism|way|thing)\b|\bsole\b"
+    r"|\bnot\s+from\b|\brather\s+than\s+(?:from|because|any)\b", re.IGNORECASE)
+
+_LOCK_TERM_RE = re.compile(
+    r"\block\w*|\bfrozen[\s_-]?assignment\b|\bpin(?:ned|s)?\b", re.IGNORECASE)
+
+#: The reason names the verdict that falsifies the sentence, so a planner (and a
+#: drill-down) can go and look at it.
+FLOOR_CONTRADICTION_REASON = (
+    "it says a lock is the only thing that can make a job immovable, and this "
+    "product's own mobility floor computes a \"" + "boxed-in"
+    + "\" verdict — bound earlier, no opening later — for operations that carry "
+      "no lock at all")
+
+
+def floor_contradictions(claim: DraftClaim) -> list[str]:
+    """Where this claim's general rule is falsified by a floor's own verdict
+    vocabulary — or [] where it is not.
+
+    R-TG6 (iii). Applies to EVERY claim regardless of the label it wears: a
+    false statement about what this product can compute is false in the
+    `synthesis` register too, and the founding specimen's first line proves it
+    (a CITED board claim carrying the same wrong rule).
+    """
+    text = claim.text or ""
+    if (_IMMOBILITY_RE.search(text) and _EXCLUSIVITY_RE.search(text)
+            and _LOCK_TERM_RE.search(text)):
+        return [FLOOR_CONTRADICTION_REASON]
+    return []
+
+
+# --- R-TG6 (ii): an entity-named mobility claim meets the floor -------------
+#
+# The general rule above is one half of the specimen. The other half is the
+# EXAMPLE the same answer hung on it — "ORD-BOX likewise shows no lock, just two
+# sequential operations" — offered as an instance of a job that is not stuck,
+# about the one bar on the board the floor had computed BOXED_IN.
+#
+# THE CHECK ASKS THE FLOOR, IT DOES NOT RE-DERIVE THE ANSWER (R-FF1). It calls
+# the same `mobility_verdict` the routes call, so a teaching answer and a
+# testimony answer about one bar can never state different verdicts — which was
+# the whole defect: Q7 and Q9 DID.
+#
+# UNDECIDABLE CONTRADICTS NOTHING, and that is load-bearing. The same claim
+# names ORD-SPAN, whose operation is chunked and whose verdict is UNDECIDABLE —
+# neither `holds` nor `refutes`. Reading it as a contradiction would manufacture
+# a claim about the plant out of a limit of our own method, which is the ruled
+# species this codebase has now refused at six seams.
+_FREE_TO_MOVE_RE = re.compile(
+    r"\bfree\s+to\s+move\b|\bcan\s+(?:still\s+)?(?:be\s+)?moved?\b"
+    r"|\bcould\s+(?:be\s+)?moved?\b|\bable\s+to\s+move\b"
+    r"|\b(?:is|are|isn't|aren't)\s+not\s+stuck\b|\bnot\s+(?:stuck|immovable|locked)\b"
+    r"|\bnothing\s+(?:is\s+)?hold\w+\b|\bmovable\b", re.IGNORECASE)
+
+
+def mobility_contradictions(claim: DraftClaim, assertions: list[Assertion], *,
+                            toolbox: Any) -> list[str]:
+    """Where this claim says a named order can move and the floor says it cannot.
+
+    R-TG6 (ii). Returns [] unless the claim BOTH asserts free mobility AND names
+    an order this run knows — so the (expensive) floor read is paid only on the
+    rare sentence that has earned it.
+    """
+    if not _FREE_TO_MOVE_RE.search(claim.text or ""):
+        return []
+    orders = [a.text for a in assertions
+              if a.kind == "entity" and a.detail == "order"]
+    if not orders:
+        return []
+    ex = getattr(toolbox, "_ex", None)
+    reader = getattr(ex, "order_mobility_verdicts", None)
+    if reader is None:
+        return []
+    out: list[str] = []
+    for ref in orders[:3]:
+        try:
+            verdicts = reader(ref)
+        except Exception:  # noqa: BLE001 — a premise check never takes an answer down
+            continue
+        for facts in verdicts or []:
+            if not facts.get("holds"):
+                continue
+            seq = facts.get("op_seq")
+            out.append(
+                f"it says {ref} can move, and this product's mobility floor "
+                f"computes \"{facts.get('verdict')}\" for "
+                f"{ref}{f' op{seq}' if seq is not None else ''} — the premise "
+                f"\"can't be moved\" holds on that operation")
+            break
+    return out
+
+
 def _figure(text: str) -> Optional[float]:
     try:
         return float(str(text).replace(",", ""))
@@ -577,6 +807,47 @@ def _verify_one(claim: DraftClaim, *, toolbox: Any,
         order_refs=getattr(ex, "_order_refs", {}) or {},
         machine_refs=getattr(ex, "_machine_refs", {}) or {},
         order_shapes=getattr(ex, "_order_shape_patterns", []) or [])
+
+    # 1a-i — R-TG6 (iii). A general rule this product's own floor vocabulary
+    # falsifies. Checked on EVERY claim, whatever label it wears: the founding
+    # specimen's first line carried the same wrong rule as a CITED board claim,
+    # so a check that ran only on general-knowledge claims would have caught one
+    # of the two sentences that said it.
+    floor_bad = floor_contradictions(claim)
+    if floor_bad:
+        return VerifiedClaim(
+            status=ClaimStatus.FAILED, assertions=assertions,
+            reason=FLOOR_REFUTED_PREFIX + floor_bad[0],
+            **base)
+
+    # 1a-ii — R-TG6 (ii). A named order this claim says can move, against the
+    # mobility floor's verdict for that order's operations. The floor is ASKED
+    # (`order_mobility_verdicts`), never re-derived.
+    mob_bad = mobility_contradictions(claim, assertions, toolbox=toolbox)
+    if mob_bad:
+        return VerifiedClaim(
+            status=ClaimStatus.FAILED, assertions=assertions,
+            reason=FLOOR_REFUTED_PREFIX + mob_bad[0],
+            **base)
+
+    # 1a-iii — R-TG6 (i). A sentence about what THIS PRODUCT does, offered with
+    # no citation. It is not general knowledge (it is about us) and it is not a
+    # reading of this plan (there is no record of our own behaviour in a run's
+    # evidence), so neither available label describes it and both would mislead.
+    #
+    # A CITED product claim is UNTOUCHED and that is deliberate: 4B.15 §5a.43
+    # built exactly one honest path for a capability claim — ground it in the
+    # docs/05 catalog through the `constraint_catalog` tool — and this check
+    # must push toward that path, never close it. So the discriminator is the
+    # citation, and the drop lands only on the sentence that asserted our
+    # behaviour from nothing.
+    if not cited:
+        pb = product_behavior_disqualifiers(claim)
+        if pb:
+            return VerifiedClaim(
+                status=ClaimStatus.FAILED, assertions=assertions,
+                reason=PRODUCT_BEHAVIOR_REASON + " (" + "; ".join(pb[:2]) + ")",
+                **base)
 
     # 1b — R-TG1, ENFORCEMENT DIRECTION (i). The model proposed this sentence as
     # domain knowledge rather than a read of the board. That proposal is INPUT

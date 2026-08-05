@@ -17016,3 +17016,172 @@ board exactly, which is how the leak was isolated rather than guessed at.
 Nothing in the schedule contract, the canonical model or the evidence contract
 changed. Contract stays **1.15**; no docs/06 doorway is owed — a pinned world is
 an artifact of OUR measurement practice, not a declared fact about a plant.
+
+---
+
+## 2026-08-05 — R-TG6: TEACHING SPEAKS WITH THE FLOOR'S VOICE OR NOT AT ALL (Session 4A teaching-graft (e))
+
+Origin: the **C9 founder round**, run by Daryn 2026-08-04/05 on the fenced world
+`datasets/mobility_box`, four clean pairs, artifacts committed at
+`tools/spikes/teaching_graft_c/c9_answers/`. The round found the defect RUBRIC
+axis C9 / hypothesis H1 was written to name, and it outranks everything else the
+round surfaced: **a teaching answer stated a principle that is FALSE of this
+product, and this product's own deterministic floor had proven it false on the
+same board three questions earlier.**
+
+**THE SPECIMEN.** Q7, "why cant this be moved" on `ORD-BOX:BOX-01:20`, testimony
+register: the mobility floor computes **BOXED_IN** — bound earlier by op10,
+nothing later — with no lock and no pin anywhere in it. The world was built so
+that exactly this is true (R-SW1). Minutes later, Q9, "what makes a job
+impossible to move at all", synthesis register, teaching intent:
+
+> *"In this product, a job becomes immovable **only** through a
+> `frozen_assignment` or pinned constraint declared in `locks.csv` … nothing
+> else in the catalog removes an operation's mobility outright."*
+> `[general knowledge — how scheduling works in general, not a fact about this plan]`
+
+Seven tool calls, every one of them hunting for LOCK RECORDS; the mobility
+machinery that had already answered the question was never consulted. **The
+founder read Q9 and reported himself satisfied**, which is the harm profile —
+not a visible error, a confident reader carrying a wrong rule out of the room.
+The same answer then offered ORD-BOX as an example of a job that is *not* stuck.
+
+### The ruling
+
+**R-TG6 — TEACHING SPEAKS WITH THE FLOOR'S VOICE OR NOT AT ALL.**
+
+**(i)** A claim asserting THIS PRODUCT'S behavior — "in this product", "only X
+makes a job immovable", catalog citations, our declared schema (`locks.csv`,
+`lock_type`, `frozen_assignment`), our catalog's own status words ("in-core",
+"proven in core") — is a **PRODUCT-BEHAVIOR claim**, not general knowledge. It
+may not wear the general-knowledge label, because that label's meaning is *there
+is nothing here to check this against*, and for a claim about this product there
+always is. It is admissible when it CITES what defines the behavior — a docs/05
+catalog row through `constraint_catalog`, which 4B.15 §5a.43 already built as the
+one honest path — and is DROPPED when offered with no citation.
+
+**(ii)** A teaching answer that names a board entity in a mobility statement has
+that statement checked against **the mobility floor's own verdict** for that
+entity — the same machinery the routes call, never a re-derivation (R-FF1). A
+claim contradicting the floor's verdict DROPS. The check walks EVERY operation of
+a named order, because an order is free to move only if its operations are.
+**UNDECIDABLE contradicts nothing** — the ruled species at a seventh seam.
+
+**(iii)** Where a floor has a verdict vocabulary for the subject being taught, a
+general rule the vocabulary falsifies is refused at the seam. Mobility today.
+
+### What is deliberately NOT built
+
+**(iii) IS A MAP, NOT AN ENTAILMENT CHECKER, AND IT MUST NOT BECOME ONE.**
+Scoring whether a general sentence follows from a verdict vocabulary is exactly
+the LLM judge R-EX1 wrote down and refused: the weights that wrote the answer
+would be marking it. What is built is an authored map from a floor's own verdict
+vocabulary to the sentence shape that vocabulary falsifies — **one entry**.
+
+**THE ENTRY IS FALSIFIED BY THE VOCABULARY, NOT BY THE BOARD, AND THAT IS THE
+STRONGER CLAIM.** `VERDICT_BOXED_IN` is a verdict this product computes for an
+operation bound earlier with no opening later, with no lock in it anywhere. Its
+mere existence in `mobility_premise` refutes "only a lock makes a job immovable"
+on EVERY board, whether or not today's board holds a specimen. Checking the board
+instead would make the rule true on a board with no boxed-in bar — which it is
+not — and would cost a census.
+
+**THE MAP HOLDS THE SHAPES A MODEL HAS BEEN SEEN TO USE.** It was widened once,
+by measurement, during this session: the fix's own first live run produced the
+same false rule in a construction the map did not hold (*"the immovability comes
+from a lock or the frozen zone, **not from** anything intrinsic"* — exclusive by
+contrast rather than by "only"). A paraphrase outside the map ships, and that is
+stated rather than glossed. **A smaller true gate beats a large leaky one.**
+
+**THE SEAM IS A FLOOR, NOT THE MECHANISM.** Measured on the fenced world: an
+answer whose every claim the seam cut collapsed to the capability card — honest
+and useless. Synthesis prompt **v8 → v9**, rule 15, is what stops the false rule
+being drafted; the seam is what makes the rule not depend on a model remembering
+it (the 0-of-5 rule).
+
+### Why this is not a sixth clause of `gk_disqualifiers`
+
+R-TG1's board-content predicate is read BOTH ways, and direction (ii) drops a
+claim precisely when it has NO board content. A product-behavior claim has no
+board content — it names no order, no time, no money, no figure we computed — so
+folding it in would make direction (ii) see board content where there is none,
+and the founding sentence would stop being dropped and start shipping as
+INTERPRETIVE: *"my reading, no record states this"*. **A different false label on
+the same false sentence.** One predicate read two ways was right for R-TG1
+because both directions ask one question. This asks another question about a
+disjoint axis, so it is its own predicate, and neither is defined in terms of the
+other.
+
+This fills the neighbouring gap to the one R-TG1(a) closed with ("the taxonomy
+has no home for a sentence about our own epistemic position"): a sentence about
+our own BEHAVIOR had to choose between two labels that both misdescribe it, and
+the general-knowledge one is the more dangerous because it is the label that
+FORBIDS checking.
+
+### Two riders, ruled with it
+
+**W4 — A COUNTERFACTUAL MAY NOT CONTRADICT THE RECORDED DRIVER.** The same round
+reproduced docket item 7 (Specimen C) on the purpose-built bar: two lines apart,
+one answer read *"It can be moved — nothing was holding ORD-EARLY op10 back"* and
+*"The assignment decision records its driver as CAPACITY_BLOCKED."* **Both
+sentences are true in their own terms** — the first is our counterfactual scan,
+the second the record's attribution — which is why this is a defect and not a
+bug: they are different propositions and on screen they read as a flat
+contradiction. **NEITHER FACT IS DELETED.** What may not survive is the
+ASSERTION. Where the driver names a constraint (`CONSTRAINT_NAMING_DRIVERS`, a
+set by MEANING — preference drivers such as `COST_TRADEOFF` and
+`PLANNER_DIRECTIVE` are silent here, because they name why the solver PREFERRED
+the placement, which is what a `chose` verdict already says), the copy states
+both, names them as different readings, and **refuses to resolve them**, because
+this product cannot tell which the solver acted on. An unrecognised driver claims
+nothing (4B.23's fail-safe, and the reason this is a named set rather than a
+not-in-the-preference-list test).
+
+**W5 — A CLOSED CALENDAR IS NOT A BUSY MACHINE.** The round's third observation:
+the later-direction sentence read *"no opening on BOX-01 fits the whole operation
+after where it sits now"* — which a planner reads as *booked* — when the truth is
+that BOX-01 goes down for a rebuild on 14 January and never comes back. **The
+strongest fact in the world was never voiced.** The two read completely
+differently to a planner: a booked machine is something you can act on (bump a
+neighbour, work an overtime window), and a machine whose calendar shuts is gone.
+The distinction is free — the free-time scan already walks the open windows — and
+**the bound is stated, never "never"**: the calendar is resolved over the solved
+span padded a fortnight, so the copy says "does not reopen anywhere in the span
+this plan covers". The discriminator is the SCAN HORIZON, learned by getting it
+wrong twice: "ends at some point" fires on every machine on every board, and the
+LAST PLACEMENT is no better (measured — BOX-01 stays open until 19:00 on the
+evening the plan's last bar ends at 18:33). `CALENDAR_SCAN_PAD_DAYS` is one
+constant with two readers for exactly this reason.
+
+### The founder's felt-bar ruling (W6), same date
+
+The synthesis preamble — *"No contracted answer covers that one, so this is me
+reading the evidence directly"* — is **REMOVED**. It opened every synthesis answer
+by apologising for the route that answered it: a fact about our own dispatch the
+planner did not ask for and cannot act on. Its only load-bearing half is carried
+better by the per-line labels, which say it per claim rather than once in the
+abstract. `SYNTHESIS_LEAD` is RETAINED in `ask_fallback_copy` with a note rather
+than deleted, because `OUTAGE_SYNTHESIS_LEAD` sits beside it and a session
+deleting one outright is a session that will reach for the other by name.
+
+The general-knowledge explainer paragraph and the closing invitation render on
+the **FIRST synthesis answer of a conversation only** — orientation repeated every
+turn stops being orientation and becomes furniture. Both ride the same
+`(session_id, schedule_id)` key R-MT1 gave the memory, so a rebind to another
+board correctly makes the next answer first again: the planner is meeting this
+register on a board they have not seen it on. **Per-line labels and the cut
+disclosures are UNTOUCHED** — those are facts about THIS answer, not orientation.
+
+A THIRD cut-disclosure joins the two R-TG1 built (`SYNTHESIS_FLOOR_REFUTED`).
+Its siblings both say, in different words, *I could not establish this*; this one
+says the opposite — the step WAS established, and established FALSE — and it
+outranks both when the set is mixed, because it is the one cut where the planner
+was about to be told something untrue about the tool they are holding.
+
+### Scope
+
+`DriverCode` unchanged. Contract unchanged **1.15** — nothing here changes the
+schedule document. No docs/06 doorway is owed: what a synthesis claim may assert
+about OUR OWN behavior is a property of our answer surface, not a declared fact
+about a plant (R-CAL1's product-side / IDS distinction on another axis). Parse
+prompt unchanged **v18**; synthesis prompt **v8 → v9** (rule 15).
