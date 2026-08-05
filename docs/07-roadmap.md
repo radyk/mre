@@ -1,6 +1,63 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.93 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.94 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.94:** **Session 4x — pinned-world reconstruction after confirmed loss**
+(2026-08-04; §5b; docs/04 2026-08-04 **R-PW1 ruled and BUILT**; contract
+unchanged **1.15**, no docs/06 doorway owed — a pinned world is an artifact of
+our measurement practice, not a declared fact about a plant; **BOTH GOVERNED
+PROMPTS UNCHANGED** — parse **v18**, synthesis **v8**, nothing in the answer
+path was touched; narrative in
+`docs/closeouts/4x-pinned-world-reconstruction.md`). **BOTH PINNED ROLLING
+BOARDS WERE DELETED FROM `_data` AND THERE WAS NO BACKUP** — between commits
+`7b4a93b` (15:07 EDT) and `804b229` (16:05 EDT), the same day. **THE `_data`
+DIRECTORY ITSELF SURVIVED** with its 2026-07-23 creation time while every child
+was recreated at 18:32 tonight, and **all eighteen sibling gitignored scratch
+directories are untouched** — which rules out a repo-root `git clean -xfd` and
+points at a recursive delete following the directory junction (d.1) made from a
+worktree into the real `_data`. Stated as inference; no command was captured and
+no further forensics were run. **R-PW1, SEVEN CLAUSES:** RETIRED-LOST ids that
+are never reused; reconstruction permitted but **identity proven over the
+PLACEMENT DIGEST and never the whole file** (whole-file identity is impossible
+by construction — `schedule_id` is `rolling-<uuid4[:12]>` and lives inside the
+document); committed recipes that **name the state they read from the data
+root**; replayable lineage; an off-tree capsule the day a world is pinned; no
+clean against the main checkout and **no junctioning `_data` into a worktree**;
+and **the pin is not complete until the placement digest is committed**.
+**THE RECONSTRUCTION SUCCEEDED FURTHER THAN EXPECTED, AND ONE COMMITTED TABLE IS
+WHY.** `tests/test_calibration.py::PINNED_WORLDS` was written for an unrelated
+purpose (4B.29 Item 1(b), proving the K flip did not reach back) and was the
+**only** committed instrument by which any claim of identity could be checked.
+Against it: a clean bare re-mint reproduced `rolling-c9973708-865` **exactly** —
+digest `ac86d185…`, 386 bars, **$2,127,482.58 to the cent**, four days and
+eleven commits later across contract 1.12 → 1.15; the exam successor
+`rolling-e9ccc879-a4b` reproduced `rolling-c362baa4-1b0`'s digest `07638cec…`
+and ledger **$16,481.95**; and the demo successor `rolling-c32a6140-b6b`
+reproduced every figure the Khalil board has on record — ledger
+**$1,667,467.80**, members **$2,135,369.63 / $1,801,222.70 / $1,667,467.80**,
+winner seed 44, spread **28.06%**, 24 committed / 122 tray, gap 89.6092%.
+**A THIRD PINNED WORLD WAS LOST THAT NOBODY HAD NOTICED AND IT CAME BACK
+WHOLE**: `rolling-c9973708-865`, still described in CLAUDE.md as "UNTOUCHED and
+still resolvable", was in `_data` too; an exact copy survived in
+`_4b25_scratch/dataroot` and was **RESTORED under its original id**, verified
+against the committed digest after the write, audit child included. **THE
+MEASUREMENT THAT PUT THE SECOND HALF OF CLAUSE (3) THERE:** the bare
+`mint_demo_board.py`, whose docstring promises `rolling-c9973708-865`, ran at
+**10.0 deterministic units instead of 6.0** with the recovered profile in the
+data root and landed on a different board — R-CAL1 rule (2) withholds only the
+coefficient the caller DECLARED, and the request declares `portfolio_k` but not
+`portfolio_det_time`. The rule is right; the recipe was incomplete, and it now
+says so. **NOT ACHIEVED, NAMED: the demo successor's lineage tip is
+AUTHORITY-ONLY.** The zero-move accept minted a real `planner_edit` Decision
+(`PLANNER_DIRECTIVE` / `observed`, objective cleared, $0.00), but **160 planner
+nudges were refused at beat one, 160 of 160 with the same C1/C2 sentence**, and
+the audit returned no usable member at either 3.0 or the plant's calibrated 10.0
+units. So no placement-bearing child could be minted on that board and none was
+faked. Two findings ride out of it: **the C1/C2 refusal sentence is false for at
+least one specimen** (a pin 30 minutes after a placement the same beat one
+accepts, on a Tuesday inside a 07:00–19:00 shift with no exception that day),
+and **the audit's K and budget are still uncalibrated constants** (4B.29
+§5a.111, now with a live instance).
 
 **v2.93:** **Micro-session 4A — the shared-body census + the certificate route**
 (2026-08-04; §5a.187-189; docs/04 2026-08-04 amendment — **NOTHING NEWLY RULED**,

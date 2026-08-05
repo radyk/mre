@@ -1,7 +1,7 @@
 # AI EXAM BANK — the general-knowledge claim class (R-TG1)
 # version  : v1
 # generated: 2026-08-03  (Session 4A teaching-graft (a))
-# world    : the DEMO BOARD `rolling-db5395dc-2ae`. Entity ids below are that
+# world    : the DEMO BOARD `rolling-c32a6140-b6b`. Entity ids below are that
 #            board's; the SHAPES are what is graded, not the ids.
 #
 # WHY THIS BANK EXISTS. Measured at HEAD before the class existed, on this board:

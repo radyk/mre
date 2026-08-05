@@ -70,6 +70,24 @@ here.
 - **Phase exits are audited by a fresh session in audit mode** (no fixes unless
   failure; every accommodation named) — the Phase-1 exit found seven
   proven-from-one-side seams this way.
+- **A PINNED WORLD HAS A COMMITTED RECIPE, A COMMITTED PLACEMENT DIGEST AND AN
+  OFF-TREE CAPSULE** (R-PW1, 2026-08-04). The recipe names everything the mint
+  reads — *including state in the data root*, since an accepted calibration
+  profile silently supplies a budget the caller did not declare. The digest is
+  sha256 over sorted `(operation_ref, resource_id, first-chunk start)`; it is
+  the ONLY way identity is ever proven, because `schedule_id` is
+  `rolling-<uuid4[:12]>` and lives inside the document, so whole-file identity
+  is impossible by construction. **A pinned world with no off-tree copy is a
+  standing defect** — `python tools/worlds/pin_world.py --schedule <id>`.
+  Lineage is a committed replay script driving the real accept path, never
+  registry writes. A lost id is RETIRED-LOST in `docs/worlds/LEDGER.md` and
+  never reused; it comes back only where its own document bytes survive.
+- **NEVER RUN A CLEAN AGAINST THE MAIN CHECKOUT, AND NEVER JUNCTION `_data`
+  INTO A WORKTREE** (R-PW1(6)). A worktree cleanup names the worktree path
+  explicitly. A junction is a reparse point: a recursive delete inside the
+  worktree empties the REAL data root and leaves its directory standing, which
+  is what the evidence of 2026-08-04 points at. To give a worktree a data root,
+  copy one or point `MRE_DATA_ROOT` at it.
 
 ## Repository layout
 
@@ -895,7 +913,17 @@ its guard is `tests/test_mobility_box.py`, whose two negative controls mutate th
 dataset and re-solve. `held` is unreachable here by construction (no frozen
 front, no pins) and has 24 and 45 specimens on the rolling boards.
 
-**THE DEMO BOARD IS `rolling-db5395dc-2ae` — THE KHALIL BOARD (4B.28, §5a.120).**
+**THE DEMO BOARD IS `rolling-c32a6140-b6b` (2026-08-04, R-PW1) — THE KHALIL
+BOARD'S WORLD UNDER A NEW ID.** `rolling-db5395dc-2ae` is **RETIRED-LOST**
+(`docs/worlds/LEDGER.md`): both pinned rolling boards were deleted from `_data`
+on 2026-08-04 and there was no backup. The successor is minted from the SAME
+submission bytes under the SAME accepted profile and **reproduces every figure
+the record holds** — ledger, all three member ledgers, winner seed, spread,
+committed/tray counts, gap. Only the id could not come back, because ids are
+`rolling-<uuid4[:12]>`. **THE EXAM WORLD IS `rolling-e9ccc879-a4b`**, whose plan
+is proven identical to the lost `rolling-c362baa4-1b0` by placement digest
+`07638cec…`. Everything below describing the Khalil board describes this one.
+The paragraph as it stood in 4B.28 (§5a.120):
 The SAME WORLD as `rolling-c9973708-865` under its plant's **ACCEPTED**
 calibration profile: K=3 at 10.0 deterministic units, seeds 42-44 ->
 **$2,135,369.63 / $1,801,222.70 / $1,667,467.80**, winner **seed 44**, spread
@@ -906,9 +934,13 @@ contract 1.15, 989s. Rebuild:
 `python tools/spikes/demo_board_4b22a/mint_demo_board.py --calibrated --reuse`
 — `--calibrated` **DELETES** `portfolio_k` from the request rather than setting
 it, because R-CAL1 rule (2) reads `model_fields_set` and a request naming ANY K
-(including the profile's own) refuses the profile. **THE OLD BOARD IS UNTOUCHED**
-and still resolvable: this thread's measurements are calibrated against it, and
-everything below about it still holds.
+(including the profile's own) refuses the profile. **THAT REBUILD NEEDS THE
+PLANT'S ACCEPTED PROFILE IN `_data/calibration/`** — it was lost with the boards
+and restored from `_4b29_scratch/store/calibration/`, whose grid digest matches
+the committed `docs/calibration/demo_board.json`. **AND THE BARE COMMAND IS NOT
+HERMETIC:** with a profile present it takes the profile's `det_total` (10.0, not
+6.0) even while declaring its own K, and lands on a different board — measured
+2026-08-04, now in its docstring.
 
 **THE PREVIOUS DEMO BOARD IS `rolling-c9973708-865` (4B.22a, §5a.84).** `demo_board`
 (`generate_erp_dataset.py`), 280 orders, seed 1, ref 2026-01-05, **window 10 /
@@ -919,8 +951,13 @@ coarse zone binding **8 of 48 cells at 95-99%** of derated capacity, a 122-order
 tray, ACCEPTED / C2 / contract 1.12. Reproduces IDENTICALLY across PYTHONHASHSEED
 0/1/2. Rebuild with ONE command, whose defaults ARE this board:
 `python tools/spikes/demo_board_4b22a/mint_demo_board.py`.
-**`rolling-c362baa4-1b0` IS UNTOUCHED** —
-still the pinned exam world, still resolving, still `proved`; use it when a
+**IT WAS LOST FROM `_data` TOO AND CAME BACK WHOLE** — an exact copy survived in
+`_4b25_scratch/dataroot`, its placement digest matches the committed trace, and
+it was RESTORED under its original id (R-PW1(2)), audit child included, so it is
+the one board here that still carries a placement-bearing lineage child.
+**`rolling-c362baa4-1b0` IS RETIRED-LOST; its successor is
+`rolling-e9ccc879-a4b`** —
+the pinned exam world, resolving, `proved`; use it when a
 demo wants a proved optimum. **THE PRICE IS THE PROOF: FEASIBLE at gap 92.4%**,
 and **that is DENSITY, not R-PD1** — the controlled pair (same board,
 `pd_share=0.0`) is still FEASIBLE at 84.5% (§5a.85). **The shipped 14-day window

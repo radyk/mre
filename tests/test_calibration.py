@@ -646,6 +646,14 @@ class TestCeremony:
 
 # ---------------------------------------------------------------------------
 
+# R-PW1, 2026-08-04. BOTH ENTRIES ARE KEPT AND ONE OF THEM CAN NEVER RESOLVE
+# AGAIN. `rolling-c362baa4-1b0` is RETIRED-LOST (docs/worlds/LEDGER.md); its
+# row stays because this table turned out to be the ONLY committed trace of
+# either board's plan, and it is what proved the reconstruction — the exam
+# successor `rolling-e9ccc879-a4b` reproduces that digest exactly. The fixture's
+# `continue` past a missing id is therefore EXPECTED for that row, not
+# incidental. `rolling-c9973708-865` was RESTORED under its original id from a
+# surviving copy, verified against this very digest, so it still guards.
 PINNED_WORLDS = {
     "rolling-c362baa4-1b0": (
         "07638cecb0b6f54393834110810b877a194eff7390964349a4cf4268aa7def22",

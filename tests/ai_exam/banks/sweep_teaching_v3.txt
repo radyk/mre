@@ -1,7 +1,7 @@
 # AI EXAM BANK — the transfer probe: does the answer TEACH? (RUBRIC axis C9)
 # version  : v3
 # generated: 2026-08-04  (Session 4A teaching-graft (c))
-# world    : the DEMO BOARD `rolling-db5395dc-2ae`. Entity ids below are that
+# world    : the DEMO BOARD `rolling-c32a6140-b6b`. Entity ids below are that
 #            board's; the SHAPES are what is graded, not the ids.
 #
 # WHY THIS BANK EXISTS. v1 measured the CLAIM CLASS (C7 — is each sentence in

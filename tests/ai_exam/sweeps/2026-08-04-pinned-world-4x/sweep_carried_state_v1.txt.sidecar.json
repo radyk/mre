@@ -1,0 +1,98 @@
+{
+  "target": "rolling-c32a6140-b6b",
+  "snapshot": "snap-rolling",
+  "started_at": "2026-08-05T01:27:58Z",
+  "llm_mode": "live",
+  "questions": 16,
+  "llm_calls": 27,
+  "parser_stats": {
+    "calls": 18,
+    "parses": 18,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 0,
+    "unavailable": 0,
+    "unreachable": 0,
+    "median_latency_ms": 1386.596400000144,
+    "malformed_samples": []
+  },
+  "synth_stats": {
+    "syntheses": 2,
+    "calls": 8,
+    "tool_calls": 6,
+    "malformed": 0,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 1,
+    "median_latency_ms": 21343.96204999939,
+    "p90_latency_ms": 40326.81149999917
+  },
+  "synthesis": {
+    "answers": 2,
+    "claims": 8,
+    "verified": 0,
+    "interpretive": 2,
+    "general_knowledge": 4,
+    "failed_and_cut": 2,
+    "deferred": 0,
+    "ungrounded_load_bearing": 2,
+    "unanswerable": 1,
+    "budget_exhausted": 0,
+    "tool_calls": 6,
+    "tool_histogram": {
+      "constraint_catalog": 1,
+      "fetch_record": 1,
+      "gate_findings": 1,
+      "lateness_set": 1,
+      "placements_for_order": 1,
+      "spec_lookup": 1
+    },
+    "calls_per_answer": {
+      "0": 1,
+      "6": 1
+    }
+  },
+  "shadow": {
+    "shadowed": 0,
+    "clean": 0,
+    "diverged": 0,
+    "unchecked": 0,
+    "provenance_strengthened": 0,
+    "by_intent": {}
+  },
+  "latency": {
+    "route": {
+      "n": 14,
+      "median_ms": 1782.8,
+      "p90_ms": 2494.2
+    },
+    "synthesis": {
+      "n": 2,
+      "median_ms": 23204.8,
+      "p90_ms": 42483.8
+    }
+  },
+  "graded_expectations": {
+    "graded": 15,
+    "met": 14
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "ungrounded-load-bearing": 1,
+    "expect-miss": 1
+  },
+  "findings": [
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 57,
+      "question": "how does a frozen zone normally work on a board like this",
+      "detail": "2 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "expect-miss",
+      "lineno": 104,
+      "question": "can you show me that on my board",
+      "detail": "route: expected 'drill-down', got 'synthesis'"
+    }
+  ]
+}

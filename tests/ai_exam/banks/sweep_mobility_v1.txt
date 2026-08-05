@@ -2,7 +2,7 @@
 # version  : v1
 # generated: 2026-08-03  (Session 4A.x, the listening docket)
 # world    : any rolling board with multi-operation orders. Calibrated against
-#            the DEMO BOARD `rolling-db5395dc-2ae`; the entity ids below are
+#            the DEMO BOARD `rolling-c32a6140-b6b`; the entity ids below are
 #            that board's, and a bank run against another world needs its ids
 #            substituted (the SHAPES are what is graded, not the ids).
 #

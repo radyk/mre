@@ -1,7 +1,7 @@
 # AI EXAM BANK — WHAT THE PRODUCT KEEPS FROM THE LAST TURN (R-MT1, R-LD5)
 # version  : v1
 # generated: 2026-08-04  (Session 4A teaching-graft (d.1))
-# world    : the DEMO BOARD `rolling-db5395dc-2ae`. Entity ids below are that
+# world    : the DEMO BOARD `rolling-c32a6140-b6b`. Entity ids below are that
 #            board's; the SHAPES are what is graded, not the ids.
 #
 # ===========================================================================

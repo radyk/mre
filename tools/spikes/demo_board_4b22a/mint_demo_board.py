@@ -13,6 +13,20 @@ Its defaults ARE the chosen board: 280 orders, window 10, frozen 1, seed 1,
 reference 2026-01-05. Run bare, it reproduces `rolling-c9973708-865`'s world
 (a fresh run id and schedule id, the same placements).
 
+**ONLY IF THE DATA ROOT HOLDS NO ACCEPTED PROFILE FOR THIS PLANT** (R-PW1(3),
+measured 2026-08-04). The bare request declares `portfolio_k` but NOT
+`portfolio_det_time`, and R-CAL1 rule (2) withholds only what the caller
+declared -- so with a profile present the solve silently takes the profile's
+`det_total` (10.0 here, not 6.0) and lands on a DIFFERENT board. That is the
+rule working; the recipe is what was incomplete. Verified both ways on
+2026-08-04: with the profile in place the bare command produced ledger
+$2,135,369.63 (digest `f836c206...`); with it withheld it reproduced
+`rolling-c9973708-865` exactly -- digest
+`ac86d185e8a977838335bde3a33a08dd01d394ce36f5117c1c6b101ec353fd6a`, ledger
+$2,127,482.58 to the cent. To reproduce that board, move
+`_data/calibration/<plant>.json` aside first, or read the `solver.calibration`
+block afterwards and check `applied` is empty.
+
 WHY NOT `build_rolling_exam_run.py`. That tool mints the PINNED EXAM WORLD --
 `_ai_exam_scratch/rolling_pinned`, 40 pilot_scale orders at window 14 / frozen 3,
 the regression target six sessions of AI measurement are calibrated against. Its

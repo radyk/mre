@@ -32,7 +32,7 @@ One command per question. It clears conversation state first, so every
 invocation is a cold turn:
 
 ```
-python tools/spikes/teaching_graft_c/ask_probe.py --run rolling-db5395dc-2ae "<question>"
+python tools/spikes/teaching_graft_c/ask_probe.py --run rolling-c32a6140-b6b "<question>"
 ```
 
 `--select ORDER[:MACHINE[:SEQ]]` supplies the board selection that clicking a
@@ -43,7 +43,7 @@ monolithic run outside the registry. That is why this script exists.)
 
 Two worlds:
 
-* **THE DEMO BOARD** `rolling-db5395dc-2ae` — 386 bars, real density. Q1–Q6.
+* **THE DEMO BOARD** `rolling-c32a6140-b6b` — 386 bars, real density. Q1–Q6.
 * **THE FENCED WORLD** `_ai_exam_scratch/mobility_pinned` (snapshot
   `snap-mobility`) — nine orders, three machines, built this session so the two
   mobility verdicts that had never been observed have a specimen. Q7–Q10.

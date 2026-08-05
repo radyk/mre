@@ -2,7 +2,7 @@
 # version  : v2   (v1 = sweep_mobility_v1.txt, the listening docket's bank —
 #                  kept, not replaced; a new version is a new file)
 # generated: 2026-08-03  (Session 4A.y, the founder listening round)
-# world    : the DEMO BOARD `rolling-db5395dc-2ae`. The entity ids below are
+# world    : the DEMO BOARD `rolling-c32a6140-b6b`. The entity ids below are
 #            that board's; the SHAPES are what is graded, not the ids.
 #
 # WHAT v2 ADDS TO v1, and every addition is a MEASURED founder specimen:

@@ -16854,3 +16854,165 @@ Contract stays **1.15**; parse prompt **v18** and synthesis prompt **v8** are bo
 UNCHANGED — this was a route body, not a prompt. No docs/06 doorway is owed: the
 certificate is a fact the gate produces about a submission, not a declared fact
 about a plant.
+
+## 2026-08-04 — R-PW1: PINNED WORLDS — LOSS, RECONSTRUCTION, CUSTODY (Session 4x)
+
+**BOTH PINNED ROLLING BOARDS WERE DELETED AND THERE WAS NO BACKUP.** This entry
+records the loss, the ruling it forced, and the reconstruction — which succeeded
+further than anyone expected, for a reason that is itself the ruling's point.
+
+### What was lost, stated from evidence
+
+The loss window is bounded by two commits of the same day. Session (d.1)
+(`7b4a93b`, 15:07 EDT) ran its baseline with `_data` **junctioned into a
+detached worktree** and recorded the collection count that proves the boards
+were there. The shared-body census (`804b229`, 16:05 EDT) recorded `_data`
+**"empty in this tree"** and declined to re-mint. Nothing between those two
+commits is a session.
+
+Four filesystem facts, all still checkable:
+
+* `C:\dev\mre\_data` **itself was never deleted** — its `CreationTime` is
+  still 2026-07-23 15:43:14. Every child (`runs/`, `submissions/`,
+  `registry.sqlite`, `mrd/`) was created 2026-08-04 18:32:26–18:38:22, when
+  Daryn restarted the product.
+* **Eighteen sibling gitignored directories survived untouched** —
+  `_4b6c_scratch` through `_4b29_scratch`, `_ai_exam_scratch`, `mre_api_data`,
+  `raw_data`, `runs`. So the removal was scoped to the contents of `_data`
+  alone.
+* That **rules out a repo-root `git clean -xfd`**, which would have taken the
+  siblings and the `_data` directory with them.
+* The worktree (d.1) built no longer exists; `git worktree list` shows only the
+  main checkout.
+
+**THE MECHANISM THE EVIDENCE POINTS AT, LABELLED AS INFERENCE.** A directory
+junction is a reparse point, and a recursive delete that follows reparse points
+empties the TARGET while removing only the LINK. That is the one hypothesis
+consistent with all four facts at once: the real `_data` keeps its creation
+time and loses its contents, and nothing outside it is touched. It is not
+proven — no command was captured — and no further forensics were run, because
+the remedy does not depend on which command it was.
+
+### R-PW1 — the ruling
+
+**(1) A pinned world confirmed lost is marked RETIRED-LOST** in the world ledger
+with the date and the loss window. Its id is never silently reused. Committed
+artifacts that reference it — sweep baselines, close-outs, transcripts — remain
+valid as HISTORICAL records and are **not edited**; they are no longer
+re-runnable instruments, and the ledger is where a reader finds that out.
+
+**(2) Reconstruction after confirmed loss is permitted** and does not violate
+the never-re-mint rule, which governs worlds that exist. A reconstructed world
+is a NEW pinned world with a NEW id. **The id is not negotiable and the reason
+is mechanical:** `schedule_id` is `f"rolling-{run_id[:12]}"` over a
+`uuid.uuid4()` run id (`api/registry.py`), so content decides nothing about it
+and an id carried onto a re-mint would assert a provenance the bytes cannot
+support. **An original id may be restored ONLY where the world's own document
+bytes survive** — a restore, not a reconstruction.
+
+**(2a) IDENTITY IS PROVEN OVER THE PLACEMENT DIGEST, NEVER THE WHOLE FILE.**
+Whole-document byte identity is not merely hard, it is **impossible by
+construction**: the document carries its own `schedule_id` and `run_id`, and
+`contract_version` advances underneath it. The instrument is the sha256 over
+sorted `(operation_ref, resource_id, first-chunk start)` — the plan itself —
+stated together with the bar count, the ledger to the cent, and the contract
+version **named separately** so a contract that moved is visible rather than
+absorbed. A near-match presented as identity is worse than a clean new world.
+
+**(3) Every pinned world's mint is a COMMITTED RECIPE** — submission source,
+mint script, seeds, solver settings, reference date; the `TARGET.json` pattern.
+A world whose recipe is not committed is not pinned; it is scratch that has been
+lucky. **AND A RECIPE THAT READS STATE FROM THE DATA ROOT IS NOT A RECIPE UNTIL
+THAT STATE IS NAMED IN IT** — measured here, not supposed: see below.
+
+**(4) Edit lineage on a pinned world is REPLAYABLE** — the edits that built it
+are a committed script driving the REAL accept path, not registry writes. Hand
+lineage may be added on top and is acknowledged unrecoverable.
+
+**(5) CUSTODY.** The day a world is pinned, a capsule of it is written OUTSIDE
+the repo tree and its sha256 recorded in the ledger. The capsule carries the run
+directories, the submission AND the placement digest, because a copy nobody can
+check is bytes rather than evidence. **A pinned world with no off-tree copy is a
+standing defect.**
+
+**(6) CLEANUP COMMANDS NEVER RUN A CLEAN AGAINST THE MAIN CHECKOUT.** A worktree
+cleanup names the worktree path explicitly, always. **And a data root is never
+junctioned into a worktree** — mount a copy, or point `MRE_DATA_ROOT` at one:
+under a junction every recursive delete in the worktree is a live round aimed at
+the real thing.
+
+**(7) THE PIN IS NOT COMPLETE UNTIL THE PLACEMENT DIGEST IS COMMITTED.** This
+clause exists because of what saved the reconstruction. `test_calibration.py`'s
+`PINNED_WORLDS` was written for a different purpose entirely — 4B.29 Item 1(b),
+proving the K=3 flip did not reach back and re-solve past artifacts — and it
+pinned both boards' digests, bar counts and ledgers as a side effect. **It was
+the only committed instrument by which anything could be checked**, and without
+it every claim below would have been a resemblance.
+
+### What the reconstruction found
+
+**THE RECIPES WERE COMMITTED AND THE SUBMISSION BYTES SURVIVED.** The registry
+copy in `_4b25_scratch` records that `rolling-c9973708-865` was minted from
+`_4b22a_scratch/demo_board/submission` and the exam world from
+`_ai_exam_scratch/rolling_pinned/submission` — **both present**. The Khalil
+board's ACCEPTED calibration profile survived twice over, in
+`_4b29_scratch/store/calibration/` and, as its measured grid, committed at
+`docs/calibration/demo_board.json`; the two share the grid digest
+`ec5ffcef9009f423…`, which is R-CAL1's own design working — the digest covers
+the MEASUREMENT and not the acceptance bookkeeping, so the committed copy proves
+the restored one.
+
+**THE BYTE-IDENTITY TEST, RUN THREE WAYS.**
+
+* **The clean control re-mint reproduces `rolling-c9973708-865` EXACTLY**:
+  digest `ac86d185e8a977838335bde3a33a08dd01d394ce36f5117c1c6b101ec353fd6a`,
+  386 bars, ledger **$2,127,482.58 to the cent**, 41 committed / 122 tray, gap
+  92.4108% — four days and eleven commits after the original, across contract
+  1.12 → 1.15. Only the wrapper moved.
+* **The Khalil board's world reproduces on every committed figure it has.**
+  There is no digest for `rolling-db5395dc-2ae` — it was minted after 4B.29 —
+  so the check is against the figures CLAUDE.md records, and all of them land:
+  ledger **$1,667,467.80**, members at seeds 42/43/44 **$2,135,369.63 /
+  $1,801,222.70 / $1,667,467.80**, winner **seed 44**, spread **$467,901.83 =
+  28.06%**, 386 bars, 24 committed, 122 tray, gap 89.6092%, ACCEPTED / C2.
+* **The exam world's plan was never lost at all.**
+  `_ai_exam_scratch/rolling_pinned/document.json` carries digest
+  `07638cecb0b6f54393834110810b877a194eff7390964349a4cf4268aa7def22` — the
+  committed trace of `rolling-c362baa4-1b0` — with 56 bars and ledger
+  **$16,481.95**. It is a re-assembly under contract **1.12** where the pinned
+  record says **1.11**, so the PLAN is identical and the DOCUMENT is not: the
+  id stays retired.
+
+**A THIRD PINNED WORLD WAS LOST THAT NOBODY HAD NOTICED, AND IT IS THE ONE THAT
+CAME BACK WHOLE.** `rolling-c9973708-865` — the previous demo board, which
+CLAUDE.md still described as "UNTOUCHED and still resolvable" — was in `_data`
+and went with the others. An exact copy survived in `_4b25_scratch/dataroot`,
+registry rows and audit child included. Its digest matches the committed trace,
+so clause (2)'s exception applies at full strength: it was **RESTORED under its
+original id**, verified after the write, not reconstructed.
+
+**THE MEASUREMENT THAT PUT THE SECOND HALF OF CLAUSE (3) THERE.** The bare
+`mint_demo_board.py` says in its own docstring that it reproduces
+`rolling-c9973708-865`. Run with the recovered profile in the data root it
+**did not** — R-CAL1 rule (2) withholds only the coefficient the caller
+declared, so a request naming `portfolio_k` still receives the profile's
+`det_total`, and the solve silently ran at **10.0 units instead of 6.0** and
+landed on a different board (`rolling-8cfac0a9-dba`, ledger $2,135,369.63,
+digest `f836c206…`). The behaviour is correct and the certificate said so out
+loud — *"applied: det_total=10 (the request declared its own k, which the
+profile does not override)"*. **The defect is the recipe, not the rule:** a
+command that claims to reproduce a specific board depends on state it neither
+declares nor checks. The clean control with the profile withheld reproduced the
+board exactly, which is how the leak was isolated rather than guessed at.
+
+### Verdicts on the three ids
+
+| id | verdict | evidence |
+|---|---|---|
+| `rolling-c9973708-865` | **RESTORED**, original id | own document bytes survived; digest matches the committed trace |
+| `rolling-c362baa4-1b0` | **RETIRED-LOST** | plan survives and is proven by digest; the document does not (contract 1.12 ≠ 1.11) |
+| `rolling-db5395dc-2ae` | **RETIRED-LOST** | no surviving bytes and no committed digest; world reproduced on every recorded figure |
+
+Nothing in the schedule contract, the canonical model or the evidence contract
+changed. Contract stays **1.15**; no docs/06 doorway is owed — a pinned world is
+an artifact of OUR measurement practice, not a declared fact about a plant.
