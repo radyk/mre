@@ -1,0 +1,65 @@
+{
+  "schedule": "rolling-c32a6140-b6b",
+  "turns": 19,
+  "routing": {
+    "graded": 15,
+    "met": 15
+  },
+  "families": {
+    "e_long": {
+      "met": 12,
+      "of": 12
+    },
+    "f_short": {
+      "met": 3,
+      "of": 3
+    },
+    "g_no_false": {
+      "met": 9,
+      "of": 9
+    },
+    "h_audience": {
+      "met": 9,
+      "of": 10
+    },
+    "i_untouched": {
+      "met": 10,
+      "of": 10
+    }
+  },
+  "synthesis": {
+    "answers": 9,
+    "claims": 39,
+    "verified": 5,
+    "interpretive": 19,
+    "general_knowledge": 8,
+    "failed_and_cut": 7,
+    "deferred": 0,
+    "ungrounded_load_bearing": 7,
+    "unanswerable": 0,
+    "budget_exhausted": 0,
+    "tool_calls": 27,
+    "tool_histogram": {
+      "calendars": 1,
+      "constraint_catalog": 4,
+      "cost_ledger": 3,
+      "entity_vocabulary": 3,
+      "lateness_set": 3,
+      "machine_occupancy": 7,
+      "placements_for_machine": 1,
+      "placements_for_order": 1,
+      "placements_in_window": 1,
+      "spec_lookup": 3
+    },
+    "calls_per_answer": {
+      "1": 1,
+      "2": 2,
+      "3": 3,
+      "4": 2,
+      "5": 1
+    }
+  },
+  "problems": [
+    "[h_audience] line 130: no audience lead \u2014 CLARIFY"
+  ]
+}

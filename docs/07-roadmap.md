@@ -2,6 +2,8 @@
 
 **Document 7** · Status: v2.95 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
 
+**v2.96:** **Session 4A teaching-graft (e2) — the measurement errand.** 2026-08-05 (**R-TG7 ruled and BUILT** plus the founder's W4 lead-order arbitration, verbatim in docs/04; contract unchanged **1.15**, no docs/06 doorway owed; **BOTH GOVERNED PROMPTS UNCHANGED** — parse **v18**, synthesis **v9**, this errand being authored copy and deterministic seams throughout; narrative in `docs/closeouts/4a-teaching-e2-measurement-errand.md`). Four measurements taken before anything was built, and **two changed what got built**. **M1: (e)'s OWN HEADLINE SUCCESS QUOTE IS THE SPECIES R-TG6 (i) REFUSES** — the claim (e) §4 quotes as proof the fix worked shipped UNCITED under `[general knowledge]` while enumerating *"reasons this product actually computes"*, and the predicate missed it twice over. **Being true is not the discriminator**; both of (e)'s own 2-of-99 specimens were true. §5a.192's shape one clause on: **the fix's own first output was outside the pattern written to catch it.** Widened by two things and **the census re-earned, not inherited**: **3 of 121** GK claims over 522 unique claim lines, all three genuine product claims wearing the wrong label — the third found by the census, not the brief; non-GK firings unchanged at 2, `floor_contradictions` 0 of 522. **M4: THE "TWO SITES" CLAIM DID NOT HOLD — THERE WERE THREE.** An AST census found `_render_counterfactual` still saying *"It was not prevented from going earlier"* beside a blocker-naming driver: the identical defect on a different route, still live (4B.14 §5a.34's rule). A **fourth** site is NAMED and not fixed — `mobility_lead_line` has no driver in hand, so it is plumbing, and a test pins it. **F3 — W4's LEAD ORDER, ARBITRATED (§5a.194(e) discharged): the RECORDED DRIVER leads**, because a record is something a planner can go and look at while the scan is our derivation computed now; **the disagreement and the refusal to adjudicate are unchanged**, only the order moves. Verified live, both sites in one fenced-world answer. **F2 — R-TG7: AN EMPTY TEACHING DROP HAS A FLOOR (§5a.194(b) discharged)** — a draft existed and was REFUSED, the per-bar door, and nothing about the plant; **ANY refuted cut fires it, the same precedence R-TG6 already gave the mixed-answer line**; it does not enter `ANSWER_MEMORY` and both halves are asserted by test. **M2 — v9 IS NON-REGRESSIVE LIVE (§5a.194(g) discharged):** v3 8/8 routing and 4/4 on every family, v2 identical to (b) and (c2) **including the same single known miss**; across 14 teaching answers empty-collapse **0/14**, product-naming GK **0/14**, floor-refuted line **0/14**. **M3 — the (ii) floor read is ~1.2% of the answer it rides on (§5a.194(d) discharged):** 295.6 ms median capped worst case on the 386-bar board against a 24,615 ms synthesis median; **nothing optimized** — M3 measures, the docket decides. **Python 2768/305/0 UNCHUNKED in 14m54s** against a baseline MEASURED ON THIS TREE of **2735/305/0** — **+33 exactly**, the new guard file collects exactly 33, and collection **3073 vs 3040** confirms it independently (3040 being byte-for-byte the number (e) recorded). **NO RESIDUAL.** **6 negative controls proven RED**, each GREEN AT HEAD first, every restore byte-identical by sha256. **MINTED NOTHING; both pinned boards untouched; cockpit untouched, not re-run.** NOT FIXED, named: the fourth W4 site; the widened predicate is still a pattern map; **R-TG7's card has no live specimen from this session** (0 of 14) and F1 makes the collapse MORE likely by construction, which is why F2 was unconditional; and §5a.194(a)(c)(f)(h) unchanged. §5a.195-202.
+
 **v2.95:** **Session 4A teaching-graft (e) — the teaching answer may not
 contradict the floors** (2026-08-05; §5a.190-194; docs/04 2026-08-05 **R-TG6
 ruled and BUILT** plus the founder's felt-bar ruling W6; contract unchanged
@@ -6952,6 +6954,98 @@ rests on the suite and on the 485-line precision census over the committed sweep
 CORPUS, so **v9 is unmeasured live beyond the founding pair**. **(h) Q3 (teaching
 persistence) REMAINS OPEN**, out of scope by the brief's own wall, as were F1/F2,
 the certificate contract (S-02/S-03) and the rolling-child accept defect.
+
+**§5a.195 — 4A-(e2): THE MEASUREMENT ERRAND. FOUR MEASUREMENTS, AND TWO OF THEM
+CHANGED WHAT GOT BUILT.** A small session, everything conditional conditioned on
+a number taken this session rather than on judgment.
+
+**§5a.196 — M1: (e)'s OWN HEADLINE SUCCESS QUOTE IS THE SPECIES R-TG6 (i)
+REFUSES.** The (e) close-out §4 quotes, as proof the fix worked, a teaching claim
+that shipped **uncited** under `[general knowledge]`: *"A job becomes impossible
+to move for one of a small number of specific reasons **this product actually
+computes**, not just a lock…"*. The label is the citation evidence —
+`gk_disqualifiers`' first clause disqualifies any cited claim from that class —
+and `product_behavior_disqualifiers` run over the exact text **did not fire**,
+missing it twice over (no *computes* in the verb list; the verb required to sit
+immediately after the noun, where this sentence has an adverb between).
+**BEING TRUE IS NOT THE DISCRIMINATOR** — both of (e)'s own 2-of-99 specimens
+were true too; the sentence enumerates what WE compute while wearing the one
+label that means *there is nothing here to check this against*. **THE SAME SHAPE
+AS §5a.192 ONE CLAUSE ON: the fix's own first output was outside the pattern
+written to catch it.** Widened by exactly two things (the verbs asserting a
+computation we perform; ONE intervening word) and **the census is re-earned, not
+inherited**: over 50 transcripts / **522 unique claim lines** / 121 GK claims it
+fires on **3**, all three genuine product claims wearing the wrong label — the
+third found by the census, not the brief (*"The scheduler itself does not pick a
+tiebreak rule from a menu — it is the solver's objective (tardiness, setup cost,
+overtime)…"*). Non-GK firings **unchanged at 2**; `floor_contradictions` **0 of
+522**.
+
+**§5a.197 — M4: THE "TWO SITES" CLAIM DID NOT HOLD; THERE WERE THREE.** An AST
+census of every place in `renderers.py` rendering the counterfactual assertion
+found a THIRD emitter, on `what-would-change`: `_render_counterfactual` said
+*"It was not prevented from going earlier — the solver preferred this
+placement"* and printed a blocker-naming driver one line down. **The identical
+defect, a different route, still live** — 4B.14 §5a.34's rule, and the reason M4
+was specified as a census rather than a re-reading. Guarded now, one definition.
+**A FOURTH SITE IS NAMED AND NOT FIXED:** `mobility_lead_line`'s earlier-open
+branch asserts *"Nothing was holding {name} back"* and **has no driver in hand**
+(`_mobility_facts` returns no such key), so guarding it is a PLUMBING change
+outside the arbitrated scope — pinned by a test that fails the day the payload
+gains a driver.
+
+**§5a.198 — F3: W4's LEAD ORDER, ARBITRATED (§5a.194(e) DISCHARGED).** **The
+RECORDED DRIVER leads, the calendar scan follows**, at every site. The driver is
+a RECORD — something this run wrote down and a planner can go and look at — while
+the scan is our own derivation computed now; leading with the derivation makes
+the record read as a caveat on our finding, leading with the record makes our
+finding read as what it is, **a second opinion**. **The disagreement and the
+refusal to adjudicate are UNCHANGED.** Verified live on the fenced world, both
+sites in one answer.
+
+**§5a.199 — F2 / R-TG7: AN EMPTY TEACHING DROP HAS A FLOOR (§5a.194(b)
+DISCHARGED).** When the seam cuts every claim of a teaching answer and any cut is
+a floor refutation, the authored card renders instead of the capability card:
+**a draft existed and was REFUSED for contradicting what this product computes**
+(not "nothing was found", which is what the capability card says and is false
+here), **the per-bar door** (the Lyon rule — a rejection holding a door handle),
+and **nothing about the plant**. Gated on the LONG licence, an empty claim set,
+and a floor-refuted cut — **the same ANY-refutation precedence R-TG6 gave the
+mixed-answer line**, because two precedence rules for one fact is how the two
+drift apart. **It does not enter `ANSWER_MEMORY`** — already true, since an
+all-cut answer sets `unanswerable` and the dispatch declines to remember one —
+and both halves are now **asserted by test**, the property being load-bearing.
+
+**§5a.200 — M2: v9 IS NON-REGRESSIVE LIVE (§5a.194(g) DISCHARGED).**
+`sweep_teaching_v3` routing **8/8**, m1/m2/m3/m4/m5 **4/4** each, controls
+**2/2**, problems none — identical to (c2)'s after-column. `sweep_teaching_v2`
+routing **15/15**, e_long **12/12**, f_short **3/3**, g_no_false **9/9**,
+h_audience **9/10**, i_untouched **10/10** — identical to (b) and (c2)
+**including the same single known miss**. Across **14 teaching answers**:
+empty-collapse **0/14**, product-naming GK sentences **0/14**,
+`SYNTHESIS_FLOOR_REFUTED` rendered **0/14**. M2 surfaced **no new construction**,
+so F1 lands on M1's alone.
+
+**§5a.201 — M3: THE (ii) FLOOR READ COSTS ~1.2% OF THE ANSWER IT RIDES ON
+(§5a.194(d) DISCHARGED).** Capped worst case (3 orders): fenced world **22.9 ms**
+median, demo board **295.6 ms** median (244.0–306.6, spread 62.6), three
+repetitions each on a quiet machine, against a synthesis median of **24,615 ms**
+measured in this session's own sweep on that board. Paid only on a claim that
+BOTH asserts free mobility and names a known order. **Not planner-noticeable, no
+docket line owed, and NOTHING OPTIMIZED** — M3 measures, the docket decides.
+
+**§5a.202 — 4A-(e2)'s CARRY-FORWARDS (REPORTED, deliberately NOT fixed).**
+**(a) THE FOURTH W4 SITE** (§5a.197) — plumbing, named, pinned by a test.
+**(b) THE WIDENED PREDICATE IS STILL A PATTERN MAP.** One intervening word, a
+closed verb list; a paraphrase outside it ships, exactly as (iii)'s map does, and
+the honest character of both is their bound. **(c) R-TG7's CARD HAS NO LIVE
+SPECIMEN FROM THIS SESSION** — M2 measured empty-collapse **0 of 14**, so the card
+is proven by guard, negative control and a rendered sample, never observed in the
+wild; (e)'s single live occurrence is its only field sighting. **(d) F1 MAKES THE
+EMPTY COLLAPSE MORE LIKELY, BY CONSTRUCTION** — it drops a shape the model was
+shipping — which is why F2 was unconditional; whether the two balance is a
+measurement no session has taken. **(e) §5a.194(a)(c)(f)(h) ARE UNCHANGED** — the
+one-floor map, W2's claim scope, the exam bank's inability to grade this, and Q3.
 
 ## 6. Open rulings queue
 

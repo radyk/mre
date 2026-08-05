@@ -1,0 +1,135 @@
+{
+  "target": "rolling-c32a6140-b6b",
+  "snapshot": "snap-rolling",
+  "started_at": "2026-08-05T10:24:15Z",
+  "llm_mode": "live",
+  "questions": 19,
+  "llm_calls": 63,
+  "parser_stats": {
+    "calls": 21,
+    "parses": 21,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 2,
+    "unavailable": 0,
+    "unreachable": 0,
+    "median_latency_ms": 1724.5915000021341,
+    "malformed_samples": []
+  },
+  "synth_stats": {
+    "syntheses": 10,
+    "calls": 41,
+    "tool_calls": 31,
+    "malformed": 0,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 0,
+    "median_latency_ms": 20574.017200000526,
+    "p90_latency_ms": 27337.01320000546
+  },
+  "synthesis": {
+    "answers": 9,
+    "claims": 39,
+    "verified": 5,
+    "interpretive": 19,
+    "general_knowledge": 8,
+    "failed_and_cut": 7,
+    "deferred": 0,
+    "ungrounded_load_bearing": 7,
+    "unanswerable": 0,
+    "budget_exhausted": 0,
+    "tool_calls": 27,
+    "tool_histogram": {
+      "calendars": 1,
+      "constraint_catalog": 4,
+      "cost_ledger": 3,
+      "entity_vocabulary": 3,
+      "lateness_set": 3,
+      "machine_occupancy": 7,
+      "placements_for_machine": 1,
+      "placements_for_order": 1,
+      "placements_in_window": 1,
+      "spec_lookup": 3
+    },
+    "calls_per_answer": {
+      "1": 1,
+      "2": 2,
+      "3": 3,
+      "4": 2,
+      "5": 1
+    }
+  },
+  "shadow": {
+    "shadowed": 1,
+    "clean": 0,
+    "diverged": 1,
+    "unchecked": 0,
+    "provenance_strengthened": 1,
+    "by_intent": {
+      "lateness-cause": {
+        "shadowed": 1,
+        "diverged": 1,
+        "unchecked": 0
+      }
+    }
+  },
+  "latency": {
+    "route": {
+      "n": 10,
+      "median_ms": 2576.8,
+      "p90_ms": 5512.3
+    },
+    "synthesis": {
+      "n": 9,
+      "median_ms": 22156.1,
+      "p90_ms": 28506.0
+    }
+  },
+  "graded_expectations": {
+    "graded": 15,
+    "met": 15
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "ungrounded-load-bearing": 5,
+    "shadow-divergence": 1
+  },
+  "findings": [
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 59,
+      "question": "how do schedulers normally decide which job to run first",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 69,
+      "question": "why do setup times matter in scheduling",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 73,
+      "question": "how does a rolling horizon normally work",
+      "detail": "2 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 113,
+      "question": "why would the solver leave a machine idle when there is work waiting",
+      "detail": "2 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 117,
+      "question": "is the work spread evenly across the machines",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "shadow-divergence",
+      "lineno": 127,
+      "question": "there are a lot of orders late what reason can i give my boss and what will help lessen the impact",
+      "detail": "promoted route 'lateness-cause' contradicts the synthesis shadow on tardiness_total, total_orders \u2014 R-AI5(7): DEMOTE"
+    }
+  ]
+}

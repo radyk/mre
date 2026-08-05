@@ -17185,3 +17185,148 @@ schedule document. No docs/06 doorway is owed: what a synthesis claim may assert
 about OUR OWN behavior is a property of our answer surface, not a declared fact
 about a plant (R-CAL1's product-side / IDS distinction on another axis). Parse
 prompt unchanged **v18**; synthesis prompt **v8 → v9** (rule 15).
+
+### 2026-08-05 — R-TG7: AN EMPTY TEACHING DROP HAS A FLOOR (Session 4A teaching-graft (e2))
+
+Origin: session (e) §8(b), and the review round Daryn arbitrated the same day.
+(e) built R-TG6's three clauses and measured, live, one Q9 run whose every claim
+the seam cut — the answer collapsing to the capability card, *"I couldn't answer
+that one from the evidence"*. That is honest and it is useless, and it is worse
+than useless in one specific way: **the one thing the planner was owed — that a
+rule had been drafted and refused because this product can show it wrong — is
+the thing the collapse deletes.** The cut disclosure R-TG6 built
+(`SYNTHESIS_FLOOR_REFUTED`) renders only where a claim SURVIVED to render it
+beside.
+
+**THE RULING.** When the seam cuts every claim of a teaching answer and at least
+one of those cuts is a floor refutation, the authored card renders in place of
+the capability floor. It states three things and no more:
+
+1. **A draft existed and was refused**, and refused because it contradicted what
+   this product computes — not because nothing was found, and not because no
+   tool reaches the question. Both of those are what the capability card says
+   and both are false here.
+2. **The per-bar door.** Name an order and an operation and the product will
+   show the mobility verdict it computed for that bar. This is the Lyon rule:
+   a rejection holding a door handle. The rule of thumb was standing in for
+   the verdict, and the verdict is the thing that is actually checkable.
+3. **Nothing about the plant.** The card asserts no board content whatever. It
+   is a statement about OUR OWN READ, and the one thing it may not do is
+   manufacture a claim about the plant out of the fact that we refused one
+   (4B.23's fail-safe, and R-TG1 direction (ii)'s reason for existing).
+
+**IT DOES NOT ENTER `ANSWER_MEMORY`**, and this is not a new mechanism: an
+answer with no surviving claims already sets `unanswerable`, and the dispatch
+already declines to remember an unanswerable answer. What is new is that a test
+asserts it, because the property is now load-bearing — there is nothing here for
+a drill-down to open, and remembering the card would erase the last real answer
+a planner could still point at (R-OF1's rider, at the neighbouring floor).
+
+**PRECEDENCE MIRRORS R-TG6's, DELIBERATELY.** A single floor-refuted cut in the
+set is enough, which is the same rule the mixed-answer disclosure already
+follows. Two precedence rules for one fact is how the two drift apart; the
+copy is worded so that it is true whether one cut was a refutation or all of
+them were.
+
+**WHAT THIS DOES NOT DO.** It does not stop the drop. Rule 15 of the synthesis
+prompt is what tries to stop the false rule being drafted, and the seam is the
+floor under rule 15; this is the floor under the floor. A teaching answer that
+reaches this card taught the planner nothing about scheduling, and the honest
+form of that is a card that says so and opens a door — not a thinner rule that
+survives by saying less.
+
+### 2026-08-05 — the (e2) measurement errand: four measurements, and W4's lead order arbitrated (Session 4A teaching-graft (e2))
+
+Four measurements were taken before anything was built, and two of them changed
+what got built.
+
+**M1 — THE RUN-1 GK LABEL: DEFECT CONFIRMED, AND THE SPECIMEN IS (e)'s OWN
+HEADLINE SUCCESS.** The (e) close-out §4 quotes, as proof R-TG6 worked, a
+teaching claim that shipped **uncited** under `[general knowledge]`:
+
+> *"A job becomes impossible to move for one of a small number of specific
+> reasons **this product actually computes**, not just a lock: …"*
+
+The label is proof of the citation state — `gk_disqualifiers`' first clause
+disqualifies any cited claim from that class — and
+`product_behavior_disqualifiers` was run over the exact text and **did not
+fire**, missing it twice over: no *computes* in the verb list, and the verb
+required to sit immediately after the noun where this sentence has an adverb in
+between.
+
+**BEING TRUE IS NOT THE DISCRIMINATOR.** Both of (e)'s own 2-of-99 census
+specimens were true as well. The sentence enumerates what WE compute while
+wearing the one label that means *there is nothing here to check this against* —
+and there is: the docs/05 catalog and the mobility floor's own verdict
+vocabulary. So it is the species R-TG6 (i) refuses, and this is the same shape
+as (e) §5(a) one clause further on: **the fix's own first output was outside the
+pattern that was written to catch it.**
+
+The predicate is widened by exactly two things — the verbs that assert a
+COMPUTATION we perform, and ONE intervening word — and it **re-earns its
+census** rather than inheriting one. Over the whole committed claim corpus
+extended with this session's own sweeps (50 transcripts, **522 unique claim
+lines**, 121 of them general-knowledge) it fires on **3**, all three genuine
+product claims wearing the wrong label; the third was found by the census and
+not by the brief (*"The scheduler itself does not pick a tiebreak rule from a
+menu — it is the solver's objective (tardiness, setup cost, overtime) plus hard
+constraints…"*, which names our ledger's own components). Firings on the 401
+non-general-knowledge claim lines are **unchanged at 2**, and
+`floor_contradictions` remains **0 of 522**.
+
+**M4 — THE "TWO SITES" CLAIM DID NOT HOLD. THERE WERE THREE.** (e) §2(d)
+censused the counterfactual-vs-driver defect at two emitting sites and fixed
+both. An AST census of every place in `renderers.py` that renders the assertion
+(`tools/spikes/teaching_graft_e2/m4_w4_site_census.py`) found a **third**, on the
+`what-would-change` route: `_render_counterfactual` said *"It was not prevented
+from going earlier — the solver preferred this placement"* and then printed a
+blocker-naming driver one line down. **The identical defect, a different route,
+still live** — *a defect class fixed at one seam is not fixed* (4B.14 §5a.34),
+and the reason M4 was specified as a census rather than a re-reading of the
+close-out. It is guarded now, by the same one definition.
+
+A **FOURTH** site is NAMED AND NOT FIXED: `mobility_lead_line`'s earlier-open
+branch says *"Nothing was holding {name} back"* and **has no driver in hand** —
+`_mobility_facts` returns no such key. Guarding it is a PLUMBING change, outside
+this errand's arbitrated scope, and it is pinned by a test that fails the day
+the payload gains a driver so the next session finds it rather than
+rediscovering it.
+
+**F3 — W4's LEAD ORDER, ARBITRATED.** (e) §8(e) left it open: a planner now
+reads two paragraphs where one confident sentence used to be, and which should
+lead was undecided. Ruled: **the RECORDED DRIVER leads, our calendar scan
+follows**, at every site. The reason is what each paragraph IS — the driver is a
+RECORD, something this run wrote down and a planner can go and look at, while
+the scan is our own derivation computed now from a model holding everything else
+still. Leading with the derivation makes the record read as a caveat on our
+finding; leading with the record makes our finding read as what it is, **a
+second opinion**. The DISAGREEMENT and the REFUSAL TO ADJUDICATE are
+**unchanged** — that is R-TG6's W4 and it is not reopened. Only the order moves.
+
+**M2 — THE v9 PROMPT, RE-SWEPT LIVE.** (e) §8(g)'s owed measurement.
+`sweep_teaching_v3` (C9) against the demo board: routing **8/8**, m1/m2/m3/m4/m5
+all **4/4**, controls **2/2**, problems none — identical to (c2)'s after-column.
+`sweep_teaching_v2` (session (b)'s depth families): routing **15/15**, e_long
+**12/12**, f_short **3/3**, g_no_false **9/9**, h_audience **9/10**, i_untouched
+**10/10** — identical to (b) and (c2) **including the same single known miss**.
+Across **14 teaching answers**: empty-collapse **0/14**, product-naming GK
+sentences **0/14**, `SYNTHESIS_FLOOR_REFUTED` rendered **0/14**. So the v9
+prompt is non-regressive live, and M2 surfaced **no new construction** for F1,
+which is why F1 lands on M1's alone.
+
+**M3 — THE (ii) FLOOR READ AT DEMO DENSITY**, (e) §8(d)'s unmeasured cost.
+Three repetitions each, quiet machine: the fenced world's capped worst case
+(3 orders) runs **22.9 ms** median, the 386-bar demo board **295.6 ms** median
+(244.0–306.6, spread 62.6). Against a synthesis median of **24,615 ms** measured
+in this session's own sweep on that board, the check is **~1.2%** of the answer
+it rides on, and it is paid only on a claim that BOTH asserts free mobility and
+names a known order. **Not planner-noticeable, no docket line owed, and nothing
+optimized** — M3 measures, the docket decides.
+
+### Scope
+
+`DriverCode` unchanged. Contract unchanged **1.15**. No docs/06 doorway is owed:
+every fix here governs what our own answer surface may assert about our own
+behaviour (R-CAL1's product-side / IDS distinction, the axis R-TG6 already
+answered). **Both governed prompts are UNCHANGED — parse v18, synthesis v9** —
+this errand being authored copy and deterministic seams throughout.

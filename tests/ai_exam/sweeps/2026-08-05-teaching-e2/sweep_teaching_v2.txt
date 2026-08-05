@@ -1,0 +1,472 @@
+AI EXAM TRANSCRIPT
+target      : rolling-c32a6140-b6b
+snapshot    : snap-rolling
+started     : 2026-08-05T10:24:15Z
+llm mode    : live
+questions   : 19
+llm calls   : 63
+door check  : live
+parse       : parses=21 calls=21 retries=0 malformed=0 clarifies=2 unavailable=0 median=1725ms
+synthesis   : answers=10 calls=41 tools=31 malformed=0 budget-out=0 unanswerable=0 median=20574ms p90=27337ms
+claims      : 39 total  verified=5 interpretive=19 general-knowledge=8 failed-and-cut=7 deferred=0  ungrounded-load-bearing=7
+probation   : shadowed=1 clean=0 DIVERGED=1 unchecked=0 provenance-strengthened=1
+latency     : route n=10 median=2577ms p90=5512ms | synthesis n=9 median=22156ms p90=28506ms
+graded      : 15/15 expectations met
+sidecar     : shadow-divergence=1, ungrounded-load-bearing=5
+------------------------------------------------------------------------
+# AI EXAM BANK — the depth licence and the teaching intent (R-TG2/R-TG3/R-TG4)
+# version  : v2
+# generated: 2026-08-04  (Session 4A teaching-graft (b))
+# world    : the DEMO BOARD `rolling-c32a6140-b6b`. Entity ids below are that
+# board's; the SHAPES are what is graded, not the ids.
+# 
+# WHY THIS BANK EXISTS. v1 measured the CLAIM CLASS. This one measures the
+# ANSWER SHAPE — when an answer may go long, when it must stay short, and what
+# a question that names a person is owed. Three measurements at HEAD decided it:
+# 
+# * TEN DOMAIN PROBES, live parse, prompt v17: `coaching` 5 / `unmatched` 4 /
+# `lateness-cause` 1. Half of the questions asking to be taught something
+# were answered as capability lookups, whose median answer over 102 measured
+# turns is THREE content lines.
+# * 86 SYNTHESIS ANSWERS across nine committed sweeps: kept claims 2:7 3:13
+# 4:18 5:19 6:4. The prompt has asked for "three to six claims" since v1 and
+# 38% of real answers land at the top of that range; nothing bounded them.
+# * THE BOSS QUESTION, verbatim below, answered at HEAD in 134 content lines —
+# a cause mix, ~95 hold-pair lines and "Evidence chain (614 record(s)):".
+# The longest answer in every committed sweep by a factor of three and a
+# half, and every line of it TRUE. The planner asked for a sentence to say
+# to a person and got an inventory.
+# 
+# FIVE EXPECTATION FAMILIES, graded by
+# `tools/spikes/teaching_graft_b/grade_depth_sweep.py` over this sweep's own
+# transcript and sidecar (the EXPECT lines below grade ROUTING only, which is
+# all the exam grammar grades):
+# 
+# (e) LONG          a `teaching` question is NOT capped, and its answer
+# carries the invitation to push back. Depth granted.
+# (f) SHORT         every other second-tier answer is inside the cap; where
+# the cap BOUND, the closer names the count.
+# (g) NO FALSE      the closer is ABSENT on every answer that was not cut. A
+# closer on an uncut answer tells a planner there is more
+# when there is not.
+# (h) AUDIENCE      a question naming a person leads with the account, then
+# the lever, then OFFERS the inventory — and prints no
+# evidence chain and no hold list.
+# (i) UNTOUCHED     testimony routes render no cap machinery and no teaching
+# invitation. Authored templates are already their own
+# budget.
+# 
+# RESET DISCIPLINE, per v1's lesson: every probe is its own conversation. These
+# are independent specimens, not a thread, and accumulated history would let one
+# probe's subject leak into the next one's resolution ladder.
+# ===========================================================================
+# T — THE TEACHING PROBES. Each asks to be taught something the board does not
+# hold. Graded (e). The route expectation is `synthesis`: `teaching` is a
+# SECOND-TIER intent and its answers render on the synthesis surface — the
+# intent expectation is what proves the parse reached the new member.
+# ===========================================================================
+# [RESET]
+# [RESET — conversation cleared]
+# [EXPECT intent=teaching route=synthesis]
+Q[55]: in general, what makes a scheduling problem hard to prove optimal
+  route=synthesis  source=parse  conf=0.95  register=synthesis  renderer=synthesis (claude-sonnet-5) — 2 tool call(s)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=teaching  conf=0.95  2516ms
+  synthesis: claims=4  verified=0  interpretive=2  general-knowledge=2  cut=0  tools=2(constraint_catalog,lateness_set)  17019ms
+  expect: intent=teaching route=synthesis  -> MET
+  A:
+    What makes a scheduling problem hard to prove optimal, in general, is the combination of a huge combinatorial search space (which job goes on which machine, in which order) with constraints that interact non-linearly — precedence, calendars, setups, capacity — so that a lower bound on the true optimum is weak and the gap between 'best found so far' and 'provably cannot do better' stays wide even after a long solve.  [general knowledge — how scheduling works in general, not a fact about this plan]
+    Objectives built on tardiness or lateness make this worse than objectives like makespan, because a late job's cost is zero until its due date and then rises, which is a nonconvex, non-monotonic shape that gives weak bounds and lets many very different schedules score almost the same.  [general knowledge — how scheduling works in general, not a fact about this plan]
+    This board shows that dynamic directly: of 280 known orders, 158 are actually scheduled, and among those 102 are late and 56 are on time or early, while 122 have no placement at all and so count as neither. (based on the 60 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: 849c0ff5]
+    With 102 competing late orders and 122 unscheduled ones all pulling on the same finite machine capacity, a solver has to weigh which orders to sacrifice against which to protect, and that many interacting binary choices is exactly the kind of combinatorial search that makes a provable optimum expensive to reach. (based on the 60 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: 849c0ff5, 5efee06d, a740525e]
+
+    Where a line is marked general knowledge it draws on how scheduling and plants behave generally — not on this plan's records, so there is nothing here to check it against.
+
+    That is how it works in general — you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.
+    [rendered by: synthesis (claude-sonnet-5) — 2 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT intent=teaching route=synthesis]
+Q[59]: how do schedulers normally decide which job to run first
+  route=synthesis  source=parse  conf=0.95  register=synthesis  renderer=synthesis (claude-sonnet-5) — 3 tool call(s)
+  lit-bars=6  records=3  refs=3/3/0
+  parse: intent=teaching  conf=0.95  1113ms
+  synthesis: claims=5  verified=0  interpretive=3  general-knowledge=1  cut=1  ungrounded-load-bearing=1  tools=3(constraint_catalog,cost_ledger,placements_for_order)  27337ms
+  expect: intent=teaching route=synthesis  -> MET
+  A:
+    The cost ledger's tardiness_controllable_cost of 1,044,865 against a tardiness_floor_cost of 535,800 shows lateness is the dominant lever in the objective here — production cost is only 71,362.8 and setup cost only 15,440 by comparison.  [synthesis — read from: ee4e0504]
+    On ORD-000091, the first two operations (CUT-02 then MILL-01) both ran on January 8, but the third operation (PAINT-01) did not start until January 15 — a wait of about a week between the second and third operations — and the order still finished late, carrying a tardiness cost of $147,776.67, the largest single tardiness line in the ledger. (based on the 60 row(s) cost_ledger returned, not the whole plan)  [synthesis — read from: f4c1503d, bb54100a, 6266f174]
+    The read here suggests the wait before PAINT-01 was likely the solver holding this order back so a higher-value or already-committed job could use PAINT-01 first, since the optimizer weighs every order's due date and tardiness penalty jointly rather than working one job to completion before starting the next — but that reasoning is mine, not something the ledger states directly. (based on the 60 row(s) cost_ledger returned, not the whole plan)  [synthesis — read from: ee4e0504, 7c20e6ef, 4aa8f168]
+    In general, classical scheduling heuristics like Earliest Due Date, Shortest Processing Time, or Critical Ratio pick 'which job first' one machine or one decision at a time, but a mixed-integer or constraint-based scheduler like this one instead searches globally for the sequence and assignment combination that minimizes a stated cost objective — so there usually is no single 'first job' rule the planner can point to; the ordering is an output of the optimization, not an input rule it followed.  [general knowledge — how scheduling works in general, not a fact about this plan]
+
+    Where a line is marked general knowledge it draws on how scheduling and plants behave generally — not on this plan's records, so there is nothing here to check it against.
+
+    One step of my reasoning didn't hold up against the records, so I couldn't ground part of it and I've left that step out rather than state it.
+
+    That is how it works in general — you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.
+
+    Note: the cost figures above are not proven optimal — the solver ran out of budget with a gap of 89.6% still open, so a cheaper schedule may exist and could be up to that much cheaper.
+
+    [rendered by: synthesis (claude-sonnet-5) — 3 tool call(s) | register: synthesis]
+  >> sidecar[ungrounded-load-bearing]: 1 load-bearing claim(s) could not be grounded and were cut
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT intent=teaching route=synthesis]
+Q[63]: what is a bottleneck machine
+  route=synthesis  source=parse  conf=0.95  register=synthesis  renderer=synthesis (claude-sonnet-5) — 2 tool call(s)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=teaching  conf=0.95  concept=UNRESOLVED<-utterance("bottleneck machine")  5993ms
+  synthesis: claims=4  verified=1  interpretive=1  general-knowledge=2  cut=0  tools=2(placements_for_machine,machine_occupancy)  12741ms
+  expect: intent=teaching route=synthesis  -> MET
+  A:
+    A bottleneck machine is the machine whose limited capacity constrains how much the whole line can produce — the resource other operations end up waiting on because it cannot run any faster or absorb more work in the time available.  [general knowledge — how scheduling works in general, not a fact about this plan]
+    Because the bottleneck sets the pace, work usually queues up in front of it and the rest of the routing is scheduled around its availability rather than the other way round.  [general knowledge — how scheduling works in general, not a fact about this plan]
+    On this board, PRESS-FAST is running at 85.5% utilization — 9776 minutes of work packed into 11430 minutes of open capacity between 2026-01-05 07:00 and 2026-01-27 17:30 across 34 operations — which is the kind of high, sustained loading a bottleneck machine shows.  [record: 148bd645...]
+    PRESS-FAST is a strong candidate for the plant's bottleneck: at 85.5% utilization it has little open capacity left to absorb new or shifted work, so delays or added orders there are the most likely to push other operations later. (based on the 34 row(s) placements_for_machine returned, not the whole plan)  [synthesis — read from: 60606dd3, 2a4294d6, 31980fbd]
+
+    Where a line is marked general knowledge it draws on how scheduling and plants behave generally — not on this plan's records, so there is nothing here to check it against.
+
+    That is how it works in general — you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.
+    [rendered by: synthesis (claude-sonnet-5) — 2 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# The two v17 sent to `coaching`. They are the ones the new meaning has to
+# earn, and the ones that measure whether rule 12's boundary holds.
+# [RESET — conversation cleared]
+# [EXPECT intent=teaching route=synthesis]
+Q[69]: why do setup times matter in scheduling
+  route=synthesis  source=parse  conf=0.95  register=synthesis  renderer=synthesis (claude-sonnet-5) — 3 tool call(s)
+  lit-bars=4  records=3  refs=3/1/0
+  parse: intent=teaching  conf=0.95  concept=UNRESOLVED<-utterance("setup times")  1725ms
+  synthesis: claims=4  verified=0  interpretive=3  general-knowledge=0  cut=1  ungrounded-load-bearing=1  tools=3(constraint_catalog,cost_ledger,placements_in_window)  20251ms
+  expect: intent=teaching route=synthesis  -> MET
+  A:
+    On PAINT-01, three consecutive operations on 2026-01-05 — order ORD-000184, ORD-000001, and ORD-000114 — all carry the same setup_family, PAINT_RED, showing the paint line sequenced same-family work back to back. (based on the 60 row(s) cost_ledger returned, not the whole plan)  [synthesis — read from: 160e4ab7, 578f8656, 6e216977]
+    Grouping operations by setup family the way PAINT-01 does here is how a scheduler avoids paying a changeover cost between every pair of jobs; sequence-dependent setups reward keeping similar work adjacent. (based on the 60 row(s) cost_ledger returned, not the whole plan)  [synthesis — read from: ee4e0504, 7c20e6ef, 4aa8f168]
+    This plan's cost ledger carries a dedicated setup_cost total of 15,440, separate from production cost and tardiness cost — setup time is priced as its own cost driver, not folded into production time.  [synthesis — read from: ee4e0504]
+
+    Part of what I drafted was neither something I could check against your board nor general scheduling knowledge, so I left it out rather than state it with a label that would have been wrong either way.
+
+    That is how it works in general — you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.
+    [rendered by: synthesis (claude-sonnet-5) — 3 tool call(s) | register: synthesis]
+  >> sidecar[ungrounded-load-bearing]: 1 load-bearing claim(s) could not be grounded and were cut
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT intent=teaching route=synthesis]
+Q[73]: how does a rolling horizon normally work
+  route=synthesis  source=parse  conf=0.98  register=synthesis  renderer=synthesis (claude-sonnet-5) — 3 tool call(s)
+  lit-bars=1  records=1  refs=0/0/1
+  parse: intent=teaching  conf=0.98  concept=UNRESOLVED<-utterance("rolling horizon")  1689ms
+  synthesis: claims=5  verified=0  interpretive=1  general-knowledge=2  cut=2  ungrounded-load-bearing=2  tools=3(spec_lookup,spec_lookup,lateness_set)  17195ms
+  expect: intent=teaching route=synthesis  -> MET
+  A:
+    A rolling horizon splits the far future into a frozen zone (locked, already committed), an active window (solved now, still able to move on the next roll), and beyond-horizon work (known and admitted, but not yet placed because it sits past the current solve window) — as the plan rolls forward, that beyond-horizon work enters a new active window and gets placed in turn.  [general knowledge — how scheduling works in general, not a fact about this plan]
+    On this board, 122 of the plan's 280 known orders have no placement in the current schedule — they are 'not_scheduled', not late and not on time, because they have no placement to judge.  [synthesis — read from: 849c0ff5]
+    Whether beyond-horizon work will actually fit when its window arrives is a separate question answered by a coarse look-ahead check, which may or may not have been run for this plan — that has not been checked here.  [general knowledge — how scheduling works in general, not a fact about this plan]
+
+    Where a line is marked general knowledge it draws on how scheduling and plants behave generally — not on this plan's records, so there is nothing here to check it against.
+
+    One step of my reasoning didn't hold up against the records, so I couldn't ground part of it and I've left that step out rather than state it.
+
+    That is how it works in general — you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.
+    [rendered by: synthesis (claude-sonnet-5) — 3 tool call(s) | register: synthesis]
+  >> sidecar[ungrounded-load-bearing]: 2 load-bearing claim(s) could not be grounded and were cut
+------------------------------------------------------------------------
+# ===========================================================================
+# C — THE `coaching` CONTROL. The boundary that costs something. These ask what
+# THIS PRODUCT can model, and must NOT become teaching questions: a capability
+# claim a planner acts on by authoring data is the one place labeling is not
+# sufficient (4B.15 §5a.43), and it is answered from docs/05 or refused.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [EXPECT intent=coaching route=coaching]
+Q[83]: can this system model setup families
+  interpreted as: can this system model setup_family  (assuming setup_family)
+  route=coaching  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.95  concept=setup_family<-utterance("setup families")  1361ms
+  expect: intent=coaching route=coaching  -> MET
+  A:
+    Yes — sequence-dependent changeovers between job families (e.g. a colour change on a paint line) to be modeled and their time amortized by grouping like work.
+
+    To enable it: tag each operation with a setup_family on its routing line (routing_lines.csv, §5.3) and declare the changeover times between families in setup_transitions.csv. See the incoming-data spec §5.11.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT intent=coaching route=coaching]
+Q[87]: how do i turn on overtime
+  route=coaching  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=coaching  conf=0.95  concept=overtime<-utterance("overtime")  1383ms
+  expect: intent=coaching route=coaching  -> MET
+  A:
+    Yes — extra working hours beyond the regular shift — an overtime window a job can run in when the regular calendar is closed, priced at a premium so the schedule only buys those hours when they pay for themselves (e.g. a Saturday shift that rescues a tight order).
+
+    To enable it: add an added exception row with reason overtime on that resource's calendar in calendars.csv (the window it opens), and set an overtime_premium_multiplier in cost_model.json (the premium its hours bill at). See the incoming-data spec §5.6.
+
+    Want to check what the submission already declares? Ask "what data problems exist?"
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# ===========================================================================
+# M — THE MIXED CASE. A board entity AND teaching phrasing in one question.
+# R-TG2's both-ways clause: the depth is granted AND the answer grounds on the
+# board before it teaches. Graded (e) and, on the rendered text, that a board
+# claim precedes the general one.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [EXPECT intent=teaching]
+Q[97]: explain why PRESS-FAST ends up being the bottleneck here
+  route=synthesis  source=parse  conf=0.92  register=synthesis  renderer=synthesis (claude-sonnet-5) — 4 tool call(s)
+  lit-bars=3  records=2  refs=2/1/0
+  parse: intent=teaching  conf=0.92  machine=PRESS-FAST<-utterance("PRESS-FAST")  2236ms
+  synthesis: claims=5  verified=2  interpretive=3  general-knowledge=0  cut=0  tools=4(entity_vocabulary,machine_occupancy,lateness_set,calendars)  27501ms
+  expect: intent=teaching  -> MET
+  A:
+    PRESS-FAST runs at 85.5% utilization from 2026-01-05 07:00 to 2026-01-27 17:30, doing 9776 minutes of work against 11430 minutes of open capacity in that span — the highest load of anything checked on this board.  [record: 148bd645...]
+    Most of the gaps on PRESS-FAST are small: several operations back-to-back with zero idle time before them, and where there is a gap it is mostly used — for example a 3641-minute gap before ORD-000048 held only 41 open minutes, and an 800-minute gap before ORD-000144 held only 80 open minutes.  [record: 650da8c3...]
+    PRESS-FAST's calendar runs Monday to Friday 07:00-19:00 with a single planned-maintenance closure on 2026-01-14, the same standard calendar every other machine on this board follows — so the tight loading is not explained by a shorter calendar than its peers. (based on the 60 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: 9588a512]
+    A machine sitting near 85% utilization over three weeks is running close to its ceiling: once a machine's queue is that full, small variations in job arrival or duration have nowhere to absorb into, so any order routed through it inherits whatever wait is already stacked up — that is generally what makes a heavily-loaded machine the pinch point in a schedule, independent of any one order's own lateness.  [synthesis — read from: 60606dd3, 2a4294d6, 31980fbd]
+    PRESS-FAST is the bottleneck here because it is loaded almost to capacity across the whole horizon checked (85.5% utilization, open gaps mostly already consumed) while running the same calendar as the rest of the plant — so orders queued for it absorb that saturation directly, which is consistent with several of the plant's most late orders (ORD-000040 at 44068 minutes late, ORD-000205 at 32740 minutes late, ORD-000144 at 22650 minutes late) having a placement on this machine. (based on the 60 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: 148bd645, ff8a63c4, 1160ae71]
+
+    That is how it works in general — you know this plant and I don't, so if any of it doesn't match what you see here, say so and I'll look at what your board actually does.
+    [rendered by: synthesis (claude-sonnet-5) — 4 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT intent=teaching]
+Q[101]: is CUT-01 overloaded, and what does overloaded normally mean
+  route=CLARIFY  source=parse  conf=0.72  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=teaching  conf=0.72  machine=CUT-01<-utterance("CUT-01")  clarify=ambiguous-intent  2015ms
+  expect: intent=teaching  -> MET
+  A:
+    I need one more detail to answer "is CUT-01 overloaded, and what does overloaded normally mean".
+    I can read that two ways and the difference matters. Say which you want: the facts as they stand, or what to do about them.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# ===========================================================================
+# S — THE SHORT BUDGET. Ordinary second-tier questions. Graded (f) and (g):
+# inside the cap, and the closer present if and only if something was withheld.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [EXPECT route=synthesis]
+Q[109]: which order carries the largest single tardiness cost line on this board
+  route=synthesis  source=parse  conf=0.72  register=synthesis  renderer=synthesis (claude-sonnet-5) — 1 tool call(s)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=unmatched  conf=0.72  4064ms
+  synthesis: claims=4  verified=1  interpretive=3  general-knowledge=0  cut=0  tools=1(cost_ledger)  14944ms
+  expect: route=synthesis  -> MET
+  A:
+    ORD-000091 carries the largest single tardiness cost line on this board: 147,776.67, with a projected completion of 2026-01-15T18:53:00Z.  [record: 7c20e6ef...]
+    The next-largest lines are ORD-000126 at 127,400.00 and ORD-000056 at 69,813.75, both well below ORD-000091's cost. (based on the 60 row(s) cost_ledger returned, not the whole plan)  [synthesis — read from: 4aa8f168, 29a70417]
+    The ledger's per-order tardiness rows returned to me were marked truncated, so this is the largest line among the rows read, not a confirmed maximum over every order's tardiness line. (based on the 60 row(s) cost_ledger returned, not the whole plan)  [synthesis — read from: ee4e0504]
+    Given the rows are ordered from highest to lowest cost and ORD-000091's line is well clear of the next entry, it is very likely the single largest tardiness cost line on the whole board.  [synthesis — read from: ee4e0504, 7c20e6ef, 4aa8f168]
+    [rendered by: synthesis (claude-sonnet-5) — 1 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT route=synthesis]
+Q[113]: why would the solver leave a machine idle when there is work waiting
+  route=synthesis  source=parse  conf=0.72  register=synthesis  renderer=synthesis (claude-sonnet-5) — 4 tool call(s)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=unmatched  conf=0.72  5697ms
+  synthesis: claims=4  verified=0  interpretive=1  general-knowledge=1  cut=2  ungrounded-load-bearing=2  tools=4(spec_lookup,entity_vocabulary,machine_occupancy,constraint_catalog)  22305ms
+  expect: route=synthesis  -> MET
+  A:
+    On PRESS-FAST, open capacity was idle for real stretches even though the machine is 85.5% utilized overall (9,776 working minutes of 11,430 open minutes): 193 open minutes before ORD-000245 on 2026-01-19, 100 minutes before ORD-000149 on 2026-01-20, 129 minutes before ORD-000105 on 2026-01-23, and 395 minutes before ORD-000205 on 2026-01-26.  [synthesis — read from: 9801090d, 09c3c954, 12340644]
+    In general, a solver holds a machine open rather than starting the next job early when doing so would violate a hard constraint — a predecessor operation not yet complete, a release date not yet reached, or a calendar window not yet open — since starting early is not a choice the solver is free to make against those constraints.  [general knowledge — how scheduling works in general, not a fact about this plan]
+
+    Where a line is marked general knowledge it draws on how scheduling and plants behave generally — not on this plan's records, so there is nothing here to check it against.
+
+    One step of my reasoning didn't hold up against the records, so I couldn't ground part of it and I've left that step out rather than state it.
+    [rendered by: synthesis (claude-sonnet-5) — 4 tool call(s) | register: synthesis]
+  >> sidecar[ungrounded-load-bearing]: 2 load-bearing claim(s) could not be grounded and were cut
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT route=synthesis]
+Q[117]: is the work spread evenly across the machines
+  route=synthesis  source=parse  conf=0.92  register=synthesis  renderer=synthesis (claude-sonnet-5) — 5 tool call(s)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=unmatched  conf=0.92  1199ms
+  synthesis: claims=4  verified=1  interpretive=2  general-knowledge=0  cut=1  ungrounded-load-bearing=1  tools=5(entity_vocabulary,machine_occupancy,machine_occupancy,machine_occupancy,machine_occupancy)  20897ms
+  expect: route=synthesis  -> MET
+  A:
+    Work is not spread evenly across the machines: utilization ranges from 61.1% on ASM-01 to 91.6% on CUT-01, with CUT-02 at 88.6% and PRESS-FAST at 85.5%.  [synthesis — read from: 0ec64e4c, 440fbc69, df5aa682]
+    ASM-01 has 3537 minutes of working time against 5785 minutes of open capacity; CUT-01 has 12505 working minutes against 13656 open; CUT-02 has 7164 against 8082; PRESS-FAST has 9776 against 11430.  [record: 0ec64e4c...]
+    I checked four of the plant's 15 machines (ASM-01, CUT-01, CUT-02, PRESS-FAST); the other 11 machines were not read, so this is a partial picture rather than a plant-wide count. (based on the 60 row(s) machine_occupancy returned, not the whole plan)  [synthesis — read from: 8a0947ab, 9fdeb5ba, 408e010b]
+
+    Part of what I drafted was neither something I could check against your board nor general scheduling knowledge, so I left it out rather than state it with a label that would have been wrong either way.
+    [rendered by: synthesis (claude-sonnet-5) — 5 tool call(s) | register: synthesis]
+  >> sidecar[ungrounded-load-bearing]: 1 load-bearing claim(s) could not be grounded and were cut
+------------------------------------------------------------------------
+# ===========================================================================
+# G — THE GOAL FAMILY (R-TG4). The founder's question VERBATIM, plus the two
+# other phrasings the census measured reaching two OTHER routes — because the
+# floor attaches to the QUESTION FAMILY and a rule wired to one route would
+# cover a third of its own family and look finished (4A.y Item 1).
+# Graded (h).
+# ===========================================================================
+# [RESET — conversation cleared]
+Q[127]: there are a lot of orders late what reason can i give my boss and what will help lessen the impact
+  route=lateness-cause  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=370  records=610  refs=255/13/102
+  parse: intent=lateness-cause  conf=0.92  1210ms
+  shadow: agreed=-  contradicted=tardiness_total,total_orders  ** DIVERGED — R-AI5(7): DEMOTE **  provenance-strengthened=yes  cost 24182ms (not the planner's)
+  A:
+    You asked what to say to my boss. Here is the one-sentence version, and the one thing that would move it most.
+
+    102 of the 158 orders scheduled in this window finish after their due date. For 58 of them the recorded driver is the same one: the machine was busy with other work.
+
+    The single biggest lever this board evidences:
+      ORD-000091 carries the largest tardiness cost on the board at $147,776.67 — more than any other single order.
+      It was held on CUT-02 until 2026-01-08 08:57 by ORD-000219; that is the specific hold to attack if you want this number down.
+
+    The order-by-order breakdown is behind this — 99 orders with a concrete hold recorded, plus the full evidence chain. Ask for it and I'll lay it out.
+
+    Note: the cost figures above are not proven optimal — the solver ran out of budget with a gap of 89.6% still open, so a cheaper schedule may exist and could be up to that much cheaper.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+  >> sidecar[shadow-divergence]: promoted route 'lateness-cause' contradicts the synthesis shadow on tardiness_total, total_orders — R-AI5(7): DEMOTE
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+Q[130]: what should i tell the customer about ORD-000091
+  route=CLARIFY  source=parse  conf=0.72  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=order-attributes  conf=0.72  order=ORD-000091<-utterance("ORD-000091")  clarify=ambiguous-intent  2230ms
+  A:
+    I need one more detail to answer "what should i tell the customer about ORD-000091".
+    I can read that two ways and the difference matters. Say which you want: the facts as they stand, or what to do about them.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+Q[133]: what do i say in the production meeting tomorrow about the late orders
+  route=briefing  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=briefing  conf=0.92  1331ms
+  A:
+    You asked what to say to the production meeting. Here is the one-sentence version, and the one thing that would move it most.
+
+    The cost optimum is NOT proved — the solver stopped with a gap of 89.6% still open.
+      Against a ledger of 1,667,467.80, that bound leaves up to 1,494,205.31 on the table — an upper limit on what a cheaper schedule could save, not a saving anyone has found.
+
+    Ask "is this schedule optimal?" for what the solver did and did not prove.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# The CONTROL for the same family: a goal question naming NOBODY. It must be
+# answered exactly as it is today — "what should I do" can be a planner
+# thinking out loud, and reshaping an answer on that guess is the false
+# positive the marker is built to avoid.
+# [RESET — conversation cleared]
+Q[140]: what should i do about all this lateness
+  route=advice  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=advice  conf=0.92  concept=UNRESOLVED<-utterance("lateness")  1885ms
+  A:
+    The first thing worth your attention on this board, ranked by consequence out of 6:
+
+      The cost optimum is NOT proved — the solver stopped with a gap of 89.6% still open.
+        Against a ledger of 1,667,467.80, that bound leaves up to 1,494,205.31 on the table — an upper limit on what a cheaper schedule could save, not a saving anyone has found.
+        -> Ask "is this schedule optimal?" for what the solver did and did not prove.
+
+    That is a ranking of what is worth looking at, not a recommendation of what to do about it.
+
+    102 order(s) finish late in this plan. I can't recommend an intervention yet — deciding whether to open overtime, add a machine, or re-prioritise isn't a question I answer today.
+
+    Here's what I can do to help you decide:
+      - explain why any order is late ("why is <order> late?")
+      - show what an order is waiting on ("why can't <order> start earlier?")
+      - price a what-if on the board: drag a job and I'll cost the move exactly.
+
+    My take: ORD-000112's 27060-minute slip traces to ORD-000252 holding CUT-01 until 2026-01-27 19:00 — pulling that earlier is the single biggest lever the board gives you today.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# ===========================================================================
+# U — THE UNTOUCHED CONTROL (i). Contracted testimony, which has its own
+# budget in its own authored copy and must reach none of this machinery.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [EXPECT route=late-orders]
+Q[148]: which orders are late and by how much
+  route=late-orders  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=102  records=102  refs=0/0/102
+  parse: intent=late-orders  conf=0.95  1903ms
+  expect: route=late-orders  -> MET
+  A:
+    Yes, there are 102 late orders in the current schedule [record: c0479435...]. Of the 280 orders known to this plan, 158 are scheduled in this window, and 102 of those scheduled orders are late, with lateness ranging from ORD-000228 at +548 min to ORD-000206 at +55860 min [record: c0479435...]. The total lateness added by this schedule is 1477827 minute(s), in addition to 626400 minute(s) that were already unavoidable at the start [record: c0479435...].
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [SELECT order=ORD-000128 machine=PAINT-01 op_seq=20]
+# [EXPECT route=why-here]
+Q[153]: why is ORD-000128 op20 placed here
+  selection: order=ORD-000128, machine=PAINT-01, op_seq=20
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  order=ORD-000128<-utterance("ORD-000128")  3010ms
+  expect: route=why-here  -> MET
+  A:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT route=machine-schedule]
+Q[157]: what is running on PRESS-FAST
+  route=machine-schedule  source=parse  conf=0.99  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=35  records=34  refs=34/1/0
+  parse: intent=machine-schedule  conf=0.99  machine=PRESS-FAST<-utterance("PRESS-FAST")  1349ms
+  expect: route=machine-schedule  -> MET
+  A:
+    PRESS-FAST: 34 operation(s):
+
+    Load: 9,776 working minute(s) against 11,430 minute(s) of open calendar between its first placement (2026-01-05 07:00) and its last (2026-01-27 17:30) — 85.5% of the open time in that stretch.
+
+    Whether that counts as overloaded is not mine to say — no utilisation threshold is declared for this plant, so the figure is stated, not judged.
+
+      [PRESS-FAST]
+        seq= 10  2026-01-05 07:00 -> 2026-01-05 11:05  ORD-000073  7h59m early
+        seq= 10  2026-01-05 11:05 -> 2026-01-05 15:20  ORD-000004  22d 18h LATE
+        seq= 10  2026-01-05 16:29 -> 2026-01-05 18:20  ORD-000106  20d 8h LATE
+        seq= 10  2026-01-06 07:00 -> 2026-01-06 14:45  ORD-000259  9d 9h early
+        seq= 10  2026-01-06 14:45 -> 2026-01-06 16:12  ORD-000096  10h09m early
+        seq= 10  2026-01-06 16:12 -> 2026-01-06 17:57  ORD-000098  2d 4h early
+        seq= 10  2026-01-07 07:00 -> 2026-01-07 13:50  ORD-000147  5d 12h LATE
+        seq= 10  2026-01-07 13:50 -> 2026-01-07 18:40  ORD-000055  17d 11h LATE
+        seq= 10  2026-01-08 07:00 -> 2026-01-08 14:59  ORD-000210  6h10m early
+        seq= 10  2026-01-08 14:59 -> 2026-01-08 16:24  ORD-000061  5d 18h LATE
+        seq= 10  2026-01-08 16:24 -> 2026-01-08 17:34  ORD-000157  2d 6h early
+        seq= 10  2026-01-08 17:34 -> 2026-01-08 18:49  ORD-000117  5d 15h early
+        seq= 10  2026-01-09 07:00 -> 2026-01-09 16:10  ORD-000040  30d 14h LATE
+        seq= 10  2026-01-09 17:14 -> 2026-01-09 18:19  ORD-000054  16d 18h LATE
+        seq= 10  2026-01-12 07:00 -> 2026-01-12 14:15  ORD-000048  12d 14h LATE
+        seq= 10  2026-01-12 14:15 -> 2026-01-12 16:54  ORD-000228  9h08m LATE
+        seq= 10  2026-01-12 17:30 -> 2026-01-12 19:00  ORD-000180  13d 19h LATE
+        seq= 10  2026-01-13 07:00 -> 2026-01-13 15:15  ORD-000120  27d 13h LATE
+        seq= 10  2026-01-13 15:15 -> 2026-01-13 18:35  ORD-000244  2d 5h early
+        seq= 10  2026-01-15 07:00 -> 2026-01-15 09:35  ORD-000260  13d 11h LATE
+        seq= 10  2026-01-15 11:05 -> 2026-01-15 17:35  ORD-000232  12d 17h LATE
+        seq= 10  2026-01-15 17:35 -> 2026-01-15 18:58  ORD-000116  12d 14h LATE
+        seq= 10  2026-01-16 07:00 -> 2026-01-16 15:47  ORD-000185  5d 13h LATE
+        seq= 10  2026-01-19 07:00 -> 2026-01-19 11:19  ORD-000245  7d 14h LATE
+        seq= 10  2026-01-19 14:45 -> 2026-01-19 17:20  ORD-000201  21d 9h LATE
+        seq= 10  2026-01-20 07:00 -> 2026-01-20 11:19  ORD-000149  28d 14h LATE
+        seq= 10  2026-01-20 11:19 -> 2026-01-20 16:44  ORD-000179  17d 16h LATE
+        seq= 10  2026-01-20 16:44 -> 2026-01-20 18:55  ORD-000031  9d 15h LATE
+        seq= 10  2026-01-21 07:00 -> 2026-01-21 13:15  ORD-000089  5d 13h LATE
+        seq= 10  2026-01-21 14:15 -> 2026-01-21 18:35  ORD-000189  8d 18h LATE
+        seq= 10  2026-01-22 07:00 -> 2026-01-22 16:51  ORD-000023  30d 14h LATE
+        seq= 10  2026-01-23 07:00 -> 2026-01-23 12:25  ORD-000105  7d 12h LATE
+        seq= 10  2026-01-26 07:00 -> 2026-01-26 17:40  ORD-000205  22d 17h LATE
+        seq= 10  2026-01-27 07:00 -> 2026-01-27 17:30  ORD-000144  15d 17h LATE
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------

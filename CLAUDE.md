@@ -189,6 +189,83 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
+**Session 4A teaching-graft (e2) — the measurement errand**, 2026-08-05 (docs/07
+v2.96, §5a.195-202; docs/04 2026-08-05 **R-TG7 ruled and BUILT** plus the
+founder's W4 lead-order arbitration; contract unchanged **1.15**, no docs/06
+doorway owed; **BOTH GOVERNED PROMPTS UNCHANGED** — parse **v18**, synthesis
+**v9**, this errand being authored copy and deterministic seams throughout;
+narrative in `docs/closeouts/4a-teaching-e2-measurement-errand.md`). Four
+measurements before anything was built; **two changed what got built.**
+**M1: (e)'s OWN HEADLINE SUCCESS QUOTE IS THE SPECIES R-TG6 (i) REFUSES.** The
+claim (e) §4 prints as proof the fix worked shipped **UNCITED** under
+`[general knowledge]` while enumerating *"reasons this product actually
+computes"* — and the predicate missed it TWICE OVER (no `computes` in the verb
+list; the verb required immediately after the noun, where an adverb sits).
+**BEING TRUE IS NOT THE DISCRIMINATOR** — both of (e)'s own 2-of-99 specimens
+were true; the subject is the LABEL, which means *there is nothing here to check
+this against*, and for a claim about this product there always is. §5a.192's
+shape one clause on: **the fix's own first output was outside the pattern
+written to catch it.** Widened by exactly two things (the verbs asserting a
+computation we perform; ONE intervening word) and **THE CENSUS IS RE-EARNED, NOT
+INHERITED**: **3 of 121** GK claims over **522 unique claim lines** / 50
+transcripts, all three genuine product claims wearing the wrong label — the
+third found BY the census (*"the solver's objective (tardiness, setup cost,
+overtime)…"*, our ledger's own components), so both halves of the widening
+earned their place independently; non-GK firings **unchanged at 2**,
+`floor_contradictions` **0 of 522**. **M4: THE "TWO SITES" CLAIM DID NOT HOLD —
+THERE WERE THREE.** An AST census of every emitter found `_render_counterfactual`
+(`what-would-change`) still saying *"It was not prevented from going earlier"*
+one line from a blocker-naming driver: **the identical defect, a different
+route, LIVE** — 4B.14 §5a.34's rule, and the reason M4 was a census and not a
+re-reading. A **FOURTH** site is NAMED and NOT fixed: `mobility_lead_line` makes
+the assertion with **no driver in hand** (`_mobility_facts` returns no such
+key), so it is PLUMBING, outside the arbitrated scope, and a test fails the day
+the payload gains one. **F3 — W4's LEAD ORDER, ARBITRATED (§5a.194(e)
+DISCHARGED): THE RECORDED DRIVER LEADS**, because a record is something this run
+wrote down and a planner can go and look at, while the scan is our own
+derivation computed now — leading with the derivation makes the record read as a
+caveat on our finding, leading with the record makes our finding read as what it
+is, **a second opinion**. **The disagreement and the refusal to adjudicate are
+UNCHANGED**; only the order moves. Verified LIVE on the fenced world, **both
+sites in one answer**. **F2 — R-TG7: AN EMPTY TEACHING DROP HAS A FLOOR
+(§5a.194(b) DISCHARGED).** When the seam cuts every claim of a teaching answer
+the authored card replaces the capability card: **a draft existed and was
+REFUSED for contradicting what this product computes** (not *"nothing was
+found"*, which is what the capability card says and is false here), **the
+per-bar door**, and **NOTHING ABOUT THE PLANT**. Three gates read never assumed
+— the LONG licence (the parse's decision quoted, not a second classifier), an
+empty claim set, and **ANY floor-refuted cut, the same precedence R-TG6 already
+gave the mixed-answer line** (two precedence rules for one fact is how the two
+drift apart), which is why the copy says *"including"* rather than a count. The
+partial line still travels. **IT DOES NOT ENTER `ANSWER_MEMORY` — ALREADY TRUE,
+NOW ASSERTED** (an all-cut answer sets `unanswerable` and the dispatch declines
+to remember one; both halves have their own test, the property being
+load-bearing). **M2 — v9 IS NON-REGRESSIVE LIVE (§5a.194(g) DISCHARGED):** v3
+routing **8/8** and **4/4** on every family, controls 2/2, problems none; v2
+**identical to (b) AND (c2) including the same single known miss**. Across **14
+teaching answers**: empty-collapse **0/14**, product-naming GK **0/14**,
+floor-refuted line **0/14** — and **(ii)=0 IS WHAT KEPT F1 AT ONE CONSTRUCTION**.
+**M3 — THE (ii) FLOOR READ IS ~1.2% OF THE ANSWER IT RIDES ON (§5a.194(d)
+DISCHARGED):** capped worst case **295.6 ms** median on the 386-bar board
+(244.0-306.6) against **22.9 ms** fenced and a **24,615 ms** synthesis median;
+paid only where a claim BOTH asserts free mobility and names a known order.
+**NOTHING OPTIMIZED** — M3 measures, the docket decides. **Python 2768/305/0
+UNCHUNKED in 14m54s** against a baseline MEASURED ON THIS TREE of
+**2735/305/0** — **+33 exactly**, the new guard file collects exactly 33,
+collection **3073 vs 3040** confirming it independently, **NO RESIDUAL**.
+**6 negative controls
+proven RED**, each GREEN AT HEAD first, every restore byte-identical by sha256,
+each aimed at its own site so a fix landing at two of three cannot pass.
+**MINTED NOTHING; both pinned boards untouched; COCKPIT UNTOUCHED, not re-run.**
+Caught in passing: `docs/07` is **CRLF in the working tree and LF in the blob**,
+so a newline-preserving rewrite still left 94 bare-LF lines — (e) §5(c)'s lesson
+at the docs layer, *working in bytes is necessary and not sufficient*.
+NOT FIXED, named: the fourth W4 site; the widened predicate is **still a pattern
+map** (a paraphrase outside it ships); **R-TG7's card has NO live specimen from
+this session** (0 of 14 — guard, control and rendered sample only); and **F1
+makes the empty collapse MORE likely by construction**, which is why F2 was
+unconditional — whether the two balance is unmeasured, so the floor was built
+before the load arrived. §5a.194(a)(c)(f)(h) unchanged. Before it:
 **Session 4A teaching-graft (e) — the teaching answer may not contradict the
 floors**, 2026-08-05 (docs/07 v2.95, §5a.190-194; docs/04 2026-08-05 **R-TG6
 ruled and BUILT** plus the founder's felt-bar ruling W6; contract unchanged

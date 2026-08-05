@@ -458,11 +458,39 @@ def _has_board_content(claim: DraftClaim, assertions: list[Assertion],
 #: about the product would drop the plainest true sentences we render.
 _PRODUCT_BEHAVIOR_PATTERNS: tuple[tuple[str, str], ...] = (
     # (a) Naming us. "In this product X" is a claim about X in this product.
+    #
+    # WIDENED BY MEASUREMENT, 4A teaching-graft (e2) F1 — AND THE SPECIMEN IS
+    # (e)'S OWN HEADLINE SUCCESS. The (e) close-out §4 quotes, as proof that the
+    # fix worked, a run-1 claim that shipped UNCITED under `[general knowledge]`:
+    #
+    #     "A job becomes impossible to move for one of a small number of
+    #      specific reasons THIS PRODUCT ACTUALLY COMPUTES, not just a lock: ..."
+    #
+    # It is TRUE, and being true is not the discriminator — both of (e)'s own
+    # 2-of-99 census specimens were true too. It enumerates what WE compute,
+    # while wearing the one label that means "there is nothing here to check
+    # this against", and there is: the docs/05 catalog and the mobility floor's
+    # own verdict vocabulary both speak to it. So it is the species (i) refuses,
+    # and the shipped pattern missed it TWICE OVER — no "computes" in the verb
+    # list, and the verb required to sit immediately after the noun where this
+    # sentence has an adverb in between.
+    #
+    # The widening is therefore exactly two things and no more: the verbs that
+    # assert a COMPUTATION we perform, and ONE intervening word. Measured over
+    # the whole committed claim corpus (50 transcripts, 522 unique claim lines,
+    # 121 of them general-knowledge) it adds exactly ONE further firing — "The
+    # scheduler itself does not pick a tiebreak rule from a menu — it is the
+    # solver's objective (tardiness, setup cost, overtime) plus hard
+    # constraints..." — which names our ledger's own components and is the same
+    # species, found independently. Firings on the 401 non-general-knowledge
+    # claim lines are UNCHANGED at 2.
     ("it states what this product does",
      r"\b(?:in|on|with|for|within)\s+th(?:is|e)\s+product\b"
      r"|\bth(?:is|e)\s+(?:product|system|engine|scheduler)\s+"
+     r"(?:\w+\s+)?"
      r"(?:can|cannot|can't|does|doesn't|will|won't|only|never|always|"
-     r"treats?|models?|supports?)\b"
+     r"treats?|models?|supports?|comput\w+|calculat\w+|determin\w+|"
+     r"decid\w+|enforc\w+|recogni[sz]\w+|consider\w+|distinguish\w+)\b"
      r"|\bwe\s+(?:only|never|always)\s+\w+\b"),
     # (b) docs/05's own vocabulary. "proven in core" is a STATUS COLUMN value in
     #     the constraint catalog — a fact about what we have built and verified,

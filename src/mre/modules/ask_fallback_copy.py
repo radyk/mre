@@ -457,6 +457,42 @@ SYNTHESIS_FLOOR_REFUTED = (
     "about a specific bar and I'll show you the verdict itself rather than a "
     "rule of thumb about it.")
 
+# R-TG7 — AN EMPTY TEACHING DROP HAS A FLOOR (Session 4A teaching-graft (e2),
+# docs/04 2026-08-05).
+#
+# The line above renders BESIDE surviving claims. Session (e) measured, live, the
+# case where none survive: a teaching answer whose every claim the seam cut, and
+# the answer then falls to the capability card — "I couldn't answer that one from
+# the evidence. I read what I could and none of it grounds an answer I'd stand
+# behind". Honest, and useless, and worse than useless in one exact way: THE
+# COLLAPSE DELETES THE ONE THING THE PLANNER WAS OWED. A rule was drafted and
+# refused because this product can show it wrong; the capability card says
+# instead that nothing was found, which is a different fact and a false one here.
+#
+# THREE THINGS, AND NO MORE. (1) A draft existed and was REFUSED, and refused for
+# contradicting what this product computes. (2) The per-bar door — the Lyon rule,
+# a rejection holding a door handle: the rule of thumb was standing in for a
+# verdict, and the verdict is the part that is actually checkable. (3) NOTHING
+# ABOUT THE PLANT. This card is a statement about our own read, and the one thing
+# it may never do is manufacture a claim about the plant out of the fact that we
+# refused one.
+#
+# The wording says "including" rather than a count, and that is load-bearing: the
+# card renders when ANY cut in the set is a floor refutation — the same
+# precedence R-TG6 already gave the mixed-answer line, because two precedence
+# rules for one fact is how the two drift apart — so a sentence saying "all of
+# them" would be false on a mixed set and a sentence carrying a count would need
+# to say which count it meant.
+SYNTHESIS_FLOOR_REFUTED_EMPTY = (
+    "I drafted an answer to that and cut every line of it — including a general "
+    "rule about how this product decides what can move, which contradicted what "
+    "this product actually computes. I'd rather leave the question open than "
+    "teach you a rule I can show you is wrong.")
+SYNTHESIS_FLOOR_REFUTED_EMPTY_DOOR = (
+    "Name a bar — an order and an operation — and I'll show you the mobility "
+    "verdict this run computed for it. That is what the rule of thumb was "
+    "standing in for, and unlike the rule it is something you can check.")
+
 # The budget ran out before the read was complete (CU1: an honest partial, never a
 # stall). `{tools}` names what was consulted.
 SYNTHESIS_PARTIAL = (

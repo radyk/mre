@@ -1,0 +1,116 @@
+{
+  "target": "rolling-c32a6140-b6b",
+  "snapshot": "snap-rolling",
+  "started_at": "2026-08-05T10:19:02Z",
+  "llm_mode": "live",
+  "questions": 16,
+  "llm_calls": 68,
+  "parser_stats": {
+    "calls": 22,
+    "parses": 22,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 2,
+    "unavailable": 0,
+    "unreachable": 0,
+    "median_latency_ms": 1419.0710000002582,
+    "malformed_samples": []
+  },
+  "synth_stats": {
+    "syntheses": 10,
+    "calls": 45,
+    "tool_calls": 35,
+    "malformed": 0,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 0,
+    "median_latency_ms": 24260.49824999791,
+    "p90_latency_ms": 34302.88209999708
+  },
+  "synthesis": {
+    "answers": 9,
+    "claims": 38,
+    "verified": 7,
+    "interpretive": 22,
+    "general_knowledge": 6,
+    "failed_and_cut": 3,
+    "deferred": 0,
+    "ungrounded_load_bearing": 3,
+    "unanswerable": 0,
+    "budget_exhausted": 0,
+    "tool_calls": 31,
+    "tool_histogram": {
+      "capability_registry": 1,
+      "constraint_catalog": 3,
+      "cost_ledger": 3,
+      "entity_vocabulary": 1,
+      "gate_findings": 2,
+      "lateness_set": 6,
+      "machine_occupancy": 7,
+      "placements_for_machine": 1,
+      "placements_for_order": 3,
+      "spec_lookup": 4
+    },
+    "calls_per_answer": {
+      "1": 1,
+      "2": 2,
+      "3": 3,
+      "5": 1,
+      "6": 2
+    }
+  },
+  "shadow": {
+    "shadowed": 1,
+    "clean": 1,
+    "diverged": 0,
+    "unchecked": 0,
+    "provenance_strengthened": 1,
+    "by_intent": {
+      "lateness-cause": {
+        "shadowed": 1,
+        "diverged": 0,
+        "unchecked": 0
+      }
+    }
+  },
+  "latency": {
+    "route": {
+      "n": 7,
+      "median_ms": 2227.6,
+      "p90_ms": 4454.7
+    },
+    "synthesis": {
+      "n": 9,
+      "median_ms": 24615.3,
+      "p90_ms": 36855.1
+    }
+  },
+  "graded_expectations": {
+    "graded": 8,
+    "met": 8
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "ungrounded-load-bearing": 3
+  },
+  "findings": [
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 51,
+      "question": "what generally decides whether an operation can be moved earlier on a board like this one",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 75,
+      "question": "how does a scheduler decide which of two orders competing for the same machine goes first",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 86,
+      "question": "what does an optimality gap actually mean and how should i read one",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    }
+  ]
+}

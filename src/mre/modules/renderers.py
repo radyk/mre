@@ -2032,6 +2032,40 @@ class TemplateRenderer:
     # Session 4A.5b (R-AI5(4)) — the labeled-synthesis answer surface.
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _empty_teaching_floor(lines: list[str], kf: dict) -> bool:
+        """R-TG7. Render the empty-drop card, or return False and leave `lines`
+        untouched for the ordinary floor.
+
+        A PURE-ISH PREDICATE WITH ITS OWN NAME, so the branch can be tested
+        directly with injected key-facts rather than believed because it was
+        written down — the shape (c2) gave `classify_teaching_turn` for exactly
+        this reason. It appends nothing on the False path, which is what makes
+        the caller's fall-through safe.
+
+        It asserts NOTHING about the plant. Everything it says is a fact about
+        our own read: a draft existed, it was refused, and here is the door to
+        the thing the refused rule was standing in for.
+        """
+        from mre.modules.ask_fallback_copy import (
+            SYNTHESIS_FLOOR_REFUTED_EMPTY, SYNTHESIS_FLOOR_REFUTED_EMPTY_DOOR,
+        )
+        from mre.modules.claim_verifier import FLOOR_REFUTED_PREFIX
+        if kf.get("licence") != "long":
+            return False
+        if kf.get("claims"):
+            return False
+        # ANY refuted cut in the set, which is R-TG6's own precedence at the
+        # mixed-answer line. The same rule at both seams, deliberately: a second
+        # precedence rule for one fact is how the two drift apart.
+        cuts = kf.get("cut") or []
+        if not any((c.get("reason") or "").startswith(FLOOR_REFUTED_PREFIX)
+                   for c in cuts):
+            return False
+        lines.append(SYNTHESIS_FLOOR_REFUTED_EMPTY)
+        lines.append(SYNTHESIS_FLOOR_REFUTED_EMPTY_DOOR)
+        return True
+
     def _render_synthesis(self, lines: list[str], bundle: ExplanationBundle) -> None:
         """CLAIM BLOCKS with per-claim provenance visible.
 
@@ -2054,6 +2088,35 @@ class TemplateRenderer:
         tools = ", ".join(consulted) or "nothing"
 
         if kf.get("unanswerable") or not claims:
+            # R-TG7 — AN EMPTY TEACHING DROP HAS A FLOOR (4A teaching-graft
+            # (e2), docs/04 2026-08-05). A teaching answer whose every claim the
+            # R-TG6 seam cut lands here, and the capability card below is FALSE
+            # of it: a rule WAS drafted, and it was refused for contradicting
+            # what this product computes, not for want of anything to read.
+            #
+            # Gated on three facts and all three are read, never assumed: the
+            # LONG licence (granted to `teaching` and to nothing else, so this
+            # is the parse's decision quoted rather than a second classifier),
+            # an empty claim set, and at least one FLOOR-REFUTED cut. Without
+            # the third the ordinary floor is right — nothing was refused, so
+            # the card's central sentence would be a false one.
+            if self._empty_teaching_floor(lines, kf):
+                # The partial line still travels where it is true. "Every line
+                # was refused" and "the budget ran out before I finished
+                # looking" are different facts, and dropping the second because
+                # the first is more interesting is how a floor starts lying by
+                # omission (4B.27 Item 9's discipline, at this branch's twin).
+                if kf.get("budget_exhausted") or kf.get("timed_out"):
+                    lines.append("")
+                    lines.append(SYNTHESIS_PARTIAL.format(tools=tools))
+                offers = kf.get("offers") or []
+                if offers:
+                    lines.append("")
+                    lines.append(SYNTHESIS_FLOOR_DOORS)
+                    for offer in offers:
+                        lines.append(f"  - {offer}")
+                lines.append("")
+                return
             # Session 4B.27 Item 9 — the lead sentence is gated on the SAME fact
             # the line below it has always been gated on. A read that did not
             # happen is not described as a read.
@@ -2874,16 +2937,31 @@ class TemplateRenderer:
             # stated as OUR scan and the disagreement is named rather than
             # resolved. Both facts survive; only the assertion goes.
             if counterfactual_contradicts_driver(driver):
+                # F3 (4A teaching-graft (e2)) — THE RECORD LEADS. (e) §8(e) left
+                # this undecided: the planner now reads two paragraphs where one
+                # confident sentence used to be, and which should come first was
+                # not ruled. Arbitrated 2026-08-05: the RECORDED DRIVER leads and
+                # the calendar scan follows, at every site.
+                #
+                # The reason is what each paragraph IS. The driver is a RECORD —
+                # something this run wrote down and a planner can go and look at.
+                # The scan is OUR OWN derivation, computed now, from a model that
+                # holds everything else still. Leading with the derivation and
+                # correcting it with the record makes the record read as a
+                # caveat on our finding; leading with the record makes our
+                # finding read as what it is, a second opinion. The DISAGREEMENT
+                # and the REFUSAL TO ADJUDICATE are unchanged — that is the
+                # ruling and it is not being reopened. Only the order moves.
                 lines.append(
-                    f"Holding every other placement where it is, {machine} had "
-                    f"open, unheld time from {at} — so as far as this scan of "
-                    f"the calendar goes, {name} {op} was not forced into "
-                    f"{when}.")
+                    f"The assignment decision records its driver as {driver}, "
+                    f"which names a constraint rather than a preference.")
                 lines.append(
-                    f"But the assignment decision records its driver as "
-                    f"{driver}. Those two readings disagree, and I can't tell "
-                    f"you which the solver acted on — so I won't tell you "
-                    f"nothing was holding it.")
+                    f"My own scan reads it the other way: holding every other "
+                    f"placement where it is, {machine} had open, unheld time "
+                    f"from {at}, so as far as that scan goes {name} {op} was "
+                    f"not forced into {when}. Those two readings disagree, and "
+                    f"I can't tell you which the solver acted on — so I won't "
+                    f"tell you nothing was holding it.")
             else:
                 lines.append(
                     f"Nothing prevented {name} {op} from starting earlier. "
@@ -2986,11 +3064,16 @@ class TemplateRenderer:
         # lead may say the room was there and may NOT say nothing held it.
         driver = kf.get("chosen_driver")
         if counterfactual_contradicts_driver(driver):
-            return (f"It may be movable — {machine} had open, unheld time "
-                    f"before where {name} sits. But the assignment decision "
-                    f"records its driver as {driver}, which names a constraint "
-                    f"rather than a preference, so the record and my calendar "
-                    f"scan do not agree about this bar. Here is what each says.")
+            # F3 — the record leads here too. Same arbitration, same reason; see
+            # the `chose` branch of `_render_why_here` for the argument. Two
+            # authored strings because a LEAD and a BODY read differently to a
+            # planner, one ORDER because the order is the ruling.
+            return (f"The assignment decision for {name} records its driver as "
+                    f"{driver}, which names a constraint rather than a "
+                    f"preference. My own scan disagrees — {machine} had open, "
+                    f"unheld time before where {name} sits — so it may be "
+                    f"movable, but the record and my calendar scan do not agree "
+                    f"about this bar. Here is what each says.")
         return (f"It can be moved — nothing was holding {name} back. "
                 f"{machine} had open, unheld time before where it sits, so "
                 f"this placement was the solver's choice rather than the only "
@@ -3195,18 +3278,43 @@ class TemplateRenderer:
         # `why-here` was built to end, wearing a helpful face.
         if verdict == "chose":
             binding = kf.get("binding") or {}
-            lines.append(
-                f"Nothing has to change for {name} {op} to start earlier: "
-                f"holding every other placement where it is, {machine} had "
-                f"open, unheld time from {binding.get('at')}"
-                + (f", {_dur_min(kf.get('slack_min'))} before it started"
-                   if kf.get("slack_min") else "")
-                + ". It was not prevented from going earlier — the solver "
-                  "preferred this placement.")
             driver = kf.get("chosen_driver")
-            if driver:
-                lines.append(f"The assignment decision records its driver as "
-                             f"{driver}.")
+            room = (f"holding every other placement where it is, {machine} had "
+                    f"open, unheld time from {binding.get('at')}"
+                    + (f", {_dur_min(kf.get('slack_min'))} before it started"
+                       if kf.get("slack_min") else ""))
+            # W4, AT THE THIRD SITE — FOUND BY MEASUREMENT, NOT BY THE (e)
+            # SESSION (4A teaching-graft (e2), M4). (e) §2(d) censused the
+            # counterfactual-vs-driver defect at TWO emitting sites and fixed
+            # both. An AST census of every place that renders the assertion
+            # found a third, here, on the `what-would-change` route: this branch
+            # said "It was not prevented from going earlier — the solver
+            # preferred this placement" and then, one line down, printed a
+            # driver naming a blocker. The identical defect, on a different
+            # route, still live — "a defect class fixed at one seam is not
+            # fixed" (4B.14 §5a.34), and the reason M4 was a census rather than
+            # a re-reading of the close-out.
+            #
+            # The ruling applies whole: neither fact is deleted, only the
+            # ASSERTION goes; the disagreement is named and NOT adjudicated; and
+            # the record leads (F3).
+            if counterfactual_contradicts_driver(driver):
+                lines.append(
+                    f"The assignment decision records its driver as {driver}, "
+                    f"which names a constraint rather than a preference.")
+                lines.append(
+                    f"My own scan reads it the other way: {room}. Those two "
+                    f"readings disagree, and I can't tell you which the solver "
+                    f"acted on — so I won't tell you nothing has to change.")
+            else:
+                lines.append(
+                    f"Nothing has to change for {name} {op} to start earlier: "
+                    + room
+                    + ". It was not prevented from going earlier — the solver "
+                      "preferred this placement.")
+                if driver:
+                    lines.append(f"The assignment decision records its driver "
+                                 f"as {driver}.")
             self._render_unpriceable(lines, kf)
             self._render_not_weighed(lines, kf)
             lines.append("")
