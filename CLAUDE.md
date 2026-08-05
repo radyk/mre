@@ -88,6 +88,14 @@ here.
   worktree empties the REAL data root and leaves its directory standing, which
   is what the evidence of 2026-08-04 points at. To give a worktree a data root,
   copy one or point `MRE_DATA_ROOT` at it.
+- **SESSIONS APPEND TO THIS FILE ONLY POINTER-FORM LINES** (R-CM1, 2026-08-05).
+  A ruling code, an id, a one-sentence discipline — that is the whole permitted
+  shape. **Prose, rationale, measurements and changelog content are BORN in
+  `docs/04` or `docs/07` and referenced from here**, never written here first
+  and relocated later. This file is loaded into every session and is enforced at
+  **150,000 characters** by `tests/test_claude_md_budget.py`. A session whose
+  CLAUDE.md diff adds **more than ~15 lines** is presumptively doing it wrong and
+  **says so in its close-out**. Full rules-of-writing text: docs/04, 2026-08-05.
 
 ## Repository layout
 
@@ -188,877 +196,92 @@ kept offering to follow it.
 
 ## Current status
 
-**Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation. Last closed:
-**Session 4A teaching-graft (e2) — the measurement errand**, 2026-08-05 (docs/07
-v2.96, §5a.195-202; docs/04 2026-08-05 **R-TG7 ruled and BUILT** plus the
-founder's W4 lead-order arbitration; contract unchanged **1.15**, no docs/06
-doorway owed; **BOTH GOVERNED PROMPTS UNCHANGED** — parse **v18**, synthesis
-**v9**, this errand being authored copy and deterministic seams throughout;
-narrative in `docs/closeouts/4a-teaching-e2-measurement-errand.md`). Four
-measurements before anything was built; **two changed what got built.**
-**M1: (e)'s OWN HEADLINE SUCCESS QUOTE IS THE SPECIES R-TG6 (i) REFUSES.** The
-claim (e) §4 prints as proof the fix worked shipped **UNCITED** under
-`[general knowledge]` while enumerating *"reasons this product actually
-computes"* — and the predicate missed it TWICE OVER (no `computes` in the verb
-list; the verb required immediately after the noun, where an adverb sits).
-**BEING TRUE IS NOT THE DISCRIMINATOR** — both of (e)'s own 2-of-99 specimens
-were true; the subject is the LABEL, which means *there is nothing here to check
-this against*, and for a claim about this product there always is. §5a.192's
-shape one clause on: **the fix's own first output was outside the pattern
-written to catch it.** Widened by exactly two things (the verbs asserting a
-computation we perform; ONE intervening word) and **THE CENSUS IS RE-EARNED, NOT
-INHERITED**: **3 of 121** GK claims over **522 unique claim lines** / 50
-transcripts, all three genuine product claims wearing the wrong label — the
-third found BY the census (*"the solver's objective (tardiness, setup cost,
-overtime)…"*, our ledger's own components), so both halves of the widening
-earned their place independently; non-GK firings **unchanged at 2**,
-`floor_contradictions` **0 of 522**. **M4: THE "TWO SITES" CLAIM DID NOT HOLD —
-THERE WERE THREE.** An AST census of every emitter found `_render_counterfactual`
-(`what-would-change`) still saying *"It was not prevented from going earlier"*
-one line from a blocker-naming driver: **the identical defect, a different
-route, LIVE** — 4B.14 §5a.34's rule, and the reason M4 was a census and not a
-re-reading. A **FOURTH** site is NAMED and NOT fixed: `mobility_lead_line` makes
-the assertion with **no driver in hand** (`_mobility_facts` returns no such
-key), so it is PLUMBING, outside the arbitrated scope, and a test fails the day
-the payload gains one. **F3 — W4's LEAD ORDER, ARBITRATED (§5a.194(e)
-DISCHARGED): THE RECORDED DRIVER LEADS**, because a record is something this run
-wrote down and a planner can go and look at, while the scan is our own
-derivation computed now — leading with the derivation makes the record read as a
-caveat on our finding, leading with the record makes our finding read as what it
-is, **a second opinion**. **The disagreement and the refusal to adjudicate are
-UNCHANGED**; only the order moves. Verified LIVE on the fenced world, **both
-sites in one answer**. **F2 — R-TG7: AN EMPTY TEACHING DROP HAS A FLOOR
-(§5a.194(b) DISCHARGED).** When the seam cuts every claim of a teaching answer
-the authored card replaces the capability card: **a draft existed and was
-REFUSED for contradicting what this product computes** (not *"nothing was
-found"*, which is what the capability card says and is false here), **the
-per-bar door**, and **NOTHING ABOUT THE PLANT**. Three gates read never assumed
-— the LONG licence (the parse's decision quoted, not a second classifier), an
-empty claim set, and **ANY floor-refuted cut, the same precedence R-TG6 already
-gave the mixed-answer line** (two precedence rules for one fact is how the two
-drift apart), which is why the copy says *"including"* rather than a count. The
-partial line still travels. **IT DOES NOT ENTER `ANSWER_MEMORY` — ALREADY TRUE,
-NOW ASSERTED** (an all-cut answer sets `unanswerable` and the dispatch declines
-to remember one; both halves have their own test, the property being
-load-bearing). **M2 — v9 IS NON-REGRESSIVE LIVE (§5a.194(g) DISCHARGED):** v3
-routing **8/8** and **4/4** on every family, controls 2/2, problems none; v2
-**identical to (b) AND (c2) including the same single known miss**. Across **14
-teaching answers**: empty-collapse **0/14**, product-naming GK **0/14**,
-floor-refuted line **0/14** — and **(ii)=0 IS WHAT KEPT F1 AT ONE CONSTRUCTION**.
-**M3 — THE (ii) FLOOR READ IS ~1.2% OF THE ANSWER IT RIDES ON (§5a.194(d)
-DISCHARGED):** capped worst case **295.6 ms** median on the 386-bar board
-(244.0-306.6) against **22.9 ms** fenced and a **24,615 ms** synthesis median;
-paid only where a claim BOTH asserts free mobility and names a known order.
-**NOTHING OPTIMIZED** — M3 measures, the docket decides. **Python 2768/305/0
-UNCHUNKED in 14m54s** against a baseline MEASURED ON THIS TREE of
-**2735/305/0** — **+33 exactly**, the new guard file collects exactly 33,
-collection **3073 vs 3040** confirming it independently, **NO RESIDUAL**.
-**6 negative controls
-proven RED**, each GREEN AT HEAD first, every restore byte-identical by sha256,
-each aimed at its own site so a fix landing at two of three cannot pass.
-**MINTED NOTHING; both pinned boards untouched; COCKPIT UNTOUCHED, not re-run.**
-Caught in passing: `docs/07` is **CRLF in the working tree and LF in the blob**,
-so a newline-preserving rewrite still left 94 bare-LF lines — (e) §5(c)'s lesson
-at the docs layer, *working in bytes is necessary and not sufficient*.
-NOT FIXED, named: the fourth W4 site; the widened predicate is **still a pattern
-map** (a paraphrase outside it ships); **R-TG7's card has NO live specimen from
-this session** (0 of 14 — guard, control and rendered sample only); and **F1
-makes the empty collapse MORE likely by construction**, which is why F2 was
-unconditional — whether the two balance is unmeasured, so the floor was built
-before the load arrived. §5a.194(a)(c)(f)(h) unchanged. Before it:
-**Session 4A teaching-graft (e) — the teaching answer may not contradict the
-floors**, 2026-08-05 (docs/07 v2.95, §5a.190-194; docs/04 2026-08-05 **R-TG6
-ruled and BUILT** plus the founder's felt-bar ruling W6; contract unchanged
-**1.15**, no docs/06 doorway owed; parse prompt unchanged **v18**, synthesis
-prompt **v8 -> v9** (rule 15); narrative in
-`docs/closeouts/4a-teaching-e-floor-truth.md`). **THE C9 FOUNDER ROUND FOUND THE
-DEFECT ITS OWN AXIS WAS WRITTEN TO NAME, ON ITS FIRST RUN** (round run by Daryn
-2026-08-04/05, artifacts committed at
-`tools/spikes/teaching_graft_c/c9_answers/`). Q7 on the fenced world: the
-mobility floor computes **BOXED_IN** for ORD-BOX op20 — bound earlier, nothing
-later, **no lock and no pin in it anywhere**. Q9, minutes later, teaching intent,
-wearing the general-knowledge label: *"In this product, a job becomes immovable
-ONLY through a `frozen_assignment` or pinned constraint declared in `locks.csv`
-… nothing else in the catalog removes an operation's mobility outright."* Seven
-tool calls, every one hunting LOCK RECORDS; the machinery that had already
-answered the question was never consulted, and the same answer then offered
-ORD-BOX as an example of a job that is NOT stuck. **THE FOUNDER READ IT AND
-REPORTED HIMSELF SATISFIED** — not a visible error, a confident reader carrying a
-wrong rule out of the room. **R-TG6, THREE CLAUSES: (i)** a sentence asserting
-THIS PRODUCT's behavior may not wear the general-knowledge label (that label
-means *there is nothing here to check this against*, and for a claim about this
-product there always is) — admissible when it CITES the docs/05 catalog,
-**DROPPED when uncited**; **(ii)** a mobility statement naming a board entity is
-checked against the **floor's own verdict**, asked never re-derived (R-FF1),
-across **EVERY operation of the order** — **UNDECIDABLE contradicts nothing**,
-the ruled species at a SEVENTH seam; **(iii)** a general rule the floor's verdict
-vocabulary falsifies is refused. **(i) IS NOT A SIXTH CLAUSE OF
-`gk_disqualifiers` AND THAT WAS THE FIRST THING GOT RIGHT** — that predicate is
-read BOTH ways and direction (ii) drops precisely when there is NO board content,
-which a product claim has none of, so folding it in would have shipped the
-founding sentence as INTERPRETIVE: **a different false label on the same false
-sentence**. **(iii) IS A MAP, NOT AN ENTAILMENT CHECKER** (that is the LLM judge
-R-EX1 refused) **AND IT IS FALSIFIED BY THE VOCABULARY, NOT THE BOARD** —
-`BOXED_IN` existing in `mobility_premise` refutes "only a lock immobilizes" on
-every board, including boards holding no specimen. **PRECISION MEASURED:** the
-product-behavior predicate fires on **2 of 99** unique GK claims across every
-committed sweep and **both are genuine product claims wearing the wrong label**;
-the (iii) map fires on **0 of 485** claim lines and **3 of 3** specimens. **THE
-MAP MISSED ITS OWN FIX'S FIRST OUTPUT AND WAS WIDENED BY MEASUREMENT** — the next
-live Q9 said the same false thing as *"comes from a lock or the frozen zone, NOT
-FROM anything intrinsic"*, exclusive by contrast rather than by "only"; **a
-paraphrase outside the map still ships**, said not glossed. **THE SEAM IS A
-FLOOR, NOT THE MECHANISM:** measured, an answer whose every claim the seam cut
-collapsed to the capability card — honest and useless — so rule 15 stops the
-false rule being drafted and the seam stops the rule depending on a model
-remembering it. **W4 — A COUNTERFACTUAL MAY NOT CONTRADICT THE RECORDED DRIVER**
-(Specimen C, reproduced on the purpose-built bar): *"nothing was holding
-ORD-EARLY op10 back"* two lines from *"records its driver as CAPACITY_BLOCKED"*.
-**BOTH SENTENCES ARE TRUE IN THEIR OWN TERMS**, so **NEITHER FACT IS DELETED** —
-only the ASSERTION goes, and the copy names the disagreement and **refuses to
-resolve it**. **W5 — A CLOSED CALENDAR IS NOT A BUSY MACHINE:** *"no opening
-fits"* reads as *booked* when BOX-01 goes down for a rebuild and never returns —
-**the strongest fact in the world, never voiced** — now stated with **the bound
-named, never "never"**. **THE DISCRIMINATOR WAS WRONG TWICE FIRST** (19:00
-against a plan ending 18:33, measured); the right comparator is the SCAN HORIZON
-and the fortnight pad is now ONE constant with two readers. **W6, THE FOUNDER'S
-FELT-BAR RULING:** the synthesis preamble is **REMOVED** (it apologised for the
-route that answered the question); the GK explainer paragraph and the closing
-invitation render on the **FIRST synthesis answer of a conversation only**, on
-R-MT1's `(session, schedule)` key; **per-line labels and cut disclosures
-UNTOUCHED**. A THIRD cut kind (`SYNTHESIS_FLOOR_REFUTED`) **outranks** R-TG1's
-two — they say *I could not establish this*, it says the step WAS established and
-established FALSE. **LIVE, three cold runs of the founding question: the wrong
-rule appears 0 times**, and the answer teaches *"not just a lock"*, enumerates
-boxed-in and undecidable, and **grounds it on ORD-BOX with a record**. **Q10 is
-BYTE-IDENTICAL to the committed control.** **Python 2735/305/0 UNCHUNKED in
-15m01s against a baseline MEASURED ON THIS TREE of 2693/305/0** (work stashed in
-the same checkout — a worktree would be wrong here, (d.1)'s recorded mistake):
-**+42 exactly, the new guard file collects exactly 42**, collection 3040 vs 2998
-confirming it independently, **NO RESIDUAL**. **5 negative controls proven RED**,
-each GREEN AT HEAD first, every restore byte-identical by sha256, working in
-BYTES because this repo mixes line endings per file. **MINTED NOTHING; both
-pinned boards untouched and unread; COCKPIT UNTOUCHED, not re-run.** NOT FIXED,
-named: the map is **one floor and one sentence shape** (the next entry costs a
-tuple plus its own census, the expensive half); **the drop can EMPTY a teaching
-answer** and no floor was built for that; **(ii) is CLAIM-SCOPED**; the (ii)
-floor read is **unmeasured at demo density**; W4 leaves two paragraphs where one
-confident sentence was and which should LEAD is undecided; **the exam bank still
-cannot grade this** — a THIRD Q7-input line for the ladder session's format work;
-and **the teaching sweeps were NOT re-run**, so v9 is unmeasured live beyond the
-founding pair. Before it:
-**Micro-session 4A — the shared-body census + the certificate route**, 2026-08-04
-(docs/07 v2.93, §5a.187-189; docs/04 2026-08-04 amendment, **NOTHING NEWLY
-RULED** — the fix applies 4B.18's `unreadable` species and 4B.23's
-no-asserting-default at new sites; contract unchanged **1.15**, no docs/06
-doorway owed; **BOTH GOVERNED PROMPTS UNCHANGED** — parse **v18**, synthesis
-**v8**, this being a route body and not a prompt; narrative in
-`docs/closeouts/4a-micro-shared-body-census.md`). R1 docket item from
-(d.0)/(d.1). **`deaf` CAUGHT THE SAME SPECIMEN TWICE AND WAS RIGHT BOTH TIMES:**
-`certificate-testimony` and `data-problems` rendered ONE BODY, so the Conformance
-Gate's own voice could not state the Conformance Gate's grade. **CENSUS FIRST —
-one shared body found twice by accident implies nothing about how many exist.**
-`_route_inner` parsed with the AST (not by eye): **41 routes, 3 assemblers
-reached by more than one route, 17 pairs, and EXACTLY ONE shared body**; 0 of the
-10 `_rolling_bundle` pairs (even its five *"this isn't a rolling schedule"*
-refusals are individually worded), and the one `_schedule_query` collapse
-(`schedule`/`customer-schedule`) is reachable **only from a probe naming no
-customer**, which the parse does not produce — recorded with its caveat, not
-claimed as a defect. **THE FINDING IS THE DISCRIMINATOR COLUMN, NOT THE COUNT:**
-the other two shared assemblers are TOLD which route called them
-(`_rolling_bundle` takes `route_id`; `_schedule_query` branches on a
-subject-derived filter) and `_explain_data_problems` was handed **only
-`entity_ref`**, so it was STRUCTURALLY incapable of knowing which question it was
-answering — which is why the guard is a PROPERTY and not a string assertion.
-**THE GRADE IS IN NO EVIDENCE RECORD:** it is computed by `grade_from_outcomes`,
-written to `certificate.json`, and never emitted to the Reporter — and the gate's
-`record()` **emits nothing on a SATISFIED rule**, so an ACCEPTED submission
-leaves the evidence store *completely silent* about its own certificate
-(`_opener_certificate` has always returned `grade: None`). The brief's STOP
-condition did **not** bind: the artifact is persisted where the route can read
-it, and reading the run dir is precedented (`local_price`, 4B.30 Item 3, the
-reason `_out_dir` exists). **RECOMPUTING THE GRADE WAS REFUSED** though
-`grade_from_outcomes` is pure — a second computation of the verdict is a second
-definition of it; the contract gap is LEDGERED (S-02), not papered over. **FOUR
-STATES, NEVER TWO** (`no_run_dir`/`absent`/`unreadable`/`present`): none of the
-three degraded states falls through to the findings list, and a missing `grade`
-inside a present certificate is its own fact. **`ordered_records` IS DELIBERATELY
-UNCHANGED** — the same set testimony/remediation/triage reason over, because
-narrowing to gate-only findings would restore the contradiction 4A.2b CU2 ended.
-**BEFORE: both routes sha256 `39022447757c0386`. AFTER: the certificate route is
-`c48508b74fc723ae`** and reads *"Intake review: ACCEPTED — costing completeness
-C2. 29 gate check(s) ran against this submission: 29 satisfied."* — **and the fix
-made the 4A.2b specimen visible in one screen** (an ACCEPTED grade beside a
-standing validator advisory, which was always this board's truth and of which a
-planner previously saw only the advisory half). **THE RIDER'S ONE TRUE POSITIVE
-IS NOW EXTINCT BY REPAIR** and the guard asserts its SILENCE with a comment
-saying why silence is right; the fixture supplies `followup_of=DEEPEN`, the value
-the LIVE parse reports (confirmed again in this session's sweep at conf 0.92), so
-the silence proves the BODIES and not the gate. **A COMMITTED BANK COMMENT SAID
-THE OPPOSITE AND WAS CORRECTED** — `sweep_carried_state_v1`'s E-block read *"If
-E2 ever stops firing, the gate has become a suppression"*, true when written and
-false now, and left alone it would have told a future session to restore a firing
-whose defect had been fixed. **Python 2682/309/0 UNCHUNKED in 22m15s** against a
-baseline of **2667/309/0**, **+15 exactly and MEASURED** (collection 2991 vs 2976
-with that one file ignored). **THE UNCHUNKED RUN SUCCEEDED AND I HAD CALLED IT
-KILLED** — its output was empty only because pytest buffers under `-q` and it
-outlived my wait loop, so (d.1)'s "full runs get killed here" is now one session
-for and one against and should be tested rather than inherited. NOT comparable to
-(d.1)'s 2700/305/0: **`_data` is EMPTY in this tree** (the pinned boards are
-gitignored and absent), worth ~29 tests of collection by (d.1)'s own note. **ONE
-RED, PREDICTED AND SELF-INFLICTED:** `test_corpus::TestCurrency` went red from
-amending docs/04 without rebuilding the corpus index — the 4B.33/(c2) shape, a
-THIRD occurrence — rebuilt, 22/22. **3 NEGATIVE CONTROLS PROVEN RED**, every
-restore byte-identical by sha256, each asserting its anchor was FOUND before
-replacing. **Bank `sweep_shared_body_v1` RUN: 5/5, sidecar clean** — **and all
-five would have been MET on the broken product, which IS the Q7 input line: the
-exam grammar cannot express "these two answers must not be the same answer"**,
-the routing having been correct throughout. **MINTED NOTHING in `_data`; neither
-pinned board mutated** (the degraded certificate states are `tmp_path` fixtures).
-**COCKPIT UNTOUCHED, not re-run.** NOT FIXED, named: **S-02, the grade in no
-evidence record** (a Metric/Artifact at the gate — a contract change, the one to
-take next); S-01 the degenerate `schedule`/`customer-schedule` collapse; S-03 the
-certificate has no signature field at all (the answer says it is unsigned;
-whether one is owed is unruled); and **S-04 the census's own bound** — contracted
-routes reached through `_route_inner` only, so synthesis, prove-it and the rolling
-answerers' internal copy were NOT swept for shared prose. Before it:
-**Session 4A teaching-graft (d.1) — carried answer state**, 2026-08-04 (docs/07
-v2.92, §5a.181-186; docs/04 2026-08-04 **R-MT1 and R-LD5 ruled and BUILT**;
-contract unchanged **1.15**, no docs/06 doorway owed; **BOTH GOVERNED PROMPTS
-UNCHANGED** — parse **v18**, synthesis **v8**, every fix being
-deterministic-seam work; narrative in
-`docs/closeouts/4a-teaching-d1-carried-state.md`). R1 item 2, session (d.1); the
-(d.0) recon measured and ruled nothing, this session fixes ONE family from its
-ledger. **THE RECON'S ONE UNCONFIRMED INFERENCE WAS CHECKED FIRST AND IS NOW AN
-OBSERVATION**: in a real Chromium, after a real `drag.accept()` rebound the board
-to its child, the very next `/ask` went to the CHILD's url carrying the PARENT
-board's turn verbatim and the same session id. **R-MT1: CARRIED ANSWER STATE IS
-SCHEDULE-SCOPED, CLEARED ON REBIND, AND HONEST ABOUT ITS OWN ABSENCE.**
-`ANSWER_MEMORY`, `SYNTHESIS_MEMORY` and `_DELIVERED` key on **(session_id,
-schedule_id)** — `ParseMemory.key` already carried `"sched"`, which is why the
-parse cache was safe and the three answer-bearing stores were not; **`forget` is
-by SESSION and takes every board with it**, because a conversation that straddled
-two boards is the defect the key fixes and is still one conversation. **ALL THREE
-CLAUSES ARE SEPARATELY LOAD-BEARING** and the guard's
-`Panel.rebind(clear_client=False)` exists so clause 1 is provable without clause
-2 helping. Live, both directions: the cross-board prove-it goes **102 records ->
-0** and says *"The answer you're pointing at was about the PREVIOUS VERSION of
-this plan…"*. **THE SESSION ID SURVIVES A REBIND, DELIBERATELY** (re-minting
-would fragment the ledger's own session thread, R-AI5(5)); the rendered turns
-stay on screen, for the same reason `appendSuperseded` leaves the log alone.
-**A GAP THE CENSUS FOUND AND NO TEST HAD:** `forget_deliveries` has called itself
-*"the ONE place that clears server-side conversation state"* since 4B.22 and
-cleared TWO of THREE — `SYNTHESIS_MEMORY` survived every RESET (4B.16a's fifth
-channel, at the store added after it). **R-LD5: DISCLOSURE FOLLOWS THE SUBJECT,
-NOT THE RESOLVER** — `SubjectSource.CONVERSATION` is added, so a subject the
-PARSE MODEL recovered from the history block is no longer indistinguishable from
-a typed one; live, the P2b arm now reads *"resolved against ORD-000073 (read from
-what you asked earlier — you didn't name it in this question); and about op10,
-read from your earlier question"* against a note that was **empty**, and
-`named_op_seq_source` walks the same subject as `named_op_seq` so the GRAIN and
-the ORDER can never be attributed to different channels. **BOTH TRUE NEGATIVES
-HELD** (a typed subject discloses nothing; the two non-binding arms still CLARIFY
-with an empty note). **D-01: THE WIRE THAT WAS NEVER RUN, AND THE DELETION IS THE
-BIGGER HALF** — `_explain_drill_down` had a `history` argument, a docstring
-explaining it, and no caller since the day it was written, so it fell to
-`findings[0]`; measured before, one turn after a teaching answer about frozen
-zones, it returned *"CUT-01 is in a workload too dense to schedule cleanly
-[WARNING]"*. Now both gestures ground on the SAME two stores in the SAME ORDER
-(synthesis claim, then answer memory) and below the ordinal branch render through
-one assembler; **with nothing carried the answer SAYS SO and offers the door**,
-because a default that ASSERTS manufactures a claim out of a gap (4B.23's rule, a
-third site). **D-06:** a zero-record TESTIMONY answer was called *"authored copy —
-it states what this product can and can't do"*; the split is by ROUTE
-(`PRODUCT_META_ROUTES`, a **judgement about four ids** neither `ROUTE_TAXONOMY`
-nor `REGISTER_BY_SUBJECT` can supply) and `prove_it_case` is the one definition.
-**TWO OF THIS SESSION'S OWN FIXES WERE WRONG ON THEIR FIRST DRAFT AND THE SAME
-INSTRUMENT CAUGHT BOTH — NEITHER BY A UNIT TEST.** The D-07 deaf gate first read
-`followup_of` ALONE and **swallowed the one true positive the rider has ever
-produced**: the live parse marks the certificate question `followup=deepen`, and
-the unit test passed throughout having constructed `followup_of=NONE` (**a guard
-that supplies its own arguments proves the assembler, not the path** — 4B.21
-§5a.78, at a seam built in the same session). The gate reads the prior delivery's
-ROUTE too; live, E1 (same route) gets no rider and E2 (different route) fires.
-And the drill-down wired to the ANSWER memory alone sent a SYNTHESIS answer to
-the empty-read branch. **D-08/09/10/11:** harness history under the success
-guard; the outage turn renders as a system marker and is KEPT in the window;
-`_repeat_depth` deleted; `_DELIVERED` gained its siblings' LRU-32. **Python
-2700/305/0** against a HEAD baseline of **2658/305/0**, **+42 accounted for file
-by file** (the new guard file 39, `test_second_question` 2, the D-10 guard 1;
-collection 2963 -> 3005 confirms it independently) — and **THREE earlier baseline
-attempts were discarded and are recorded, not replaced**: the first overlapped
-this session's edits, the second ran in a worktree that STILL IMPORTED THE EDITED
-SOURCE through the editable install, the third lacked `_data` and collected 29
-fewer tests. **BOTH RUNS ARE CHUNKED** (the environment killed three consecutive
-full runs at 19/19/7%), four identical alphabetical slices per side summing
-exactly to each side's collection count — **so the counts are exact and the load
-profile is NOT one run's**, which matters for the contention-sensitive class and
-is said rather than glossed. **Cockpit 367/2 of 369** (the 2 known deictic;
-baseline 365/2 of 367). **NINE negative controls proven RED**,
-every restore byte-identical by sha256 — and **the control harness found its own
-bug first**: `explainer.py` is CRLF and `interpreter.py` LF, so two LF-joined
-anchors matched nothing and reported ANCHOR NOT FOUND rather than passing falsely
-(4A-(a)'s newline lesson, on the MATCH instead of the write). **Bank
-`sweep_carried_state_v1` RUN: 14/15**, one known miss documented in the bank.
-**MINTED NOTHING in `_data`**; both pinned boards read-only. NOT FIXED, named:
-**the bank CANNOT hold R-MT1's founding specimen at all** — a run targets ONE
-schedule and the grammar has no mid-conversation rebind, so it is a missing WORLD
-and not a missing EXPECT key, which is the concrete cost of Q7; no expectation can
-reference an earlier turn's content or say what a turn did NOT do; the cold
-drill-down refusal is unreachable from a live parse (it parses `unmatched` at
-0.25 and the second tier answers honestly); clause 3 has no specimen from the
-SHIPPED client by construction; **D-03/D-04 are untouched** (the ladder covers 5
-of 33 subject types and `askHistory` fills its refs from the board SELECTION, so
-the rung is empty after most answers) — session (d.2), after Q7; and **the
-shared-body defect `deaf` caught is still live** (`certificate-testimony` and
-`data-problems` render one body, so the certificate route does not state the
-certificate) — the census micro-session's. Before it:
-**Micro-session 4A teaching-graft (c2) — the teaching answer reads the board**,
-2026-08-04 (docs/07 v2.91, §5a.177-180; docs/04 2026-08-04 **R-TG5 ruled and
-BUILT**; contract unchanged **1.15**, no docs/06 doorway owed; parse prompt
-UNCHANGED **v18**, synthesis prompt **v7 -> v8**; RUBRIC axis C9 gains **M5 THE
-ATTEMPT**; narrative in `docs/closeouts/4a-teaching-c2-reads-the-board.md`).
-**THE FIX SESSION (c) MEASURED AND DELIBERATELY REFUSED TO MAKE, AND IT IS ONE
-PROMPT RULE.** **R-TG5: a teaching answer must ATTEMPT a read aimed at finding an
-instance of the principle ON THIS BOARD** — case found, it grounds it (principle
-labelled general knowledge, instance cited beside it); no case found, it teaches
-generally AND SAYS SO in one line. **THE ATTEMPT IS WHAT IS REQUIRED, NEVER THE
-GROUNDING**: a board with no instance is a fact about the board, and a stretch
-(citing a record that does not show the principle, to make M2 green) is the
-inverse defect and the more expensive one — *a planner can check a missing
-example against nothing and a wrong one against their board*. **THE NO-CASE LINE
-CITES THE READ THAT FOUND NOTHING**, load-bearing because *"nothing on this board
-is in that position"* is a statement about the PLANT: uncited it carries no board
-content and **R-TG1 direction (ii) DROPS IT**, so an uncited disclosure is a
-disclosure the planner never sees (session (a)'s no-class-for-our-own-epistemic-
-position limit reaching the prompt; the answer is to GROUND the sentence, not
-open a fourth class — both halves asserted against the LIVE verifier). **NOTHING
-IS ENFORCED AT THE SEAM, BY RULING** — R-TG3 is at the seam because a forgettable
-instruction gets forgotten; this one is not, because **a deterministic
-did-it-read gate can only count calls and a rule that counts calls is satisfied
-by making one**, and a guard asserts the ABSENCE of the gate so a session adding
-it must delete a test saying why. **THE FIRST DRAFT FAILED IN THE SHAPE THE
-RULING HAD ALREADY NAMED**: rule 14 as first written said *make at least one
-read*, and the model went from ONE tool call to THREE — `constraint_catalog` and
-`spec_lookup`, twice — and shipped **ZERO board claims**. It had obeyed; the
-catalog reads OUR DOCUMENTATION and has never seen this plant. **THE CATALOG IS
-NOT THE BOARD** is in the prompt because of that measurement, and M5 subtracts
-the two documentation tools. **BEFORE/AFTER, same instrument, same board:
-m2_attached 0/4 -> 4/4**, m5_attempt **4/4** (2-4 board reads each), routing 8/8,
-m1/m3/m4 4/4, controls 2/2, **problems none**; cuts **7 -> 3** and verified
-**4 -> 6**, which is the mechanism visible — the sentences now cite so direction
-(ii) has less to drop. **THE FLOOR TAIL IS CLOSED**: the same question six times
-cold, **floor hits 1/6 -> 0/6**, read 6/6, board claim 6/6, kept claims
-**[2,3,4,4,4,3]** against turn 51's **one**. **NON-REGRESSION IS EXACT** —
-session (b)'s `sweep_teaching_v2` re-swept gives routing 15/15, long 12/12, short
-3/3, no-false-closer 9/9, audience 9/10, untouched 10/10, the same scores and the
-SAME single known miss (line 130 CLARIFY). **NEGATIVE CONTROL**: rule 14
-physically excised → read 4/4 -> **2/4**, board claim 4/4 -> **2/4**, P1/P2
-collapsing to (c)'s exact shape; it fires on TWO pairs of four and not four, and
-that is reported rather than re-rolled (live model, variance established), with
-the COMMITTED before-sweep staying the baseline of record; restore byte-identical
-by sha256. **THE NO-CASE BRANCH HAS A LIVE SPECIMEN**, on the fenced world whose
-tardiness is $0.00: *"Right now none of this plant's 9 scheduled orders are
-actually late, so this board is not currently showing a delay propagating end to
-end — only the tight, zero-slack coupling that would carry one if it happened"*,
-**cited**, beside the labelled principle. **Python 2658/305/0** against (c)'s **2643/305/0**, +15 and the new guard file collects exactly 15 (a FIRST full run read 2657/305/1 — `test_corpus`'s currency guard, RED because the corpus index was rebuilt for the docs amendments WHILE that run was in flight; rebuilt, 22/22, and the clean run is the run of record). **`--runslow` NOT re-run** — (c)'s known red is a live-PARSE routing outcome and this session changed only the SYNTHESIS prompt, so it is not claimed either way. **Cockpit
-UNTOUCHED, not re-run. MINTED NOTHING** (the fenced world is read-only here).
-NOT FIXED, named: **rule 6 and rule 14 disagree about what goes first and the
-model splits 2-2** (P2/P4 lead with the principle, P1/P3 with the board case —
-naming the opener would be a fifth ordering rule, not opened); **the LONG budget
-still does not bind** (deferred 0 across both sweeps, kept 2-4 against a licence
-of 8 — a third measurement of (c) §6.2); **the stretch is unmeasured in the
-wild** (clause 3 is uncatchable mechanically, four answers read is not a rate);
-**M5 counts a read, not a RELEVANT read** (the doc-tool subtraction is its only
-aboutness, deliberately crude); and `SYNTHESIS_UNPLACEABLE` still fires wherever
-one claim is dropped. Before it:
-**Session 4A teaching-graft (c) — the exam learns to grade understanding**,
-2026-08-04 (docs/07 v2.90, §5a.170-176; docs/04 2026-08-04 **R-SW1 and R-EX1
-ruled and BUILT**; contract unchanged **1.15**, no docs/06 doorway owed, both
-answered on the record; **BOTH GOVERNED PROMPTS UNCHANGED** — parse v18,
-synthesis v7; RUBRIC gains axis **C9 DOES THE ANSWER TEACH?**; narrative in
-`docs/closeouts/4a-teaching-c-exam-axis.md`). R1 item 2, session (c) of four.
-**THE SESSION BUILT THE TWO THINGS FOUR PRIOR SESSIONS HAD OWED.** **R-SW1: a
-specimen world is a COMMITTED DATASET WHOSE SPECIMENS ARE MEASURED, NEVER
-ASSUMED.** `boxed-in` and `earlier-open` were **0 of 386 and 0 of 56** on the two
-pinned boards, and **the cause is structural**: both need `later_at` None, and
-`later_at` scans a machine's open calendar **padded a fortnight past the last
-placement** — so on a plant that keeps working `later-open` absorbs everything
-and the two verdicts are not rare but IMPOSSIBLE. `datasets/mobility_box` is a
-plant that **STOPS** (nine orders, three machines, `BOX-01` down for a rebuild
-from 2026-01-14; hand-authored `glass_box`-style, gate ACCEPTED/C2/0, ledger
-$6,160.00, **tardiness $0.00** so lateness is never a second explanation).
-Census: **boxed-in 1 / earlier-open 1 / later-open 7 / undecidable 1**; `held` is
-unreachable monolithically and already has 24 and 45 specimens, named not
-missing. **THE `earlier-open` SPECIMEN'S COST LEVER IS DECLARED AND IS THE
-INTERESTING PART** — stage 2 minimises starts subject to stage 1's cost, so free
-earlier room is ALWAYS taken and the verdict can only exist where the earlier
-room costs MORE: here a **Saturday overtime window at a declared 1.5x premium**,
-binding family chunk-fit at 2026-01-10 07:00, **slack 2,880 min**. **THE PREMISE
-TESTS ASSERT THE MECHANISM, NOT THE VERDICT STRING** (binding family + instants
-on one side, absence of ANY open window on the other, independently), with **two
-negative controls that MUTATE THE DATASET and re-solve**: delete the outage rows
-and boxed-in collapses; delete the ONE overtime row and earlier-open collapses.
-**THE FIRST QUESTION EVER ASKED OF THE WORLD FOUND A DEFECT** — `_render_mobility_
-later` enumerated three verdicts and treated EVERYTHING ELSE as BOXED_IN, so the
-answer said *"It can be moved — nothing was holding ORD-EARLY op10 back"* and
-then *"Later: … so \"can't be moved\" is fair"*, one bar, one screen. **TWO
-RENDERERS BUILT FROM ONE VERDICT AND ONLY ONE ENUMERATED IT** (`mobility_lead_
-line` handles all five and returns None otherwise). Fixed: own branch for
-earlier-open, boxed-in explicit, **an unrecognised verdict says NOTHING** (4B.23's
-fail-safe at the seam violating it). Guard is the PROPERTY over all five —
-*the paragraph may say the premise is fair iff the verdict says it holds*.
-**157 EXISTING MOBILITY TESTS WERE GREEN BEFORE AND AFTER; none covered the
-branch.** Live: **4/4 boxed-in turns say "fair", 0/4 earlier-open**;
-`sweep_mobility_v2` re-swept on the demo board **20/20, unchanged**. **R-EX1:
-RUBRIC C9 grades whether a planner could PREDICT THE NEXT CASE.** The instrument
-is a **TRANSFER PAIR with the conversation CLEARED between halves** — **Q2 IS THE
-ANSWER KEY, NOT THE THING GRADED**, and a Q2 the product cannot answer INVALIDATES
-its pair. Four mechanical checks, each bounded by what it does NOT show (**M2
-checks CO-OCCURRENCE ONLY** and the RUBRIC says twice that a green M2 is never
-evidence the principle is ABOUT the instance); three human-only. **THE LLM JUDGE
-IS WRITTEN DOWN AND REFUSED** — it scores the ENTAILMENT with the weights that
-wrote the answer, so it is the work marking itself; the honest instrument is the
-FOUNDER ROUND, committed **UNRUN** at `tools/spikes/teaching_graft_c/founder_
-round_c9.md` with a blank prediction line under every Q1. **THE FIRST C9
-MEASUREMENT IS A FINDING: the depth licence is granted to the answers with the
-LEAST to say.** Two runs of `sweep_teaching_v3`: routing 8/8, M1 4/4, M3 4/4, M4
-4/4, controls 2/2 — and **M2 0/4**. All four transfer teaching answers carried a
-labelled principle and **NOT ONE carried a board claim** (0 verified, 0
-interpretive, 0 lit bars, 0 records; **two made NO tool call at all**), while the
-three teaching-routed HUNT probes in the same sweep DID — so **the difference is
-the QUESTION, not the route**: those name a figure/machine/order so the loop reads
-the plant. **R-TG3 grants depth by intent and nothing makes a teaching answer look
-at the plant**; on one turn the licence granted 8 and the answer shipped 1. NOT
-FIXED — the remedy is a synthesis-prompt change and two findings are about what
-that prompt produces. **THE TWO HUNTS, REPORTED EITHER WAY. (a) R-TG1 DIRECTION
-(i) HAS TWO LIVE SPECIMENS AT LAST AND THEY DO NOT REPRODUCE** — both refused for
-*"a figure this run computed (90)"* where **the 90 is queueing theory's own
-number**, i.e. the CONSERVATIVE arm session (a) chose on purpose (both landed
-INTERPRETIVE, neither cut); the same probe in two sweep runs refused **0** times.
-**(b) THE CLOSER STILL HAS NO SPECIMEN** — five overflow probes, **deferred 0 on
-every one**, drafting at most 5 and keeping at most 4; with (b)'s A/B that is
-**eight targeted attempts, zero firings**, so **on the shipped prompt the cap is a
-floor with no load on it** and rule 6 does all the compressing. **Cap LEFT ALONE;
-no prompt weakened to manufacture either specimen.** **PLANNER_DIRECTIVE HAS A
-SPECIMEN** (4B.33 §5a.135(a), partly discharged): the REAL accept over the fenced
-world mints `planner_edit | PLANNER_DIRECTIVE | observed`, $0.00, `delta_abs`
-None — **evidence reproduced, REGISTRY BOOKKEEPING NOT**, stated not glossed.
-**Python 2643/305/0** against a **corrected session-(b) baseline of
-2631/291/0** (+12 passed, +14 skipped, and the new guard file collects 25 — one
-skip in the delta is unaccounted for and is recorded, not rounded off) (CLAUDE.md's (b) line records 2629; the two-test difference is
-unexplained and recorded in both close-outs). **`--runslow` is NOT green and NOT
-green AT HEAD** — `test_ai_voice.py::test_cu5_split_jobs`, proven pre-existing by
-reverting this session's only `src/` change (restore byte-identical by sha256).
-**Cockpit UNTOUCHED, not re-run. NOTHING MINTED IN `_data`.** NOT FIXED, named:
-the teaching answer reads nothing; the fenced world is not registered (so `held`
-and R-F1 are unreachable on it); `edit-summary` prints a truncated operation UUID;
-*"why is ORD-PACK pinned"* on the edited world answers about the frozen front and
-is silent about the pin the same run recorded; B5 asked for five things and got
-four without saying so; and **`_open_windows`' fortnight pad is what makes
-`later-open` universal** and is unexamined. Before it:
-**Session 4A teaching-graft (b) — the depth licence and the teaching intent**,
-2026-08-04 (docs/07 v2.89, §5a.165-169; docs/04 2026-08-04 **R-TG2, R-TG3 and
-R-TG4 ruled and BUILT**; contract unchanged **1.15**, no docs/06 doorway owed,
-both answered on the record; parse prompt **v17 -> v18**, synthesis prompt **v6
--> v7**; RUBRIC gains axis **C8 ANSWER SHAPE**; narrative in
-`docs/closeouts/4a-teaching-b-depth-license.md`). R1 item 2, session (b) of four.
-**THE SESSION'S SUBJECT IS THE GAP C1-C7 CANNOT SEE: AN ANSWER THAT IS TRUE,
-GROUNDED, CORRECTLY ROUTED AND CORRECTLY CLASSED AND STILL UNUSABLE.** Measured
-at HEAD before anything was built, three ways. **(1)** Ten domain probes, live
-parse: **`coaching` 5 / `unmatched` 4 / `lateness-cause` 1** — half the questions
-asking to be TAUGHT something got a docs/05 capability lookup, median **3 content
-lines** over 102 turns. **(2)** 86 synthesis answers across all nine committed
-sweeps: kept claims **2->7 · 3->13 · 4->18 · 5->19 · 6->4** (median 4), while
-synthesis rule 6 has asked for "three to six" since v1 and bounds nothing.
-**(3) THE BOSS QUESTION** — *"there are a lot of orders late what reason can i
-give my boss and what will help lessen the impact"* — came back **134 content
-lines**: a cause mix, **~95 hold-pair lines**, and `Evidence chain (614
-record(s)):`. The longest answer in every committed sweep by 3.5x, **and every
-line of it is TRUE**. The goal was AUDIENCE-SHAPED; the answer was
-COMPLETENESS-SHAPED. **R-TG2: `teaching` IS A SECOND-TIER INTENT, NOT A ROUTE** —
-there is no contracted assembly for *"how does this normally work"* and inventing
-one would author domain prose as TESTIMONY (R-TG1's defect one layer up, where
-the label would be the register). `SECOND_TIER_INTENTS` **NAMES** what the parity
-test used to subtract with a comment; a guard asserts no member has a taxonomy
-entry. **THE TEACHING MARKERS SCORE 8/10 WITH ZERO FALSE POSITIVES AND ARE NOT
-WIRED TO ROUTING — that refusal IS the ruling** (a marker set that routed would
-be the deterministic classifier R-AI5(2) deleted, back under a new name). LIVE
-after v18: **5 of 5** at conf 0.95-0.98, including both v17 sent to `coaching`;
-both `coaching` controls held. **R-TG3: DEPTH IS GRANTED BY INTENT** — LONG **8**
-claims for `teaching` alone, SHORT **4** for everything else, both chosen from
-(2): 4 is the MEDIAN real answer, so it leaves the median untouched and binds the
-upper 38% at testimony's own p75. LONG is a **CEILING NOT A TARGET and does not
-bind today** (never more than 6 drafted in 86 answers), said rather than hidden.
-The bound is at the DISPATCH SEAM, after draft AND after verification, so it can
-change how many claims reach the page and never what a claim IS. **A DEFERRED
-CLAIM IS NOT A CUT CLAIM** (cut = failed verification; deferred = PASSED and
-surplus) — the SIXTH measured category fusion refused. **THE CLOSER IS ABSENT
-WHEN NOTHING WAS WITHHELD**, its own clause and a DEFECT-bucket item if broken.
-**THE A/B IS THE RESULT THAT WAS NOT EXPECTED** (`cap_ab.py`, same probes, rule 6
-swapped back to v6, governed prompt restored byte-identical by sha256): **v7 kept
-[4,4,3] deferred [0,0,0]; v6 kept [4,4,5] deferred [2,4,0]**, closer firing
-twice. **THE PROMPT DID THE WORK AND THE SEAM IS THE FLOOR UNDER IT** — so the
-shipped arm has NO live closer specimen, and that is reported, not hidden.
-**R-TG4: THE BOSS QUESTION IS 8 LINES** — the account, the lever, the OFFER.
-**`ordered_records` IS SUPPRESSED, NOT CLEARED**: 614 records and 460 bars
-survive, so the drill-down opens exactly what the offer offered; **what changed
-is ORDER and BUDGET, never evidence discipline**. **THE LEVER IS THE ROUTE'S OWN
-"My take:", PROMOTED FROM AFTERTHOUGHT TO HEADLINE** — found by reading the
-CONTROL, where `advice` still ends on its TWELFTH line with *"ORD-000112's
-27060-minute slip traces to ORD-000252 holding CUT-01 until 2026-01-27 19:00 —
-pulling that earlier is the single biggest lever the board gives you today."*
-**Nothing was missing from this product except an opinion about what to say
-first.** THE FLOOR IS FAMILY-SCOPED (4A.y paid forward: the four goal probes
-reach **THREE routes**); the parse reports `audience` and a deterministic floor
-stands under it — and **THE FLOOR IS REDUNDANT TODAY, MEASURED**: at v18 the
-model reports the field on **4 of 4** goal questions and 0 of 4 others, every
-value STRING-IDENTICAL to the floor's, so the seam has caught nothing (4A.y
-measured a fresh field reported 0-of-5; this one is followed); the marker matches
-a PERSON not an ask — **3 of 4 goal probes, 0 of the other 20** — and the shape
-FAILS OPEN. `sweep_teaching_v2`, 19 turns: **routing 15/15** (a FIRST run read
-14/15 on one OUTAGE turn, R-OF1's floor working; it did not reproduce and the
-COMMITTED sweep is the re-run against frozen bytes), **long 12/12, short 3/3,
-no-false-closer 9/9, audience 9/10, untouched 10/10**. **Python 2629/291/0** (baseline 2581; **+48**);
-**13 negative controls proven RED**, restores byte-identical, and one is aimed at
-the RENDERER rather than the seam so it cannot call past the broken line.
-**Cockpit UNTOUCHED, not re-run. MINTED NOTHING.** NOT FIXED, named: **the
-`briefing` account is the top-ranked worry and on this board it is the WRONG
-sentence to say in a room** (*"the cost optimum is NOT proved"*, to a production
-meeting about late orders) — R-TG4 deliberately does NOT re-rank, because picking
-an opener item from the question's words is a relevance classifier, so this is a
-finding about the OPENER; *"what should i tell the customer about ORD-000091"*
-CLARIFIES and the shape never runs (the graded miss is KEPT rather than fitted
-away); **two surfaces now rank "the biggest lever" on DIFFERENT AXES** (money vs
-minutes, each self-describing); a synthesis claim is truncated at 600 chars
-mid-sentence (pre-existing); and **the cap counts CLAIMS, not characters** —
-synthesis lines run ~130 chars to testimony's ~94, so the budget governs how many
-things are said and not how long each is. Before it:
-**Session 4A teaching-graft (a) — the general-knowledge claim class**, 2026-08-03
-(docs/07 v2.88, §5a.162-164; docs/04 2026-08-03 **R-TG1 ruled and BUILT** + the
-**R-OF1 rider**; contract unchanged **1.15**, no docs/06 doorway owed, both
-answered on the record; parse prompt unchanged **v17**, synthesis prompt **v5 ->
-v6**; RUBRIC gains axis **C7 CLAIM CLASS**; narrative in
-`docs/closeouts/4a-teaching-a-claim-class.md`). R1 item 2, session (a) of four.
-**MEASURED AT HEAD BEFORE ANYTHING WAS BUILT: SEVEN SENTENCES OF GENERAL
-SCHEDULING KNOWLEDGE SHIPPED ACROSS SEVEN SYNTHESIS ANSWERS, NONE LABELLED** —
-ten domain-inviting probes on the demo board; five wore `[synthesis — read from:
-<ids>]`, two wore `[synthesis — my reading, no record states this]`, and one of
-those two sat beside the sample note *"(based on the 26 row(s)
-constraint_catalog returned, not the whole plan)"* on a sentence about why exact
-methods scale poorly. **THE MODEL WAS NOT AT FAULT: there was no class for the
-sentence to be**, so it spoke in the only vocabulary the surface offered, and
-that vocabulary means *I read this off your board*. **R-TG1: a
-GENERAL-KNOWLEDGE claim is UNVERIFIABLE BY DESIGN** — verification SKIPPED and
-the claim LABELLED, never failed, never passed unlabelled.
-`ClaimKind.GENERAL_KNOWLEDGE` is the model's PROPOSAL and
-`ClaimStatus.GENERAL_KNOWLEDGE` the verifier's VERDICT — different objects,
-R-AI5(8) at a second seam. **ONE DETERMINISTIC PREDICATE READ BOTH WAYS**
-(`gk_disqualifiers`; two would drift): **(i)** a claim naming an order, a
-machine, a time, money or **a figure this run computed** may not wear the label
-and is refused back to ordinary verification (the escape-hatch clause — *"85%
-utilization is generally healthy"* is general until 85 is what PRESS-FAST
-measures); **(ii)** a claim citing nothing, grounding nothing and naming nothing
-on this board is **DROPPED** unless proposed, **and a CONCLUSION gets no
-exemption** (two of the four pure specimens were conclusions). **(ii) IS A DROP
-AND NOT AN AUTO-LABEL:** the verifier can prove *not a fact about this plan* and
-only the author can assert *this is how scheduling works* — **it may REFUTE a
-proposal and may not MANUFACTURE one**. A general line carries **NO provenance
-fields at all** and its own marker naming BOTH halves, with a footer note once
-per answer; register stays `synthesis` (a claim class, not a rung); the
-drill-down gets an authored branch. **LIVE, same ten probes after: 17 general
-claims labelled, 7 cut, and the probe that got the CAPABILITY CARD now answers**
-(it declined for want of a place to put the answer, not for want of one).
-`sweep_teaching_v1`, 14 turns, demo board: **routing 13/13; labeled 27/27, cited
-9/9, no-hatch 17/17, untouched 5/5**. **TWO THINGS THE RULING BROKE AND FIXED IN
-THE SAME COMMIT:** `_forced_close` asked the model for a claim about OUR OWN
-READ that (ii) now cuts (removed — `SYNTHESIS_PARTIAL` renders that fact from
-the call log, and the unanswerable branch now states it too); and **a cut names
-WHICH KIND of cut it was** — found LIVE after the fix, (ii) cuts the tier's own
-honest limit statements and the answer then said *"one step of my reasoning
-didn't hold up against the records"*, **false in its first clause**
-(`SYNTHESIS_UNPLACEABLE`). **R-OF1 RIDER: a `system`-register card never enters
-`ANSWER_MEMORY`** — nothing was read so nothing may ground a drill-down, and
-remembering it would ERASE the last real answer; keyed on the REGISTER, not a
-route name. §5a.161(b) DISCHARGED. **33 new guards; 7 negative controls proven
-RED**, restores byte-identical — and **the control harness found its own bug
-first: this repo mixes line endings PER FILE** (`claim_verifier.py` pure LF,
-`renderers.py`/`interpreter.py` pure CRLF), so a multi-line byte anchor matched
-in one file and silently not in another (4A.y's newline lesson, on the READ
-instead of the write). **Five pre-existing test bodies UPDATED because they
-state the old behaviour and the update IS the ruling.** **Cockpit UNTOUCHED, not
-re-run. MINTED NOTHING.** NOT FIXED, named: **the taxonomy still has no home for
-a sentence about our own epistemic position** (a fourth class is a
-vocabulary-class change not opened; R-DP12 §5a.130's shape); **direction (i) has
-NO LIVE SPECIMEN from this session** — under v6 the model keeps figures out of
-general sentences, so no proposal was refused in the wild, and it is proven by
-guard and negative control only; **`_sample_note` is still answer-level
-provenance in per-claim clothes** for BOARD claims (it picks the largest call of
-the session regardless of the claim — 4B.5 CU5(d)'s class at a site it did not
-reach); a `validator` finding on a control-family question (pre-existing,
-contracted path, fail-closed working); and the number clause is conservative by
-choice. Before it:
-**Micro-session 4A — the floor tells the truth about why it fell**, 2026-08-03
-(docs/07 v2.87, §5a.159-161; docs/04 2026-08-03 **R-OF1 ruled and BUILT**;
-contract unchanged **1.15**, no docs/06 doorway owed, both answered on the
-record; parse prompt unchanged **v17**; narrative in
-`docs/closeouts/4a-outage-floor.md`). **R-OF1: AN OUTAGE MAY NEVER
-WEAR THE CAPABILITY CARD.** With a credit-exhausted key, three different
-questions returned one card — *"I couldn't answer that one: I don't have a tool
-that reaches it… Here's what I can do that's closest"*, `[rendered by:
-synthesis — 0 tool call(s)]` — and **every clause is false in that failure
-mode**: the tools were there, the question was never READ. **THE CAUSE IS ONE
-VALUE** — every model failure reached the ask path as `None`, so "answered
-unusably" and "could not be reached" were the same fact by the time a sentence
-was rendered about them. `llm_compat.call_text_outcome` names which
-(`UNREACHABLE` = `messages.create` itself failed; `NO_TEXT` = the call succeeded
-and returned nothing usable) and **nothing string-matches a provider's
-wording**. **CENSUS: SEVEN PATHS** — **three** rendered an infrastructure
-failure as a capability statement (parse call, synthesis call, and
-no-key-with-a-parser, which claimed the QUESTION was unanswerable);
-**three were already honest** (the voice renderer degrades to the template, the
-preflight fails open, the unmatched bridge answers from a real parse); **one is
-a deliberate boundary** (a caller passing NO parser keeps the bridge). **THREE
-STAGES, NOT ONE CARD:** on `parse` the question was never read, on `synthesis`
-it WAS read and no route covered it, on `unconfigured` **there is no retry
-line** because there is nothing to wait for. **NO DOORS** (an offer presupposes
-the question was understood). **`system` JOINS THE REGISTER VOCABULARY** (ADD,
-never repurpose) — the footer reads `[rendered by: authored copy — the language
-model was unreachable | register: system]`, and the browser had already made
-this call for a failed fetch (`appendTransportError`). `tier_of` returns
-`floor`, so beat one never promises a read that cannot happen. **THE LIVE RUN
-FOUND WHAT 21 GUARDS DID NOT (§5a.160): A RIDER QUALIFIED AN ANSWER THAT DOES
-NOT EXIST** — the coverage rider fired on the first outage card served from the
-demo board (*"what I said above is when it does start"*, about a card whose
-content is that nothing was read); withheld at **both** render seams.
-**Python 2548/291/0** (family-floor baseline 2524; **+24**, of which 23 are the
-new guard, and 3 pre-existing assertions were UPDATED because they state the old
-behaviour and the update IS the ruling); **cockpit 365/2 of 367** — the 2 known
-deictic, no new flake. **7 negative controls proven RED**, every restore
-byte-identical (sha256 asserted — 4A.y's harness lesson).
-**LIVE, three ways on the demo board:** unreachable key → the outage card;
-key restored → the same question answers normally (testimony, 1 bar lit);
-out-of-scope question → **the capability card UNCHANGED**, `register:
-synthesis`. **MINTED NOTHING.** NOT FIXED, named: the no-parser bridge (by
-ruling); the ask dock's collapse badge renders the literal word **"null"**
-(pre-existing, cockpit, one line — `main.js` guards the METHOD where it means
-the VALUE); and `sweep_mobility_v2`'s `dark-evidence=2` is **two premise
-corrections and neither is a finding** (a correction cites nothing because
-there is no record for a placement that does not exist — 4B.17's recorded
-shape, same count). Before it:
-**Session 4A.y — the floor is family-scoped**, 2026-08-03 (docs/07 v2.86,
-§5a.153-158; docs/04 2026-08-03 **R-FF1–R-FF4 ruled and BUILT**; contract
-unchanged **1.15**, no docs/06 doorway owed; parse prompt unchanged **v17**;
-narrative in `docs/closeouts/4a-family-floor.md`). **THE FOUNDER LISTENING ROUND
-WAS HELD** — R1 item 1 is CLOSED except the honest-outage message, which stayed
-queued and is named. Five specimens, one seam: **the docket's machinery works
-where wired, and it was wired to ONE ROUTE while routing is a MODEL's decision.**
-**R-FF1: THE FLOOR ATTACHES TO THE QUESTION FAMILY.** 18-phrasing census, live
-parse, demo board: the family reaches **`why-here` 11 / `frozen` 5 /
-`what-would-change` 2**, and **6 of 18 got a premise check** — six missed on the
-VOCABULARY, six on the ROUTE, **one on both**. Now **17 of 18**. `frozen` is a
-ROLLING intent and the dispatch returns for those **before the floor AND before
-`_with_assumptions`** — 4B.21 §5a.78 a third time, so five phrasings got no check
-and no disclosure of anything, including the grain the docket had just built.
-Barring the other two was REFUSED (it decides a route from words: the classifier
-R-AI5 forbids). Each member renders in its OWN shape and **the lead claims
-nothing about what follows it** — `why-here`'s *"that is what I've explained
-below"* is false of the other two. ONE computation (`mobility_verdict` wraps
-`_mobility_facts`). **R-FF2: THE PARSE INVENTED A DIRECTION** — the docket
-measured 0-of-5 OMISSION; *"this cant move can it"* came back **`EARLIER`**,
-unstated. `states_direction` reads the planner's words; the parse's report is
-untouched and still branches the route, so the founder's correct priced answer
-(*"why cant this move later"*) is unchanged and now GUARDED. **R-FF4: A PREMISE
-IS VERIFIED AT THE GRAIN IT WAS ASSERTED AT** — *"why is ORD-000126 op30 on
-CUT-01"* (op30 is on FINISH-01) returned **op10's record under the sentence
-*"This is about op30 on CUT-01; the evidence below is that step's own assignment
-decision"***: not an implication, an ASSERTION about our own evidence. TWO layers
-(the check, and the binding site with the order-wide fallback closed).
-**THE DOCKET'S DISCLOSURE HAD NEVER BEEN RENDERED IN THE COCKPIT AT ALL** —
-`appendResolved` reduced the note to a hardcoded `[from board selection]`
-substring test, so 4A.x §5's quotations came from the exam-report path; its
-*"nothing is broken in the product"* is CORRECTED. **THE REPEAT RIDER FIRED ON
-THREE DIFFERENT BARS** (measured live, one sequence); `repeat` now needs the
-SUBJECT too, grain compared only where the turn carries it. **Python
-2524/291/0** (HEAD in this tree **2469**, **+55**); **cockpit 363/4 of 367** — 2
-known deictic, 2 flakes green 8/8 in isolation. **8 negative controls proven
-RED**, files restored byte-identical — and **the harness corrupted a file's line
-endings on its first run** (`write_text` translates newlines; caught by its own
-restore assertion). **`sweep_mobility_v2` RUN: 21 questions, 20/20 met.**
-**MINTED NOTHING.** NOT FIXED, named: **`jammed` is the one phrasing of 18 still
-uncovered, BY RULING** (a jam happens to a MACHINE); **`boxed-in`/`earlier-open`
-are still unreachable on both pinned boards** (§5a.152(b) unchanged); the
-honest-outage message; and the founder's EXACT F1 routing did not reproduce in
-four history reconstructions (the CLASS did, deterministically). Before it:
-**Session 4A.x — the listening docket**, 2026-08-03 (docs/07 v2.83, §5a.148-152;
-docs/04 2026-08-03 **R-LD1–R-LD4 ruled and BUILT**; contract unchanged **1.15**,
-no docs/06 doorway owed, both answered on the record; parse prompt **v17**;
-RUBRIC gains axis **C6 PREMISE INTEGRITY**; narrative in
-`docs/closeouts/4a-listening-docket.md`). Four measured specimens, one disease:
-**RELEVANCE UNVALIDATED — a confident answer to a question nobody asked, and all
-four are TRUTHFUL**. **R-LD1: A TYPED OPERATION NUMBER HAD NEVER REACHED A
-ROUTE.** *"why cant ORD-000126 op30 start earlier"* was answered about **op10**,
-with a bridging sentence announcing a fallback nobody fell back to. Three seams:
-`SubjectRef` had no grain (so the parse emitted `op30` as a SECOND ORDER SUBJECT
-that resolved to nothing — measured); **`route_params` never set `op_seq` at
-all**, so the EIGHT assemblers reading it saw None from every question ever
-typed; the only live suppliers were the board SELECTION (5 intents) and TWO
-per-route text re-scans. **4B.21's A5 is NARROWED, NOT CLOSED** — it fixed ONE
-route with a re-scan of its own. Now: `SubjectRef.op_seq` + a deterministic
-EXTRACTION at one seam (runs AFTER routing, can never route — not the deleted
-classifier), **SELECTION LAST** because a typed number cannot be stale; and **a
-route that answers at order grain SAYS SO**. Found on the way: **two intent sets
-answer different questions** (`_OPERATION_SCOPED_INTENTS` = may a SELECTION
-re-scope this; `_GRAIN_HONOURING_INTENTS` = can it answer a TYPED grain), and the
-disclosure's first version accused `why-on-machine` of dropping a grain it had
-honoured. **R-LD2: THREE RESOLUTIONS MADE, ONE DISCLOSED** — *"why cant this be
-moved"* with a bar selected named the SUBJECT and stayed silent on the GRAIN and
-the DIRECTION (*"moved"* read as EARLIER, the only direction `why-here`
-computes). `move_direction` is now the mobility family's marker, on `why-here`
-too; **`UNSTATED` is what makes an assumption visible**, `None` keeps every
-non-move phrasing byte-identical, and **a planner is never told back what they
-just said**. NARROWED where it could be wrong: a NAMED TARGET resolves inside the
-assembler, so the dispatch promises nothing. **R-LD3: THE PREMISE MACHINERY
-COVERED ONE CLAIM SHAPE AND MOBILITY WAS NOT IT** (census: `_verify_placement_
-premise` and `lateness-cause`'s `premise_holds`, that is all).
-`mobility_premise.assess`, **whose ORDER OF TESTS IS THE RULING**: HELD first
-(4B.14's stale-true-fact rule), CHUNKED second *before the earlier direction* (a
-`chose` verdict on a splittable op is a LOWER BOUND, too weak to build a
-CORRECTION on), then the open directions. `undecidable` is **the ruled species a
-SIXTH time** — `holds` False AND `refutes` False. **Only `chose` refutes
-EARLIER.** **The correction is a LEAD, not a replacement**: the chain that
-follows is still correct, merely one-directional. **R-LD4** composes — earlier
-chain + the first opening where the whole op fits + the invitation to the route
-that PRICES it — and **DOES NOT PRICE** (an opening read as permission is the
-failure the clause prevents). **THE PARSE REPORTED THE DIRECTION IN 0 OF 5** and
-the floor is why the check fires: **a disclosure depending on a model remembering
-a field will silently stop**; the report stays verbatim and the DISPATCH decides
-(R-AI5(8), not a departure from it). **THE PREMISE IS FALSE ON 361 OF 386 BARS**
-— census over both pinned worlds: demo `held` 24 / `later-open` **361** /
-`undecidable` 1; exam 45 / 9 / 2 — so the earlier-only answer was wrong on 94% of
-the demo board. **`boxed-in` AND `earlier-open` ARE ZERO ON BOTH BOARDS** and are
-asserted by unit test only. **Python 2468/291/0** (HEAD in this tree **2411/291/0,
-MEASURED** in a detached worktree — its 2 failures are the two tests that anchor
-to a repo root a worktree resolves differently; **+57**. The 4B.35 close-out
-records 2416; the 5-test difference predates this session). **Six negative controls proven RED**, and **TWO DID NOT FIRE FIRST
-TIME** — one calling past the broken line (4B.28 §5a.123 again), one reverting an
-ineffective seam. **Cockpit untouched, not re-run. MINTED NOTHING.**
-**`sweep_mobility_v1`: RUN 2026-08-03 against `rolling-db5395dc-2ae` — 15/15
-expectations met** (`tests/ai_exam/sweeps/2026-08-03-mobility-v1/`; the session
-itself could not run it, the API credit balance having been exhausted partway,
-and every live measurement above completed before that). **THE FOUNDER LISTENING
-ROUND WAS HELD IN 4A.y** — see the top of this section. Before it:
-**Session 4B.35 — one clock, and the refused nudge**, 2026-08-03 (docs/07 v2.82,
-§5a.143-147; docs/04 2026-08-03 **R-TZ1 ruled and BUILT** + a second ruling putting
-R-DP2 at beat one's checker; contract unchanged **1.15**; narrative in
-`docs/closeouts/4b35-one-clock.md`). **R-TZ1: EVERY PLANNER-FACING TIME RENDERS IN
-ONE DECLARED CLOCK — THE FACILITY'S** (IDS manifest `timezone`, docs/06 §3), on
-`/meta` beside the grade because it is a SUBMISSION property (**no contract bump
-owed**), labelled once on the board chrome, provenance in **THREE states never two**
-(`declared`/`defaulted`/`unreadable` — a defaulted clock reads `· assumed`, because
-one that reads like a declared one is R-CAL1 rule (3)'s failure on another axis).
-Stored instants are UNTOUCHED: this is a RENDERING ruling. Census **12 sites across
-nine files**, all on the browser's clock, now one boundary (`src/cockpit/src/clock.js`);
-**the vis AXIS too**, offset resolved PER INSTANT so a DST zone is exact inside one
-view. **THE DEFECT, MEASURED:** the job panel said ORD-000128 op20 ran
-*"Jan 13, 11:09 → 13:29"* while the testimony said it finished *"18:29"* — five hours,
-every pair, neither labelled; on the axis it made every machine appear to start its
-shift at **2 AM**. **THE §2 VERDICT CHOSE NONE OF THE BRIEF'S THREE BRANCHES AND WAS
-WRITTEN BEFORE ANY FIX: THE DROP INSTANT WAS NEVER SHIFTED** — real pointer, real
-board, Toronto browser: vis round-trip **0 ms** and `pin_start_iso` EQUAL to the carry
-instant on both beats. **Specimen B DOES NOT REPRODUCE** (0 beat-one refusals of 15
-tier-0-legal instants; `op30` is eligible on ONE machine so no cross-row drag exists;
-not a stale `dist`) — recorded unexplained, not closed. **Specimen C's refusal was
-never nameless** (a beat-TWO refusal naming the successor). **BEAT ONE'S CHECKER KNEW
-"NO" AND NOT "WHY"** — CP-SAT's INFEASIBLE is a bare bit, so every beat-one refusal
-ever shown read ONE CONSTANT sentence; fixed AT THE CHECKER
-(`local_price.relaxed_refusal`), **restricted to the families that survive beat one's
-RELAXATION** (eligibility, calendar), because occupancy and precedence are facts about
-the ARRANGEMENT and claiming them for a solve free to move the occupant is the
-over-claim `holds_others` exists to prevent; **an unattributed refusal SAYS SO**.
-`PROVEN` alone is retired from both refusal registers (`proven impossible`, R-DP6's
-term) — a *"Can't go here"* card wearing *verdict · proven within budget* was live on
-the demo board. **20-PROBE RE-MEASURE: 18 refusals / 2 priced, every beat-one refusal
-NAMED (10 of 10, C1/C2), and BOTH prices NON-ZERO at $75.00** — 4B.32 measured four
-prices all exactly $0.00 and recorded the ledger-MOVED branch as unreachable from a
-drag on this board; **it is reachable**. **Python 2416/291/0** (the +1 was RED AT HEAD:
-4B.34 amended docs/04 without rebuilding the corpus index — fixed here); **cockpit 364
-passed / 3 failed of 367**, the 2 known deictic plus a **SEVENTH parallel-load flake**
-(green 11/11 in isolation). **NOT FIXED, NAMED: the Python answer surfaces still render
-stored UTC verbatim** — correct wherever the facility declares UTC, which both pinned
-worlds do, but NOT governed; a plant declaring `Europe/Istanbul` would get a correct
-board and testimony five hours from it. Before it:
-**Session 4B.34 — GUI polish: six items from the interrogation pass**, 2026-08-03
-(docs/07 v2.81, §5a.136-142; docs/04 2026-08-03 **R-GP1 ruled and BUILT**;
-**COCKPIT-ONLY** — no Python, no solver, no schema, contract unchanged **1.15**;
-narrative in `docs/closeouts/4b34-gui-polish.md`). **R-GP1: CURRENT MEANS THE MOST
-RECENT PLACEMENT-BEARING STATE OF A LINEAGE** — an authority-only child is shown
-in the lineage but never outranks its parent and never fires the newer-schedule
-banner; the comparison is a DERIVED placement digest scoped to DESCENDANTS
-(unscoped it swallows the RESUBMIT case, which `deeplink.spec.mjs` caught).
-**THE LEDGER CANNOT DO THIS JOB, MEASURED:** the Khalil board, two ceremony
-children, a zero-move accept AND the one child that moved an operation all read
-**$1,667,467.80** — only the digest separates them. Also: the docks reclaimed
-NOTHING (a fixed flex-basis beats `height`; `#app` counted its children, and the
-newer-schedule banner was the live third), and **the collapsed ASK edge was
-clickable in a 26x26 corner only**; the legend was over the **BARS**, not the
-tray, and is now in normal flow; tooltips avoid their own subject (**only 4 of 366
-bars reproduce it**) and the job panel drags by its header; the compression
-**3-state cycle** ships — **the briefed state loss did NOT reproduce across nine
-paths**, the real defect being the label as a COPY rather than a VIEW.
-**361 passed / 2 failed of 363** (baseline 306/2/308, **+55**; the 2 are the known
-deictic pair); **seven negative controls proven RED**, after the control harness's
-own first run was a **FALSE GREEN** against a stale `dist`. Before it:
-**Session 4B.33 — the honest driver's name + the last wall limit**, 2026-08-03
-(docs/07 v2.80, §5a.133-135; docs/04 2026-08-03 **R-DP13 ruled and BUILT** and the
-golden-CSV flake FIXED; contract unchanged **1.15** and the bump question answered
-either way; **`DriverCode` 13 -> 14**; narrative in
-`docs/closeouts/4b33-honest-driver-and-last-wall.md`). Before it:
-**Session 4B.32 — verdict identity + honest driver**, 2026-08-03 (docs/07 v2.79,
-§5a.129-132; docs/04 2026-08-03 **R-DP12 ruled and BUILT**, **R-DP10 DISCHARGED
-BY IDENTITY**, R-T2's disclosure line STRUCTURALLY MOOT on this path; contract
-unchanged **1.15**; narrative in `docs/closeouts/4b32-verdict-identity.md`).
-Before it:
-**Session 4B.31 — accept integrity: the incumbent must re-validate**, 2026-08-02
-(docs/07 v2.78, §5a.125-128; docs/04 2026-08-02 **R-DP11 ruled and BUILT**,
-**R-DP10 ruled and NOT built**; contract unchanged **1.15**; narrative in
-`docs/closeouts/4b31-accept-integrity.md`). Before it:
-**Session 4B.28 — the board serves a person using it**, 2026-08-02 (docs/07 v2.77,
-§5a.119-124; docs/04 2026-08-02 R-F1's mechanics verbatim; contract **1.15**;
-parse prompt **v16**; narrative in `docs/closeouts/4B.28.md`). Before it:
-**Session 4B.27 — the conversational batch**, 2026-08-01 (docs/07 v2.75,
-§5a.112-113; docs/04 2026-08-01; parse prompt **v14**; narrative in
-`docs/closeouts/4B.27.md`). Before it:
-**Session 4B.29 — calibration is the product**, 2026-08-01 (docs/07 v2.74,
-§5a.108-111; docs/04 2026-08-01 R-CAL1 verbatim; narrative in
-`docs/closeouts/4B.29.md`). Before it:
-**Errand 4B.26 — what is the main-solve K actually for?**, 2026-08-01 (docs/07
-v2.73, §5a.107; narrative in `docs/closeouts/4B.26.md`). Before it:
-**Session 4B.25 — the published board is a portfolio, not a draw**, 2026-08-01
-(docs/07 v2.72, §5a.101-106; docs/04 2026-08-01 R-BK1 verbatim; narrative in
-`docs/closeouts/4B.25.md`). Before it:
-**Session 4B.24 — the incumbent earns its flag**, 2026-07-31 (docs/07 v2.71,
-§5a.96-100; docs/04 2026-07-31 R-T2 AMENDMENT verbatim; narrative in
-`docs/closeouts/4B.24.md`). Before it:
-**Session 4B.23 — beat two is never called**, 2026-07-31 (docs/07 v2.70,
-§5a.89-95; docs/04 2026-07-31; narrative in `docs/closeouts/4B.23.md`). Before it:
-**Errand 4B.22a — a demo board worth dragging**, 2026-07-31 (docs/07 v2.69,
-§5a.84-88; docs/04 2026-07-31; narrative in `docs/closeouts/4B.22a.md`). Before
-it: **Session 4B.22 — the second question**, 2026-07-31 (docs/07 v2.68, §5a.79-83;
-docs/04 ruling; narrative in `docs/closeouts/4B.22.md`). Before that:
-4B.21 (v2.67, §5a.71-78), 4B.20 (v2.66, §5a.67-70),
-4B.19 (v2.65, §5a.64-66), 4B.18 (v2.64, §5a.63), 4B.17 (v2.63, §5a.54-62),
-4B.16 (v2.61, §5a.49-50), 4B.15 (v2.59, §5a.39-45), 4B.14 (v2.58, §5a.34-38),
-4B.13 (v2.57), 4B.12 (v2.56, a MEASUREMENT session), 4B.11 (v2.55, **R-PD1
-verbatim**).
+**Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation.
+**Last closed: Session 4A teaching-graft (e2) — the measurement errand**,
+2026-08-05 (docs/07 v2.96, §5a.195-202; docs/04 2026-08-05 **R-TG7 ruled and
+BUILT** plus the founder's W4 lead-order arbitration; contract unchanged
+**1.15**; parse prompt **v18**, synthesis prompt **v9**; narrative
+`docs/closeouts/4a-teaching-e2-measurement-errand.md`).
 
-**THE FENCED SPECIMEN WORLD IS `datasets/mobility_box` (4A teaching-graft (c),
-R-SW1).** A plant that STOPS — the only shape that can produce the `boxed-in` and
-`earlier-open` mobility verdicts, which are 0 of 386 and 0 of 56 on the two
-pinned boards and IMPOSSIBLE on any plant that keeps working (`later_at` scans a
-fortnight past the last placement). Nine orders, three machines, hand-authored;
-`BOX-01` down for a rebuild from 2026-01-14. Monolithic, deterministic, NOT
-registered in `_data`. Build and read it with:
+**THE SESSION LEDGER IS NOT IN THIS FILE.** What a session built, what it
+measured, its test counts and its commit live in `docs/07` §5a (position and
+named debts), `docs/04` (the ruling and the reasoning, append-only) and one
+close-out per session under `docs/closeouts/`. The prose this section used to
+carry — every session from 4B.11 to (e2), every ruling narrative, every
+findings list — is archived **verbatim** in `docs/04` under **2026-08-05 —
+CLAUDE.md STATUS SECTION CONSOLIDATION**. Nothing was deleted; it was moved.
+**Read the docs/04 Amendment log tail before touching any area it covers.**
+
+Recent sessions, newest first. `docs/closeouts/<file>.md` is the narrative:
+
+| session | subject | ruling | close-out |
+| --- | --- | --- | --- |
+| 4A tg (e2) | the measurement errand | R-TG7 + W4 lead order | `4a-teaching-e2-measurement-errand.md` |
+| 4A tg (e) | teaching may not contradict the floors | R-TG6, W6 | `4a-teaching-e-floor-truth.md` |
+| 4A micro | shared-body census + certificate route | (none new) | `4a-micro-shared-body-census.md` |
+| 4A tg (d.1) | carried answer state | R-MT1, R-LD5 | `4a-teaching-d1-carried-state.md` |
+| 4A tg (d.0) | multi-turn recon | (measurement) | `4a-teaching-d0-multiturn-recon.md` |
+| 4A tg (c2) | the teaching answer reads the board | R-TG5 | `4a-teaching-c2-reads-the-board.md` |
+| 4A tg (c) | the exam learns to grade understanding | R-SW1, R-EX1 | `4a-teaching-c-exam-axis.md` |
+| 4A tg (b) | the depth licence and teaching intent | R-TG2/3/4 | `4a-teaching-b-depth-license.md` |
+| 4A tg (a) | the general-knowledge claim class | R-TG1 | `4a-teaching-a-claim-class.md` |
+| 4A micro | the outage floor | R-OF1 | `4a-outage-floor.md` |
+| 4A.y | the floor is family-scoped | R-FF1–R-FF4 | `4a-family-floor.md` |
+| 4A.x | the listening docket | R-LD1–R-LD4 | `4a-listening-docket.md` |
+| 4x | pinned-world reconstruction | R-PW1 | `4x-pinned-world-reconstruction.md` |
+| 4B.35 | one clock, and the refused nudge | R-TZ1 | `4b35-one-clock.md` |
+| 4B.34 | GUI polish | R-GP1 | `4b34-gui-polish.md` |
+| 4B.33 | the honest driver's name | R-DP13 | `4b33-honest-driver-and-last-wall.md` |
+| 4B.32 | verdict identity | R-DP12 | `4b32-verdict-identity.md` |
+| 4B.31 | accept integrity | R-DP11 | `4b31-accept-integrity.md` |
+
+Earlier sessions (4B.11–4B.30) are indexed the same way in docs/07 §5a and in
+`docs/closeouts/`; the consolidation entry names each with its docs/07 version
+and §5a range.
+
+### Governed artifacts, current versions
+
+Contract **1.15** · parse prompt **v18** · synthesis prompt **v9** ·
+`DriverCode` **14 members** · finding codes **20** · RUBRIC axes through **C9**.
+Changing any of these is a **vocabulary-class change**: reviewed, versioned,
+committed with its spec update in the same commit.
+
+### The worlds a session must know
+
+**THE DEMO BOARD IS `rolling-c32a6140-b6b`** (2026-08-04, R-PW1) — the Khalil
+board's world under a new id, minted from the SAME submission bytes under the
+SAME accepted profile, reproducing every figure the record holds (ledger
+**$1,667,467.80**, K=3 at 10.0 units, seeds 42-44, winner **seed 44**, spread
+**28.06%**, 386 bars / 24 committed / 122 tray, ACCEPTED / C2, gap 89.6%).
+Rebuild: `python tools/spikes/demo_board_4b22a/mint_demo_board.py --calibrated
+--reuse`. **`--calibrated` DELETES `portfolio_k` from the request** rather than
+setting it — R-CAL1 rule (2) reads `model_fields_set`, so a request naming ANY K
+refuses the profile. **That rebuild needs the plant's accepted profile in
+`_data/calibration/`**, and **the bare command is not hermetic** (with a profile
+present it takes the profile's `det_total`, not its own, and lands elsewhere).
+
+**THE EXAM WORLD IS `rolling-e9ccc879-a4b`** — proven identical to the lost
+`rolling-c362baa4-1b0` by placement digest `07638cec…`; resolving, `proved`. Use
+it when a demo wants a proved optimum.
+
+**THE PREVIOUS DEMO BOARD IS `rolling-c9973708-865`** (4B.22a) — `demo_board`,
+280 orders, seed 1, ref 2026-01-05, window 10 / frozen 1, 386 bars, tardiness
+$2,040,146.67 ($535,800 floor). Rebuild:
+`python tools/spikes/demo_board_4b22a/mint_demo_board.py` (its defaults ARE this
+board). It is the one board still carrying a placement-bearing lineage child.
+
+**`rolling-db5395dc-2ae` and `rolling-c362baa4-1b0` are RETIRED-LOST** and never
+reused (`docs/worlds/LEDGER.md`). Both pinned rolling boards were deleted from
+`_data` on 2026-08-04 with no backup; ids are `rolling-<uuid4[:12]>`, so only the
+id could not come back.
+
+**THE FENCED SPECIMEN WORLD IS `datasets/mobility_box`** (R-SW1) — a plant that
+STOPS, the only shape that can produce the `boxed-in` and `earlier-open` mobility
+verdicts (0 of 386 and 0 of 56 on the pinned boards, and IMPOSSIBLE on a plant
+that keeps working: `later_at` scans a fortnight past the last placement). Nine
+orders, three machines, `BOX-01` down for a rebuild from 2026-01-14. Monolithic,
+deterministic, NOT registered in `_data`. Its bank is `sweep_mobility_v3`, its
+guard `tests/test_mobility_box.py`. `held` is unreachable here by construction.
 
 ```
 python -m mre --submission datasets/mobility_box --out _ai_exam_scratch/mobility_pinned     --snapshot-id snap-mobility --solver-workers 1 --solver-seed 0 --time-limit 600
@@ -1066,1492 +289,220 @@ python tools/spikes/teaching_graft_c/census_mobility.py        # one line per ba
 python tools/spikes/teaching_graft_c/mint_edited_world.py      # + a real planner_edit accept
 ```
 
-Its bank is `sweep_mobility_v3` (v1/v2 ask the DEMO board and are not replaced);
-its guard is `tests/test_mobility_box.py`, whose two negative controls mutate the
-dataset and re-solve. `held` is unreachable here by construction (no frozen
-front, no pins) and has 24 and 45 specimens on the rolling boards.
-
-**THE DEMO BOARD IS `rolling-c32a6140-b6b` (2026-08-04, R-PW1) — THE KHALIL
-BOARD'S WORLD UNDER A NEW ID.** `rolling-db5395dc-2ae` is **RETIRED-LOST**
-(`docs/worlds/LEDGER.md`): both pinned rolling boards were deleted from `_data`
-on 2026-08-04 and there was no backup. The successor is minted from the SAME
-submission bytes under the SAME accepted profile and **reproduces every figure
-the record holds** — ledger, all three member ledgers, winner seed, spread,
-committed/tray counts, gap. Only the id could not come back, because ids are
-`rolling-<uuid4[:12]>`. **THE EXAM WORLD IS `rolling-e9ccc879-a4b`**, whose plan
-is proven identical to the lost `rolling-c362baa4-1b0` by placement digest
-`07638cec…`. Everything below describing the Khalil board describes this one.
-The paragraph as it stood in 4B.28 (§5a.120):
-The SAME WORLD as `rolling-c9973708-865` under its plant's **ACCEPTED**
-calibration profile: K=3 at 10.0 deterministic units, seeds 42-44 ->
-**$2,135,369.63 / $1,801,222.70 / $1,667,467.80**, winner **seed 44**, spread
-**$467,901.83 = 28.06%** and the certificate says *"far from settled"*. Ledger
-**$1,667,467.80** (the profile predicted it to the cent), 386 bars (24 committed
-/ 362 active), 122 in the tray, coarse zone present, ACCEPTED / C2, gap 89.6%,
-contract 1.15, 989s. Rebuild:
-`python tools/spikes/demo_board_4b22a/mint_demo_board.py --calibrated --reuse`
-— `--calibrated` **DELETES** `portfolio_k` from the request rather than setting
-it, because R-CAL1 rule (2) reads `model_fields_set` and a request naming ANY K
-(including the profile's own) refuses the profile. **THAT REBUILD NEEDS THE
-PLANT'S ACCEPTED PROFILE IN `_data/calibration/`** — it was lost with the boards
-and restored from `_4b29_scratch/store/calibration/`, whose grid digest matches
-the committed `docs/calibration/demo_board.json`. **AND THE BARE COMMAND IS NOT
-HERMETIC:** with a profile present it takes the profile's `det_total` (10.0, not
-6.0) even while declaring its own K, and lands on a different board — measured
-2026-08-04, now in its docstring.
-
-**THE PREVIOUS DEMO BOARD IS `rolling-c9973708-865` (4B.22a, §5a.84).** `demo_board`
-(`generate_erp_dataset.py`), 280 orders, seed 1, ref 2026-01-05, **window 10 /
-frozen 1**, deterministic, coarse — minted through the API's own two steps.
-386 bars (41 committed / 345 active), 96 late, **47 past-due orders SCHEDULED**,
-tardiness $2,040,146.67 split **$535,800 floor / $1,504,346.67 controllable**, a
-coarse zone binding **8 of 48 cells at 95-99%** of derated capacity, a 122-order
-tray, ACCEPTED / C2 / contract 1.12. Reproduces IDENTICALLY across PYTHONHASHSEED
-0/1/2. Rebuild with ONE command, whose defaults ARE this board:
-`python tools/spikes/demo_board_4b22a/mint_demo_board.py`.
-**IT WAS LOST FROM `_data` TOO AND CAME BACK WHOLE** — an exact copy survived in
-`_4b25_scratch/dataroot`, its placement digest matches the committed trace, and
-it was RESTORED under its original id (R-PW1(2)), audit child included, so it is
-the one board here that still carries a placement-bearing lineage child.
-**`rolling-c362baa4-1b0` IS RETIRED-LOST; its successor is
-`rolling-e9ccc879-a4b`** —
-the pinned exam world, resolving, `proved`; use it when a
-demo wants a proved optimum. **THE PRICE IS THE PROOF: FEASIBLE at gap 92.4%**,
-and **that is DENSITY, not R-PD1** — the controlled pair (same board,
-`pd_share=0.0`) is still FEASIBLE at 84.5% (§5a.85). **The shipped 14-day window
-does not survive this density**: UNKNOWN — an EMPTY board — at 140 and 170 orders,
-INFEASIBLE at 360; and solvability is **NOT MONOTONE** (10-day: UNKNOWN at 200,
-FEASIBLE with 386 bars at 280). A drag now costs **$2,596.67** (split $0.00
-re-optimization / $2,596.67 your move), and **$2,301.67 of it is paid by the
-order it displaced**; the same gesture on the old board costs $354.58 of which
-the displaced order pays **$0.00** — on an empty board displacement is free, so
-the card can only ever charge a planner for their own order. **`pilot_scale` is
-BYTE-IDENTICAL** and proven so at 40 and 400 orders — the three `demo_board`
-knobs draw nothing from `rng` at their defaults. NO `src/mre/` CHANGE.
-
-**"YOUR MOVE" IS PRICED LOCALLY, AND THE FOUNDER'S NUDGE COSTS $0.00 (4B.24,
-R-T2 AMENDMENT, §5a.96 — §5a.95(b) DISCHARGED).** Five clauses, verbatim in
-docs/04. **(1) EVERY SANDBOX SOLVE IS DETERMINISTIC** — deterministic budget,
-pinned seed, workers=1, **wall as a SAFETY CEILING only**, and a wall-truncated
-solve REFUSES TO PRICE rather than pricing from a lottery draw. **(2) "YOUR MOVE"
-IS PRICED LOCALLY** — everything else held, the bar moved, the ledger recomputed
-and validated. **(3) THE WINDOW'S OPPORTUNITY IS ITS OWN LABELLED THING.**
-**(4) ACCEPTING IS TWO CEREMONIES.** **(5) THE INCUMBENT IS AUDITED, NOT
-ENSHRINED.** The founder nudged ORD-000057 four hours inside an overtime window
-it already occupied, on a machine carrying nothing else those hours; the card
-charged **-$50,784.33**, all to *"your move"*, relocating four unrelated orders by
-weeks. Beat two re-solved the WHOLE WINDOW wall-clock-bounded with no
-deterministic time over an incumbent at a 92.4% gap — **the card reported the
-difference between two lottery draws and labelled it the planner's**.
-`src/mre/modules/local_price.py` is compressor C's validate-and-price (4B.6c)
-pointed at a pin, re-validated by pinning all 386 placements into a fresh model
-and asking CP-SAT. Live: **$0.00, empty affected list, 0.384s** against 64s, and
-**five repetitions give ONE DISTINCT CARD** on the full tuple. A refusal names its
-docs/05 family and carries **`holds_others` — SHUT is not OCCUPIED**, the ruled
-species a FIFTH time (`CostProof` 4B.18, `partitions()` 4B.21,
-`FeasibilityGhost.verdict` 4B.23). Clause (2) reached ACCEPT and had to:
-`hold_all_placements` pins every incumbent placement, so **the promise on the card
-and the schedule that lands are the same object**. `POST /audit` (the deliberate
-search) found **$239,824.80 cheaper, 226 ops moving**, offered with its own
-affected list and its own accept (`POST /audit/accept`) — **one click can never
-commit both**. The card's `attribution: "local"` draws ONE row and never a
-`window re-optimization $0.00` line: the component is **ABSENT by construction,
-not measured as zero**.
-
-**BEAT ONE'S BUDGET WAS MARGINAL IN THE WRONG CURRENCY, AND THERE IS NO PLATEAU
-(4B.24, §5a.97-98).** Beat one's verdict costs **0.0426 deterministic units — the
-same to four decimals at all five seeds — and 2.5-3.9 SECONDS**, because the
-deterministic meter barely counts PRESOLVE; so raising the deterministic budget
-alone would have changed nothing. `FEASIBILITY_BUDGET_S` **2.0 -> 12.0**,
-`FEASIBILITY_DET_TIME_S` **1.0 -> 2.0**, and `wall_ceiling_for()` gives a
-deterministic re-solve `max(caller ceiling, det x 120 s/unit)` so **the clock can
-no longer decide** (`applied_time_limit_s` reports the limit ACTUALLY applied).
-One unit of unpinned search, five seeds: **three find exactly the incumbent, seed
-44 finds 16.3% cheaper, seed 45 13.2%**; seed 42 at THREE units finds 12.4% — the
-SEED decides and so does the BUDGET, because CP-SAT schedules its portfolio around
-the budget it is handed. **"Units to plateau" was NOT measured and could not be**:
-improvements run to the budget edge at every budget tested, and
-`CpSolverSolutionCallback.DeterministicTime()` returns a CONSTANT for every
-solution of a run. Exchange rate **33.9-77.0 s/deterministic unit**. Two runs of
-seed 42: identical det time (1.0328) and trace, wall times 2.4s apart. **NOT
-FIXED, named (§5a.100):** beat one is now the whole cost of a gesture (4.8-5.7s of
-~8.2s, mostly presolve); the audit's single seed finds nothing at 1 unit; a
-CHUNKED op cannot be locally priced and declines BY NAME; **a collision drop is
-now a REFUSAL by ruling**, so 4B.22a's displacement card is unreachable from a
-gesture; and Item 6 was driven through the API, not a pointer (no browser
-extension). **DISCHARGED BY 4B.25:** `POST /audit/accept`'s success branch (it was
-BROKEN — see below) and `tests/test_rolling_two_beat.py`'s 12 errors.
-
-**R-BK1 — THE PUBLISHED BOARD IS A PORTFOLIO, NOT A DRAW (4B.25, §5a.101,
-docs/04 verbatim).** Five clauses. **(1)** A solve may be a DECLARED PORTFOLIO:
-K deterministic runs at CONSECUTIVE seeds `seed0..seed0+K-1`, best by LEDGER,
-ties by lowest seed — a pure function of a fixed set, so **the portfolio is
-deterministic**; a member the WALL stopped is not reproducible and is NOT
-SELECTABLE (4B.24 clause (1), same words). **(2)** K and the per-member budget
-are DECLARED coefficients with provenance, and **K=1 IS EXACTLY TODAY'S
-BEHAVIOUR** — one call, no extra solve, no scratch dir, **NO BLOCK IN THE
-DOCUMENT** (absent by construction, 4B.24's discipline), proven by SCHEDULE
-DIGEST. **(3)** by the LEDGER, never the raw objective (4B.7). **(4)** the losing
-members' totals are PUBLISHED — the cross-seed spread is 4B.12's honest companion
-to the gap and is free here; three authored registers, and **a spread of one
-number is not a spread** (None, never 0.00). **(5)** separate PROCESSES, never
-CP-SAT `workers>1`. Live: `src/mre/modules/portfolio.py` (the primitive),
-`rolling_horizon.solve_rolling_portfolio` (K+1 searches at K>1, the winner's
-re-solve CHECKED against the member that won — `PortfolioDrift`), and
-`sandbox.audit_incumbent`. **`AUDIT_K` = 3. `SolveRequest.portfolio_k` WAS 1
-and is 3 since 4B.29** (see the contract note above); the audit's K is NOT
-calibrated and is still a constant.
-
-**THE AUDIT PORTFOLIO FOUND 2.3x MORE MONEY THAN THE SINGLE SEED (4B.25,
-§5a.102).** Dense demo board, `POST /audit` at K=5 x 3.0 units, seeds 42-46:
-**$1,887,657.78 / $2,030,588.40 / $1,581,932.98 / $1,784,070.77 /
-$1,859,103.07**. 4B.24's $239,824.80 was **seed 42, the FOURTH BEST of five**;
-seed 44 finds **$545,549.60**. **SPREAD $448,655.42 = 28.36%, and the offer
-sentence says so** — *"far from settled"* — which turns a figure a planner would
-read as the answer into a floor. Seed 42 reproduces 4B.24's number **TO THE
-CENT** across sessions. **K=3 finds the same winner** for 60% of the wall. Two
-K=5 audits → **ONE DISTINCT OFFER** on the full tuple. **`POST /audit/accept`'s
-SUCCESS BRANCH WAS BROKEN** (`AttributeError: DriverCode has no attribute
-'COST_MINIMIZATION'` — a name never in the vocabulary, behind the button 4B.24
-reported as never-executed); corrected to `COST_TRADEOFF`, and a real child
-minted: 386 bars, 333 ops moved, **ledger equal to the offer TO THE CENT**
-(§5a.104). The offer now carries its WINNING SEED and the accept carries
-`expect_delta_abs`, so a child that re-solved differently is REFUSED.
-
-**THE MAIN-SOLVE PORTFOLIO IS WORTH $578, NOT $545,549 (4B.25, §5a.103).** Same
-board, seeds and budget, COLD instead of warm-started: **42 $2,127,482.58
-(exactly the incumbent) / 43 $2,164,599.48 / 44 UNKNOWN / 45 UNKNOWN / 46
-$2,126,904.42**. Winner seed 46, **$578.16 (0.027%)**, spread 1.77%. **TWO OF
-FIVE SEEDS RETURN AN EMPTY BOARD** — 4B.22a's non-monotone solvability is
-SEED-dependent as well as size-dependent, and clause (4) is what stops a
-portfolio that shrank to three from reporting a tighter spread than its evidence.
-**WALLS: sequential 515.8s vs five processes 298.8s — 1.73x, not 5x**, because
-each member runs **~1.8x SLOWER with four siblings** on this laptop. **Ledgers
-AND deterministic times are IDENTICAL TO TEN DECIMAL PLACES across execution
-modes** while walls differ by 80s: clauses (1) and (5) in one table. **NOT FIXED,
-named (§5a.106):** the cold-vs-warm gap is unexplained; K=1 at seed 44 would
-publish an EMPTY board here; *"search deeper"* now costs **~7 min at K=3** and
-nothing in the cockpit says it is three searches long; the parallel speedup is a
-LAPTOP number; a parallel member re-runs the WHOLE SPINE; the audit child's
-lineage is in the REGISTRY, not its document; and **the portfolio is not
-reachable from the ask path** (§5a.29's shape, second member).
-
-**R-CAL1 — CALIBRATION IS MEASURED, OFFERED, AND DECLARED (4B.29, §5a.108,
-docs/04 verbatim).** 4B.26 recommended shipping K=3 AND 10.0 units as one
-change; this session shipped the K and REFUSED the budget, because **10.0 is ONE
-BOARD's calibration, not a law** — its own control board wants a different
-WINDOW, not a bigger budget. Four rules. **(1) MEASURED, NEVER AUTHORED** — the
-profile carries a **sha256 of its own grid**, recomputed on load; an edited grid
-is `unreadable` (never `absent`), refused at read AND at accept. The digest
-covers the MEASUREMENT and not the bookkeeping, which is what makes RE-USE legal:
-30 of 55 cells are 4B.26's own rows, imported with `source` naming them. **(2)
-OFFERED, NEVER AUTO-APPLIED** — `--accept` takes a NAME and refuses a blank one;
-**THE CALLER ALWAYS WINS**, and **THE WINDOW IS NEVER OFFERED** (it is what a
-planner asked to SEE, not a coefficient of how hard we look) though
-`window_calibrated` rides beside `window_solved`. **(3) DECLARED — INCLUDING
-WHEN THE ANSWER IS NO**: `solver.calibration` is PRESENT on an uncalibrated
-plant and says so, the OPPOSITE discipline from `solver.portfolio`'s absent-at-
-K=1, deliberately. **(4) THE FACILITY IS THE SCOPE** — a two-facility submission
-is REFUSED calibration by name. **THE COEFFICIENTS ARE PRODUCT-SIDE, NOT IDS,
-AND THAT IS ON THE RECORD:** K, the budget and the window are facts about OUR
-SEARCH; nothing reaches the model, objective or ledger, so **no docs/06 doorway
-is owed**. **THE KNEE IS A STATED RULE:** *the smallest measured budget at which
-(i) every seeded search published a board and (ii) its winner is within a
-declared tolerance (1%) of the best winner at any LARGER measured budget* —
-(ii) is vacuously true at the largest measured budget, the rule's own limit
-stated. Where no budget satisfies (i) that is a FINDING and the profile
-recommends the deepest window that IS reachable. Recommended K comes off the
-same grid (consecutive seeds → the K-portfolio IS the first K) and is **floored
-at 2**, with the floor named separately so an argument never wears a
-measurement's clothes. **DRIFT** (`CALIBRATION_DRIFT`, finding code 20, ADDED
-never repurposed): fewer than K publishable under an ACCEPTED AND APPLIED
-profile → INFO / `proceeded_flagged`, on the certificate, **and the board still
-publishes**. It fires only under an accepted profile — a plant on defaults has
-no promise to drift from. Live: `python -m mre.calibrate`, resumable,
-append-only, cost stated BEFORE it spends.
-
-**THE 8.0 BISECTION SAYS NO, AND THE MONEY AND THE RELIABILITY ARRIVE AT
-DIFFERENT BUDGETS (4B.29, §5a.109 — §5a.107's residual arm).** Demo board, five
-new cells: **seeds 44 and 45 are STILL EMPTY at 8.0 units**, so the knee stays
-at **10.0** and the hazard clears between **8 and 10**, not 6 and 10. But seed
-43 finds **$1,801,222.70 at 8.0** — 16.8% cheaper than any 6.0 member and
-exactly its 10.0 and 15.0 figure. So a K=3 portfolio at 8.0 would publish
-$325k cheaper while two of five siblings still place NOTHING; **condition (i) is
-what stops the profile recommending it**, and this is the grid where (i) bites
-(on 4B.26's own table condition (ii) ruled the starved budgets out alone).
-**ON A PROVABLE BOARD THE FLIP CHANGES NOTHING BUT THE WALL** — 20 orders, three
-members, all OPTIMAL at $885.58, winner seed 42 by tie-break, and the
-certificate gains *"all 3 seeded searches landed on the same total"* free.
-
-**THE COLD PORTFOLIO WAS BUDGET-STARVED, NOT GEOMETRICALLY WEAK (4B.26,
-§5a.107 — §5a.106(a)(b) MEASURED).** A (budget x seed) sweep, demo board, COLD,
-seeds 42-46. Value vs the incumbent at K=5: **$578.16 at 3.0 units / $1,298.60
-at 6.0 / $460,014.78 (21.6%) at 10.0 / the SAME $460,014.78 at 15.0** — it
-switches on **between 6.0 and 10.0** (354x) and the WINNER PLATEAUS AT 10. Cold
-at 10.0 recovers **84% of the warm audit's $545,549.60**. **THE SPREAD WIDENS
-BEFORE IT NARROWS** (1.77/1.81/**28.06**/25.20%) — the tight low-budget spread
-was three STARVED searches failing in the same place, never agreement. **THE
-EMPTY-BOARD HAZARD IS A BUDGET THRESHOLD, NOT A BAD SEED:** 44/45 empty at 3.0
-and 6.0, **nobody fails at >=10.0, and seed 44 WINS there**. At the shipped
-default (K=1, 6.0, seed 42) the board DOES publish at the incumbent's ledger to
-the cent — but **2 of 5 seeds would publish an EMPTY BOARD**, and which two is a
-property of (board x budget), so no fixed seed0 is safe in advance. **K IS NOT
-UNIVERSAL INSURANCE:** the 170-order world at w14 is **0 of 5**; the SAME world
-at w10 is **5 of 5, spread 42.10%** — **the window, not the density, kills it**
-(§5a.15 from the seed axis). **RAISING THE BUDGET AT K=1 MAKES THE BOARD WORSE**
-(seed 42 **+$7,887.05** at 10.0 vs 6.0) while the same spend at K=3 earns
-$460,014.78 — the budget lever is unsafe alone and safe with K. **RECOMMENDED,
-NOT FLIPPED: K=3 + 10.0 units as ONE change** (K=3 takes the ENTIRE K=5 gain
-wherever material; K=5's edge is <=$1,298.60 = 0.06% and only at starved
-budgets; 45% of K=5's wall, ~12.9 min sequential, **3.9x the shipped solve**).
-**Daryn decides.** NOT FIXED: more budget is **NOT MONOTONE** in the ledger for
-a fixed seed; the 6.0-10.0 plateau was not bisected; mid170-w14 was not pushed
-past 6.0; every publishable cell is FEASIBLE, so **"cheaper" is never "closer to
-optimal"**.
-
-**THE 4B.8 RENAME DRIFT WAS SIX FILES AND THE GUARD WAS POINTED AT ONE (4B.25,
-§5a.105).** `test_rolling_two_beat.py`'s 12 errors were the visible member; five
-more `det_time`/`det_total` call sites had been broken since 4B.8, **every one
-inside a `--runslow`-gated fixture, so the default suite collected them, skipped
-them and reported green** — and one was `tools/build_rolling_fixture.py` carrying
-**the exact defect the errand session's signature guard was written for**. The
-guard now sweeps EVERY file in `tests/` and `tools/`. A sixth thing was stale: an
-assertion pinning the PRE-4B.11 hedge for a placed order, correct-in-life for
-three sessions, never run. **A GUARD POINTED AT ONE FILE GUARDS ONE FILE.**
-
-**BEAT TWO WAS NEVER CALLED, AND THE CHAIN WAS NEVER BROKEN — IT WAS
-CONDITIONAL (4B.23, §5a.89 — §5a.88(a) DISCHARGED).** One drag on the demo board
-made ONE request. `controller.js` branched on `ghost.feasible`, which
-`feasibility_ghost` computes as `status in ("OPTIMAL","FEASIBLE")` — so **UNKNOWN
-(our budget ran out) and INFEASIBLE (the plant has no room) were one branch
-wearing one sentence**, and `returnHome`'s `keepCard` default then HID the card.
-Matched gesture: **dense 386 bars → UNKNOWN → 1 request; pinned 56 bars →
-OPTIMAL → 2 requests and a $354.58 card.** Identical code; the fixture cans a
-FEASIBLE beat one, so every two-beat test was green over a branch nothing
-exercised. **THIRD INSTANCE OF A RULED SPECIES** (`CostProof`'s fourth state
-4B.18, `partitions()` tri-state 4B.21): `FeasibilityGhost.verdict` is
-`possible | impossible | undetermined`, an unrecognised status **fails SAFE to
-undetermined**, `feasible` alone is never sufficient to author a sentence about
-the plant, and **both `possible` and `undetermined` proceed to pricing** — only a
-PROVEN refusal stops the chain. **A REFUSAL AND A FAILURE READ DIFFERENTLY**
-(§5a.91), in different registers, four exits and none silent, the failure naming
-WHICH BEAT and offering a retry, **no raw transport string on a planner
-surface**. Two caught on the way: the pending card said *"this is possible
-here"* BEFORE the request was sent, and a Tier-0 refusal lost its reason at the
-release. **BEAT ONE's 4.6s IS THE MODEL BUILD** — `SolverBuilder.build` 6.564s /
-67% dense vs 0.308s / 13% pinned, so its budget governs 22% of its own latency
-(§5a.92; a model cache is named and priced, not built). **15s WAS TOO SMALL A
-BEAT-TWO BUDGET AT DEMO DENSITY** — 15s `no_verdict`, 25/40/60s FEASIBLE at
-$2,596.67; token now **30.0s**, and **a budget is a CEILING not a spend** (the
-pinned world still proves in 1.3s; the cost is ~64s cold / ~34s warm on 386 bars,
-§5a.93). **A POLL CANNOT DISCARD A LIVE PROPOSAL** — SUPPRESS, because the
-proposal is in no document to reconcile against; narrower than
-`hasUncommittedState`, so 4.4 CU2's banner and 4B.5's fixes stand (§5a.94).
-Guard: 11 tests x 2 themes, premise test, **three negative controls proven red
-against physically reverted code**. **NOT FIXED, named (§5a.95):** R-DP9's no-op
-tolerance **scales with the zoom** (~240 min at the default 30-day view swallows
-a 236-min move — no card, no request, indistinguishable to a planner from the
-defect just fixed); beat two is a **wall-clock solve with no deterministic
-budget**; `cockpit.spec.mjs:111` ("deictic") is **red at HEAD**, not from this
-session.
-
-**A DRILL-DOWN RESOLVES TO THE ANSWER IT FOLLOWS (4B.22, §5a.79 — §5a.77
-DISCHARGED).** The 4B.5 ladder (card > selection > last-subject > history)
-resolves WHO a question is about and **has no rung for WHAT WE SAID** — a
-citation set is not a subject — so *"show me the evidence for that"*, one turn
-after an answer citing a record and lighting three bars, bound the order
-correctly and grounded nothing. Three authored cases, **none silent**: records
-open (naming the question they are behind, and saying a contracted route has no
-per-sentence claims); **an answer that cited nothing SAYS SO** — a different
-fact from having nothing open, and `PROVE_IT_NO_TARGET` stated the wrong one for
-both, telling a planner the citations were "on it" about a CLARIFY;
-synthesis provenance unchanged (4B.5 CU5). `AnswerMemory` is written at
-**`run_ask`**, the ONE seam every live answer passes — NOT at `dispatch`'s
-matched-route branch, which a rolling route, a tray answer and a CLARIFY never
-reach. `forget_deliveries` clears it and is now the ONE clear for server-side
-conversation state (4B.16a's fifth-channel defect refused in advance). The
-4A.5a fall-through stands: a prove-it gesture that ALSO names a real intent is
-answered as that intent.
-
-**THREE ANSWERS EXISTED AND NO ROUTE REACHED THEM (4B.22, §5a.80-82 — §5a.69
-DISCHARGED).** 4B.15's attribute-lookup shape, three times. **NO NEW INTENT WAS
-TAKEN**: the parse already reaches each route, so the cheaper honest option was
-to let it carry the figure. **B1** `machine-schedule` states the load from
-`evidence_tools.machine_load`, **the one definition it now shares with the
-toolbox** — naming its QUANTITY (working time, never the span) and its
-DENOMINATOR (open minutes over the same first-to-last interval: 5,981 against
-6,655, 89.9%; the whole calendar is 22,320) — **and REFUSING the judgment**,
-because "overloaded" is a threshold no plant declares and `SATURATED = 0.85`
-measures CONCENTRATION, a different claim. A multi-machine listing states no
-load at all. **B2** `advice` leads with the opener's top-ranked item and names
-which of the two questions it answered; the intervention refusal is right and is
-kept verbatim. `Intent.ADVICE` joins the document allow-list. **B3** `inventory`
-answers whether an order can be PARTLY placed and **distinguishes measured from
-invariant** — nothing enforces all-or-nothing, because
-`rolling_horizon._derive_maps` keeps ONE work package per demand. Guard: 35
-tests, **every Class A assertion over TWO CONSECUTIVE `run_ask` CALLS**, five
-premise tests, **four negative controls each proven red on its own half** — and
-the premise fixture's own first version was wrong in exactly the way the session
-exists to catch. **NOT FIXED, named (§5a.83):** the `why-on-machine` lead is
-about ELIGIBILITY and its record's driver is about OCCUPANCY, so the drill-down
-shows a planner two propositions about one record (the sixth driver-phrase site
-now reads **"recorded driver:"** — 4B.21's remedy, a one-line scope widening
-taken because the drill-down put it on the demo path); *"how do i fix that"*
-after a whole-board read lands on CLARIFY `no-subject`, honest, because the
-BOARD is the subject and the ladder has no rung for it.
-
-**A COUNT NAMES THE DISPOSITION IT COUNTS (4B.21, §5a.71 — 4B.17's A5
-DISCHARGED).** "Orders" alone is not a disposition: known, scheduled, committed,
-active-window, beyond-horizon and excluded are different sets and a surface
-reporting one says WHICH. **A PREDICATE ASSERTED OVER A COUNT MUST APPLY TO
-EVERY MEMBER OF THE SET COUNTED** — where it does not the set is SPLIT and each
-part reported with the predicate that applies. Two clauses added: adjacent
-counts share a denominator or name their own; where the dispositions do not
-partition the known set the surface **says so and states no total** (4B.18's
-`unreadable` again). `inventory` said *"40 order(s) are in the plan, scheduled
-across 56 operation(s) … Every order finishes on time"* on a board of **40
-known / 26 scheduled / 14 beyond-horizon / 56 placed of 88 declared** — three
-denominators in three lines — while the opener said 26, the tray said 14, and
-the toolbox's `lateness_set` note stated the split correctly. **THE SURFACE THAT
-WAS RIGHT IS THE ONE NOBODY READS.** Census: 542 raw sites → 253 candidates → 8
-defects, plus a separate UNIVERSAL sweep (38 planner-facing, 15 with a
-placement-presupposing predicate, 3 defects) because the sharpest specimen
-carries no number. Fix: ONE definition, `order_disposition.census`, every field
-naming its set, read by seven surfaces. Guard: agreement + prose, 10 tests,
-premise test, **two negative controls red on opposite halves**, limit in the
-docstring. **§5a.72: THIS IS THE FIFTH CATEGORY FUSION IN SIX SESSIONS** (delta
-card 4B.5, `lateness_set` 4B.13, `CostProof` 4B.18, working-time 4B.20,
-`inventory` 4B.21) and docs/04 names the mechanism: **a name written once, by
-whoever needed a number, and never re-read as a claim.** **§5a.78: THE GUARD WAS
-GREEN WHILE THE LIVE PATH WAS BROKEN** — every test supplies its own document;
-the ask path injects one from an intent ALLOW-LIST `inventory` was not on. A
-guard that supplies its own arguments proves the assembler, not the path.
-**A5 (§5a.73):** the chain was assembled for the ORDER and the lead computed for
-the OPERATION — *"no alternative to weigh"* over a chain entry for a DIFFERENT
-op pricing two. Scoping ONE list (`ordered_records`) fixes chain, cited refs,
-lit bars and the cockpit footer together; `why-on-machine` now takes an
-`op_seq`. The driver-phrase-as-whole-clause census found seven sites and the two
-RENDERER ones now read **"Recorded driver:"** — *"Why:"* claimed to be the
-reason. **§5a.74: A CONTRACT TERM THAT IS ALSO AN ORDINARY WORD WAS DEFINED IN
-NO REACHABLE DOCUMENT** — synthesis called the 14 beyond-horizon orders *"inside
-this plan's horizon … left out of the schedule itself"* because "horizon" means
-the date extent in English; `"committed"` retrieved ZERO corpus passages.
-docs/01 **§6.10** now states the four dispositions and the everyday senses that
-mislead (free — docs/01 is already CURRENT tier); `synthesis_prompt.md` **v5**
-rule 12. **NOT FIXED, named:** *"what does it mean that work is beyond the
-horizon"* parses to `coaching`, which lists nine submission fields (§5a.75 —
-§5a.69's shape again); drill-down anaphora is a context-ladder change (§5a.77);
-three prose sites still print raw minutes, deliberately, for R-PD1 clause (4)
-comparability (§5a.76).
-
-**WORKING TIME AND ELAPSED SPAN ARE DIFFERENT QUANTITIES AND ARE NEVER
-INTERCHANGEABLE (4B.20, §5a.67 — §5a.56 DISCHARGED).** Any surface reporting one
-names WHICH, in the field name or the sentence; **(end − start) on a chunked
-operation is a SPAN**, and working time is the sum of the run windows and nothing
-else. Two clauses added: **a capacity figure names its DENOMINATOR** (5821 busy
-minutes against 1501 of open capacity — 3.9x — with nothing on the surface making
-it checkable), and **a figure the product DERIVES must be quotable by the surface
-that derives it** (see below). The census was by ARITHMETIC, not name — an AST
-walk, then a binding pass: **408 raw sites → 198 time-quantity bindings → 63
-OFFSETS (the solver's whole variable space) → 135 true durations, of which THREE
-are wrong and all three are `evidence_tools.py`**; `_duration_minutes` feeds
-THREE tools, so 4B.17's "two seams" was one function. **THE TRUER FIGURE WAS
-ALREADY ON THE ROW** — `run_min`/`span_min`/`chunks` since 4B.14 — and the
-toolbox discarded them to recompute the subtraction. **`board.js` WAS RIGHT AND
-RIGHT BY A PROPERTY OF THE DATA NOTHING ENFORCES** (§5a.68): span occupancy
-saved only by the open-window intersection, measured identical on every machine;
-now per-chunk. The opener was never affected (it reads `run_min`). **MAKING THE
-ANSWER TRUER MADE IT UNVERIFIABLE (§5a.70):** working time lives in no single
-record, so a correct claim with four real citations was CUT — derived row figures
-now enter the toolbox's tallies through a NAMED set. Guard: naming register +
-value property, **its limit stated in the docstring** (the toolbox surface only),
-premise test, **two negative controls proven red**. Governed: four
-`TOOL_MEANINGS`, `synthesis_prompt.md` **v4** rule 11. **NOT FIXED, named:** *"how
-busy is CUT-01"* parses to the contracted `machine-schedule` route, which
-enumerates 18 placements and states **no utilisation figure at all** — the fixed
-surface is unreachable from the question that most directly asks for it (§5a.69).
-
-**A PERSISTED EVIDENCE INDEX IS A FAITHFUL RECONSTRUCTION OF THE INDEX IT WAS
-SAVED FROM (4B.18, §5a.63 — §5a.55 DISCHARGED).** Any record class the builder
-puts in `_all_evidence` survives a round trip, or the load reports itself
-INCOMPLETE and names what is missing. **Silence is forbidden: an answer surface
-may not be unable to distinguish "this never happened" from "this was not
-persisted".** Schema 1 lost **25 records across FOUR classes** on a real run
-(236 → 211), not the one 4B.17 measured: `record_event` and
-`register_input`/`register_output` hardcode `subjects=[]`, so **every Event and
-Artifact is subject-less**, and `load()` rebuilt from `entity_records` alone —
-taking the entire input manifest and the four M0 conformance rate metrics with
-the solver report. A subject-less Finding survived in `finding_index` but not
-`_all_evidence`, so **one loaded index gave two answers about itself**. Schema 2
-persists `_all_evidence` and DERIVES the indices on load through `build`'s own
-`_index_record`. `CostProof` has a fourth state, **`unreadable`**, priority over
-the other three, so a claim about the PLANT is never manufactured from a fact
-about our STORAGE; the rider, the opener item and the route each have an
-authored branch and **none may be silent**. Old indexes load and declare
-themselves; **forward compatibility is NOT provided** (a schema-2 file read by
-older code yields an EMPTY index — loud, not subtly wrong). The guard asserts by
-**kind and count**, emits through the real Reporter, runs over every real run,
-and its **negative control is proven red**. NOT DONE, named: the seven schema-1
-indexes in `_data/runs/` are left unmigrated as the live incomplete-path
-specimens; **a schema-2 file that is lossy for a future reason is not
-self-detecting** (`incomplete` covers schema 1 only) — the round-trip guard
-stands in that gap, because a file cannot audit itself and a test can.
-
-**§5a.22 IS DISCHARGED — THE r5 BANK IS CALIBRATED, RUN AND GRADED (4B.17).**
-27 → 33 questions, six runs, 198 answers; every expectation change logged in
-`tests/ai_exam/RUBRIC.md`'s append-only RECALIBRATION LOG with its cause and old
-text; the 27 original question TEXTS untouched. **NOTHING IS LATE ON THE PINNED
-BOARD**, so nine lateness questions are false-premise specimens now. **FIVE
-REPRODUCIBLE TRUTH FAILURES, NONE A MODEL ARTIFACT, ALL REPORTED AND NOT FIXED:**
-a door label offers to *"explain why CUT-01 carries no work"* about the BUSIEST
-machine (§5a.60 — a door label is a claim, and the reverse-guard only proves the
-door OPENS); the no-such-machine correction lists **8 of 15** machines and drops
-the one the asked order is on (§5a.54, verbatim in 4B.13's own close-out);
-**the synthesis toolbox reports the merged SPAN as `duration_minutes` and
-`busy_minutes`** — 5821 against 1501 working minutes, 3.9x the machine's open
-time, the **FOURTH SEAM** of a class fixed three times (§5a.56 — **FIXED 4B.20,
-§5a.67**, where the census proved the class has four members and three are one
-function); the pinned exam
-world could not state its own cost proof because `EvidenceIndex.save()` dropped
-run-level records (§5a.55 — **FIXED 4B.18, §5a.63**, where the loss turned out to
-be four classes and 25 records, not one); and `why-on-machine`'s evidence
-chain **contradicts its own only-eligible lead and still carries the founder's
-original vacuous driver phrase** (§5a.54). **THE TIER QUESTION IS STILL
-UNRESOLVED AND THE REASON IS NOW STRUCTURAL: 31 of 33 questions never reach the
-layer the split changes** (§5a.57) — one differing routing decision in 198
-answers, and it is the parse's, which is Haiku in both configurations. Cost
-$0.0105 vs $0.0110/question, **Sonnet the cheaper here**. A founder-regression
-bank cannot resolve a tier decision; that needs a bank UNMATCHED by design.
-
-**THE COUNTERFACTUAL — `what-would-change` (4B.16, §5a.49, parse prompt v13).**
-The INVERSE of `why-here` over the SAME computed bounds and NO new ones: take
-the docs/05 family that BINDS and report the change that would move it, with
-its threshold and the arithmetic (min_chunk / predecessor finish / another
-eligible lane / a longer window). **EVERY THRESHOLD IS VERIFIED BY RE-RUNNING
-`earliest_fit`, THROUGH `resumable_fit` SO R-C3 APPLIES** — which is how the
-brief's own specimen was caught: `min_chunk <= 240` DOES NOT WORK, the ceiling
-is **215 = floor(431/2)**, because at 216 the solver treats the op as atomic.
-Unverified levers are DROPPED. **NECESSARY, NEVER SUFFICIENT:** every answer
-names the NEXT bound (recomputed through the ladder tail, not assumed to be the
-runner-up) and says it removes a barrier rather than placing anything. B7/B8,
-the objective (on `chose`) and a declared closure are NAMED as unpriceable.
-Alternative lanes are scanned from the UPSTREAM FLOOR, never from the start of
-their calendar. A planner-named DAY is NOT parsed — the target is computed and
-the answer says which day it tested.
-
-**THE OPENER — `briefing`, widened (4B.16, §5a.50).** Every item the document
-supports, RANKED BY CONSEQUENCE, each carrying its number and a pointer;
-contracted testimony, no synthesis on the path. Band 1 is money and its two
-members are comparable because both are currency (controllable tardiness —
-never the floor — and the unproved gap x ledger); band 4 is CLEAN, so **"three
-things and none of them are on fire" is reachable**. ELIGIBILITY is what makes
-a busy machine a concentration; at-risk is conservative by construction (slack
-in calendar minutes vs the longest step in WORKING minutes). **WHAT THE
-DOCUMENT DOES NOT SUPPORT IS REPORTED** — no tray on a monolithic run, no
-coarse zone, no document at all. NOT FIXED: the certificate item cannot state
-the GRADE (a submission fact the document does not carry), and concentration
-did not fire on either measured board (demo density is far below 85%, so it is
-unexercised live).
-
-**A MATCHED ROUTE COULD NOT BE WRONG (4B.15, §5a.40).** Five consecutive
-measured turns were swallowed by `coaching` at 0.92 confidence — including an
-EXPLICIT CORRECTION reparsed into the same wrong intent. R-AI5 inverted: tier
-one over-claims, tier two is never reached, and synthesis OUTPERFORMED the
-routes everywhere it was allowed to run. `route_falsifiability.py` checks the
-DETERMINISTIC template rendering at the dispatch seam (before any LLM render)
-and falls through to synthesis on **SUBJECT SILENCE** or a **DISCARDED
-DISJUNCTION** — the alternatives carry the question's own preposition, so an
-answer CONTAINING the fact without surfacing the choice is a fall-through, not
-a pass. **IT CAN ONLY REJECT THE ROUTE THE PARSE CHOSE**, never name one, so no
-deterministic classifier returns. Fails OPEN in every direction.
-
-**ANY DECLARED FIELD IS ASKABLE (4B.15, §5a.41).** `Intent.ATTRIBUTE_LOOKUP` +
-`attribute_lookup.py`, parse prompt **v12**. "is ORD-000013 op20 splittable"
-returned capability documentation with a scold while the blocker analysis
-quoted the answer off the same snapshot one exchange later. The field
-vocabulary is **REFLECTED off `contracts/entities.py`** — a new entity field is
-askable the day it lands; the authored alias map picks WHICH FIELD to read,
-never a value. The provenance chain is walked (an Operation's `splittable` is
-`derived` → cite the OperationSpec's `observed` submission column). NOT
-DECLARED and DECLARED-AS-ZERO render differently, always.
-
-**CAPABILITY CLAIMS GROUND IN docs/05 OR ARE REFUSED (4B.15, §5a.43).**
-`constraint_catalog.py` parses docs/05's own **MARKDOWN TABLES** into 26
-records + 6 rulings + 6 exclusions — a table is structure, and docs/05 §0 says
-the catalog is "structured records first". **THE PROSE-LOCKED DEBT IS
-DISCHARGED FOR THE CATALOG ROWS, NOT THE PROSE** (quoted verbatim, never parsed
-for meaning). The honesty register is **DERIVED** from (verdict, status), so
-moving a status column changes every answer about that item; a MIXED status
-gets its own register rather than being flattened. Two synthesis tools
-(`constraint_catalog`, `spec_lookup`) put the same ground under tier two;
-synthesis prompt **v3** rule 9 makes reaching for them mandatory before a
-capability claim. Agreement with the blocker analysis's not-weighed list is
-ASSERTED from `UNCOMPUTED_FAMILIES`, so the two surfaces cannot drift.
-**LABELING IS NOT SUFFICIENT WHERE THE CLAIM IS WHAT THE PRODUCT CAN DO** — a
-planner acts on it by authoring data that is then silently ignored, and there
-is no board to check that against.
-
-**THE CORPUS SHIPS WITH THE BUILD, IN TIERS (4B.15, §5a.39).** `corpus.py`:
-CURRENT (docs/01/05/06) free rein; **HISTORICAL (docs/04) opt-in and every
-passage DATED** — it carries superseded rulings as first-class text, so a
-first-match retriever states a retired mechanism as current with a real
-citation; **INTENT (docs/07) REACHABLE BY NOTHING**, enforced by
-`TIERS_FOR_PURPOSE` not listing it. Fail-closed dating DROPS the 15 undated
-`D-nn` founding decisions. **`docs/` IS NOT IN THE RUNTIME IMAGE** (the
-Dockerfile says so), so the index is package data with a sha256 per document —
-a spec edit without `python tools/build_corpus_index.py` is a RED TEST.
-
-**THE REPEAT DETECTOR WAS INVERTED AND IT SCOLDED (4B.15, §5a.42).** Four
-measured firings, ZERO true positives, escalating to "Still the same; nothing
-has changed since you asked". It counted MY OUTPUT (how recently a route
-answered) and read it as THEIR INPUT. Split: `repeat` needs the same QUESTION;
-`deaf` needs the same delivered ANSWER for a DIFFERENT question and responds
-with self-doubt plus an offer to narrow. **THE SIGNAL IS THE OUTPUT, NOT THE
-ROUTE.**
-
-**THE TIER IS MEASURED, AND WAS UNASKABLE UNTIL IT WAS (4B.15, §5a.44).** Both
-governed call sites hardcoded `temperature=0` — a **400 on Claude Opus 5 and
-Sonnet 5**, so every request to both candidate tiers failed at the transport
-before any answer existed to grade. `llm_compat.py` fixes it and retries once
-without the offending field. `tools/model_tier_bench.py`, counted tokens:
-**parse on Haiku + synthesis on Sonnet 5** ties best correctness (14/15) and
-multi-hop (7/8) at the LOWEST median latency (1.5s) and 37% under
-Sonnet-everywhere. **Opus 5 is NOT recommended** — 2.7x, better on no quality
-column, and the source of the bench's only fabricated answer (three
-non-existent machines, zero tool calls, correctly labelled and shipped anyway).
-**NOTHING SHIPPED CHANGED — both layers still run Haiku; the tier is Daryn's
-call.**
-
-**ITEM 0: A TRUE FACT ABOUT THE WRONG DAY (4B.15, §5a.45).** 4B.14's close-out
-is CORRECT — PAINT-01 is OPEN on Tue Jan 13 and carries ZERO work; the live
-answer's "07:00 to 11:24" is real occupancy on Tuesday **Jan 6**, the other
-Tuesday in a five-Tuesday horizon. Nothing told the model what day it was. The
-shared context block now carries the reference date and horizon; synthesis rule
-10 forbids taking a weekday from whichever row appeared first. 4B.14's chain
-was re-verified from the snapshot and is unchanged.
-
-**THE EXPLAINER KNEW ONE CAUSAL STORY AND THE PLANT HAS SIX — `why-here`
-(4B.14, docs/07 §5a.35, parse prompt v11).** `start-reason` answered every
-"why is it placed here" with resource contention, the last job on the machine;
-when the true cause was one of the other five it reached for the only one it
-had and rendered it fluently, with citations.
-`src/mre/modules/blocker_analysis.py` computes an earliest-feasible-start per
-docs/05 family — release A4, precedence A1/A2, frozen R-F1, pin A7/F1, resource
-B1, calendar C1/C2, chunk-fit C3 — and names the one that BINDS. **BINDING is
-the EARLIEST family attaining the maximum**: when precedence and chunk-fit land
-together, precedence pushed it and chunk-fit merely failed to push further.
-**THE DISTINCTION THAT MATTERS MOST, and the product could not draw it:**
-`actual == max(est)` is COULDN'T; `actual > max(est)` is NOTHING PREVENTED IT
-and the solver CHOSE. Four docs/05 families are **NAMED as uncomputed on every
-answer** (B3/B5, B7/B8, C4, F3); A3/A6 are out of scope, being upper bounds.
-The route is AUTHORED COPY — **the verb is the answer**, and a reword that
-softens "couldn't" is the failure it was built to end.
-
-**ITEM 0 RETURNED (A): THE SCHEDULE IS RIGHT, THE EXPLANATION WAS WRONG.**
-ORD-000013's op20 is `splittable=False`, needs **431 working minutes**, and had
-**294** left before PAINT-01 closed on Tuesday; Wed Jan 14 is a
-`planned_maintenance` closure on **13 of 15 machines** (HEAT-01/02 open).
-**THE ROOT CAUSE WAS A THIRD FIRST-CHUNK-ONLY READ (§5a.34):**
-`_load_enriched_assignments` read `phase_windows["run"][0]["end"]`, so a chunked
-op reported its first PAUSE as its end — the exact figure the bad answer cited.
-4B.13 fixed the same class at two other seams and stopped. **A defect class
-fixed at one seam is not fixed.**
-
-**CAUSAL SUFFICIENCY — A CITED CAUSE MUST ACCOUNT FOR THE QUANTITY IT EXPLAINS
-(§5a.36, `causal_sufficiency.py`).** "Held until T, so it took the next opening"
-asserts an arithmetic identity nobody checked. **The 4B.5 vacuity tripwire
-cannot catch this and neither check subsumes the other** — the specimen names an
-order, a machine AND a timestamp, and would pass with the timestamp off by a
-year. **The two 4B.14 fixes are independent, and this is pinned:** repairing the
-chunk read alone leaves the sentence false, because the real cause is chunk-fit.
-
-**DISAGREEMENT LAUNDERING (§5a.37, `ContestedClaim`).** "it seems it should be
-able to start on tuesday after op10 finishes" came back "is ORD-000013 really on
-time? Yes - the record agrees." The intent was right; the ASSEMBLER knew one
-proposition and its canonical question said so verbatim. **Worse than a wrong
-number, because the planner cannot tell they were ignored.** The parse now
-reports which claim is disputed (`lateness`/`timing`/`other`, also on
-`why-here`) and a challenge is answered ON ITS OWN TERMS — where the planner is
-right, plainly, first. `predicate_coverage` went from **one entry to three**,
-both additions measured.
-
-**Contract 1.12** (4B.14): `AssignmentBlock.splittable` + `min_chunk_min`, both
-Optional and absent on an older document. The job card carries RUN TIME and
-ELAPSED SPAN as **separate labelled rows** — after 4B.13's chunk fix they
-genuinely differ (1,501 working minutes across a 5,821-minute span) and
-conflating them is the confusion the merged bar used to create.
-
-**CLOSE-OUTS LIVE AT `docs/closeouts/<session-id>.md` — ONE PATH PER SESSION,
-NOTHING OVERWRITES** (4B.13 Item 6). Until then every session wrote the repo-root
-`SESSION_CLOSEOUT.md`, so the newest close-out silently replaced the last one and
-a stale root file kept being read as current. Historical references in docs/04
-(append-only, never rewritten) and older docs/07 entries name the ROOT path; they
-mean that session's file, now under `docs/closeouts/`. Errand and recon reports
-follow the same rule with a qualified name (`4B.12-errand-exam-world.md`).
-
-**THE CLIFF IS AT 92 OPS/MACHINE, NOT 137 — AND §5a.27's NUMBERS ARE SUPERSEDED
-(4B.12, docs/07 §5a.31; §5a.27 carries a dated note and is NOT rewritten).**
-Re-run against **byte-identical worlds** (`verify_world_identity.py`: 8 worlds,
-all identical; the generator untouched since 4B.10's commit), the last density
-proving 5/5 is **92** and at **94** it is **0/5**. Cause is 4B.10's own
-mechanism firing everywhere: R-PD1 admits past-due work, so the floor is nonzero
-wherever late work exists and CONTROLLABLE tardiness is nonzero at the LIGHTEST
-density measured — **there is no tardiness-free regime left on this book**, and
-the proof costs **200-360x** what it cost on the same world without its late
-work. **OPS/MACHINE IS REFUTED AS A PREDICTOR by a sharper argument than
-utilisation was: the proof cost is not even MONOTONE** — 65 ops/machine proves
-in 0.045-0.286 units while the LIGHTER 50 takes 0.294-0.735.
-
-**F004 AND F006 ARE SOLVED, NOT BRACKETED (§5a.31(e-g)), and the product result
-is ANSWERABILITY.** F004, the MEDIAN facility: 254 ops/machine, **0/5 proved,
-gap 83.5-85.8%**. F006, the largest: 772 ops/machine at 134.9% utilisation,
-**gap 98.8%**. **NOT ONE CELL AT ANY DENSITY RETURNED UNKNOWN** — every failing
-cell places every admitted op and states its own gap, while a FIRST SOLUTION
-costs 0.0002-0.147 units against a 5.5-unit cap that cannot close the bound
-(37x at F006, 948x at 149 ops/machine; 4B.8 measured the same shape at 74x).
-**The problem at real density is not producing an answer, it is proving one** —
-which is why 4B.11's rendered gap is the right response and a pre-solve warning
-is the wrong one. **EVERY a=1 FIGURE IS THE OPTIMISTIC ONE:** the plant
-cross-trains, and a=2 proves 0/5 at 100 ops/machine where a=1 manages 1/5.
-**REPORTED, NOT FIXED — the tardiness split needs a THIRD category** at F006:
-"controllable" means not-already-accrued, NOT discretionary, and on a 134.9%
-plant most of it cannot be scheduled away by any placement (§5a.31(g)).
-
-**`hint_mode` — THE WARM START, SHIPPED BEHIND A FLAG, DEFAULT OFF** (4B.12 CU3,
-`rolling_horizon.py`; guards in `tests/test_hint_warm_start.py`). Its spend comes
-out of the SAME `det_total`. **Turning it on is a ruling, not a default change** —
-every golden is captured with it off. Verdict in docs/07 §5a.32.
-
-**R-PD1 — PAST-DUE IS WORK, NOT A DEFECT (ruled and implemented, docs/04
-2026-07-28).** Six clauses. **(1)** a past-due unstarted demand is admitted,
-scheduled and priced with tardiness from its DECLARED due date. **(2) EXCLUSION IS A
-DATA-DEFECT CATEGORY ONLY** — never for a true statement about the plant's position
-(late, beyond horizon, over capacity); this **generalizes §5a.1 and §5a.26 into one
-rule**. **(3) THE GATE'S DISPOSITION BINDS DOWNSTREAM** — a module removing a
-`proceeded_flagged` demand raises its OWN finding naming ITSELF (`excluded_by_module`
-in evidence; the general guard is committed in `tests/test_pastdue_disposition.py`,
-35 tests). **(4)** tardiness decomposes and never fuses. **(5) AGE IS NOT LATENESS —
-OPEN, deliberately unbuilt** (§5a.28: the threshold is a declared IDS coefficient
-that does not exist, and inventing one authors a business fact we do not have; the
-full pipeline-proof chain is named in docs/06 §5.9). **(6)** every per-order route
-voices the disposition.
-
-**21 of 21 past-due orders are SCHEDULED on the specimen, and GRAVITY DID NOT HAVE
-TO BE TOLD** — measured, they are admitted by the BASE rule (`due <= window_end`)
-before gravity runs at all, so the admission policy needed no change and got none.
-`validator.py` Check 1 excludes nothing and raises one
-**`PAST_DUE_AT_INTAKE`** finding (**finding code 19**, ADDED never repurposed —
-`TEMPORAL_IMPOSSIBILITY` is M0's verdict on `due < release/created` and keeps that
-meaning) at INFO / `proceeded_flagged`, `remediation_applies: false`. **A SECOND
-EXCLUSION SITE was found and closed:** Check 5's resumable window-fit test floors
-`elapsed_days` at 0, so every past-due resumable demand would have been excluded
-there as `INFEASIBLE_SUBSET` — the same removal wearing a different code. And
-**scheduling past-due WORK never means modelling past TIME**: `_compute_horizon`'s
-reference-date floor is now unconditional (sample_data dragged the horizon to
-**2024-12-20** without it).
-
-**THE TARDINESS SPLIT — contract 1.10 -> 1.11.** `cost_summary.tardiness_floor` +
-`tardiness_controllable`, present TOGETHER or not at all, summing to `tardiness` to
-the cent, **ABSENT on any book with no past-due work**. It does not change the model
-— the floor was never in the objective. **4B.12 found its LIMIT: an over-capacity
-plant needs a THIRD category** — see above.
-
-**§5a.23 DISCHARGED — the cost proof is rendered and voiced.**
-`src/mre/modules/cost_proof.py` is the single definition. The cockpit strip carries a
-chip (label + title composed SERVER-SIDE, delivered on `/meta`, so the JS composes no
-wording); the answer surface carries an unprompted rider fired by the ONE delivery
-seam **only when the board is UNPROVED and the text states money** — the asymmetry is
-the point. Every bundle leaving `Explainer.route` carries the proof, read from the M6
-`solve_complete` event the document's `SolverBlock` is also built from. **The rolling
-path could not state a gap at all** before this. **No optimality ROUTE was built** —
-a vocabulary-class change, named as §5a.29.
-
-**THE 42 IS RECONCILED** (4B.11): `_excluded_summary` counted a token set holding
-both id-spaces of every excluded demand. Counting keys on the **resolved ORDER**
-and `scheduled + count == total` is asserted.
-
-**THE sample_data BASELINE WAS REGENERATED** (WO-PAST-001, seeded defect 3, whose
-`DEFECTS.md` declared `proceeded_flagged` all along). **Accounted for by
-construction:** the pipeline re-run with that single row REMOVED reproduces the
-previous golden **byte-for-byte**. New golden **801,930.00**, tardiness
-**777,521.00**, of which **776,160 is FLOOR**; `pilot_scale` and every rolling golden
-untouched. **Two fixtures were building against TWO CLOCKS** (bare `SolverBuilder()`
-while pinning a reference date elsewhere in the same run) — invisible until a
-released-long-ago order became schedulable; both now pass the date they had pinned.
-
-**THE REAL SHAPE, AND WHY IT REFRAMES SCALE (4B.10; full tables docs/07 §5a.24-27).**
-`pilot_scale` runs 13-15 machines at ~24 ops/machine; **the measured planning unit is
-4 MACHINES CARRYING 250-800 OPS EACH.** No long tail — 90% of demand due inside 14
-days, 50% inside 7, **7.83% ALREADY PAST DUE**. Durations are **DETERMINED**:
-`op = SetUpMinutes + (WoQuantity/CostingLotSize) x ProductionMinutes` (§5a.25) — and
-**a SENTINEL CLASS carries 93.56% of computed load** (1,434 products reading
-`lot = setup = production = 1`; **no exclusion rule we have catches them**, they fire
-on `lot == 0`). Every utilisation figure is taken with the class removed.
-**Utilisation is BOTH answers:** F006, the LARGEST facility, is structurally
-over-capacity (no solver fixes that); F004, the MEDIAN, is comfortably feasible —
-**there the difficulty is OURS**. The cases must not be conflated.
-
-**THE CLIFF IS A REGION WHERE THE SEED DECIDES, AND ITS DRIVER IS TARDINESS
-(§5a.27). ITS NUMBERS ARE SUPERSEDED BY 4B.12 — the MECHANISM below is current,
-137 and 13.056% are not.** Priced, not asserted: freeing the tardiness weight turns
-FEASIBLE/gap-11.47% into OPTIMAL and collapses the objective's spread across feasible
-solutions by a factor of **194** — **not constant, nearly flat**. UTILISATION was
-refuted as a predictor twice; 4B.12 refuted ops/machine as well, so **no pre-solve
-rule can exist** and the honest mechanism is REPORTING (why §5a.23 mattered).
-**Caveat that must travel:** this mirrors an extract with no setup families, no
-changeover matrix and no overtime; a plant that prices changeovers carries a
-placement-dependent term even at `alternates=1`. What generalizes is the SHAPE of the
-rule — difficulty turns on how much of the objective varies with placement — **not
-any particular number**.
-
-**`facility_real` ADDED, `pilot_scale` UNTOUCHED AND PROVEN SO.** Four variants (F004
-median / F006 largest / cross-trained / F005's 25% past-due), calibration CHECKED by
-`tools/spikes/density_4b10/verify_facility_real.py`, measured-vs-authored table at
-`datasets/facility_real/PROFILE_PROVENANCE.md`. `pilot_scale` keeps its purpose as the
-LOOK-AHEAD preset; `facility_real` is the REALISTIC one. **Alternates are
-CROSS-TRAINING, not extra machines** — identical machine count and load, so the pair
-is a controlled experiment. **Its CONDITIONAL grade is a GENERATOR TRUTHFULNESS
-DEFECT, not the past-due orders — 4B.10's claim to the contrary is CORRECTED
-(§5a.30)**; NOT fixed, because the inversion is what keeps R-PD1 clause (3)'s guard
-non-vacuous.
-
-**THE TWO-STAGE BUDGET IS DERIVED, NOT A CONSTANT (4B.8 CU2).** The caller declares
-a TOTAL (`det_total`); stage 1 is capped at total minus a **1/12 RESERVE**; stage 2
-gets what the total has left after stage 1 actually ran. The reserve is what keeps
-R-SC3(1) true at scale. The MONOLITHIC path passes `cap_stage1=False` (its cost proof
-stays uncapped) with a 2.0 total; raising it was measured and REJECTED.
-
-**THE STATUS LINE REPORTS THE COST PROOF (4B.8 CU3 — a RULING, contract 1.9 -> 1.10).**
-`solver.status` carries **STAGE 1's** status; Optional `solver.tiebreak_status` /
-`tiebreak_skipped_reason` carry stage 2's. **A schedule whose cost is proven optimal
-SAYS SO, and an unproven tiebreak never downgrades that claim.** **§5a.23 is
-DISCHARGED by 4B.11** — the strip chip and the money-answer rider both read it. What
-remains (§5a.29) is that nobody can ASK: there is no optimality INTENT, so
-"is this optimal?" falls to synthesis, which cannot see `solver.status`.
-
-**`EARLINESS_PREFERENCE` IS DORMANT (4B.8 CU4, interim only).** The extractor no
-longer emits it; `CAPACITY_BLOCKED` carries real occupancy evidence instead. **The
-DriverCode member SURVIVES and docs/07 §5a.20 stays OPEN** for the vocabulary
-migration.
-
-**§5a.15 DIAGNOSED, NOT FIXED (4B.8 CU5): THE 200-ORDER / 14-DAY INSTANCE IS
-FEASIBLE** — a solution in **0.082 deterministic units** once the objective is
-dropped, so **NOT an R-SC2 admission defect**; the COST solve finds nothing in 6.0,
-a factor of **74**. 4B.12 measured that same shape across nine densities (37x-948x)
-and it is the reason CU3's warm start exists.
-
-**R-SC3(2) IS RETIRED — `earliness_value` IS NO LONGER A PRICE** (4B.7, docs/07
-v2.52). Stage 1 minimizes COST ALONE on both paths and the coefficient parameter is
-DELETED from both signatures so it cannot leak back (measured: the price cost
-+73.20% of ledger at 40 orders / +97.61% at 120). **R-SC3(1) stands: stage 2 IS the
-tiebreak and runs UNCONDITIONALLY** at every coefficient including 0 and undeclared.
-`earliness_value` survives as a **REPORTING rate** on its own labelled line,
-`in_ledger: False`, never in `cost_summary.total` nor a delta card's money.
-**THE INVARIANT, ASSERTED: the SCHEDULE is byte-identical across every
-`earliness_value`** — a failure means the coefficient is back in the objective, and
-that is the only way it can return. Discharged with it: §5a.16, .17, .12, .9.
-
-**THE COARSE ZONE (R-SC2 amendment, 4B.6).** Beyond-horizon demand is coarsely
-PLACED, not merely listed (`src/mre/modules/coarse_horizon.py`; contract **1.9**
-adds `BeyondHorizonItem.coarse` + `RollingBlock.coarse_zone`, both Optional and
-absent on a monolithic run). Seven clauses govern it, and the ones that bite:
-
-- **RELAXATION, ALWAYS.** Only the NEGATIVE is claimed — coarse-INFEASIBLE implies
-  fine-INFEASIBLE; **the converse is never asserted in code, certificate or AI
-  answer.** The relaxation guard (`tests/test_coarse_horizon.py`) makes this a
-  theorem, and its NEGATIVE CONTROL proves the guard can go red.
-- **THE PROOF RUN AND THE PLANNING RUN ARE DIFFERENT RUNS.** `proves_infeasible`
-  is the only gate the negative escapes through: False for a planning run, a
-  FEASIBLE run, and a wall-truncated one.
-- **rho IS A DECLARED IDS COEFFICIENT** (docs/06 §5.9 `refinements.coarse_horizon`),
-  pipeline-proven per §8. Defaulted rho is **1.0 — a no-op derate**; an undeclared
-  plant is never given an invented margin, and provenance prints beside the value.
-- **COARSE NEVER CONSTRAINS FINE, nor its admission policy** — enforced as an
-  import-direction test. Unlock condition is stated in docs/07 §5a, not left to drift.
-- **TWO LEDGERS, NEVER FUSED** — enforced by SHAPE: coarse tardiness is counted in
-  BUCKETS and there is no currency field on the coarse surface at all.
-- **COARSE NEVER RENDERS AS A BAR** — a density band (`src/cockpit/src/coarse.js`).
-- Predictions are persisted OUTSIDE the document (`coarse_predictions.py`): the
-  document is a window-0 view, the audit is cross-roll. Realization is captured on
-  both intake paths (natural roll and gravity admission) and the rolling worker
-  WRITES it since 4B.6a, judging each prediction exactly once.
-- **EVERY LOAD FIGURE NAMES WHAT IT DID NOT COUNT** (4B.6a). Resumables and
-  over-capacity ops consume ZERO coarse minutes, so load is understated — answers,
-  tooltips and the band footer say so, and say nothing when nothing is excluded. A
-  plant with no declared derate is told loudly its figures assume full utilization
-  (a docs/06 §5.9 remediation note, **not a gate rule** — 36 rules, unchanged).
-  Resumables are EXCLUDED and NAMED (`coarse_unmodelable`): single-bucket forcing
-  would TIGHTEN the relaxation, and that exclusion is what makes clause (1) true.
-- Ask path: `coarse-fit` + `bucket-load` joined the closed vocabulary (parse prompt
-  **v9**). "When will ORD-X start" got NO new route — it is `why-not-scheduled-yet`,
-  carrying the coarse bucket BESIDE the untouched `earliest_window_estimate`
-  heuristic (two figures, two methods, never fused).
-
-**THE DELTA CARD SPLITS ITS VERDICT (4B.5 CU1).** `cost_delta_abs` measures the
-RE-SOLVE, not the move. Beat two also solves the window WITHOUT the pin (the
-BASELINE, cached per incumbent) and the card always shows *window re-optimization*
-beside *your move*, summing exactly to the total. **A planner's move is judged
-against the baseline, never the stale incumbent.** An unprovable baseline shows the
-unsplit total with an explicit "includes window re-optimization" line — never a
-silent fused number, never a half split.
-
-**R-F1/R-F2/R-F3 are RULED and RECORDED, not built** (4B.5 CU6; verbatim in docs/04,
-summarized in docs/07 §6). The planner-movable frozen boundary (a thaw makes standing
-pins, never free work); rush intake as a Demand the SOLVER places; the OUTCOME ->
-WINDOW -> PIN ladder with optional reasons. NAMED-QUEUED: the pin register,
-amend-submission (pilot-relevant), the boundary-drag gesture, the window constraint.
-
-**The ask path (R-AI5) — two tiers, sealed from each other, and a loop between
-them.** Every question is parsed FIRST by a model against the closed intent
-vocabulary (`src/mre/contracts/parse.py`), with the conversation history, the live
-board selection, the last-answered subject and the OPEN DELTA CARD as context. The
-resolution ladder is **card > selection > last answer > history > clarify**; while a
-priced card is showing, `open-card` READS IT BACK rather than re-deriving it, so the
-two surfaces cannot state different numbers. **No deterministic classifier survives
-anywhere** — `Explainer.classify` / `answer` went in 4A.5a and
-`rolling_questions.classify_rolling` (the last one) in 4A.5c. They must not come back.
-
-- A **matched** intent dispatches into the unchanged route assembly, render and
-  validator — unless the parse reports a **dropped qualifier** (a time scope, an
-  "actually", a comparative the route cannot honour), which diverts it to the second
-  tier and names it in the rendered-by line. The parse REPORTS; the dispatch decides.
-- An **unmatched** intent goes to **labeled open synthesis** (R-AI5(2)): a model
-  reasons over the closed read-only tool surface (`src/mre/modules/evidence_tools.py`)
-  under a stated budget and drafts structured CLAIMS, hardened claim-by-claim by
-  `claim_verifier` — **deterministic code, never a model** — into VERIFIED /
-  INTERPRETIVE / FAILED-and-cut. Provenance is visible per claim, the register is
-  `synthesis`, and "prove it" re-runs the grounding pass on one claim.
-- A matched intent can NEVER fall to synthesis, and an unmatched one NEVER guesses a
-  route (pinned by dispatch tests). Without a parser or synthesizer the honest floor
-  answers that it could not interpret / could not ground.
-- On a **rolling** run, subject resolution reads the document's three regions
-  (`RollingVocabulary`): a beyond-horizon tray order resolves as a real subject with a
-  BEYOND-HORIZON disposition. **A tray order is never "not in this schedule."** Since
-  4B.11 the same route RESOLVES a placed order instead of offering a disjunction.
-
-**THE PROMOTION LOOP (R-AI5(5)/(7)) — the system proposes its own healing; the
-proven register is entered only by review.** Every sweep writes a question ledger and
-emits `tools/provenance_report.py`: synthesis residue clustered into recurring shapes,
-ranked by a frequency-weighted Pareto. **R-AI5(6) is printed in the report's own
-header** — clusters whose residue is takes or aggregate reads are
-NOT-PROMOTABLE-BY-DESIGN, excluded from the Pareto, never counted as backlog.
-
-- `tools/promotion_dossier.py` drafts a dossier autonomously (`docs/promotions/`) and
-  **cannot reach dispatch**. The dossier is the application; the working thread's
-  review is the signature. Promotion is a **reviewed vocabulary-class change** (Intent
-  + meaning + taxonomy + offer + assembler + authored copy + prompt bump + a
-  `PROMOTIONS` entry citing the dossier). **Never automatic.**
-- A promoted route runs **shadowed** through probation: the sweep answers its shape
-  under both paths and diffs the facts. **Demotion is automatic** on a contradiction —
-  one field in `contracts/promotion.py`, and the intent leaves
-  `model_selectable_intents()`, so the parse can no longer name it.
-- Live: **one** promotion, `lateness-cause`, on probation.
-
-**R-AI5(8) is the hard rule of the tier:** the answering model's beliefs about its
-own citations are INPUT to verification, never the label — and the same discipline
-governs routing (the parse reports a dropped qualifier; it never decides the
-diversion). Both prompts are governed artifacts: changing either is a
-vocabulary-class change, reviewed, versioned, committed with its doc update.
-
-**Where history lives — do not duplicate it here:**
-
-- `docs/07-roadmap.md` is authoritative for *what comes next*. Check it before
-  picking up work. It is updated same-day per its own W2 rule.
-- `docs/04-design-history.md` is authoritative for *what happened and why*. It is
-  append-only. **Read the Amendment log tail before touching any area it covers.**
-- Session close-outs are written to docs/04 and docs/07 — never narrated here.
-
-**R-DP13 — `PLANNER_DIRECTIVE`, THE CODE THE TAXONOMY LACKED (4B.33, §5a.133,
-docs/04 2026-08-03). §5a.130 CLOSED.** `DriverCode` **13 -> 14**, ADDED never
-repurposed, docs/02 §4.2 same commit. A `planner_edit` accept's real driver is
-*a human directed this placement* — every other member names something the PLANT
-or the MODEL did. **THE DRIVER IS A CONSTANT AND THE SIGNATURE NOW SAYS SO:**
-`_edit_driver` takes **NOTHING** (it took `cost_delta`), because a signature
-accepting a quantity advertises a derivation that no longer happens; R-DP12 is
-not weakened, since its rule was *never the incomparable scaled objective* and a
-constant trivially is not. **THE PHRASE MAY NAME NO DIRECTION** — *"a planner
-directed this placement, and its cost was priced before it was accepted"*, true
-at EVERY ledger delta, stating only what is checkable on the record
-(`authority`, `chosen.cost_delta`), and saying **"a planner", not "you"** (the
-reader is not necessarily the authority). **`COST_TRADEOFF` JOINS
-`NO_ALTERNATIVE` IN RETIREMENT FROM THIS SITE** — false at $0.00 AND false of a
-dearer accept — while staying correct wherever a cost genuinely decided
-(planner merges, the extractor's price-ranked attribution, and
-`POST /audit/accept`, where the accepted board IS the cheaper one). **NO CONTRACT
-BUMP AND NO docs/06 DOORWAY ARE OWED, BOTH ANSWERED ON THE RECORD:**
-`CONTRACT_VERSION` versions the schedule DOCUMENT and `driver` lives on Decision
-records the document does not carry; the pipeline-proof rule governs declared
-facts about the PLANT, and this classifies an act performed INSIDE the product
-(R-CAL1's product-side/IDS distinction on another axis). **LIVE on the Khalil
-board:** children `caff8efa` (zero-move, 6.99s) and `e2e18e8c` (+24h, 3.70s),
-ledger $1,667,467.80 unchanged on both, and the drill-down voices the phrase
-verbatim. **NOT FIXED, named (§5a.135):** no exam bank can reach it — neither
-pinned world holds a single `planner_edit` Decision (0 of 32, 0 of 96, measured)
-because an accept mints a CHILD at runtime, so the specimen needs a new pinned
-world; the `edits`/`edit_cost` routes **do not voice the driver at all**
-(`_edit_facts` never carried it and the renderer short-circuits the chain), so
-the drill-down is its ONLY live surface; *"why is this bar here?"* still lands on
-CLARIFY `no-subject`; and the R-F1 boundary move keeps `FROZEN_COMMITMENT`.
-
-**THE GOLDEN-CSV FLAKE IS FIXED, AND THE BUDGET WAS ALREADY THERE (4B.33,
-§5a.134 — §5a.132(e) DISCHARGED).** The per-stage measurement IS the finding:
-stage 1, the **cost proof**, has no deterministic cap and proves **OPTIMAL in
-0.81s**; stage 2, the earliest-start **tiebreak whose placements ARE
-`schedule.csv`**, already carried a **1.953-unit deterministic budget** and
-needed **14.56s** of a 30s wall. **THE WALL WAS OVERRIDING A BUDGET THAT WAS
-ALREADY CORRECT**, by barely 2x — and under load the solve DOUBLES (73s vs ~35s
-measured), putting stage 2 at ~29s against 30s. **That is the coin flip and why
-it failed about HALF the time.** **NO MECHANISM ADDED AND NO CLI FLAG NEEDED**:
-`test_defaults_reproduce_baseline` now passes `--time-limit 600` (a SAFETY
-CEILING ~40x the solve, ~4x the worst case at 77 s/unit), so each stage is
-reproducible **for its own reason** — stage 1 because it PROVES, stage 2 because
-its DETERMINISTIC budget binds. **THE PREMISE IS ASSERTED:** `_run_mre` fails
-loudly if the cost proof stops proving, since then the ceiling becomes
-load-bearing again. **NEITHER GOLDEN MOVED** (`sha256 cc6242b4…`; ledger
-801,930.00 unchanged), nothing re-anchored. **9 FOR 9** byte-identical (6 quiet,
-3 under load). **THE CONTROL IS THE MECHANISM:** the old 30s wall did NOT
-reproduce in 10 quiet runs — recorded, not glossed — while **forcing** it to bind
-(`--time-limit 8`) gave a byte-different schedule 3 for 3. **THE SHAPE
-GENERALISES TO ONE OF THE THREE REMAINING FLAKE MEMBERS:**
-`test_scenario_untouched_moves_bounded` needs the full determinism triple AND the
-wall lifted; the two SCREENSHOT members are render/timing races a deterministic
-budget does nothing for.
-
-**R-DP12 — THE LEDGER IS THE ONLY COMPARABLE NUMBER (4B.32, §5a.129, docs/04
-2026-08-03). THE INCOMPARABLE NUMBER WAS ALSO WEARING A DOLLAR SIGN.** Live on
-the Khalil board, twice, identically: a ZERO-MOVE accept whose ledger went
-**$1,667,467.80 → $1,667,467.80** recorded `driver: NO_ALTERNATIVE` and a
-Decision message reading **`(−$7,014,821)`** — so the store the ask layer
-testifies from held a sentence claiming a $7M saving for a move that changed
-nothing. `delta_abs` is the restricted accept model's SCALED objective minus the
-**WINDOW SOLVE's**: different expressions, different op sets. **CU1 — VERDICT
-IDENTITY:** under `hold_all_placements` every variable is pinned, so the
-objective **cannot change the plan and can only change the WORD**; the accept
-now **clears it**, exactly as the card's `validate_held_world` always has
-(`cp-sat-pin-all`). That makes the two surfaces **ONE AUTHORITY**, which
-**DISCHARGES R-DP10** — and the three discharge conditions (one compiler, one pin
-seam, one question) are in docs/04 so **the obligation REVIVES if any lapses**;
-it also closes 4B.31 §8(c) (the accept PROVES OPTIMAL, never a budget verdict).
-**R-T2's disclosure line is STRUCTURALLY MOOT here, recorded not dropped.**
-**CU2:** driver and every dollar derive from `cost_delta.total_delta`; the scaled
-objective survives only as **labelled solver telemetry** and is **None, never
-0.0**, where the objective was cleared. **`NO_ALTERNATIVE` IS RETIRED FROM THE
-ACCEPT** — *"there was no other feasible option"* is a claim about the PLANT that
-under a full hold would be manufactured from a property of OUR METHOD. **THE
-TAXONOMY HAS NO HONEST CODE AND THE GAP IS RECORDED, NOT PAPERED OVER**
-(§5a.130): `COST_TRADEOFF` lands at every delta including $0.00, where it
-**over-reads**; the missing member is `PLANNER_DIRECTIVE`, a reviewed
-vocabulary-class change NOT taken. The driver is a CONSTANT deliberately — the
-variation `delta_abs` supplied was noise with a sign. **CU4:** the R-DP11
-property guard asserted `seen[0]`, so a second WIDER build would have passed the
-guard written to forbid it — now every build (§5a.131). **NOT FIXED, named
-(§5a.132):** the ledger-MOVED branch is **unreachable from a drag on this board
-and that was MEASURED** — 54 gestures, **50 refusals and 4 prices, every price
-exactly $0.00** — so the dearer/cheaper branches are asserted by unit test, never
-observed live; `hold_all_placements=False` keeps its objective correctly and has
-NO live coverage; `POST /audit/accept` was not touched (its `delta_abs` is a
-LEDGER figure, believed from 4B.25 and not re-derived here); and the
-`COST_TRADEOFF` phrase is false of a DEARER accept, pre-existing.
-**4B.31 FINDING (g) IS CORRECTED (§5a.132(e) — FIXED 4B.33, §5a.134, where the
-cause turned out to be a deterministic budget the wall was OVERRIDING):
-`test_defaults_reproduce_baseline::test_schedule_csv_identical` is NOT merely
-load-sensitive — on an IDLE machine it is pass/FAIL/pass/FAIL on this tree and
-pass/FAIL/pass on a clean detached HEAD worktree, i.e. it fails ~HALF THE TIME
-at HEAD with nothing else running.** `_run_mre` pins workers, seed and
-PYTHONHASHSEED; the ONLY unpinned thing is `--time-limit 30`, a **WALL** limit,
-which the hard rules already call irreproducible. `test_cost_ledger_identical`
-passed **six for six** — the LEDGER is stable and only the placement drifts
-among tied optima. The fix shape is a deterministic budget in that fixture.
-
-**R-DP11 — THE ACCEPT MODEL IS THE PLAN OF RECORD'S OWN SCOPE (4B.31, §5a.126,
-docs/04 2026-08-02 verbatim). NOTHING HAD EVER COMMITTED ON A ROLLING BOARD.**
-A card reading *"PROVEN WITHIN BUDGET"* against an accept answering `INFEASIBLE`
-turned out not to be about the move at all: a **ZERO-MOVE accept** — pinning a bar
-at its own placement — refused on every rolling board (409 in 2.4-2.5s) while the
-same gesture on a MONOLITHIC board returned 201. **THE MECHANISM IS SCOPE.**
-`apply_planner_edit` built over **the WHOLE BOOK** against the **WINDOW's**
-horizon: the Khalil snapshot holds **695 operations and the plan places 386**, so
-the **309 beyond-horizon tray ops the rolling engine declined to admit** re-entered
-as free work that had to fit 31 days around 386 held placements. Two-cell control:
-whole book **INFEASIBLE 0.6s**, plan-of-record scope **OPTIMAL 0.1s**, **zero pin
-refusals in both**. A deletion filter reduced the cause to **ONE tray order,
-ORD-000062**. **THE FIX WAS SIX SESSIONS OLD AND WIRED TO THREE SURFACES OUT OF
-FOUR** — `_restrict_window` (4B.3c CU3) reaches beat one, beat two and the audit;
-the ACCEPT had no such parameter. Five clauses; the load-bearing ones: the scope is
-**DERIVED INSIDE THE ACCEPT, never passed in** (`sandbox.plan_of_record_scope`,
-**None never the empty set**), the published plan is a feasible assignment **BY
-CONSTRUCTION**, and on a plan that places every operation the scope is the
-**IDENTITY** (90/90 on three monolithic boards — goldens untouched). Live: the
-Khalil board commits, ledger **$1,667,467.80 → $1,667,467.80, delta $0.00**, and
-card-vs-accept agree on **18 gestures, 0 disagreements**. **THE GUARD NEEDED TWO
-MEMBERS (§5a.127):** at 40 and 80 orders the whole book FITS and the zero-move
-accept is **GREEN AT HEAD, defect and all** — only `pilot_scale` 200/w7 reproduces
-— so the invariant is asserted as a **PROPERTY** (the ops handed to the live
-`SolverBuilder.build` == the plan's placed set), **RED at HEAD even on the sparse
-fixture**; three negative controls proven red against physically reverted code.
-**R-DP10 (verdict authority) IS RULED AND ITS TWO-BEAT CARD IS NOT BUILT** —
-criterion 5 unmet, by judgement not blocker; the residue is that the accept
-re-solves WITH an objective and can return UNKNOWN where the card's
-objective-cleared validation proved OPTIMAL. **Daryn decides.** CU4 shipped: a
-refused accept names its blocker in the **4B.24 refusal vocabulary, one
-definition** — *"that time is already taken on this machine (ORD-000138) [B1]"*.
-
-**R-F1's MECHANICS, BUILT AT LAST (4B.28, §5a.119, docs/04 2026-08-02
-verbatim).** R-F1 was ruled 2026-07-26 and NOTHING HAD EVER BUILT IT — for six
-sessions the frozen boundary rendered as a labelled line nobody could touch. It
-is a real handle now: hover states it, drag moves it, and the instant + delta
-render DURING the drag with the committed boundary still drawn beside the
-provisional one. **A THAW CHANGES AUTHORITY, NEVER POSITION** — every committed
-assignment the boundary uncovers becomes a STANDING PIN at its exact placement,
-**which is why `frozen_boundary.py` contains no solver** and why the child
-version SHARES ITS PARENT'S RUN AND SNAPSHOT (the placements ARE the parent's
-placements, so the ask path keeps reading the same evidence in the same run dir).
-**A FREEZE ABSORBS THE PINS IT CROSSES** — the first release of a standing pin
-this product has performed, deliberately narrow: only pins the frozen front now
-binds anyway, so no placement is ever left unheld; the general `unpin` verb is
-untouched. **THE CEREMONY IS TWO CALLS** — a preview that mutates nothing and an
-apply handed the preview's own digest — so the count on screen is the count that
-applies and a board that changed under the dialog is REFUSED (4B.25's
-`expect_delta_abs` at a second seam). **DEMONSTRATED END TO END on the Khalil
-board:** thaw 8 (committed 24 -> 16, 8 pins, **placements identical**), ask
-*"why is ORD-000001 pinned?"* -> the boundary move naming its instants and its
-planner, re-freeze 8, **absorb all 8**, placements STILL identical. A drag past
-the window end refuses by name. **`frozen` NOW OWNS "PINNED"** (parse prompt
-**v16**, one MEANING widened, no new intent — the route existed and the assembler
-could answer): before it, "why is ORD-000001 pinned?" went to `attribute-lookup`,
-which correctly said it could not find that field, because *pinned* is not a
-field — it is a fact about AUTHORITY. **NAMED LIMIT: STANDING PINS DO NOT SURVIVE
-A SLICE ROLL** — splicing seam 3 is unbuilt, and the thaw gesture now mints
-exactly the objects seam 3 must preserve, which makes it the strongest argument
-yet for seam 3 being NEXT after the demo.
-
-**SCREEN ROOM, AND THE DROP MAPPING CHOSE THE MECHANISM (4B.28, §5a.121).** Three
-docks (tray / coarse / ask) collapse to a labelled edge, persisted per browser,
-tray and coarse collapsed by default and ask OPEN. **THE BADGE SURVIVES THE
-COLLAPSE** — a collapsed tray reading "BEYOND THE HORIZON 122" is not a hidden
-tray, and that is the Glass Box cardinal danger the tray exists to answer.
-DOWNTIME COMPRESSION uses **vis-timeline's own `hiddenDates`, not a custom
-scale**, and the requirement that decided it is the DROP MAPPING: every
-pixel<->instant conversion already goes through `timeline.body.util` and vis
-applies hidden ranges INSIDE those functions, so R-DP9's tolerance, 4B.23's time
-mapping and the drag's pin stay exact with no second coordinate system. Only
-spans where EVERY row is closed fold (hidden dates are an AXIS property). **A
-FOLD HAS ZERO WIDTH, SO EVERY SEAM IS MARKED** — two bars either side of a folded
-night would otherwise read as ADJACENT, a claim about the plant compression would
-be inventing. LINEAR is the default and the toggle persists: verifying a calendar
-claim is unanswerable on a folded ruler.
-
-**THE GESTURAL DEBT IS PAID, AND ONE DEFECT WAS FOUND ON THE WAY (4B.28,
-§5a.122).** **THE CHUNKED DRAG** was inert because `onPointerDown` tested the
-item id against the ASSIGNMENT index and 4B.20 made a chunked bar's items PIECES
-— so the gesture never started and vis's Hammer pan took the drag. Dragging any
-piece now drags the OPERATION, the pieces travel as one, and the drop **DECLINES
-VISIBLY** in a THIRD card register (not proven-impossible red, not failure alarm)
-with **no "try again"**, checked from the row before any request. **THE ASK
-PATH'S OWN COPY WAS CORRECTED IN THE SAME COMMIT** — it promised *"Dragging the
-bar on the board runs the full re-solve, which can"*, which was never true — so
-the two surfaces state ONE LIMIT (§5a.118(h) discharged). **R-DP9's TOLERANCE**
-was `grid_px x pxToMinutes(1)` ≈ **240 minutes at the default 30-day view** and
-is now a **FIXED 5 WORKING MINUTES** (`feel.snap.noop_tol_min`): jitter is a
-property of the hand and does not scale with the zoom. A no-op SAYS SO. **THE JOB
-PANEL** states every operation of the order from the board's OWN derivation (no
-third computation of any quantity, 4B.21's discipline) and its two intent buttons
-carry `op_seq` exactly — **§5a.118(c) discharged for board users**. **FOUND, NOT
-BRIEFED:** `board.rebind` predated per-chunk rendering and `items.update` INSERTS
-on an unknown id, so every accepted edit on a board with a split operation raised
-a **PHANTOM MERGED BAR** over the pieces still there; one builder, one remover,
-removal by prefix. Also fixed: `board.onSelect` held a SINGLE callback and
-overwrote it, so a second subscriber would have silently unsubscribed the ask
-panel's deictic scope.
-
-**A GUARD THAT CALLS PAST THE BROKEN LINE PROVES NOTHING (4B.28, §5a.123).** Six
-negative controls proven RED against physically reverted code. **A SEVENTH DID
-NOT FIRE**: the chunked-drag control's first version drove `drag.grab(op)`
-programmatically and stayed GREEN against the reverted defect, because the defect
-lives in `onPointerDown`. Rewritten to drive a real pointer on a real chunk
-piece, it went red. **The only way to find that out is to revert the fix and
-look** — 4B.21 §5a.78's species from the other side.
-
-**THE ASK PATH'S EIGHT, AND NOT ONE NEW INTENT (4B.27, §5a.112).** Ten measured
-defects; **eight fixed, one did not reproduce, one NOT BUILT**. Parse prompt
-**v14** widens three MEANINGS and adds nothing — `frozen` may be asked about ONE
-ORDER, `late-order` also owns "tight", `gap-between` is selected by TWO NAMED
-ORDERS — because in all three the route existed and the assembler could already
-answer. **THE DELTA CARD CALLED TWO QUANTITIES "LATENESS"**: the total is net
-plan tardiness **CLAMPED** (`Σ max(0,l_new)−max(0,l_old)`), the rows are a
-**SIGNED** per-order lateness change, so *"no change to lateness"* beside
-*"ORD-000040 +1440min"* was two true statements in one word — **and it is NOT
-the floor/controllable split, because a move cannot change the floor at all**.
-The bare driver phrase got 4B.21's remedy at its EIGHTH site. **THE SOLVE'S
-TIMING WAS UNRECORDED, NOT UNREAD** — the rolling `solve_complete` never carried
-it (the monolithic one always did) and the M6 RunContext closes in **1.4ms**
-because it is the REPORTING context, so fixing the reader's field names alone
-would have reported 0.0014s for a 400-second search; now two figures, never
-fused (*"10 deterministic units … 416.9 seconds on this machine"*). **R-BK1's
-PORTFOLIO IS REACHABLE FROM THE ASK PATH** (§5a.106(g) discharged) — the seam
-was the dispatch's DOCUMENT ALLOW-LIST, **4B.21 §5a.78's mechanism a second
-time**; live at K=3 it states all three ledgers and the 28.06% spread. **A
-PROVED BOARD GETS A DIFFERENT SENTENCE** — the K=1 caveat's first version told
-the pinned world another seed might find something cheaper, caught in this
-session's own verification. **"TIGHT" IS THE BOARD'S BAND** (`latenessBand`,
-−1440), **NOT the opener's at-risk set** — routing one to the other would have
-been the fusion class committed while fixing it. **11 of 13 order-taking routes
-DROP a second order** and the remedy is DISCLOSURE at one seam, not eleven
-two-subject assemblers; PRESS-FAST/PRESS-SLOW survived because it comes from the
-EVIDENCE, not the parse. **NOT FIXED (§5a.113):** item 1 (the later-direction
-counterfactual) is NOT BUILT — the machinery exists (`local_price`) but on a
-dense board a later drag is usually a REFUSAL, so the honest answer is dominated
-by refusal branches; item 7 **DID NOT REPRODUCE** (4 probes, all correct) and
-its requested keyword-shape remedy would have been a **deterministic
-classifier**; the tray pre-emption still rewrites a two-order question (now
-disclosed, not answered); the winner's wall (416.9s) EXCEEDS the portfolio's
-(399s); Census A's MACHINE axis is unaddressed; `frozen` is rolling-only.
-
-**Carried qualifications (open, owned):**
-
-- Cloud deploy is verified **in-container**, not **in-cloud**: live `az deployment group
-  create` from `deploy/azure/` + cloud smoke remain PARKED on the Azure trigger; the
-  Bicep is still ARM-unvalidated (Session 2.4 carry, partially retired 2.4b).
-- The `raw_data` path bypasses the M0 gate and has no WIP doorway — owned Phase-4 debt
-  (RawAdapter retirement / pilot connector); the live gate-free entry points are named in
-  docs/04's 4B.2c R-SC1 correction.
-- Phase 3's **cold-stranger cold-drive** is MET-BY-PROXY only — a named Phase-4 entry
-  condition, not relaxed.
+### Standing law in force
+
+One line each. **The ruling code is the pointer** — every code below resolves to
+its full text in `docs/04-design-history.md`; the docs/07 §5a entry carries the
+measurements. Do not restate a ruling's reasoning here.
+
+**The ask path**
+
+- **R-AI5** — two tiers, sealed. Every question is parsed FIRST by a model
+  against the closed intent vocabulary; a matched intent dispatches into the
+  contracted route, an unmatched one goes to labeled open synthesis over the
+  read-only tool surface, hardened claim-by-claim by `claim_verifier`
+  (deterministic code, never a model). A matched intent can NEVER fall to
+  synthesis; an unmatched one NEVER guesses a route. **No deterministic
+  classifier survives anywhere, and none may come back.**
+- **R-AI5(8)** — the answering model's beliefs about its own citations are INPUT
+  to verification, never the label. The parse REPORTS; the dispatch DECIDES.
+- **R-AI5(5)/(7)** — the promotion loop proposes; only review promotes. A
+  promoted route runs shadowed; demotion is automatic on contradiction. Live:
+  one promotion, `lateness-cause`, on probation.
+- **R-TG1** — a GENERAL-KNOWLEDGE claim is unverifiable by design: verification
+  SKIPPED, claim LABELLED, never passed unlabelled. `gk_disqualifiers` is ONE
+  predicate read BOTH ways (a claim naming board content may not wear the label;
+  a claim naming nothing on this board is DROPPED unless proposed).
+- **R-TG2/R-TG3/R-TG4** — `teaching` is a second-tier INTENT, not a route; depth
+  is granted by intent (LONG 8 claims, SHORT 4) at the DISPATCH seam; a deferred
+  claim is not a cut claim; the boss question is 8 lines — account, lever, offer.
+- **R-TG5** — a teaching answer must ATTEMPT a board read. The ATTEMPT is
+  required, never the grounding; the no-case line CITES the read that found
+  nothing. **The catalog is not the board.**
+- **R-TG6** — a sentence asserting THIS PRODUCT's behavior may not wear the
+  general-knowledge label; a mobility statement naming a board entity is checked
+  against the floor's own verdict (asked, never re-derived); a general rule the
+  floor's verdict vocabulary falsifies is refused.
+- **R-TG7** — an empty teaching drop has a floor: the authored card replaces the
+  capability card and says a draft existed and was REFUSED, never "nothing was
+  found". It does not enter `ANSWER_MEMORY`.
+- **R-MT1** — carried answer state is schedule-scoped, cleared on rebind, honest
+  about its own absence. `ANSWER_MEMORY` / `SYNTHESIS_MEMORY` / `_DELIVERED` key
+  on `(session_id, schedule_id)`; `forget` is by SESSION.
+- **R-LD1–R-LD5** — a typed operation number reaches the route; every resolution
+  made is disclosed; a premise is verified at the GRAIN it was asserted at;
+  disclosure follows the SUBJECT, not the resolver.
+- **R-FF1–R-FF4** — the premise floor attaches to the QUESTION FAMILY, not one
+  route; the parse may not invent a direction; each member renders in its own
+  shape and the lead claims nothing about what follows.
+- **R-OF1** — an outage may never wear the capability card. `system` is a
+  register; three stages (parse / synthesis / unconfigured), no doors.
+- **R-EX1** — RUBRIC C9 grades whether a planner could predict the next case,
+  via a transfer pair with the conversation cleared between halves. **The LLM
+  judge is written down and REFUSED.**
+- **R-SW1** — a specimen world is a committed dataset whose specimens are
+  MEASURED, never assumed.
+
+**Money, proof and the board**
+
+- **R-PD1** — past-due is work, not a defect: admitted, scheduled, priced from
+  its declared due date. **Exclusion is a data-defect category ONLY.** The gate's
+  disposition binds downstream; tardiness decomposes and never fuses; every
+  per-order route voices the disposition. Clause (5) (age vs lateness) is OPEN
+  and deliberately unbuilt — the threshold is a declared IDS coefficient that
+  does not exist.
+- **R-BK1** — the published board is a portfolio, not a draw: K deterministic
+  runs at consecutive seeds, best by LEDGER, ties by lowest seed. K and the
+  budget are DECLARED coefficients; losing members' totals are PUBLISHED; a
+  spread of one number is None, never 0.00. Separate PROCESSES, never
+  CP-SAT `workers>1`.
+- **R-CAL1** — calibration is MEASURED (sha256 over its own grid), OFFERED never
+  auto-applied (**the caller always wins**; the WINDOW is never offered),
+  DECLARED including when the answer is no, and the FACILITY is the scope. The
+  coefficients are product-side, not IDS — no docs/06 doorway is owed.
+- **R-T2** — every sandbox solve is deterministic and a wall-truncated solve
+  REFUSES TO PRICE; "your move" is priced locally; the window's opportunity is
+  its own labelled thing; accepting is two ceremonies; the incumbent is audited,
+  not enshrined.
+- **R-DP11** — the accept model is the plan of record's own scope, DERIVED inside
+  the accept and never passed in.
+- **R-DP12** — the ledger is the only comparable number. The scaled objective
+  survives only as labelled solver telemetry, None never 0.0.
+- **R-DP13** — `PLANNER_DIRECTIVE` is the driver for a `planner_edit` accept; the
+  phrase names no direction and says "a planner", not "you".
+- **R-DP9** — the no-op tolerance is a FIXED 5 working minutes, not a function of
+  the zoom. A no-op says so.
+- **R-GP1** — current means the most recent PLACEMENT-BEARING state of a lineage,
+  compared by a derived placement digest scoped to descendants.
+- **R-TZ1** — every planner-facing time renders in ONE declared clock, the
+  facility's, with provenance in THREE states (declared / defaulted /
+  unreadable). A rendering ruling: stored instants are untouched. **Named limit:
+  the Python answer surfaces still render stored UTC verbatim.**
+- **R-F1** — the frozen boundary is planner-movable; a thaw changes AUTHORITY,
+  never position (uncovered assignments become standing pins); a freeze absorbs
+  the pins it crosses; the ceremony is two calls (preview, then apply against the
+  preview's digest). **Standing pins do not survive a slice roll** — splicing
+  seam 3 is unbuilt.
+- **R-F2 / R-F3** — ruled and RECORDED, not built (rush intake as a Demand the
+  solver places; the OUTCOME → WINDOW → PIN ladder).
+- **R-SC2 / R-SC3** — the coarse zone is a RELAXATION, always: only the negative
+  is claimed, and the converse is never asserted in code, certificate or answer.
+  Coarse never constrains fine, never renders as a bar; two ledgers, never fused;
+  rho is a declared IDS coefficient defaulting to a no-op 1.0. Stage 1 minimizes
+  COST ALONE; stage 2 IS the tiebreak and runs unconditionally.
+- **R-C3 / R-B3 / R-B7/B8 / R-A2/A3 / R-A4 / R-Dwell** — the locked constraint
+  rulings; the catalog with verdict/plane/status per item is `docs/05`.
+
+**Discipline learned the expensive way (each has its specimen in docs/04)**
+
+- **A defect class fixed at one seam is not fixed.** Census the class; the
+  4B.14 chunk read, the 4B.20 duration class and the (e2) counterfactual sites
+  were each found this way.
+- **A guard that supplies its own arguments proves the assembler, not the path**
+  (4B.21 §5a.78). A guard pointed at one file guards one file (4B.25 §5a.105).
+- **A negative control that calls past the broken line proves nothing** (4B.28
+  §5a.123). Prove every control RED against physically reverted code, and assert
+  the restore is byte-identical by sha256.
+- **A count names the disposition it counts** (4B.21): a predicate asserted over
+  a count must apply to every member of the set counted; adjacent counts share a
+  denominator or name their own.
+- **Working time and elapsed span are different quantities** (4B.20) and a
+  capacity figure names its denominator.
+- **A category fusion is a name written once and never re-read as a claim** —
+  five in six sessions (4B.21 §5a.72). Re-read names as claims.
+- **A ruled species: the third state.** `unreadable` beside absent/present
+  (4B.18), `undetermined` beside possible/impossible (4B.23), `UNDECIDABLE`
+  beside holds/refutes (4A.x). **An unrecognised value fails SAFE and says
+  nothing about the plant.**
+- **A default that ASSERTS manufactures a claim out of a gap** (4B.23).
+- **This repo mixes line endings PER FILE.** Byte anchors and multi-line
+  replacements must work in bytes and check the file's own newline state first
+  (4A-(a); (e2) §6 found the same at the docs layer).
+- **Close-outs live at `docs/closeouts/<session-id>.md`** — one path per session,
+  nothing overwrites.
+
+### Carried qualifications (open, owned)
+
+- Cloud deploy is verified **in-container**, not **in-cloud**: live `az deployment
+  group create` from `deploy/azure/` + cloud smoke remain PARKED on the Azure
+  trigger; the Bicep is still ARM-unvalidated (Session 2.4 carry).
+- The `raw_data` path bypasses the M0 gate and has no WIP doorway — owned Phase-4
+  debt; the live gate-free entry points are named in docs/04's 4B.2c R-SC1
+  correction.
+- Phase 3's **cold-stranger cold-drive** is MET-BY-PROXY only — a named Phase-4
+  entry condition, not relaxed.
 - Daryn's feel-token export is not committed; the cockpit runs on `DEFAULT_FEEL`.
-- Two remediation-catalog quality notes carry no resolvable IDS §-cite (quarantined) —
-  a design-thread `note_version` fix.
+- Two remediation-catalog quality notes carry no resolvable IDS §-cite
+  (quarantined) — a design-thread `note_version` fix.
 - Pool service must become **slice-aware** before serving sliced-mode schedules.
 - `test_n3000` is contention-sensitive (green alone).
-- The **parallel-load screenshot-flake** class is standing debt (two members: 3.1c
-  0-bars, 4A.3 planner due-marker; both pass in isolation). A THIRD, non-screenshot
-  member observed 4B.6c: `test_scenario.py::test_scenario_untouched_moves_bounded`
-  failed once in a full-suite run and passes in isolation and as a whole file (32/32).
-  Root cause is structural, not incidental: its fixture solves with
-  `time_limit_seconds=30.0` and **no pinned workers or seed**
-  (`tests/test_scenario.py:341-344`), i.e. CP-SAT default PARALLEL search under a
-  WALL-CLOCK limit — which the hard rules already say is not reproducible. Under load
-  it reaches a different tied-optimal placement and the `moves <= 3` bound breaks.
-  The fix is deterministic mode in that fixture, not a wider bound. NOT fixed in 4B.6c
-  (a measurement session changes no test but its own). **4B.33 answered the shape
-  question (§5a.135(d)) without fixing them: the deterministic-budget fix
-  generalises to THIS member only — it needs the full determinism triple AND the
-  wall lifted, a strictly larger fix — while the two SCREENSHOT members are
-  render/timing races that a deterministic budget does nothing for.** A SIXTH
-  member observed 4B.33:
-  `test_accept_self_validation.py::test_negative_control_a_corrupted_plan_is_refused`
-  failed once under concurrent load and is green on four consecutive quiet runs
-  of its file and green at HEAD.
-- Product naming is under GTM review — "MRE" is the working repo name, not a brand.
-
-**Small carry-forwards (do not lose):**
-
-- 4B.28 findings (docs/07 §5a.124 — REPORTED, deliberately NOT fixed; all
-  nine in `docs/closeouts/4B.28.md` §7). The two a session should take next:
-  **STANDING PINS DO NOT SURVIVE A SLICE ROLL** (above) and **THE FOLD SET IS
-  PLANT-WIDE, NOT PER ROW** — only spans where EVERY machine is closed fold,
-  which is the only honest choice under an axis-level mechanism, but on a plant
-  with staggered shifts compression will quietly do far less than it appears to
-  promise and **nothing on screen says so**. Also: the compression-tolerance
-  guard proves INVARIANCE, not the demo-board MAGNITUDE (the rolling fixture
-  spans ~5 days, so the control fired at 155.5 vs 175.0 minutes, not 240); the
-  boundary snaps to the HOUR on an authored token nobody has tuned; the
-  confirmation beat states the COUNT but does not NAME the orders (the plan
-  carries them); a monolithic boundary move is untested in the BROWSER beyond
-  "the handle is not offered"; the job panel's TRAY branch is unexercised live
-  (`_derive_maps` keeps one work package per demand, so a part-placed order is
-  not producible — 4B.22 B3); *"why is this bar held?"* with no subject still
-  lands on CLARIFY `no-subject` (§5a.79's ladder, unchanged); and
-  **`--calibrated` is a flag on a SPIKE SCRIPT, not a product path** — minting a
-  board under its plant's accepted profile should not require knowing that
-  naming K refuses the profile.
-- 4B.29 findings (docs/07 §5a.111 — REPORTED, deliberately NOT fixed; all
-  eight in `docs/closeouts/4B.29.md` §8). The two a session should take next:
-  **THE PROFILE HAS NO EXPIRY** — R-CAL1 rule (3) speaks of an "expired"
-  profile and nothing computes one; DRIFT only fires when a search actually
-  FAILS, so a profile whose knee has quietly moved UP while still publishing K
-  boards is stale and SILENT. An age threshold is a declared coefficient nobody
-  has: R-PD1 clause (5)'s shape again. **TWO SYNTHETIC WORLDS SHARE ONE PLANT
-  KEY** — `demo_board` and the 170-order control both declare `F001` /
-  `SyntheticERP vGen`, so rule (4) keys them identically and one profile would
-  overwrite the other in a shared data root. Correct for REAL plants (one
-  facility, one calibration, re-measured); a hazard for our measurement worlds,
-  worked around here with separate directories rather than fixed in the
-  generator. Also: **the AUDIT's K is NOT calibrated** (`AUDIT_K` is a constant
-  3 at 3.0 units — a profile calibrates the MAIN solve and says nothing about
-  the button a planner presses on purpose); **a MONOLITHIC solve carries no
-  calibration block at all** (the block is on the rolling path only, so rule
-  (3)'s absence-is-stated guarantee is simply not in force there and nothing
-  says so); the ceremony is a CLI and nothing else (no Gatehouse surface, no
-  scheduling, no cloud); neither profile was `--save`d into the WORKING data
-  root; every wall in both profiles is one laptop and the mid170 arm ran beside
-  the test suite; and **every publishable cell in both grids is FEASIBLE**, so
-  "10 units is better than 6" means cheaper, never closer to optimal
-  (4B.26 §6(g)'s caveat, unchanged).
-- 4B.22a findings (docs/07 §5a.86-88 — REPORTED, deliberately NOT fixed; all
-  eight in `docs/closeouts/4B.22a.md` §7). The two a session should take next:
-  **`order-schedule` DOES NOT VOICE THE PAST-DUE DISPOSITION** (R-PD1 clause 6) —
-  *"where is ORD-000040"* returns a four-line itinerary for an order due
-  **2025-12-15**, 21 days before the plan begins, finishing **34.8 days late**
-  with **$20,860** of tardiness of which **$12,000 is floor**, every fact already
-  in the document's own service outcome. **THE CONCENTRATION BAND CANNOT FIRE AT
-  ANY DENSITY** — `_opener_load` divides by the machine's WHOLE RESOLVED CALENDAR
-  (28,080 min against a plan occupying ~25 days), so the busiest lane on a
-  386-bar board reads **39.7%** against `SATURATED = 0.85` and the 50% pre-filter
-  drops it first; **4B.20's denominator class at a FIFTH site**, and 4B.16's
-  "unexercised at demo density" is REFUTED as the explanation. Also:
-  `what-would-change` offered a start of **2025-12-22** on a board whose origin is
-  2026-01-05 (a past-due order's upstream floor is its old release date); **beat
-  one says "this placement isn't possible here" from `status: UNKNOWN`** and beat
-  two then prices the same pin at $2,596.67 (the 2s first-feasible budget was
-  enough at 40 orders, not at 386); a dense board **chunks FEWER** operations than
-  an empty one (1 vs 2) and **forcing more destroys the solve** (splittable weight
-  1 -> 4 turns a FEASIBLE 386-bar board into UNKNOWN at both windows — measured,
-  rejected, knob kept); the gate raises *"CUT-01 is in a workload too dense to
-  schedule cleanly"* as a DATA-QUALITY finding; the at-risk band has ONE member.
-- 4B.22 findings (docs/07 §5a.83 — REPORTED, deliberately NOT fixed):
-  **THE RECORD BEHIND THE `why-on-machine` LEAD ANSWERS A DIFFERENT QUESTION** —
-  the lead is about WHICH MACHINE (eligibility, "no alternative to weigh") and
-  the cited decision's driver is about WHEN (occupancy, "the machine was busy
-  with other work"). Both true of the same record; the drill-down now shows a
-  planner both, one line apart. The **"recorded driver:"** label makes the
-  sentence claim only what is checkable, but whether the chain should carry the
-  eligibility decision instead — or both, with their questions named — is a
-  `why-on-machine` assembler question 4B.22 did not open.
-  **`"how do i fix that"` AFTER A WHOLE-BOARD READ** lands on CLARIFY
-  `no-subject` (parse: `remediation` at 0.72). Honest, and measured for the
-  first time. The BOARD is the subject and the ladder has no rung for it —
-  §5a.79's shape on the other axis.
-  **THE B1 FIGURE PRINTS RAW MINUTES** beside its percentage, deliberately: two
-  capacity quantities in one sentence are comparable only in one unit (§5a.76's
-  reason).
-- 4B.21 findings (docs/07 §5a.75-78 — REPORTED, deliberately NOT fixed):
-  **TWO DISPOSITION QUESTIONS ARE CLAIMED BY ROUTES THAT DO NOT ANSWER THEM** —
-  *"are the fourteen orders with no placement a problem I should act on"* goes
-  to `coarse-fit`, and *"what does it mean that work is beyond the horizon"* to
-  `coaching`, which replies *"I don't recognize which capability you mean"* and
-  lists nine submission fields. Both vocabulary calls. (The third of the three,
-  `excluded-orders` answering *"no data-quality problems"* to *"why are some
-  orders missing from the schedule entirely"*, WAS fixed.)
-  **DRILL-DOWN ANAPHORA — FIXED 4B.22 (§5a.79).** It was: *"show me the evidence
-  for that"* after a contracted answer returned *"I don't have a claim of my own
-  open to ground"*, because `SynthesisMemory` remembers synthesis answers ONLY.
-  **THREE PROSE SITES STILL PRINT RAW MINUTES** (the challenge route, the swap
-  take, `rolling_questions`' lateness clause) — left because R-PD1 clause (4)
-  states the floor and the controllable part in the SAME unit for comparability.
-  **THE `deaf` RIDER FIRES WHEN SIX QUESTIONS ARE ASKED IN ONE SESSION** and two
-  legitimately share a route — visible in this session's own verification run.
-  §5a.58's boundary, unchanged.
-- 4B.20 findings (docs/07 §5a.68-70 — REPORTED, deliberately NOT fixed):
-  **THE `machine-schedule` ROUTE ANSWERS "how busy" WITH AN ENUMERATION —
-  FIXED 4B.22 (§5a.80)**, from the one definition it now shares with the
-  toolbox, and refusing the judgment for want of a declared threshold.
-  **`rolling_horizon`'s `busy_minutes` METRIC NAME is under-specified** against
-  the new ruling — the arithmetic is correct (it intersects with the open
-  windows), and renaming an evidence Metric is a vocabulary-class change.
-  **`schedule_csv`'s `duration_min` COLUMN does not say which quantity it is** —
-  harmless today because the row IS a chunk, so summing the column gives working
-  time. **4B.17's A3 SPECIMEN NO LONGER REACHES TIER TWO** — *"would splitting
-  the jobs help"* now parses to `what-would-change` or to synthesis with zero
-  tool calls, so re-measuring A3 needs a phrasing that still lands there or it
-  measures the parse. The declared/placed **1,500 vs 1,501** difference on
-  ORD-000011 op10 is chunk-boundary rounding, labelled correctly on both sides,
-  and was not investigated.
-- 4B.17 findings beyond the five truth failures (docs/07 §5a.54-62 — REPORTED,
-  deliberately NOT fixed): **THE `repeat`/`deaf` BOUNDARY IS KEYED ON STRING
-  IDENTITY** (§5a.58) — the same string twice gets the correct lead; the same
-  QUESTION reworded gets self-doubt plus the full recitation, so the C(c)
-  terseness specimen never fires. Two firings, zero true positives — §5a.42's
-  score on the other side of its own split. **§5a.51's "off board selection"
-  CLAIM DOES NOT REPRODUCE** (§5a.59): `"how do i change that"` with only a
-  selection parses `unmatched` at all six runs. **THE COACHING INVITATION CANNOT
-  DECLINE TO FIRE, BY SHAPE** (§5a.61) — `slots=()`, so
-  `invitation_line()` can never withhold it; it routes a planner to a null
-  answer. **THE CARD ROUTE ANSWERS FIVE QUESTIONS WITH ONE BYTE-IDENTICAL
-  RECITAL** (RUBRIC entry 10's question, answered by six runs: it is a recital).
-  **THE BINDING-FAMILY CENSUS IS EMPTY HERE AND NOT DERIVABLE FROM THE DOCUMENT**
-  (§5a.62): contract 1.11 carries calendars and chunks but not splittability
-  (1.12), nor precedence/release for COMMITTED work.
-  **`dark-evidence` FIRES ON A PREMISE CORRECTION**, 2 per run — the sidecar
-  signal predates the guard, and a correction cites nothing because there is
-  nothing to cite. **THE r5 CARD SPECIMEN IS UNEXERCISABLE**: 4B.7 made
-  `reopt_delta_abs` 0.00 by construction, so move == total and "which half"
-  cannot discriminate — reported, never counted as a pass.
-- 4B.16 findings (docs/07 §5a.49-50 — REPORTED, deliberately NOT fixed):
-  **THE OPENER CANNOT STATE THE CERTIFICATE GRADE** — it is a submission fact
-  the API joins on `/meta` and the schedule document does not carry it, so the
-  one word a stranger recognizes is the one the item cannot say. Same seam
-  `RECON_GATEHOUSE.txt` Q1 names from the other side.
-  **CONCENTRATION IS UNEXERCISED LIVE** — demo density is far below the 85%
-  threshold, so it fired on neither measured board and is proven only by unit
-  test (the §5a.11 limit again).
-  **BOTH ROUTES ARE NOW MEASURED AGAINST A LIVE PARSE (4B.16a Item 2 — the
-  "blocked on the key" claim here was the rumour):** 9 of 10 planner phrasings
-  reach the intended route on the pinned world. The one that does not is
-  `"why can't it be earlier"` -> **`why-here` at 0.95 with `polarity=negative`**,
-  which is a genuine route-boundary question (the counterfactual is why-here's
-  INVERSE over the same bounds) and NOT fixed — a vocabulary call. Subjectless
-  `"how do i fix that"` after a BRIEFING lands on CLARIFY `no-subject`: honest,
-  and the contrast with the same follow-up after a `why-here` (which resolves
-  from selection) is the finding.
-- 4B.15 findings (docs/07 §5a.39-45 — REPORTED, deliberately NOT fixed):
-  **THE SYNTHESIS TOOLBOX CANNOT READ A DECLARED FIELD** — measured as Sonnet's
-  single bench failure: the parse sent a field question to tier two, which
-  honestly reported that per-operation submission data "is not something the
-  placement, cost, or lateness tools expose". It is right. The fix is a third
-  tool wrapping `attribute_lookup`; left undone because the tool surface is a
-  governed artifact this session already changed twice.
-  **THE DEAFNESS RIDER FIRES WHEN THE ONE ANSWER IS CORRECT** (three phrasings
-  of one question) — humble rather than wrong, but distinguishing "one answer
-  because I am confused" from "one answer because it IS the answer" needs a
-  signal this session does not have.
-  **CLAUDE.md IS OVER ITS 40k CEILING AND STILL GROWING** — 47k before 4B.15, 53k before 4B.16, 57k before 4B.17, 62k before 4B.20, 65k before 4B.21, 70k before 4B.22, 74k after it, ~78k after 4B.22a, 81k after 4B.23, 85k after 4B.24, ~88k after 4B.25, ~92k after 4B.26, ~96k after 4B.29, ~102k after 4B.27, ~110k after 4B.28, **~142k after 4A teaching-graft (a)**, **~155k after 4A teaching-graft (c)**, ~160k after 4A teaching-graft (c2), **170k after 4A teaching-graft (d.1) — 4.3x the ceiling, and past the 150k limit the 2026-07-25 maintenance note was written about**. Compression was out of scope for every one of them; it is the largest single item owed at the next phase exit, and the status section is what shrinks first.
-  **THE docs/05 TOPIC MAP'S ORDER IS LOAD-BEARING** and mis-ordered once here: a
-  day-shift restriction answered as C1/C2 "proven end to end" when the item is
-  C4 (model-proven, §8 doorway). Caught and pinned; the class stands.
-  **THE CORPUS EXCLUDES 15 FOUNDING `D-nn` DECISIONS** for having no date — the
-  fail-closed side, named so a future session can rule on dating them instead.
-- 4B.14 findings (docs/07 §5a.34-38 — REPORTED, deliberately NOT fixed):
-  **A `chose` VERDICT ON A SPLITTABLE OPERATION IS A LOWER BOUND** — setup is a
-  separate R-C3 phase and the fit scan treats working minutes as one divisible
-  quantity, so the copy claims only what is computed ("there was open, unheld
-  time from T") and never "the solver could have placed it there".
-  **THE RUNNER-UP CAN BE A STALE TRUE FACT** — the renderer suppresses it when
-  the binding family's near-miss window is more recent, which is a heuristic
-  about relevance, not a proof. **`start-reason` WAS NOT RETIRED**; whether it
-  and `why-here` should merge is a vocabulary question 4B.14 did not rule on.
-  **CLAUDE.md is 45k against its 40k phase-exit ceiling** (43k before this
-  session) — the status section is what shrinks first.
-- 4B.12 findings (docs/07 §5a.31-32 — REPORTED, deliberately NOT fixed):
-  **THE TARDINESS SPLIT NEEDS A THIRD CATEGORY** — at F006's 134.9% utilisation
-  "controllable" (15.3M of a 16.9M ledger) means not-already-accrued, NOT
-  discretionary; the missing member is `capacity_infeasible` and it is unbuilt for
-  R-PD1 clause (5)'s reason — computing it means solving a relaxation and asserting
-  its bound as a business fact (§5a.31(g)). **THE a=2 CLIFF IS BRACKETED, NOT
-  PINNED** (between 50 and 100 ops/machine; those cells cost 25-30 min each), and
-  **F006 at a=2 is UNMEASURABLE under this repo's own wall rule** — four of five
-  F004 a=2 rows already truncate at 1984-2787 s on a plant a third the size.
-  **PER-FACILITY PARTITIONING is the named conditional follow-up** (the 4B.10
-  partition ruling's corollary): CP-SAT's LNS improvement workers live in the
-  parallel portfolio the determinism rule disables, which is why a hint cannot
-  substitute for them — partitioning buys parallelism without losing
-  reproducibility.
-- 4B.11 findings (docs/07 §5a.28-30 — REPORTED, deliberately NOT fixed):
-  **R-PD1 clause (5) is OPEN** — no age-vs-lateness finding, because the threshold is
-  a declared IDS coefficient that does not exist and inventing one authors a business
-  fact we do not have; the full pipeline-proof chain is written out in docs/06 §5.9
-  (§5a.28). **No optimality ROUTE** — the proof is rendered and voiced but nobody can
-  ASK for it; a new intent is a vocabulary-class change (§5a.29).
-  **`facility_real`'s CONDITIONAL grade is a GENERATOR truthfulness defect** and
-  4B.10's claim that it was correct is CORRECTED — the generator writes
-  `created_date = ref` for every order, so a past-due order is emitted with an
-  inverted date pair. NOT fixed: that inversion is the only live
-  M0-`proceeded_flagged` specimen keeping R-PD1 clause (3)'s guard non-vacuous, so
-  whoever fixes it must supply the guard a new specimen in the same commit (§5a.30).
+- The **parallel-load flake** class is standing debt, six members named in
+  docs/07 §5a and the consolidation entry. Root cause where diagnosed is
+  structural: a fixture solving under a WALL-CLOCK limit with no pinned workers
+  or seed, which the hard rules already call irreproducible. 4B.33 fixed the
+  golden-CSV member and answered the shape question for the rest.
 - `OperationSpec.yield_factor` still carries false `observed` provenance (flagged
   2026-07-12, not fixed).
-- Sentinel / repeated-identical-value detector (Rep 3's 40× `run_rate_seconds=60.0`).
-- Provenance spot-check guard: sampled `observed` values must appear in the cited source.
-- W1 scenarios unbuilt: `dwell_heavy`, `calendar_chaos`, `multi_facility_balance`.
-- AI-track named debts: the docs/05 structured-constraint surface (prose-locked,
-  retrieval must never read prose); machine-idle eligibility naming no specific ops
-  on the monolithic path; per-order PRODUCTION-dollar attribution (a ledger change).
-  (Aggregate-cause coaching is RETIRED — promoted to `lateness-cause`, 4A.5c.)
-- 4B.6c findings: **§5a.16 and §5a.17 are DISCHARGED by 4B.7** (rolling records the
-  COST objective; the pool's 5% is 5%). **STILL OPEN — §5a.15: the shipped 14-day
-  window is BUDGET-STARVED at 200 orders** (313 free ops, UNKNOWN on the plain cost
-  objective at a deterministic budget of 6.0 AND of 20.0; a 7-day window on the same
-  plant proves OPTIMAL in under 5). The 14-day convention was measured on a plant 5x
-  smaller. **Next session's subject.**
-- 4B.7 findings: **§5a.19 and §5a.21 are DISCHARGED by 4B.8** (the budget is derived,
-  the status line reports the cost proof). **STILL OPEN — §5a.20:**
-  `EARLINESS_PREFERENCE` names a mechanism that no longer exists; the DriverCode member
-  survives while the extractor no longer emits it (4B.8 CU4 made it dormant, interim
-  only). Correcting it is a **vocabulary-class change** reaching planner_language /
-  explainer / renderers / four AI-voice tests / the exam bank.
-  **§5a.22 is DISCHARGED by 4B.17** — recalibrated (from the committed fixture, no
-  fresh world needed: the exam target was verified byte-identical to
-  `rolling-c362baa4-1b0`), run six times and graded. See the status section.
-- 4B.6b findings (docs/07 §5a.8, .10, .12-14 — REPORTED, deliberately NOT fixed):
-  **§5a.12 is DISCHARGED by 4B.7** — the coefficient left the objective, so the window
-  solve and the sandbox baseline now minimize the SAME expression and `reopt_delta_abs`
-  collapsed to **exactly 0.00** by construction; the card was NOT relabelled, and 4B.6b's
-  own proof (forcing `earliness_value=0` drove it to 0.00) predicted the number. STILL
-  OPEN: the prediction store's data-root sweep is
-  scoped by NOTHING and matches on `op_id` alone — two plants sharing order numbering
-  in one root produced **20 cross-plant realizations** (a CORRECTNESS debt now, plus
-  the perf one); a COMPLETED order's predictions are never retired (orphaned,
-  re-swept forever); the intake-path label reads ~100% `gravity_admission` at short
-  windows and carries no signal; the pinned exam world's coarse zone runs at
-  DEFAULTED rho 1.0 because its submission predates the generator's declaration
-  (`--fresh` would fix it and is provably free — measured, not done).
-- **§5a.7 IS CLOSED — IT WAS A RUMOUR FOR THREE SESSIONS. THE KEY WORKS; DO NOT
-  SCOPE OFF A KEY BLOCKER** (4B.16a). The sweep was NEVER blocked (own loader
-  since 4A.5b); pytest was, for one session, fixed 4B.8 (four slow tests pass,
-  re-verified 54.7s); `python -m mre.ask` / `mre.ai_exam` had NO loader, which is
-  what kept it alive — fixed. **`src/mre/env_local.py` is the ONE reader**; a
-  second is a red test (negative control proven). Nothing in the library loads a
-  file, correctly — in a container the key comes from the platform secret store,
-  so each ENTRY POINT populates the env. `regression_founder_r5` was unrun because
-  its expectations were UNCALIBRATED (§5a.22), not for a key — **4B.17 ran it**.
-- 4B.6a debts (docs/07 §5a.9, .11): **§5a.9 is DISCHARGED by 4B.7** — the ~7.9%-dearer incumbent is gone, the board
-  now sits at the proven optimum 16,481.95 / tardiness 0.00; `rolling_coarse_hot/` binds by
-  DECLARED derate 0.10, a contrivance for screenshot coverage, not a discharge of the
-  demo-density limit.
-- 4B.5 debts: the two-solve BASELINE is not extended to FORCED-ALTERNATIVES pricing
-  (same economics, separate audit); the causal vacuity tripwire counts a quantity
-  as a DIGIT only, and a driver phrase alone clears it (the founder's own specimen is
-  fixed at the assembler, not by the tripwire); CU4(b)'s viewport guard is a standing
-  invariant the harness cannot make fail.
-- R-AI5 residue: start-reason's early-vs-plain read is still the assembler's (only a
-  NEGATIVE polarity is authoritative from the parse); a CLARIFY turn carries no
-  subject forward.
-- Promotion-loop limits (4A.5c): clustering is crude-but-stated and UNDER-states
-  frequency (it splits shapes whose parses disagreed) — merging is a human's, in a
-  dossier. The shadow diff compares only figures BOTH sides state about the same
-  labelled quantity, which on the promoted shape is thin overlap: the teeth are
-  real but narrow. The two-phase ask's first beat names the tool BUDGET, not a live
-  count — a real ticking count needs streaming or background execution.
-- Synthesis-tier named limits (4A.5b): a claim's COUNT is checked against the
-  toolbox's own tallies for the enumerating call, not typed to the predicate it
-  sits beside; percentages and ratios the model computes are never verifiable and
-  land interpretive by construction.
-- A splittable op with `rate_overrides` uses the scalar default duration; a heterogeneous
-  op's `var_map.op_durations` scalar is the default representative (rate-varying pins
-  unexercised).
-- Pilot-volume latency (174 workcenters) is UNMEASURED — every committed figure is demo
-  density.
+- A splittable op with `rate_overrides` uses the scalar default duration
+  (rate-varying pins unexercised).
+- Pilot-volume latency (174 workcenters) is UNMEASURED — every committed figure
+  is demo density.
 - **`--horizon-days` files horizon work as EXCLUSION on a PRODUCTION path**
-  (`__main__.py` 251-300, reachable via `SolveRequest.horizon_days`): demand due
-  beyond ref+N joins the same set that carries gate exclusions — a horizon category
-  shelved as a data-defect category. NOT reachable from a rolling run. Full reasoning
-  and fix shape in docs/07 §5a.
-- **Per-component gravity ablation** (4B.2c): the counterfactual proves the BUNDLE;
-  **no individual pull is proven, and setup-family affinity is the priced-air
-  candidate.** Restated here because 4B.6 built a mechanism adjacent to gravity.
-- 4B.6 debts (all in docs/07 §5a): the three deferred coarse refinements (family-presence
-  setup, cross-bucket allocation for resumables, the WP makespan bound — each a
-  TIGHTENING, so each must land against the CU4 guard); the coarse zone is UNEXERCISED
-  at demo density (38 beyond-horizon demands but ~8% load, nothing binds — **the
-  binding behaviour is now pinned at 200 orders by `tests/test_coarse_binding.py`,
-  4B.6a CU3; the DEMO instance is still light**); coarse slip attribution is mostly
-  `unattributed` by construction (the store now has data to attribute over);
-  `coarse_horizon.py` carries its own narrow ortools surface (a stated deviation from
-  the solver_builder/solve_runner quarantine, not an oversight).
+  (`__main__.py`, reachable via `SolveRequest.horizon_days`) — a horizon category
+  shelved as a data-defect category. NOT reachable from a rolling run; full
+  reasoning and fix shape in docs/07 §5a.
+- Product naming is under GTM review — "MRE" is the working repo name, not a
+  brand.
 
-Everything else — what a session built, its test counts, its commit — lives in docs/04
-and docs/07. Do not restate it here.
+### Small carry-forwards (do not lose)
+
+**These are pointers. The text is in docs/07 §5a and the named close-out** — and
+verbatim, as it stood here, in the docs/04 consolidation entry. Each was
+REPORTED and deliberately NOT fixed.
+
+| where | the two to take next | full list |
+| --- | --- | --- |
+| 4B.28 | standing pins do not survive a slice roll; the fold set is plant-wide, not per row | §5a.124 · `4B.28.md` §7 |
+| 4B.29 | the profile has no expiry; two synthetic worlds share one plant key | §5a.111 · `4B.29.md` §8 |
+| 4B.22a | `order-schedule` does not voice the past-due disposition; the concentration band cannot fire at any density | §5a.86-88 · `4B.22a.md` §7 |
+| 4B.22 | the `why-on-machine` record answers a different question; "how do i fix that" after a board read lands on CLARIFY | §5a.83 |
+| 4B.21 | two disposition questions are claimed by routes that do not answer them | §5a.75-78 |
+| 4B.20 | `busy_minutes`' metric name is under-specified; 4B.17's A3 specimen no longer reaches tier two | §5a.68-70 |
+| 4B.17 | the `repeat`/`deaf` boundary is keyed on string identity; the coaching invitation cannot decline to fire | §5a.54-62 |
+| 4B.16 | the opener cannot state the certificate grade; concentration is unexercised live | §5a.49-50 |
+| 4B.15 | the synthesis toolbox cannot read a declared field; the corpus excludes 15 undated `D-nn` decisions | §5a.39-45 |
+| 4B.14 | a `chose` verdict on a splittable op is a LOWER BOUND; the runner-up can be a stale true fact | §5a.34-38 |
+| 4B.12 | the tardiness split needs a THIRD category (`capacity_infeasible`); the a=2 cliff is bracketed, not pinned | §5a.31-32 |
+| 4B.11 | R-PD1 clause (5) is open; there is no optimality ROUTE — nobody can ASK | §5a.28-30 |
+| 4B.6b/c | §5a.15 the 14-day window is budget-starved at 200 orders; the prediction store's sweep is scoped by nothing | §5a.8-17 |
+| 4B.5–4B.7 | the two-solve baseline is not extended to forced-alternatives pricing; `EARLINESS_PREFERENCE` names a mechanism that no longer exists (§5a.20) | §5a.19-21 |
+| 4A (a)–(e2) | the widened GK predicate is still a pattern map; the fourth W4 site is unfixed; the exam bank cannot express "these two answers must not be the same" | §5a.162-202 |
+
+Standing named debts not tied to one session: the sentinel /
+repeated-identical-value detector (Rep 3's 40× `run_rate_seconds=60.0`); a
+provenance spot-check guard (sampled `observed` values must appear in the cited
+source); W1 scenarios unbuilt (`dwell_heavy`, `calendar_chaos`,
+`multi_facility_balance`); the docs/05 structured-constraint surface is
+prose-locked for the PROSE (the catalog ROWS were discharged 4B.15);
+per-component gravity ablation proves the BUNDLE, no individual pull; and
+per-order PRODUCTION-dollar attribution is a ledger change.
+
+Everything else — what a session built, its test counts, its commit — lives in
+docs/04 and docs/07. Do not restate it here.
 
 ---
 
 **Maintenance rule for this section.** This file is loaded into every session and
-has a hard character ceiling. On 2026-07-25 it reached 191,692 bytes against a
-150k limit, of which 94% was a session changelog duplicating docs/04 — pushing
-`## Working style` to the far end of a file that was no longer delivered whole.
+is checked against a **150,000-character budget by
+`tests/test_claude_md_budget.py`**, which fails the suite when it is exceeded. On
+2026-07-25 it reached 191,692 characters, of which 94% was a session changelog
+duplicating docs/04; on 2026-08-05 it reached 190,354 and was consolidated back
+to orientation plus pointers (docs/04, same date).
 
 This section records **position, qualifications, and carry-forwards only**. It
 does not record what a session built, how many tests it added, or which commit
-carried it. `CLAUDE.md` is checked against a **40k-char ceiling at every phase
-exit**; if it is over, the status section is the first thing to shrink.
+carried it. See **the write rule** in Hard rules: sessions append pointer-form
+lines here, and prose is born in docs/04 or docs/07.
 
 ## Working style
 

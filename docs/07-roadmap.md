@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.95 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.97 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.97:** **Maintenance errand — CLAUDE.md back under budget.** 2026-08-05 (**R-CM1 ruled and BUILT**, verbatim in docs/04; contract unchanged **1.15**, no docs/06 doorway owed; **BOTH GOVERNED PROMPTS UNCHANGED** — parse **v18**, synthesis **v9**, this errand touching no prompt, no `src/mre/` module and no solver; narrative in `docs/closeouts/maint-claude-md-budget.md`). CLAUDE.md was **190,354 characters against a 150,000 standing budget**, and a section-by-section census found **93.4% of the file in one section** (`## Current status`, 177,722 chars), of which **51% was a session changelog** already committed in docs/07 §5a, docs/04 and a per-session close-out. **RELOCATION AND CONDENSATION, NEVER DELETION** — the status section's prose is archived **verbatim** in docs/04 under *CLAUDE.md STATUS SECTION CONSOLIDATION* before a byte of it was condensed. **R-CM1, THREE CLAUSES:** the permitted shape is a POINTER (the ruling code IS the pointer); **prose is BORN in docs/04 or docs/07, not relocated later** — the clause that does the work, because the 2026-07-25 maintenance rule asked for restraint and **restraint is not a mechanism** (it was read for fourteen sessions and the file grew from 47k to 190k); and **the budget is LAW** — `tests/test_claude_md_budget.py` fails the suite past 150,000 characters. **THE FILE LANDED AT 33,453 — 17.6% of what it was**, under the 130k target and under the 40k phase-exit ceiling it names for itself, which is the first time that ceiling has been met since 4B.14. Three stale statements were CORRECTED in the move, each named: the two RETIRED-LOST board ids no longer carry paragraphs written as if they were current; the over-the-ceiling running tally is retired in favour of the test; and **this document's own Status line read v2.95 while a v2.96 entry stood above it** — caught by this errand, not by (e2). §5a.203.
 
 **v2.96:** **Session 4A teaching-graft (e2) — the measurement errand.** 2026-08-05 (**R-TG7 ruled and BUILT** plus the founder's W4 lead-order arbitration, verbatim in docs/04; contract unchanged **1.15**, no docs/06 doorway owed; **BOTH GOVERNED PROMPTS UNCHANGED** — parse **v18**, synthesis **v9**, this errand being authored copy and deterministic seams throughout; narrative in `docs/closeouts/4a-teaching-e2-measurement-errand.md`). Four measurements taken before anything was built, and **two changed what got built**. **M1: (e)'s OWN HEADLINE SUCCESS QUOTE IS THE SPECIES R-TG6 (i) REFUSES** — the claim (e) §4 quotes as proof the fix worked shipped UNCITED under `[general knowledge]` while enumerating *"reasons this product actually computes"*, and the predicate missed it twice over. **Being true is not the discriminator**; both of (e)'s own 2-of-99 specimens were true. §5a.192's shape one clause on: **the fix's own first output was outside the pattern written to catch it.** Widened by two things and **the census re-earned, not inherited**: **3 of 121** GK claims over 522 unique claim lines, all three genuine product claims wearing the wrong label — the third found by the census, not the brief; non-GK firings unchanged at 2, `floor_contradictions` 0 of 522. **M4: THE "TWO SITES" CLAIM DID NOT HOLD — THERE WERE THREE.** An AST census found `_render_counterfactual` still saying *"It was not prevented from going earlier"* beside a blocker-naming driver: the identical defect on a different route, still live (4B.14 §5a.34's rule). A **fourth** site is NAMED and not fixed — `mobility_lead_line` has no driver in hand, so it is plumbing, and a test pins it. **F3 — W4's LEAD ORDER, ARBITRATED (§5a.194(e) discharged): the RECORDED DRIVER leads**, because a record is something a planner can go and look at while the scan is our derivation computed now; **the disagreement and the refusal to adjudicate are unchanged**, only the order moves. Verified live, both sites in one fenced-world answer. **F2 — R-TG7: AN EMPTY TEACHING DROP HAS A FLOOR (§5a.194(b) discharged)** — a draft existed and was REFUSED, the per-bar door, and nothing about the plant; **ANY refuted cut fires it, the same precedence R-TG6 already gave the mixed-answer line**; it does not enter `ANSWER_MEMORY` and both halves are asserted by test. **M2 — v9 IS NON-REGRESSIVE LIVE (§5a.194(g) discharged):** v3 8/8 routing and 4/4 on every family, v2 identical to (b) and (c2) **including the same single known miss**; across 14 teaching answers empty-collapse **0/14**, product-naming GK **0/14**, floor-refuted line **0/14**. **M3 — the (ii) floor read is ~1.2% of the answer it rides on (§5a.194(d) discharged):** 295.6 ms median capped worst case on the 386-bar board against a 24,615 ms synthesis median; **nothing optimized** — M3 measures, the docket decides. **Python 2768/305/0 UNCHUNKED in 14m54s** against a baseline MEASURED ON THIS TREE of **2735/305/0** — **+33 exactly**, the new guard file collects exactly 33, and collection **3073 vs 3040** confirms it independently (3040 being byte-for-byte the number (e) recorded). **NO RESIDUAL.** **6 negative controls proven RED**, each GREEN AT HEAD first, every restore byte-identical by sha256. **MINTED NOTHING; both pinned boards untouched; cockpit untouched, not re-run.** NOT FIXED, named: the fourth W4 site; the widened predicate is still a pattern map; **R-TG7's card has no live specimen from this session** (0 of 14) and F1 makes the collapse MORE likely by construction, which is why F2 was unconditional; and §5a.194(a)(c)(f)(h) unchanged. §5a.195-202.
 
@@ -7046,6 +7048,36 @@ EMPTY COLLAPSE MORE LIKELY, BY CONSTRUCTION** — it drops a shape the model was
 shipping — which is why F2 was unconditional; whether the two balance is a
 measurement no session has taken. **(e) §5a.194(a)(c)(f)(h) ARE UNCHANGED** — the
 one-floor map, W2's claim scope, the exam bank's inability to grade this, and Q3.
+
+**§5a.203 — THE MAINTENANCE ERRAND: CLAUDE.md BACK UNDER BUDGET (R-CM1).**
+**190,354 -> 33,453 characters**, counted as the file is read from disk in UTF-8
+with its own line endings (CRLF counted as two — the strictest available method,
+and the one the 190.4k figure was taken with). The census, which drove every
+move rather than judgement doing it: `## Current status` **177,722** (93.4% of
+the file), inside which the session changelog was **67,947**, the ruling and
+discovery narratives **78,144**, the small carry-forwards **22,866**, the pinned
+worlds **5,424**, and carried qualifications **2,544**; the other seven sections
+totalled **12,632** and were kept nearly whole. **THE TOP FIVE CONTRIBUTORS ARE
+ALL ONE GROWTH PATTERN**: a session finishes, writes its narrative into
+CLAUDE.md's status section at the top, and never removes the one below it —
+so the file grew by roughly one close-out per session and shrank never. That is
+why R-CM1 clause (2) governs where prose is BORN and not who cleans it up.
+**NOTHING WAS LOST:** the whole status section is archived verbatim in docs/04
+(same date) before condensation, so every relocation is provable by diff rather
+than by assurance. **WHAT SURVIVES IN CLAUDE.md** is the orientation a fresh
+session cannot function without — the four current world ids and the two
+RETIRED-LOST ones, the data-root and determinism law, the governed-artifact
+versions, forty-odd ruling codes in one line each, the carried qualifications,
+and a pointer table for the per-session carry-forwards. **STALE CONTENT WAS
+CORRECTED, NOT CARRIED:** two lost board ids described as if current, the
+over-the-ceiling running tally, and this document's own Status line (v2.95
+against a v2.96 entry). **REPORTED, NOT FIXED:** the 150k budget is INHERITED
+and has never been derived — nobody has measured what a 150k CLAUDE.md actually
+costs a session in context, and if that measurement is taken the number should
+move to what it says; the test enforces the floor of sanity, not the 40k
+phase-exit target, because encoding the target would fail ordinary pointer-form
+appends; and the ~15-line diff heuristic in clause (1) is a close-out
+obligation that no test can check.
 
 ## 6. Open rulings queue
 
