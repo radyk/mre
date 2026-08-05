@@ -257,6 +257,11 @@ _HEADER_ONLY_SUBJECTS = frozenset({
     # Session 4A.3 — the swap/move bridge + the absence pair compose their whole
     # answer in the header (the R-AI3 ladder in planner language).
     "swap_move", "gap_between", "machine_idle",
+    # Session 4A teaching-graft (d.3), R-TE1 — the glossary answer is a
+    # definition, its citations and a door. There is no evidence chain to dump
+    # beneath it: what it cites is a DOCUMENT or a ruling, not this run's
+    # records, except for the one run figure it prints in its own words.
+    "term_explanation",
     # Session 4A.5c CU4 — the rolling answers compose their whole body in the
     # header (they are read from the document, not from evidence records).
     "rolling",
@@ -525,6 +530,37 @@ def counterfactual_contradicts_driver(driver: Any) -> bool:
     if not driver:
         return False
     return str(driver).strip().upper() in CONSTRAINT_NAMING_DRIVERS
+
+
+def _term_figure_line(term: Optional[str], fig: dict) -> Optional[str]:
+    """This run's own record for a glossary term, in a sentence (R-TE1).
+
+    AUTHORED PER FIGURE, never formatted generically: "the gap on this plan is
+    89.6%" and "this board is the best of 3" are different sentences doing
+    different jobs, and a generic `f"{term}: {value}"` would be a debug line
+    wearing an answer's clothes. A shape we cannot voice returns None and the
+    definition stands alone.
+    """
+    kind, value = fig.get("kind"), fig.get("value")
+    if kind == "portfolio" and isinstance(value, dict):
+        k = value.get("k")
+        winner = value.get("winner_seed", value.get("winner"))
+        seed0 = value.get("seed0")
+        if k and seed0 is not None:
+            last = seed0 + int(k) - 1
+            tail = (f", and this board is the one from seed {winner}"
+                    if winner is not None else "")
+            return (f"On this plan: {k} searches were run, at seeds {seed0}"
+                    f"–{last}{tail}.")
+        return None
+    if kind == "gap" and isinstance(value, (int, float)):
+        return f"On this plan: the gap is {value * 100:.1f}%."
+    if kind == "frozen_boundary" and value:
+        return f"On this plan: the frozen boundary sits at {str(value)[:16]}."
+    if kind == "driver_codes" and isinstance(value, int):
+        return (f"This product's driver vocabulary holds {value} codes, and a "
+                "decision records exactly one of them.")
+    return None
 
 
 def mobility_lead_line(bundle) -> Optional[str]:
@@ -1981,6 +2017,63 @@ class TemplateRenderer:
                     "minimum chunk, setup family, durations, due date, "
                     "quantity, customer, eligible machines — if you name the "
                     "order (and the operation, where it matters).")
+            lines.append("")
+
+        elif bundle.subject_type == "term_explanation":
+            # R-TE1 (Session 4A teaching-graft (d.3)) — THE PRODUCT EXPLAINS ITS
+            # OWN WORDS. The definition, then the artifact that defines it, then
+            # this run's own figure where the entry names one, then a door.
+            #
+            # THE CITATION IS NOT DECORATION AND IT IS NOT OPTIONAL. Every
+            # sentence here is a claim about what this product does, which is
+            # R-TG6 (i)'s species: it may not wear the general-knowledge label
+            # and it may not be offered uncited. The dispatch cannot reach this
+            # branch with an entry that has no citations (the glossary's own
+            # shape forbids it), so the loop below always prints at least one.
+            kf = bundle.key_facts
+            term = kf.get("term")
+            if kf.get("known"):
+                lines.append(f'"{term}" — {kf.get("body")}')
+                lines.append("")
+                for c in kf.get("citations") or []:
+                    target = c.get("target", "")
+                    if c.get("kind") == "run":
+                        continue          # printed as a figure, below
+                    lines.append(f"  [{target}] {c.get('phrase')}")
+                fig = kf.get("figure")
+                if fig:
+                    line = _term_figure_line(term, fig)
+                    if line:
+                        lines.append("")
+                        lines.append(line)
+                else:
+                    # SAID, NOT SWALLOWED. A definition is true whether or not
+                    # today's run carries the figure it points at, and silence
+                    # here would let a planner read the absence as "there isn't
+                    # one on this board".
+                    if any((c.get("kind") == "run")
+                           for c in kf.get("citations") or []):
+                        lines.append("")
+                        lines.append(
+                            "This plan doesn't carry that figure, so the "
+                            "definition above is all I can show you for it.")
+                doors = kf.get("doors") or []
+                if doors:
+                    lines.append("")
+                    lines.append("Next: " + "  ".join(f'Ask "{d}".'
+                                                      for d in doors))
+            else:
+                # The fail-safe. The dispatch confirms the term before routing
+                # here, so this is unreachable on the live path — and it says
+                # nothing about the plant rather than guessing at a definition.
+                seen = kf.get("seen") or []
+                lines.append(
+                    "I use some words in a particular way, and I can explain "
+                    "the ones I've actually used with you — but I couldn't tell "
+                    "which one you meant.")
+                if seen:
+                    lines.append("")
+                    lines.append("Words I've used here: " + ", ".join(seen) + ".")
             lines.append("")
 
         elif bundle.subject_type == "coaching":
@@ -4679,6 +4772,13 @@ class LLMRenderer:
         # planner acts on a capability claim by AUTHORING DATA, so there is no
         # board to check a fluent overstatement against.
         "coaching",
+        # Session 4A teaching-graft (d.3), R-TE1: a glossary answer is authored
+        # copy AND it is the strictest case of it in the file. Every sentence is
+        # a claim about THIS PRODUCT's behaviour — R-TG6 (i)'s species — and its
+        # only licence to exist is the citation beside it. A model rewording a
+        # definition of our own vocabulary is producing exactly the uncited
+        # product claim that ruling drops, with our authority on it.
+        "term_explanation",
         # Session 4B.15 Item 3: an attribute lookup is a VALUE and its SOURCE.
         # There is nothing to testify from and nothing to improve — a reword can
         # only blur "not declared" into "none" or drop the provenance clause,

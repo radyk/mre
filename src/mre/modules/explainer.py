@@ -293,6 +293,11 @@ ROUTE_TAXONOMY: dict[str, dict] = {
     # enable X / does MRE support W". Answered from the authored capability
     # registry (capabilities.py) with a docs/06 § citation.
     "coaching":              {"params": [],          "canonical": "how do I enable that?"},
+    # Session 4A teaching-graft (d.3), R-TE1 — THE PRODUCT EXPLAINS ITS OWN
+    # WORDS. "what do you mean seed". Answered from the authored, cited
+    # glossary (`glossary.py`), gated by the term memory: we explain words we
+    # SAID, on the board the planner is looking at.
+    "term-explanation":      {"params": [],          "canonical": "what does that word mean?"},
     # Session 4B.15 Item 3 — ATTRIBUTE LOOKUP. "is ORD-000013 op20 splittable"
     # and "how long does op20 take" are fully specified, zero-ambiguity reads of
     # a declared field, and both were answered with documentation because no
@@ -872,6 +877,10 @@ class Explainer:
         if route_id == "coaching":
             concept = params.get("concept") or coaching_concept(q.lower())
             return self._explain_coaching(q, concept)
+        if route_id == "term-explanation":
+            return self._explain_term(q, params.get("term"),
+                                      params.get("term_seen"),
+                                      params.get("document"))
         if route_id == "attribute-lookup":
             # THE PLANNER'S OWN WORDS, not the canonical question. `q` is the
             # ROUTED question, which a subject rewrite replaces with the route's
@@ -5419,6 +5428,86 @@ class Explainer:
         if machine:
             examples.append(f"what's running on {machine} — that machine's schedule")
         return examples + list(_SUPPORTED_ROUTES)
+
+    def _explain_term(self, question: str, term: Optional[str],
+                      term_seen: Any = None,
+                      document: Any = None) -> ExplanationBundle:
+        """R-TE1 — what one of OUR WORDS means, with the artifact that defines it.
+
+        Session 4A teaching-graft (d.3). Three states and no fourth:
+
+        * a GLOSSARY term the planner has been shown -> the authored entry, its
+          citations resolved, and the run's own figure where the entry names one;
+        * a term the planner has been shown that the glossary does NOT hold ->
+          an honest refusal that NAMES the word and the fact that we used it.
+          **It does not improvise.** A definition of our word is a
+          product-behaviour claim (R-TG6 (i)) and an uncited one is dropped, so
+          having a model write one here would be building the defect that ruling
+          exists to refuse;
+        * no term at all -> the dispatch never sends us here (it confirms the
+          intent only against the term memory), so this is the fail-safe and it
+          says nothing about the plant.
+
+        THE RUN FIGURE IS READ, NEVER ASSERTED. Where it cannot be read the
+        citation degrades to the ruling alone and the answer is still true —
+        `None`, never a zero, and never a sentence about a figure we did not get.
+        """
+        from mre.modules.glossary import GLOSSARY_BY_TERM
+
+        entry = GLOSSARY_BY_TERM.get(str(term or ""))
+        facts: dict = {
+            "term": term or None,
+            "known": entry is not None,
+            # Which of our words this planner HAS been shown, so the refusal
+            # branch can offer the ones we can actually explain.
+            "seen": sorted(term_seen or ()),
+        }
+        if entry is not None:
+            facts.update({
+                "body": entry.body,
+                "citations": [{"kind": k, "target": t, "phrase": p}
+                              for k, t, p in entry.citations],
+                "doors": list(entry.doors),
+                "figure": self._term_figure(entry.run_figure, document),
+            })
+        return self._authored_bundle("term_explanation", question, facts)
+
+    @staticmethod
+    def _term_figure(figure: Optional[str], document: Any) -> Optional[dict]:
+        """This run's own record for a glossary term, or None.
+
+        None is a first-class answer here: a glossary entry is TRUE whether or
+        not today's run happens to carry the figure it points at, and a figure
+        reader that invented a zero would turn a definition into a claim about
+        the plant. Every branch is defensive for the same reason.
+
+        THE DOCUMENT IS PASSED IN, NOT REACHED FOR. The first draft of this
+        read `getattr(self, "_document", None)` — an attribute the Explainer
+        does not have — so every figure would have degraded to None silently and
+        the glossary would have looked correct while citing nothing. That is
+        (d.2) rider R1's false zero, in this session's own new code, and it was
+        caught the same way: by checking what the object actually holds.
+        """
+        doc = document if isinstance(document, dict) else {}
+        if not figure or not doc:
+            return None
+        try:
+            solver = doc.get("solver") or {}
+            if figure == "portfolio":
+                pf = solver.get("portfolio")
+                return {"kind": "portfolio", "value": pf} if pf else None
+            if figure == "gap":
+                gap = solver.get("gap")
+                return None if gap is None else {"kind": "gap", "value": gap}
+            if figure == "frozen_boundary":
+                at = (doc.get("rolling") or {}).get("frozen_until")
+                return {"kind": "frozen_boundary", "value": at} if at else None
+            if figure == "driver_codes":
+                from mre.contracts.vocabularies import DriverCode
+                return {"kind": "driver_codes", "value": len(list(DriverCode))}
+        except Exception:  # noqa: BLE001 — a figure we cannot read is None
+            return None
+        return None
 
     def _authored_bundle(self, subject_type: str, question: str,
                          key_facts: dict) -> ExplanationBundle:

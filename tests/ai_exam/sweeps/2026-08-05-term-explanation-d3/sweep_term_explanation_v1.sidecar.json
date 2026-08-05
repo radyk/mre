@@ -1,0 +1,98 @@
+{
+  "target": "rolling-c32a6140-b6b",
+  "snapshot": "snap-rolling",
+  "started_at": "2026-08-05T18:34:24Z",
+  "llm_mode": "live",
+  "questions": 14,
+  "llm_calls": 27,
+  "parser_stats": {
+    "calls": 17,
+    "parses": 17,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 1,
+    "unavailable": 0,
+    "unreachable": 0,
+    "median_latency_ms": 1545.4368999999133,
+    "malformed_samples": []
+  },
+  "synth_stats": {
+    "syntheses": 2,
+    "calls": 10,
+    "tool_calls": 8,
+    "malformed": 0,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 0,
+    "median_latency_ms": 26964.212799999586,
+    "p90_latency_ms": 45019.016599999304
+  },
+  "synthesis": {
+    "answers": 2,
+    "claims": 8,
+    "verified": 0,
+    "interpretive": 3,
+    "general_knowledge": 1,
+    "failed_and_cut": 4,
+    "deferred": 0,
+    "ungrounded_load_bearing": 4,
+    "unanswerable": 0,
+    "budget_exhausted": 0,
+    "tool_calls": 8,
+    "tool_histogram": {
+      "constraint_catalog": 1,
+      "cost_ledger": 1,
+      "fetch_record": 1,
+      "lateness_set": 1,
+      "machine_occupancy": 1,
+      "placements_for_order": 1,
+      "spec_lookup": 2
+    },
+    "calls_per_answer": {
+      "1": 1,
+      "7": 1
+    }
+  },
+  "shadow": {
+    "shadowed": 0,
+    "clean": 0,
+    "diverged": 0,
+    "unchecked": 0,
+    "provenance_strengthened": 0,
+    "by_intent": {}
+  },
+  "latency": {
+    "route": {
+      "n": 12,
+      "median_ms": 1688.9,
+      "p90_ms": 2513.2
+    },
+    "synthesis": {
+      "n": 2,
+      "median_ms": 28881.3,
+      "p90_ms": 47139.0
+    }
+  },
+  "graded_expectations": {
+    "graded": 14,
+    "met": 14
+  },
+  "door_check": "live",
+  "finding_counts": {
+    "ungrounded-load-bearing": 2
+  },
+  "findings": [
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 104,
+      "question": "what do you mean seed",
+      "detail": "3 load-bearing claim(s) could not be grounded and were cut"
+    },
+    {
+      "kind": "ungrounded-load-bearing",
+      "lineno": 121,
+      "question": "what do you mean bottleneck",
+      "detail": "1 load-bearing claim(s) could not be grounded and were cut"
+    }
+  ]
+}

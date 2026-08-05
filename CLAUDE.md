@@ -197,11 +197,11 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation.
-**Last closed: Session 4A teaching-graft (d.2) — the format, the ladder, and
-what a clarify eats**, 2026-08-05 (docs/07 v2.98, §5a.204-211; docs/04
-2026-08-05 **R-EX2 and R-LD6 ruled and BUILT**; contract unchanged **1.15**;
-parse prompt **v18**, synthesis prompt **v9**; narrative
-`docs/closeouts/4a-teaching-d2-format-ladder-carry.md`).
+**Last closed: Session 4A teaching-graft (d.3) — the product explains its own
+words**, 2026-08-05 (docs/07 v2.99, §5a.212-222; docs/04 2026-08-05 **R-TE1
+ruled and BUILT**; contract unchanged **1.15**; parse prompt **v18 → v19**,
+synthesis prompt **v9**; narrative
+`docs/closeouts/4a-teaching-d3-term-explanation.md`).
 
 **THE SESSION LEDGER IS NOT IN THIS FILE.** What a session built, what it
 measured, its test counts and its commit live in `docs/07` §5a (position and
@@ -216,6 +216,7 @@ Recent sessions, newest first. `docs/closeouts/<file>.md` is the narrative:
 
 | session | subject | ruling | close-out |
 | --- | --- | --- | --- |
+| 4A tg (d.3) | the product explains its own words | R-TE1 | `4a-teaching-d3-term-explanation.md` |
 | 4A tg (d.2) | bank format, ladder, clarify-carry | R-EX2, R-LD6 | `4a-teaching-d2-format-ladder-carry.md` |
 | 4A tg (e2) | the measurement errand | R-TG7 + W4 lead order | `4a-teaching-e2-measurement-errand.md` |
 | 4A tg (e) | teaching may not contradict the floors | R-TG6, W6 | `4a-teaching-e-floor-truth.md` |
@@ -242,7 +243,7 @@ and §5a range.
 
 ### Governed artifacts, current versions
 
-Contract **1.15** · parse prompt **v18** · synthesis prompt **v9** ·
+Contract **1.15** · parse prompt **v19** · synthesis prompt **v9** ·
 `DriverCode` **14 members** · finding codes **20** · RUBRIC axes through **C9**.
 Changing any of these is a **vocabulary-class change**: reviewed, versioned,
 committed with its spec update in the same commit.
@@ -327,6 +328,10 @@ measurements. Do not restate a ruling's reasoning here.
 - **R-TG7** — an empty teaching drop has a floor: the authored card replaces the
   capability card and says a draft existed and was REFUSED, never "nothing was
   found". It does not enter `ANSWER_MEMORY`.
+- **R-TE1** — the product explains its OWN WORDS. `term-explanation` is a
+  CONTRACTED route over a governed, CITED glossary; the model proposes, the
+  deterministic seam confirms only a word we SAID on THIS board (`TermMemory`,
+  R-MT1's key). Not a documentation browser — the trigger contract is the wall.
 - **R-EX2** — banks grade ROUTES and RELATIONS; bodies belong to tests.
   `REBIND` is a sequence step; three relational forms index an earlier turn
   (`BODY_SAME_AS`/`BODY_DIFFERS_FROM`, `RECORDS_FROM` — non-empty required —
@@ -407,6 +412,11 @@ measurements. Do not restate a ruling's reasoning here.
 
 **Discipline learned the expensive way (each has its specimen in docs/04)**
 
+- **A pre-commit hook blocks a commit whose staged docs outrun the corpus
+  index** (R1, (d.3)). Install: `git config core.hooksPath tools/hooks`;
+  bypass is `git commit --no-verify` and nothing else.
+- **An empty denominator is not a clean bill.** A check that fires 0 of 0 says
+  the corpus could not exercise it (4A-(d.3) §5a.212).
 - **A predicate is audited by the NEXT session, over the BUILDING session's own
   artifacts** — a session that has just built a check is the worst-placed
   observer of what it misses (4A-(e2) §9; 4A-(d.2) §5a.204 found a third missing
@@ -494,7 +504,8 @@ REPORTED and deliberately NOT fixed.
 | 4B.11 | R-PD1 clause (5) is open; there is no optimality ROUTE — nobody can ASK | §5a.28-30 |
 | 4B.6b/c | §5a.15 the 14-day window is budget-starved at 200 orders; the prediction store's sweep is scoped by nothing | §5a.8-17 |
 | 4B.5–4B.7 | the two-solve baseline is not extended to forced-alternatives pricing; `EARLINESS_PREFERENCE` names a mechanism that no longer exists (§5a.20) | §5a.19-21 |
-| 4A (d.2) | the GK predicate misses a postposed deictic; `RECORDS_FROM` is a subset test, not equality | §5a.211 · `4a-teaching-d2-format-ladder-carry.md` |
+| 4A (d.3) | a defined word asked about before it is said gets the second tier; the glossary is 10 entries against 27 emitted terms | §5a.222 · `4a-teaching-d3-term-explanation.md` |
+| 4A (d.2) | `RECORDS_FROM` is a subset test, not equality; the cross-version bank names two schedule ids (the postposed deictic was discharged by (d.3) R2) | §5a.211 · `4a-teaching-d2-format-ladder-carry.md` |
 | 4A (a)–(e2) | the widened GK predicate is still a pattern map; C9's transfer pair is still not bank-expressible (the fourth W4 site and the same-answer assertion were discharged by (d.2)) | §5a.162-202 |
 
 Standing named debts not tied to one session: the sentinel /

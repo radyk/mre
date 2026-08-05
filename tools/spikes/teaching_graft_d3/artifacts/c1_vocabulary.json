@@ -1,0 +1,186 @@
+{
+  "transcripts": 53,
+  "answers": 1810,
+  "uses": {
+    "tardiness": 507,
+    "window": 379,
+    "gap": 232,
+    "overtime": 186,
+    "slack": 135,
+    "horizon": 113,
+    "splittable": 96,
+    "frozen": 75,
+    "optimal": 68,
+    "capability": 67,
+    "past-due": 52,
+    "driver": 50,
+    "chunk": 45,
+    "ledger": 38,
+    "seed": 30,
+    "coarse": 19,
+    "derate": 18,
+    "rolling": 15,
+    "bound": 13,
+    "pinned": 10,
+    "beyond-horizon": 8,
+    "spread": 7,
+    "makespan": 3,
+    "certificate": 2,
+    "setup family": 2,
+    "monolithic": 1,
+    "calibrated": 1
+  },
+  "answers_with": {
+    "window": 274,
+    "tardiness": 267,
+    "overtime": 151,
+    "gap": 146,
+    "splittable": 90,
+    "slack": 88,
+    "horizon": 79,
+    "optimal": 52,
+    "driver": 43,
+    "capability": 38,
+    "chunk": 37,
+    "frozen": 35,
+    "ledger": 32,
+    "coarse": 19,
+    "derate": 18,
+    "rolling": 11,
+    "bound": 8,
+    "spread": 7,
+    "pinned": 7,
+    "past-due": 6,
+    "beyond-horizon": 5,
+    "seed": 5,
+    "makespan": 3,
+    "certificate": 2,
+    "setup family": 2,
+    "monolithic": 1,
+    "calibrated": 1
+  },
+  "examples": {
+    "gap": {
+      "source": "2026-07-24/sweep_glass_box.txt",
+      "line": "The gap on PAINT-01 between ORD-09 (2026-01-05 10:20) and ORD-12 (2026-01-05 14:41) isn't idle — ORD-02 runs there (2026-01-05 11:01 → 2026-01-05 14:41)."
+    },
+    "splittable": {
+      "source": "2026-07-24/sweep_glass_box.txt",
+      "line": "- splittable, earliness_value, setup_family, alternates, customers, locks, wip, overtime"
+    },
+    "overtime": {
+      "source": "2026-07-24/sweep_glass_box.txt",
+      "line": "- splittable, earliness_value, setup_family, alternates, customers, locks, wip, overtime"
+    },
+    "capability": {
+      "source": "2026-07-24/sweep_glass_box.txt",
+      "line": "That's a configuration question, and I can point you to the submission setting for it — but I don't recognize which capability you mean."
+    },
+    "slack": {
+      "source": "2026-07-24/sweep_glass_box.txt",
+      "line": "My take: ORD-04 has ~0.2 day(s) of slack to spend; ORD-05 is the one hurting (890 min late) — giving it ORD-04's earlier slot is the move worth pricing."
+    },
+    "chunk": {
+      "source": "2026-07-24/sweep_glass_box.txt",
+      "line": "To enable it: set splittable=true and a min_chunk_minutes on that operation's routing line in routing_lines.csv (the run phase becomes resumable; chunk boundaries fall on calendar boundaries, and nothing is billed to the pause). See the incoming-data spec §5.3."
+    },
+    "window": {
+      "source": "2026-07-24/sweep_glass_box.txt",
+      "line": "Yes — extra working hours beyond the regular shift — an overtime window a job can run in when the regular calendar is closed, priced at a premium so the schedule only buys those hours when they pay for themselves (e.g. a Saturday shift that rescues a tight order)."
+    },
+    "tardiness": {
+      "source": "2026-07-24/sweep_glass_box.txt",
+      "line": "1. the customer priority weight is only weakly known for 13 order(s), so tardiness priority is unreliable  [WARNING]"
+    },
+    "optimal": {
+      "source": "2026-07-24/sweep_glass_box.txt",
+      "line": "I can't answer that one exactly — \"what's the optimal plan\"."
+    },
+    "horizon": {
+      "source": "2026-07-24/sweep_glass_box.txt",
+      "line": "I can't answer that one exactly — \"what's beyond the horizon\"."
+    },
+    "beyond-horizon": {
+      "source": "2026-07-24/sweep_glass_box.txt",
+      "line": "- beyond-horizon"
+    },
+    "frozen": {
+      "source": "2026-07-24/sweep_glass_box.txt",
+      "line": "I can't answer that one exactly — \"what's frozen\"."
+    },
+    "driver": {
+      "source": "2026-07-26-arc-close/sweep_synthesis.txt",
+      "line": "The plan's money is going primarily into running machines at regular rates, with setup overhead and one late order's penalty as secondary drivers.  [synthesis — read from: cad82727, 34a0fc14]"
+    },
+    "rolling": {
+      "source": "2026-07-26-arc-close/sweep_traps.txt",
+      "line": "This isn't a rolling schedule, so there's no horizon to look past."
+    },
+    "monolithic": {
+      "source": "2026-07-26-synthesis/regression_founder.txt",
+      "line": "Splitting ORD-05 could reduce lateness only if a split piece could start and finish before the due date—but the operation is monolithic (one step on one machine), so splitting would not change when work begins or the total duration, only distribute it across time windows.  [synthesis — read from: 82257d9a, 5bb0fd1c, 1968510e]"
+    },
+    "spread": {
+      "source": "2026-07-26-synthesis/sweep_synthesis.txt",
+      "line": "The work is not spread evenly: CUT-01 is heavily loaded while PRESS-FAST and PRESS-SLOW are lightly loaded, and several machines have extended idle periods.  [synthesis — read from: 33eeadd1, 1f59860a, 42e73fdf]"
+    },
+    "coarse": {
+      "source": "2026-07-30-r5-graded/transcript-haiku-1.txt",
+      "line": "Declare refinements.coarse_horizon.capacity_derate in cost_model.json (docs/06 §5.9) and the coarse figures derate with it."
+    },
+    "derate": {
+      "source": "2026-07-30-r5-graded/transcript-haiku-1.txt",
+      "line": "Declare refinements.coarse_horizon.capacity_derate in cost_model.json (docs/06 §5.9) and the coarse figures derate with it."
+    },
+    "pinned": {
+      "source": "2026-08-03-mobility-v1/transcript-1.txt",
+      "line": "Held-world price: every other placement pinned where it is, the whole ledger recomputed, and the result re-checked against the scheduler (OPTIMAL). It is what this move costs, not what the best plan containing it would cost."
+    },
+    "ledger": {
+      "source": "2026-08-03-mobility-v1/transcript-1.txt",
+      "line": "Held-world price: every other placement pinned where it is, the whole ledger recomputed, and the result re-checked against the scheduler (OPTIMAL). It is what this move costs, not what the best plan containing it would cost."
+    },
+    "bound": {
+      "source": "2026-08-03-teaching-v1/sweep_teaching_v1.txt",
+      "line": "Proving optimality requires not just finding a good solution but also a matching lower bound; many scheduling objectives (like total tardiness or weighted lateness) give lower bounds that are weak or slow to compute, so the gap between the best found solution and the best provable bound can stay open for a long time.  [general knowledge — how scheduling works in general, not a fact about this plan]"
+    },
+    "past-due": {
+      "source": "2026-08-03-teaching-v1/sweep_teaching_v1.txt",
+      "line": "Yes, there are 102 late orders among the 158 orders scheduled in this window [record: 2aafb20c...]. Of these, 46 orders were already past due before the window opened, and the schedule adds 1477827 minute(s) of lateness across all late orders [record: 2aafb20c...]. The remaining 122 of the 280 total known orders sit beyond the horizon with no placement yet, so they are neither late nor on time [record: 2aafb20c...]."
+    },
+    "certificate": {
+      "source": "2026-08-04-pinned-world-4x/sweep_carried_state_v1.txt",
+      "line": "This plan has no certificate. The submission never went through the intake gate, so no grade was ever issued — there is nothing for me to report and nothing for me to guess."
+    },
+    "makespan": {
+      "source": "2026-08-04-teaching-c/sweep_teaching_v3.run1.txt",
+      "line": "The lower bound side of the gap is often weak for scheduling objectives like tardiness or makespan, because relaxations (dropping integrality or precedence) can be far looser than the real problem — so a stubbornly large reported gap can mean the bound is poor rather than that the incumbent schedule is actually far from optimal.  [general knowledge — how scheduling works in general, not a fact about this plan]"
+    },
+    "seed": {
+      "source": "2026-08-04-teaching-c/sweep_teaching_v3.run1.txt",
+      "line": "On \"found\": this board is the best of 3 seeded searches, the one at seed 44."
+    },
+    "setup family": {
+      "source": "2026-08-04-teaching-c2/sweep_teaching_v3.txt",
+      "line": "Order ORD-000206's second operation (PAINT-02, setup family PAINT_BLUE) is currently placed 2026-02-02 17:25 to 19:00, and PAINT-02 is running at 57.9% utilization over 2026-01-15 to 2026-02-02, with idle open capacity sitting in gaps before several of its jobs (for example 257 open minutes before the 2026-01-20 07:00 job and 1499 open minutes before the 2026-01-29 15:31 job). (based on the 60 row(s) lateness_set returned, not the whole plan)  [synthesis — read from: a3062a95, 93ca0399, a740525e]"
+    },
+    "calibrated": {
+      "source": "2026-08-04-teaching-v2/sweep_teaching_v2.txt",
+      "line": "Setup time is time a machine spends changing over — tooling, fixtures, calibration, cleanup — between finishing one operation and starting the next, and the schedule has to hold that time open on the machine even though no product comes out of it.  [general knowledge — how scheduling works in general, not a fact about this plan]"
+    }
+  },
+  "never_emitted": [
+    "member",
+    "ghost",
+    "register",
+    "portfolio",
+    "tray",
+    "deterministic",
+    "snapshot",
+    "provenance",
+    "boxed-in",
+    "mobility",
+    "counterfactual",
+    "workcenter"
+  ]
+}

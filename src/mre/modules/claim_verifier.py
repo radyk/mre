@@ -491,7 +491,30 @@ _PRODUCT_BEHAVIOR_PATTERNS: tuple[tuple[str, str], ...] = (
      r"(?:can|cannot|can't|does|doesn't|will|won't|only|never|always|"
      r"treats?|models?|supports?|comput\w+|calculat\w+|determin\w+|"
      r"decid\w+|enforc\w+|recogni[sz]\w+|consider\w+|distinguish\w+)\b"
-     r"|\bwe\s+(?:only|never|always)\s+\w+\b"),
+     r"|\bwe\s+(?:only|never|always)\s+\w+\b"
+     # THE POSTPOSED DEICTIC, added by (d.3)'s rider R2 and found by (d.2)'s
+     # standing predicate audit over (e2)'s OWN sweeps:
+     #
+     #   "a mixed-integer or constraint-based SCHEDULER LIKE THIS ONE instead
+     #    searches globally ... the ordering is an output of the optimization,
+     #    not an input rule it followed"                    [general knowledge]
+     #
+     # A third construction, independent of both (e2) widenings: the pointer
+     # sits AFTER the noun, so every alternation above — all of which want
+     # "this/the <noun>" — misses it. The claim is as much about this product
+     # as any of them, and it is as checkable (docs/05, the solver builder).
+     #
+     # BOUNDED THE SAME WAY THE OTHERS ARE: a closed noun list, the same
+     # one-intervening-word allowance, and the same closed verb list, so it
+     # widens the SHAPE and not the reach. "A scheduler like this one decides"
+     # fires; "a plant like this one runs hot" does not.
+     r"|\b(?:product|system|engine|scheduler|solver)s?\s+like\s+th(?:is|ese)\s+"
+     r"(?:one|ones)?\s*"
+     r"(?:\w+\s+)?"
+     r"(?:can|cannot|can't|does|doesn't|will|won't|only|never|always|"
+     r"treats?|models?|supports?|comput\w+|calculat\w+|determin\w+|"
+     r"decid\w+|enforc\w+|recogni[sz]\w+|consider\w+|distinguish\w+|"
+     r"search\w+|instead)\b"),
     # (b) docs/05's own vocabulary. "proven in core" is a STATUS COLUMN value in
     #     the constraint catalog — a fact about what we have built and verified,
     #     which no general statement about scheduling has any use for.

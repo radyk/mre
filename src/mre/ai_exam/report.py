@@ -10,6 +10,7 @@ import json
 from typing import Any
 
 from .runner import ExamResult, TurnRecord
+from .sidecar import _RELATIONAL_KEYS
 
 
 _RULE = "-" * 72
@@ -130,6 +131,23 @@ def render_transcript(result: ExamResult) -> str:
             lines.append("  expect: " + " ".join(
                 f"{k}={v}" for k, v in t.expect.items()) +
                 ("  -> MET" if ok else "  -> MISSED"))
+            # THE VALUES A RELATIONAL EXPECTATION ACTUALLY COMPARED.
+            #
+            # Found by (d.3)'s standing predicate audit, pointed at (d.2)'s own
+            # sweeps: the committed transcripts said `records_from=1 -> MET` and
+            # nothing else, so **a real comparison and a degenerate one look
+            # identical in the artifact**. (d.2)'s close-out claim that "every
+            # relational form carried real values" was true, and it was
+            # established by cross-referencing OTHER lines of the transcript by
+            # eye — which the next auditor has to redo from scratch, and which
+            # is precisely the position this law exists to prevent.
+            #
+            # A relational PASS is now self-evidencing: the fingerprint, the
+            # record count and the referenced turn are on the line.
+            if any(k in _RELATIONAL_KEYS for k in t.expect):
+                lines.append(f"    compared: body={t.body_sha[:12] or '(empty)'}"
+                             f"  records={len(t.record_ids)}"
+                             f"  turn={t.conv_index} of this conversation")
         lines.append("  A:")
         for aln in (t.answer or "").splitlines():
             lines.append(f"    {aln}" if aln else "")

@@ -1,0 +1,24 @@
+#!/bin/sh
+# THE CORPUS CURRENCY HOOK — Session 4A teaching-graft (d.3), rider R1.
+#
+# The corpus-staleness class has four named occurrences (4B.33, (c2), the
+# shared-body census micro-session, (e2)): a session amends `docs/`, forgets to
+# rebuild `src/mre/corpus_index.json`, and the currency gate goes red in the
+# middle of a twenty-minute suite. The remedy written down each time was
+# "remember"; four identical failures is what this repo's law says earns the
+# mechanical fix.
+#
+# INSTALL (one command, from the repo root):
+#     git config core.hooksPath tools/hooks
+#
+# `core.hooksPath` is used rather than copying into `.git/hooks` so the hook is
+# COMMITTED and reviewable — a hook that lives only in one clone is a hook the
+# next session does not have.
+#
+# BYPASS: `git commit --no-verify`. That is git's own door and it is the only
+# one — building a second bypass (an env var, a marker file) would be a way to
+# turn the guard off without saying so in the reflog.
+#
+# Runs in ~0.3s: it reads one committed JSON index and hashes the staged docs.
+
+exec python tools/check_corpus_currency.py --staged

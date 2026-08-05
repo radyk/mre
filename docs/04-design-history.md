@@ -19936,3 +19936,248 @@ expectation, which is a real bound of the format and is written into the bank.
 **R-LD6 CLAUSE (5) IS NOT A CLAIM ABOUT MULTI-TURN TEACHING.** Q3 (teaching
 persistence) is untouched and still open; so is the term-explanation gap (F1),
 which is (d.3)'s subject.
+
+---
+
+## 2026-08-05 — R-TE1: THE PRODUCT EXPLAINS ITS OWN WORDS
+
+**Session 4A teaching-graft (d.3).** The last open founder finding (F1) from the
+2026-08-04/05 listening rounds. Contract unchanged **1.15**; **parse prompt
+v18 → v19** (one new intent enters the closed vocabulary); synthesis prompt
+unchanged **v9**; `DriverCode` unchanged; no docs/06 doorway owed.
+
+---
+
+### 0. The standing predicate audit, run first — and it was VACUOUS, which is a result
+
+(d.2)'s law: every predicate built in session N is run over session N's own
+artifacts in session N+1. Pointed at `2026-08-05-relational-d2`: **3
+transcripts, 1 claim line, 0 general-knowledge claims.** Both predicates
+therefore fire 0 of 0, and **that is not a clean bill — it is an empty
+denominator.** (d.2)'s banks are route-heavy by design and contracted routes
+carry no claims, so its corpus cannot exercise a claim predicate at all. Said
+rather than reported as a pass; the (d.2) instance of this law was the one that
+found something, and this one could not have.
+
+**The audit's OTHER half found something real.** (d.2) also built the R-EX2
+relational checks, and its committed transcripts record
+`records_from=1 -> MET` and nothing else — **a real comparison and a degenerate
+one are indistinguishable in the artifact.** (d.2)'s close-out claim that "every
+relational form carried real values" was true and was established by
+cross-referencing other lines of the transcript BY EYE, which the next auditor
+has to redo from scratch. Fixed: a relational pass now prints the fingerprint,
+the record count and the referenced turn on its own line, so it is
+self-evidencing.
+
+---
+
+### R-TE1 — THE PRODUCT EXPLAINS ITS OWN WORDS
+
+**THE FOUNDING SPECIMEN**, founder freewheel round, 2026-08-04, demo board. The
+`solve-optimality` route — a CONTRACTED one — answered the cost-optimum question
+with the word **"seed" nine times** (*"this board is the best of 3 seeded
+searches, the one at seed 44"*). The planner asked what it meant:
+
+> **T1** *"what do you mean seed"* → entity CLARIFY
+> **T2** *"you mentioned seed 44 is the cheapest seed but what does it mean to
+> change seeds"* → capability coach, *"I don't recognize which capability you
+> mean"*
+
+Two refusals, each holding a door handle that opens on the wrong room. The
+planner was asking about a word **the product's own last answer introduced**,
+and neither register could hear it.
+
+**REPRODUCED BEFORE ANYTHING WAS BUILT**, and the second half is the interesting
+one. T1: the parse proposed `prove-it`, bound NO subjects, and the dispatch's
+subject-resolution guard clarified. T2: the parse proposed `coaching` **with a
+CONCEPT subject `raw="seed"`** that resolved to `None`, because `coaching_concept`
+matches a closed capability registry. **The model had already identified the
+gesture AND extracted the term.** Nothing was missing from the parse — what was
+missing was an intent for it to name, so the nearest neighbour took it.
+
+#### THE CENSUS REFUTED THE TWO-SEAM FRAMING
+
+The brief said *"find every seam that would eat a term question, prove there is
+no third."* There is no third; **there are seven.** 25 phrasings × terms, live
+at v18, each in a conversation whose first turn actually emits the word:
+
+| destination | n |
+|---|---|
+| `synthesis` / `teaching` | **12** |
+| `CLARIFY` / `teaching` | 3 |
+| `prove-it` / `prove-it` | 3 |
+| `synthesis` / `unmatched` | 3 |
+| `CLARIFY` / `prove-it` | 2 |
+| `coaching` / `coaching` | 1 |
+| `CLARIFY` / `gap-between` | 1 |
+
+**The founder's two specimens are the RAREST cases** — one hit each. The
+dominant destination is the second tier (15 of 25), which answers these
+questions and answers them **without the citation a definition of our own word
+owes**. So the design's centre of gravity moved: this is not mainly about
+rescuing two refusals, it is about the fact that most term questions were being
+answered by improvisation.
+
+#### THE CLAUSES
+
+**(1) A NEW INTENT, `term-explanation`, JOINS THE CLOSED VOCABULARY. The model
+PROPOSES; the deterministic seam DISPOSES.** The intent is confirmed only when
+the word is in the governed glossary AND **this planner has been shown it, on
+THIS board** — which is a property of the rendered transcript, not of anything a
+model remembers (R-AI5(8)). `TermMemory` is keyed `(session_id, schedule_id)` on
+R-MT1's own key, written from the RENDERED answer text after the renderer, and
+cleared by `forget_deliveries` beside the other three stores. **A term from a
+PREVIOUS BOARD's answers does not confirm the intent after a rebind** — measured:
+the demo board's memory holds `['gap','seed']` and the exam board's holds `[]`
+one gesture later.
+
+**(2) A GLOSSARY TERM ANSWERS BY A CONTRACTED ROUTE — authored copy, every
+sentence citing the artifact that defines it.** A definition of one of our words
+is a claim about THIS PRODUCT's behaviour, which is **R-TG6 (i)'s species
+exactly**, so it may never wear the general-knowledge label and may never be
+offered uncited. Citations resolve to a docs/05 row, a docs/02 section, a ruling
+code, or **the run's own record** — "seed" cites R-BK1 *and shows this board's
+three members and the seed that won*. A run figure that cannot be read is
+`None` and **the answer says so** rather than letting the absence read as "there
+isn't one on this board".
+
+**(3) AN UNCONFIRMED PROPOSAL IS NOT A MATCHED INTENT.** It goes to the second
+tier by the one door, and the R-AI5(2) seal is untouched: the dispatch decided
+this is not `term-explanation`, so nothing FELL anywhere.
+
+**THIS TIGHTENS THE IN-ROOM DRAFT, and the reason is a ruling collision.** The
+draft said a term outside the glossary but inside the prior answers should go to
+teaching synthesis *with its source turn disclosed*. It reaches the same
+destination here, by the ordinary door and with no new mechanism — but the
+draft's framing would have made it this route's job to hand a model our own
+vocabulary and ask it to define it, and **a model improvising a definition of
+one of our words is precisely the uncited product-behaviour claim R-TG6 (i)
+DROPS.** The glossary either cites or it is silent; what a model does with an
+unmatched question is already governed, by R-TG1 and R-TG6.
+
+**(4) THE GLOSSARY IS VERSIONED WITH THE DOCS IT CITES.** Every citation target
+is resolved against the real document by `tests/test_glossary.py` — a ruling
+code must appear in docs/04, and `docs/05:R-C3` must be findable **in docs/05**,
+not merely somewhere. An entry whose citation target moves fails a test rather
+than quietly becoming folklore.
+
+#### THE SCOPE WALL IS THE TRIGGER CONTRACT, AND IT IS THE RULING
+
+This is **not a documentation browser, not search over docs, not a general
+"define X" feature**. The wall is clause (1): we explain words we SAID. Measured
+live, four arms — confirmed / never-said / not-ours / after-a-rebind — and only
+the first is this intent. *"What do you mean bottleneck"* goes to the second
+tier and is answered as general knowledge under R-TG1's label, which is the
+correct home for it: the glossary must not grow an entry for every word a
+planner might type.
+
+#### FIRST EDITION — TEN ENTRIES, SCOPED BY CENSUS
+
+C1 counted every product-specific term the product has actually emitted across
+**53 committed transcripts and 1,810 rendered answers**. A term never emitted is
+out by construction. The edition:
+
+| term | citation targets |
+|---|---|
+| seed | R-BK1 · the run's portfolio |
+| gap | the run's solver telemetry · docs/05 Acceptance gates |
+| ledger | R-DP12 |
+| frozen | R-F1 · the run's frozen boundary |
+| pinned | docs/06 locks · docs/05 Category F |
+| driver | docs/02 §4.2 · the run's driver-code count |
+| splittable | docs/05 R-C3 |
+| chunk | docs/05 R-C3 |
+| past-due | R-PD1 |
+| coarse | R-SC3 · docs/06 coarse_horizon |
+
+**TWO CENSUS FINDINGS THAT CHANGED THE EDITION.** `member` and `portfolio` —
+**R-BK1's own words** — are *never emitted*: the answer says "seeded searches"
+and "seed 44" instead, which is part of why the planner had to ask. And
+`calibrated` in R-CAL1's sense is never emitted either — its single hit in 1,810
+answers is the ordinary machine-shop sense (*"tooling, fixtures, calibration,
+cleanup"*), so it is OUT. Defining a word the planner has not been shown is the
+same defect as refusing to define one they have.
+
+---
+
+### The prompt, v18 → v19
+
+One new intent, one new rule (14), and the rule spends its words where the
+census proved the cost is: `teaching` (12 hits) and `prove-it` (5). The
+`prove-it` boundary is a **real ambiguity in English**, not a model error —
+*"what do you mean X"* asks for a DEFINITION when X is a word and for GROUNDS
+when X is a claim, and the rule says so in four paired examples.
+
+**THE QUOTE SIGNAL IS WHAT CLOSED T2.** With rule 14 as first drafted, T1
+routed correctly and T2 still read as `teaching` — defensibly, since it asks
+about an ACTION ("what does it mean to change seeds"). The discriminator added:
+**when the planner attributes the word to me — "you mentioned X", "you said X" —
+this is the intent, whatever else the sentence goes on to ask.** A word I
+introduced is a word I owe them a definition of before anything else. Both
+specimens then routed correctly, and the true negatives held.
+
+---
+
+### Riders
+
+**R1 — THE PRE-COMMIT CURRENCY HOOK.** The corpus-staleness class has four named
+occurrences (4B.33, (c2), the shared-body census micro-session, (e2)), and the
+remedy written down each time was *"remember to rebuild"*. **Restraint is not a
+mechanism** — R-CM1's own words, one rule over — and four identical failures is
+what this repo's law says earns the mechanical fix. `tools/hooks/pre-commit`
+runs the currency check against the **staged** docs, installed by
+`git config core.hooksPath tools/hooks` so the hook is COMMITTED and reviewable
+rather than living in one clone. Bypass is `--no-verify`, git's own door and the
+only one. **Proven both ways:** a staged stale doc is rejected (exit 1, commit
+does not land) and a clean tree passes.
+
+**Its own first draft failed open**, and that is recorded because it is the
+species: it read `payload["documents"]` where the key is `docs`, so it would
+have crashed into its own SKIPPED branch and reported everything current
+forever. It now calls the corpus's own `doc_fingerprints()` — the same
+definition the currency test uses.
+
+**R2 — THE THIRD PREDICATE WIDENING, CENSUS-FUNDED.** The postposed deictic
+(*"a scheduler like this one instead searches globally…"*), found by (d.2)'s
+audit. Bounded exactly as the other two are — a closed noun list, the same
+one-intervening-word allowance, the same closed verb list — so it widens the
+SHAPE and not the reach. **Census over 53 transcripts / 522 unique claim lines /
+121 general-knowledge: 3 → 4 firings, and the fourth is the specimen.** Firings
+on the 401 non-GK lines: **5 before, 5 after — unchanged by this widening.**
+
+**Recorded honestly: that 5 is not the 2 (e2) reported.** It is 5 both before
+and after this session's change, so the discrepancy predates (d.3) and is not
+this widening's doing. Filed rather than chased; the number is what the
+committed ruler reads today.
+
+**R3 — THE DEICTIC SPEC, SETTLED.** `cockpit.spec.mjs::deictic` has been the
+standing known-red for sessions, and (d.2) proved it pre-existing and correctly
+refused to fit the expectation to output. The history settles it: **4B.14 RULED
+the change** — docs/04, 2026-07-29: *"the cockpit's deictic button has been
+labelled 'Why is this here?' since 4A.2 and fired `why is X on Y?` —
+`why-on-machine`, a CAPABILITY question… A fine answer to a question the button
+does not ask: 'here' is a position in TIME at least as much as on a lane. It now
+fires the blocker analysis."*
+
+So the copy moved with a ruling and **the spec was left behind by it**. Updating
+an expectation to a RULING is not fitting it to output, and the difference is
+that the ruled text is quotable. **The canonical deictic text is
+`why is {order} placed where it is on {machine}?`.**
+
+**The fixture was left behind too, and that was the rest of the red**: the
+canned-answer map still keyed the pre-4B.14 question, so *no* answer matched and
+the "Evidence chain" assertion was failing on a fallback. Both questions are now
+keyed, which is 4B.14's own point — they are **different questions**, one about
+capability and one about time.
+
+---
+
+### What this does NOT do
+
+**The glossary does not answer for a word it defines that has not been said
+yet.** Asked "what do you mean seed" cold, the planner gets the second tier's
+honest floor rather than the entry. Widening the trigger to fix that is exactly
+the documentation-browser slope the wall exists to stop; the honest fix is a
+better second-tier answer, and it is filed rather than taken.
+
+**Q3 (teaching persistence) is untouched** and remains parked.

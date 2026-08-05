@@ -1,0 +1,68 @@
+[
+  {
+    "arm": "A confirmed (said here)",
+    "question": "what do you mean seed",
+    "route": "term-explanation",
+    "intent": "term-explanation",
+    "want": "confirm",
+    "ok": true,
+    "first_line": [
+      "\"seed\" — A seed is the starting number for the solver's search. The same plant solved twice with different seeds gives two different schedules, both legal, and usually not the same price — so this board is not \"the\" answer, it is the cheapest of several runs we made on purpose."
+    ]
+  },
+  {
+    "arm": "B never said in this convo",
+    "question": "what do you mean seed",
+    "route": "synthesis",
+    "intent": "term-explanation",
+    "want": "refuse",
+    "ok": true,
+    "first_line": [
+      "I couldn't answer that one from the evidence. I read what I could and none of it grounds an answer I'd stand behind, so I'd rather say so than guess."
+    ]
+  },
+  {
+    "arm": "C not one of our words",
+    "question": "what do you mean bottleneck",
+    "route": "synthesis",
+    "intent": "term-explanation",
+    "want": "refuse",
+    "ok": true,
+    "first_line": [
+      "A bottleneck is the machine whose limited capacity holds up the flow of orders through the plant — work queues up in front of it while other machines wait, and it ends up setting the pace for how fast anything finishes.  [general knowledge — how scheduling works in general, not a fact about this plan]"
+    ]
+  },
+  {
+    "arm": "D after a version rebind",
+    "question": "what do you mean seed",
+    "route": "synthesis",
+    "intent": "term-explanation",
+    "want": "refuse",
+    "ok": true,
+    "first_line": [
+      "I couldn't answer that one from the evidence. I read what I could and none of it grounds an answer I'd stand behind, so I'd rather say so than guess."
+    ]
+  },
+  {
+    "arm": "TN entity clarify",
+    "question": "why cant this be moved earlier",
+    "route": "CLARIFY",
+    "intent": "why-here",
+    "want": "CLARIFY",
+    "ok": true,
+    "first_line": [
+      "I need one more detail to answer \"why cant this be moved earlier\"."
+    ]
+  },
+  {
+    "arm": "TN capability coach",
+    "question": "how do i turn on overtime",
+    "route": "coaching",
+    "intent": "coaching",
+    "want": "coaching",
+    "ok": true,
+    "first_line": [
+      "Yes — extra working hours beyond the regular shift — an overtime window a job can run in when the regular calendar is closed, priced at a premium so the schedule only buys those hours when they pay for themselves (e.g. a Saturday shift that rescues a tight order)."
+    ]
+  }
+]

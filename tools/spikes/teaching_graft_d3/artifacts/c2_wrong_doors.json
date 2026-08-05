@@ -1,0 +1,64 @@
+{
+  "founder": {
+    "opener_emits_seed": true,
+    "turns": [
+      {
+        "question": "is this the cheapest possible plan",
+        "route": "solve-optimality",
+        "intent": "solve-optimality",
+        "register": "testimony",
+        "subject_type": "optimality",
+        "subject_name": "?",
+        "subjects": [],
+        "note": "",
+        "first_line": [
+          "I can't prove it, and I'd rather say so than guess. The solver ran out of budget before it could close the bound, with a gap of 89.6% still open. The earliest-start tiebreak did not prove out, which does not affect the cost claim above."
+        ]
+      },
+      {
+        "question": "what do you mean seed",
+        "route": "term-explanation",
+        "intent": "term-explanation",
+        "register": "testimony",
+        "subject_type": "term_explanation",
+        "subject_name": "?",
+        "subjects": [
+          {
+            "kind": "concept",
+            "raw": "seed",
+            "ref": null,
+            "source": "utterance",
+            "pointed": false,
+            "op_seq": null
+          }
+        ],
+        "note": "",
+        "first_line": [
+          "\"seed\" — A seed is the starting number for the solver's search. The same plant solved twice with different seeds gives two different schedules, both legal, and usually not the same price — so this board is not \"the\" answer, it is the cheapest of several runs we made on purpose."
+        ]
+      },
+      {
+        "question": "you mentioned seed 44 is the cheapest seed but what does it mean to change seeds",
+        "route": "term-explanation",
+        "intent": "term-explanation",
+        "register": "testimony",
+        "subject_type": "term_explanation",
+        "subject_name": "?",
+        "subjects": [
+          {
+            "kind": "concept",
+            "raw": "seeds",
+            "ref": null,
+            "source": "utterance",
+            "pointed": false,
+            "op_seq": null
+          }
+        ],
+        "note": "",
+        "first_line": [
+          "\"seed\" — A seed is the starting number for the solver's search. The same plant solved twice with different seeds gives two different schedules, both legal, and usually not the same price — so this board is not \"the\" answer, it is the cheapest of several runs we made on purpose."
+        ]
+      }
+    ]
+  }
+}

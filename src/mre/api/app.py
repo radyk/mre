@@ -1986,7 +1986,9 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
     the beyond-horizon tray resolved to nothing and was answered as absent."""
     from mre.modules.evidence_index import EvidenceIndex
     from mre.modules.explainer import Explainer
-    from mre.modules.interpreter import PARSE_MEMORY, carry_subject, run_ask
+    from mre.modules.interpreter import (
+        PARSE_MEMORY, carry_subject, remember_terms, run_ask,
+    )
     from mre.modules.question_parser import QuestionParser
     from mre.modules.question_ledger import QuestionLedger
     from mre.modules.snapshot_store import SnapshotStore
@@ -2071,6 +2073,15 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
     #     network, auth, parsing, validation — degrades to the deterministic
     #     TEMPLATE + a logged Event, never a 5xx) --------------------------------
     answer = _render_fail_closed(bundle, use_llm, _log)
+    # R-TE1 clause (1) (Session 4A teaching-graft (d.3)) — RECORD WHICH OF OUR
+    # WORDS THIS PLANNER HAS BEEN SHOWN, from the text they actually saw.
+    #
+    # AFTER the renderer, deliberately. The trigger contract is "we explain
+    # words we SAID", and what was said is the rendered string — not the
+    # bundle's key_facts, which is where the same terms live in a shape no
+    # planner ever reads, and not the pre-render template, which the LLM
+    # renderer may have reworded.
+    remember_terms(session_id, schedule_id, answer)
     return answer, {
         "subject_id": bundle.subject_id,
         "subject_type": bundle.subject_type,

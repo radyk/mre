@@ -132,8 +132,23 @@ test("deictic — 'Why is this here?' injects the selection, not a literal 'this
   await page.locator("#ask-deictic").click();
 
   // the RESOLVED question was sent — external refs, no literal "this"
+  //
+  // THE CANONICAL TEXT IS 4B.14's, AND THIS SPEC WAS LEFT BEHIND BY IT
+  // (settled in session 4A teaching-graft (d.3), rider R3). Until 4B.14 the
+  // button fired `why is X on Y?` — `why-on-machine`, a CAPABILITY question
+  // answered with which machines could have run the step. docs/04's 4B.14
+  // amendment rules that this is "a fine answer to a question the button does
+  // not ask: 'here' is a position in TIME at least as much as on a lane", and
+  // changes the button to fire the blocker analysis. The copy moved with the
+  // ruling; this expectation did not, and has been the standing known-red ever
+  // since — (d.2) proved it pre-existing and correctly refused to fit it.
+  //
+  // IT IS UPDATED TO THE RULING, NOT TO THE OUTPUT. Those are different acts:
+  // the text below is quoted from the ruling that put it in the product, and if
+  // the product ever stops emitting it, this spec goes red again — which is
+  // what it is for.
   await expect(page.locator("#ask-log .msg.you pre").last())
-    .toHaveText("why is ORD-000012 on F001-RES001?");
+    .toHaveText("why is ORD-000012 placed where it is on F001-RES001?");
   // …and a non-fallback answer rendered (real testimony, not "can't answer")
   const answer = page.locator(".msg.answer").last();
   await expect(answer).toContainText("Evidence chain");

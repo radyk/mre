@@ -1,6 +1,6 @@
 # Question-parse prompt — a GOVERNED ARTIFACT (R-AI5(1))
 
-    prompt_version: 18
+    prompt_version: 19
     ruling:         R-AI5(1) — every question is parsed FIRST by a language model
                     against a CLOSED intent vocabulary, with the conversation
                     history, live board selection, and last-answered subject as
@@ -383,6 +383,52 @@
                     deterministic floor stands under the report, because 4A.y
                     measured a freshly-prompted field reported 0 times in 5.
 
+    v19:            Session 4A teaching-graft (d.3) (2026-08-05) — ONE NEW
+                    INTENT, from the founder's own transcript (R-TE1).
+
+                    `term-explanation` JOINS THE VOCABULARY. The founding
+                    specimen: the `solve-optimality` route — a CONTRACTED one —
+                    answered with the word "seed" nine times ("this board is the
+                    best of 3 seeded searches, the one at seed 44"), and the
+                    planner asked what it meant. Twice. Both refusals held a
+                    door handle that opened on the wrong room: an entity CLARIFY
+                    ("name an order, a machine, or a capability") and the
+                    capability coach ("I don't recognize which capability you
+                    mean"). The product could not explain its own vocabulary.
+
+                    THE CENSUS REFUTED THE TWO-SEAM FRAMING, and that is why
+                    this rule is worded the way it is. Twenty-five phrasings x
+                    terms, live at v18, in a conversation whose first turn
+                    actually emits the word: SEVEN destinations, not two —
+                    `synthesis/teaching` 12, `CLARIFY/teaching` 3,
+                    `prove-it/prove-it` 3, `synthesis/unmatched` 3,
+                    `CLARIFY/prove-it` 2, `coaching/coaching` 1,
+                    `CLARIFY/gap-between` 1. The founder's two specimens are the
+                    RAREST cases; the dominant destination is the second tier,
+                    which answers these questions and answers them without the
+                    citation a definition of our own word owes (R-TG6 (i)).
+
+                    So rule 14 spends its words on the two boundaries the census
+                    proved expensive: `teaching` (12 hits) and `prove-it` (5).
+                    The `prove-it` one is the subtle one and it is a real
+                    ambiguity in English rather than a model error — "what do
+                    you mean X" is a request for a DEFINITION when X is a word
+                    and a request for GROUNDS when X is a claim.
+
+                    The intent is a CONTRACTED ROUTE, unlike `teaching`, and the
+                    reason is R-TG6 (i): a definition of one of our words is a
+                    claim about THIS PRODUCT's behaviour, so it must cite the
+                    artifact that defines it, and a model improvising one is the
+                    uncited product claim that ruling drops. Authored, cited
+                    copy is the only shape that can be right.
+
+                    THE MODEL PROPOSES; THE DETERMINISTIC SEAM DISPOSES. The
+                    intent is confirmed only when the word is in the governed
+                    glossary AND this planner has been shown it on THIS board.
+                    An unconfirmed proposal is not a matched intent and goes to
+                    the second tier by the one door — which is where the census
+                    found most of these questions already going.
+
 ## Review discipline
 
 This file is a reviewed artifact, exactly like the driver/finding vocabularies and
@@ -738,6 +784,67 @@ RULES
    the answer: the system leads with one sentence a person could say out loud
    and the single biggest lever, and OFFERS the order-by-order detail instead of
    printing it.
+
+14. SOMETIMES THEY ARE ASKING WHAT ONE OF *MY* WORDS MEANS. That is
+   `term-explanation`, and it is about MY vocabulary — a word that appeared in
+   an answer I just gave them.
+
+     - "what do you mean seed"
+     - "what is a gap" / "what does the gap mean"
+     - "you mentioned seed 44 is the cheapest seed but what does it mean to
+        change seeds"
+     - "i don't know what the ledger is"
+     - "explain what you mean by frozen"
+
+   PUT THE WORD ITSELF IN A `concept` SUBJECT, in the planner's own spelling.
+   That is the whole subject: no order, no machine.
+
+   TWO BOUNDARIES, AND BOTH WERE MEASURED EXPENSIVE — read them.
+
+   AGAINST `teaching`: `teaching` explains how the WORLD works and would read
+   the same at any plant running any software. `term-explanation` explains a
+   word THIS SYSTEM chose to use. "What is a bottleneck machine" is `teaching` —
+   every scheduler in the trade says bottleneck. "What do you mean seed" is
+   `term-explanation` — I said "seed" and the planner is asking me what I meant
+   by it. When the word is one you would find in a scheduling textbook, it is
+   `teaching`; when the planner is quoting me back at myself, it is this.
+
+   QUOTING ME IS THE STRONGEST SIGNAL THERE IS. "You mentioned X", "you said
+   X", "you keep saying X", "you called it X" — when the planner attributes the
+   word to me and then asks about it, this is the intent, whatever else the
+   sentence goes on to ask. That is true even when the question is phrased about
+   an ACTION rather than a definition:
+
+     - "you mentioned seed 44 is the cheapest seed but what does it mean to
+        CHANGE SEEDS"                                     -> term-explanation
+     - "you keep saying the gap — what does a big gap DO"  -> term-explanation
+
+   Both look like they are asking how something WORKS, which pulls toward
+   `teaching`. They are not: the planner has told you exactly where the word
+   came from, and a word I introduced is a word I owe them a definition of
+   before anything else. Answer the word first; the mechanism follows from it.
+
+   AGAINST `prove-it`: "what do you mean ..." is genuinely ambiguous in English
+   and the discriminator is WHAT THE OBJECT IS.
+
+     - "what do you mean SEED"                     -> a WORD    -> term-explanation
+     - "what do you mean IT CAN'T BE MOVED"        -> a CLAIM   -> prove-it
+     - "what do you mean THE GAP"                  -> a WORD    -> term-explanation
+     - "what do you mean THERE'S NO CHEAPER PLAN"  -> a CLAIM   -> prove-it
+
+   A word is one or two nouns. A claim is a sentence I asserted. If the planner
+   could reasonably finish the question with "...by that word?", it is this
+   intent; if they could finish it with "...how do you know?", it is `prove-it`.
+
+   It is NOT `coaching`, which is how to DECLARE a capability in a submission
+   ("how do I turn on overtime"). Asking what "splittable" MEANS is this intent;
+   asking how to TURN IT ON is `coaching`.
+
+   Name it whenever the shape fits. You are not being asked to know whether I
+   actually used the word — that is checked after you, against the transcript,
+   and a proposal that does not check out simply goes elsewhere. Guessing this
+   intent for a word I never said costs nothing; failing to name it when I did
+   say it costs the planner an answer.
 
 OUTPUT — strict JSON, no prose, no code fence. `intent` must be one of the
 vocabulary ids listed at the top; the follow-up names (`deepen`, `list-expand`,

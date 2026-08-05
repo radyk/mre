@@ -36,7 +36,7 @@ load_env_local()
 
 from mre.ai_exam.runner import RunTarget, resolved_subject  # noqa: E402
 from mre.modules.interpreter import (  # noqa: E402
-    carry_subject, forget_deliveries, run_ask,
+    carry_subject, forget_deliveries, remember_terms, run_ask,
 )
 from mre.modules.question_parser import QuestionParser  # noqa: E402
 from mre.modules.renderers import TemplateRenderer  # noqa: E402
@@ -238,6 +238,11 @@ class Conversation:
                     schedule_id=self.target.label)
 
         text = TemplateRenderer().render(r.bundle)
+        # R-TE1 clause (1) (session (d.3)): the API records which of OUR WORDS
+        # the planner was shown, from the RENDERED text, right after the render.
+        # This harness renders for itself, so it makes the same call at the same
+        # point rather than holding its own copy of the rule.
+        remember_terms(self.session_id, self.target.label, text)
         t = Turn(n=len(self.turns) + 1, question=question,
                  schedule=self.target.label,
                  route=r.route, register=r.register,

@@ -1,0 +1,136 @@
+# AI EXAM BANK — THE PRODUCT EXPLAINS ITS OWN WORDS (R-TE1)
+# version  : v1
+# generated: 2026-08-05  (Session 4A teaching-graft (d.3))
+# world    : the DEMO BOARD `rolling-c32a6140-b6b`. What is graded is the
+#            SHAPE, not the ids.
+#
+# ===========================================================================
+# THE FOUNDING SPECIMEN IS BLOCK A, VERBATIM
+# ===========================================================================
+#
+# Founder freewheel round, 2026-08-04. The `solve-optimality` route — a
+# CONTRACTED one — answered the cost-optimum question with the word "seed" nine
+# times ("this board is the best of 3 seeded searches, the one at seed 44"), and
+# the planner asked what it meant. Twice. Both refusals held a door handle that
+# opened on the wrong room:
+#
+#   "what do you mean seed"          -> entity CLARIFY
+#   "...what does it mean to         -> capability coach, "I don't recognize
+#    change seeds"                      which capability you mean"
+#
+# THE OPENER IS LOAD-BEARING AND MUST NOT BE DELETED. R-TE1's trigger contract
+# is that we explain words WE SAID: without turn 1 emitting "seed", turns 2 and
+# 3 are correctly NOT this intent, which block D grades on purpose. A bank that
+# dropped the opener would grade the opposite of what it claims to.
+#
+# WHAT IS GRADED HERE, and what is not. Routing and the relational forms
+# (R-EX2). The BODY — that the definition is right, that it cites R-BK1, that
+# the run figure is voiced — is `tests/test_glossary.py`, per the division:
+# banks grade routes and relations, bodies belong to tests.
+# ===========================================================================
+
+
+# ===========================================================================
+# A — THE FOUNDER PAIR (both refusals, both now the same route)
+#
+# RECORDS=0 is the discriminator that matters. A glossary answer cites a RULING
+# and a DOCUMENT, not this run's evidence records, so it opens nothing — and
+# before R-EX2 "answered from the glossary" and "answered from the board" would
+# have been the same EXPECT line.
+# ===========================================================================
+RESET
+EXPECT intent=solve-optimality route=solve-optimality
+is this the cheapest possible plan
+
+EXPECT intent=term-explanation route=term-explanation RECORDS=0
+what do you mean seed
+
+EXPECT intent=term-explanation route=term-explanation RECORDS=0
+you mentioned seed 44 is the cheapest seed but what does it mean to change seeds
+
+
+# ===========================================================================
+# B — TWO ASKINGS OF ONE WORD ARE ONE ANSWER (BODY_SAME_AS)
+#
+# The glossary is authored copy keyed by term, so two phrasings of "what is a
+# gap" must produce the SAME body. If they ever differ, something is composing
+# a definition rather than retrieving one — which is the failure R-TE1 exists to
+# prevent, and nothing else in the suite would notice it.
+# ===========================================================================
+RESET
+EXPECT intent=solve-optimality route=solve-optimality
+is this the cheapest possible plan
+
+EXPECT route=term-explanation RECORDS=0
+what do you mean gap
+
+EXPECT route=term-explanation RECORDS=0 BODY_SAME_AS=2
+what does the gap mean
+
+
+# ===========================================================================
+# C — TWO DIFFERENT WORDS ARE TWO DIFFERENT ANSWERS (BODY_DIFFERS_FROM)
+#
+# The shared-body defect the census micro-session found, watched at the new
+# route before it can happen: one assembler serving two questions is exactly how
+# `certificate-testimony` and `data-problems` came to render one body.
+# ===========================================================================
+RESET
+EXPECT intent=solve-optimality route=solve-optimality
+is this the cheapest possible plan
+
+EXPECT route=term-explanation RECORDS=0
+what do you mean seed
+
+EXPECT route=term-explanation RECORDS=0 BODY_DIFFERS_FROM=2
+what do you mean gap
+
+
+# ===========================================================================
+# D — THE SCOPE WALL, GRADED (the true negative)
+#
+# THE SAME QUESTION AS BLOCK A's SECOND TURN, WITH NO OPENER. Nothing has said
+# "seed" to this planner, so this is not the intent — the route must be anything
+# BUT `term-explanation`. Without this block the bank grades a route that fires;
+# with it, the bank grades a route that KNOWS WHEN NOT TO.
+#
+# The expectation is deliberately NOT a named route. What the second tier does
+# with an unconfirmed proposal is its business and it varies (the (d.3) census
+# measured these questions reaching four different second-tier shapes at v18);
+# what R-TE1 rules is that the glossary does not answer.
+# ===========================================================================
+RESET
+EXPECT intent=term-explanation route=synthesis|CLARIFY|coaching|prove-it
+what do you mean seed
+
+
+# ===========================================================================
+# E — A WORD WE DO NOT DEFINE (the other half of the wall)
+#
+# "bottleneck" is a perfectly good scheduling term and it is not OURS. It goes
+# to the second tier and is answered as general knowledge under R-TG1's label,
+# which is the correct home for it — the glossary must not grow a definition for
+# every word a planner might type. This is the documentation-browser slope, and
+# this block is the guard on it.
+# ===========================================================================
+RESET
+EXPECT intent=solve-optimality route=solve-optimality
+is this the cheapest possible plan
+
+EXPECT route=synthesis|CLARIFY|coaching|prove-it
+what do you mean bottleneck
+
+
+# ===========================================================================
+# F — THE TWO SEAMS THE SPECIMENS WERE WRONGLY CAUGHT BY, STILL WORKING
+#
+# A fix that empties the entity clarify or the capability coach has traded one
+# wrong answer for another. Both must still answer the questions they are for.
+# ===========================================================================
+RESET
+EXPECT route=CLARIFY
+why cant this be moved earlier
+
+RESET
+EXPECT intent=coaching route=coaching
+how do i turn on overtime

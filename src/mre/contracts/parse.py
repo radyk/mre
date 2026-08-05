@@ -204,6 +204,38 @@ class Intent(str, Enum):
     # can fall to synthesis; this intent never was one. And synthesis still
     # never guesses a route — a teaching parse dispatches to the tier by name.
     TEACHING = "teaching"
+    # -- Session 4A teaching-graft (d.3), R-TE1: THE PRODUCT'S OWN WORDS -------
+    # A question about a word THIS PRODUCT SAID: "what do you mean seed", "what
+    # is a gap", "you mentioned seed 44 — what does it mean to change seeds".
+    #
+    # THE FOUNDING SPECIMEN, reproduced live before anything was built. The
+    # `solve-optimality` route — a CONTRACTED one — answers the cost-optimum
+    # question with the word "seed" nine times, and the two most natural
+    # follow-ups a planner can type reached two different refusals:
+    #
+    #   "what do you mean seed"       -> parse proposed `prove-it`, bound NO
+    #                                    subjects, and the dispatch's
+    #                                    subject-resolution guard CLARIFIED
+    #   "...what does it mean to      -> parse proposed `coaching` with a
+    #    change seeds"                   CONCEPT subject raw="seed" that
+    #                                    resolved to None, so the capability
+    #                                    coach said "I don't recognize which
+    #                                    capability you mean"
+    #
+    # THE SECOND ONE IS THE INTERESTING HALF: the model had already identified
+    # the gesture AND extracted the term. Nothing was missing from the parse —
+    # what was missing was an intent for it to name, so the nearest neighbour
+    # took it and answered a question nobody asked.
+    #
+    # IT IS A CONTRACTED ROUTE, NOT A SECOND-TIER INTENT, and that is the
+    # ruling rather than a convenience. `teaching` went to the tier because
+    # there is no contracted evidence assembly for "how does this normally
+    # work". Here there is: a definition of OUR word is a claim about THIS
+    # PRODUCT's behaviour — R-TG6 (i)'s species — so it must cite the artifact
+    # that defines it, and a model improvising a definition of our own
+    # vocabulary is exactly the uncited product claim R-TG6 (i) DROPS. Authored
+    # copy with a resolved citation is the only shape that can be right.
+    TERM_EXPLANATION = "term-explanation"
     # -- R-AI5 additions -----------------------------------------------------
     CONFIRM_TAKE = "confirm-take"
     # Session 4A.5b: `prove-it` is BOTH a follow-up kind and an intent, exactly as
@@ -985,6 +1017,18 @@ INTENT_MEANINGS: dict[Intent, str] = {
         "that ALSO names an order, a machine or this plan is still this "
         "intent — name the subject too, and the answer grounds on the board "
         "before it teaches",
+    Intent.TERM_EXPLANATION:
+        "the planner is asking what one of OUR OWN WORDS means — a word that "
+        "appeared in an answer they were just given. \"what do you mean "
+        "seed\", \"what is a gap\", \"you mentioned seed 44 — what does it "
+        "mean to change seeds\", \"i don't know what the ledger is\". Put the "
+        "word itself in a `concept` subject, in the planner's own spelling. "
+        "It is NOT `teaching` — that explains how the WORLD works and would "
+        "read the same at any plant with any software; this explains a word "
+        "THIS SYSTEM chose. It is NOT `coaching` — that is how to DECLARE a "
+        "capability in a submission. It is NOT `prove-it`: \"what do you mean\" "
+        "is this intent when the object is a WORD and `prove-it` when the "
+        "object is a CLAIM (\"what do you mean it can't be moved\")",
     Intent.UNMATCHED:
         "no intent above fits this question",
 }

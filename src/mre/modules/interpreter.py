@@ -363,6 +363,82 @@ class AnswerMemory:
 #: The process-wide answer memory the API ask path uses. Tests construct their own.
 ANSWER_MEMORY = AnswerMemory()
 
+
+# ---------------------------------------------------------------------------
+# THE TERM MEMORY — which of OUR WORDS this planner has actually been shown
+# (R-TE1 clause (1), Session 4A teaching-graft (d.3)).
+#
+# THE FOUNDING SPECIMEN. A contracted route said "seed" nine times and the
+# planner asked what it meant; the entity clarify and the capability coach each
+# refused, because neither could hear a question about the product's own
+# vocabulary. What makes this answerable WITHOUT becoming a documentation
+# browser is the trigger contract: **we explain words we said**, and what we
+# said is a property of the RENDERED TEXT rather than of anything a model
+# remembers.
+#
+# WHY A STORE RATHER THAN A CONTEXT FIELD. The client already carries history,
+# and the obvious cheap move is to have the panel compute the terms and send
+# them. That is a rule living in the client — the precise defect R-LD6 clause
+# (5) had just finished removing from three places. The rule lives here; the
+# clients send nothing new.
+#
+# KEYED (session, schedule) ON R-MT1's OWN KEY, and cleared by the ONE clear.
+# A term from a PREVIOUS BOARD's answers must not confirm the intent after a
+# rebind: the planner is looking at a different plan, and "you said seed" would
+# be citing a conversation about something else. 4B.16a's lesson is that a store
+# with its own separate clear is a store that outlives the conversation, so this
+# one is forgotten by `forget_deliveries` beside the other three.
+# ---------------------------------------------------------------------------
+
+class TermMemory:
+    """The glossary terms this session has been SHOWN, per (session, schedule).
+
+    Bounded twice over: by the LRU on sessions, and by the glossary itself —
+    the value is a subset of a closed authored vocabulary, so it cannot grow
+    with the conversation the way an answer store can.
+    """
+
+    def __init__(self, limit: int = 32) -> None:
+        self._limit = limit
+        self._by_session: dict[tuple[str, str], set[str]] = {}
+
+    def remember(self, session_id: Optional[str], schedule_id: Optional[str],
+                 terms: Any) -> None:
+        key = _carry_key(session_id, schedule_id)
+        if key is None or not terms:
+            return
+        seen = self._by_session.pop(key, set())
+        seen |= set(terms)
+        self._by_session[key] = seen
+        while len(self._by_session) > self._limit:
+            self._by_session.pop(next(iter(self._by_session)))
+
+    def seen(self, session_id: Optional[str],
+             schedule_id: Optional[str]) -> frozenset[str]:
+        key = _carry_key(session_id, schedule_id)
+        return frozenset(self._by_session.get(key, ()) if key is not None else ())
+
+    def forget(self, session_id: Optional[str]) -> None:
+        _forget_session(self._by_session, session_id)
+
+
+#: The process-wide term memory the API ask path writes after every render.
+TERM_MEMORY = TermMemory()
+
+
+def remember_terms(session_id: Optional[str], schedule_id: Optional[str],
+                   answer: str) -> frozenset[str]:
+    """Record which of our words this RENDERED answer showed the planner.
+
+    Called with the text the planner actually saw — after the renderer, not
+    before — because the trigger contract is about what was SAID. Returns what
+    it recorded, so a harness can assert on it.
+    """
+    from mre.modules.glossary import terms_in
+    found = terms_in(answer or "")
+    TERM_MEMORY.remember(session_id, schedule_id, found)
+    return found
+
 #: Routes whose answer is ABOUT a previous answer rather than about the plan.
 #: Remembering one would make a second "show me the evidence" drill into the
 #: drill-down instead of into the answer the planner is still looking at.
@@ -1288,6 +1364,12 @@ def forget_deliveries(session_id: Optional[str]) -> None:
         _forget_session(_DELIVERED, session_id)
         ANSWER_MEMORY.forget(session_id)
         SYNTHESIS_MEMORY.forget(session_id)
+        # R-TE1 (d.3): the FOURTH store, added here in the same breath as the
+        # store itself. 4B.16a was a RESET that cleared four channels and missed
+        # a fifth, and (d.1) found this function claiming to clear three while
+        # clearing two — a new store whose clear is written later is the same
+        # defect queued up.
+        TERM_MEMORY.forget(session_id)
 
 
 def _same_subject(turn: dict, order: Optional[str],
@@ -1765,6 +1847,43 @@ def dispatch(explainer: Any, parsed: ParsedQuestion, *,
         params = route_params(parsed, parsed.question)
         return Dispatched("confirm-take", explainer.route("confirm-take", params),
                           note, parsed.question)
+
+    # 3b — R-TE1 (Session 4A teaching-graft (d.3)): THE PRODUCT EXPLAINS ITS OWN
+    # WORDS, and the DETERMINISTIC SEAM DECIDES WHETHER IT DOES.
+    #
+    # The parse PROPOSES the intent and the term; this disposes (R-AI5(8)). The
+    # intent is confirmed only when the word is one of ours AND this planner has
+    # actually been shown it, on THIS board — which is a property of the rendered
+    # transcript, not of anything a model remembers, and it is the whole scope
+    # wall. Without it this route is a documentation browser that will answer
+    # "what is a bottleneck" as though we had defined the term.
+    #
+    # AN UNCONFIRMED PROPOSAL IS NOT A MATCHED INTENT, so sending it onward is
+    # not a fall and the R-AI5(2) seal is untouched. The dispatch decided this is
+    # not term-explanation; what is left is a question we did not match, and
+    # unmatched has exactly one door. That is also where the (d.3) census found
+    # most of these questions already going — 15 of 25 phrasings reached the
+    # second tier before this route existed — so the unconfirmed path is the
+    # measured status quo rather than a new behaviour.
+    if parsed.intent is Intent.TERM_EXPLANATION:
+        from mre.modules.glossary import known_term
+        raw = next((s.raw for s in parsed.subjects
+                    if s.kind is SubjectKind.CONCEPT and s.raw), "")
+        # The concept subject first — the model marks the word it read as the
+        # question's object. The QUESTION is the fallback, never the reverse: a
+        # question mentioning two of our words means the model's pick wins.
+        entry = known_term(raw) or known_term(parsed.question)
+        seen = TERM_MEMORY.seen(session_id, schedule_id)
+        if entry is not None and entry.term in seen:
+            params = route_params(parsed, parsed.question)
+            params["term"] = entry.term
+            params["term_seen"] = sorted(seen)
+            params["document"] = document
+            return Dispatched(
+                "term-explanation",
+                explainer.route("term-explanation", params),
+                note, parsed.question)
+        return _second_tier()
 
     # 4 — no contracted intent fits (or the parse is not confident enough to answer
     # AS one). R-AI5(2): this is where LABELED OPEN SYNTHESIS lives, and it is the

@@ -38,23 +38,38 @@ from mre.modules.claim_verifier import (  # noqa: E402
     product_behavior_disqualifiers,
 )
 
-E2_DIR = ROOT / "tests" / "ai_exam" / "sweeps" / "2026-08-05-teaching-e2"
+SWEEPS = ROOT / "tests" / "ai_exam" / "sweeps"
+E2_DIR = SWEEPS / "2026-08-05-teaching-e2"
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--show", action="store_true",
                     help="print every GK claim, firing or not")
+    # PARAMETERISED IN (d.3), because the LAW is standing and an instrument
+    # hard-coded to one session's directory has to be cloned every time — which
+    # is how four copies of a check drift apart. `--dir` takes the BUILDING
+    # session's sweep directory; the default stays (e2)'s so the number in the
+    # (d.2) close-out is still reproducible from this file.
+    ap.add_argument("--dir", default=str(E2_DIR),
+                    help="the building session's sweep directory")
     args = ap.parse_args()
 
-    paths = sorted(E2_DIR.rglob("*.txt"))
+    target = Path(args.dir)
+    if not target.is_absolute():
+        target = ROOT / target
+    if not target.is_dir():
+        print(f"no such sweep directory: {target}")
+        return 1
+    paths = sorted(target.rglob("*.txt"))
     rows = claim_lines(paths)
     seen: dict[str, tuple[str, str]] = {}
     for text, label, src in rows:
         seen.setdefault(text, (label, src))
     gk = {t: v for t, v in seen.items() if _GK_RE.match(v[0])}
 
-    print(f"corpus            : {len(paths)} transcript(s) — (e2)'s OWN sweeps")
+    print(f"corpus            : {len(paths)} transcript(s) from {target.name} "
+          "— the BUILDING session's OWN sweeps")
     for p in paths:
         print(f"    {p.name}")
     print(f"claim lines       : {len(rows)} rendered, {len(seen)} unique")

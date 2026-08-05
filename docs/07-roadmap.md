@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.98 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.99 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.99:** **Session 4A teaching-graft (d.3) — the product explains its own words.** 2026-08-05 (**R-TE1 ruled and BUILT**, verbatim in docs/04; contract unchanged **1.15**, no docs/06 doorway owed; **PARSE PROMPT v18 → v19** — one new intent enters the closed vocabulary — synthesis prompt unchanged **v9**; narrative in `docs/closeouts/4a-teaching-d3-term-explanation.md`). Closes the last open founder finding (F1) from the 2026-08-04/05 listening rounds. **THE STANDING PREDICATE AUDIT WAS VACUOUS, AND SAYING SO IS THE RESULT** — over (d.2)'s own sweeps: 3 transcripts, **1 claim line, 0 general-knowledge claims**, so both claim predicates fire 0 of 0. **An empty denominator is not a clean bill**: (d.2)'s banks are route-heavy by design and contracted routes carry no claims, so its corpus cannot exercise a claim predicate at all. **The audit's OTHER half found something real** — (d.2)'s transcripts record `records_from=1 -> MET` and nothing else, so a real comparison and a degenerate one are indistinguishable in the artifact; (d.2)'s own "every relational form carried real values" was true and was established BY EYE from other lines. A relational pass now prints the fingerprint, the record count and the referenced turn on its own line. **THE FOUNDING SPECIMEN:** `solve-optimality` — a CONTRACTED route — answered with "seed" **nine times**, and the two most natural follow-ups reached an entity CLARIFY and the capability coach. Reproduced live before anything was built, and **the second half is the interesting one**: the parse proposed `coaching` with a CONCEPT subject `raw="seed"` resolving to None — **the model had already identified the gesture and extracted the term**, and what was missing was an intent for it to name. **THE CENSUS REFUTED THE BRIEF'S TWO-SEAM FRAMING: THERE ARE SEVEN.** 25 phrasings x terms, live at v18, each after a turn that actually emits the word: `synthesis/teaching` **12**, `CLARIFY/teaching` 3, `prove-it/prove-it` 3, `synthesis/unmatched` 3, `CLARIFY/prove-it` 2, `coaching/coaching` 1, `CLARIFY/gap-between` 1. **The founder's two specimens are the RAREST cases**, one hit each; the dominant destination is the second tier — **15 of 25** — which answers these questions **without the citation a definition of our own word owes**. The design's centre of gravity moved with the number. **R-TE1, FOUR CLAUSES:** (1) the model PROPOSES the intent and the term, the deterministic seam DISPOSES — confirmed only when the word is ours AND this planner has been shown it **on this board** (`TermMemory`, keyed on R-MT1's `(session, schedule)`, written from the RENDERED text, cleared by the ONE clear); (2) a glossary term answers by a CONTRACTED route, authored, **every sentence citing the artifact that defines it** — R-TG6 (i)'s species, so never the GK label and never uncited, and a run figure that cannot be read is None **and the answer says so**; (3) an unconfirmed proposal is NOT a matched intent and goes to the second tier by the one door, so the R-AI5(2) seal is untouched; (4) every citation target resolves against the real document BY TEST. **CLAUSE (3) TIGHTENS THE IN-ROOM DRAFT** on a ruling collision: the draft would have had this route hand a model our own vocabulary and ask it to define it, and **a model improvising a definition of one of our words is precisely the uncited product claim R-TG6 (i) DROPS**. Same destination, no new mechanism. **THE SCOPE WALL, MEASURED IN FOUR ARMS** — confirmed / never-said-here / not-one-of-ours / after-a-rebind, and only the first is this intent; the rebind arm is the sharp one (the demo board's memory holds `['gap','seed']`, the exam board's `[]` one gesture later). **Both TRUE NEGATIVES hold**: a genuine entity ambiguity still CLARIFIES, a genuine capability question still COACHES. **THE FIRST EDITION IS TEN ENTRIES, SCOPED BY CENSUS** (53 transcripts, 1,810 rendered answers, 27 terms emitted): seed, gap, ledger, frozen, pinned, driver, splittable, chunk, past-due, coarse. **TWO CENSUS FINDINGS CHANGED IT:** `member` and `portfolio` — **R-BK1's own words** — are NEVER emitted (the answer says "seeded searches" and "seed 44", which is part of why the planner had to ask); and `calibrated` in R-CAL1's sense is never emitted either, its single hit in 1,810 answers being the ordinary machine-shop sense, so it is OUT. **The census instrument was corrected mid-run** — its first pass counted the harness's own `>> sidecar[...]` lines as product speech, putting `pinned` at 26/23 instead of 10/7. **PARSE v19's RULE 14 spends its words where the census proved the cost is** (`teaching` 12, `prove-it` 5); the `prove-it` boundary is **a real ambiguity in English rather than a model error** — "what do you mean X" asks for a DEFINITION when X is a word and for GROUNDS when X is a claim. **THE QUOTE SIGNAL CLOSED T2**: as first drafted T1 routed correctly and T2 still read as `teaching`, defensibly, because it asks about an ACTION; the discriminator added is that **when the planner attributes the word to me — "you mentioned X" — this is the intent, whatever else the sentence goes on to ask**. **RIDER R1 — THE PRE-COMMIT CURRENCY HOOK.** Four named occurrences of the corpus-staleness class (4B.33, (c2), the shared-body census micro-session, (e2)) and the remedy each time was "remember to rebuild". **Restraint is not a mechanism** — R-CM1's own words one rule over. `tools/hooks/pre-commit` checks the **staged** docs; installed by `git config core.hooksPath tools/hooks` so the hook is COMMITTED and reviewable; `--no-verify` is git's own door and the only one. **Proven both ways.** **Its own first draft FAILED OPEN** — it read `payload["documents"]` where the key is `docs`, so it would have fallen into its own SKIPPED branch and reported everything current forever; it now calls the corpus's own `doc_fingerprints()`. **RIDER R2 — THE THIRD WIDENING, CENSUS-FUNDED**: the postposed deictic, bounded exactly as the other two are. Over 522 unique claim lines / 121 GK: **3 → 4 firings, the fourth being the specimen; non-GK 5 before and 5 after, unchanged**. Recorded honestly: **that 5 is not the 2 (e2) reported**, and it reads 5 on both sides of this change, so the discrepancy predates (d.3). **RIDER R3 — THE DEICTIC SPEC, SETTLED AS A DECISION.** **4B.14 RULED the change** (docs/04, 2026-07-29 — "'here' is a position in TIME at least as much as on a lane. It now fires the blocker analysis"), so the copy moved with a ruling and **the spec was left behind by it**; updating an expectation to a RULING is not fitting it to output, and the difference is that the ruled text is quotable. Canonical: `why is {order} placed where it is on {machine}?`. **The FIXTURE was left behind too** — the canned-answer map still keyed the pre-4B.14 question, so no answer matched and the "Evidence chain" assertion was failing on a fallback. Both questions are keyed now, which is 4B.14's own point: **they are different questions**. **Python 2882/305/0 UNCHUNKED in 15m11s** against a baseline of **2825/305/0** ((d.2)'s measured after-run at HEAD `0ec3d58`) — **+57 exactly**, the new guard file collects exactly 57, and collection **3187 vs 3130** confirms it independently. **NO RESIDUAL.** **11 negative controls proven RED**, each GREEN AT HEAD first, every restore byte-identical by sha256 — **and one stayed green on the first attempt and it was MINE, not the seam's**: the schedule-scoping control keyed `seen()` on `("session","")` while `remember()` still wrote the real schedule, so the lookup missed and the guard passed; re-aimed at the actual defect shape. **Cockpit 367 passed / 2 failed (was 366/3) — the `deictic` pair is GREEN**, and the two remaining are [dark]-only freshness tests that pass **2/2 in isolation with the changes in place AND 2/2 with them stashed**, a different pair from (d.2)'s two: the standing parallel-load flake class, named. **`sweep_term_explanation_v1` 14/14 met**; its first run reported **`dead-door=3`** — one glossary door that reads perfectly and **parses to no intent**, caught by the exam's own reverse-guard on this session's new copy, and dropped. **MINTED NOTHING; both pinned worlds read-only.** NOT FIXED, named: a defined word asked about BEFORE it is said gets the second tier's floor (widening the trigger is the documentation-browser slope the wall exists to stop); the glossary is 10 entries against 27 emitted terms; the non-GK census figure disagrees with (e2)'s recorded 2 and the disagreement predates this session; `member` and `portfolio` are still never emitted; and **the (d.1) ask-panel divider is still QUEUED** — R3 touched cockpit SPECS and a FIXTURE, never the ask panel's rendering surface, so the rider's own condition is unmet. §5a.212-222.
 
 **v2.98:** **Session 4A teaching-graft (d.2) — the format, the ladder, and what a clarify eats.** 2026-08-05 (**R-EX2 and R-LD6 ruled and BUILT**, verbatim in docs/04; contract unchanged **1.15**, no docs/06 doorway owed; **BOTH GOVERNED PROMPTS UNCHANGED** — parse **v18**, synthesis **v9**, every seam here being deterministic code or authored copy; narrative in `docs/closeouts/4a-teaching-d2-format-ladder-carry.md`). **THE STANDING-LAW PREDICATE AUDIT RAN FIRST AND WAS NOT CLEAN** — the (e2)-widened `product_behavior_disqualifiers` fires **0 of 14** GK claims in (e2)'s OWN sweeps and the (iii) map **0 of 67**, and at least one of the 14 is the species: *"a mixed-integer or constraint-based **scheduler like this one** instead searches globally … the ordering is an output of the optimization"*, missing by a THIRD construction (the POSTPOSED deictic) independent of both (e2) widenings. **NOT widened** — (e2)'s own standard is that a widened predicate re-earns its census, and widening on one specimen is exactly what that errand refused. **R-EX2 — BANKS GRADE ROUTES AND RELATIONS; BODIES BELONG TO TESTS:** `REBIND <schedule>` as a sequence step (`onVersionChange` reproduced — rebind, clear the selection, touch nothing else; an unresolvable rebind is loud and **the run STOPS**); three relational forms indexing an earlier turn — `BODY_SAME_AS` / `BODY_DIFFERS_FROM`, `RECORDS_FROM` (**non-empty REQUIRED**, because the empty set is a subset of everything and a pure subset test would pass a turn that opened NOTHING, which IS the defect the form catches) and `RECORDS` (which is what separates *"opened nothing"* from *"opened the wrong thing"*, one EXPECT line under the old grammar); and **no prose assertions, ENFORCED** by `EXPECT_KEYS` being a closed set. An unresolvable reference is a MISS not a skip, and an EMPTY BODY is unevaluable in BOTH directions. **THE HEADLINE PROOF:** the committed cross-version bank runs **4/4 clean** at HEAD and, with R-MT1's composite store key reverted to session-only, goes RED with **`records: expected 0, got 102`** — **102 being the (d.0) recon's own number**, board A's lateness record ids served against board B. The (d.1) bank's header called this *"not a missing EXPECT key; it is a missing world"*. `sweep_relational_v1` — the queued founding specimens encoded — ran **11/11 met, sidecar clean**, every form carrying real values. **R-LD6 — ONE RESOLVER CONTRACT, MEASURED BEFORE DECIDED:** all four rungs bind, are consumed and are disclosed (one probe each), so **nothing is deleted**; the parse model's own words are the LAST resort and are disclosed as a recovery; **nothing resolves during a parse outage** — measured with a transport double, R-OF1's card answers with **NO subjects bound**, so the ladder is NOT a fallback for an unreachable model and may not be described as one (what it buys is DETERMINISM); and **D-04 is reported as NOT a defect** — HISTORY remembers what the planner was LOOKING AT, LAST-ANSWER what the turn was ABOUT, and fusing them would be a category fusion. **THE FOUNDER'S CLARIFY SPECIMEN: CONFIRMED AT THE MECHANISM, REFRAMED IN ITS CONSEQUENCE.** The three-turn reproduction did NOT reproduce — the intervening turn re-supplied the subject — so it was isolated to a HELD PAIR one word apart, **3 runs of 3**: the CLARIFY arm carries `{}`, the control carries the order, and **in BOTH arms the parse resolved ORD-000252 from the planner's own typing**. The identical follow-up sentence therefore reached **two different routes**, and the clarify arm resolved at all only because the parse model re-read the order out of RECENT TURNS — the layer with nothing underneath it. Clause (5) puts the deterministic rung back: `carry_subject`, **ONE definition and three readers**, the bundle's subject first and unchanged, else the subject the PARSE resolved — unique per kind, never guessed, unresolved siblings excluded before the count, **ADDITIVE BY CONSTRUCTION** so no populated carry changes. Both arms now reach `start-reason` 3/3, and the recon's P2b middle arm binds off the **LADDER** where it used to bind off the model. **RIDER R1 — W4's FOURTH SITE, SIZED THEN FIXED:** demo board **0 of 386**, and that zero is a **TAUTOLOGY** (the numerator's SET is empty — `earlier-open` needs `later_at` to be None, which no plant that keeps working produces); the fenced specimen world, the only board where the branch renders, is **1 of 1** — ORD-EARLY op10, CAPACITY_BLOCKED. **THE FIRST INSTRUMENT PRODUCED A FALSE ZERO** by reading `row["driver"]` instead of what the three guarded sites read; a zero from an instrument that cannot see the value is not a zero, and it was this session's own standing law caught on this session's own rider. Fixed through the SAME one definition in the SAME arbitrated order (record leads, scan is a second opinion, neither fact deleted); the plumbing was not a floor change at all, `analysis` already being an argument. (e2)'s tripwire fired as designed and is replaced by the real guard, which reads the payload's keys **off the AST**. **Python 2825/305/0 UNCHUNKED in 24m23s** against a baseline DERIVED for this tree of **2772/305/0** ((e2)'s 2768 plus the maintenance commit's 4) — **+53 exactly**, the new guard file collects exactly 53, and collection **3130 vs 3077** confirms it independently (3077 being (e2)'s recorded 3073 plus the same 4). **NO RESIDUAL.** **12 negative controls proven RED**, each GREEN AT HEAD first, every restore byte-identical by sha256 — **and TWO stayed green on the first attempt, both the GUARD's fault and not the seam's**: one searched a whole file and passed on the explanatory COMMENT, one searched a function's source text and did the same; both were rewritten to read CODE. **4B.28 §5a.123 caught in the act, twice, in one session.** **Cockpit suite RUN because `askpanel.js` was touched — 366 passed, 3 failed, NONE of them this session's**: the `deictic` pair is **PROVEN PRE-EXISTING** (it reproduces with the change stashed back to HEAD) and the `beat_two` dark failure did not reproduce on re-run (22/22); the `carriedstate` pair guarding the neighbouring R-MT1 seam is 2/2 green. **MINTED NOTHING; both pinned worlds read-only throughout.** NOT FIXED, named: the GK predicate's third missing construction; **C9's transfer pair is STILL not bank-expressible by construction** — its halves are separated by a cleared conversation, that separation IS the axis, and a relational index does not cross a RESET (what IS discharged is (e2) §8(e), *"the exam bank cannot express 'these two answers must not be the same'"*); `RECORDS_FROM` is a subset test, not an equality; the cross-version bank names two schedule ids in its own text and rots the day either world is re-minted; a one-run-of-three `validator` finding not investigated; **rider R2 left QUEUED with its condition stated** (the ask panel's rendering surface was never opened, and opening one for a rider is what the rider forbids); and the pre-existing cockpit red. §5a.204-211.
 
@@ -7229,6 +7231,144 @@ rendering surface the divider belongs to. Opening a surface for a rider is what
 the rider's own wording forbids.
 **(g) Q3 (teaching persistence) and F1 (the term-explanation gap) are
 UNTOUCHED** — (d.3)'s subject, one line to the parking lot as the brief directs.
+
+
+**§5a.212 — THE PREDICATE AUDIT WAS VACUOUS ON (d.2)'s CORPUS, AND ITS OTHER
+HALF FOUND SOMETHING.** Pointed at `2026-08-05-relational-d2`: **3 transcripts,
+1 claim line, 0 general-knowledge claims**, so both claim predicates fire 0 of
+0. **That is an EMPTY DENOMINATOR, not a clean bill** — (d.2)'s banks are
+route-heavy by design and contracted routes carry no claims, so its corpus
+cannot exercise a claim predicate at all. Stated rather than reported as a pass.
+The audit's OTHER half did find something: (d.2)'s committed transcripts record
+`records_from=1 -> MET` **and nothing else**, so a real comparison and a
+degenerate one are indistinguishable in the artifact. (d.2)'s own claim that
+"every relational form carried real values" was true and was established BY EYE
+from other lines of the transcript. A relational pass now prints the
+fingerprint, the record count and the referenced turn on its own line.
+
+**§5a.213 — R-TE1: THE PRODUCT EXPLAINS ITS OWN WORDS.** The founding specimen:
+`solve-optimality` — a CONTRACTED route — answered with "seed" **nine times**,
+and the two most natural follow-ups reached an entity CLARIFY and the capability
+coach. Reproduced live before anything was built, and **the second half is the
+interesting one**: the parse proposed `coaching` with a CONCEPT subject
+`raw="seed"` that resolved to None. **The model had already identified the
+gesture and extracted the term** — what was missing was an intent for it to
+name, so the nearest neighbour took it.
+
+**§5a.214 — THE CENSUS REFUTED THE TWO-SEAM FRAMING: THERE ARE SEVEN.** The
+brief asked for a proof that no third seam eats a term question. 25 phrasings ×
+terms, live at v18, each after a turn that actually emits the word:
+`synthesis/teaching` **12**, `CLARIFY/teaching` 3, `prove-it/prove-it` 3,
+`synthesis/unmatched` 3, `CLARIFY/prove-it` 2, `coaching/coaching` 1,
+`CLARIFY/gap-between` 1. **The founder's two specimens are the RAREST cases**,
+one hit each; the dominant destination is the second tier — 15 of 25 — which
+answers these questions **without the citation a definition of our own word
+owes**. The design's centre of gravity moved with the number: this is not mainly
+about rescuing two refusals, it is that most term questions were being answered
+by improvisation.
+
+**§5a.215 — R-TE1's FOUR CLAUSES, AND THE ONE THAT WAS TIGHTENED.** (1) the
+model PROPOSES the intent and the term, the deterministic seam DISPOSES —
+confirmed only when the word is ours AND this planner has been shown it **on
+this board** (`TermMemory`, keyed on R-MT1's `(session, schedule)`, written from
+the RENDERED text, cleared by the ONE clear). (2) a glossary term answers by a
+CONTRACTED route, authored, **every sentence citing the artifact that defines
+it** — R-TG6 (i)'s species, so never the GK label and never uncited; a run
+figure that cannot be read is None **and the answer says so**. (3) an
+unconfirmed proposal is NOT a matched intent and goes to the second tier by the
+one door, so the R-AI5(2) seal is untouched. (4) every citation target is
+resolved against the real document by test — a ruling code must be in docs/04,
+`docs/05:R-C3` must be findable IN docs/05. **CLAUSE (3) TIGHTENS THE IN-ROOM
+DRAFT** on a ruling collision: the draft would have had this route hand a model
+our own vocabulary and ask it to define it, and **a model improvising a
+definition of one of our words is precisely the uncited product claim R-TG6 (i)
+DROPS.** Same destination, no new mechanism, and the improvisation is governed
+where it already was.
+
+**§5a.216 — THE SCOPE WALL, MEASURED IN FOUR ARMS.** Not a documentation
+browser: confirmed / never-said-here / not-one-of-ours / after-a-rebind, and
+only the first is this intent. The rebind arm is the sharp one — the demo
+board's term memory holds `['gap','seed']` and the exam board's holds `[]` one
+gesture later. Both TRUE NEGATIVES hold: a genuine entity ambiguity still
+CLARIFIES and a genuine capability question still COACHES, which is what stops
+the fix trading one wrong answer for another.
+
+**§5a.217 — THE FIRST EDITION IS TEN ENTRIES, SCOPED BY CENSUS.** C1 counted
+every product-specific term actually emitted across **53 committed transcripts,
+1,810 rendered answers**; a term never emitted is out by construction. seed,
+gap, ledger, frozen, pinned, driver, splittable, chunk, past-due, coarse — each
+citing a ruling, a docs section, the run's own record, or two of those. **TWO
+CENSUS FINDINGS CHANGED THE EDITION:** `member` and `portfolio` — **R-BK1's own
+words** — are NEVER emitted (the answer says "seeded searches" and "seed 44",
+which is part of why the planner had to ask); and `calibrated` in R-CAL1's sense
+is never emitted either, its single hit in 1,810 answers being the ordinary
+machine-shop sense ("tooling, fixtures, calibration, cleanup"), so it is OUT.
+**Defining a word the planner has not been shown is the same defect as refusing
+to define one they have.** The census instrument itself was corrected mid-run —
+its first pass counted the harness's own `>> sidecar[...]` lines as product
+speech, which put `pinned` at 26/23 instead of 10/7.
+
+**§5a.218 — PARSE PROMPT v18 → v19, AND THE QUOTE SIGNAL.** One intent, one rule
+(14), and the rule spends its words where the census proved the cost is:
+`teaching` and `prove-it`. The `prove-it` boundary is **a real ambiguity in
+English rather than a model error** — "what do you mean X" asks for a DEFINITION
+when X is a word and for GROUNDS when X is a claim — and the rule carries four
+paired examples. **The quote signal is what closed T2**: as first drafted, T1
+routed correctly and T2 still read as `teaching`, defensibly, because it asks
+about an ACTION. The discriminator added is that **when the planner attributes
+the word to me — "you mentioned X", "you said X" — this is the intent, whatever
+else the sentence goes on to ask.**
+
+**§5a.219 — RIDER R1: THE PRE-COMMIT CURRENCY HOOK.** Four named occurrences of
+the corpus-staleness class (4B.33, (c2), the shared-body census micro-session,
+(e2)), and the remedy written down each time was "remember to rebuild".
+**Restraint is not a mechanism** — R-CM1's own words one rule over — and four
+identical failures earns the mechanical fix. `tools/hooks/pre-commit` checks the
+**staged** docs, installed by `git config core.hooksPath tools/hooks` so the
+hook is COMMITTED and reviewable; `--no-verify` is git's own door and the only
+one. **Proven both ways:** a staged stale doc is rejected and the commit does
+not land; a clean tree passes. **Its own first draft FAILED OPEN** — it read
+`payload["documents"]` where the key is `docs`, so it would have fallen into its
+own SKIPPED branch and reported everything current forever. It now calls the
+corpus's own `doc_fingerprints()`, the definition the currency test uses.
+
+**§5a.220 — RIDER R2: THE THIRD WIDENING, CENSUS-FUNDED.** The postposed deictic
+("a scheduler like this one instead searches globally…"), the construction
+(d.2)'s audit found. Bounded exactly as the other two are — closed noun list,
+one intervening word, closed verb list — so it widens the SHAPE, not the reach.
+**Census over 522 unique claim lines / 121 GK: 3 → 4 firings, the fourth being
+the specimen; non-GK firings 5 before and 5 after, unchanged.** Recorded
+honestly: **that 5 is not the 2 (e2) reported**, and it is 5 on both sides of
+this session's change, so the discrepancy predates (d.3). Filed, not chased.
+
+**§5a.221 — RIDER R3: THE DEICTIC SPEC, SETTLED AS A DECISION.** The standing
+known-red for several sessions; (d.2) proved it pre-existing and correctly
+refused to fit the expectation to output. The history settles it: **4B.14 RULED
+the change** (docs/04, 2026-07-29 — "'here' is a position in TIME at least as
+much as on a lane. It now fires the blocker analysis"), so the copy moved with a
+ruling and **the spec was left behind by it**. Updating an expectation to a
+RULING is not fitting it to output, and the difference is that the ruled text is
+quotable. Canonical: `why is {order} placed where it is on {machine}?`. **The
+FIXTURE was left behind too** — the canned-answer map still keyed the pre-4B.14
+question, so no answer matched and the "Evidence chain" assertion was failing on
+a fallback. **Both questions are keyed now, which is 4B.14's own point: they are
+different questions**, one about capability and one about time.
+
+**§5a.222 — 4A-(d.3)'s CARRY-FORWARDS (REPORTED, deliberately NOT fixed).**
+**(a) A DEFINED WORD ASKED ABOUT BEFORE IT IS SAID gets the second tier's honest
+floor, not the entry.** Widening the trigger is exactly the documentation-browser
+slope the wall exists to stop; the honest fix is a better second-tier answer.
+**(b) THE GLOSSARY IS TEN ENTRIES AGAINST 27 EMITTED TERMS.** The other 17 are
+mostly general scheduling English (tardiness, slack, window, makespan) where the
+citation bar is harder to meet honestly; the census names them all.
+**(c) THE NON-GK CENSUS FIGURE (5 of 401) DISAGREES WITH (e2)'s RECORDED 2**,
+and the disagreement predates this session.
+**(d) `member` AND `portfolio` ARE STILL NEVER EMITTED** — R-BK1's own
+vocabulary does not reach a planner, and the glossary defines the word the
+product actually says instead of fixing the answer that avoids it.
+**(e) THE (d.1) ASK-PANEL DIVIDER IS STILL QUEUED.** R3 touched cockpit SPECS
+and a FIXTURE, never the ask panel's rendering surface, so the condition the
+rider set itself is still unmet. Stated as a call, not an omission.
 
 ## 6. Open rulings queue
 
