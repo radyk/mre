@@ -197,11 +197,11 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation.
-**Last closed: Session 4A teaching-graft (e2) — the measurement errand**,
-2026-08-05 (docs/07 v2.96, §5a.195-202; docs/04 2026-08-05 **R-TG7 ruled and
-BUILT** plus the founder's W4 lead-order arbitration; contract unchanged
-**1.15**; parse prompt **v18**, synthesis prompt **v9**; narrative
-`docs/closeouts/4a-teaching-e2-measurement-errand.md`).
+**Last closed: Session 4A teaching-graft (d.2) — the format, the ladder, and
+what a clarify eats**, 2026-08-05 (docs/07 v2.98, §5a.204-211; docs/04
+2026-08-05 **R-EX2 and R-LD6 ruled and BUILT**; contract unchanged **1.15**;
+parse prompt **v18**, synthesis prompt **v9**; narrative
+`docs/closeouts/4a-teaching-d2-format-ladder-carry.md`).
 
 **THE SESSION LEDGER IS NOT IN THIS FILE.** What a session built, what it
 measured, its test counts and its commit live in `docs/07` §5a (position and
@@ -216,6 +216,7 @@ Recent sessions, newest first. `docs/closeouts/<file>.md` is the narrative:
 
 | session | subject | ruling | close-out |
 | --- | --- | --- | --- |
+| 4A tg (d.2) | bank format, ladder, clarify-carry | R-EX2, R-LD6 | `4a-teaching-d2-format-ladder-carry.md` |
 | 4A tg (e2) | the measurement errand | R-TG7 + W4 lead order | `4a-teaching-e2-measurement-errand.md` |
 | 4A tg (e) | teaching may not contradict the floors | R-TG6, W6 | `4a-teaching-e-floor-truth.md` |
 | 4A micro | shared-body census + certificate route | (none new) | `4a-micro-shared-body-census.md` |
@@ -326,6 +327,17 @@ measurements. Do not restate a ruling's reasoning here.
 - **R-TG7** — an empty teaching drop has a floor: the authored card replaces the
   capability card and says a draft existed and was REFUSED, never "nothing was
   found". It does not enter `ANSWER_MEMORY`.
+- **R-EX2** — banks grade ROUTES and RELATIONS; bodies belong to tests.
+  `REBIND` is a sequence step; three relational forms index an earlier turn
+  (`BODY_SAME_AS`/`BODY_DIFFERS_FROM`, `RECORDS_FROM` — non-empty required —
+  and `RECORDS`); no prose assertion is expressible, and `EXPECT_KEYS` being
+  closed is what enforces it.
+- **R-LD6** — ONE resolver contract. All four rungs live and disclosed; the
+  parse model's words are the LAST resort; **nothing resolves during a parse
+  outage**; HISTORY remembers what was LOOKED AT and LAST-ANSWER what the turn
+  was ABOUT. Clause (5): the carry takes the bundle's subject, else the subject
+  the PARSE resolved — one definition (`interpreter.carry_subject`), three
+  readers, additive by construction.
 - **R-MT1** — carried answer state is schedule-scoped, cleared on rebind, honest
   about its own absence. `ANSWER_MEMORY` / `SYNTHESIS_MEMORY` / `_DELIVERED` key
   on `(session_id, schedule_id)`; `forget` is by SESSION.
@@ -395,6 +407,12 @@ measurements. Do not restate a ruling's reasoning here.
 
 **Discipline learned the expensive way (each has its specimen in docs/04)**
 
+- **A predicate is audited by the NEXT session, over the BUILDING session's own
+  artifacts** — a session that has just built a check is the worst-placed
+  observer of what it misses (4A-(e2) §9; 4A-(d.2) §5a.204 found a third missing
+  construction this way).
+- **A zero produced by an instrument that cannot see the value is not a zero**
+  (4A-(d.2) §5a.209), and a count whose numerator's SET is empty proves nothing.
 - **A defect class fixed at one seam is not fixed.** Census the class; the
   4B.14 chunk read, the 4B.20 duration class and the (e2) counterfactual sites
   were each found this way.
@@ -476,7 +494,8 @@ REPORTED and deliberately NOT fixed.
 | 4B.11 | R-PD1 clause (5) is open; there is no optimality ROUTE — nobody can ASK | §5a.28-30 |
 | 4B.6b/c | §5a.15 the 14-day window is budget-starved at 200 orders; the prediction store's sweep is scoped by nothing | §5a.8-17 |
 | 4B.5–4B.7 | the two-solve baseline is not extended to forced-alternatives pricing; `EARLINESS_PREFERENCE` names a mechanism that no longer exists (§5a.20) | §5a.19-21 |
-| 4A (a)–(e2) | the widened GK predicate is still a pattern map; the fourth W4 site is unfixed; the exam bank cannot express "these two answers must not be the same" | §5a.162-202 |
+| 4A (d.2) | the GK predicate misses a postposed deictic; `RECORDS_FROM` is a subset test, not equality | §5a.211 · `4a-teaching-d2-format-ladder-carry.md` |
+| 4A (a)–(e2) | the widened GK predicate is still a pattern map; C9's transfer pair is still not bank-expressible (the fourth W4 site and the same-answer assertion were discharged by (d.2)) | §5a.162-202 |
 
 Standing named debts not tied to one session: the sentinel /
 repeated-identical-value detector (Rep 3's 40× `run_rate_seconds=60.0`); a

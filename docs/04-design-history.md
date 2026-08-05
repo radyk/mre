@@ -19646,3 +19646,293 @@ that ruled this and built it in the same session, which is the shape a ruling
 session normally has. The 150k number is inherited, not re-derived — nobody has
 measured what context cost a 150k CLAUDE.md actually imposes, and if that
 measurement is ever taken the budget should move to what it says.
+
+---
+
+## 2026-08-05 — R-EX2 AND R-LD6: THE BANK FORMAT, AND ONE RESOLVER CONTRACT
+
+**Session 4A teaching-graft (d.2).** Two rulings, one subject: **what does a
+turn leave behind for the next turn, and what may a bank assert about it?**
+Contract unchanged **1.15**; both governed prompts unchanged (**parse v18**,
+**synthesis v9**) — every seam here is deterministic code or authored copy;
+`DriverCode` unchanged; no docs/06 doorway owed.
+
+---
+
+### 0. The standing-law predicate audit, run FIRST — and it found something
+
+The (e2) close-out's own lesson became standing law this session: *a session
+that has just built a check is the worst-placed observer of what the check does
+not catch.* So every predicate or pattern map built in a prior session gets an
+M1-style check in the next one, run over the BUILDING session's own artifacts.
+
+This session's instance, `tools/spikes/teaching_graft_d2/predicate_audit.py`
+over `tests/ai_exam/sweeps/2026-08-05-teaching-e2` — 2 transcripts, **67 claim
+lines, 14 of them general knowledge**:
+
+| | |
+|---|---|
+| `product_behavior_disqualifiers` (the (e2)-WIDENED version) | **0 of 14** |
+| `floor_contradictions` (the (iii) map) | **0 of 67** |
+
+**AND AT LEAST ONE OF THE 14 IS A MEMBER OF THE SPECIES.** Claim 3 of
+`sweep_teaching_v2`, under `[general knowledge]`:
+
+> *"…but a mixed-integer or constraint-based **scheduler like this one** instead
+> searches globally for the sequence and assignment combination that minimizes a
+> stated cost objective — so there usually is no single 'first job' rule the
+> planner can point to; **the ordering is an output of the optimization, not an
+> input rule it followed**."*
+
+That asserts what THIS product does, and it is checkable — against docs/05 and
+against the solver builder. It misses by a THIRD construction, independent of
+both of (e2)'s two widenings: the deictic is **POSTPOSED** (`scheduler like this
+one`), and pattern (a) requires `th(is|e) (product|system|engine|scheduler)`
+with the noun BEFORE the pointer.
+
+**NOT WIDENED HERE, deliberately.** (e2)'s own standard is that a widened
+predicate re-earns its census, and this session held no census budget; widening
+on one specimen is the temptation that errand's discipline exists to refuse.
+Filed as a carry-forward with its specimen quoted, which is what the audit is
+for. **The audit's value is not that it was clean. It is that it was not.**
+
+---
+
+### R-EX2 — BANKS GRADE ROUTES AND RELATIONS; BODIES BELONG TO TESTS
+
+**The exam grammar gains three things.**
+
+**(1) SEQUENCE-LEVEL WORLD DIRECTIVES.** `REBIND <schedule>` is a step, so a
+conversation can cross a version boundary inside one graded sequence. It
+reproduces `main.js::onVersionChange` — what fires after an accepted edit, a
+boundary move or a publish: rebind the schedule, **clear the board selection,
+touch nothing else**. History, the last-answered subject, the open card and the
+session id all survive, because that is the shipped behaviour and it is the
+whole reason a cross-version bank has anything to grade. A `REBIND` that cannot
+resolve is a loud `rebind-failed` finding and **the run STOPS** — a transcript
+naming one board while grading another is worse than no transcript.
+
+**(2) EXPECTATIONS THAT REFERENCE AN EARLIER TURN BY INDEX**, in exactly three
+relational forms — 1-based within the CURRENT conversation, because an index
+that crossed a `RESET` would name a turn the bank has already thrown away:
+
+* **`BODY_SAME_AS=n` / `BODY_DIFFERS_FROM=n`** — body identity/distinctness by
+  fingerprint (sha256 over the answer body with its `[rendered by: …]` footer
+  stripped, so a renderer change is not a body change);
+* **`RECORDS_FROM=n`** — record-set provenance: this turn's records came from
+  turn n's answer. **NON-EMPTY IS PART OF THE FORM.** The empty set is a subset
+  of every set, so a pure subset test would pass a turn that opened NOTHING —
+  which is the exact defect (D-01) the form was written to catch, reported as a
+  pass;
+* **`RECORDS=n`** — record count. With a route expectation beside it, this is
+  what distinguishes *"opened nothing"* from *"opened the wrong thing"*, which
+  under the old grammar were literally the same `EXPECT` line.
+
+**AN UNRESOLVABLE REFERENCE IS A MISS, NOT A SKIP** — a forward reference, an
+index past the conversation, or an index into a turn that ERRORED. A bank that
+grades nothing must never read like a bank that passed; that is the failure mode
+this whole format exists because of.
+
+**AN EMPTY BODY IS UNEVALUABLE IN BOTH DIRECTIONS** — the third-state discipline
+at another seam. Two empty answers are two defects, not one answer, and an empty
+body is not evidence that two answers DIFFER either. An empty body carries no
+fingerprint at all.
+
+**(3) NO PROSE ASSERTIONS IN BANKS, EVER.** Body CONTENT is guard-file territory.
+A string assertion against authored copy in a bank is a weaker duplicate of a
+unit test that breaks on every legitimate copy edit. **The division is ENFORCED,
+not merely stated**: `EXPECT_KEYS` is a closed set and an unrecognised key is a
+parse finding, so a prose expectation cannot be written down.
+
+**ORIGIN — THREE MEASURED INPUTS, none of them an opinion.** (d.1) §8's per-turn
+vs prior-turn note; the shared-body census micro-session, whose bank scored
+**5/5 while the product rendered ONE BODY FOR TWO DIFFERENT QUESTIONS** (it
+graded the routing, and the routing was never wrong); and (e) §8(f).
+
+---
+
+### R-LD6 — ONE RESOLVER CONTRACT, STATED
+
+The (d.0) recon measured all four ladder rungs (card > selection > last-answer >
+history) EMPTY on all six turns of a typed conversation, and resolution worked
+anyway. It left open (D-03/D-04) whether the ladder is dead code or a mis-wired
+resolver. **Measured before decided**, one probe per rung
+(`tools/spikes/teaching_graft_d2/ladder_probe.py`, `carry_probe.py`):
+
+| rung | probe | result |
+|---|---|---|
+| CARD | a priced move open, nothing else live | binds, `source=card`, **disclosed** |
+| SELECTION | a bar selected, no card | binds, `source=selection`, **disclosed** |
+| LAST-ANSWER | `why is ORD-000252 late` → `demand`, then a pointed follow-up | binds, `source=last-answer`, **disclosed** |
+| HISTORY | a bar selected on turn 1, then the selection CLEARED | binds, `source=history`, **disclosed** |
+
+**NOTHING IS DELETED: all four rungs are reachable and all four are consumed.**
+The clauses:
+
+**(1) FOUR RUNGS, IN ORDER, FOR A POINTED SUBJECT** — card > selection >
+last-answer > history. Every rung is live and every binding is disclosed.
+
+**(2) THE MODEL'S OWN WORDS ARE THE LAST RESORT, NOT THE FIRST.** Where every
+rung is empty, and only then, `bind_subjects` tries the words the parse put in
+`raw` (`SubjectSource.CONVERSATION`, R-LD5) — and that recovery is disclosed AS
+a recovery. The ladder wins where it binds.
+
+**(3) NOTHING RESOLVES WHEN THE PARSE TIER IS DOWN.** Measured, not inferred
+(`outage_resolver_probe.py`, driving the shipped `QuestionParser(_client=…)`
+seam with a transport double): with the LAST-ANSWER rung FULL and the model
+unreachable, the turn returns R-OF1's outage card — `route=OUTAGE`,
+`register=system`, **no subjects bound at all**. **The ladder is not a fallback
+for an unreachable model and may not be described as one.** The one thing it
+does that the parse does not is DETERMINISM: P2 measured byte-identical answers
+across three conversational positions where the selection rung binds.
+
+**(4) THE CHANNELS ARE NOT INTERCHANGEABLE.** HISTORY remembers **what the
+planner was looking at** (it is filled from the board selection at the time of
+each turn); LAST-ANSWER remembers **what the last turn was about**. D-04 reported
+the first as a defect; it is not. Making history carry subjects would fuse two
+different questions into one channel — a category fusion, this repo's own named
+defect class, five in six sessions.
+
+**(5) WHAT ENTERS THE LAST-ANSWER RUNG.** The answer's own resolved subject
+where the bundle names one (**clause (1) of `carry_subject`, the shipped
+behaviour, unchanged and FIRST**); failing that, **the subject the PARSE resolved
+for that question**. Unique per kind — two distinct resolved orders carry NO
+order, the same refusal `_resolve_machine` already makes on an ambiguous token —
+and an UNRESOLVED subject leaves the set before the count is taken, so a typo
+beside a real id does not cost the planner the real id. **ADDITIVE BY
+CONSTRUCTION:** clause (2) can only fill a carry that would otherwise have been
+empty, so no carry that is populated today changes. **ONE DEFINITION,
+`interpreter.carry_subject`, THREE READERS** — the ask meta carries it, the
+panel reads it, the exam runner reads it. The rule lived in three places before,
+which is how it drifted.
+
+**THE FOUNDER'S SPECIMEN, AND WHAT IT ACTUALLY WAS.** From the freewheel round:
+*"why is ORD-000252 on CUT-01 when it is"* → facts-vs-action CLARIFY; two turns
+later *"why is it scheduled when it is"* → **asked WHICH ORDER**. The hypothesis
+was that a clarify turn eats the subjects a question names. Driven as a HELD PAIR
+one word apart, 3 runs of 3 (`clarify_pair.py`):
+
+| arm | turn 1 | carry into turn 2 | turn 2's route |
+|---|---|---|---|
+| A | *"…on CUT-01 **when it is**"* → CLARIFY | **`{}`** | **`why-here`** |
+| B | *"…on CUT-01"* → `why-on-machine` | `{order: ORD-000252}` | **`start-reason`** |
+
+**IN BOTH ARMS THE PARSE RESOLVED `ORD-000252` FROM THE PLANNER'S OWN TYPING.**
+The clarify's bundle truthfully renders `subject_external_name="?"` — it could
+not answer — and the carry channel read the BUNDLE, so arm A's deterministic
+memory of an order the planner had named was empty one turn later. **The same
+follow-up sentence reached two different routes, 3 of 3, and the only variable
+was whether the previous turn drew a clarify.** Arm A resolved at all only
+because the parse model re-read the order out of the RECENT TURNS block.
+
+So the hypothesis is **CONFIRMED at the mechanism and REFRAMED in its
+consequence**: the clarify does eat the subject, and what the founder saw was
+the *model recovery* — the layer with nothing deterministic underneath it —
+failing on a longer conversation. **This is R-LD5's logic one step earlier: a
+subject is a property of the planner's SENTENCE and survives the route that
+sentence drew. A route that could not answer still had a subject.** After clause
+(5) both arms carry the order and both reach `start-reason`, 3 of 3.
+
+**A SIDE EFFECT WORTH NAMING.** Re-running the recon's P2b after the fix, the
+middle arm now binds off the **LADDER** (`source=last-answer`) where it used to
+bind off the model. The (d.0) dossier's headline — *"the product's cross-turn
+understanding is a model behaviour wearing deterministic clothes"* — now has a
+deterministic backstop under one of its two specimens. R-LD5's disclosure rule
+holds on all three arms; the true negative (an unrelated turn before the probe)
+still correctly CLARIFIES, so clause (2) did not over-carry.
+
+---
+
+### RIDER R1 — W4's FOURTH SITE, SIZED THEN FIXED
+
+(e2) §8(a) named `mobility_lead_line`'s `earlier-open` branch as the fourth
+emitter of *"Nothing was holding X back"* and left it: no driver in hand, and
+plumbing one looked like a change to what the floor computes.
+
+**THE SIZING IS THE STORY** (`w4_fourth_site_count.py`):
+
+| world | placements | `earlier-open` | …carrying a blocker-naming driver |
+|---|---|---|---|
+| demo board `rolling-c32a6140-b6b` | 386 | **0** | **0** |
+| fenced specimen world (R-SW1) | 10 | **1** | **1 — ORD-EARLY op10, CAPACITY_BLOCKED** |
+
+**The demo board's zero is a TAUTOLOGY and saying so is the point:**
+`earlier-open` requires `later_at` to be None, which no plant that keeps working
+produces, so the numerator's SET is empty. The fenced world is the only board
+where that branch can render — and there it is **1 of 1**. Every time that
+sentence has ever rendered against a solve, it has contradicted the record
+sitting beside it.
+
+**AND THE FIRST INSTRUMENT PRODUCED A FALSE ZERO.** Reading `row["driver"]` off
+the enriched assignment gave `(none)` for a bar (e2) §5 quotes as recording
+CAPACITY_BLOCKED; the three guarded sites read `key_facts["chosen_driver"]`
+(`_first_assignment_driver`), and reading what they read gave the 1. **A zero
+produced by an instrument that cannot see the value is not a zero** — this
+session's own standing law, caught on this session's own rider.
+
+**FIXED.** The plumbing was not a floor change at all: `analysis` is already an
+argument to `_mobility_facts`, so the payload gains `chosen_driver` (sixteen
+keys) and the site goes through the **same one definition**,
+`counterfactual_contradicts_driver`, in the **same arbitrated order** — the
+record leads, our scan is a second opinion, the disagreement is stated and
+**neither fact is deleted**. A preference driver is silent and an unrecognised
+one claims nothing, unchanged. Live on the fenced world, through the real path:
+
+> *"On the premise first: the assignment decision for ORD-EARLY op10 records its
+> driver as CAPACITY_BLOCKED, which names a constraint rather than a preference.
+> My own scan disagrees — BOX-01 had open, unheld time before where it sits — so
+> it may be movable, but the record and my calendar scan do not agree about this
+> bar, and I can't tell you which the solver acted on."*
+
+(e2)'s tripwire test fired as designed and is **replaced by the real guard**,
+which now reads the payload's keys off the **AST** rather than by substring —
+its own negative control caught the substring version passing on the explanatory
+comment beside the line.
+
+---
+
+### What was measured, and what was proven
+
+**THE HEADLINE PROOF.** The committed cross-version bank
+(`tests/ai_exam/banks/sweep_crossversion_v1.txt`) is run at HEAD — **4/4, clean**
+— and then re-run with **R-MT1's composite store key reverted to session-only**,
+the state the (d.0) recon measured. It goes **RED**, with:
+
+> `records: expected 0, got 102`
+
+**102 — the recon's own number**, board A's lateness records served against
+board B. That is R-EX2's whole claim demonstrated rather than argued: a bank can
+now watch a defect no bank format could previously express, and the (d.1) bank's
+own header called that *"not a missing EXPECT key; it is a missing world"*.
+
+* `sweep_relational_v1.txt` — the queued founding specimens encoded and run
+  live: **11/11 expectations met, sidecar clean**. Every relational form
+  carried real values (RECORDS_FROM over a non-empty set, BODY_DIFFERS_FROM on
+  the certificate pair whose two turns cite the SAME four records, RECORDS=0 on
+  the cold refusal).
+* **12 negative controls proven RED**, each asserted GREEN AT HEAD first, every
+  restore byte-identical by sha256, working in BYTES and detecting each file's
+  own line endings. **Two of them failed on the first attempt and both failures
+  were the GUARD's, not the seam's** — one watched a comment, one watched an
+  identifier that survived the revert. Both guards were rewritten to read code
+  (the panel's function body with comments stripped; the payload's keys off the
+  AST). 4B.28 §5a.123 caught in the act, twice.
+* `sweep_mobility_v3` re-run on the fenced world because the renderer changed:
+  **10/10 met, `ungrounded-load-bearing: 1` — byte-for-byte the committed
+  baseline.** The fixed lead renders inside that transcript.
+
+---
+
+### What this does NOT do
+
+**C9's TRANSFER PAIR IS STILL NOT BANK-EXPRESSIBLE, by construction.** Its two
+halves are separated by a cleared conversation — that separation IS the axis —
+and a relational index does not cross a `RESET`. What R-EX2 discharges is the
+narrower (e2) §8(e) carry-forward, *"the exam bank cannot express 'these two
+answers must not be the same'"*: `BODY_DIFFERS_FROM` expresses exactly that,
+within one conversation. Across a reset it is still two blocks stating the same
+expectation, which is a real bound of the format and is written into the bank.
+
+**R-LD6 CLAUSE (5) IS NOT A CLAIM ABOUT MULTI-TURN TEACHING.** Q3 (teaching
+persistence) is untouched and still open; so is the term-explanation gap (F1),
+which is (d.3)'s subject.

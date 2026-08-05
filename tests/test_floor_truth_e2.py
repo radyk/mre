@@ -390,17 +390,61 @@ class TestF3TheRecordLeads:
         assert "Nothing has to change" in out
         assert "disagree" not in out
 
-    def test_the_fourth_site_is_named_not_silently_left(self):
-        """`mobility_lead_line`'s earlier-open branch says "Nothing was holding
-        X back" and has NO driver in hand — `_mobility_facts` returns no such
-        key. Fixing it is a PLUMBING change (the driver has to reach the
-        mobility-lead payload), which is outside this errand's arbitrated scope.
-        This test pins the fact so the next session finds it rather than
-        rediscovering it."""
+    def test_the_fourth_site_is_guarded_by_the_same_one_definition(self):
+        """THE TRIPWIRE FIRED AND THIS IS ITS REPLACEMENT.
+
+        (e2) left `mobility_lead_line`'s earlier-open branch asserting "Nothing
+        was holding X back" with no driver in hand, and pinned the gap with a
+        test that failed the day the payload gained one. Session (d.2)'s rider
+        R1 sized it: 0 of 386 on the demo board — a TAUTOLOGY, since
+        `earlier-open` needs `later_at` to be None and no plant that keeps
+        working produces that — and **1 of 1 on the fenced specimen world**, the
+        only board where the branch renders. ORD-EARLY op10, CAPACITY_BLOCKED.
+
+        So the payload carries `chosen_driver` now and this site goes through
+        the SAME `counterfactual_contradicts_driver` as the other three, in the
+        same arbitrated order: the record leads, the scan is a second opinion,
+        and neither is deleted."""
+        import ast
         import inspect
+        import textwrap
         from mre.modules import explainer as ex
-        facts_src = inspect.getsource(ex.Explainer._mobility_facts)
-        assert "chosen_driver" not in facts_src, (
-            "the mobility-lead payload now carries a driver — "
-            "`mobility_lead_line` can and should be guarded, and this test "
-            "should be replaced by that guard")
+        from mre.modules.explainer import ExplanationBundle
+
+        # THE PAYLOAD'S KEYS, OFF THE AST — not a substring search of the
+        # source. A text search passes on the explanatory comment beside the
+        # line, which is a guard watching a comment; the negative control for
+        # this very assertion caught it doing exactly that.
+        tree = ast.parse(textwrap.dedent(
+            inspect.getsource(ex.Explainer._mobility_facts)))
+        keys = {k.value for node in ast.walk(tree)
+                if isinstance(node, ast.Return) and isinstance(node.value, ast.Dict)
+                for k in node.value.keys
+                if isinstance(k, ast.Constant) and isinstance(k.value, str)}
+        assert "chosen_driver" in keys, (
+            "the mobility-lead payload must carry the driver, or the fourth W4 "
+            f"site has nothing to guard with; keys are {sorted(keys)}")
+
+        def lead(driver):
+            bundle = ExplanationBundle(
+                question="what would have to change for ORD-EARLY",
+                subject_id="d", subject_type="counterfactual",
+                subject_external_name="ORD-EARLY", ordered_records=[],
+                key_facts={"mobility_lead": {
+                    "order": "ORD-EARLY", "op_seq": 10, "machine": "BOX-01",
+                    "verdict": "earlier-open", "open_directions": ["earlier"],
+                    "chosen_driver": driver}},
+                snapshot_id="snap", identity_map=None)
+            return rd.mobility_lead_line(bundle) or ""
+
+        blocked = lead("CAPACITY_BLOCKED")
+        assert "Nothing was holding" not in blocked
+        assert "records its driver as CAPACITY_BLOCKED" in blocked
+        # THE RECORD LEADS: the driver is named before our own scan.
+        assert blocked.index("records its driver") < blocked.index("My own scan")
+        assert "do not agree" in blocked
+
+        # A PREFERENCE DRIVER IS SILENT, and an UNRECOGNISED one claims nothing
+        # — the 4B.23 fail-safe, unchanged at this site as at the other three.
+        for quiet in ("COST_TRADEOFF", "SOMETHING_WE_DO_NOT_KNOW", None, ""):
+            assert "Nothing was holding" in lead(quiet)

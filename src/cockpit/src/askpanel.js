@@ -56,7 +56,18 @@ export function createAskPanel(rootEl, board, scheduleId, opts = {}) {
   // nothing — we never guess order-vs-machine.
   const ORDER_SUBJECTS = new Set(["demand", "start_reason", "contested_fact", "order_attributes"]);
   const MACHINE_SUBJECTS = new Set(["machine_idle"]);
+  // R-LD6 clause (5), session 4A teaching-graft (d.2). The server now computes
+  // what a turn contributes to the LAST-ANSWER rung and sends it as
+  // `carry_subject` — ONE definition (`interpreter.carry_subject`), read here
+  // and by the exam runner, instead of the rule living in three places. It adds
+  // the subject the PARSE resolved wherever the bundle names none, which is what
+  // a CLARIFY does: the planner typed an order, we resolved it, and the answer
+  // could not name it. The two sets above stay as the fallback for a payload
+  // without the field, and as what clause (1) means.
   function resolvedSubject(meta) {
+    if (meta && meta.carry_subject && typeof meta.carry_subject === "object") {
+      return { ...meta.carry_subject };
+    }
     const name = ((meta && meta.subject_external_name) || "").trim();
     if (!name || name === "?" || name === "all") return {};
     const st = meta && meta.subject_type;

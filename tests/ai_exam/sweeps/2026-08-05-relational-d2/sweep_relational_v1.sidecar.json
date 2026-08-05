@@ -1,0 +1,74 @@
+{
+  "target": "rolling-c32a6140-b6b",
+  "snapshot": "snap-rolling",
+  "started_at": "2026-08-05T15:14:17Z",
+  "llm_mode": "live",
+  "questions": 11,
+  "llm_calls": 14,
+  "parser_stats": {
+    "calls": 12,
+    "parses": 12,
+    "retries": 0,
+    "malformed": 0,
+    "clarifies": 1,
+    "unavailable": 0,
+    "unreachable": 0,
+    "median_latency_ms": 1575.7738000002064,
+    "malformed_samples": []
+  },
+  "synth_stats": {
+    "syntheses": 1,
+    "calls": 1,
+    "tool_calls": 0,
+    "malformed": 0,
+    "budget_exhausted": 0,
+    "timed_out": 0,
+    "unanswerable": 1,
+    "median_latency_ms": 1987.4249000004056,
+    "p90_latency_ms": 1987.4249000004056
+  },
+  "synthesis": {
+    "answers": 1,
+    "claims": 0,
+    "verified": 0,
+    "interpretive": 0,
+    "general_knowledge": 0,
+    "failed_and_cut": 0,
+    "deferred": 0,
+    "ungrounded_load_bearing": 0,
+    "unanswerable": 1,
+    "budget_exhausted": 0,
+    "tool_calls": 0,
+    "tool_histogram": {},
+    "calls_per_answer": {
+      "0": 1
+    }
+  },
+  "shadow": {
+    "shadowed": 0,
+    "clean": 0,
+    "diverged": 0,
+    "unchecked": 0,
+    "provenance_strengthened": 0,
+    "by_intent": {}
+  },
+  "latency": {
+    "route": {
+      "n": 10,
+      "median_ms": 2220.9,
+      "p90_ms": 3189.6
+    },
+    "synthesis": {
+      "n": 1,
+      "median_ms": 3795.8,
+      "p90_ms": 3795.8
+    }
+  },
+  "graded_expectations": {
+    "graded": 11,
+    "met": 11
+  },
+  "door_check": "live",
+  "finding_counts": {},
+  "findings": []
+}

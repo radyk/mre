@@ -1,6 +1,8 @@
 # Product Roadmap
 
-**Document 7** · Status: v2.97 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+**Document 7** · Status: v2.98 · Companions: 01–04 (constitution), 05 (Constraint Catalog, in progress), 06 (Incoming Data Spec)
+
+**v2.98:** **Session 4A teaching-graft (d.2) — the format, the ladder, and what a clarify eats.** 2026-08-05 (**R-EX2 and R-LD6 ruled and BUILT**, verbatim in docs/04; contract unchanged **1.15**, no docs/06 doorway owed; **BOTH GOVERNED PROMPTS UNCHANGED** — parse **v18**, synthesis **v9**, every seam here being deterministic code or authored copy; narrative in `docs/closeouts/4a-teaching-d2-format-ladder-carry.md`). **THE STANDING-LAW PREDICATE AUDIT RAN FIRST AND WAS NOT CLEAN** — the (e2)-widened `product_behavior_disqualifiers` fires **0 of 14** GK claims in (e2)'s OWN sweeps and the (iii) map **0 of 67**, and at least one of the 14 is the species: *"a mixed-integer or constraint-based **scheduler like this one** instead searches globally … the ordering is an output of the optimization"*, missing by a THIRD construction (the POSTPOSED deictic) independent of both (e2) widenings. **NOT widened** — (e2)'s own standard is that a widened predicate re-earns its census, and widening on one specimen is exactly what that errand refused. **R-EX2 — BANKS GRADE ROUTES AND RELATIONS; BODIES BELONG TO TESTS:** `REBIND <schedule>` as a sequence step (`onVersionChange` reproduced — rebind, clear the selection, touch nothing else; an unresolvable rebind is loud and **the run STOPS**); three relational forms indexing an earlier turn — `BODY_SAME_AS` / `BODY_DIFFERS_FROM`, `RECORDS_FROM` (**non-empty REQUIRED**, because the empty set is a subset of everything and a pure subset test would pass a turn that opened NOTHING, which IS the defect the form catches) and `RECORDS` (which is what separates *"opened nothing"* from *"opened the wrong thing"*, one EXPECT line under the old grammar); and **no prose assertions, ENFORCED** by `EXPECT_KEYS` being a closed set. An unresolvable reference is a MISS not a skip, and an EMPTY BODY is unevaluable in BOTH directions. **THE HEADLINE PROOF:** the committed cross-version bank runs **4/4 clean** at HEAD and, with R-MT1's composite store key reverted to session-only, goes RED with **`records: expected 0, got 102`** — **102 being the (d.0) recon's own number**, board A's lateness record ids served against board B. The (d.1) bank's header called this *"not a missing EXPECT key; it is a missing world"*. `sweep_relational_v1` — the queued founding specimens encoded — ran **11/11 met, sidecar clean**, every form carrying real values. **R-LD6 — ONE RESOLVER CONTRACT, MEASURED BEFORE DECIDED:** all four rungs bind, are consumed and are disclosed (one probe each), so **nothing is deleted**; the parse model's own words are the LAST resort and are disclosed as a recovery; **nothing resolves during a parse outage** — measured with a transport double, R-OF1's card answers with **NO subjects bound**, so the ladder is NOT a fallback for an unreachable model and may not be described as one (what it buys is DETERMINISM); and **D-04 is reported as NOT a defect** — HISTORY remembers what the planner was LOOKING AT, LAST-ANSWER what the turn was ABOUT, and fusing them would be a category fusion. **THE FOUNDER'S CLARIFY SPECIMEN: CONFIRMED AT THE MECHANISM, REFRAMED IN ITS CONSEQUENCE.** The three-turn reproduction did NOT reproduce — the intervening turn re-supplied the subject — so it was isolated to a HELD PAIR one word apart, **3 runs of 3**: the CLARIFY arm carries `{}`, the control carries the order, and **in BOTH arms the parse resolved ORD-000252 from the planner's own typing**. The identical follow-up sentence therefore reached **two different routes**, and the clarify arm resolved at all only because the parse model re-read the order out of RECENT TURNS — the layer with nothing underneath it. Clause (5) puts the deterministic rung back: `carry_subject`, **ONE definition and three readers**, the bundle's subject first and unchanged, else the subject the PARSE resolved — unique per kind, never guessed, unresolved siblings excluded before the count, **ADDITIVE BY CONSTRUCTION** so no populated carry changes. Both arms now reach `start-reason` 3/3, and the recon's P2b middle arm binds off the **LADDER** where it used to bind off the model. **RIDER R1 — W4's FOURTH SITE, SIZED THEN FIXED:** demo board **0 of 386**, and that zero is a **TAUTOLOGY** (the numerator's SET is empty — `earlier-open` needs `later_at` to be None, which no plant that keeps working produces); the fenced specimen world, the only board where the branch renders, is **1 of 1** — ORD-EARLY op10, CAPACITY_BLOCKED. **THE FIRST INSTRUMENT PRODUCED A FALSE ZERO** by reading `row["driver"]` instead of what the three guarded sites read; a zero from an instrument that cannot see the value is not a zero, and it was this session's own standing law caught on this session's own rider. Fixed through the SAME one definition in the SAME arbitrated order (record leads, scan is a second opinion, neither fact deleted); the plumbing was not a floor change at all, `analysis` already being an argument. (e2)'s tripwire fired as designed and is replaced by the real guard, which reads the payload's keys **off the AST**. **Python 2825/305/0 UNCHUNKED in 24m23s** against a baseline DERIVED for this tree of **2772/305/0** ((e2)'s 2768 plus the maintenance commit's 4) — **+53 exactly**, the new guard file collects exactly 53, and collection **3130 vs 3077** confirms it independently (3077 being (e2)'s recorded 3073 plus the same 4). **NO RESIDUAL.** **12 negative controls proven RED**, each GREEN AT HEAD first, every restore byte-identical by sha256 — **and TWO stayed green on the first attempt, both the GUARD's fault and not the seam's**: one searched a whole file and passed on the explanatory COMMENT, one searched a function's source text and did the same; both were rewritten to read CODE. **4B.28 §5a.123 caught in the act, twice, in one session.** **Cockpit suite RUN because `askpanel.js` was touched — 366 passed, 3 failed, NONE of them this session's**: the `deictic` pair is **PROVEN PRE-EXISTING** (it reproduces with the change stashed back to HEAD) and the `beat_two` dark failure did not reproduce on re-run (22/22); the `carriedstate` pair guarding the neighbouring R-MT1 seam is 2/2 green. **MINTED NOTHING; both pinned worlds read-only throughout.** NOT FIXED, named: the GK predicate's third missing construction; **C9's transfer pair is STILL not bank-expressible by construction** — its halves are separated by a cleared conversation, that separation IS the axis, and a relational index does not cross a RESET (what IS discharged is (e2) §8(e), *"the exam bank cannot express 'these two answers must not be the same'"*); `RECORDS_FROM` is a subset test, not an equality; the cross-version bank names two schedule ids in its own text and rots the day either world is re-minted; a one-run-of-three `validator` finding not investigated; **rider R2 left QUEUED with its condition stated** (the ask panel's rendering surface was never opened, and opening one for a rider is what the rider forbids); and the pre-existing cockpit red. §5a.204-211.
 
 **v2.97:** **Maintenance errand — CLAUDE.md back under budget.** 2026-08-05 (**R-CM1 ruled and BUILT**, verbatim in docs/04; contract unchanged **1.15**, no docs/06 doorway owed; **BOTH GOVERNED PROMPTS UNCHANGED** — parse **v18**, synthesis **v9**, this errand touching no prompt, no `src/mre/` module and no solver; narrative in `docs/closeouts/maint-claude-md-budget.md`). CLAUDE.md was **190,354 characters against a 150,000 standing budget**, and a section-by-section census found **93.4% of the file in one section** (`## Current status`, 177,722 chars), of which **51% was a session changelog** already committed in docs/07 §5a, docs/04 and a per-session close-out. **RELOCATION AND CONDENSATION, NEVER DELETION** — the status section's prose is archived **verbatim** in docs/04 under *CLAUDE.md STATUS SECTION CONSOLIDATION* before a byte of it was condensed. **R-CM1, THREE CLAUSES:** the permitted shape is a POINTER (the ruling code IS the pointer); **prose is BORN in docs/04 or docs/07, not relocated later** — the clause that does the work, because the 2026-07-25 maintenance rule asked for restraint and **restraint is not a mechanism** (it was read for fourteen sessions and the file grew from 47k to 190k); and **the budget is LAW** — `tests/test_claude_md_budget.py` fails the suite past 150,000 characters. **THE FILE LANDED AT 33,453 — 17.6% of what it was**, under the 130k target and under the 40k phase-exit ceiling it names for itself, which is the first time that ceiling has been met since 4B.14. Three stale statements were CORRECTED in the move, each named: the two RETIRED-LOST board ids no longer carry paragraphs written as if they were current; the over-the-ceiling running tally is retired in favour of the test; and **this document's own Status line read v2.95 while a v2.96 entry stood above it** — caught by this errand, not by (e2). §5a.203.
 
@@ -7078,6 +7080,155 @@ move to what it says; the test enforces the floor of sanity, not the 40k
 phase-exit target, because encoding the target would fail ordinary pointer-form
 appends; and the ~15-line diff heuristic in clause (1) is a close-out
 obligation that no test can check.
+
+
+**§5a.204 — THE STANDING-LAW PREDICATE AUDIT, RUN FIRST, AND IT WAS NOT CLEAN.**
+(e2)'s own §9 lesson became standing law: *a session that has just built a check
+is the worst-placed observer of what the check does not catch*, so every
+predicate built in session N is run over session N's OWN artifacts in session
+N+1. This session's instance, over `2026-08-05-teaching-e2` — **67 claim lines,
+14 general knowledge**: the **(e2)-widened** `product_behavior_disqualifiers`
+fires **0 of 14**, `floor_contradictions` **0 of 67**. **AND AT LEAST ONE OF THE
+14 IS THE SPECIES** — *"a mixed-integer or constraint-based **scheduler like this
+one** instead searches globally … the ordering is an output of the optimization,
+not an input rule it followed"*, under `[general knowledge]`. It misses by a
+**THIRD construction independent of both (e2) widenings**: the deictic is
+POSTPOSED, and pattern (a) requires the pointer BEFORE the noun. **NOT WIDENED
+HERE** — (e2)'s own standard is that a widened predicate re-earns its census and
+this session held no census budget; widening on one specimen is exactly the
+temptation that errand refused. Filed with its specimen quoted. The audit's
+value is not that it was clean; it is that it was not.
+
+**§5a.205 — R-EX2: BANKS GRADE ROUTES AND RELATIONS; BODIES BELONG TO TESTS.**
+Three elements, all built. **(1) `REBIND <schedule>` as a sequence step** —
+`main.js::onVersionChange` reproduced (rebind, clear the selection, touch nothing
+else), so a conversation can cross a version boundary inside one graded sequence;
+an unresolvable rebind is a loud finding and **the run STOPS**. **(2) Three
+relational expectation forms**, 1-based within the current conversation:
+`BODY_SAME_AS` / `BODY_DIFFERS_FROM` (fingerprint over the body with the
+rendered-by footer stripped), `RECORDS_FROM` (record-set provenance, **non-empty
+required** — an empty set is a subset of everything, so a pure subset test would
+pass a turn that opened NOTHING, which IS the defect the form catches), and
+`RECORDS` (count — with a route expectation beside it this is what separates
+*"opened nothing"* from *"opened the wrong thing"*, which the old grammar wrote
+as one line). **An unresolvable reference is a MISS, not a skip**, and **an empty
+body is UNEVALUABLE in both directions** — the third-state discipline again.
+**(3) No prose assertions, ENFORCED**: `EXPECT_KEYS` is closed, so a prose
+expectation cannot be written down. **ORIGIN: three measured inputs** — (d.1)
+§8, (e) §8(f), and the shared-body census micro-session, whose bank scored
+**5/5 while the product rendered one body for two different questions**.
+
+**§5a.206 — THE HEADLINE PROOF: THE BANK CATCHES THE DEFECT NO BANK COULD SEE.**
+`tests/ai_exam/banks/sweep_crossversion_v1.txt` runs at HEAD **4/4, clean**; with
+**R-MT1's composite store key reverted to session-only** — the state the (d.0)
+recon measured — it goes RED with **`records: expected 0, got 102`**. **102 is
+the recon's own number**: board A's lateness records served to a planner looking
+at board B. The (d.1) bank's header called this *"not a missing EXPECT key; it
+is a missing world"*; it is a bank sequence now. `sweep_relational_v1.txt`, the
+queued founding specimens encoded, ran **11/11 met, sidecar clean**, every form
+carrying real values (RECORDS_FROM over a non-empty set; BODY_DIFFERS_FROM on
+the certificate pair whose two turns cite the SAME four records; RECORDS=0 on
+the cold refusal).
+
+**§5a.207 — R-LD6: ONE RESOLVER CONTRACT, AND NOTHING IS DELETED.** The (d.0)
+recon left D-03/D-04 open — dead code, or a mis-wired resolver? **Measured
+before decided**, one probe per rung: CARD, SELECTION, LAST-ANSWER and HISTORY
+each bind, each is consumed, each is disclosed. **All four are live.** Clauses:
+the four rungs in order for a POINTED subject; the parse model's own words are
+the LAST resort and are disclosed as a recovery (R-LD5); **nothing resolves when
+the parse tier is down** — measured with a transport double, the turn returns
+R-OF1's outage card with **no subjects bound at all**, so the ladder is NOT a
+fallback for an unreachable model and may not be described as one (what it does
+buy is DETERMINISM: P2's byte-identical answers across three positions); and
+**the channels are not interchangeable** — HISTORY remembers what the planner was
+LOOKING AT, LAST-ANSWER what the last turn was ABOUT. **D-04 is reported as NOT a
+defect**: fusing them would be a category fusion, this repo's own named class.
+
+**§5a.208 — R-LD6 CLAUSE (5) AND THE FOUNDER'S CLARIFY SPECIMEN: CONFIRMED AT
+THE MECHANISM, REFRAMED IN ITS CONSEQUENCE.** Driven as a HELD PAIR one word
+apart, **3 runs of 3**: *"why is ORD-000252 on CUT-01 **when it is**"* draws a
+CLARIFY and carries **`{}`**; *"why is ORD-000252 on CUT-01"* answers on
+`why-on-machine` and carries `{order: ORD-000252}`. **In BOTH arms the parse
+resolved the order from the planner's own typing** — the clarify's bundle
+truthfully names no subject, and the carry channel read the BUNDLE. **The
+identical follow-up sentence therefore reached two different routes, 3 of 3**
+(`why-here` vs `start-reason`), and arm A resolved at all only because the parse
+model re-read the order out of the RECENT TURNS block. So the clarify does eat
+the subject; what the founder saw was that model recovery failing on a longer
+conversation, with nothing deterministic underneath. **THE FIX IS R-LD5's LOGIC
+ONE STEP EARLIER**: a subject is a property of the planner's SENTENCE and
+survives the route it drew. `carry_subject` — **ONE definition, three readers**
+(ask meta, panel, exam runner) — takes the bundle's subject first, unchanged, and
+**only where that is empty** takes the subject the parse resolved: unique per
+kind, never guessed, unresolved siblings excluded before the count. **ADDITIVE BY
+CONSTRUCTION**, so no populated carry changes. After it, both arms reach
+`start-reason`, 3 of 3. **SIDE EFFECT NAMED:** re-running the recon's P2b, the
+middle arm now binds off the **LADDER** where it used to bind off the model — the
+(d.0) headline (*"cross-turn understanding is a model behaviour wearing
+deterministic clothes"*) gains a deterministic backstop on one of its two
+specimens, and the true negative still correctly CLARIFIES, so clause (2) did not
+over-carry.
+
+**§5a.209 — RIDER R1: W4's FOURTH SITE, SIZED THEN FIXED, AND THE FIRST
+INSTRUMENT LIED.** Demo board: **0 `earlier-open` of 386 placements**, so 0
+carrying a blocker-naming driver — **and that zero is a TAUTOLOGY**, since
+`earlier-open` needs `later_at` to be None, which no plant that keeps working
+produces. On the **fenced specimen world**, the only board where the branch can
+render, it is **1 of 1**: ORD-EARLY op10 on BOX-01, driver **CAPACITY_BLOCKED**.
+Every time that sentence has rendered against a solve it has contradicted the
+record beside it. **THE FIRST COUNT WAS A FALSE ZERO** — reading `row["driver"]`
+off the enriched assignment returned `(none)` for a bar (e2) §5 quotes as
+CAPACITY_BLOCKED; the three guarded sites read `key_facts["chosen_driver"]`, and
+reading what they read gave the 1. **A zero produced by an instrument that
+cannot see the value is not a zero** — this session's own standing law, on this
+session's own rider. **FIXED, and it was not a floor change**: `analysis` is
+already an argument to `_mobility_facts`, so the payload carries `chosen_driver`
+and the site goes through the **same one definition** in the **same arbitrated
+order** (record leads, scan is a second opinion, disagreement stated, neither
+fact deleted; preference drivers silent, unrecognised drivers claim nothing).
+(e2)'s tripwire fired as designed and is replaced by the real guard — which
+reads the payload's keys **off the AST**, because its own negative control caught
+the substring version passing on the comment beside the line.
+
+**§5a.210 — 12 NEGATIVE CONTROLS RED, AND TWO OF THEM FAILED FIRST — BOTH THE
+GUARD'S FAULT.** Each asserted GREEN AT HEAD before its seam was reverted, every
+restore byte-identical by sha256, working in BYTES with per-file line-ending
+detection. **Two stayed green on the first attempt and neither was the seam's
+doing**: one guard searched the whole of `askpanel.js` for `meta.carry_subject`
+and passed on the explanatory COMMENT; the other searched `_mobility_facts`'s
+source text and passed on the same. Both were rewritten to read CODE — the
+panel's function body with comments stripped, and the payload's keys off the
+AST. **4B.28 §5a.123 caught in the act, twice, in one session** — and the thing
+that caught it was running the control rather than trusting the assertion.
+
+**§5a.211 — 4A-(d.2)'s CARRY-FORWARDS (REPORTED, deliberately NOT fixed).**
+**(a) THE PRODUCT-BEHAVIOR PREDICATE HAS A THIRD MISSING CONSTRUCTION** — the
+postposed deictic (*"a scheduler like this one"*), specimen quoted in §5a.204.
+Widening it needs its own census, which is the expensive half.
+**(b) C9's TRANSFER PAIR IS STILL NOT BANK-EXPRESSIBLE, BY CONSTRUCTION** — its
+halves are separated by a cleared conversation, that separation IS the axis, and
+a relational index does not cross a `RESET`. What R-EX2 discharges is the
+narrower (e2) §8(e) item, *"the bank cannot express 'these two answers must not
+be the same'"*: `BODY_DIFFERS_FROM` says exactly that within one conversation.
+Across a reset it is two blocks stating the same expectation, written into the
+bank as a bound rather than left to be discovered.
+**(c) `RECORDS_FROM` IS A SUBSET TEST, NOT AN EQUALITY** — a turn serving a
+STRICT subset of the referenced turn's records passes. That is right for a
+drill-down that opens one item of a list and wrong for a prove-it that should
+open all of them, and no form distinguishes them today.
+**(d) `sweep_crossversion_v1.txt` NAMES TWO SCHEDULE IDS IN ITS OWN TEXT** —
+every other bank is board-agnostic. It cannot be, and the file says so, but it
+means the bank rots the day either pinned world is re-minted.
+**(e) THE CROSS-VERSION BANK PRODUCED A `validator: 1` FINDING ON ONE RUN OF
+THREE** and `clean` on the others — an LLM renderer validation fallback, run-to-run,
+not investigated. Recorded rather than dropped because the number moved.
+**(f) R2, THE (d.1) DIVIDER, IS LEFT QUEUED** and its condition is stated: the
+rider was conditional on the ask panel already being open, and this session
+changed one function in `askpanel.js` (`resolvedSubject`) without opening the
+rendering surface the divider belongs to. Opening a surface for a rider is what
+the rider's own wording forbids.
+**(g) Q3 (teaching persistence) and F1 (the term-explanation gap) are
+UNTOUCHED** — (d.3)'s subject, one line to the parking lot as the brief directs.
 
 ## 6. Open rulings queue
 

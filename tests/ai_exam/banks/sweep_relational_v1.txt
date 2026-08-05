@@ -1,0 +1,160 @@
+# AI EXAM BANK — THE RELATIONAL EXPECTATIONS (R-EX2)
+# version  : v1
+# generated: 2026-08-05  (Session 4A teaching-graft (d.2))
+# world    : the DEMO BOARD `rolling-c32a6140-b6b`. Entity ids below are that
+#            board's; the SHAPES are what is graded, not the ids.
+#
+# ===========================================================================
+# WHAT THIS BANK IS
+# ===========================================================================
+#
+# R-EX2 gave the exam grammar three things: sequence-level world directives
+# (`REBIND`), expectations that reference an earlier turn by index in three
+# relational forms (`BODY_SAME_AS` / `BODY_DIFFERS_FROM`, `RECORDS_FROM`,
+# `RECORDS`), and a stated division — no prose assertions in banks, ever.
+#
+# This file is the QUEUED FOUNDING SPECIMENS encoded in those forms. Every block
+# below was previously a sequence whose ROUTING was graded here and whose actual
+# SUBJECT — did it open the right thing, is this the same answer twice — lived
+# only in a guard file or a close-out quotation. Three measured inputs asked for
+# this: (d.1) §8 (the per-turn/prior-turn note), the shared-body census
+# micro-session (its bank was **5/5 passing on a product that rendered one body
+# for two different questions**), and (e) §8(f).
+#
+# WHAT IT STILL DOES NOT GRADE, AND SHOULD NOT. Body CONTENT is guard-file
+# territory. `BODY_SAME_AS` says two answers are the same answer; it does not
+# say what either one says, and no key here ever will — `EXPECT_KEYS` is a closed
+# set and an unrecognised key is a parse finding, so the division is enforced
+# rather than merely stated. A string assertion against authored copy in a bank
+# is a weaker duplicate of a unit test that breaks on every legitimate copy edit.
+#
+# THE CROSS-VERSION PAIR IS NOT HERE. It needs `REBIND` and two named schedule
+# ids, so it lives in `sweep_crossversion_v1.txt`, which states its own world
+# requirement.
+#
+# RESET DISCIPLINE. Each block is one conversation; a relational index is 1-based
+# WITHIN its conversation and cannot reach across a RESET. That bound is what
+# block E is about.
+# ===========================================================================
+
+
+# ===========================================================================
+# A — THE DRILL-DOWN GROUNDING PAIR (D-01, and RECORDS_FROM's founding case)
+#
+# "show me the evidence for that" must open THE ANSWER THE PLANNER IS LOOKING
+# AT. Before (d.1) the drill-down's assembler took a `history` argument no
+# caller ever passed and fell through to the board's most severe gate finding —
+# a WARNING about a machine, served as the evidence for whatever had just been
+# said. The routing half of that has been graded here since (d.1). The half that
+# mattered could not be written down until now: RECORDS_FROM=1 says this turn's
+# records are turn 1's records, and it requires the set to be NON-EMPTY, because
+# an empty set is a subset of everything and "opened nothing" must never read as
+# "grounded correctly".
+# ===========================================================================
+RESET
+EXPECT intent=why-here route=why-here
+why is ORD-000128 op20 placed where it is
+
+EXPECT followup=prove-it RECORDS_FROM=1
+show me the evidence for that
+
+
+# ===========================================================================
+# B — THE REFUSAL, AND ITS WRONG-THING SIBLING (RECORDS=0)
+#
+# A COLD "show me that": nothing has been answered, so there is nothing to open.
+# The old defect and the correct behaviour reach the same EXPECT line under the
+# old grammar — "the drill-down opened nothing" and "the drill-down opened the
+# wrong thing" were literally the same assertion. RECORDS=0 is the discriminator
+# R-EX2 added for exactly this, and it is the reason that clause is in the ruling.
+#
+# NO ROUTE IS EXPECTED HERE, DELIBERATELY. (d.1) measured that with no
+# conversation at all the parse reads these words as `unmatched` at confidence
+# 0.25 and the SECOND TIER answers — honestly, with zero tool calls. Pinning
+# `route=drill-down` would grade the parse's reading rather than the property,
+# and the property is true on both paths: a cold "show me that" opens nothing.
+# ===========================================================================
+RESET
+EXPECT RECORDS=0
+can you show me that on my board
+
+
+# ===========================================================================
+# C — THE CENSUS'S CERTIFICATE PAIR (BODY_DIFFERS_FROM)
+#
+# (d.0) P6 T7 was the first true positive `deaf` ever produced in this repo:
+# two questions with different declared meanings rendering THE SAME BODY,
+# because `certificate-testimony` and `data-problems` shared an assembler that
+# was never handed the route id and was structurally incapable of knowing which
+# question it was answering. The micro-session fixed the route.
+#
+# The bank that was watching this pair scored 5/5 while it was broken. It graded
+# the routing, and the routing was never wrong — two questions did reach two
+# routes, and then one assembler answered both. BODY_DIFFERS_FROM is the
+# assertion that was missing, and this block is the reason the ruling exists.
+# ===========================================================================
+RESET
+EXPECT intent=data-problems route=data-problems
+are there any data quality problems
+
+EXPECT intent=certificate-testimony route=certificate-testimony BODY_DIFFERS_FROM=1
+what does the certificate say
+
+
+# ===========================================================================
+# D — THE DEAF PAIR'S OTHER SIDE (BODY_SAME_AS)
+#
+# The false positive the (d.1) gate removed: a deictic follow-up that correctly
+# re-resolves to the same subject and correctly gets the same answer. `deaf`
+# used to answer it with "I'm not understanding what you're asking".
+#
+# BODY_SAME_AS=1 pins the premise the gate rests on — that these two turns ARE
+# one answer twice. If this ever starts differing, `deaf`'s silence here stops
+# being correct behaviour and starts being luck, and nothing else in the suite
+# would notice.
+# ===========================================================================
+RESET
+SELECT order=ORD-000128 seq=20
+EXPECT intent=why-here route=why-here
+why is ORD-000128 op20 placed where it is
+
+EXPECT route=why-here BODY_SAME_AS=1
+so why is it there
+
+
+# ===========================================================================
+# E — THE FOUNDER'S CLARIFY-CARRY PAIR (R-LD6 clause (5))
+#
+# From the founder freewheel round, and reproduced as a HELD PAIR one word
+# apart. Arm 1's opener draws a facts-vs-action CLARIFY; arm 2's does not. In
+# BOTH arms the parse resolves ORD-000252 from the planner's own typing.
+#
+# Measured 3/3 BEFORE the fix: arm 1 carried nothing into turn 2 — the carry
+# channel read the BUNDLE, and a clarify's bundle truthfully names no subject —
+# so the two arms' follow-ups landed on DIFFERENT ROUTES (`why-here` vs
+# `start-reason`) from the identical sentence. Arm 1 only resolved at all
+# because the parse model re-read the order out of the RECENT TURNS block.
+#
+# What is graded is that the two arms now AGREE. That is the whole property:
+# a subject is a property of the planner's sentence and survives the route that
+# sentence drew.
+#
+# NB the two arms cannot be one conversation and cannot use a relational form to
+# compare each other — they are separated by a RESET, by construction, because
+# each needs a cold opener. Two blocks stating the same expectation is what
+# "these two must agree" looks like across a reset, and it is a real bound of
+# the format rather than an oversight.
+# ===========================================================================
+RESET
+EXPECT intent=why-on-machine route=CLARIFY
+why is ORD-000252 on CUT-01 when it is
+
+EXPECT route=start-reason order=ORD-000252
+why is it scheduled when it is
+
+RESET
+EXPECT intent=why-on-machine route=why-on-machine
+why is ORD-000252 on CUT-01
+
+EXPECT route=start-reason order=ORD-000252
+why is it scheduled when it is

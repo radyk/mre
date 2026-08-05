@@ -8,6 +8,23 @@
 # WHAT THIS BANK CAN GRADE, AND WHAT IT CANNOT — READ THIS FIRST
 # ===========================================================================
 #
+# *** SUPERSEDED IN PART, 2026-08-05, R-EX2 (Session 4A teaching-graft (d.2)).
+#     This section was written as the measured Q7 input and it did its job: the
+#     three gaps it names below — no way to say "turn 2 opened turn 1's
+#     records", no way to say "turn 2 did NOT open the board's worst gate
+#     finding", and NO WAY TO REBIND THE BOARD AT ALL — are the three things
+#     R-EX2 built. They are `RECORDS_FROM=n`, `RECORDS=n` and `REBIND
+#     <schedule>`, and the specimens are encoded in `sweep_relational_v1.txt`
+#     and `sweep_crossversion_v1.txt`.
+#
+#     THIS FILE IS LEFT AS IT WAS, deliberately. It is the committed evidence
+#     that the format could not express these things, and rewriting its
+#     expectations into the new forms would erase the argument that got them
+#     built. Its blocks still grade what they always graded.
+#
+#     WHAT REMAINS TRUE below: prose is still not assertable and never will be
+#     (R-EX2 clause 3 makes that a ruling rather than a limitation). ***
+#
 # This is the measured input to Q7 (the bank-format decision, docs/07 §5b), and
 # it is written down here rather than in a design note because the gap is a
 # property of THESE probes, not a hypothesis.

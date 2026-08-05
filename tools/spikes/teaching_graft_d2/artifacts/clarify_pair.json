@@ -1,0 +1,185 @@
+[
+  {
+    "run": 1,
+    "arm": "A_clarify",
+    "t1_question": "why is ORD-000252 on CUT-01 when it is",
+    "t1_route": "CLARIFY",
+    "t1_parse_bound": [
+      "ORD-000252"
+    ],
+    "t1_subject_type": "clarify",
+    "t1_subject_name": "?",
+    "carry_into_t2": {
+      "order": "ORD-000252",
+      "machine": "CUT-01"
+    },
+    "t2_route": "start-reason",
+    "t2_intent": "start-reason",
+    "t2_subjects": [
+      {
+        "kind": "order",
+        "raw": "it",
+        "ref": "ORD-000252",
+        "source": "last-answer",
+        "pointed": true,
+        "op_seq": null
+      }
+    ],
+    "t2_note": "resolved against ORD-000252",
+    "t2_first_line": [
+      "ORD-000252 starts Tuesday (2026-01-27 11:15) because CUT-01 was busy: it was held by ORD-000222, high priority until 2026-01-27 11:15, so ORD-000252 took the next opening."
+    ]
+  },
+  {
+    "run": 1,
+    "arm": "B_control",
+    "t1_question": "why is ORD-000252 on CUT-01",
+    "t1_route": "why-on-machine",
+    "t1_parse_bound": [
+      "ORD-000252"
+    ],
+    "t1_subject_type": "demand",
+    "t1_subject_name": "ORD-000252",
+    "carry_into_t2": {
+      "order": "ORD-000252"
+    },
+    "t2_route": "start-reason",
+    "t2_intent": "start-reason",
+    "t2_subjects": [
+      {
+        "kind": "order",
+        "raw": "it",
+        "ref": "ORD-000252",
+        "source": "last-answer",
+        "pointed": true,
+        "op_seq": null
+      }
+    ],
+    "t2_note": "resolved against ORD-000252",
+    "t2_first_line": [
+      "ORD-000252 starts Tuesday (2026-01-27 11:15) because CUT-01 was busy: it was held by ORD-000222, high priority until 2026-01-27 11:15, so ORD-000252 took the next opening."
+    ]
+  },
+  {
+    "run": 2,
+    "arm": "A_clarify",
+    "t1_question": "why is ORD-000252 on CUT-01 when it is",
+    "t1_route": "CLARIFY",
+    "t1_parse_bound": [
+      "ORD-000252"
+    ],
+    "t1_subject_type": "clarify",
+    "t1_subject_name": "?",
+    "carry_into_t2": {
+      "order": "ORD-000252",
+      "machine": "CUT-01"
+    },
+    "t2_route": "start-reason",
+    "t2_intent": "start-reason",
+    "t2_subjects": [
+      {
+        "kind": "order",
+        "raw": "it",
+        "ref": "ORD-000252",
+        "source": "last-answer",
+        "pointed": true,
+        "op_seq": null
+      }
+    ],
+    "t2_note": "resolved against ORD-000252",
+    "t2_first_line": [
+      "ORD-000252 starts Tuesday (2026-01-27 11:15) because CUT-01 was busy: it was held by ORD-000222, high priority until 2026-01-27 11:15, so ORD-000252 took the next opening."
+    ]
+  },
+  {
+    "run": 2,
+    "arm": "B_control",
+    "t1_question": "why is ORD-000252 on CUT-01",
+    "t1_route": "why-on-machine",
+    "t1_parse_bound": [
+      "ORD-000252"
+    ],
+    "t1_subject_type": "demand",
+    "t1_subject_name": "ORD-000252",
+    "carry_into_t2": {
+      "order": "ORD-000252"
+    },
+    "t2_route": "start-reason",
+    "t2_intent": "start-reason",
+    "t2_subjects": [
+      {
+        "kind": "order",
+        "raw": "it",
+        "ref": "ORD-000252",
+        "source": "last-answer",
+        "pointed": true,
+        "op_seq": null
+      }
+    ],
+    "t2_note": "resolved against ORD-000252",
+    "t2_first_line": [
+      "ORD-000252 starts Tuesday (2026-01-27 11:15) because CUT-01 was busy: it was held by ORD-000222, high priority until 2026-01-27 11:15, so ORD-000252 took the next opening."
+    ]
+  },
+  {
+    "run": 3,
+    "arm": "A_clarify",
+    "t1_question": "why is ORD-000252 on CUT-01 when it is",
+    "t1_route": "CLARIFY",
+    "t1_parse_bound": [
+      "ORD-000252"
+    ],
+    "t1_subject_type": "clarify",
+    "t1_subject_name": "?",
+    "carry_into_t2": {
+      "order": "ORD-000252",
+      "machine": "CUT-01"
+    },
+    "t2_route": "start-reason",
+    "t2_intent": "start-reason",
+    "t2_subjects": [
+      {
+        "kind": "order",
+        "raw": "it",
+        "ref": "ORD-000252",
+        "source": "last-answer",
+        "pointed": true,
+        "op_seq": null
+      }
+    ],
+    "t2_note": "resolved against ORD-000252",
+    "t2_first_line": [
+      "ORD-000252 starts Tuesday (2026-01-27 11:15) because CUT-01 was busy: it was held by ORD-000222, high priority until 2026-01-27 11:15, so ORD-000252 took the next opening."
+    ]
+  },
+  {
+    "run": 3,
+    "arm": "B_control",
+    "t1_question": "why is ORD-000252 on CUT-01",
+    "t1_route": "why-on-machine",
+    "t1_parse_bound": [
+      "ORD-000252"
+    ],
+    "t1_subject_type": "demand",
+    "t1_subject_name": "ORD-000252",
+    "carry_into_t2": {
+      "order": "ORD-000252"
+    },
+    "t2_route": "start-reason",
+    "t2_intent": "start-reason",
+    "t2_subjects": [
+      {
+        "kind": "order",
+        "raw": "it",
+        "ref": "ORD-000252",
+        "source": "last-answer",
+        "pointed": true,
+        "op_seq": null
+      }
+    ],
+    "t2_note": "resolved against ORD-000252",
+    "t2_first_line": [
+      "ORD-000252 starts Tuesday (2026-01-27 11:15) because CUT-01 was busy: it was held by ORD-000222, high priority until 2026-01-27 11:15, so ORD-000252 took the next opening."
+    ]
+  }
+]

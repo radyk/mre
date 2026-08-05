@@ -1,0 +1,286 @@
+[
+  {
+    "label": "L3b LAST-ANSWER (late-order -> demand)",
+    "turns": [
+      {
+        "n": 1,
+        "question": "why is ORD-000252 late",
+        "route": "late-order",
+        "intent": "late-order",
+        "subject_type": "demand",
+        "subject_name": "ORD-000252",
+        "resolution_note": "",
+        "subjects": [
+          {
+            "kind": "order",
+            "raw": "ORD-000252",
+            "ref": "ORD-000252",
+            "source": "utterance",
+            "pointed": false,
+            "op_seq": null
+          }
+        ],
+        "sent_selection": {},
+        "sent_last_answered": {},
+        "sent_history": [],
+        "text": "No — ORD-000252 is on time. It finished 3.3 days early (due 2026-01-31T23:59:59Z).\n\nEvidence chain (5 record(s)):\n\n[1] DECISION  | INTERPRETATION  (planning)\n    Recorded driver: its due date was driving the schedule\n    [record: 2e14e911...]\n\n[2] DECISION  | ASSIGNMENT  (scheduling)\n    Assigned to: CUT-01\n    Recorded driver: it was the cheaper option once every cost was weighed\n    Note: This is a reconstruction from the solved schedule.\n    Alternative: CUT-02  - Would cost $23.25 more.\n    Alternative: CUT-03  - Would cost $54.25 more.\n    [record: c94583eb...]\n\n[3] DECISION  | ASSIGNMENT  (scheduling)\n    Assigned to: PAINT-01\n    Recorded driver: the machine was busy with other work\n    Note: This is a reconstruction from the solved schedule.\n    [record: b34cd1d4...]\n\n[4] METRIC  | lateness_minutes  (scheduling)\n    Value: -4714 min (-78.6h) (ORD-000252)\n    [record: c2b4e2af...]\n\n[5] METRIC  | projected_completion_epoch  (scheduling)\n    Value: 2026-01-28 17:25 UTC (ORD-000252)\n    [record: 4869b449...]\n\nNote: the cost figures above are not proven optimal — the solver ran out of budget with a gap of 89.6% still open, so a cheaper schedule may exist and could be up to that much cheaper.\n\n[rendered by: template | register: testimony]"
+      },
+      {
+        "n": 2,
+        "question": "why cant this be moved earlier",
+        "route": "what-would-change",
+        "intent": "what-would-change",
+        "subject_type": "counterfactual",
+        "subject_name": "ORD-000252",
+        "resolution_note": "resolved against ORD-000252",
+        "subjects": [
+          {
+            "kind": "order",
+            "raw": "this",
+            "ref": "ORD-000252",
+            "source": "last-answer",
+            "pointed": true,
+            "op_seq": null
+          }
+        ],
+        "sent_selection": {},
+        "sent_last_answered": {
+          "order": "ORD-000252"
+        },
+        "sent_history": [
+          {
+            "question": "why is ORD-000252 late",
+            "resolved_question": "why is ORD-000252 late",
+            "route": "late-order",
+            "order": null,
+            "machine": null,
+            "op_seq": null
+          }
+        ],
+        "text": "Answering about ORD-000252 op10 on CUT-01 — the first of its 2 operations.\nORD-000252 op10 needs 7h45m in one piece. The last stretch before where it sits that was too short ran Friday 2026-01-23 16:00–16:59 on CUT-01 — 59m, 6h46m short.\n\nTo fit Friday, one of these has to change:\n  op10 declared splittable with a minimum piece of 59 minutes or less  [docs/05 C3 · docs/06 §5.3 routing_lines.csv splittable / min_chunk_minutes]\n      the run phase becomes resumable, so the 59m still open is enough to START it — R-C3 caps the piece at half the 7h45m it needs (465/2 = 232)\n  the operation runs on CUT-02, CUT-03 instead  [docs/05 B1 · docs/06 §5.3 routing_lines.csv alternative rows]\n      CUT-03 has 7h45m of open, unheld time from Thu 2026-01-08 07:00 — whether the solver would prefer it is a cost question I cannot answer without re-solving\n\nIf any of these changed, the next bound would be the machine's calendar [docs/05 C1/C2] at Monday 2026-01-05 07:00 — that removes the barrier; it does not place the operation there.\n\nCan't be priced as a change (it would take a re-solve): B7/B8 sequence-dependent changeover.\n\nNot weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.\n[rendered by: template | register: testimony]"
+      }
+    ]
+  },
+  {
+    "label": "PART C founder sequence",
+    "turns": [
+      {
+        "n": 1,
+        "question": "why is ORD-000252 on CUT-01 when it is",
+        "route": "CLARIFY",
+        "intent": "why-on-machine",
+        "subject_type": "clarify",
+        "subject_name": "?",
+        "resolution_note": "",
+        "subjects": [
+          {
+            "kind": "order",
+            "raw": "ORD-000252",
+            "ref": "ORD-000252",
+            "source": "utterance",
+            "pointed": false,
+            "op_seq": null
+          },
+          {
+            "kind": "machine",
+            "raw": "CUT-01",
+            "ref": "CUT-01",
+            "source": "utterance",
+            "pointed": false,
+            "op_seq": null
+          }
+        ],
+        "sent_selection": {},
+        "sent_last_answered": {},
+        "sent_history": [],
+        "text": "I need one more detail to answer \"why is ORD-000252 on CUT-01 when it is\".\n\"when it is — the sentence is incomplete\" looks like it refers to a group, not one order — I won't guess which. Did you mean the flagged orders? Ask e.g. \"which orders have issues?\" or name a specific order.\n\n[rendered by: template | register: testimony]"
+      },
+      {
+        "n": 2,
+        "question": "is ord 252 late",
+        "route": "late-order",
+        "intent": "late-order",
+        "subject_type": "demand",
+        "subject_name": "ORD-000252",
+        "resolution_note": "assuming ORD-000252",
+        "subjects": [
+          {
+            "kind": "order",
+            "raw": "ord 252",
+            "ref": "ORD-000252",
+            "source": "utterance",
+            "pointed": false,
+            "op_seq": null
+          }
+        ],
+        "sent_selection": {},
+        "sent_last_answered": {},
+        "sent_history": [
+          {
+            "question": "why is ORD-000252 on CUT-01 when it is",
+            "resolved_question": "why is ORD-000252 on CUT-01 when it is",
+            "route": "CLARIFY",
+            "order": null,
+            "machine": null,
+            "op_seq": null
+          }
+        ],
+        "text": "No — ORD-000252 is on time. It finished 3.3 days early (due 2026-01-31T23:59:59Z).\n\nEvidence chain (5 record(s)):\n\n[1] DECISION  | INTERPRETATION  (planning)\n    Recorded driver: its due date was driving the schedule\n    [record: 2e14e911...]\n\n[2] DECISION  | ASSIGNMENT  (scheduling)\n    Assigned to: CUT-01\n    Recorded driver: it was the cheaper option once every cost was weighed\n    Note: This is a reconstruction from the solved schedule.\n    Alternative: CUT-02  - Would cost $23.25 more.\n    Alternative: CUT-03  - Would cost $54.25 more.\n    [record: c94583eb...]\n\n[3] DECISION  | ASSIGNMENT  (scheduling)\n    Assigned to: PAINT-01\n    Recorded driver: the machine was busy with other work\n    Note: This is a reconstruction from the solved schedule.\n    [record: b34cd1d4...]\n\n[4] METRIC  | lateness_minutes  (scheduling)\n    Value: -4714 min (-78.6h) (ORD-000252)\n    [record: c2b4e2af...]\n\n[5] METRIC  | projected_completion_epoch  (scheduling)\n    Value: 2026-01-28 17:25 UTC (ORD-000252)\n    [record: 4869b449...]\n\nNote: the cost figures above are not proven optimal — the solver ran out of budget with a gap of 89.6% still open, so a cheaper schedule may exist and could be up to that much cheaper.\n\n[rendered by: template | register: testimony]"
+      },
+      {
+        "n": 3,
+        "question": "why is it scheduled when it is",
+        "route": "start-reason",
+        "intent": "start-reason",
+        "subject_type": "start_reason",
+        "subject_name": "ORD-000252",
+        "resolution_note": "resolved against ORD-000252",
+        "subjects": [
+          {
+            "kind": "order",
+            "raw": "it",
+            "ref": "ORD-000252",
+            "source": "last-answer",
+            "pointed": true,
+            "op_seq": null
+          }
+        ],
+        "sent_selection": {},
+        "sent_last_answered": {
+          "order": "ORD-000252"
+        },
+        "sent_history": [
+          {
+            "question": "why is ORD-000252 on CUT-01 when it is",
+            "resolved_question": "why is ORD-000252 on CUT-01 when it is",
+            "route": "CLARIFY",
+            "order": null,
+            "machine": null,
+            "op_seq": null
+          },
+          {
+            "question": "is ord 252 late",
+            "resolved_question": "is ORD-000252 late",
+            "route": "late-order",
+            "order": null,
+            "machine": null,
+            "op_seq": null
+          }
+        ],
+        "text": "ORD-000252 starts Tuesday (2026-01-27 11:15) because CUT-01 was busy: it was held by ORD-000222, high priority until 2026-01-27 11:15, so ORD-000252 took the next opening.\n[rendered by: template | register: testimony]"
+      }
+    ]
+  },
+  {
+    "label": "PART C control (no clarify in front)",
+    "turns": [
+      {
+        "n": 1,
+        "question": "why is ORD-000252 on CUT-01",
+        "route": "why-on-machine",
+        "intent": "why-on-machine",
+        "subject_type": "demand",
+        "subject_name": "ORD-000252",
+        "resolution_note": "",
+        "subjects": [
+          {
+            "kind": "order",
+            "raw": "ORD-000252",
+            "ref": "ORD-000252",
+            "source": "utterance",
+            "pointed": false,
+            "op_seq": null
+          },
+          {
+            "kind": "machine",
+            "raw": "CUT-01",
+            "ref": "CUT-01",
+            "source": "utterance",
+            "pointed": false,
+            "op_seq": null
+          }
+        ],
+        "sent_selection": {},
+        "sent_last_answered": {},
+        "sent_history": [],
+        "text": "ORD-000252 is on CUT-01 because it was the cheaper option once every cost was weighed.\nORD-000252 has 1 other step(s) in this window, each with its own machine and its own reason — ask about one by naming it (e.g. \"why is ORD-000252 op<seq> on <machine>?\").\n\nEvidence chain (1 record(s)):\n\n[1] DECISION  | ASSIGNMENT  (scheduling)\n    Assigned to: CUT-01\n    Recorded driver: it was the cheaper option once every cost was weighed\n    Note: This is a reconstruction from the solved schedule.\n    Alternative: CUT-02  - Would cost $23.25 more.\n    Alternative: CUT-03  - Would cost $54.25 more.\n    [record: c94583eb...]\n\nNote: the cost figures above are not proven optimal — the solver ran out of budget with a gap of 89.6% still open, so a cheaper schedule may exist and could be up to that much cheaper.\n\n[rendered by: template | register: testimony]"
+      },
+      {
+        "n": 2,
+        "question": "is ord 252 late",
+        "route": "late-order",
+        "intent": "late-order",
+        "subject_type": "demand",
+        "subject_name": "ORD-000252",
+        "resolution_note": "resolved against ORD-000252",
+        "subjects": [
+          {
+            "kind": "order",
+            "raw": "ord 252",
+            "ref": "ORD-000252",
+            "source": "last-answer",
+            "pointed": true,
+            "op_seq": null
+          }
+        ],
+        "sent_selection": {},
+        "sent_last_answered": {
+          "order": "ORD-000252"
+        },
+        "sent_history": [
+          {
+            "question": "why is ORD-000252 on CUT-01",
+            "resolved_question": "why is ORD-000252 on CUT-01",
+            "route": "why-on-machine",
+            "order": null,
+            "machine": null,
+            "op_seq": null
+          }
+        ],
+        "text": "No — ORD-000252 is on time. It finished 3.3 days early (due 2026-01-31T23:59:59Z).\n\nEvidence chain (5 record(s)):\n\n[1] DECISION  | INTERPRETATION  (planning)\n    Recorded driver: its due date was driving the schedule\n    [record: 2e14e911...]\n\n[2] DECISION  | ASSIGNMENT  (scheduling)\n    Assigned to: CUT-01\n    Recorded driver: it was the cheaper option once every cost was weighed\n    Note: This is a reconstruction from the solved schedule.\n    Alternative: CUT-02  - Would cost $23.25 more.\n    Alternative: CUT-03  - Would cost $54.25 more.\n    [record: c94583eb...]\n\n[3] DECISION  | ASSIGNMENT  (scheduling)\n    Assigned to: PAINT-01\n    Recorded driver: the machine was busy with other work\n    Note: This is a reconstruction from the solved schedule.\n    [record: b34cd1d4...]\n\n[4] METRIC  | lateness_minutes  (scheduling)\n    Value: -4714 min (-78.6h) (ORD-000252)\n    [record: c2b4e2af...]\n\n[5] METRIC  | projected_completion_epoch  (scheduling)\n    Value: 2026-01-28 17:25 UTC (ORD-000252)\n    [record: 4869b449...]\n\nNote: the cost figures above are not proven optimal — the solver ran out of budget with a gap of 89.6% still open, so a cheaper schedule may exist and could be up to that much cheaper.\n\n[rendered by: template | register: testimony]"
+      },
+      {
+        "n": 3,
+        "question": "why is it scheduled when it is",
+        "route": "start-reason",
+        "intent": "start-reason",
+        "subject_type": "start_reason",
+        "subject_name": "ORD-000252",
+        "resolution_note": "resolved against ORD-000252",
+        "subjects": [
+          {
+            "kind": "order",
+            "raw": "it",
+            "ref": "ORD-000252",
+            "source": "last-answer",
+            "pointed": true,
+            "op_seq": null
+          }
+        ],
+        "sent_selection": {},
+        "sent_last_answered": {
+          "order": "ORD-000252"
+        },
+        "sent_history": [
+          {
+            "question": "why is ORD-000252 on CUT-01",
+            "resolved_question": "why is ORD-000252 on CUT-01",
+            "route": "why-on-machine",
+            "order": null,
+            "machine": null,
+            "op_seq": null
+          },
+          {
+            "question": "is ord 252 late",
+            "resolved_question": "is ORD-000252 late",
+            "route": "late-order",
+            "order": null,
+            "machine": null,
+            "op_seq": null
+          }
+        ],
+        "text": "ORD-000252 starts Tuesday (2026-01-27 11:15) because CUT-01 was busy: it was held by ORD-000222, high priority until 2026-01-27 11:15, so ORD-000252 took the next opening.\n[rendered by: template | register: testimony]"
+      }
+    ]
+  }
+]

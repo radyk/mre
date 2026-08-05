@@ -82,10 +82,14 @@ def main(argv: list[str] | None = None) -> int:
     target = _resolve_target(args)
 
     use_llm = {"auto": None, "on": True, "off": False}[args.llm]
+    # R-EX2: a bank may REBIND to another schedule mid-sequence, which needs a
+    # data root to resolve against. `--out-dir` runs have none, and a REBIND
+    # there is a loud finding rather than a silent continuation.
     runner = ExamRunner(
         target, use_llm=use_llm,
         ledger_path=Path(args.ledger) if args.ledger else None,
-        per_question_timeout=args.timeout, session_id=args.session_id)
+        per_question_timeout=args.timeout, session_id=args.session_id,
+        data_root=args.data_root or _env("MRE_DATA_ROOT") or None)
 
     script = parse_script(Path(args.questions).read_text(encoding="utf-8"))
     result = runner.run(script, limit=args.limit)

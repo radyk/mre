@@ -242,10 +242,28 @@ grades conversation. The six signals:
                       question -- what a planner clicking it would hit -- and is
                       reported SKIPPED, never clean, when no parser is available.
   expect-miss      -- a bank's own EXPECT line did not match what the parse named
-                      or where the dispatch sent it (Session 4A.5a CU3). ROUTING
-                      only: intent, typed subjects, follow-up linkage, route. It
-                      never grades prose, and a miss is a finding to triage, not
-                      a verdict.
+                      or where the dispatch sent it (Session 4A.5a CU3), OR a
+                      RELATIONAL expectation about an earlier turn did not hold
+                      (R-EX2, Session 4A teaching-graft (d.2)). ROUTES AND
+                      RELATIONS: intent, typed subjects, follow-up linkage,
+                      route; and body identity/distinctness by fingerprint
+                      (BODY_SAME_AS / BODY_DIFFERS_FROM), record-set provenance
+                      (RECORDS_FROM) and record count (RECORDS).
+                      IT NEVER GRADES PROSE, and that division is R-EX2 clause
+                      (3): body CONTENT is guard-file territory, because a
+                      string assertion against authored copy in a bank is a
+                      weaker duplicate of a unit test that breaks on every
+                      legitimate copy edit. `EXPECT_KEYS` is a closed set, so a
+                      prose expectation cannot be written down at all.
+                      A miss is a finding to triage, not a verdict -- INCLUDING
+                      a miss caused by the BANK (an index past the end of the
+                      conversation, or a reference to a turn that errored).
+                      Those are misses on purpose: a bank that grades nothing
+                      must never read like a bank that passed.
+  rebind-failed    -- a REBIND directive could not resolve its schedule (no data
+                      root, unknown id, or an empty entity vocabulary). The run
+                      STOPS: a transcript naming one board while grading another
+                      is worse than no transcript (R-EX2, (d.2)).
   target-unloadable-- the pinned run did not load; NO questions were fired
                       (the instrument refuses to emit garbage)
   shadow-divergence-- a PROMOTED route on probation contradicted its synthesis

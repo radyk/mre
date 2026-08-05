@@ -1,0 +1,186 @@
+[
+  {
+    "label": "L1 CARD",
+    "turns": [
+      {
+        "n": 1,
+        "question": "why cant this be moved earlier",
+        "route": "why-here",
+        "intent": "why-here",
+        "subject_type": "why_here",
+        "subject_name": "ORD-000252",
+        "resolution_note": "resolved against ORD-000252 (from the move you have open)",
+        "subjects": [
+          {
+            "kind": "order",
+            "raw": "ORD-000252",
+            "ref": "ORD-000252",
+            "source": "card",
+            "pointed": true,
+            "op_seq": null
+          }
+        ],
+        "sent_selection": {},
+        "sent_last_answered": {},
+        "sent_history": [],
+        "text": "Answering about ORD-000252 op10 on CUT-01 — the first of its 2 operations.\nORD-000252 op10 couldn't start before Tuesday 2026-01-27 11:15: it needs 7h45m in one piece and CUT-01 had only 59m left when it came free at 2026-01-23 16:00, and it can't be split.\n\nWhat pushed it, in order:\n  2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00\n  2026-01-05 07:00  the machine's calendar [docs/05 C1/C2] — CUT-01 is closed until 2026-01-05 07:00\n  2026-01-27 11:15  no window long enough [docs/05 C3] — it needs 7h45m in one piece and CUT-01 had only 59m left when it came free at 2026-01-23 16:00\n\nNot weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.\n[rendered by: template | register: testimony]"
+      }
+    ]
+  },
+  {
+    "label": "L2 SELECTION",
+    "turns": [
+      {
+        "n": 1,
+        "question": "why cant this be moved earlier",
+        "route": "why-here",
+        "intent": "why-here",
+        "subject_type": "why_here",
+        "subject_name": "ORD-000252",
+        "resolution_note": "resolved against ORD-000252 (from board selection); and about op10, the operation selected on the board",
+        "subjects": [
+          {
+            "kind": "order",
+            "raw": "this",
+            "ref": "ORD-000252",
+            "source": "selection",
+            "pointed": true,
+            "op_seq": null
+          }
+        ],
+        "sent_selection": {
+          "order": "ORD-000252",
+          "machine": "CUT-01",
+          "op_seq": 10
+        },
+        "sent_last_answered": {},
+        "sent_history": [],
+        "text": "ORD-000252 op10 couldn't start before Tuesday 2026-01-27 11:15: it needs 7h45m in one piece and CUT-01 had only 59m left when it came free at 2026-01-23 16:00, and it can't be split.\n\nWhat pushed it, in order:\n  2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00\n  2026-01-05 07:00  the machine's calendar [docs/05 C1/C2] — CUT-01 is closed until 2026-01-05 07:00\n  2026-01-27 11:15  no window long enough [docs/05 C3] — it needs 7h45m in one piece and CUT-01 had only 59m left when it came free at 2026-01-23 16:00\n\nNot weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.\n[rendered by: template | register: testimony]"
+      }
+    ]
+  },
+  {
+    "label": "L3 LAST-ANSWER",
+    "turns": [
+      {
+        "n": 1,
+        "question": "when does ORD-000252 finish",
+        "route": "order-schedule",
+        "intent": "order-schedule",
+        "subject_type": "schedule",
+        "subject_name": "ORD-000252",
+        "resolution_note": "",
+        "subjects": [
+          {
+            "kind": "order",
+            "raw": "ORD-000252",
+            "ref": "ORD-000252",
+            "source": "utterance",
+            "pointed": false,
+            "op_seq": null
+          }
+        ],
+        "sent_selection": {},
+        "sent_last_answered": {},
+        "sent_history": [],
+        "text": "ORD-000252 completes 2026-01-28 17:25 — 3.3 day(s) early (due 2026-01-31).\nIt starts 2026-01-27 11:15.\n\nORD-000252 runs across 2 operation(s):\n\n  [CUT-01]\n    seq= 10  2026-01-27 11:15 -> 2026-01-27 19:00  ORD-000252\n  [PAINT-01]\n    seq= 20  2026-01-28 09:35 -> 2026-01-28 17:25  ORD-000252\n[rendered by: template | register: testimony]"
+      },
+      {
+        "n": 2,
+        "question": "why cant this be moved earlier",
+        "route": "CLARIFY",
+        "intent": "why-here",
+        "subject_type": "clarify",
+        "subject_name": "?",
+        "resolution_note": "",
+        "subjects": [
+          {
+            "kind": "order",
+            "raw": "this",
+            "ref": null,
+            "source": "utterance",
+            "pointed": true,
+            "op_seq": null
+          }
+        ],
+        "sent_selection": {},
+        "sent_last_answered": {},
+        "sent_history": [
+          {
+            "question": "when does ORD-000252 finish",
+            "resolved_question": "when does ORD-000252 finish",
+            "route": "order-schedule",
+            "order": null,
+            "machine": null,
+            "op_seq": null
+          }
+        ],
+        "text": "I need one more detail to answer \"why cant this be moved earlier\".\nWhich order, machine, or customer do you mean? Ask it again naming one, e.g. \"why is that order late?\" becomes \"why is <order> late?\".\n\n[rendered by: template | register: testimony]"
+      }
+    ]
+  },
+  {
+    "label": "L4 HISTORY",
+    "turns": [
+      {
+        "n": 1,
+        "question": "why is this here",
+        "route": "why-here",
+        "intent": "why-here",
+        "subject_type": "why_here",
+        "subject_name": "ORD-000252",
+        "resolution_note": "resolved against ORD-000252 (from board selection); and about op10, the operation selected on the board",
+        "subjects": [
+          {
+            "kind": "order",
+            "raw": "this order",
+            "ref": "ORD-000252",
+            "source": "selection",
+            "pointed": true,
+            "op_seq": null
+          }
+        ],
+        "sent_selection": {
+          "order": "ORD-000252",
+          "machine": "CUT-01",
+          "op_seq": 10
+        },
+        "sent_last_answered": {},
+        "sent_history": [],
+        "text": "ORD-000252 op10 couldn't start before Tuesday 2026-01-27 11:15: it needs 7h45m in one piece and CUT-01 had only 59m left when it came free at 2026-01-23 16:00, and it can't be split.\n\nWhat pushed it, in order:\n  2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00\n  2026-01-05 07:00  the machine's calendar [docs/05 C1/C2] — CUT-01 is closed until 2026-01-05 07:00\n  2026-01-27 11:15  no window long enough [docs/05 C3] — it needs 7h45m in one piece and CUT-01 had only 59m left when it came free at 2026-01-23 16:00\n\nNot weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.\n[rendered by: template | register: testimony]"
+      },
+      {
+        "n": 2,
+        "question": "why cant this be moved earlier",
+        "route": "why-here",
+        "intent": "why-here",
+        "subject_type": "why_here",
+        "subject_name": "ORD-000252",
+        "resolution_note": "resolved against ORD-000252 (from earlier in this conversation)",
+        "subjects": [
+          {
+            "kind": "order",
+            "raw": "this",
+            "ref": "ORD-000252",
+            "source": "history",
+            "pointed": true,
+            "op_seq": null
+          }
+        ],
+        "sent_selection": {},
+        "sent_last_answered": {},
+        "sent_history": [
+          {
+            "question": "why is this here",
+            "resolved_question": "why is ORD-000252 placed where it is?",
+            "route": "why-here",
+            "order": "ORD-000252",
+            "machine": "CUT-01",
+            "op_seq": 10
+          }
+        ],
+        "text": "Answering about ORD-000252 op10 on CUT-01 — the first of its 2 operations.\nORD-000252 op10 couldn't start before Tuesday 2026-01-27 11:15: it needs 7h45m in one piece and CUT-01 had only 59m left when it came free at 2026-01-23 16:00, and it can't be split.\n\nWhat pushed it, in order:\n  2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00\n  2026-01-05 07:00  the machine's calendar [docs/05 C1/C2] — CUT-01 is closed until 2026-01-05 07:00\n  2026-01-27 11:15  no window long enough [docs/05 C3] — it needs 7h45m in one piece and CUT-01 had only 59m left when it came free at 2026-01-23 16:00\n\nNot weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.\n[rendered by: template | register: testimony]"
+      }
+    ]
+  }
+]

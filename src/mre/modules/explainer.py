@@ -2886,6 +2886,23 @@ class Explainer:
             # must not read as "the machine is merely busy".
             "no_later_kind": no_later_kind,
             "closes_at": _fmt_dt(closes_at) if closes_at else None,
+            # W4's FOURTH SITE (Session 4A teaching-graft (d.2), rider R1).
+            # (e2) §8(a) named `mobility_lead_line`'s earlier-open branch as the
+            # fourth emitter of "nothing was holding it back" and could not
+            # guard it, because this payload's fifteen keys held no driver and
+            # plumbing one is a change to what the floor COMPUTES. It is not: the
+            # analysis is ALREADY an argument to this method, and this is the
+            # same `chosen_driver` the other three sites read. Sixteen keys.
+            #
+            # SIZED BEFORE IT WAS FIXED, and the sizing is the whole story. On
+            # the DEMO BOARD the count is 0 of 386 — and that zero is a
+            # tautology, because `earlier-open` needs `later_at` to be None,
+            # which no plant that keeps working produces. On the FENCED SPECIMEN
+            # WORLD, the only board where this branch can render at all, it is
+            # **1 of 1**: ORD-EARLY op10 on BOX-01, driver CAPACITY_BLOCKED. So
+            # every time that sentence has ever rendered against a solve, it has
+            # contradicted the record sitting beside it.
+            "chosen_driver": getattr(analysis, "chosen_driver", None),
         }
 
     def _no_later_reason(self, machine: Optional[str],

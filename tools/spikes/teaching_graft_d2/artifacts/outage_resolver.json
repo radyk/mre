@@ -1,0 +1,9 @@
+{
+  "carry_at_outage": {
+    "order": "ORD-000252"
+  },
+  "t2_route": "OUTAGE",
+  "t2_subjects": [],
+  "t2_subject_name": "the ask layer",
+  "t2_text": "I can't reach my language model right now, so I couldn't read your question at all. This is an outage on my side, not a limit of what I can answer.\n\nThe board, the schedule and everything you can click still work — nothing about the plan depends on me being able to talk.\nTry me again in a moment.\n\n[rendered by: authored copy — the language model was unreachable | register: system]"
+}

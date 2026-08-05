@@ -1,0 +1,79 @@
+# AI EXAM BANK — THE CROSS-VERSION PAIR (R-EX2's `REBIND`, R-MT1's specimen)
+# version  : v1
+# generated: 2026-08-05  (Session 4A teaching-graft (d.2))
+#
+# ===========================================================================
+# THIS BANK NAMES ITS WORLDS, AND THAT IS UNUSUAL — READ THIS FIRST
+# ===========================================================================
+#
+# Every other bank in this directory is board-agnostic: it is pointed at one
+# schedule with `--run` and its entity ids happen to be that board's. This one
+# names TWO schedule ids in its own text, because what it grades is what happens
+# WHEN THE BOARD CHANGES UNDER A LIVE CONVERSATION, and a bank cannot express
+# that without saying which board it changes to.
+#
+#   requires : a data root holding BOTH
+#              `rolling-c32a6140-b6b`  — the demo board, 280 orders, ~100 late
+#              `rolling-e9ccc879-a4b`  — the exam world, 40 orders, ZERO late
+#   run with : python -m mre.ai_exam --run rolling-c32a6140-b6b \
+#                  --data-root ./_data --questions <this file> --transcript ...
+#
+# A `REBIND` that cannot resolve is a LOUD `rebind-failed` finding and the run
+# STOPS. It never continues quietly against the old world, because a transcript
+# that says one board while grading another is worse than no transcript.
+#
+# ===========================================================================
+# WHAT IT GRADES
+# ===========================================================================
+#
+# `main.js::onVersionChange` — what fires after an accepted edit, a boundary
+# move or a publish — rebinds the schedule, clears the board selection, and
+# TOUCHES NOTHING ELSE. History, the last-answered subject and the session id
+# all survive. The (d.0) recon (P4) drove that seam by hand and found board A's
+# 102 record ids, with board A's lateness figures, served to a planner looking at
+# board B: a board on which every one of those record ids is absent and no order
+# is late at all.
+#
+# R-MT1 fixed it by keying the three answer-bearing stores on
+# (session_id, schedule_id). This bank is the first thing in the repo that can
+# WATCH the fix, because until R-EX2 no bank format could cross a version
+# boundary — the (d.1) bank's own header names this as "not a missing EXPECT
+# key; it is a missing world".
+#
+# `RECORDS=0` is the assertion. After a rebind the prove-it must find nothing
+# for the board the planner is now looking at. Zero records is the correct
+# answer and the ONLY safe one; 102 was the defect.
+# ===========================================================================
+
+
+# ===========================================================================
+# A — DIRECTION A -> B : the demo board's late orders, then the exam world
+#
+# Turn 1 on the demo board serves ~100 lateness records. Turn 2 asks the most
+# natural follow-up there is, one gesture after the board changed underneath it.
+# ===========================================================================
+RESET
+EXPECT intent=late-orders route=late-orders
+how many orders are late and what is the total tardiness cost
+
+REBIND rolling-e9ccc879-a4b
+EXPECT followup=prove-it RECORDS=0
+show me the evidence for that
+
+
+# ===========================================================================
+# B — DIRECTION B -> A : the exam world first, then the demo board
+#
+# The reverse, because a store keyed correctly in one direction and not the
+# other is a store keyed by accident. The exam world has ZERO late orders, so
+# turn 1's own record set is empty here and the property under test is the same
+# one: what survives the rebind is nothing.
+# ===========================================================================
+RESET
+REBIND rolling-e9ccc879-a4b
+EXPECT intent=late-orders route=late-orders
+how many orders are late and what is the total tardiness cost
+
+REBIND rolling-c32a6140-b6b
+EXPECT followup=prove-it RECORDS=0
+show me the evidence for that

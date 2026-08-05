@@ -120,13 +120,20 @@ def offered_questions(answer: str) -> list[str]:
     return [m.group(1).strip() for m in _OFFERED_QUESTION.finditer(answer or "")]
 
 
-def _answer_body(answer: str) -> str:
-    """The answer with its ``[rendered by: … | register: …]`` footer stripped, for
-    the empty-body check."""
+def answer_body(answer: str) -> str:
+    """The answer with its ``[rendered by: … | register: …]`` footer stripped.
+
+    Used by the empty-body check AND, since R-EX2, as the input to the body
+    fingerprint — the same body both times, so "this answer is empty" and "these
+    two answers are the same" can never disagree about what the answer is."""
     lines = [ln for ln in (answer or "").splitlines()
              if not ln.strip().startswith("[rendered by:")
              and not ln.strip().startswith("[LLM validation failed")]
     return "\n".join(lines).strip()
+
+
+#: Kept as a private alias: this module's older callers and tests name it.
+_answer_body = answer_body
 
 
 def _subject_ref(parse: dict, kind: str) -> Optional[str]:
@@ -134,6 +141,11 @@ def _subject_ref(parse: dict, kind: str) -> Optional[str]:
         if s.get("kind") == kind and s.get("ref"):
             return str(s["ref"])
     return None
+
+
+#: Every R-EX2 key `check_expectation` must NOT try to read off a single turn.
+_RELATIONAL_KEYS = frozenset(
+    {"body_same_as", "body_differs_from", "records_from", "records"})
 
 
 def check_expectation(turn: Any) -> list[Finding]:
@@ -159,6 +171,12 @@ def check_expectation(turn: Any) -> list[Finding]:
     }
     misses = []
     for key, want in expect.items():
+        # R-EX2's relational keys reference an EARLIER TURN and are checked by
+        # `check_relational`, which has the conversation in hand. Falling through
+        # to `actual.get(key)` here would compare them against None and report a
+        # miss on every relational expectation ever written.
+        if key in _RELATIONAL_KEYS:
+            continue
         got = actual.get(key)
         # "a|b" means either is acceptable; "-" means the field must be absent.
         options = [w.strip() for w in str(want).split("|")]
@@ -166,6 +184,104 @@ def check_expectation(turn: Any) -> list[Finding]:
               else (str(got) in options))
         if not ok:
             misses.append(f"{key}: expected {want!r}, got {got!r}")
+    if not misses:
+        return []
+    return [Finding("expect-miss", turn.lineno, turn.question, "; ".join(misses))]
+
+
+#: R-EX2's relational keys, split by what they compare. Held here rather than
+#: imported from `script` so this module stays a pure checker over finished
+#: records; `script.TURN_REF_KEYS` is the PARSE-side copy and the two are pinned
+#: to each other by a test.
+_BODY_KEYS = ("body_same_as", "body_differs_from")
+
+
+def check_relational(turn: Any, prior: list) -> list[Finding]:
+    """R-EX2's relational expectations — the ones that reference an EARLIER TURN.
+
+    Session 4A teaching-graft (d.2). Three measured inputs asked for these and no
+    bank format could carry them: (d.1) §8, the shared-body census micro-session
+    (5/5 passing on a product that rendered one body for two different questions),
+    and (e) §8(f).
+
+    ``prior`` is the CURRENT conversation's finished turns, oldest first; an index
+    is 1-based into it. A reference the bank cannot resolve — a forward reference,
+    an index past the conversation's length, an index into a turn that errored —
+    is an ``expect-miss``, NOT a skip. A bank that grades nothing must never read
+    like a bank that passed, and that is the failure mode this whole format was
+    built because of.
+    """
+    expect = getattr(turn, "expect", None) or {}
+    if not expect:
+        return []
+    misses: list[str] = []
+
+    def _ref(key: str) -> Optional[Any]:
+        """The referenced turn, or None with a miss recorded."""
+        n = expect[key]
+        if not isinstance(n, int) or n < 1:
+            misses.append(f"{key}: {n!r} is not a 1-based turn index")
+            return None
+        if n > len(prior):
+            misses.append(
+                f"{key}: refers to turn {n}, but only {len(prior)} turn(s) "
+                "precede this one in this conversation")
+            return None
+        ref = prior[n - 1]
+        if getattr(ref, "error", None):
+            misses.append(f"{key}: turn {n} failed, so it has nothing to compare")
+            return None
+        return ref
+
+    for key in _BODY_KEYS:
+        if key not in expect:
+            continue
+        ref = _ref(key)
+        if ref is None:
+            continue
+        # AN EMPTY BODY HAS NO FINGERPRINT, and a relational claim about one is
+        # UNEVALUABLE rather than true or false — the third-state discipline
+        # this codebase has now applied at seven seams. Failing SAFE in BOTH
+        # directions is the point: two empty answers are two defects, and
+        # reading them as "the same answer" would let a pair of blank turns
+        # satisfy the assertion that pins `deaf`'s premise.
+        if not turn.body_sha or not ref.body_sha:
+            which = "this turn" if not turn.body_sha else f"turn {expect[key]}"
+            misses.append(
+                f"{key}: {which} has an EMPTY body, so there is nothing to "
+                "compare — an empty answer is a defect, not an answer")
+            continue
+        same = turn.body_sha == ref.body_sha
+        want_same = key == "body_same_as"
+        if same is not want_same:
+            misses.append(
+                f"{key}: turn {expect[key]} body {ref.body_sha[:12]}, this body "
+                f"{turn.body_sha[:12]} — "
+                + ("they differ" if want_same else "they are IDENTICAL"))
+
+    if "records_from" in expect:
+        ref = _ref("records_from")
+        if ref is not None:
+            mine, theirs = set(turn.record_ids or []), set(ref.record_ids or [])
+            if not mine:
+                # An empty set is a subset of everything. Grounding nothing is
+                # not grounding correctly, and this is the exact hole R-EX2's
+                # own note about RECORDS=0 names.
+                misses.append(
+                    f"records_from: this turn served NO records, so it did not "
+                    f"come from turn {expect['records_from']}")
+            elif not mine <= theirs:
+                stray = sorted(mine - theirs)
+                misses.append(
+                    f"records_from: {len(stray)} of {len(mine)} record(s) are not "
+                    f"in turn {expect['records_from']}'s answer "
+                    f"(e.g. {stray[0][:12]})")
+
+    if "records" in expect:
+        want = expect["records"]
+        if turn.record_count != want:
+            misses.append(f"records: expected {want}, got {turn.record_count}")
+
     if not misses:
         return []
     return [Finding("expect-miss", turn.lineno, turn.question, "; ".join(misses))]
@@ -228,8 +344,15 @@ def check_shadow(turn: Any) -> list[Finding]:
     return []
 
 
-def check_turn(turn: Any, vocab: Vocab) -> list[Finding]:
-    """All mechanical findings for one finished turn."""
+def check_turn(turn: Any, vocab: Vocab,
+               prior: Optional[list] = None) -> list[Finding]:
+    """All mechanical findings for one finished turn.
+
+    ``prior`` is the CURRENT conversation's earlier turns (oldest first), which
+    R-EX2's relational expectations index into. Omitted, the relational checks
+    simply have nothing to resolve against and every relational expectation
+    misses — which is the honest reading: a caller with no conversation in hand
+    cannot grade a claim about one."""
     findings: list[Finding] = []
     q = turn.question
 
@@ -271,6 +394,11 @@ def check_turn(turn: Any, vocab: Vocab) -> list[Finding]:
     # intent the parse named, what subjects it bound, where it dispatched. It never
     # grades prose (R-AI4(2)).
     findings.extend(check_expectation(turn))
+
+    # 7b — R-EX2's relational expectations (Session 4A teaching-graft (d.2)):
+    # body identity/distinctness by fingerprint, record-set provenance, and
+    # record count. Still ROUTING-and-RELATIONS only; still never prose.
+    findings.extend(check_relational(turn, prior or []))
 
     # 8 — the synthesis tier's own tripwires (Session 4A.5b CU5). Both are
     # truth-floor checks, not quality reads: a FAILED claim must never reach the

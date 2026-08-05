@@ -1986,7 +1986,7 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
     the beyond-horizon tray resolved to nothing and was answered as absent."""
     from mre.modules.evidence_index import EvidenceIndex
     from mre.modules.explainer import Explainer
-    from mre.modules.interpreter import PARSE_MEMORY, run_ask
+    from mre.modules.interpreter import PARSE_MEMORY, carry_subject, run_ask
     from mre.modules.question_parser import QuestionParser
     from mre.modules.question_ledger import QuestionLedger
     from mre.modules.snapshot_store import SnapshotStore
@@ -2017,6 +2017,10 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
     # that suspenders: should anything in the ask surface still throw, the question
     # is re-run with NO parser (ledger already handled) so the answer degrades to
     # the honest unsupported one rather than a 5xx.
+    # R-LD6 clause (5)'s second input. `summarize` never parses, so it has no
+    # parsed subjects and carries only what its bundle names — which is the
+    # correct answer, not a gap: nobody typed an entity.
+    parsed: Any = None
     if question.strip().lower() == "summarize":
         bundle = explainer.summarize_run()
         ask_meta = {"resolved_question": question, "route": "summarize",
@@ -2052,6 +2056,7 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
                              schedule_id=schedule_id, session_id=session_id,
                              document=document)
         bundle = result.bundle
+        parsed = result.parsed
         ask_meta = {"resolved_question": result.resolved_question,
                     "route": result.route, "source": result.source,
                     "confidence": result.confidence,
@@ -2072,11 +2077,24 @@ def _answer_question(out_dir: Path, snapshot_id: str, question: str,
         "subject_external_name": bundle.subject_external_name,
         "snapshot_id": bundle.snapshot_id,
         "record_count": len(bundle.ordered_records),
+        # R-EX2's `RECORDS_FROM=n` needs record IDENTITY, not a count: "this
+        # turn's records came from turn n's answer" is a set question. SURFACED,
+        # never synthesized — the same principle as `cited_refs` below, off the
+        # same `ordered_records` the renderer footnoted. Records with no id
+        # (authored rows) simply contribute nothing.
+        "record_ids": [rid for rec in (bundle.ordered_records or [])
+                       if (rid := (rec.get("record_id") or ""))],
         "register": _register_of(bundle),
         # The entity refs this answer already cites — surfaced (not synthesized)
         # so the cockpit can highlight the corresponding bars/lanes in sync with
         # the text. Reads only bundle.ordered_records; adds no answer path.
         "cited_refs": _cited_refs_from_bundle(bundle),
+        # R-LD6 clause (5) — WHAT THIS TURN CONTRIBUTES TO THE NEXT TURN'S
+        # LAST-ANSWER RUNG, computed once here so the panel and the exam runner
+        # cannot drift (they each held their own copy of the rule before). Both
+        # read this field and fall back to their own reading only when it is
+        # absent, which is an archived sweep and never a live answer.
+        "carry_subject": carry_subject(bundle, parsed),
         **ask_meta,
     }
 

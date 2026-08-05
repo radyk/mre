@@ -81,10 +81,19 @@ def render_transcript(result: ExamResult) -> str:
         ", ".join(f"{k}={v}" for k, v in sorted(counts.items())) if counts else "clean"))
     lines.append(_RULE)
 
+    # R-EX2: a bank can now cross a version boundary mid-conversation, so the
+    # transcript names the board per turn the moment more than one appears. On
+    # every bank that does not REBIND this prints nothing and reads as before.
+    boards = {t.schedule for t in result.turns if t.schedule}
+    show_board = len(boards) > 1
+
     for t in result.turns:
         for c in getattr(t, "_comments", []) or []:
             lines.append(f"# {c}")
         lines.append(f"Q[{t.lineno}]: {t.question}")
+        if show_board:
+            lines.append(f"  board: {t.schedule}  (turn {t.conv_index} of this "
+                         "conversation)")
         if t.selection:
             lines.append("  selection: " + ", ".join(
                 f"{k}={v}" for k, v in t.selection.items()))

@@ -1,0 +1,313 @@
+AI EXAM TRANSCRIPT
+target      : rolling-c32a6140-b6b
+snapshot    : snap-rolling
+started     : 2026-08-05T15:14:17Z
+llm mode    : live
+questions   : 11
+llm calls   : 14
+door check  : live
+parse       : parses=12 calls=12 retries=0 malformed=0 clarifies=1 unavailable=0 median=1576ms
+synthesis   : answers=1 calls=1 tools=0 malformed=0 budget-out=0 unanswerable=1 median=1987ms p90=1987ms
+claims      : 0 total  verified=0 interpretive=0 general-knowledge=0 failed-and-cut=0 deferred=0  ungrounded-load-bearing=0
+latency     : route n=10 median=2221ms p90=3190ms | synthesis n=1 median=3796ms p90=3796ms
+graded      : 11/11 expectations met
+sidecar     : clean
+------------------------------------------------------------------------
+# AI EXAM BANK — THE RELATIONAL EXPECTATIONS (R-EX2)
+# version  : v1
+# generated: 2026-08-05  (Session 4A teaching-graft (d.2))
+# world    : the DEMO BOARD `rolling-c32a6140-b6b`. Entity ids below are that
+# board's; the SHAPES are what is graded, not the ids.
+# 
+# ===========================================================================
+# WHAT THIS BANK IS
+# ===========================================================================
+# 
+# R-EX2 gave the exam grammar three things: sequence-level world directives
+# (`REBIND`), expectations that reference an earlier turn by index in three
+# relational forms (`BODY_SAME_AS` / `BODY_DIFFERS_FROM`, `RECORDS_FROM`,
+# `RECORDS`), and a stated division — no prose assertions in banks, ever.
+# 
+# This file is the QUEUED FOUNDING SPECIMENS encoded in those forms. Every block
+# below was previously a sequence whose ROUTING was graded here and whose actual
+# SUBJECT — did it open the right thing, is this the same answer twice — lived
+# only in a guard file or a close-out quotation. Three measured inputs asked for
+# this: (d.1) §8 (the per-turn/prior-turn note), the shared-body census
+# micro-session (its bank was **5/5 passing on a product that rendered one body
+# for two different questions**), and (e) §8(f).
+# 
+# WHAT IT STILL DOES NOT GRADE, AND SHOULD NOT. Body CONTENT is guard-file
+# territory. `BODY_SAME_AS` says two answers are the same answer; it does not
+# say what either one says, and no key here ever will — `EXPECT_KEYS` is a closed
+# set and an unrecognised key is a parse finding, so the division is enforced
+# rather than merely stated. A string assertion against authored copy in a bank
+# is a weaker duplicate of a unit test that breaks on every legitimate copy edit.
+# 
+# THE CROSS-VERSION PAIR IS NOT HERE. It needs `REBIND` and two named schedule
+# ids, so it lives in `sweep_crossversion_v1.txt`, which states its own world
+# requirement.
+# 
+# RESET DISCIPLINE. Each block is one conversation; a relational index is 1-based
+# WITHIN its conversation and cannot reach across a RESET. That bound is what
+# block E is about.
+# ===========================================================================
+# ===========================================================================
+# A — THE DRILL-DOWN GROUNDING PAIR (D-01, and RECORDS_FROM's founding case)
+# 
+# "show me the evidence for that" must open THE ANSWER THE PLANNER IS LOOKING
+# AT. Before (d.1) the drill-down's assembler took a `history` argument no
+# caller ever passed and fell through to the board's most severe gate finding —
+# a WARNING about a machine, served as the evidence for whatever had just been
+# said. The routing half of that has been graded here since (d.1). The half that
+# mattered could not be written down until now: RECORDS_FROM=1 says this turn's
+# records are turn 1's records, and it requires the set to be NON-EMPTY, because
+# an empty set is a subset of everything and "opened nothing" must never read as
+# "grounded correctly".
+# ===========================================================================
+# [RESET — conversation cleared]
+# [EXPECT intent=why-here route=why-here]
+Q[56]: why is ORD-000128 op20 placed where it is
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  order=ORD-000128<-utterance("ORD-000128")  2371ms
+  expect: intent=why-here route=why-here  -> MET
+  A:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT followup=prove-it records_from=1]
+Q[59]: show me the evidence for that
+  interpreted as: (resolved against ORD-000128)
+  route=prove-it  source=parse  conf=0.95  register=synthesis  renderer=synthesis (grounding pass)
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=prove-it  conf=0.95  followup=prove-it  order=ORD-000128<-last-answer("ORD-000128")  2775ms
+  expect: followup=prove-it records_from=1  -> MET
+  A:
+    That was my answer to "why is ORD-000128 op20 placed where it is". It came from a contracted route, so it has no per-sentence claims to pick apart — here is the whole record set it was assembled from (1 record(s)):
+
+      - the assignment decision — recorded driver: the machine was busy with other work  [record: 5e4e30f3...]
+    [rendered by: synthesis (grounding pass) | register: synthesis]
+------------------------------------------------------------------------
+# ===========================================================================
+# B — THE REFUSAL, AND ITS WRONG-THING SIBLING (RECORDS=0)
+# 
+# A COLD "show me that": nothing has been answered, so there is nothing to open.
+# The old defect and the correct behaviour reach the same EXPECT line under the
+# old grammar — "the drill-down opened nothing" and "the drill-down opened the
+# wrong thing" were literally the same assertion. RECORDS=0 is the discriminator
+# R-EX2 added for exactly this, and it is the reason that clause is in the ruling.
+# 
+# NO ROUTE IS EXPECTED HERE, DELIBERATELY. (d.1) measured that with no
+# conversation at all the parse reads these words as `unmatched` at confidence
+# 0.25 and the SECOND TIER answers — honestly, with zero tool calls. Pinning
+# `route=drill-down` would grade the parse's reading rather than the property,
+# and the property is true on both paths: a cold "show me that" opens nothing.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [EXPECT records=0]
+Q[79]: can you show me that on my board
+  route=synthesis  source=parse  conf=0.25  register=synthesis  renderer=synthesis (claude-sonnet-5) — 0 tool call(s)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=unmatched  conf=0.25  1653ms
+  synthesis: claims=0  verified=0  interpretive=0  general-knowledge=0  cut=0  tools=0  unanswerable  1987ms
+  expect: records=0  -> MET
+  A:
+    I couldn't answer that one: I don't have a tool that reaches it. Nothing I can read holds that, so I'd rather say so than guess.
+
+    Here's what I can do that's closest:
+      - show every late order at a glance
+      - list the data-quality problems
+    [rendered by: synthesis (claude-sonnet-5) — 0 tool call(s) | register: synthesis]
+------------------------------------------------------------------------
+# ===========================================================================
+# C — THE CENSUS'S CERTIFICATE PAIR (BODY_DIFFERS_FROM)
+# 
+# (d.0) P6 T7 was the first true positive `deaf` ever produced in this repo:
+# two questions with different declared meanings rendering THE SAME BODY,
+# because `certificate-testimony` and `data-problems` shared an assembler that
+# was never handed the route id and was structurally incapable of knowing which
+# question it was answering. The micro-session fixed the route.
+# 
+# The bank that was watching this pair scored 5/5 while it was broken. It graded
+# the routing, and the routing was never wrong — two questions did reach two
+# routes, and then one assembler answered both. BODY_DIFFERS_FROM is the
+# assertion that was missing, and this block is the reason the ruling exists.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [EXPECT intent=data-problems route=data-problems]
+Q[98]: are there any data quality problems
+  route=data-problems  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=50  records=4  refs=0/3/47
+  parse: intent=data-problems  conf=0.95  1568ms
+  expect: intent=data-problems route=data-problems  -> MET
+  A:
+    4 data-quality problem(s):
+
+      1. CUT-01 is in a workload too dense to schedule cleanly  [WARNING]
+           Affected: CUT-01
+      2. CUT-02 is in a workload too dense to schedule cleanly  [WARNING]
+           Affected: CUT-02
+      3. CUT-03 is in a workload too dense to schedule cleanly  [WARNING]
+           Affected: CUT-03
+      4. 47 orders was already past its due date before this plan started, and is scheduled late  [INFO]
+           Affected: ORD-000001, ORD-000004, ORD-000009 … 47 in all
+
+    Want the fix-first ordering? Ask "what should I fix first?"
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT intent=certificate-testimony route=certificate-testimony body_differs_from=1]
+Q[101]: what does the certificate say
+  route=certificate-testimony  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=50  records=4  refs=0/3/47
+  parse: intent=certificate-testimony  conf=0.95  followup=deepen  1270ms
+  expect: intent=certificate-testimony route=certificate-testimony body_differs_from=1  -> MET
+  A:
+    This plan has no certificate. The submission never went through the intake gate, so no grade was ever issued — there is nothing for me to report and nothing for me to guess.
+
+    Behind that, the problems on the record:
+
+    4 data-quality problem(s):
+
+      1. CUT-01 is in a workload too dense to schedule cleanly  [WARNING]
+           Affected: CUT-01
+      2. CUT-02 is in a workload too dense to schedule cleanly  [WARNING]
+           Affected: CUT-02
+      3. CUT-03 is in a workload too dense to schedule cleanly  [WARNING]
+           Affected: CUT-03
+      4. 47 orders was already past its due date before this plan started, and is scheduled late  [INFO]
+           Affected: ORD-000001, ORD-000004, ORD-000009 … 47 in all
+
+    Want the fix-first ordering? Ask "what should I fix first?"
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# ===========================================================================
+# D — THE DEAF PAIR'S OTHER SIDE (BODY_SAME_AS)
+# 
+# The false positive the (d.1) gate removed: a deictic follow-up that correctly
+# re-resolves to the same subject and correctly gets the same answer. `deaf`
+# used to answer it with "I'm not understanding what you're asking".
+# 
+# BODY_SAME_AS=1 pins the premise the gate rests on — that these two turns ARE
+# one answer twice. If this ever starts differing, `deaf`'s silence here stops
+# being correct behaviour and starts being luck, and nothing else in the suite
+# would notice.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [SELECT order=ORD-000128 op_seq=20]
+# [EXPECT intent=why-here route=why-here]
+Q[119]: why is ORD-000128 op20 placed where it is
+  selection: order=ORD-000128, op_seq=20
+  interpreted as: (resolved against ORD-000128 (from board selection))
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  order=ORD-000128<-selection("ORD-000128")  1442ms
+  expect: intent=why-here route=why-here  -> MET
+  A:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT route=why-here body_same_as=1]
+Q[122]: so why is it there
+  selection: order=ORD-000128, op_seq=20
+  interpreted as: (resolved against ORD-000128 (from board selection))
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  followup=deepen  order=ORD-000128<-selection("ORD-000128")  1443ms
+  expect: route=why-here body_same_as=1  -> MET
+  A:
+    ORD-000128 op20 couldn't start before Tuesday 2026-01-13 16:09: op10 finishes at 2026-01-13 16:08.
+    Before that: its release date is 2025-12-04 00:00.
+
+    What pushed it, in order:
+      2025-12-04 00:00  release date [docs/05 A4] — its release date is 2025-12-04 00:00
+      2026-01-13 16:08  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 16:08
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# ===========================================================================
+# E — THE FOUNDER'S CLARIFY-CARRY PAIR (R-LD6 clause (5))
+# 
+# From the founder freewheel round, and reproduced as a HELD PAIR one word
+# apart. Arm 1's opener draws a facts-vs-action CLARIFY; arm 2's does not. In
+# BOTH arms the parse resolves ORD-000252 from the planner's own typing.
+# 
+# Measured 3/3 BEFORE the fix: arm 1 carried nothing into turn 2 — the carry
+# channel read the BUNDLE, and a clarify's bundle truthfully names no subject —
+# so the two arms' follow-ups landed on DIFFERENT ROUTES (`why-here` vs
+# `start-reason`) from the identical sentence. Arm 1 only resolved at all
+# because the parse model re-read the order out of the RECENT TURNS block.
+# 
+# What is graded is that the two arms now AGREE. That is the whole property:
+# a subject is a property of the planner's sentence and survives the route that
+# sentence drew.
+# 
+# NB the two arms cannot be one conversation and cannot use a relational form to
+# compare each other — they are separated by a RESET, by construction, because
+# each needs a cold opener. Two blocks stating the same expectation is what
+# "these two must agree" looks like across a reset, and it is a real bound of
+# the format rather than an oversight.
+# ===========================================================================
+# [RESET — conversation cleared]
+# [EXPECT intent=why-on-machine route=CLARIFY]
+Q[150]: why is ORD-000252 on CUT-01 when it is
+  route=CLARIFY  source=parse  conf=0.35  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=why-on-machine  conf=0.35  order=ORD-000252<-utterance("ORD-000252")  machine=CUT-01<-utterance("CUT-01")  clarify=ambiguous-intent  2535ms
+  expect: intent=why-on-machine route=CLARIFY  -> MET
+  A:
+    I need one more detail to answer "why is ORD-000252 on CUT-01 when it is".
+    I can read that two ways and the difference matters. Say which you want: the facts as they stand, or what to do about them.
+
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT route=start-reason order=ORD-000252]
+Q[153]: why is it scheduled when it is
+  interpreted as: why is ORD-000252 scheduled when it is  (resolved against ORD-000252)
+  route=start-reason  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=4  records=2  refs=2/2/0
+  parse: intent=start-reason  conf=0.92  followup=deepen  polarity=positive  order=ORD-000252<-last-answer("it")  1582ms
+  expect: route=start-reason order=ORD-000252  -> MET
+  A:
+    ORD-000252 starts Tuesday (2026-01-27 11:15) because CUT-01 was busy: it was held by ORD-000222, high priority until 2026-01-27 11:15, so ORD-000252 took the next opening.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [EXPECT intent=why-on-machine route=why-on-machine]
+Q[157]: why is ORD-000252 on CUT-01
+  route=why-on-machine  source=parse  conf=0.95  register=testimony  renderer=LLM (claude-haiku-4-5-20251001)
+  lit-bars=3  records=1  refs=1/1/1
+  parse: intent=why-on-machine  conf=0.95  order=ORD-000252<-utterance("ORD-000252")  machine=CUT-01<-utterance("CUT-01")  1834ms
+  expect: intent=why-on-machine route=why-on-machine  -> MET
+  A:
+    ORD-000252 is on CUT-01 because it was the cheaper option once every cost was weighed [record: c94583eb...]. The alternatives were CUT-02, which would cost $23.25 more, and CUT-03, which would cost $54.25 more [record: c94583eb...].
+
+    Note: the cost figures above are not proven optimal — the solver ran out of budget with a gap of 89.6% still open, so a cheaper schedule may exist and could be up to that much cheaper.
+
+    [rendered by: LLM (claude-haiku-4-5-20251001) | register: testimony]
+------------------------------------------------------------------------
+# [EXPECT route=start-reason order=ORD-000252]
+Q[160]: why is it scheduled when it is
+  interpreted as: why is ORD-000252 scheduled when it is  (resolved against ORD-000252)
+  route=start-reason  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=4  records=2  refs=2/2/0
+  parse: intent=start-reason  conf=0.92  followup=deepen  order=ORD-000252<-last-answer("it")  1569ms
+  expect: route=start-reason order=ORD-000252  -> MET
+  A:
+    ORD-000252 starts Tuesday (2026-01-27 11:15) because CUT-01 was busy: it was held by ORD-000222, high priority until 2026-01-27 11:15, so ORD-000252 took the next opening.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------

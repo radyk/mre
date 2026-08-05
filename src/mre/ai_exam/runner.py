@@ -24,6 +24,7 @@ parse counts, and how many graded EXPECT lines were met at close.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import time
@@ -33,9 +34,10 @@ from pathlib import Path
 from typing import Any, Optional
 
 from .script import (
-    Card, Comment, Expect, ParsedScript, Question, Reset, Select, parse_script,
+    Card, Comment, Expect, ParsedScript, Question, Rebind, Reset, Select,
+    parse_script,
 )
-from .sidecar import Finding, Vocab, check_turn
+from .sidecar import Finding, Vocab, answer_body, check_turn
 
 
 # ---------------------------------------------------------------------------
@@ -152,6 +154,22 @@ class TurnRecord:
     # fact agreement. Empty on every other turn — the shadow is what a probation
     # IS, not a permanent tax on every answer.
     shadow: dict = field(default_factory=dict)
+    # --- R-EX2 (Session 4A teaching-graft (d.2)) --------------------------
+    #: 1-based position of this turn WITHIN ITS CONVERSATION (RESET restarts it).
+    #: This is what a relational expectation's index refers to; the whole-script
+    #: ordinal would let a reference reach across a RESET into a conversation the
+    #: bank has already thrown away.
+    conv_index: int = 0
+    #: sha256 of the answer BODY (footer stripped) — the fingerprint
+    #: BODY_SAME_AS / BODY_DIFFERS_FROM compare. A fingerprint, never the text:
+    #: what a bank may assert about a body is identity, not content.
+    body_sha: str = ""
+    #: The evidence record ids this answer served, in order. RECORDS_FROM reads
+    #: these as a set; they are surfaced by the ask meta, not derived here.
+    record_ids: list[str] = field(default_factory=list)
+    #: The schedule this turn was asked against — it can change mid-conversation
+    #: since REBIND, and a transcript that did not say so would read as one board.
+    schedule: str = ""
 
 
 @dataclass
@@ -302,7 +320,15 @@ _MACHINE_SUBJECT_TYPES = frozenset({"machine_idle"})
 
 def resolved_subject(subject_type: str, subject_external_name: str) -> dict:
     """The prior answer's subject as an {order|machine} dict, or {} when the type
-    is ambiguous or the name is a placeholder. Mirrors askpanel.js exactly."""
+    is ambiguous or the name is a placeholder. Mirrors askpanel.js exactly.
+
+    R-LD6 clause (5), Session 4A teaching-graft (d.2): this is CLAUSE (1) ONLY,
+    and it is no longer the whole rule. The live carry comes from the ask meta's
+    ``carry_subject`` field — ONE definition in ``interpreter.carry_subject``,
+    read by this runner and by the panel — which adds the subject the PARSE
+    resolved wherever the bundle names none. This function stays as the fallback
+    for a meta with no such field, which is an archived payload and never a live
+    answer, and as the thing the lockstep tests pin."""
     name = (subject_external_name or "").strip()
     if not name or name in ("?", "all"):
         return {}
@@ -311,6 +337,20 @@ def resolved_subject(subject_type: str, subject_external_name: str) -> dict:
     if subject_type in _MACHINE_SUBJECT_TYPES:
         return {"machine": name}
     return {}
+
+
+def carry_from_meta(meta: dict, subject_type: str,
+                    subject_external_name: str) -> dict:
+    """What the next turn's LAST-ANSWER rung gets, read the way the panel reads it.
+
+    The ask meta's ``carry_subject`` is authoritative when the key is present —
+    it is computed by the product, not by the harness, which is the whole point
+    of R-LD6 clause (5) having ONE definition. ``resolved_subject`` remains the
+    fallback so a harness driving an older payload still behaves."""
+    if isinstance(meta, dict) and "carry_subject" in meta:
+        carried = meta.get("carry_subject") or {}
+        return dict(carried) if isinstance(carried, dict) else {}
+    return resolved_subject(subject_type, subject_external_name)
 
 
 # The SHIPPED card, verbatim. Read off ``tests/cockpit/fixtures/rolling/sandbox.json``
@@ -451,8 +491,13 @@ class ExamRunner:
     def __init__(self, target: RunTarget, *, use_llm: Optional[bool] = None,
                  ledger_path: Optional[Path] = None, per_question_timeout: float = 90.0,
                  session_id: str = "ai-exam", parser: Any = None,
-                 synthesizer: Any = None) -> None:
+                 synthesizer: Any = None,
+                 data_root: Optional[Path | str] = None) -> None:
         self.target = target
+        # R-EX2: what a REBIND directive resolves its schedule id against. A bank
+        # with a REBIND and a runner with no data root is a loud finding, never a
+        # quiet continuation on the old board.
+        self.data_root = data_root
         key = bool(os.environ.get("ANTHROPIC_API_KEY"))
         self.use_llm = key if use_llm is None else (use_llm and key)
         self.ledger_path = ledger_path
@@ -571,6 +616,11 @@ class ExamRunner:
         pending_comments: list[str] = []
         pending_expect: dict = {}
         asked = 0
+        # R-EX2: the turns of the CURRENT conversation, in order — what a
+        # relational expectation's 1-based index addresses. Emptied by RESET,
+        # and deliberately NOT by REBIND: a version change is exactly the case
+        # where turn N+1 must still be able to refer to turn N.
+        conversation: list[TurnRecord] = []
 
         with _CallCounter() as counter:
             for item in script.items:
@@ -599,7 +649,41 @@ class ExamRunner:
                     # conversation, which is most of them.
                     from mre.modules.interpreter import forget_deliveries
                     forget_deliveries(self.session_id)
+                    conversation = []
                     pending_comments.append("[RESET — conversation cleared]")
+                    continue
+                if isinstance(item, Rebind):
+                    # R-EX2 — `main.js::onVersionChange`, reproduced. Rebind the
+                    # schedule, CLEAR THE SELECTION, and touch nothing else:
+                    # history, last_answered, the card and the session id all
+                    # survive, which is the shipped behaviour and the whole
+                    # reason a cross-version bank has anything to grade.
+                    if not self.data_root:
+                        result.parse_errors.append(Finding(
+                            "rebind-failed", item.lineno, "",
+                            f"REBIND {item.schedule!r} needs a data root and this "
+                            "runner has none; no further questions fired"))
+                        break
+                    try:
+                        self.target = RunTarget.from_schedule(
+                            self.data_root, item.schedule)
+                        self._vocab = self.target.build_vocab(parser=self.parser)
+                    except Exception as exc:  # noqa: BLE001 — a dead rebind is a finding
+                        result.parse_errors.append(Finding(
+                            "rebind-failed", item.lineno, "",
+                            f"REBIND {item.schedule!r}: {type(exc).__name__}: {exc}"
+                            " — no further questions fired"))
+                        break
+                    if not self._vocab.healthy:
+                        result.parse_errors.append(Finding(
+                            "rebind-failed", item.lineno, "",
+                            f"REBIND {item.schedule!r} loaded an EMPTY entity "
+                            "vocabulary; no further questions fired"))
+                        break
+                    selection = {}
+                    pending_comments.append(
+                        f"[REBIND -> {item.schedule} — board changed; selection "
+                        "cleared, conversation kept]")
                     continue
                 if isinstance(item, Card):
                     # Session 4B.5 CU2 — the open delta card channel. The bank
@@ -647,6 +731,8 @@ class ExamRunner:
                     lineno=item.lineno, question=item.text,
                     selection=dict(selection),
                     latency_ms=(time.perf_counter() - started) * 1000.0,
+                    conv_index=len(conversation) + 1,
+                    schedule=self.target.label,
                 )
                 turn._comments = pending_comments  # type: ignore[attr-defined]
                 pending_comments = []
@@ -666,6 +752,16 @@ class ExamRunner:
                     turn.subject_type = meta.get("subject_type", "") or ""
                     turn.subject_external_name = meta.get("subject_external_name", "") or ""
                     turn.record_count = meta.get("record_count", 0) or 0
+                    turn.record_ids = list(meta.get("record_ids") or [])
+                    # R-EX2: the body FINGERPRINT, taken over the same body the
+                    # `empty` check reads — footer stripped, so a rendered-by tag
+                    # change is not a body change. AN EMPTY BODY GETS NO
+                    # FINGERPRINT: two empty answers are two defects, not one
+                    # answer, and hashing "" would make them read as identical.
+                    body = answer_body(turn.answer)
+                    turn.body_sha = (
+                        hashlib.sha256(body.encode("utf-8")).hexdigest()
+                        if body else "")
                     turn.cited_refs = meta.get("cited_refs", {}) or {}
                     turn.lit_bars = sum(
                         len(turn.cited_refs.get(k, []))
@@ -683,8 +779,12 @@ class ExamRunner:
                     if shadow_ms and turn.latency_ms is not None:
                         turn.latency_ms = max(0.0, turn.latency_ms - shadow_ms)
                 turn.llm_calls = counter.count - before
-                turn.findings = check_turn(turn, self._vocab)
+                # R-EX2: the relational checks read the CURRENT conversation's
+                # earlier turns, which is why `conversation` is threaded here
+                # rather than `result.turns` — the latter spans RESETs.
+                turn.findings = check_turn(turn, self._vocab, prior=conversation)
                 result.turns.append(turn)
+                conversation.append(turn)
 
                 # Extend history exactly as the cockpit does: subject refs from the
                 # ACTIVE selection, plus this turn's route/resolved question.
@@ -715,9 +815,11 @@ class ExamRunner:
                     })
                     # Carry THIS answer's resolved subject into the next
                     # question, the way the panel does — the honest fix for a
-                    # follow-up after a TYPED entity question (CU1).
-                    last_answered = resolved_subject(
-                        turn.subject_type, turn.subject_external_name)
+                    # follow-up after a TYPED entity question (CU1). Since
+                    # R-LD6 clause (5) the rule lives in the product and both
+                    # clients read it off the meta (d.2).
+                    last_answered = carry_from_meta(
+                        meta or {}, turn.subject_type, turn.subject_external_name)
             result.total_llm_calls = counter.count
         if self.parser is not None and hasattr(self.parser, "stats"):
             result.parser_stats = self.parser.stats.as_dict()

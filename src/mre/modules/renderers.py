@@ -597,6 +597,29 @@ def mobility_lead_line(bundle) -> Optional[str]:
                 f"C1/C2, C3].{also} That is where it could go, not what it "
                 f"would cost.")
     if "earlier" in dirs:
+        # W4's FOURTH SITE, guarded (Session 4A teaching-graft (d.2), rider R1).
+        # (e2) §8(a) named this branch and left it: it asserted "Nothing was
+        # holding {name} back" with NO DRIVER IN HAND. The driver is in hand now
+        # — `_mobility_facts` carries `chosen_driver`, the same value the other
+        # three sites read — so this goes through the SAME ONE DEFINITION,
+        # `counterfactual_contradicts_driver`, in the SAME arbitrated order.
+        #
+        # THE RECORD LEADS. F3's argument, unchanged: the driver is something
+        # this run WROTE DOWN and a planner can go and look at; the scan is OUR
+        # OWN derivation, computed now, holding everything else still. Leading
+        # with the derivation makes the record read as a caveat on our finding;
+        # leading with the record makes our finding read as what it is, a second
+        # opinion. And the refusal to adjudicate is the ruling, not the framing:
+        # this product cannot tell which the solver acted on, so it says so.
+        driver = mob.get("chosen_driver")
+        if counterfactual_contradicts_driver(driver):
+            return (f"On the premise first: the assignment decision for {name} "
+                    f"records its driver as {driver}, which names a constraint "
+                    f"rather than a preference. My own scan disagrees — "
+                    f"{machine} had open, unheld time before where it sits — so "
+                    f"it may be movable, but the record and my calendar scan do "
+                    f"not agree about this bar, and I can't tell you which the "
+                    f"solver acted on.")
         return (f"On the premise first: it can be moved. Nothing was holding "
                 f"{name} back — {machine} had open, unheld time before where "
                 f"it sits, so this placement was the solver's choice rather "

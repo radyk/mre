@@ -35,7 +35,9 @@ from mre.env_local import load_env_local
 load_env_local()
 
 from mre.ai_exam.runner import RunTarget, resolved_subject  # noqa: E402
-from mre.modules.interpreter import forget_deliveries, run_ask  # noqa: E402
+from mre.modules.interpreter import (  # noqa: E402
+    carry_subject, forget_deliveries, run_ask,
+)
 from mre.modules.question_parser import QuestionParser  # noqa: E402
 from mre.modules.renderers import TemplateRenderer  # noqa: E402
 from mre.modules.synthesizer import Synthesizer  # noqa: E402
@@ -293,7 +295,13 @@ class Conversation:
             "machine": self.selection.get("machine"),
             "op_seq": self.selection.get("op_seq"),
         })
-        self.last_answered = resolved_subject(t.subject_type, t.subject_name)
+        # R-LD6 clause (5) (session (d.2)): the panel reads the ask meta's
+        # `carry_subject`, which the API computes with `interpreter.carry_subject`.
+        # This harness drives `run_ask` directly, so it calls the SAME function on
+        # the same two inputs rather than re-implementing the rule — a harness
+        # holding its own copy of a rule is what made the rule drift in the first
+        # place. `resolved_subject` stays imported as clause (1)'s definition.
+        self.last_answered = carry_subject(r.bundle, r.parsed)
         self.turns.append(t)
         return t
 

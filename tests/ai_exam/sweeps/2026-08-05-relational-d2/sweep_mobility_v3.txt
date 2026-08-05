@@ -1,0 +1,335 @@
+AI EXAM TRANSCRIPT
+target      : out-dir:mobility_pinned
+snapshot    : snap-mobility
+started     : 2026-08-05T15:33:35Z
+llm mode    : live
+questions   : 11
+llm calls   : 17
+door check  : live
+parse       : parses=12 calls=12 retries=0 malformed=0 clarifies=0 unavailable=0 median=1670ms
+synthesis   : answers=1 calls=5 tools=4 malformed=0 budget-out=0 unanswerable=1 median=18382ms p90=18382ms
+claims      : 4 total  verified=0 interpretive=0 general-knowledge=0 failed-and-cut=4 deferred=0  ungrounded-load-bearing=4
+latency     : route n=10 median=1860ms p90=2467ms | synthesis n=1 median=19566ms p90=19566ms
+graded      : 10/10 expectations met
+sidecar     : ungrounded-load-bearing=1
+------------------------------------------------------------------------
+# AI EXAM BANK — the two verdicts nobody had ever seen (boxed-in, earlier-open)
+# version  : v3
+# generated: 2026-08-04  (Session 4A teaching-graft (c))
+# world    : THE FENCED SPECIMEN WORLD, NOT the demo board. This bank asks
+# `datasets/mobility_box` solved to `_ai_exam_scratch/mobility_pinned`
+# (snapshot `snap-mobility`) — see datasets/mobility_box/README.md.
+# v1 and v2 ask the DEMO BOARD and are not replaced; a new world is a
+# new bank, exactly as a new version is a new file.
+# 
+# WHY THIS BANK EXISTS. `mobility_premise.assess` returns five verdicts. The
+# listening docket (4A.x) censused both pinned boards and measured:
+# 
+# demo   held 24 / later-open 361 / undecidable 1 / boxed-in 0 / earlier-open 0
+# exam   held 45 / later-open   9 / undecidable 2 / boxed-in 0 / earlier-open 0
+# 
+# Two of the five had never been produced by a solved board and were asserted by
+# unit test only. Both need `later_at` to be None, and `later_at` is computed
+# over a machine's open calendar padded a fortnight past the last placement — so
+# on a plant that keeps working there is ALWAYS room later, and `later-open`
+# absorbs everything. The specimen world is a plant that STOPS: `BOX-01` goes
+# down for a rebuild on 2026-01-14 and does not come back inside anything this
+# plan can see.
+# 
+# WHAT THIS BANK GRADES. The EXPECT lines grade ROUTING, which is all the exam
+# grammar grades. The VERDICTS themselves are asserted mechanically and
+# independently by `tests/test_mobility_box.py` (green, with two negative
+# controls that mutate the dataset and prove each specimen collapses) and are
+# printed by `tools/spikes/teaching_graft_c/census_mobility.py`. What the sweep
+# adds is the thing neither of those can show: WHAT A PLANNER IS TOLD.
+# 
+# RESET DISCIPLINE: every phrasing group resets. Nothing here is
+# history-bearing — v2's history-bearing groups exist because ROUTE BYPASS was
+# its subject, and it is not this bank's.
+# ===========================================================================
+# S1 — BOXED IN. The premise HOLDS, and the answer must AGREE with the planner.
+# ORD-BOX op20 runs 2026-01-13 09:52 -> 18:33 on BOX-01. Earlier is shut by
+# precedence (op10 frees the machine at 09:51); later is shut because BOX-01 has
+# no open window at all after 19:00 that day. "Can't be moved" is FAIR, and the
+# answer must not manufacture a correction for a premise that holds (RUBRIC C6b:
+# correcting a true premise is a DEFECT-bucket item, not a style miss).
+# ===========================================================================
+# [RESET — conversation cleared]
+# [SELECT order=ORD-BOX machine=BOX-01 op_seq=20]
+# [EXPECT order=ORD-BOX]
+Q[46]: why cant this be moved
+  selection: order=ORD-BOX, machine=BOX-01, op_seq=20
+  interpreted as: why cant ORD-BOX be moved  (resolved against ORD-BOX (from board selection); and about op20, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.92  order=ORD-BOX<-selection("this")  1884ms
+  expect: order=ORD-BOX  -> MET
+  A:
+    Earlier — what's stopping it:
+    ORD-BOX op20 couldn't start before Tuesday 2026-01-13 09:52: op10 finishes at 2026-01-13 09:51.
+    Before that: its release date is 2026-01-13 00:00.
+
+    What pushed it, in order:
+      2026-01-13 00:00  release date [docs/05 A4] — its release date is 2026-01-13 00:00
+      2026-01-13 09:51  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 09:51
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: BOX-01 is not open at all after 2026-01-13 19:00 — its calendar closes there and does not reopen anywhere in the span this plan covers, so the whole operation has nowhere later to go. This is not a busy machine; there is no time on it to compete for. So "can't be moved" is fair, and the reason above is the whole of it. This counts free time on BOX-01 only; a move to another machine is a different question, and one I'd answer as a swap.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [SELECT order=ORD-BOX machine=BOX-01 op_seq=20]
+# [EXPECT order=ORD-BOX]
+Q[51]: is this bar immovable
+  selection: order=ORD-BOX, machine=BOX-01, op_seq=20
+  interpreted as: (resolved against ORD-BOX (from board selection))
+  route=frozen  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=frozen  conf=0.92  order=ORD-BOX<-selection("this bar")  1478ms
+  expect: order=ORD-BOX  -> MET
+  A:
+    On the premise first: "can't be moved" is fair — no opening on BOX-01 fits the whole of ORD-BOX op20 after where it sits now, and nothing shows it could have gone earlier. This counts free time on BOX-01 only; another machine is a different question, and one I'd answer as a swap.
+
+    This isn't a rolling schedule, so nothing is frozen.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# The floor vocabulary's 4A.y additions, on a bar where the premise is TRUE.
+# [SELECT order=ORD-BOX machine=BOX-01 op_seq=20]
+# [EXPECT order=ORD-BOX]
+Q[57]: why is this bar trapped here
+  selection: order=ORD-BOX, machine=BOX-01, op_seq=20
+  interpreted as: why is ORD-BOX trapped here  (resolved against ORD-BOX (from board selection); and about op20, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.92  order=ORD-BOX<-selection("this bar")  1875ms
+  expect: order=ORD-BOX  -> MET
+  A:
+    Earlier — what's stopping it:
+    ORD-BOX op20 couldn't start before Tuesday 2026-01-13 09:52: op10 finishes at 2026-01-13 09:51.
+    Before that: its release date is 2026-01-13 00:00.
+
+    What pushed it, in order:
+      2026-01-13 00:00  release date [docs/05 A4] — its release date is 2026-01-13 00:00
+      2026-01-13 09:51  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 09:51
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: BOX-01 is not open at all after 2026-01-13 19:00 — its calendar closes there and does not reopen anywhere in the span this plan covers, so the whole operation has nowhere later to go. This is not a busy machine; there is no time on it to compete for. So "can't be moved" is fair, and the reason above is the whole of it. This counts free time on BOX-01 only; a move to another machine is a different question, and one I'd answer as a swap.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# Named subject, no selection: the same verdict must be reachable by typing.
+# [EXPECT order=ORD-BOX]
+Q[62]: why cant ORD-BOX op20 be moved
+  interpreted as: (read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.92  polarity=negative  order=ORD-BOX<-utterance("ORD-BOX")  1662ms
+  expect: order=ORD-BOX  -> MET
+  A:
+    Earlier — what's stopping it:
+    ORD-BOX op20 couldn't start before Tuesday 2026-01-13 09:52: op10 finishes at 2026-01-13 09:51.
+    Before that: its release date is 2026-01-13 00:00.
+
+    What pushed it, in order:
+      2026-01-13 00:00  release date [docs/05 A4] — its release date is 2026-01-13 00:00
+      2026-01-13 09:51  an earlier step [docs/05 A1/A2] — op10 finishes at 2026-01-13 09:51
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: BOX-01 is not open at all after 2026-01-13 19:00 — its calendar closes there and does not reopen anywhere in the span this plan covers, so the whole operation has nowhere later to go. This is not a busy machine; there is no time on it to compete for. So "can't be moved" is fair, and the reason above is the whole of it. This counts free time on BOX-01 only; a move to another machine is a different question, and one I'd answer as a swap.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# ===========================================================================
+# S2 — EARLIER OPEN. The premise is FALSE, and the refutation must name WHICH
+# direction is open — and only that one. ORD-EARLY runs 2026-01-12 07:00 ->
+# 14:01 on BOX-01. There was room on the SATURDAY overtime shift (2026-01-10
+# 07:00, chunk-fit binding, slack 2,880 minutes) and there is nothing later.
+# An answer that says "it can move" without saying WHICH WAY is the silence this
+# whole family exists to end; an answer that offers a LATER move here would be
+# offering room that does not exist.
+# ===========================================================================
+# [SELECT order=ORD-EARLY machine=BOX-01 op_seq=10]
+# [EXPECT order=ORD-EARLY]
+Q[76]: why cant this be moved
+  selection: order=ORD-EARLY, machine=BOX-01, op_seq=10
+  interpreted as: why is ORD-EARLY placed where it is?  (resolved against ORD-EARLY (from board selection); and about op10, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.92  order=ORD-EARLY<-selection("this order")  1906ms
+  expect: order=ORD-EARLY  -> MET
+  A:
+    The assignment decision for ORD-EARLY op10 records its driver as CAPACITY_BLOCKED, which names a constraint rather than a preference. My own scan disagrees — BOX-01 had open, unheld time before where ORD-EARLY op10 sits — so it may be movable, but the record and my calendar scan do not agree about this bar. Here is what each says.
+
+    Earlier — what's stopping it:
+    The assignment decision records its driver as CAPACITY_BLOCKED, which names a constraint rather than a preference.
+    My own scan reads it the other way: holding every other placement where it is, BOX-01 had open, unheld time from 2026-01-10 07:00, so as far as that scan goes ORD-EARLY op10 was not forced into Monday 2026-01-12 07:00. Those two readings disagree, and I can't tell you which the solver acted on — so I won't tell you nothing was holding it.
+
+    What pushed it, in order:
+      2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00
+      2026-01-05 07:00  the machine's calendar [docs/05 C1/C2] — BOX-01 is closed until 2026-01-05 07:00
+      2026-01-10 07:00  no window long enough [docs/05 C3] — it needs 7h01m in one piece and BOX-01 had only 19m left when it came free at 2026-01-09 18:41
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: there is no room that way. BOX-01 is not open at all after 2026-01-13 19:00 — its calendar closes there and does not reopen anywhere in the span this plan covers, so the whole operation has nowhere later to go. This is not a busy machine; there is no time on it to compete for. So the only direction open to ORD-EARLY op10 is the earlier one above. This counts free time on BOX-01 only; a move to another machine is a different question, and one I'd answer as a swap.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [SELECT order=ORD-EARLY machine=BOX-01 op_seq=10]
+# [EXPECT order=ORD-EARLY]
+Q[81]: this cant move can it
+  selection: order=ORD-EARLY, machine=BOX-01, op_seq=10
+  interpreted as: (resolved against ORD-EARLY (from board selection); and about op10, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=what-would-change  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=what-would-change  conf=0.92  order=ORD-EARLY<-selection("ORD-EARLY")  1761ms
+  expect: order=ORD-EARLY  -> MET
+  A:
+    On the premise first: the assignment decision for ORD-EARLY op10 records its driver as CAPACITY_BLOCKED, which names a constraint rather than a preference. My own scan disagrees — BOX-01 had open, unheld time before where it sits — so it may be movable, but the record and my calendar scan do not agree about this bar, and I can't tell you which the solver acted on.
+
+    The assignment decision records its driver as CAPACITY_BLOCKED, which names a constraint rather than a preference.
+    My own scan reads it the other way: holding every other placement where it is, BOX-01 had open, unheld time from 2026-01-10 07:00, 48h before it started. Those two readings disagree, and I can't tell you which the solver acted on — so I won't tell you nothing has to change.
+
+    Can't be priced as a change (it would take a re-solve): B7/B8 sequence-dependent changeover; the objective — why the solver PREFERRED a later slot.
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# [SELECT order=ORD-EARLY machine=BOX-01 op_seq=10]
+# [EXPECT order=ORD-EARLY]
+Q[86]: why is this stuck
+  selection: order=ORD-EARLY, machine=BOX-01, op_seq=10
+  interpreted as: why is ORD-EARLY placed where it is?  (resolved against ORD-EARLY (from board selection); and about op10, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.92  order=ORD-EARLY<-selection("this order")  2127ms
+  expect: order=ORD-EARLY  -> MET
+  A:
+    The assignment decision for ORD-EARLY op10 records its driver as CAPACITY_BLOCKED, which names a constraint rather than a preference. My own scan disagrees — BOX-01 had open, unheld time before where ORD-EARLY op10 sits — so it may be movable, but the record and my calendar scan do not agree about this bar. Here is what each says.
+
+    Earlier — what's stopping it:
+    The assignment decision records its driver as CAPACITY_BLOCKED, which names a constraint rather than a preference.
+    My own scan reads it the other way: holding every other placement where it is, BOX-01 had open, unheld time from 2026-01-10 07:00, so as far as that scan goes ORD-EARLY op10 was not forced into Monday 2026-01-12 07:00. Those two readings disagree, and I can't tell you which the solver acted on — so I won't tell you nothing was holding it.
+
+    What pushed it, in order:
+      2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00
+      2026-01-05 07:00  the machine's calendar [docs/05 C1/C2] — BOX-01 is closed until 2026-01-05 07:00
+      2026-01-10 07:00  no window long enough [docs/05 C3] — it needs 7h01m in one piece and BOX-01 had only 19m left when it came free at 2026-01-09 18:41
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: there is no room that way. BOX-01 is not open at all after 2026-01-13 19:00 — its calendar closes there and does not reopen anywhere in the span this plan covers, so the whole operation has nowhere later to go. This is not a busy machine; there is no time on it to compete for. So the only direction open to ORD-EARLY op10 is the earlier one above. This counts free time on BOX-01 only; a move to another machine is a different question, and one I'd answer as a swap.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# The DIRECTED question on the same bar. It states its direction, so it is owed
+# NO disclosure about which way it was read (4A.x R-LD2) — and the answer is the
+# one the planner actually wants: the room was there, and it was overtime.
+# [EXPECT order=ORD-EARLY]
+Q[93]: why cant ORD-EARLY start earlier
+  route=why-here  source=parse  conf=0.95  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.95  polarity=negative  order=ORD-EARLY<-utterance("ORD-EARLY")  1544ms
+  expect: order=ORD-EARLY  -> MET
+  A:
+    The assignment decision records its driver as CAPACITY_BLOCKED, which names a constraint rather than a preference.
+    My own scan reads it the other way: holding every other placement where it is, BOX-01 had open, unheld time from 2026-01-10 07:00, so as far as that scan goes ORD-EARLY op10 was not forced into Monday 2026-01-12 07:00. Those two readings disagree, and I can't tell you which the solver acted on — so I won't tell you nothing was holding it.
+
+    What pushed it, in order:
+      2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00
+      2026-01-05 07:00  the machine's calendar [docs/05 C1/C2] — BOX-01 is closed until 2026-01-05 07:00
+      2026-01-10 07:00  no window long enough [docs/05 C3] — it needs 7h01m in one piece and BOX-01 had only 19m left when it came free at 2026-01-09 18:41
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# ===========================================================================
+# S3 — THE CONTROLS. The two verdicts that already had specimens, on the same
+# board, so "this world answers strangely" is not available as an explanation
+# for S1 and S2.
+# ===========================================================================
+# [SELECT order=ORD-PACK machine=PACK-01 op_seq=10]
+# [EXPECT order=ORD-PACK]
+Q[103]: why cant this be moved
+  selection: order=ORD-PACK, machine=PACK-01, op_seq=10
+  interpreted as: why cant ORD-PACK be moved  (resolved against ORD-PACK (from board selection); and about op10, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.92  order=ORD-PACK<-selection("this")  1516ms
+  expect: order=ORD-PACK  -> MET
+  A:
+    It can be moved — ORD-PACK op10 has room LATER: the next opening on PACK-01 long enough for the whole operation is Tuesday 2026-01-06 14:02. What's blocked is moving it EARLIER, and that is what I've explained below.
+
+    Earlier — what's stopping it:
+    ORD-PACK op10 couldn't start before Monday 2026-01-05 07:00: PACK-01 is closed until 2026-01-05 07:00.
+    Before that: its release date is 2026-01-05 00:00.
+
+    What pushed it, in order:
+      2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00
+      2026-01-05 07:00  the machine's calendar [docs/05 C1/C2] — PACK-01 is closed until 2026-01-05 07:00
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: there is room. The first opening on PACK-01 where the whole operation fits after where it sits now is Tuesday 2026-01-06 14:02 — computed from PACK-01's open calendar minus everything already placed on it, under the same minimum-piece rule the solver applies [docs/05 C1/C2, C3].
+    That is WHERE it could go, not what it would cost. Ask "what would pushing ORD-PACK op10 out cost?" and I'll hold every other placement, move that one bar and price the difference — or drag it on the board and the card prices the same move.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# ORD-SPAN runs in two chunks: UNDECIDABLE. The answer must decline to price the
+# move in either direction and must say that is a limit of what it can compute,
+# never a statement about the plant.
+# [SELECT order=ORD-SPAN machine=PACK-01 op_seq=10]
+# [EXPECT order=ORD-SPAN]
+Q[111]: why cant this be moved
+  selection: order=ORD-SPAN, machine=PACK-01, op_seq=10
+  interpreted as: why is ORD-SPAN placed where it is?  (resolved against ORD-SPAN (from board selection); and about op10, the operation selected on the board; read as EARLIER — you didn't say which way, and this is the direction I can compute a bound for)
+  route=why-here  source=parse  conf=0.92  register=testimony  renderer=template — authored copy — rendered verbatim
+  lit-bars=2  records=1  refs=1/1/0
+  parse: intent=why-here  conf=0.92  order=ORD-SPAN<-selection("this order")  1401ms
+  expect: order=ORD-SPAN  -> MET
+  A:
+    Earlier — what's stopping it:
+    ORD-SPAN op10 couldn't start before Monday 2026-01-05 11:01: the first stretch long enough begins 2026-01-05 11:01.
+    Before that: PACK-01 is closed until 2026-01-05 07:00.
+    It runs in 2 pieces between 2026-01-05 11:01 and 2026-01-06 14:02, 15h01m of actual work — it pauses when PACK-01 closes and resumes when it reopens, which is what it means for this operation to be splittable.
+
+    What pushed it, in order:
+      2026-01-05 00:00  release date [docs/05 A4] — its release date is 2026-01-05 00:00
+      2026-01-05 07:00  the machine's calendar [docs/05 C1/C2] — PACK-01 is closed until 2026-01-05 07:00
+      2026-01-05 11:01  no window long enough [docs/05 C3] — the first stretch long enough begins 2026-01-05 11:01
+
+    Not weighed here (docs/05): B3/B5 secondary and cumulative resources (tools, operator pools); B7/B8 sequence-dependent changeover; C4 time-window operation restrictions; F3 SameResource linkage.
+
+    Later: I can't tell you. ORD-SPAN op10 runs in 2 pieces, and a chunked operation can't be priced as a local move in either direction — the pauses are closures the solver placed, and shifting the bar doesn't re-derive them. That is a limit of what I can compute, not a statement that the plant has no room.
+    [rendered by: template — authored copy — rendered verbatim | register: testimony]
+------------------------------------------------------------------------
+# [RESET — conversation cleared]
+# ===========================================================================
+# S4 — THE TEACHING TURN ON A WORLD WHERE THE ANSWER IS SIMPLE ENOUGH TO CHECK.
+# C9's transfer question with a knowable answer key: the principle a planner
+# needs here is that a bar is immobile when BOTH directions are shut, and this
+# board shows one bar of each kind. Ungraded for routing on purpose — whether
+# "what makes a job impossible to move" is a teaching question or a capability
+# question is exactly the boundary R-TG2 declined to decide by keyword.
+# ===========================================================================
+Q[122]: what makes a job impossible to move at all
+  route=synthesis  source=parse  conf=0.92  register=synthesis  renderer=synthesis (claude-sonnet-5) — 4 tool call(s)
+  lit-bars=0  records=0  refs=0/0/0
+  parse: intent=teaching  conf=0.92  1130ms
+  synthesis: claims=4  verified=0  interpretive=0  general-knowledge=0  cut=4  ungrounded-load-bearing=4  tools=4(constraint_catalog,spec_lookup,spec_lookup,spec_lookup)  unanswerable  18382ms
+  A:
+    I couldn't answer that one from the evidence. I read what I could and none of it grounds an answer I'd stand behind, so I'd rather say so than guess.
+    I looked at: constraint_catalog, spec_lookup.
+
+    Here's what I can do that's closest:
+      - show every late order at a glance
+      - list the data-quality problems
+    [rendered by: synthesis (claude-sonnet-5) — 4 tool call(s) | register: synthesis]
+  >> sidecar[ungrounded-load-bearing]: 4 load-bearing claim(s) could not be grounded and were cut
+------------------------------------------------------------------------

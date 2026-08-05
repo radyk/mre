@@ -378,6 +378,97 @@ _NOT_REMEMBERED = ("prove-it", "drill-down")
 
 
 # ---------------------------------------------------------------------------
+# THE LAST-ANSWER RUNG'S CONTENT — R-LD6 clause (5), Session 4A teaching-graft
+# (d.2).
+#
+# The resolution ladder's third rung is fed by ONE question: *what was the last
+# turn about?* Until now the only thing that could answer it was the ANSWER's
+# own rendered subject, through the five `subject_type` literals below — five of
+# the **45** this codebase emits (censused this session; the (d.0) dossier's
+# "5 of 33" undercounted the denominator, not the gap).
+#
+# THE FOUNDER'S SPECIMEN, AND WHAT IT PROVED. Measured 3/3 as a held pair on the
+# demo board, one word apart:
+#
+#   A  "why is ORD-000252 on CUT-01 WHEN IT IS"  -> CLARIFY; carry {}
+#   B  "why is ORD-000252 on CUT-01"             -> why-on-machine; carry {order}
+#   both then: "why is it scheduled when it is"
+#
+# In BOTH arms the parse RESOLVED `ORD-000252` from the planner's own typing. In
+# arm A the clarify bundle renders `subject_external_name="?"` — truthfully, it
+# could not answer — and the carry channel, which reads the BUNDLE, therefore
+# took nothing. The planner named an order, the product resolved it, and one
+# turn later the deterministic memory of it was empty. Arm A's follow-up landed
+# on a DIFFERENT ROUTE from arm B's, 3 runs of 3, and only got there at all
+# because the parse model re-read it out of the RECENT TURNS block (R-LD5's
+# `conversation` source) — a model behaviour standing in for the deterministic
+# rung that was supposed to be underneath it.
+#
+# THE RULE, AND IT IS R-LD5's LOGIC ONE STEP EARLIER: a subject is a property of
+# the planner's SENTENCE and survives the route that sentence drew. A route that
+# could not answer still had a subject.
+#
+# ADDITIVE BY CONSTRUCTION, which is what makes it provable: clause (1) is the
+# shipped behaviour, unchanged and first. Clause (2) can only fill a carry that
+# would otherwise have been EMPTY. No carry that is populated today changes.
+#
+# NEVER GUESSED. Two distinct resolved orders in one question carry NO order —
+# the same refusal `_resolve_machine` already makes on an ambiguous token. A
+# question about two orders is not a question about the first one.
+# ---------------------------------------------------------------------------
+
+#: Kept in lockstep with `askpanel.js` ORDER_SUBJECTS / MACHINE_SUBJECTS and
+#: `ai_exam.runner`'s copies — clause (1) is those sets, and they move together
+#: or the harness measures a product nobody ships.
+CARRIED_ORDER_SUBJECT_TYPES = frozenset(
+    {"demand", "start_reason", "contested_fact", "order_attributes"})
+CARRIED_MACHINE_SUBJECT_TYPES = frozenset({"machine_idle"})
+
+#: Placeholder subject names that mean "no subject", not a subject called that.
+_SUBJECT_PLACEHOLDERS = frozenset({"", "?", "all"})
+
+
+def _unique_parsed_ref(parsed: Any, kind_value: str) -> Optional[str]:
+    """The ONE ref of this kind the parse resolved, or None (including when it
+    resolved two different ones — ambiguity carries nothing)."""
+    refs = {s.ref for s in (getattr(parsed, "subjects", None) or [])
+            if getattr(getattr(s, "kind", None), "value", None) == kind_value
+            and s.ref}
+    return next(iter(refs)) if len(refs) == 1 else None
+
+
+def carry_subject(bundle: Any, parsed: Any = None) -> dict:
+    """What this turn contributes to the next turn's LAST-ANSWER rung.
+
+    R-LD6 clause (5). Clause (1) — the answer's own subject, where the bundle
+    names one of the five carried types — is unchanged and wins. Clause (2) — the
+    subject the PARSE resolved for this question — applies only where clause (1)
+    is empty, so this can add a carry and can never alter one.
+
+    Returns ``{}``, ``{"order": ref}``, ``{"machine": ref}`` or both. The panel
+    and the exam runner both read this ONE definition rather than each holding
+    their own (the F3 discipline: one definition, three sites).
+    """
+    subject_type = getattr(bundle, "subject_type", "") or ""
+    name = (getattr(bundle, "subject_external_name", "") or "").strip()
+    if name.lower() not in _SUBJECT_PLACEHOLDERS:
+        if subject_type in CARRIED_ORDER_SUBJECT_TYPES:
+            return {"order": name}
+        if subject_type in CARRIED_MACHINE_SUBJECT_TYPES:
+            return {"machine": name}
+    if parsed is None:
+        return {}
+    out: dict = {}
+    order = _unique_parsed_ref(parsed, "order")
+    machine = _unique_parsed_ref(parsed, "machine")
+    if order:
+        out["order"] = order
+    if machine:
+        out["machine"] = machine
+    return out
+
+
+# ---------------------------------------------------------------------------
 # The parse memory — what makes the two-phase ask FREE (Session 4A.5c CU3a).
 # ---------------------------------------------------------------------------
 

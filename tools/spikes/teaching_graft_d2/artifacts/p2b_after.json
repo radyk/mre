@@ -1,0 +1,52 @@
+[
+  {
+    "arm": "cold",
+    "route": "CLARIFY",
+    "note": "",
+    "subjects": [
+      {
+        "kind": "order",
+        "raw": "this",
+        "ref": null,
+        "source": "utterance",
+        "pointed": true,
+        "op_seq": null
+      }
+    ],
+    "carry_in": {}
+  },
+  {
+    "arm": "after-mobility",
+    "route": "what-would-change",
+    "note": "resolved against ORD-000073",
+    "subjects": [
+      {
+        "kind": "order",
+        "raw": "this",
+        "ref": "ORD-000073",
+        "source": "last-answer",
+        "pointed": true,
+        "op_seq": 10
+      }
+    ],
+    "carry_in": {
+      "order": "ORD-000073"
+    }
+  },
+  {
+    "arm": "after-unrelated",
+    "route": "CLARIFY",
+    "note": "",
+    "subjects": [
+      {
+        "kind": "order",
+        "raw": "this",
+        "ref": null,
+        "source": "utterance",
+        "pointed": true,
+        "op_seq": null
+      }
+    ],
+    "carry_in": {}
+  }
+]
