@@ -1908,6 +1908,32 @@ is still **drafted-not-run**.
     every form including marketing copy; the honest version is the pilot-phase
     import-and-price feature. Recorded so it is not re-proposed as a headline.
 
+- **2026-08-06, W2.3 (a mint errand; nothing below was designed here).** Routed
+  on sight, one line each:
+  - **R4 (solver)** — **the `--runslow` ladder is 14 RED at HEAD** and has been
+    skipped by every recorded baseline for six sessions. Four stale contract
+    literals, three stale signatures (**one is R-SC2's
+    `test_relaxation_guard_negative_control_goes_red`, which cannot execute**),
+    six live-LLM failures undiagnosed. Cheapest first: the literals.
+  - **R4 (solver) — A RULING QUESTION, not a patch.** R-SP1 clause (6) says the
+    trail's `elapsed_s` are recorded facts never asserted by a test;
+    `test_document_is_byte_identical_with_the_store_on_and_off` asserts the WHOLE
+    document and now fails on them. Either byte-identity excludes the trail, or
+    a run-varying float does not belong in a document claimed byte-identical.
+  - **R4 (solver)** — **the demo board cannot produce a forced alternative**: 8
+    targets, 8 `infeasible_this_horizon`, 154 of 386 placed bars multi-eligible.
+    Second independent door onto 4x's *160 refused of 160* on the same world.
+  - **R2 (screens)** — the summary screen's two provenance guards are
+    incomplete: `unsourcedFigures` is hand-enumerated while `sourcesOf` walks
+    (the portfolio, money rows, split and progress figures are unexamined, and
+    the companion test is a SUBSET test), and the trail zone is asserted in one
+    direction only. Both proven by injection; §5a.242(b).
+  - **R1 (AI layer)** — none surfaced beyond W2.1's standing item (the trail
+    still cannot be asked about; now its dollars cannot either).
+  - **R3 (load layer)** — none surfaced.
+  - **R5 (GTM)** — none surfaced. Noted for the demo script rather than GTM: the
+    dollar story and the drag-ghost surface cannot be shown on the same board.
+
 ### Cross-cutting standing orders (all rooms)
 
 - **Named-children clause in every session prompt**; close-outs state
