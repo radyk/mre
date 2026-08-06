@@ -20181,3 +20181,133 @@ the documentation-browser slope the wall exists to stop; the honest fix is a
 better second-tier answer, and it is filed rather than taken.
 
 **Q3 (teaching persistence) is untouched** and remains parked.
+
+
+---
+
+## 2026-08-05 — R-CT1: THE CERTIFICATE CONTRACT (S-02 + S-03)
+
+**Session:** 4A/4B shared, the certificate contract. Cross-room (the gate is R4
+territory, the voice is R1's). Two ledger rows from the shared-body census
+(`docs/closeouts/4a-micro-shared-body-census.md` §9) closed. Contract
+**CONTRACT_VERSION unchanged at 1.15**; docs/02 amended (§4.4, §4.5, §6). Parse
+prompt **v19** and synthesis prompt **v9** both unchanged — this is gate code,
+contract text, authored copy and tests. Narrative:
+`docs/closeouts/4x-certificate-contract.md`.
+
+### R-CT1 (1) — THE GATE'S VERDICT IS EVIDENCE
+
+**An ACCEPTED submission left the evidence store silent about its own
+certificate.** `ConformanceGate.record` emits a Finding only for a rule that is
+NOT satisfied — which is correct and stays correct, because every finding code
+names a defect and a satisfied rule is not one. The consequence was that the
+grade was computed, written to `certificate.json`, and never reported, so every
+surface that reads evidence alone was **structurally** unable to state it. The
+board opener returns `grade: None` and says so; the certificate route reached
+past the store to the artifact, which was honest and was still a contract gap.
+
+The gate now reports its verdict **at both of its exits** — the full rule
+cascade and the intake refusal, because "I was pointed at nothing" is still a
+grade and a record present on only one path would be a gap shaped exactly like
+the one it closes. The verdict decomposes across three record types that already
+existed: the categorical part on a §4.5 **Event** (`status_text:
+"gate_verdict"`, tier `headline`, subjects naming the submission), the coverage
+on §4.4 **Metrics** (`gate.rules_checked` rolling up the four outcome counts,
+emitted even at zero so the decomposition is verifiable by the consolidator
+rather than asserted), and `certificate.json` on a §4.6 **Artifact** registered
+with its sha256.
+
+**What was refused, and why it stays refused.** A *Finding* — an ACCEPTED grade
+would have to wear a defect's code. A *Decision* — the grade is a pure function
+(`grade_from_outcomes`), not a choice; there are no alternatives to enumerate,
+and `driver` is mandatory-exactly-one where every code names a *scheduling*
+cause, so filling one would claim deliberation that did not happen. A *Metric*
+for the grade itself — `value` is a float and a grade is a word. A *new record
+type* — nothing here needed one.
+
+**Provenance is truthful and walkable.** `grade_provenance` names the class
+(`derived`) and the formula id, and the guard asserts that id **resolves to a
+callable**. It is a use of the docs/01 §7 vocabulary and NOT a sidecar write: a
+sidecar is keyed on a canonical entity attribute, and M0 runs before canonical
+identities exist at all.
+
+**The read has ONE definition and ONE stated order — evidence first, artifact
+second.** `Explainer._read_certificate` is that definition; `source` names which
+reading answered, so a caller is never confused about what it holds and the
+guards prove the order rather than infer it. **The artifact fallback is retained
+and is not a legacy path**: evidence is append-only, so every board gated before
+this change has no verdict record and never will. NO RETROACTIVE WRITES.
+
+**`record_event` grew an optional `subjects` parameter.** The Event model has
+carried `subjects` since L1 (docs/02 §3's envelope); the verb hardcoded an empty
+list. That was a REPORTER limitation, never a contract one, and an Event that
+cannot name its subject is unreachable by key — which docs/02 §8(1) requires of
+M0's records. Additive: the default is none, so every existing call site emits
+byte-identically.
+
+**No `CONTRACT_VERSION` bump is owed, and the brief's expectation of one was
+wrong on a rule docs/02 already states.** §4.2: that constant versions the
+SCHEDULE DOCUMENT, and no field added here reaches it. The governing rule is
+add-never-repurpose, with the spec update in the same commit — which is this
+entry and the docs/02 diff.
+
+### R-CT1 (2) — THE ANSWER STATES WHAT THE CERTIFICATE CONTAINS
+
+**"…and it is unsigned — nobody has countersigned it" is removed, and
+countersigning is PARKED, not scaffolded** (arbitrated by Daryn, 2026-08-05:
+removal, not build). The sentence was true of the artifact and false as an
+implication: it tells a planner a signing step exists and was not done, when
+this product has no certificate-countersigning concept at all. **The manufacture
+rule's quieter cousin — asserting the absence of something implies the
+something.** The cure is not a softer phrasing but a sentence about what the
+record IS: whose it is, when it was made, and that the grade is *computed from
+those rule outcomes* — which is checkable, because `grade_from_outcomes` is pure
+and the outcomes are the counts stated one line above. The provenance clause is
+stated only where the reading carries provenance; a board read from the artifact
+has none to quote and does not quote one.
+
+**The copy was censused, not spot-fixed.** One live site
+(`renderers.py`, the `present` branch). Every other repo hit is historical
+record (docs/04, docs/07, the census close-out, committed sweep transcripts —
+all correctly left alone), the arithmetic sense of *sign*, or R-CAL1's
+`CalibrationProfile` signature.
+
+**R-CAL1 IS UNTOUCHED AND UNDIMINISHED, AND THIS IS NOT PRECEDENT AGAINST IT.**
+A CalibrationProfile signature is a different artifact with a *defined*
+attestation — a human accepting a measurement they are answerable for — and rule
+(2) still holds. A guard in this session's file asserts it, so a future session
+cannot read S-03 as licence to strip it.
+
+### The prerequisites countersigning is parked behind (verbatim)
+
+1. define what the signer is attesting to;
+2. identify when customers actually require human approval.
+
+### Discipline recorded
+
+**A digest must be taken from the artifact, not from the string we meant to
+write.** `write_text` newline-translates on Windows, so a sha256 of the
+serialized JSON does not verify against the file it names. Caught by the guard,
+not by reading the code — the first assertion that compared the registered hash
+to the bytes on disk went red.
+
+**An instrument's context line is not the measurement.** See the census
+reconciliation in the same session's close-out §1: (e2)'s "2 of 401" was
+`f1_widening_trial.py`'s single-pattern *(context)* line transcribed into a
+table whose other rows came from the whole-predicate ruler. The operative figure
+is **5**.
+
+**A "latest" taken from a list is not a latest.** `EvidenceIndex.build` walks
+`sorted(runs_dir.glob("*.jsonl"))` and run files are named `<uuid4>.jsonl`, so
+index order ACROSS RUNS is effectively random. The first implementation took
+`verdicts[-1]` and the first guard asserted `== verdicts[-1]` — **the
+implementation against its own list position**, which passes under either rule.
+Both corrected: the route sorts on the record's own timestamp, and the guard
+names the newest by `max()` after asserting the two runs are distinguishable in
+time at all.
+
+**A control that reverts the wrong occurrence proves nothing, and only running
+it says so.** NC4's one-line anchor `subjects=subjects or [],` matches
+`record_metric` BEFORE `record_event`, so it reverted a verb the guard never
+touches and stayed green. Re-anchored on `message=message or status_text`, which
+is unique to `record_event`. (d.2) recorded this class twice; this is a third.

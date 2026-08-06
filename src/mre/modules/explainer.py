@@ -2033,20 +2033,34 @@ class Explainer:
         )
 
     def _read_certificate(self) -> dict:
-        """The gate's own certificate, READ from the artifact the pipeline wrote
-        (``out_dir/certificate.json``, written by ``__main__``), never re-derived.
+        """The gate's own certificate — READ, never re-derived. ONE definition,
+        with ONE stated order: **the evidence store first, the artifact second.**
 
-        The grade is a pure function of rule outcomes (``grade_from_outcomes``),
-        so recomputing it here would be a SECOND definition of the verdict — and
-        the handoff rule this module already follows for gate findings is *read
-        from evidence, never by re-running the gate*. Reading the artifact the
-        gate signed off is that rule, not an exception to it. Reading the run
-        directory is precedented: ``local_price`` does it for the ledger, which
-        is why ``self._out_dir`` exists at all (4B.30 Item 3).
+        THE ORDER IS THE POINT (S-02). The evidence contract is the citation
+        surface every AI answer stands on, so where the gate has reported its own
+        verdict as a record, that record is what this route grounds on. Until
+        this session the gate reported nothing on a SATISFIED rule, so an
+        ACCEPTED submission was silent in the store and this method had no choice
+        but to reach past it to ``out_dir/certificate.json``. The artifact read
+        is RETAINED and is not a legacy path: evidence is append-only, so every
+        board gated before this change has no verdict record and never will, and
+        the fallback is the only honest way to answer about one.
+
+        Neither path re-computes anything. The grade is a pure function of rule
+        outcomes (``grade_from_outcomes``); calling it here would be a SECOND
+        definition of the verdict. Reading the run directory is precedented:
+        ``local_price`` does it for the ledger, which is why ``self._out_dir``
+        exists at all (4B.30 Item 3).
+
+        ``source`` names which reading answered — ``evidence`` or ``artifact`` —
+        so a caller can never be confused about what it is holding, and the
+        guards can prove the order rather than infer it.
 
         FOUR STATES, NEVER TWO — 4B.18's ``unreadable`` species again, and its
-        priority rule with it. A claim about the SUBMISSION is never manufactured
-        from a fact about our STORAGE:
+        priority rule with it. The states describe the ARTIFACT search, which is
+        the only search that can be degraded (an absent evidence record is not a
+        state, it is simply the fallback's cue). A claim about the SUBMISSION is
+        never manufactured from a fact about our STORAGE:
 
         - ``no_run_dir``  — this Explainer was built without a run directory, so
           nothing was looked for. Not the same as looking and finding nothing.
@@ -2064,18 +2078,22 @@ class Explainer:
         """
         import json
 
+        from_evidence = self._certificate_from_evidence()
+        if from_evidence is not None:
+            return from_evidence
+
         if self._out_dir is None:
-            return {"state": "no_run_dir"}
+            return {"state": "no_run_dir", "source": "artifact"}
         path = Path(self._out_dir) / "certificate.json"
         if not path.exists():
-            return {"state": "absent", "path": str(path)}
+            return {"state": "absent", "path": str(path), "source": "artifact"}
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
         except Exception:  # noqa: BLE001 — an unreadable certificate is a STATE
-            return {"state": "unreadable", "path": str(path),
+            return {"state": "unreadable", "path": str(path), "source": "artifact",
                     "why": "the file did not parse as JSON"}
         if not isinstance(raw, dict):
-            return {"state": "unreadable", "path": str(path),
+            return {"state": "unreadable", "path": str(path), "source": "artifact",
                     "why": "the file is not a certificate record"}
         outcomes = raw.get("rule_outcomes")
         tally: Optional[dict] = None
@@ -2086,13 +2104,18 @@ class Explainer:
                 tally[key] = tally.get(key, 0) + 1
         return {
             "state": "present",
+            "source": "artifact",
             "path": str(path),
             "grade": raw.get("grade"),
             "costing_grade": raw.get("costing_completeness_grade"),
             "rules_checked": len(outcomes) if isinstance(outcomes, dict) else None,
             "outcome_tally": tally,
+            # The lists stay (this reading HAS them) and the counts are added, so
+            # the renderer reads ONE key shape whichever path answered.
             "deficiencies": raw.get("deficiencies") or [],
             "normalizations": raw.get("normalizations") or [],
+            "deficiency_count": len(raw.get("deficiencies") or []),
+            "normalization_count": len(raw.get("normalizations") or []),
             "flags_disclosed": raw.get("flags_disclosed") or [],
             "gate_finding_count": (len(raw["findings"])
                                    if isinstance(raw.get("findings"), list) else None),
@@ -2100,6 +2123,81 @@ class Explainer:
             "run_id": raw.get("run_id"),
             "submission_dir": raw.get("submission_dir"),
             "counts": raw.get("counts") or {},
+        }
+
+    def _certificate_from_evidence(self) -> Optional[dict]:
+        """The gate's verdict as the GATE REPORTED IT — the ``gate_verdict``
+        Event (docs/02 §4.5, S-02) — or None when this run's evidence carries no
+        such record, which is the fallback's cue and not a state.
+
+        Returns the SAME dict shape the artifact read returns, because the
+        renderer must not learn where a fact came from in order to state it. The
+        only difference is ``source``, and ``record_id`` — the record a planner
+        or an auditor can go and look at, which is the whole reason to prefer
+        this reading.
+
+        THE MOST RECENT ONE STANDS, when there are several. A run directory can
+        hold more than one M0 run (a resubmit re-gates the same submission into
+        the same runs dir), and the verdict that stands is the latest — the same
+        rule the registry applies to schedules.
+
+        BY TIMESTAMP, NOT BY POSITION, and the difference is not academic:
+        ``EvidenceIndex.build`` walks ``sorted(runs_dir.glob("*.jsonl"))`` and
+        run files are named ``<uuid4>.jsonl``, so index order across runs is
+        effectively RANDOM. Taking the last element would have picked the
+        lexicographically-last run id and called it the newest.
+
+        A record whose payload is not a dict, or which carries no grade, is
+        REFUSED here rather than half-read: falling through to the artifact is
+        correct for a malformed record (the artifact may well be intact), and
+        manufacturing a state out of our own storage failure is the thing 4B.18
+        ruled against.
+        """
+        # Imported from the gate that WRITES the record — one constant, so a
+        # rename cannot leave the reader looking for a string nobody emits.
+        from mre.modules.conformance import GATE_VERDICT_STATUS
+
+        try:
+            events = self._index.events()
+        except Exception:  # noqa: BLE001 — an index that cannot be read is a MISS
+            return None
+        verdicts = [e for e in events
+                    if e.get("status_text") == GATE_VERDICT_STATUS]
+        if not verdicts:
+            return None
+        # Stable sort on the record's own timestamp: equal stamps (two runs
+        # inside one clock tick) keep index order rather than being reordered
+        # arbitrarily.
+        rec = sorted(verdicts, key=lambda e: str(e.get("timestamp") or ""))[-1]
+        payload = rec.get("payload")
+        if not isinstance(payload, dict) or not payload.get("grade"):
+            return None
+        tally = payload.get("outcome_tally")
+        return {
+            "state": "present",
+            "source": "evidence",
+            "record_id": rec.get("record_id"),
+            "grade": payload.get("grade"),
+            "costing_grade": payload.get("costing_completeness_grade"),
+            "rules_checked": payload.get("rules_checked"),
+            "outcome_tally": tally if isinstance(tally, dict) else None,
+            # THE COUNTS, NOT THE LISTS — and the counts are what BOTH readings
+            # expose, because the body only ever states how many. The verdict
+            # record deliberately does not carry the deficiency TEXT: those
+            # bodies are already in evidence as Findings and the certificate
+            # renders them from there (``_render_findings``). Copying their prose
+            # onto the verdict record would be a second definition of the finding
+            # set — the exact defect class this route was repaired for.
+            "deficiency_count": payload.get("deficiency_count") or 0,
+            "normalization_count": payload.get("normalization_count") or 0,
+            "flags_disclosed": payload.get("flags_disclosed") or [],
+            "gate_finding_count": payload.get("finding_count"),
+            "generated_at": payload.get("generated_at"),
+            "run_id": rec.get("run_id"),
+            "submission_dir": payload.get("submission_ref"),
+            "counts": payload.get("counts") or {},
+            "grade_provenance": payload.get("grade_provenance") or {},
+            "intake_error": payload.get("intake_error"),
         }
 
     def _explain_certificate(self, entity_ref: Optional[str] = None) -> ExplanationBundle:

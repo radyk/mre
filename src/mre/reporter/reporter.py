@@ -291,7 +291,18 @@ class Reporter:
         payload: Optional[dict[str, Any]] = None,
         tier: RecordTier = RecordTier.DETAIL,
         message: str = "",
+        subjects: Optional[list[EntityRef]] = None,
     ) -> Event:
+        """``subjects`` is OPTIONAL and defaults to none, so every existing call
+        site emits byte-identically (Session S-02).
+
+        It was added because the Event model has carried ``subjects`` as part of
+        the common envelope since L1 (docs/02 §3) while this verb hardcoded an
+        empty list — a REPORTER limitation, never a contract one. An Event that
+        cannot name its subject is unreachable by entity key, and docs/02 §8(1)
+        is explicit that M0's records must be reachable that way (it is what
+        certificate trending across submissions keys on). The M0 gate verdict is
+        the first Event that needs it."""
         record = Event(
             record_id=str(uuid.uuid4()),
             run_id=self.run_id,
@@ -299,7 +310,7 @@ class Reporter:
             module=self.module,
             timestamp=self._now(),
             snapshot_id=self.snapshot_id,
-            subjects=[],
+            subjects=subjects or [],
             tier=tier,
             message=message or status_text,
             status_text=status_text,

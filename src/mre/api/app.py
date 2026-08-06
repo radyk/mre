@@ -1127,12 +1127,14 @@ def _run_gate(registry: Registry, submission_id: str, sub_dir: Path | str,
         trigger="api", snapshot_id="pre-adapter", sink_dir=sub_dir / "gate_runs",
     )
     result = ConformanceGate().run(files_dir, reporter)
-    reporter.end(RunStatus.SUCCESS if result.go else RunStatus.PARTIAL)
 
     json_path = sub_dir / "certificate.json"
     md_path = sub_dir / "certificate.md"
-    write_certificate_json(result.certificate, json_path)
+    # Written and registered BEFORE the run closes — the output manifest is
+    # sealed into the close record (S-02).
+    write_certificate_json(result.certificate, json_path, reporter=reporter)
     write_certificate_markdown(result.certificate, md_path)
+    reporter.end(RunStatus.SUCCESS if result.go else RunStatus.PARTIAL)
     registry.record_certificate(
         submission_id, result.grade, result.costing_grade, json_path, md_path,
     )

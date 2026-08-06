@@ -190,11 +190,29 @@ Code + subjects + snapshot on every record turns the store into a **monitoring**
 
 `{run_id, name, value, unit, subjects, rollup_of}`
 
-**Decomposability contract (enforced):** any metric carrying `rollup_of` must equal the aggregate of the records it references; the consolidator verifies this at run end. No number appears in a summary that cannot be traced to its constituents. Attribution follows Document 1's invariant: costs at the finest meaningful grain (WorkPackage/task/resource), service outcomes per Demand.
+**Decomposability contract (enforced):** any metric carrying `rollup_of` must equal the aggregate of the records it references; the consolidator verifies this at run end. A rollup's components are emitted **even at zero** (M0's `gate.rules_*` are the worked example): components that appear only when non-empty cannot be verified as a set, and an absent component reads as an unasked question rather than a measured nought. No number appears in a summary that cannot be traced to its constituents. Attribution follows Document 1's invariant: costs at the finest meaningful grain (WorkPackage/task/resource), service outcomes per Demand.
 
 ### 4.5 Event
 
 Progress and status: `{status_text, payload}`. Long solves stream improving solutions and telemetry here.
+
+`subjects` is **emittable** on an Event. The record model has carried the field since L1 (§3's envelope), but `record_event` hardcoded an empty list until 2026-08-05; it is now an optional parameter defaulting to none, so a progress ping stays subject-less while a status record that is *about* something names it. Boundary rule 1 is what makes such a record reachable by key.
+
+**The M0 gate verdict** (`status_text: "gate_verdict"`, added 2026-08-05, R-CT1). The conformance gate emits a Finding only for a rule it did **not** satisfy — which is correct and stays correct: every finding code names a defect, and a satisfied rule is not one. The consequence, unnoticed until the shared-body census, was that an **ACCEPTED submission left the evidence store silent about its own certificate**. The grade was computed, written to `certificate.json`, and never reported, so every surface reading evidence alone was *structurally* unable to state it — the board opener returns `grade: None` and says so, and the certificate answer had to reach past the store to the artifact.
+
+The gate now reports its verdict at **both** of its exits — the full rule cascade and the intake refusal ("I was pointed at nothing" is still a grade) — decomposed across three record types that already existed:
+
+| part | record | content |
+|---|---|---|
+| the categorical verdict | **this Event** | `grade`, `costing_completeness_grade`, `outcome_tally`, `flags_disclosed`, deficiency/normalization/finding counts, the submission ref, `grade_provenance` |
+| the coverage | **Metric** (§4.4) | `gate.rules_checked` rolling up `gate.rules_{satisfied,flagged,degraded,violated}` |
+| the artifact | **Artifact** (§4.6) | `certificate.json`, registered with its sha256 |
+
+`grade_provenance` names the provenance **class** (Document 1 §7) and the formula that produced the value: the grade is `derived` by `grade_from_outcomes` from observed rule outcomes. It is a *use of that vocabulary*, not a sidecar write — a sidecar is keyed on a canonical entity attribute, and M0 runs before canonical identities exist at all.
+
+**What was refused, and why it stays refused.** A *Finding* — an ACCEPTED grade would have to wear a defect's code, and the gate's silence on a satisfied rule is therefore not the bug. A *Decision* — the grade is a pure function, not a choice: there are no alternatives to enumerate, and `driver` is mandatory-exactly-one where every code names a scheduling cause, so filling one would claim deliberation that did not happen. A *Metric* for the grade itself — `value` is a float and a grade is a word. A *new record type* — nothing here needs one.
+
+**No `CONTRACT_VERSION` bump is owed**, by the rule §4.2 already states: that constant versions the **schedule document**, and no field added here reaches it. This is an add-never-repurpose vocabulary change, committed with its spec update.
 
 ### 4.6 Artifact
 
@@ -217,7 +235,7 @@ reporter.record_decision(type, subjects, chosen, alternatives, driver, basis,
                          policy=None, tier=...)
 reporter.record_finding(code, severity, subjects, evidence, disposition, detail=None)
 reporter.record_metric(name, value, unit, subjects=None, rollup_of=None)
-reporter.record_event(status_text, payload=None)
+reporter.record_event(status_text, payload=None, subjects=None)
 reporter.register_output(artifact_ref)
 reporter.end(status)          # or auto via context manager; exceptions captured
 ```

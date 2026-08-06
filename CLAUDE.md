@@ -197,11 +197,11 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation.
-**Last closed: Session 4A teaching-graft (d.3) — the product explains its own
-words**, 2026-08-05 (docs/07 v2.99, §5a.212-222; docs/04 2026-08-05 **R-TE1
-ruled and BUILT**; contract unchanged **1.15**; parse prompt **v18 → v19**,
-synthesis prompt **v9**; narrative
-`docs/closeouts/4a-teaching-d3-term-explanation.md`).
+**Last closed: Session S-02 + S-03 — the certificate contract**, 2026-08-05
+(docs/07 v3.00, §5a.223-226; docs/04 2026-08-05 **R-CT1 ruled and BUILT**;
+contract unchanged **1.15** — docs/02 amended, no `CONTRACT_VERSION` bump owed;
+prompts unchanged **v19 / v9**; narrative
+`docs/closeouts/4x-certificate-contract.md`).
 
 **THE SESSION LEDGER IS NOT IN THIS FILE.** What a session built, what it
 measured, its test counts and its commit live in `docs/07` §5a (position and
@@ -216,6 +216,7 @@ Recent sessions, newest first. `docs/closeouts/<file>.md` is the narrative:
 
 | session | subject | ruling | close-out |
 | --- | --- | --- | --- |
+| S-02 + S-03 | the certificate contract | R-CT1 | `4x-certificate-contract.md` |
 | 4A tg (d.3) | the product explains its own words | R-TE1 | `4a-teaching-d3-term-explanation.md` |
 | 4A tg (d.2) | bank format, ladder, clarify-carry | R-EX2, R-LD6 | `4a-teaching-d2-format-ladder-carry.md` |
 | 4A tg (e2) | the measurement errand | R-TG7 + W4 lead order | `4a-teaching-e2-measurement-errand.md` |
@@ -359,6 +360,11 @@ measurements. Do not restate a ruling's reasoning here.
   judge is written down and REFUSED.**
 - **R-SW1** — a specimen world is a committed dataset whose specimens are
   MEASURED, never assumed.
+- **R-CT1** — the gate's VERDICT is evidence (Event + Metrics + Artifact, both
+  exits, provenance `derived`); the certificate answer states what the
+  certificate CONTAINS and never asserts a signing step. ONE read definition,
+  evidence-first / artifact-second; the fallback is permanent (append-only).
+  Countersigning is PARKED with two prerequisites; R-CAL1 is untouched.
 
 **Money, proof and the board**
 
@@ -504,6 +510,7 @@ REPORTED and deliberately NOT fixed.
 | 4B.11 | R-PD1 clause (5) is open; there is no optimality ROUTE — nobody can ASK | §5a.28-30 |
 | 4B.6b/c | §5a.15 the 14-day window is budget-starved at 200 orders; the prediction store's sweep is scoped by nothing | §5a.8-17 |
 | 4B.5–4B.7 | the two-solve baseline is not extended to forced-alternatives pricing; `EARLINESS_PREFERENCE` names a mechanism that no longer exists (§5a.20) | §5a.19-21 |
+| S-02/S-03 | the board opener still returns `grade: None` though its record now exists; `certificate.md` is written but not registered | §5a.226 · `4x-certificate-contract.md` |
 | 4A (d.3) | a defined word asked about before it is said gets the second tier; the glossary is 10 entries against 27 emitted terms | §5a.222 · `4a-teaching-d3-term-explanation.md` |
 | 4A (d.2) | `RECORDS_FROM` is a subset test, not equality; the cross-version bank names two schedule ids (the postposed deictic was discharged by (d.3) R2) | §5a.211 · `4a-teaching-d2-format-ladder-carry.md` |
 | 4A (a)–(e2) | the widened GK predicate is still a pattern map; C9's transfer pair is still not bank-expressible (the fourth W4 site and the same-answer assertion were discharged by (d.2)) | §5a.162-202 |

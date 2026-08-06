@@ -30,6 +30,7 @@ making gate findings reachable by canonical key (docs/02 boundary rule 1).
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import statistics as _stats
 from dataclasses import dataclass
@@ -45,7 +46,7 @@ from mre.contracts.ids_rules import (
     finding_severity, grade_from_outcomes,
 )
 from mre.contracts.vocabularies import (
-    FindingDisposition, FindingSeverity, RecordTier,
+    FindingDisposition, FindingSeverity, ProvenanceClass, RecordTier,
 )
 from mre.reporter import Reporter
 
@@ -153,6 +154,171 @@ _OUTCOME_RANK = {RuleOutcome.SATISFIED: 0, RuleOutcome.FLAGGED: 1,
                  RuleOutcome.DEGRADED: 2, RuleOutcome.VIOLATED: 3}
 
 
+# ---------------------------------------------------------------------------
+# THE GATE'S OWN VERDICT, AS EVIDENCE (S-02)
+# ---------------------------------------------------------------------------
+#
+# THE GAP THIS CLOSES. ``record()`` above emits a Finding only when a rule is
+# NOT satisfied — which is correct and stays correct: every finding code names a
+# defect, and a satisfied rule is not one. The consequence, unnoticed until the
+# shared-body census, is that an ACCEPTED submission with no deficiencies leaves
+# the evidence store COMPLETELY SILENT about its own certificate. The grade was
+# computed, written to ``certificate.json``, and never reported. Any surface
+# reading evidence alone is therefore structurally unable to state the grade —
+# ``Explainer._opener_certificate`` returns ``{"grade": None}`` and says so, and
+# the certificate route had to reach past the store to the artifact.
+#
+# WHICH RECORD KIND, AND WHAT WAS REFUSED. docs/02 §4 offers six, and the
+# verdict decomposes into three parts that each already have a home:
+#
+#   * the COUNTS (how many rules ran, how many landed on each outcome) are
+#     numbers with a unit and a decomposition — §4.4 Metric, and the rollup is
+#     verified by the consolidator rather than asserted here;
+#   * the ARTIFACT (certificate.json) is an output with a reference and a hash —
+#     §4.6 Artifact, registered through verb 7 by ``write_certificate_json``;
+#   * the GRADE and the costing grade are CATEGORICAL, and ride the §4.5 Event
+#     whose ``status_text`` is a status string and whose payload is free
+#     structure (§5: "codes are for routing, payloads are for substance"). The
+#     in-repo precedent is M6's ``solve_complete``, which carries that module's
+#     terminal verdict — status, objective, gap, budget — as an Event that both
+#     the document assembler and the answer surface read.
+#
+# REFUSED, and each for its own reason:
+#   * a Finding — every code in the vocabulary names a problem, so an ACCEPTED
+#     grade would have to wear a defect's code. That is the category fusion this
+#     repo keeps ruling against, and it is why ``record()``'s silence is not the
+#     bug;
+#   * a Decision — the grade is a PURE FUNCTION (``grade_from_outcomes``), not a
+#     choice. There are no alternatives to enumerate and no driver to name; the
+#     ``driver`` field is mandatory-exactly-one and every code in it names a
+#     scheduling cause. Recording a computation as a Decision claims deliberation
+#     that did not happen;
+#   * a Metric for the grade itself — ``value`` is a float. A grade is a word.
+#   * a new record type — nothing here needs one, and a seventh type to carry one
+#     categorical field is a larger change than the gap.
+#
+# NO SCHEDULE-DOCUMENT CONTRACT BUMP IS OWED, and docs/02 §4.2 already states
+# the rule: ``CONTRACT_VERSION`` versions the SCHEDULE DOCUMENT, and no field
+# added here reaches it. This is a docs/02 amendment governed by
+# add-never-repurpose, in the same commit as the code.
+
+#: ``status_text`` for the verdict Event. One constant, read by the gate that
+#: writes it and by the answer surface that grounds on it — a second spelling of
+#: this string is a second definition of the record.
+GATE_VERDICT_STATUS = "gate_verdict"
+
+#: The formula that produces the grade. Named ON the record so the provenance is
+#: WALKABLE rather than asserted: a reader can go and read the function.
+GRADE_FORMULA = "mre.contracts.ids_rules.grade_from_outcomes"
+
+#: Metric names. ``gate.rules_checked`` is the rollup; the four below are its
+#: components and are emitted even at ZERO, because a rollup whose components
+#: are conditionally present cannot be verified (and an absent component reads
+#: as an unasked question rather than a measured nought).
+_METRIC_CHECKED = "gate.rules_checked"
+_METRIC_BY_OUTCOME = {
+    RuleOutcome.SATISFIED: "gate.rules_satisfied",
+    RuleOutcome.FLAGGED: "gate.rules_flagged",
+    RuleOutcome.DEGRADED: "gate.rules_degraded",
+    RuleOutcome.VIOLATED: "gate.rules_violated",
+}
+
+
+def emit_gate_verdict(
+    reporter: Reporter,
+    *,
+    subjects: list[EntityRef],
+    grade: str,
+    costing_grade: str,
+    rule_outcome: dict[str, str],
+    deficiencies: list[str],
+    normalizations: list[str],
+    flags_disclosed: list[str],
+    counts: dict[str, int],
+    finding_count: int,
+    generated_at: str,
+    intake_error: Optional[str] = None,
+) -> dict[str, Any]:
+    """Write the gate's verdict into the evidence store. ONE definition, called
+    from both of ``ConformanceGate.run``'s exits — the intake refusal grades a
+    submission just as much as the full cascade does, and a verdict record that
+    existed on only one path would be a gap shaped exactly like the one it was
+    built to close.
+
+    Returns the emitted records' ids so a caller can cite them.
+
+    ``rule_outcome`` is the WORST-OUTCOME-PER-RULE map, not the raw outcome
+    list: rules that record more than once would otherwise inflate the
+    denominator, and the count a planner is told ("29 gate checks ran") must be
+    the count of CHECKS, not of calls. It is the same denominator the
+    certificate artifact carries, so the two readings cannot drift.
+    """
+    tally: dict[str, int] = {}
+    for value in rule_outcome.values():
+        tally[str(value)] = tally.get(str(value), 0) + 1
+
+    component_ids: list[str] = []
+    for outcome, metric_name in _METRIC_BY_OUTCOME.items():
+        rec = reporter.record_metric(
+            name=metric_name, value=float(tally.get(outcome.value, 0)),
+            unit="rules", subjects=subjects, tier=RecordTier.SUPPORTING,
+            message=f"{tally.get(outcome.value, 0)} rule(s) {outcome.value}",
+        )
+        component_ids.append(rec.record_id)
+
+    checked = reporter.record_metric(
+        name=_METRIC_CHECKED, value=float(len(rule_outcome)), unit="rules",
+        subjects=subjects, rollup_of=component_ids, tier=RecordTier.SUPPORTING,
+        message=f"{len(rule_outcome)} gate rule(s) evaluated",
+    )
+
+    payload: dict[str, Any] = {
+        "grade": grade,
+        "costing_completeness_grade": costing_grade,
+        "rules_checked": len(rule_outcome),
+        "outcome_tally": tally,
+        "deficiency_count": len(deficiencies),
+        "normalization_count": len(normalizations),
+        "flags_disclosed": list(flags_disclosed),
+        "finding_count": finding_count,
+        "counts": dict(counts),
+        "generated_at": generated_at,
+        # The submission this grades, named in the payload as well as in
+        # ``subjects`` — §3's self-containment rule: a retrieval agent gets
+        # fragments, and this one must make sense alone.
+        "submission_ref": subjects[0].entity_id if subjects else None,
+        # PROVENANCE, TRUTHFULLY (docs/01 §7's four classes, used as a
+        # vocabulary and NOT as a sidecar write — a sidecar is keyed by
+        # (entity_id, attribute_name, snapshot_id) on the CANONICAL model, and
+        # nothing here is a canonical attribute: M0 runs before canonical
+        # identities exist at all). The grade is DERIVED — computed by a named
+        # formula from the rule outcomes, which are themselves observed off the
+        # submission. Writing it as `observed` would be the defect class the
+        # 2026-07-12 amendments name.
+        "grade_provenance": {
+            "provenance_class": ProvenanceClass.DERIVED.value,
+            "formula_id": GRADE_FORMULA,
+            "inputs": "rule_outcomes",
+        },
+        "metric_ids": {"rules_checked": checked.record_id,
+                       "components": component_ids},
+    }
+    if intake_error:
+        payload["intake_error"] = intake_error
+
+    event = reporter.record_event(
+        status_text=GATE_VERDICT_STATUS,
+        payload=payload,
+        tier=RecordTier.HEADLINE,
+        message=(f"intake gate verdict: {grade} "
+                 f"(costing completeness {costing_grade}, "
+                 f"{len(rule_outcome)} rule(s) checked)"),
+        subjects=subjects,
+    )
+    return {"event_id": event.record_id, "checked_metric_id": checked.record_id,
+            "component_metric_ids": component_ids}
+
+
 class ConformanceGate:
     """Grades an IDS submission directory against docs/06 §4 (the Rule Registry)."""
 
@@ -193,6 +359,8 @@ class ConformanceGate:
             return None
 
         message = f"{self._INTAKE_MESSAGES[kind]}: {submission_dir}"
+        subject = EntityRef(entity_id=submission_dir.name or "submission",
+                            entity_type="submission", system="IDS")
         spec = RULE_REGISTRY[RuleId.SUBMISSION_FILES_PRESENT]
         ev = GateFindingEvidence(
             rule_id=RuleId.SUBMISSION_FILES_PRESENT, outcome=RuleOutcome.VIOLATED,
@@ -202,15 +370,26 @@ class ConformanceGate:
         rec = reporter.record_finding(
             code=spec.finding_code,
             severity=finding_severity(spec.category, FindingDisposition.BLOCKED),
-            subjects=[EntityRef(entity_id=submission_dir.name or "submission",
-                                entity_type="submission", system="IDS")],
+            subjects=[subject],
             evidence=ev.as_evidence(), disposition=FindingDisposition.BLOCKED,
             message=message, tier=RecordTier.HEADLINE,
+        )
+        generated_at = datetime.now(UTC).isoformat()
+        rule_outcome = {RuleId.SUBMISSION_FILES_PRESENT.value:
+                        RuleOutcome.VIOLATED.value}
+        # S-02 — THE VERDICT ENTERS THE EVIDENCE ON THIS PATH TOO. "I was pointed
+        # at nothing" is still a grade, and a planner asking what the certificate
+        # says after an intake refusal must be answerable from the store.
+        emit_gate_verdict(
+            reporter, subjects=[subject], grade="REJECTED", costing_grade="C0",
+            rule_outcome=rule_outcome, deficiencies=[message], normalizations=[],
+            flags_disclosed=[], counts={}, finding_count=1,
+            generated_at=generated_at, intake_error=kind,
         )
         certificate = {
             "submission_dir": str(submission_dir),
             "run_id": reporter.run_id,
-            "generated_at": datetime.now(UTC).isoformat(),
+            "generated_at": generated_at,
             "grade": "REJECTED",
             "costing_completeness_grade": "C0",
             "intake_error": kind,
@@ -218,8 +397,7 @@ class ConformanceGate:
             "deficiencies": [message],
             "normalizations": [],
             "findings": [json.loads(rec.model_dump_json())],
-            "rule_outcomes": {RuleId.SUBMISSION_FILES_PRESENT.value:
-                              RuleOutcome.VIOLATED.value},
+            "rule_outcomes": rule_outcome,
             "flags_disclosed": [],
             "counts": {},
         }
@@ -1087,10 +1265,29 @@ class ConformanceGate:
 
         flagged = sorted({f["evidence"]["rule_id"] for f in findings
                           if f["evidence"].get("outcome") == "flagged"})
+        generated_at = datetime.now(UTC).isoformat()
+        gate_counts = {
+            "orders": len(orders), "valid_orders": len(valid_orders),
+            "products": len(products), "routings": len(routings),
+            "resources": len(resources), "customers": len(customers),
+            "setup_transitions": len(setup_transitions), "locks": len(locks),
+            "wip_status": len(wip_rows),
+        }
+        # S-02 — THE VERDICT ENTERS THE EVIDENCE. Emitted BEFORE the certificate
+        # dict is assembled and from the same locals, so the two readings of the
+        # grade are one computation: there is no second call to
+        # ``grade_from_outcomes`` anywhere in this module.
+        emit_gate_verdict(
+            reporter, subjects=_submission_subject(), grade=grade,
+            costing_grade=costing_grade, rule_outcome=rule_outcome,
+            deficiencies=deficiencies, normalizations=normalizations,
+            flags_disclosed=flagged, counts=gate_counts,
+            finding_count=len(findings), generated_at=generated_at,
+        )
         certificate = {
             "submission_dir": str(submission_dir),
             "run_id": reporter.run_id,
-            "generated_at": datetime.now(UTC).isoformat(),
+            "generated_at": generated_at,
             "grade": grade,
             "costing_completeness_grade": costing_grade,
             "manifest": manifest,
@@ -1099,13 +1296,7 @@ class ConformanceGate:
             "findings": findings,
             "rule_outcomes": rule_outcome,
             "flags_disclosed": flagged,
-            "counts": {
-                "orders": len(orders), "valid_orders": len(valid_orders),
-                "products": len(products), "routings": len(routings),
-                "resources": len(resources), "customers": len(customers),
-                "setup_transitions": len(setup_transitions), "locks": len(locks),
-                "wip_status": len(wip_rows),
-            },
+            "counts": gate_counts,
         }
 
         return GateResult(
@@ -1296,8 +1487,32 @@ class ConformanceGate:
 # Certificate writers
 # ---------------------------------------------------------------------------
 
-def write_certificate_json(certificate: dict, path: Path) -> None:
-    Path(path).write_text(json.dumps(certificate, indent=2, default=str), encoding="utf-8")
+def write_certificate_json(certificate: dict, path: Path,
+                           reporter: Optional[Reporter] = None) -> None:
+    """Write the certificate artifact, and — when a still-open gate reporter is
+    given — REGISTER it as this run's output (docs/02 §4.6, verb 7).
+
+    ONE definition of "the certificate is an artifact of this run", so the two
+    callers (``__main__`` and the API's ``_run_gate``) cannot drift in what they
+    register or how they hash it. The reporter is optional because the writer is
+    also used by tests and tools that have no run to attribute the file to;
+    those get the file and no record, which is honest — nothing produced it as
+    part of a graded run.
+
+    Registration must happen BEFORE ``reporter.end()``: the output manifest is
+    written into the close record, so an artifact registered after the run is
+    closed would be lost from the manifest it belongs to.
+    """
+    path = Path(path)
+    path.write_text(json.dumps(certificate, indent=2, default=str), encoding="utf-8")
+    if reporter is not None:
+        # HASH THE FILE, NOT THE STRING WE MEANT TO WRITE. ``write_text``
+        # newline-translates on Windows, so the bytes on disk are not the bytes
+        # of the JSON we serialized — a digest taken from the string would fail
+        # to verify against the very artifact it names. Caught by the guard, not
+        # by reading the code.
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        reporter.register_output(str(path), artifact_hash=digest)
 
 
 def write_certificate_markdown(certificate: dict, path: Path) -> None:

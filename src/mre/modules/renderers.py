@@ -2789,15 +2789,19 @@ class TemplateRenderer:
                     f"{checked} gate check(s) ran against this submission"
                     + (f": {', '.join(parts)}." if parts else "."))
 
-            defs = cert.get("deficiencies") or []
-            norms = cert.get("normalizations") or []
+            # COUNTS, from whichever reading answered. Both the evidence record
+            # and the artifact expose ``*_count``; the artifact additionally has
+            # the deficiency text, which this body does not state — the finding
+            # bodies below are the one place that prose lives.
+            n_defs = cert.get("deficiency_count") or 0
+            n_norms = cert.get("normalization_count") or 0
             flags = cert.get("flags_disclosed") or []
-            if defs or norms or flags:
-                if defs:
-                    lines.append(f"{len(defs)} deficiency(ies) recorded against "
+            if n_defs or n_norms or flags:
+                if n_defs:
+                    lines.append(f"{n_defs} deficiency(ies) recorded against "
                                  "the submission.")
-                if norms:
-                    lines.append(f"{len(norms)} value(s) were normalized on "
+                if n_norms:
+                    lines.append(f"{n_norms} value(s) were normalized on "
                                  "intake.")
                 if flags:
                     lines.append("Flagged and disclosed: " + ", ".join(flags) + ".")
@@ -2805,11 +2809,33 @@ class TemplateRenderer:
                 lines.append("No deficiencies, nothing normalized, nothing "
                              "flagged.")
 
+            # S-03 — WHAT THE CERTIFICATE CONTAINS, AND NOTHING ABOUT SIGNING.
+            #
+            # This sentence used to end "…and it is unsigned — nobody has
+            # countersigned it." True of the artifact, false as an implication:
+            # a planner reading it is told a signing step exists and was skipped,
+            # when this product has no certificate-countersigning concept at all.
+            # It is the manufacture rule's quieter cousin — ASSERTING THE ABSENCE
+            # OF SOMETHING IMPLIES THE SOMETHING — and the cure is not a softer
+            # phrasing but a sentence about what the record IS.
+            #
+            # What replaces it is provenance: whose record this is, when it was
+            # made, and how the grade came to be. "Computed from those rule
+            # outcomes" is checkable — ``grade_from_outcomes`` is a pure function
+            # and the outcomes are the counts stated one line above.
+            #
+            # R-CAL1 IS UNTOUCHED BY THIS. A CalibrationProfile signature is a
+            # different artifact with a defined attestation (a human accepting a
+            # measurement they are answerable for). Nothing here weakens it, and
+            # nothing here is precedent against it.
             when = str(cert.get("generated_at") or "")[:10]
+            derived = ((cert.get("grade_provenance") or {}).get("provenance_class")
+                       == "derived")
             lines.append(
                 "This is the gate's own record"
                 + (f", generated {when}" if when else "")
-                + ", and it is unsigned — nobody has countersigned it.")
+                + ("; the grade is computed from those rule outcomes."
+                   if derived and checked else "."))
         else:
             lines.append(
                 "I can't tell you what the certificate says: I have no reliable "

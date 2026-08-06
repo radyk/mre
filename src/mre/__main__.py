@@ -125,10 +125,16 @@ def main(argv: list[str] | None = None) -> int:
             trigger="cli", snapshot_id=snap_id, sink_dir=runs_dir,
         )
         gate_result = ConformanceGate().run(extract_dir, g_rep)
+
+        # The certificate is WRITTEN AND REGISTERED BEFORE the run is closed
+        # (S-02): ``register_output`` appends to the output manifest, which
+        # ``end()`` seals into the close record. Registering after the end would
+        # drop the artifact from the manifest that is supposed to carry it.
+        write_certificate_json(gate_result.certificate,
+                               out_dir / "certificate.json", reporter=g_rep)
+        write_certificate_markdown(gate_result.certificate, out_dir / "certificate.md")
         g_rep.end(RunStatus.SUCCESS if gate_result.go else RunStatus.PARTIAL)
 
-        write_certificate_json(gate_result.certificate, out_dir / "certificate.json")
-        write_certificate_markdown(gate_result.certificate, out_dir / "certificate.md")
         _p(f"gate        : grade={gate_result.grade}, costing={gate_result.costing_grade}, "
            f"findings={len(gate_result.certificate['findings'])}")
 
