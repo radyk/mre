@@ -20691,3 +20691,66 @@ safe. So the amendment's premise (BOTH endpoints are placements of the same
 plan) is now CHECKED rather than assumed: the caller passes the operation set
 the final plan placed, and a capture that does not place the same ones is
 REFUSED, falling back to the objective-space story.
+
+
+## 2026-08-06 — SESSION W2.3: THE THIRD-GENERATION DEMO WORLD
+
+**No new ruling.** This session ruled nothing and changed no contract; it
+applies R-PW1 and R-SP1 as they stand. Recorded here because two measurements
+change what a later session may assume, and one of them contradicts a premise
+several close-outs have been written under.
+
+**(1) THE PRICED TRAIL DID NOT PERTURB THE SEARCH, PROVEN ON A REAL BOARD.**
+R-SP1 clause (6) asserts the progress callback must not perturb the solve.
+Between gen-2 (contract 1.15, minted 2026-08-04) and gen-3 (contract 1.17,
+minted 2026-08-06) the product gained a solution callback recording a search
+history AND an unconditional first-incumbent `extract` on every solve. The same
+committed recipe, re-run at HEAD, reproduced gen-2's plan to the **placement
+digest**: `8071cdaaf953bc17a952b679c2d055c5ae414264720edae229a4a1eb17ed583a`,
+386 bars, ledger **$1,667,467.80**, the whole K=3 portfolio story (seeds 42-44,
+winner 44, spread 28.0606%) and gap 89.6092%. Sixteen figures, all exact. The
+clause was ruled on an eight-job specimen; it now holds on 386 bars, and the
+mechanism is the deterministic budget rather than good luck — the callback costs
+WALL time, and wall time is not what binds a deterministic solve.
+
+**(2) THE `--runslow` LADDER IS RED AT HEAD, AND THE SKIP IS WHY NOBODY KNEW.**
+284 slow-marked tests have been skipped by every recorded baseline for at least
+six sessions ("305 skipped" in each). Run, they are **14 failed / 3239 passed**.
+Four causes, and three of them are the same shape: a test that does not run
+cannot report that the code moved underneath it.
+
+* **Four stale contract literals** — `assert doc.contract_version == "1.14"`,
+  four bumps behind, in `test_rolling_document.py` (x2), `test_portfolio.py`
+  and `test_coarse_horizon.py`. W2.2 bumped eight `"1.16"` literals to `"1.17"`
+  and could only see the ones that run.
+* **Three stale signatures** — `reference_solve()` and `build_rolling_view()`
+  *got an unexpected keyword argument `det_time`*. **One of the three is
+  `test_relaxation_guard_negative_control_goes_red`**, so R-SC2's negative
+  control has not been passing; it has been unable to execute. A negative
+  control that cannot run is the 4B.28 lesson at a new site.
+* **One real behaviour change** —
+  `test_coarse_history_wiring::test_document_is_byte_identical_with_the_store_on_and_off`
+  fails on the trail's `elapsed_s` values, which vary run to run by design.
+  R-SP1 clause (6) says elapsed times are recorded facts and are never asserted
+  by a test; this test asserts the WHOLE DOCUMENT, so the clause and the test
+  now contradict each other. **Not adjudicated here** — it is a ruling question
+  (does byte-identity exclude the trail, or does the trail not belong in a
+  document claimed byte-identical?), and it needs the R4 room, not a patch.
+* **Six live-LLM-path failures** (`test_ai_voice` x4, `test_api_endpoints`,
+  `test_ask_chain_api`) — **NOT DIAGNOSED**, named so the next reader does not
+  mistake silence for a clean bill.
+
+**THE STANDING RULE THIS EARNS:** *a suite result names the ladder it ran.*
+"2968/305/0" and "3239/21/14" are the same tree. Six sessions reported the first
+without the second existing anywhere.
+
+**(3) THE DEMO BOARD CANNOT CARRY DRAG GHOSTS, AND SAYS SO HONESTLY.** Taken
+through `POST /alternatives` (budget 8) for the first time, the board returned
+pool status **`empty`**: 8 targets selected by `heuristic_v2`, **8 INFEASIBLE**
+(`infeasible_this_horizon`), 0 publishable members, 0.63s each. Not for want of
+candidates — **154 of the 386 placed bars are multi-eligible** (measured with
+the module's own `_eligible_refs`, after a first instrument reading a
+non-existent field returned a false zero of 695). This is 4x's *160 planner
+nudges refused, 160 of 160* arriving through a second, independent door on the
+same world. The product invents nothing; the consequence is that a demo of the
+ghost surface needs a different board than a demo of the dollar story.

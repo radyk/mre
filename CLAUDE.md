@@ -197,11 +197,12 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation.
-**Last closed: Session W2.2 — the dollar story and the three rollups**,
-2026-08-05 (docs/07 §5a.231-236; docs/04 2026-08-05 **R-SP1 AMENDMENT 1 ruled
-and BUILT**; contract **1.17** `solver.progress` priced pair + `statistics`;
-docs/02 §4.4/§4.5 amended; prompts unchanged **v19 / v9**; narrative
-`docs/closeouts/w2-dollar-story-rollups.md`).
+**Last closed: Session W2.3 — the third-generation demo world**, 2026-08-06
+(docs/07 §5a.237-242; docs/04 2026-08-06; **no ruling, no contract change,
+prompts unchanged v19 / v9**; narrative `docs/closeouts/w2-gen3-demo-world.md`).
+**THE `--runslow` LADDER IS 14 RED AT HEAD** — found by running it; every
+recorded baseline shows `305 skipped`. Causes and the standing rule it proves
+are in docs/07 §5a.240.
 
 **THE SESSION LEDGER IS NOT IN THIS FILE.** What a session built, what it
 measured, its test counts and its commit live in `docs/07` §5a (position and
@@ -216,6 +217,7 @@ Recent sessions, newest first. `docs/closeouts/<file>.md` is the narrative:
 
 | session | subject | ruling | close-out |
 | --- | --- | --- | --- |
+| W2.3 | the third-generation demo world | (none new) | `w2-gen3-demo-world.md` |
 | W2.2 | the dollar story + the three rollups | R-SP1 amd 1 | `w2-dollar-story-rollups.md` |
 | W2.1 | solve-progress ledger + summary screen | R-SP1 | `w2-solve-progress-summary-v1.md` |
 | S-02 + S-03 | the certificate contract | R-CT1 | `4x-certificate-contract.md` |
@@ -253,7 +255,17 @@ committed with its spec update in the same commit.
 
 ### The worlds a session must know
 
-**THE DEMO BOARD IS `rolling-c32a6140-b6b`** (2026-08-04, R-PW1) — the Khalil
+**THE DEMO BOARD IS `rolling-9fdee7aa-ec5`** (2026-08-06, W2.3) — gen-2's
+recipe re-run at HEAD, contract **1.17**, so the board a demo runs on carries
+R-SP1's PRICED trail ($2,128,903.83 → $1,667,467.80) and the 1.17 rollups.
+**Its plan IS gen-2's, proven by placement digest `8071cdaa…`.** Recipe and the
+added `/alternatives` step: `docs/worlds/LEDGER.md`. **It carries NO ghosts** —
+8 of 8 forced-alternative members INFEASIBLE — and **no lineage child, pending
+the R4 accept fix**, both recorded there. Verify:
+`python tools/spikes/gen3_demo_world/verify_gen3.py --schedule <id>`.
+
+**THE GEN-2 DEMO BOARD IS `rolling-c32a6140-b6b`** — pinned, HISTORICAL, and
+still the instrument six committed sweep banks name; not re-pointed. The Khalil
 board's world under a new id, minted from the SAME submission bytes under the
 SAME accepted profile, reproducing every figure the record holds (ledger
 **$1,667,467.80**, K=3 at 10.0 units, seeds 42-44, winner **seed 44**, spread
@@ -269,7 +281,7 @@ present it takes the profile's `det_total`, not its own, and lands elsewhere).
 `rolling-c362baa4-1b0` by placement digest `07638cec…`; resolving, `proved`. Use
 it when a demo wants a proved optimum.
 
-**THE PREVIOUS DEMO BOARD IS `rolling-c9973708-865`** (4B.22a) — `demo_board`,
+**THE 4B.22a DEMO BOARD IS `rolling-c9973708-865`** — `demo_board`,
 280 orders, seed 1, ref 2026-01-05, window 10 / frozen 1, 386 bars, tardiness
 $2,040,146.67 ($535,800 floor). Rebuild:
 `python tools/spikes/demo_board_4b22a/mint_demo_board.py` (its defaults ARE this

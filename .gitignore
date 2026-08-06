@@ -65,3 +65,6 @@ _4b25_scratch/
 _4b26_scratch/
 _4b27_scratch/
 _4b29_scratch/
+# Session W2.3 scratch (the gen-3 demo board's live cockpit screenshots). The
+# SCRIPTS are committed, under tools/spikes/gen3_demo_world/; the shots are not.
+_w23_scratch/

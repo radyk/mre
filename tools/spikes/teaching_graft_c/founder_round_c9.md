@@ -2,6 +2,12 @@
 
 **Prepared by Session 4A teaching-graft (c), 2026-08-04. NOT RUN by the session.**
 
+> **HISTORICAL as of 2026-08-06 (W2.3). Deliberately NOT re-pointed at the gen-3
+> demo board `rolling-9fdee7aa-ec5`.** This round's board is `rolling-c32a6140-b6b`,
+> which is still pinned and still reproduces; re-pointing a protocol after its
+> round is a rewrite of the record, not maintenance. A future C9 round writes
+> its own file.
+
 This is a script for Daryn to run, not a result. The session that wrote it did
 not simulate it, did not predict its outcome, and does not have an entry in any
 close-out saying how it went. RUBRIC axis C9 says why: the mechanical half of

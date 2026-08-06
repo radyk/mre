@@ -7605,6 +7605,97 @@ on a priced trail whose solve was WALL-truncated; every specimen here bound on
 its deterministic budget, so the sentence is guarded by fixture and by a cockpit
 spec, never yet by a real wall-stopped board.
 
+**§5a.237 — W2.3: THE THIRD-GENERATION DEMO WORLD.** Narrative in
+`docs/closeouts/w2-gen3-demo-world.md`; the two measurements that bind a later
+session are in docs/04, 2026-08-06. **No ruling, no contract change, prompts
+unchanged (v19 / v9).** `rolling-9fdee7aa-ec5` is THE DEMO BOARD: gen-2's
+committed recipe re-run at HEAD so the board a demo runs on carries R-SP1's
+priced trail and the 1.17 rollups. Gen-2 (`rolling-c32a6140-b6b`) stays pinned
+and HISTORICAL — six committed sweep banks name it and it was not re-pointed.
+
+**§5a.238 — THE IDENTITY RESULT, AND WHY THE BRIEF'S STOP WAS REAL.** The brief
+required a STOP if placements moved, because HEAD gained a search callback and
+an unconditional first-incumbent `extract` between the two mints. They did not
+move: placement digest `8071cdaaf953bc17...`, 386 bars, ledger **$1,667,467.80**,
+K=3 seeds 42-44, winner 44, spread **28.0606%**, members $2,135,369.63 /
+$1,801,222.70 / $1,667,467.80, gap 89.6092%, ACCEPTED / C2, 24 committed / 122
+tray. **Sixteen assertions, all exact**, by an instrument written BEFORE the
+mint (`tools/spikes/gen3_demo_world/verify_gen3.py`) and control-run against
+gen-2 first: identity 16/16 green, the new-at-HEAD half 13/14 RED, so it
+discriminates rather than merely agreeing.
+
+**§5a.239 — WHAT GEN-3 CARRIES THAT GEN-2 COULD NOT.** Priced trail
+**$2,128,903.83 -> $1,667,467.80 (21.7%)** over **2 incumbents**, both found at
+~180s; the bridge's `final_plan_cost` equals the shipped ledger to the cent on a
+386-bar board (W2.2 proved it on 8 jobs); `window_key` present, the dollar
+rollup decomposes. Statistics: 102 late / 56 on-time / 158 counted, 6,886
+changeover minutes, 15 machines with utilization. The live cockpit renders the
+PRICED state in both themes, nine stat tiles each carrying `data-source`, zero
+named gaps, and the solver-units zone money-free. **The brief expected 82-92% on
+the top machines; the measurement is 78.9% / 78.3% / 66.4%.** Since the plan is
+gen-2's to the digest, that is a difference of MEASURE, not of board — the
+server's definition is horizon-wide, the cockpit's per-row figure is
+per-visible-window, and the screen already says the two may differ.
+
+**§5a.239a — SUITES.** Python, no `--runslow`: baseline on this tree
+**2969/305/1** (893s) -> after **2970/305/0** (930s), against W2.2's
+reference **2968/305/0**. Collection **3273 -> 3275, +2**, entirely the
+data-root-parametrized `test_roundtrip_on_a_real_run` (10 run dirs against
+8) -- and only ONE of the two is this session's; the other is a dev-cockpit
+`-Fresh` boot that predates it. The single baseline failure is
+`test_scenario_untouched_moves_bounded`, **green alone in 3.06s**, whose
+fixture solves under `time_limit_seconds=30.0` with **no pinned workers and
+no pinned seed** -- the standing parallel-load flake class, root cause
+confirmed rather than assumed. **NO RESIDUAL; zero tests added.** Cockpit
+NOT run as a suite (no cockpit source changed; the four guards touched in the
+audit were run individually and are green).
+
+**§5a.240 — THE `--runslow` LADDER IS 14 RED AT HEAD (the session's largest
+finding, and not its subject).** Full causes in docs/04, 2026-08-06 (2).
+284 slow tests skipped in every recorded baseline; run, **14 failed / 3239
+passed**. Four stale contract literals, three stale signatures — **one of which
+is R-SC2's `test_relaxation_guard_negative_control_goes_red`, a negative control
+that cannot execute** — one genuine contradiction between R-SP1 clause (6) and a
+whole-document byte-identity assertion (NOT adjudicated; an R4 ruling question),
+and six live-LLM failures NOT diagnosed. **The rule earned: a suite result names
+the ladder it ran.**
+
+**§5a.241 — THE RIDER, AND THE GHOSTS.** *Registry sweep:* **no removal
+mechanism exists** — 28 API routes with zero DELETE verbs, no helper in
+`api/registry.py`, no tool issuing a schedule deletion. Per the rider's own
+condition, **nothing was removed**; picker 9 -> 10, the only addition being
+gen-3. `65beb694` was already absent (moved off-tree by 4x). *Ghosts:* the
+`/alternatives` step was ADDED to the recipe because the committed mint script
+never had it and **gen-2 has no pool at all**; on this world it returns pool
+status `empty` — 8 targets, 8 INFEASIBLE, 154 of 386 bars multi-eligible, so not
+for want of candidates. The pool is WALL-limited and therefore outside every
+determinism claim; identity remains the placement digest.
+
+**§5a.242 — W2.3's CARRY-FORWARDS (REPORTED, deliberately NOT fixed).**
+**(a) THE `--runslow` RED, all fourteen** (§5a.240), including the ruling
+question and the six undiagnosed.
+**(b) THE PREDICATE AUDIT FOUND TWO HOLES IN W2.2's GUARDS, both proven by
+injection with byte-identical restores.** `unsourcedFigures` is hand-enumerated
+over three shapes while its sibling `sourcesOf` walks — stripping
+`portfolioModel`'s only source string leaves all three provenance guards GREEN,
+and `money.rows`, the tardiness split, the portfolio and twelve progress figures
+are unexamined; the `sourcesOf` test is also a SUBSET test, so a deleted
+citation shrinks the set silently ((d.2)'s `RECORDS_FROM` lesson at a second
+site). And the trail zone is asserted in ONE DIRECTION: money may not enter, but
+a solver-units figure rendered OUTSIDE it passes both zone guards, which is
+exactly the degradation W2.2 §6 said the zone existed to catch.
+**(c) `git checkout --` IS NOT A BYTE-IDENTICAL RESTORE IN THIS REPO.**
+`core.autocrlf=true` returned a 13,822-byte LF file as 14,138 bytes of CRLF with
+`git status` clean and the sha256 wrong. 4A-(a)'s newline lesson at a fourth
+site, and the first where the RESTORE STEP of a negative control was the thing
+that broke. Restores must write captured bytes back.
+**(d) LINEAGE IS PENDING R4-ACCEPT** — stated as a decision in
+`docs/worlds/LEDGER.md`, not an oversight. No accept was attempted on gen-3.
+**(e) A CAPSULE DOES NOT CARRY `pools` / `pool_members` ROWS**, so a restore
+returns the alternatives files without the registry's knowledge of the pool.
+**(f) THE DEMO NEEDS TWO BOARDS OR A THIRD WORLD** — the dollar story and the
+drag-ghost surface cannot both be shown on this one (§5a.241).
+
 ## 6. Open rulings queue
 
 1. Requirement model: set-with-roles (docs/05, in progress)
