@@ -214,6 +214,61 @@ The gate now reports its verdict at **both** of its exits — the full rule casc
 
 **No `CONTRACT_VERSION` bump is owed**, by the rule §4.2 already states: that constant versions the **schedule document**, and no field added here reaches it. This is an add-never-repurpose vocabulary change, committed with its spec update.
 
+**The M6 solve-progress trail** (`status_text: "solve_progress"`, added
+2026-08-05, R-SP1). The solver has streamed one `improving_solution` Event per
+incumbent since `solve_runner` was written — with no elapsed time, no terminal
+bound beside them, no collection and no reader. A per-record ping nobody could
+assemble is not a record of the search, and the consequence was that **the
+optimizer's contribution was invisible on every surface**: a board published one
+number and nothing said what the search had done to reach it.
+
+The solve now records its incumbent trail at both of the paths that solve for
+cost — the monolithic `SolveRunner` and the rolling window solve — decomposed
+across three record types that already existed:
+
+| part | record | content |
+|---|---|---|
+| the trail | **this Event** | `incumbents` (index, objective, elapsed), `stage`, `window_key`, `best_bound`, `gap`, `det_consumed`/`det_budget`, `objective_unit`, `trail_provenance` |
+| the scalars | **Metric** (§4.4) | `solve.first_incumbent` rolling up `solve.final_incumbent` + `solve.incumbent_improvement`; `solve.incumbents_found` beside them |
+| the artifact | **Artifact** (§4.6) | `solve_progress.json`, registered with its sha256 |
+
+`trail_provenance` names the provenance **class** (Document 1 §7) and its
+source: the trail is `derived` from
+`ortools.sat.python.cp_model.CpSolverSolutionCallback` — CP-SAT's own reading of
+its own search. It is not `observed`: nothing about the plant was measured.
+
+**The rollup is load-bearing, not decorative.** R-SP1 clause (2) permits an
+improvement figure to be stated only against the solver's OWN first feasible
+plan. `first = final + improvement` decomposes exactly and the consolidator
+verifies it, so `improvement` cannot quietly become a difference against a
+customer baseline, a human planner, or any other subtrahend and still decompose.
+The wording is a promise; the rollup is the mechanism.
+
+**`solve.incumbent_improvement` is emitted even at zero.** A search that found
+one plan and could not better it has a measured nought, and §4.4's rule applies
+unchanged: a component present only when non-empty cannot be verified as a set.
+
+**The unit is `objective_units`, never currency.** A trail point is the scaled
+CP-SAT objective, which R-DP12 clause (3) admits only as labelled solver
+telemetry — it is not proportional to the ledger (R-DP12's specimen: a zero-move
+accept, ledger unchanged to the cent, scaled objective moved by 7,014,821). The
+unit is named on the record so a reader who takes the number without reading the
+module still sees it is not money.
+
+**What was refused, and why it stays refused.** A *Finding* — every code names a
+defect, and a search that found one plan and could not improve it is not one; a
+flat trail is a true story, and a finding code would turn a fact into a
+complaint. (`SOLVER_NONOPTIMAL` is unaffected: an unclosed gap IS defect-shaped,
+and it is a different statement from the trail.) A *Decision* — an incumbent is
+not a deliberation: there are no alternatives to enumerate, and `driver` is
+mandatory-exactly-one where every code names a scheduling cause. A *Metric for
+the trail itself* — `value` is a float and a trail is a sequence. A *new record
+type* — nothing here needs one.
+
+**No evidence-side `CONTRACT_VERSION` bump is owed**, by the rule §4.2 already
+states. The schedule document *does* gain `solver.progress` in the same change,
+and that bump — to **1.16** — is owed by the block, not by these records.
+
 ### 4.6 Artifact
 
 Registered inputs and outputs: reference, hash, producing/consuming run. Artifact lineage links (this run consumed artifacts of runs X, Y) plus stable entity keys give cross-run identity — the run lineage graph — for free.

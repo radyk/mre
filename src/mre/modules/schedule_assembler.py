@@ -742,7 +742,14 @@ def assemble_rolling_document(
                                     if portfolio is not None
                                     and getattr(portfolio, "k", 1) > 1
                                     else None),
-                         calibration=_calibration_block(calibration))
+                         calibration=_calibration_block(calibration),
+                         # THE TRAIL (contract 1.16, R-SP1). Read off the VIEW,
+                         # because this assembler builds its solver telemetry
+                         # from the view and not from evidence. Same content
+                         # composer as the monolithic path — only the source
+                         # differs. `window_key` is clause (1): the trail names
+                         # the ONE window it belongs to.
+                         progress=_progress_block_from_view(view))
 
     return ScheduleDocument(
         contract_version=CONTRACT_VERSION,
@@ -835,7 +842,55 @@ def _solver_block(evidence: list[dict]) -> SolverBlock:
         # to report. The recorded `status` is stage 1's on both paths.
         tiebreak_status=p.get("tiebreak_status"),
         tiebreak_skipped_reason=p.get("tiebreak_skipped_reason"),
+        # THE SOLVE-PROGRESS TRAIL (contract 1.16, R-SP1). None on every run
+        # whose evidence predates the record — permanently, because evidence is
+        # append-only and nothing is reconstructed retroactively (clause 5).
+        progress=_progress_block_from_evidence(evidence, m6.get("run_id")),
     )
+
+
+def _progress_block_from_view(view: Any) -> Any:
+    """The R-SP1 trail for the rolling path, read off the completed view.
+
+    None when the window ran no search at all (nothing admitted): an empty trail
+    with a headline saying "no workable plan" would claim a search happened.
+    """
+    from mre.contracts.schedule_document import SolveProgressBlock
+    from mre.modules.solve_progress import progress_block_fields
+    trail = list(getattr(view, "incumbent_trail", None) or [])
+    if not trail:
+        return None
+    return SolveProgressBlock(**progress_block_fields(
+        trail, best_bound=getattr(view, "best_bound", None),
+        gap=getattr(view, "gap", None),
+        window_key=view.window_start.isoformat()))
+
+
+def _progress_block_from_evidence(evidence: list[dict], run_id) -> Any:
+    """The R-SP1 trail for the monolithic path, read out of the evidence stream.
+
+    The rolling assembler builds the same block from the completed view instead
+    (it does not read evidence for solver telemetry at all), so the two differ in
+    SOURCE only — the block's CONTENT is composed once, in
+    ``solve_progress.progress_block_fields``.
+    """
+    from mre.contracts.schedule_document import SolveProgressBlock
+    from mre.modules.solve_progress import (
+        SOLVE_PROGRESS_STATUS, progress_block_fields,
+    )
+    recs = [r for r in evidence
+            if r.get("record_type") == "event"
+            and r.get("status_text") == SOLVE_PROGRESS_STATUS
+            and r.get("run_id") == run_id]
+    if not recs:
+        return None
+    # Newest by the record's OWN timestamp, not by list position: S-02's "a
+    # 'latest' taken from a list is not a latest" — index order across runs is
+    # effectively random.
+    p = max(recs, key=lambda r: r.get("timestamp", "")).get("payload", {})
+    return SolveProgressBlock(**progress_block_fields(
+        p.get("incumbents") or [], best_bound=p.get("best_bound"),
+        gap=p.get("gap"), window_key=p.get("window_key")))
 
 def _reference_date(evidence: list[dict]) -> Optional[datetime]:
     m3 = _latest_run_open(evidence, "M3")

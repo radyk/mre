@@ -1148,3 +1148,109 @@ html, body {
 .board-compress[data-view-mode="clean"] {
   border-style: dashed; border-color: var(--marker-frozen);
 }
+
+/* --- THE SUMMARY SCREEN (Session W2.1, R-SP1) ---------------------------
+ * A read-only, post-solve overlay: dollars first, then the solver's own search
+ * history, then the statistics we can source. No control on this screen changes
+ * anything — the pre/post wall is the whole reason it is a separate surface. */
+.summary-overlay {
+  position: fixed; inset: 0; z-index: 60;
+  background: var(--scrim);
+  display: flex; align-items: flex-start; justify-content: center;
+  overflow: auto; padding: 32px 16px;
+}
+.summary {
+  background: var(--panel); color: var(--ink);
+  border: 1px solid var(--grid); border-radius: var(--radius);
+  box-shadow: var(--shadow-2);
+  width: min(880px, 100%);
+  font: var(--fw-normal) var(--fs-sm)/1.5 var(--font-ui);
+}
+.sm-head {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  padding: 16px 20px; border-bottom: 1px solid var(--grid);
+}
+.sm-title { font: var(--fw-semibold) var(--fs-lg)/1.2 var(--font-ui); margin: 0; }
+.sm-id { font: var(--fw-normal) var(--fs-2xs)/1 var(--font-mono); color: var(--muted); }
+.sm-ro {
+  font: var(--fw-semibold) var(--fs-2xs)/1 var(--font-mono);
+  color: var(--muted-2); text-transform: uppercase; letter-spacing: .04em;
+}
+.sm-close {
+  margin-left: auto; cursor: pointer;
+  background: var(--panel-float); border: 1px solid var(--grid);
+  border-radius: var(--radius-sm); color: var(--muted);
+  font: var(--fw-semibold) var(--fs-xs)/1 var(--font-mono); padding: 6px 10px;
+}
+.sm-close:hover { color: var(--ink); border-color: var(--muted-2); }
+
+.summary section { padding: 18px 20px; border-bottom: 1px solid var(--grid); }
+.summary section:last-child { border-bottom: 0; }
+.sm-h {
+  margin: 0 0 12px; font: var(--fw-semibold) var(--fs-md)/1.2 var(--font-ui);
+}
+.sm-sub-h {
+  margin: 16px 0 8px;
+  font: var(--fw-semibold) var(--fs-2xs)/1 var(--font-mono);
+  color: var(--muted); text-transform: uppercase; letter-spacing: .05em;
+}
+.sm-note, .sm-clause, .sm-absent, .sm-story { margin: 8px 0 0; }
+.sm-note { color: var(--muted); font-size: var(--fs-xs); }
+/* The clause (2)/(3) labels are the disclosure that keeps the improvement
+ * figure honest, so they are readable body text and never fine print. */
+.sm-clause { color: var(--ink); font-size: var(--fs-xs); }
+.sm-absent { color: var(--muted); }
+.sm-story { font-size: var(--fs-base); }
+
+.sm-total { display: flex; align-items: baseline; gap: 10px; }
+.sm-total-num {
+  font: var(--fw-bold) 34px/1 var(--font-mono); letter-spacing: -.01em;
+}
+.sm-total-lbl { color: var(--muted); font-size: var(--fs-xs); }
+
+.sm-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+.sm-table td, .sm-table th {
+  padding: 5px 0; border-bottom: 1px solid var(--grid); text-align: left;
+}
+.sm-table th {
+  font: var(--fw-semibold) var(--fs-2xs)/1 var(--font-mono);
+  color: var(--muted); text-transform: uppercase; letter-spacing: .04em;
+}
+.sm-table .sm-v { text-align: right; font-family: var(--font-mono); }
+.sm-table .sm-k { color: var(--muted); }
+.sm-table .sm-sub .sm-k { padding-left: 16px; font-size: var(--fs-xs); }
+.sm-dim { color: var(--muted-2); }
+.sm-winner .sm-k, .sm-winner .sm-v { color: var(--ink); font-weight: var(--fw-semibold); }
+.sm-tag {
+  margin-left: 6px; padding: 1px 5px; border-radius: var(--radius-xs);
+  background: var(--shade-green); color: var(--ink);
+  font: var(--fw-semibold) var(--fs-2xs)/1.4 var(--font-mono);
+}
+
+.sm-curve { margin-top: 12px; }
+.sm-curve svg { width: 100%; max-width: 420px; height: auto; display: block; }
+.sm-curve-line { fill: none; stroke: var(--proof-unproved); stroke-width: 1.5; }
+.sm-curve-dot { fill: var(--proof-unproved); }
+/* The trail is the solver's own measure, never currency — the curve is drawn in
+ * the proof palette rather than a money one for exactly that reason. */
+
+.sm-tiles { display: flex; flex-wrap: wrap; gap: 10px; }
+.sm-tile {
+  display: flex; flex-direction: column; gap: 2px; min-width: 128px;
+  background: var(--panel-2); border: 1px solid var(--grid);
+  border-radius: var(--radius-sm); padding: 10px 12px;
+}
+.sm-tile-num { font: var(--fw-semibold) var(--fs-lg)/1.1 var(--font-mono); }
+.sm-tile-lbl { color: var(--muted); font-size: var(--fs-2xs); }
+/* The named gaps. Rendered plainly and never styled as an error: "we do not
+ * store this" is a true statement about us, not a fault in the plan. */
+.sm-gaplist { margin: 0; padding-left: 18px; color: var(--muted); }
+.sm-gaplist li { font-size: var(--fs-xs); margin-bottom: 4px; }
+.sm-gaplist strong { color: var(--ink); font-weight: var(--fw-semibold); }
+/* the strip's one door to the summary screen (W2.1) */
+.summary-open {
+  background: var(--panel-float); border: 1px solid var(--grid);
+  border-radius: var(--radius-sm); color: var(--muted); cursor: pointer;
+  font: var(--fw-semibold) var(--fs-xs)/1 var(--font-mono); padding: 6px 9px;
+}
+.summary-open:hover { color: var(--ink); border-color: var(--muted-2); }

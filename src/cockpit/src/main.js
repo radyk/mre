@@ -19,6 +19,9 @@ import { initClock, clockLabel, clockZone, clockProvenance, fmt, fmtTime }
 import { createBoundaryCeremony } from "./boundary.js";
 import { createJobPanel } from "./jobpanel.js";
 import { makeCollapsible } from "./collapse.js";
+// The post-solve summary screen (Session W2.1, R-SP1). Read-only and
+// self-contained: it takes the document and renders from its stored fields.
+import { mountSummary } from "./summary.js";
 // R-GP1 (Session 4B.34 Item 6): the placement digest that separates a newer PLAN
 // from a newer ROW.
 import {
@@ -176,7 +179,16 @@ function paintTopStrip(el, doc, meta) {
     ${costProofChip(meta)}
     <span class="grade ${gcls}"><span class="lbl">certificate</span> ${grade}${costing}</span>
     <span class="clock-label" title="${clockTitle(meta)}">${clockLabel()}</span>
+    <button class="summary-open" id="summary-open" type="button">summary</button>
     <button class="theme-toggle" id="theme-toggle"></button>`;
+  // W2.1 — THE SUMMARY SCREEN's ONE DOOR. Post-solve by design: it opens over
+  // the board that is already loaded and carries no solve control, no parameter
+  // and no Gatehouse element. Recreated on every repaint like the toggle, so it
+  // is (re)bound here and always renders the document the strip was painted for.
+  const sumBtn = el.querySelector("#summary-open");
+  sumBtn.title = "plan summary — cost, the solver's search, and the statistics";
+  sumBtn.addEventListener("click", () => mountSummary(doc));
+
   // the toggle is recreated on every repaint (version change too) — (re)bind it.
   const btn = el.querySelector("#theme-toggle");
   paintThemeToggle(btn, currentTheme());

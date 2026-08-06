@@ -274,7 +274,7 @@ from pydantic import BaseModel, model_validator
 
 from mre.contracts.vocabularies import ScheduleStatus
 
-CONTRACT_VERSION = "1.15"
+CONTRACT_VERSION = "1.16"
 
 # Exact decomposition tolerance: cost components are currency values
 # accumulated in float; "exactly" means to the cent, matching the
@@ -383,6 +383,79 @@ class CalibrationBlock(BaseModel):
     drift: Optional[CalibrationDriftBlock] = None
 
 
+class IncumbentBlock(BaseModel):
+    """One improving solution CP-SAT found, in the order it found it.
+
+    ``objective`` is the SCALED SOLVER OBJECTIVE, not currency — see
+    :class:`SolveProgressBlock`. ``elapsed_s`` is the solver's own reading of how
+    long it had been searching when it found this plan: a RECORDED fact that
+    varies run to run, never asserted by a test (R-SP1 clause 6)."""
+    index: int
+    objective: float
+    elapsed_s: float
+
+
+class SolveProgressBlock(BaseModel):
+    """R-SP1 (contract 1.16) — THE SOLVER'S OWN SEARCH HISTORY, TOLD AGAINST
+    ITSELF.
+
+    The optimizer's contribution was invisible: a board published one number and
+    nothing said what the search had done to reach it. This block is CP-SAT's
+    incumbent trail — every improving solution, its objective and the solver's
+    own elapsed time — plus the terminal bound and gap.
+
+    **THE FIGURES HERE ARE NOT DOLLARS** (clause 3). A trail point is the scaled
+    CP-SAT objective, which R-DP12 clause (3) admits only as *labelled solver
+    telemetry* and clause (2) forbids from reaching a planner surface as money.
+    It is not proportional to the ledger — R-DP12's own specimen is a zero-move
+    accept whose ledger did not change by a cent while the scaled objective moved
+    by 7,014,821. So ``improvement_pct`` is an objective-space ratio (the same
+    kind the shipped gap rider already renders), the ledger belongs to
+    ``CostSummary`` alone, and no consumer may difference the two.
+
+    **IMPROVEMENT IS ONLY EVER AGAINST THE SOLVER'S OWN FIRST PLAN** (clause 2).
+    Never against the customer's current process, a human planner, or any
+    baseline the solver did not itself produce. ``clause_2_label`` carries that
+    disclosure as authored copy, because a bare percentage IMPLIES a baseline to
+    a reader who has not been told what the comparison is, and the clause forbids
+    the implication as firmly as the statement.
+
+    **``window_key`` is clause (1).** On a rolling board the trail belongs to ONE
+    window and names it; two windows are two solves of two problems and their
+    trails are never summed. None on a monolithic solve, which has no window.
+
+    **``stage`` is clause (7).** An R-SC3 solve runs two stages and only stage 1
+    minimizes COST — stage 2 minimizes a sum of START MINUTES. This is stage 1's
+    and says so; a concatenated trail would show a cost search collapsing into a
+    minute count and call the difference improvement.
+
+    **``flat`` is clause (4).** Exactly one incumbent is a TRUE story and is told
+    rather than hidden: "the first plan found was not improved within budget".
+
+    Absent (None) on every board solved before this contract, permanently —
+    evidence is append-only and no trail is reconstructed retroactively (clause
+    5). Every surface that renders it has an honest absent state.
+    """
+    stage: Literal["cost"] = "cost"
+    window_key: Optional[str] = None
+    incumbents: list[IncumbentBlock] = []
+    count: int = 0
+    first: Optional[float] = None
+    final: Optional[float] = None
+    improvement_abs: Optional[float] = None
+    improvement_pct: Optional[float] = None
+    flat: bool = False
+    best_bound: Optional[float] = None
+    gap: Optional[float] = None
+    objective_unit: str = "objective_units"
+    #: Authored server-side, exactly as ``CostProof.chip`` is: two surfaces
+    #: composing their own wording is two surfaces that can state different
+    #: things.
+    headline: str = ""
+    clause_2_label: str = ""
+    clause_3_label: str = ""
+
+
 class SolverBlock(BaseModel):
     """M6 RunContext telemetry for the solve that produced this schedule."""
     # THE COST PROOF (contract 1.10, Session 4B.8 CU3). An R-SC3 solve proves two
@@ -411,6 +484,12 @@ class SolverBlock(BaseModel):
     # was given a calibration lookup — INCLUDING when the answer is "nobody has
     # measured this plant". Absent only where there was no store to consult.
     calibration: Optional[CalibrationBlock] = None
+    # THE SOLVE-PROGRESS TRAIL (contract 1.16, R-SP1). Absent on every board
+    # solved before the solver kept one, permanently — evidence is append-only
+    # and nothing is reconstructed retroactively (clause 5). `status`, `gap` and
+    # `objective` above are the TERMINAL facts of the same stage-1 search this
+    # trail walks, so a reader can check the last trail point against them.
+    progress: Optional[SolveProgressBlock] = None
 
 
 class CostSummary(BaseModel):

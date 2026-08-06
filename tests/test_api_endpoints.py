@@ -177,7 +177,7 @@ class TestScheduleDocument:
     def test_document_validates_against_contract(self, api):
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
         parsed = ScheduleDocument.model_validate(doc)
-        assert parsed.contract_version == "1.15"
+        assert parsed.contract_version == "1.16"
         assert parsed.schedule_id == api.schedule_id
         assert parsed.run_id == api.run["id"]
         assert parsed.solver.deterministic is True
@@ -227,7 +227,7 @@ class TestScheduleMeta:
     def test_meta_joins_the_certificate_grade(self, api):
         meta = _data(api.client.get(f"/schedules/{api.schedule_id}/meta"))
         assert meta["id"] == api.schedule_id
-        assert meta["contract_version"] == "1.15"
+        assert meta["contract_version"] == "1.16"
         assert meta["grade"] == "ACCEPTED"
         assert meta["costing_grade"] == "C1"
         assert meta["submission_id"] == api.submission["submission_id"]
@@ -283,7 +283,7 @@ class TestScheduleInteraction:
         data = _data(api.client.get(
             f"/schedules/{api.schedule_id}/interaction"))
         assert data["schedule_id"] == api.schedule_id
-        assert data["contract_version"] == "1.15"
+        assert data["contract_version"] == "1.16"
         block = InteractionBlock.model_validate(data["interaction"])
         # one entry per scheduled op, each with its eligible set + the graph
         doc = _data(api.client.get(f"/schedules/{api.schedule_id}"))
@@ -699,7 +699,7 @@ class TestRollingSolve:
 
         sid = run["result"]["schedule_id"]
         doc = _data(client.get(f"/schedules/{sid}"))
-        assert doc["contract_version"] == "1.15"
+        assert doc["contract_version"] == "1.16"
         assert doc["rolling"] is not None
         r = doc["rolling"]
         # the sliced world: committed + active bars, and a populated tray.
@@ -810,7 +810,7 @@ class TestRollingTwoBeatAPI:
 
     def test_served_document_is_rolling_with_interaction(self, rolling_api):
         doc = _data(rolling_api.client.get(f"/schedules/{rolling_api.schedule_id}"))
-        assert doc["contract_version"] == "1.15"
+        assert doc["contract_version"] == "1.16"
         assert doc["rolling"] is not None
         assert doc["rolling"]["beyond_horizon"], "empty tray"
         # the split-endpoint interaction payload is served for the active window

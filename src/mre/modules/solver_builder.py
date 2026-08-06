@@ -489,6 +489,11 @@ def solve_two_stage(
         solutions_found=s2.solutions_found, solve_values=s2.solve_values,
         wall_truncated=(s1.wall_truncated or s2.wall_truncated),
         tiebreak_status=s2.status, det_consumed=_spent,
+        # R-SP1 clause (7): the trail belongs to the COST search, and this
+        # return already carries stage 1's objective. Same reasoning as the
+        # rolling twin in `rolling_horizon._two_stage_solve` — one rule, both
+        # seams, because a defect class fixed at one seam is not fixed.
+        incumbent_trail=s1.incumbent_trail,
     ), True
 
 

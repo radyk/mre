@@ -1799,18 +1799,31 @@ and all cockpit presentation polish.
 
 Queue additions from the Khalil demo (2026-08-03), **MUST-tier first**:
 
-1. **Solve-progress ledger + summary screen v1** — CP-SAT incumbent-trail
-   callback recorded per solve (per WINDOW on rolling), rendered as the money
-   story. **HONESTY RULING REQUIRED IN docs/04 BEFORE BUILD:** improvement is
-   over the **solver's own first feasible plan**, NEVER *"savings vs your
-   current process"*; the proof floor renders with the existing gap rider; **no
-   fabricated baselines**. (Khalil explicitly retracted live animation —
-   summary only.)
+1. **Solve-progress ledger + summary screen v1** — **BUILT 2026-08-05, session
+   W2.1, R-SP1** (docs/04 same date; close-out
+   `docs/closeouts/w2-solve-progress-summary-v1.md`). CP-SAT's incumbent trail
+   is recorded per solve (keyed to the WINDOW on rolling), enters evidence as
+   Event + Metrics + Artifact, and renders on a read-only post-solve summary
+   screen. Contract **1.16** (`solver.progress`).
+   **THE RULING GAINED A CLAUSE THE BRIEF DID NOT HAVE.** The trail is the
+   SCALED CP-SAT objective, which R-DP12 clause (3) admits only as labelled
+   solver telemetry and clause (2) keeps off planner surfaces as money — so
+   R-SP1(3) renders improvement as a **percentage of the solver's own first
+   plan** and keeps the LEDGER as the only currency on the screen. Improvement
+   is never *"savings vs your current process"*; the proof floor renders with
+   the existing gap rider; no fabricated baselines. (Khalil explicitly
+   retracted live animation — summary only.)
+   **Carried:** pricing the FIRST incumbent through the ledger is what would
+   make the story dollars, and is its own item (§5a).
 2. **"Resources" header** on the machine column; finding phrasings de-jargoned
    (*"workload too dense"* → plain words).
 3. **Setup-grouping visual v1, DISPLAY-ONLY** — attribute-colored solved
    sequence per machine; total changeover minutes shown; **NO "minutes saved"
-   without a ruled comparator**.
+   without a ruled comparator**. **PREREQUISITE NAMED 2026-08-05 (W2.1):**
+   *total changeover minutes is not stored anywhere* — `setup_min` is
+   per-bar and the ledger carries setup COST, not minutes. The summary screen
+   renders it as a named gap rather than summing it client-side. This item
+   owes an **M7 rollup** beside the setup cost the extractor already computes.
 4. **Axis-increment affordance** — the capability exists via zoom; the finding
    is discoverability.
 
@@ -1867,7 +1880,24 @@ is still **drafted-not-run**.
 
 ### Parking lot (route on sight, one line each, then clear)
 
-- *(empty — the items above were routed at map creation, 2026-08-03)*
+- **2026-08-05, W2.1 (R2 item 1, executed from the R1 room at Daryn's
+  direction).** Four items surfaced during the build, one line each, each routed
+  to its owner rather than designed here:
+  - **R1 (AI layer)** — the trail is EVIDENCE and nothing can ask about it: *"how
+    much did the solver improve this plan"* reaches no route. A glossary term +
+    a contracted route, when R1 next opens.
+  - **R3 (load layer)** — none surfaced.
+  - **R4 (solver)** — **pricing the FIRST incumbent through the extractor's
+    ledger** is the change that turns R-SP1's story from solver units into
+    dollars. Needs an extraction inside the solution callback and must answer
+    R-SP1(6) on wall-limited solves. Owner's call whether it is R4 or R2.
+  - **R4/R2** — the **three M7 rollups** the summary screen names as gaps
+    (late/on-time counts, utilization with a named denominator, total changeover
+    minutes). The third is a prerequisite of **R2 queue item 3** and is now
+    written into that item.
+  - **R5 (GTM)** — the *"savings vs your current process"* framing is refused in
+    every form including marketing copy; the honest version is the pilot-phase
+    import-and-price feature. Recorded so it is not re-proposed as a headline.
 
 ### Cross-cutting standing orders (all rooms)
 
@@ -7433,6 +7463,68 @@ is stated only on the evidence path, because only that reading carries provenanc
 is truthful, and it is also a body difference between old boards and new ones; if it
 ever reads as inconsistency the fix is to teach the artifact path to say less, never to
 make it assert what it cannot read.
+
+**§5a.227 — W2.1: THE SOLVE-PROGRESS LEDGER (R-SP1).** Full reasoning and the
+transcribed ruling in docs/04, 2026-08-05; narrative in
+`docs/closeouts/w2-solve-progress-summary-v1.md`. Contract **1.15 -> 1.16**
+(`solver.progress`), docs/02 §4.5 amended, prompts unchanged. CP-SAT's incumbent
+trail is collected by the solution callback, keyed to the WINDOW on rolling,
+carried on `SolveResult.incumbent_trail` / `RollingView.incumbent_trail`, and
+entered into evidence as **Event + Metrics + Artifact** at BOTH cost-solving
+paths through one function. `solve.first_incumbent` is the **ROLLUP** of
+`solve.final_incumbent` + `solve.incumbent_improvement`, which is what makes
+R-SP1(2) structural rather than a matter of wording.
+
+**§5a.228 — THE CLAUSE THE BRIEF DID NOT HAVE, AND WHY.** The brief fixed the
+story as *"first plan found at $X, improved to $Z"*. A trail point is the
+**scaled CP-SAT objective**, which **R-DP12(3)** admits only as labelled solver
+telemetry and **R-DP12(2)** keeps off planner surfaces as money. The two are not
+proportional — R-DP12's specimen is a zero-move accept, ledger unchanged to the
+cent, scaled objective moved by **-7,014,821**. Resolved by adding **R-SP1(3)**:
+the trail is in the solver's own units, improvement is a **percentage of the
+first incumbent** (the same objective-space ratio the gap rider already shows a
+planner), and the **LEDGER is the only currency on the screen**. Guarded on both
+sides, including the converse (the ledger keeps its dollar sign).
+
+**§5a.229 — MEASUREMENTS.** Determinism specimen (eight-job weighted tardiness,
+`workers=1`, `seed=42`): **46 incumbents, 6515 -> 530**, sequence byte-identical
+across two runs, monotone descending; placements identical with the callback
+attached vs a bare `CpSolver.Solve` with none. Live end-to-end specimen
+(`datasets/mobility_box`, deterministic, into `_ai_exam_scratch/w21_trail_specimen`
+- the only child minted, unregistered): **15 incumbents, 4,073,055 -> 616,000,
+84.9%**, bound 616,000, OPTIMAL, rollup exact, artifact sha256 verifying from the
+FILE bytes. **All three pinned boards are on the absent-trail side, measured:**
+`rolling-c32a6140-b6b`, `rolling-e9ccc879-a4b`, `rolling-c9973708-865` each carry
+a `solver` block with no `progress` key. None re-solved. Suites: **2903/305/0
+baseline -> 2937/305/0** (+34, no residual); cockpit **367/2 -> 407/0** (+38 new; the two named
+load-flake members were green in this run). Negative controls **7/7 red**, every
+restore byte-identical.
+
+**§5a.230 — W2.1's CARRY-FORWARDS (REPORTED, deliberately NOT fixed).**
+**(a) PRICING THE FIRST INCUMBENT IS WHAT WOULD MAKE THE STORY DOLLARS.** It
+needs an extractor run inside the solution callback (one per incumbent; dozens
+per solve at demo density), and it interacts with R-SP1(6)'s non-perturbation
+promise on any WALL-limited solve — under a deterministic budget the search is
+unaffected, but callback cost is wall cost. Its own item, in R2 or R4.
+**(b) THREE OF THE FOUR v1 STATISTICS ARE NOT STORED ANYWHERE.** Late/on-time
+counts (the document carries per-order lateness, no tally), board-scope
+utilization by machine (the cockpit's own is per VISIBLE WINDOW - a different
+denominator, 4B.20), and total changeover minutes (`setup_min` is per bar; the
+ledger carries setup COST). Each renders as a named gap on the screen with the
+**M7 rollup** it should come from. R2 queue item 3 owes the changeover one as a
+prerequisite, and that cross-reference is now written into the queue.
+**(c) THE TRAIL IS NOT ASKABLE.** It is evidence, so a route COULD be built, and
+the brief deliberately scoped that out: "how much did the solver improve this
+plan" currently reaches no route. A future R1 item (glossary + route), not a
+contract change.
+**(d) ROLLING RECORDS ONE WINDOW's TRAIL, BECAUSE A ROLLING SOLVE IS ONE WINDOW.**
+`build_rolling_view` solves window 0; clause (1)'s no-summing rule is therefore
+enforced by `window_key` against a future multi-window roll rather than exercised
+by one today. Stated as a bound, not as coverage.
+**(e) THE PORTFOLIO's LOSING MEMBERS HAVE NO TRAIL.** Members run in their own
+processes and return only a `PortfolioMember`; only the WINNER is re-solved with
+`persist=True`, and that re-solve is the trail the board carries. Correct and
+cheap, but "what did seed 43's search do" is unanswerable by construction.
 
 ## 6. Open rulings queue
 

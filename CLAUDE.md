@@ -197,11 +197,11 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation.
-**Last closed: Session S-02 + S-03 — the certificate contract**, 2026-08-05
-(docs/07 v3.00, §5a.223-226; docs/04 2026-08-05 **R-CT1 ruled and BUILT**;
-contract unchanged **1.15** — docs/02 amended, no `CONTRACT_VERSION` bump owed;
-prompts unchanged **v19 / v9**; narrative
-`docs/closeouts/4x-certificate-contract.md`).
+**Last closed: Session W2.1 — the solve-progress ledger and the summary
+screen**, 2026-08-05 (docs/07 §5a.227-230, R2 queue item 1 BUILT; docs/04
+2026-08-05 **R-SP1 ruled and BUILT**; contract **1.16** `solver.progress`;
+docs/02 §4.5 amended; prompts unchanged **v19 / v9**; narrative
+`docs/closeouts/w2-solve-progress-summary-v1.md`).
 
 **THE SESSION LEDGER IS NOT IN THIS FILE.** What a session built, what it
 measured, its test counts and its commit live in `docs/07` §5a (position and
@@ -216,6 +216,7 @@ Recent sessions, newest first. `docs/closeouts/<file>.md` is the narrative:
 
 | session | subject | ruling | close-out |
 | --- | --- | --- | --- |
+| W2.1 | solve-progress ledger + summary screen | R-SP1 | `w2-solve-progress-summary-v1.md` |
 | S-02 + S-03 | the certificate contract | R-CT1 | `4x-certificate-contract.md` |
 | 4A tg (d.3) | the product explains its own words | R-TE1 | `4a-teaching-d3-term-explanation.md` |
 | 4A tg (d.2) | bank format, ladder, clarify-carry | R-EX2, R-LD6 | `4a-teaching-d2-format-ladder-carry.md` |
@@ -244,7 +245,7 @@ and §5a range.
 
 ### Governed artifacts, current versions
 
-Contract **1.15** · parse prompt **v19** · synthesis prompt **v9** ·
+Contract **1.16** · parse prompt **v19** · synthesis prompt **v9** ·
 `DriverCode` **14 members** · finding codes **20** · RUBRIC axes through **C9**.
 Changing any of these is a **vocabulary-class change**: reviewed, versioned,
 committed with its spec update in the same commit.
@@ -374,6 +375,10 @@ measurements. Do not restate a ruling's reasoning here.
   per-order route voices the disposition. Clause (5) (age vs lateness) is OPEN
   and deliberately unbuilt — the threshold is a declared IDS coefficient that
   does not exist.
+- **R-SP1** — the money story is the solver's OWN search history, told against
+  itself: improvement only over its own first feasible plan, in SOLVER UNITS
+  (the ledger is the only currency), stage 1's trail, per WINDOW and never
+  summed, flat and absent states told, the callback must not perturb.
 - **R-BK1** — the published board is a portfolio, not a draw: K deterministic
   runs at consecutive seeds, best by LEDGER, ties by lowest seed. K and the
   budget are DECLARED coefficients; losing members' totals are PUBLISHED; a
@@ -510,6 +515,7 @@ REPORTED and deliberately NOT fixed.
 | 4B.11 | R-PD1 clause (5) is open; there is no optimality ROUTE — nobody can ASK | §5a.28-30 |
 | 4B.6b/c | §5a.15 the 14-day window is budget-starved at 200 orders; the prediction store's sweep is scoped by nothing | §5a.8-17 |
 | 4B.5–4B.7 | the two-solve baseline is not extended to forced-alternatives pricing; `EARLINESS_PREFERENCE` names a mechanism that no longer exists (§5a.20) | §5a.19-21 |
+| W2.1 | pricing the FIRST incumbent is what would make the story dollars; three of the four v1 statistics are stored nowhere (M7 rollups owed) | §5a.230 · `w2-solve-progress-summary-v1.md` |
 | S-02/S-03 | the board opener still returns `grade: None` though its record now exists; `certificate.md` is written but not registered | §5a.226 · `4x-certificate-contract.md` |
 | 4A (d.3) | a defined word asked about before it is said gets the second tier; the glossary is 10 entries against 27 emitted terms | §5a.222 · `4a-teaching-d3-term-explanation.md` |
 | 4A (d.2) | `RECORDS_FROM` is a subset test, not equality; the cross-version bank names two schedule ids (the postposed deictic was discharged by (d.3) R2) | §5a.211 · `4a-teaching-d2-format-ladder-carry.md` |

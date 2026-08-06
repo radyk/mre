@@ -20311,3 +20311,203 @@ it says so.** NC4's one-line anchor `subjects=subjects or [],` matches
 `record_metric` BEFORE `record_event`, so it reverted a verb the guard never
 touches and stayed green. Re-anchored on `message=message or status_text`, which
 is unique to `record_event`. (d.2) recorded this class twice; this is a third.
+
+---
+
+## 2026-08-05 — R-SP1: THE SOLVE-PROGRESS LEDGER AND THE SUMMARY SCREEN
+
+**Session W2.1.** W2 screens work (docs/07 §5b, R2 queue item 1), executed from
+the R1 room at Daryn's direction. The Khalil MUST-tier item: **the optimizer's
+contribution was invisible**, and this session makes it visible without
+fabricating a number. Contract **1.15 → 1.16** (`solver.progress`); docs/02
+amended (§4.5); prompts unchanged (parse **v19**, synthesis **v9**).
+
+### The ruling (R-SP1), transcribed
+
+**R-SP1 — THE MONEY STORY IS THE SOLVER'S OWN SEARCH HISTORY, TOLD AGAINST
+ITSELF.**
+
+1. **The solve-progress ledger records CP-SAT's incumbent trail via a solution
+   callback**: every incumbent's objective value and the solver's own elapsed
+   time, plus the terminal bound and gap. On a rolling board the trail is
+   recorded PER WINDOW and rendered per window; window trails are never summed
+   or blended into a single "the solve improved by $X" claim, because they are
+   separate solves of separate problems.
+2. **Improvement is stated ONLY over the solver's own first feasible plan**:
+   "first plan found at X, improved to Z." It is NEVER stated or implied as
+   savings versus the customer's current process, a human planner, or any
+   baseline the solver did not itself produce. The first incumbent is not what a
+   planner would have made, and no surface may suggest it is. The honest
+   customer-baseline comparison is the pilot-phase import-and-price feature, not
+   this.
+3. **THE TRAIL IS IN THE SOLVER'S OWN UNITS AND A DOLLAR SIGN NEVER TOUCHES
+   IT.** A trail point is a SCALED OBJECTIVE value, which R-DP12 clause (3)
+   admits only as *labelled solver telemetry*. The improvement therefore renders
+   as a **percentage of the first incumbent** — the same objective-space ratio
+   the shipped gap rider already puts in front of a planner — and never as
+   currency. The only currency figure on any surface that renders the trail is
+   the **LEDGER**, which belongs to the FINAL plan alone and is never differenced
+   against an earlier incumbent. Pricing the first incumbent through the ledger
+   is the change that would make this story dollars; it is a separate, named
+   item and is not this.
+4. **The proof floor and gap render with the story** wherever the final cost
+   renders, under the existing gap rider's vocabulary ("not proven optimal; a
+   cheaper plan may exist and could be up to G% cheaper"). A trail with one
+   incumbent renders honestly: "first plan found was not improved within budget"
+   — a flat story is a true story.
+5. **The trail is a run artifact under the evidence contract like any other**:
+   recorded with provenance at solve time, stored with the run, askable. Boards
+   solved before this change have no trail and never will (append-only; no
+   retroactive writes); every surface that renders the story has an honest
+   absent-trail state.
+6. **Determinism.** Under deterministic law the SEQUENCE of incumbent objective
+   values is reproducible and is what tests assert; elapsed times are recorded
+   facts that vary run to run and are never asserted. The callback observes and
+   must not perturb: the regression digest of a solved board is proven unchanged
+   with the callback attached vs detached.
+7. **The trail is STAGE 1's.** An R-SC3 solve runs two stages and only stage 1
+   minimizes cost; stage 2 minimizes a sum of START MINUTES. A trail that
+   concatenated the two would show a cost search collapsing to a number of
+   minutes and call it improvement. Stage 2 has its own proof and its own
+   report; it has no place in this one.
+
+*Clauses (3) and (7) were added in-room during the build; the brief authorised
+tightening in place. Clause (3) is the subject of the finding below.*
+
+### THE FINDING THAT CHANGED THE RULING
+
+**The brief's clause (2) specified the story in dollars, and standing law
+forbids it.** Clause (2) as drafted fixes the form as *"first plan found at $X,
+improved to $Z."* A trail point is `solver.ObjectiveValue()` — the **scaled
+CP-SAT objective** (`_COST_SCALE = 100`, plus gravity and priority weighting).
+**R-DP12 clause (3)** admits that number only as *labelled solver telemetry*;
+clause (2) of the same ruling says scaled-objective arithmetic **never reaches a
+planner surface**.
+
+Not a units quibble. R-DP12's own motivating specimen is a **zero-move accept on
+the Khalil board** whose ledger did not change by one cent — $1,667,467.80 →
+$1,667,467.80 — while the scaled objective moved by **−7,014,821**, and that
+difference was printed *with a dollar sign* in a planner-voiced message. The two
+quantities are not proportional. A dollar sign on a trail point would be a
+manufactured number of exactly the class R-DP12 exists to end.
+
+**Resolved by tightening R-SP1 rather than by ignoring either side** — clause (3)
+above. The headline now reads *"The solver's first workable plan scored
+1,240,000; it finished on a plan scoring 980,000 — 21.0% better by its own cost
+measure"*: weaker copy, and the true one. Guards on both sides —
+`test_no_authored_string_in_this_module_carries_a_dollar_sign` in Python, and a
+DOM assertion over `#sm-trail` / `#sm-progress-story` / `#sm-proof-floor` in the
+cockpit, with the converse asserted too (the LEDGER keeps its dollar sign).
+
+**What would make the story dollars is named and carried**: pricing the FIRST
+incumbent through the extractor's ledger, which needs an extraction inside the
+solution callback. Not free (one extraction per incumbent, dozens per solve on a
+386-bar board) and it interacts with clause (6)'s non-perturbation promise on
+any wall-limited solve. Not taken in passing.
+
+### The evidence decomposition, and the four refusals
+
+Same three-part shape S-02 used for the gate verdict, and for the same reasons
+(`src/mre/modules/solve_progress.py` carries the full text; docs/02 §4.5 is
+amended):
+
+| part | record | content |
+|---|---|---|
+| the trail | **Event** (§4.5) | `solve_progress` — incumbents, stage, `window_key`, bound, gap, `trail_provenance` |
+| the scalars | **Metric** (§4.4) | `solve.first_incumbent` rolling up `solve.final_incumbent` + `solve.incumbent_improvement`; `solve.incumbents_found` |
+| the file | **Artifact** (§4.6) | `solve_progress.json`, sha256 **from the file** |
+
+docs/02 §4.5 already anticipated the record — *"long solves stream improving
+solutions and telemetry here"*. The per-incumbent `improving_solution` Event has
+in fact existed since `solve_runner` was written, with **no elapsed time, no
+terminal bound beside it, no collection and no reader**. It is left exactly as
+it was (append-only); the trail is the collection it always needed.
+
+**REFUSED.** A *Finding* — every code names a defect and a flat search is not
+one (clause 4); a finding code would turn a fact into a complaint. The shipped
+`SOLVER_NONOPTIMAL` finding is untouched: an unclosed gap IS defect-shaped, and
+it is a different statement. A *Decision* — an incumbent is not a deliberation;
+there are no alternatives to enumerate and `driver` is mandatory-exactly-one
+over codes that all name SCHEDULING causes. A *Metric for the trail itself* —
+`value` is a float, a trail is a sequence. A *new record type* — nothing here
+needs one.
+
+**THE ROLLUP IS WHAT MAKES CLAUSE (2) STRUCTURAL.** `first = final +
+improvement` decomposes exactly and the consolidator verifies it, so
+`improvement` cannot quietly become a difference against a customer baseline and
+still decompose. The wording is a promise; the rollup is the mechanism.
+
+### Clause (6), both proofs, measured
+
+Specimen: an eight-job weighted single-machine tardiness model (`workers=1`,
+`seed=42`), chosen because the two-stage tests' constant-cost model is cost-flat
+by design and yields ONE incumbent — the wrong specimen for a sequence proof.
+
+* **Sequence reproducible.** 46 incumbents, `6515 → 530`, byte-identical
+  sequence across two runs, monotone descending. Elapsed times are asserted only
+  to be present and non-decreasing, never by value.
+* **The observer does not perturb.** The same model solved through `SolveRunner`
+  (callback attached) and through a bare `CpSolver.Solve(model)` with no
+  callback: same objective, same `op_start_minutes`, same `op_end_minutes`.
+* **The specimen's adequacy is its own test.** Both proofs would pass vacuously
+  on a one-incumbent trail, so `test_the_specimen_actually_produces_a_trail_
+  worth_asserting` fails loudly if the model ever stops exercising the property.
+
+### The live specimen, end to end
+
+`datasets/mobility_box`, deterministic (`workers=1`, `seed=42`), fresh scratch
+run into `_ai_exam_scratch/w21_trail_specimen` (**the only child minted**; not
+registered, not in `_data`):
+
+```
+15 incumbents   4,073,055 -> 616,000   84.9% by the solver's own measure
+bound 616,000   gap 0.0 (OPTIMAL)      window_key None (monolithic)
+metrics: first 4,073,055 = final 616,000 + improvement 3,457,055   (exact)
+artifact solve_progress.json   sha256 verifies from the FILE bytes   no "$"
+```
+
+**Every pinned world is on the absent-trail side, measured rather than assumed.**
+`rolling-c32a6140-b6b` (demo, 1.15), `rolling-e9ccc879-a4b` (exam, 1.15) and
+`rolling-c9973708-865` (previous demo, 1.12) all carry a `solver` block with **no
+`progress` key**. None was re-solved or re-minted; a pre-1.16 document still
+parses, and that is its own guard.
+
+### The summary screen (W3), and what it refuses to show
+
+Read-only, post-solve, dollars first: the ledger and its stored decomposition,
+then the R-SP1 story in three honest states (present / flat / absent), then the
+statistics. The only interactive element on the screen is `close` — the pre/post
+wall is asserted by counting controls.
+
+**Three of the four v1 statistics are NAMED GAPS, not numbers.** Nothing stores
+late/on-time counts, board-scope utilization by machine, or total changeover
+minutes; the document carries per-order lateness, per-bar `setup_min`, and a
+utilization the cockpit recomputes per VISIBLE WINDOW (a different denominator —
+4B.20). Each renders as a line saying what is missing and **where it should come
+from** (an M7 rollup in each case). An honest gap beats a number with no
+provenance, and a gap that is silently dropped is neither. `summarymodel.js`
+enforces it structurally: every figure carries the document path it was read
+from, and a test asserts the whole set against a declared list of stored
+sources.
+
+### Discipline recorded
+
+**A ruling drafted in the product's own vocabulary can still contradict its
+standing law, and the clause that reads most naturally is the one to check.**
+*"First plan found at $X"* is the obvious sentence and it was unbuildable. What
+caught it was reading R-DP12 **before** writing the block, not after.
+
+**A specimen's adequacy is asserted, not assumed.** A determinism proof over a
+one-element sequence is a tautology wearing a test name.
+
+**A surface that caps what it shows says what it left out.** The trail table
+shows 12 of a possible dozens-to-hundreds, samples evenly, always keeps the
+first and the last, plots **every** point on the curve, and states the ratio.
+
+**A defect class fixed at one seam is not fixed — and the specimen is what found
+it.** The first pass wrote the artifact on the ROLLING seam only. The monolithic
+live specimen came back with the Event and the Metrics present and **no
+`solve_progress.json`**. Fixed at the caller that owns an out_dir (`__main__`,
+beside the certificate), which is the division `write_certificate_json` already
+uses; NC6 and NC7 revert the monolithic emission and the assembler's read
+independently.

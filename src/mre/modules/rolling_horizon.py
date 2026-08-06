@@ -454,6 +454,16 @@ def _two_stage_solve(model, var_map, free_start_vars, *,
             solutions_found=s2.solutions_found, solve_values=s2.solve_values,
             wall_truncated=(s1.wall_truncated or s2.wall_truncated),
             tiebreak_status=s2.status,
+            # R-SP1 CLAUSE (7) — THE TRAIL IS STAGE 1's, AND ONLY STAGE 1's.
+            # This return shape already carries stage 1's OBJECTIVE with stage
+            # 2's PLACEMENTS; the trail follows the objective, because it is the
+            # objective's own history. Stage 2 minimizes Σ free-op START MINUTES,
+            # so appending its trail would show a cost search collapsing into a
+            # minute count and call the difference improvement — 4B.7 §5a.16's
+            # defect (`.objective` was a MINUTE COUNT downstream) reintroduced
+            # through a new surface. The other three return paths use
+            # `replace(s1, …)` and inherit s1's trail for free.
+            incumbent_trail=s1.incumbent_trail,
             # Phase 0 (4B.12 CU3) is INCLUDED: `det_consumed` is what the whole
             # call spent, and a warm start that is not counted is a warm start
             # that looks free. 0.0 at HINT_OFF, so unchanged for every caller.
@@ -736,6 +746,18 @@ class RollingView:
     # ledger. None on a solve that reported neither (never a fabricated 0.0).
     objective: Optional[float] = None
     gap: Optional[float] = None
+    # W2.1 (R-SP1) — THE COST SEARCH's OWN HISTORY, AND THE BOUND IT STOPPED AT.
+    # `incumbent_trail` is stage 1's improving solutions in the order CP-SAT
+    # found them; `best_bound` is the proof floor that renders WITH the story
+    # (clause 4) and that the view could not previously state at all — only
+    # `gap`, which is a ratio over a number the view did carry.
+    #
+    # Populated on EVERY view, persisted or not: the assembler builds the
+    # rolling SolverBlock from the view rather than from evidence, so a trail
+    # that only existed on the persisted path would be absent from exactly the
+    # documents that render it. EMPTY on a window that admitted no work.
+    incumbent_trail: list = field(default_factory=list)
+    best_bound: Optional[float] = None
     # 4B.25 — what the two-stage solve ACTUALLY SPENT, in deterministic units.
     # A portfolio member's row is meant to answer "was it the seed or the
     # budget?" (4B.24 §7(b) says both decide), and it could not: the view
@@ -842,6 +864,11 @@ def build_rolling_view(
     objective: Optional[float] = None
     gap: Optional[float] = None
     det_consumed: Optional[float] = None
+    # W2.1 (R-SP1). Defaults for the no-free-ops path: a window that admitted no
+    # work ran no search, so it has an EMPTY trail and no bound — not a
+    # fabricated first plan and not a zero.
+    incumbent_trail: list = []
+    best_bound: Optional[float] = None
 
     # CU1 persistence wiring — reporters + snapshot writer are opened only when
     # ``persist`` is set (the API rolling worker). runs_dir mirrors the spine's
@@ -889,6 +916,9 @@ def build_rolling_view(
         objective = solve.objective
         gap = solve.gap
         det_consumed = solve.det_consumed
+        # W2.1 (R-SP1) — stage 1's trail and the bound it stopped at.
+        incumbent_trail = list(solve.incumbent_trail)
+        best_bound = solve.best_bound
         if solve.status in ("OPTIMAL", "FEASIBLE"):
             sv = solve.solve_values
             for op in free_ops:
@@ -984,6 +1014,39 @@ def build_rolling_view(
                              "earliness_tiebreak": tiebreak,
                              "tiebreak_status": solve.tiebreak_status,
                              "tiebreak_skipped_reason": solve.tiebreak_skipped_reason})
+                # W2.1 (R-SP1) — THE TRAIL, AT THE ROLLING SEAM.
+                #
+                # The same `emit_solve_progress` the monolithic runner calls
+                # beside ITS `solve_complete`. It is called here rather than
+                # inside SolveRunner because this path passes the runner
+                # `reporter=None` on purpose (the two-stage helper must not
+                # write stage 2's telemetry over stage 1's), so the rolling
+                # window's records are written where the rolling window's
+                # `solve_complete` is written. One definition, two paths — the
+                # gate's two exits, again.
+                #
+                # `window_key` is clause (1): this trail is THIS window's, and
+                # naming the window is what stops two of them being summed.
+                from mre.modules.solve_progress import (
+                    emit_solve_progress, write_solve_progress_json,
+                )
+                emit_solve_progress(
+                    s_rep, trail=incumbent_trail, status=solve.status,
+                    best_bound=solve.best_bound, gap=solve.gap,
+                    det_consumed=solve.det_consumed, det_budget=det_total,
+                    window_key=t0.isoformat())
+                # The artifact, registered BEFORE the run closes — the output
+                # manifest is sealed into the close record, so a file registered
+                # after `end()` is lost from the manifest that should carry it.
+                write_solve_progress_json(
+                    {"schedule_window_start": t0.isoformat(),
+                     "window_days": window_days, "frozen_days": frozen_days,
+                     "seed": seed, "det_budget": det_total,
+                     "status": solve.status, "best_bound": solve.best_bound,
+                     "gap": solve.gap, "stage": "cost",
+                     "objective_unit": "objective_units",
+                     "incumbents": incumbent_trail},
+                    plant.out_dir / "solve_progress.json", reporter=s_rep)
                 s_rep.end(RunStatus.SUCCESS)
                 e_rep = _report(ModuleCode.M7, "rolling window-0 extraction",
                                 plant.snapshot_id, runs_dir)
@@ -1016,7 +1079,8 @@ def build_rolling_view(
         det_consumed=det_consumed,
         earliness_value=ev_used, status=status, earliness_tiebreak=tiebreak,
         tiebreak_status=tiebreak_status, tiebreak_skipped_reason=tiebreak_skipped,
-        objective=objective, gap=gap)
+        objective=objective, gap=gap,
+        incumbent_trail=incumbent_trail, best_bound=best_bound)
 
 
 # ---------------------------------------------------------------------------

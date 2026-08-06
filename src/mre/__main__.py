@@ -492,6 +492,28 @@ def main(argv: list[str] | None = None) -> int:
         deterministic_time_total=DET_TOTAL_MONOLITHIC,
         cap_stage1=False,   # the cost proof stays uncapped, exactly as before
     )
+    # W2.1 (R-SP1) — THE TRAIL's ARTIFACT ON THE MONOLITHIC PATH.
+    #
+    # `SolveRunner` wrote the Event and the Metrics (it has the reporter); the
+    # FILE is written here, by the caller that owns an out_dir — the same
+    # division `write_certificate_json` uses, and for the same reason: the
+    # runner has no directory to write into and inventing one would put a run's
+    # artifact somewhere the run does not own. Registered BEFORE `end()`,
+    # because the output manifest is sealed into the close record.
+    #
+    # The first pass shipped this on the ROLLING seam only, and the specimen
+    # solve is what found it — Event and Metrics present, no artifact. A defect
+    # class fixed at one seam is not fixed (4B.14 §5a.34).
+    from mre.modules.solve_progress import write_solve_progress_json
+
+    write_solve_progress_json(
+        {"stage": "cost", "status": solve_result.status,
+         "best_bound": solve_result.best_bound, "gap": solve_result.gap,
+         "seed": args.solver_seed, "num_search_workers": args.solver_workers,
+         "det_budget": DET_TOTAL_MONOLITHIC,
+         "objective_unit": "objective_units",
+         "incumbents": solve_result.incumbent_trail},
+        out_dir / "solve_progress.json", reporter=r_rep)
     r_rep.end(RunStatus.SUCCESS if solve_result.status in ("OPTIMAL", "FEASIBLE") else RunStatus.PARTIAL)
     _p(
         f"solver      : status={solve_result.status}, "

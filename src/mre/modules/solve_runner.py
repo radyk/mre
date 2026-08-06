@@ -9,7 +9,7 @@ SOLVER_NONOPTIMAL finding emitted when accepted with gap > threshold.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 from mre.modules.solver_builder import SolveValues, VariableMap
@@ -55,6 +55,18 @@ class SolveResult:
     tiebreak_status: Optional[str] = None
     tiebreak_skipped_reason: Optional[str] = None
 
+    # THE INCUMBENT TRAIL (Session W2.1, R-SP1). One entry per improving
+    # solution, in the order CP-SAT found them: {"index", "objective",
+    # "elapsed_s"}. EMPTY on a solve that found nothing — an empty list, never a
+    # manufactured first plan.
+    #
+    # `objective` is the SCALED SOLVER OBJECTIVE and is not currency (clause 3,
+    # and R-DP12 clause (3) behind it). `elapsed_s` is the solver's own reading:
+    # a RECORDED fact that varies run to run and is never asserted. Under
+    # deterministic law the SEQUENCE of objectives is reproducible, and that is
+    # what the guards assert (clause 6).
+    incumbent_trail: list = field(default_factory=list)
+
     # The DETERMINISTIC time this solve actually consumed (CP-SAT's own
     # response_proto.deterministic_time), or None if it could not be read.
     # Session 4B.8 CU2 needs it because stage 2's budget is now the REMAINDER of
@@ -83,13 +95,28 @@ def _deterministic_time_of(solver) -> Optional[float]:
 
 
 class _SolutionCallback:
-    """Callback that streams improving solutions as Evidence Events."""
+    """Callback that streams improving solutions as Evidence Events AND collects
+    them into the R-SP1 incumbent trail.
+
+    THE PER-RECORD PING WAS ALREADY HERE AND WAS NOT A RECORD OF THE SEARCH. One
+    ``improving_solution`` Event per incumbent has been emitted since this file
+    was written — with no elapsed time, no terminal bound beside it, no
+    collection and no reader. Nobody could assemble a story from it, and the
+    consequence was that the optimizer's contribution was invisible on every
+    surface. The Event stays exactly as it was (evidence is append-only and
+    something may yet read it); ``trail`` is the collection it always needed.
+
+    ``elapsed_s`` is the CALLBACK's own ``WallTime()`` — the solver's reading of
+    how long it had been searching when it found this plan. Recorded, never
+    asserted (clause 6).
+    """
 
     def __init__(self, var_map: VariableMap, reporter) -> None:
         self._var_map = var_map
         self._reporter = reporter
         self._count = 0
         self._best_obj: Optional[float] = None
+        self.trail: list[dict] = []
 
     def on_solution_callback(self, solver) -> None:
         self._count += 1
@@ -97,6 +124,15 @@ class _SolutionCallback:
             obj = solver.ObjectiveValue()
         except Exception:
             obj = 0.0
+        # A callback that cannot read its own clock records the plan without the
+        # time rather than dropping the plan: the SEQUENCE is the reproducible
+        # thing and it must never be lost to a missing accessor.
+        try:
+            elapsed = float(solver.WallTime())
+        except Exception:  # noqa: BLE001 — version-dependent accessor
+            elapsed = 0.0
+        self.trail.append({"index": self._count, "objective": float(obj),
+                           "elapsed_s": elapsed})
 
         if self._reporter is not None:
             from mre.contracts.vocabularies import RecordTier
@@ -180,6 +216,7 @@ class SolveRunner:
 
         cb = _Cb(var_map, reporter)
         status_enum = solver.Solve(model, cb)
+        trail = list(cb._inner.trail)
 
         status_map = {
             cp.OPTIMAL:    "OPTIMAL",
@@ -254,6 +291,22 @@ class SolveRunner:
                     f"wall_time={wall_time:.2f}s"
                 ),
             )
+            # R-SP1 — THE TRAIL, BESIDE THE TERMINAL TELEMETRY IT BELONGS TO.
+            # This is the MONOLITHIC path's seam. The rolling path emits its own
+            # `solve_complete` (this runner is called there with reporter=None)
+            # and calls the SAME function beside it — one definition of the
+            # records, one per path, which is the shape S-02 used at the gate's
+            # two exits. A record written on only one path would be a gap shaped
+            # exactly like the one it was built to close.
+            #
+            # No `window_key`: a monolithic solve has no window to name, and
+            # clause (1)'s no-summing rule is about windows that exist.
+            from mre.modules.solve_progress import emit_solve_progress
+            emit_solve_progress(
+                reporter, trail=trail, status=status_str, best_bound=bound,
+                gap=gap, det_consumed=_deterministic_time_of(solver),
+                det_budget=self._deterministic_time, window_key=None,
+            )
 
         # Extract values if feasible
         if status_str in ("OPTIMAL", "FEASIBLE"):
@@ -279,4 +332,5 @@ class SolveRunner:
             wall_truncated=(self._deterministic_time is not None
                             and wall_time >= self._time_limit - 0.05),
             det_consumed=_deterministic_time_of(solver),
+            incumbent_trail=trail,
         )

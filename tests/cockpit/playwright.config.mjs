@@ -31,14 +31,18 @@ export default defineConfig({
     // It asserts what a REQUEST carries across an in-place version rebind —
     // nothing about it is theme-sensitive, so it runs once like the other
     // state/logic specs rather than twice like the rendering ones.
-    { name: "logic", testMatch: /(legality|rowstats|freshness|schedulepicker|attribution|three_way_card|lineage|carriedstate)\.spec\.mjs$/ },
+    // `summarymodel` is the summary screen's PURE selector layer (Session W2.1,
+    // R-SP1). It decides which stored document fields the screen may show and
+    // which asked-for statistics are named gaps; none of that is rendering, so
+    // it runs once, theme-free, like the other logic specs.
+    { name: "logic", testMatch: /(legality|rowstats|freshness|schedulepicker|attribution|three_way_card|lineage|carriedstate|summarymodel)\.spec\.mjs$/ },
     {
       name: "light", metadata: { theme: "light" },
-      testMatch: /(cockpit|gesture|rehearsal|planner|rolling|rolling\.two_beat|beat_two|deeplink|coarse|boundary|guipolish|oneclock)\.spec\.mjs$/,
+      testMatch: /(cockpit|gesture|rehearsal|planner|rolling|rolling\.two_beat|beat_two|deeplink|coarse|boundary|guipolish|oneclock|summary)\.spec\.mjs$/,
     },
     {
       name: "dark", metadata: { theme: "dark" },
-      testMatch: /(cockpit|gesture|rehearsal|planner|rolling|rolling\.two_beat|beat_two|deeplink|coarse|boundary|guipolish)\.spec\.mjs$/,
+      testMatch: /(cockpit|gesture|rehearsal|planner|rolling|rolling\.two_beat|beat_two|deeplink|coarse|boundary|guipolish|summary)\.spec\.mjs$/,
     },
   ],
   webServer: {
